@@ -410,19 +410,16 @@ describe("settings.jobs CRUD", () => {
     expect(result).toHaveLength(0);
   });
 
-  it("create adds a job with no salary of its own", async () => {
+  it("create adds a job with no salary or payroll-config of its own", async () => {
     const job = await caller.settings.jobs.create({
       personId,
       employerName: "Acme Corp",
-      payPeriod: "biweekly",
-      payWeek: "even",
       startDate: "2022-01-15",
-      w4FilingStatus: "Single",
     });
     expect(job).toBeDefined();
     expect(job!.employerName).toBe("Acme Corp");
-    expect(job!.payPeriod).toBe("biweekly");
     expect(job).not.toHaveProperty("annualSalary");
+    expect(job).not.toHaveProperty("payPeriod");
   });
 
   it("list returns one job after create", async () => {
@@ -533,12 +530,11 @@ describe("settings.deductions CRUD", () => {
       id,
       jobId,
       deductionName: "Health Insurance Premium",
-      amountPerPeriod: "275.00",
       isPretax: true,
       ficaExempt: true,
     });
     expect(updated!.deductionName).toBe("Health Insurance Premium");
-    expect(updated!.amountPerPeriod).toBe("275.00");
+    expect(updated).not.toHaveProperty("amountPerPeriod");
   });
 
   it("delete removes a deduction", async () => {
@@ -829,16 +825,20 @@ describe("paycheck router — with deductions and contributions", () => {
       w4FilingStatus: "MFJ",
     });
 
-    // Add a deduction
-    db.insert(schema.paycheckDeductions)
+    // Add a deduction — amountPerPeriod no longer lives on the row
+    // (Stage B); it only resolves via the Contribution Profile's
+    // deductions active field below (same no-base-value rule contribution
+    // accounts already follow), so it needs one to appear at all.
+    const deduction = db
+      .insert(schema.paycheckDeductions)
       .values({
         jobId,
         deductionName: "Health Insurance",
-        amountPerPeriod: "200",
         isPretax: true,
         ficaExempt: true,
       })
-      .run();
+      .returning({ id: schema.paycheckDeductions.id })
+      .get();
 
     // Add a contribution account — no value of its own; the Contribution
     // Profile below is what gives it one.
@@ -868,7 +868,9 @@ describe("paycheck router — with deductions and contributions", () => {
             contributionMethod: "percent_of_salary",
           },
         },
-        jobs: {},
+        deductions: {
+          [deduction.id]: { amountPerPeriod: "50.00" },
+        },
       },
     });
   });

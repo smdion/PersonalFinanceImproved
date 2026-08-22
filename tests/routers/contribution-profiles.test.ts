@@ -56,7 +56,7 @@ describe("contributionProfiles router", () => {
       });
       expect(profile).not.toBeNull();
       expect(Array.isArray(profile!.accountDetails)).toBe(true);
-      expect(Array.isArray(profile!.salaryDetails)).toBe(true);
+      expect(Array.isArray(profile!.deductionDetails)).toBe(true);
       expect(typeof profile!.resolved.combinedSalary).toBe("number");
     });
   });
@@ -68,7 +68,7 @@ describe("contributionProfiles router", () => {
       const profile = await caller.contributionProfile.create({
         name: "Test Profile",
         description: "For testing",
-        contributionActiveFields: { contributionAccounts: {}, jobs: {} },
+        contributionActiveFields: { contributionAccounts: {} },
       });
       expect(profile).toBeDefined();
       expect(profile.name).toBe("Test Profile");
@@ -79,7 +79,7 @@ describe("contributionProfiles router", () => {
       const profile = await caller.contributionProfile.create({
         name: "Second Profile",
         description: "Another test",
-        contributionActiveFields: { contributionAccounts: {}, jobs: {} },
+        contributionActiveFields: { contributionAccounts: {} },
       });
       expect(typeof profile.id).toBe("number");
       expect(profile.id).toBeGreaterThan(0);
@@ -179,7 +179,7 @@ describe("contributionProfiles router", () => {
       const profile = await caller.contributionProfile.create({
         name: "Profile To Delete",
         description: "Will be deleted",
-        contributionActiveFields: { contributionAccounts: {}, jobs: {} },
+        contributionActiveFields: { contributionAccounts: {} },
       });
       deletableId = profile.id;
     });
@@ -213,7 +213,7 @@ describe("contributionProfiles router", () => {
       const profile = await caller.contributionProfile.create({
         name: "Resolve Test Profile",
         description: "Used to test resolve",
-        contributionActiveFields: { contributionAccounts: {}, jobs: {} },
+        contributionActiveFields: { contributionAccounts: {} },
       });
       profileId = profile.id;
     });
@@ -242,4 +242,10 @@ describe("contributionProfiles router", () => {
       expect(typeof result!.employerMatchByCategory).toBe("object");
     });
   });
+
+  // Write-time bracket validation for w4FilingStatus/w4Box2cChecked moved
+  // to salaryProfile.create/update (assertSalaryEntryTaxBracketsExist in
+  // salary-profiles.ts) — the Contribution Profile `jobs` bucket that used
+  // to carry these fields is deleted wholesale. See
+  // tests/routers/salary-profiles.test.ts for that coverage.
 });

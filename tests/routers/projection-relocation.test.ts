@@ -51,6 +51,7 @@ function seedRetirementSettings(
       enableIrmaaAwareness: false,
       enableAcaAwareness: false,
       householdSize: 2,
+      filingStatus: "MFJ",
     })
     .run();
 }

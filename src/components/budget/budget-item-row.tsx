@@ -120,6 +120,14 @@ export function BudgetItemRow({
               PC
             </span>
           )}
+          {item.incomplete && (
+            <span
+              className="flex-shrink-0 text-caption font-semibold text-amber-700 bg-amber-50 rounded px-0.5 leading-tight"
+              title="Linked contribution account has no resolvable pay period (missing/ended job) — excluded from this total, not defaulted."
+            >
+              Incomplete
+            </span>
+          )}
           {isLinked && (
             <span
               className={`flex-shrink-0 text-caption font-semibold text-blue-600 bg-blue-50 rounded px-0.5 leading-tight ${amountsOnly ? "" : "cursor-pointer"}`}

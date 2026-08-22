@@ -262,6 +262,14 @@ export function RelocationBudgetSelectors({
                   Match: {formatCurrency(currentContribProfile.employerMatch)}
                   /yr
                 </span>
+                {currentContribProfile.incompleteAccountIds.length > 0 && (
+                  <span
+                    className="font-semibold text-amber-700 bg-amber-50 rounded px-0.5"
+                    title="Some contribution accounts have no resolvable pay period (missing/ended job) and are excluded from this total."
+                  >
+                    Incomplete
+                  </span>
+                )}
               </div>
             )}
           </div>
@@ -300,6 +308,14 @@ export function RelocationBudgetSelectors({
                   {formatCurrency(relocationContribProfile.employerMatch)}
                   /yr
                 </span>
+                {relocationContribProfile.incompleteAccountIds.length > 0 && (
+                  <span
+                    className="font-semibold text-amber-700 bg-amber-50 rounded px-0.5"
+                    title="Some contribution accounts have no resolvable pay period (missing/ended job) and are excluded from this total."
+                  >
+                    Incomplete
+                  </span>
+                )}
               </div>
             )}
           </div>

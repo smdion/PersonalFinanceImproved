@@ -1,11 +1,18 @@
 "use client";
 
 /**
- * ExtraPaycheckRulesEditor
+ * ExtraPaycheckJobPanel / ExtraPaycheckRulesEditor / ExtraPaycheckDestinationToggle
  *
- * Per-person panel for authoring extra-paycheck routing rules.
- * Shows upcoming extra-paycheck months, the current rule list, and
- * an inline add/edit form. Saves via savings.extraPaycheckRouting.save.
+ * ExtraPaycheckJobPanel is the full per-job routing editor — rules, splits
+ * across savings goals, growth rates, month overrides. ExtraPaycheckRulesEditor
+ * wraps it in a multi-person grid and renders on the Savings page, where
+ * this detail belongs (it's Savings-domain mechanics, not a Salary Profile
+ * concern). Salary Profile Manager instead renders only
+ * ExtraPaycheckDestinationToggle, next to a job's payPeriod/anchorPayDate —
+ * just the comp-layer decision of whether the extra check is diverted at
+ * all (see RULES.md's extraPaycheckRouting section), not the mechanics of
+ * where. Saves via savings.extraPaycheckRouting.save/saveGrowth/
+ * saveOverride/setEnabled.
  */
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
@@ -13,7 +20,10 @@ import { trpc } from "@/lib/trpc";
 import { formatCurrency, MONTH_NAMES_SHORT } from "@/lib/utils/format";
 import { sumBy } from "@/lib/utils/math";
 import { Button } from "@/components/ui/button";
-import { getExtraPaycheckMonthKeys } from "@/lib/calculators/paycheck";
+import {
+  getExtraPaycheckMonthKeys,
+  isExtraPaycheckBudgetMode,
+} from "@/lib/calculators/paycheck";
 import type {
   ExtraPaycheckRule,
   ExtraPaycheckOverride,
@@ -22,6 +32,22 @@ import type {
 
 type YearlyGrowthEntry = { type: "pct" | "dollar"; value: number };
 type YearlyGrowth = Record<number, YearlyGrowthEntry>;
+
+/**
+ * extraPaycheckRouting now lives inside the Salary Profile entry, not a
+ * savings-only table — invalidating only `savings.*` leaves Salary Profile
+ * Manager (`salaryProfile.getById`) and the Paycheck page
+ * (`paycheck.computeSummary`) showing stale routing after a save, since
+ * neither query lives under the `savings` router. Every mutation in this
+ * file that touches routing must invalidate all three.
+ */
+function invalidateExtraPaycheckConsumers(
+  utils: ReturnType<typeof trpc.useUtils>,
+) {
+  utils.savings.invalidate();
+  utils.salaryProfile.invalidate();
+  utils.paycheck.invalidate();
+}
 
 function projectedNetPay(
   baseNetPay: number,
@@ -274,7 +300,9 @@ type JobEntry = {
   personId: number;
   personName: string;
   employerName: string;
-  payPeriod: string;
+  /** `null` is a genuine "incomplete" state — no snapshot AND no entry for
+   *  this job in the active Salary Profile. */
+  payPeriod: string | null;
   anchorPayDate: string | null;
   extraPaycheckRouting: ExtraPaycheckRoutingData | null;
 };
@@ -289,7 +317,7 @@ function emptyForm(): RuleForm {
   return { from: "", to: "", splits: [{ goalId: 0, pct: "100" }] };
 }
 
-function PersonPanel({
+export function ExtraPaycheckJobPanel({
   job,
   goals,
   netPayPerCheck,
@@ -307,27 +335,32 @@ function PersonPanel({
   const utils = trpc.useUtils();
   const saveMutation = trpc.savings.extraPaycheckRouting.save.useMutation({
     onSuccess: () => {
-      utils.savings.invalidate();
+      invalidateExtraPaycheckConsumers(utils);
       onSaved();
     },
   });
   const saveGrowthMutation =
     trpc.savings.extraPaycheckRouting.saveGrowth.useMutation({
-      onSuccess: () => utils.savings.invalidate(),
+      onSuccess: () => invalidateExtraPaycheckConsumers(utils),
     });
   const saveOverrideMutation =
     trpc.savings.extraPaycheckRouting.saveOverride.useMutation({
       onSuccess: () => {
-        utils.savings.invalidate();
+        invalidateExtraPaycheckConsumers(utils);
         setOverrideMonth(null);
         setOverrideForm(null);
         setIsNewOverride(false);
       },
     });
+  const setEnabledMutation =
+    trpc.savings.extraPaycheckRouting.setEnabled.useMutation({
+      onSuccess: () => invalidateExtraPaycheckConsumers(utils),
+    });
 
   const routing = job.extraPaycheckRouting;
   const rules: ExtraPaycheckRule[] = routing?.rules ?? [];
   const overrides: ExtraPaycheckOverride[] = routing?.overrides ?? [];
+  const budgetMode = isExtraPaycheckBudgetMode(routing);
 
   // Growth state is per-person, initialized from persisted routing data.
   const [yearlyGrowth, setYearlyGrowth] = useState<YearlyGrowth>(
@@ -575,426 +608,503 @@ function PersonPanel({
 
   return (
     <div className="space-y-4">
-      {/* Growth editor — per-person, persisted */}
-      {projectionYears > 0 && netPayPerCheck > 0 && (
-        <div className="rounded border border-subtle bg-surface-sunken/30 p-3 space-y-2.5">
-          <SimpleGrowthEditor
-            projectionYears={projectionYears}
-            baseNetPay={baseNetPayDisplay}
-            baseYear={baseYearDisplay}
-            yearlyGrowth={yearlyGrowth}
-            setYearlyGrowth={setYearlyGrowth}
-          />
-          <div className="flex items-center gap-3 flex-wrap border-t border-subtle/50 pt-2">
-            <span className="text-caption text-faint">
-              Base {formatCurrency(baseNetPayDisplay)}/check
-              {routing?.baseYear
-                ? ` · saved ${routing.baseYear}`
-                : " · not yet saved"}
-            </span>
-            <Button
-              variant="secondary"
-              size="xs"
-              onClick={() =>
-                saveGrowthMutation.mutate({
-                  jobId: job.id,
-                  yearlyGrowth,
-                })
-              }
-              disabled={saveGrowthMutation.isPending}
-            >
-              {saveGrowthMutation.isPending
-                ? "Applying…"
-                : "Apply growth rates"}
-            </Button>
-            <span className="text-caption text-faint/60">
-              Re-apply after salary changes
-            </span>
-          </div>
+      <div className="flex items-center gap-2">
+        <span className="text-caption text-muted">Extra paycheck goes to:</span>
+        <div className="inline-flex rounded border border-default overflow-hidden text-caption">
+          <button
+            onClick={() =>
+              rules.length > 0
+                ? setEnabledMutation.mutate({ jobId: job.id, enabled: true })
+                : openAdd()
+            }
+            className={`px-2 py-1 ${
+              !budgetMode
+                ? "bg-blue-600 text-white"
+                : "bg-surface-primary text-muted hover:text-primary"
+            }`}
+          >
+            Savings
+          </button>
+          <button
+            onClick={() =>
+              rules.length > 0 &&
+              setEnabledMutation.mutate({ jobId: job.id, enabled: false })
+            }
+            className={`px-2 py-1 ${
+              budgetMode
+                ? "bg-blue-600 text-white"
+                : "bg-surface-primary text-muted hover:text-primary"
+            }`}
+          >
+            Budget
+          </button>
         </div>
-      )}
+        {setEnabledMutation.isPending && (
+          <span className="text-caption text-faint">Saving…</span>
+        )}
+      </div>
 
-      {/* Rule list */}
-      {rules.length > 0 && (
-        <table className="w-full text-xs border-collapse">
-          <thead>
-            <tr className="border-b border-subtle text-faint">
-              <th className="text-left py-1 pr-2 font-medium">From</th>
-              <th className="text-left py-1 pr-2 font-medium">To</th>
-              <th className="text-left py-1 pr-2 font-medium">Routing</th>
-              <th className="text-left py-1 pr-2 font-medium">Net / check</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {rules.map((rule, idx) => {
-              const ruleYear = parseInt(rule.from.slice(0, 4));
-              const netPerCheck = projectedNetPay(
-                baseNetPayDisplay,
-                ruleYear,
-                baseYearDisplay,
-                yearlyGrowth,
-              );
-              return (
-                <tr
-                  key={`${rule.from}-${rule.to ?? "open"}`}
-                  className="border-b border-subtle/50"
+      {budgetMode && rules.length > 0 ? (
+        <p className="text-xs text-muted">
+          Routing is paused — the extra paycheck stays as regular income instead
+          of going to a savings goal. Your configured rules are kept; switch
+          back to Savings to resume them. See the Budget page for which months
+          to expect it.
+        </p>
+      ) : (
+        <>
+          {/* Growth editor — per-person, persisted */}
+          {projectionYears > 0 && netPayPerCheck > 0 && (
+            <div className="rounded border border-subtle bg-surface-sunken/30 p-3 space-y-2.5">
+              <SimpleGrowthEditor
+                projectionYears={projectionYears}
+                baseNetPay={baseNetPayDisplay}
+                baseYear={baseYearDisplay}
+                yearlyGrowth={yearlyGrowth}
+                setYearlyGrowth={setYearlyGrowth}
+              />
+              <div className="flex items-center gap-3 flex-wrap border-t border-subtle/50 pt-2">
+                <span className="text-caption text-faint">
+                  Base {formatCurrency(baseNetPayDisplay)}/check
+                  {routing?.baseYear
+                    ? ` · saved ${routing.baseYear}`
+                    : " · not yet saved"}
+                </span>
+                <Button
+                  variant="secondary"
+                  size="xs"
+                  onClick={() =>
+                    saveGrowthMutation.mutate({
+                      jobId: job.id,
+                      yearlyGrowth,
+                    })
+                  }
+                  disabled={saveGrowthMutation.isPending}
                 >
-                  <td className="py-1 pr-2 tabular-nums">{fmt(rule.from)}</td>
-                  <td className="py-1 pr-2 tabular-nums text-muted">
-                    {rule.to ? fmt(rule.to) : "∞"}
-                  </td>
-                  <td className="py-1 pr-2">
-                    {rule.splits.map((s) => {
-                      const g = goals.find((g) => g.id === s.goalId);
-                      return (
-                        <span key={s.goalId} className="mr-1.5">
-                          {g?.name ?? `#${s.goalId}`}{" "}
-                          <span className="text-faint">{s.pct}%</span>
-                        </span>
-                      );
-                    })}
-                  </td>
-                  <td className="py-1 pr-2 tabular-nums text-muted">
-                    {formatCurrency(netPerCheck)}
-                  </td>
-                  <td className="py-1 text-right">
+                  {saveGrowthMutation.isPending
+                    ? "Applying…"
+                    : "Apply growth rates"}
+                </Button>
+                <span className="text-caption text-faint/60">
+                  Re-apply after salary changes
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Rule list */}
+          {rules.length > 0 && (
+            <table className="w-full text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-subtle text-faint">
+                  <th className="text-left py-1 pr-2 font-medium">From</th>
+                  <th className="text-left py-1 pr-2 font-medium">To</th>
+                  <th className="text-left py-1 pr-2 font-medium">Routing</th>
+                  <th className="text-left py-1 pr-2 font-medium">
+                    Net / check
+                  </th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {rules.map((rule, idx) => {
+                  const ruleYear = parseInt(rule.from.slice(0, 4));
+                  const netPerCheck = projectedNetPay(
+                    baseNetPayDisplay,
+                    ruleYear,
+                    baseYearDisplay,
+                    yearlyGrowth,
+                  );
+                  return (
+                    <tr
+                      key={`${rule.from}-${rule.to ?? "open"}`}
+                      className="border-b border-subtle/50"
+                    >
+                      <td className="py-1 pr-2 tabular-nums">
+                        {fmt(rule.from)}
+                      </td>
+                      <td className="py-1 pr-2 tabular-nums text-muted">
+                        {rule.to ? fmt(rule.to) : "∞"}
+                      </td>
+                      <td className="py-1 pr-2">
+                        {rule.splits.map((s) => {
+                          const g = goals.find((g) => g.id === s.goalId);
+                          return (
+                            <span key={s.goalId} className="mr-1.5">
+                              {g?.name ?? `#${s.goalId}`}{" "}
+                              <span className="text-faint">{s.pct}%</span>
+                            </span>
+                          );
+                        })}
+                      </td>
+                      <td className="py-1 pr-2 tabular-nums text-muted">
+                        {formatCurrency(netPerCheck)}
+                      </td>
+                      <td className="py-1 text-right">
+                        <button
+                          onClick={() => openEdit(idx)}
+                          className="text-xs text-blue-600 hover:text-blue-700 mr-2"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => deleteRule(idx)}
+                          className="text-xs text-faint hover:text-red-600 transition-colors"
+                        >
+                          ×
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+
+          {rules.length === 0 && !addForm && (
+            <p className="text-xs text-muted">No routing rules yet.</p>
+          )}
+
+          {/* Month overrides */}
+          <div className="border-t border-subtle/50 pt-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-caption text-faint font-medium uppercase tracking-wide">
+                Month overrides
+              </span>
+              {overrideMonth === null &&
+                extraPaycheckMonthOptions.length > 0 && (
+                  <button
+                    onClick={openAddOverride}
+                    className="px-2.5 py-1 text-label rounded border border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong transition-colors"
+                  >
+                    + Add override
+                  </button>
+                )}
+            </div>
+            {overrides.length > 0 && overrideMonth === null && (
+              <div className="space-y-1.5">
+                {overrides.map((o) => (
+                  <div
+                    key={o.month}
+                    className="flex items-center gap-2 text-xs"
+                  >
+                    <span className="text-faint tabular-nums w-16 shrink-0">
+                      {fmt(o.month)}
+                    </span>
+                    <span className="text-muted flex-1">
+                      {o.splits
+                        .map((s) => {
+                          const g = goals.find((g) => g.id === s.goalId);
+                          return `${g?.name ?? `#${s.goalId}`} ${s.pct}%`;
+                        })
+                        .join(", ")}
+                    </span>
                     <button
-                      onClick={() => openEdit(idx)}
-                      className="text-xs text-blue-600 hover:text-blue-700 mr-2"
+                      onClick={() => openOverride(o.month)}
+                      className="text-xs text-blue-600 hover:text-blue-700"
                     >
                       Edit
                     </button>
                     <button
-                      onClick={() => deleteRule(idx)}
+                      onClick={() => deleteOverride(o.month)}
+                      disabled={saveOverrideMutation.isPending}
                       className="text-xs text-faint hover:text-red-600 transition-colors"
                     >
                       ×
                     </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      )}
-
-      {rules.length === 0 && !addForm && (
-        <p className="text-xs text-muted">No routing rules yet.</p>
-      )}
-
-      {/* Month overrides */}
-      <div className="border-t border-subtle/50 pt-3 space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-caption text-faint font-medium uppercase tracking-wide">
-            Month overrides
-          </span>
-          {overrideMonth === null && extraPaycheckMonthOptions.length > 0 && (
-            <button
-              onClick={openAddOverride}
-              className="px-2.5 py-1 text-label rounded border border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong transition-colors"
-            >
-              + Add override
-            </button>
-          )}
-        </div>
-        {overrides.length > 0 && overrideMonth === null && (
-          <div className="space-y-1.5">
-            {overrides.map((o) => (
-              <div key={o.month} className="flex items-center gap-2 text-xs">
-                <span className="text-faint tabular-nums w-16 shrink-0">
-                  {fmt(o.month)}
-                </span>
-                <span className="text-muted flex-1">
-                  {o.splits
-                    .map((s) => {
-                      const g = goals.find((g) => g.id === s.goalId);
-                      return `${g?.name ?? `#${s.goalId}`} ${s.pct}%`;
-                    })
-                    .join(", ")}
-                </span>
-                <button
-                  onClick={() => openOverride(o.month)}
-                  className="text-xs text-blue-600 hover:text-blue-700"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => deleteOverride(o.month)}
-                  disabled={saveOverrideMutation.isPending}
-                  className="text-xs text-faint hover:text-red-600 transition-colors"
-                >
-                  ×
-                </button>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
-        {overrides.length === 0 && overrideMonth === null && (
-          <p className="text-caption text-faint/50">None set.</p>
-        )}
-        {overrideMonth !== null && overrideForm && (
-          <div className="border border-subtle rounded-md p-3 space-y-2 bg-surface-sunken/50 text-xs">
-            {isNewOverride ? (
-              <label className="space-y-0.5 block">
-                <span className="text-caption text-muted">Month</span>
-                <select
-                  value={overrideMonth ?? ""}
-                  onChange={(e) => setOverrideMonth(e.target.value)}
-                  className="w-full border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="">— pick a month —</option>
-                  {extraPaycheckMonthOptions.map((mk) => {
-                    const hasOverride = overrides.some((o) => o.month === mk);
-                    return (
-                      <option key={mk} value={mk}>
-                        {fmt(mk)}
-                        {hasOverride ? " ↺" : ""}
-                      </option>
-                    );
-                  })}
-                </select>
-              </label>
-            ) : (
-              <p className="font-medium text-primary">
-                Override — {fmt(overrideMonth!)}
-              </p>
             )}
-            <div className="space-y-1">
-              <span className="text-caption text-muted">
-                Fund splits (must total 100%)
-              </span>
-              {overrideForm.map((sp, si) => (
-                // eslint-disable-next-line react/no-array-index-key
-                <div key={si} className="flex gap-2 items-center">
-                  <select
-                    value={sp.goalId}
-                    onChange={(e) => {
-                      const next = overrideForm.map((s, i) =>
-                        i === si ? { ...s, goalId: Number(e.target.value) } : s,
-                      );
-                      setOverrideForm(next);
-                    }}
-                    className="flex-1 border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  >
-                    <option value={0}>— choose fund —</option>
-                    {goals.map((g) => (
-                      <option key={g.id} value={g.id}>
-                        {g.name}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    step={1}
-                    value={sp.pct}
-                    onChange={(e) => {
-                      const next = overrideForm.map((s, i) =>
-                        i === si ? { ...s, pct: e.target.value } : s,
-                      );
-                      setOverrideForm(next);
-                    }}
-                    className="w-16 border border-default rounded px-1.5 py-0.5 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500 text-right tabular-nums"
-                  />
-                  <span className="text-caption text-muted">%</span>
-                  {overrideForm.length > 1 && (
+            {overrides.length === 0 && overrideMonth === null && (
+              <p className="text-caption text-faint/50">None set.</p>
+            )}
+            {overrideMonth !== null && overrideForm && (
+              <div className="border border-subtle rounded-md p-3 space-y-2 bg-surface-sunken/50 text-xs">
+                {isNewOverride ? (
+                  <label className="space-y-0.5 block">
+                    <span className="text-caption text-muted">Month</span>
+                    <select
+                      value={overrideMonth ?? ""}
+                      onChange={(e) => setOverrideMonth(e.target.value)}
+                      className="w-full border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    >
+                      <option value="">— pick a month —</option>
+                      {extraPaycheckMonthOptions.map((mk) => {
+                        const hasOverride = overrides.some(
+                          (o) => o.month === mk,
+                        );
+                        return (
+                          <option key={mk} value={mk}>
+                            {fmt(mk)}
+                            {hasOverride ? " ↺" : ""}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </label>
+                ) : (
+                  <p className="font-medium text-primary">
+                    Override — {fmt(overrideMonth!)}
+                  </p>
+                )}
+                <div className="space-y-1">
+                  <span className="text-caption text-muted">
+                    Fund splits (must total 100%)
+                  </span>
+                  {overrideForm.map((sp, si) => (
+                    // eslint-disable-next-line react/no-array-index-key
+                    <div key={si} className="flex gap-2 items-center">
+                      <select
+                        value={sp.goalId}
+                        onChange={(e) => {
+                          const next = overrideForm.map((s, i) =>
+                            i === si
+                              ? { ...s, goalId: Number(e.target.value) }
+                              : s,
+                          );
+                          setOverrideForm(next);
+                        }}
+                        className="flex-1 border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      >
+                        <option value={0}>— choose fund —</option>
+                        {goals.map((g) => (
+                          <option key={g.id} value={g.id}>
+                            {g.name}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={sp.pct}
+                        onChange={(e) => {
+                          const next = overrideForm.map((s, i) =>
+                            i === si ? { ...s, pct: e.target.value } : s,
+                          );
+                          setOverrideForm(next);
+                        }}
+                        className="w-16 border border-default rounded px-1.5 py-0.5 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500 text-right tabular-nums"
+                      />
+                      <span className="text-caption text-muted">%</span>
+                      {overrideForm.length > 1 && (
+                        <button
+                          onClick={() =>
+                            setOverrideForm(
+                              overrideForm.filter((_, i) => i !== si),
+                            )
+                          }
+                          className="text-xs text-faint hover:text-red-600 transition-colors"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between">
                     <button
                       onClick={() =>
-                        setOverrideForm(overrideForm.filter((_, i) => i !== si))
+                        setOverrideForm([
+                          ...overrideForm,
+                          { goalId: 0, pct: "0" },
+                        ])
                       }
-                      className="text-xs text-faint hover:text-red-600 transition-colors"
+                      className="text-xs text-blue-600 hover:text-blue-700"
                     >
-                      ×
+                      + add fund
                     </button>
-                  )}
+                    <span
+                      className={`text-caption tabular-nums ${
+                        Math.abs(overrideSplitTotal - 100) < 0.01
+                          ? "text-green-600"
+                          : "text-red-500"
+                      }`}
+                    >
+                      Total: {overrideSplitTotal.toFixed(0)}%
+                    </span>
+                  </div>
                 </div>
-              ))}
-              <div className="flex items-center justify-between">
-                <button
-                  onClick={() =>
-                    setOverrideForm([...overrideForm, { goalId: 0, pct: "0" }])
-                  }
-                  className="text-xs text-blue-600 hover:text-blue-700"
-                >
-                  + add fund
-                </button>
-                <span
-                  className={`text-caption tabular-nums ${
-                    Math.abs(overrideSplitTotal - 100) < 0.01
-                      ? "text-green-600"
-                      : "text-red-500"
-                  }`}
-                >
-                  Total: {overrideSplitTotal.toFixed(0)}%
-                </span>
-              </div>
-            </div>
-            <div className="flex gap-2 pt-1">
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={saveOverride}
-                disabled={
-                  !overrideMonth.match(/^\d{4}-\d{2}$/) ||
-                  Math.abs(overrideSplitTotal - 100) >= 0.01 ||
-                  saveOverrideMutation.isPending ||
-                  !overrideForm.every((s) => s.goalId > 0)
-                }
-              >
-                {saveOverrideMutation.isPending ? "Saving…" : "Save override"}
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setOverrideMonth(null);
-                  setOverrideForm(null);
-                  setIsNewOverride(false);
-                }}
-              >
-                Cancel
-              </Button>
-            </div>
-            {saveOverrideMutation.error && (
-              <p className="text-xs text-red-600">
-                {saveOverrideMutation.error.message}
-              </p>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Add/edit form */}
-      {addForm && (
-        <div className="border border-subtle rounded-md p-3 space-y-3 bg-surface-sunken/50">
-          <p className="text-xs font-medium text-primary">
-            {editingIdx !== null ? "Edit rule" : "New rule"}
-          </p>
-
-          <div className="grid grid-cols-2 gap-3">
-            <label className="space-y-0.5">
-              <span className="text-caption text-muted">From</span>
-              <input
-                type="month"
-                value={addForm.from}
-                onChange={(e) => setFormField("from", e.target.value)}
-                className="w-full border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-            </label>
-            <label className="space-y-0.5">
-              <span className="text-caption text-muted">
-                To (blank = open-ended)
-              </span>
-              <input
-                type="month"
-                value={addForm.to}
-                onChange={(e) => setFormField("to", e.target.value)}
-                className="w-full border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-            </label>
-          </div>
-
-          <div className="space-y-1">
-            <span className="text-caption text-muted">
-              Fund splits (must total 100%)
-            </span>
-            {addForm.splits.map((sp, si) => (
-              // eslint-disable-next-line react/no-array-index-key -- splits are order-dependent form state with no stable ID
-              <div key={si} className="flex gap-2 items-center">
-                <select
-                  value={sp.goalId}
-                  onChange={(e) => setSplitGoal(si, Number(e.target.value))}
-                  className="flex-1 border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value={0}>— choose fund —</option>
-                  {goals.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.name}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  step={1}
-                  value={sp.pct}
-                  onChange={(e) => setSplitPct(si, e.target.value)}
-                  className="w-16 border border-default rounded px-1.5 py-0.5 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500 text-right tabular-nums"
-                />
-                <span className="text-caption text-muted">%</span>
-                {addForm.splits.length > 1 && (
-                  <button
-                    onClick={() => removeSplit(si)}
-                    className="text-xs text-faint hover:text-red-600 transition-colors"
+                <div className="flex gap-2 pt-1">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={saveOverride}
+                    disabled={
+                      !overrideMonth.match(/^\d{4}-\d{2}$/) ||
+                      Math.abs(overrideSplitTotal - 100) >= 0.01 ||
+                      saveOverrideMutation.isPending ||
+                      !overrideForm.every((s) => s.goalId > 0)
+                    }
                   >
-                    ×
-                  </button>
+                    {saveOverrideMutation.isPending
+                      ? "Saving…"
+                      : "Save override"}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setOverrideMonth(null);
+                      setOverrideForm(null);
+                      setIsNewOverride(false);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+                {saveOverrideMutation.error && (
+                  <p className="text-xs text-red-600">
+                    {saveOverrideMutation.error.message}
+                  </p>
                 )}
               </div>
-            ))}
-            <div className="flex items-center justify-between">
-              <button
-                onClick={addSplit}
-                className="text-xs text-blue-600 hover:text-blue-700"
-              >
-                + add fund
-              </button>
-              <span
-                className={`text-caption tabular-nums ${
-                  Math.abs(splitTotal - 100) < 0.01
-                    ? "text-green-600"
-                    : "text-red-500"
-                }`}
-              >
-                Total: {splitTotal.toFixed(0)}%
-              </span>
+            )}
+          </div>
+
+          {/* Add/edit form */}
+          {addForm && (
+            <div className="border border-subtle rounded-md p-3 space-y-3 bg-surface-sunken/50">
+              <p className="text-xs font-medium text-primary">
+                {editingIdx !== null ? "Edit rule" : "New rule"}
+              </p>
+
+              <div className="grid grid-cols-2 gap-3">
+                <label className="space-y-0.5">
+                  <span className="text-caption text-muted">From</span>
+                  <input
+                    type="month"
+                    value={addForm.from}
+                    onChange={(e) => setFormField("from", e.target.value)}
+                    className="w-full border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </label>
+                <label className="space-y-0.5">
+                  <span className="text-caption text-muted">
+                    To (blank = open-ended)
+                  </span>
+                  <input
+                    type="month"
+                    value={addForm.to}
+                    onChange={(e) => setFormField("to", e.target.value)}
+                    className="w-full border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </label>
+              </div>
+
+              <div className="space-y-1">
+                <span className="text-caption text-muted">
+                  Fund splits (must total 100%)
+                </span>
+                {addForm.splits.map((sp, si) => (
+                  // eslint-disable-next-line react/no-array-index-key -- splits are order-dependent form state with no stable ID
+                  <div key={si} className="flex gap-2 items-center">
+                    <select
+                      value={sp.goalId}
+                      onChange={(e) => setSplitGoal(si, Number(e.target.value))}
+                      className="flex-1 border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    >
+                      <option value={0}>— choose fund —</option>
+                      {goals.map((g) => (
+                        <option key={g.id} value={g.id}>
+                          {g.name}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={sp.pct}
+                      onChange={(e) => setSplitPct(si, e.target.value)}
+                      className="w-16 border border-default rounded px-1.5 py-0.5 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500 text-right tabular-nums"
+                    />
+                    <span className="text-caption text-muted">%</span>
+                    {addForm.splits.length > 1 && (
+                      <button
+                        onClick={() => removeSplit(si)}
+                        className="text-xs text-faint hover:text-red-600 transition-colors"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={addSplit}
+                    className="text-xs text-blue-600 hover:text-blue-700"
+                  >
+                    + add fund
+                  </button>
+                  <span
+                    className={`text-caption tabular-nums ${
+                      Math.abs(splitTotal - 100) < 0.01
+                        ? "text-green-600"
+                        : "text-red-500"
+                    }`}
+                  >
+                    Total: {splitTotal.toFixed(0)}%
+                  </span>
+                </div>
+              </div>
+
+              <p className="text-caption text-muted">
+                Net pay per check is calculated from the paycheck page and
+                projected using the growth rates above.
+              </p>
+
+              <div className="flex gap-2 pt-1">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={saveForm}
+                  disabled={!formValid || saveMutation.isPending}
+                >
+                  {saveMutation.isPending ? "Saving…" : "Save rule"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={editingIdx !== null ? cancelEdit : cancelAdd}
+                >
+                  Cancel
+                </Button>
+              </div>
+
+              {saveMutation.error && (
+                <p className="text-xs text-red-600">
+                  {saveMutation.error.message}
+                </p>
+              )}
             </div>
-          </div>
-
-          <p className="text-caption text-muted">
-            Net pay per check is calculated from the paycheck page and projected
-            using the growth rates above.
-          </p>
-
-          <div className="flex gap-2 pt-1">
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={saveForm}
-              disabled={!formValid || saveMutation.isPending}
-            >
-              {saveMutation.isPending ? "Saving…" : "Save rule"}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={editingIdx !== null ? cancelEdit : cancelAdd}
-            >
-              Cancel
-            </Button>
-          </div>
-
-          {saveMutation.error && (
-            <p className="text-xs text-red-600">{saveMutation.error.message}</p>
           )}
-        </div>
-      )}
 
-      {!addForm && (
-        <button
-          onClick={openAdd}
-          className="px-2.5 py-1 text-label rounded border border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong transition-colors"
-        >
-          + Add rule
-        </button>
+          {!addForm && (
+            <button
+              onClick={openAdd}
+              className="px-2.5 py-1 text-label rounded border border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong transition-colors"
+            >
+              + Add rule
+            </button>
+          )}
+        </>
       )}
     </div>
   );
 }
 
+/**
+ * Full multi-person routing editor — one ExtraPaycheckJobPanel per job,
+ * grouped by person. Lives on the Savings page: rules/splits/goals/growth
+ * are Savings-domain complexity (percentage splits across savings GOALS,
+ * a concept this component owns), not a Salary Profile concern. Salary
+ * Profile Manager shows only ExtraPaycheckDestinationToggle below — the
+ * simple comp-layer decision of whether the extra check is diverted at
+ * all, without the detailed mechanics of where.
+ */
 export function ExtraPaycheckRulesEditor({
   goals,
   netPayByPersonId,
@@ -1024,7 +1134,6 @@ export function ExtraPaycheckRulesEditor({
   if (!jobs?.length)
     return <p className="text-xs text-muted">No jobs found.</p>;
 
-  // Group by person
   const byPerson = new Map<number, { name: string; jobs: JobEntry[] }>();
   for (const job of jobs) {
     if (!byPerson.has(job.personId)) {
@@ -1056,7 +1165,7 @@ export function ExtraPaycheckRulesEditor({
                     {job.employerName}
                   </p>
                 )}
-                <PersonPanel
+                <ExtraPaycheckJobPanel
                   job={job}
                   goals={goals}
                   netPayPerCheck={netPayByPersonId.get(personId) ?? 0}
@@ -1068,6 +1177,84 @@ export function ExtraPaycheckRulesEditor({
             ))}
           </div>
         ),
+      )}
+    </div>
+  );
+}
+
+/**
+ * Minimal Savings-vs-Budget control for Salary Profile Manager — just the
+ * pill toggle, no rules/splits/growth/overrides. Those are Savings-domain
+ * mechanics (see ExtraPaycheckRulesEditor above); this only surfaces the
+ * comp-layer decision itself: is the job's extra biweekly paycheck diverted
+ * anywhere at all. Reuses `routing` already fetched by the caller (Salary
+ * Profile Manager already has each job's entry in scope) rather than
+ * re-querying savings.extraPaycheckRouting.list for a job Manager already
+ * has data for.
+ */
+export function ExtraPaycheckDestinationToggle({
+  jobId,
+  routing,
+  disabled = false,
+}: {
+  jobId: number;
+  routing: ExtraPaycheckRoutingData | null;
+  /** Set while a what-if Scenario is being previewed — this toggle has no
+   *  scenario-override path of its own (unlike salary/contribution edits,
+   *  which redirect into the Scenario's overlay), so a real write here
+   *  would silently persist outside the sandboxed preview the user believes
+   *  they're in. Deliberately NOT tied to the page's read-only/edit-lock
+   *  state — this is a toggle, not an editable value, so it stays
+   *  actionable even while the rest of the profile is locked. */
+  disabled?: boolean;
+}) {
+  const utils = trpc.useUtils();
+  const setEnabledMutation =
+    trpc.savings.extraPaycheckRouting.setEnabled.useMutation({
+      onSuccess: () => invalidateExtraPaycheckConsumers(utils),
+    });
+
+  const rules = routing?.rules ?? [];
+  const budgetMode = isExtraPaycheckBudgetMode(routing);
+  const setMode = (toSavings: boolean) =>
+    !disabled &&
+    rules.length > 0 &&
+    setEnabledMutation.mutate({ jobId, enabled: toSavings });
+
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      <span className="text-caption text-muted">Extra paycheck goes to:</span>
+      <div className="inline-flex rounded border border-default overflow-hidden text-caption">
+        <button
+          onClick={() => setMode(true)}
+          disabled={disabled}
+          className={`px-2 py-1 disabled:opacity-50 disabled:cursor-not-allowed ${
+            !budgetMode
+              ? "bg-blue-600 text-white"
+              : "bg-surface-primary text-muted hover:text-primary"
+          }`}
+        >
+          Savings
+        </button>
+        <button
+          onClick={() => setMode(false)}
+          disabled={disabled}
+          className={`px-2 py-1 disabled:opacity-50 disabled:cursor-not-allowed ${
+            budgetMode
+              ? "bg-blue-600 text-white"
+              : "bg-surface-primary text-muted hover:text-primary"
+          }`}
+        >
+          Budget
+        </button>
+      </div>
+      {setEnabledMutation.isPending && (
+        <span className="text-caption text-faint">Saving…</span>
+      )}
+      {disabled && (
+        <span className="text-caption text-faint">
+          (unavailable in scenario preview)
+        </span>
       )}
     </div>
   );

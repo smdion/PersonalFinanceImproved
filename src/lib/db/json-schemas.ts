@@ -10,6 +10,12 @@
  */
 
 import { z } from "zod/v4";
+import {
+  w4FilingStatusSchema,
+  payPeriodSchema,
+  payWeekSchema,
+  zDecimal,
+} from "@/lib/config/enum-values";
 
 // ── Primitives & re-usable fragments ────────────────────────────
 
@@ -153,25 +159,83 @@ export const relocationScenarioParamsSchema = z.object({
   moveYear: z.number().nullable().optional().default(null),
 });
 
+// ── extra-paycheck routing (nested inside a salary entry) ───────
+
+/** One split target inside an ExtraPaycheckRule/Override. */
+const extraPaycheckSplitSchema = z.object({
+  goalId: z.number().int(),
+  pct: z.number(),
+});
+
+/** One date-ranged rule directing an extra paycheck to one or more goals. */
+const extraPaycheckRuleSchema = z.object({
+  from: z.string(),
+  to: z.string().nullable(),
+  splits: z.array(extraPaycheckSplitSchema),
+  /** @deprecated legacy fallback — see ExtraPaycheckRule in schema-pg.ts. */
+  netPaySnapshot: z.number().optional(),
+});
+
+/** A one-time per-month override that takes precedence over its rule. */
+const extraPaycheckOverrideSchema = z.object({
+  month: z.string(),
+  splits: z.array(extraPaycheckSplitSchema),
+});
+
+/** Per-year growth entry for projecting future extra-paycheck net pay. */
+const yearlyGrowthEntrySchema = z.object({
+  type: z.enum(["pct", "dollar"]),
+  value: z.number(),
+});
+
+/**
+ * A Salary Profile entry's `extraPaycheckRouting` field — see
+ * ExtraPaycheckRoutingData in schema-pg.ts for the full field-by-field
+ * rationale (this schema mirrors that type exactly). Moved here from
+ * `jobs.extra_paycheck_routing` because it's the same category of fact as
+ * `include401kInBonus`/`includeBonusInContributions` above: a comp-layer
+ * decision about how this job's pay gets treated, not a job identity fact.
+ * `.strict()` for the same reason as salaryEntrySchema itself.
+ */
+export const extraPaycheckRoutingSchema = z
+  .object({
+    rules: z.array(extraPaycheckRuleSchema),
+    overrides: z.array(extraPaycheckOverrideSchema).optional(),
+    baseNetPayPerCheck: z.number().optional(),
+    baseYear: z.number().optional(),
+    yearlyGrowth: z.record(z.string(), yearlyGrowthEntrySchema).optional(),
+    payPeriod: payPeriodSchema.optional(),
+    anchorPayDate: z.string().nullable().optional(),
+    enabled: z.boolean().optional(),
+  })
+  .strict();
+
 // ── salary_profiles ─────────────────────────────────────────────
 
 /**
  * salary_profiles.salaries — jobId → salary entry.
  *
- * A job either has a COMPLETE entry (all four fields, a real self-contained
- * number for this profile) or no key at all (this profile says nothing
- * about that job, which resolves to $0/no bonus — never a fallback to some
- * other value). There is no partial-pin state and no "live" concept: a
- * profile is its own complete world, not a set of overrides on a shared
- * baseline. If you want different numbers, use a different profile.
+ * A job either has a COMPLETE entry (all seventeen fields, a real
+ * self-contained set of numbers/elections for this profile) or no key at
+ * all (this profile says nothing about that job, which resolves to
+ * $0/no bonus/incomplete — never a fallback to some other value). There is
+ * no partial-pin state and no "live" concept: a profile is its own complete
+ * world, not a set of overrides on a shared baseline. If you want different
+ * numbers, use a different profile.
  *
  * `.strict()` so a stale payload shape from an old client is rejected
  * loudly rather than being stored and silently ignored.
  *
- * Bonus terms live HERE, not on a Contribution Profile: "what is my bonus"
- * is the same category of fact as "what is my salary". A Contribution
- * Profile still owns include401kInBonus / includeBonusInContributions,
- * which are about how contributions are computed FROM a bonus.
+ * Bonus terms, pay schedule, W-4 elections, and extra-paycheck routing all
+ * live HERE, not split across `jobs` columns or a Contribution Profile:
+ * "what is my bonus," "when do I get paid," "what withholding elections
+ * apply," and "where does my extra paycheck go" are all the same category
+ * of fact as "what is my salary" — this collapses income, withholding/
+ * schedule elections, and comp-routing decisions into one axis (see
+ * RULES.md's Salary Profile layer section for the accepted tradeoff). A
+ * Contribution Profile still owns the *deductions* bucket (paycheck_
+ * deductions amounts) — a distinct fact from what the job elects on its
+ * W-4/pay schedule.
  */
 export const salaryEntrySchema = z
   .object({
@@ -184,6 +248,23 @@ export const salaryEntrySchema = z
      *  the formula fields above, which growth/projection math always uses
      *  untouched. Only the live Paycheck display reads this. */
     bonusOverride: z.number().nullable(),
+    payPeriod: payPeriodSchema,
+    payWeek: payWeekSchema,
+    /** `null` is a real, complete value ("no anchor, use start date"). */
+    anchorPayDate: z.string().nullable(),
+    budgetPeriodsPerMonth: z.number().nullable(),
+    w4FilingStatus: w4FilingStatusSchema,
+    w4Box2cChecked: z.boolean(),
+    additionalFedWithholding: z.number(),
+    /** 1-12, month when bonus is typically paid (null = unknown/spread). */
+    bonusMonth: z.number().nullable(),
+    /** 1-31, day of month when bonus is paid (null = first period of month). */
+    bonusDayOfMonth: z.number().nullable(),
+    include401kInBonus: z.boolean(),
+    includeBonusInContributions: z.boolean(),
+    /** `null` is a real, complete value ("no extra-paycheck routing
+     *  configured for this job"). See extraPaycheckRoutingSchema above. */
+    extraPaycheckRouting: extraPaycheckRoutingSchema.nullable(),
   })
   .strict();
 
@@ -233,35 +314,51 @@ export const contribAccountActiveFieldsSchema = z
   );
 
 /**
- * Contribution-profile job active-field set.
- *
- * Bonus AMOUNT terms (bonusPercent / bonusMultiplier / monthsInBonusYear)
- * deliberately do NOT appear here — they moved to the Salary Profile entry,
- * because "how big is the bonus" belongs with "how big is the salary". What
- * stays is what is genuinely about contributions computed FROM a bonus
- * (include401kInBonus, includeBonusInContributions), plus the employer name
- * and the bonus pay DATE, which are neither.
+ * Contribution-profile deduction active-field set. Deductions (STD/LTD/
+ * Dental/Medical/Vision, etc.) have NO base `amountPerPeriod` of their own —
+ * Stage B dropped that column — so this is the ONLY source for one, same
+ * no-base-value contract as a contribution account's contributionValue (see
+ * applyDeductionActiveFields/applyContribActiveFields). `deductionName`/
+ * `isPretax`/`ficaExempt`/job assignment stay structural/raw-only on
+ * `paycheck_deductions` itself, mirroring the accountType/taxTreatment
+ * (structural) vs contributionValue/contributionMethod (profile-driven)
+ * boundary contribution accounts already draw.
  */
-export const jobActiveFieldsSchema = z
+export const deductionActiveFieldsSchema = z
   .object({
-    bonusMonth: z.union([z.number(), z.null()]).optional(),
-    bonusDayOfMonth: z.union([z.number(), z.null()]).optional(),
-    include401kInBonus: z.boolean().optional(),
-    includeBonusInContributions: z.boolean().optional(),
-    employerName: z.string().optional(),
+    amountPerPeriod: zDecimal.optional(),
   })
   .strict();
 
-/** contribution_profiles.contribution_active_fields — typed active-field structure */
+/**
+ * contribution_profiles.contribution_active_fields — typed active-field
+ * structure.
+ *
+ * Two different merge semantics live under this one column, by bucket —
+ * both NO base value, exclude-if-absent (see applyContribActiveFields /
+ * applyDeductionActiveFields):
+ *  - contributionAccounts: an account absent (or with no contributionValue
+ *    set) here has no resolvable contribution at all (the "incomplete
+ *    profile" state).
+ *  - deductions: a deduction absent (or with no amountPerPeriod set) here
+ *    has no resolvable amount at all, same rule.
+ *
+ * There is no `jobs` bucket any more — a Contribution Profile no longer
+ * touches jobs at all. Pay schedule, W-4 elections, bonus pay date/flags,
+ * and employerName-override all either moved to the Salary Profile entry
+ * (the first three) or lost their profile-override path entirely
+ * (employerName — accepted feature reduction, see RULES.md's Salary
+ * Profile layer section).
+ */
 export const contributionActiveFieldsSchema = z
   .object({
     contributionAccounts: z
       .record(z.string(), contribAccountActiveFieldsSchema)
       .default({}),
-    jobs: z.record(z.string(), jobActiveFieldsSchema).default({}),
+    deductions: z.record(z.string(), deductionActiveFieldsSchema).default({}),
   })
   .strict()
-  .default({ contributionAccounts: {}, jobs: {} });
+  .default({ contributionAccounts: {}, deductions: {} });
 
 // ── app_settings ────────────────────────────────────────────────
 

@@ -208,15 +208,15 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
             data={chartData}
             margin={{ top: 5, right: 15, left: 5, bottom: 5 }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.mcGrid} />
             <XAxis
               dataKey="age"
-              tick={{ fontSize: CHART_FONT.tick, fill: "#6b7280" }}
+              tick={{ fontSize: CHART_FONT.tick, fill: CHART_COLORS.axisMuted }}
               tickLine={false}
-              axisLine={{ stroke: "#d1d5db" }}
+              axisLine={{ stroke: CHART_COLORS.axisLine }}
             />
             <YAxis
-              tick={{ fontSize: CHART_FONT.tick, fill: "#6b7280" }}
+              tick={{ fontSize: CHART_FONT.tick, fill: CHART_COLORS.axisMuted }}
               tickLine={false}
               axisLine={false}
               tickFormatter={(v: number) => compactCurrency(v)}
@@ -441,14 +441,14 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
             {chartData.some((d) => Number(d.age) === ssStartAge) && (
               <ReferenceLine
                 x={ssStartAge}
-                stroke="#2dd4bf"
+                stroke={CHART_COLORS.ssMarker}
                 strokeDasharray="6 3"
                 strokeWidth={1}
                 label={{
                   value: "SS",
                   position: "top",
                   fontSize: CHART_FONT.tiny,
-                  fill: "#2dd4bf",
+                  fill: CHART_COLORS.ssMarker,
                 }}
               />
             )}
@@ -458,14 +458,14 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
               chartData.some((d) => Number(d.age) === rmdStartAge) && (
                 <ReferenceLine
                   x={rmdStartAge}
-                  stroke="#f59e0b"
+                  stroke={CHART_COLORS.rmdMarker}
                   strokeDasharray="6 3"
                   strokeWidth={1}
                   label={{
                     value: "RMD",
                     position: "top",
                     fontSize: CHART_FONT.tiny,
-                    fill: "#f59e0b",
+                    fill: CHART_COLORS.rmdMarker,
                   }}
                 />
               )}
@@ -526,7 +526,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
           <span className="flex items-center gap-1">
             <span
               className="w-3 h-0.5 rounded"
-              style={{ backgroundColor: "#2dd4bf" }}
+              style={{ backgroundColor: CHART_COLORS.ssMarker }}
             />
             SS Start
           </span>
@@ -536,7 +536,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
             <span className="flex items-center gap-1">
               <span
                 className="w-3 h-0.5 rounded"
-                style={{ backgroundColor: "#f59e0b" }}
+                style={{ backgroundColor: CHART_COLORS.rmdMarker }}
               />
               RMD Start
             </span>

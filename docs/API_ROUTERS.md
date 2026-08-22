@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**327 procedures across 37 routers.**
+**329 procedures across 37 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -100,16 +100,17 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `contribution-profiles`
 
-| Procedure                | Kind     | Auth                           | Description                                                                                                                                                                                              |
-| ------------------------ | -------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `compareData`            | query    | `protectedProcedure`           | map, keyed by account id. Deliberately skips what `getById` does per profile — perf-account fuzzy matching and full display-name disambiguation — since those only need to happen once per account row,  |
-| `create`                 | mutation | `contributionProfileProcedure` | Create a new contribution profile.                                                                                                                                                                       |
-| `delete`                 | mutation | `contributionProfileProcedure` | active-profile setting must always resolve to a real row), when it's the globally-active selection, and when any Plan still pins it — the scenarios FK is `set null`, so without that check deleting wou |
-| `getById`                | query    | `protectedProcedure`           | Get a single profile with fully resolved per-account details.                                                                                                                                            |
-| `list`                   | query    | `protectedProcedure`           | List all contribution profiles with resolved summary totals.                                                                                                                                             |
-| `resolve`                | query    | `protectedProcedure`           | Resolve a profile to aggregate totals — used by the relocation tool and any other consumer that needs salary/contribution/match numbers for a given profile.                                             |
-| `setAccountActiveFields` | mutation | `contributionProfileProcedure` | caller needing to fetch/merge the full contributionActiveFields blob itself. Used right after creating a new contribution account (e.g. What-If's "Make real") to give it a real value in whichever prof |
-| `update`                 | mutation | `contributionProfileProcedure` | Update an existing contribution profile.                                                                                                                                                                 |
+| Procedure                  | Kind     | Auth                           | Description                                                                                                                                                                                              |
+| -------------------------- | -------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `compareData`              | query    | `protectedProcedure`           | map, keyed by account id. Deliberately skips what `getById` does per profile — perf-account fuzzy matching and full display-name disambiguation — since those only need to happen once per account row,  |
+| `create`                   | mutation | `contributionProfileProcedure` | Create a new contribution profile.                                                                                                                                                                       |
+| `delete`                   | mutation | `contributionProfileProcedure` | active-profile setting must always resolve to a real row), when it's the globally-active selection, and when any Plan still pins it — the scenarios FK is `set null`, so without that check deleting wou |
+| `getById`                  | query    | `protectedProcedure`           | Get a single profile with fully resolved per-account details.                                                                                                                                            |
+| `list`                     | query    | `protectedProcedure`           | List all contribution profiles with resolved summary totals.                                                                                                                                             |
+| `resolve`                  | query    | `protectedProcedure`           | Resolve a profile to aggregate totals — used by the relocation tool and any other consumer that needs salary/contribution/match numbers for a given profile.                                             |
+| `setAccountActiveFields`   | mutation | `contributionProfileProcedure` | caller needing to fetch/merge the full contributionActiveFields blob itself. Used right after creating a new contribution account (e.g. What-If's "Make real") to give it a real value in whichever prof |
+| `setDeductionActiveFields` | mutation | `contributionProfileProcedure` | Set (merge) one deduction's active amount within a profile — same pattern as setAccountActiveFields, for the deductions section of the Contribution Profile editor. A deduction has no live amountPerPer |
+| `update`                   | mutation | `contributionProfileProcedure` | Update an existing contribution profile.                                                                                                                                                                 |
 
 ## `data-browser`
 
@@ -326,6 +327,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `save`                      | mutation | `savingsProcedure`   | Save routing rules for a single job and re-materialize. Preserves existing overrides and growth settings.                                                                                                |
 | `saveGrowth`                | mutation | `savingsProcedure`   | Persist growth rates for a job, then re-materialize. Net pay is always recomputed server-side.                                                                                                           |
 | `saveOverride`              | mutation | `savingsProcedure`   | Upsert or delete a one-time override for a specific extra-paycheck month.                                                                                                                                |
+| `setEnabled`                | mutation | `savingsProcedure`   | "Budget" mode (enabled: false) means the extra paycheck isn't diverted to any goal and stays as regular income, same as a job with no routing at all; switching back to "Savings" (enabled: true) restor |
 | `settle`                    | mutation | `savingsProcedure`   | Settlement is per-occurrence (plannedTxId + occurrenceMonth), never per-row — a recurring row has many future occurrences, and settling one must not hide the others from the projection. Never invoked  |
 | `settleMany`                | mutation | `savingsProcedure`   | (no description)                                                                                                                                                                                         |
 | `unlinkGoalFromApi`         | mutation | `savingsProcedure`   | Unlink a savings goal from a budget API category.                                                                                                                                                        |
@@ -372,25 +374,25 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `settings/paycheck`
 
-| Procedure            | Kind     | Auth                 | Description                    |
-| -------------------- | -------- | -------------------- | ------------------------------ |
-| `create`             | mutation | `adminProcedure`     | (no description)               |
-| `create`             | mutation | `adminProcedure`     | (no description)               |
-| `create`             | mutation | `adminProcedure`     | (no description)               |
-| `create`             | mutation | `adminProcedure`     | (no description)               |
-| `delete`             | mutation | `adminProcedure`     | (no description)               |
-| `delete`             | mutation | `adminProcedure`     | (no description)               |
-| `delete`             | mutation | `adminProcedure`     | (no description)               |
-| `delete`             | mutation | `adminProcedure`     | (no description)               |
-| `list`               | query    | `protectedProcedure` | (no description)               |
-| `list`               | query    | `protectedProcedure` | (no description)               |
-| `list`               | query    | `protectedProcedure` | (no description)               |
-| `list`               | query    | `protectedProcedure` | (no description)               |
-| `setPriorYearAmount` | mutation | `adminProcedure`     | (no description)               |
-| `update`             | mutation | `adminProcedure`     | routing rules has no need for. |
-| `update`             | mutation | `adminProcedure`     | (no description)               |
-| `update`             | mutation | `adminProcedure`     | (no description)               |
-| `update`             | mutation | `adminProcedure`     | (no description)               |
+| Procedure            | Kind     | Auth                           | Description                                                                                                                                                                                              |
+| -------------------- | -------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `create`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
+| `create`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
+| `create`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
+| `create`             | mutation | `contributionProfileProcedure` | deduction's identity (name/isPretax/ficaExempt) is the same class of previously-admin-gated job fact that W-4/pay-schedule fields already moved off of (Stage B); its AMOUNT already resolves via a Cont |
+| `delete`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
+| `delete`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
+| `delete`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
+| `delete`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
+| `list`               | query    | `protectedProcedure`           | (no description)                                                                                                                                                                                         |
+| `list`               | query    | `protectedProcedure`           | (no description)                                                                                                                                                                                         |
+| `list`               | query    | `protectedProcedure`           | (no description)                                                                                                                                                                                         |
+| `list`               | query    | `protectedProcedure`           | (no description)                                                                                                                                                                                         |
+| `setPriorYearAmount` | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
+| `update`             | mutation | `adminProcedure`               | routing rules has no need for.                                                                                                                                                                           |
+| `update`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
+| `update`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
+| `update`             | mutation | `contributionProfileProcedure` | (no description)                                                                                                                                                                                         |
 
 ## `settings/tax-limits`
 

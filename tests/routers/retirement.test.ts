@@ -104,6 +104,7 @@ async function seedRetirementSettings(
       withdrawalRate: "0.04",
       socialSecurityMonthly: "2500",
       ssStartAge: 67,
+      filingStatus: "MFJ",
       ...overrides,
     })
     .returning({ id: schema.retirementSettings.id })
@@ -1514,5 +1515,243 @@ describe("retirement router -- all optional inputs combined", () => {
     expect(r.projectionByYear.length).toBeGreaterThan(0);
     expect(r.totalLargePurchasePortfolioHit).toBeGreaterThan(0);
     expect(r.warnings).toBeInstanceOf(Array);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Contribution Profile plan: computeContribTotals must use the per-arm
+// resolved (profile-patched) jobs, not the outer raw activeJobs, for
+// fixed_per_period annualization — a per-arm payPeriod active field
+// previously had no effect on the relocation comparison's contribution math.
+// ---------------------------------------------------------------------------
+
+describe("computeRelocationAnalysis -- per-arm payPeriod resolution", () => {
+  it("a Contribution Profile can no longer change payPeriod — both arms annualize against the same Salary Profile schedule", async () => {
+    const { caller, db, cleanup } = await createTestCaller();
+    try {
+      const personId = await seedPerson(db, "SchedulePerson", "1990-01-01");
+      await markPrimary(db, personId);
+      await seedRetirementSettings(db, personId);
+      const jobId = seedJob(db, personId, { payPeriod: "biweekly" });
+
+      const currentProfileId = await insertBudgetProfile(db, "Budget");
+      await insertBudgetItem(
+        db,
+        currentProfileId,
+        "Essentials",
+        "Rent",
+        [2000],
+      );
+
+      const perfAcctId = seedPerformanceAccount(db, {
+        parentCategory: "Retirement",
+        accountType: "401k",
+        ownerPersonId: personId,
+      });
+      seedSnapshot(db, "2025-06-15", [
+        {
+          performanceAccountId: perfAcctId,
+          amount: "50000",
+          taxType: "preTax",
+        },
+      ]);
+
+      const schema = await getSchema();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic schema import requires runtime cast
+      const acct = await (db as any)
+        .insert(schema.contributionAccounts)
+        .values({
+          personId,
+          jobId,
+          accountType: "401k",
+          parentCategory: "Retirement",
+          taxTreatment: "pre_tax",
+          employerMatchType: "none",
+          isActive: true,
+          performanceAccountId: perfAcctId,
+        })
+        .returning({ id: schema.contributionAccounts.id })
+        .get();
+
+      // Baseline arm: fixed_per_period $100, no payPeriod active field —
+      // annualizes against the job's real biweekly schedule (26 periods).
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic schema import requires runtime cast
+      const baselineProfile = await (db as any)
+        .insert(schema.contributionProfiles)
+        .values({
+          name: "Baseline Schedule",
+          contributionActiveFields: {
+            contributionAccounts: {
+              [String(acct.id)]: {
+                contributionValue: "100",
+                contributionMethod: "fixed_per_period",
+              },
+            },
+          },
+        })
+        .returning({ id: schema.contributionProfiles.id })
+        .get();
+
+      // Comparison arm: same $100 fixed_per_period, a DIFFERENT Contribution
+      // Profile — but a Contribution Profile no longer touches jobs at all
+      // (the `jobs` active-fields bucket that used to let it override
+      // payPeriod is deleted). Both arms must annualize against the SAME
+      // schedule (the job's Salary Profile entry, 26 biweekly periods) —
+      // switching Contribution Profile can no longer change payPeriod.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic schema import requires runtime cast
+      const secondProfile = await (db as any)
+        .insert(schema.contributionProfiles)
+        .values({
+          name: "Second Profile",
+          contributionActiveFields: {
+            contributionAccounts: {
+              [String(acct.id)]: {
+                contributionValue: "100",
+                contributionMethod: "fixed_per_period",
+              },
+            },
+          },
+        })
+        .returning({ id: schema.contributionProfiles.id })
+        .get();
+
+      const result = await caller.retirement.computeRelocationAnalysis({
+        currentProfileId,
+        currentBudgetColumn: 0,
+        relocationProfileId: currentProfileId,
+        relocationBudgetColumn: 0,
+        currentContributionProfileId: baselineProfile.id,
+        relocationContributionProfileId: secondProfile.id,
+      });
+
+      const current = (result as Record<string, unknown>)
+        .currentContribProfile as { annualContributions: number };
+      const relocation = (result as Record<string, unknown>)
+        .relocationContribProfile as { annualContributions: number };
+
+      // $100 x 26 (biweekly) for both arms — the job's Salary Profile entry
+      // is the only schedule source now, unaffected by which Contribution
+      // Profile is picked.
+      expect(current.annualContributions).toBeCloseTo(2600, 0);
+      expect(relocation.annualContributions).toBeCloseTo(2600, 0);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("degrades gracefully (excludes the one contribution, never throws) when a jobless fixed_per_period account can't resolve a pay period", async () => {
+    const { caller, db, cleanup } = await createTestCaller();
+    try {
+      const personId = await seedPerson(db, "StrandedAcctPerson", "1990-01-01");
+      await markPrimary(db, personId);
+      await seedRetirementSettings(db, personId);
+      const activeJobId = seedJob(db, personId, { payPeriod: "biweekly" });
+
+      const currentProfileId = await insertBudgetProfile(db, "Budget");
+      await insertBudgetItem(
+        db,
+        currentProfileId,
+        "Essentials",
+        "Rent",
+        [2000],
+      );
+
+      const perfAcctId = seedPerformanceAccount(db, {
+        parentCategory: "Retirement",
+        accountType: "401k",
+        ownerPersonId: personId,
+      });
+      seedSnapshot(db, "2025-06-15", [
+        {
+          performanceAccountId: perfAcctId,
+          amount: "50000",
+          taxType: "preTax",
+        },
+      ]);
+
+      const schema = await getSchema();
+      // A healthy account on the active job, plus a JOBLESS fixed_per_period
+      // account — retirement.ts's per-arm closure resolves a job for it by
+      // jobId only (no personId fallback), so a null jobId can never
+      // resolve a pay period; the stranded account must be excluded from
+      // this arm's total, not take down the whole comparison.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic schema import requires runtime cast
+      const healthyAcct = await (db as any)
+        .insert(schema.contributionAccounts)
+        .values({
+          personId,
+          jobId: activeJobId,
+          accountType: "401k",
+          parentCategory: "Retirement",
+          taxTreatment: "pre_tax",
+          employerMatchType: "none",
+          isActive: true,
+          performanceAccountId: perfAcctId,
+        })
+        .returning({ id: schema.contributionAccounts.id })
+        .get();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic schema import requires runtime cast
+      const strandedAcct = await (db as any)
+        .insert(schema.contributionAccounts)
+        .values({
+          personId,
+          jobId: null,
+          accountType: "401k",
+          parentCategory: "Retirement",
+          taxTreatment: "pre_tax",
+          employerMatchType: "none",
+          isActive: true,
+          performanceAccountId: perfAcctId,
+        })
+        .returning({ id: schema.contributionAccounts.id })
+        .get();
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic schema import requires runtime cast
+      const profile = await (db as any)
+        .insert(schema.contributionProfiles)
+        .values({
+          name: "Stranded Account Profile",
+          contributionActiveFields: {
+            contributionAccounts: {
+              [String(healthyAcct.id)]: {
+                contributionValue: "10",
+                contributionMethod: "percent_of_salary",
+              },
+              [String(strandedAcct.id)]: {
+                contributionValue: "100",
+                contributionMethod: "fixed_per_period",
+              },
+            },
+            jobs: {},
+          },
+        })
+        .returning({ id: schema.contributionProfiles.id })
+        .get();
+
+      const call = () =>
+        caller.retirement.computeRelocationAnalysis({
+          currentProfileId,
+          currentBudgetColumn: 0,
+          relocationProfileId: currentProfileId,
+          relocationBudgetColumn: 0,
+          currentContributionProfileId: profile.id,
+          relocationContributionProfileId: profile.id,
+        });
+
+      await expect(call()).resolves.toBeTruthy();
+      const result = await call();
+
+      const current = (result as Record<string, unknown>)
+        .currentContribProfile as {
+        annualContributions: number;
+        incompleteAccountIds: number[];
+      };
+      expect(current.incompleteAccountIds).toContain(strandedAcct.id);
+      // The healthy account's contribution still counts — only the
+      // stranded one is excluded, not the whole arm.
+      expect(current.annualContributions).toBeGreaterThan(0);
+    } finally {
+      cleanup();
+    }
   });
 });

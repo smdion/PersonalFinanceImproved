@@ -20,17 +20,12 @@ import {
   zSandboxContribAdditions,
   toSalaryActiveMap,
 } from "./_shared";
-import { applySandboxSalaryEntries } from "@/server/helpers/salary";
 import {
   SK_ACTIVE_CONTRIB_PROFILE_ID,
   SK_ACTIVE_SALARY_PROFILE_ID,
 } from "@/lib/constants/settings-keys";
 import * as schema from "@/lib/db/schema";
-import {
-  canDeleteBudgetProfile,
-  canRemoveColumn,
-  filterActiveJobs,
-} from "@/lib/pure/profiles";
+import { canDeleteBudgetProfile, canRemoveColumn } from "@/lib/pure/profiles";
 import {
   columnLabelsSchema,
   columnMonthsSchema,
@@ -47,19 +42,9 @@ import {
 import type { BudgetInput } from "@/lib/calculators/types";
 import {
   computeBudgetAnnualTotal,
-  getPeriodsPerYear,
-  getEffectiveIncome,
-  resolveCompensation,
-  applyActiveSalary,
-  applyActiveBonusTerms,
-  computeAnnualContribution,
-  loadAndApplyContribProfile,
-  loadEffectiveSalaryProfile,
-  resolveJoblessPeriodsPerYear,
   applyContributionAccountEdit,
   resolveTargetBudgetProfile,
   getResolvedGoalAllocations,
-  applyContribActiveFields,
   resolveLinkedBudgetItemAmounts,
 } from "@/server/helpers";
 import { accountDisplayName } from "@/lib/utils/format";
@@ -733,12 +718,6 @@ export const budgetRouter = createTRPCRouter({
       // disagree with the client's genuinely per-column payroll breakdown in
       // use-budget-derived-data.ts.
 
-      const rawContribs = await ctx.db
-        .select()
-        .from(schema.contributionAccounts)
-        .where(eq(schema.contributionAccounts.isActive, true));
-      const allJobs = await ctx.db.select().from(schema.jobs);
-
       // Per-column profile resolution, using the documented precedence
       // (Plan pin > column pin > caller's local selection > globally-active).
       // Must match use-budget-derived-data.ts's resolution exactly, or budget
@@ -768,113 +747,28 @@ export const budgetRouter = createTRPCRouter({
       // active salaries. Precedence: Plan active salary > Salary Profile > live.
       const planSalaryActiveMap = toSalaryActiveMap(input?.salaryActiveFields);
 
-      const linkedContribIds = new Set(
-        items
-          .filter((i) => i.contributionAccountId)
-          .map((i) => i.contributionAccountId!),
+      // Resolved through the SAME helper listProfiles uses above
+      // (resolveLinkedBudgetItemAmounts) — this procedure used to maintain
+      // its own independent copy of this exact resolution (the only
+      // difference being What-If sandbox support), which the helper now
+      // accepts directly, so a linked item's $ figure can never drift
+      // between the two call sites.
+      const resolvedItemsById = new Map(
+        (
+          await resolveLinkedBudgetItemAmounts(
+            ctx.db,
+            items,
+            numColumns,
+            contribProfileIdByColumn,
+            salaryProfileIdByColumn,
+            {
+              planSalaryActiveMap,
+              sandboxContribActiveFields: input?.sandboxContribActiveFields,
+              sandboxSalaryEntries: input?.sandboxSalaryEntries,
+            },
+          )
+        ).map((r) => [r.id, r]),
       );
-
-      /**
-       * Monthly $ for every linked contribution account under one
-       * (Contribution Profile, Salary Profile) pair. Called once per DISTINCT
-       * pair across the profile's columns, not once per column — columns that
-       * share both pins share the result.
-       */
-      const computeContribMonthlyForPair = async (
-        contribProfileId: number | null,
-        salaryProfileId: number | null,
-      ): Promise<Map<number, number>> => {
-        const contribMonthlyById = new Map<number, number>();
-        if (linkedContribIds.size === 0) return contribMonthlyById;
-
-        const effectiveSalaryMap = applySandboxSalaryEntries(
-          input?.sandboxSalaryEntries,
-          planSalaryActiveMap,
-        );
-        // salaryProfileId is null both transiently (tier resolution hasn't
-        // loaded a globalDefaultId yet) and permanently (a caller like the
-        // Net Worth page's budget summary that supplies no tiers at all) —
-        // loadAndApplySalaryProfile would silently return an empty map
-        // (zero salary/bonus) in the latter case, unlike every sibling
-        // procedure's null-id handling. Fall back to the globally-active
-        // Salary Profile the same way they do.
-        const salaryProfileActiveMap = await loadEffectiveSalaryProfile(
-          ctx.db,
-          salaryProfileId,
-        );
-        const profileResult = await loadAndApplyContribProfile(
-          ctx.db,
-          contribProfileId,
-          rawContribs,
-          allJobs,
-        );
-        // Sandbox edits apply here too — a budget item linked to a
-        // contribution account must reflect the sandbox's edited value the
-        // same way the paycheck/contribution routers do, or "edit the
-        // contribution account" and "see it in the budget" disagree.
-        const activeContribs = applyContribActiveFields(
-          profileResult.contribs,
-          input?.sandboxContribActiveFields ?? {},
-          true,
-        );
-        const activeJobs = filterActiveJobs(profileResult.jobs);
-        const defaultPeriodsPerYear = resolveJoblessPeriodsPerYear(activeJobs);
-
-        const salaryByJobId = new Map<number, number>();
-        for (const j of activeJobs) {
-          const comp = resolveCompensation(salaryProfileActiveMap, j.id);
-          // The What-If sandbox can override salary and/or bonus terms
-          // independently of the Salary Profile's own resolved values —
-          // same per-field precedence used everywhere else this tier
-          // applies. Reading j's raw fields here silently ignored a Salary
-          // Profile entry for linked contribution items on the Budget tab.
-          const sandboxEntry = effectiveSalaryMap.get(j.personId);
-          const salary = applyActiveSalary(
-            j.personId,
-            comp.salary,
-            effectiveSalaryMap,
-          );
-          const bonusTerms = applyActiveBonusTerms(sandboxEntry, comp.terms);
-          salaryByJobId.set(j.id, getEffectiveIncome(j, salary, bonusTerms));
-        }
-
-        for (const c of activeContribs) {
-          if (!linkedContribIds.has(c.id)) continue;
-          const val = Number(c.contributionValue);
-          const jobPeriodsPerYear = c.jobId
-            ? getPeriodsPerYear(
-                activeJobs.find((j) => j.id === c.jobId)?.payPeriod ??
-                  "biweekly",
-              )
-            : defaultPeriodsPerYear;
-          const salary = c.jobId ? (salaryByJobId.get(c.jobId) ?? 0) : 0;
-          const annual = computeAnnualContribution(
-            c.contributionMethod,
-            val,
-            salary,
-            jobPeriodsPerYear,
-          );
-          contribMonthlyById.set(c.id, annual / 12);
-        }
-        return contribMonthlyById;
-      };
-
-      const contribMonthlyByPair = new Map<string, Map<number, number>>();
-      const contribMonthlyByColumn: Map<number, number>[] = [];
-      for (let col = 0; col < numColumns; col++) {
-        const contribProfileId = contribProfileIdByColumn[col] ?? null;
-        const salaryProfileId = salaryProfileIdByColumn[col] ?? null;
-        const key = `${contribProfileId}:${salaryProfileId}`;
-        let monthlyById = contribMonthlyByPair.get(key);
-        if (!monthlyById) {
-          monthlyById = await computeContribMonthlyForPair(
-            contribProfileId,
-            salaryProfileId,
-          );
-          contribMonthlyByPair.set(key, monthlyById);
-        }
-        contribMonthlyByColumn.push(monthlyById);
-      }
 
       // For linked items, each column's own contribution monthly amount
       // replaces that column's DB amount. For unlinked items, use DB amounts
@@ -894,19 +788,15 @@ export const budgetRouter = createTRPCRouter({
               (amt, col) => itemActiveMap.get(`${itemId}:${col}`) ?? amt,
             );
       const budgetItems = items.map((i) => {
-        const dbAmounts = i.amounts as number[];
+        const resolved = resolvedItemsById.get(i.id)!;
         if (!i.contributionAccountId)
           return {
             ...i,
-            amounts: applyItemActiveFields(i.id, dbAmounts),
+            amounts: applyItemActiveFields(i.id, resolved.amounts),
             contribAmounts: null as number[] | null,
             contribAmount: null as number | null,
           };
-        const accountId = i.contributionAccountId;
-        const contribAmounts = Array.from(
-          { length: numColumns },
-          (_, col) => contribMonthlyByColumn[col]?.get(accountId) ?? 0,
-        );
+        const contribAmounts = resolved.amounts;
         return {
           ...i,
           amounts: applyItemActiveFields(i.id, contribAmounts),
@@ -954,6 +844,10 @@ export const budgetRouter = createTRPCRouter({
           apiCategoryName: i.apiCategoryName,
           apiSyncDirection: i.apiSyncDirection,
           contributionAccountId: i.contributionAccountId,
+          // Linked to a fixed_per_period contribution account with no
+          // resolvable job/pay period — excluded from amounts above (0),
+          // not a guessed pay period. See resolveContribPeriods.
+          incomplete: resolvedItemsById.get(i.id)?.incomplete ?? false,
         };
       });
 

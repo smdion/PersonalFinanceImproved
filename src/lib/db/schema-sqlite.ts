@@ -61,7 +61,11 @@ export type ExtraPaycheckOverride = {
 /** Per-year growth entry for projecting future extra-paycheck net pay. */
 export type YearlyGrowthEntry = { type: "pct" | "dollar"; value: number };
 
-/** Top-level shape stored in jobs.extra_paycheck_routing. */
+/** Top-level shape stored in a Salary Profile entry's `extraPaycheckRouting`
+ *  field (see salaryEntrySchema in json-schemas.ts) — moved off
+ *  `jobs.extra_paycheck_routing` because it's a comp-layer decision, the
+ *  same category of fact as `include401kInBonus`/
+ *  `includeBonusInContributions`, not a job identity fact. */
 export type ExtraPaycheckRoutingData = {
   rules: ExtraPaycheckRule[];
   overrides?: ExtraPaycheckOverride[];
@@ -82,6 +86,32 @@ export type ExtraPaycheckRoutingData = {
    * compound into the base for subsequent years.
    */
   yearlyGrowth?: Record<string, YearlyGrowthEntry>;
+  /**
+   * Pay schedule snapshotted alongside baseNetPayPerCheck/baseYear, from the
+   * same resolved job entry computeJobNetPayPerCheck already reads. Optional
+   * — the materializer prefers this snapshot but falls back to the job's
+   * LIVE entry in the globally-active Salary Profile when absent (e.g.
+   * routing saved before this field existed). Freezes the schedule at save
+   * time so a later job/Salary-Profile correction doesn't retroactively move
+   * already-materialized planned-transaction dates — see RULES.md's
+   * extraPaycheckRouting section.
+   */
+  payPeriod?: PayPeriod;
+  /** Snapshotted alongside payPeriod above. `null` is a real, complete
+   *  value ("no anchor, use start date") — distinct from the field being
+   *  entirely absent (pre-snapshot routing, or a schedule that couldn't be
+   *  resolved at save time). */
+  anchorPayDate?: string | null;
+  /**
+   * Whether `rules` currently materialize into savings_planned_transactions
+   * at all. Absent/true = today's behavior (route to savings goals, per
+   * rules/overrides below). false = "Budget" mode — the extra paycheck
+   * isn't diverted anywhere; it stays as regular income, same as a job with
+   * no routing configured. Distinct from clearing `rules` so a user can
+   * pause routing without losing a configured schedule (see
+   * extra-paycheck-rules-editor.tsx's Savings/Budget toggle).
+   */
+  enabled?: boolean;
 };
 
 // ============================================================================
@@ -149,32 +179,8 @@ export const jobs = sqliteTable(
       .references(() => people.id, { onDelete: "restrict" }),
     employerName: text("employer_name").notNull(),
     title: text("title"),
-    payPeriod: text("pay_period").$type<PayPeriod>().notNull(),
-    payWeek: text("pay_week").$type<PayWeek>().notNull(),
     startDate: text("start_date").notNull(),
-    anchorPayDate: text("anchor_pay_date"), // a known payday — defaults to startDate if null
     endDate: text("end_date"),
-    include401kInBonus: integer("include_401k_in_bonus", { mode: "boolean" })
-      .notNull()
-      .default(false),
-    includeBonusInContributions: integer("include_bonus_in_contributions", {
-      mode: "boolean",
-    })
-      .notNull()
-      .default(true),
-    bonusMonth: integer("bonus_month"), // 1-12, month when bonus is typically paid (null = unknown/spread)
-    bonusDayOfMonth: integer("bonus_day_of_month"), // 1-31, day of month when bonus is paid (null = first period of month)
-    w4FilingStatus: text("w4_filing_status").$type<W4FilingStatus>().notNull(),
-    w4Box2cChecked: integer("w4_box2c_checked", { mode: "boolean" })
-      .notNull()
-      .default(false),
-    additionalFedWithholding: text("additional_fed_withholding")
-      .notNull()
-      .default("0"),
-    budgetPeriodsPerMonth: text("budget_periods_per_month"),
-    extraPaycheckRouting: text("extra_paycheck_routing", {
-      mode: "json",
-    }).$type<ExtraPaycheckRoutingData | null>(),
     /** A permanent, auto-provisioned peg for Salary Profiles to pin what-if
      *  scenarios against (e.g. "moving to Chicago in 5 years") — never a
      *  real job. Always has endDate: null (it never "ends") but must be
@@ -257,6 +263,25 @@ export const contributionAccounts = sqliteTable(
     index("contribution_accounts_acct_type_idx").on(table.accountType),
     index("contribution_accounts_parent_cat_idx").on(table.parentCategory),
     index("contribution_accounts_is_active_idx").on(table.isActive),
+    // At most one active row per (job, accountType, parentCategory) may
+    // carry real employer match config. computeGroupedEmployerMatch
+    // (server/helpers/contribution.ts) combines a physical account's
+    // Roth/Traditional splits before applying the match cap once, and
+    // requires exactly one "winning" row's config for that group — two
+    // independently-configured siblings is an ambiguous state the app
+    // throws on rather than silently guessing at. These two indexes (job-
+    // linked and jobless-fallback-to-person, matching every caller's own
+    // resolution convention) stop that state from being written at all.
+    uniqueIndex("contribution_accounts_job_match_unq")
+      .on(table.jobId, table.accountType, table.parentCategory)
+      .where(
+        sql`${table.employerMatchType} <> 'none' AND ${table.jobId} IS NOT NULL AND ${table.isActive} = true`,
+      ),
+    uniqueIndex("contribution_accounts_person_match_unq")
+      .on(table.personId, table.accountType, table.parentCategory)
+      .where(
+        sql`${table.employerMatchType} <> 'none' AND ${table.jobId} IS NULL AND ${table.isActive} = true`,
+      ),
   ],
 );
 
@@ -285,7 +310,6 @@ export const paycheckDeductions = sqliteTable(
       .notNull()
       .references(() => jobs.id, { onDelete: "cascade" }),
     deductionName: text("deduction_name").notNull(),
-    amountPerPeriod: text("amount_per_period").notNull(),
     isPretax: integer("is_pretax", { mode: "boolean" }).notNull(),
     ficaExempt: integer("fica_exempt", { mode: "boolean" })
       .notNull()
@@ -1207,8 +1231,12 @@ export const retirementSettings = sqliteTable(
       .default(false),
     /** Household size for ACA FPL calculation. */
     householdSize: integer("household_size").notNull().default(2),
-    /** Explicit filing status for retirement projections. Null = derive from primary job W-4. */
-    filingStatus: text("filing_status").$type<W4FilingStatus>(),
+    /** Filing status for retirement projections. Backfilled from the
+     *  person's active job's W-4 filing status (drizzle/0021), then made
+     *  NOT NULL — the job-facts fallback tier in build-engine-payload.ts
+     *  stays in place until this column is reliably non-null for every
+     *  household, but no new row can be inserted without one. */
+    filingStatus: text("filing_status").$type<W4FilingStatus>().notNull(),
   },
   (table) => [index("retirement_settings_person_id_idx").on(table.personId)],
 );
@@ -1820,9 +1848,9 @@ export const salaryProfiles = sqliteTable("salary_profiles", {
   id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
   name: text("name").notNull().unique(),
   description: text("description"),
-  /** jobId → complete salary entry. A job either has ALL five fields (a
-   *  real, complete number for this profile) or no key at all (this
-   *  profile says nothing about that job — contributes $0, not a
+  /** jobId → complete salary entry. A job either has ALL seventeen fields (a
+   *  real, complete number/election for this profile) or no key at all
+   *  (this profile says nothing about that job — contributes $0, not a
    *  fallback to some other value). No partial entries — see
    *  salaryEntriesSchema in json-schemas.ts. */
   salaries: text("salaries", { mode: "json" })
@@ -1835,6 +1863,18 @@ export const salaryProfiles = sqliteTable("salary_profiles", {
           bonusMultiplier: number;
           monthsInBonusYear: number;
           bonusOverride: number | null;
+          payPeriod: PayPeriod;
+          payWeek: PayWeek;
+          anchorPayDate: string | null;
+          budgetPeriodsPerMonth: number | null;
+          w4FilingStatus: W4FilingStatus;
+          w4Box2cChecked: boolean;
+          additionalFedWithholding: number;
+          bonusMonth: number | null;
+          bonusDayOfMonth: number | null;
+          include401kInBonus: boolean;
+          includeBonusInContributions: boolean;
+          extraPaycheckRouting: ExtraPaycheckRoutingData | null;
         }
       >
     >()

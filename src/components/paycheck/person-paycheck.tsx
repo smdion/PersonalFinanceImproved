@@ -3,14 +3,18 @@
 import { useState } from "react";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatCurrency } from "@/lib/utils/format";
+import { PAY_PERIOD_LABELS } from "@/lib/config/display-labels";
 import { useScenario } from "@/lib/context/scenario-context";
 import { PayStub } from "./pay-stub";
 import { AnnualSummary } from "./annual-summary";
 import { BonusSection } from "./bonus-section";
+import { TaxWithholdingSection } from "./tax-withholding-section";
 import { ContributionsSection } from "./contributions-section";
 import { AddDeductionForm } from "./add-deduction-form";
 import { SSCapIndicator } from "./ss-cap-indicator";
-import { PayScheduleInfo } from "./pay-schedule-info";
+import { ExtraPaycheckDestinationToggle } from "@/components/savings/extra-paycheck-rules-editor";
+import { SectionHeader } from "./section-header";
+import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
 import type {
   PaycheckResult,
   ViewMode,
@@ -84,24 +88,32 @@ export function PersonPaycheck({
   onToggleContrib,
   sharedGroupOrder,
   interaction,
+  incompleteAccountIds,
 }: {
   person: { name: string; id: number };
   job: {
     id: number;
     employerName: string;
     title: string | null;
+    /** These 7 fields no longer live on the raw job row — they resolve
+     *  through the active Salary Profile's entry for this job (see
+     *  SalaryProfileEntry in server/helpers/salary.ts). paycheck.ts's
+     *  computeSummary still merges them flat onto `job` for the client
+     *  (the same pattern use-paycheck-person-views.ts's `job: any` and
+     *  household-income-card.tsx already rely on), so they're read the
+     *  same way here as before the migration — only their write path
+     *  changed (paycheck/page.tsx now routes them to salaryProfile.update
+     *  instead of settings.jobs.update). */
     bonusMonth: number | null;
     bonusDayOfMonth: number | null;
     include401kInBonus: boolean;
     includeBonusInContributions: boolean;
-    payPeriod: string;
-    payWeek: string;
     personId: number;
     w4FilingStatus: string;
     w4Box2cChecked: boolean;
-    startDate: string;
-    anchorPayDate?: string | null;
-    budgetPeriodsPerMonth?: string | null;
+    additionalFedWithholding: number;
+    payPeriod: string;
+    extraPaycheckRouting: ExtraPaycheckRoutingData | null;
   };
   salary: number;
   /** The bonus terms actually in effect (Salary Profile pin, if any, else
@@ -141,6 +153,11 @@ export function PersonPaycheck({
   onToggleContrib: () => void;
   sharedGroupOrder?: string[];
   interaction: PersonPaycheckInteraction;
+  /** Contribution accounts belonging to this person/job with no active
+   *  value under the current Contribution Profile — see
+   *  getIncompleteContribAccountIds. Surfaced as a badge, never silently
+   *  dropped from the total. */
+  incompleteAccountIds?: number[];
 }) {
   const [addingDeduction, setAddingDeduction] = useState<{
     isPretax: boolean;
@@ -161,7 +178,17 @@ export function PersonPaycheck({
         <div className="p-5 border-b border-subtle bg-gradient-to-r from-surface-sunken/80 to-transparent">
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="text-xl font-bold text-primary">{person.name}</h2>
+              <h2 className="text-xl font-bold text-primary flex items-center gap-2">
+                {person.name}
+                {incompleteAccountIds && incompleteAccountIds.length > 0 && (
+                  <span
+                    className="text-caption font-semibold text-amber-700 bg-amber-50 rounded px-1 leading-tight"
+                    title={`${incompleteAccountIds.length} contribution account(s) have no active value under the current Contribution Profile — excluded from totals below.`}
+                  >
+                    Incomplete
+                  </span>
+                )}
+              </h2>
               <p className="text-sm text-muted">
                 {job.title ? (
                   <>
@@ -181,6 +208,26 @@ export function PersonPaycheck({
                   isEditable={!readOnly}
                 />
               </p>
+              {/* Read-only pay-schedule summary — editing the schedule
+                  itself (payPeriod/anchorPayDate/etc.) now lives on Salary
+                  Profile Manager, but the computed values below (next
+                  payday, periods/year, 3-check months) have no relationship
+                  to WHERE the schedule is edited, so they stay here. */}
+              <p className="text-xs text-faint">
+                {PAY_PERIOD_LABELS[job.payPeriod] ?? job.payPeriod}
+                {" · "}
+                Next: {paycheck.nextPayDate}
+                {" · "}
+                {paycheck.periodsPerYear}/yr
+                {paycheck.extraPaycheckMonths.length > 0 && (
+                  <>
+                    {" · "}
+                    <span className="text-green-600">
+                      3-check: {paycheck.extraPaycheckMonths.join(", ")}
+                    </span>
+                  </>
+                )}
+              </p>
             </div>
             <div className="text-right">
               <InlineEdit
@@ -195,35 +242,49 @@ export function PersonPaycheck({
               <p className="text-xs text-faint">annual salary</p>
             </div>
           </div>
-          <PayScheduleInfo
-            job={job}
-            paycheck={paycheck}
-            onUpdateJob={onUpdateJob}
-            readOnly={readOnly}
-          />
         </div>
 
         {/* Two-column layout: Pay stub + Annual summary side by side */}
         <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <PayStub
-            paycheck={paycheck}
-            rawDeductions={rawDeductions}
-            onUpdateDeduction={onUpdateDeduction}
-            alignedPreTax={alignedPreTax}
-            alignedPostTax={alignedPostTax}
-            onAddDeduction={
-              readOnly || isInScenario
-                ? undefined
-                : (isPretax) => setAddingDeduction({ isPretax })
-            }
-            onDeleteDeduction={handlers?.onDeleteDeduction ?? undefined}
-            readOnly={readOnly}
-          />
+          <div className="space-y-4">
+            <PayStub
+              paycheck={paycheck}
+              rawDeductions={rawDeductions}
+              onUpdateDeduction={onUpdateDeduction}
+              alignedPreTax={alignedPreTax}
+              alignedPostTax={alignedPostTax}
+              onAddDeduction={
+                readOnly || isInScenario
+                  ? undefined
+                  : (isPretax) => setAddingDeduction({ isPretax })
+              }
+              onDeleteDeduction={handlers?.onDeleteDeduction ?? undefined}
+              readOnly={readOnly}
+            />
+            {job.payPeriod === "biweekly" && (
+              <div className="space-y-2">
+                <SectionHeader>Extra Paycheck</SectionHeader>
+                <div className="bg-surface-sunken border border-subtle rounded-lg p-4 text-sm">
+                  <ExtraPaycheckDestinationToggle
+                    jobId={job.id}
+                    routing={job.extraPaycheckRouting ?? null}
+                    disabled={isInScenario}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
           <div className="space-y-4">
             <AnnualSummary
               paycheck={paycheck}
               mode={mode}
               blendedAnnual={blendedAnnual}
+            />
+            <TaxWithholdingSection
+              job={job}
+              onUpdateJob={onUpdateJob}
+              readOnly={readOnly}
+              salaryReadOnly={salaryReadOnly}
             />
             <BonusSection
               paycheck={paycheck}

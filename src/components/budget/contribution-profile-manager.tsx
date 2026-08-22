@@ -20,6 +20,10 @@ import {
   ContribAccountForm,
   type ContribAccountFormValues,
 } from "@/components/paycheck/contrib-account-form";
+import {
+  DeductionForm,
+  type DeductionFormValues,
+} from "@/components/paycheck/deduction-form";
 
 type ProfileSummary = {
   id: number;
@@ -64,6 +68,7 @@ export function ContributionProfileManager({
     utils.contribution.invalidate();
     utils.paycheck.invalidate();
     utils.projection.invalidate();
+    utils.settings.invalidate();
   };
 
   const createContribAccount =
@@ -515,6 +520,58 @@ function ProfileListItem({
   );
 }
 
+/**
+ * At most one active contribution per (person, accountType) group holds
+ * real employer match config (computeGroupedEmployerMatch enforces this) —
+ * its match applies to the whole group, combining every active split's
+ * contribution before capping. A sibling split with no config of its own
+ * still earns a real, proportional share of that match — this groups
+ * `accountDetails` so callers can say so instead of showing nothing.
+ * Shared by the read-only summary table and the editable account table
+ * (both render the same profile's accounts, previously duplicated this
+ * grouping independently).
+ */
+function groupSharedMatchAccounts<
+  T extends {
+    id: number;
+    personId: number | null;
+    accountType: string;
+    liveMatchType: string | null;
+  },
+>(
+  accountDetails: T[],
+): {
+  sharedMatchSource: Map<number, T>;
+  combinedGroupIds: Set<number>;
+} {
+  const groups = new Map<string, T[]>();
+  for (const ad of accountDetails) {
+    const key = `${ad.personId}:${ad.accountType}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(ad);
+  }
+  const sharedMatchSource = new Map<number, T>();
+  // ids of every row (both the config-holding row and its sibling) in a
+  // group whose match is combined across a split — used to show the same
+  // "combined" note on both rows.
+  const combinedGroupIds = new Set<number>();
+  groups.forEach((group) => {
+    if (group.length <= 1) return;
+    const withMatch = group.filter(
+      (ad) => ad.liveMatchType && ad.liveMatchType !== "none",
+    );
+    const matchSource = withMatch[0];
+    if (withMatch.length !== 1 || !matchSource) return;
+    for (const ad of group) combinedGroupIds.add(ad.id);
+    for (const ad of group) {
+      if (ad.id !== matchSource.id) {
+        sharedMatchSource.set(ad.id, matchSource);
+      }
+    }
+  });
+  return { sharedMatchSource, combinedGroupIds };
+}
+
 // ---------------------------------------------------------------------------
 // Profile Detail Panel (right side)
 // ---------------------------------------------------------------------------
@@ -522,6 +579,7 @@ function ProfileListItem({
 function ProfileDetailPanel({ profileId }: { profileId: number }) {
   const { data: profile, isLoading } =
     trpc.contributionProfile.getById.useQuery({ id: profileId });
+  const { data: deductionRows } = trpc.settings.deductions.list.useQuery();
 
   if (isLoading) {
     return (
@@ -571,82 +629,193 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
             </tr>
           </thead>
           <tbody>
-            {profile.accountDetails.map((ad, rowIdx) => {
-              const af = ad.activeFields as Record<string, unknown> | null;
-              const hasActiveFields = af !== null;
-              const isProfileDisabled = af?.isActive === false;
-              const activeMethod = af?.contributionMethod as string | undefined;
-              const activeValue = af?.contributionValue as
-                string | number | undefined;
-              const methodSuffix =
-                activeMethod === "percent_of_salary" ? "%" : "";
-              const hasActiveName =
-                ad.liveAccountName && ad.accountName !== ad.liveAccountName;
-              return (
-                <tr
-                  key={ad.id}
-                  className={`border-b border-subtle hover:bg-blue-50/60 transition-colors ${
-                    rowIdx % 2 === 1
-                      ? "bg-surface-sunken/60"
-                      : "bg-surface-primary"
-                  } ${isProfileDisabled ? "opacity-40" : ""}`}
-                >
-                  <td className="py-1.5 pl-4 pr-3 text-secondary">
-                    <span className="flex items-center gap-1.5">
-                      <span
-                        className={`${isProfileDisabled ? "line-through" : ""} ${hasActiveName ? "text-amber-600" : ""}`}
-                      >
-                        {ad.accountName}
-                      </span>
-                      {isProfileDisabled && (
-                        <span className="text-micro px-1 py-0.5 rounded bg-surface-strong text-muted font-semibold shrink-0">
-                          DISABLED
-                        </span>
-                      )}
-                    </span>
-                  </td>
-                  <td className="py-1.5 px-3 text-muted whitespace-nowrap">
-                    {activeMethod
-                      ? activeMethod === "percent_of_salary"
-                        ? "% salary"
-                        : "fixed"
-                      : "—"}
-                  </td>
-                  <td
-                    className={`py-1.5 px-3 text-right font-mono ${
-                      hasActiveFields && !isProfileDisabled
-                        ? "text-amber-600 font-medium"
-                        : "text-secondary"
-                    }`}
+            {(() => {
+              // Roth/Traditional splits of the same physical account (same
+              // person + account type) share one employer match — it's
+              // entered on only one of the split rows but applies against
+              // their COMBINED contributions, not each row's own. Show the
+              // SAME match text on every row in the group (rather than
+              // merging the cell via rowSpan) so it's unambiguous per-row
+              // which account it describes — a merged cell visually reads as
+              // belonging to whichever row it starts on, which is
+              // misleading when that happens to be the row WITHOUT the
+              // config. Only do this when exactly one row in the group
+              // actually has match data — if multiple rows carry (possibly
+              // conflicting) match config, that's outside this assumption,
+              // so leave them per-row rather than guess which is authoritative.
+              const { sharedMatchSource, combinedGroupIds } =
+                groupSharedMatchAccounts(profile.accountDetails);
+
+              return profile.accountDetails.map((ad, rowIdx) => {
+                const af = ad.activeFields as Record<string, unknown> | null;
+                const hasActiveFields = af !== null;
+                const isProfileDisabled = af?.isActive === false;
+                const activeMethod = af?.contributionMethod as
+                  string | undefined;
+                const activeValue = af?.contributionValue as
+                  string | number | undefined;
+                const methodSuffix =
+                  activeMethod === "percent_of_salary" ? "%" : "";
+                const hasActiveName =
+                  ad.liveAccountName && ad.accountName !== ad.liveAccountName;
+                const sharedFrom = sharedMatchSource.get(ad.id);
+                const matchSource = sharedFrom ?? ad;
+                const isCombined = combinedGroupIds.has(ad.id);
+                return (
+                  <tr
+                    key={ad.id}
+                    className={`border-b border-subtle hover:bg-blue-50/60 transition-colors ${
+                      rowIdx % 2 === 1
+                        ? "bg-surface-sunken/60"
+                        : "bg-surface-primary"
+                    } ${isProfileDisabled ? "opacity-40" : ""}`}
                   >
-                    {hasActiveFields ? (
-                      <>
-                        {activeValue}
-                        {methodSuffix}
-                      </>
-                    ) : (
-                      <span className="italic text-faint">Not set</span>
-                    )}
-                  </td>
-                  <td className="py-1.5 px-3 text-right text-faint">
-                    {ad.liveMatchType && ad.liveMatchType !== "none" ? (
-                      <span>
-                        {parseFloat(ad.liveMatchValue ?? "0")}%
-                        {ad.liveMaxMatchPct &&
-                        parseFloat(ad.liveMaxMatchPct) > 0
-                          ? ` to ${formatPercent(parseFloat(ad.liveMaxMatchPct), 2)}`
-                          : ""}
+                    <td className="py-1.5 pl-4 pr-3 text-secondary">
+                      <span className="flex items-center gap-1.5">
+                        <span
+                          className={`${isProfileDisabled ? "line-through" : ""} ${hasActiveName ? "text-amber-600" : ""}`}
+                        >
+                          {ad.accountName}
+                        </span>
+                        {isProfileDisabled && (
+                          <span className="text-micro px-1 py-0.5 rounded bg-surface-strong text-muted font-semibold shrink-0">
+                            DISABLED
+                          </span>
+                        )}
                       </span>
-                    ) : (
-                      <span className="text-faint">—</span>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
+                    </td>
+                    <td className="py-1.5 px-3 text-muted whitespace-nowrap">
+                      {activeMethod
+                        ? activeMethod === "percent_of_salary"
+                          ? "% salary"
+                          : "fixed"
+                        : "—"}
+                    </td>
+                    <td
+                      className={`py-1.5 px-3 text-right font-mono ${
+                        hasActiveFields && !isProfileDisabled
+                          ? "text-amber-600 font-medium"
+                          : "text-secondary"
+                      }`}
+                    >
+                      {hasActiveFields ? (
+                        <>
+                          {activeValue}
+                          {methodSuffix}
+                        </>
+                      ) : (
+                        <span className="italic text-faint">Not set</span>
+                      )}
+                    </td>
+                    <td className="py-1.5 px-3 text-right text-faint whitespace-nowrap">
+                      {matchSource.liveMatchType &&
+                      matchSource.liveMatchType !== "none" ? (
+                        <span
+                          title={
+                            isCombined ? "Combined with other split" : undefined
+                          }
+                        >
+                          {matchSource.liveMatchType ===
+                          "percent_of_contribution" ? (
+                            <>
+                              {parseFloat(matchSource.liveMatchValue ?? "0")}%
+                              {matchSource.liveMaxMatchPct &&
+                              parseFloat(matchSource.liveMaxMatchPct) > 0
+                                ? ` of ${formatPercent(parseFloat(matchSource.liveMaxMatchPct), 2)}`
+                                : ""}
+                            </>
+                          ) : (
+                            // dollar_match / fixed_annual — a flat dollar
+                            // amount, not a rate, so no "%" suffix.
+                            `${formatCurrency(parseFloat(matchSource.liveMatchValue ?? "0"))}/yr`
+                          )}
+                          {isCombined && (
+                            <span className="italic"> (combined)</span>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="text-faint">—</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              });
+            })()}
           </tbody>
         </table>
       </div>
+
+      {/* Deductions section — paycheck_deductions carries no amount of its
+          own any more (Stage B): amountPerPeriod resolves entirely through
+          this profile's deductions active-fields, the same "no base value,
+          absent = incomplete" rule contributionAccounts already uses (see
+          deductionActiveFieldsSchema / applyDeductionActiveFields). */}
+      {deductionRows && deductionRows.length > 0 && (
+        <div className="mt-5">
+          <h4 className="text-label font-semibold text-muted uppercase tracking-wide mb-2">
+            Deductions
+          </h4>
+          <table className="w-full text-xs border-collapse">
+            <thead>
+              <tr className="border-b-2 border-strong">
+                <th className="text-left py-2 pl-4 pr-3 text-muted font-medium">
+                  Deduction
+                </th>
+                <th className="text-left py-2 px-3 text-muted font-medium w-24">
+                  Pretax
+                </th>
+                <th className="text-right py-2 px-3 text-muted font-medium w-28">
+                  Amount / Period
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {deductionRows.map((d: DeductionRow, rowIdx: number) => {
+                const activeFieldsRoot = (profile.contributionActiveFields ??
+                  {}) as ActiveFieldsRoot;
+                const af = activeFieldsRoot.deductions?.[String(d.id)] as
+                  Record<string, unknown> | undefined;
+                const activeAmount = af?.amountPerPeriod as
+                  string | number | undefined;
+                const personName =
+                  profile.deductionDetails.find((dd) => dd.id === d.id)
+                    ?.employerName ?? `Job ${d.jobId}`;
+                return (
+                  <tr
+                    key={d.id}
+                    className={`border-b border-subtle hover:bg-blue-50/60 transition-colors ${
+                      rowIdx % 2 === 1
+                        ? "bg-surface-sunken/60"
+                        : "bg-surface-primary"
+                    }`}
+                  >
+                    <td className="py-1.5 pl-4 pr-3 text-secondary">
+                      {d.deductionName}
+                      <span className="text-faint"> — {personName}</span>
+                    </td>
+                    <td className="py-1.5 px-3 text-muted">
+                      {d.isPretax ? "Pretax" : "Post-tax"}
+                    </td>
+                    <td
+                      className={`py-1.5 px-3 text-right font-mono ${
+                        activeAmount !== undefined
+                          ? "text-amber-600 font-medium"
+                          : "text-secondary"
+                      }`}
+                    >
+                      {activeAmount !== undefined ? (
+                        formatCurrency(parseFloat(String(activeAmount)))
+                      ) : (
+                        <span className="italic text-faint">Not set</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
@@ -673,27 +842,44 @@ function ProfileEditor({
   const [matchValues, setMatchValues] = useState<
     Record<string, { matchValue?: string; maxMatchPct?: string }>
   >({});
-  const [jobValues, setJobValues] = useState<
-    Record<string, Record<string, string>>
+  const [contribValues, setContribValues] = useState<
+    Record<string, { method?: string; value?: string }>
   >({});
   const [nameValues, setNameValues] = useState<Record<string, string>>({});
   const [disabledAccounts, setDisabledAccounts] = useState<
     Record<string, boolean>
   >({});
-  const [employerNameValues, setEmployerNameValues] = useState<
+  const [deductionValues, setDeductionValues] = useState<
     Record<string, string>
   >({});
+
+  const { data: deductionRows } = trpc.settings.deductions.list.useQuery();
+  const { data: jobsList } = trpc.settings.jobs.list.useQuery();
 
   const createMutation = trpc.contributionProfile.create.useMutation({
     onSuccess: (created) => onSaved(created.id),
   });
 
   const handleSave = () => {
-    // No contributionValue/Method here — a new profile starts with no
-    // value for any account (same "never silently inherit" principle
-    // already applied to salary pins); fill amounts in afterward via the
-    // standing editor, where a Method can be chosen alongside a Value.
+    // A new profile starts with no value for an account unless a value is
+    // entered here (same "never silently inherit" principle already applied
+    // to salary pins) — leaving Value blank leaves that account unset, same
+    // as every account's own value, editable afterward via the standing
+    // editor.
     const contribAccounts: Record<string, Record<string, unknown>> = {};
+    // Merge contribution method/value into contrib accounts
+    for (const [accountId, cVal] of Object.entries(contribValues)) {
+      if (cVal.value && cVal.value.trim()) {
+        const num = parseFloat(cVal.value);
+        if (!isNaN(num)) {
+          contribAccounts[accountId] = {
+            ...(contribAccounts[accountId] ?? {}),
+            contributionValue: String(num),
+            contributionMethod: cVal.method ?? "percent_of_salary",
+          };
+        }
+      }
+    }
     // Merge custom names into contrib accounts
     for (const [accountId, nameVal] of Object.entries(nameValues)) {
       if (nameVal.trim()) {
@@ -735,27 +921,15 @@ function ProfileEditor({
       }
     }
 
-    // Build per-job values for bonus fields
-    const jobs: Record<string, Record<string, unknown>> = {};
-    for (const [jobId, fields] of Object.entries(jobValues)) {
-      const parsed: Record<string, unknown> = {};
-      for (const [key, val] of Object.entries(fields)) {
-        if (
-          key === "include401kInBonus" ||
-          key === "includeBonusInContributions"
-        ) {
-          parsed[key] = val === "true";
-        } else {
-          const num = parseFloat(val);
-          if (!isNaN(num)) parsed[key] = num;
+    // Build per-deduction amount overrides — same "leave blank = not set"
+    // rule as contribution accounts (no base value to fall back to).
+    const deductions: Record<string, Record<string, unknown>> = {};
+    for (const [deductionId, amountStr] of Object.entries(deductionValues)) {
+      if (amountStr && amountStr.trim()) {
+        const num = parseFloat(amountStr);
+        if (!isNaN(num)) {
+          deductions[deductionId] = { amountPerPeriod: String(num) };
         }
-      }
-      if (Object.keys(parsed).length > 0) jobs[jobId] = parsed;
-    }
-    // Merge custom employer names into jobs
-    for (const [jobId, nameVal] of Object.entries(employerNameValues)) {
-      if (nameVal.trim()) {
-        jobs[jobId] = { ...(jobs[jobId] ?? {}), employerName: nameVal.trim() };
       }
     }
 
@@ -766,7 +940,7 @@ function ProfileEditor({
       ...(Object.keys(contribAccounts).length > 0
         ? { contributionAccounts: contribAccounts }
         : {}),
-      ...(Object.keys(jobs).length > 0 ? { jobs } : {}),
+      ...(Object.keys(deductions).length > 0 ? { deductions } : {}),
     };
 
     createMutation.mutate({
@@ -842,15 +1016,17 @@ function ProfileEditor({
               Contributions
             </h4>
             <p className="text-caption text-faint mb-2">
-              Contribution amounts aren&apos;t set here — this new profile
-              starts with none, same as every account&apos;s own value. Set them
-              afterward once the profile is created.
+              Leave Value blank to start this account with no value, same as
+              every account&apos;s own value — set it afterward once the profile
+              is created, or fill it in now.
             </p>
             <table className="w-full text-xs">
               <thead>
                 <tr className="text-muted border-b">
                   <th className="w-6 py-1.5"></th>
                   <th className="text-left py-1.5 font-medium">Account</th>
+                  <th className="text-left py-1.5 font-medium w-28">Method</th>
+                  <th className="text-right py-1.5 font-medium w-24">Value</th>
                   <th className="text-right py-1.5 font-medium w-24">
                     Employer Match
                   </th>
@@ -861,18 +1037,13 @@ function ProfileEditor({
               </thead>
               <tbody>
                 {baseData.accountDetails.map((ad) => {
-                  const fmtValue = (v: string | null | undefined) => {
-                    if (!v) return "—";
-                    const n = parseFloat(v);
-                    if (isNaN(n)) return v;
-                    return n % 1 === 0 ? String(n) : n.toFixed(2);
-                  };
                   const hasMatch =
                     ad.liveMatchType !== "none" && ad.liveMatchType !== null;
-                  const liveMaxMatchDisplay = ad.liveMaxMatchPct
-                    ? String(parseFloat(ad.liveMaxMatchPct) * 100)
-                    : "";
                   const isDisabled = disabledAccounts[String(ad.id)] ?? false;
+                  const contribVal = contribValues[String(ad.id)] ?? {};
+                  const effectiveMethod =
+                    contribVal.method ?? "percent_of_salary";
+                  const isPercent = effectiveMethod === "percent_of_salary";
                   return (
                     <tr
                       key={ad.id}
@@ -920,6 +1091,58 @@ function ProfileEditor({
                           />
                         )}
                       </td>
+                      <td className="py-1.5 px-1.5">
+                        {!isDisabled && (
+                          <select
+                            value={effectiveMethod}
+                            onChange={(e) =>
+                              setContribValues((prev) => ({
+                                ...prev,
+                                [String(ad.id)]: {
+                                  ...prev[String(ad.id)],
+                                  method: e.target.value,
+                                },
+                              }))
+                            }
+                            className="w-full px-1.5 py-0.5 text-xs border rounded bg-surface-primary text-primary"
+                          >
+                            {Object.entries(CONTRIBUTION_METHOD_LABELS).map(
+                              ([k, label]) => (
+                                <option key={k} value={k}>
+                                  {label}
+                                </option>
+                              ),
+                            )}
+                          </select>
+                        )}
+                      </td>
+                      <td className="py-1.5 text-right">
+                        {!isDisabled && (
+                          <div className="flex items-center justify-end gap-0.5">
+                            <span className="text-caption text-faint w-3 text-right shrink-0">
+                              {isPercent ? "" : "$"}
+                            </span>
+                            <input
+                              type="number"
+                              value={contribVal.value ?? ""}
+                              onChange={(e) =>
+                                setContribValues((prev) => ({
+                                  ...prev,
+                                  [String(ad.id)]: {
+                                    ...prev[String(ad.id)],
+                                    value: e.target.value,
+                                  },
+                                }))
+                              }
+                              placeholder="Not set"
+                              className="w-16 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
+                            />
+                            <span className="text-caption text-faint w-3 text-left shrink-0">
+                              {isPercent ? "%" : ""}
+                            </span>
+                          </div>
+                        )}
+                      </td>
                       <td className="py-1.5 text-right">
                         {hasMatch ? (
                           <div className="flex items-center justify-end gap-0.5">
@@ -937,7 +1160,7 @@ function ProfileEditor({
                                   },
                                 }))
                               }
-                              placeholder={fmtValue(ad.liveMatchValue)}
+                              placeholder="—"
                               className="w-14 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
                             />
                             <span className="text-caption text-faint">%</span>
@@ -963,7 +1186,7 @@ function ProfileEditor({
                                   },
                                 }))
                               }
-                              placeholder={liveMaxMatchDisplay || "—"}
+                              placeholder="—"
                               className="w-14 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
                             />
                             <span className="text-caption text-faint">%</span>
@@ -979,87 +1202,82 @@ function ProfileEditor({
             </table>
           </div>
         )}
-        {/* Employer & bonus handling — bonus AMOUNT terms live on the Salary Profile */}
-        {baseData?.salaryDetails && baseData.salaryDetails.length > 0 && (
+        {/* Deductions — same "leave blank = not set" rule as contribution
+            accounts above; a new profile starts with no deduction amounts
+            unless entered here. */}
+        {deductionRows && deductionRows.length > 0 && (
           <div>
             <h4 className="text-label font-semibold text-muted uppercase tracking-wide mb-2">
-              Employer & Bonus Handling
+              Deductions
             </h4>
-            <div className="space-y-3">
-              {baseData.salaryDetails.map((sd) => {
-                const jo = jobValues[String(sd.jobId)] ?? {};
-                const setField = (field: string, value: string) =>
-                  setJobValues((prev) => ({
-                    ...prev,
-                    [String(sd.jobId)]: {
-                      ...(prev[String(sd.jobId)] ?? {}),
-                      [field]: value,
-                    },
-                  }));
-                return (
-                  <div key={sd.jobId} className="border rounded-lg p-3">
-                    <div className="text-xs font-medium text-secondary mb-2 flex items-center gap-2">
-                      <span>{sd.personName} —</span>
-                      <input
-                        type="text"
-                        value={employerNameValues[String(sd.jobId)] ?? ""}
-                        onChange={(e) =>
-                          setEmployerNameValues((prev) => {
-                            const next = { ...prev };
-                            if (e.target.value)
-                              next[String(sd.jobId)] = e.target.value;
-                            else delete next[String(sd.jobId)];
-                            return next;
-                          })
-                        }
-                        placeholder={sd.employerName}
-                        className="flex-1 px-1.5 py-0.5 text-xs border rounded bg-surface-primary text-primary"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <label className="flex items-center gap-1.5 text-caption text-muted">
-                        <input
-                          type="checkbox"
-                          checked={
-                            jo.include401kInBonus === "true" ||
-                            (jo.include401kInBonus === undefined &&
-                              sd.liveInclude401kInBonus)
-                          }
-                          onChange={(e) =>
-                            setField(
-                              "include401kInBonus",
-                              String(e.target.checked),
-                            )
-                          }
-                          className="rounded border-strong"
-                        />
-                        Deduct 401k from bonus
-                      </label>
-                      <label className="flex items-center gap-1.5 text-caption text-muted">
-                        <input
-                          type="checkbox"
-                          checked={
-                            jo.includeBonusInContributions === "true" ||
-                            (jo.includeBonusInContributions === undefined &&
-                              sd.liveIncludeBonusInContributions)
-                          }
-                          onChange={(e) =>
-                            setField(
-                              "includeBonusInContributions",
-                              String(e.target.checked),
-                            )
-                          }
-                          className="rounded border-strong"
-                        />
-                        Contributions on salary + bonus
-                      </label>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <table className="w-full text-xs border-collapse">
+              <thead>
+                <tr className="border-b-2 border-strong">
+                  <th className="text-left py-2 pl-4 pr-3 text-muted font-medium">
+                    Deduction
+                  </th>
+                  <th className="text-left py-2 px-3 text-muted font-medium w-24">
+                    Pretax
+                  </th>
+                  <th className="text-right py-2 px-3 text-muted font-medium w-28">
+                    Amount / Period
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {deductionRows.map((d: DeductionRow, rowIdx: number) => {
+                  const personName =
+                    jobsList?.find((j) => j.id === d.jobId)?.employerName ??
+                    `Job ${d.jobId}`;
+                  return (
+                    <tr
+                      key={d.id}
+                      className={`border-b border-subtle hover:bg-blue-50/60 transition-colors ${
+                        rowIdx % 2 === 1
+                          ? "bg-surface-sunken/60"
+                          : "bg-surface-primary"
+                      }`}
+                    >
+                      <td className="py-1.5 pl-4 pr-3 text-secondary">
+                        {d.deductionName}
+                        <span className="text-faint"> — {personName}</span>
+                      </td>
+                      <td className="py-1.5 px-3 text-muted">
+                        {d.isPretax ? "Pretax" : "Post-tax"}
+                      </td>
+                      <td className="py-1.5 px-3 text-right">
+                        <div className="flex items-center justify-end gap-0.5">
+                          <span className="text-caption text-faint w-3 text-right shrink-0">
+                            $
+                          </span>
+                          <input
+                            type="number"
+                            value={deductionValues[String(d.id)] ?? ""}
+                            onChange={(e) =>
+                              setDeductionValues((prev) => ({
+                                ...prev,
+                                [String(d.id)]: e.target.value,
+                              }))
+                            }
+                            placeholder="Not set"
+                            className="w-16 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
+        {/* The old "Employer & Bonus Handling" jobs active-fields section
+            was removed in the Stage B migration — that bucket
+            (contributionActiveFields.jobs) is retired entirely.
+            include401kInBonus/includeBonusInContributions/employerName now
+            live on the Salary Profile entry (employerName has no
+            profile-override mechanism at all any more), edited on the
+            Salary Profile tab instead. */}
       </div>
     </div>
   );
@@ -1069,10 +1287,20 @@ function ProfileEditor({
 // Profile Inline Editor — unlocked, in-place editing of an existing profile
 // ---------------------------------------------------------------------------
 
-/** The stored shape of contribution_profiles.contribution_active_fields. */
+/** The stored shape of contribution_profiles.contribution_active_fields.
+ *  No more "jobs" bucket — retired entirely in the Stage B migration. */
 type ActiveFieldsRoot = {
   contributionAccounts?: Record<string, Record<string, unknown>>;
-  jobs?: Record<string, Record<string, unknown>>;
+  deductions?: Record<string, Record<string, unknown>>;
+};
+
+/** A raw paycheck_deductions row, as returned by settings.deductions.list. */
+type DeductionRow = {
+  id: number;
+  jobId: number;
+  deductionName: string;
+  isPretax: boolean;
+  ficaExempt: boolean;
 };
 
 /**
@@ -1092,7 +1320,37 @@ function ProfileInlineEditor({
   const { data: profile } = trpc.contributionProfile.getById.useQuery({
     id: profileId,
   });
+  const { data: deductionRows } = trpc.settings.deductions.list.useQuery();
   const { drafts, setDraft, clearDraft } = useDraftCommit();
+  const utils = trpc.useUtils();
+  const [addingDeduction, setAddingDeduction] = useState(false);
+  const createDeduction = trpc.settings.deductions.create.useMutation({
+    onSuccess: () => {
+      utils.settings.invalidate();
+      setAddingDeduction(false);
+    },
+  });
+  const updateDeduction = trpc.settings.deductions.update.useMutation({
+    onSuccess: () => utils.settings.invalidate(),
+  });
+  /** Same generic-field-patch pattern as paycheck/page.tsx's onUpdateDeduction
+   *  — one call site builds the full record from the current row plus the
+   *  one field being changed, instead of each editable cell hand-writing
+   *  its own copy of the other four fields. */
+  const patchDeductionRecord = (
+    d: DeductionRow,
+    changes: Partial<
+      Pick<DeductionRow, "deductionName" | "isPretax" | "ficaExempt">
+    >,
+  ) =>
+    updateDeduction.mutate({
+      id: d.id,
+      jobId: d.jobId,
+      deductionName: d.deductionName,
+      isPretax: d.isPretax,
+      ficaExempt: d.ficaExempt,
+      ...changes,
+    });
   const updateMutation = trpc.contributionProfile.update.useMutation({
     onSuccess: () => onSaved(),
   });
@@ -1102,7 +1360,8 @@ function ProfileInlineEditor({
   const root = (profile.contributionActiveFields ?? {}) as ActiveFieldsRoot;
   const accountActiveFields = (id: number) =>
     root.contributionAccounts?.[String(id)] ?? {};
-  const jobActiveFields = (id: number) => root.jobs?.[String(id)] ?? {};
+  const deductionActiveFields = (id: number) =>
+    root.deductions?.[String(id)] ?? {};
 
   /** Send a patch for one account. `undefined` removes that key. */
   const patchAccount = (
@@ -1123,19 +1382,22 @@ function ProfileInlineEditor({
     });
   };
 
-  /** Send a patch for one job. `undefined` removes that key. */
-  const patchJob = (jobId: number, changes: Record<string, unknown>) => {
-    const jobs = { ...(root.jobs ?? {}) };
-    const entry = { ...(jobs[String(jobId)] ?? {}) };
+  /** Send a patch for one deduction. `undefined` removes that key. */
+  const patchDeduction = (
+    deductionId: number,
+    changes: Record<string, unknown>,
+  ) => {
+    const deductions = { ...(root.deductions ?? {}) };
+    const entry = { ...(deductions[String(deductionId)] ?? {}) };
     for (const [key, value] of Object.entries(changes)) {
       if (value === undefined) delete entry[key];
       else entry[key] = value;
     }
-    if (Object.keys(entry).length === 0) delete jobs[String(jobId)];
-    else jobs[String(jobId)] = entry;
+    if (Object.keys(entry).length === 0) delete deductions[String(deductionId)];
+    else deductions[String(deductionId)] = entry;
     updateMutation.mutate({
       id: profileId,
-      contributionActiveFields: { ...root, jobs },
+      contributionActiveFields: { ...root, deductions },
     });
   };
 
@@ -1250,318 +1512,396 @@ function ProfileInlineEditor({
               </tr>
             </thead>
             <tbody>
-              {profile.accountDetails.map((ad, rowIdx) => {
-                const af = accountActiveFields(ad.id);
-                const storedMethod =
-                  af.contributionMethod !== undefined
-                    ? String(af.contributionMethod)
+              {(() => {
+                // Same "combined across Roth/Trad splits" detection as the
+                // read-only Profiles summary table above — shared via
+                // groupSharedMatchAccounts so both render paths stay in sync.
+                const { sharedMatchSource: editSharedMatchSource } =
+                  groupSharedMatchAccounts(profile.accountDetails);
+                return profile.accountDetails.map((ad, rowIdx) => {
+                  const sharedFrom = editSharedMatchSource.get(ad.id);
+                  const af = accountActiveFields(ad.id);
+                  const storedMethod =
+                    af.contributionMethod !== undefined
+                      ? String(af.contributionMethod)
+                      : "";
+                  // The <select> below has no blank option, so an unset
+                  // storedMethod renders as the first CONTRIBUTION_METHOD_LABELS
+                  // entry ("% of Salary") regardless of what this variable says.
+                  // Fall back the same way here (and to any in-progress draft
+                  // pick) so the $/% prefix-suffix always matches what the
+                  // dropdown is actually showing.
+                  const effectiveMethod =
+                    drafts[`a${ad.id}:method`] ??
+                    (storedMethod || "percent_of_salary");
+                  const isPercent = effectiveMethod === "percent_of_salary";
+                  const hasMatch =
+                    ad.liveMatchType !== "none" && ad.liveMatchType !== null;
+                  const isDisabled = af.isActive === false;
+                  const storedValue =
+                    af.contributionValue !== undefined
+                      ? String(af.contributionValue)
+                      : "";
+                  const storedName =
+                    af.displayNameActive !== undefined
+                      ? String(af.displayNameActive)
+                      : "";
+                  const storedMatch =
+                    af.employerMatchValue !== undefined
+                      ? String(af.employerMatchValue)
+                      : "";
+                  const storedCap =
+                    af.employerMaxMatchPct !== undefined
+                      ? String(Number(af.employerMaxMatchPct) * 100)
+                      : "";
+                  return (
+                    <tr
+                      key={ad.id}
+                      className={`border-b border-subtle hover:bg-blue-50/60 transition-colors ${
+                        rowIdx % 2 === 1
+                          ? "bg-surface-sunken/60"
+                          : "bg-surface-primary"
+                      } ${isDisabled ? "opacity-40" : ""}`}
+                    >
+                      <td className="py-1.5 pl-4 align-top">
+                        <input
+                          type="checkbox"
+                          checked={!isDisabled}
+                          onChange={(e) =>
+                            patchAccount(ad.id, {
+                              isActive: e.target.checked ? undefined : false,
+                            })
+                          }
+                          className="rounded border-strong mt-0.5"
+                          title={
+                            isDisabled
+                              ? "Account disabled in this profile"
+                              : "Account active"
+                          }
+                        />
+                      </td>
+                      <td className="py-1.5 px-3 text-secondary">
+                        <div className={isDisabled ? "line-through" : ""}>
+                          {ad.liveAccountName ?? ad.accountName}
+                        </div>
+                        {!isDisabled && (
+                          <input
+                            type="text"
+                            value={drafts[`a${ad.id}:name`] ?? storedName}
+                            onChange={(e) =>
+                              setDraft(`a${ad.id}:name`, e.target.value)
+                            }
+                            onBlur={() =>
+                              commitText(
+                                `a${ad.id}:name`,
+                                storedName,
+                                (value) =>
+                                  patchAccount(ad.id, {
+                                    displayNameActive: value,
+                                  }),
+                              )
+                            }
+                            placeholder="Custom name..."
+                            className="w-full mt-0.5 px-1.5 py-0.5 text-caption border rounded bg-surface-primary text-primary"
+                          />
+                        )}
+                      </td>
+                      <td className="py-1.5 px-3">
+                        <select
+                          value={effectiveMethod}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (storedValue.trim() !== "") {
+                              // A value already exists — method is already
+                              // required-and-present, safe to patch alone.
+                              patchAccount(ad.id, { contributionMethod: val });
+                            } else {
+                              // No value yet — contributionMethod can't be set
+                              // alone (required together). Track the pick
+                              // locally; the Value field's commit below picks
+                              // it up when a real value is finally entered.
+                              setDraft(`a${ad.id}:method`, val);
+                            }
+                          }}
+                          className="w-full px-1.5 py-0.5 text-xs border rounded bg-surface-primary text-primary"
+                        >
+                          {Object.entries(CONTRIBUTION_METHOD_LABELS).map(
+                            ([k, label]) => (
+                              <option key={k} value={k}>
+                                {label}
+                              </option>
+                            ),
+                          )}
+                        </select>
+                      </td>
+                      <td className="py-1.5 px-3 text-right">
+                        <div className="flex items-center justify-end gap-0.5">
+                          <span className="text-caption text-faint w-3 text-right shrink-0">
+                            {isPercent ? "" : "$"}
+                          </span>
+                          <input
+                            type="number"
+                            value={drafts[`a${ad.id}:value`] ?? storedValue}
+                            onChange={(e) =>
+                              setDraft(`a${ad.id}:value`, e.target.value)
+                            }
+                            onBlur={() =>
+                              commitNumeric(
+                                `a${ad.id}:value`,
+                                storedValue,
+                                (value) => {
+                                  if (value === undefined) {
+                                    // Cleared — both-or-neither, drop the
+                                    // method along with the value.
+                                    patchAccount(ad.id, {
+                                      contributionValue: undefined,
+                                      contributionMethod: undefined,
+                                    });
+                                  } else if (storedValue.trim() === "") {
+                                    // First time this account gets a value —
+                                    // carry the (possibly just-picked) method
+                                    // along with it in the same patch.
+                                    patchAccount(ad.id, {
+                                      contributionValue: value,
+                                      contributionMethod: effectiveMethod,
+                                    });
+                                    clearDraft(`a${ad.id}:method`);
+                                  } else {
+                                    patchAccount(ad.id, {
+                                      contributionValue: value,
+                                    });
+                                  }
+                                },
+                                (num) => String(num),
+                              )
+                            }
+                            placeholder="Not set"
+                            className="w-16 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
+                          />
+                          <span className="text-caption text-faint w-3 text-left shrink-0">
+                            {isPercent ? "%" : ""}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-1.5 px-3 text-right">
+                        {hasMatch ? (
+                          <div className="flex items-center justify-end gap-0.5">
+                            <input
+                              type="number"
+                              value={drafts[`a${ad.id}:match`] ?? storedMatch}
+                              onChange={(e) =>
+                                setDraft(`a${ad.id}:match`, e.target.value)
+                              }
+                              onBlur={() =>
+                                commitNumeric(
+                                  `a${ad.id}:match`,
+                                  storedMatch,
+                                  (value) =>
+                                    patchAccount(ad.id, {
+                                      employerMatchValue: value,
+                                    }),
+                                  (num) => String(num),
+                                )
+                              }
+                              placeholder="—"
+                              className="w-14 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
+                            />
+                            <span className="text-caption text-faint">%</span>
+                          </div>
+                        ) : sharedFrom ? (
+                          <span
+                            className="text-faint italic"
+                            title={`Combined with this account's other tax-treatment split — match config is on the ${sharedFrom.accountName} row`}
+                          >
+                            (combined)
+                          </span>
+                        ) : (
+                          <span className="text-faint">—</span>
+                        )}
+                      </td>
+                      <td className="py-1.5 px-3 text-right">
+                        {hasMatch ? (
+                          <div className="flex items-center justify-end gap-0.5">
+                            <input
+                              type="number"
+                              value={drafts[`a${ad.id}:cap`] ?? storedCap}
+                              onChange={(e) =>
+                                setDraft(`a${ad.id}:cap`, e.target.value)
+                              }
+                              onBlur={() =>
+                                commitNumeric(
+                                  `a${ad.id}:cap`,
+                                  storedCap,
+                                  (value) =>
+                                    patchAccount(ad.id, {
+                                      employerMaxMatchPct: value,
+                                    }),
+                                  // Display percentage back to decimal (5 → 0.05)
+                                  (num) => String(num / 100),
+                                )
+                              }
+                              placeholder="—"
+                              className="w-14 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
+                            />
+                            <span className="text-caption text-faint">%</span>
+                          </div>
+                        ) : (
+                          <span className="text-faint">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                });
+              })()}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Deductions — no base value on the row any more (Stage B): each
+          deduction is either given an amountPerPeriod by this profile, or
+          it has none at all (same "not set" state as an unset contribution
+          value, no live fallback). */}
+      <div className="mb-5">
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="text-label font-semibold text-muted uppercase tracking-wide">
+            Deductions
+          </h4>
+          <button
+            type="button"
+            onClick={() => setAddingDeduction(true)}
+            className="text-caption font-medium text-blue-600 hover:text-blue-700"
+          >
+            + Add Deduction
+          </button>
+        </div>
+
+        <SlidePanel
+          isOpen={addingDeduction}
+          onClose={() => setAddingDeduction(false)}
+          title="Add Deduction"
+        >
+          <DeductionForm
+            onSave={(data: DeductionFormValues) => createDeduction.mutate(data)}
+            onCancel={() => setAddingDeduction(false)}
+            isPending={createDeduction.isPending}
+          />
+        </SlidePanel>
+
+        {deductionRows && deductionRows.length > 0 && (
+          <table className="w-full text-xs border-collapse">
+            <thead>
+              <tr className="border-b-2 border-strong">
+                <th className="text-left py-2 pl-4 pr-3 text-muted font-medium">
+                  Deduction
+                </th>
+                <th className="text-left py-2 px-3 text-muted font-medium w-24">
+                  Pretax
+                </th>
+                <th className="text-right py-2 px-3 text-muted font-medium w-28">
+                  Amount / Period
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {deductionRows.map((d: DeductionRow, rowIdx: number) => {
+                const df = deductionActiveFields(d.id);
+                const storedAmount =
+                  df.amountPerPeriod !== undefined
+                    ? String(df.amountPerPeriod)
                     : "";
-                const isPercent = storedMethod === "percent_of_salary";
-                const fmtValue = (v: string | null | undefined) => {
-                  if (!v) return "—";
-                  const n = parseFloat(v);
-                  if (isNaN(n)) return v;
-                  return n % 1 === 0 ? String(n) : n.toFixed(2);
-                };
-                const hasMatch =
-                  ad.liveMatchType !== "none" && ad.liveMatchType !== null;
-                const liveMaxMatchDisplay = ad.liveMaxMatchPct
-                  ? String(parseFloat(ad.liveMaxMatchPct) * 100)
-                  : "";
-                const isDisabled = af.isActive === false;
-                const storedValue =
-                  af.contributionValue !== undefined
-                    ? String(af.contributionValue)
-                    : "";
-                const storedName =
-                  af.displayNameActive !== undefined
-                    ? String(af.displayNameActive)
-                    : "";
-                const storedMatch =
-                  af.employerMatchValue !== undefined
-                    ? String(af.employerMatchValue)
-                    : "";
-                const storedCap =
-                  af.employerMaxMatchPct !== undefined
-                    ? String(Number(af.employerMaxMatchPct) * 100)
-                    : "";
+                const personName =
+                  profile.deductionDetails.find((dd) => dd.id === d.id)
+                    ?.employerName ?? `Job ${d.jobId}`;
+                const storedName = d.deductionName;
                 return (
                   <tr
-                    key={ad.id}
+                    key={d.id}
                     className={`border-b border-subtle hover:bg-blue-50/60 transition-colors ${
                       rowIdx % 2 === 1
                         ? "bg-surface-sunken/60"
                         : "bg-surface-primary"
-                    } ${isDisabled ? "opacity-40" : ""}`}
+                    }`}
                   >
-                    <td className="py-1.5 pl-4 align-top">
+                    <td className="py-1.5 pl-4 pr-3 text-secondary">
                       <input
-                        type="checkbox"
-                        checked={!isDisabled}
+                        type="text"
+                        value={drafts[`d${d.id}:name`] ?? storedName}
                         onChange={(e) =>
-                          patchAccount(ad.id, {
-                            isActive: e.target.checked ? undefined : false,
-                          })
+                          setDraft(`d${d.id}:name`, e.target.value)
                         }
-                        className="rounded border-strong mt-0.5"
-                        title={
-                          isDisabled
-                            ? "Account disabled in this profile"
-                            : "Account active"
-                        }
-                      />
-                    </td>
-                    <td className="py-1.5 px-3 text-secondary">
-                      <div className={isDisabled ? "line-through" : ""}>
-                        {ad.liveAccountName ?? ad.accountName}
-                      </div>
-                      {!isDisabled && (
-                        <input
-                          type="text"
-                          value={drafts[`a${ad.id}:name`] ?? storedName}
-                          onChange={(e) =>
-                            setDraft(`a${ad.id}:name`, e.target.value)
-                          }
-                          onBlur={() =>
-                            commitText(`a${ad.id}:name`, storedName, (value) =>
-                              patchAccount(ad.id, {
-                                displayNameActive: value,
-                              }),
-                            )
-                          }
-                          placeholder="Custom name..."
-                          className="w-full mt-0.5 px-1.5 py-0.5 text-caption border rounded bg-surface-primary text-primary"
-                        />
-                      )}
-                    </td>
-                    <td className="py-1.5 px-3">
-                      <select
-                        value={drafts[`a${ad.id}:method`] ?? storedMethod}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (storedValue.trim() !== "") {
-                            // A value already exists — method is already
-                            // required-and-present, safe to patch alone.
-                            patchAccount(ad.id, { contributionMethod: val });
-                          } else {
-                            // No value yet — contributionMethod can't be set
-                            // alone (required together). Track the pick
-                            // locally; the Value field's commit below picks
-                            // it up when a real value is finally entered.
-                            setDraft(`a${ad.id}:method`, val);
+                        onKeyDown={(e) => {
+                          if (e.key === "Escape") {
+                            clearDraft(`d${d.id}:name`);
+                            e.currentTarget.blur();
+                          } else if (e.key === "Enter") {
+                            e.currentTarget.blur();
                           }
                         }}
-                        className="w-full px-1.5 py-0.5 text-xs border rounded bg-surface-primary text-primary"
+                        onBlur={() => {
+                          const draft = drafts[`d${d.id}:name`];
+                          if (draft === undefined) return;
+                          clearDraft(`d${d.id}:name`);
+                          const trimmed = draft.trim();
+                          if (!trimmed || trimmed === storedName) return;
+                          patchDeductionRecord(d, { deductionName: trimmed });
+                        }}
+                        className="w-full px-1 py-0.5 border rounded bg-surface-primary text-primary"
+                      />
+                      <span className="text-faint"> — {personName}</span>
+                    </td>
+                    <td className="py-1.5 px-3 text-muted">
+                      <select
+                        value={d.isPretax ? "pretax" : "posttax"}
+                        onChange={(e) =>
+                          patchDeductionRecord(d, {
+                            isPretax: e.target.value === "pretax",
+                          })
+                        }
+                        className="px-1 py-0.5 border rounded bg-surface-primary text-primary"
                       >
-                        {Object.entries(CONTRIBUTION_METHOD_LABELS).map(
-                          ([k, label]) => (
-                            <option key={k} value={k}>
-                              {label}
-                            </option>
-                          ),
-                        )}
+                        <option value="pretax">Pretax</option>
+                        <option value="posttax">Post-tax</option>
                       </select>
                     </td>
                     <td className="py-1.5 px-3 text-right">
                       <div className="flex items-center justify-end gap-0.5">
                         <span className="text-caption text-faint w-3 text-right shrink-0">
-                          {isPercent ? "" : "$"}
+                          $
                         </span>
                         <input
                           type="number"
-                          value={drafts[`a${ad.id}:value`] ?? storedValue}
+                          value={drafts[`d${d.id}:amount`] ?? storedAmount}
                           onChange={(e) =>
-                            setDraft(`a${ad.id}:value`, e.target.value)
+                            setDraft(`d${d.id}:amount`, e.target.value)
                           }
                           onBlur={() =>
                             commitNumeric(
-                              `a${ad.id}:value`,
-                              storedValue,
-                              (value) => {
-                                if (value === undefined) {
-                                  // Cleared — both-or-neither, drop the
-                                  // method along with the value.
-                                  patchAccount(ad.id, {
-                                    contributionValue: undefined,
-                                    contributionMethod: undefined,
-                                  });
-                                } else if (storedValue.trim() === "") {
-                                  // First time this account gets a value —
-                                  // carry the (possibly just-picked) method
-                                  // along with it in the same patch.
-                                  patchAccount(ad.id, {
-                                    contributionValue: value,
-                                    contributionMethod:
-                                      drafts[`a${ad.id}:method`] ??
-                                      storedMethod ??
-                                      "percent_of_salary",
-                                  });
-                                  clearDraft(`a${ad.id}:method`);
-                                } else {
-                                  patchAccount(ad.id, {
-                                    contributionValue: value,
-                                  });
-                                }
-                              },
+                              `d${d.id}:amount`,
+                              storedAmount,
+                              (value) =>
+                                patchDeduction(d.id, {
+                                  amountPerPeriod: value,
+                                }),
                               (num) => String(num),
                             )
                           }
                           placeholder="Not set"
                           className="w-16 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
                         />
-                        <span className="text-caption text-faint w-3 text-left shrink-0">
-                          {isPercent ? "%" : ""}
-                        </span>
                       </div>
-                    </td>
-                    <td className="py-1.5 px-3 text-right">
-                      {hasMatch ? (
-                        <div className="flex items-center justify-end gap-0.5">
-                          <input
-                            type="number"
-                            value={drafts[`a${ad.id}:match`] ?? storedMatch}
-                            onChange={(e) =>
-                              setDraft(`a${ad.id}:match`, e.target.value)
-                            }
-                            onBlur={() =>
-                              commitNumeric(
-                                `a${ad.id}:match`,
-                                storedMatch,
-                                (value) =>
-                                  patchAccount(ad.id, {
-                                    employerMatchValue: value,
-                                  }),
-                                (num) => String(num),
-                              )
-                            }
-                            placeholder={fmtValue(ad.liveMatchValue)}
-                            className="w-14 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
-                          />
-                          <span className="text-caption text-faint">%</span>
-                        </div>
-                      ) : (
-                        <span className="text-faint">—</span>
-                      )}
-                    </td>
-                    <td className="py-1.5 px-3 text-right">
-                      {hasMatch ? (
-                        <div className="flex items-center justify-end gap-0.5">
-                          <input
-                            type="number"
-                            value={drafts[`a${ad.id}:cap`] ?? storedCap}
-                            onChange={(e) =>
-                              setDraft(`a${ad.id}:cap`, e.target.value)
-                            }
-                            onBlur={() =>
-                              commitNumeric(
-                                `a${ad.id}:cap`,
-                                storedCap,
-                                (value) =>
-                                  patchAccount(ad.id, {
-                                    employerMaxMatchPct: value,
-                                  }),
-                                // Display percentage back to decimal (5 → 0.05)
-                                (num) => String(num / 100),
-                              )
-                            }
-                            placeholder={liveMaxMatchDisplay || "—"}
-                            className="w-14 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
-                          />
-                          <span className="text-caption text-faint">%</span>
-                        </div>
-                      ) : (
-                        <span className="text-faint">—</span>
-                      )}
                     </td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
-        </div>
-      )}
+        )}
+      </div>
 
-      {profile.salaryDetails.length > 0 && (
-        <div>
-          <h4 className="text-label font-semibold text-muted uppercase tracking-wide mb-2">
-            Employer & Bonus Handling
-          </h4>
-          <div className="space-y-3">
-            {profile.salaryDetails.map((sd) => {
-              const jo = jobActiveFields(sd.jobId);
-              const storedEmployer =
-                jo.employerName !== undefined ? String(jo.employerName) : "";
-              const include401k =
-                jo.include401kInBonus !== undefined
-                  ? jo.include401kInBonus === true
-                  : sd.liveInclude401kInBonus;
-              const bonusInContribs =
-                jo.includeBonusInContributions !== undefined
-                  ? jo.includeBonusInContributions === true
-                  : sd.liveIncludeBonusInContributions;
-              return (
-                <div key={sd.jobId} className="border rounded-lg p-3">
-                  <div className="text-xs font-medium text-secondary mb-2 flex items-center gap-2">
-                    <span>{sd.personName} —</span>
-                    <input
-                      type="text"
-                      value={drafts[`j${sd.jobId}:employer`] ?? storedEmployer}
-                      onChange={(e) =>
-                        setDraft(`j${sd.jobId}:employer`, e.target.value)
-                      }
-                      onBlur={() =>
-                        commitText(
-                          `j${sd.jobId}:employer`,
-                          storedEmployer,
-                          (value) =>
-                            patchJob(sd.jobId, { employerName: value }),
-                        )
-                      }
-                      placeholder={sd.employerName}
-                      className="flex-1 px-1.5 py-0.5 text-xs border rounded bg-surface-primary text-primary"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <label className="flex items-center gap-1.5 text-caption text-muted">
-                      <input
-                        type="checkbox"
-                        checked={include401k}
-                        onChange={(e) =>
-                          patchJob(sd.jobId, {
-                            include401kInBonus:
-                              e.target.checked === sd.liveInclude401kInBonus
-                                ? undefined
-                                : e.target.checked,
-                          })
-                        }
-                        className="rounded border-strong"
-                      />
-                      Deduct 401k from bonus
-                    </label>
-                    <label className="flex items-center gap-1.5 text-caption text-muted">
-                      <input
-                        type="checkbox"
-                        checked={bonusInContribs}
-                        onChange={(e) =>
-                          patchJob(sd.jobId, {
-                            includeBonusInContributions:
-                              e.target.checked ===
-                              sd.liveIncludeBonusInContributions
-                                ? undefined
-                                : e.target.checked,
-                          })
-                        }
-                        className="rounded border-strong"
-                      />
-                      Contributions on salary + bonus
-                    </label>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      {/* The old "Employer & Bonus Handling" jobs active-fields section was
+          removed in the Stage B migration — see the matching comment in
+          ProfileEditor above. */}
     </div>
   );
 }

@@ -16,6 +16,12 @@ import { roundToCents } from "@/lib/utils/math";
 import { toNumber } from "./transforms";
 import type { Db } from "./transforms";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
+import type {
+  PayPeriod,
+  PayWeek,
+  W4FilingStatus,
+} from "@/lib/config/enum-values";
+import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
 
 // ---------------------------------------------------------------------------
 // Plan/session + What-If sandbox tiers — independent of Salary Profiles.
@@ -142,6 +148,22 @@ export type SalaryProfileEntry = {
   bonusMultiplier: number;
   monthsInBonusYear: number;
   bonusOverride: number | null;
+  payPeriod: PayPeriod;
+  payWeek: PayWeek;
+  anchorPayDate: string | null;
+  budgetPeriodsPerMonth: number | null;
+  w4FilingStatus: W4FilingStatus;
+  w4Box2cChecked: boolean;
+  additionalFedWithholding: number;
+  bonusMonth: number | null;
+  bonusDayOfMonth: number | null;
+  include401kInBonus: boolean;
+  includeBonusInContributions: boolean;
+  /** Where this job's extra (3rd biweekly) paycheck gets routed — the same
+   *  category of fact as include401kInBonus/includeBonusInContributions
+   *  above, not a job identity fact. `null` is a real, complete value ("no
+   *  routing configured"). See ExtraPaycheckRoutingData (schema-pg.ts). */
+  extraPaycheckRouting: ExtraPaycheckRoutingData | null;
 };
 
 /** A Salary Profile's own `salaries` map, keyed by jobId (string key) —
@@ -297,14 +319,26 @@ export async function loadEffectiveSalaryProfile(
   if (salaryProfileId != null) {
     return loadAndApplySalaryProfile(db, salaryProfileId);
   }
+  const activeId = await resolveActiveSalaryProfileId(db);
+  return activeId != null ? loadAndApplySalaryProfile(db, activeId) : new Map();
+}
+
+/**
+ * Resolve just the id of the globally-active Salary Profile (the same
+ * app_settings lookup loadEffectiveSalaryProfile does internally), for
+ * callers that need the id itself to write back into that profile's row —
+ * not just its resolved job map. See savings.ts's extraPaycheckRouting
+ * sub-router, which reads/writes a single job's entry within this row.
+ */
+export async function resolveActiveSalaryProfileId(
+  db: Db,
+): Promise<number | null> {
   const rows = await db
     .select()
     .from(schema.appSettings)
     .where(eq(schema.appSettings.key, SK_ACTIVE_SALARY_PROFILE_ID));
   const activeId = Number(rows[0]?.value ?? NaN);
-  return Number.isFinite(activeId)
-    ? loadAndApplySalaryProfile(db, activeId)
-    : new Map();
+  return Number.isFinite(activeId) ? activeId : null;
 }
 
 /**
@@ -323,18 +357,75 @@ export function applySalaryProfileRow(
   return map;
 }
 
+/** A job merged with its resolved Salary Profile entry's non-comp fields —
+ *  every field is `undefined` when the job has no entry in the active
+ *  Salary Profile (an incomplete/absent state), never a fallback value. */
+export type JobWithSalaryFields<J> = J & {
+  payPeriod: PayPeriod | undefined;
+  payWeek: PayWeek | undefined;
+  anchorPayDate: string | null | undefined;
+  budgetPeriodsPerMonth: number | null | undefined;
+  w4FilingStatus: W4FilingStatus | undefined;
+  w4Box2cChecked: boolean | undefined;
+  additionalFedWithholding: number | undefined;
+  bonusMonth: number | null | undefined;
+  bonusDayOfMonth: number | null | undefined;
+  include401kInBonus: boolean | undefined;
+  includeBonusInContributions: boolean | undefined;
+  extraPaycheckRouting: ExtraPaycheckRoutingData | null | undefined;
+};
+
+/**
+ * Merge each job with the 12 non-comp fields (pay schedule, W-4 elections,
+ * bonus pay date/flags, extra-paycheck routing) from its entry in an
+ * already-resolved Salary Profile active map. These fields moved off the
+ * `jobs` table entirely in Stage B (plus this session's extraPaycheckRouting
+ * move) — a job's only source for them is its Salary Profile entry, same
+ * as `salary`/`bonusPercent`/etc. already work via resolveCompensation. A
+ * job absent from the map (or the map itself empty) gets every field
+ * `undefined` — a real "incomplete" signal downstream callers must check
+ * for, never silently substituted with a guessed default.
+ */
+export function mergeSalaryProfileJobFields<J extends { id: number }>(
+  jobs: J[],
+  salaryProfileActiveMap: SalaryProfileActiveMap,
+): JobWithSalaryFields<J>[] {
+  return jobs.map((j) => {
+    const entry = salaryProfileActiveMap.get(j.id);
+    return {
+      ...j,
+      payPeriod: entry?.payPeriod,
+      payWeek: entry?.payWeek,
+      anchorPayDate: entry?.anchorPayDate,
+      budgetPeriodsPerMonth: entry?.budgetPeriodsPerMonth,
+      w4FilingStatus: entry?.w4FilingStatus,
+      w4Box2cChecked: entry?.w4Box2cChecked,
+      additionalFedWithholding: entry?.additionalFedWithholding,
+      bonusMonth: entry?.bonusMonth,
+      bonusDayOfMonth: entry?.bonusDayOfMonth,
+      include401kInBonus: entry?.include401kInBonus,
+      includeBonusInContributions: entry?.includeBonusInContributions,
+      extraPaycheckRouting: entry?.extraPaycheckRouting,
+    };
+  });
+}
+
 /**
  * Compute effective income for a job — salary + annual bonus when
  * includeBonusInContributions is true. Used for payroll contribution
  * calculations where the flag controls whether percent-of-salary deductions
- * apply to bonus pay.
+ * apply to bonus pay. `includeBonusInContributions` now lives on the
+ * resolved Salary Profile entry, not the raw `jobs` row — callers pass the
+ * entry (or undefined, when the job has no entry in the active profile; a
+ * missing entry already resolves baseSalary to 0, so treating it as "no
+ * bonus" here changes nothing observable).
  */
 export function getEffectiveIncome(
-  job: { includeBonusInContributions: boolean },
+  entry: { includeBonusInContributions: boolean | undefined } | undefined,
   baseSalary: number,
   bonusTerms: BonusTerms,
 ): number {
-  if (!job.includeBonusInContributions) return baseSalary;
+  if (!entry?.includeBonusInContributions) return baseSalary;
   return getTotalCompensation(baseSalary, bonusTerms);
 }
 

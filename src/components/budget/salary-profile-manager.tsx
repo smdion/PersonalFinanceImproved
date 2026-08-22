@@ -5,13 +5,24 @@ import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
 import { FormError } from "@/components/ui/form-error";
-import { FormField, FormInput } from "@/components/forms";
+import { FormField, FormInput, FormSelect } from "@/components/forms";
 import { useScenario } from "@/lib/context/scenario-context";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { ProfileViewingBadge } from "./profile-viewing-badge";
 import { confirm } from "@/components/ui/confirm-dialog";
 import { useDraftCommit } from "@/lib/hooks/use-draft-commit";
+import { PAY_PERIOD_CONFIG } from "@/lib/config/pay-periods";
+import {
+  PAY_PERIOD_VALUES,
+  PAY_WEEK_VALUES,
+  W4_FILING_STATUS_VALUES,
+  type PayPeriod,
+  type PayWeek,
+  type W4FilingStatus,
+} from "@/lib/config/enum-values";
+import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
+import { ExtraPaycheckDestinationToggle } from "@/components/savings/extra-paycheck-rules-editor";
 
 /**
  * Salary Profiles tab — the "what if I earned X" axis.
@@ -214,10 +225,14 @@ export function SalaryProfileManager({
             />
           ) : effectiveSelectedId != null ? (
             !canEdit || locked ? (
-              <ProfileDetail profileId={effectiveSelectedId} />
+              <ProfileDetail
+                profileId={effectiveSelectedId}
+                isActiveProfile={effectiveSelectedId === globalActiveSalaryId}
+              />
             ) : (
               <ProfileEditPanel
                 profileId={effectiveSelectedId}
+                isActiveProfile={effectiveSelectedId === globalActiveSalaryId}
                 onSaved={() => invalidateProfileDeps()}
               />
             )
@@ -317,6 +332,20 @@ type JobOption = {
   /** What this profile actually produces for this job. */
   effectiveSalary: number;
   estimatedBonus: number;
+  // ── Pay/withholding/bonus-timing fields (see Entry below for the full
+  // ── field-by-field meaning — these just mirror it for display). ──
+  payPeriod: PayPeriod;
+  payWeek: PayWeek;
+  anchorPayDate: string | null;
+  budgetPeriodsPerMonth: number | null;
+  w4FilingStatus: W4FilingStatus;
+  w4Box2cChecked: boolean;
+  additionalFedWithholding: number;
+  bonusMonth: number | null;
+  bonusDayOfMonth: number | null;
+  include401kInBonus: boolean;
+  includeBonusInContributions: boolean;
+  extraPaycheckRouting: ExtraPaycheckRoutingData | null;
 };
 
 /**
@@ -343,26 +372,72 @@ type Detail = {
   bonusOverride: number | null;
   effectiveSalary: number;
   estimatedBonus: number;
+  payPeriod: PayPeriod;
+  payWeek: PayWeek;
+  anchorPayDate: string | null;
+  budgetPeriodsPerMonth: number | null;
+  w4FilingStatus: W4FilingStatus;
+  w4Box2cChecked: boolean;
+  additionalFedWithholding: number;
+  bonusMonth: number | null;
+  bonusDayOfMonth: number | null;
+  include401kInBonus: boolean;
+  includeBonusInContributions: boolean;
+  extraPaycheckRouting: ExtraPaycheckRoutingData | null;
 };
 
-/** The complete entry shape written to the profile's jsonb — all five
- *  fields, always. */
+/** The complete entry shape written to the profile's jsonb — all sixteen
+ *  fields, always. Spelled out rather than imported from
+ *  server/helpers/salary.ts's SalaryProfileEntry: components may not import
+ *  server modules (see the Detail docblock above) — this mirrors it by hand
+ *  and must be kept in sync with it and with salaryEntrySchema. */
 type Entry = {
   salary: number;
   bonusPercent: number;
   bonusMultiplier: number;
   monthsInBonusYear: number;
   bonusOverride: number | null;
+  payPeriod: PayPeriod;
+  payWeek: PayWeek;
+  anchorPayDate: string | null;
+  budgetPeriodsPerMonth: number | null;
+  w4FilingStatus: W4FilingStatus;
+  w4Box2cChecked: boolean;
+  additionalFedWithholding: number;
+  bonusMonth: number | null;
+  bonusDayOfMonth: number | null;
+  include401kInBonus: boolean;
+  includeBonusInContributions: boolean;
+  /** Where this job's extra (3rd biweekly) paycheck routes, if configured —
+   *  edited via the extra-paycheck rules editor rendered below, not through
+   *  this panel's own field cells. */
+  extraPaycheckRouting: ExtraPaycheckRoutingData | null;
 };
 
 /** What a brand-new entry starts as when a job is explicitly added to a
- *  profile — plain zeros/on-target, never copied from anywhere. */
+ *  profile — plain zeros/on-target defaults, never copied from anywhere.
+ *  The new pay/withholding fields default to the most common real-world
+ *  setup (biweekly, MFJ, no extra withholding) rather than to nulls
+ *  everywhere, since most of them can't be usefully "empty" — a pay period
+ *  has to be something. */
 const BLANK_ENTRY: Entry = {
   salary: 0,
   bonusPercent: 0,
   bonusMultiplier: 1,
   monthsInBonusYear: 12,
   bonusOverride: null,
+  payPeriod: "biweekly",
+  payWeek: "na",
+  anchorPayDate: null,
+  budgetPeriodsPerMonth: null,
+  w4FilingStatus: "MFJ",
+  w4Box2cChecked: false,
+  additionalFedWithholding: 0,
+  bonusMonth: null,
+  bonusDayOfMonth: null,
+  include401kInBonus: false,
+  includeBonusInContributions: true,
+  extraPaycheckRouting: null,
 };
 
 /**
@@ -386,6 +461,18 @@ function detailForJob(sd: Detail, jobId: number): Detail {
     bonusOverride: opt.bonusOverride,
     effectiveSalary: opt.effectiveSalary,
     estimatedBonus: opt.estimatedBonus,
+    payPeriod: opt.payPeriod,
+    payWeek: opt.payWeek,
+    anchorPayDate: opt.anchorPayDate,
+    budgetPeriodsPerMonth: opt.budgetPeriodsPerMonth,
+    w4FilingStatus: opt.w4FilingStatus,
+    w4Box2cChecked: opt.w4Box2cChecked,
+    additionalFedWithholding: opt.additionalFedWithholding,
+    bonusMonth: opt.bonusMonth,
+    bonusDayOfMonth: opt.bonusDayOfMonth,
+    include401kInBonus: opt.include401kInBonus,
+    includeBonusInContributions: opt.includeBonusInContributions,
+    extraPaycheckRouting: opt.extraPaycheckRouting,
   };
 }
 
@@ -415,6 +502,26 @@ const FIELDS = {
 } as const;
 
 type FieldKey = keyof typeof FIELDS;
+
+/** Display labels for the three new enum selects — the raw stored values
+ *  (payPeriod/payWeek/w4FilingStatus) are already short and mostly
+ *  self-explanatory, but a couple ("na", "HOH") read better spelled out. */
+const PAY_PERIOD_LABELS: Record<PayPeriod, string> = {
+  weekly: "Weekly",
+  biweekly: "Biweekly",
+  semimonthly: "Semimonthly",
+  monthly: "Monthly",
+};
+const PAY_WEEK_LABELS: Record<PayWeek, string> = {
+  even: "Even week",
+  odd: "Odd week",
+  na: "N/A",
+};
+const W4_FILING_STATUS_LABELS: Record<W4FilingStatus, string> = {
+  MFJ: "Married filing jointly",
+  Single: "Single",
+  HOH: "Head of household",
+};
 
 /** What the input/cell shows: this entry's own value, in display units. */
 function entryDisplay(sd: Detail, field: FieldKey): number {
@@ -588,15 +695,279 @@ function JobPicker({
   );
 }
 
+/** One labeled value in the read-only pay/withholding details grid. */
+function DetailStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <div className="text-micro text-faint uppercase tracking-wide">
+        {label}
+      </div>
+      <div className="text-xs text-secondary">{value}</div>
+    </div>
+  );
+}
+
+/**
+ * Read-only grid of the 11 pay/withholding/bonus-timing fields — too many to
+ * fit as table columns, so shown as a second row beneath each job (see
+ * PayTaxDetailsEdit's docblock for the same tradeoff on the editable side).
+ * Always shown, not behind a collapse toggle — extra-paycheck routing lives
+ * in this same panel now and must never be hidden by default.
+ */
+function PayTaxDetailsView({ sd }: { sd: Detail }) {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2">
+      <DetailStat label="Pay period" value={PAY_PERIOD_LABELS[sd.payPeriod]} />
+      <DetailStat label="Pay week" value={PAY_WEEK_LABELS[sd.payWeek]} />
+      <DetailStat
+        label="Anchor pay date"
+        value={sd.anchorPayDate ?? "— (uses job start date)"}
+      />
+      <DetailStat
+        label="Budget periods/mo"
+        value={
+          sd.budgetPeriodsPerMonth !== null
+            ? fmt(sd.budgetPeriodsPerMonth)
+            : `${PAY_PERIOD_CONFIG[sd.payPeriod]?.defaultBudgetPerMonth ?? "—"} (derived)`
+        }
+      />
+      <DetailStat
+        label="W-4 filing status"
+        value={W4_FILING_STATUS_LABELS[sd.w4FilingStatus]}
+      />
+      <DetailStat
+        label="W-4 step 2(c)"
+        value={sd.w4Box2cChecked ? "Checked" : "Unchecked"}
+      />
+      <DetailStat
+        label="Extra fed withholding"
+        value={formatCurrency(sd.additionalFedWithholding)}
+      />
+      <DetailStat
+        label="Bonus month"
+        value={sd.bonusMonth !== null ? String(sd.bonusMonth) : "—"}
+      />
+      <DetailStat
+        label="Bonus day"
+        value={sd.bonusDayOfMonth !== null ? String(sd.bonusDayOfMonth) : "—"}
+      />
+      <DetailStat
+        label="401(k) on bonus"
+        value={sd.include401kInBonus ? "Yes" : "No"}
+      />
+      <DetailStat
+        label="Bonus counts toward contributions"
+        value={sd.includeBonusInContributions ? "Yes" : "No"}
+      />
+    </div>
+  );
+}
+
+/**
+ * Editable grid of the 11 pay/withholding/bonus-timing fields — the
+ * editable twin of PayTaxDetailsView. Enum selects and checkboxes commit
+ * immediately (no typing state to debounce); the date/nullable-number
+ * inputs go through the same drafts/commit-on-blur plumbing as the rest of
+ * this panel.
+ */
+function PayTaxDetailsEdit({
+  sd,
+  drafts,
+  setDraft,
+  onWriteField,
+  onCommitAnchorPayDate,
+  onCommitBudgetPeriodsPerMonth,
+  onCommitAdditionalFedWithholding,
+  onCommitBonusMonth,
+  onCommitBonusDayOfMonth,
+}: {
+  sd: Detail;
+  drafts: Record<string, string>;
+  setDraft: (key: string, value: string) => void;
+  onWriteField: <K extends keyof Entry>(
+    sd: Detail,
+    field: K,
+    value: Entry[K],
+  ) => void;
+  onCommitAnchorPayDate: (sd: Detail) => void;
+  onCommitBudgetPeriodsPerMonth: (sd: Detail) => void;
+  onCommitAdditionalFedWithholding: (sd: Detail) => void;
+  onCommitBonusMonth: (sd: Detail) => void;
+  onCommitBonusDayOfMonth: (sd: Detail) => void;
+}) {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3">
+      <FormField label="Pay period">
+        <FormSelect
+          value={sd.payPeriod}
+          onChange={(e) =>
+            onWriteField(sd, "payPeriod", e.target.value as PayPeriod)
+          }
+        >
+          {PAY_PERIOD_VALUES.map((v) => (
+            <option key={v} value={v}>
+              {PAY_PERIOD_LABELS[v]}
+            </option>
+          ))}
+        </FormSelect>
+      </FormField>
+      <FormField label="Pay week">
+        <FormSelect
+          value={sd.payWeek}
+          onChange={(e) =>
+            onWriteField(sd, "payWeek", e.target.value as PayWeek)
+          }
+        >
+          {PAY_WEEK_VALUES.map((v) => (
+            <option key={v} value={v}>
+              {PAY_WEEK_LABELS[v]}
+            </option>
+          ))}
+        </FormSelect>
+      </FormField>
+      <FormField label="Anchor pay date">
+        <FormInput
+          type="date"
+          value={
+            drafts[`${sd.personId}:anchorPayDate`] ?? sd.anchorPayDate ?? ""
+          }
+          onChange={(e) =>
+            setDraft(`${sd.personId}:anchorPayDate`, e.target.value)
+          }
+          onBlur={() => onCommitAnchorPayDate(sd)}
+        />
+      </FormField>
+      <FormField label="Budget periods/mo">
+        <FormInput
+          type="number"
+          step="any"
+          min="0"
+          value={
+            drafts[`${sd.personId}:budgetPeriodsPerMonth`] ??
+            (sd.budgetPeriodsPerMonth !== null
+              ? fmt(sd.budgetPeriodsPerMonth)
+              : "")
+          }
+          onChange={(e) =>
+            setDraft(`${sd.personId}:budgetPeriodsPerMonth`, e.target.value)
+          }
+          onBlur={() => onCommitBudgetPeriodsPerMonth(sd)}
+          placeholder={String(
+            PAY_PERIOD_CONFIG[sd.payPeriod]?.defaultBudgetPerMonth ?? "",
+          )}
+        />
+      </FormField>
+      <FormField label="W-4 filing status">
+        <FormSelect
+          value={sd.w4FilingStatus}
+          onChange={(e) =>
+            onWriteField(sd, "w4FilingStatus", e.target.value as W4FilingStatus)
+          }
+        >
+          {W4_FILING_STATUS_VALUES.map((v) => (
+            <option key={v} value={v}>
+              {W4_FILING_STATUS_LABELS[v]}
+            </option>
+          ))}
+        </FormSelect>
+      </FormField>
+      <label className="flex items-center gap-1.5 text-xs text-secondary self-end pb-1.5">
+        <input
+          type="checkbox"
+          checked={sd.w4Box2cChecked}
+          onChange={(e) => onWriteField(sd, "w4Box2cChecked", e.target.checked)}
+        />
+        W-4 step 2(c)
+      </label>
+      <FormField label="Extra fed withholding">
+        <FormInput
+          type="number"
+          step="1"
+          min="0"
+          value={
+            drafts[`${sd.personId}:additionalFedWithholding`] ??
+            fmt(sd.additionalFedWithholding)
+          }
+          onChange={(e) =>
+            setDraft(`${sd.personId}:additionalFedWithholding`, e.target.value)
+          }
+          onBlur={() => onCommitAdditionalFedWithholding(sd)}
+        />
+      </FormField>
+      <FormField label="Bonus month (1-12)">
+        <FormInput
+          type="number"
+          step="1"
+          min="1"
+          max="12"
+          value={
+            drafts[`${sd.personId}:bonusMonth`] ??
+            (sd.bonusMonth !== null ? String(sd.bonusMonth) : "")
+          }
+          onChange={(e) =>
+            setDraft(`${sd.personId}:bonusMonth`, e.target.value)
+          }
+          onBlur={() => onCommitBonusMonth(sd)}
+          placeholder="—"
+        />
+      </FormField>
+      <FormField label="Bonus day (1-31)">
+        <FormInput
+          type="number"
+          step="1"
+          min="1"
+          max="31"
+          value={
+            drafts[`${sd.personId}:bonusDayOfMonth`] ??
+            (sd.bonusDayOfMonth !== null ? String(sd.bonusDayOfMonth) : "")
+          }
+          onChange={(e) =>
+            setDraft(`${sd.personId}:bonusDayOfMonth`, e.target.value)
+          }
+          onBlur={() => onCommitBonusDayOfMonth(sd)}
+          placeholder="—"
+        />
+      </FormField>
+      <label className="flex items-center gap-1.5 text-xs text-secondary self-end pb-1.5">
+        <input
+          type="checkbox"
+          checked={sd.include401kInBonus}
+          onChange={(e) =>
+            onWriteField(sd, "include401kInBonus", e.target.checked)
+          }
+        />
+        401(k) on bonus
+      </label>
+      <label className="flex items-center gap-1.5 text-xs text-secondary self-end pb-1.5">
+        <input
+          type="checkbox"
+          checked={sd.includeBonusInContributions}
+          onChange={(e) =>
+            onWriteField(sd, "includeBonusInContributions", e.target.checked)
+          }
+        />
+        Bonus counts toward contributions
+      </label>
+    </div>
+  );
+}
+
 /**
  * Read-only detail view — used when canEdit is false and whenever the padlock
  * is locked. A job either has a real entry in this profile (shown plainly)
  * or it doesn't (shown as "—", contributing $0).
  */
-function ProfileDetail({ profileId }: { profileId: number }) {
+function ProfileDetail({
+  profileId,
+  isActiveProfile,
+}: {
+  profileId: number;
+  isActiveProfile: boolean;
+}) {
   const { data: profile } = trpc.salaryProfile.getById.useQuery({
     id: profileId,
   });
+  const { isInScenario } = useScenario();
   if (!profile) return null;
 
   const cell = (sd: Detail, field: FieldKey, suffix?: string) => (
@@ -630,45 +1001,80 @@ function ProfileDetail({ profileId }: { profileId: number }) {
       <table className="w-full text-xs border-collapse">
         <SalaryTableHead editable={false} />
         <tbody>
-          {profile.salaryDetails.map((sd, rowIdx) => (
-            <tr key={sd.personId} className={rowClass(rowIdx)}>
-              <td className="py-1.5 pl-4 pr-3 font-medium text-secondary">
-                {sd.personName}
-              </td>
-              <td className="py-1.5 px-3 text-muted">
-                {sd.employerName ?? "No active job"}
-                {!sd.hasEntry && sd.jobId !== null && (
-                  <span className="text-caption text-faint ml-1">
-                    (not in this profile)
-                  </span>
+          {profile.salaryDetails.map((sd, rowIdx) => {
+            return (
+              <React.Fragment key={sd.personId}>
+                <tr className={rowClass(rowIdx)}>
+                  <td className="py-1.5 pl-4 pr-3 font-medium text-secondary">
+                    {sd.personName}
+                  </td>
+                  <td className="py-1.5 px-3 text-muted">
+                    {sd.employerName ?? "No active job"}
+                    {!sd.hasEntry && sd.jobId !== null && (
+                      <span className="text-caption text-faint ml-1">
+                        (not in this profile)
+                      </span>
+                    )}
+                  </td>
+                  {cell(sd, "salary")}
+                  {cell(sd, "bonusPercent", "%")}
+                  {cell(sd, "bonusMultiplier", "×")}
+                  <td
+                    className={`py-1.5 px-3 text-right tabular-nums ${
+                      sd.hasEntry && sd.bonusOverride !== null
+                        ? "text-amber-700"
+                        : "text-faint"
+                    }`}
+                  >
+                    {sd.hasEntry && sd.bonusOverride !== null
+                      ? formatCurrency(sd.bonusOverride)
+                      : "—"}
+                  </td>
+                  <td
+                    className={`py-1.5 px-3 text-right tabular-nums ${
+                      sd.hasEntry ? "text-secondary" : "text-faint"
+                    }`}
+                  >
+                    {sd.hasEntry ? formatCurrency(sd.estimatedBonus) : "—"}
+                  </td>
+                  <td className="py-1.5 pr-4 pl-3 text-right">
+                    <span className="tabular-nums font-medium text-secondary">
+                      {formatCurrency(sd.effectiveSalary + sd.estimatedBonus)}
+                    </span>
+                  </td>
+                </tr>
+                {sd.hasEntry && (
+                  <tr className={rowClass(rowIdx)}>
+                    <td colSpan={8} className="py-3 px-4 bg-surface-sunken/60">
+                      <PayTaxDetailsView sd={sd} />
+                      <div className="mt-4 pt-3 border-t border-subtle/50">
+                        <h5 className="text-caption text-faint font-medium uppercase tracking-wide mb-2">
+                          Extra Paycheck Routing
+                        </h5>
+                        {!isActiveProfile ? (
+                          <p className="text-xs text-muted">
+                            Extra-paycheck routing always applies to the
+                            globally-active Salary Profile. Activate this
+                            profile to edit routing here.
+                          </p>
+                        ) : sd.jobId === null ? (
+                          <p className="text-xs text-muted">
+                            No job selected for this row.
+                          </p>
+                        ) : (
+                          <ExtraPaycheckDestinationToggle
+                            jobId={sd.jobId}
+                            routing={sd.extraPaycheckRouting}
+                            disabled={isInScenario}
+                          />
+                        )}
+                      </div>
+                    </td>
+                  </tr>
                 )}
-              </td>
-              {cell(sd, "salary")}
-              {cell(sd, "bonusPercent", "%")}
-              {cell(sd, "bonusMultiplier", "×")}
-              <td
-                className={`py-1.5 px-3 text-right tabular-nums ${
-                  sd.hasEntry && sd.bonusOverride !== null
-                    ? "text-amber-700"
-                    : "text-faint"
-                }`}
-              >
-                {sd.hasEntry && sd.bonusOverride !== null
-                  ? formatCurrency(sd.bonusOverride)
-                  : "—"}
-              </td>
-              <td
-                className={`py-1.5 px-3 text-right tabular-nums ${
-                  sd.hasEntry ? "text-secondary" : "text-faint"
-                }`}
-              >
-                {sd.hasEntry ? formatCurrency(sd.estimatedBonus) : "—"}
-              </td>
-              <td className="py-1.5 pr-4 pl-3 text-right tabular-nums font-medium text-secondary">
-                {formatCurrency(sd.effectiveSalary + sd.estimatedBonus)}
-              </td>
-            </tr>
-          ))}
+              </React.Fragment>
+            );
+          })}
         </tbody>
         <TotalsFooter combinedIncome={profile.combinedIncome} />
       </table>
@@ -763,14 +1169,22 @@ function ProfileCreatePanel({
  */
 function ProfileEditPanel({
   profileId,
+  isActiveProfile,
   onSaved,
 }: {
   profileId: number;
+  /** Extra-paycheck routing always reads/writes the globally-ACTIVE Salary
+   *  Profile (see writeJobExtraPaycheckRouting's docblock, savings.ts) —
+   *  never a profile a user is merely viewing. The routing editor below
+   *  only renders for that profile; a non-active one shows a note instead,
+   *  so edits here always land where this screen implies they do. */
+  isActiveProfile: boolean;
   onSaved: () => void;
 }) {
   const { data: profile } = trpc.salaryProfile.getById.useQuery({
     id: profileId,
   });
+  const { isInScenario } = useScenario();
   const [error, setError] = useState<string | null>(null);
   /** In-progress text per field; cleared once its mutation is sent. */
   const { drafts, setDraft, clearDraft } = useDraftCommit();
@@ -830,11 +1244,14 @@ function ProfileEditPanel({
   };
 
   /** Update one field of an already-existing entry. Entries are always
-   *  complete, so this only ever runs for a job that already has one. */
-  const writeField = (
+   *  complete, so this only ever runs for a job that already has one.
+   *  Generic over Entry's keys so both the original numeric fields and the
+   *  11 new fields (enums, booleans, nullable dates/numbers) share this one
+   *  write path. */
+  const writeField = <K extends keyof Entry>(
     sd: Detail,
-    field: FieldKey | "bonusOverride",
-    stored: number | null,
+    field: K,
+    stored: Entry[K],
   ) => {
     if (sd.jobId === null) return;
     const key = String(sd.jobId);
@@ -881,6 +1298,76 @@ function ProfileEditPanel({
     if (sd[field] === stored) return;
     writeField(sd, field, stored);
   };
+
+  /** Empty commits back to null — like commitBonusOverride, empty is a
+   *  meaningful "no anchor date, use job start date" value, not a no-op. */
+  const commitAnchorPayDate = (sd: Detail) => {
+    const key = `${sd.personId}:anchorPayDate`;
+    const draft = drafts[key];
+    if (draft === undefined) return;
+    clearDraft(key);
+    const trimmed = draft.trim();
+    const next = trimmed === "" ? null : trimmed;
+    if (sd.anchorPayDate === next) return;
+    writeField(sd, "anchorPayDate", next);
+  };
+
+  const commitBudgetPeriodsPerMonth = (sd: Detail) => {
+    const key = `${sd.personId}:budgetPeriodsPerMonth`;
+    const draft = drafts[key];
+    if (draft === undefined) return;
+    clearDraft(key);
+    const trimmed = draft.trim();
+    if (trimmed === "") {
+      if (sd.budgetPeriodsPerMonth === null) return;
+      writeField(sd, "budgetPeriodsPerMonth", null);
+      return;
+    }
+    const num = parseFloat(trimmed);
+    if (isNaN(num) || num < 0) return;
+    if (sd.budgetPeriodsPerMonth === num) return;
+    writeField(sd, "budgetPeriodsPerMonth", num);
+  };
+
+  const commitAdditionalFedWithholding = (sd: Detail) => {
+    const key = `${sd.personId}:additionalFedWithholding`;
+    const draft = drafts[key];
+    if (draft === undefined) return;
+    clearDraft(key);
+    const trimmed = draft.trim();
+    const num = trimmed === "" ? 0 : parseFloat(trimmed);
+    if (isNaN(num) || num < 0) return;
+    if (sd.additionalFedWithholding === num) return;
+    writeField(sd, "additionalFedWithholding", num);
+  };
+
+  /** Shared by bonusMonth/bonusDayOfMonth — both nullable, 1-based, ranged
+   *  integers with the same "empty clears back to null" semantics. */
+  const commitNullableInt = (
+    sd: Detail,
+    field: "bonusMonth" | "bonusDayOfMonth",
+    min: number,
+    max: number,
+  ) => {
+    const key = `${sd.personId}:${field}`;
+    const draft = drafts[key];
+    if (draft === undefined) return;
+    clearDraft(key);
+    const trimmed = draft.trim();
+    if (trimmed === "") {
+      if (sd[field] === null) return;
+      writeField(sd, field, null);
+      return;
+    }
+    const num = parseInt(trimmed, 10);
+    if (isNaN(num) || num < min || num > max) return;
+    if (sd[field] === num) return;
+    writeField(sd, field, num);
+  };
+  const commitBonusMonth = (sd: Detail) =>
+    commitNullableInt(sd, "bonusMonth", 1, 12);
+  const commitBonusDayOfMonth = (sd: Detail) =>
+    commitNullableInt(sd, "bonusDayOfMonth", 1, 31);
 
   return (
     <div className="bg-surface-sunken rounded-lg p-4">
@@ -946,83 +1433,131 @@ function ProfileEditPanel({
                   />
                 );
                 return (
-                  <tr key={rawSd.personId} className={rowClass(rowIdx)}>
-                    <td className="py-1.5 pl-4 pr-3 font-medium text-secondary">
-                      {sd.personName}
-                    </td>
-                    <td className="py-1.5 px-3 text-muted">
-                      <JobPicker
-                        sd={sd}
-                        rawSd={rawSd}
-                        onChange={(jobId) =>
-                          setJobOverride((prev) => ({
-                            ...prev,
-                            [rawSd.personId]: jobId,
-                          }))
-                        }
-                      />
-                    </td>
-                    {sd.hasEntry ? (
-                      <>
-                        <td className="py-1.5 px-3">
-                          {cellFor("salary", "$")}
-                        </td>
-                        <td className="py-1.5 px-3">
-                          {cellFor("bonusPercent", undefined, "%")}
-                        </td>
-                        <td className="py-1.5 px-3">
-                          {cellFor("bonusMultiplier", undefined, "×")}
-                        </td>
-                        <td className="py-1.5 px-3">
-                          <BonusOverrideCell
-                            sd={sd}
-                            draft={drafts[`${sd.personId}:bonusOverride`]}
-                            onDraft={(v) =>
-                              setDraft(`${sd.personId}:bonusOverride`, v)
-                            }
-                            onCommit={() => commitBonusOverride(sd)}
-                          />
-                        </td>
-                        <td className="py-1.5 px-3 text-right tabular-nums text-secondary">
-                          {formatCurrency(sd.estimatedBonus)}
-                        </td>
-                        <td className="py-1.5 pr-4 pl-3 text-right">
+                  <React.Fragment key={rawSd.personId}>
+                    <tr className={rowClass(rowIdx)}>
+                      <td className="py-1.5 pl-4 pr-3 font-medium text-secondary">
+                        {sd.personName}
+                      </td>
+                      <td className="py-1.5 px-3 text-muted">
+                        <JobPicker
+                          sd={sd}
+                          rawSd={rawSd}
+                          onChange={(jobId) =>
+                            setJobOverride((prev) => ({
+                              ...prev,
+                              [rawSd.personId]: jobId,
+                            }))
+                          }
+                        />
+                      </td>
+                      {sd.hasEntry ? (
+                        <>
+                          <td className="py-1.5 px-3">
+                            {cellFor("salary", "$")}
+                          </td>
+                          <td className="py-1.5 px-3">
+                            {cellFor("bonusPercent", undefined, "%")}
+                          </td>
+                          <td className="py-1.5 px-3">
+                            {cellFor("bonusMultiplier", undefined, "×")}
+                          </td>
+                          <td className="py-1.5 px-3">
+                            <BonusOverrideCell
+                              sd={sd}
+                              draft={drafts[`${sd.personId}:bonusOverride`]}
+                              onDraft={(v) =>
+                                setDraft(`${sd.personId}:bonusOverride`, v)
+                              }
+                              onCommit={() => commitBonusOverride(sd)}
+                            />
+                          </td>
+                          <td className="py-1.5 px-3 text-right tabular-nums text-secondary">
+                            {formatCurrency(sd.estimatedBonus)}
+                          </td>
+                          <td className="py-1.5 pr-4 pl-3 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <span className="tabular-nums font-medium text-secondary">
+                                {formatCurrency(
+                                  sd.effectiveSalary + sd.estimatedBonus,
+                                )}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => removeEntry(sd.jobId)}
+                                title="Remove this job from the profile"
+                                className="text-caption text-faint hover:text-red-500 shrink-0"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          </td>
+                        </>
+                      ) : (
+                        <td
+                          colSpan={6}
+                          className="py-1.5 px-3 text-right text-faint"
+                        >
                           <div className="flex items-center justify-end gap-2">
-                            <span className="tabular-nums font-medium text-secondary">
-                              {formatCurrency(
-                                sd.effectiveSalary + sd.estimatedBonus,
-                              )}
-                            </span>
+                            <span>Not in this profile</span>
                             <button
                               type="button"
-                              onClick={() => removeEntry(sd.jobId)}
-                              title="Remove this job from the profile"
-                              className="text-caption text-faint hover:text-red-500 shrink-0"
+                              onClick={() => addEntry(sd.jobId)}
+                              disabled={sd.jobId === null}
+                              className="text-caption font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50"
                             >
-                              ×
+                              + Add
                             </button>
                           </div>
                         </td>
-                      </>
-                    ) : (
-                      <td
-                        colSpan={6}
-                        className="py-1.5 px-3 text-right text-faint"
-                      >
-                        <div className="flex items-center justify-end gap-2">
-                          <span>Not in this profile</span>
-                          <button
-                            type="button"
-                            onClick={() => addEntry(sd.jobId)}
-                            disabled={sd.jobId === null}
-                            className="text-caption font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50"
-                          >
-                            + Add
-                          </button>
-                        </div>
-                      </td>
+                      )}
+                    </tr>
+                    {sd.hasEntry && (
+                      <tr className={rowClass(rowIdx)}>
+                        <td
+                          colSpan={8}
+                          className="py-3 px-4 bg-surface-sunken/60"
+                        >
+                          <PayTaxDetailsEdit
+                            sd={sd}
+                            drafts={drafts}
+                            setDraft={setDraft}
+                            onWriteField={writeField}
+                            onCommitAnchorPayDate={commitAnchorPayDate}
+                            onCommitBudgetPeriodsPerMonth={
+                              commitBudgetPeriodsPerMonth
+                            }
+                            onCommitAdditionalFedWithholding={
+                              commitAdditionalFedWithholding
+                            }
+                            onCommitBonusMonth={commitBonusMonth}
+                            onCommitBonusDayOfMonth={commitBonusDayOfMonth}
+                          />
+                          <div className="mt-4 pt-3 border-t border-subtle/50">
+                            <h5 className="text-caption text-faint font-medium uppercase tracking-wide mb-2">
+                              Extra Paycheck Routing
+                            </h5>
+                            {!isActiveProfile ? (
+                              <p className="text-xs text-muted">
+                                Extra-paycheck routing always applies to the
+                                globally-active Salary Profile. Activate this
+                                profile to edit routing here.
+                              </p>
+                            ) : sd.jobId === null ? (
+                              <p className="text-xs text-muted">
+                                No job selected for this row.
+                              </p>
+                            ) : (
+                              <ExtraPaycheckDestinationToggle
+                                jobId={sd.jobId}
+                                routing={sd.extraPaycheckRouting}
+                                disabled={isInScenario}
+                              />
+                            )}
+                          </div>
+                        </td>
+                      </tr>
                     )}
-                  </tr>
+                  </React.Fragment>
                 );
               })}
             </tbody>

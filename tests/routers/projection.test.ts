@@ -790,6 +790,7 @@ describe("projection router — computeProjection", () => {
         enableIrmaaAwareness: false,
         enableAcaAwareness: false,
         householdSize: 2,
+        filingStatus: "MFJ",
       })
       .run();
 

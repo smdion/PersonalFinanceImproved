@@ -40,6 +40,7 @@ import {
   Hammer,
   type LucideIcon,
 } from "lucide-react";
+import { BRAND_COLORS } from "@/lib/utils/colors";
 
 // ── Navigation data structure ──
 
@@ -307,7 +308,7 @@ export function Sidebar({
               />
               <path
                 d="M10 6 L10 24 L22 24"
-                stroke="#38bdf8"
+                stroke={BRAND_COLORS.logoAccent}
                 strokeWidth="3.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -318,7 +319,7 @@ export function Sidebar({
                 y1="14"
                 x2="20"
                 y2="14"
-                stroke="#38bdf8"
+                stroke={BRAND_COLORS.logoAccent}
                 strokeWidth="2"
                 strokeLinecap="round"
                 opacity="0.5"
@@ -328,7 +329,7 @@ export function Sidebar({
                 y1="18"
                 x2="18"
                 y2="18"
-                stroke="#38bdf8"
+                stroke={BRAND_COLORS.logoAccent}
                 strokeWidth="2"
                 strokeLinecap="round"
                 opacity="0.5"

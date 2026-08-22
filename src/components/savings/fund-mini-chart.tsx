@@ -88,8 +88,16 @@ export function FundMiniChart({
             </linearGradient>
             {hasNegative && (
               <linearGradient id="grad-negative" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#ef4444" stopOpacity={0.1} />
+                <stop
+                  offset="5%"
+                  stopColor={CHART_COLORS.fundChartNegative}
+                  stopOpacity={0.3}
+                />
+                <stop
+                  offset="95%"
+                  stopColor={CHART_COLORS.fundChartNegative}
+                  stopOpacity={0.1}
+                />
               </linearGradient>
             )}
           </defs>
@@ -145,19 +153,23 @@ export function FundMiniChart({
           />
 
           {/* Zero line */}
-          <ReferenceLine y={0} stroke="#4b5563" strokeDasharray="3 3" />
+          <ReferenceLine
+            y={0}
+            stroke={CHART_COLORS.fundChartZeroLine}
+            strokeDasharray="3 3"
+          />
 
           {/* Target line */}
           {target > 0 && (
             <ReferenceLine
               y={target}
-              stroke="#10b981"
+              stroke={CHART_COLORS.fundChartTarget}
               strokeDasharray="6 3"
               strokeWidth={1.5}
               label={{
                 value: `Target: ${formatCurrency(target)}`,
                 position: "right",
-                fill: "#10b981",
+                fill: CHART_COLORS.fundChartTarget,
                 fontSize: CHART_FONT.tiny,
               }}
             />
@@ -187,8 +199,12 @@ export function FundMiniChart({
                   cx={cx}
                   cy={cy}
                   r={4}
-                  fill={hasWithdrawal ? "#ef4444" : "#10b981"}
-                  stroke="#1f2937"
+                  fill={
+                    hasWithdrawal
+                      ? CHART_COLORS.fundChartNegative
+                      : CHART_COLORS.fundChartTarget
+                  }
+                  stroke={CHART_COLORS.fundChartDot}
                   strokeWidth={1.5}
                 />
               );
@@ -197,7 +213,7 @@ export function FundMiniChart({
               r: 4,
               stroke: fundColor,
               strokeWidth: 2,
-              fill: "#1f2937",
+              fill: CHART_COLORS.fundChartDot,
             }}
           />
         </AreaChart>

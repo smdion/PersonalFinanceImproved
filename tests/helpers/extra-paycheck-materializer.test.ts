@@ -16,6 +16,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createTestDb, type TestDbContext } from "./db-harness";
 import { materializeExtraPaycheckOverrides } from "@/server/helpers/extra-paycheck-materializer";
 import { eq } from "drizzle-orm";
+import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 
 const mockGetExtraPaycheckMonthKeys = vi.fn();
 vi.mock("@/lib/calculators/paycheck", () => ({
@@ -26,6 +27,7 @@ vi.mock("@/lib/calculators/paycheck", () => ({
 describe("materializeExtraPaycheckOverrides", () => {
   let ctx: TestDbContext;
   let goalId: number;
+  let salaryProfileId: number;
 
   beforeEach(async () => {
     vi.useFakeTimers();
@@ -54,25 +56,85 @@ describe("materializeExtraPaycheckOverrides", () => {
         id: 1,
         personId: 1,
         employerName: "TestCo",
-        annualSalary: "100000",
-        payPeriod: "biweekly",
-        payWeek: "even",
         startDate: "2020-01-01",
-        w4FilingStatus: "MFJ",
-        anchorPayDate: "2026-01-02",
-        extraPaycheckRouting: {
-          rules: [
-            {
-              from: "2026-01",
-              to: null,
-              splits: [{ goalId, pct: 100 }],
-              netPaySnapshot: 1000,
+      })
+      .run();
+    // extraPaycheckRouting/payPeriod/anchorPayDate/w4FilingStatus all moved
+    // off `jobs` to the Salary Profile entry (Stage B, then this session's
+    // routing move) — the materializer reads them from the job's entry in
+    // the globally-active Salary Profile.
+    const [salaryProfile] = ctx.db
+      .insert(ctx.schema.salaryProfiles)
+      .values({
+        name: "Test Salary Profile",
+        salaries: {
+          "1": {
+            salary: 100000,
+            bonusPercent: 0,
+            bonusMultiplier: 1,
+            monthsInBonusYear: 12,
+            bonusOverride: null,
+            payPeriod: "biweekly",
+            payWeek: "even",
+            anchorPayDate: "2026-01-02",
+            budgetPeriodsPerMonth: null,
+            w4FilingStatus: "MFJ",
+            w4Box2cChecked: false,
+            additionalFedWithholding: 0,
+            bonusMonth: null,
+            bonusDayOfMonth: null,
+            include401kInBonus: false,
+            includeBonusInContributions: true,
+            extraPaycheckRouting: {
+              rules: [
+                {
+                  from: "2026-01",
+                  to: null,
+                  splits: [{ goalId, pct: 100 }],
+                  netPaySnapshot: 1000,
+                },
+              ],
             },
-          ],
+          },
         },
+      })
+      .returning()
+      .all();
+    salaryProfileId = salaryProfile!.id;
+    ctx.db
+      .insert(ctx.schema.appSettings)
+      .values({
+        key: SK_ACTIVE_SALARY_PROFILE_ID,
+        value: salaryProfile!.id,
+      })
+      .onConflictDoUpdate({
+        target: ctx.schema.appSettings.key,
+        set: { value: salaryProfile!.id },
       })
       .run();
   });
+
+  /** Patch job 1's extraPaycheckRouting field in the active Salary
+   *  Profile's entry — same read-modify-write shape
+   *  writeJobExtraPaycheckRouting (savings.ts) does. */
+  function updateRouting(routing: Record<string, unknown> | null): void {
+    const [row] = ctx.db
+      .select()
+      .from(ctx.schema.salaryProfiles)
+      .where(eq(ctx.schema.salaryProfiles.id, salaryProfileId))
+      .all();
+    const salaries = row!.salaries as Record<string, Record<string, unknown>>;
+    ctx.db
+      .update(ctx.schema.salaryProfiles)
+      .set({
+        salaries: {
+          ...salaries,
+          "1": { ...salaries["1"], extraPaycheckRouting: routing },
+        },
+      })
+      .where(eq(ctx.schema.salaryProfiles.id, salaryProfileId))
+      .run();
+  }
 
   afterEach(() => {
     ctx.cleanup();
@@ -96,6 +158,29 @@ describe("materializeExtraPaycheckOverrides", () => {
       "2026-07-01",
     ]);
     expect(Number(rows[0]!.amount)).toBe(1000);
+  });
+
+  it("materializes nothing for a job paused via the Savings/Budget toggle (enabled: false), and cleans up rows from a prior enabled run", async () => {
+    // First confirm rows exist while enabled (today's default).
+    await materializeExtraPaycheckOverrides(ctx.db as never);
+    expect(ruleRows().length).toBeGreaterThan(0);
+
+    // Pause routing without touching the configured rule — same shape the
+    // savings.extraPaycheckRouting.setEnabled mutation persists.
+    updateRouting({
+      rules: [
+        {
+          from: "2026-01",
+          to: null,
+          splits: [{ goalId, pct: 100 }],
+          netPaySnapshot: 1000,
+        },
+      ],
+      enabled: false,
+    });
+
+    await materializeExtraPaycheckOverrides(ctx.db as never);
+    expect(ruleRows()).toEqual([]);
   });
 
   it("preserves a rule row dated before the current month across regeneration", async () => {
@@ -132,22 +217,16 @@ describe("materializeExtraPaycheckOverrides", () => {
     // Change what the routing would generate for June, to prove the
     // preserved row keeps its original amount rather than being
     // regenerated with the new one.
-    ctx.db
-      .update(ctx.schema.jobs)
-      .set({
-        extraPaycheckRouting: {
-          rules: [
-            {
-              from: "2026-01",
-              to: null,
-              splits: [{ goalId, pct: 100 }],
-              netPaySnapshot: 5000,
-            },
-          ],
+    updateRouting({
+      rules: [
+        {
+          from: "2026-01",
+          to: null,
+          splits: [{ goalId, pct: 100 }],
+          netPaySnapshot: 5000,
         },
-      })
-      .where(eq(ctx.schema.jobs.id, 1))
-      .run();
+      ],
+    });
 
     await materializeExtraPaycheckOverrides(ctx.db as never);
 

@@ -93,6 +93,7 @@ async function seedRetirementSettings(
       withdrawalRate: "0.04",
       socialSecurityMonthly: "2500",
       ssStartAge: 67,
+      filingStatus: "MFJ",
       ...overrides,
     })
     .run();

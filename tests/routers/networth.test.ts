@@ -57,6 +57,7 @@ async function seedFullData(
       withdrawalRate: "0.04",
       taxMultiplier: "1.0",
       grossUpForTaxes: true,
+      filingStatus: "MFJ",
     })
     .run();
 

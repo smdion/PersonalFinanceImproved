@@ -43,6 +43,8 @@ import { salaryEntriesSchema } from "@/lib/db/json-schemas";
 import { resolveCompensation } from "@/server/helpers";
 import type { SalaryEntryMap } from "@/server/helpers";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
+import { resolveActiveSalaryProfileId } from "@/server/helpers/salary";
+import { computeJobNetPayPerCheck } from "./savings";
 
 /** How much this profile specifies, for the list view's at-a-glance summary. */
 function summarizeEntries(salaries: SalaryEntryMap) {
@@ -51,6 +53,48 @@ function summarizeEntries(salaries: SalaryEntryMap) {
     pinnedCount: entries.length,
     pinnedSalaryTotal: entries.reduce((s, e) => s + e.salary, 0),
   };
+}
+
+/**
+ * w4FilingStatus + w4Box2cChecked form a composite key into the federal
+ * withholding bracket table. A Salary Profile entry is complete-or-absent
+ * (see salaryEntrySchema) — every entry being written always sets both
+ * halves together, unlike the old Contribution-Profile-jobs-bucket design
+ * this replaces (moved here from contribution-profiles.ts's
+ * assertJobTaxBracketsExist, now checking every entry unconditionally
+ * rather than only entries that patch one half). Validating at write time
+ * — rather than deferring to a read-time error that could surface during
+ * an unrelated computation — is a hard requirement per RULES.md: a
+ * composite-key mismatch should never be persisted in the first place.
+ */
+async function assertSalaryEntryTaxBracketsExist(
+  db: typeof import("@/lib/db").db,
+  salaries: SalaryEntryMap | undefined,
+): Promise<void> {
+  const entries = Object.entries(salaries ?? {});
+  if (entries.length === 0) return;
+
+  const taxYear = new Date().getFullYear();
+  const brackets = await db
+    .select({
+      filingStatus: schema.taxBrackets.filingStatus,
+      w4Checkbox: schema.taxBrackets.w4Checkbox,
+    })
+    .from(schema.taxBrackets)
+    .where(eq(schema.taxBrackets.taxYear, taxYear));
+  const bracketKeys = new Set(
+    brackets.map((b) => `${b.filingStatus}|${b.w4Checkbox}`),
+  );
+
+  for (const [jobId, entry] of entries) {
+    if (!bracketKeys.has(`${entry.w4FilingStatus}|${entry.w4Box2cChecked}`)) {
+      throw new Error(
+        `No tax bracket data found for filing status "${entry.w4FilingStatus}" ` +
+          `(multiple jobs: ${entry.w4Box2cChecked}) for tax year ${taxYear} — ` +
+          `cannot save this entry for job ${jobId}.`,
+      );
+    }
+  }
 }
 
 export const salaryProfileRouter = createTRPCRouter({
@@ -126,6 +170,27 @@ export const salaryProfileRouter = createTRPCRouter({
           /** This year's actual paid-out bonus, pinned on the same entry —
            *  see SalaryProfileEntry.bonusOverride's docblock. */
           bonusOverride: entry?.bonusOverride ?? null,
+          /** Pay schedule, W-4 elections, and bonus pay date/flags — the 11
+           *  fields that moved off `jobs` in Stage B. Defaults below match
+           *  onboarding-wizard.tsx's defaults for a brand-new entry, purely
+           *  a visible starting point for the editor when this job has no
+           *  entry yet — never used in any live calculation (a job with no
+           *  entry resolves to $0/incomplete everywhere else). */
+          payPeriod: entry?.payPeriod ?? "biweekly",
+          payWeek: entry?.payWeek ?? "na",
+          anchorPayDate: entry?.anchorPayDate ?? null,
+          budgetPeriodsPerMonth: entry?.budgetPeriodsPerMonth ?? null,
+          w4FilingStatus: entry?.w4FilingStatus ?? "MFJ",
+          w4Box2cChecked: entry?.w4Box2cChecked ?? false,
+          additionalFedWithholding: entry?.additionalFedWithholding ?? 0,
+          bonusMonth: entry?.bonusMonth ?? null,
+          bonusDayOfMonth: entry?.bonusDayOfMonth ?? null,
+          include401kInBonus: entry?.include401kInBonus ?? false,
+          includeBonusInContributions:
+            entry?.includeBonusInContributions ?? false,
+          /** Where this job's extra (3rd biweekly) paycheck routes, if
+           *  configured — see extraPaycheckRoutingSchema (json-schemas.ts). */
+          extraPaycheckRouting: entry?.extraPaycheckRouting ?? null,
           /** What this profile actually produces for this job — the pinned
            *  actual when set, else the formula estimate. */
           effectiveSalary: comp.salary,
@@ -168,6 +233,19 @@ export const salaryProfileRouter = createTRPCRouter({
           bonusMultiplier: selected?.bonusMultiplier ?? 1,
           monthsInBonusYear: selected?.monthsInBonusYear ?? 12,
           bonusOverride: selected?.bonusOverride ?? null,
+          payPeriod: selected?.payPeriod ?? "biweekly",
+          payWeek: selected?.payWeek ?? "na",
+          anchorPayDate: selected?.anchorPayDate ?? null,
+          budgetPeriodsPerMonth: selected?.budgetPeriodsPerMonth ?? null,
+          w4FilingStatus: selected?.w4FilingStatus ?? "MFJ",
+          w4Box2cChecked: selected?.w4Box2cChecked ?? false,
+          additionalFedWithholding: selected?.additionalFedWithholding ?? 0,
+          bonusMonth: selected?.bonusMonth ?? null,
+          bonusDayOfMonth: selected?.bonusDayOfMonth ?? null,
+          include401kInBonus: selected?.include401kInBonus ?? false,
+          includeBonusInContributions:
+            selected?.includeBonusInContributions ?? false,
+          extraPaycheckRouting: selected?.extraPaycheckRouting ?? null,
           /** What this profile actually produces for this person. */
           effectiveSalary: selected?.effectiveSalary ?? 0,
           estimatedBonus: selected?.estimatedBonus ?? 0,
@@ -204,6 +282,8 @@ export const salaryProfileRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      await assertSalaryEntryTaxBracketsExist(ctx.db, input.salaries);
+
       const rows = await ctx.db
         .insert(schema.salaryProfiles)
         .values({
@@ -231,6 +311,8 @@ export const salaryProfileRouter = createTRPCRouter({
         .where(eq(schema.salaryProfiles.id, input.id));
       if (!existing[0]) throw new Error("Profile not found");
 
+      await assertSalaryEntryTaxBracketsExist(ctx.db, input.salaries);
+
       const updates: Partial<typeof schema.salaryProfiles.$inferInsert> = {};
       if (input.name !== undefined) updates.name = input.name;
       if (input.description !== undefined)
@@ -242,7 +324,60 @@ export const salaryProfileRouter = createTRPCRouter({
         .set(updates)
         .where(eq(schema.salaryProfiles.id, input.id))
         .returning();
-      return rows[0]!;
+      const updated = rows[0]!;
+
+      // Refresh extraPaycheckRouting's baseNetPayPerCheck/payPeriod/
+      // anchorPayDate snapshot for any job in THIS edit whose routing is
+      // already configured — but only when this is the globally-ACTIVE
+      // profile. Editing an active profile's real values (a withholding
+      // correction, a raise) is not "browsing a hypothetical" — it's a
+      // correction to the one real number computeJobNetPayPerCheck already
+      // resolves against, so it should propagate immediately, the same way
+      // an explicit extraPaycheckRouting.save/saveGrowth would. Editing a
+      // NON-active profile (a what-if comparison) must NOT trigger this —
+      // that's exactly the "routine profile switch silently rewrites a
+      // plan" case RULES.md's no-cascade-by-design note warns about; the
+      // distinction is active-vs-not, not edited-vs-not.
+      if (input.salaries !== undefined) {
+        try {
+          const activeId = await resolveActiveSalaryProfileId(ctx.db);
+          if (activeId === input.id) {
+            const salaries = updated.salaries as SalaryEntryMap;
+            let anyRefreshed = false;
+            for (const [jobIdStr, entry] of Object.entries(salaries)) {
+              const routing = entry.extraPaycheckRouting;
+              if (!routing?.rules?.length) continue;
+              const jobId = Number(jobIdStr);
+              const refreshed = await computeJobNetPayPerCheck(ctx.db, jobId);
+              salaries[jobIdStr] = {
+                ...entry,
+                extraPaycheckRouting: {
+                  ...routing,
+                  baseNetPayPerCheck: refreshed.netPayPerCheck,
+                  payPeriod: refreshed.payPeriod,
+                  anchorPayDate: refreshed.anchorPayDate,
+                },
+              };
+              anyRefreshed = true;
+            }
+            if (anyRefreshed) {
+              const [refreshedRow] = await ctx.db
+                .update(schema.salaryProfiles)
+                .set({ salaries })
+                .where(eq(schema.salaryProfiles.id, input.id))
+                .returning();
+              return refreshedRow!;
+            }
+          }
+        } catch {
+          // The user's actual edit (already written above) must not fail
+          // just because the best-effort routing-snapshot refresh couldn't
+          // resolve (e.g. a mid-edit state with no matching tax bracket
+          // yet) — fall through and return the already-saved update.
+        }
+      }
+
+      return updated;
     }),
 
   /**

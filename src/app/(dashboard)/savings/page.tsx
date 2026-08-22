@@ -925,7 +925,12 @@ export default function SavingsPage() {
                       })()}
                     </div>
 
-                    {/* Extra paycheck rules — one column per earner */}
+                    {/* Extra paycheck rules — one column per earner. The
+                        Savings/Budget toggle also lives on Budget → Salary
+                        Profiles (comp-layer decision), but the detailed
+                        mechanics — splits across savings goals, growth
+                        rates, month overrides — are Savings-domain and
+                        belong here, not cluttering the profile screen. */}
                     <ExtraPaycheckRulesEditor
                       goals={rawGoals
                         .filter((g) => g.isActive && !g.parentGoalId)

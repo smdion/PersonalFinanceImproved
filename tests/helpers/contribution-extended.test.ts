@@ -11,10 +11,10 @@ import {
   aggregateContributionsByCategory,
   resolveProfile,
   applyContribActiveFields,
-  applyJobActiveFields,
   buildContributionDisplaySpecs,
 } from "@/server/helpers/contribution";
 import type { AccountCategory } from "@/lib/calculators/types";
+import type { SalaryProfileActiveMap } from "@/server/helpers/salary";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -22,6 +22,7 @@ import type { AccountCategory } from "@/lib/calculators/types";
 
 function makeContribRow(
   overrides: Partial<{
+    id: number;
     personId: number;
     jobId: number | null;
     accountType: AccountCategory;
@@ -37,6 +38,7 @@ function makeContribRow(
   }> = {},
 ) {
   return {
+    id: 1,
     personId: 1,
     jobId: 1,
     accountType: "401k" as AccountCategory,
@@ -85,10 +87,12 @@ describe("aggregateContributionsByCategory", () => {
   it("computes Roth fraction correctly", () => {
     const contribs = [
       makeContribRow({
+        id: 1,
         contributionValue: "8",
         taxTreatment: "pre_tax",
       }),
       makeContribRow({
+        id: 2,
         contributionValue: "4",
         taxTreatment: "tax_free",
       }),
@@ -132,15 +136,18 @@ describe("aggregateContributionsByCategory", () => {
   it("aggregates across multiple categories", () => {
     const contribs = [
       makeContribRow({
+        id: 1,
         accountType: "401k" as AccountCategory,
         contributionValue: "10",
       }),
       makeContribRow({
+        id: 2,
         accountType: "ira" as AccountCategory,
         contributionValue: "5",
         taxTreatment: "tax_free",
       }),
       makeContribRow({
+        id: 3,
         accountType: "hsa" as AccountCategory,
         contributionMethod: "fixed_annual",
         contributionValue: "4300",
@@ -209,6 +216,53 @@ describe("aggregateContributionsByCategory", () => {
 
     // 10% of 100000 = 10000
     expect(contribByCategory["401k"].annual).toBe(10000);
+  });
+
+  it("marks a fixed_per_period account incomplete and excludes it when its job can't be resolved (method-gated treatment)", () => {
+    const contribs = [
+      makeContribRow({
+        id: 1,
+        jobId: 99, // no job with this id in `jobs` below — ended/missing link
+        contributionMethod: "fixed_per_period",
+        contributionValue: "500",
+      }),
+    ];
+    const jobs = [makeJob(1, 1, "biweekly")]; // a different, unrelated job
+    const salaries = [makeJobSalary(1, 1, 120000)];
+
+    const { contribByCategory, incompleteAccountIds } =
+      aggregateContributionsByCategory(contribs, jobs, salaries);
+
+    expect(incompleteAccountIds).toEqual([1]);
+    // Excluded from the total (0), not defaulted to a guessed pay period.
+    expect(contribByCategory["401k"].annual).toBe(0);
+  });
+
+  it("does NOT mark percent_of_salary/fixed_monthly accounts incomplete for the same missing-job scenario", () => {
+    const contribs = [
+      makeContribRow({
+        id: 1,
+        jobId: 99,
+        contributionMethod: "percent_of_salary",
+        contributionValue: "10",
+      }),
+      makeContribRow({
+        id: 2,
+        jobId: 99,
+        contributionMethod: "fixed_monthly",
+        contributionValue: "200",
+      }),
+    ];
+    const jobs = [makeJob(1, 1, "biweekly")];
+    const salaries = [makeJobSalary(1, 1, 120000)];
+
+    const { incompleteAccountIds } = aggregateContributionsByCategory(
+      contribs,
+      jobs,
+      salaries,
+    );
+
+    expect(incompleteAccountIds).toEqual([]);
   });
 });
 
@@ -309,65 +363,12 @@ describe("applyContribActiveFields", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// applyJobActiveFields
-// ---------------------------------------------------------------------------
-
-describe("applyJobActiveFields", () => {
-  const baseJob = {
-    id: 1,
-    personId: 1,
-    bonusPercent: "0.10",
-    bonusMultiplier: "1.0",
-    bonusOverride: null,
-    monthsInBonusYear: 12,
-    annualSalary: "120000",
-    payPeriod: "biweekly",
-    endDate: null,
-    bonusMonth: 2,
-    includeBonusInContributions: false,
-    employerName: "OldCorp",
-  } as unknown as (typeof import("@/lib/db/schema").jobs)["$inferSelect"];
-
-  it("returns jobs unchanged when no active fields", () => {
-    const result = applyJobActiveFields([baseJob], {});
-    expect(result[0].bonusPercent).toBe("0.10");
-  });
-
-  it("applies valid active fields", () => {
-    const result = applyJobActiveFields([baseJob], {
-      "1": { includeBonusInContributions: true, bonusMonth: 3 },
-    });
-    expect(result[0].includeBonusInContributions).toBe(true);
-    expect(result[0].bonusMonth).toBe(3);
-  });
-
-  it("refuses bonus AMOUNT fields — they moved to the Salary Profile", () => {
-    // A Contribution Profile must not be able to change anyone's
-    // compensation. These names are still real jobs columns, so the plain
-    // `field in job` filter would happily apply a stale stored key.
-    const result = applyJobActiveFields([baseJob], {
-      "1": {
-        bonusPercent: "0.15",
-        bonusMultiplier: "1.5",
-        monthsInBonusYear: 6,
-      },
-    });
-    expect(result[0].bonusPercent).toBe("0.10");
-    expect(result[0].bonusMultiplier).toBe("1.0");
-    expect(result[0].monthsInBonusYear).toBe(12);
-  });
-
-  it("ignores active fields not present on job", () => {
-    const result = applyJobActiveFields([baseJob], {
-      "1": { nonExistentField: "value", bonusMonth: 4 },
-    } as Record<string, Record<string, unknown>>);
-    expect(result[0].bonusMonth).toBe(4);
-    expect(
-      (result[0] as Record<string, unknown>)["nonExistentField"],
-    ).toBeUndefined();
-  });
-});
+// applyJobActiveFields / the Contribution Profile `jobs` active-fields
+// bucket no longer exist — Stage B deleted them wholesale. Pay schedule,
+// W-4 elections, and bonus pay date/flags now come from the Salary
+// Profile entry (see mergeSalaryProfileJobFields), and employerName has no
+// profile-override path at all any more (accepted feature reduction, see
+// RULES.md's Salary Profile layer section).
 
 // ---------------------------------------------------------------------------
 // resolveProfile
@@ -380,10 +381,36 @@ describe("resolveProfile", () => {
       name: "Test Profile",
       contributionActiveFields: {
         contributionAccounts: {},
-        jobs: {},
       },
       ...overrides,
     }) as unknown as (typeof import("@/lib/db/schema").contributionProfiles)["$inferSelect"];
+
+  // resolveProfile merges pay-schedule/W-4/bonus-date fields from the
+  // caller's own resolved Salary Profile map (mergeSalaryProfileJobFields)
+  // — no longer from a Contribution Profile `jobs` bucket.
+  const salaryProfileActiveMap: SalaryProfileActiveMap = new Map([
+    [
+      1,
+      {
+        salary: 120000,
+        bonusPercent: 0,
+        bonusMultiplier: 1,
+        monthsInBonusYear: 12,
+        bonusOverride: null,
+        payPeriod: "biweekly",
+        payWeek: "na",
+        anchorPayDate: null,
+        budgetPeriodsPerMonth: null,
+        w4FilingStatus: "MFJ",
+        w4Box2cChecked: false,
+        additionalFedWithholding: 0,
+        bonusMonth: null,
+        bonusDayOfMonth: null,
+        include401kInBonus: false,
+        includeBonusInContributions: false,
+      },
+    ],
+  ]);
 
   const liveContrib = {
     id: 10,
@@ -433,6 +460,7 @@ describe("resolveProfile", () => {
       [liveContrib],
       [liveJob],
       [liveJobSalary],
+      salaryProfileActiveMap,
     );
 
     expect(result.jobSalaries[0].salary).toBe(120000);
@@ -447,6 +475,7 @@ describe("resolveProfile", () => {
       [liveContrib],
       [liveJob],
       [liveJobSalary],
+      salaryProfileActiveMap,
     );
 
     expect(result.activeContribs).toHaveLength(0);
@@ -459,7 +488,6 @@ describe("resolveProfile", () => {
         contributionAccounts: {
           "10": { contributionValue: "15" },
         },
-        jobs: {},
       },
     });
     const result = resolveProfile(
@@ -467,6 +495,7 @@ describe("resolveProfile", () => {
       [liveContrib],
       [liveJob],
       [liveJobSalary],
+      salaryProfileActiveMap,
     );
 
     expect(result.activeContribs[0].contributionValue).toBe("15");
@@ -478,7 +507,6 @@ describe("resolveProfile", () => {
         contributionAccounts: {
           "10": { isActive: false },
         },
-        jobs: {},
       },
     });
     const result = resolveProfile(
@@ -486,59 +514,27 @@ describe("resolveProfile", () => {
       [liveContrib],
       [liveJob],
       [liveJobSalary],
+      salaryProfileActiveMap,
     );
 
     expect(result.activeContribs).toHaveLength(0);
   });
 
-  it("applies job overrides it still owns", () => {
-    const profile = makeProfile({
-      contributionActiveFields: {
-        contributionAccounts: {},
-        jobs: {
-          "1": { employerName: "NewCorp" },
-        },
-      },
-    });
+  it("merges pay-schedule fields from the Salary Profile map onto patchedJobs", () => {
+    // The Contribution Profile `jobs` bucket that used to own employerName/
+    // bonus-date overrides is gone — patchedJobs' non-comp fields now come
+    // entirely from mergeSalaryProfileJobFields against salaryProfileActiveMap.
+    const profile = makeProfile();
     const result = resolveProfile(
       profile,
       [liveContrib],
       [liveJob],
       [liveJobSalary],
+      salaryProfileActiveMap,
     );
 
-    expect(result.patchedJobs[0].employerName).toBe("NewCorp");
-  });
-
-  it("REFUSES a stale bonus-amount job override", () => {
-    // bonusPercent/bonusMultiplier/monthsInBonusYear moved to the Salary
-    // Profile and are no longer real jobs columns at all. The override
-    // filter is field-name-driven (`field in job`), so a leftover key in an
-    // old contribution_active_fields row has nothing to land on any more —
-    // this is the runtime backstop that makes a missed row inert, not
-    // wrong.
-    const profile = makeProfile({
-      contributionActiveFields: {
-        contributionAccounts: {},
-        jobs: {
-          "1": {
-            bonusPercent: "0.25",
-            bonusMultiplier: "3",
-            monthsInBonusYear: 6,
-          },
-        },
-      },
-    });
-    const result = resolveProfile(
-      profile,
-      [liveContrib],
-      [liveJob],
-      [liveJobSalary],
-    );
-
-    expect(result.patchedJobs[0]).not.toHaveProperty("bonusPercent");
-    expect(result.patchedJobs[0]).not.toHaveProperty("bonusMultiplier");
-    expect(result.patchedJobs[0]).not.toHaveProperty("monthsInBonusYear");
+    expect(result.patchedJobs[0].payPeriod).toBe("biweekly");
+    expect(result.patchedJobs[0].w4FilingStatus).toBe("MFJ");
   });
 });
 
@@ -585,8 +581,14 @@ describe("buildContributionDisplaySpecs", () => {
   });
 
   it("redistributes match proportionally within person+category group", () => {
+    // Only one of the two sibling rows carries real match config — the
+    // schema/computeGroupedEmployerMatch invariant (at most one row per
+    // job/person + accountType + parentCategory group may have real
+    // config; two independently-configured siblings is a data-integrity
+    // error, covered separately below).
     const contribs = [
       makeContribRow({
+        id: 1,
         contributionValue: "10", // 12000
         taxTreatment: "pre_tax",
         employerMatchType: "percent_of_contribution",
@@ -594,11 +596,9 @@ describe("buildContributionDisplaySpecs", () => {
         employerMaxMatchPct: "0.06",
       }),
       makeContribRow({
+        id: 2,
         contributionValue: "5", // 6000
         taxTreatment: "tax_free",
-        employerMatchType: "percent_of_contribution",
-        employerMatchValue: "100",
-        employerMaxMatchPct: "0.06",
       }),
     ];
     const people = [{ id: 1, name: "Alice" }];
@@ -613,10 +613,39 @@ describe("buildContributionDisplaySpecs", () => {
     );
 
     expect(specs).toHaveLength(2);
-    // Total match should be redistributed proportionally
+    // Combined rate = 18000/120000 = 0.15, capped at 0.06 -> total match
+    // = 120000 * 0.06 * 1.0 = 7200, split 2:1 by contribution share.
     const totalMatch = specs.reduce((s, sp) => s + sp.matchAnnual, 0);
-    expect(totalMatch).toBeGreaterThan(0);
+    expect(totalMatch).toBeCloseTo(7200);
     // Pre-tax has 2x the contribution, so should get 2x the match
     expect(specs[0].matchAnnual).toBeCloseTo(specs[1].matchAnnual * 2, 0);
+  });
+
+  it("throws when two sibling rows both carry real match config", () => {
+    const contribs = [
+      makeContribRow({
+        id: 1,
+        contributionValue: "10",
+        employerMatchType: "percent_of_contribution",
+        employerMatchValue: "100",
+        employerMaxMatchPct: "0.06",
+      }),
+      makeContribRow({
+        id: 2,
+        contributionValue: "5",
+        taxTreatment: "tax_free",
+        employerMatchType: "percent_of_contribution",
+        employerMatchValue: "100",
+        employerMaxMatchPct: "0.06",
+      }),
+    ];
+    expect(() =>
+      buildContributionDisplaySpecs(
+        contribs,
+        [{ id: 1, name: "Alice" }],
+        [makeJob()],
+        [makeJobSalary()],
+      ),
+    ).toThrow(/independently carry employer match config/);
   });
 });

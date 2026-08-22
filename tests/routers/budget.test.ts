@@ -17,6 +17,7 @@ import {
   seedBudgetItem,
   seedBudgetProfile,
   seedPerson,
+  seedJob,
   seedContributionProfile,
   viewerSession,
   createViewerSessionWithPermissions,
@@ -1353,6 +1354,89 @@ describe("budget router", () => {
           contributionProfile: profileTiers(contribProfileId),
         }),
       ).rejects.toThrow(/percent_of_salary/);
+    });
+
+    // -----------------------------------------------------------------------
+    // What-If sandbox overrides on a linked item — the exact behavior
+    // resolveLinkedBudgetItemAmounts's consolidation (Ledgr v0.7.6 review)
+    // must preserve: computeActiveSummary previously resolved this through a
+    // hand-rolled duplicate of the shared helper specifically so sandbox
+    // edits could apply; after consolidation the shared helper itself must
+    // apply them.
+    // -----------------------------------------------------------------------
+
+    it("sandboxContribActiveFields overrides a linked item's amount, on top of the Contribution Profile's own value", async () => {
+      const { itemId, contribAccountId, contribProfileId } =
+        await seedLinkedItem({
+          contributionMethod: "fixed_monthly",
+          contributionValue: "75.00",
+        });
+
+      const baseline = await caller.budget.computeActiveSummary({
+        contributionProfile: profileTiers(contribProfileId),
+      });
+      expect(
+        baseline.rawItems!.find((i) => i.id === itemId)!.contribAmount,
+      ).toBeCloseTo(75, 2);
+
+      const withSandbox = await caller.budget.computeActiveSummary({
+        contributionProfile: profileTiers(contribProfileId),
+        sandboxContribActiveFields: {
+          [String(contribAccountId)]: { contributionValue: "300" },
+        },
+      });
+      const sandboxed = withSandbox.rawItems!.find((i) => i.id === itemId)!;
+      expect(sandboxed.contribAmount).toBeCloseTo(300, 2);
+      expect(sandboxed.contribAmounts![0]).toBeCloseTo(300, 2);
+
+      // The sandbox is request-scoped — it must never write through to the
+      // Contribution Profile's real stored value.
+      expect(getContributionValue(contribProfileId)).toBeCloseTo(75, 2);
+    });
+
+    it("sandboxSalaryEntries doesn't change a fixed_per_period linked item's amount (salary-independent), unlike percent_of_salary", async () => {
+      // fixed_per_period's amount depends on the job's pay period, not
+      // salary — this asserts sandboxSalaryEntries's job-periods resolution
+      // path (also newly consolidated onto the shared helper) still leaves
+      // a salary-independent method's amount alone.
+      const personId = await seedPerson(db);
+      const jobId = seedJob(db, personId);
+      const contribAccountId = seedLinkableContributionAccount(db, personId, {
+        jobId,
+      });
+      const contribProfileId = seedContributionProfile(db, {
+        name: "Sandbox Salary Test Profile",
+        contributionActiveFields: {
+          contributionAccounts: {
+            [String(contribAccountId)]: {
+              contributionValue: "50",
+              contributionMethod: "fixed_per_period",
+            },
+          },
+        },
+      });
+      const itemId = seedBudgetItem(db, profileId, {
+        category: "Investing",
+        subcategory: "Sandbox Salary Test Item",
+        amounts: [999],
+        contributionAccountId: contribAccountId,
+      });
+
+      const baseline = await caller.budget.computeActiveSummary({
+        contributionProfile: profileTiers(contribProfileId),
+      });
+      const before = baseline.rawItems!.find((i) => i.id === itemId)!;
+      expect(before.contribAmount).toBeCloseTo((50 * 26) / 12, 2);
+
+      const withSandbox = await caller.budget.computeActiveSummary({
+        contributionProfile: profileTiers(contribProfileId),
+        sandboxSalaryEntries: {
+          [String(personId)]: { salary: 999999 },
+        },
+      });
+      const after = withSandbox.rawItems!.find((i) => i.id === itemId)!;
+
+      expect(after.contribAmount).toBeCloseTo(before.contribAmount!, 2);
     });
   });
 });

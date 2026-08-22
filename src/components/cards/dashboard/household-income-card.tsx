@@ -4,30 +4,28 @@ import React, { memo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils/format";
-import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { useScenario } from "@/lib/context/scenario-context";
 import { sumBy } from "@/lib/utils/math";
 import { LoadingCard, ErrorCard } from "./utils";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
+import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
 
 function HouseholdIncomeCardImpl() {
   const { viewMode } = useScenario();
   const isYtd = viewMode === "ytd";
   const isBlended = viewMode === "blended";
   const salaryActiveFields = useActiveSalaries();
-  // Independent Salary Profile axis (Plan pin -> globally-active setting).
+  // Independent axes, each Plan pin -> globally-active setting.
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
-  const [activeContribProfileId] = usePersistedSetting<number | null>(
-    "active_contrib_profile_id",
-    null,
-  );
+  const {
+    contributionProfileId: activeContribProfileId,
+    queryInput: contribProfileInput,
+  } = useEffectiveContribProfileId();
   const { data: contribProfiles } = trpc.contributionProfile.list.useQuery();
   const queryInput = {
     ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
-    ...(activeContribProfileId != null
-      ? { contributionProfileId: activeContribProfileId }
-      : {}),
+    ...contribProfileInput,
     ...salaryProfileInput,
   };
   const { data, isLoading, error } = trpc.paycheck.computeSummary.useQuery(
@@ -66,9 +64,20 @@ function HouseholdIncomeCardImpl() {
       ? d.paycheck!.bonusEstimate
       : (fullFormulaBonusOf(d) ?? d.paycheck!.bonusEstimate);
   const isBonusPaidYtd = (d: (typeof people)[0]) => {
-    const bonusMonth = d.job?.bonusMonth;
+    // paycheck.computeSummary's `job` is the Salary-Profile-merged shape
+    // (mergeSalaryProfileJobFields) — bonusMonth/bonusDayOfMonth live there
+    // now, not on the `jobs` table. This asserts the flat, merged shape
+    // PersonPaycheck/BonusSection already expect from the same `job` field
+    // (see their prop types and use-paycheck-person-views.ts's `job: any`
+    // escape hatch for the identical gap) rather than inventing a
+    // different nesting.
+    const job = d.job as {
+      bonusMonth: number | null;
+      bonusDayOfMonth: number | null;
+    } | null;
+    const bonusMonth = job?.bonusMonth;
     if (bonusMonth == null) return false;
-    const day = d.job?.bonusDayOfMonth ?? 1;
+    const day = job?.bonusDayOfMonth ?? 1;
     const today = new Date();
     const payDate = new Date(today.getFullYear(), bonusMonth - 1, day);
     return today >= payDate;

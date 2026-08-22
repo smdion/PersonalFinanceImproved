@@ -12,27 +12,23 @@ import { useScenario } from "@/lib/context/scenario-context";
 import { sumBy } from "@/lib/utils/math";
 import { LoadingCard, ErrorCard } from "./utils";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
+import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
 
 function TaxesCardImpl() {
   const { viewMode } = useScenario();
   const isYtd = viewMode === "ytd";
   const isBlended = viewMode === "blended";
   const salaryActiveFields = useActiveSalaries();
-  // Independent Salary Profile axis (Plan pin -> globally-active setting).
+  // Independent axes, each Plan pin -> globally-active setting.
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
-  const [activeContribProfileId] = usePersistedSetting<number | null>(
-    "active_contrib_profile_id",
-    null,
-  );
+  const { queryInput: contribProfileInput } = useEffectiveContribProfileId();
   const [taxYearSetting] = usePersistedSetting<number | null>(
     "paycheck_tax_year",
     null,
   );
   const queryInput = {
     ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
-    ...(activeContribProfileId != null
-      ? { contributionProfileId: activeContribProfileId }
-      : {}),
+    ...contribProfileInput,
     ...salaryProfileInput,
     ...(taxYearSetting != null ? { taxYearOverride: taxYearSetting } : {}),
   };

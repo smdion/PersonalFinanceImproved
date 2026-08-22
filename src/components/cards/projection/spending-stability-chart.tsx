@@ -380,7 +380,7 @@ export function SpendingStabilityChart({
               dataKey="ratio"
               stackId="det"
               name={`vs ${baselineLabel}`}
-              fill="#3b82f6"
+              fill={CHART_COLORS.spendingRatioBar}
               fillOpacity={0.85}
               isAnimationActive={false}
               radius={[2, 2, 0, 0]}

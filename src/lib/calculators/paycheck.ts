@@ -245,7 +245,13 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
     adjustedAnnualWage,
     input.taxBrackets.brackets,
   );
-  const federalWithholding = safeDivide(annualTax, periodsPerYear, 0)!;
+  // W-4 Line 4c: a flat extra dollar amount added directly to PER-CHECK
+  // withholding, never folded into adjustedAnnualWage before the bracket
+  // lookup (that would incorrectly annualize a per-check amount) and never
+  // applied to marginalRate (which feeds the bonus supplemental-rate path
+  // below — that's a flat rate, not the per-check W-4 mechanism).
+  const federalWithholding =
+    safeDivide(annualTax, periodsPerYear, 0)! + input.additionalFedWithholding;
 
   // ── Step 4: FICA taxes ──
   // Social Security: 6.2% (from input) on FICA base, capped at wage base (e.g. $176,100/year).
@@ -620,6 +626,21 @@ export function getExtraPaycheckMonthKeys(
     }
   }
   return results;
+}
+
+/**
+ * Whether a job's extra (3rd biweekly) paycheck currently lands in Budget
+ * mode (stays as regular income) rather than Savings mode (routed per
+ * `rules`/`overrides`). No rules configured yet defaults to Budget mode —
+ * `enabled` only has meaning once there's something to enable/disable.
+ * Loosely typed (not `ExtraPaycheckRoutingData`) so calculator code never
+ * needs to import from a schema file — see RULES.md's pure-calculator rule.
+ */
+export function isExtraPaycheckBudgetMode(
+  routing: { rules?: unknown[]; enabled?: boolean } | null | undefined,
+): boolean {
+  const rules = routing?.rules ?? [];
+  return rules.length === 0 ? true : routing?.enabled === false;
 }
 
 /**

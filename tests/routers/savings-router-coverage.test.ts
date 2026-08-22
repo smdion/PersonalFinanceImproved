@@ -24,9 +24,11 @@ import {
   seedBudgetItem,
   seedAppSetting,
   seedJob,
+  seedPerson,
 } from "./setup";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
+import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 
 const mockGetActiveBudgetApi = vi.fn().mockResolvedValue("none");
 const mockGetBudgetAPIClient = vi.fn().mockResolvedValue(null);
@@ -1564,6 +1566,30 @@ describe("savings.extraPaycheckRouting", () => {
 
   afterAll(() => cleanup());
 
+  /** Read a job's extraPaycheckRouting straight from its entry in the
+   *  globally-active Salary Profile — same place
+   *  writeJobExtraPaycheckRouting (savings.ts) writes it. */
+  function getRouting(jobId: number) {
+    const activeSettingRow = db
+      .select()
+      .from(sqliteSchemaTables.appSettings)
+      .where(
+        eq(sqliteSchemaTables.appSettings.key, SK_ACTIVE_SALARY_PROFILE_ID),
+      )
+      .get();
+    const activeSalaryProfileId = Number(activeSettingRow!.value);
+    const activeSalaryProfile = db
+      .select()
+      .from(sqliteSchemaTables.salaryProfiles)
+      .where(eq(sqliteSchemaTables.salaryProfiles.id, activeSalaryProfileId))
+      .get()!;
+    const salaries = activeSalaryProfile.salaries as Record<
+      string,
+      { extraPaycheckRouting?: Record<string, unknown> | null }
+    >;
+    return salaries[String(jobId)]?.extraPaycheckRouting ?? null;
+  }
+
   it("list returns all jobs with routing fields", async () => {
     const jobs = await caller.savings.extraPaycheckRouting.list();
     expect(Array.isArray(jobs)).toBe(true);
@@ -1628,18 +1654,242 @@ describe("savings.extraPaycheckRouting", () => {
       // Deliberately wrong — proves the server ignores this and recomputes.
       baseNetPayPerCheck: 999999,
     });
-    const [row] = await db
-      .select({
-        extraPaycheckRouting: sqliteSchemaTables.jobs.extraPaycheckRouting,
-      })
-      .from(sqliteSchemaTables.jobs)
-      .where(eq(sqliteSchemaTables.jobs.id, jobId));
-    const baseNetPayPerCheck = row?.extraPaycheckRouting?.baseNetPayPerCheck;
+    const routing = getRouting(jobId) as { baseNetPayPerCheck?: number } | null;
+    const baseNetPayPerCheck = routing?.baseNetPayPerCheck;
     expect(baseNetPayPerCheck).not.toBe(999999);
     // $120,000 / 26 biweekly periods = $4,615.38 gross, minus federal
     // withholding and FICA (no deductions/contributions seeded).
     expect(baseNetPayPerCheck).toBeGreaterThan(3700);
     expect(baseNetPayPerCheck).toBeLessThan(3900);
     expect(baseNetPayPerCheck).toBe(3816.61);
+  });
+
+  it("list resolves live from the job's own column when no routing rule has ever been saved for it", async () => {
+    const personId = await seedPerson(db, "FreshRoutingPerson");
+    const freshJobId = seedJob(db, personId, {
+      payPeriod: "monthly",
+      anchorPayDate: "2025-02-01",
+    });
+    const jobs = await caller.savings.extraPaycheckRouting.list();
+    const row = jobs.find((j) => j.id === freshJobId);
+    expect(row).toBeDefined();
+    expect(row!.extraPaycheckRouting).toBeNull();
+    // No snapshot exists yet — falls through to the live job column.
+    expect(row!.payPeriod).toBe("monthly");
+    expect(row!.anchorPayDate).toBe("2025-02-01");
+  });
+
+  it("snapshot freezes payPeriod/anchorPayDate at save time — a later correction to the job's live schedule doesn't retroactively change what list()/the materializer use", async () => {
+    const personId = await seedPerson(db, "ScheduleFreezePerson");
+    const scheduleJobId = seedJob(db, personId, {
+      payPeriod: "biweekly",
+      anchorPayDate: "2025-01-03",
+    });
+
+    await caller.savings.extraPaycheckRouting.save({
+      jobId: scheduleJobId,
+      rules: [{ from: "2025-01", to: null, splits: [{ goalId, pct: 100 }] }],
+    });
+
+    const beforeCorrection = (
+      await caller.savings.extraPaycheckRouting.list()
+    ).find((j) => j.id === scheduleJobId);
+    expect(beforeCorrection!.payPeriod).toBe("biweekly");
+
+    // Correct the job's REAL live schedule — mirrors "user fixes a data
+    // entry mistake on the Paycheck page" after routing was already saved.
+    // payPeriod/anchorPayDate live on the Salary Profile entry now, not a
+    // `jobs` column — patch the active profile's entry for this job.
+    const activeSettingRow = db
+      .select()
+      .from(sqliteSchemaTables.appSettings)
+      .where(
+        eq(sqliteSchemaTables.appSettings.key, SK_ACTIVE_SALARY_PROFILE_ID),
+      )
+      .get();
+    const activeSalaryProfileId = Number(activeSettingRow!.value);
+    const activeSalaryProfile = db
+      .select()
+      .from(sqliteSchemaTables.salaryProfiles)
+      .where(eq(sqliteSchemaTables.salaryProfiles.id, activeSalaryProfileId))
+      .get()!;
+    const salaries = activeSalaryProfile.salaries as Record<
+      string,
+      Record<string, unknown>
+    >;
+    await db
+      .update(sqliteSchemaTables.salaryProfiles)
+      .set({
+        salaries: {
+          ...salaries,
+          [String(scheduleJobId)]: {
+            ...salaries[String(scheduleJobId)],
+            payPeriod: "weekly",
+            anchorPayDate: "2025-01-10",
+          },
+        },
+      })
+      .where(eq(sqliteSchemaTables.salaryProfiles.id, activeSalaryProfileId));
+
+    const afterCorrection = (
+      await caller.savings.extraPaycheckRouting.list()
+    ).find((j) => j.id === scheduleJobId);
+    // Still the snapshot's frozen value, not the corrected live column —
+    // the correction only takes effect once routing is explicitly re-saved.
+    expect(afterCorrection!.payPeriod).toBe("biweekly");
+    expect(afterCorrection!.anchorPayDate).toBe("2025-01-03");
+
+    const routing = getRouting(scheduleJobId) as {
+      payPeriod?: string;
+      anchorPayDate?: string | null;
+    } | null;
+    expect(routing?.payPeriod).toBe("biweekly");
+    expect(routing?.anchorPayDate).toBe("2025-01-03");
+  });
+
+  it("editing the ACTIVE Salary Profile's own values re-snapshots baseNetPayPerCheck for a job with routing already configured — this is a correction to the real profile, not a hypothetical comparison, so it must propagate", async () => {
+    const personId = await seedPerson(db, "ActiveEditRefreshPerson");
+    const refreshJobId = seedJob(db, personId, {
+      payPeriod: "biweekly",
+      anchorPayDate: "2025-01-03",
+      additionalFedWithholding: 0,
+    });
+    await caller.savings.extraPaycheckRouting.save({
+      jobId: refreshJobId,
+      rules: [{ from: "2025-01", to: null, splits: [{ goalId, pct: 100 }] }],
+    });
+    const before = getRouting(refreshJobId) as {
+      baseNetPayPerCheck?: number;
+    } | null;
+    const baseNetPayPerCheckBefore = before?.baseNetPayPerCheck;
+    expect(baseNetPayPerCheckBefore).toBeGreaterThan(0);
+
+    const activeSettingRow = db
+      .select()
+      .from(sqliteSchemaTables.appSettings)
+      .where(
+        eq(sqliteSchemaTables.appSettings.key, SK_ACTIVE_SALARY_PROFILE_ID),
+      )
+      .get();
+    const activeSalaryProfileId = Number(activeSettingRow!.value);
+    const activeSalaryProfile = db
+      .select()
+      .from(sqliteSchemaTables.salaryProfiles)
+      .where(eq(sqliteSchemaTables.salaryProfiles.id, activeSalaryProfileId))
+      .get()!;
+    const salaries = activeSalaryProfile.salaries as Record<
+      string,
+      Record<string, unknown>
+    >;
+
+    // A real correction (not a what-if) — increasing withholding on the
+    // job that already has routing configured, via the proper router
+    // mutation (not a raw db write, which deliberately does NOT cascade —
+    // see the freeze test above).
+    await caller.salaryProfile.update({
+      id: activeSalaryProfileId,
+      salaries: {
+        ...salaries,
+        [String(refreshJobId)]: {
+          ...salaries[String(refreshJobId)],
+          additionalFedWithholding: 500,
+        },
+      } as never,
+    });
+
+    const after = getRouting(refreshJobId) as {
+      baseNetPayPerCheck?: number;
+    } | null;
+    // More withheld each check => strictly lower net pay per check.
+    expect(after?.baseNetPayPerCheck).toBeLessThan(baseNetPayPerCheckBefore!);
+  });
+
+  it("editing a NON-active Salary Profile never refreshes routing, even for a job whose entry there already carries a (stale) snapshot", async () => {
+    const personId = await seedPerson(db, "NonActiveEditPerson");
+    const otherJobId = seedJob(db, personId, {
+      payPeriod: "biweekly",
+      anchorPayDate: "2025-01-03",
+    });
+    // A second, non-active profile with a manually-seeded stale snapshot —
+    // routing.save always targets the active profile, so this simulates
+    // the entry via direct insert rather than the normal save flow.
+    const otherProfileId = db
+      .insert(sqliteSchemaTables.salaryProfiles)
+      .values({
+        name: "Comparison Profile",
+        salaries: {
+          [String(otherJobId)]: {
+            salary: 120000,
+            bonusPercent: 0,
+            bonusMultiplier: 1,
+            monthsInBonusYear: 12,
+            bonusOverride: null,
+            payPeriod: "biweekly",
+            payWeek: "na",
+            anchorPayDate: "2025-01-03",
+            budgetPeriodsPerMonth: null,
+            w4FilingStatus: "MFJ",
+            w4Box2cChecked: false,
+            additionalFedWithholding: 0,
+            bonusMonth: null,
+            bonusDayOfMonth: null,
+            include401kInBonus: false,
+            includeBonusInContributions: true,
+            extraPaycheckRouting: {
+              rules: [
+                { from: "2025-01", to: null, splits: [{ goalId, pct: 100 }] },
+              ],
+              baseNetPayPerCheck: 999999,
+            },
+          },
+        },
+      })
+      .returning({ id: sqliteSchemaTables.salaryProfiles.id })
+      .get().id;
+
+    await caller.salaryProfile.update({
+      id: otherProfileId,
+      salaries: {
+        [String(otherJobId)]: {
+          salary: 120000,
+          bonusPercent: 0,
+          bonusMultiplier: 1,
+          monthsInBonusYear: 12,
+          bonusOverride: null,
+          payPeriod: "biweekly",
+          payWeek: "na",
+          anchorPayDate: "2025-01-03",
+          budgetPeriodsPerMonth: null,
+          w4FilingStatus: "MFJ",
+          w4Box2cChecked: false,
+          additionalFedWithholding: 750,
+          bonusMonth: null,
+          bonusDayOfMonth: null,
+          include401kInBonus: false,
+          includeBonusInContributions: true,
+          extraPaycheckRouting: {
+            rules: [
+              { from: "2025-01", to: null, splits: [{ goalId, pct: 100 }] },
+            ],
+            baseNetPayPerCheck: 999999,
+          },
+        },
+      } as never,
+    });
+
+    const row = db
+      .select()
+      .from(sqliteSchemaTables.salaryProfiles)
+      .where(eq(sqliteSchemaTables.salaryProfiles.id, otherProfileId))
+      .get()!;
+    const otherSalaries = row.salaries as Record<
+      string,
+      { extraPaycheckRouting?: { baseNetPayPerCheck?: number } }
+    >;
+    // Untouched — browsing/editing a non-active profile must never cascade.
+    expect(
+      otherSalaries[String(otherJobId)].extraPaycheckRouting
+        ?.baseNetPayPerCheck,
+    ).toBe(999999);
   });
 });

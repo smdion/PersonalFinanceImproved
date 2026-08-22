@@ -37,6 +37,12 @@ vi.mock("@/components/paycheck/bonus-section", () => ({
   BonusSection: () => <div data-testid="bonus-section">BonusSection</div>,
 }));
 
+vi.mock("@/components/paycheck/tax-withholding-section", () => ({
+  TaxWithholdingSection: () => (
+    <div data-testid="tax-withholding-section">TaxWithholdingSection</div>
+  ),
+}));
+
 vi.mock("@/components/paycheck/contributions-section", () => ({
   ContributionsSection: () => (
     <div data-testid="contributions-section">ContributionsSection</div>
@@ -53,8 +59,12 @@ vi.mock("@/components/paycheck/ss-cap-indicator", () => ({
   SSCapIndicator: () => null,
 }));
 
-vi.mock("@/components/paycheck/pay-schedule-info", () => ({
-  PayScheduleInfo: () => <div data-testid="pay-schedule">PaySchedule</div>,
+vi.mock("@/components/savings/extra-paycheck-rules-editor", () => ({
+  ExtraPaycheckDestinationToggle: () => (
+    <div data-testid="extra-paycheck-toggle">
+      ExtraPaycheckDestinationToggle
+    </div>
+  ),
 }));
 
 const baseJob = {
@@ -155,10 +165,8 @@ describe("PersonPaycheck", () => {
     expect(screen.getByTestId("contributions-section")).toBeInTheDocument();
   });
 
-  it("renders pay schedule info", () => {
-    render(<PersonPaycheck {...defaultProps} />);
-    expect(screen.getByTestId("pay-schedule")).toBeInTheDocument();
-  });
+  // pay-schedule-info.tsx is retired (Stage B) — its 4 fields moved into
+  // the Salary Profile entry editor (SalaryProfileManager).
 
   it("renders without title when job.title is null", () => {
     render(

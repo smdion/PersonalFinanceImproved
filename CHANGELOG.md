@@ -8,6 +8,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.7
 
+## [0.7.6] - 2026-08-22
+
+### Added
+
+- **Salary Profile now owns each job's full pay picture** — pay schedule, W-4 withholding, bonus timing, and where the "extra" (3rd) paycheck in a biweekly month goes — instead of these being scattered across the job record and, in W-4's case, admin-only. A Salary Profile is now a complete, self-contained world for a job: if it doesn't mention a job, that job contributes nothing under that profile, surfaced explicitly rather than silently defaulted.
+- **You can now add a new paycheck deduction (health/dental/vision insurance, etc.) and edit its name or tax treatment directly from the Contribution Profile page** — previously only the dollar amount could be edited there; creating one or renaming it required going elsewhere.
+- **The Savings-vs-Budget toggle for a biweekly job's extra paycheck** now lives on both Salary Profile Manager and the Paycheck page as a simple two-button control, with the full routing rules editor (splits, growth, overrides) on the Savings page.
+- The What-If tab's Paycheck step now shows which Salary Profile is active, matching the Contributions step's existing display of the active Contribution Profile.
+- **The new-profile form now lets you set a Method and Value per account at creation time**, instead of only being settable afterward in the standing profile editor. Leaving Value blank still leaves that account unset, same as before.
+
+### Fixed
+
+- **The Living Costs dashboard card's "Unallocated" figure could disagree by thousands of dollars between its Net and Gross views.** Gross mode was missing an accounting line for payroll-deducted items other than retirement (health/dental/vision insurance, disability, etc.) — those come out of pay before Net is computed, so Net already accounted for them invisibly while Gross simply dropped them. A new "Other Paycheck Deductions" line closes the gap so both views now reconcile to the same real number.
+- **The Living Costs card's extra-paycheck math now reflects the real pay calendar for the full year**, not just months that already have a materialized transaction — a routing choice made partway through the year previously under-counted months earlier in the year that never got a transaction generated for them.
+- **The Living Costs card no longer reacts to the Paycheck page's Current Salary / Year-End Estimate / Actual YTD selector** — every other number on the card (budget spending, savings, contributions) is an annualized rate, not a real year-to-date total, so scoping only income to "so far this year" was pushing percentages well past 100%. The card now always shows a full-year view, with a note explaining why.
+- **Retirement relocation comparisons no longer fabricate pay-schedule or W-4 data** when comparing what a switched Salary Profile would look like.
+- **Dashboard cards now consistently respect an active Plan's pinned Salary/Contribution Profile** — the Budget Status card was reading the globally-active Contribution Profile directly instead of through the same Plan-pin-aware resolution every other card uses, which could show a stale profile if the globally-active one were ever deleted.
+- Fixed a crash when clicking away from the "Extra withholding" field on the Paycheck page without changing its value.
+- The extra-paycheck Savings/Budget toggle can no longer make a real, permanent change while previewing a What-If Scenario — it's now disabled during scenario preview, matching every other control that writes real data.
+- Fixed a bug in the Salary Profile Manager where switching a row to a different job could keep showing the previous job's Savings/Budget routing state until the page refreshed.
+- Restored the read-only pay-schedule summary (next payday, pay periods per year, upcoming 3-paycheck months) on the Paycheck page, which had been dropped when its editing controls moved to Salary Profile Manager.
+- **Contribution Profiles: the Method dropdown and the Value field's $/% now agree for an account with no method set yet.** Previously an unset method rendered the dropdown as "% of Salary" (its first option) while the $/% prefix on the Value field was computed from the actual (empty) stored method and showed "$" instead — so a blank row's dropdown and value field visibly disagreed, and the mismatch could also affect what got saved on first entry.
+- Removed the Employer Match/Match Cap placeholder hints on the new-profile form that showed each account's own live match config — they read as pre-filled defaults rather than examples. Removed a second leftover instance of the same hint on the existing-profile editor.
+- **The profile detail view's Match column now reads "50% of 7%" instead of "50% to 7%"**, and for an account split across Roth and Traditional (e.g. a single 401k), both rows now clearly show the same shared match terms with a "(combined)" note, instead of the split without its own match settings looking like it had none.
+- **Employer match for an account split across Roth and Traditional contributions (e.g. a single 401k) is now calculated against your combined contribution to both, not just the portion in whichever split holds the match settings.** Previously, if your Traditional contribution alone already exceeded the match cap, this had no visible effect — but for anyone whose Roth/Traditional split shifted so neither portion alone reached the cap, match was being under-credited. Every place that shows employer match — the Paycheck page, the Portfolio account editor, and the Contribution Profiles pages — now consistently shows the real combined amount, including on the split that has no match settings of its own.
+- **The employer match tax-treatment control is relabeled "Match Deposits To"** (previously "Match Tax") with an explanation that it governs the whole account's match, not just the split it's entered on — most 401(k) plans deposit match as Traditional regardless of how you split your own contributions, though some newer plans allow a real Roth match.
+
+### Changed (internal)
+
+- Consolidated the Budget page's contribution-amount resolution (used for both the profile list and the active summary) onto a single shared code path — previously the two endpoints maintained independent copies of the same logic, risking drift between what the Budget tab shows and what other pages compute.
+- Fixed two data-safety issues in the Salary Profile schema migration: an inner join that could silently drop or, in the worst case, wipe a Salary Profile's data if a job was deleted without being pruned from it first; and a SQLite key-comparison that could match the wrong job under a malformed key.
+- Added a pre-flight data cleanup step to the employer-match uniqueness migration so it can't abort partway through if existing data already has a conflict.
+- Added a database constraint preventing an account's Roth and Traditional splits from ever independently holding conflicting employer-match settings — confirmed against a live data check that nothing existing would violate it.
+
 ## [0.7.5] - 2026-08-20
 
 Remediation from a 43-batch, whole-codebase review (~150+ findings). Two large, lower-priority items (several large-file splits, and a handful of performance optimizations) were deliberately deferred to the roadmap rather than folded into this release.

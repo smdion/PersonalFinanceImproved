@@ -427,7 +427,10 @@ export function ContribAccountForm({
                 placeholder="e.g. 7"
               />
             </FormField>
-            <FormField label="Match Tax">
+            <FormField
+              label="Match Deposits To"
+              tooltip="Where the employer match itself lands — applies to the account's whole match, regardless of how your own contributions are split between Roth and Traditional. Most 401(k) plans deposit match as Traditional even if you contribute Roth; some newer plans allow a real Roth match (SECURE 2.0)."
+            >
               <FormSelect
                 value={v.employerMatchTaxTreatment}
                 onChange={(e) =>

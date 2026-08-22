@@ -19,6 +19,7 @@ vi.mock("@/lib/budget-api", () => ({
 
 import { createTestCaller, adminSession, seedPerson, seedJob } from "./setup";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
+import { eq, and } from "drizzle-orm";
 import {
   applySalaryProfileRow,
   loadAndApplySalaryProfile,
@@ -35,6 +36,18 @@ function entry(
     bonusMultiplier: number;
     monthsInBonusYear: number;
     bonusOverride: number | null;
+    payPeriod: "weekly" | "biweekly" | "semimonthly" | "monthly";
+    payWeek: "even" | "odd" | "na";
+    anchorPayDate: string | null;
+    budgetPeriodsPerMonth: number | null;
+    w4FilingStatus: "MFJ" | "Single" | "HOH";
+    w4Box2cChecked: boolean;
+    additionalFedWithholding: number;
+    bonusMonth: number | null;
+    bonusDayOfMonth: number | null;
+    include401kInBonus: boolean;
+    includeBonusInContributions: boolean;
+    extraPaycheckRouting: Record<string, unknown> | null;
   }> = {},
 ) {
   return {
@@ -43,6 +56,18 @@ function entry(
     bonusMultiplier: 1,
     monthsInBonusYear: 12,
     bonusOverride: null,
+    payPeriod: "biweekly",
+    payWeek: "na",
+    anchorPayDate: null,
+    budgetPeriodsPerMonth: null,
+    w4FilingStatus: "MFJ",
+    w4Box2cChecked: false,
+    additionalFedWithholding: 0,
+    bonusMonth: null,
+    bonusDayOfMonth: null,
+    include401kInBonus: false,
+    includeBonusInContributions: true,
+    extraPaycheckRouting: null,
     ...overrides,
   };
 }
@@ -284,6 +309,66 @@ describe("salaryProfile router", () => {
         await expect(
           caller.salaryProfile.update({ id: 9999, name: "x" }),
         ).rejects.toThrow("Profile not found");
+      } finally {
+        cleanup();
+      }
+    });
+  });
+
+  // w4FilingStatus/w4Box2cChecked write-time bracket validation — moved
+  // here from contribution-profiles.test.ts (Stage B: these fields are
+  // Salary-Profile-owned now, the Contribution Profile `jobs` bucket that
+  // used to carry them is deleted).
+  describe("write-time bracket validation for w4FilingStatus/w4Box2cChecked", () => {
+    it("accepts a complete entry whose filing status has a matching bracket row", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const personId = await seedPerson(db, "BracketOk");
+        const jobId = seedJob(db, personId);
+
+        const profile = await caller.salaryProfile.create({
+          name: "Bracket OK",
+          salaries: {
+            [String(jobId)]: entry({ w4FilingStatus: "Single" }),
+          },
+        });
+        expect(profile).toBeDefined();
+      } finally {
+        cleanup();
+      }
+    });
+
+    it("rejects a filing-status/checkbox combination with no matching bracket row for the current tax year", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const personId = await seedPerson(db, "BracketMissing");
+        const jobId = seedJob(db, personId);
+
+        // Delete the one bracket row this combination would otherwise
+        // resolve to, guaranteeing a genuine miss regardless of which
+        // years happen to be seeded.
+        const taxYear = new Date().getFullYear();
+        db.delete(sqliteSchema.taxBrackets)
+          .where(
+            and(
+              eq(sqliteSchema.taxBrackets.taxYear, taxYear),
+              eq(sqliteSchema.taxBrackets.filingStatus, "HOH"),
+              eq(sqliteSchema.taxBrackets.w4Checkbox, true),
+            ),
+          )
+          .run();
+
+        await expect(
+          caller.salaryProfile.create({
+            name: "Bracket Missing",
+            salaries: {
+              [String(jobId)]: entry({
+                w4FilingStatus: "HOH",
+                w4Box2cChecked: true,
+              }),
+            },
+          }),
+        ).rejects.toThrow(/tax bracket/i);
       } finally {
         cleanup();
       }

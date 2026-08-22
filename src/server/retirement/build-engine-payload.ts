@@ -71,7 +71,7 @@ import {
   incomeCapForMarginalRate,
 } from "@/lib/calculators/engine";
 import type { db as _db } from "@/lib/db";
-import { findActiveJob, filterActiveJobs } from "@/lib/pure/profiles";
+import { filterActiveJobs } from "@/lib/pure/profiles";
 
 type Db = typeof _db;
 
@@ -250,14 +250,29 @@ export async function buildEnginePayload(
   // C6: if the caller passed contributionProfileId to fetchRetirementData, the profile
   // row is already batched in data.contribProfileRow (undefined = not fetched; use async
   // fallback for backward-compat). When pre-fetched, the sync path avoids a serial round-trip.
+  // Salary Profile resolved up front — both the Contribution Profile
+  // application below (jobs now carry their pay-schedule/W-4 fields via the
+  // Salary Profile, not raw `jobs` columns) and the salary math further
+  // down need it.
+  const salaryProfileActiveMap =
+    data.salaryProfileRow !== undefined
+      ? applySalaryProfileRow(data.salaryProfileRow)
+      : await loadEffectiveSalaryProfile(db, opts.salaryProfileId);
+
   const contribProfileResult =
     data.contribProfileRow !== undefined
-      ? applyContribProfileRow(data.contribProfileRow, allContribsRaw, allJobs)
+      ? applyContribProfileRow(
+          data.contribProfileRow,
+          allContribsRaw,
+          allJobs,
+          salaryProfileActiveMap,
+        )
       : await loadAndApplyContribProfile(
           db,
           opts.contributionProfileId,
           allContribsRaw,
           allJobs,
+          salaryProfileActiveMap,
         );
   const allContribs = contribProfileResult.contribs;
   const patchedJobs = contribProfileResult.jobs;
@@ -268,11 +283,11 @@ export async function buildEnginePayload(
   const settings = retSettings.find((s) => s.personId === primaryPerson.id);
   if (!settings) return null;
 
-  // Get filing status from primary person's active job, then find matching tax brackets
-  const filingStatus =
-    settings.filingStatus ??
-    findActiveJob(patchedJobs, primaryPerson.id)?.w4FilingStatus ??
-    "MFJ";
+  // retirement_settings.filing_status is NOT NULL (Stage A backfill,
+  // drizzle/0021) — the job-facts fallback tier this used to need
+  // (findActiveJob(...)?.w4FilingStatus ?? "MFJ") is gone; it was only kept
+  // until that backfill landed.
+  const filingStatus = settings.filingStatus;
   const latestTaxYear =
     allTaxBrackets.length > 0
       ? Math.max(...allTaxBrackets.map((b) => b.taxYear))
@@ -378,14 +393,10 @@ export async function buildEnginePayload(
       (o) => [o.personId, { salary: o.salary }] as const,
     ),
   );
-  // C6: prefer the batch-fetched row when fetchRetirementData was given the
-  // id; fall back to the async fetch for callers that only pass it here.
-  // Job-targeted (Salary Profile pins) — separate from uiSalaryActiveMap
-  // (person-targeted, Plan/session tier, always wins per field).
-  const salaryProfileActiveMap =
-    data.salaryProfileRow !== undefined
-      ? applySalaryProfileRow(data.salaryProfileRow)
-      : await loadEffectiveSalaryProfile(db, opts.salaryProfileId);
+  // salaryProfileActiveMap was already resolved above (needed earlier for
+  // the Contribution Profile application) — job-targeted (Salary Profile
+  // pins), separate from uiSalaryActiveMap (person-targeted, Plan/session
+  // tier, always wins per field).
   const asOfDate = referenceDate;
   const activeJobs = filterActiveJobs(patchedJobs);
   // C7: use getSalariesForJobs helper (deduplicates the parallel-fetch pattern).
@@ -947,7 +958,6 @@ export async function buildEnginePayload(
       salary: getEffectiveIncome(j, comp.salary, comp.terms),
       baseSalary: comp.salary,
       totalComp: getTotalCompensation(comp.salary, comp.terms),
-      resolvedBonusOverride: null,
     };
   });
 
@@ -997,6 +1007,15 @@ export async function buildEnginePayload(
     const switchSalaryEntriesByJob = (salaryProfile?.salaries ??
       {}) as SalaryEntryMap;
     const ownJob = activeJobs.find((j) => j.personId === override.personId);
+    // `ownEntry` here is intentionally read loosely (no completeness
+    // requirement) — a retirement_salary_overrides row only ever cares
+    // whether THIS entry pins a `salary`/bonus terms to grow, the same
+    // narrow presence rule this override mechanism has always used
+    // (predates Stage B). A real Salary Profile entry saved through the
+    // app is always complete-or-absent (salaryEntrySchema is `.strict()`),
+    // but nothing here depends on that for the salary-injection math below
+    // — see ownEntryNormalized further down for where completeness of the
+    // OTHER 11 fields actually matters.
     const ownEntry = ownJob
       ? switchSalaryEntriesByJob[String(ownJob.id)]
       : undefined;
@@ -1055,12 +1074,50 @@ export async function buildEnginePayload(
     // switched-to entry for this person's own job onto the live map; every
     // other job keeps following its live salary, same rule as the salary
     // override above.
-    // Normalize possibly-partial bonus fields to "no bonus" defaults — same
-    // reasoning as ownTotalComp above, since resolveCompensation assumes a
-    // complete entry and would otherwise turn missing fields into NaN.
+    //
+    // The 11 non-comp fields (pay schedule, W-4, bonus date/flags) fall
+    // back to the LIVE Salary Profile's own entry for this job when the
+    // switched-to entry doesn't set its own — a switch-year override that
+    // only pins income shouldn't silently reset pay schedule/W-4. If a
+    // field can't be resolved from EITHER side, this overlay is dropped
+    // entirely rather than filling the gap with a hardcoded literal
+    // ("biweekly"/"MFJ"/etc.) — a relocation comparison built on a
+    // fabricated tax/schedule config is exactly the silent-wrong-number
+    // failure mode this profile model exists to prevent (RULES.md's "no
+    // hardcoded fallbacks"). Dropping the overlay falls through to using
+    // this job's LIVE entry entirely for contribution math, a safe
+    // degradation rather than a fabrication.
+    const liveOwnEntry = ownJob
+      ? salaryProfileActiveMap.get(ownJob.id)
+      : undefined;
+    const NON_COMP_FIELDS = [
+      "payPeriod",
+      "payWeek",
+      "anchorPayDate",
+      "budgetPeriodsPerMonth",
+      "w4FilingStatus",
+      "w4Box2cChecked",
+      "additionalFedWithholding",
+      "bonusMonth",
+      "bonusDayOfMonth",
+      "include401kInBonus",
+      "includeBonusInContributions",
+    ] as const satisfies readonly (keyof SalaryProfileEntry)[];
+    const nonCompFields: Record<string, unknown> = {};
+    let allNonCompFieldsResolved = true;
+    for (const field of NON_COMP_FIELDS) {
+      const value = ownEntry?.[field] ?? liveOwnEntry?.[field];
+      if (value === undefined) {
+        allNonCompFieldsResolved = false;
+        break;
+      }
+      nonCompFields[field] = value;
+    }
     const ownEntryNormalized: SalaryProfileEntry | undefined =
-      ownBaseSalary !== undefined
-        ? {
+      ownBaseSalary !== undefined &&
+      ownTotalComp !== undefined &&
+      allNonCompFieldsResolved
+        ? ({
             salary: ownBaseSalary,
             bonusPercent: ownEntry?.bonusPercent ?? 0,
             bonusMultiplier: ownEntry?.bonusMultiplier ?? 1,
@@ -1068,21 +1125,24 @@ export async function buildEnginePayload(
             // Never carry a current-year pin into projection/contribution
             // math — see SalaryProfileEntry.bonusOverride's docblock.
             bonusOverride: null,
-          }
+            ...nonCompFields,
+          } as SalaryProfileEntry)
         : undefined;
+    const switchedSalaryProfileActiveMap =
+      ownJob && ownEntryNormalized !== undefined
+        ? new Map(salaryProfileActiveMap).set(ownJob.id, ownEntryNormalized)
+        : salaryProfileActiveMap;
     const switchJobSalaries = salaryProfile
       ? activeJobs.map((j) => {
-          const map =
-            j.id === ownJob?.id && ownEntryNormalized !== undefined
-              ? new Map(salaryProfileActiveMap).set(j.id, ownEntryNormalized)
-              : salaryProfileActiveMap;
-          const comp = resolveCompensation(map, j.id);
+          const comp = resolveCompensation(
+            switchedSalaryProfileActiveMap,
+            j.id,
+          );
           return {
             job: { id: j.id, personId: j.personId },
             salary: getEffectiveIncome(j, comp.salary, comp.terms),
             baseSalary: comp.salary,
             totalComp: getTotalCompensation(comp.salary, comp.terms),
-            resolvedBonusOverride: null,
           };
         })
       : liveJobSalaries;
@@ -1094,8 +1154,9 @@ export async function buildEnginePayload(
     const resolved = resolveProfile(
       contribProfile,
       liveContribRows,
-      activeJobs as (typeof schema.jobs.$inferSelect)[],
+      activeJobs,
       switchJobSalaries,
+      switchedSalaryProfileActiveMap,
     );
 
     const data = buildProfileContribData(

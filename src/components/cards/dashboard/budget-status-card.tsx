@@ -7,7 +7,9 @@ import { Card, ProgressBar } from "@/components/ui/card";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
+import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
+import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
 import { safeDivide, sumBy } from "@/lib/utils/math";
 import { LoadingCard, ErrorCard } from "./utils";
 
@@ -15,10 +17,20 @@ const TOP_CATEGORY_COUNT = 3;
 
 function BudgetStatusCardImpl() {
   const [activeColumn] = usePersistedSetting<number>("budget_active_column", 0);
-  const [activeContribProfileId] = usePersistedSetting<number | null>(
-    "active_contrib_profile_id",
-    null,
-  );
+  // Same three-tier resolution (Plan pin -> [no local view here] -> globally
+  // active) budget-content.tsx uses — without this, the card always shows
+  // the globally-active budget profile regardless of what a Plan pins,
+  // unlike the Salary/Contribution axes below which already resolve this.
+  const { data: budgetProfilesList } = useBudgetProfilesList();
+  const globalActiveBudgetId =
+    budgetProfilesList?.find((p) => p.isActive)?.id ?? null;
+  const { profileId: displayBudgetProfileId, isPinned: isBudgetPinned } =
+    useEffectiveProfileId("budget", {
+      validIds: budgetProfilesList?.map((p) => p.id),
+      localSelection: null,
+      globalDefaultId: globalActiveBudgetId,
+    });
+  const [activeContribProfileId] = useActiveContribProfile();
   const { data: contribProfilesList } =
     trpc.contributionProfile.list.useQuery();
   const { planPinId: planContribProfileId } = useEffectiveProfileId(
@@ -38,6 +50,9 @@ function BudgetStatusCardImpl() {
   });
   const { data, isLoading, error } = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: activeColumn,
+    ...(displayBudgetProfileId != null
+      ? { profileId: displayBudgetProfileId }
+      : {}),
     contributionProfile: {
       planPinId: planContribProfileId,
       localSelectionId: null,
@@ -85,7 +100,7 @@ function BudgetStatusCardImpl() {
   return (
     <Card
       title="Budget"
-      subtitle={`${data.profile?.name} — ${modeName}`}
+      subtitle={`${data.profile?.name}${isBudgetPinned ? " (pinned)" : ""} — ${modeName}`}
       href="/budget"
     >
       <div className="flex items-baseline justify-between">

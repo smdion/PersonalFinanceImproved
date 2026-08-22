@@ -4,7 +4,7 @@
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { roundToCents } from "@/lib/utils/math";
-import { toNumber, getPeriodsPerYear } from "./transforms";
+import { toNumber } from "./transforms";
 import type { Db } from "./transforms";
 import { parseAppSettings } from "./settings";
 import { filterActiveJobs } from "@/lib/pure/profiles";
@@ -14,13 +14,15 @@ import {
   applyActiveSalary,
   applyActiveBonusTerms,
   getEffectiveIncome,
+  applySandboxSalaryEntries,
 } from "./salary";
-import type { SalaryActiveMap } from "./salary";
+import type { SalaryActiveMap, SalaryOverrideEntry } from "./salary";
 import {
   loadAndApplyContribProfile,
   applyContribActiveFields,
   computeAnnualContribution,
   resolveJoblessPeriodsPerYear,
+  resolveContribPeriods,
 } from "./contribution";
 
 /** No TTL — cached YNAB data is kept until the user manually triggers a resync. */
@@ -277,10 +279,15 @@ export function computeBudgetAnnualTotal(
  *
  * `contribProfileIdByColumn`/`salaryProfileIdByColumn` must already reflect
  * the caller's own Plan-pin/column-pin resolution for each column — this
- * function does no tier resolution of its own, matching budget.ts's
- * `computeContribMonthlyForPair` precedence exactly so a linked item's
- * dollar figure can never disagree between the Budget tab and any other
- * consumer.
+ * function does no tier resolution of its own, so a linked item's dollar
+ * figure can never disagree between the Budget tab and any other consumer.
+ *
+ * `opts.sandboxContribActiveFields`/`sandboxSalaryEntries` are the What-If
+ * sandbox's own hand-edited values — the highest-precedence tier, layered
+ * on top of `planSalaryActiveMap`/the Contribution Profile's resolved
+ * values exactly the way `budget.computeActiveSummary` needs them to be
+ * for its own linked items, so that endpoint can call this helper directly
+ * instead of maintaining its own copy of this resolution.
  */
 export async function resolveLinkedBudgetItemAmounts<
   T extends {
@@ -294,15 +301,23 @@ export async function resolveLinkedBudgetItemAmounts<
   numColumns: number,
   contribProfileIdByColumn: (number | null)[],
   salaryProfileIdByColumn: (number | null)[],
-  opts?: { planSalaryActiveMap?: SalaryActiveMap },
-): Promise<(T & { amounts: number[] })[]> {
+  opts?: {
+    planSalaryActiveMap?: SalaryActiveMap;
+    sandboxContribActiveFields?: Record<string, { contributionValue: string }>;
+    sandboxSalaryEntries?: Record<string, SalaryOverrideEntry> | null;
+  },
+): Promise<(T & { amounts: number[]; incomplete: boolean })[]> {
   const linkedContribIds = new Set(
     items
       .filter((i) => i.contributionAccountId != null)
       .map((i) => i.contributionAccountId!),
   );
   if (linkedContribIds.size === 0) {
-    return items.map((i) => ({ ...i, amounts: i.amounts as number[] }));
+    return items.map((i) => ({
+      ...i,
+      amounts: i.amounts as number[],
+      incomplete: false,
+    }));
   }
 
   const rawContribs = await db
@@ -310,14 +325,20 @@ export async function resolveLinkedBudgetItemAmounts<
     .from(schema.contributionAccounts)
     .where(eq(schema.contributionAccounts.isActive, true));
   const allJobs = await db.select().from(schema.jobs);
-  const planSalaryActiveMap: SalaryActiveMap =
-    opts?.planSalaryActiveMap ?? new Map();
+  const effectiveSalaryMap: SalaryActiveMap = applySandboxSalaryEntries(
+    opts?.sandboxSalaryEntries,
+    opts?.planSalaryActiveMap ?? new Map(),
+  );
 
   const computeContribMonthlyForPair = async (
     contribProfileId: number | null,
     salaryProfileId: number | null,
-  ): Promise<Map<number, number>> => {
+  ): Promise<{
+    contribMonthlyById: Map<number, number>;
+    incompleteIds: Set<number>;
+  }> => {
     const contribMonthlyById = new Map<number, number>();
+    const incompleteIds = new Set<number>();
     const salaryProfileActiveMap = await loadEffectiveSalaryProfile(
       db,
       salaryProfileId,
@@ -327,23 +348,27 @@ export async function resolveLinkedBudgetItemAmounts<
       contribProfileId,
       rawContribs,
       allJobs,
+      salaryProfileActiveMap,
     );
     const activeContribs = applyContribActiveFields(
       profileResult.contribs,
-      {},
+      opts?.sandboxContribActiveFields ?? {},
       true,
     );
     const activeJobs = filterActiveJobs(profileResult.jobs);
-    const defaultPeriodsPerYear = resolveJoblessPeriodsPerYear(activeJobs);
+    const {
+      periodsPerYear: defaultPeriodsPerYear,
+      incomplete: joblessIncomplete,
+    } = resolveJoblessPeriodsPerYear(activeJobs);
 
     const salaryByJobId = new Map<number, number>();
     for (const j of activeJobs) {
       const comp = resolveCompensation(salaryProfileActiveMap, j.id);
-      const sandboxEntry = planSalaryActiveMap.get(j.personId);
+      const sandboxEntry = effectiveSalaryMap.get(j.personId);
       const salary = applyActiveSalary(
         j.personId,
         comp.salary,
-        planSalaryActiveMap,
+        effectiveSalaryMap,
       );
       const bonusTerms = applyActiveBonusTerms(sandboxEntry, comp.terms);
       salaryByJobId.set(j.id, getEffectiveIncome(j, salary, bonusTerms));
@@ -352,11 +377,23 @@ export async function resolveLinkedBudgetItemAmounts<
     for (const c of activeContribs) {
       if (!linkedContribIds.has(c.id)) continue;
       const val = Number(c.contributionValue);
-      const jobPeriodsPerYear = c.jobId
-        ? getPeriodsPerYear(
-            activeJobs.find((j) => j.id === c.jobId)?.payPeriod ?? "biweekly",
-          )
-        : defaultPeriodsPerYear;
+      const isFixedPerPeriod = c.contributionMethod === "fixed_per_period";
+      let jobPeriodsPerYear: number;
+      let incomplete: boolean;
+      if (c.jobId) {
+        const job = activeJobs.find((j) => j.id === c.jobId);
+        const resolved = resolveContribPeriods(c.contributionMethod, job);
+        jobPeriodsPerYear = resolved.periodsPerYear;
+        incomplete = resolved.incomplete;
+      } else {
+        jobPeriodsPerYear = defaultPeriodsPerYear;
+        incomplete = isFixedPerPeriod && joblessIncomplete;
+      }
+      if (incomplete) {
+        incompleteIds.add(c.id);
+        contribMonthlyById.set(c.id, 0);
+        continue;
+      }
       const salary = c.jobId ? (salaryByJobId.get(c.jobId) ?? 0) : 0;
       const annual = computeAnnualContribution(
         c.contributionMethod,
@@ -366,36 +403,41 @@ export async function resolveLinkedBudgetItemAmounts<
       );
       contribMonthlyById.set(c.id, annual / 12);
     }
-    return contribMonthlyById;
+    return { contribMonthlyById, incompleteIds };
   };
 
-  const contribMonthlyByPair = new Map<string, Map<number, number>>();
+  const contribMonthlyByPair = new Map<
+    string,
+    { contribMonthlyById: Map<number, number>; incompleteIds: Set<number> }
+  >();
   const contribMonthlyByColumn: Map<number, number>[] = [];
+  const incompleteAccountIds = new Set<number>();
   for (let col = 0; col < numColumns; col++) {
     const contribProfileId = contribProfileIdByColumn[col] ?? null;
     const salaryProfileId = salaryProfileIdByColumn[col] ?? null;
     const key = `${contribProfileId}:${salaryProfileId}`;
-    let monthlyById = contribMonthlyByPair.get(key);
-    if (!monthlyById) {
-      monthlyById = await computeContribMonthlyForPair(
+    let resolved = contribMonthlyByPair.get(key);
+    if (!resolved) {
+      resolved = await computeContribMonthlyForPair(
         contribProfileId,
         salaryProfileId,
       );
-      contribMonthlyByPair.set(key, monthlyById);
+      contribMonthlyByPair.set(key, resolved);
     }
-    contribMonthlyByColumn.push(monthlyById);
+    contribMonthlyByColumn.push(resolved.contribMonthlyById);
+    for (const id of resolved.incompleteIds) incompleteAccountIds.add(id);
   }
 
   return items.map((i) => {
     if (i.contributionAccountId == null) {
-      return { ...i, amounts: i.amounts as number[] };
+      return { ...i, amounts: i.amounts as number[], incomplete: false };
     }
     const accountId = i.contributionAccountId;
     const amounts = Array.from(
       { length: numColumns },
       (_, col) => contribMonthlyByColumn[col]?.get(accountId) ?? 0,
     );
-    return { ...i, amounts };
+    return { ...i, amounts, incomplete: incompleteAccountIds.has(accountId) };
   });
 }
 

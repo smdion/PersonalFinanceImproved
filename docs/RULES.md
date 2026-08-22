@@ -226,22 +226,23 @@ Portfolio Snapshots + Performance Data + Settings
 
 ### Shared State Sources
 
-| Data                               | Source                               | Key                                                                                                 |
-| ---------------------------------- | ------------------------------------ | --------------------------------------------------------------------------------------------------- |
-| Year-level financial data          | `buildYearEndHistory()`              | `YearEndRow` from `net_worth_annual` + live current year                                            |
-| Tax location breakdown             | `YearEndRow.portfolioByTaxLocation`  | JSONB on `net_worth_annual` (finalized) / snapshot (current)                                        |
-| Budget column                      | `app_settings`                       | `budget_active_column`                                                                              |
-| Annual expenses                    | `getAnnualExpensesFromBudget()`      | Uses `budget_active_column`                                                                         |
-| Total compensation (profile-aware) | `resolveCompensation()`              | `server/helpers/salary.ts` — the single place salary+bonus is computed under a Salary Profile entry |
-| Salary override merge              | `applyActiveSalary()`                | Final `active ?? raw` merge of the Plan/session override onto an already-resolved raw salary        |
-| Salary override map                | `loadAndApplySalaryProfile()`        | Plan/session pins, then the active Salary Profile's entries                                         |
-| Portfolio balances                 | `getLatestSnapshot()`                | Latest `portfolio_snapshots` row                                                                    |
-| Contribution accounts              | `buildContribAccounts()`             | `contribution_accounts` table                                                                       |
-| Contribution specs                 | `buildContributionDisplaySpecs()`    | Per-account specs with match redistribution                                                         |
-| Category aggregations              | `aggregateContributionsByCategory()` | Contribution + match totals per account category                                                    |
-| Account type config                | `getAccountTypeConfig()`             | All account-type behavior (from `ACCOUNT_TYPE_CONFIG`)                                              |
-| Parent category map                | `getParentCategory()`                | Account type → goal category (Retirement/Portfolio) via config                                      |
-| Mortgage balance                   | `computeMortgageBalance()`           | Amortization from loans + extra payments                                                            |
+| Data                               | Source                               | Key                                                                                                                                                                                                                                                         |
+| ---------------------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Year-level financial data          | `buildYearEndHistory()`              | `YearEndRow` from `net_worth_annual` + live current year                                                                                                                                                                                                    |
+| Tax location breakdown             | `YearEndRow.portfolioByTaxLocation`  | JSONB on `net_worth_annual` (finalized) / snapshot (current)                                                                                                                                                                                                |
+| Budget column                      | `app_settings`                       | `budget_active_column`                                                                                                                                                                                                                                      |
+| Annual expenses                    | `getAnnualExpensesFromBudget()`      | Uses `budget_active_column`                                                                                                                                                                                                                                 |
+| Total compensation (profile-aware) | `resolveCompensation()`              | `server/helpers/salary.ts` — the single place salary+bonus is computed under a Salary Profile entry                                                                                                                                                         |
+| Salary override merge              | `applyActiveSalary()`                | Final `active ?? raw` merge of the Plan/session override onto an already-resolved raw salary                                                                                                                                                                |
+| Salary override map                | `loadAndApplySalaryProfile()`        | Plan/session pins, then the active Salary Profile's entries                                                                                                                                                                                                 |
+| Portfolio balances                 | `getLatestSnapshot()`                | Latest `portfolio_snapshots` row                                                                                                                                                                                                                            |
+| Contribution accounts              | `buildContribAccounts()`             | `contribution_accounts` table                                                                                                                                                                                                                               |
+| Employer match                     | `computeGroupedEmployerMatch()`      | Combines Roth/Traditional splits of one account before applying the match cap once; every consumer (`buildContribAccounts`, `buildContributionDisplaySpecs`, `aggregateContributionsByCategory`, `retirement.ts`'s scenario comparison) routes through this |
+| Contribution specs                 | `buildContributionDisplaySpecs()`    | Per-account specs, incl. match via `computeGroupedEmployerMatch()`                                                                                                                                                                                          |
+| Category aggregations              | `aggregateContributionsByCategory()` | Contribution + match totals per account category, incl. match via `computeGroupedEmployerMatch()`                                                                                                                                                           |
+| Account type config                | `getAccountTypeConfig()`             | All account-type behavior (from `ACCOUNT_TYPE_CONFIG`)                                                                                                                                                                                                      |
+| Parent category map                | `getParentCategory()`                | Account type → goal category (Retirement/Portfolio) via config                                                                                                                                                                                              |
+| Mortgage balance                   | `computeMortgageBalance()`           | Amortization from loans + extra payments                                                                                                                                                                                                                    |
 
 ### Rules
 
@@ -250,82 +251,110 @@ Portfolio Snapshots + Performance Data + Settings
 3. **Scenarios are explicit opt-ins.** Override controls are clearly labeled as "what-if", not hidden divergences.
 4. **Shared helpers, not duplicated queries.** Use `helpers.ts` when multiple routers need the same derived value.
 5. **Age and personal data come from the `people` table.** Never hardcode ages or personal details.
+6. **Grep before reimplementing a documented rule.** Before writing a display rule, derived formula, or label mapping that plausibly already exists (check DESIGN.md and grep for similarly-named components/hooks first), find and reuse the existing implementation rather than writing a second one from the spec. Two independent implementations of the same rule will diverge — this is how the sub-row label rule, tax-type labels, and the household savings-rate formula each shipped real bugs after being written twice.
 
 ### The Salary Profile layer
 
-A job's own `jobs.annual_salary` (and its bonus fields) is the raw,
-un-overridden answer to "what does this job pay" and stays the sole
-authority for it — nothing writes salary back into `jobs` on its behalf,
-and no function name should be treated as a substitute for reading that
-column. The same goes for the bonus terms on
-`jobs` (`bonus_percent`, `bonus_multiplier`, `months_in_bonus_year`). A
-**Salary Profile** sits on top of both: `salary_profiles.salaries` maps a
-personId to an entry of **optional** fields, and
-
-> **presence of a field IS the pin.**
+`jobs` carries no compensation, schedule, W-4, or extra-paycheck-routing
+data of its own any more — it is pure identity/lifecycle (`id`, `personId`,
+`startDate`, `endDate`, `isSpeculative`, `employerName`, `title`). Every
+number and election a job needs for a live calculation comes from a
+**Salary Profile**: `salary_profiles.salaries` maps `jobId` (string key) to
+a **complete, 17-field entry**:
 
 ```ts
 type SalaryProfileEntry = {
-  salary?: number; // else jobs.annual_salary on every read
-  bonusPercent?: number; // fraction, 0.12 = 12%
-  bonusMultiplier?: number;
-  monthsInBonusYear?: number;
+  salary: number;
+  bonusPercent: number; // fraction, 0.12 = 12%
+  bonusMultiplier: number;
+  monthsInBonusYear: number;
+  bonusOverride: number | null; // this year's actual paid-out bonus, pinned
+  payPeriod: PayPeriod;
+  payWeek: PayWeek;
+  anchorPayDate: string | null; // null = "no anchor, use startDate" — a real, complete value
+  budgetPeriodsPerMonth: number | null;
+  w4FilingStatus: W4FilingStatus;
+  w4Box2cChecked: boolean;
+  additionalFedWithholding: number;
+  bonusMonth: number | null;
+  bonusDayOfMonth: number | null;
+  include401kInBonus: boolean;
+  includeBonusInContributions: boolean;
 };
 ```
 
-A field that is set pins that value for this profile. A field that is absent
-resolves live from the job record. An empty entry — or no key for that person
-at all — pins nothing; the two say the same thing, so the router normalizes
-empty entries away on write. There is **no `mode` discriminator** and no
-"Follows job" / "Fixed amount" toggle anywhere in the UI.
+> **A job either has ALL 16 fields in a given profile, or none at all.**
 
-The fields are **independent**. Pinning a salary says nothing about bonus, so
-a pinned salary still earns a bonus computed from live (or separately pinned)
-terms. Anything that treats "salary is pinned" as "bonus is zero" is a bug —
-that exact assumption shipped once and silently dropped pinned people's
-bonuses from every contribution and projection number while the profile
-editor kept displaying them.
+There is no partial-pin state, no per-field presence check, and no "resolves
+live from the job record" fallback — a job has nothing left on `jobs` to
+fall back to. A profile that doesn't mention a job says **nothing** about
+it: salary/bonus resolve to $0/no bonus, and every other field resolves to
+`undefined`, which every consumer must treat as a real "incomplete" signal
+(see `mergeSalaryProfileJobFields`/`resolveContribPeriods`'s pattern of
+excluding rather than guessing) — never a substitute for a live column,
+because none exists. `salaryEntrySchema` (`json-schemas.ts`) is `.strict()`
+so a partial or stale-shaped entry is rejected at write time, not silently
+stored and later misread.
+
+**This collapses two axes that used to be independent** (accepted per the
+project owner's explicit direction, not a silent side effect): "how much do
+I earn" and "what withholding/schedule elections apply" are now the same
+Salary Profile fact. If you want a different W-4 election or pay schedule
+without changing income, that still requires a different Salary Profile (or
+a different entry within one) — there is no way to vary only one axis
+independently of the other.
 
 **One definition of compensation.** `resolveCompensation()` in
 `server/helpers/salary.ts` is the single place salary-plus-bonus is computed
 under a profile entry, and `resolveProfile`, `build-engine-payload`, and the
 `salaryProfile.getById` editor preview all go through it. They previously
 re-derived it separately and disagreed. Do not add a fourth derivation.
+`mergeSalaryProfileJobFields()` is the equivalent single place for merging
+the other 11 fields onto a job object — every router that needs
+`payPeriod`/`w4FilingStatus`/etc. on a job calls this rather than
+re-deriving the merge.
 
-**Invariant:** only entries that pin _something_ are written into the
-`Map<personId, SalaryProfileEntry>` salary override map
-(`applySalaryProfileRow` / `pinnedSalaries` in `server/helpers/salary.ts`).
-A key in that map therefore means "this person has at least one pin" — it
-does **not** mean their salary is pinned. Ask
-`map.get(personId)?.salary !== undefined` for that specific question;
-`.has()` is not a substitute and using it as one is how the year-0 bonus
-adjustment guard first went wrong. Merge precedence into the map is
-gaps-only **per field**, not per person: Plan / session pins (salary only)
-win for salary while the profile still supplies bonus terms for the same
-person.
+**Contribution Profile no longer touches jobs at all.** The `jobs`
+active-fields bucket that used to let a Contribution Profile override
+`employerName`/bonus-pay-date/bonus-inclusion-flags is deleted wholesale —
+`contributionActiveFieldsSchema` has only `contributionAccounts` and
+`deductions` buckets now. Two consequences, both intentional:
 
-**Bonus terms live on the Salary Profile, not the Contribution Profile.**
-"How big is the bonus" is the same category of fact as "how big is the
-salary". A Contribution Profile's job overrides keep only what is genuinely
-about contributions computed _from_ a bonus — `include401kInBonus`,
-`includeBonusInContributions` — plus `employerName` and the bonus pay date.
-`applyJobOverrides` refuses the moved keys at runtime so a stale stored
-override cannot change anyone's compensation from the wrong axis. Salary is
-likewise not _displayed_ as a Contribution Profile statistic.
+1. **`employerName`'s profile-override capability is gone**, not preserved
+   elsewhere. Modeling "a different employer, same everything else" via a
+   named override is no longer supported — modeling a genuinely different
+   job means creating a new `jobs` row, which already carries its own
+   `employerName`. A real feature reduction, not a bug.
+2. **The permission gate for W-4/schedule/bonus-date fields moved.** These
+   used to be admin-only (raw `jobs.update`, `adminProcedure`). They're now
+   part of a Salary Profile entry, written through
+   `salaryProfile.create`/`update` (`contributionProfileProcedure`) — no
+   longer admin-gated. Anyone who could already edit a Contribution Profile
+   can now set these for any job.
+
+**`paycheck_deductions` has no live amount of its own either** —
+`amount_per_period` was dropped the same way `contribution_accounts` lost
+its base contribution value. A deduction's dollar amount resolves ONLY via
+a Contribution Profile's `deductions` active-field entry
+(`applyDeductionActiveFields`), same no-base-value, exclude-if-absent rule
+`applyContribActiveFields` already uses for contribution accounts.
 
 ### Violations to Watch For
 
 - A router computing budget expenses with a different column index
-- A page showing salary that doesn't come from `jobs.annual_salary` (raw) or
-  `resolveCompensation()` / `applyActiveSalary()` (profile-aware)
-- An unpinned person's salary reaching the salary override map
-- `salaryOverrideMap.has(personId)` used to mean "this person's salary is
-  pinned" (it means "has at least one pin" — check `?.salary !== undefined`)
+- A page showing salary/pay-schedule/W-4 data that doesn't come from a
+  Salary Profile entry via `resolveCompensation()` /
+  `mergeSalaryProfileJobFields()` (profile-aware) — `jobs` has no such
+  columns left to read
 - A pinned salary being treated as excluding bonus, or total compensation
   computed anywhere other than `resolveCompensation()`
-- Bonus amount terms (`bonusPercent` / `bonusMultiplier` /
-  `monthsInBonusYear`) reappearing in a Contribution Profile override
+- Any field of `SalaryProfileEntry` reappearing in a Contribution Profile
+  active-field bucket — the `jobs` bucket there is deleted, only
+  `contributionAccounts`/`deductions` remain
 - A salary figure displayed as a Contribution Profile statistic
+- A job's `payPeriod`/`w4FilingStatus`/etc. treated as `undefined` meaning
+  the same thing as `0`/`false`/a guessed default, instead of "incomplete —
+  exclude, don't guess"
 - A fallback value that silently replaces missing data
 - Two routers fetching the same data independently
 - A "what-if" override that leaks into non-scenario calculations
@@ -361,6 +390,9 @@ likewise not _displayed_ as a Contribution Profile statistic.
 - A numeric fallback (`0.04`, `0.07`, `200000`) that doesn't reference its constant from `constants.ts`
 - Stored computed values without a documented sync/cascade mechanism
 - Business logic (math, validation, aggregation) written inline in a `.transaction()` callback or a router procedure handler instead of extracted to `src/lib/pure/`
+- A display rule, label mapping, or formula reimplemented in a second component instead of importing the existing function
+- A local hex/Tailwind color value for a chart series or a status/severity indicator instead of an export from `colors.ts`
+- A new `lib/pure/` function, hook, or `components/ui/` primitive merged with zero call sites
 
 ---
 
@@ -480,12 +512,13 @@ the confirmation dialog — see `budget-profile-sidebar.tsx` /
 1. **Person-centric, not employer-centric.** A person has jobs. Jobs change. The person persists.
 2. **Generic over specific.** Contribution accounts, savings goals, budget categories — all user-definable.
 3. **Snapshots for history, settings for current state.** Time-varying data gets point-in-time records.
-4. **Computed values are not stored — with documented exceptions.** Live totals, percentages, and projections are recalculated from source data at read time. **Exceptions** (stored because inputs may not survive):
-   - **`net_worth_annual`** — finalized year-end records capture point-in-time state (tax location breakdown from a Dec 31 snapshot that may later be pruned).
-   - **`annualReturnPct`** — stored on finalized `annual_performance` and `account_performance` rows. Immutable after finalization. Recomputed on-read for non-finalized years.
-   - **`lifetimeGains`, `lifetimeContributions`, `lifetimeMatch`** — cumulative fields on `annual_performance`. Computed at finalization from previous year's baseline. **Cascade rule:** when `account_performance` rows on a finalized year are edited, lifetime fields on the annual row and all subsequent years must be recomputed. Without cascade, corrections to historical data create silent drift in all forward lifetime totals.
+4. **Computed values are not stored — with documented exceptions.** Live totals, percentages, and projections are recalculated from source data at read time. **Exceptions** fall into two classes: (a) stored because inputs may not survive, or (b) a deliberate point-in-time commitment recorded under whatever was active at save time — the "recorded fact" pattern — which stays fixed even though its inputs DO survive and remain deterministic, because re-deriving it later would mean the value silently changes out from under something that already treated it as settled (a materialized future transaction, a pinned actual).
+   - **`net_worth_annual`** — finalized year-end records capture point-in-time state (tax location breakdown from a Dec 31 snapshot that may later be pruned). Class (a).
+   - **`annualReturnPct`** — stored on finalized `annual_performance` and `account_performance` rows. Immutable after finalization. Recomputed on-read for non-finalized years. Class (a).
+   - **`lifetimeGains`, `lifetimeContributions`, `lifetimeMatch`** — cumulative fields on `annual_performance`. Computed at finalization from previous year's baseline. **Cascade rule:** when `account_performance` rows on a finalized year are edited, lifetime fields on the annual row and all subsequent years must be recomputed. Without cascade, corrections to historical data create silent drift in all forward lifetime totals. Class (a).
+   - **`jobs.extra_paycheck_routing.baseNetPayPerCheck`** (plus its `payPeriod`/`anchorPayDate` snapshot) — snapshotted by `computeJobNetPayPerCheck` (savings.ts) only when an extra-paycheck routing rule or its growth rates are saved, resolved against whichever Contribution/Salary Profile was globally active at that moment. Class (b): inputs are preserved and recomputation is deterministic, but this value feeds a materializer that generates real future `savings_planned_transactions` — re-resolving it on every read would mean a routine profile switch silently rewrites a plan the user already committed to. **Cascades on active-profile edits, not on profile switches:** the no-recompute rule protects against _browsing_ a different profile (a what-if comparison must never retroactively rewrite a real plan) — it was never meant to protect against _correcting_ the one real profile that's already active. `salaryProfile.update` refreshes this snapshot automatically (best-effort — a refresh failure never blocks the user's actual edit) whenever the edit targets the globally-active profile and the affected job already has routing configured; editing a non-active profile never triggers it. Recorded at save time (explicit routing save, or an active-profile edit) under whatever was active then, never re-resolved on plain reads. `payPeriod`/`anchorPayDate` are snapshotted alongside `baseNetPayPerCheck` (both optional, materializer/`extraPaycheckRouting.list` fall back to the job's live Salary Profile entry when absent — `jobs` itself has no such columns any more) so the materializer always generates transaction dates against the SAME schedule the net-pay figure was computed under — this is what makes the value internally coherent, replacing the earlier design's save-time mismatch check (removed; a later correction to the job's real pay period/anchor date no longer needs blocking, since it can no longer retroactively desync an already-saved schedule from an already-saved amount — it just doesn't apply until routing is explicitly re-saved, the same way `baseNetPayPerCheck` itself already behaved). **`enabled`** (optional, defaults to true) lets a user pause routing without deleting the configured rules — the Savings/Budget toggle in `extra-paycheck-rules-editor.tsx` (`savings.extraPaycheckRouting.setEnabled`) flips this in place; `enabled: false` (or no `rules` at all) means the extra paycheck stays as regular income, same as an unrouted job. The Budget page's `ExtraPaycheckBudgetNote` shows which months/amounts to expect for jobs in this state — a plain informational note, not folded into any computed total yet (see FEATURE-ROADMAP.md for that follow-up).
 
-   If the inputs are preserved and the computation is deterministic, compute at read time. If the inputs may not survive (snapshots pruned, accounts restructured), store at finalization — but document the sync/cascade mechanism.
+   If the inputs are preserved, the computation is deterministic, AND nothing downstream treats the value as a settled point-in-time commitment, compute at read time. If the inputs may not survive (snapshots pruned, accounts restructured) — class (a) — or the value is itself a deliberate "recorded as of when this was saved" commitment — class (b) — store at finalization/save time, but document the sync/cascade mechanism (or the explicit absence of one, and why, for class (b)).
 
 5. **Limits and rules are data, not code.** IRS limits, tax brackets, return rates — all in the DB, versioned by year.
 6. **DB is the single source of truth.** No hardcoded fallback values for user-specific data. Universal mathematical defaults (`DEFAULT_WITHDRAWAL_RATE = 0.04`, `DEFAULT_TAX_RATE_*` in `constants.ts`) are acceptable as they represent well-established financial planning conventions, not user data.
@@ -587,14 +620,17 @@ These are true cross-cutting reference data that no single page owns.
 - **Components never import from `server/`.** They consume data via tRPC hooks.
 - **Three state layers:** Server state (React Query via tRPC), Form state (React Hook Form), UI state (`useState`).
 - **Formatting — zero exceptions.** Use `formatCurrency()`, `formatPercent()`, `compactCurrency()`, `formatDate()` from `@/lib/utils/format`. **Never** inline formatting — this includes chart axis tick formatters, tooltip renderers, and input display formatters. If the canonical function doesn't support your precision needs, extend the function (e.g., `formatPercent(value, decimals)` already accepts a decimals argument) — don't bypass it. Inline `.toFixed(N) + '%'` and `'$${n/1000}k'` are violations.
-- **Colors:** Use centralized helpers from `@/lib/utils/colors.ts`. Never hardcode colors for account/tax types.
+- **Colors:** Use centralized helpers from `@/lib/utils/colors.ts` for **every** color that carries meaning — not just account/tax types. This includes chart-series colors, status/severity colors (success/warning/danger/info), and MC-band colors. Two components rendering the same category/status must import the same constant, never re-derive their own hex/Tailwind values inline — this is exactly how the net-worth bar chart and pie chart once showed different colors for the identical category, and how Badge/toast/banner each drifted to a different shade for the same severity.
   - **Account types** (401k, 403b, IRA, HSA, Brokerage): `accountColor()` (bg fill), `accountMatchColor()` (light fill), `accountBorderColor()` (left border), `accountTextColor()` (text)
   - **Tax treatments** (preTax, taxFree, hsa, afterTax): `taxTypeColor()` (bg fill for bars), `taxTypeTextColor()` (text for labels/cells)
+  - **Status/severity** (success, warning, danger, info): `STATUS_COLORS` — consumed by `Badge`, `toast`, `ScenarioBanner`, `CalloutLine`. Do not add a new local shade map for the same 4 semantic colors.
+  - **Chart series**: named exports from `colors.ts` (`CHART_COLORS`, `EXPENSE_PIE_COLORS`, `mcBandOuter`/`mcBandInner`/`mcMedian`/etc.) — never a local color array or hardcoded hex per chart file.
   - UI badges (BG, PC, etc.) must NOT use account-type colors — use indigo or gray to avoid overlap.
 - **Math:** Use `safeDivide()`, `roundToCents()`, `sumBy()` from `@/lib/utils/math.ts`.
 - **Shared components:** `EmptyState`, `HelpTip`, `AccountBadge`, `PageHeader`, `LoadingCard`, `ErrorCard`, `ContribPeriodToggle`.
 - **Account type config:** `src/lib/config/account-types.ts` is the single source for all account-type behavior. Use `getAccountTypeConfig()`, `getAllCategories()`, `isOverflowTarget()`, `categoriesWithIrsLimit()`, etc. — never hardcode category checks.
 - **Display labels:** Import from `src/lib/config/display-labels.ts`. Never define local label maps in components.
+- **New shared primitives ship with a real consumer.** A component/hook/util introduced specifically to replace duplicated logic (a new `lib/pure/` function, a `lib/hooks/` hook, a `components/ui/` primitive) must migrate at least one genuine call site in the same PR — never merge one with zero adopters "for later." `FormField`, `useOptimisticMutation`, and `safeDivide()` all shipped unused and the duplication they were meant to kill kept spreading for months until a dedicated audit rediscovered them.
 
 ### Refactoring: LOC vs per-file size
 

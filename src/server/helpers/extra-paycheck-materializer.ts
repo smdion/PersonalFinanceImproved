@@ -1,7 +1,8 @@
 /**
  * Extra-paycheck materializer.
  *
- * Reads `jobs.extra_paycheck_routing` (rules + optional overrides) and writes
+ * Reads each job's `extraPaycheckRouting` field from its entry in the
+ * globally-active Salary Profile (rules + optional overrides) and writes
  * the resulting dollar amounts into `savings_planned_transactions` with
  * `source = 'rule'` for the next 24 months.
  *
@@ -21,6 +22,7 @@ import type {
 } from "@/lib/db/schema-pg";
 import { getExtraPaycheckMonthKeys } from "@/lib/calculators/paycheck";
 import type { Db } from "./transforms";
+import { loadEffectiveSalaryProfile } from "./salary";
 
 const HORIZON_MONTHS = 120; // covers the max 10-year projection window
 
@@ -68,37 +70,55 @@ export async function materializeExtraPaycheckOverrides(db: Db): Promise<void> {
 async function _materialize(db: Db): Promise<void> {
   const now = new Date();
 
-  // Load all active jobs with routing data
+  // Load all jobs; routing/payPeriod/anchorPayDate all now live on the
+  // job's entry in the globally-active Salary Profile, not on `jobs` itself.
   const allJobs = await db
     .select({
       id: schema.jobs.id,
-      anchorPayDate: schema.jobs.anchorPayDate,
-      payPeriod: schema.jobs.payPeriod,
-      extraPaycheckRouting: schema.jobs.extraPaycheckRouting,
       personId: schema.jobs.personId,
       endDate: schema.jobs.endDate,
       isSpeculative: schema.jobs.isSpeculative,
     })
     .from(schema.jobs);
+  const salaryProfileActiveMap = await loadEffectiveSalaryProfile(db, null);
 
   const todayStr = now.toISOString().slice(0, 10);
   const jobsWithRules = (
     allJobs as {
       id: number;
-      anchorPayDate: string | null;
-      payPeriod: string;
-      extraPaycheckRouting: ExtraPaycheckRoutingData | null;
       personId: number;
       endDate: string | null;
       isSpeculative: boolean;
     }[]
-  ).filter(
-    (j) =>
-      !j.isSpeculative &&
-      j.extraPaycheckRouting?.rules?.length &&
-      j.anchorPayDate &&
-      (!j.endDate || j.endDate >= todayStr),
-  );
+  )
+    .map((j) => {
+      const entry = salaryProfileActiveMap.get(j.id);
+      return {
+        ...j,
+        extraPaycheckRouting: (entry?.extraPaycheckRouting ??
+          null) as ExtraPaycheckRoutingData | null,
+        anchorPayDate: entry?.anchorPayDate ?? null,
+        payPeriod: entry?.payPeriod,
+      };
+    })
+    .filter((j) => {
+      if (
+        j.isSpeculative ||
+        !j.extraPaycheckRouting?.rules?.length ||
+        j.extraPaycheckRouting.enabled === false
+      )
+        return false;
+      if (j.endDate && j.endDate < todayStr) return false;
+      // Prefer the snapshot's own anchorPayDate (frozen at save time — see
+      // ExtraPaycheckRoutingData's docblock); fall back to the job's live
+      // Salary Profile entry for routing saved before this field existed.
+      const anchorPayDate =
+        j.extraPaycheckRouting.anchorPayDate !== undefined
+          ? j.extraPaycheckRouting.anchorPayDate
+          : j.anchorPayDate;
+      const payPeriod = j.extraPaycheckRouting.payPeriod ?? j.payPeriod;
+      return !!anchorPayDate && !!payPeriod;
+    });
 
   // Load active goal ids
   const activeGoals = await db
@@ -137,10 +157,21 @@ async function _materialize(db: Db): Promise<void> {
     const baseYear = routing.baseYear ?? nowYear;
     const personName = personNameMap.get(job.personId) ?? "Unknown";
 
-    const anchor = new Date(job.anchorPayDate! + "T00:00:00Z");
+    // Same prefer-snapshot-fall-back-to-live-column precedence as the
+    // filter above — the schedule used to generate transaction dates must
+    // match the schedule that decided whether this job was included at all.
+    // Both guaranteed present here — jobsWithRules's filter above already
+    // required both to resolve (from snapshot or live Salary Profile entry)
+    // before a job made it into this loop.
+    const anchorPayDate =
+      routing.anchorPayDate !== undefined
+        ? routing.anchorPayDate
+        : job.anchorPayDate;
+    const payPeriod = routing.payPeriod ?? job.payPeriod!;
+    const anchor = new Date(anchorPayDate! + "T00:00:00Z");
     const monthDates = getExtraPaycheckMonthKeys(
       anchor,
-      job.payPeriod,
+      payPeriod,
       now,
       HORIZON_MONTHS,
     );

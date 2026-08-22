@@ -102,6 +102,11 @@ export type PaycheckPersonView = {
   activeSalaryValue: number | null;
   /** Already-resolved contribution figures — see the docblock. */
   perContribData: PerContribView[];
+  /** Contribution account ids owned by this person/job with no active
+   *  value under the current Contribution Profile — see
+   *  getIncompleteContribAccountIds. Not a blocker, just a "some numbers
+   *  here are quietly excluded" signal. */
+  incompleteAccountIds: number[];
 };
 
 export type UsePaycheckPersonViewsOptions = {
@@ -390,6 +395,8 @@ export function usePaycheckPersonViews({
               ?.salary ?? null,
           perContribData: (personContrib?.perContribData ??
             []) as PerContribView[],
+          incompleteAccountIds: ((d as Record<string, unknown>)
+            .incompleteAccountIds ?? []) as number[],
         };
       }),
     [people, contribData, alignedData, jointContribs, salaryActiveFields],
