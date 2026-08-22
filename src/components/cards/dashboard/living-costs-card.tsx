@@ -13,10 +13,16 @@ import {
   RAMSEY_RANGES,
   DEFAULT_LIVING_COST_MAPPING,
 } from "@/lib/config/living-costs";
+import {
+  isRetirementParent,
+  isPortfolioParent,
+} from "@/lib/config/account-types";
 import { LoadingCard } from "./utils";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
+import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
+import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
 
 function LivingCostsCardImpl() {
   const { viewMode } = useScenario();
@@ -34,10 +40,10 @@ function LivingCostsCardImpl() {
     localSelection: null,
     globalDefaultId: rawActiveSalaryProfileId,
   });
-  const [activeContribProfileId] = usePersistedSetting<number | null>(
-    "active_contrib_profile_id",
-    null,
-  );
+  const {
+    contributionProfileId: activeContribProfileId,
+    queryInput: contribProfileInput,
+  } = useEffectiveContribProfileId();
   const { data: contribProfilesList } =
     trpc.contributionProfile.list.useQuery();
   const { planPinId: planContribProfileId } = useEffectiveProfileId(
@@ -48,12 +54,30 @@ function LivingCostsCardImpl() {
       globalDefaultId: activeContribProfileId,
     },
   );
+  // Budget Profile axis (Plan pin -> globally-active row) — without this,
+  // the card always shows the globally-active budget profile regardless of
+  // what a Plan pins or what the top bar just switched to.
+  const { data: budgetProfilesList } = useBudgetProfilesList();
+  const globalActiveBudgetId =
+    budgetProfilesList?.find((p) => p.isActive)?.id ?? null;
+  const { profileId: displayBudgetProfileId, isPinned: isBudgetPinned } =
+    useEffectiveProfileId("budget", {
+      validIds: budgetProfilesList?.map((p) => p.id),
+      localSelection: null,
+      globalDefaultId: globalActiveBudgetId,
+    });
+  const activeBudgetProfileName = budgetProfilesList?.find(
+    (p) => p.id === displayBudgetProfileId,
+  )?.name;
   // Same tiers used by the paycheck query below, so the budget total and the
   // income figure on this card never disagree about which Plan-pinned
   // Salary/Contribution Profile is in effect.
   const { data: budgetData, isLoading: isBudgetLoading } =
     trpc.budget.computeActiveSummary.useQuery({
       selectedColumn: budgetColumn,
+      ...(displayBudgetProfileId != null
+        ? { profileId: displayBudgetProfileId }
+        : {}),
       contributionProfile: {
         planPinId: planContribProfileId,
         localSelectionId: null,
@@ -68,18 +92,23 @@ function LivingCostsCardImpl() {
     });
   const lcQueryInput = {
     ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
-    ...(activeContribProfileId != null
-      ? { contributionProfileId: activeContribProfileId }
-      : {}),
+    ...contribProfileInput,
     ...salaryProfileInput,
   };
   const { data: paycheckData, isLoading: isPaycheckLoading } =
     trpc.paycheck.computeSummary.useQuery(
       Object.keys(lcQueryInput).length > 0 ? lcQueryInput : undefined,
     );
+  // Taxes/Retirement/Investments — the non-budget destinations gross income
+  // actually goes to, so the card can show the full picture (budget
+  // categories alone never sum anywhere near 100% of gross).
+  const { data: contribData, isLoading: isContribLoading } =
+    trpc.contribution.computeSummary.useQuery(
+      Object.keys(lcQueryInput).length > 0 ? lcQueryInput : undefined,
+    );
   const [useGross, setUseGross] = useState(false);
 
-  if (isBudgetLoading || isPaycheckLoading)
+  if (isBudgetLoading || isPaycheckLoading || isContribLoading)
     return <LoadingCard title="Living Costs" />;
 
   const budget = budgetData?.result;
@@ -185,6 +214,59 @@ function LivingCostsCardImpl() {
     (r) => r.status === "on-target" || r.status === "below",
   ).length;
 
+  // Full gross-income picture: taxes and retirement/investment contributions
+  // are real destinations for gross income that the Ramsey budget-category
+  // rows above never account for (those only ever sum to a fraction of
+  // gross) — shown separately, against gross only (a "% of net" tax figure
+  // doesn't mean anything), with no target range since Ramsey's ranges don't
+  // cover these. Employer match is excluded — it's not part of YOUR gross
+  // income, so including it would make the allocation sum to more than 100%.
+  const annualTaxes = paycheckData?.householdTax?.totalTax ?? 0;
+  const contribPeople = contribData?.people ?? [];
+  const contribJoint = contribData?.jointAccountTypes ?? [];
+  const jointRetirementNoMatch = sumBy(
+    contribJoint.filter((a) => isRetirementParent(a.parentCategory)),
+    (a) => a.employeeContrib,
+  );
+  const jointPortfolioNoMatch = sumBy(
+    contribJoint.filter((a) => isPortfolioParent(a.parentCategory)),
+    (a) => a.employeeContrib,
+  );
+  const retirementNoMatch =
+    sumBy(
+      contribPeople,
+      (p) => p.totals.views[viewMode].retirementWithoutMatch,
+    ) + jointRetirementNoMatch;
+  const investmentsNoMatch =
+    sumBy(
+      contribPeople,
+      (p) => p.totals.views[viewMode].portfolioWithoutMatch,
+    ) + jointPortfolioNoMatch;
+  const totalBudgetSpending = sumBy(budget.categories, (cat) =>
+    Math.max(categoryTotals.get(cat.name) ?? 0, 0),
+  );
+  const unallocated = Math.max(
+    grossIncome -
+      annualTaxes -
+      retirementNoMatch -
+      investmentsNoMatch -
+      totalBudgetSpending,
+    0,
+  );
+  const grossPictureRows = [
+    { name: "Taxes", annual: annualTaxes, color: "bg-red-400" },
+    { name: "Retirement", annual: retirementNoMatch, color: "bg-purple-400" },
+    { name: "Investments", annual: investmentsNoMatch, color: "bg-blue-400" },
+    {
+      name: "Budget spending",
+      annual: totalBudgetSpending,
+      color: "bg-green-400",
+    },
+    { name: "Unallocated", annual: unallocated, color: "bg-surface-strong" },
+  ]
+    .map((r) => ({ ...r, pct: safeDivide(r.annual, grossIncome, 0) }))
+    .filter((r) => r.annual > 0);
+
   return (
     <Card
       title={
@@ -195,7 +277,11 @@ function LivingCostsCardImpl() {
           />
         </>
       }
-      subtitle={`${onTarget}/${rows.length} within range`}
+      subtitle={`${onTarget}/${rows.length} within range${
+        activeBudgetProfileName
+          ? ` · ${activeBudgetProfileName}${isBudgetPinned ? " (pinned)" : ""}`
+          : ""
+      }`}
       href="/budget"
     >
       {/* Gross / Net toggle */}
@@ -289,6 +375,40 @@ function LivingCostsCardImpl() {
           Target
         </span>
       </div>
+
+      {grossPictureRows.length > 0 && (
+        <div className="mt-4 pt-3 border-t border-subtle">
+          <div className="flex items-center gap-1 mb-2">
+            <span className="text-caption text-faint uppercase tracking-wider">
+              Full gross picture
+            </span>
+            <HelpTip text="Where every dollar of gross income actually goes — taxes and retirement/investment contributions included, not just budget spending. Employer match is excluded since it isn't part of your own gross income." />
+          </div>
+          <div className="space-y-2">
+            {grossPictureRows.map((r) => (
+              <div key={r.name} className="text-xs">
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="text-muted">{r.name}</span>
+                  <span className="text-faint">
+                    <span className="font-medium text-primary">
+                      {formatPercent(r.pct, 0)}
+                    </span>{" "}
+                    <span className="text-faint">
+                      ({formatCurrency(r.annual)})
+                    </span>
+                  </span>
+                </div>
+                <div className="h-2 bg-surface-elevated rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${r.color}`}
+                    style={{ width: `${Math.min(r.pct * 100, 100)}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </Card>
   );
 }

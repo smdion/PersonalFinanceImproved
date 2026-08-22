@@ -16,6 +16,7 @@ import { sumBy } from "@/lib/utils/math";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
+import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
 import {
   categoriesWithIrsLimit,
   getLimitGroup,
@@ -31,11 +32,11 @@ function RetirementCardImpl() {
   // these before querying (M27, .scratch/docs/review-findings.md: this card
   // used to omit both, which the engine treats as "no profile" = $0
   // contributions, not "the active profile" — silently zeroing out
-  // Contributions/Coast FIRE/nest egg on this card alone).
-  const [activeContribProfileId] = usePersistedSetting<number | null>(
-    "active_contrib_profile_id",
-    null,
-  );
+  // Contributions/Coast FIRE/nest egg on this card alone). Each also Plan
+  // pin-aware (Plan pin -> globally-active setting), not just the raw
+  // global setting, or a Plan pinning a different profile wouldn't move
+  // this card.
+  const { queryInput: contribProfileInput } = useEffectiveContribProfileId();
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const [accBudgetProfileId] = usePersistedSetting<number | null>(
     "retirement_acc_budget_profile_id",
@@ -63,9 +64,7 @@ function RetirementCardImpl() {
   );
   const engineInput = {
     ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
-    ...(activeContribProfileId != null
-      ? { contributionProfileId: activeContribProfileId }
-      : {}),
+    ...contribProfileInput,
     ...salaryProfileInput,
     ...(accBudgetProfileId != null
       ? { accumulationBudgetProfileId: accBudgetProfileId }

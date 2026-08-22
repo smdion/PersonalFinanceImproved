@@ -7,8 +7,8 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatNumber } from "@/lib/utils/format";
 import { PERF_CATEGORY_RETIREMENT } from "@/lib/config/display-labels";
 import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
-import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
+import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
 import { sumBy, safeDivide } from "@/lib/utils/math";
 import { LoadingCard, ErrorCard } from "./utils";
 
@@ -64,16 +64,11 @@ function FidelityMultiplierCardImpl() {
   // Uses result.projectionByYear for future-age lookups, which needs the
   // active Contribution Profile — omitting it makes the engine treat future
   // years as $0 contributions (M27, .scratch/docs/review-findings.md).
-  const [activeContribProfileId] = usePersistedSetting<number | null>(
-    "active_contrib_profile_id",
-    null,
-  );
+  const { queryInput: contribProfileInput } = useEffectiveContribProfileId();
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const engineInput = {
     ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
-    ...(activeContribProfileId != null
-      ? { contributionProfileId: activeContribProfileId }
-      : {}),
+    ...contribProfileInput,
     ...salaryProfileInput,
   };
   const { data, isLoading, error } =

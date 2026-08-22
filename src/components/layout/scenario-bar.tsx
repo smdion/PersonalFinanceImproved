@@ -60,8 +60,23 @@ export function ScenarioBar() {
   const [activeContribId, setActiveContribId] = useActiveContribProfile();
   const [activeSalaryId, setActiveSalaryId] = useActiveSalaryProfile();
 
+  // Every query that resolves "the active budget profile" server-side
+  // (computeActiveSummary and friends) takes no budget-profile id as a
+  // query argument, unlike the Salary/Contribution pills below — so React
+  // Query has no way to know those results are stale after a swap here.
+  // Same invalidation set salary-profile-manager.tsx/
+  // contribution-profile-manager.tsx already use for the same reason (a
+  // profile switch that feeds budget-linked contribution/paycheck/
+  // projection math), so a budget-profile swap can't leave any of them
+  // showing pre-swap numbers the way this bar's own pill briefly did.
   const activateBudget = trpc.budget.setActiveProfile.useMutation({
-    onSuccess: () => utils.budget.listProfiles.invalidate(),
+    onSuccess: () => {
+      utils.budget.invalidate();
+      utils.contribution.invalidate();
+      utils.paycheck.invalidate();
+      utils.projection.invalidate();
+      utils.savings.invalidate();
+    },
   });
 
   // Plan pin -> globally-active profile, so the pill reflects what's actually

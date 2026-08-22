@@ -37,10 +37,12 @@ vi.mock("@/lib/trpc", () => ({
     contribution: {
       computeSummary: { useQuery: () => contribQuery },
     },
-    // Reached via useEffectiveSalaryProfileId → useActiveSalaryProfile.
-    // An empty list is the "nothing to resolve" case: the hook leaves the
-    // active id alone rather than re-pointing it.
+    // Reached via useEffectiveSalaryProfileId → useActiveSalaryProfile, and
+    // useEffectiveContribProfileId → useActiveContribProfile. An empty list
+    // is the "nothing to resolve" case: the hook leaves the active id alone
+    // rather than re-pointing it.
     salaryProfile: { list: { useQuery: () => ({ data: [] }) } },
+    contributionProfile: { list: { useQuery: () => ({ data: [] }) } },
   },
 }));
 
