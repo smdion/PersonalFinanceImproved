@@ -99,16 +99,27 @@ function LivingCostsCardImpl() {
     trpc.paycheck.computeSummary.useQuery(
       Object.keys(lcQueryInput).length > 0 ? lcQueryInput : undefined,
     );
-  // Taxes/Retirement/Investments — the non-budget destinations gross income
-  // actually goes to, so the card can show the full picture (budget
+  // Taxes/Retirement/Portfolio/Savings — the non-budget destinations gross
+  // income actually goes to, so the card can show the full picture (budget
   // categories alone never sum anywhere near 100% of gross).
   const { data: contribData, isLoading: isContribLoading } =
     trpc.contribution.computeSummary.useQuery(
       Object.keys(lcQueryInput).length > 0 ? lcQueryInput : undefined,
     );
+  // Savings goal buckets (e-fund, house, vacation, etc.) — a distinct
+  // destination from Retirement/Portfolio contribution accounts above,
+  // doesn't take a Salary/Contribution Profile input (savings goals aren't
+  // profile-scoped the way contribution accounts are).
+  const { data: savingsData, isLoading: isSavingsLoading } =
+    trpc.savings.computeSummary.useQuery();
   const [useGross, setUseGross] = useState(false);
 
-  if (isBudgetLoading || isPaycheckLoading || isContribLoading)
+  if (
+    isBudgetLoading ||
+    isPaycheckLoading ||
+    isContribLoading ||
+    isSavingsLoading
+  )
     return <LoadingCard title="Living Costs" />;
 
   const budget = budgetData?.result;
@@ -214,13 +225,14 @@ function LivingCostsCardImpl() {
     (r) => r.status === "on-target" || r.status === "below",
   ).length;
 
-  // Full gross-income picture: taxes and retirement/investment contributions
-  // are real destinations for gross income that the Ramsey budget-category
-  // rows above never account for (those only ever sum to a fraction of
-  // gross) — shown separately, against gross only (a "% of net" tax figure
-  // doesn't mean anything), with no target range since Ramsey's ranges don't
-  // cover these. Employer match is excluded — it's not part of YOUR gross
-  // income, so including it would make the allocation sum to more than 100%.
+  // In Gross mode, append taxes/retirement/investments/unallocated to the
+  // SAME list the budget categories render in — `rows` above already
+  // recomputes against `incomeBase` (net or gross, whichever the toggle
+  // picked), so switching to Gross alone doesn't yet account for where the
+  // rest of gross income goes (budget categories only ever sum to a
+  // fraction of it). No target range on these — Ramsey's ranges don't cover
+  // taxes/savings. Employer match is excluded — it's not part of YOUR gross
+  // income, so including it would make the allocation sum past 100%.
   const annualTaxes = paycheckData?.householdTax?.totalTax ?? 0;
   const contribPeople = contribData?.people ?? [];
   const contribJoint = contribData?.jointAccountTypes ?? [];
@@ -245,27 +257,40 @@ function LivingCostsCardImpl() {
   const totalBudgetSpending = sumBy(budget.categories, (cat) =>
     Math.max(categoryTotals.get(cat.name) ?? 0, 0),
   );
+  const annualSavings =
+    sumBy(savingsData?.savings.goals ?? [], (g) => g.monthlyAllocation) * 12;
   const unallocated = Math.max(
     grossIncome -
       annualTaxes -
       retirementNoMatch -
       investmentsNoMatch -
+      annualSavings -
       totalBudgetSpending,
     0,
   );
-  const grossPictureRows = [
-    { name: "Taxes", annual: annualTaxes, color: "bg-red-400" },
-    { name: "Retirement", annual: retirementNoMatch, color: "bg-purple-400" },
-    { name: "Investments", annual: investmentsNoMatch, color: "bg-blue-400" },
-    {
-      name: "Budget spending",
-      annual: totalBudgetSpending,
-      color: "bg-green-400",
-    },
-    { name: "Unallocated", annual: unallocated, color: "bg-surface-strong" },
-  ]
-    .map((r) => ({ ...r, pct: safeDivide(r.annual, grossIncome, 0) }))
-    .filter((r) => r.annual > 0);
+  const extraGrossRows = useGross
+    ? [
+        { name: "Taxes", annual: annualTaxes, color: "bg-red-400" },
+        {
+          name: "Retirement",
+          annual: retirementNoMatch,
+          color: "bg-purple-400",
+        },
+        {
+          name: "Portfolio",
+          annual: investmentsNoMatch,
+          color: "bg-indigo-400",
+        },
+        { name: "Savings", annual: annualSavings, color: "bg-teal-400" },
+        {
+          name: "Unallocated",
+          annual: unallocated,
+          color: "bg-surface-strong",
+        },
+      ]
+        .map((r) => ({ ...r, pct: safeDivide(r.annual, grossIncome, 0) }))
+        .filter((r) => r.annual > 0)
+    : [];
 
   return (
     <Card
@@ -273,7 +298,7 @@ function LivingCostsCardImpl() {
         <>
           Living Costs
           <HelpTip
-            text={`Budget categories as % of ${incomeLabel} income compared to Dave Ramsey's recommended ranges. Toggle between gross and net income. Ramsey's original ranges are based on net take-home pay.`}
+            text={`Budget categories as % of ${incomeLabel} income compared to Dave Ramsey's recommended ranges (Ramsey's original ranges are based on net take-home pay). Switch to Gross to also see taxes and retirement/investment contributions, so gross income is fully accounted for — not just budget spending.`}
           />
         </>
       }
@@ -359,33 +384,9 @@ function LivingCostsCardImpl() {
             </div>
           </div>
         ))}
-      </div>
-      <div className="mt-2 flex gap-3 text-caption text-faint">
-        <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-green-500" /> On target
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-blue-400" /> Below
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-red-400" /> Above
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-green-100 border border-green-200" />{" "}
-          Target
-        </span>
-      </div>
-
-      {grossPictureRows.length > 0 && (
-        <div className="mt-4 pt-3 border-t border-subtle">
-          <div className="flex items-center gap-1 mb-2">
-            <span className="text-caption text-faint uppercase tracking-wider">
-              Full gross picture
-            </span>
-            <HelpTip text="Where every dollar of gross income actually goes — taxes and retirement/investment contributions included, not just budget spending. Employer match is excluded since it isn't part of your own gross income." />
-          </div>
-          <div className="space-y-2">
-            {grossPictureRows.map((r) => (
+        {extraGrossRows.length > 0 && (
+          <div className="pt-2 mt-1 border-t border-subtle space-y-2">
+            {extraGrossRows.map((r) => (
               <div key={r.name} className="text-xs">
                 <div className="flex items-center justify-between mb-0.5">
                   <span className="text-muted">{r.name}</span>
@@ -407,8 +408,28 @@ function LivingCostsCardImpl() {
               </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
+      <div className="mt-2 flex gap-3 text-caption text-faint">
+        <span className="flex items-center gap-1">
+          <span className="w-2 h-2 rounded-full bg-green-500" /> On target
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-2 h-2 rounded-full bg-blue-400" /> Below
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-2 h-2 rounded-full bg-red-400" /> Above
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-2 h-2 rounded-full bg-green-100 border border-green-200" />{" "}
+          Target
+        </span>
+        {extraGrossRows.length > 0 && (
+          <span className="flex items-center gap-1 ml-auto">
+            <HelpTip text="Taxes/Retirement/Investments/Unallocated (below the Target legend) have no recommended range — they're shown so gross income is fully accounted for, not just budget spending. Employer match is excluded since it isn't part of your own gross income." />
+          </span>
+        )}
+      </div>
     </Card>
   );
 }
