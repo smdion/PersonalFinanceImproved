@@ -28,15 +28,26 @@ import type { BonusTerms } from "./salary";
 import { toNumber } from "./transforms";
 import { requireLimit } from "./settings";
 
+/**
+ * Every field but `startDate` now comes from the resolved Salary Profile
+ * entry, not a raw `jobs` column — `| undefined` reflects "no entry for
+ * this job in the active profile at all." Callers only reach this builder
+ * after already establishing the job/entry is complete (paycheck.ts's
+ * bracketRow gate; savings.ts's computeJobNetPayPerCheck throws first) —
+ * `undefined` here would mean that contract was violated upstream, not a
+ * real "field genuinely missing" state (a complete entry always has every
+ * field, even when the value itself is `null` — e.g. `anchorPayDate: null`
+ * meaning "no anchor, use start date").
+ */
 export interface JobForPaycheckInput {
-  payPeriod: PaycheckInput["payPeriod"];
-  payWeek: PaycheckInput["payWeek"];
-  anchorPayDate: string | Date | null;
+  payPeriod: PaycheckInput["payPeriod"] | undefined;
+  payWeek: PaycheckInput["payWeek"] | undefined;
+  anchorPayDate: string | Date | null | undefined;
   startDate: string | Date;
-  include401kInBonus: boolean;
-  bonusMonth: number | null;
-  bonusDayOfMonth: number | null;
-  additionalFedWithholding: string | number | null;
+  include401kInBonus: boolean | undefined;
+  bonusMonth: number | null | undefined;
+  bonusDayOfMonth: number | null | undefined;
+  additionalFedWithholding: string | number | null | undefined;
 }
 
 export interface ResolvedPaycheckInputs {
@@ -65,8 +76,12 @@ export function buildPaycheckInputForJob(
 ): PaycheckInput {
   return {
     annualSalary: resolved.salary,
-    payPeriod: job.payPeriod,
-    payWeek: job.payWeek,
+    payPeriod: job.payPeriod!,
+    payWeek: job.payWeek!,
+    // `?? job.startDate` only ever fires for a real, complete-entry `null`
+    // ("no anchor, use start date") — `job.anchorPayDate` can't be
+    // `undefined` here without violating this builder's completeness
+    // contract (see JobForPaycheckInput's docblock).
     anchorPayDate: new Date(job.anchorPayDate ?? job.startDate),
     supplementalTaxRate: requireLimit(
       resolved.limitsMap,
@@ -89,9 +104,9 @@ export function buildPaycheckInputForJob(
         : toNumber(resolved.bonusTerms.bonusMultiplier),
     bonusOverride: resolved.bonusOverride,
     monthsInBonusYear: resolved.bonusTerms.monthsInBonusYear ?? 12,
-    includeContribInBonus: job.include401kInBonus,
-    bonusMonth: job.bonusMonth,
-    bonusDayOfMonth: job.bonusDayOfMonth,
+    includeContribInBonus: job.include401kInBonus ?? false,
+    bonusMonth: job.bonusMonth ?? null,
+    bonusDayOfMonth: job.bonusDayOfMonth ?? null,
     asOfDate: resolved.asOfDate,
   };
 }

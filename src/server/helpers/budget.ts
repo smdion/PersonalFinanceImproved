@@ -336,6 +336,7 @@ export async function resolveLinkedBudgetItemAmounts<
       contribProfileId,
       rawContribs,
       allJobs,
+      salaryProfileActiveMap,
     );
     const activeContribs = applyContribActiveFields(
       profileResult.contribs,

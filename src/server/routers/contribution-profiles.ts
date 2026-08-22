@@ -34,6 +34,7 @@ import { getDisplayConfig } from "@/lib/config/account-types";
 import {
   contributionActiveFieldsSchema,
   contribAccountActiveFieldsSchema,
+  deductionActiveFieldsSchema,
 } from "@/lib/db/json-schemas";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 
@@ -80,77 +81,6 @@ async function assertNoJointPercentOfSalaryWithoutJob(
   }
 }
 
-/**
- * w4FilingStatus + w4Box2cChecked form a composite key into the federal
- * withholding bracket table. A profile can set either half independently
- * (applyJobActiveFields only patches the field actually present), so the
- * EFFECTIVE combination reaching bracket lookup is whichever half the
- * profile sets, merged with the job's raw value for whichever half it
- * doesn't. Validating this at write time — rather than deferring to a
- * read-time error that could surface during an unrelated save (e.g.
- * extra-paycheck routing) — is a hard requirement per the Contribution
- * Profile plan's Ground Rules: a composite-key mismatch should never be
- * persisted in the first place.
- */
-async function assertJobTaxBracketsExist(
-  db: Db,
-  contributionActiveFields:
-    | {
-        jobs?: Record<
-          string,
-          { w4FilingStatus?: string; w4Box2cChecked?: boolean }
-        >;
-      }
-    | undefined,
-): Promise<void> {
-  const incomingJobs = contributionActiveFields?.jobs ?? {};
-  const jobIdsToCheck = Object.entries(incomingJobs)
-    .filter(
-      ([, f]) =>
-        f.w4FilingStatus !== undefined || f.w4Box2cChecked !== undefined,
-    )
-    .map(([id]) => Number(id));
-  if (jobIdsToCheck.length === 0) return;
-
-  const rawJobs = await db
-    .select({
-      id: schema.jobs.id,
-      w4FilingStatus: schema.jobs.w4FilingStatus,
-      w4Box2cChecked: schema.jobs.w4Box2cChecked,
-    })
-    .from(schema.jobs)
-    .where(inArray(schema.jobs.id, jobIdsToCheck));
-  const rawJobById = new Map(rawJobs.map((j) => [j.id, j]));
-
-  const taxYear = new Date().getFullYear();
-  const brackets = await db
-    .select({
-      filingStatus: schema.taxBrackets.filingStatus,
-      w4Checkbox: schema.taxBrackets.w4Checkbox,
-    })
-    .from(schema.taxBrackets)
-    .where(eq(schema.taxBrackets.taxYear, taxYear));
-  const bracketKeys = new Set(
-    brackets.map((b) => `${b.filingStatus}|${b.w4Checkbox}`),
-  );
-
-  for (const jobId of jobIdsToCheck) {
-    const rawJob = rawJobById.get(jobId);
-    if (!rawJob) continue; // stale id — nothing to validate against
-    const activeFields = incomingJobs[String(jobId)]!;
-    const effectiveFilingStatus =
-      activeFields.w4FilingStatus ?? rawJob.w4FilingStatus;
-    const effectiveCheckbox =
-      activeFields.w4Box2cChecked ?? rawJob.w4Box2cChecked;
-    if (!bracketKeys.has(`${effectiveFilingStatus}|${effectiveCheckbox}`)) {
-      throw new Error(
-        `No tax bracket data found for filing status "${effectiveFilingStatus}" ` +
-          `(multiple jobs: ${effectiveCheckbox}) for tax year ${taxYear} — cannot save this active-field combination.`,
-      );
-    }
-  }
-}
-
 export const contributionProfileRouter = createTRPCRouter({
   /**
    * List all contribution profiles with resolved summary totals.
@@ -162,11 +92,22 @@ export const contributionProfileRouter = createTRPCRouter({
       .orderBy(schema.contributionProfiles.createdAt);
 
     // Load live data for resolving summaries
-    const { contribs, jobs, jobSalaries, rawContribRows } =
-      await loadLiveContribData(ctx.db);
+    const {
+      contribs,
+      jobs,
+      jobSalaries,
+      rawContribRows,
+      salaryProfileActiveMap,
+    } = await loadLiveContribData(ctx.db);
 
     const resolved = profiles.map((profile) => {
-      const r = resolveProfile(profile, contribs, jobs, jobSalaries);
+      const r = resolveProfile(
+        profile,
+        contribs,
+        jobs,
+        jobSalaries,
+        salaryProfileActiveMap,
+      );
       const agg = aggregateContributionsByCategory(
         r.activeContribs,
         r.activeJobs,
@@ -315,8 +256,15 @@ export const contributionProfileRouter = createTRPCRouter({
         rawContribRows,
         peopleMap,
         perfAccountMap,
+        salaryProfileActiveMap,
       } = await loadLiveContribData(ctx.db);
-      const resolved = resolveProfile(profile, contribs, jobs, jobSalaries);
+      const resolved = resolveProfile(
+        profile,
+        contribs,
+        jobs,
+        jobSalaries,
+        salaryProfileActiveMap,
+      );
 
       // Build per-account detail for the editor UI
       const contribActiveFieldsRoot =
@@ -329,10 +277,8 @@ export const contributionProfileRouter = createTRPCRouter({
           string,
           Record<string, unknown>
         >;
-      const jobActiveFieldsMap = (contribActiveFieldsRoot.jobs ?? {}) as Record<
-        string,
-        Record<string, unknown>
-      >;
+      const deductionActiveFields = (contribActiveFieldsRoot.deductions ??
+        {}) as Record<string, Record<string, unknown>>;
       // Convert perfAccountMap to array for fallback matching
       const allPerfAccounts = Array.from(perfAccountMap.values());
 
@@ -432,24 +378,25 @@ export const contributionProfileRouter = createTRPCRouter({
         };
       });
 
-      // Salary/bonus amounts have no live value on a job any more (only a
-      // Salary Profile entry resolves them) — this section only needs
-      // identity plus the two employer/bonus-inclusion toggles that
-      // Contribution Profiles actually govern.
-      const salaryDetails = jobs.map((j) => {
-        const person = peopleMap.get(j.personId);
+      // Deductions have no live value on their own any more (Stage B
+      // dropped paycheck_deductions.amount_per_period) — same no-base-value,
+      // exclude-if-absent contract as a contribution account's
+      // contributionValue (see applyDeductionActiveFields).
+      const allDeductions = await ctx.db
+        .select()
+        .from(schema.paycheckDeductions);
+      const deductionDetails = allDeductions.map((d) => {
+        const activeFields = deductionActiveFields[String(d.id)];
+        const job = jobs.find((j) => j.id === d.jobId);
         return {
-          jobId: j.id,
-          personId: j.personId,
-          personName: person?.name ?? `Person ${j.personId}`,
-          employerName: j.employerName,
-          liveInclude401kInBonus: j.include401kInBonus,
-          liveIncludeBonusInContributions: j.includeBonusInContributions,
-          // Job active fields from profile
-          jobActiveFields: jobActiveFieldsMap[String(j.id)] ?? null,
-          employerNameActive:
-            (jobActiveFieldsMap[String(j.id)]?.employerName as
-              string | undefined) ?? null,
+          id: d.id,
+          jobId: d.jobId,
+          employerName: job?.employerName ?? null,
+          deductionName: d.deductionName,
+          isPretax: d.isPretax,
+          ficaExempt: d.ficaExempt,
+          activeFields: activeFields ?? null,
+          isIncomplete: activeFields?.amountPerPeriod === undefined,
         };
       });
 
@@ -457,7 +404,7 @@ export const contributionProfileRouter = createTRPCRouter({
         ...profile,
         createdAt: profile.createdAt.toISOString(),
         accountDetails,
-        salaryDetails,
+        deductionDetails,
         resolved: {
           combinedSalary: resolved.combinedSalary,
         },
@@ -480,7 +427,6 @@ export const contributionProfileRouter = createTRPCRouter({
         ctx.db,
         input.contributionActiveFields,
       );
-      await assertJobTaxBracketsExist(ctx.db, input.contributionActiveFields);
 
       const rows = await ctx.db
         .insert(schema.contributionProfiles)
@@ -516,7 +462,6 @@ export const contributionProfileRouter = createTRPCRouter({
         ctx.db,
         input.contributionActiveFields,
       );
-      await assertJobTaxBracketsExist(ctx.db, input.contributionActiveFields);
 
       const updates: Partial<typeof schema.contributionProfiles.$inferInsert> =
         {};
@@ -575,7 +520,6 @@ export const contributionProfileRouter = createTRPCRouter({
 
       const root = profile.contributionActiveFields as {
         contributionAccounts?: Record<string, Record<string, unknown>>;
-        jobs?: Record<string, Record<string, unknown>>;
       };
       const nextActiveFields = {
         ...root,
@@ -583,6 +527,55 @@ export const contributionProfileRouter = createTRPCRouter({
           ...root.contributionAccounts,
           [String(input.accountId)]: {
             ...root.contributionAccounts?.[String(input.accountId)],
+            ...input.fields,
+          },
+        },
+      };
+
+      const rows = await ctx.db
+        .update(schema.contributionProfiles)
+        .set({
+          contributionActiveFields:
+            nextActiveFields as typeof profile.contributionActiveFields,
+        })
+        .where(eq(schema.contributionProfiles.id, input.profileId))
+        .returning();
+      return rows[0]!;
+    }),
+
+  /**
+   * Set (merge) one deduction's active amount within a profile — same
+   * pattern as setAccountActiveFields, for the deductions section of the
+   * Contribution Profile editor. A deduction has no live amountPerPeriod
+   * any more (Stage B dropped the column) — this is the only way to give
+   * one a resolvable value.
+   */
+  setDeductionActiveFields: contributionProfileProcedure
+    .input(
+      z.object({
+        profileId: z.number(),
+        deductionId: z.number(),
+        fields: deductionActiveFieldsSchema,
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const existing = await ctx.db
+        .select()
+        .from(schema.contributionProfiles)
+        .where(eq(schema.contributionProfiles.id, input.profileId));
+      const profile = existing[0];
+      if (!profile) throw new Error("Profile not found");
+
+      const root = profile.contributionActiveFields as {
+        contributionAccounts?: Record<string, Record<string, unknown>>;
+        deductions?: Record<string, Record<string, unknown>>;
+      };
+      const nextActiveFields = {
+        ...root,
+        deductions: {
+          ...root.deductions,
+          [String(input.deductionId)]: {
+            ...root.deductions?.[String(input.deductionId)],
             ...input.fields,
           },
         },
@@ -663,8 +656,15 @@ export const contributionProfileRouter = createTRPCRouter({
       const profile = profiles[0];
       if (!profile) return null;
 
-      const { contribs, jobs, jobSalaries } = await loadLiveContribData(ctx.db);
-      const resolved = resolveProfile(profile, contribs, jobs, jobSalaries);
+      const { contribs, jobs, jobSalaries, salaryProfileActiveMap } =
+        await loadLiveContribData(ctx.db);
+      const resolved = resolveProfile(
+        profile,
+        contribs,
+        jobs,
+        jobSalaries,
+        salaryProfileActiveMap,
+      );
       const agg = aggregateContributionsByCategory(
         resolved.activeContribs,
         resolved.activeJobs,

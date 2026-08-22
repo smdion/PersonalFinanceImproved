@@ -33,52 +33,9 @@ import {
   getTotalCompensation,
   resolveCompensation,
   loadEffectiveSalaryProfile,
+  mergeSalaryProfileJobFields,
 } from "./salary";
-
-/**
- * Bonus-AMOUNT fields a Contribution Profile is no longer allowed to mark
- * active — they moved to the Salary Profile entry (same tier as salary).
- *
- * The active-field filter is field-name-driven and these names all still
- * exist on `jobs`, so a stale key left behind in an old
- * contribution_active_fields blob would otherwise keep being applied and
- * keep changing someone's compensation from the wrong profile. The
- * migration strips them and jobActiveFieldsSchema rejects new ones; this is
- * the runtime backstop that makes a missed row inert rather than silently
- * wrong.
- */
-const MOVED_TO_SALARY_PROFILE = new Set([
-  "bonusPercent",
-  "bonusMultiplier",
-  "monthsInBonusYear",
-]);
-
-/**
- * Presence-based active-field filter shared by jobs and deductions: an
- * active field applies only if it names a real column on the record AND
- * isn't in the caller's exclude set. Presence-based (`field in record`),
- * never truthiness-based — an explicit `0` or `false` active-field value
- * must still apply, not be treated as "not set".
- */
-function pickEntityActiveFields(
-  activeFields: Record<string, unknown>,
-  record: object,
-  excludeSet: Set<string> = new Set(),
-): Record<string, unknown> {
-  return Object.fromEntries(
-    Object.entries(activeFields).filter(
-      ([field]) => field in record && !excludeSet.has(field),
-    ),
-  );
-}
-
-/** Job active fields that are real columns AND still owned by this axis. */
-function pickJobActiveFields(
-  activeFields: Record<string, unknown>,
-  job: object,
-): Record<string, unknown> {
-  return pickEntityActiveFields(activeFields, job, MOVED_TO_SALARY_PROFILE);
-}
+import type { SalaryProfileActiveMap } from "./salary";
 
 /**
  * Compute annual contribution amount from DB contribution row fields.
@@ -112,11 +69,12 @@ export function computeAnnualContribution(
  * applyContributionAccountEdit's inverse so the two can't drift apart.
  */
 export function resolveJoblessPeriodsPerYear(
-  activeJobs: { payPeriod: string }[],
+  activeJobs: { payPeriod: string | undefined }[],
 ): { periodsPerYear: number; incomplete: boolean } {
-  return activeJobs.length > 0
+  const withSchedule = activeJobs.find((j) => j.payPeriod != null);
+  return withSchedule
     ? {
-        periodsPerYear: getPeriodsPerYear(activeJobs[0]!.payPeriod),
+        periodsPerYear: getPeriodsPerYear(withSchedule.payPeriod!),
         incomplete: false,
       }
     : { periodsPerYear: 0, incomplete: true };
@@ -135,11 +93,12 @@ export function resolveJoblessPeriodsPerYear(
  */
 export function resolveContribPeriods(
   method: string,
-  job: { payPeriod: string } | undefined,
+  job: { payPeriod: string | undefined } | undefined,
 ): { periodsPerYear: number; incomplete: boolean } {
   if (method !== "fixed_per_period")
     return { periodsPerYear: 0, incomplete: false };
-  if (!job) return { periodsPerYear: 0, incomplete: true };
+  if (!job || job.payPeriod == null)
+    return { periodsPerYear: 0, incomplete: true };
   return {
     periodsPerYear: getPeriodsPerYear(job.payPeriod),
     incomplete: false,
@@ -214,14 +173,14 @@ export async function applyContributionAccountEdit(
     .where(
       and(isNull(schema.jobs.endDate), eq(schema.jobs.isSpeculative, false)),
     );
-  // Patch against THIS edit's own profile (already fetched above), not the
-  // globally-active/budget-pinned one — using the forward path's profile
-  // here would resolve periodsPerYear against the wrong profile whenever
-  // the edit target isn't the globally-active profile, reproducing the
-  // exact bug this fix exists to close.
-  const activeJobs = applyJobActiveFields(
+  // Salary Profile is an independent axis from Contribution Profile — a
+  // job's pay schedule is never Contribution-Profile-owned, so this always
+  // resolves against whichever Salary Profile is globally active, same as
+  // loadLiveContribData's own "no specific preference" resolution.
+  const salaryProfileActiveMap = await loadEffectiveSalaryProfile(db, null);
+  const activeJobs = mergeSalaryProfileJobFields(
     rawActiveJobs,
-    (activeFields.jobs ?? {}) as Record<string, Record<string, unknown>>,
+    salaryProfileActiveMap,
   );
   const { periodsPerYear, incomplete } =
     resolveJoblessPeriodsPerYear(activeJobs);
@@ -557,7 +516,7 @@ type ContribRow = {
 };
 
 type PersonRef = { id: number; name: string };
-type JobRef = { id: number; personId: number; payPeriod: string };
+type JobRef = { id: number; personId: number; payPeriod: string | undefined };
 type JobSalaryRef = { job: { id: number; personId: number }; salary: number };
 
 /**
@@ -846,11 +805,15 @@ export async function loadLiveContribData(db: Db) {
     db.select().from(schema.people),
     db.select().from(schema.performanceAccounts),
   ]);
-  const activeJobs = filterActiveJobs(allJobs);
+  const activeJobsRaw = filterActiveJobs(allJobs);
   const activeContribs = allContribs.filter((c) => c.isActive);
   const perfAccountMap = new Map(allPerfAccounts.map((pa) => [pa.id, pa]));
 
   const salaryProfileActiveMap = await loadEffectiveSalaryProfile(db, null);
+  const activeJobs = mergeSalaryProfileJobFields(
+    activeJobsRaw,
+    salaryProfileActiveMap,
+  );
 
   const jobSalaries = activeJobs.map((j) => {
     const comp = resolveCompensation(salaryProfileActiveMap, j.id);
@@ -895,6 +858,7 @@ export async function loadLiveContribData(db: Db) {
     rawContribRows: allContribs, // All accounts (active + inactive/stubbed) for profile editor
     peopleMap,
     perfAccountMap,
+    salaryProfileActiveMap,
   };
 }
 
@@ -912,12 +876,7 @@ export async function loadLiveContribData(db: Db) {
  */
 export function resolveProfile<
   C extends { id: number },
-  J extends {
-    id: number;
-    personId: number;
-    payPeriod: string;
-    includeBonusInContributions: boolean;
-  },
+  J extends { id: number; personId: number },
   S extends {
     job: { id: number; personId: number };
     /** Payroll contribution basis — bonus-inclusive per the job's flag. */
@@ -937,6 +896,7 @@ export function resolveProfile<
   liveContribs: C[],
   liveJobs: J[],
   liveJobSalaries: S[],
+  salaryProfileActiveMap: SalaryProfileActiveMap,
 ) {
   const contribActiveFieldsRoot = profile.contributionActiveFields as Record<
     string,
@@ -944,7 +904,6 @@ export function resolveProfile<
   >;
   const accountActiveFields =
     contribActiveFieldsRoot.contributionAccounts ?? {};
-  const jobActiveFields = contribActiveFieldsRoot.jobs ?? {};
 
   // Apply contribution account active fields — same no-fallback,
   // unconditional-merge, exclude-if-absent rule as applyContribActiveFields
@@ -972,14 +931,17 @@ export function resolveProfile<
     .filter((c): c is NonNullable<typeof c> => c !== null)
     .filter((c) => c.isActive !== false);
 
-  // Apply job active fields (employer name, bonus pay date,
-  // bonus-contribution flags). Bonus AMOUNT terms are excluded — see
-  // MOVED_TO_SALARY_PROFILE.
-  const patchedJobs = liveJobs.map((j) => {
-    const activeFields = jobActiveFields[String(j.id)];
-    if (!activeFields) return j;
-    return { ...j, ...pickJobActiveFields(activeFields, j) };
-  });
+  // Jobs carry no Contribution-Profile-owned fields any more — the deleted
+  // `jobs` active-fields bucket used to let a profile patch employer name /
+  // bonus pay date / bonus-contribution flags; all of that either moved to
+  // the Salary Profile entry (bonus date + flags) or lost its
+  // profile-override path entirely (employerName — see RULES.md). Pay
+  // schedule and includeBonusInContributions now always come straight from
+  // the resolved Salary Profile entry, same axis as salary itself.
+  const patchedJobs = mergeSalaryProfileJobFields(
+    liveJobs,
+    salaryProfileActiveMap,
+  );
 
   const activeJobs = patchedJobs.map((j) => ({
     id: j.id,
@@ -987,12 +949,6 @@ export function resolveProfile<
     payPeriod: j.payPeriod,
   }));
 
-  // Must derive from patchedJobs, not liveJobs — includeBonusInContributions
-  // is a job active field this profile can override, and getEffectiveIncome
-  // reads it (via `salary` here). Deriving from the unpatched job (the old
-  // `jobSalaries = liveJobSalaries` alias) meant toggling the flag on a
-  // Contribution Profile silently no-op'd: the flag was read before the
-  // patch that was supposed to change it.
   const patchedJobById = new Map(patchedJobs.map((j) => [j.id, j]));
   const jobSalaries = liveJobSalaries.map((js) => {
     const patchedJob = patchedJobById.get(js.job.id);
@@ -1122,55 +1078,57 @@ export function buildSandboxContribRow(
   };
 }
 
-/**
- * Apply a contribution profile's job active fields to raw DB job rows.
- *
- * Sets the job fields a Contribution Profile still owns: employerName,
- * the bonus PAY DATE (bonusMonth / bonusDayOfMonth), and the two flags that
- * decide how contributions are computed from a bonus (include401kInBonus,
- * includeBonusInContributions).
- *
- * It no longer sets how BIG the bonus is. bonusPercent / bonusMultiplier /
- * monthsInBonusYear moved to the Salary Profile entry — same tier as
- * salary — so a Contribution Profile can no longer change anyone's
- * compensation.
- *
- * jobActiveFields shape: { "jobId": { field: value, ... } }
- */
-export function applyJobActiveFields(
-  jobs: (typeof schema.jobs.$inferSelect)[],
-  jobActiveFields: Record<string, Record<string, unknown>>,
-): (typeof schema.jobs.$inferSelect)[] {
-  return jobs.map((job) => {
-    const activeFields = jobActiveFields[String(job.id)];
-    if (!activeFields) return job;
-    return { ...job, ...pickJobActiveFields(activeFields, job) };
-  });
-}
+/** paycheck_deductions row with a resolved amountPerPeriod attached. */
+export type DeductionRowWithActiveFields =
+  typeof schema.paycheckDeductions.$inferSelect & {
+    amountPerPeriod: string | number;
+  };
 
 /**
  * Apply a contribution profile's deduction active fields to raw DB
- * deduction rows. Deductions have a real, live `amountPerPeriod` on the
- * row (unlike contribution accounts) — this only ever *patches* that value
- * when a profile has one set (including an explicit `0`) and leaves the
- * live default in place otherwise. Unlike applyContribActiveFields, this
- * never drops a row: an unset deduction is still a real deduction, just at
- * its live default amount.
+ * deduction rows. `paycheck_deductions` carries no `amountPerPeriod` column
+ * of its own (Stage B dropped it) — same no-base-value, exclude-if-absent
+ * rule as applyContribActiveFields: a deduction with no active-field entry
+ * under this profile has no resolvable amount and is excluded, not passed
+ * through with a stale/zero value. See getIncompleteDeductionIds for
+ * surfacing the gap to the UI.
  *
  * deductionActiveFields shape: { "deductionId": { amountPerPeriod: value } }
  */
 export function applyDeductionActiveFields(
   deductions: (typeof schema.paycheckDeductions.$inferSelect)[],
   deductionActiveFields: Record<string, Record<string, unknown>>,
-): (typeof schema.paycheckDeductions.$inferSelect)[] {
-  return deductions.map((deduction) => {
-    const activeFields = deductionActiveFields[String(deduction.id)];
-    if (!activeFields) return deduction;
-    return {
-      ...deduction,
-      ...pickEntityActiveFields(activeFields, deduction),
-    };
-  });
+): DeductionRowWithActiveFields[] {
+  return deductions
+    .map((deduction): DeductionRowWithActiveFields | null => {
+      const activeFields = deductionActiveFields[String(deduction.id)];
+      if (!activeFields || activeFields.amountPerPeriod === undefined)
+        return null;
+      // Unconditional merge, not pickEntityActiveFields's presence filter —
+      // amountPerPeriod is no longer a real `paycheck_deductions` column
+      // (Stage B dropped it), so a `field in deduction` check would always
+      // be false and silently drop it. Same unconditional-spread pattern
+      // applyContribActiveFields already uses for contributionValue/Method.
+      return { ...deduction, ...activeFields } as DeductionRowWithActiveFields;
+    })
+    .filter((d): d is DeductionRowWithActiveFields => d !== null);
+}
+
+/**
+ * Which of these deductions have no active amount set under the given
+ * profile's active fields — the "incomplete profile" surface for the UI,
+ * same purpose as getIncompleteContribAccountIds.
+ */
+export function getIncompleteDeductionIds(
+  rows: { id: number }[],
+  deductionActiveFields: Record<string, Record<string, unknown>>,
+): number[] {
+  return rows
+    .filter(
+      (row) =>
+        deductionActiveFields[String(row.id)]?.amountPerPeriod === undefined,
+    )
+    .map((row) => row.id);
 }
 
 /**
@@ -1200,9 +1158,10 @@ export async function fetchContributionProfile(
 
 /**
  * Load a contribution profile by ID and apply its active fields to raw DB
- * rows. Returns modified contribs + jobs (+ deductions, when
- * `allDeductions` is passed) — or the originals if no profile is selected /
- * the row is gone.
+ * rows. Returns modified contribs (+ deductions, when `allDeductions` is
+ * passed) plus jobs merged with their resolved Salary Profile fields (see
+ * mergeSalaryProfileJobFields) — or the originals if no profile is
+ * selected / the row is gone.
  *
  * `allDeductions` is optional and deliberately not threaded through
  * everywhere this function is called (budget.ts, build-engine-payload.ts
@@ -1211,23 +1170,33 @@ export async function fetchContributionProfile(
  * function's deduction support is scoped to its actual consumer, not
  * `resolveProfile` generally.
  *
- * Purely contribution-account, job-field, and deduction active fields.
- * Salary is NOT part of a Contribution Profile — call
- * loadAndApplySalaryProfile (./salary.ts) for that axis, independently.
+ * `salaryProfileActiveMap` is the caller's own resolved Salary Profile —
+ * an independent axis from Contribution Profile, never re-derived here.
+ * Every existing caller already loads this map for its own comp
+ * resolution (resolveCompensation) before calling this function.
  */
 export async function loadAndApplyContribProfile(
   db: Db,
   profileId: number | undefined | null,
   allContribs: (typeof schema.contributionAccounts.$inferSelect)[],
   allJobs: (typeof schema.jobs.$inferSelect)[],
+  salaryProfileActiveMap: SalaryProfileActiveMap,
   allDeductions?: (typeof schema.paycheckDeductions.$inferSelect)[],
 ): Promise<{
   contribs: ContribRowWithActiveFields[];
-  jobs: (typeof schema.jobs.$inferSelect)[];
-  deductions: (typeof schema.paycheckDeductions.$inferSelect)[];
+  jobs: ReturnType<
+    typeof mergeSalaryProfileJobFields<(typeof allJobs)[number]>
+  >;
+  deductions: DeductionRowWithActiveFields[];
 }> {
   const profile = await fetchContributionProfile(db, profileId);
-  return applyContribProfileRow(profile, allContribs, allJobs, allDeductions);
+  return applyContribProfileRow(
+    profile,
+    allContribs,
+    allJobs,
+    salaryProfileActiveMap,
+    allDeductions,
+  );
 }
 
 /**
@@ -1241,21 +1210,24 @@ export function applyContribProfileRow(
   profile: typeof schema.contributionProfiles.$inferSelect | null | undefined,
   allContribs: (typeof schema.contributionAccounts.$inferSelect)[],
   allJobs: (typeof schema.jobs.$inferSelect)[],
+  salaryProfileActiveMap: SalaryProfileActiveMap,
   allDeductions?: (typeof schema.paycheckDeductions.$inferSelect)[],
 ): {
   contribs: ContribRowWithActiveFields[];
-  jobs: (typeof schema.jobs.$inferSelect)[];
-  deductions: (typeof schema.paycheckDeductions.$inferSelect)[];
+  jobs: ReturnType<
+    typeof mergeSalaryProfileJobFields<(typeof allJobs)[number]>
+  >;
+  deductions: DeductionRowWithActiveFields[];
 } {
+  const jobs = mergeSalaryProfileJobFields(allJobs, salaryProfileActiveMap);
   if (!profile) {
     // No profile at all — nothing resolves (same "no fallback" rule as a
     // profile with empty active fields; there is no longer a live account
-    // value to fall back to). Deductions still fall back to their live
-    // default — they carry a real base value, unlike contribution accounts.
+    // value to fall back to for accounts OR deductions).
     return {
       contribs: applyContribActiveFields(allContribs, {}),
-      jobs: allJobs,
-      deductions: allDeductions ?? [],
+      jobs,
+      deductions: [],
     };
   }
   const activeFieldsRoot = profile.contributionActiveFields as Record<
@@ -1266,7 +1238,6 @@ export function applyContribProfileRow(
     allContribs,
     activeFieldsRoot.contributionAccounts ?? {},
   );
-  const jobs = applyJobActiveFields(allJobs, activeFieldsRoot.jobs ?? {});
   const deductions = allDeductions
     ? applyDeductionActiveFields(
         allDeductions,
@@ -1342,7 +1313,7 @@ export type ContribInputRow = {
  */
 export function buildProfileContribData(
   activeContribs: ContribInputRow[],
-  activeJobs: { id: number; personId: number; payPeriod: string }[],
+  activeJobs: { id: number; personId: number; payPeriod: string | undefined }[],
   jobSalaries: {
     job: { id: number; personId: number };
     salary: number;

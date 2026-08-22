@@ -171,31 +171,8 @@ export const jobs = pgTable(
       .references(() => people.id, { onDelete: "restrict" }),
     employerName: text("employer_name").notNull(),
     title: text("title"),
-    payPeriod: text("pay_period").$type<PayPeriod>().notNull(),
-    payWeek: text("pay_week").$type<PayWeek>().notNull(),
     startDate: date("start_date").notNull(),
-    anchorPayDate: date("anchor_pay_date"), // a known payday — defaults to startDate if null
     endDate: date("end_date"),
-    include401kInBonus: boolean("include_401k_in_bonus")
-      .notNull()
-      .default(false),
-    includeBonusInContributions: boolean("include_bonus_in_contributions")
-      .notNull()
-      .default(true),
-    bonusMonth: integer("bonus_month"), // 1-12, month when bonus is typically paid (null = unknown/spread)
-    bonusDayOfMonth: integer("bonus_day_of_month"), // 1-31, day of month when bonus is paid (null = first period of month)
-    w4FilingStatus: text("w4_filing_status").$type<W4FilingStatus>().notNull(),
-    w4Box2cChecked: boolean("w4_box2c_checked").notNull().default(false),
-    additionalFedWithholding: decimal("additional_fed_withholding", {
-      precision: 14,
-      scale: 2,
-    })
-      .notNull()
-      .default("0"),
-    budgetPeriodsPerMonth: decimal("budget_periods_per_month", {
-      precision: 6,
-      scale: 4,
-    }),
     extraPaycheckRouting: jsonb(
       "extra_paycheck_routing",
     ).$type<ExtraPaycheckRoutingData | null>(),
@@ -337,10 +314,6 @@ export const paycheckDeductions = pgTable(
       .notNull()
       .references(() => jobs.id, { onDelete: "cascade" }),
     deductionName: text("deduction_name").notNull(),
-    amountPerPeriod: decimal("amount_per_period", {
-      precision: 14,
-      scale: 2,
-    }).notNull(),
     isPretax: boolean("is_pretax").notNull(),
     ficaExempt: boolean("fica_exempt").notNull().default(false),
   },
@@ -2083,9 +2056,9 @@ export const salaryProfiles = pgTable("salary_profiles", {
   id: serial("id").primaryKey(),
   name: text("name").notNull().unique(),
   description: text("description"),
-  /** jobId → complete salary entry. A job either has ALL five fields (a
-   *  real, complete number for this profile) or no key at all (this
-   *  profile says nothing about that job — contributes $0, not a
+  /** jobId → complete salary entry. A job either has ALL sixteen fields (a
+   *  real, complete number/election for this profile) or no key at all
+   *  (this profile says nothing about that job — contributes $0, not a
    *  fallback to some other value). No partial entries — see
    *  salaryEntriesSchema in json-schemas.ts. */
   salaries: jsonb("salaries")
@@ -2098,6 +2071,17 @@ export const salaryProfiles = pgTable("salary_profiles", {
           bonusMultiplier: number;
           monthsInBonusYear: number;
           bonusOverride: number | null;
+          payPeriod: PayPeriod;
+          payWeek: PayWeek;
+          anchorPayDate: string | null;
+          budgetPeriodsPerMonth: number | null;
+          w4FilingStatus: W4FilingStatus;
+          w4Box2cChecked: boolean;
+          additionalFedWithholding: number;
+          bonusMonth: number | null;
+          bonusDayOfMonth: number | null;
+          include401kInBonus: boolean;
+          includeBonusInContributions: boolean;
         }
       >
     >()

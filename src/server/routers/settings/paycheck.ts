@@ -44,45 +44,28 @@ export function speculativeJobValues(personId: number) {
   return {
     personId,
     employerName: "Speculative (What-If Planning)",
-    payPeriod: "biweekly" as const,
-    payWeek: "na" as const,
     startDate: new Date().toISOString().slice(0, 10),
-    w4FilingStatus: "Single" as const,
-    includeBonusInContributions: false,
     isSpeculative: true,
   };
 }
 
-// annualSalary/bonusPercent/bonusMultiplier/monthsInBonusYear are
-// deliberately NOT here — a job is purely structural and carries no salary
-// or bonus terms of its own; both come exclusively from a Salary Profile's
-// complete entry (see resolveCompensation in server/helpers/salary.ts).
+// A job is purely identity/lifecycle now — payPeriod/payWeek/anchorPayDate/
+// w4*/bonus-date/bonus-inclusion-flags/budgetPeriodsPerMonth all moved to
+// the Salary Profile entry's complete 16-field shape (see salaryEntrySchema
+// in json-schemas.ts) and no longer exist as `jobs` columns at all. Salary/
+// bonus amounts were already off this table (see resolveCompensation's
+// docblock in server/helpers/salary.ts).
 const jobInput = z
   .object({
     personId: z.number().int(),
     employerName: z.string().trim().min(1),
     title: z.string().trim().nullable().optional(),
-    payPeriod: z.enum(["weekly", "biweekly", "semimonthly", "monthly"]),
-    payWeek: z.enum(["even", "odd", "na"]),
     startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-    anchorPayDate: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/)
-      .nullable()
-      .optional(),
     endDate: z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/)
       .nullable()
       .optional(),
-    include401kInBonus: z.boolean().default(false),
-    includeBonusInContributions: z.boolean().default(false),
-    bonusMonth: z.number().int().min(1).max(12).nullable().optional(),
-    bonusDayOfMonth: z.number().int().min(1).max(31).nullable().optional(),
-    w4FilingStatus: z.enum(["MFJ", "Single", "HOH"]),
-    w4Box2cChecked: z.boolean().default(false),
-    additionalFedWithholding: zDecimal.default("0"),
-    budgetPeriodsPerMonth: zDecimal.nullable().optional(),
   })
   .refine((data) => !data.endDate || data.endDate >= data.startDate, {
     message: "End date must be on or after start date",
@@ -141,10 +124,14 @@ const ownershipPersonIdInvariantIssue = {
   path: ["personId"],
 };
 
+// amountPerPeriod is deliberately NOT here — a deduction is purely
+// structural now; its dollar amount is ALWAYS a Contribution Profile's
+// deductions active-field entry (contributionProfile.update/
+// setDeductionActiveFields write it), same no-base-value rule contribution
+// accounts already follow. See applyDeductionActiveFields.
 const deductionInput = z.object({
   jobId: z.number().int(),
   deductionName: z.string().trim().min(1),
-  amountPerPeriod: zDecimal,
   isPretax: z.boolean(),
   ficaExempt: z.boolean().default(false),
 });

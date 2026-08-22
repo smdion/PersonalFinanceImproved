@@ -162,6 +162,7 @@ export const paycheckRouter = createTRPCRouter({
         input?.contributionProfileId,
         allContribs,
         allJobs,
+        salaryProfileActiveMap,
         allDeductions,
       );
       // getIncompleteContribAccountIds's signal (a real account with no
@@ -229,6 +230,12 @@ export const paycheckRouter = createTRPCRouter({
           }
           const jobForClient = activeJob;
 
+          // activeJob.w4FilingStatus is undefined both when this job has no
+          // entry in the active Salary Profile at all, and (structurally
+          // impossible otherwise, since an entry is always complete —
+          // see mergeSalaryProfileJobFields) when it does. Either way, no
+          // bracketRow match means "incomplete," the same safe state a
+          // job with no Salary Profile entry already resolves to.
           const bracketRow = allBrackets.find(
             (b) =>
               b.filingStatus === activeJob.w4FilingStatus &&
@@ -246,6 +253,10 @@ export const paycheckRouter = createTRPCRouter({
               incompleteAccountIds,
             };
           }
+          // From here on, activeJob's Salary Profile fields are guaranteed
+          // present — bracketRow only matched because w4FilingStatus/
+          // w4Box2cChecked were defined, which only happens for a complete
+          // entry (all 16 fields present together).
 
           // A job has no salary/bonus of its own — resolve against the
           // Salary Profile, then the Plan/session + What-If sandbox tiers.
@@ -259,7 +270,7 @@ export const paycheckRouter = createTRPCRouter({
             dbSalary,
             effectiveSalaryMap,
           );
-          const periodsPerYear = getPeriodsPerYear(activeJob.payPeriod);
+          const periodsPerYear = getPeriodsPerYear(activeJob.payPeriod!);
           const taxBracketInput = buildBracketInput(bracketRow, limitsMap);
 
           // profileResult.deductions is already profile-resolved (live
@@ -276,7 +287,8 @@ export const paycheckRouter = createTRPCRouter({
             // resolved amount, applied here (not a second pass after
             // calculatePaycheck) so it's the SAME arithmetic every other
             // deduction goes through.
-            amount: deductionEditMap.get(d.id) ?? toNumber(d.amountPerPeriod),
+            amount:
+              deductionEditMap.get(d.id) ?? toNumber(String(d.amountPerPeriod)),
             taxTreatment: d.isPretax
               ? ("pre_tax" as const)
               : ("after_tax" as const),
@@ -425,7 +437,7 @@ export const paycheckRouter = createTRPCRouter({
             const taxInput: TaxInput = {
               annualGross: salary,
               preTaxDeductionsAnnual: preTaxAnnual,
-              filingStatus: activeJob.w4FilingStatus,
+              filingStatus: activeJob.w4FilingStatus!,
               taxBrackets: annualBracketInput,
               w4CheckboxOverride: null,
               asOfDate,
@@ -434,9 +446,7 @@ export const paycheckRouter = createTRPCRouter({
           }
 
           const rawContribs = [...jobContribs, ...personalContribs];
-          const budgetOverride = activeJob.budgetPeriodsPerMonth
-            ? toNumber(activeJob.budgetPeriodsPerMonth)
-            : null;
+          const budgetOverride = activeJob.budgetPeriodsPerMonth ?? null;
 
           return {
             person,
@@ -470,7 +480,7 @@ export const paycheckRouter = createTRPCRouter({
               budgetOverride,
             ),
             budgetNote: getBudgetFrequencyNote(
-              activeJob.payPeriod,
+              activeJob.payPeriod!,
               budgetOverride,
             ),
             incompleteAccountIds,
@@ -490,7 +500,7 @@ export const paycheckRouter = createTRPCRouter({
       const activePeople = results.filter((r) => r.paycheck && r.tax && r.job);
       let householdTax = null;
       if (activePeople.length > 0) {
-        const filingStatus = activePeople[0]!.job!.w4FilingStatus;
+        const filingStatus = activePeople[0]!.job!.w4FilingStatus!;
         const bracketRow = allBrackets.find(
           (b) => b.filingStatus === filingStatus && b.w4Checkbox === false,
         );
@@ -498,7 +508,7 @@ export const paycheckRouter = createTRPCRouter({
           const bracketInput = buildBracketInput(bracketRow, limitsMap);
           const combinedGross = activePeople.reduce((s, r) => s + r.salary, 0);
           const combinedPreTax = activePeople.reduce((s, r) => {
-            const ppy = getPeriodsPerYear(r.job!.payPeriod);
+            const ppy = getPeriodsPerYear(r.job!.payPeriod!);
             return (
               s +
               r.paycheck!.preTaxDeductions.reduce((ss, d) => ss + d.amount, 0) *

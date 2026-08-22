@@ -522,6 +522,7 @@ function ProfileListItem({
 function ProfileDetailPanel({ profileId }: { profileId: number }) {
   const { data: profile, isLoading } =
     trpc.contributionProfile.getById.useQuery({ id: profileId });
+  const { data: deductionRows } = trpc.settings.deductions.list.useQuery();
 
   if (isLoading) {
     return (
@@ -710,6 +711,78 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
           </tbody>
         </table>
       </div>
+
+      {/* Deductions section — paycheck_deductions carries no amount of its
+          own any more (Stage B): amountPerPeriod resolves entirely through
+          this profile's deductions active-fields, the same "no base value,
+          absent = incomplete" rule contributionAccounts already uses (see
+          deductionActiveFieldsSchema / applyDeductionActiveFields). */}
+      {deductionRows && deductionRows.length > 0 && (
+        <div className="mt-5">
+          <h4 className="text-label font-semibold text-muted uppercase tracking-wide mb-2">
+            Deductions
+          </h4>
+          <table className="w-full text-xs border-collapse">
+            <thead>
+              <tr className="border-b-2 border-strong">
+                <th className="text-left py-2 pl-4 pr-3 text-muted font-medium">
+                  Deduction
+                </th>
+                <th className="text-left py-2 px-3 text-muted font-medium w-24">
+                  Pretax
+                </th>
+                <th className="text-right py-2 px-3 text-muted font-medium w-28">
+                  Amount / Period
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {deductionRows.map((d: DeductionRow, rowIdx: number) => {
+                const activeFieldsRoot = (profile.contributionActiveFields ??
+                  {}) as ActiveFieldsRoot;
+                const af = activeFieldsRoot.deductions?.[String(d.id)] as
+                  Record<string, unknown> | undefined;
+                const activeAmount = af?.amountPerPeriod as
+                  string | number | undefined;
+                const personName =
+                  profile.deductionDetails.find((dd) => dd.id === d.id)
+                    ?.employerName ?? `Job ${d.jobId}`;
+                return (
+                  <tr
+                    key={d.id}
+                    className={`border-b border-subtle hover:bg-blue-50/60 transition-colors ${
+                      rowIdx % 2 === 1
+                        ? "bg-surface-sunken/60"
+                        : "bg-surface-primary"
+                    }`}
+                  >
+                    <td className="py-1.5 pl-4 pr-3 text-secondary">
+                      {d.deductionName}
+                      <span className="text-faint"> — {personName}</span>
+                    </td>
+                    <td className="py-1.5 px-3 text-muted">
+                      {d.isPretax ? "Pretax" : "Post-tax"}
+                    </td>
+                    <td
+                      className={`py-1.5 px-3 text-right font-mono ${
+                        activeAmount !== undefined
+                          ? "text-amber-600 font-medium"
+                          : "text-secondary"
+                      }`}
+                    >
+                      {activeAmount !== undefined ? (
+                        formatCurrency(parseFloat(String(activeAmount)))
+                      ) : (
+                        <span className="italic text-faint">Not set</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
@@ -739,16 +812,15 @@ function ProfileEditor({
   const [contribValues, setContribValues] = useState<
     Record<string, { method?: string; value?: string }>
   >({});
-  const [jobValues, setJobValues] = useState<
-    Record<string, Record<string, string>>
-  >({});
   const [nameValues, setNameValues] = useState<Record<string, string>>({});
   const [disabledAccounts, setDisabledAccounts] = useState<
     Record<string, boolean>
   >({});
-  const [employerNameValues, setEmployerNameValues] = useState<
+  const [deductionValues, setDeductionValues] = useState<
     Record<string, string>
   >({});
+
+  const { data: deductionRows } = trpc.settings.deductions.list.useQuery();
 
   const createMutation = trpc.contributionProfile.create.useMutation({
     onSuccess: (created) => onSaved(created.id),
@@ -815,27 +887,15 @@ function ProfileEditor({
       }
     }
 
-    // Build per-job values for bonus fields
-    const jobs: Record<string, Record<string, unknown>> = {};
-    for (const [jobId, fields] of Object.entries(jobValues)) {
-      const parsed: Record<string, unknown> = {};
-      for (const [key, val] of Object.entries(fields)) {
-        if (
-          key === "include401kInBonus" ||
-          key === "includeBonusInContributions"
-        ) {
-          parsed[key] = val === "true";
-        } else {
-          const num = parseFloat(val);
-          if (!isNaN(num)) parsed[key] = num;
+    // Build per-deduction amount overrides — same "leave blank = not set"
+    // rule as contribution accounts (no base value to fall back to).
+    const deductions: Record<string, Record<string, unknown>> = {};
+    for (const [deductionId, amountStr] of Object.entries(deductionValues)) {
+      if (amountStr && amountStr.trim()) {
+        const num = parseFloat(amountStr);
+        if (!isNaN(num)) {
+          deductions[deductionId] = { amountPerPeriod: String(num) };
         }
-      }
-      if (Object.keys(parsed).length > 0) jobs[jobId] = parsed;
-    }
-    // Merge custom employer names into jobs
-    for (const [jobId, nameVal] of Object.entries(employerNameValues)) {
-      if (nameVal.trim()) {
-        jobs[jobId] = { ...(jobs[jobId] ?? {}), employerName: nameVal.trim() };
       }
     }
 
@@ -846,7 +906,7 @@ function ProfileEditor({
       ...(Object.keys(contribAccounts).length > 0
         ? { contributionAccounts: contribAccounts }
         : {}),
-      ...(Object.keys(jobs).length > 0 ? { jobs } : {}),
+      ...(Object.keys(deductions).length > 0 ? { deductions } : {}),
     };
 
     createMutation.mutate({
@@ -1108,87 +1168,76 @@ function ProfileEditor({
             </table>
           </div>
         )}
-        {/* Employer & bonus handling — bonus AMOUNT terms live on the Salary Profile */}
-        {baseData?.salaryDetails && baseData.salaryDetails.length > 0 && (
+        {/* Deductions — same "leave blank = not set" rule as contribution
+            accounts above; a new profile starts with no deduction amounts
+            unless entered here. */}
+        {deductionRows && deductionRows.length > 0 && (
           <div>
             <h4 className="text-label font-semibold text-muted uppercase tracking-wide mb-2">
-              Employer & Bonus Handling
+              Deductions
             </h4>
-            <div className="space-y-3">
-              {baseData.salaryDetails.map((sd) => {
-                const jo = jobValues[String(sd.jobId)] ?? {};
-                const setField = (field: string, value: string) =>
-                  setJobValues((prev) => ({
-                    ...prev,
-                    [String(sd.jobId)]: {
-                      ...(prev[String(sd.jobId)] ?? {}),
-                      [field]: value,
-                    },
-                  }));
-                return (
-                  <div key={sd.jobId} className="border rounded-lg p-3">
-                    <div className="text-xs font-medium text-secondary mb-2 flex items-center gap-2">
-                      <span>{sd.personName} —</span>
-                      <input
-                        type="text"
-                        value={employerNameValues[String(sd.jobId)] ?? ""}
-                        onChange={(e) =>
-                          setEmployerNameValues((prev) => {
-                            const next = { ...prev };
-                            if (e.target.value)
-                              next[String(sd.jobId)] = e.target.value;
-                            else delete next[String(sd.jobId)];
-                            return next;
-                          })
-                        }
-                        placeholder={sd.employerName}
-                        className="flex-1 px-1.5 py-0.5 text-xs border rounded bg-surface-primary text-primary"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <label className="flex items-center gap-1.5 text-caption text-muted">
+            <table className="w-full text-xs border-collapse">
+              <thead>
+                <tr className="border-b-2 border-strong">
+                  <th className="text-left py-2 pl-4 pr-3 text-muted font-medium">
+                    Deduction
+                  </th>
+                  <th className="text-left py-2 px-3 text-muted font-medium w-24">
+                    Pretax
+                  </th>
+                  <th className="text-right py-2 px-3 text-muted font-medium w-28">
+                    Amount / Period
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {deductionRows.map((d: DeductionRow, rowIdx: number) => (
+                  <tr
+                    key={d.id}
+                    className={`border-b border-subtle hover:bg-blue-50/60 transition-colors ${
+                      rowIdx % 2 === 1
+                        ? "bg-surface-sunken/60"
+                        : "bg-surface-primary"
+                    }`}
+                  >
+                    <td className="py-1.5 pl-4 pr-3 text-secondary">
+                      {d.deductionName}
+                    </td>
+                    <td className="py-1.5 px-3 text-muted">
+                      {d.isPretax ? "Pretax" : "Post-tax"}
+                    </td>
+                    <td className="py-1.5 px-3 text-right">
+                      <div className="flex items-center justify-end gap-0.5">
+                        <span className="text-caption text-faint w-3 text-right shrink-0">
+                          $
+                        </span>
                         <input
-                          type="checkbox"
-                          checked={
-                            jo.include401kInBonus === "true" ||
-                            (jo.include401kInBonus === undefined &&
-                              sd.liveInclude401kInBonus)
-                          }
+                          type="number"
+                          value={deductionValues[String(d.id)] ?? ""}
                           onChange={(e) =>
-                            setField(
-                              "include401kInBonus",
-                              String(e.target.checked),
-                            )
+                            setDeductionValues((prev) => ({
+                              ...prev,
+                              [String(d.id)]: e.target.value,
+                            }))
                           }
-                          className="rounded border-strong"
+                          placeholder="Not set"
+                          className="w-16 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
                         />
-                        Deduct 401k from bonus
-                      </label>
-                      <label className="flex items-center gap-1.5 text-caption text-muted">
-                        <input
-                          type="checkbox"
-                          checked={
-                            jo.includeBonusInContributions === "true" ||
-                            (jo.includeBonusInContributions === undefined &&
-                              sd.liveIncludeBonusInContributions)
-                          }
-                          onChange={(e) =>
-                            setField(
-                              "includeBonusInContributions",
-                              String(e.target.checked),
-                            )
-                          }
-                          className="rounded border-strong"
-                        />
-                        Contributions on salary + bonus
-                      </label>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
+        {/* The old "Employer & Bonus Handling" jobs active-fields section
+            was removed in the Stage B migration — that bucket
+            (contributionActiveFields.jobs) is retired entirely.
+            include401kInBonus/includeBonusInContributions/employerName now
+            live on the Salary Profile entry (employerName has no
+            profile-override mechanism at all any more), edited on the
+            Salary Profile tab instead. */}
       </div>
     </div>
   );
@@ -1198,10 +1247,20 @@ function ProfileEditor({
 // Profile Inline Editor — unlocked, in-place editing of an existing profile
 // ---------------------------------------------------------------------------
 
-/** The stored shape of contribution_profiles.contribution_active_fields. */
+/** The stored shape of contribution_profiles.contribution_active_fields.
+ *  No more "jobs" bucket — retired entirely in the Stage B migration. */
 type ActiveFieldsRoot = {
   contributionAccounts?: Record<string, Record<string, unknown>>;
-  jobs?: Record<string, Record<string, unknown>>;
+  deductions?: Record<string, Record<string, unknown>>;
+};
+
+/** A raw paycheck_deductions row, as returned by settings.deductions.list. */
+type DeductionRow = {
+  id: number;
+  jobId: number;
+  deductionName: string;
+  isPretax: boolean;
+  ficaExempt: boolean;
 };
 
 /**
@@ -1221,6 +1280,7 @@ function ProfileInlineEditor({
   const { data: profile } = trpc.contributionProfile.getById.useQuery({
     id: profileId,
   });
+  const { data: deductionRows } = trpc.settings.deductions.list.useQuery();
   const { drafts, setDraft, clearDraft } = useDraftCommit();
   const updateMutation = trpc.contributionProfile.update.useMutation({
     onSuccess: () => onSaved(),
@@ -1231,7 +1291,8 @@ function ProfileInlineEditor({
   const root = (profile.contributionActiveFields ?? {}) as ActiveFieldsRoot;
   const accountActiveFields = (id: number) =>
     root.contributionAccounts?.[String(id)] ?? {};
-  const jobActiveFields = (id: number) => root.jobs?.[String(id)] ?? {};
+  const deductionActiveFields = (id: number) =>
+    root.deductions?.[String(id)] ?? {};
 
   /** Send a patch for one account. `undefined` removes that key. */
   const patchAccount = (
@@ -1252,19 +1313,22 @@ function ProfileInlineEditor({
     });
   };
 
-  /** Send a patch for one job. `undefined` removes that key. */
-  const patchJob = (jobId: number, changes: Record<string, unknown>) => {
-    const jobs = { ...(root.jobs ?? {}) };
-    const entry = { ...(jobs[String(jobId)] ?? {}) };
+  /** Send a patch for one deduction. `undefined` removes that key. */
+  const patchDeduction = (
+    deductionId: number,
+    changes: Record<string, unknown>,
+  ) => {
+    const deductions = { ...(root.deductions ?? {}) };
+    const entry = { ...(deductions[String(deductionId)] ?? {}) };
     for (const [key, value] of Object.entries(changes)) {
       if (value === undefined) delete entry[key];
       else entry[key] = value;
     }
-    if (Object.keys(entry).length === 0) delete jobs[String(jobId)];
-    else jobs[String(jobId)] = entry;
+    if (Object.keys(entry).length === 0) delete deductions[String(deductionId)];
+    else deductions[String(deductionId)] = entry;
     updateMutation.mutate({
       id: profileId,
-      contributionActiveFields: { ...root, jobs },
+      contributionActiveFields: { ...root, deductions },
     });
   };
 
@@ -1645,87 +1709,93 @@ function ProfileInlineEditor({
         </div>
       )}
 
-      {profile.salaryDetails.length > 0 && (
-        <div>
+      {/* Deductions — no base value on the row any more (Stage B): each
+          deduction is either given an amountPerPeriod by this profile, or
+          it has none at all (same "not set" state as an unset contribution
+          value, no live fallback). */}
+      {deductionRows && deductionRows.length > 0 && (
+        <div className="mb-5">
           <h4 className="text-label font-semibold text-muted uppercase tracking-wide mb-2">
-            Employer & Bonus Handling
+            Deductions
           </h4>
-          <div className="space-y-3">
-            {profile.salaryDetails.map((sd) => {
-              const jo = jobActiveFields(sd.jobId);
-              const storedEmployer =
-                jo.employerName !== undefined ? String(jo.employerName) : "";
-              const include401k =
-                jo.include401kInBonus !== undefined
-                  ? jo.include401kInBonus === true
-                  : sd.liveInclude401kInBonus;
-              const bonusInContribs =
-                jo.includeBonusInContributions !== undefined
-                  ? jo.includeBonusInContributions === true
-                  : sd.liveIncludeBonusInContributions;
-              return (
-                <div key={sd.jobId} className="border rounded-lg p-3">
-                  <div className="text-xs font-medium text-secondary mb-2 flex items-center gap-2">
-                    <span>{sd.personName} —</span>
-                    <input
-                      type="text"
-                      value={drafts[`j${sd.jobId}:employer`] ?? storedEmployer}
-                      onChange={(e) =>
-                        setDraft(`j${sd.jobId}:employer`, e.target.value)
-                      }
-                      onBlur={() =>
-                        commitText(
-                          `j${sd.jobId}:employer`,
-                          storedEmployer,
-                          (value) =>
-                            patchJob(sd.jobId, { employerName: value }),
-                        )
-                      }
-                      placeholder={sd.employerName}
-                      className="flex-1 px-1.5 py-0.5 text-xs border rounded bg-surface-primary text-primary"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <label className="flex items-center gap-1.5 text-caption text-muted">
-                      <input
-                        type="checkbox"
-                        checked={include401k}
-                        onChange={(e) =>
-                          patchJob(sd.jobId, {
-                            include401kInBonus:
-                              e.target.checked === sd.liveInclude401kInBonus
-                                ? undefined
-                                : e.target.checked,
-                          })
-                        }
-                        className="rounded border-strong"
-                      />
-                      Deduct 401k from bonus
-                    </label>
-                    <label className="flex items-center gap-1.5 text-caption text-muted">
-                      <input
-                        type="checkbox"
-                        checked={bonusInContribs}
-                        onChange={(e) =>
-                          patchJob(sd.jobId, {
-                            includeBonusInContributions:
-                              e.target.checked ===
-                              sd.liveIncludeBonusInContributions
-                                ? undefined
-                                : e.target.checked,
-                          })
-                        }
-                        className="rounded border-strong"
-                      />
-                      Contributions on salary + bonus
-                    </label>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <table className="w-full text-xs border-collapse">
+            <thead>
+              <tr className="border-b-2 border-strong">
+                <th className="text-left py-2 pl-4 pr-3 text-muted font-medium">
+                  Deduction
+                </th>
+                <th className="text-left py-2 px-3 text-muted font-medium w-24">
+                  Pretax
+                </th>
+                <th className="text-right py-2 px-3 text-muted font-medium w-28">
+                  Amount / Period
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {deductionRows.map((d: DeductionRow, rowIdx: number) => {
+                const df = deductionActiveFields(d.id);
+                const storedAmount =
+                  df.amountPerPeriod !== undefined
+                    ? String(df.amountPerPeriod)
+                    : "";
+                const personName =
+                  profile.deductionDetails.find((dd) => dd.id === d.id)
+                    ?.employerName ?? `Job ${d.jobId}`;
+                return (
+                  <tr
+                    key={d.id}
+                    className={`border-b border-subtle hover:bg-blue-50/60 transition-colors ${
+                      rowIdx % 2 === 1
+                        ? "bg-surface-sunken/60"
+                        : "bg-surface-primary"
+                    }`}
+                  >
+                    <td className="py-1.5 pl-4 pr-3 text-secondary">
+                      {d.deductionName}
+                      <span className="text-faint"> — {personName}</span>
+                    </td>
+                    <td className="py-1.5 px-3 text-muted">
+                      {d.isPretax ? "Pretax" : "Post-tax"}
+                    </td>
+                    <td className="py-1.5 px-3 text-right">
+                      <div className="flex items-center justify-end gap-0.5">
+                        <span className="text-caption text-faint w-3 text-right shrink-0">
+                          $
+                        </span>
+                        <input
+                          type="number"
+                          value={drafts[`d${d.id}:amount`] ?? storedAmount}
+                          onChange={(e) =>
+                            setDraft(`d${d.id}:amount`, e.target.value)
+                          }
+                          onBlur={() =>
+                            commitNumeric(
+                              `d${d.id}:amount`,
+                              storedAmount,
+                              (value) =>
+                                patchDeduction(d.id, {
+                                  amountPerPeriod: value,
+                                }),
+                              (num) => String(num),
+                            )
+                          }
+                          placeholder="Not set"
+                          className="w-16 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
+
+      {/* The old "Employer & Bonus Handling" jobs active-fields section was
+          removed in the Stage B migration — see the matching comment in
+          ProfileEditor above. */}
     </div>
   );
 }

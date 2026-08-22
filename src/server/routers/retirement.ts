@@ -22,6 +22,7 @@ import {
   getTotalCompensation,
   resolveCompensation,
   loadEffectiveSalaryProfile,
+  mergeSalaryProfileJobFields,
   getLatestSnapshot,
   computeAnnualContribution,
   computeGroupedEmployerMatch,
@@ -54,7 +55,7 @@ async function resolveDefaultFilingStatus(
   personId: number,
 ): Promise<W4FilingStatus> {
   const [job] = await db
-    .select({ w4FilingStatus: schema.jobs.w4FilingStatus })
+    .select({ id: schema.jobs.id })
     .from(schema.jobs)
     .where(
       and(
@@ -64,7 +65,9 @@ async function resolveDefaultFilingStatus(
       ),
     )
     .limit(1);
-  return job?.w4FilingStatus ?? "MFJ";
+  if (!job) return "MFJ";
+  const salaryProfileActiveMap = await loadEffectiveSalaryProfile(db, null);
+  return salaryProfileActiveMap.get(job.id)?.w4FilingStatus ?? "MFJ";
 }
 
 // --- CRUD Zod schemas ---
@@ -379,10 +382,13 @@ export const retirementRouter = createTRPCRouter({
       // docblock) — Plan-specific salary threading into relocation
       // scenarios is a separate, not-yet-built feature.
       const asOfDate = referenceDate;
-      const activeJobs = filterActiveJobs(allJobs);
       const salaryProfileActiveMap = await loadEffectiveSalaryProfile(
         ctx.db,
         null,
+      );
+      const activeJobs = mergeSalaryProfileJobFields(
+        filterActiveJobs(allJobs),
+        salaryProfileActiveMap,
       );
       const jobSalaries = activeJobs.map((j) => {
         const comp = resolveCompensation(salaryProfileActiveMap, j.id);
@@ -414,7 +420,10 @@ export const retirementRouter = createTRPCRouter({
         // arms can legitimately represent different real jobs/offers with
         // different pay schedules. Defaults to the raw jobs only for the
         // (non-comparison) live-data callers that never resolve a profile.
-        jobsForPeriods: { id: number; payPeriod: string }[] = activeJobs,
+        jobsForPeriods: {
+          id: number;
+          payPeriod: string | undefined;
+        }[] = activeJobs,
       ) => {
         const salaryById = new Map<number, number>();
         const annualById = new Map<number, number>();
@@ -491,6 +500,7 @@ export const retirementRouter = createTRPCRouter({
           activeContribs,
           activeJobs,
           jobSalaries,
+          salaryProfileActiveMap,
         );
         const resolvedCombinedSalary = resolved.jobSalaries.reduce(
           (s, js) => s + js.salary,

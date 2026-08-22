@@ -1,9 +1,12 @@
 /**
- * Contribution Profile active-field coverage for tax-input job fields
- * (w4FilingStatus, w4Box2cChecked, additionalFedWithholding, payPeriod,
- * payWeek, anchorPayDate) and deductions (amountPerPeriod) — the gap this
- * plan closes: switching a Contribution Profile previously changed
- * contribution amounts but not tax/withholding or deduction amounts.
+ * Salary Profile coverage for tax-input/schedule fields (w4FilingStatus,
+ * w4Box2cChecked, additionalFedWithholding, payPeriod, payWeek,
+ * anchorPayDate) and Contribution Profile coverage for deductions
+ * (amountPerPeriod). Originally written against the superseded Stage-A
+ * design (Contribution Profile owned all of these via a `jobs` active-fields
+ * bucket) — updated for Stage B, where tax-input/schedule fields moved to
+ * the Salary Profile entry and the Contribution Profile `jobs` bucket is
+ * deleted wholesale. Deductions still resolve via Contribution Profile.
  */
 import "./setup-mocks";
 import { describe, it, expect, vi } from "vitest";
@@ -22,28 +25,15 @@ import {
   seedSavingsGoal,
 } from "./setup";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
-import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { eq } from "drizzle-orm";
 import { applyContributionAccountEdit } from "@/server/helpers";
 
-/** The migration seeds a default `active_contrib_profile_id` row — upsert
- *  rather than insert so setting it in a test doesn't hit the unique
- *  constraint. */
-function setActiveContribProfile(
-  db: Awaited<ReturnType<typeof createTestCaller>>["db"],
-  profileId: number,
-) {
-  db.insert(sqliteSchema.appSettings)
-    .values({ key: SK_ACTIVE_CONTRIB_PROFILE_ID, value: String(profileId) })
-    .onConflictDoUpdate({
-      target: sqliteSchema.appSettings.key,
-      set: { value: String(profileId) },
-    })
-    .run();
-}
-
 describe("paycheck.computeSummary — tax-input active fields", () => {
-  it("a profile's w4FilingStatus/additionalFedWithholding active fields change computed federal withholding", async () => {
+  it("a different Salary Profile's w4FilingStatus/additionalFedWithholding change computed federal withholding", async () => {
+    // w4FilingStatus/additionalFedWithholding are Salary-Profile-owned now
+    // — the Contribution Profile `jobs` bucket that used to carry them is
+    // deleted wholesale. Compare the default active Salary Profile against
+    // an explicitly-passed alternate one for the same job.
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       const personId = await seedPerson(db, "TaxInputPerson");
@@ -53,26 +43,41 @@ describe("paycheck.computeSummary — tax-input active fields", () => {
         w4Box2cChecked: false,
       });
 
-      const withoutProfile = await caller.paycheck.computeSummary();
-      const baseline = withoutProfile.people.find(
+      const baselineResult = await caller.paycheck.computeSummary();
+      const baseline = baselineResult.people.find(
         (p) => p.person.id === personId,
       )!;
 
-      const profileId = seedContributionProfile(db, {
-        name: "Tax Input Profile",
-        contributionActiveFields: {
-          contributionAccounts: {},
-          jobs: {
+      const altSalaryProfileId = db
+        .insert(sqliteSchema.salaryProfiles)
+        .values({
+          name: "Single Filer, Extra Withholding",
+          salaries: {
             [String(jobId)]: {
+              salary: 150000,
+              bonusPercent: 0,
+              bonusMultiplier: 1,
+              monthsInBonusYear: 12,
+              bonusOverride: null,
+              payPeriod: "biweekly",
+              payWeek: "na",
+              anchorPayDate: null,
+              budgetPeriodsPerMonth: null,
               w4FilingStatus: "Single",
-              additionalFedWithholding: "100",
+              w4Box2cChecked: false,
+              additionalFedWithholding: 100,
+              bonusMonth: null,
+              bonusDayOfMonth: null,
+              include401kInBonus: false,
+              includeBonusInContributions: true,
             },
           },
-        },
-      });
+        })
+        .returning({ id: sqliteSchema.salaryProfiles.id })
+        .get().id;
 
       const withProfile = await caller.paycheck.computeSummary({
-        contributionProfileId: profileId,
+        salaryProfileId: altSalaryProfileId,
       });
       const withProfilePerson = withProfile.people.find(
         (p) => p.person.id === personId,
@@ -93,7 +98,7 @@ describe("paycheck.computeSummary — tax-input active fields", () => {
     }
   });
 
-  it("a profile-set payPeriod changes the live pay stub's periodsPerYear", async () => {
+  it("a different Salary Profile's payPeriod changes the live pay stub's periodsPerYear", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       const personId = await seedPerson(db, "PayPeriodPerson");
@@ -103,22 +108,36 @@ describe("paycheck.computeSummary — tax-input active fields", () => {
         anchorPayDate: "2026-01-02",
       });
 
-      const profileId = seedContributionProfile(db, {
-        name: "Weekly Profile",
-        contributionActiveFields: {
-          contributionAccounts: {},
-          jobs: {
+      const weeklySalaryProfileId = db
+        .insert(sqliteSchema.salaryProfiles)
+        .values({
+          name: "Weekly Schedule",
+          salaries: {
             [String(jobId)]: {
+              salary: 100000,
+              bonusPercent: 0,
+              bonusMultiplier: 1,
+              monthsInBonusYear: 12,
+              bonusOverride: null,
               payPeriod: "weekly",
               payWeek: "na",
               anchorPayDate: "2026-01-02",
+              budgetPeriodsPerMonth: null,
+              w4FilingStatus: "MFJ",
+              w4Box2cChecked: false,
+              additionalFedWithholding: 0,
+              bonusMonth: null,
+              bonusDayOfMonth: null,
+              include401kInBonus: false,
+              includeBonusInContributions: true,
             },
           },
-        },
-      });
+        })
+        .returning({ id: sqliteSchema.salaryProfiles.id })
+        .get().id;
 
       const result = await caller.paycheck.computeSummary({
-        contributionProfileId: profileId,
+        salaryProfileId: weeklySalaryProfileId,
       });
       const person = result.people.find((p) => p.person.id === personId)!;
       expect(person.paycheck!.periodsPerYear).toBe(52);
@@ -127,7 +146,7 @@ describe("paycheck.computeSummary — tax-input active fields", () => {
     }
   });
 
-  it("falls back to the job's live defaults when the profile has no active fields set for it", async () => {
+  it("falls back to the default active Salary Profile when no explicit one is passed", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       const personId = await seedPerson(db, "NoActiveFieldsPerson");
@@ -140,7 +159,7 @@ describe("paycheck.computeSummary — tax-input active fields", () => {
 
       const profileId = seedContributionProfile(db, {
         name: "Empty Profile",
-        contributionActiveFields: { contributionAccounts: {}, jobs: {} },
+        contributionActiveFields: { contributionAccounts: {} },
       });
 
       const withEmptyProfile = await caller.paycheck.computeSummary({
@@ -161,17 +180,18 @@ describe("paycheck.computeSummary — tax-input active fields", () => {
 });
 
 describe("paycheck.computeSummary — deduction active fields", () => {
+  // amountPerPeriod no longer lives on the paycheck_deductions row
+  // (Stage B) — it seeds only the structural fields; any dollar amount a
+  // test needs comes from a Contribution Profile's deductions active field.
   function seedDeduction(
     db: Awaited<ReturnType<typeof createTestCaller>>["db"],
     jobId: number,
-    amountPerPeriod: string,
   ): number {
     return db
       .insert(sqliteSchema.paycheckDeductions)
       .values({
         jobId,
         deductionName: "Dental",
-        amountPerPeriod,
         isPretax: false,
         ficaExempt: false,
       })
@@ -184,9 +204,21 @@ describe("paycheck.computeSummary — deduction active fields", () => {
     try {
       const personId = await seedPerson(db, "DeductionPerson");
       const jobId = seedJob(db, personId);
-      const deductionId = seedDeduction(db, jobId, "20");
+      const deductionId = seedDeduction(db, jobId);
 
-      const profileId = seedContributionProfile(db, {
+      // No row-level "live" amount exists any more — both the $20 baseline
+      // and the $75 override are Contribution Profile deductions
+      // active-field entries, compared against each other rather than
+      // against a no-profile call.
+      const baselineProfileId = seedContributionProfile(db, {
+        name: "Deduction Baseline Profile",
+        contributionActiveFields: {
+          contributionAccounts: {},
+          jobs: {},
+          deductions: { [String(deductionId)]: { amountPerPeriod: "20" } },
+        },
+      });
+      const overrideProfileId = seedContributionProfile(db, {
         name: "Deduction Profile",
         contributionActiveFields: {
           contributionAccounts: {},
@@ -195,9 +227,11 @@ describe("paycheck.computeSummary — deduction active fields", () => {
         },
       });
 
-      const withoutProfile = await caller.paycheck.computeSummary();
+      const withoutProfile = await caller.paycheck.computeSummary({
+        contributionProfileId: baselineProfileId,
+      });
       const withProfile = await caller.paycheck.computeSummary({
-        contributionProfileId: profileId,
+        contributionProfileId: overrideProfileId,
       });
 
       const baseline = withoutProfile.people.find(
@@ -221,12 +255,12 @@ describe("paycheck.computeSummary — deduction active fields", () => {
     }
   });
 
-  it("an explicit zero active-field value zeroes the deduction, not falls back to live", async () => {
+  it("an explicit zero active-field value zeroes the deduction", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       const personId = await seedPerson(db, "ZeroDeductionPerson");
       const jobId = seedJob(db, personId);
-      const deductionId = seedDeduction(db, jobId, "40");
+      const deductionId = seedDeduction(db, jobId);
 
       const profileId = seedContributionProfile(db, {
         name: "Zero Deduction Profile",
@@ -255,7 +289,7 @@ describe("paycheck.computeSummary — deduction active fields", () => {
     try {
       const personId = await seedPerson(db, "SandboxDeductionPerson");
       const jobId = seedJob(db, personId);
-      const deductionId = seedDeduction(db, jobId, "20");
+      const deductionId = seedDeduction(db, jobId);
 
       const profileId = seedContributionProfile(db, {
         name: "Sandbox Layer Profile",
@@ -283,8 +317,13 @@ describe("paycheck.computeSummary — deduction active fields", () => {
   });
 });
 
-describe("computeJobNetPayPerCheck / extraPaycheckRouting — profile resolution + payPeriod mismatch guard", () => {
-  it("baseNetPayPerCheck reflects the globally-active profile's tax-input/deduction active fields", async () => {
+describe("computeJobNetPayPerCheck / extraPaycheckRouting — Salary Profile resolution", () => {
+  it("baseNetPayPerCheck reflects the globally-active Salary Profile's tax-input for that job", async () => {
+    // additionalFedWithholding is Salary-Profile-owned now — the
+    // Contribution Profile `jobs` bucket that used to carry it is deleted
+    // wholesale. seedJob's overrides write straight into the shared
+    // default active Salary Profile (see setup.ts), so job B's own entry
+    // can differ from job A's without needing a second profile.
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       const personIdA = await seedPerson(db, "RoutingPersonA");
@@ -298,6 +337,7 @@ describe("computeJobNetPayPerCheck / extraPaycheckRouting — profile resolution
         payPeriod: "biweekly",
         payWeek: "even",
         anchorPayDate: "2026-01-02",
+        additionalFedWithholding: "500",
       });
       const goalId = seedSavingsGoal(db);
 
@@ -305,23 +345,13 @@ describe("computeJobNetPayPerCheck / extraPaycheckRouting — profile resolution
         { from: "2026-01", to: null, splits: [{ goalId, pct: 100 }] },
       ];
 
-      // Job A: saved with no globally-active profile — live default.
+      // Job A: no extra withholding.
       await caller.savings.extraPaycheckRouting.save({
         jobId: jobIdA,
         rules,
       });
 
-      // Job B: saved under a profile adding $500/check extra withholding.
-      const profileId = seedContributionProfile(db, {
-        name: "Routing Profile",
-        contributionActiveFields: {
-          contributionAccounts: {},
-          jobs: {
-            [String(jobIdB)]: { additionalFedWithholding: "500" },
-          },
-        },
-      });
-      setActiveContribProfile(db, profileId);
+      // Job B: its own Salary Profile entry adds $500/check extra withholding.
       await caller.savings.extraPaycheckRouting.save({
         jobId: jobIdB,
         rules,
@@ -352,35 +382,22 @@ describe("computeJobNetPayPerCheck / extraPaycheckRouting — profile resolution
     }
   });
 
-  it("snapshots the globally-active profile's payPeriod/anchorPayDate at save time, even when they differ from the job's live values (Stage A: no mismatch guard, freeze instead)", async () => {
+  it("snapshots the job's Salary Profile payPeriod/anchorPayDate at save time", async () => {
+    // There is only one source for payPeriod/anchorPayDate now (the
+    // Salary Profile entry) — the old "Contribution Profile sets a
+    // mismatched schedule vs. the job's live column" scenario is no
+    // longer representable, since both used to be independently settable
+    // and now aren't.
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
-      const personId = await seedPerson(db, "MismatchPerson");
+      const personId = await seedPerson(db, "SnapshotPerson");
       const jobId = seedJob(db, personId, {
-        payPeriod: "biweekly",
-        payWeek: "even",
-        anchorPayDate: "2026-01-02",
+        payPeriod: "weekly",
+        payWeek: "na",
+        anchorPayDate: "2026-01-09",
       });
       const goalId = seedSavingsGoal(db);
 
-      const profileId = seedContributionProfile(db, {
-        name: "Mismatched Schedule Profile",
-        contributionActiveFields: {
-          contributionAccounts: {},
-          jobs: {
-            [String(jobId)]: {
-              payPeriod: "weekly",
-              payWeek: "na",
-              anchorPayDate: "2026-01-09",
-            },
-          },
-        },
-      });
-      setActiveContribProfile(db, profileId);
-
-      // No mismatch guard any more — the save succeeds and freezes the
-      // profile's own resolved schedule into the snapshot, rather than
-      // rejecting because it differs from the job's live column.
       const saved = await caller.savings.extraPaycheckRouting.save({
         jobId,
         rules: [{ from: "2026-01", to: null, splits: [{ goalId, pct: 100 }] }],
@@ -400,7 +417,7 @@ describe("computeJobNetPayPerCheck / extraPaycheckRouting — profile resolution
     }
   });
 
-  it("succeeds when the globally-active profile's payPeriod matches the job's real payPeriod", async () => {
+  it("succeeds for the job's ordinary biweekly Salary Profile schedule", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       const personId = await seedPerson(db, "MatchingSchedulePerson");
@@ -409,21 +426,6 @@ describe("computeJobNetPayPerCheck / extraPaycheckRouting — profile resolution
         payWeek: "even",
         anchorPayDate: "2026-01-02",
       });
-
-      const profileId = seedContributionProfile(db, {
-        name: "Matching Schedule Profile",
-        contributionActiveFields: {
-          contributionAccounts: {},
-          jobs: {
-            [String(jobId)]: {
-              payPeriod: "biweekly",
-              payWeek: "even",
-              anchorPayDate: "2026-01-02",
-            },
-          },
-        },
-      });
-      setActiveContribProfile(db, profileId);
 
       const saved = await caller.savings.extraPaycheckRouting.save({
         jobId,
@@ -448,16 +450,17 @@ describe("computeJobNetPayPerCheck / extraPaycheckRouting — profile resolution
   });
 });
 
-describe("applyContributionAccountEdit — inverse-path uses the edit's own profile, not the globally-active one", () => {
-  it("resolves periodsPerYear against the profile passed in, even when it is not globally active", async () => {
+describe("applyContributionAccountEdit — periodsPerYear resolves from the globally-active Salary Profile", () => {
+  it("resolves the same periodsPerYear regardless of which Contribution Profile the edit targets", async () => {
+    // Pay schedule is Salary-Profile-owned now — a Contribution Profile
+    // can no longer change periodsPerYear at all (the `jobs` bucket that
+    // used to let it is deleted). Two different Contribution Profiles
+    // editing the same jobless account must resolve the SAME
+    // periodsPerYear, from the one globally-active Salary Profile.
     const { db, cleanup } = await createTestCaller(adminSession);
     try {
       const personId = await seedPerson(db, "BudgetLinkPerson");
-      // The job's real, raw schedule is biweekly (26 periods/yr) — and
-      // stays the globally-active setting throughout this test (never
-      // set), so a bug reverting to "the globally-active profile" would
-      // silently fall back to biweekly for BOTH edits below.
-      const jobId = seedJob(db, personId, { payPeriod: "biweekly" });
+      seedJob(db, personId, { payPeriod: "biweekly" });
 
       // Budget-linked accounts must have jobId === null. Inserted directly
       // (not via the generic seedContributionAccount helper, which targets
@@ -476,27 +479,19 @@ describe("applyContributionAccountEdit — inverse-path uses the edit's own prof
         .returning({ id: sqliteSchema.contributionAccounts.id })
         .get().id;
 
-      const biweeklyProfileId = seedContributionProfile(db, {
-        name: "Biweekly Schedule",
+      const profileAId = seedContributionProfile(db, {
+        name: "Profile A",
         contributionActiveFields: {
           contributionAccounts: {
             [String(accountId)]: { contributionMethod: "fixed_per_period" },
           },
-          jobs: {},
         },
       });
-      const weeklyProfileId = seedContributionProfile(db, {
-        name: "Weekly Schedule",
+      const profileBId = seedContributionProfile(db, {
+        name: "Profile B",
         contributionActiveFields: {
           contributionAccounts: {
             [String(accountId)]: { contributionMethod: "fixed_per_period" },
-          },
-          jobs: {
-            [String(jobId)]: {
-              payPeriod: "weekly",
-              payWeek: "na",
-              anchorPayDate: "2026-01-02",
-            },
           },
         },
       });
@@ -506,50 +501,44 @@ describe("applyContributionAccountEdit — inverse-path uses the edit's own prof
         db,
         accountId,
         monthlyAmount,
-        biweeklyProfileId,
+        profileAId,
       );
+      const valueA = await readContributionValue(db, profileAId, accountId);
+
       await applyContributionAccountEdit(
         db,
         accountId,
         monthlyAmount,
-        weeklyProfileId,
+        profileBId,
       );
+      const valueB = await readContributionValue(db, profileBId, accountId);
 
-      const [biweeklyProfile] = await db
-        .select({
-          contributionActiveFields:
-            sqliteSchema.contributionProfiles.contributionActiveFields,
-        })
-        .from(sqliteSchema.contributionProfiles)
-        .where(eq(sqliteSchema.contributionProfiles.id, biweeklyProfileId));
-      const [weeklyProfile] = await db
-        .select({
-          contributionActiveFields:
-            sqliteSchema.contributionProfiles.contributionActiveFields,
-        })
-        .from(sqliteSchema.contributionProfiles)
-        .where(eq(sqliteSchema.contributionProfiles.id, weeklyProfileId));
-
-      const biweeklyValue = Number(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- JSONB active-field leaf shape
-        (biweeklyProfile!.contributionActiveFields as any).contributionAccounts[
-          String(accountId)
-        ].contributionValue,
-      );
-      const weeklyValue = Number(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- JSONB active-field leaf shape
-        (weeklyProfile!.contributionActiveFields as any).contributionAccounts[
-          String(accountId)
-        ].contributionValue,
-      );
-
-      // (1000 * 12) / 26 vs (1000 * 12) / 52 — each profile's own
-      // periodsPerYear, not the raw job's biweekly value for both.
-      expect(biweeklyValue).toBeCloseTo((monthlyAmount * 12) / 26, 1);
-      expect(weeklyValue).toBeCloseTo((monthlyAmount * 12) / 52, 1);
-      expect(biweeklyValue).not.toBeCloseTo(weeklyValue, 1);
+      // (1000 * 12) / 26 — the job's biweekly Salary Profile schedule, for
+      // both profiles.
+      expect(valueA).toBeCloseTo((monthlyAmount * 12) / 26, 1);
+      expect(valueB).toBeCloseTo((monthlyAmount * 12) / 26, 1);
     } finally {
       cleanup();
     }
   });
 });
+
+async function readContributionValue(
+  db: Awaited<ReturnType<typeof createTestCaller>>["db"],
+  profileId: number,
+  accountId: number,
+): Promise<number> {
+  const [profile] = await db
+    .select({
+      contributionActiveFields:
+        sqliteSchema.contributionProfiles.contributionActiveFields,
+    })
+    .from(sqliteSchema.contributionProfiles)
+    .where(eq(sqliteSchema.contributionProfiles.id, profileId));
+  return Number(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- JSONB active-field leaf shape
+    (profile!.contributionActiveFields as any).contributionAccounts[
+      String(accountId)
+    ].contributionValue,
+  );
+}

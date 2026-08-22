@@ -11,10 +11,10 @@ import {
   aggregateContributionsByCategory,
   resolveProfile,
   applyContribActiveFields,
-  applyJobActiveFields,
   buildContributionDisplaySpecs,
 } from "@/server/helpers/contribution";
 import type { AccountCategory } from "@/lib/calculators/types";
+import type { SalaryProfileActiveMap } from "@/server/helpers/salary";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -363,65 +363,12 @@ describe("applyContribActiveFields", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// applyJobActiveFields
-// ---------------------------------------------------------------------------
-
-describe("applyJobActiveFields", () => {
-  const baseJob = {
-    id: 1,
-    personId: 1,
-    bonusPercent: "0.10",
-    bonusMultiplier: "1.0",
-    bonusOverride: null,
-    monthsInBonusYear: 12,
-    annualSalary: "120000",
-    payPeriod: "biweekly",
-    endDate: null,
-    bonusMonth: 2,
-    includeBonusInContributions: false,
-    employerName: "OldCorp",
-  } as unknown as (typeof import("@/lib/db/schema").jobs)["$inferSelect"];
-
-  it("returns jobs unchanged when no active fields", () => {
-    const result = applyJobActiveFields([baseJob], {});
-    expect(result[0].bonusPercent).toBe("0.10");
-  });
-
-  it("applies valid active fields", () => {
-    const result = applyJobActiveFields([baseJob], {
-      "1": { includeBonusInContributions: true, bonusMonth: 3 },
-    });
-    expect(result[0].includeBonusInContributions).toBe(true);
-    expect(result[0].bonusMonth).toBe(3);
-  });
-
-  it("refuses bonus AMOUNT fields — they moved to the Salary Profile", () => {
-    // A Contribution Profile must not be able to change anyone's
-    // compensation. These names are still real jobs columns, so the plain
-    // `field in job` filter would happily apply a stale stored key.
-    const result = applyJobActiveFields([baseJob], {
-      "1": {
-        bonusPercent: "0.15",
-        bonusMultiplier: "1.5",
-        monthsInBonusYear: 6,
-      },
-    });
-    expect(result[0].bonusPercent).toBe("0.10");
-    expect(result[0].bonusMultiplier).toBe("1.0");
-    expect(result[0].monthsInBonusYear).toBe(12);
-  });
-
-  it("ignores active fields not present on job", () => {
-    const result = applyJobActiveFields([baseJob], {
-      "1": { nonExistentField: "value", bonusMonth: 4 },
-    } as Record<string, Record<string, unknown>>);
-    expect(result[0].bonusMonth).toBe(4);
-    expect(
-      (result[0] as Record<string, unknown>)["nonExistentField"],
-    ).toBeUndefined();
-  });
-});
+// applyJobActiveFields / the Contribution Profile `jobs` active-fields
+// bucket no longer exist — Stage B deleted them wholesale. Pay schedule,
+// W-4 elections, and bonus pay date/flags now come from the Salary
+// Profile entry (see mergeSalaryProfileJobFields), and employerName has no
+// profile-override path at all any more (accepted feature reduction, see
+// RULES.md's Salary Profile layer section).
 
 // ---------------------------------------------------------------------------
 // resolveProfile
@@ -434,10 +381,36 @@ describe("resolveProfile", () => {
       name: "Test Profile",
       contributionActiveFields: {
         contributionAccounts: {},
-        jobs: {},
       },
       ...overrides,
     }) as unknown as (typeof import("@/lib/db/schema").contributionProfiles)["$inferSelect"];
+
+  // resolveProfile merges pay-schedule/W-4/bonus-date fields from the
+  // caller's own resolved Salary Profile map (mergeSalaryProfileJobFields)
+  // — no longer from a Contribution Profile `jobs` bucket.
+  const salaryProfileActiveMap: SalaryProfileActiveMap = new Map([
+    [
+      1,
+      {
+        salary: 120000,
+        bonusPercent: 0,
+        bonusMultiplier: 1,
+        monthsInBonusYear: 12,
+        bonusOverride: null,
+        payPeriod: "biweekly",
+        payWeek: "na",
+        anchorPayDate: null,
+        budgetPeriodsPerMonth: null,
+        w4FilingStatus: "MFJ",
+        w4Box2cChecked: false,
+        additionalFedWithholding: 0,
+        bonusMonth: null,
+        bonusDayOfMonth: null,
+        include401kInBonus: false,
+        includeBonusInContributions: false,
+      },
+    ],
+  ]);
 
   const liveContrib = {
     id: 10,
@@ -487,6 +460,7 @@ describe("resolveProfile", () => {
       [liveContrib],
       [liveJob],
       [liveJobSalary],
+      salaryProfileActiveMap,
     );
 
     expect(result.jobSalaries[0].salary).toBe(120000);
@@ -501,6 +475,7 @@ describe("resolveProfile", () => {
       [liveContrib],
       [liveJob],
       [liveJobSalary],
+      salaryProfileActiveMap,
     );
 
     expect(result.activeContribs).toHaveLength(0);
@@ -513,7 +488,6 @@ describe("resolveProfile", () => {
         contributionAccounts: {
           "10": { contributionValue: "15" },
         },
-        jobs: {},
       },
     });
     const result = resolveProfile(
@@ -521,6 +495,7 @@ describe("resolveProfile", () => {
       [liveContrib],
       [liveJob],
       [liveJobSalary],
+      salaryProfileActiveMap,
     );
 
     expect(result.activeContribs[0].contributionValue).toBe("15");
@@ -532,7 +507,6 @@ describe("resolveProfile", () => {
         contributionAccounts: {
           "10": { isActive: false },
         },
-        jobs: {},
       },
     });
     const result = resolveProfile(
@@ -540,59 +514,27 @@ describe("resolveProfile", () => {
       [liveContrib],
       [liveJob],
       [liveJobSalary],
+      salaryProfileActiveMap,
     );
 
     expect(result.activeContribs).toHaveLength(0);
   });
 
-  it("applies job overrides it still owns", () => {
-    const profile = makeProfile({
-      contributionActiveFields: {
-        contributionAccounts: {},
-        jobs: {
-          "1": { employerName: "NewCorp" },
-        },
-      },
-    });
+  it("merges pay-schedule fields from the Salary Profile map onto patchedJobs", () => {
+    // The Contribution Profile `jobs` bucket that used to own employerName/
+    // bonus-date overrides is gone — patchedJobs' non-comp fields now come
+    // entirely from mergeSalaryProfileJobFields against salaryProfileActiveMap.
+    const profile = makeProfile();
     const result = resolveProfile(
       profile,
       [liveContrib],
       [liveJob],
       [liveJobSalary],
+      salaryProfileActiveMap,
     );
 
-    expect(result.patchedJobs[0].employerName).toBe("NewCorp");
-  });
-
-  it("REFUSES a stale bonus-amount job override", () => {
-    // bonusPercent/bonusMultiplier/monthsInBonusYear moved to the Salary
-    // Profile and are no longer real jobs columns at all. The override
-    // filter is field-name-driven (`field in job`), so a leftover key in an
-    // old contribution_active_fields row has nothing to land on any more —
-    // this is the runtime backstop that makes a missed row inert, not
-    // wrong.
-    const profile = makeProfile({
-      contributionActiveFields: {
-        contributionAccounts: {},
-        jobs: {
-          "1": {
-            bonusPercent: "0.25",
-            bonusMultiplier: "3",
-            monthsInBonusYear: 6,
-          },
-        },
-      },
-    });
-    const result = resolveProfile(
-      profile,
-      [liveContrib],
-      [liveJob],
-      [liveJobSalary],
-    );
-
-    expect(result.patchedJobs[0]).not.toHaveProperty("bonusPercent");
-    expect(result.patchedJobs[0]).not.toHaveProperty("bonusMultiplier");
-    expect(result.patchedJobs[0]).not.toHaveProperty("monthsInBonusYear");
+    expect(result.patchedJobs[0].payPeriod).toBe("biweekly");
+    expect(result.patchedJobs[0].w4FilingStatus).toBe("MFJ");
   });
 });
 

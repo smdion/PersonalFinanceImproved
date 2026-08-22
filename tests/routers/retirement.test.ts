@@ -1526,7 +1526,7 @@ describe("retirement router -- all optional inputs combined", () => {
 // ---------------------------------------------------------------------------
 
 describe("computeRelocationAnalysis -- per-arm payPeriod resolution", () => {
-  it("a payPeriod active field on the relocation-arm profile changes fixed_per_period annualization", async () => {
+  it("a Contribution Profile can no longer change payPeriod — both arms annualize against the same Salary Profile schedule", async () => {
     const { caller, db, cleanup } = await createTestCaller();
     try {
       const personId = await seedPerson(db, "SchedulePerson", "1990-01-01");
@@ -1587,33 +1587,27 @@ describe("computeRelocationAnalysis -- per-arm payPeriod resolution", () => {
                 contributionMethod: "fixed_per_period",
               },
             },
-            jobs: {},
           },
         })
         .returning({ id: schema.contributionProfiles.id })
         .get();
 
-      // Comparison arm: same $100 fixed_per_period, but this profile also
-      // sets the job's payPeriod (+ coupled payWeek/anchorPayDate) to
-      // weekly (52 periods) — annualization should follow THIS arm's
-      // resolved schedule, not the outer raw job.
+      // Comparison arm: same $100 fixed_per_period, a DIFFERENT Contribution
+      // Profile — but a Contribution Profile no longer touches jobs at all
+      // (the `jobs` active-fields bucket that used to let it override
+      // payPeriod is deleted). Both arms must annualize against the SAME
+      // schedule (the job's Salary Profile entry, 26 biweekly periods) —
+      // switching Contribution Profile can no longer change payPeriod.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic schema import requires runtime cast
-      const weeklyProfile = await (db as any)
+      const secondProfile = await (db as any)
         .insert(schema.contributionProfiles)
         .values({
-          name: "Weekly Schedule",
+          name: "Second Profile",
           contributionActiveFields: {
             contributionAccounts: {
               [String(acct.id)]: {
                 contributionValue: "100",
                 contributionMethod: "fixed_per_period",
-              },
-            },
-            jobs: {
-              [String(jobId)]: {
-                payPeriod: "weekly",
-                payWeek: "na",
-                anchorPayDate: "2026-01-02",
               },
             },
           },
@@ -1627,7 +1621,7 @@ describe("computeRelocationAnalysis -- per-arm payPeriod resolution", () => {
         relocationProfileId: currentProfileId,
         relocationBudgetColumn: 0,
         currentContributionProfileId: baselineProfile.id,
-        relocationContributionProfileId: weeklyProfile.id,
+        relocationContributionProfileId: secondProfile.id,
       });
 
       const current = (result as Record<string, unknown>)
@@ -1635,9 +1629,11 @@ describe("computeRelocationAnalysis -- per-arm payPeriod resolution", () => {
       const relocation = (result as Record<string, unknown>)
         .relocationContribProfile as { annualContributions: number };
 
-      // $100 x 26 (biweekly) vs $100 x 52 (weekly).
+      // $100 x 26 (biweekly) for both arms — the job's Salary Profile entry
+      // is the only schedule source now, unaffected by which Contribution
+      // Profile is picked.
       expect(current.annualContributions).toBeCloseTo(2600, 0);
-      expect(relocation.annualContributions).toBeCloseTo(5200, 0);
+      expect(relocation.annualContributions).toBeCloseTo(2600, 0);
     } finally {
       cleanup();
     }

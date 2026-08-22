@@ -15,7 +15,7 @@ import {
   salaryEntriesSchema,
   contributionActiveFieldsSchema,
   contribAccountActiveFieldsSchema,
-  jobActiveFieldsSchema,
+  deductionActiveFieldsSchema,
   taxBracketEntrySchema,
   taxBracketsSchema,
   accountMappingSchema,
@@ -232,10 +232,21 @@ describe("salaryEntriesSchema", () => {
     bonusMultiplier: 1,
     monthsInBonusYear: 12,
     bonusOverride: null,
+    payPeriod: "biweekly",
+    payWeek: "na",
+    anchorPayDate: null,
+    budgetPeriodsPerMonth: null,
+    w4FilingStatus: "MFJ",
+    w4Box2cChecked: false,
+    additionalFedWithholding: 0,
+    bonusMonth: null,
+    bonusDayOfMonth: null,
+    include401kInBonus: false,
+    includeBonusInContributions: true,
     ...overrides,
   });
 
-  it("accepts a complete entry — all five fields required", () => {
+  it("accepts a complete entry — all sixteen fields required", () => {
     const result = salaryEntriesSchema.safeParse({
       "1": complete(),
       "4": complete({ salary: 200000, bonusPercent: 0.2 }),
@@ -349,48 +360,27 @@ describe("contribAccountActiveFieldsSchema", () => {
   });
 });
 
-describe("jobActiveFieldsSchema", () => {
-  it("accepts the fields a Contribution Profile still owns", () => {
-    const result = jobActiveFieldsSchema.safeParse({
-      include401kInBonus: true,
-      includeBonusInContributions: false,
-      employerName: "NewCorp",
-      bonusMonth: 3,
-      bonusDayOfMonth: 15,
+// jobActiveFieldsSchema no longer exists — the Contribution Profile `jobs`
+// active-fields bucket is deleted wholesale (Stage B). Pay schedule, W-4
+// elections, and bonus pay date/flags all moved to the Salary Profile
+// entry (see salaryEntriesSchema above); employerName has no
+// profile-override path at all any more.
+
+describe("deductionActiveFieldsSchema", () => {
+  it("accepts a valid amountPerPeriod", () => {
+    const result = deductionActiveFieldsSchema.safeParse({
+      amountPerPeriod: "25.00",
     });
     expect(result.success).toBe(true);
-  });
-
-  it("REJECTS bonus amount terms — they moved to the Salary Profile", () => {
-    // "How big is the bonus" is the same category of fact as "how big is
-    // the salary", so it belongs on the Salary Profile entry. Rejecting
-    // these here is what stops a Contribution Profile from ever changing
-    // anyone's compensation again.
-    for (const field of [
-      { bonusPercent: 15 },
-      { bonusMultiplier: 1.5 },
-      { monthsInBonusYear: 12 },
-    ]) {
-      expect(jobActiveFieldsSchema.safeParse(field).success).toBe(false);
-    }
   });
 
   it("accepts empty object", () => {
-    const result = jobActiveFieldsSchema.safeParse({});
-    expect(result.success).toBe(true);
-  });
-
-  it("accepts null for nullable fields", () => {
-    const result = jobActiveFieldsSchema.safeParse({
-      bonusMonth: null,
-      bonusDayOfMonth: null,
-    });
-    expect(result.success).toBe(true);
+    expect(deductionActiveFieldsSchema.safeParse({}).success).toBe(true);
   });
 
   it("rejects unknown fields (strict mode)", () => {
-    const result = jobActiveFieldsSchema.safeParse({
-      salary: 100000, // not a valid field
+    const result = deductionActiveFieldsSchema.safeParse({
+      deductionName: "Dental", // structural-only, not profile-settable
     });
     expect(result.success).toBe(false);
   });
@@ -407,8 +397,8 @@ describe("contributionActiveFieldsSchema", () => {
         },
         "12": { contributionMethod: "percent_gross", contributionValue: 500 },
       },
-      jobs: {
-        "1": { employerName: "TestCo", include401kInBonus: true },
+      deductions: {
+        "1": { amountPerPeriod: "12.50" },
       },
     });
     expect(result.success).toBe(true);
@@ -419,7 +409,7 @@ describe("contributionActiveFieldsSchema", () => {
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.contributionAccounts).toEqual({});
-      expect(result.data.jobs).toEqual({});
+      expect(result.data.deductions).toEqual({});
     }
   });
 
@@ -429,7 +419,6 @@ describe("contributionActiveFieldsSchema", () => {
     if (result.success) {
       expect(result.data).toEqual({
         contributionAccounts: {},
-        jobs: {},
         deductions: {},
       });
     }
@@ -439,7 +428,6 @@ describe("contributionActiveFieldsSchema", () => {
     const result = contributionActiveFieldsSchema.safeParse({
       contributionAccounts: {},
       jobs: {},
-      extra: "bad",
     });
     expect(result.success).toBe(false);
   });
@@ -449,7 +437,6 @@ describe("contributionActiveFieldsSchema", () => {
       contributionAccounts: {
         "5": { unknownField: "bad" },
       },
-      jobs: {},
     });
     expect(result.success).toBe(false);
   });

@@ -812,6 +812,7 @@ export const budgetRouter = createTRPCRouter({
           contribProfileId,
           rawContribs,
           allJobs,
+          salaryProfileActiveMap,
         );
         // Sandbox edits apply here too — a budget item linked to a
         // contribution account must reflect the sandbox's edited value the

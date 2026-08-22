@@ -53,6 +53,48 @@ function summarizeEntries(salaries: SalaryEntryMap) {
   };
 }
 
+/**
+ * w4FilingStatus + w4Box2cChecked form a composite key into the federal
+ * withholding bracket table. A Salary Profile entry is complete-or-absent
+ * (see salaryEntrySchema) — every entry being written always sets both
+ * halves together, unlike the old Contribution-Profile-jobs-bucket design
+ * this replaces (moved here from contribution-profiles.ts's
+ * assertJobTaxBracketsExist, now checking every entry unconditionally
+ * rather than only entries that patch one half). Validating at write time
+ * — rather than deferring to a read-time error that could surface during
+ * an unrelated computation — is a hard requirement per RULES.md: a
+ * composite-key mismatch should never be persisted in the first place.
+ */
+async function assertSalaryEntryTaxBracketsExist(
+  db: typeof import("@/lib/db").db,
+  salaries: SalaryEntryMap | undefined,
+): Promise<void> {
+  const entries = Object.entries(salaries ?? {});
+  if (entries.length === 0) return;
+
+  const taxYear = new Date().getFullYear();
+  const brackets = await db
+    .select({
+      filingStatus: schema.taxBrackets.filingStatus,
+      w4Checkbox: schema.taxBrackets.w4Checkbox,
+    })
+    .from(schema.taxBrackets)
+    .where(eq(schema.taxBrackets.taxYear, taxYear));
+  const bracketKeys = new Set(
+    brackets.map((b) => `${b.filingStatus}|${b.w4Checkbox}`),
+  );
+
+  for (const [jobId, entry] of entries) {
+    if (!bracketKeys.has(`${entry.w4FilingStatus}|${entry.w4Box2cChecked}`)) {
+      throw new Error(
+        `No tax bracket data found for filing status "${entry.w4FilingStatus}" ` +
+          `(multiple jobs: ${entry.w4Box2cChecked}) for tax year ${taxYear} — ` +
+          `cannot save this entry for job ${jobId}.`,
+      );
+    }
+  }
+}
+
 export const salaryProfileRouter = createTRPCRouter({
   /** All salary profiles, oldest first. Real rows only. */
   list: protectedProcedure.query(async ({ ctx }) => {
@@ -126,6 +168,24 @@ export const salaryProfileRouter = createTRPCRouter({
           /** This year's actual paid-out bonus, pinned on the same entry —
            *  see SalaryProfileEntry.bonusOverride's docblock. */
           bonusOverride: entry?.bonusOverride ?? null,
+          /** Pay schedule, W-4 elections, and bonus pay date/flags — the 11
+           *  fields that moved off `jobs` in Stage B. Defaults below match
+           *  onboarding-wizard.tsx's defaults for a brand-new entry, purely
+           *  a visible starting point for the editor when this job has no
+           *  entry yet — never used in any live calculation (a job with no
+           *  entry resolves to $0/incomplete everywhere else). */
+          payPeriod: entry?.payPeriod ?? "biweekly",
+          payWeek: entry?.payWeek ?? "na",
+          anchorPayDate: entry?.anchorPayDate ?? null,
+          budgetPeriodsPerMonth: entry?.budgetPeriodsPerMonth ?? null,
+          w4FilingStatus: entry?.w4FilingStatus ?? "MFJ",
+          w4Box2cChecked: entry?.w4Box2cChecked ?? false,
+          additionalFedWithholding: entry?.additionalFedWithholding ?? 0,
+          bonusMonth: entry?.bonusMonth ?? null,
+          bonusDayOfMonth: entry?.bonusDayOfMonth ?? null,
+          include401kInBonus: entry?.include401kInBonus ?? false,
+          includeBonusInContributions:
+            entry?.includeBonusInContributions ?? false,
           /** What this profile actually produces for this job — the pinned
            *  actual when set, else the formula estimate. */
           effectiveSalary: comp.salary,
@@ -168,6 +228,18 @@ export const salaryProfileRouter = createTRPCRouter({
           bonusMultiplier: selected?.bonusMultiplier ?? 1,
           monthsInBonusYear: selected?.monthsInBonusYear ?? 12,
           bonusOverride: selected?.bonusOverride ?? null,
+          payPeriod: selected?.payPeriod ?? "biweekly",
+          payWeek: selected?.payWeek ?? "na",
+          anchorPayDate: selected?.anchorPayDate ?? null,
+          budgetPeriodsPerMonth: selected?.budgetPeriodsPerMonth ?? null,
+          w4FilingStatus: selected?.w4FilingStatus ?? "MFJ",
+          w4Box2cChecked: selected?.w4Box2cChecked ?? false,
+          additionalFedWithholding: selected?.additionalFedWithholding ?? 0,
+          bonusMonth: selected?.bonusMonth ?? null,
+          bonusDayOfMonth: selected?.bonusDayOfMonth ?? null,
+          include401kInBonus: selected?.include401kInBonus ?? false,
+          includeBonusInContributions:
+            selected?.includeBonusInContributions ?? false,
           /** What this profile actually produces for this person. */
           effectiveSalary: selected?.effectiveSalary ?? 0,
           estimatedBonus: selected?.estimatedBonus ?? 0,
@@ -204,6 +276,8 @@ export const salaryProfileRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      await assertSalaryEntryTaxBracketsExist(ctx.db, input.salaries);
+
       const rows = await ctx.db
         .insert(schema.salaryProfiles)
         .values({
@@ -230,6 +304,8 @@ export const salaryProfileRouter = createTRPCRouter({
         .from(schema.salaryProfiles)
         .where(eq(schema.salaryProfiles.id, input.id));
       if (!existing[0]) throw new Error("Profile not found");
+
+      await assertSalaryEntryTaxBracketsExist(ctx.db, input.salaries);
 
       const updates: Partial<typeof schema.salaryProfiles.$inferInsert> = {};
       if (input.name !== undefined) updates.name = input.name;

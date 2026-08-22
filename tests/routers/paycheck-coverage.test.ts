@@ -351,46 +351,22 @@ describe("settings.jobs — optional fields", () => {
 
   afterAll(() => cleanup());
 
-  it("creates a job with title, anchorPayDate, and bonus-adjacent fields", async () => {
+  it("creates a job with only title/startDate — payroll-config fields moved to the Salary Profile entry", async () => {
+    // payPeriod/anchorPayDate/w4*/bonus-date/bonus-flags/
+    // budgetPeriodsPerMonth all moved off `jobs` in Stage B — jobs.create's
+    // input no longer accepts them at all (stripped, not rejected, since
+    // jobInput isn't `.strict()`). See salary-profiles.test.ts for coverage
+    // of those 11 fields on a Salary Profile entry instead.
     const job = await caller.settings.jobs.create({
       personId,
       employerName: "FullCo",
       title: "Senior Engineer",
-      payPeriod: "semimonthly",
-      payWeek: "na",
       startDate: "2022-03-01",
-      anchorPayDate: "2022-03-15",
-      w4FilingStatus: "MFJ",
-      include401kInBonus: true,
-      includeBonusInContributions: true,
-      bonusMonth: 3,
-      bonusDayOfMonth: 15,
     });
 
     expect(job).toBeDefined();
     expect(job!.title).toBe("Senior Engineer");
-    expect(job!.anchorPayDate).toBe("2022-03-15");
-    expect(job!.include401kInBonus).toBe(true);
-    expect(job!.bonusMonth).toBe(3);
-    expect(job!.bonusDayOfMonth).toBe(15);
-  });
-
-  it("creates a job with w4 additional withholding and budget periods", async () => {
-    const job = await caller.settings.jobs.create({
-      personId,
-      employerName: "WithholdCo",
-      payPeriod: "weekly",
-      payWeek: "even",
-      startDate: "2023-01-01",
-      w4FilingStatus: "HOH",
-      w4Box2cChecked: true,
-      additionalFedWithholding: "50",
-      budgetPeriodsPerMonth: "4.33",
-    });
-
-    expect(job!.w4FilingStatus).toBe("HOH");
-    expect(job!.w4Box2cChecked).toBe(true);
-    expect(job!.additionalFedWithholding).toBe("50");
-    expect(job!.budgetPeriodsPerMonth).toBe("4.33");
+    expect(job).not.toHaveProperty("anchorPayDate");
+    expect(job).not.toHaveProperty("w4FilingStatus");
   });
 });

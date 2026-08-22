@@ -255,79 +255,106 @@ Portfolio Snapshots + Performance Data + Settings
 
 ### The Salary Profile layer
 
-A job's own `jobs.annual_salary` (and its bonus fields) is the raw,
-un-overridden answer to "what does this job pay" and stays the sole
-authority for it — nothing writes salary back into `jobs` on its behalf,
-and no function name should be treated as a substitute for reading that
-column. The same goes for the bonus terms on
-`jobs` (`bonus_percent`, `bonus_multiplier`, `months_in_bonus_year`). A
-**Salary Profile** sits on top of both: `salary_profiles.salaries` maps a
-personId to an entry of **optional** fields, and
-
-> **presence of a field IS the pin.**
+`jobs` carries no compensation, schedule, or W-4 data of its own any more —
+it is pure identity/lifecycle (`id`, `personId`, `startDate`, `endDate`,
+`isSpeculative`, `employerName`, `title`, `extraPaycheckRouting`). Every
+number and election a job needs for a live calculation comes from a
+**Salary Profile**: `salary_profiles.salaries` maps `jobId` (string key) to
+a **complete, 16-field entry**:
 
 ```ts
 type SalaryProfileEntry = {
-  salary?: number; // else jobs.annual_salary on every read
-  bonusPercent?: number; // fraction, 0.12 = 12%
-  bonusMultiplier?: number;
-  monthsInBonusYear?: number;
+  salary: number;
+  bonusPercent: number; // fraction, 0.12 = 12%
+  bonusMultiplier: number;
+  monthsInBonusYear: number;
+  bonusOverride: number | null; // this year's actual paid-out bonus, pinned
+  payPeriod: PayPeriod;
+  payWeek: PayWeek;
+  anchorPayDate: string | null; // null = "no anchor, use startDate" — a real, complete value
+  budgetPeriodsPerMonth: number | null;
+  w4FilingStatus: W4FilingStatus;
+  w4Box2cChecked: boolean;
+  additionalFedWithholding: number;
+  bonusMonth: number | null;
+  bonusDayOfMonth: number | null;
+  include401kInBonus: boolean;
+  includeBonusInContributions: boolean;
 };
 ```
 
-A field that is set pins that value for this profile. A field that is absent
-resolves live from the job record. An empty entry — or no key for that person
-at all — pins nothing; the two say the same thing, so the router normalizes
-empty entries away on write. There is **no `mode` discriminator** and no
-"Follows job" / "Fixed amount" toggle anywhere in the UI.
+> **A job either has ALL 16 fields in a given profile, or none at all.**
 
-The fields are **independent**. Pinning a salary says nothing about bonus, so
-a pinned salary still earns a bonus computed from live (or separately pinned)
-terms. Anything that treats "salary is pinned" as "bonus is zero" is a bug —
-that exact assumption shipped once and silently dropped pinned people's
-bonuses from every contribution and projection number while the profile
-editor kept displaying them.
+There is no partial-pin state, no per-field presence check, and no "resolves
+live from the job record" fallback — a job has nothing left on `jobs` to
+fall back to. A profile that doesn't mention a job says **nothing** about
+it: salary/bonus resolve to $0/no bonus, and every other field resolves to
+`undefined`, which every consumer must treat as a real "incomplete" signal
+(see `mergeSalaryProfileJobFields`/`resolveContribPeriods`'s pattern of
+excluding rather than guessing) — never a substitute for a live column,
+because none exists. `salaryEntrySchema` (`json-schemas.ts`) is `.strict()`
+so a partial or stale-shaped entry is rejected at write time, not silently
+stored and later misread.
+
+**This collapses two axes that used to be independent** (accepted per the
+project owner's explicit direction, not a silent side effect): "how much do
+I earn" and "what withholding/schedule elections apply" are now the same
+Salary Profile fact. If you want a different W-4 election or pay schedule
+without changing income, that still requires a different Salary Profile (or
+a different entry within one) — there is no way to vary only one axis
+independently of the other.
 
 **One definition of compensation.** `resolveCompensation()` in
 `server/helpers/salary.ts` is the single place salary-plus-bonus is computed
 under a profile entry, and `resolveProfile`, `build-engine-payload`, and the
 `salaryProfile.getById` editor preview all go through it. They previously
 re-derived it separately and disagreed. Do not add a fourth derivation.
+`mergeSalaryProfileJobFields()` is the equivalent single place for merging
+the other 11 fields onto a job object — every router that needs
+`payPeriod`/`w4FilingStatus`/etc. on a job calls this rather than
+re-deriving the merge.
 
-**Invariant:** only entries that pin _something_ are written into the
-`Map<personId, SalaryProfileEntry>` salary override map
-(`applySalaryProfileRow` / `pinnedSalaries` in `server/helpers/salary.ts`).
-A key in that map therefore means "this person has at least one pin" — it
-does **not** mean their salary is pinned. Ask
-`map.get(personId)?.salary !== undefined` for that specific question;
-`.has()` is not a substitute and using it as one is how the year-0 bonus
-adjustment guard first went wrong. Merge precedence into the map is
-gaps-only **per field**, not per person: Plan / session pins (salary only)
-win for salary while the profile still supplies bonus terms for the same
-person.
+**Contribution Profile no longer touches jobs at all.** The `jobs`
+active-fields bucket that used to let a Contribution Profile override
+`employerName`/bonus-pay-date/bonus-inclusion-flags is deleted wholesale —
+`contributionActiveFieldsSchema` has only `contributionAccounts` and
+`deductions` buckets now. Two consequences, both intentional:
 
-**Bonus terms live on the Salary Profile, not the Contribution Profile.**
-"How big is the bonus" is the same category of fact as "how big is the
-salary". A Contribution Profile's job overrides keep only what is genuinely
-about contributions computed _from_ a bonus — `include401kInBonus`,
-`includeBonusInContributions` — plus `employerName` and the bonus pay date.
-`applyJobOverrides` refuses the moved keys at runtime so a stale stored
-override cannot change anyone's compensation from the wrong axis. Salary is
-likewise not _displayed_ as a Contribution Profile statistic.
+1. **`employerName`'s profile-override capability is gone**, not preserved
+   elsewhere. Modeling "a different employer, same everything else" via a
+   named override is no longer supported — modeling a genuinely different
+   job means creating a new `jobs` row, which already carries its own
+   `employerName`. A real feature reduction, not a bug.
+2. **The permission gate for W-4/schedule/bonus-date fields moved.** These
+   used to be admin-only (raw `jobs.update`, `adminProcedure`). They're now
+   part of a Salary Profile entry, written through
+   `salaryProfile.create`/`update` (`contributionProfileProcedure`) — no
+   longer admin-gated. Anyone who could already edit a Contribution Profile
+   can now set these for any job.
+
+**`paycheck_deductions` has no live amount of its own either** —
+`amount_per_period` was dropped the same way `contribution_accounts` lost
+its base contribution value. A deduction's dollar amount resolves ONLY via
+a Contribution Profile's `deductions` active-field entry
+(`applyDeductionActiveFields`), same no-base-value, exclude-if-absent rule
+`applyContribActiveFields` already uses for contribution accounts.
 
 ### Violations to Watch For
 
 - A router computing budget expenses with a different column index
-- A page showing salary that doesn't come from `jobs.annual_salary` (raw) or
-  `resolveCompensation()` / `applyActiveSalary()` (profile-aware)
-- An unpinned person's salary reaching the salary override map
-- `salaryOverrideMap.has(personId)` used to mean "this person's salary is
-  pinned" (it means "has at least one pin" — check `?.salary !== undefined`)
+- A page showing salary/pay-schedule/W-4 data that doesn't come from a
+  Salary Profile entry via `resolveCompensation()` /
+  `mergeSalaryProfileJobFields()` (profile-aware) — `jobs` has no such
+  columns left to read
 - A pinned salary being treated as excluding bonus, or total compensation
   computed anywhere other than `resolveCompensation()`
-- Bonus amount terms (`bonusPercent` / `bonusMultiplier` /
-  `monthsInBonusYear`) reappearing in a Contribution Profile override
+- Any field of `SalaryProfileEntry` reappearing in a Contribution Profile
+  active-field bucket — the `jobs` bucket there is deleted, only
+  `contributionAccounts`/`deductions` remain
 - A salary figure displayed as a Contribution Profile statistic
+- A job's `payPeriod`/`w4FilingStatus`/etc. treated as `undefined` meaning
+  the same thing as `0`/`false`/a guessed default, instead of "incomplete —
+  exclude, don't guess"
 - A fallback value that silently replaces missing data
 - Two routers fetching the same data independently
 - A "what-if" override that leaks into non-scenario calculations
@@ -489,7 +516,7 @@ the confirmation dialog — see `budget-profile-sidebar.tsx` /
    - **`net_worth_annual`** — finalized year-end records capture point-in-time state (tax location breakdown from a Dec 31 snapshot that may later be pruned). Class (a).
    - **`annualReturnPct`** — stored on finalized `annual_performance` and `account_performance` rows. Immutable after finalization. Recomputed on-read for non-finalized years. Class (a).
    - **`lifetimeGains`, `lifetimeContributions`, `lifetimeMatch`** — cumulative fields on `annual_performance`. Computed at finalization from previous year's baseline. **Cascade rule:** when `account_performance` rows on a finalized year are edited, lifetime fields on the annual row and all subsequent years must be recomputed. Without cascade, corrections to historical data create silent drift in all forward lifetime totals. Class (a).
-   - **`jobs.extra_paycheck_routing.baseNetPayPerCheck`** (plus its `payPeriod`/`anchorPayDate` snapshot) — snapshotted by `computeJobNetPayPerCheck` (savings.ts) only when an extra-paycheck routing rule or its growth rates are saved, resolved against whichever Contribution/Salary Profile was globally active at that moment. Class (b): inputs are preserved and recomputation is deterministic, but this value feeds a materializer that generates real future `savings_planned_transactions` — re-resolving it on every read would mean a routine profile switch silently rewrites a plan the user already committed to. **No cascade by design:** recorded at save time under the then-globally-active profile, never re-resolved later. `payPeriod`/`anchorPayDate` are snapshotted alongside `baseNetPayPerCheck` (both optional, materializer/`extraPaycheckRouting.list` fall back to the live `jobs` columns when absent) so the materializer always generates transaction dates against the SAME schedule the net-pay figure was computed under — this is what makes the value internally coherent, replacing the earlier design's save-time mismatch check (removed; a later correction to the job's real pay period/anchor date no longer needs blocking, since it can no longer retroactively desync an already-saved schedule from an already-saved amount — it just doesn't apply until routing is explicitly re-saved, the same way `baseNetPayPerCheck` itself already behaved).
+   - **`jobs.extra_paycheck_routing.baseNetPayPerCheck`** (plus its `payPeriod`/`anchorPayDate` snapshot) — snapshotted by `computeJobNetPayPerCheck` (savings.ts) only when an extra-paycheck routing rule or its growth rates are saved, resolved against whichever Contribution/Salary Profile was globally active at that moment. Class (b): inputs are preserved and recomputation is deterministic, but this value feeds a materializer that generates real future `savings_planned_transactions` — re-resolving it on every read would mean a routine profile switch silently rewrites a plan the user already committed to. **No cascade by design:** recorded at save time under the then-globally-active profile, never re-resolved later. `payPeriod`/`anchorPayDate` are snapshotted alongside `baseNetPayPerCheck` (both optional, materializer/`extraPaycheckRouting.list` fall back to the job's live Salary Profile entry when absent — `jobs` itself has no such columns any more) so the materializer always generates transaction dates against the SAME schedule the net-pay figure was computed under — this is what makes the value internally coherent, replacing the earlier design's save-time mismatch check (removed; a later correction to the job's real pay period/anchor date no longer needs blocking, since it can no longer retroactively desync an already-saved schedule from an already-saved amount — it just doesn't apply until routing is explicitly re-saved, the same way `baseNetPayPerCheck` itself already behaved).
 
    If the inputs are preserved, the computation is deterministic, AND nothing downstream treats the value as a settled point-in-time commitment, compute at read time. If the inputs may not survive (snapshots pruned, accounts restructured) — class (a) — or the value is itself a deliberate "recorded as of when this was saved" commitment — class (b) — store at finalization/save time, but document the sync/cascade mechanism (or the explicit absence of one, and why, for class (b)).
 

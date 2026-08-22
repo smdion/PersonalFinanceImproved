@@ -11,7 +11,6 @@ import { TaxWithholdingSection } from "./tax-withholding-section";
 import { ContributionsSection } from "./contributions-section";
 import { AddDeductionForm } from "./add-deduction-form";
 import { SSCapIndicator } from "./ss-cap-indicator";
-import { PayScheduleInfo } from "./pay-schedule-info";
 import type {
   PaycheckResult,
   ViewMode,
@@ -92,19 +91,23 @@ export function PersonPaycheck({
     id: number;
     employerName: string;
     title: string | null;
+    /** These 7 fields no longer live on the raw job row — they resolve
+     *  through the active Salary Profile's entry for this job (see
+     *  SalaryProfileEntry in server/helpers/salary.ts). paycheck.ts's
+     *  computeSummary still merges them flat onto `job` for the client
+     *  (the same pattern use-paycheck-person-views.ts's `job: any` and
+     *  household-income-card.tsx already rely on), so they're read the
+     *  same way here as before the migration — only their write path
+     *  changed (paycheck/page.tsx now routes them to salaryProfile.update
+     *  instead of settings.jobs.update). */
     bonusMonth: number | null;
     bonusDayOfMonth: number | null;
     include401kInBonus: boolean;
     includeBonusInContributions: boolean;
-    payPeriod: string;
-    payWeek: string;
     personId: number;
     w4FilingStatus: string;
     w4Box2cChecked: boolean;
     additionalFedWithholding: string;
-    startDate: string;
-    anchorPayDate?: string | null;
-    budgetPeriodsPerMonth?: string | null;
   };
   salary: number;
   /** The bonus terms actually in effect (Salary Profile pin, if any, else
@@ -213,12 +216,6 @@ export function PersonPaycheck({
               <p className="text-xs text-faint">annual salary</p>
             </div>
           </div>
-          <PayScheduleInfo
-            job={job}
-            paycheck={paycheck}
-            onUpdateJob={onUpdateJob}
-            readOnly={readOnly}
-          />
         </div>
 
         {/* Two-column layout: Pay stub + Annual summary side by side */}
@@ -247,6 +244,7 @@ export function PersonPaycheck({
               job={job}
               onUpdateJob={onUpdateJob}
               readOnly={readOnly}
+              salaryReadOnly={salaryReadOnly}
             />
             <BonusSection
               paycheck={paycheck}

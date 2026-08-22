@@ -274,7 +274,9 @@ type JobEntry = {
   personId: number;
   personName: string;
   employerName: string;
-  payPeriod: string;
+  /** `null` is a genuine "incomplete" state — no snapshot AND no entry for
+   *  this job in the active Salary Profile. */
+  payPeriod: string | null;
   anchorPayDate: string | null;
   extraPaycheckRouting: ExtraPaycheckRoutingData | null;
 };

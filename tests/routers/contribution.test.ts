@@ -26,6 +26,48 @@ vi.mock("@/lib/budget-api", () => ({
 
 type TestDb = BetterSQLite3Database<typeof schema>;
 
+/** A complete 16-field Salary Profile entry — every field required. */
+function completeSalaryEntry(
+  overrides: Partial<{
+    salary: number;
+    bonusPercent: number;
+    bonusMultiplier: number;
+    monthsInBonusYear: number;
+    bonusOverride: number | null;
+    payPeriod: "weekly" | "biweekly" | "semimonthly" | "monthly";
+    payWeek: "even" | "odd" | "na";
+    anchorPayDate: string | null;
+    budgetPeriodsPerMonth: number | null;
+    w4FilingStatus: "MFJ" | "Single" | "HOH";
+    w4Box2cChecked: boolean;
+    additionalFedWithholding: number;
+    bonusMonth: number | null;
+    bonusDayOfMonth: number | null;
+    include401kInBonus: boolean;
+    includeBonusInContributions: boolean;
+  }> = {},
+) {
+  return {
+    salary: 0,
+    bonusPercent: 0,
+    bonusMultiplier: 1,
+    monthsInBonusYear: 12,
+    bonusOverride: null,
+    payPeriod: "biweekly" as const,
+    payWeek: "na" as const,
+    anchorPayDate: null,
+    budgetPeriodsPerMonth: null,
+    w4FilingStatus: "MFJ" as const,
+    w4Box2cChecked: false,
+    additionalFedWithholding: 0,
+    bonusMonth: null,
+    bonusDayOfMonth: null,
+    include401kInBonus: false,
+    includeBonusInContributions: true,
+    ...overrides,
+  };
+}
+
 describe("contribution router", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: TestDb;
@@ -801,12 +843,12 @@ describe("contribution router", () => {
       bonusSalaryProfileId = seedSalaryProfile(db, {
         name: `bonus-salary-profile-${Date.now()}`,
         salaries: {
-          [String(jobId)]: {
+          [String(jobId)]: completeSalaryEntry({
             salary: 120000,
             bonusPercent: 0.1,
             bonusMultiplier: 1,
-            monthsInBonusYear: 12,
-          },
+            include401kInBonus: true,
+          }),
         },
       });
     });
@@ -919,12 +961,7 @@ describe("contribution router", () => {
       salaryProfileId = seedSalaryProfile(db, {
         name: `test-salary-profile-${Date.now()}`,
         salaries: {
-          [String(jobId)]: {
-            salary: 180000,
-            bonusPercent: 0,
-            bonusMultiplier: 1,
-            monthsInBonusYear: 12,
-          },
+          [String(jobId)]: completeSalaryEntry({ salary: 180000 }),
         },
       });
     });

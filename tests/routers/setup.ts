@@ -25,6 +25,7 @@ import { applyMigrationsIdempotent } from "../helpers/db-harness";
 import type { Permission } from "@/server/auth";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
+import type { SalaryProfileEntry } from "@/server/helpers/salary";
 
 // Import schema for SQLite
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
@@ -229,13 +230,7 @@ export async function seedBudgetProfile(
 function seedDefaultSalaryProfileEntry(
   db: BetterSQLite3Database<typeof sqliteSchema>,
   jobId: number,
-  entry: {
-    salary: number;
-    bonusPercent: number;
-    bonusMultiplier: number;
-    monthsInBonusYear: number;
-    bonusOverride: number | null;
-  },
+  entry: SalaryProfileEntry,
 ): number {
   const settingRow = db
     .select()
@@ -287,33 +282,84 @@ function seedDefaultSalaryProfileEntry(
   return created.id;
 }
 
+/** Genuine `jobs` columns post-Stage-B-trim — everything else a caller
+ *  passes to seedJob is a Salary Profile entry field, routed to
+ *  seedDefaultSalaryProfileEntry instead (see below). Written as an
+ *  explicit Omit (rather than intersecting with `Partial<jobs.$inferInsert>`
+ *  directly) so this stays correct whether or not schema-sqlite.ts has
+ *  already been regenerated to drop the payroll-config columns — some of
+ *  those columns' OLD types (e.g. additionalFedWithholding as text) would
+ *  otherwise collide with the Salary Profile entry's field types (a number)
+ *  under the same key name. */
+type JobColumnOverrides = Omit<
+  Partial<typeof sqliteSchema.jobs.$inferInsert>,
+  | "payPeriod"
+  | "payWeek"
+  | "anchorPayDate"
+  | "budgetPeriodsPerMonth"
+  | "w4FilingStatus"
+  | "w4Box2cChecked"
+  | "additionalFedWithholding"
+  | "bonusMonth"
+  | "bonusDayOfMonth"
+  | "include401kInBonus"
+  | "includeBonusInContributions"
+>;
+
+/** Convenience overrides for the Salary Profile entry seedJob writes for
+ *  its job — every field on SalaryProfileEntry, plus the pre-existing
+ *  string-typed comp convenience fields (annualSalary/bonusPercent/
+ *  bonusMultiplier) this helper always accepted. */
+type SalaryEntryOverrides = Partial<
+  Omit<
+    SalaryProfileEntry,
+    "salary" | "bonusPercent" | "bonusMultiplier" | "monthsInBonusYear"
+  >
+> & {
+  annualSalary?: string;
+  bonusPercent?: string;
+  bonusMultiplier?: string;
+  monthsInBonusYear?: number;
+};
+
 /**
  * Seed a job for a person.
  *
- * A job carries no salary of its own any more — `annualSalary`/
- * `bonusPercent`/`bonusMultiplier`/`monthsInBonusYear` here are convenience
- * fields (defaulting to the same values this helper always defaulted to),
- * written as a complete entry into the shared default Salary Profile
- * (see seedDefaultSalaryProfileEntry) instead of a job column, so every
- * existing call site keeps working unchanged. See resolveCompensation's
- * docblock (server/helpers/salary.ts) for why a job needs a Salary Profile
- * entry to resolve to anything but $0.
+ * A job carries no salary/bonus/payroll-config of its own any more —
+ * `annualSalary`/`bonusPercent`/`bonusMultiplier`/`monthsInBonusYear` plus
+ * the 11 payroll-config fields (payPeriod, payWeek, anchorPayDate,
+ * budgetPeriodsPerMonth, w4FilingStatus, w4Box2cChecked,
+ * additionalFedWithholding, bonusMonth, bonusDayOfMonth, include401kInBonus,
+ * includeBonusInContributions) here are convenience fields (defaulting to
+ * the same values this helper always defaulted to, for the ones that
+ * existed pre-Stage-B), written as a complete entry into the shared default
+ * Salary Profile (see seedDefaultSalaryProfileEntry) instead of a job
+ * column, so every existing call site keeps working unchanged. See
+ * resolveCompensation's docblock (server/helpers/salary.ts) for why a job
+ * needs a Salary Profile entry to resolve to anything but $0.
  */
 export function seedJob(
   db: BetterSQLite3Database<typeof sqliteSchema>,
   personId: number,
-  overrides: Partial<typeof sqliteSchema.jobs.$inferInsert> & {
-    annualSalary?: string;
-    bonusPercent?: string;
-    bonusMultiplier?: string;
-    monthsInBonusYear?: number;
-  } = {},
+  overrides: JobColumnOverrides & SalaryEntryOverrides = {},
 ): number {
   const {
     annualSalary,
     bonusPercent,
     bonusMultiplier,
     monthsInBonusYear,
+    bonusOverride,
+    payPeriod,
+    payWeek,
+    anchorPayDate,
+    budgetPeriodsPerMonth,
+    w4FilingStatus,
+    w4Box2cChecked,
+    additionalFedWithholding,
+    bonusMonth,
+    bonusDayOfMonth,
+    include401kInBonus,
+    includeBonusInContributions,
     ...jobOverrides
   } = overrides;
   const result = db
@@ -321,10 +367,7 @@ export function seedJob(
     .values({
       personId,
       employerName: "TestCo",
-      payPeriod: "biweekly",
-      payWeek: "even",
       startDate: "2020-01-01",
-      w4FilingStatus: "MFJ",
       ...jobOverrides,
     })
     .returning({ id: sqliteSchema.jobs.id })
@@ -334,7 +377,18 @@ export function seedJob(
     bonusPercent: Number(bonusPercent ?? "0"),
     bonusMultiplier: Number(bonusMultiplier ?? "1"),
     monthsInBonusYear: monthsInBonusYear ?? 12,
-    bonusOverride: null,
+    bonusOverride: bonusOverride ?? null,
+    payPeriod: payPeriod ?? "biweekly",
+    payWeek: payWeek ?? "na",
+    anchorPayDate: anchorPayDate ?? null,
+    budgetPeriodsPerMonth: budgetPeriodsPerMonth ?? null,
+    w4FilingStatus: w4FilingStatus ?? "MFJ",
+    w4Box2cChecked: w4Box2cChecked ?? false,
+    additionalFedWithholding: additionalFedWithholding ?? 0,
+    bonusMonth: bonusMonth ?? null,
+    bonusDayOfMonth: bonusDayOfMonth ?? null,
+    include401kInBonus: include401kInBonus ?? false,
+    includeBonusInContributions: includeBonusInContributions ?? true,
   });
   return result.id;
 }

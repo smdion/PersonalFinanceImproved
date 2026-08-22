@@ -9,7 +9,6 @@ export { ContributionSnapshot } from "./contribution-snapshot";
 export { DeductionRow } from "./deduction-row";
 export { FundingBar } from "./funding-bar";
 export { InlineAccountType } from "./inline-account-type";
-export { PayScheduleInfo } from "./pay-schedule-info";
 export { PayStub } from "./pay-stub";
 export { PersonPaycheck } from "./person-paycheck";
 export { SectionHeader } from "./section-header";

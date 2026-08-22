@@ -16,6 +16,11 @@ import { roundToCents } from "@/lib/utils/math";
 import { toNumber } from "./transforms";
 import type { Db } from "./transforms";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
+import type {
+  PayPeriod,
+  PayWeek,
+  W4FilingStatus,
+} from "@/lib/config/enum-values";
 
 // ---------------------------------------------------------------------------
 // Plan/session + What-If sandbox tiers — independent of Salary Profiles.
@@ -142,6 +147,17 @@ export type SalaryProfileEntry = {
   bonusMultiplier: number;
   monthsInBonusYear: number;
   bonusOverride: number | null;
+  payPeriod: PayPeriod;
+  payWeek: PayWeek;
+  anchorPayDate: string | null;
+  budgetPeriodsPerMonth: number | null;
+  w4FilingStatus: W4FilingStatus;
+  w4Box2cChecked: boolean;
+  additionalFedWithholding: number;
+  bonusMonth: number | null;
+  bonusDayOfMonth: number | null;
+  include401kInBonus: boolean;
+  includeBonusInContributions: boolean;
 };
 
 /** A Salary Profile's own `salaries` map, keyed by jobId (string key) —
@@ -323,18 +339,72 @@ export function applySalaryProfileRow(
   return map;
 }
 
+/** A job merged with its resolved Salary Profile entry's non-comp fields —
+ *  every field is `undefined` when the job has no entry in the active
+ *  Salary Profile (an incomplete/absent state), never a fallback value. */
+export type JobWithSalaryFields<J> = J & {
+  payPeriod: PayPeriod | undefined;
+  payWeek: PayWeek | undefined;
+  anchorPayDate: string | null | undefined;
+  budgetPeriodsPerMonth: number | null | undefined;
+  w4FilingStatus: W4FilingStatus | undefined;
+  w4Box2cChecked: boolean | undefined;
+  additionalFedWithholding: number | undefined;
+  bonusMonth: number | null | undefined;
+  bonusDayOfMonth: number | null | undefined;
+  include401kInBonus: boolean | undefined;
+  includeBonusInContributions: boolean | undefined;
+};
+
+/**
+ * Merge each job with the 11 non-comp fields (pay schedule, W-4 elections,
+ * bonus pay date/flags) from its entry in an already-resolved Salary
+ * Profile active map. These fields moved off the `jobs` table entirely in
+ * Stage B — a job's only source for them is its Salary Profile entry, same
+ * as `salary`/`bonusPercent`/etc. already work via resolveCompensation. A
+ * job absent from the map (or the map itself empty) gets every field
+ * `undefined` — a real "incomplete" signal downstream callers must check
+ * for, never silently substituted with a guessed default.
+ */
+export function mergeSalaryProfileJobFields<J extends { id: number }>(
+  jobs: J[],
+  salaryProfileActiveMap: SalaryProfileActiveMap,
+): JobWithSalaryFields<J>[] {
+  return jobs.map((j) => {
+    const entry = salaryProfileActiveMap.get(j.id);
+    return {
+      ...j,
+      payPeriod: entry?.payPeriod,
+      payWeek: entry?.payWeek,
+      anchorPayDate: entry?.anchorPayDate,
+      budgetPeriodsPerMonth: entry?.budgetPeriodsPerMonth,
+      w4FilingStatus: entry?.w4FilingStatus,
+      w4Box2cChecked: entry?.w4Box2cChecked,
+      additionalFedWithholding: entry?.additionalFedWithholding,
+      bonusMonth: entry?.bonusMonth,
+      bonusDayOfMonth: entry?.bonusDayOfMonth,
+      include401kInBonus: entry?.include401kInBonus,
+      includeBonusInContributions: entry?.includeBonusInContributions,
+    };
+  });
+}
+
 /**
  * Compute effective income for a job — salary + annual bonus when
  * includeBonusInContributions is true. Used for payroll contribution
  * calculations where the flag controls whether percent-of-salary deductions
- * apply to bonus pay.
+ * apply to bonus pay. `includeBonusInContributions` now lives on the
+ * resolved Salary Profile entry, not the raw `jobs` row — callers pass the
+ * entry (or undefined, when the job has no entry in the active profile; a
+ * missing entry already resolves baseSalary to 0, so treating it as "no
+ * bonus" here changes nothing observable).
  */
 export function getEffectiveIncome(
-  job: { includeBonusInContributions: boolean },
+  entry: { includeBonusInContributions: boolean | undefined } | undefined,
   baseSalary: number,
   bonusTerms: BonusTerms,
 ): number {
-  if (!job.includeBonusInContributions) return baseSalary;
+  if (!entry?.includeBonusInContributions) return baseSalary;
   return getTotalCompensation(baseSalary, bonusTerms);
 }
 

@@ -165,29 +165,8 @@ export const jobs = sqliteTable(
       .references(() => people.id, { onDelete: "restrict" }),
     employerName: text("employer_name").notNull(),
     title: text("title"),
-    payPeriod: text("pay_period").$type<PayPeriod>().notNull(),
-    payWeek: text("pay_week").$type<PayWeek>().notNull(),
     startDate: text("start_date").notNull(),
-    anchorPayDate: text("anchor_pay_date"), // a known payday — defaults to startDate if null
     endDate: text("end_date"),
-    include401kInBonus: integer("include_401k_in_bonus", { mode: "boolean" })
-      .notNull()
-      .default(false),
-    includeBonusInContributions: integer("include_bonus_in_contributions", {
-      mode: "boolean",
-    })
-      .notNull()
-      .default(true),
-    bonusMonth: integer("bonus_month"), // 1-12, month when bonus is typically paid (null = unknown/spread)
-    bonusDayOfMonth: integer("bonus_day_of_month"), // 1-31, day of month when bonus is paid (null = first period of month)
-    w4FilingStatus: text("w4_filing_status").$type<W4FilingStatus>().notNull(),
-    w4Box2cChecked: integer("w4_box2c_checked", { mode: "boolean" })
-      .notNull()
-      .default(false),
-    additionalFedWithholding: text("additional_fed_withholding")
-      .notNull()
-      .default("0"),
-    budgetPeriodsPerMonth: text("budget_periods_per_month"),
     extraPaycheckRouting: text("extra_paycheck_routing", {
       mode: "json",
     }).$type<ExtraPaycheckRoutingData | null>(),
@@ -320,7 +299,6 @@ export const paycheckDeductions = sqliteTable(
       .notNull()
       .references(() => jobs.id, { onDelete: "cascade" }),
     deductionName: text("deduction_name").notNull(),
-    amountPerPeriod: text("amount_per_period").notNull(),
     isPretax: integer("is_pretax", { mode: "boolean" }).notNull(),
     ficaExempt: integer("fica_exempt", { mode: "boolean" })
       .notNull()
@@ -1859,9 +1837,9 @@ export const salaryProfiles = sqliteTable("salary_profiles", {
   id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
   name: text("name").notNull().unique(),
   description: text("description"),
-  /** jobId → complete salary entry. A job either has ALL five fields (a
-   *  real, complete number for this profile) or no key at all (this
-   *  profile says nothing about that job — contributes $0, not a
+  /** jobId → complete salary entry. A job either has ALL sixteen fields (a
+   *  real, complete number/election for this profile) or no key at all
+   *  (this profile says nothing about that job — contributes $0, not a
    *  fallback to some other value). No partial entries — see
    *  salaryEntriesSchema in json-schemas.ts. */
   salaries: text("salaries", { mode: "json" })
@@ -1874,6 +1852,17 @@ export const salaryProfiles = sqliteTable("salary_profiles", {
           bonusMultiplier: number;
           monthsInBonusYear: number;
           bonusOverride: number | null;
+          payPeriod: PayPeriod;
+          payWeek: PayWeek;
+          anchorPayDate: string | null;
+          budgetPeriodsPerMonth: number | null;
+          w4FilingStatus: W4FilingStatus;
+          w4Box2cChecked: boolean;
+          additionalFedWithholding: number;
+          bonusMonth: number | null;
+          bonusDayOfMonth: number | null;
+          include401kInBonus: boolean;
+          includeBonusInContributions: boolean;
         }
       >
     >()

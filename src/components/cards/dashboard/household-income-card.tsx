@@ -66,9 +66,20 @@ function HouseholdIncomeCardImpl() {
       ? d.paycheck!.bonusEstimate
       : (fullFormulaBonusOf(d) ?? d.paycheck!.bonusEstimate);
   const isBonusPaidYtd = (d: (typeof people)[0]) => {
-    const bonusMonth = d.job?.bonusMonth;
+    // paycheck.computeSummary's `job` is the Salary-Profile-merged shape
+    // (mergeSalaryProfileJobFields) — bonusMonth/bonusDayOfMonth live there
+    // now, not on the `jobs` table. This asserts the flat, merged shape
+    // PersonPaycheck/BonusSection already expect from the same `job` field
+    // (see their prop types and use-paycheck-person-views.ts's `job: any`
+    // escape hatch for the identical gap) rather than inventing a
+    // different nesting.
+    const job = d.job as {
+      bonusMonth: number | null;
+      bonusDayOfMonth: number | null;
+    } | null;
+    const bonusMonth = job?.bonusMonth;
     if (bonusMonth == null) return false;
-    const day = d.job?.bonusDayOfMonth ?? 1;
+    const day = job?.bonusDayOfMonth ?? 1;
     const today = new Date();
     const payDate = new Date(today.getFullYear(), bonusMonth - 1, day);
     return today >= payDate;

@@ -1367,14 +1367,37 @@ export function WhatIfTab({
   const [deductionMakeRealPendingId, setDeductionMakeRealPendingId] = useState<
     number | null
   >(null);
-  const deductionMakeRealAdditionRef = useRef<number | null>(null);
+  const deductionMakeRealAdditionRef = useRef<DeductionAddition | null>(null);
+  const setDeductionActiveFields =
+    trpc.contributionProfile.setDeductionActiveFields.useMutation();
   const createDeduction = trpc.settings.deductions.create.useMutation({
     onSuccess: (created) => {
-      utils.paycheck.invalidate();
-      const localId = deductionMakeRealAdditionRef.current;
-      if (localId != null) sandbox.removeDeductionAddition(localId);
-      setDeductionMakeRealPendingId(null);
-      toast.success(`Added "${created?.deductionName ?? ""}" to the paycheck`);
+      const addition = deductionMakeRealAdditionRef.current;
+      const finish = () => {
+        utils.paycheck.invalidate();
+        utils.contributionProfile.invalidate();
+        if (addition) sandbox.removeDeductionAddition(addition.localId);
+        setDeductionMakeRealPendingId(null);
+        toast.success(
+          `Added "${created?.deductionName ?? ""}" to the paycheck`,
+        );
+      };
+      // A deduction has no live amount of its own any more — the value the
+      // user was previewing gets carried into the currently-effective
+      // Contribution Profile's deductions active field, same "make real"
+      // pattern setContribAccountActiveFields already uses above.
+      if (created && addition && contribId != null) {
+        setDeductionActiveFields.mutate(
+          {
+            profileId: contribId,
+            deductionId: created.id,
+            fields: { amountPerPeriod: addition.amountPerPeriod.toFixed(2) },
+          },
+          { onSuccess: finish, onError: finish },
+        );
+      } else {
+        finish();
+      }
     },
     onError: (err) => {
       setDeductionMakeRealPendingId(null);
@@ -1385,12 +1408,11 @@ export function WhatIfTab({
     addition: DeductionAddition,
     jobId: number,
   ) => {
-    deductionMakeRealAdditionRef.current = addition.localId;
+    deductionMakeRealAdditionRef.current = addition;
     setDeductionMakeRealPendingId(addition.localId);
     createDeduction.mutate({
       jobId,
       deductionName: addition.name,
-      amountPerPeriod: addition.amountPerPeriod.toFixed(2),
       isPretax: addition.isPretax,
       ficaExempt: false,
     });

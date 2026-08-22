@@ -16,7 +16,13 @@ vi.mock("@/lib/budget-api", () => ({
   cacheGet: vi.fn().mockResolvedValue(null),
 }));
 
-import { createTestCaller, adminSession, seedPerson, seedJob } from "./setup";
+import {
+  createTestCaller,
+  adminSession,
+  seedPerson,
+  seedJob,
+  seedContributionProfile,
+} from "./setup";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
 
 const SALARY = 120000;
@@ -27,19 +33,32 @@ describe("paycheck.computeSummary — sandboxDeductionEdits", () => {
     try {
       const personId = await seedPerson(db, "Edited");
       const jobId = seedJob(db, personId, { annualSalary: String(SALARY) });
+      // amountPerPeriod no longer lives on the paycheck_deductions row
+      // (Stage B) — the "live" $100 baseline this test needs is seeded via
+      // a Contribution Profile's deductions active field instead, and both
+      // calls below resolve through that same profile.
       const deductionId = db
         .insert(sqliteSchema.paycheckDeductions)
         .values({
           jobId,
           deductionName: "Health Insurance",
-          amountPerPeriod: "100",
           isPretax: true,
           ficaExempt: false,
         })
         .returning({ id: sqliteSchema.paycheckDeductions.id })
         .get().id;
+      const profileId = seedContributionProfile(db, {
+        name: "Deduction Baseline Profile",
+        contributionActiveFields: {
+          contributionAccounts: {},
+          jobs: {},
+          deductions: { [String(deductionId)]: { amountPerPeriod: "100" } },
+        },
+      });
 
-      const baseline = await caller.paycheck.computeSummary();
+      const baseline = await caller.paycheck.computeSummary({
+        contributionProfileId: profileId,
+      });
       const basePerson = baseline.people.find((p) => p.person.id === personId)!;
       const baselinePreTax = basePerson.paycheck!.preTaxDeductions.reduce(
         (s: number, d: { amount: number }) => s + d.amount,
@@ -48,6 +67,7 @@ describe("paycheck.computeSummary — sandboxDeductionEdits", () => {
       expect(baselinePreTax).toBeCloseTo(100, 2);
 
       const edited = await caller.paycheck.computeSummary({
+        contributionProfileId: profileId,
         sandboxDeductionEdits: [{ id: deductionId, amountPerPeriod: 250 }],
       });
       const editedPerson = edited.people.find((p) => p.person.id === personId)!;

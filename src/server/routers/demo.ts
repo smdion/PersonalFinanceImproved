@@ -16,6 +16,7 @@ import {
 } from "@/lib/constants/settings-keys";
 import { speculativeJobValues } from "./settings/paycheck";
 import type { W4FilingStatus } from "@/lib/config/enum-values";
+import type { SalaryProfileEntry } from "../helpers/salary";
 
 /** Safe slug pattern — lowercase alphanumeric + hyphens, 1-40 chars. */
 const DEMO_SLUG_REGEX = /^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/;
@@ -62,21 +63,13 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
     .insert(schema.jobs)
     .values(personRows.map((p) => speculativeJobValues(p.id)));
 
-  // 2. Jobs — a job carries no salary/bonus terms of its own; insert the
-  // job, then collect a COMPLETE entry (salary + all three bonus terms) to
-  // give it in a demo Salary Profile below — a profile entry is
-  // all-or-nothing, never a partial pin (mirrors the "Demo Contribution"
-  // profile pattern).
-  const salaryPinsByJobId: Record<
-    string,
-    {
-      salary: number;
-      bonusPercent: number;
-      bonusMultiplier: number;
-      monthsInBonusYear: number;
-      bonusOverride: number | null;
-    }
-  > = {};
+  // 2. Jobs — a job carries no salary/bonus/payroll terms of its own;
+  // insert the (now purely structural) job row, then collect a COMPLETE
+  // Salary Profile entry (all 16 fields — salary, bonus terms, and the
+  // payroll-config fields that used to live on the job row) to give it in
+  // a demo Salary Profile below — a profile entry is all-or-nothing, never
+  // a partial pin (mirrors the "Demo Contribution" profile pattern).
+  const salaryPinsByJobId: Record<string, SalaryProfileEntry> = {};
   for (const j of profile.jobs) {
     const [createdJob] = await db
       .insert(schema.jobs)
@@ -84,14 +77,8 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
         personId: personIdByName.get(j.personName)!,
         employerName: j.employerName,
         title: j.title,
-        payPeriod: j.payPeriod,
-        payWeek: j.payWeek,
         startDate: j.startDate,
-        anchorPayDate: j.anchorPayDate,
         endDate: j.endDate,
-        bonusMonth: j.bonusMonth,
-        bonusDayOfMonth: j.bonusDayOfMonth ?? null,
-        w4FilingStatus: j.w4FilingStatus,
       })
       .returning({ id: schema.jobs.id });
     if (!createdJob) continue;
@@ -101,6 +88,22 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
       bonusMultiplier: 1,
       monthsInBonusYear: 12,
       bonusOverride: null,
+      payPeriod: j.payPeriod,
+      payWeek: j.payWeek,
+      anchorPayDate: j.anchorPayDate ?? null,
+      // Not modeled by DemoProfile.jobs — null defers to the payPeriod's
+      // standard periods/month, same as an unset real Salary Profile entry.
+      budgetPeriodsPerMonth: null,
+      w4FilingStatus: j.w4FilingStatus,
+      // Reasonable demo defaults — no demo persona needs box 2c checked or
+      // extra withholding to look realistic.
+      w4Box2cChecked: false,
+      additionalFedWithholding: 0,
+      bonusMonth: j.bonusMonth,
+      bonusDayOfMonth: j.bonusDayOfMonth ?? null,
+      // Matches speculativeJobValues' defaults for the same two flags.
+      include401kInBonus: false,
+      includeBonusInContributions: false,
     };
   }
   if (Object.keys(salaryPinsByJobId).length > 0) {

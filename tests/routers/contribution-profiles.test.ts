@@ -6,9 +6,7 @@
  */
 import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { createTestCaller, adminSession, seedPerson, seedJob } from "./setup";
-import * as sqliteSchema from "@/lib/db/schema-sqlite";
-import { eq, and } from "drizzle-orm";
+import { createTestCaller } from "./setup";
 
 describe("contributionProfiles router", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
@@ -58,7 +56,7 @@ describe("contributionProfiles router", () => {
       });
       expect(profile).not.toBeNull();
       expect(Array.isArray(profile!.accountDetails)).toBe(true);
-      expect(Array.isArray(profile!.salaryDetails)).toBe(true);
+      expect(Array.isArray(profile!.deductionDetails)).toBe(true);
       expect(typeof profile!.resolved.combinedSalary).toBe("number");
     });
   });
@@ -70,7 +68,7 @@ describe("contributionProfiles router", () => {
       const profile = await caller.contributionProfile.create({
         name: "Test Profile",
         description: "For testing",
-        contributionActiveFields: { contributionAccounts: {}, jobs: {} },
+        contributionActiveFields: { contributionAccounts: {} },
       });
       expect(profile).toBeDefined();
       expect(profile.name).toBe("Test Profile");
@@ -81,7 +79,7 @@ describe("contributionProfiles router", () => {
       const profile = await caller.contributionProfile.create({
         name: "Second Profile",
         description: "Another test",
-        contributionActiveFields: { contributionAccounts: {}, jobs: {} },
+        contributionActiveFields: { contributionAccounts: {} },
       });
       expect(typeof profile.id).toBe("number");
       expect(profile.id).toBeGreaterThan(0);
@@ -181,7 +179,7 @@ describe("contributionProfiles router", () => {
       const profile = await caller.contributionProfile.create({
         name: "Profile To Delete",
         description: "Will be deleted",
-        contributionActiveFields: { contributionAccounts: {}, jobs: {} },
+        contributionActiveFields: { contributionAccounts: {} },
       });
       deletableId = profile.id;
     });
@@ -215,7 +213,7 @@ describe("contributionProfiles router", () => {
       const profile = await caller.contributionProfile.create({
         name: "Resolve Test Profile",
         description: "Used to test resolve",
-        contributionActiveFields: { contributionAccounts: {}, jobs: {} },
+        contributionActiveFields: { contributionAccounts: {} },
       });
       profileId = profile.id;
     });
@@ -245,107 +243,9 @@ describe("contributionProfiles router", () => {
     });
   });
 
-  // ── TAX-INPUT ACTIVE FIELDS — write-time bracket validation ──
-
-  describe("write-time bracket validation for w4FilingStatus/w4Box2cChecked active fields", () => {
-    it("accepts a jobs active-field combination that has a matching bracket row", async () => {
-      const { caller, db, cleanup } = await createTestCaller(adminSession);
-      try {
-        const personId = await seedPerson(db, "BracketOk");
-        const jobId = seedJob(db, personId);
-
-        const profile = await caller.contributionProfile.create({
-          name: "Bracket OK",
-          description: undefined,
-          contributionActiveFields: {
-            contributionAccounts: {},
-            jobs: { [String(jobId)]: { w4FilingStatus: "Single" } },
-          },
-        });
-        expect(profile).toBeDefined();
-      } finally {
-        cleanup();
-      }
-    });
-
-    it("rejects a jobs active-field combination with no matching bracket row for the current tax year", async () => {
-      const { caller, db, cleanup } = await createTestCaller(adminSession);
-      try {
-        const personId = await seedPerson(db, "BracketMissing");
-        const jobId = seedJob(db, personId, { w4FilingStatus: "MFJ" });
-
-        // Delete the one bracket row this combination would otherwise
-        // resolve to, guaranteeing a genuine miss regardless of which
-        // years happen to be seeded.
-        const taxYear = new Date().getFullYear();
-        db.delete(sqliteSchema.taxBrackets)
-          .where(
-            and(
-              eq(sqliteSchema.taxBrackets.taxYear, taxYear),
-              eq(sqliteSchema.taxBrackets.filingStatus, "HOH"),
-              eq(sqliteSchema.taxBrackets.w4Checkbox, true),
-            ),
-          )
-          .run();
-
-        await expect(
-          caller.contributionProfile.create({
-            name: "Bracket Missing",
-            description: undefined,
-            contributionActiveFields: {
-              contributionAccounts: {},
-              jobs: {
-                [String(jobId)]: {
-                  w4FilingStatus: "HOH",
-                  w4Box2cChecked: true,
-                },
-              },
-            },
-          }),
-        ).rejects.toThrow(/tax bracket/i);
-      } finally {
-        cleanup();
-      }
-    });
-
-    it("rejects on update, using the job's raw checkbox when only filing status is set", async () => {
-      const { caller, db, cleanup } = await createTestCaller(adminSession);
-      try {
-        const personId = await seedPerson(db, "BracketMissingUpdate");
-        // Raw job's w4Box2cChecked defaults to false (schema default).
-        const jobId = seedJob(db, personId, { w4FilingStatus: "MFJ" });
-
-        const taxYear = new Date().getFullYear();
-        db.delete(sqliteSchema.taxBrackets)
-          .where(
-            and(
-              eq(sqliteSchema.taxBrackets.taxYear, taxYear),
-              eq(sqliteSchema.taxBrackets.filingStatus, "Single"),
-              eq(sqliteSchema.taxBrackets.w4Checkbox, false),
-            ),
-          )
-          .run();
-
-        const profile = await caller.contributionProfile.create({
-          name: "Bracket Missing Via Update",
-          description: undefined,
-          contributionActiveFields: { contributionAccounts: {}, jobs: {} },
-        });
-
-        await expect(
-          caller.contributionProfile.update({
-            id: profile.id,
-            contributionActiveFields: {
-              contributionAccounts: {},
-              // Only filing status set — effective checkbox is the job's
-              // raw (unset) false, which now has no matching bracket row.
-              jobs: { [String(jobId)]: { w4FilingStatus: "Single" } },
-            },
-          }),
-        ).rejects.toThrow(/tax bracket/i);
-      } finally {
-        cleanup();
-      }
-    });
-  });
+  // Write-time bracket validation for w4FilingStatus/w4Box2cChecked moved
+  // to salaryProfile.create/update (assertSalaryEntryTaxBracketsExist in
+  // salary-profiles.ts) — the Contribution Profile `jobs` bucket that used
+  // to carry these fields is deleted wholesale. See
+  // tests/routers/salary-profiles.test.ts for that coverage.
 });

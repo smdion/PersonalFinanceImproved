@@ -5,7 +5,6 @@ import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { DataTable } from "@/components/settings/data-table";
 import { formatDate } from "@/lib/utils/format";
-import { PAY_PERIOD_CONFIG } from "@/lib/config/pay-periods";
 import { PERSON_COLORS } from "@/lib/utils/colors";
 
 type Job = {
@@ -13,19 +12,8 @@ type Job = {
   personId: number;
   employerName: string;
   title: string | null;
-  payPeriod: string;
-  payWeek: string;
   startDate: string;
   endDate: string | null;
-  anchorPayDate: string | null;
-  bonusMonth: number | null;
-  bonusDayOfMonth: number | null;
-  include401kInBonus: boolean;
-  includeBonusInContributions: boolean;
-  w4FilingStatus: string;
-  w4Box2cChecked: boolean;
-  additionalFedWithholding: string;
-  budgetPeriodsPerMonth: string | null;
   isSpeculative: boolean;
 };
 
@@ -42,11 +30,12 @@ function duration(start: string, end: string | null): string {
 }
 
 /**
- * Jobs settings — pure employment structure (employer, dates, payroll
- * config). A job carries no salary or bonus terms of its own: what someone
+ * Jobs settings — pure employment structure (employer, title, dates). A job
+ * carries no salary, bonus, or payroll-config terms of its own: what someone
  * earned in the past lives on the Historical page (`historical_salaries`),
- * and what they earn now lives in the active Salary Profile. This
- * component never shows a dollar figure.
+ * and what they earn now — plus payroll config like pay period and W-4
+ * filing status — lives in the active Salary Profile. This component never
+ * shows a dollar figure.
  */
 export function JobsSettings() {
   const user = useUser();
@@ -146,12 +135,12 @@ export function JobsSettings() {
                             <span className="font-semibold text-primary">
                               {job.employerName}
                             </span>
-                            <span className="text-faint">·</span>
-                            <span className="text-muted">{job.payPeriod}</span>
-                            <span className="text-faint">·</span>
-                            <span className="text-muted">
-                              {job.w4FilingStatus}
-                            </span>
+                            {job.title && (
+                              <>
+                                <span className="text-faint">·</span>
+                                <span className="text-muted">{job.title}</span>
+                              </>
+                            )}
                           </div>
                           <div className="flex items-center gap-3 mt-1 text-muted">
                             <span>
@@ -184,7 +173,7 @@ export function JobsSettings() {
             render: (r) => personName(r.personId),
           },
           { key: "employerName", label: "Employer" },
-          { key: "payPeriod", label: "Pay Period" },
+          { key: "title", label: "Title" },
           {
             key: "startDate",
             label: "Start",
@@ -196,7 +185,6 @@ export function JobsSettings() {
             render: (r) =>
               r.endDate ? formatDate(r.endDate, "short") : "Current",
           },
-          { key: "w4FilingStatus", label: "W4 Status" },
         ]}
         data={data}
         isLoading={isLoading}
@@ -241,12 +229,9 @@ function JobForm({
   onSubmit: (v: {
     personId: number;
     employerName: string;
-    payPeriod: "weekly" | "biweekly" | "semimonthly" | "monthly";
-    payWeek: "even" | "odd" | "na";
+    title: string | null;
     startDate: string;
     endDate: string | null;
-    w4FilingStatus: "MFJ" | "Single" | "HOH";
-    budgetPeriodsPerMonth: string | null;
   }) => void;
   onCancel: () => void;
   isPending: boolean;
@@ -255,14 +240,9 @@ function JobForm({
     initial?.personId ?? people[0]?.id ?? 0,
   );
   const [employer, setEmployer] = useState(initial?.employerName ?? "");
-  const [payPeriod, setPayPeriod] = useState(initial?.payPeriod ?? "biweekly");
-  const [payWeek, setPayWeek] = useState(initial?.payWeek ?? "na");
+  const [title, setTitle] = useState(initial?.title ?? "");
   const [startDate, setStartDate] = useState(initial?.startDate ?? "");
   const [endDate, setEndDate] = useState(initial?.endDate ?? "");
-  const [filing, setFiling] = useState(initial?.w4FilingStatus ?? "MFJ");
-  const [budgetPeriods, setBudgetPeriods] = useState(
-    initial?.budgetPeriodsPerMonth ?? "",
-  );
 
   return (
     <form
@@ -271,12 +251,9 @@ function JobForm({
         onSubmit({
           personId,
           employerName: employer,
-          payPeriod: payPeriod as "biweekly",
-          payWeek: payWeek as "even",
+          title: title || null,
           startDate,
           endDate: endDate || null,
-          w4FilingStatus: filing as "MFJ",
-          budgetPeriodsPerMonth: budgetPeriods || null,
         });
       }}
       className="grid grid-cols-2 md:grid-cols-4 gap-3"
@@ -305,44 +282,12 @@ function JobForm({
         />
       </label>
       <label className="flex flex-col text-sm">
-        Pay Period
-        <select
-          value={payPeriod}
-          onChange={(e) => setPayPeriod(e.target.value)}
-          className="mt-1 px-2 py-1 border rounded"
-        >
-          <option value="weekly">Weekly</option>
-          <option value="biweekly">Biweekly</option>
-          <option value="semimonthly">Semimonthly</option>
-          <option value="monthly">Monthly</option>
-        </select>
-      </label>
-      <label className="flex flex-col text-sm">
-        Budget paychecks/mo
+        Title
         <input
-          type="number"
-          step="any"
-          min="0"
-          value={budgetPeriods}
-          onChange={(e) => setBudgetPeriods(e.target.value)}
-          placeholder={String(
-            PAY_PERIOD_CONFIG[payPeriod]?.defaultBudgetPerMonth ?? "",
-          )}
-          title={`Paychecks included in monthly budget. Leave blank for default (${PAY_PERIOD_CONFIG[payPeriod]?.defaultBudgetPerMonth ?? ""}). Set to ${((PAY_PERIOD_CONFIG[payPeriod]?.periodsPerYear ?? 12) / 12).toFixed(2)} to include all paychecks.`}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
           className="mt-1 px-2 py-1 border rounded"
         />
-      </label>
-      <label className="flex flex-col text-sm">
-        Pay Week
-        <select
-          value={payWeek}
-          onChange={(e) => setPayWeek(e.target.value)}
-          className="mt-1 px-2 py-1 border rounded"
-        >
-          <option value="even">Even</option>
-          <option value="odd">Odd</option>
-          <option value="na">N/A</option>
-        </select>
       </label>
       <label className="flex flex-col text-sm">
         Start Date
@@ -362,18 +307,6 @@ function JobForm({
           onChange={(e) => setEndDate(e.target.value)}
           className="mt-1 px-2 py-1 border rounded"
         />
-      </label>
-      <label className="flex flex-col text-sm">
-        W4 Filing Status
-        <select
-          value={filing}
-          onChange={(e) => setFiling(e.target.value)}
-          className="mt-1 px-2 py-1 border rounded"
-        >
-          <option value="MFJ">MFJ</option>
-          <option value="Single">Single</option>
-          <option value="HOH">HOH</option>
-        </select>
       </label>
       <div className="col-span-full flex gap-2">
         <button

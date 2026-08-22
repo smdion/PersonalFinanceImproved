@@ -27,6 +27,11 @@ import {
   EDIT_LOCK_KEYS,
   useEditLock,
 } from "@/components/ui/edit-lock-toggle";
+import type {
+  PayPeriod,
+  PayWeek,
+  W4FilingStatus,
+} from "@/lib/config/enum-values";
 
 export default function PaycheckPage() {
   const user = useUser();
@@ -91,14 +96,16 @@ export default function PaycheckPage() {
   });
 
   // Helper: update one or more fields in the active profile's active
-  // fields, in a single atomic write. Multi-field form exists because
-  // payPeriod/payWeek/anchorPayDate are a coupled schedule unit the write
-  // schema requires to be set together (or none) — editing just one of
-  // them via the single-field form would transiently violate that and be
-  // rejected. Callers editing an independent field can keep passing a
-  // single field/value pair.
+  // fields, in a single atomic write. The multi-field form exists for
+  // entity kinds whose write schema requires certain fields to be set
+  // together (or none) — a caller editing an independent field can keep
+  // passing a single field/value pair. There is no more "jobs" entity kind
+  // here: that active-fields bucket (payPeriod/payWeek/anchorPayDate, W-4,
+  // bonus timing/flags) was retired in the Stage B migration — those 11
+  // fields now live on the Salary Profile entry instead (see
+  // writeSalaryProfileEntry above).
   function updateProfileActiveField(
-    entityType: "contributionAccounts" | "jobs" | "deductions",
+    entityType: "contributionAccounts" | "deductions",
     entityId: number,
     fieldOrFields: string | Record<string, unknown>,
     value?: unknown,
@@ -131,7 +138,7 @@ export default function PaycheckPage() {
    * Returns true if handled by scenario or profile mode; false means caller should do a direct DB write.
    */
   function writeOverride(
-    entityType: "contributionAccounts" | "jobs" | "deductions",
+    entityType: "contributionAccounts" | "deductions",
     entityId: number,
     field: string,
     value: string | number | boolean | null,
@@ -181,12 +188,26 @@ export default function PaycheckPage() {
     },
   });
 
+  /** Mirrors SalaryProfileEntry (server/helpers/salary.ts) by hand —
+   *  components may not import server modules. Must stay in sync with it
+   *  and with salaryEntrySchema. */
   type CompleteSalaryEntry = {
     salary: number;
     bonusPercent: number;
     bonusMultiplier: number;
     monthsInBonusYear: number;
     bonusOverride: number | null;
+    payPeriod: PayPeriod;
+    payWeek: PayWeek;
+    anchorPayDate: string | null;
+    budgetPeriodsPerMonth: number | null;
+    w4FilingStatus: W4FilingStatus;
+    w4Box2cChecked: boolean;
+    additionalFedWithholding: number;
+    bonusMonth: number | null;
+    bonusDayOfMonth: number | null;
+    include401kInBonus: boolean;
+    includeBonusInContributions: boolean;
   };
 
   /**
@@ -194,7 +215,7 @@ export default function PaycheckPage() {
    * Profile. Entries are complete/all-or-nothing (no partial pins) — the
    * first edit to a job that has no entry yet creates one, defaulting
    * every untouched field to `defaults` (that job's currently-resolved
-   * values), so the write is always a full 5-field entry.
+   * values), so the write is always a full 16-field entry.
    */
   function writeSalaryProfileEntry(
     jobId: number,
@@ -442,6 +463,7 @@ export default function PaycheckPage() {
                           const nullableDecimalFields = [
                             "budgetPeriodsPerMonth",
                           ];
+                          const decimalFields = ["additionalFedWithholding"];
                           const parsed = boolFields.includes(field)
                             ? value === "true"
                             : nullableIntFields.includes(field)
@@ -451,24 +473,50 @@ export default function PaycheckPage() {
                               : nullableDecimalFields.includes(field)
                                 ? value === ""
                                   ? null
-                                  : value
-                                : value;
+                                  : Number(value)
+                                : decimalFields.includes(field)
+                                  ? Number(value)
+                                  : value;
                           if (isInScenario) {
                             setScenarioOverride("jobs", job.id, field, parsed);
                             return;
                           }
-                          // A job has no salary or bonus terms of its own — every
-                          // edit lands in the displayed Salary Profile as part of
-                          // that job's complete entry (see resolveCompensation in
-                          // server/helpers/salary.ts). Untouched fields default to
-                          // this job's currently-resolved values.
+                          // A job has no salary, bonus, pay-schedule, or W-4
+                          // terms of its own any more — every edit to any of
+                          // those lands in the displayed Salary Profile as
+                          // part of that job's complete 16-field entry (see
+                          // resolveCompensation/SalaryProfileEntry in
+                          // server/helpers/salary.ts). Untouched fields
+                          // default to this job's currently-resolved values.
+                          const salaryProfileEntryDefaults: CompleteSalaryEntry =
+                            {
+                              salary: d.salary,
+                              ...d.resolvedBonusTerms,
+                              payPeriod: job.payPeriod,
+                              payWeek: job.payWeek,
+                              anchorPayDate: job.anchorPayDate ?? null,
+                              budgetPeriodsPerMonth:
+                                job.budgetPeriodsPerMonth != null
+                                  ? Number(job.budgetPeriodsPerMonth)
+                                  : null,
+                              w4FilingStatus: job.w4FilingStatus,
+                              w4Box2cChecked: job.w4Box2cChecked,
+                              additionalFedWithholding: Number(
+                                job.additionalFedWithholding,
+                              ),
+                              bonusMonth: job.bonusMonth ?? null,
+                              bonusDayOfMonth: job.bonusDayOfMonth ?? null,
+                              include401kInBonus: job.include401kInBonus,
+                              includeBonusInContributions:
+                                job.includeBonusInContributions,
+                            };
                           if (field === "annualSalary") {
                             const num = Number(value);
                             if (isNaN(num) || num <= 0) return;
                             if (!salaryEditsProfile) return;
                             writeSalaryProfileEntry(
                               job.id,
-                              { salary: d.salary, ...d.resolvedBonusTerms },
+                              salaryProfileEntryDefaults,
                               { salary: num },
                             );
                             return;
@@ -482,7 +530,7 @@ export default function PaycheckPage() {
                             if (salaryEditsProfile) {
                               writeSalaryProfileEntry(
                                 job.id,
-                                { salary: d.salary, ...d.resolvedBonusTerms },
+                                salaryProfileEntryDefaults,
                                 {
                                   [field as
                                     | "bonusPercent"
@@ -500,7 +548,7 @@ export default function PaycheckPage() {
                             if (salaryEditsProfile) {
                               writeSalaryProfileEntry(
                                 job.id,
-                                { salary: d.salary, ...d.resolvedBonusTerms },
+                                salaryProfileEntryDefaults,
                                 {
                                   bonusOverride:
                                     value === "" ? null : Number(value),
@@ -509,81 +557,54 @@ export default function PaycheckPage() {
                             }
                             return;
                           }
-                          // Profile mode: the remaining bonus-adjacent fields
-                          // (still real job columns), tax-input fields, and
-                          // the coupled payPeriod/payWeek/anchorPayDate
-                          // schedule unit all go to Contribution Profile
-                          // active fields — same mechanism, no field-level
-                          // carve-out (see the Contribution Profile plan's
-                          // governing principle). employerName was already
-                          // in the write-side schema allowlist but missing
-                          // here — a pre-existing gap, fixed in the same pass.
-                          const contribProfileBonusFields = [
-                            "bonusMonth",
-                            "bonusDayOfMonth",
-                            "include401kInBonus",
-                            "includeBonusInContributions",
-                            "employerName",
-                            "w4FilingStatus",
-                            "w4Box2cChecked",
-                            "additionalFedWithholding",
-                            // payPeriod/payWeek/anchorPayDate are handled
-                            // above (coupled-triplet special case), not here.
-                          ];
-                          // payPeriod/payWeek/anchorPayDate are a coupled
-                          // schedule unit the write schema requires set
-                          // together — write all three atomically, using
-                          // this job's currently-resolved values (already
-                          // live-default-or-active-profile, from `job`) for
-                          // the two fields not being edited right now.
-                          const schedulePeriodFields = [
-                            "payPeriod",
-                            "payWeek",
-                            "anchorPayDate",
-                          ];
+                          // The remaining 11 fields — pay schedule, W-4, and
+                          // the bonus-timing/contribution-flag fields — all
+                          // moved onto this same Salary Profile entry in the
+                          // Stage B migration. There is no more Contribution
+                          // Profile "jobs" active-fields bucket (retired
+                          // entirely) and no more raw job columns for any of
+                          // them; the ONLY write path left is the displayed
+                          // Salary Profile, same as salary/bonus above.
+                          const salaryProfileNewFields: (keyof CompleteSalaryEntry)[] =
+                            [
+                              "payPeriod",
+                              "payWeek",
+                              "anchorPayDate",
+                              "budgetPeriodsPerMonth",
+                              "w4FilingStatus",
+                              "w4Box2cChecked",
+                              "additionalFedWithholding",
+                              "bonusMonth",
+                              "bonusDayOfMonth",
+                              "include401kInBonus",
+                              "includeBonusInContributions",
+                            ];
                           if (
-                            isProfileMode &&
-                            schedulePeriodFields.includes(field)
+                            salaryProfileNewFields.includes(
+                              field as keyof CompleteSalaryEntry,
+                            )
                           ) {
-                            updateProfileActiveField("jobs", job.id, {
-                              payPeriod: job.payPeriod,
-                              payWeek: job.payWeek,
-                              anchorPayDate: job.anchorPayDate ?? undefined,
-                              [field]: parsed,
-                            });
+                            if (salaryEditsProfile) {
+                              writeSalaryProfileEntry(
+                                job.id,
+                                salaryProfileEntryDefaults,
+                                {
+                                  [field]: parsed,
+                                } as Partial<CompleteSalaryEntry>,
+                              );
+                            }
                             return;
                           }
-                          if (
-                            isProfileMode &&
-                            contribProfileBonusFields.includes(field)
-                          ) {
-                            updateProfileActiveField(
-                              "jobs",
-                              job.id,
-                              field,
-                              parsed,
-                            );
-                            return;
-                          }
+                          // Only real job columns left: employerName and
+                          // title (jobs.update's trimmed schema — see
+                          // settings/paycheck.ts).
                           updateJob.mutate({
                             id: job.id,
                             personId: job.personId,
                             employerName: job.employerName,
-                            payPeriod: job.payPeriod,
-                            payWeek: job.payWeek,
+                            title: job.title,
                             startDate: job.startDate,
-                            anchorPayDate: job.anchorPayDate ?? undefined,
-                            w4FilingStatus: job.w4FilingStatus,
-                            w4Box2cChecked: job.w4Box2cChecked,
-                            bonusMonth: job.bonusMonth ?? undefined,
-                            bonusDayOfMonth: job.bonusDayOfMonth ?? undefined,
-                            include401kInBonus: job.include401kInBonus,
-                            includeBonusInContributions:
-                              job.includeBonusInContributions,
-                            additionalFedWithholding:
-                              job.additionalFedWithholding,
-                            budgetPeriodsPerMonth:
-                              job.budgetPeriodsPerMonth ?? undefined,
+                            endDate: job.endDate ?? undefined,
                             [field]: parsed,
                           });
                         },
@@ -615,7 +636,6 @@ export default function PaycheckPage() {
                             id: raw.id,
                             jobId: raw.jobId,
                             deductionName: raw.deductionName,
-                            amountPerPeriod: raw.amountPerPeriod,
                             isPretax: raw.isPretax,
                             ficaExempt: raw.ficaExempt,
                             [field]: value,

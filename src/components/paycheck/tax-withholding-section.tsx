@@ -10,14 +10,18 @@ import { SectionHeader } from "./section-header";
  * W-4 tax-input controls. Deliberately a separate section from
  * BonusSection — that component early-returns when there's no bonus, which
  * would make these fields permanently uneditable for anyone without one.
- * These are real job columns (like "Paid in" in BonusSection), so they
- * gate on `readOnly` alone, not `salaryReadOnly` — unrelated to the
- * Salary Profile axis.
+ *
+ * These fields now live on the resolved Salary Profile entry (see
+ * SalaryProfileEntry in server/helpers/salary.ts), the same axis salary and
+ * bonus terms are on — so, like BonusSection's bonus-formula fields, they
+ * gate on `salaryReadOnly` (requires a Salary Profile in view and its
+ * padlock unlocked) in addition to `readOnly`.
  */
 export function TaxWithholdingSection({
   job,
   onUpdateJob,
   readOnly,
+  salaryReadOnly,
 }: {
   job: {
     w4FilingStatus: string;
@@ -26,7 +30,10 @@ export function TaxWithholdingSection({
   };
   onUpdateJob: (field: string, value: string) => void;
   readOnly?: boolean;
+  /** Mirrors PersonPaycheck's salary padlock — see the docblock above. */
+  salaryReadOnly?: boolean;
 }) {
+  const editable = !readOnly && !salaryReadOnly;
   return (
     <div className="space-y-2">
       <SectionHeader>Tax Withholding</SectionHeader>
@@ -36,7 +43,7 @@ export function TaxWithholdingSection({
           <select
             value={job.w4FilingStatus}
             onChange={(e) => onUpdateJob("w4FilingStatus", e.target.value)}
-            disabled={readOnly}
+            disabled={!editable}
             className="text-sm border rounded px-2 py-0.5 bg-surface-primary font-medium disabled:opacity-60"
           >
             <option value="MFJ">MFJ</option>
@@ -50,7 +57,7 @@ export function TaxWithholdingSection({
             onChange={(v) => onUpdateJob("w4Box2cChecked", String(v))}
             label="Multiple jobs / spouse works (W-4 Step 2c)"
             size="xs"
-            disabled={readOnly}
+            disabled={!editable}
           />
           <HelpTip text="Matches the W-4 filing status/checkbox combination used to look up federal withholding brackets." />
         </div>
@@ -68,7 +75,7 @@ export function TaxWithholdingSection({
             parseInput={(v) => v.replace(/[^0-9.]/g, "")}
             type="number"
             className="font-medium"
-            isEditable={!readOnly}
+            isEditable={editable}
           />
         </div>
       </div>

@@ -14,6 +14,7 @@ import {
   applyActiveSalary,
   resolveCompensation,
   loadAndApplySalaryProfile,
+  mergeSalaryProfileJobFields,
 } from "./salary";
 import type { SalaryActiveMap, SalaryProfileActiveMap } from "./salary";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
@@ -783,7 +784,10 @@ export async function buildYearEndHistory(
       : 0;
 
     // Gross income from active jobs (includes bonus — matches finalized year-end data)
-    const activeJobs = filterActiveJobs(jobs);
+    const activeJobs = mergeSalaryProfileJobFields(
+      filterActiveJobs(jobs),
+      salaryProfileActiveMap,
+    );
     const salaryActiveMap = targeting?.salaryActiveFields ?? new Map();
     const combinedGross = activeJobs.reduce((s, job) => {
       const comp = resolveCompensation(salaryProfileActiveMap, job.id);
@@ -983,6 +987,10 @@ export async function buildYearEndHistory(
         let totalSalary = 0;
         let weightedRatio = 0;
         for (const job of activeJobs) {
+          // No entry for this job in the active Salary Profile — no
+          // schedule to weight this job's contribution to the ratio by;
+          // excluded, not defaulted to a guessed period count.
+          if (job.payPeriod == null) continue;
           const ppy = PAY_PERIOD_CONFIG[job.payPeriod]?.periodsPerYear ?? 12;
           const elapsed = job.anchorPayDate
             ? countPeriodsElapsed(

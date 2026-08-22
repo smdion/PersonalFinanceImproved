@@ -164,20 +164,25 @@ export const relocationScenarioParamsSchema = z.object({
 /**
  * salary_profiles.salaries — jobId → salary entry.
  *
- * A job either has a COMPLETE entry (all four fields, a real self-contained
- * number for this profile) or no key at all (this profile says nothing
- * about that job, which resolves to $0/no bonus — never a fallback to some
- * other value). There is no partial-pin state and no "live" concept: a
- * profile is its own complete world, not a set of overrides on a shared
- * baseline. If you want different numbers, use a different profile.
+ * A job either has a COMPLETE entry (all sixteen fields, a real
+ * self-contained set of numbers/elections for this profile) or no key at
+ * all (this profile says nothing about that job, which resolves to
+ * $0/no bonus/incomplete — never a fallback to some other value). There is
+ * no partial-pin state and no "live" concept: a profile is its own complete
+ * world, not a set of overrides on a shared baseline. If you want different
+ * numbers, use a different profile.
  *
  * `.strict()` so a stale payload shape from an old client is rejected
  * loudly rather than being stored and silently ignored.
  *
- * Bonus terms live HERE, not on a Contribution Profile: "what is my bonus"
- * is the same category of fact as "what is my salary". A Contribution
- * Profile still owns include401kInBonus / includeBonusInContributions,
- * which are about how contributions are computed FROM a bonus.
+ * Bonus terms, pay schedule, and W-4 elections all live HERE, not split
+ * across `jobs` columns or a Contribution Profile: "what is my bonus,"
+ * "when do I get paid," and "what withholding elections apply" are all the
+ * same category of fact as "what is my salary" — this collapses income and
+ * withholding/schedule elections into one axis (see RULES.md's Salary
+ * Profile layer section for the accepted tradeoff). A Contribution Profile
+ * still owns the *deductions* bucket (paycheck_deductions amounts) — a
+ * distinct fact from what the job elects on its W-4/pay schedule.
  */
 export const salaryEntrySchema = z
   .object({
@@ -190,6 +195,20 @@ export const salaryEntrySchema = z
      *  the formula fields above, which growth/projection math always uses
      *  untouched. Only the live Paycheck display reads this. */
     bonusOverride: z.number().nullable(),
+    payPeriod: payPeriodSchema,
+    payWeek: payWeekSchema,
+    /** `null` is a real, complete value ("no anchor, use start date"). */
+    anchorPayDate: z.string().nullable(),
+    budgetPeriodsPerMonth: z.number().nullable(),
+    w4FilingStatus: w4FilingStatusSchema,
+    w4Box2cChecked: z.boolean(),
+    additionalFedWithholding: z.number(),
+    /** 1-12, month when bonus is typically paid (null = unknown/spread). */
+    bonusMonth: z.number().nullable(),
+    /** 1-31, day of month when bonus is paid (null = first period of month). */
+    bonusDayOfMonth: z.number().nullable(),
+    include401kInBonus: z.boolean(),
+    includeBonusInContributions: z.boolean(),
   })
   .strict();
 
@@ -239,87 +258,15 @@ export const contribAccountActiveFieldsSchema = z
   );
 
 /**
- * Contribution-profile job active-field set.
- *
- * Bonus AMOUNT terms (bonusPercent / bonusMultiplier / monthsInBonusYear)
- * deliberately do NOT appear here — they moved to the Salary Profile entry,
- * because "how big is the bonus" belongs with "how big is the salary". What
- * stays is what is genuinely about contributions computed FROM a bonus
- * (include401kInBonus, includeBonusInContributions), plus the employer name
- * and the bonus pay DATE, which are neither.
- *
- * Tax-input fields (w4FilingStatus, w4Box2cChecked, additionalFedWithholding)
- * and schedule fields (payPeriod, payWeek, anchorPayDate) are included here
- * for the same reason contributions already are: a Contribution Profile is
- * master for every field it declares, everywhere that field is read — see
- * DESIGN.md's Contribution Profile section. payPeriod/payWeek/anchorPayDate
- * are a single coupled schedule unit (calculatePaycheck treats them as a
- * triplet throughout — extra-paycheck-month detection, bonus-period
- * placement, year-schedule generation) and must always be set/read
- * together, never independently.
- *
- * `computeJobNetPayPerCheck` (savings.ts) resolves ALL of these fields
- * against the profile exactly like every other consumer — there is no
- * field-level carve-out. The one place this creates real risk is saving an
- * extra-paycheck routing rule: since payPeriod/anchorPayDate are the
- * denominator for every per-period dollar amount that function resolves,
- * `extraPaycheckRouting.save`/`saveGrowth` reject the mutation outright
- * when the globally-active profile's payPeriod/anchorPayDate for a job
- * don't match that job's real values, rather than persisting an internally
- * incoherent baseNetPayPerCheck — see savings.ts for the guard.
- *
- * w4FilingStatus + w4Box2cChecked form a composite key into the federal
- * withholding bracket table; write-time validation (contributionProfile
- * mutation) rejects any combination with no matching bracket row for the
- * current tax year, rather than letting the mismatch surface later as an
- * unrelated read-time error.
- *
- * Permission note: contributionProfile.update is `withPermission("contributionProfile")`
- * while the raw job/deduction mutations are `adminProcedure` — a non-admin
- * user holding only the contributionProfile permission can therefore set
- * these tax-input and deduction values for any job via a profile's active
- * fields. This is accepted as consistent with the existing employerName/bonus
- * precedent, not a new category of risk.
- */
-export const jobActiveFieldsSchema = z
-  .object({
-    bonusMonth: z.union([z.number(), z.null()]).optional(),
-    bonusDayOfMonth: z.union([z.number(), z.null()]).optional(),
-    include401kInBonus: z.boolean().optional(),
-    includeBonusInContributions: z.boolean().optional(),
-    employerName: z.string().optional(),
-    w4FilingStatus: w4FilingStatusSchema.optional(),
-    w4Box2cChecked: z.boolean().optional(),
-    additionalFedWithholding: zDecimal.optional(),
-    payPeriod: payPeriodSchema.optional(),
-    payWeek: payWeekSchema.optional(),
-    anchorPayDate: z.string().optional(),
-  })
-  .strict()
-  .refine(
-    (f) => {
-      const set = [
-        f.payPeriod !== undefined,
-        f.payWeek !== undefined,
-        f.anchorPayDate !== undefined,
-      ];
-      return set.every((v) => v === set[0]);
-    },
-    {
-      message:
-        "payPeriod, payWeek, and anchorPayDate must be set together (or none of them) — they are a coupled schedule unit",
-      path: ["payPeriod"],
-    },
-  );
-
-/**
  * Contribution-profile deduction active-field set. Deductions (STD/LTD/
- * Dental/Medical/Vision, etc.) hold a real, live `amountPerPeriod` on the
- * row itself — unlike contribution accounts, which have no base value at
- * all. Only `amountPerPeriod` is settable here; `deductionName`/`isPretax`/
- * `ficaExempt`/job assignment stay structural/raw-only, mirroring the
- * accountType/taxTreatment (structural) vs contributionValue/contributionMethod
- * (profile-driven) boundary contribution accounts already draw.
+ * Dental/Medical/Vision, etc.) have NO base `amountPerPeriod` of their own —
+ * Stage B dropped that column — so this is the ONLY source for one, same
+ * no-base-value contract as a contribution account's contributionValue (see
+ * applyDeductionActiveFields/applyContribActiveFields). `deductionName`/
+ * `isPretax`/`ficaExempt`/job assignment stay structural/raw-only on
+ * `paycheck_deductions` itself, mirroring the accountType/taxTreatment
+ * (structural) vs contributionValue/contributionMethod (profile-driven)
+ * boundary contribution accounts already draw.
  */
 export const deductionActiveFieldsSchema = z
   .object({
@@ -331,30 +278,31 @@ export const deductionActiveFieldsSchema = z
  * contribution_profiles.contribution_active_fields — typed active-field
  * structure.
  *
- * Three different merge semantics live under this one column, by bucket:
- *  - contributionAccounts: NO base value — an account absent (or with no
- *    contributionValue set) here has no resolvable contribution at all
- *    (the "incomplete profile" state). See applyContribActiveFields.
- *  - jobs: live default + optional patch — a job always has a real row;
- *    a profile MAY set any of its active fields, and unset fields fall
- *    back to the live default.
- *  - deductions: live default + optional patch, same shape as jobs — a
- *    deduction always has a real amountPerPeriod; a profile MAY override it.
- * pickEntityActiveFields (contribution.ts) looks uniform across all three
- * buckets but behaves differently per bucket — see that function and
- * applyContribActiveFields/applyJobActiveFields/applyDeductionActiveFields
- * for the actual merge behavior of each.
+ * Two different merge semantics live under this one column, by bucket —
+ * both NO base value, exclude-if-absent (see applyContribActiveFields /
+ * applyDeductionActiveFields):
+ *  - contributionAccounts: an account absent (or with no contributionValue
+ *    set) here has no resolvable contribution at all (the "incomplete
+ *    profile" state).
+ *  - deductions: a deduction absent (or with no amountPerPeriod set) here
+ *    has no resolvable amount at all, same rule.
+ *
+ * There is no `jobs` bucket any more — a Contribution Profile no longer
+ * touches jobs at all. Pay schedule, W-4 elections, bonus pay date/flags,
+ * and employerName-override all either moved to the Salary Profile entry
+ * (the first three) or lost their profile-override path entirely
+ * (employerName — accepted feature reduction, see RULES.md's Salary
+ * Profile layer section).
  */
 export const contributionActiveFieldsSchema = z
   .object({
     contributionAccounts: z
       .record(z.string(), contribAccountActiveFieldsSchema)
       .default({}),
-    jobs: z.record(z.string(), jobActiveFieldsSchema).default({}),
     deductions: z.record(z.string(), deductionActiveFieldsSchema).default({}),
   })
   .strict()
-  .default({ contributionAccounts: {}, jobs: {}, deductions: {} });
+  .default({ contributionAccounts: {}, deductions: {} });
 
 // ── app_settings ────────────────────────────────────────────────
 

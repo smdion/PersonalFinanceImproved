@@ -767,19 +767,24 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       // carries no salary of its own — each one's annualSalary from the
       // Income step goes into the household's Salary Profile below instead.
       const today = new Date().toISOString().substring(0, 10);
-      const jobEntries: Record<string, number> = {};
+      const jobEntries: Record<
+        string,
+        { salary: number; payPeriod: JobDraft["payPeriod"] }
+      > = {};
       for (const job of jobs) {
         const personId = createdPeopleIds[job.personIndex];
         if (personId === undefined) continue;
         const created = await createJob.mutateAsync({
           personId,
           employerName: job.employerName,
-          payPeriod: job.payPeriod,
-          payWeek: "na",
           startDate: today,
-          w4FilingStatus: "MFJ",
         });
-        if (created) jobEntries[String(created.id)] = Number(job.annualSalary);
+        if (created) {
+          jobEntries[String(created.id)] = {
+            salary: Number(job.annualSalary),
+            payPeriod: job.payPeriod,
+          };
+        }
       }
 
       // Give each new job a complete entry in the baseline Salary Profile
@@ -797,15 +802,37 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               bonusMultiplier: number;
               monthsInBonusYear: number;
               bonusOverride: number | null;
+              payPeriod: JobDraft["payPeriod"];
+              payWeek: "na";
+              anchorPayDate: string | null;
+              budgetPeriodsPerMonth: number | null;
+              w4FilingStatus: "MFJ";
+              w4Box2cChecked: boolean;
+              additionalFedWithholding: number;
+              bonusMonth: number | null;
+              bonusDayOfMonth: number | null;
+              include401kInBonus: boolean;
+              includeBonusInContributions: boolean;
             }
           >;
-          for (const [jobId, salary] of Object.entries(jobEntries)) {
+          for (const [jobId, entry] of Object.entries(jobEntries)) {
             salaries[jobId] = {
-              salary,
+              salary: entry.salary,
               bonusPercent: 0,
               bonusMultiplier: 1,
               monthsInBonusYear: 12,
               bonusOverride: null,
+              payPeriod: entry.payPeriod,
+              payWeek: "na",
+              anchorPayDate: null,
+              budgetPeriodsPerMonth: null,
+              w4FilingStatus: "MFJ",
+              w4Box2cChecked: false,
+              additionalFedWithholding: 0,
+              bonusMonth: null,
+              bonusDayOfMonth: null,
+              include401kInBonus: false,
+              includeBonusInContributions: false,
             };
           }
           await updateSalaryProfile.mutateAsync({

@@ -28,6 +28,7 @@ import {
 } from "./setup";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
+import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 
 const mockGetActiveBudgetApi = vi.fn().mockResolvedValue("none");
 const mockGetBudgetAPIClient = vi.fn().mockResolvedValue(null);
@@ -1678,10 +1679,38 @@ describe("savings.extraPaycheckRouting", () => {
 
     // Correct the job's REAL live schedule — mirrors "user fixes a data
     // entry mistake on the Paycheck page" after routing was already saved.
+    // payPeriod/anchorPayDate live on the Salary Profile entry now, not a
+    // `jobs` column — patch the active profile's entry for this job.
+    const activeSettingRow = db
+      .select()
+      .from(sqliteSchemaTables.appSettings)
+      .where(
+        eq(sqliteSchemaTables.appSettings.key, SK_ACTIVE_SALARY_PROFILE_ID),
+      )
+      .get();
+    const activeSalaryProfileId = Number(activeSettingRow!.value);
+    const activeSalaryProfile = db
+      .select()
+      .from(sqliteSchemaTables.salaryProfiles)
+      .where(eq(sqliteSchemaTables.salaryProfiles.id, activeSalaryProfileId))
+      .get()!;
+    const salaries = activeSalaryProfile.salaries as Record<
+      string,
+      Record<string, unknown>
+    >;
     await db
-      .update(sqliteSchemaTables.jobs)
-      .set({ payPeriod: "weekly", anchorPayDate: "2025-01-10" })
-      .where(eq(sqliteSchemaTables.jobs.id, scheduleJobId));
+      .update(sqliteSchemaTables.salaryProfiles)
+      .set({
+        salaries: {
+          ...salaries,
+          [String(scheduleJobId)]: {
+            ...salaries[String(scheduleJobId)],
+            payPeriod: "weekly",
+            anchorPayDate: "2025-01-10",
+          },
+        },
+      })
+      .where(eq(sqliteSchemaTables.salaryProfiles.id, activeSalaryProfileId));
 
     const afterCorrection = (
       await caller.savings.extraPaycheckRouting.list()

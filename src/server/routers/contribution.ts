@@ -289,6 +289,7 @@ export const contributionRouter = createTRPCRouter({
         input?.contributionProfileId,
         allContribs,
         allJobs,
+        salaryProfileActiveMap,
       );
       // Sandbox edits are the highest-precedence tier, applied AFTER the
       // picked profile's own overrides via the SAME merge function.
@@ -327,7 +328,9 @@ export const contributionRouter = createTRPCRouter({
         if (c.performanceAccountId == null || !c.jobId) continue;
         if (jobCache.has(c.jobId)) continue;
         const job = effectiveJobs.find((j) => j.id === c.jobId);
-        if (!job) continue;
+        // No entry for this job in the active Salary Profile — same
+        // "nothing to resolve" state as no job at all (see below).
+        if (!job || job.payPeriod == null) continue;
         // Must apply the same Plan/session override tier as the actual-salary
         // computation below, or YTD-vs-actual diverges whenever a What-If
         // salary override is active (expected YTD would keep using the
@@ -413,7 +416,9 @@ export const contributionRouter = createTRPCRouter({
       const results: PersonSnapshot[] = await Promise.all(
         people.map(async (person) => {
           const activeJob = findActiveJob(effectiveJobs, person.id);
-          if (!activeJob) {
+          // No active job, or no entry for it in the active Salary Profile
+          // — same safe "nothing resolves" state either way.
+          if (!activeJob || activeJob.payPeriod == null) {
             return {
               person,
               salary: 0,

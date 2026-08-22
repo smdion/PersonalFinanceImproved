@@ -35,10 +35,10 @@ import {
   getActiveBudgetProfile,
   resolveTargetBudgetProfile,
   applyContribActiveFields,
-  applyJobActiveFields,
   applyDeductionActiveFields,
   fetchContributionProfile,
   buildPaycheckInputForJob,
+  mergeSalaryProfileJobFields,
 } from "@/server/helpers";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { buildBracketInput } from "./paycheck";
@@ -65,18 +65,25 @@ import type { BudgetCategoryGroup, BudgetTransaction } from "@/lib/budget-api";
  * Intentionally does not apply a salary active-value map (Plan/session pin)
  * — this value gets persisted as a recorded fact, not shown as "what your
  * finances look like under the active Plan." See applyActiveSalary's
- * docblock (server/helpers/salary.ts) for the live-vs-active rule. Salary
- * and Contribution PROFILE resolution (as opposed to a Plan/session pin) DO
- * apply here, against the globally-active profile — contribution accounts,
- * job tax-inputs (w4FilingStatus, w4Box2cChecked, additionalFedWithholding,
- * payPeriod, payWeek, anchorPayDate), and deductions all resolve the same
- * way, with no field-level carve-out (see the Contribution Profile plan's
- * governing principle). payPeriod/payWeek/anchorPayDate are the denominator
- * for every per-period value this function computes — the resolved
- * payPeriod/anchorPayDate are returned alongside netPayPerCheck so callers
- * can snapshot them into ExtraPaycheckRoutingData at the same moment,
- * freezing the schedule the materializer uses against a later job/profile
- * change (see ExtraPaycheckRoutingData's docblock).
+ * docblock (server/helpers/salary.ts) for the live-vs-active rule. Salary,
+ * pay schedule, and W-4 elections (w4FilingStatus, w4Box2cChecked,
+ * additionalFedWithholding, payPeriod, payWeek, anchorPayDate) all now come
+ * from the job's entry in the globally-ACTIVE Salary Profile — not a
+ * Contribution Profile job-fields bucket, which no longer exists. Deductions
+ * still resolve against the globally-active Contribution Profile. No
+ * field-level carve-out within each axis. payPeriod/payWeek/anchorPayDate
+ * are the denominator for every per-period value this function computes —
+ * the resolved payPeriod/anchorPayDate are returned alongside
+ * netPayPerCheck so callers can snapshot them into ExtraPaycheckRoutingData
+ * at the same moment, freezing the schedule the materializer uses against a
+ * later job/profile change (see ExtraPaycheckRoutingData's docblock).
+ *
+ * Throws when the job has no entry in the active Salary Profile at all —
+ * the one place in this system a missing-entry state throws rather than
+ * degrading, per RULES.md: this is reached only from an explicit,
+ * user-initiated save (extraPaycheckRouting.save/saveGrowth), where a clear
+ * rejection is the right behavior rather than silently persisting a
+ * fabricated schedule.
  */
 async function computeJobNetPayPerCheck(
   db: DbType,
@@ -154,7 +161,6 @@ async function computeJobNetPayPerCheck(
   const contribActiveFieldsRoot = (contribProfile?.contributionActiveFields ??
     {}) as {
     contributionAccounts?: Record<string, Record<string, unknown>>;
-    jobs?: Record<string, Record<string, unknown>>;
     deductions?: Record<string, Record<string, unknown>>;
   };
   const accountActiveFields =
@@ -167,22 +173,26 @@ async function computeJobNetPayPerCheck(
     rawPersonalContribs,
     accountActiveFields,
   );
-
-  // Job tax-inputs (filing status, withholding, schedule) and deductions
-  // resolve against the same globally-active profile, exactly like
-  // contribution accounts above — no field-level carve-out (see this
-  // function's docblock). This is what makes payPeriod/w4FilingStatus/
-  // deductions actually respond to a Contribution Profile switch on the
-  // Paycheck page and in this persisted snapshot alike.
-  const resolvedJobs = applyJobActiveFields(
-    [job],
-    contribActiveFieldsRoot.jobs ?? {},
-  );
-  const resolvedJob = resolvedJobs[0]!;
   const jobDeductions = applyDeductionActiveFields(
     rawJobDeductions,
     contribActiveFieldsRoot.deductions ?? {},
   );
+
+  // Job tax-inputs (filing status, withholding, schedule) come from the
+  // job's entry in the globally-ACTIVE Salary Profile — same "recorded
+  // fact" resolution as salary itself, no field-level carve-out.
+  const salaryProfileActiveMap = await loadEffectiveSalaryProfile(db, null);
+  const salaryEntry = salaryProfileActiveMap.get(job.id);
+  if (!salaryEntry) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: `Job ${jobId} has no entry in the active Salary Profile — add one before saving extra-paycheck routing.`,
+    });
+  }
+  const resolvedJob = mergeSalaryProfileJobFields(
+    [job],
+    salaryProfileActiveMap,
+  )[0]!;
 
   const limitsMap = new Map<string, number>();
   const limitsRecord: Record<string, number> = {};
@@ -194,30 +204,24 @@ async function computeJobNetPayPerCheck(
 
   const bracketRow = allBrackets.find(
     (b) =>
-      b.filingStatus === resolvedJob.w4FilingStatus &&
-      b.w4Checkbox === resolvedJob.w4Box2cChecked,
+      b.filingStatus === salaryEntry.w4FilingStatus &&
+      b.w4Checkbox === salaryEntry.w4Box2cChecked,
   );
   if (!bracketRow)
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
-      message: contribProfile
-        ? `No tax bracket data found for the filing status set by profile "${contribProfile.name}" for this job.`
-        : "No tax bracket data found for this job's filing status.",
+      message: `No tax bracket data found for the filing status set by the active Salary Profile for job ${jobId}.`,
     });
 
-  // A job has no salary/bonus of its own — resolve against the globally-
-  // ACTIVE Salary Profile (same "recorded fact" philosophy as above,
-  // mirrored from the Contribution Profile resolution just above).
-  const salaryProfileActiveMap = await loadEffectiveSalaryProfile(db, null);
   const comp = resolveCompensation(salaryProfileActiveMap, job.id);
   const currentSalary = comp.salary;
   const bonusTerms = comp.terms;
-  const periodsPerYear = getPeriodsPerYear(resolvedJob.payPeriod);
+  const periodsPerYear = getPeriodsPerYear(salaryEntry.payPeriod);
   const taxBrackets = buildBracketInput(bracketRow, limitsMap);
 
   const deductions: DeductionLine[] = jobDeductions.map((d) => ({
     name: d.deductionName,
-    amount: toNumber(d.amountPerPeriod),
+    amount: toNumber(String(d.amountPerPeriod)),
     taxTreatment: d.isPretax ? ("pre_tax" as const) : ("after_tax" as const),
     ficaExempt: d.ficaExempt,
   }));
@@ -231,9 +235,9 @@ async function computeJobNetPayPerCheck(
 
   // Intentionally does not pass a bonusOverride — this value gets persisted
   // as a recorded fact, not a live/pinned-actual view. See this function's
-  // own docblock. Uses resolvedJob (profile-patched), not the raw job, so
-  // payPeriod/payWeek/anchorPayDate/w4* here match whatever this same
-  // function just resolved contributions/deductions against.
+  // own docblock. Uses resolvedJob (Salary-Profile-merged), not the raw
+  // job, so payPeriod/payWeek/anchorPayDate/w4* here match whatever this
+  // same function just resolved contributions/deductions against.
   const paycheckInput = buildPaycheckInputForJob(resolvedJob, {
     salary: currentSalary,
     bonusTerms,
@@ -249,8 +253,8 @@ async function computeJobNetPayPerCheck(
   const paycheck = calculatePaycheck(paycheckInput);
   return {
     netPayPerCheck: Math.round(paycheck.netPay * 100) / 100,
-    payPeriod: resolvedJob.payPeriod,
-    anchorPayDate: resolvedJob.anchorPayDate,
+    payPeriod: salaryEntry.payPeriod,
+    anchorPayDate: salaryEntry.anchorPayDate,
   };
 }
 
@@ -1921,8 +1925,6 @@ export const savingsRouter = createTRPCRouter({
           id: schema.jobs.id,
           personId: schema.jobs.personId,
           employerName: schema.jobs.employerName,
-          payPeriod: schema.jobs.payPeriod,
-          anchorPayDate: schema.jobs.anchorPayDate,
           extraPaycheckRouting: schema.jobs.extraPaycheckRouting,
         })
         .from(schema.jobs)
@@ -1942,17 +1944,27 @@ export const savingsRouter = createTRPCRouter({
       // correction doesn't retroactively change what this editor shows for
       // already-saved rules. Only a job with no routing saved yet (or a
       // pre-snapshot routing row) has no frozen schedule to read — resolve
-      // live from the job's own column in that case, the one place a live
-      // resolution still belongs (nothing to freeze until the first save).
-      return jobs.map((j) => ({
-        ...j,
-        payPeriod: j.extraPaycheckRouting?.payPeriod ?? j.payPeriod,
-        anchorPayDate:
-          j.extraPaycheckRouting?.anchorPayDate !== undefined
-            ? j.extraPaycheckRouting.anchorPayDate
-            : j.anchorPayDate,
-        personName: personMap.get(j.personId) ?? "Unknown",
-      }));
+      // live from the job's Salary Profile entry in that case, the one
+      // place a live resolution still belongs (nothing to freeze until the
+      // first save). `null` here is a genuine "incomplete" state — no
+      // snapshot AND no active Salary Profile entry for this job.
+      const salaryProfileActiveMap = await loadEffectiveSalaryProfile(
+        ctx.db,
+        null,
+      );
+      return jobs.map((j) => {
+        const entry = salaryProfileActiveMap.get(j.id);
+        return {
+          ...j,
+          payPeriod:
+            j.extraPaycheckRouting?.payPeriod ?? entry?.payPeriod ?? null,
+          anchorPayDate:
+            j.extraPaycheckRouting?.anchorPayDate !== undefined
+              ? j.extraPaycheckRouting.anchorPayDate
+              : (entry?.anchorPayDate ?? null),
+          personName: personMap.get(j.personId) ?? "Unknown",
+        };
+      });
     }),
 
     /** Save routing rules for a single job and re-materialize. Preserves existing overrides and growth settings. */

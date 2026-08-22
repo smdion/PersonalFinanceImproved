@@ -43,12 +43,12 @@ export function BonusSection({
   onUpdateJob: (field: string, value: string) => void;
   /** Sandbox/preview mode — bonus terms are shown but not editable. */
   readOnly?: boolean;
-  /** Mirrors PersonPaycheck's salary padlock — bonus %, multiplier, and the
-   *  current-year Actual pin all write into the SAME Salary Profile entry
-   *  as salary (see writeSalaryProfileEntry in paycheck/page.tsx), so they
-   *  must gate on the same lock. Only those fields respect it; "Paid in"
-   *  and the two toggles below are real job columns, unrelated to the
-   *  Salary Profile, and keep gating on `readOnly` alone. */
+  /** Mirrors PersonPaycheck's salary padlock — bonus %, multiplier, the
+   *  current-year Actual pin, "Paid in", and the two toggles below ALL live
+   *  on the same Salary Profile entry as salary now (see
+   *  writeSalaryProfileEntry in paycheck/page.tsx and SalaryProfileEntry in
+   *  server/helpers/salary.ts), so every editable field in this section
+   *  gates on this same lock. */
   salaryReadOnly?: boolean;
 }) {
   const { bonusEstimate } = paycheck;
@@ -67,7 +67,7 @@ export function BonusSection({
               onChange={(v) => onUpdateJob("include401kInBonus", String(v))}
               label="Deduct 401k from bonus"
               size="xs"
-              disabled={readOnly}
+              disabled={!bonusTermsEditable}
             />
             <HelpTip text="When on, 401k contributions are withheld from the bonus paycheck just like a regular paycheck." />
           </div>
@@ -79,7 +79,7 @@ export function BonusSection({
               }
               label="Contributions on salary + bonus"
               size="xs"
-              disabled={readOnly}
+              disabled={!bonusTermsEditable}
             />
             <HelpTip text="When on, percent-of-salary contributions (e.g. 401k at 16%) are calculated against salary + bonus instead of salary alone." />
           </div>
@@ -169,10 +169,10 @@ export function BonusSection({
                   onUpdateJob("bonusDayOfMonth", String(d.getDate()));
                 }
               }}
-              disabled={readOnly}
+              disabled={!bonusTermsEditable}
               className="text-sm border rounded px-2 py-0.5 bg-surface-primary font-medium"
             />
-            {!readOnly && job.bonusMonth != null && (
+            {bonusTermsEditable && job.bonusMonth != null && (
               <button
                 type="button"
                 onClick={() => {

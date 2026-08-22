@@ -16,6 +16,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createTestDb, type TestDbContext } from "./db-harness";
 import { materializeExtraPaycheckOverrides } from "@/server/helpers/extra-paycheck-materializer";
 import { eq } from "drizzle-orm";
+import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 
 const mockGetExtraPaycheckMonthKeys = vi.fn();
 vi.mock("@/lib/calculators/paycheck", () => ({
@@ -54,12 +55,7 @@ describe("materializeExtraPaycheckOverrides", () => {
         id: 1,
         personId: 1,
         employerName: "TestCo",
-        annualSalary: "100000",
-        payPeriod: "biweekly",
-        payWeek: "even",
         startDate: "2020-01-01",
-        w4FilingStatus: "MFJ",
-        anchorPayDate: "2026-01-02",
         extraPaycheckRouting: {
           rules: [
             {
@@ -70,6 +66,48 @@ describe("materializeExtraPaycheckOverrides", () => {
             },
           ],
         },
+      })
+      .run();
+    // payPeriod/anchorPayDate/w4FilingStatus moved off `jobs` to the
+    // Salary Profile entry (Stage B) — the materializer's live-column
+    // fallback (used here, since the routing above has no payPeriod/
+    // anchorPayDate snapshot of its own) reads it from there.
+    const [salaryProfile] = ctx.db
+      .insert(ctx.schema.salaryProfiles)
+      .values({
+        name: "Test Salary Profile",
+        salaries: {
+          "1": {
+            salary: 100000,
+            bonusPercent: 0,
+            bonusMultiplier: 1,
+            monthsInBonusYear: 12,
+            bonusOverride: null,
+            payPeriod: "biweekly",
+            payWeek: "even",
+            anchorPayDate: "2026-01-02",
+            budgetPeriodsPerMonth: null,
+            w4FilingStatus: "MFJ",
+            w4Box2cChecked: false,
+            additionalFedWithholding: 0,
+            bonusMonth: null,
+            bonusDayOfMonth: null,
+            include401kInBonus: false,
+            includeBonusInContributions: true,
+          },
+        },
+      })
+      .returning()
+      .all();
+    ctx.db
+      .insert(ctx.schema.appSettings)
+      .values({
+        key: SK_ACTIVE_SALARY_PROFILE_ID,
+        value: salaryProfile!.id,
+      })
+      .onConflictDoUpdate({
+        target: ctx.schema.appSettings.key,
+        set: { value: salaryProfile!.id },
       })
       .run();
   });

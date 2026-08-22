@@ -82,10 +82,11 @@ describe("combinedIncome agrees with resolveProfile's totalComp", () => {
   ) {
     const live = await loadLiveContribData(db);
     const resolved = resolveProfile(
-      { contributionActiveFields: { contributionAccounts: {}, jobs: {} } },
+      { contributionActiveFields: { contributionAccounts: {} } },
       live.contribs,
       live.jobs,
       live.jobSalaries,
+      live.salaryProfileActiveMap,
     );
     return resolved.jobSalaries.reduce((s, js) => s + js.totalComp, 0);
   }
