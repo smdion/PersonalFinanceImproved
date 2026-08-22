@@ -104,6 +104,7 @@ async function seedRetirementSettings(
       withdrawalRate: "0.04",
       socialSecurityMonthly: "2500",
       ssStartAge: 67,
+      filingStatus: "MFJ",
       ...overrides,
     })
     .returning({ id: schema.retirementSettings.id })
@@ -1637,6 +1638,122 @@ describe("computeRelocationAnalysis -- per-arm payPeriod resolution", () => {
       // $100 x 26 (biweekly) vs $100 x 52 (weekly).
       expect(current.annualContributions).toBeCloseTo(2600, 0);
       expect(relocation.annualContributions).toBeCloseTo(5200, 0);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("degrades gracefully (excludes the one contribution, never throws) when a jobless fixed_per_period account can't resolve a pay period", async () => {
+    const { caller, db, cleanup } = await createTestCaller();
+    try {
+      const personId = await seedPerson(db, "StrandedAcctPerson", "1990-01-01");
+      await markPrimary(db, personId);
+      await seedRetirementSettings(db, personId);
+      const activeJobId = seedJob(db, personId, { payPeriod: "biweekly" });
+
+      const currentProfileId = await insertBudgetProfile(db, "Budget");
+      await insertBudgetItem(
+        db,
+        currentProfileId,
+        "Essentials",
+        "Rent",
+        [2000],
+      );
+
+      const perfAcctId = seedPerformanceAccount(db, {
+        parentCategory: "Retirement",
+        accountType: "401k",
+        ownerPersonId: personId,
+      });
+      seedSnapshot(db, "2025-06-15", [
+        {
+          performanceAccountId: perfAcctId,
+          amount: "50000",
+          taxType: "preTax",
+        },
+      ]);
+
+      const schema = await getSchema();
+      // A healthy account on the active job, plus a JOBLESS fixed_per_period
+      // account — retirement.ts's per-arm closure resolves a job for it by
+      // jobId only (no personId fallback), so a null jobId can never
+      // resolve a pay period; the stranded account must be excluded from
+      // this arm's total, not take down the whole comparison.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic schema import requires runtime cast
+      const healthyAcct = await (db as any)
+        .insert(schema.contributionAccounts)
+        .values({
+          personId,
+          jobId: activeJobId,
+          accountType: "401k",
+          parentCategory: "Retirement",
+          taxTreatment: "pre_tax",
+          employerMatchType: "none",
+          isActive: true,
+          performanceAccountId: perfAcctId,
+        })
+        .returning({ id: schema.contributionAccounts.id })
+        .get();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic schema import requires runtime cast
+      const strandedAcct = await (db as any)
+        .insert(schema.contributionAccounts)
+        .values({
+          personId,
+          jobId: null,
+          accountType: "401k",
+          parentCategory: "Retirement",
+          taxTreatment: "pre_tax",
+          employerMatchType: "none",
+          isActive: true,
+          performanceAccountId: perfAcctId,
+        })
+        .returning({ id: schema.contributionAccounts.id })
+        .get();
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic schema import requires runtime cast
+      const profile = await (db as any)
+        .insert(schema.contributionProfiles)
+        .values({
+          name: "Stranded Account Profile",
+          contributionActiveFields: {
+            contributionAccounts: {
+              [String(healthyAcct.id)]: {
+                contributionValue: "10",
+                contributionMethod: "percent_of_salary",
+              },
+              [String(strandedAcct.id)]: {
+                contributionValue: "100",
+                contributionMethod: "fixed_per_period",
+              },
+            },
+            jobs: {},
+          },
+        })
+        .returning({ id: schema.contributionProfiles.id })
+        .get();
+
+      const call = () =>
+        caller.retirement.computeRelocationAnalysis({
+          currentProfileId,
+          currentBudgetColumn: 0,
+          relocationProfileId: currentProfileId,
+          relocationBudgetColumn: 0,
+          currentContributionProfileId: profile.id,
+          relocationContributionProfileId: profile.id,
+        });
+
+      await expect(call()).resolves.toBeTruthy();
+      const result = await call();
+
+      const current = (result as Record<string, unknown>)
+        .currentContribProfile as {
+        annualContributions: number;
+        incompleteAccountIds: number[];
+      };
+      expect(current.incompleteAccountIds).toContain(strandedAcct.id);
+      // The healthy account's contribution still counts — only the
+      // stranded one is excluded, not the whole arm.
+      expect(current.annualContributions).toBeGreaterThan(0);
     } finally {
       cleanup();
     }

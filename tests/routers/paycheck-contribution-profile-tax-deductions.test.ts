@@ -352,7 +352,7 @@ describe("computeJobNetPayPerCheck / extraPaycheckRouting — profile resolution
     }
   });
 
-  it("rejects saving extra-paycheck routing when the globally-active profile's payPeriod doesn't match the job's real payPeriod", async () => {
+  it("snapshots the globally-active profile's payPeriod/anchorPayDate at save time, even when they differ from the job's live values (Stage A: no mismatch guard, freeze instead)", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       const personId = await seedPerson(db, "MismatchPerson");
@@ -361,6 +361,7 @@ describe("computeJobNetPayPerCheck / extraPaycheckRouting — profile resolution
         payWeek: "even",
         anchorPayDate: "2026-01-02",
       });
+      const goalId = seedSavingsGoal(db);
 
       const profileId = seedContributionProfile(db, {
         name: "Mismatched Schedule Profile",
@@ -370,16 +371,30 @@ describe("computeJobNetPayPerCheck / extraPaycheckRouting — profile resolution
             [String(jobId)]: {
               payPeriod: "weekly",
               payWeek: "na",
-              anchorPayDate: "2026-01-02",
+              anchorPayDate: "2026-01-09",
             },
           },
         },
       });
       setActiveContribProfile(db, profileId);
 
-      await expect(
-        caller.savings.extraPaycheckRouting.save({ jobId, rules: [] }),
-      ).rejects.toThrow(/pay schedule/i);
+      // No mismatch guard any more — the save succeeds and freezes the
+      // profile's own resolved schedule into the snapshot, rather than
+      // rejecting because it differs from the job's live column.
+      const saved = await caller.savings.extraPaycheckRouting.save({
+        jobId,
+        rules: [{ from: "2026-01", to: null, splits: [{ goalId, pct: 100 }] }],
+      });
+      expect(saved).toEqual({ ok: true });
+
+      const [row] = await db
+        .select({
+          extraPaycheckRouting: sqliteSchema.jobs.extraPaycheckRouting,
+        })
+        .from(sqliteSchema.jobs)
+        .where(eq(sqliteSchema.jobs.id, jobId));
+      expect(row?.extraPaycheckRouting?.payPeriod).toBe("weekly");
+      expect(row?.extraPaycheckRouting?.anchorPayDate).toBe("2026-01-09");
     } finally {
       cleanup();
     }

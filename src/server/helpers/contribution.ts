@@ -104,16 +104,46 @@ export function computeAnnualContribution(
 
 /**
  * Fallback periods-per-year for a jobless contribution account: the first
- * active job's pay period, or 26 (biweekly) if there are none. Shared by
+ * active job's pay period, or `incomplete: true` if there are none (no job
+ * anywhere to resolve a schedule from — `periodsPerYear` is a meaningless
+ * placeholder in that case, not a real value; callers must not use it for a
+ * `fixed_per_period` account without also honoring `incomplete`). Shared by
  * computeActiveSummary's forward computation and
  * applyContributionAccountEdit's inverse so the two can't drift apart.
  */
 export function resolveJoblessPeriodsPerYear(
   activeJobs: { payPeriod: string }[],
-): number {
+): { periodsPerYear: number; incomplete: boolean } {
   return activeJobs.length > 0
-    ? getPeriodsPerYear(activeJobs[0]!.payPeriod)
-    : 26;
+    ? {
+        periodsPerYear: getPeriodsPerYear(activeJobs[0]!.payPeriod),
+        incomplete: false,
+      }
+    : { periodsPerYear: 0, incomplete: true };
+}
+
+/**
+ * Resolve the periods-per-year for a single contribution row's method,
+ * and whether that resolution is incomplete. Only `fixed_per_period`
+ * actually consumes `periodsPerYear` (see computeAnnualContribution) — for
+ * every other method this always resolves complete with an unused `0`,
+ * so a missing/unresolvable job never marks a `percent_of_salary` or
+ * `fixed_monthly` account incomplete (see the plan's method-gated
+ * treatment). `job` is the row's own resolved job (by jobId, or by
+ * personId for a jobless account) — `undefined` means no job could be
+ * resolved for this row at all.
+ */
+export function resolveContribPeriods(
+  method: string,
+  job: { payPeriod: string } | undefined,
+): { periodsPerYear: number; incomplete: boolean } {
+  if (method !== "fixed_per_period")
+    return { periodsPerYear: 0, incomplete: false };
+  if (!job) return { periodsPerYear: 0, incomplete: true };
+  return {
+    periodsPerYear: getPeriodsPerYear(job.payPeriod),
+    incomplete: false,
+  };
 }
 
 /**
@@ -193,7 +223,16 @@ export async function applyContributionAccountEdit(
     rawActiveJobs,
     (activeFields.jobs ?? {}) as Record<string, Record<string, unknown>>,
   );
-  const periodsPerYear = resolveJoblessPeriodsPerYear(activeJobs);
+  const { periodsPerYear, incomplete } =
+    resolveJoblessPeriodsPerYear(activeJobs);
+
+  // No active job anywhere to resolve a pay schedule from. This is a
+  // budget-linked (jobId === null) account whose method needs periodsPerYear
+  // — nothing sane to write, and this path isn't a user-facing save action
+  // that can reject with an error (see the plan's jobless-account
+  // treatment), so leave the value as-is rather than writing a fabricated
+  // number.
+  if (incomplete && method === "fixed_per_period") return;
 
   const newValue = roundToCents(
     computeContributionValueFromMonthly(method, monthlyAmount, periodsPerYear),
@@ -538,6 +577,10 @@ export function aggregateContributionsByCategory(
   employerMatchByCategory: Record<AccountCategory, number>;
   /** Employer match broken down by category → parentCategory → amount. */
   employerMatchByParentCat: Map<AccountCategory, Map<string, number>>;
+  /** Ids of `fixed_per_period` accounts with no resolvable job/pay period —
+   *  excluded from the totals above (annual treated as 0) rather than
+   *  defaulted to a guessed pay period. See resolveContribPeriods. */
+  incompleteAccountIds: number[];
 } {
   const contribByCategory = buildCategoryRecord((): ContribCategorySummary => ({
     annual: 0,
@@ -551,6 +594,7 @@ export function aggregateContributionsByCategory(
     Map<string, number>
   >();
 
+  const incompleteAccountIds: number[] = [];
   const salaryById = new Map<number, number>();
   const annualById = new Map<number, number>();
   for (const c of activeContribs) {
@@ -563,13 +607,14 @@ export function aggregateContributionsByCategory(
       ? activeJobs.find((j) => j.id === c.jobId)
       : activeJobs.find((j) => j.personId === c.personId);
     const salary = js?.salary ?? 0;
-    const periods = getPeriodsPerYear(job?.payPeriod ?? "biweekly");
-    const annual = computeAnnualContribution(
+    const { periodsPerYear: periods, incomplete } = resolveContribPeriods(
       c.contributionMethod,
-      cv,
-      salary,
-      periods,
+      job,
     );
+    if (incomplete) incompleteAccountIds.push(c.id);
+    const annual = incomplete
+      ? 0
+      : computeAnnualContribution(c.contributionMethod, cv, salary, periods);
     salaryById.set(c.id, salary);
     annualById.set(c.id, annual);
 
@@ -629,6 +674,7 @@ export function aggregateContributionsByCategory(
     contribByCategory,
     employerMatchByCategory,
     employerMatchByParentCat,
+    incompleteAccountIds,
   };
 }
 
@@ -652,6 +698,9 @@ export type ContribDisplaySpec = {
   ownerName: string | null;
   personId: number | null;
   matchAnnual: number;
+  /** True for a `fixed_per_period` account with no resolvable job/pay
+   *  period — baseAnnual is 0 (excluded), not a guessed pay period. */
+  incomplete: boolean;
 };
 
 /**
@@ -676,6 +725,7 @@ export function buildContributionDisplaySpecs(
 
   const salaryById = new Map<number, number>();
   const annualById = new Map<number, number>();
+  const incompleteById = new Map<number, boolean>();
   for (const c of filtered) {
     const job = c.jobId
       ? activeJobs.find((j) => j.id === c.jobId)
@@ -684,12 +734,18 @@ export function buildContributionDisplaySpecs(
       ? jobSalaries.find((x) => x.job.id === c.jobId)
       : jobSalaries.find((x) => x.job.personId === c.personId);
     const salary = js?.salary ?? 0;
-    const periods = getPeriodsPerYear(job?.payPeriod ?? "biweekly");
+    const { periodsPerYear: periods, incomplete } = resolveContribPeriods(
+      c.contributionMethod,
+      job,
+    );
     const cv = Number(c.contributionValue);
     salaryById.set(c.id, salary);
+    incompleteById.set(c.id, incomplete);
     annualById.set(
       c.id,
-      computeAnnualContribution(c.contributionMethod, cv, salary, periods),
+      incomplete
+        ? 0
+        : computeAnnualContribution(c.contributionMethod, cv, salary, periods),
     );
   }
 
@@ -729,6 +785,7 @@ export function buildContributionDisplaySpecs(
       ownerName: ownerPerson?.name ?? null,
       personId: c.personId,
       matchAnnual: matchByRow.get(c.id)!.matchAnnual,
+      incomplete: incompleteById.get(c.id) ?? false,
     };
   });
 }
@@ -1250,6 +1307,9 @@ export type ProfileContribData = {
   employerMatchByParentCat: Map<AccountCategory, Map<string, number>>;
   salaryByPerson: Record<number, number>;
   combinedSalary: number;
+  /** Ids of `fixed_per_period` accounts with no resolvable job/pay period —
+   *  excluded from contributionSpecs and the category totals. */
+  incompleteAccountIds: number[];
 };
 
 /** Minimal contribution row shape needed by buildProfileContribData. */
@@ -1322,6 +1382,7 @@ export function buildProfileContribData(
     contribByCategory,
     employerMatchByCategory,
     employerMatchByParentCat,
+    incompleteAccountIds: aggregationIncompleteIds,
   } = aggregateContributionsByCategory(
     contribRows,
     activeJobs,
@@ -1341,13 +1402,18 @@ export function buildProfileContribData(
     ]),
   ) as Record<AccountCategory, number>;
 
-  // Build per-account contribution specs
+  // Build per-account contribution specs. A `fixed_per_period` account with
+  // no resolvable job/pay period can't produce a real spec (periodsPerYear
+  // would be a guess) — it's dropped and reported via
+  // specBuilderIncompleteIds instead, per the method-gated incomplete
+  // treatment (see resolveContribPeriods).
+  const specBuilderIncompleteIds: number[] = [];
   const contributionSpecs: ContributionSpec[] = activeContribs
     .filter((c) => {
       const cv = toNumber(String(c.contributionValue ?? "0"));
       return cv > 0;
     })
-    .map((c) => {
+    .map((c): ContributionSpec | null => {
       const cat = c.accountType;
       const cv = toNumber(String(c.contributionValue ?? "0"));
       const method = (c.contributionMethod ??
@@ -1366,7 +1432,12 @@ export function buildProfileContribData(
       } else if (method === "fixed_per_period") {
         value = cv;
         const job = activeJobs.find((j) => j.id === c.jobId);
-        periodsPerYear = getPeriodsPerYear(job?.payPeriod ?? "biweekly");
+        const resolved = resolveContribPeriods(method, job);
+        if (resolved.incomplete) {
+          specBuilderIncompleteIds.push(c.id);
+          return null;
+        }
+        periodsPerYear = resolved.periodsPerYear;
         baseAnnual = cv * periodsPerYear;
       } else {
         // fixed_monthly
@@ -1451,7 +1522,8 @@ export function buildProfileContribData(
           ? ctx.perfContributionScalingMap.get(c.performanceAccountId)
           : undefined) as ContributionSpec["contributionScaling"],
       };
-    });
+    })
+    .filter((spec): spec is ContributionSpec => spec !== null);
 
   // Base year contributions
   const baseYearContributions = Object.fromEntries(
@@ -1473,5 +1545,8 @@ export function buildProfileContribData(
     employerMatchByParentCat,
     salaryByPerson,
     combinedSalary: totalCompensation,
+    incompleteAccountIds: Array.from(
+      new Set([...aggregationIncompleteIds, ...specBuilderIncompleteIds]),
+    ),
   };
 }

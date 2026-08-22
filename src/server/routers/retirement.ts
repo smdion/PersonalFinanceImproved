@@ -1,5 +1,5 @@
 /** Retirement router for readiness analysis including savings rates, employer matches, tax bucket projections, relocation comparisons, profile-switching scenarios, and retirement-settings/scenario/override/return-rate CRUD. */
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, and, isNull } from "drizzle-orm";
 import { z } from "zod/v4";
 import {
   DEFAULT_RETURN_RATE,
@@ -22,7 +22,6 @@ import {
   getTotalCompensation,
   resolveCompensation,
   loadEffectiveSalaryProfile,
-  getPeriodsPerYear,
   getLatestSnapshot,
   computeAnnualContribution,
   computeGroupedEmployerMatch,
@@ -30,7 +29,10 @@ import {
   resolveProfile,
   getPrimaryPerson,
   resolveLinkedBudgetItemAmounts,
+  resolveContribPeriods,
 } from "@/server/helpers";
+import type { Db } from "@/server/helpers";
+import type { W4FilingStatus } from "@/lib/config/enum-values";
 import type { ContribRowWithActiveFields } from "@/server/helpers/contribution";
 import { isRetirementParent } from "@/lib/config/account-types";
 import { getAge } from "@/lib/utils/date";
@@ -38,6 +40,32 @@ import { roundToCents } from "@/lib/utils/math";
 import { filterActiveJobs } from "@/lib/pure/profiles";
 import { withdrawalStrategyEnum } from "@/lib/config/withdrawal-strategies";
 import { zDecimal } from "./settings/_shared";
+
+/**
+ * Resolve the filing status to store when a caller sends null/undefined
+ * (meaning "auto") — the person's own active, non-speculative job's W-4
+ * filing status, or "MFJ" as the ultimate fallback. Mirrors
+ * build-engine-payload.ts's read-time job-facts tier so the write-time
+ * value and the read-time fallback agree, but only used here at write time
+ * since filing_status is NOT NULL on the DB row (see drizzle/0021).
+ */
+async function resolveDefaultFilingStatus(
+  db: Db,
+  personId: number,
+): Promise<W4FilingStatus> {
+  const [job] = await db
+    .select({ w4FilingStatus: schema.jobs.w4FilingStatus })
+    .from(schema.jobs)
+    .where(
+      and(
+        eq(schema.jobs.personId, personId),
+        isNull(schema.jobs.endDate),
+        eq(schema.jobs.isSpeculative, false),
+      ),
+    )
+    .limit(1);
+  return job?.w4FilingStatus ?? "MFJ";
+}
 
 // --- CRUD Zod schemas ---
 
@@ -390,21 +418,31 @@ export const retirementRouter = createTRPCRouter({
       ) => {
         const salaryById = new Map<number, number>();
         const annualById = new Map<number, number>();
+        const incompleteIds: number[] = [];
         for (const c of contribs) {
           const cv = Number(c.contributionValue);
           const js = salaries.find((x) => x.job.id === c.jobId);
           const job = jobsForPeriods.find((j) => j.id === c.jobId);
           const salary = js?.salary ?? 0;
-          const periods = getPeriodsPerYear(job?.payPeriod ?? "biweekly");
+          // A missing job here must degrade this ONE contribution out of
+          // this arm's total, not throw — one incomplete job can't be
+          // allowed to kill the whole relocation comparison.
+          const { periodsPerYear: periods, incomplete } = resolveContribPeriods(
+            c.contributionMethod,
+            job,
+          );
+          if (incomplete) incompleteIds.push(c.id);
           salaryById.set(c.id, salary);
           annualById.set(
             c.id,
-            computeAnnualContribution(
-              c.contributionMethod,
-              cv,
-              salary,
-              periods,
-            ),
+            incomplete
+              ? 0
+              : computeAnnualContribution(
+                  c.contributionMethod,
+                  cv,
+                  salary,
+                  periods,
+                ),
           );
         }
 
@@ -430,7 +468,7 @@ export const retirementRouter = createTRPCRouter({
           totalContribs += annualById.get(c.id)!;
           totalEmployerMatch += matchByRow.get(c.id)!.matchAnnual;
         }
-        return { totalContribs, totalEmployerMatch };
+        return { totalContribs, totalEmployerMatch, incompleteIds };
       };
 
       // Resolve contribution profiles for each scenario. No profile
@@ -468,6 +506,7 @@ export const retirementRouter = createTRPCRouter({
           combinedSalary: resolvedCombinedSalary,
           annualContributions: totals.totalContribs,
           employerMatch: totals.totalEmployerMatch,
+          incompleteAccountIds: totals.incompleteIds,
         };
       };
 
@@ -538,6 +577,7 @@ export const retirementRouter = createTRPCRouter({
           ),
           employerMatch: roundToCents(currentContribData.employerMatch),
           combinedSalary: roundToCents(currentContribData.combinedSalary),
+          incompleteAccountIds: currentContribData.incompleteAccountIds,
         },
         relocationContribProfile: {
           annualContributions: roundToCents(
@@ -545,6 +585,7 @@ export const retirementRouter = createTRPCRouter({
           ),
           employerMatch: roundToCents(relocContribData.employerMatch),
           combinedSalary: roundToCents(relocContribData.combinedSalary),
+          incompleteAccountIds: relocContribData.incompleteAccountIds,
         },
       };
     }),
@@ -565,17 +606,28 @@ export const retirementRouter = createTRPCRouter({
           .select()
           .from(schema.retirementSettings)
           .where(eq(schema.retirementSettings.personId, input.personId));
+        // filing_status is NOT NULL on the DB row (see drizzle/0021's
+        // backfill) even though a caller may still send null/undefined to
+        // mean "auto" — resolve that request to a concrete value here, the
+        // same way build-engine-payload.ts's job-facts tier does at read
+        // time, so the column never gets a null written to it.
+        const resolvedInput = {
+          ...input,
+          filingStatus:
+            input.filingStatus ??
+            (await resolveDefaultFilingStatus(ctx.db, input.personId)),
+        };
         if (existing.length > 0) {
           return ctx.db
             .update(schema.retirementSettings)
-            .set(input)
+            .set(resolvedInput)
             .where(eq(schema.retirementSettings.personId, input.personId))
             .returning()
             .then((r) => r[0]);
         }
         return ctx.db
           .insert(schema.retirementSettings)
-          .values(input)
+          .values(resolvedInput)
           .returning()
           .then((r) => r[0]);
       }),

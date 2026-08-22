@@ -217,6 +217,53 @@ describe("aggregateContributionsByCategory", () => {
     // 10% of 100000 = 10000
     expect(contribByCategory["401k"].annual).toBe(10000);
   });
+
+  it("marks a fixed_per_period account incomplete and excludes it when its job can't be resolved (method-gated treatment)", () => {
+    const contribs = [
+      makeContribRow({
+        id: 1,
+        jobId: 99, // no job with this id in `jobs` below — ended/missing link
+        contributionMethod: "fixed_per_period",
+        contributionValue: "500",
+      }),
+    ];
+    const jobs = [makeJob(1, 1, "biweekly")]; // a different, unrelated job
+    const salaries = [makeJobSalary(1, 1, 120000)];
+
+    const { contribByCategory, incompleteAccountIds } =
+      aggregateContributionsByCategory(contribs, jobs, salaries);
+
+    expect(incompleteAccountIds).toEqual([1]);
+    // Excluded from the total (0), not defaulted to a guessed pay period.
+    expect(contribByCategory["401k"].annual).toBe(0);
+  });
+
+  it("does NOT mark percent_of_salary/fixed_monthly accounts incomplete for the same missing-job scenario", () => {
+    const contribs = [
+      makeContribRow({
+        id: 1,
+        jobId: 99,
+        contributionMethod: "percent_of_salary",
+        contributionValue: "10",
+      }),
+      makeContribRow({
+        id: 2,
+        jobId: 99,
+        contributionMethod: "fixed_monthly",
+        contributionValue: "200",
+      }),
+    ];
+    const jobs = [makeJob(1, 1, "biweekly")];
+    const salaries = [makeJobSalary(1, 1, 120000)];
+
+    const { incompleteAccountIds } = aggregateContributionsByCategory(
+      contribs,
+      jobs,
+      salaries,
+    );
+
+    expect(incompleteAccountIds).toEqual([]);
+  });
 });
 
 // ---------------------------------------------------------------------------

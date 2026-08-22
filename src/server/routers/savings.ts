@@ -72,16 +72,20 @@ import type { BudgetCategoryGroup, BudgetTransaction } from "@/lib/budget-api";
  * payPeriod, payWeek, anchorPayDate), and deductions all resolve the same
  * way, with no field-level carve-out (see the Contribution Profile plan's
  * governing principle). payPeriod/payWeek/anchorPayDate are the denominator
- * for every per-period value this function computes, so
- * `extraPaycheckRouting.save`/`saveGrowth` reject the save outright if the
- * globally-active profile's schedule fields don't match this job's real
- * ones, rather than persisting an internally incoherent number — see those
- * mutations.
+ * for every per-period value this function computes — the resolved
+ * payPeriod/anchorPayDate are returned alongside netPayPerCheck so callers
+ * can snapshot them into ExtraPaycheckRoutingData at the same moment,
+ * freezing the schedule the materializer uses against a later job/profile
+ * change (see ExtraPaycheckRoutingData's docblock).
  */
 async function computeJobNetPayPerCheck(
   db: DbType,
   jobId: number,
-): Promise<number> {
+): Promise<{
+  netPayPerCheck: number;
+  payPeriod: string;
+  anchorPayDate: string | null;
+}> {
   const taxYear = new Date().getFullYear();
   const asOfDate = new Date();
 
@@ -180,30 +184,6 @@ async function computeJobNetPayPerCheck(
     contribActiveFieldsRoot.deductions ?? {},
   );
 
-  // Guard against persisting an internally-incoherent baseNetPayPerCheck:
-  // payPeriod/payWeek/anchorPayDate are the denominator for every
-  // per-period value this function computes, and extra-paycheck routing
-  // always materializes real future transactions against the job's REAL
-  // schedule (extra-paycheck-materializer.ts reads job.payPeriod/
-  // anchorPayDate directly off the job row, never from this snapshot). If
-  // the globally-active profile's schedule for this job doesn't match
-  // reality, block the save rather than silently persist a per-check
-  // amount computed under a hypothetical cadence. This function is only
-  // ever called from extraPaycheckRouting.save/saveGrowth — both writes
-  // that persist baseNetPayPerCheck — so the check belongs here, once.
-  if (
-    resolvedJob.payPeriod !== job.payPeriod ||
-    resolvedJob.payWeek !== job.payWeek ||
-    resolvedJob.anchorPayDate !== job.anchorPayDate
-  ) {
-    throw new TRPCError({
-      code: "PRECONDITION_FAILED",
-      message: contribProfile
-        ? `Cannot save extra-paycheck routing: profile "${contribProfile.name}" sets a pay schedule that doesn't match this job's actual pay period/anchor date. Switch the active profile to one matching this job's real schedule, or update the job's real pay period/anchor date, before saving.`
-        : "Cannot save extra-paycheck routing: this job's pay schedule is inconsistent.",
-    });
-  }
-
   const limitsMap = new Map<string, number>();
   const limitsRecord: Record<string, number> = {};
   for (const l of allLimits) {
@@ -267,7 +247,11 @@ async function computeJobNetPayPerCheck(
   });
 
   const paycheck = calculatePaycheck(paycheckInput);
-  return Math.round(paycheck.netPay * 100) / 100;
+  return {
+    netPayPerCheck: Math.round(paycheck.netPay * 100) / 100,
+    payPeriod: resolvedJob.payPeriod,
+    anchorPayDate: resolvedJob.anchorPayDate,
+  };
 }
 
 /** Sum essential budget items for a given tier/column, returning monthly. */
@@ -1953,8 +1937,20 @@ export const savingsRouter = createTRPCRouter({
         .select({ id: schema.people.id, name: schema.people.name })
         .from(schema.people);
       const personMap = new Map(people.map((p) => [p.id, p.name]));
+      // Prefer the routing snapshot's own payPeriod/anchorPayDate (frozen at
+      // save time — see ExtraPaycheckRoutingData's docblock) so a later job
+      // correction doesn't retroactively change what this editor shows for
+      // already-saved rules. Only a job with no routing saved yet (or a
+      // pre-snapshot routing row) has no frozen schedule to read — resolve
+      // live from the job's own column in that case, the one place a live
+      // resolution still belongs (nothing to freeze until the first save).
       return jobs.map((j) => ({
         ...j,
+        payPeriod: j.extraPaycheckRouting?.payPeriod ?? j.payPeriod,
+        anchorPayDate:
+          j.extraPaycheckRouting?.anchorPayDate !== undefined
+            ? j.extraPaycheckRouting.anchorPayDate
+            : j.anchorPayDate,
         personName: personMap.get(j.personId) ?? "Unknown",
       }));
     }),
@@ -2023,10 +2019,11 @@ export const savingsRouter = createTRPCRouter({
         const existingOverrides = existing?.overrides ?? [];
 
         // Always recompute net pay from the paycheck calculator — never trust a client-supplied value.
-        const baseNetPayPerCheck = await computeJobNetPayPerCheck(
-          ctx.db,
-          input.jobId,
-        );
+        const {
+          netPayPerCheck: baseNetPayPerCheck,
+          payPeriod,
+          anchorPayDate,
+        } = await computeJobNetPayPerCheck(ctx.db, input.jobId);
         const nowYear = new Date().getFullYear();
         await ctx.db
           .update(schema.jobs)
@@ -2038,6 +2035,8 @@ export const savingsRouter = createTRPCRouter({
                     overrides: existingOverrides,
                     baseNetPayPerCheck,
                     baseYear: nowYear,
+                    payPeriod,
+                    anchorPayDate,
                     yearlyGrowth:
                       input.yearlyGrowth !== undefined
                         ? input.yearlyGrowth
@@ -2069,10 +2068,11 @@ export const savingsRouter = createTRPCRouter({
           .where(eq(schema.jobs.id, input.jobId));
         if (!existingJob?.extraPaycheckRouting) return { ok: true };
 
-        const baseNetPayPerCheck = await computeJobNetPayPerCheck(
-          ctx.db,
-          input.jobId,
-        );
+        const {
+          netPayPerCheck: baseNetPayPerCheck,
+          payPeriod,
+          anchorPayDate,
+        } = await computeJobNetPayPerCheck(ctx.db, input.jobId);
         const nowYear = new Date().getFullYear();
         await ctx.db
           .update(schema.jobs)
@@ -2081,6 +2081,8 @@ export const savingsRouter = createTRPCRouter({
               ...existingJob.extraPaycheckRouting,
               baseNetPayPerCheck,
               baseYear: nowYear,
+              payPeriod,
+              anchorPayDate,
               yearlyGrowth: input.yearlyGrowth,
             },
           })

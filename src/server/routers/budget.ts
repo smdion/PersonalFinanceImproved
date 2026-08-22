@@ -47,7 +47,6 @@ import {
 import type { BudgetInput } from "@/lib/calculators/types";
 import {
   computeBudgetAnnualTotal,
-  getPeriodsPerYear,
   getEffectiveIncome,
   resolveCompensation,
   applyActiveSalary,
@@ -56,6 +55,7 @@ import {
   loadAndApplyContribProfile,
   loadEffectiveSalaryProfile,
   resolveJoblessPeriodsPerYear,
+  resolveContribPeriods,
   applyContributionAccountEdit,
   resolveTargetBudgetProfile,
   getResolvedGoalAllocations,
@@ -783,9 +783,14 @@ export const budgetRouter = createTRPCRouter({
       const computeContribMonthlyForPair = async (
         contribProfileId: number | null,
         salaryProfileId: number | null,
-      ): Promise<Map<number, number>> => {
+      ): Promise<{
+        contribMonthlyById: Map<number, number>;
+        incompleteIds: Set<number>;
+      }> => {
         const contribMonthlyById = new Map<number, number>();
-        if (linkedContribIds.size === 0) return contribMonthlyById;
+        const incompleteIds = new Set<number>();
+        if (linkedContribIds.size === 0)
+          return { contribMonthlyById, incompleteIds };
 
         const effectiveSalaryMap = applySandboxSalaryEntries(
           input?.sandboxSalaryEntries,
@@ -818,7 +823,10 @@ export const budgetRouter = createTRPCRouter({
           true,
         );
         const activeJobs = filterActiveJobs(profileResult.jobs);
-        const defaultPeriodsPerYear = resolveJoblessPeriodsPerYear(activeJobs);
+        const {
+          periodsPerYear: defaultPeriodsPerYear,
+          incomplete: joblessIncomplete,
+        } = resolveJoblessPeriodsPerYear(activeJobs);
 
         const salaryByJobId = new Map<number, number>();
         for (const j of activeJobs) {
@@ -841,12 +849,23 @@ export const budgetRouter = createTRPCRouter({
         for (const c of activeContribs) {
           if (!linkedContribIds.has(c.id)) continue;
           const val = Number(c.contributionValue);
-          const jobPeriodsPerYear = c.jobId
-            ? getPeriodsPerYear(
-                activeJobs.find((j) => j.id === c.jobId)?.payPeriod ??
-                  "biweekly",
-              )
-            : defaultPeriodsPerYear;
+          const isFixedPerPeriod = c.contributionMethod === "fixed_per_period";
+          let jobPeriodsPerYear: number;
+          let incomplete: boolean;
+          if (c.jobId) {
+            const job = activeJobs.find((j) => j.id === c.jobId);
+            const resolved = resolveContribPeriods(c.contributionMethod, job);
+            jobPeriodsPerYear = resolved.periodsPerYear;
+            incomplete = resolved.incomplete;
+          } else {
+            jobPeriodsPerYear = defaultPeriodsPerYear;
+            incomplete = isFixedPerPeriod && joblessIncomplete;
+          }
+          if (incomplete) {
+            incompleteIds.add(c.id);
+            contribMonthlyById.set(c.id, 0);
+            continue;
+          }
           const salary = c.jobId ? (salaryByJobId.get(c.jobId) ?? 0) : 0;
           const annual = computeAnnualContribution(
             c.contributionMethod,
@@ -856,24 +875,30 @@ export const budgetRouter = createTRPCRouter({
           );
           contribMonthlyById.set(c.id, annual / 12);
         }
-        return contribMonthlyById;
+        return { contribMonthlyById, incompleteIds };
       };
 
-      const contribMonthlyByPair = new Map<string, Map<number, number>>();
+      const contribMonthlyByPair = new Map<
+        string,
+        { contribMonthlyById: Map<number, number>; incompleteIds: Set<number> }
+      >();
       const contribMonthlyByColumn: Map<number, number>[] = [];
+      const incompleteContribAccountIds = new Set<number>();
       for (let col = 0; col < numColumns; col++) {
         const contribProfileId = contribProfileIdByColumn[col] ?? null;
         const salaryProfileId = salaryProfileIdByColumn[col] ?? null;
         const key = `${contribProfileId}:${salaryProfileId}`;
-        let monthlyById = contribMonthlyByPair.get(key);
-        if (!monthlyById) {
-          monthlyById = await computeContribMonthlyForPair(
+        let resolved = contribMonthlyByPair.get(key);
+        if (!resolved) {
+          resolved = await computeContribMonthlyForPair(
             contribProfileId,
             salaryProfileId,
           );
-          contribMonthlyByPair.set(key, monthlyById);
+          contribMonthlyByPair.set(key, resolved);
         }
-        contribMonthlyByColumn.push(monthlyById);
+        contribMonthlyByColumn.push(resolved.contribMonthlyById);
+        for (const id of resolved.incompleteIds)
+          incompleteContribAccountIds.add(id);
       }
 
       // For linked items, each column's own contribution monthly amount
@@ -954,6 +979,12 @@ export const budgetRouter = createTRPCRouter({
           apiCategoryName: i.apiCategoryName,
           apiSyncDirection: i.apiSyncDirection,
           contributionAccountId: i.contributionAccountId,
+          // Linked to a fixed_per_period contribution account with no
+          // resolvable job/pay period — excluded from amounts above (0),
+          // not a guessed pay period. See resolveContribPeriods.
+          incomplete: i.contributionAccountId
+            ? incompleteContribAccountIds.has(i.contributionAccountId)
+            : false,
         };
       });
 

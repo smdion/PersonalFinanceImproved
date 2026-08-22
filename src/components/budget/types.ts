@@ -19,6 +19,10 @@ export type RawItem = {
   apiSyncDirection?: "pull" | "push" | "both" | null;
   /** Linked contribution account ID */
   contributionAccountId?: number | null;
+  /** True when this item's linked contribution account is a
+   *  fixed_per_period account with no resolvable job/pay period —
+   *  amounts above are 0 (excluded), not a guessed pay period. */
+  incomplete?: boolean;
 };
 
 export type PayrollBreakdown = {

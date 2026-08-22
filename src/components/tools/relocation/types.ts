@@ -40,6 +40,9 @@ export type RelocationContribProfile = {
   annualContributions: number;
   employerMatch: number;
   combinedSalary: number;
+  /** Ids of contribution accounts excluded from annualContributions above
+   *  because they have no resolvable job/pay period. */
+  incompleteAccountIds: number[];
 };
 
 /** Re-export of the calculator `RelocationResult` under the local name so

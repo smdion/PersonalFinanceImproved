@@ -24,6 +24,7 @@ import {
   seedBudgetItem,
   seedAppSetting,
   seedJob,
+  seedPerson,
 } from "./setup";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
@@ -1641,5 +1642,62 @@ describe("savings.extraPaycheckRouting", () => {
     expect(baseNetPayPerCheck).toBeGreaterThan(3700);
     expect(baseNetPayPerCheck).toBeLessThan(3900);
     expect(baseNetPayPerCheck).toBe(3816.61);
+  });
+
+  it("list resolves live from the job's own column when no routing rule has ever been saved for it", async () => {
+    const personId = await seedPerson(db, "FreshRoutingPerson");
+    const freshJobId = seedJob(db, personId, {
+      payPeriod: "monthly",
+      anchorPayDate: "2025-02-01",
+    });
+    const jobs = await caller.savings.extraPaycheckRouting.list();
+    const row = jobs.find((j) => j.id === freshJobId);
+    expect(row).toBeDefined();
+    expect(row!.extraPaycheckRouting).toBeNull();
+    // No snapshot exists yet — falls through to the live job column.
+    expect(row!.payPeriod).toBe("monthly");
+    expect(row!.anchorPayDate).toBe("2025-02-01");
+  });
+
+  it("snapshot freezes payPeriod/anchorPayDate at save time — a later correction to the job's live schedule doesn't retroactively change what list()/the materializer use", async () => {
+    const personId = await seedPerson(db, "ScheduleFreezePerson");
+    const scheduleJobId = seedJob(db, personId, {
+      payPeriod: "biweekly",
+      anchorPayDate: "2025-01-03",
+    });
+
+    await caller.savings.extraPaycheckRouting.save({
+      jobId: scheduleJobId,
+      rules: [{ from: "2025-01", to: null, splits: [{ goalId, pct: 100 }] }],
+    });
+
+    const beforeCorrection = (
+      await caller.savings.extraPaycheckRouting.list()
+    ).find((j) => j.id === scheduleJobId);
+    expect(beforeCorrection!.payPeriod).toBe("biweekly");
+
+    // Correct the job's REAL live schedule — mirrors "user fixes a data
+    // entry mistake on the Paycheck page" after routing was already saved.
+    await db
+      .update(sqliteSchemaTables.jobs)
+      .set({ payPeriod: "weekly", anchorPayDate: "2025-01-10" })
+      .where(eq(sqliteSchemaTables.jobs.id, scheduleJobId));
+
+    const afterCorrection = (
+      await caller.savings.extraPaycheckRouting.list()
+    ).find((j) => j.id === scheduleJobId);
+    // Still the snapshot's frozen value, not the corrected live column —
+    // the correction only takes effect once routing is explicitly re-saved.
+    expect(afterCorrection!.payPeriod).toBe("biweekly");
+    expect(afterCorrection!.anchorPayDate).toBe("2025-01-03");
+
+    const [row] = await db
+      .select({
+        extraPaycheckRouting: sqliteSchemaTables.jobs.extraPaycheckRouting,
+      })
+      .from(sqliteSchemaTables.jobs)
+      .where(eq(sqliteSchemaTables.jobs.id, scheduleJobId));
+    expect(row?.extraPaycheckRouting?.payPeriod).toBe("biweekly");
+    expect(row?.extraPaycheckRouting?.anchorPayDate).toBe("2025-01-03");
   });
 });

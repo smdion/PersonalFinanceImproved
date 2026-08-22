@@ -15,6 +15,7 @@ import {
   SK_ACTIVE_SALARY_PROFILE_ID,
 } from "@/lib/constants/settings-keys";
 import { speculativeJobValues } from "./settings/paycheck";
+import type { W4FilingStatus } from "@/lib/config/enum-values";
 
 /** Safe slug pattern — lowercase alphanumeric + hyphens, 1-40 chars. */
 const DEMO_SLUG_REGEX = /^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/;
@@ -309,7 +310,13 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
     });
   }
 
-  // 12. Retirement settings
+  // 12. Retirement settings — filing_status is NOT NULL on the DB row (see
+  // drizzle/0021); derive it from that person's own job the same way the
+  // migration's backfill does, since the demo seeder writes directly to
+  // the DB rather than through retirement.retirementSettings.upsert.
+  const filingStatusByPersonName = (personName: string): W4FilingStatus =>
+    profile.jobs.find((j) => j.personName === personName)?.w4FilingStatus ??
+    "MFJ";
   const rs = profile.retirementSettings;
   const personId = personIdByName.get(rs.personName)!;
   await db.insert(schema.retirementSettings).values({
@@ -323,6 +330,7 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
     withdrawalStrategy: rs.withdrawalStrategy,
     socialSecurityMonthly: rs.socialSecurityMonthly,
     ssStartAge: rs.ssStartAge,
+    filingStatus: filingStatusByPersonName(rs.personName),
   });
 
   // 12b. Per-person retirement settings overrides
@@ -341,6 +349,7 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
           withdrawalStrategy: rs.withdrawalStrategy,
           socialSecurityMonthly: prs.socialSecurityMonthly,
           ssStartAge: prs.ssStartAge,
+          filingStatus: filingStatusByPersonName(prs.personName),
         });
       }
     }

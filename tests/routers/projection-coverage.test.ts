@@ -98,6 +98,7 @@ function seedFullProjectionData(
       enableIrmaaAwareness: false,
       enableAcaAwareness: false,
       householdSize: 2,
+      filingStatus: "MFJ",
     })
     .run();
 
@@ -265,6 +266,7 @@ describe("projection router — computeProjection full result path", () => {
           enableIrmaaAwareness: false,
           enableAcaAwareness: false,
           householdSize: 2,
+          filingStatus: "MFJ",
         })
         .run();
 
@@ -918,6 +920,7 @@ describe("projection router — computeProjection edge cases", () => {
           enableIrmaaAwareness: false,
           enableAcaAwareness: false,
           householdSize: 2,
+          filingStatus: "MFJ",
         })
         .run();
 

@@ -24,6 +24,8 @@ import {
   applyContribActiveFields,
   buildSandboxContribRow,
   buildPaycheckInputForJob,
+  fetchContributionProfile,
+  getIncompleteContribAccountIds,
 } from "@/server/helpers";
 import { applySandboxSalaryEntries } from "@/server/helpers/salary";
 import {
@@ -162,6 +164,21 @@ export const paycheckRouter = createTRPCRouter({
         allJobs,
         allDeductions,
       );
+      // getIncompleteContribAccountIds's signal (a real account with no
+      // active value under this profile — see applyContribActiveFields,
+      // which silently excludes it above) had no UI home anywhere before
+      // this — surfaced per-person below so a card never just shows a
+      // quietly-shrunk total.
+      const contribProfileRow = await fetchContributionProfile(
+        ctx.db,
+        input?.contributionProfileId,
+      );
+      const accountActiveFields =
+        (
+          contribProfileRow?.contributionActiveFields as
+            | { contributionAccounts?: Record<string, Record<string, unknown>> }
+            | undefined
+        )?.contributionAccounts ?? {};
       // The What-If tab's sandbox edits are the highest-precedence tier,
       // applied AFTER the picked profile's own overrides — same merge
       // function, one more layer, never a second resolution path.
@@ -184,6 +201,19 @@ export const paycheckRouter = createTRPCRouter({
 
       const results = await Promise.all(
         people.map(async (person) => {
+          // Personal (jobless) contributions belong on this person's card
+          // whether or not they currently have an active job — computed
+          // before the early returns below so neither branch loses the
+          // signal.
+          const incompleteAccountIds = getIncompleteContribAccountIds(
+            allContribs.filter(
+              (c) =>
+                c.personId === person.id &&
+                (c.jobId === null || allJobs.some((j) => j.id === c.jobId)),
+            ),
+            accountActiveFields,
+          );
+
           const activeJob = findActiveJob(effectiveJobs, person.id);
           if (!activeJob) {
             return {
@@ -194,6 +224,7 @@ export const paycheckRouter = createTRPCRouter({
               tax: null,
               rawDeductions: [],
               rawContribs: [],
+              incompleteAccountIds,
             };
           }
           const jobForClient = activeJob;
@@ -212,6 +243,7 @@ export const paycheckRouter = createTRPCRouter({
               tax: null,
               rawDeductions: [],
               rawContribs: [],
+              incompleteAccountIds,
             };
           }
 
@@ -441,6 +473,7 @@ export const paycheckRouter = createTRPCRouter({
               activeJob.payPeriod,
               budgetOverride,
             ),
+            incompleteAccountIds,
           };
         }),
       );

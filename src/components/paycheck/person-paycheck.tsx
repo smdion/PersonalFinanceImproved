@@ -85,6 +85,7 @@ export function PersonPaycheck({
   onToggleContrib,
   sharedGroupOrder,
   interaction,
+  incompleteAccountIds,
 }: {
   person: { name: string; id: number };
   job: {
@@ -143,6 +144,11 @@ export function PersonPaycheck({
   onToggleContrib: () => void;
   sharedGroupOrder?: string[];
   interaction: PersonPaycheckInteraction;
+  /** Contribution accounts belonging to this person/job with no active
+   *  value under the current Contribution Profile — see
+   *  getIncompleteContribAccountIds. Surfaced as a badge, never silently
+   *  dropped from the total. */
+  incompleteAccountIds?: number[];
 }) {
   const [addingDeduction, setAddingDeduction] = useState<{
     isPretax: boolean;
@@ -163,7 +169,17 @@ export function PersonPaycheck({
         <div className="p-5 border-b border-subtle bg-gradient-to-r from-surface-sunken/80 to-transparent">
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="text-xl font-bold text-primary">{person.name}</h2>
+              <h2 className="text-xl font-bold text-primary flex items-center gap-2">
+                {person.name}
+                {incompleteAccountIds && incompleteAccountIds.length > 0 && (
+                  <span
+                    className="text-caption font-semibold text-amber-700 bg-amber-50 rounded px-1 leading-tight"
+                    title={`${incompleteAccountIds.length} contribution account(s) have no active value under the current Contribution Profile — excluded from totals below.`}
+                  >
+                    Incomplete
+                  </span>
+                )}
+              </h2>
               <p className="text-sm text-muted">
                 {job.title ? (
                   <>

@@ -82,6 +82,22 @@ export type ExtraPaycheckRoutingData = {
    * compound into the base for subsequent years.
    */
   yearlyGrowth?: Record<string, YearlyGrowthEntry>;
+  /**
+   * Pay schedule snapshotted alongside baseNetPayPerCheck/baseYear, from the
+   * same resolved job entry computeJobNetPayPerCheck already reads. Optional
+   * — the materializer prefers this snapshot but falls back to the live
+   * `jobs.payPeriod`/`jobs.anchorPayDate` columns when absent (e.g. routing
+   * saved before this field existed). Freezes the schedule at save time so
+   * a later job/Salary-Profile correction doesn't retroactively move
+   * already-materialized planned-transaction dates — see RULES.md's
+   * extraPaycheckRouting section.
+   */
+  payPeriod?: string;
+  /** Snapshotted alongside payPeriod above. `null` is a real, complete
+   *  value ("no anchor, use start date") — distinct from the field being
+   *  entirely absent (pre-snapshot routing, or a schedule that couldn't be
+   *  resolved at save time). */
+  anchorPayDate?: string | null;
 };
 
 // ============================================================================
@@ -1226,8 +1242,12 @@ export const retirementSettings = sqliteTable(
       .default(false),
     /** Household size for ACA FPL calculation. */
     householdSize: integer("household_size").notNull().default(2),
-    /** Explicit filing status for retirement projections. Null = derive from primary job W-4. */
-    filingStatus: text("filing_status").$type<W4FilingStatus>(),
+    /** Filing status for retirement projections. Backfilled from the
+     *  person's active job's W-4 filing status (drizzle/0021), then made
+     *  NOT NULL — the job-facts fallback tier in build-engine-payload.ts
+     *  stays in place until this column is reliably non-null for every
+     *  household, but no new row can be inserted without one. */
+    filingStatus: text("filing_status").$type<W4FilingStatus>().notNull(),
   },
   (table) => [index("retirement_settings_person_id_idx").on(table.personId)],
 );

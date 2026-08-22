@@ -413,6 +413,7 @@ export default function PaycheckPage() {
               rawDeductions={d.rawDeductions}
               rawContribs={d.rawContribs}
               perContribData={d.perContribData}
+              incompleteAccountIds={d.incompleteAccountIds}
               alignedPreTax={d.alignedPreTax}
               alignedPostTax={d.alignedPostTax}
               coverageNote={d.coverageNote}
