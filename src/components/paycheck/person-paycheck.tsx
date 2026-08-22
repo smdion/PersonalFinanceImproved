@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatCurrency } from "@/lib/utils/format";
+import { PAY_PERIOD_LABELS } from "@/lib/config/display-labels";
 import { useScenario } from "@/lib/context/scenario-context";
 import { PayStub } from "./pay-stub";
 import { AnnualSummary } from "./annual-summary";
@@ -11,6 +12,9 @@ import { TaxWithholdingSection } from "./tax-withholding-section";
 import { ContributionsSection } from "./contributions-section";
 import { AddDeductionForm } from "./add-deduction-form";
 import { SSCapIndicator } from "./ss-cap-indicator";
+import { ExtraPaycheckDestinationToggle } from "@/components/savings/extra-paycheck-rules-editor";
+import { SectionHeader } from "./section-header";
+import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
 import type {
   PaycheckResult,
   ViewMode,
@@ -107,7 +111,9 @@ export function PersonPaycheck({
     personId: number;
     w4FilingStatus: string;
     w4Box2cChecked: boolean;
-    additionalFedWithholding: string;
+    additionalFedWithholding: number;
+    payPeriod: string;
+    extraPaycheckRouting: ExtraPaycheckRoutingData | null;
   };
   salary: number;
   /** The bonus terms actually in effect (Salary Profile pin, if any, else
@@ -202,6 +208,26 @@ export function PersonPaycheck({
                   isEditable={!readOnly}
                 />
               </p>
+              {/* Read-only pay-schedule summary — editing the schedule
+                  itself (payPeriod/anchorPayDate/etc.) now lives on Salary
+                  Profile Manager, but the computed values below (next
+                  payday, periods/year, 3-check months) have no relationship
+                  to WHERE the schedule is edited, so they stay here. */}
+              <p className="text-xs text-faint">
+                {PAY_PERIOD_LABELS[job.payPeriod] ?? job.payPeriod}
+                {" · "}
+                Next: {paycheck.nextPayDate}
+                {" · "}
+                {paycheck.periodsPerYear}/yr
+                {paycheck.extraPaycheckMonths.length > 0 && (
+                  <>
+                    {" · "}
+                    <span className="text-green-600">
+                      3-check: {paycheck.extraPaycheckMonths.join(", ")}
+                    </span>
+                  </>
+                )}
+              </p>
             </div>
             <div className="text-right">
               <InlineEdit
@@ -220,20 +246,34 @@ export function PersonPaycheck({
 
         {/* Two-column layout: Pay stub + Annual summary side by side */}
         <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <PayStub
-            paycheck={paycheck}
-            rawDeductions={rawDeductions}
-            onUpdateDeduction={onUpdateDeduction}
-            alignedPreTax={alignedPreTax}
-            alignedPostTax={alignedPostTax}
-            onAddDeduction={
-              readOnly || isInScenario
-                ? undefined
-                : (isPretax) => setAddingDeduction({ isPretax })
-            }
-            onDeleteDeduction={handlers?.onDeleteDeduction ?? undefined}
-            readOnly={readOnly}
-          />
+          <div className="space-y-4">
+            <PayStub
+              paycheck={paycheck}
+              rawDeductions={rawDeductions}
+              onUpdateDeduction={onUpdateDeduction}
+              alignedPreTax={alignedPreTax}
+              alignedPostTax={alignedPostTax}
+              onAddDeduction={
+                readOnly || isInScenario
+                  ? undefined
+                  : (isPretax) => setAddingDeduction({ isPretax })
+              }
+              onDeleteDeduction={handlers?.onDeleteDeduction ?? undefined}
+              readOnly={readOnly}
+            />
+            {job.payPeriod === "biweekly" && (
+              <div className="space-y-2">
+                <SectionHeader>Extra Paycheck</SectionHeader>
+                <div className="bg-surface-sunken border border-subtle rounded-lg p-4 text-sm">
+                  <ExtraPaycheckDestinationToggle
+                    jobId={job.id}
+                    routing={job.extraPaycheckRouting ?? null}
+                    disabled={isInScenario}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
           <div className="space-y-4">
             <AnnualSummary
               paycheck={paycheck}

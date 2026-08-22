@@ -1490,6 +1490,8 @@ export function WhatIfTab({
     budgetProfiles?.find((p) => p.id === budgetId)?.name ?? "";
   const contribProfileName =
     contribProfiles?.find((p) => p.id === contribId)?.name ?? null;
+  const salaryProfileName =
+    salaryProfiles?.find((p) => p.id === salaryId)?.name ?? null;
 
   // The Contribution Profile picker's effect was previously buried as two
   // rows in the middle of WhatIfPaycheckSummary's table, with nothing
@@ -1601,8 +1603,8 @@ export function WhatIfTab({
       {/* ── Step 1: Salary/bonus edits ── */}
       <WhatIfStep
         number={1}
-        title="Paycheck"
-        description="Edit salary, bonus, or deductions to see the resulting take-home pay."
+        title={`Paycheck${salaryProfileName ? ` — ${salaryProfileName}` : ""}`}
+        description="Edit salary or bonus to see the resulting take-home pay."
         headerExtra={
           netMonthlyIncome != null ? (
             <span className="text-xs font-semibold text-indigo-700">
@@ -1624,29 +1626,18 @@ export function WhatIfTab({
               entries={sandbox.salaryEntries}
               onChange={sandbox.setSalaryField}
             />
-            <WhatIfDeductionsEditor
-              views={views}
-              deductionEdits={sandbox.deductionEdits}
-              onEditDeduction={sandbox.setDeductionEdit}
-              onResetDeduction={sandbox.resetDeductionEdit}
-              additions={sandbox.deductionAdditions}
-              onAddDeduction={sandbox.addDeduction}
-              onUpdateAddition={sandbox.updateDeductionAddition}
-              onRemoveAddition={sandbox.removeDeductionAddition}
-              canManagePaycheck={canManagePaycheck}
-              onMakeReal={handleMakeDeductionReal}
-              makeRealPendingId={deductionMakeRealPendingId}
-            />
             <WhatIfPaycheckSummary views={views} />
           </div>
         )}
       </WhatIfStep>
 
-      {/* ── Step 2: Contribution accounts ── */}
+      {/* ── Step 2: Contribution accounts + deductions — both resolve via
+          the Contribution Profile now (paycheck_deductions carries no
+          amount of its own, see RULES.md's Salary Profile layer section) ── */}
       <WhatIfStep
         number={2}
         title={`Contributions${contribProfileName ? ` — ${contribProfileName}` : ""}`}
-        description="What you and your employer put toward retirement/savings accounts."
+        description="What you and your employer put toward retirement/savings accounts, and what's deducted from your paycheck."
         headerExtra={
           views.length > 0 && contribProfileName ? (
             <span className="text-xs font-semibold text-indigo-700">
@@ -1677,6 +1668,21 @@ export function WhatIfTab({
             canManagePaycheck={canManagePaycheck}
             onMakeReal={setMakeRealAddition}
             makeRealPendingId={contribMakeRealPendingId}
+          />
+        )}
+        {!paycheckLoading && views.length > 0 && (
+          <WhatIfDeductionsEditor
+            views={views}
+            deductionEdits={sandbox.deductionEdits}
+            onEditDeduction={sandbox.setDeductionEdit}
+            onResetDeduction={sandbox.resetDeductionEdit}
+            additions={sandbox.deductionAdditions}
+            onAddDeduction={sandbox.addDeduction}
+            onUpdateAddition={sandbox.updateDeductionAddition}
+            onRemoveAddition={sandbox.removeDeductionAddition}
+            canManagePaycheck={canManagePaycheck}
+            onMakeReal={handleMakeDeductionReal}
+            makeRealPendingId={deductionMakeRealPendingId}
           />
         )}
       </WhatIfStep>

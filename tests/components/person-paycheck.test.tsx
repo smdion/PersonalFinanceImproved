@@ -59,6 +59,14 @@ vi.mock("@/components/paycheck/ss-cap-indicator", () => ({
   SSCapIndicator: () => null,
 }));
 
+vi.mock("@/components/savings/extra-paycheck-rules-editor", () => ({
+  ExtraPaycheckDestinationToggle: () => (
+    <div data-testid="extra-paycheck-toggle">
+      ExtraPaycheckDestinationToggle
+    </div>
+  ),
+}));
+
 const baseJob = {
   id: 1,
   employerName: "Acme Corp",

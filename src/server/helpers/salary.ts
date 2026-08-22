@@ -21,6 +21,7 @@ import type {
   PayWeek,
   W4FilingStatus,
 } from "@/lib/config/enum-values";
+import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
 
 // ---------------------------------------------------------------------------
 // Plan/session + What-If sandbox tiers — independent of Salary Profiles.
@@ -158,6 +159,11 @@ export type SalaryProfileEntry = {
   bonusDayOfMonth: number | null;
   include401kInBonus: boolean;
   includeBonusInContributions: boolean;
+  /** Where this job's extra (3rd biweekly) paycheck gets routed — the same
+   *  category of fact as include401kInBonus/includeBonusInContributions
+   *  above, not a job identity fact. `null` is a real, complete value ("no
+   *  routing configured"). See ExtraPaycheckRoutingData (schema-pg.ts). */
+  extraPaycheckRouting: ExtraPaycheckRoutingData | null;
 };
 
 /** A Salary Profile's own `salaries` map, keyed by jobId (string key) —
@@ -313,14 +319,26 @@ export async function loadEffectiveSalaryProfile(
   if (salaryProfileId != null) {
     return loadAndApplySalaryProfile(db, salaryProfileId);
   }
+  const activeId = await resolveActiveSalaryProfileId(db);
+  return activeId != null ? loadAndApplySalaryProfile(db, activeId) : new Map();
+}
+
+/**
+ * Resolve just the id of the globally-active Salary Profile (the same
+ * app_settings lookup loadEffectiveSalaryProfile does internally), for
+ * callers that need the id itself to write back into that profile's row —
+ * not just its resolved job map. See savings.ts's extraPaycheckRouting
+ * sub-router, which reads/writes a single job's entry within this row.
+ */
+export async function resolveActiveSalaryProfileId(
+  db: Db,
+): Promise<number | null> {
   const rows = await db
     .select()
     .from(schema.appSettings)
     .where(eq(schema.appSettings.key, SK_ACTIVE_SALARY_PROFILE_ID));
   const activeId = Number(rows[0]?.value ?? NaN);
-  return Number.isFinite(activeId)
-    ? loadAndApplySalaryProfile(db, activeId)
-    : new Map();
+  return Number.isFinite(activeId) ? activeId : null;
 }
 
 /**
@@ -354,13 +372,15 @@ export type JobWithSalaryFields<J> = J & {
   bonusDayOfMonth: number | null | undefined;
   include401kInBonus: boolean | undefined;
   includeBonusInContributions: boolean | undefined;
+  extraPaycheckRouting: ExtraPaycheckRoutingData | null | undefined;
 };
 
 /**
- * Merge each job with the 11 non-comp fields (pay schedule, W-4 elections,
- * bonus pay date/flags) from its entry in an already-resolved Salary
- * Profile active map. These fields moved off the `jobs` table entirely in
- * Stage B — a job's only source for them is its Salary Profile entry, same
+ * Merge each job with the 12 non-comp fields (pay schedule, W-4 elections,
+ * bonus pay date/flags, extra-paycheck routing) from its entry in an
+ * already-resolved Salary Profile active map. These fields moved off the
+ * `jobs` table entirely in Stage B (plus this session's extraPaycheckRouting
+ * move) — a job's only source for them is its Salary Profile entry, same
  * as `salary`/`bonusPercent`/etc. already work via resolveCompensation. A
  * job absent from the map (or the map itself empty) gets every field
  * `undefined` — a real "incomplete" signal downstream callers must check
@@ -385,6 +405,7 @@ export function mergeSalaryProfileJobFields<J extends { id: number }>(
       bonusDayOfMonth: entry?.bonusDayOfMonth,
       include401kInBonus: entry?.include401kInBonus,
       includeBonusInContributions: entry?.includeBonusInContributions,
+      extraPaycheckRouting: entry?.extraPaycheckRouting,
     };
   });
 }

@@ -28,6 +28,7 @@ import type { ColumnResult } from "@/components/budget";
 import { BudgetPushYnabModal } from "@/components/budget/budget-push-ynab-modal";
 import { BudgetPullYnabModal } from "@/components/budget/budget-pull-ynab-modal";
 import { BudgetSummaryBar } from "@/components/budget/budget-summary-bar";
+import { ExtraPaycheckBudgetNote } from "@/components/budget/extra-paycheck-budget-note";
 import { EditLockToggle } from "@/components/ui/edit-lock-toggle";
 import {
   BudgetProfileSidebar,
@@ -520,6 +521,8 @@ export function BudgetContent() {
               onToggleModeManager={() => setShowModeManager(!showModeManager)}
               isSavingBatch={updateBatch.isPending}
             />
+
+            <ExtraPaycheckBudgetNote />
 
             <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-4">
               <BudgetProfileSidebar

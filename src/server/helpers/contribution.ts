@@ -823,7 +823,6 @@ export async function loadLiveContribData(db: Db) {
       baseSalary: comp.salary,
       totalComp: getTotalCompensation(comp.salary, comp.terms),
       personId: j.personId,
-      resolvedBonusOverride: null,
     };
   });
 
@@ -853,7 +852,6 @@ export async function loadLiveContribData(db: Db) {
       salary: js.salary,
       baseSalary: js.baseSalary,
       totalComp: js.totalComp,
-      resolvedBonusOverride: js.resolvedBonusOverride,
     })),
     rawContribRows: allContribs, // All accounts (active + inactive/stubbed) for profile editor
     peopleMap,
@@ -886,7 +884,6 @@ export function resolveProfile<
      *  computing off it would compound. */
     baseSalary: number;
     totalComp: number;
-    resolvedBonusOverride: number | null;
   },
 >(
   profile: Pick<

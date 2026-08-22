@@ -47,6 +47,7 @@ function entry(
     bonusDayOfMonth: number | null;
     include401kInBonus: boolean;
     includeBonusInContributions: boolean;
+    extraPaycheckRouting: Record<string, unknown> | null;
   }> = {},
 ) {
   return {
@@ -66,6 +67,7 @@ function entry(
     bonusDayOfMonth: null,
     include401kInBonus: false,
     includeBonusInContributions: true,
+    extraPaycheckRouting: null,
     ...overrides,
   };
 }

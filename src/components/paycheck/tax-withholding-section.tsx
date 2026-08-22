@@ -26,7 +26,7 @@ export function TaxWithholdingSection({
   job: {
     w4FilingStatus: string;
     w4Box2cChecked: boolean;
-    additionalFedWithholding: string;
+    additionalFedWithholding: number;
   };
   onUpdateJob: (field: string, value: string) => void;
   readOnly?: boolean;
@@ -67,7 +67,7 @@ export function TaxWithholdingSection({
             <HelpTip text="W-4 Line 4c — a flat extra amount added to federal withholding each paycheck, on top of the bracket calculation." />
           </span>
           <InlineEdit
-            value={job.additionalFedWithholding}
+            value={String(job.additionalFedWithholding)}
             onSave={(v) => onUpdateJob("additionalFedWithholding", v)}
             formatDisplay={(v) =>
               v && Number(v) > 0 ? formatCurrency(Number(v)) : "—"

@@ -95,26 +95,44 @@ WHERE sp."salaries" = '{}'::jsonb;--> statement-breakpoint
 -- shallow merge with the right operand winning on key conflict, but none of
 -- these 11 keys can already exist on a pre-Stage-B entry (the old schema
 -- was `.strict()` too), so this is a pure additive merge, not an overwrite.
+--
+-- INNER JOIN (not LEFT) is intentional here, unlike 0023's later fix for
+-- the same rebuild pattern: an orphaned entry (a job deleted without
+-- pruning salary_profiles.salaries — settings/paycheck.ts's job-delete path
+-- doesn't) has no source row to pull payPeriod/w4FilingStatus/etc. from,
+-- and every one of those 11 fields is NON-NULLABLE in salaryEntrySchema, so
+-- unlike 0023 (whose one new field, extraPaycheckRouting, is nullable) an
+-- orphaned entry genuinely cannot be upgraded to a valid complete entry —
+-- dropping it from the rebuilt object is the only coherent outcome, not a
+-- bug in itself. The bug 0023 caught was the ALL-orphan case: with zero
+-- surviving rows, jsonb_object_agg returns NULL, which the bare assignment
+-- below would write into salaries' NOT NULL column and abort the whole
+-- migration on Postgres (or silently wipe to '{}' with no error at all on
+-- the SQLite twin) — COALESCE guards that degenerate case identically on
+-- both dialects, matching step 1a's already-correct pattern above.
 UPDATE "salary_profiles" sp
-SET "salaries" = (
-	SELECT jsonb_object_agg(
-		entry.key,
-		entry.value || jsonb_build_object(
-			'payPeriod', j."pay_period",
-			'payWeek', j."pay_week",
-			'anchorPayDate', j."anchor_pay_date",
-			'budgetPeriodsPerMonth', j."budget_periods_per_month"::float8,
-			'w4FilingStatus', j."w4_filing_status",
-			'w4Box2cChecked', j."w4_box2c_checked",
-			'additionalFedWithholding', j."additional_fed_withholding"::float8,
-			'bonusMonth', j."bonus_month",
-			'bonusDayOfMonth', j."bonus_day_of_month",
-			'include401kInBonus', j."include_401k_in_bonus",
-			'includeBonusInContributions', j."include_bonus_in_contributions"
+SET "salaries" = COALESCE(
+	(
+		SELECT jsonb_object_agg(
+			entry.key,
+			entry.value || jsonb_build_object(
+				'payPeriod', j."pay_period",
+				'payWeek', j."pay_week",
+				'anchorPayDate', j."anchor_pay_date",
+				'budgetPeriodsPerMonth', j."budget_periods_per_month"::float8,
+				'w4FilingStatus', j."w4_filing_status",
+				'w4Box2cChecked', j."w4_box2c_checked",
+				'additionalFedWithholding', j."additional_fed_withholding"::float8,
+				'bonusMonth', j."bonus_month",
+				'bonusDayOfMonth', j."bonus_day_of_month",
+				'include401kInBonus', j."include_401k_in_bonus",
+				'includeBonusInContributions', j."include_bonus_in_contributions"
+			)
 		)
-	)
-	FROM jsonb_each(sp."salaries") AS entry(key, value)
-	JOIN "jobs" j ON j."id"::text = entry.key
+		FROM jsonb_each(sp."salaries") AS entry(key, value)
+		JOIN "jobs" j ON j."id"::text = entry.key
+	),
+	'{}'::jsonb
 )
 WHERE sp."salaries" != '{}'::jsonb;--> statement-breakpoint
 

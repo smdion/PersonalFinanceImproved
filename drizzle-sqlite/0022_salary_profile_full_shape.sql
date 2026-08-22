@@ -57,8 +57,26 @@ WHERE `salaries` = '{}';--> statement-breakpoint
 -- legitimately null and must survive as JSON null, not vanish). Do NOT add
 -- entries for jobs this profile doesn't already mention — the JOIN only
 -- ever touches keys already present in the map.
+--
+-- `CAST(j.\`id\` AS TEXT) = je.key`, not `j.\`id\` = CAST(je.key AS INTEGER)`
+-- — SQLite's numeric CAST is lenient (CAST('foo' AS INTEGER) = 0,
+-- CAST('012abc' AS INTEGER) = 12), so casting the JSON key to a number can
+-- spuriously match a real job id for a malformed/legacy key and write that
+-- job's pay schedule/W-4 elections into the wrong entry. Casting the job id
+-- to text instead makes this an exact string comparison, matching the
+-- Postgres twin's `j."id"::text = entry.key`.
+--
+-- COALESCE(..., '{}') guards the same all-orphan case as the Postgres
+-- twin's fix: an entry can outlive its job (settings/paycheck.ts's
+-- job-delete path doesn't prune salary_profiles.salaries), and every field
+-- being written here is non-nullable in salaryEntrySchema, so an orphaned
+-- entry can't be upgraded to a valid complete entry — it's correctly
+-- dropped from the rebuilt object by the JOIN. Without the COALESCE,
+-- json_group_object over zero surviving rows would silently wipe an
+-- all-orphan profile to NULL with no error; wrapping it makes the
+-- degenerate case an explicit, visible '{}' instead, matching step 1a.
 UPDATE `salary_profiles`
-SET `salaries` = (
+SET `salaries` = COALESCE((
 	SELECT json_group_object(
 		je.key,
 		json_set(
@@ -77,8 +95,8 @@ SET `salaries` = (
 		)
 	)
 	FROM json_each(salary_profiles.`salaries`) AS je
-	JOIN `jobs` j ON j.`id` = CAST(je.key AS INTEGER)
-)
+	JOIN `jobs` j ON CAST(j.`id` AS TEXT) = je.key
+), '{}')
 WHERE `salaries` != '{}';--> statement-breakpoint
 
 -- 2. Backfill paycheck_deductions into every Contribution Profile's

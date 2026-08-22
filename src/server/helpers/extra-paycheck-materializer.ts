@@ -1,7 +1,8 @@
 /**
  * Extra-paycheck materializer.
  *
- * Reads `jobs.extra_paycheck_routing` (rules + optional overrides) and writes
+ * Reads each job's `extraPaycheckRouting` field from its entry in the
+ * globally-active Salary Profile (rules + optional overrides) and writes
  * the resulting dollar amounts into `savings_planned_transactions` with
  * `source = 'rule'` for the next 24 months.
  *
@@ -69,38 +70,43 @@ export async function materializeExtraPaycheckOverrides(db: Db): Promise<void> {
 async function _materialize(db: Db): Promise<void> {
   const now = new Date();
 
-  // Load all active jobs with routing data
+  // Load all jobs; routing/payPeriod/anchorPayDate all now live on the
+  // job's entry in the globally-active Salary Profile, not on `jobs` itself.
   const allJobs = await db
     .select({
       id: schema.jobs.id,
-      extraPaycheckRouting: schema.jobs.extraPaycheckRouting,
       personId: schema.jobs.personId,
       endDate: schema.jobs.endDate,
       isSpeculative: schema.jobs.isSpeculative,
     })
     .from(schema.jobs);
-  // payPeriod/anchorPayDate no longer live on `jobs` — the live-column
-  // fallback below now reads the job's entry in the globally-active Salary
-  // Profile instead (same "prefer snapshot, fall back to live" precedence).
   const salaryProfileActiveMap = await loadEffectiveSalaryProfile(db, null);
 
   const todayStr = now.toISOString().slice(0, 10);
   const jobsWithRules = (
     allJobs as {
       id: number;
-      extraPaycheckRouting: ExtraPaycheckRoutingData | null;
       personId: number;
       endDate: string | null;
       isSpeculative: boolean;
     }[]
   )
-    .map((j) => ({
-      ...j,
-      anchorPayDate: salaryProfileActiveMap.get(j.id)?.anchorPayDate ?? null,
-      payPeriod: salaryProfileActiveMap.get(j.id)?.payPeriod,
-    }))
+    .map((j) => {
+      const entry = salaryProfileActiveMap.get(j.id);
+      return {
+        ...j,
+        extraPaycheckRouting: (entry?.extraPaycheckRouting ??
+          null) as ExtraPaycheckRoutingData | null,
+        anchorPayDate: entry?.anchorPayDate ?? null,
+        payPeriod: entry?.payPeriod,
+      };
+    })
     .filter((j) => {
-      if (j.isSpeculative || !j.extraPaycheckRouting?.rules?.length)
+      if (
+        j.isSpeculative ||
+        !j.extraPaycheckRouting?.rules?.length ||
+        j.extraPaycheckRouting.enabled === false
+      )
         return false;
       if (j.endDate && j.endDate < todayStr) return false;
       // Prefer the snapshot's own anchorPayDate (frozen at save time — see

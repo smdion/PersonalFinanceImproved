@@ -360,6 +360,7 @@ export function seedJob(
     bonusDayOfMonth,
     include401kInBonus,
     includeBonusInContributions,
+    extraPaycheckRouting,
     ...jobOverrides
   } = overrides;
   const result = db
@@ -389,6 +390,7 @@ export function seedJob(
     bonusDayOfMonth: bonusDayOfMonth ?? null,
     include401kInBonus: include401kInBonus ?? false,
     includeBonusInContributions: includeBonusInContributions ?? true,
+    extraPaycheckRouting: extraPaycheckRouting ?? null,
   });
   return result.id;
 }

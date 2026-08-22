@@ -162,6 +162,13 @@
       "when": 1787202000000,
       "tag": "0022_salary_profile_full_shape",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "6",
+      "when": 1787202500000,
+      "tag": "0023_extra_paycheck_routing_to_salary_profile",
+      "breakpoints": true
     }
   ]
 }

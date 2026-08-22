@@ -61,7 +61,11 @@ export type ExtraPaycheckOverride = {
 /** Per-year growth entry for projecting future extra-paycheck net pay. */
 export type YearlyGrowthEntry = { type: "pct" | "dollar"; value: number };
 
-/** Top-level shape stored in jobs.extra_paycheck_routing. */
+/** Top-level shape stored in a Salary Profile entry's `extraPaycheckRouting`
+ *  field (see salaryEntrySchema in json-schemas.ts) — moved off
+ *  `jobs.extra_paycheck_routing` because it's a comp-layer decision, the
+ *  same category of fact as `include401kInBonus`/
+ *  `includeBonusInContributions`, not a job identity fact. */
 export type ExtraPaycheckRoutingData = {
   rules: ExtraPaycheckRule[];
   overrides?: ExtraPaycheckOverride[];
@@ -85,19 +89,29 @@ export type ExtraPaycheckRoutingData = {
   /**
    * Pay schedule snapshotted alongside baseNetPayPerCheck/baseYear, from the
    * same resolved job entry computeJobNetPayPerCheck already reads. Optional
-   * — the materializer prefers this snapshot but falls back to the live
-   * `jobs.payPeriod`/`jobs.anchorPayDate` columns when absent (e.g. routing
-   * saved before this field existed). Freezes the schedule at save time so
-   * a later job/Salary-Profile correction doesn't retroactively move
+   * — the materializer prefers this snapshot but falls back to the job's
+   * LIVE entry in the globally-active Salary Profile when absent (e.g.
+   * routing saved before this field existed). Freezes the schedule at save
+   * time so a later job/Salary-Profile correction doesn't retroactively move
    * already-materialized planned-transaction dates — see RULES.md's
    * extraPaycheckRouting section.
    */
-  payPeriod?: string;
+  payPeriod?: PayPeriod;
   /** Snapshotted alongside payPeriod above. `null` is a real, complete
    *  value ("no anchor, use start date") — distinct from the field being
    *  entirely absent (pre-snapshot routing, or a schedule that couldn't be
    *  resolved at save time). */
   anchorPayDate?: string | null;
+  /**
+   * Whether `rules` currently materialize into savings_planned_transactions
+   * at all. Absent/true = today's behavior (route to savings goals, per
+   * rules/overrides below). false = "Budget" mode — the extra paycheck
+   * isn't diverted anywhere; it stays as regular income, same as a job with
+   * no routing configured. Distinct from clearing `rules` so a user can
+   * pause routing without losing a configured schedule (see
+   * extra-paycheck-rules-editor.tsx's Savings/Budget toggle).
+   */
+  enabled?: boolean;
 };
 
 // ============================================================================
@@ -167,9 +181,6 @@ export const jobs = sqliteTable(
     title: text("title"),
     startDate: text("start_date").notNull(),
     endDate: text("end_date"),
-    extraPaycheckRouting: text("extra_paycheck_routing", {
-      mode: "json",
-    }).$type<ExtraPaycheckRoutingData | null>(),
     /** A permanent, auto-provisioned peg for Salary Profiles to pin what-if
      *  scenarios against (e.g. "moving to Chicago in 5 years") — never a
      *  real job. Always has endDate: null (it never "ends") but must be
@@ -1837,7 +1848,7 @@ export const salaryProfiles = sqliteTable("salary_profiles", {
   id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
   name: text("name").notNull().unique(),
   description: text("description"),
-  /** jobId → complete salary entry. A job either has ALL sixteen fields (a
+  /** jobId → complete salary entry. A job either has ALL seventeen fields (a
    *  real, complete number/election for this profile) or no key at all
    *  (this profile says nothing about that job — contributes $0, not a
    *  fallback to some other value). No partial entries — see
@@ -1863,6 +1874,7 @@ export const salaryProfiles = sqliteTable("salary_profiles", {
           bonusDayOfMonth: number | null;
           include401kInBonus: boolean;
           includeBonusInContributions: boolean;
+          extraPaycheckRouting: ExtraPaycheckRoutingData | null;
         }
       >
     >()

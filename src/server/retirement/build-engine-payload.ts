@@ -958,7 +958,6 @@ export async function buildEnginePayload(
       salary: getEffectiveIncome(j, comp.salary, comp.terms),
       baseSalary: comp.salary,
       totalComp: getTotalCompensation(comp.salary, comp.terms),
-      resolvedBonusOverride: null,
     };
   });
 
@@ -1144,7 +1143,6 @@ export async function buildEnginePayload(
             salary: getEffectiveIncome(j, comp.salary, comp.terms),
             baseSalary: comp.salary,
             totalComp: getTotalCompensation(comp.salary, comp.terms),
-            resolvedBonusOverride: null,
           };
         })
       : liveJobSalaries;

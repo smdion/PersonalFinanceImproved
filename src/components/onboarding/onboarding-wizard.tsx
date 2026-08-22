@@ -813,6 +813,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               bonusDayOfMonth: number | null;
               include401kInBonus: boolean;
               includeBonusInContributions: boolean;
+              extraPaycheckRouting: null;
             }
           >;
           for (const [jobId, entry] of Object.entries(jobEntries)) {
@@ -833,6 +834,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               bonusDayOfMonth: null,
               include401kInBonus: false,
               includeBonusInContributions: false,
+              extraPaycheckRouting: null,
             };
           }
           await updateSalaryProfile.mutateAsync({

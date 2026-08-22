@@ -1566,6 +1566,30 @@ describe("savings.extraPaycheckRouting", () => {
 
   afterAll(() => cleanup());
 
+  /** Read a job's extraPaycheckRouting straight from its entry in the
+   *  globally-active Salary Profile — same place
+   *  writeJobExtraPaycheckRouting (savings.ts) writes it. */
+  function getRouting(jobId: number) {
+    const activeSettingRow = db
+      .select()
+      .from(sqliteSchemaTables.appSettings)
+      .where(
+        eq(sqliteSchemaTables.appSettings.key, SK_ACTIVE_SALARY_PROFILE_ID),
+      )
+      .get();
+    const activeSalaryProfileId = Number(activeSettingRow!.value);
+    const activeSalaryProfile = db
+      .select()
+      .from(sqliteSchemaTables.salaryProfiles)
+      .where(eq(sqliteSchemaTables.salaryProfiles.id, activeSalaryProfileId))
+      .get()!;
+    const salaries = activeSalaryProfile.salaries as Record<
+      string,
+      { extraPaycheckRouting?: Record<string, unknown> | null }
+    >;
+    return salaries[String(jobId)]?.extraPaycheckRouting ?? null;
+  }
+
   it("list returns all jobs with routing fields", async () => {
     const jobs = await caller.savings.extraPaycheckRouting.list();
     expect(Array.isArray(jobs)).toBe(true);
@@ -1630,13 +1654,8 @@ describe("savings.extraPaycheckRouting", () => {
       // Deliberately wrong — proves the server ignores this and recomputes.
       baseNetPayPerCheck: 999999,
     });
-    const [row] = await db
-      .select({
-        extraPaycheckRouting: sqliteSchemaTables.jobs.extraPaycheckRouting,
-      })
-      .from(sqliteSchemaTables.jobs)
-      .where(eq(sqliteSchemaTables.jobs.id, jobId));
-    const baseNetPayPerCheck = row?.extraPaycheckRouting?.baseNetPayPerCheck;
+    const routing = getRouting(jobId) as { baseNetPayPerCheck?: number } | null;
+    const baseNetPayPerCheck = routing?.baseNetPayPerCheck;
     expect(baseNetPayPerCheck).not.toBe(999999);
     // $120,000 / 26 biweekly periods = $4,615.38 gross, minus federal
     // withholding and FICA (no deductions/contributions seeded).
@@ -1720,13 +1739,157 @@ describe("savings.extraPaycheckRouting", () => {
     expect(afterCorrection!.payPeriod).toBe("biweekly");
     expect(afterCorrection!.anchorPayDate).toBe("2025-01-03");
 
-    const [row] = await db
-      .select({
-        extraPaycheckRouting: sqliteSchemaTables.jobs.extraPaycheckRouting,
+    const routing = getRouting(scheduleJobId) as {
+      payPeriod?: string;
+      anchorPayDate?: string | null;
+    } | null;
+    expect(routing?.payPeriod).toBe("biweekly");
+    expect(routing?.anchorPayDate).toBe("2025-01-03");
+  });
+
+  it("editing the ACTIVE Salary Profile's own values re-snapshots baseNetPayPerCheck for a job with routing already configured — this is a correction to the real profile, not a hypothetical comparison, so it must propagate", async () => {
+    const personId = await seedPerson(db, "ActiveEditRefreshPerson");
+    const refreshJobId = seedJob(db, personId, {
+      payPeriod: "biweekly",
+      anchorPayDate: "2025-01-03",
+      additionalFedWithholding: 0,
+    });
+    await caller.savings.extraPaycheckRouting.save({
+      jobId: refreshJobId,
+      rules: [{ from: "2025-01", to: null, splits: [{ goalId, pct: 100 }] }],
+    });
+    const before = getRouting(refreshJobId) as {
+      baseNetPayPerCheck?: number;
+    } | null;
+    const baseNetPayPerCheckBefore = before?.baseNetPayPerCheck;
+    expect(baseNetPayPerCheckBefore).toBeGreaterThan(0);
+
+    const activeSettingRow = db
+      .select()
+      .from(sqliteSchemaTables.appSettings)
+      .where(
+        eq(sqliteSchemaTables.appSettings.key, SK_ACTIVE_SALARY_PROFILE_ID),
+      )
+      .get();
+    const activeSalaryProfileId = Number(activeSettingRow!.value);
+    const activeSalaryProfile = db
+      .select()
+      .from(sqliteSchemaTables.salaryProfiles)
+      .where(eq(sqliteSchemaTables.salaryProfiles.id, activeSalaryProfileId))
+      .get()!;
+    const salaries = activeSalaryProfile.salaries as Record<
+      string,
+      Record<string, unknown>
+    >;
+
+    // A real correction (not a what-if) — increasing withholding on the
+    // job that already has routing configured, via the proper router
+    // mutation (not a raw db write, which deliberately does NOT cascade —
+    // see the freeze test above).
+    await caller.salaryProfile.update({
+      id: activeSalaryProfileId,
+      salaries: {
+        ...salaries,
+        [String(refreshJobId)]: {
+          ...salaries[String(refreshJobId)],
+          additionalFedWithholding: 500,
+        },
+      } as never,
+    });
+
+    const after = getRouting(refreshJobId) as {
+      baseNetPayPerCheck?: number;
+    } | null;
+    // More withheld each check => strictly lower net pay per check.
+    expect(after?.baseNetPayPerCheck).toBeLessThan(baseNetPayPerCheckBefore!);
+  });
+
+  it("editing a NON-active Salary Profile never refreshes routing, even for a job whose entry there already carries a (stale) snapshot", async () => {
+    const personId = await seedPerson(db, "NonActiveEditPerson");
+    const otherJobId = seedJob(db, personId, {
+      payPeriod: "biweekly",
+      anchorPayDate: "2025-01-03",
+    });
+    // A second, non-active profile with a manually-seeded stale snapshot —
+    // routing.save always targets the active profile, so this simulates
+    // the entry via direct insert rather than the normal save flow.
+    const otherProfileId = db
+      .insert(sqliteSchemaTables.salaryProfiles)
+      .values({
+        name: "Comparison Profile",
+        salaries: {
+          [String(otherJobId)]: {
+            salary: 120000,
+            bonusPercent: 0,
+            bonusMultiplier: 1,
+            monthsInBonusYear: 12,
+            bonusOverride: null,
+            payPeriod: "biweekly",
+            payWeek: "na",
+            anchorPayDate: "2025-01-03",
+            budgetPeriodsPerMonth: null,
+            w4FilingStatus: "MFJ",
+            w4Box2cChecked: false,
+            additionalFedWithholding: 0,
+            bonusMonth: null,
+            bonusDayOfMonth: null,
+            include401kInBonus: false,
+            includeBonusInContributions: true,
+            extraPaycheckRouting: {
+              rules: [
+                { from: "2025-01", to: null, splits: [{ goalId, pct: 100 }] },
+              ],
+              baseNetPayPerCheck: 999999,
+            },
+          },
+        },
       })
-      .from(sqliteSchemaTables.jobs)
-      .where(eq(sqliteSchemaTables.jobs.id, scheduleJobId));
-    expect(row?.extraPaycheckRouting?.payPeriod).toBe("biweekly");
-    expect(row?.extraPaycheckRouting?.anchorPayDate).toBe("2025-01-03");
+      .returning({ id: sqliteSchemaTables.salaryProfiles.id })
+      .get().id;
+
+    await caller.salaryProfile.update({
+      id: otherProfileId,
+      salaries: {
+        [String(otherJobId)]: {
+          salary: 120000,
+          bonusPercent: 0,
+          bonusMultiplier: 1,
+          monthsInBonusYear: 12,
+          bonusOverride: null,
+          payPeriod: "biweekly",
+          payWeek: "na",
+          anchorPayDate: "2025-01-03",
+          budgetPeriodsPerMonth: null,
+          w4FilingStatus: "MFJ",
+          w4Box2cChecked: false,
+          additionalFedWithholding: 750,
+          bonusMonth: null,
+          bonusDayOfMonth: null,
+          include401kInBonus: false,
+          includeBonusInContributions: true,
+          extraPaycheckRouting: {
+            rules: [
+              { from: "2025-01", to: null, splits: [{ goalId, pct: 100 }] },
+            ],
+            baseNetPayPerCheck: 999999,
+          },
+        },
+      } as never,
+    });
+
+    const row = db
+      .select()
+      .from(sqliteSchemaTables.salaryProfiles)
+      .where(eq(sqliteSchemaTables.salaryProfiles.id, otherProfileId))
+      .get()!;
+    const otherSalaries = row.salaries as Record<
+      string,
+      { extraPaycheckRouting?: { baseNetPayPerCheck?: number } }
+    >;
+    // Untouched — browsing/editing a non-active profile must never cascade.
+    expect(
+      otherSalaries[String(otherJobId)].extraPaycheckRouting
+        ?.baseNetPayPerCheck,
+    ).toBe(999999);
   });
 });

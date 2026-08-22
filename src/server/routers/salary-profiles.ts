@@ -43,6 +43,8 @@ import { salaryEntriesSchema } from "@/lib/db/json-schemas";
 import { resolveCompensation } from "@/server/helpers";
 import type { SalaryEntryMap } from "@/server/helpers";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
+import { resolveActiveSalaryProfileId } from "@/server/helpers/salary";
+import { computeJobNetPayPerCheck } from "./savings";
 
 /** How much this profile specifies, for the list view's at-a-glance summary. */
 function summarizeEntries(salaries: SalaryEntryMap) {
@@ -186,6 +188,9 @@ export const salaryProfileRouter = createTRPCRouter({
           include401kInBonus: entry?.include401kInBonus ?? false,
           includeBonusInContributions:
             entry?.includeBonusInContributions ?? false,
+          /** Where this job's extra (3rd biweekly) paycheck routes, if
+           *  configured — see extraPaycheckRoutingSchema (json-schemas.ts). */
+          extraPaycheckRouting: entry?.extraPaycheckRouting ?? null,
           /** What this profile actually produces for this job — the pinned
            *  actual when set, else the formula estimate. */
           effectiveSalary: comp.salary,
@@ -240,6 +245,7 @@ export const salaryProfileRouter = createTRPCRouter({
           include401kInBonus: selected?.include401kInBonus ?? false,
           includeBonusInContributions:
             selected?.includeBonusInContributions ?? false,
+          extraPaycheckRouting: selected?.extraPaycheckRouting ?? null,
           /** What this profile actually produces for this person. */
           effectiveSalary: selected?.effectiveSalary ?? 0,
           estimatedBonus: selected?.estimatedBonus ?? 0,
@@ -318,7 +324,60 @@ export const salaryProfileRouter = createTRPCRouter({
         .set(updates)
         .where(eq(schema.salaryProfiles.id, input.id))
         .returning();
-      return rows[0]!;
+      const updated = rows[0]!;
+
+      // Refresh extraPaycheckRouting's baseNetPayPerCheck/payPeriod/
+      // anchorPayDate snapshot for any job in THIS edit whose routing is
+      // already configured — but only when this is the globally-ACTIVE
+      // profile. Editing an active profile's real values (a withholding
+      // correction, a raise) is not "browsing a hypothetical" — it's a
+      // correction to the one real number computeJobNetPayPerCheck already
+      // resolves against, so it should propagate immediately, the same way
+      // an explicit extraPaycheckRouting.save/saveGrowth would. Editing a
+      // NON-active profile (a what-if comparison) must NOT trigger this —
+      // that's exactly the "routine profile switch silently rewrites a
+      // plan" case RULES.md's no-cascade-by-design note warns about; the
+      // distinction is active-vs-not, not edited-vs-not.
+      if (input.salaries !== undefined) {
+        try {
+          const activeId = await resolveActiveSalaryProfileId(ctx.db);
+          if (activeId === input.id) {
+            const salaries = updated.salaries as SalaryEntryMap;
+            let anyRefreshed = false;
+            for (const [jobIdStr, entry] of Object.entries(salaries)) {
+              const routing = entry.extraPaycheckRouting;
+              if (!routing?.rules?.length) continue;
+              const jobId = Number(jobIdStr);
+              const refreshed = await computeJobNetPayPerCheck(ctx.db, jobId);
+              salaries[jobIdStr] = {
+                ...entry,
+                extraPaycheckRouting: {
+                  ...routing,
+                  baseNetPayPerCheck: refreshed.netPayPerCheck,
+                  payPeriod: refreshed.payPeriod,
+                  anchorPayDate: refreshed.anchorPayDate,
+                },
+              };
+              anyRefreshed = true;
+            }
+            if (anyRefreshed) {
+              const [refreshedRow] = await ctx.db
+                .update(schema.salaryProfiles)
+                .set({ salaries })
+                .where(eq(schema.salaryProfiles.id, input.id))
+                .returning();
+              return refreshedRow!;
+            }
+          }
+        } catch {
+          // The user's actual edit (already written above) must not fail
+          // just because the best-effort routing-snapshot refresh couldn't
+          // resolve (e.g. a mid-edit state with no matching tax bracket
+          // yet) — fall through and return the already-saved update.
+        }
+      }
+
+      return updated;
     }),
 
   /**

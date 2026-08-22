@@ -14,8 +14,9 @@ import {
   applyActiveSalary,
   applyActiveBonusTerms,
   getEffectiveIncome,
+  applySandboxSalaryEntries,
 } from "./salary";
-import type { SalaryActiveMap } from "./salary";
+import type { SalaryActiveMap, SalaryOverrideEntry } from "./salary";
 import {
   loadAndApplyContribProfile,
   applyContribActiveFields,
@@ -278,10 +279,15 @@ export function computeBudgetAnnualTotal(
  *
  * `contribProfileIdByColumn`/`salaryProfileIdByColumn` must already reflect
  * the caller's own Plan-pin/column-pin resolution for each column — this
- * function does no tier resolution of its own, matching budget.ts's
- * `computeContribMonthlyForPair` precedence exactly so a linked item's
- * dollar figure can never disagree between the Budget tab and any other
- * consumer.
+ * function does no tier resolution of its own, so a linked item's dollar
+ * figure can never disagree between the Budget tab and any other consumer.
+ *
+ * `opts.sandboxContribActiveFields`/`sandboxSalaryEntries` are the What-If
+ * sandbox's own hand-edited values — the highest-precedence tier, layered
+ * on top of `planSalaryActiveMap`/the Contribution Profile's resolved
+ * values exactly the way `budget.computeActiveSummary` needs them to be
+ * for its own linked items, so that endpoint can call this helper directly
+ * instead of maintaining its own copy of this resolution.
  */
 export async function resolveLinkedBudgetItemAmounts<
   T extends {
@@ -295,7 +301,11 @@ export async function resolveLinkedBudgetItemAmounts<
   numColumns: number,
   contribProfileIdByColumn: (number | null)[],
   salaryProfileIdByColumn: (number | null)[],
-  opts?: { planSalaryActiveMap?: SalaryActiveMap },
+  opts?: {
+    planSalaryActiveMap?: SalaryActiveMap;
+    sandboxContribActiveFields?: Record<string, { contributionValue: string }>;
+    sandboxSalaryEntries?: Record<string, SalaryOverrideEntry> | null;
+  },
 ): Promise<(T & { amounts: number[]; incomplete: boolean })[]> {
   const linkedContribIds = new Set(
     items
@@ -315,8 +325,10 @@ export async function resolveLinkedBudgetItemAmounts<
     .from(schema.contributionAccounts)
     .where(eq(schema.contributionAccounts.isActive, true));
   const allJobs = await db.select().from(schema.jobs);
-  const planSalaryActiveMap: SalaryActiveMap =
-    opts?.planSalaryActiveMap ?? new Map();
+  const effectiveSalaryMap: SalaryActiveMap = applySandboxSalaryEntries(
+    opts?.sandboxSalaryEntries,
+    opts?.planSalaryActiveMap ?? new Map(),
+  );
 
   const computeContribMonthlyForPair = async (
     contribProfileId: number | null,
@@ -340,7 +352,7 @@ export async function resolveLinkedBudgetItemAmounts<
     );
     const activeContribs = applyContribActiveFields(
       profileResult.contribs,
-      {},
+      opts?.sandboxContribActiveFields ?? {},
       true,
     );
     const activeJobs = filterActiveJobs(profileResult.jobs);
@@ -352,11 +364,11 @@ export async function resolveLinkedBudgetItemAmounts<
     const salaryByJobId = new Map<number, number>();
     for (const j of activeJobs) {
       const comp = resolveCompensation(salaryProfileActiveMap, j.id);
-      const sandboxEntry = planSalaryActiveMap.get(j.personId);
+      const sandboxEntry = effectiveSalaryMap.get(j.personId);
       const salary = applyActiveSalary(
         j.personId,
         comp.salary,
-        planSalaryActiveMap,
+        effectiveSalaryMap,
       );
       const bonusTerms = applyActiveBonusTerms(sandboxEntry, comp.terms);
       salaryByJobId.set(j.id, getEffectiveIncome(j, salary, bonusTerms));

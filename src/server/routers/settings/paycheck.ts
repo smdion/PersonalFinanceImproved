@@ -4,6 +4,7 @@ import {
   createTRPCRouter,
   protectedProcedure,
   adminProcedure,
+  contributionProfileProcedure,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { materializeExtraPaycheckOverrides } from "@/server/helpers/extra-paycheck-materializer";
@@ -423,14 +424,23 @@ export const paycheckProcedures = {
         .from(schema.paycheckDeductions)
         .orderBy(asc(schema.paycheckDeductions.jobId)),
     ),
-    create: adminProcedure.input(deductionInput).mutation(({ ctx, input }) =>
-      ctx.db
-        .insert(schema.paycheckDeductions)
-        .values(input)
-        .returning()
-        .then((r) => r[0]),
-    ),
-    update: adminProcedure
+    // create/update at contributionProfileProcedure's level, not admin — a
+    // deduction's identity (name/isPretax/ficaExempt) is the same class of
+    // previously-admin-gated job fact that W-4/pay-schedule fields already
+    // moved off of (Stage B); its AMOUNT already resolves via a
+    // Contribution Profile's active fields at this same permission level,
+    // so gating identity higher than the value that depends on it doesn't
+    // make sense. delete stays admin — more destructive, not requested.
+    create: contributionProfileProcedure
+      .input(deductionInput)
+      .mutation(({ ctx, input }) =>
+        ctx.db
+          .insert(schema.paycheckDeductions)
+          .values(input)
+          .returning()
+          .then((r) => r[0]),
+      ),
+    update: contributionProfileProcedure
       .input(z.object({ id: z.number().int() }).extend(deductionInput.shape))
       .mutation(({ ctx, input: { id, ...data } }) =>
         ctx.db

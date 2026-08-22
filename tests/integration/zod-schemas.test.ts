@@ -13,6 +13,7 @@ import {
   budgetAmountsSchema,
   settingValueSchema,
   salaryEntriesSchema,
+  extraPaycheckRoutingSchema,
   contributionActiveFieldsSchema,
   contribAccountActiveFieldsSchema,
   deductionActiveFieldsSchema,
@@ -243,10 +244,11 @@ describe("salaryEntriesSchema", () => {
     bonusDayOfMonth: null,
     include401kInBonus: false,
     includeBonusInContributions: true,
+    extraPaycheckRouting: null,
     ...overrides,
   });
 
-  it("accepts a complete entry — all sixteen fields required", () => {
+  it("accepts a complete entry — all seventeen fields required", () => {
     const result = salaryEntriesSchema.safeParse({
       "1": complete(),
       "4": complete({ salary: 200000, bonusPercent: 0.2 }),
@@ -310,6 +312,101 @@ describe("salaryEntriesSchema", () => {
         "1": complete({ bonusMultiplier: null }),
       }).success,
     ).toBe(false);
+  });
+
+  it("accepts extraPaycheckRouting: null — a complete 'no routing configured' entry", () => {
+    const result = salaryEntriesSchema.safeParse({
+      "1": complete({ extraPaycheckRouting: null }),
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an entry missing extraPaycheckRouting entirely", () => {
+    const { extraPaycheckRouting: _drop, ...withoutRouting } = complete();
+    expect(salaryEntriesSchema.safeParse({ "1": withoutRouting }).success).toBe(
+      false,
+    );
+  });
+});
+
+describe("extraPaycheckRoutingSchema", () => {
+  const validRouting = {
+    rules: [
+      {
+        from: "2026-01",
+        to: null,
+        splits: [{ goalId: 1, pct: 100 }],
+      },
+    ],
+  };
+
+  it("accepts a minimal valid routing blob (rules only)", () => {
+    expect(extraPaycheckRoutingSchema.safeParse(validRouting).success).toBe(
+      true,
+    );
+  });
+
+  it("accepts a fully-populated routing blob", () => {
+    const result = extraPaycheckRoutingSchema.safeParse({
+      rules: [
+        {
+          from: "2026-01",
+          to: "2026-12",
+          splits: [
+            { goalId: 1, pct: 60 },
+            { goalId: 2, pct: 40 },
+          ],
+          netPaySnapshot: 1000,
+        },
+      ],
+      overrides: [{ month: "2026-06", splits: [{ goalId: 1, pct: 100 }] }],
+      baseNetPayPerCheck: 1000,
+      baseYear: 2026,
+      yearlyGrowth: { "2027": { type: "pct", value: 3 } },
+      payPeriod: "biweekly",
+      anchorPayDate: "2026-01-02",
+      enabled: true,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects splits missing a required field", () => {
+    expect(
+      extraPaycheckRoutingSchema.safeParse({
+        rules: [{ from: "2026-01", to: null, splits: [{ goalId: 1 }] }],
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects an invalid payPeriod value", () => {
+    expect(
+      extraPaycheckRoutingSchema.safeParse({
+        ...validRouting,
+        payPeriod: "fortnightly",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects a malformed yearlyGrowth entry (missing value)", () => {
+    expect(
+      extraPaycheckRoutingSchema.safeParse({
+        ...validRouting,
+        yearlyGrowth: { "2027": { type: "pct" } },
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects unknown top-level fields", () => {
+    expect(
+      extraPaycheckRoutingSchema.safeParse({
+        ...validRouting,
+        unknownField: true,
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects missing rules array", () => {
+    expect(extraPaycheckRoutingSchema.safeParse({}).success).toBe(false);
   });
 });
 

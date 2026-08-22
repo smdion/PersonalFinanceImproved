@@ -65,8 +65,9 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
 
   // 2. Jobs — a job carries no salary/bonus/payroll terms of its own;
   // insert the (now purely structural) job row, then collect a COMPLETE
-  // Salary Profile entry (all 16 fields — salary, bonus terms, and the
-  // payroll-config fields that used to live on the job row) to give it in
+  // Salary Profile entry (all 17 fields — salary, bonus terms, the
+  // payroll-config fields that used to live on the job row, and
+  // extraPaycheckRouting) to give it in
   // a demo Salary Profile below — a profile entry is all-or-nothing, never
   // a partial pin (mirrors the "Demo Contribution" profile pattern).
   const salaryPinsByJobId: Record<string, SalaryProfileEntry> = {};
@@ -104,6 +105,9 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
       // Matches speculativeJobValues' defaults for the same two flags.
       include401kInBonus: false,
       includeBonusInContributions: false,
+      // Not modeled by DemoProfile.jobs — no demo persona needs a
+      // preconfigured extra-paycheck routing to look realistic.
+      extraPaycheckRouting: null,
     };
   }
   if (Object.keys(salaryPinsByJobId).length > 0) {
@@ -248,7 +252,6 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
         name: "Demo Contribution",
         contributionActiveFields: {
           contributionAccounts: contribActiveFieldsByAccountId,
-          jobs: {},
         },
       })
       .returning({ id: schema.contributionProfiles.id });

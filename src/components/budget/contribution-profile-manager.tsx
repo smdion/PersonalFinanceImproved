@@ -20,6 +20,10 @@ import {
   ContribAccountForm,
   type ContribAccountFormValues,
 } from "@/components/paycheck/contrib-account-form";
+import {
+  DeductionForm,
+  type DeductionFormValues,
+} from "@/components/paycheck/deduction-form";
 
 type ProfileSummary = {
   id: number;
@@ -64,6 +68,7 @@ export function ContributionProfileManager({
     utils.contribution.invalidate();
     utils.paycheck.invalidate();
     utils.projection.invalidate();
+    utils.settings.invalidate();
   };
 
   const createContribAccount =
@@ -515,6 +520,58 @@ function ProfileListItem({
   );
 }
 
+/**
+ * At most one active contribution per (person, accountType) group holds
+ * real employer match config (computeGroupedEmployerMatch enforces this) —
+ * its match applies to the whole group, combining every active split's
+ * contribution before capping. A sibling split with no config of its own
+ * still earns a real, proportional share of that match — this groups
+ * `accountDetails` so callers can say so instead of showing nothing.
+ * Shared by the read-only summary table and the editable account table
+ * (both render the same profile's accounts, previously duplicated this
+ * grouping independently).
+ */
+function groupSharedMatchAccounts<
+  T extends {
+    id: number;
+    personId: number | null;
+    accountType: string;
+    liveMatchType: string | null;
+  },
+>(
+  accountDetails: T[],
+): {
+  sharedMatchSource: Map<number, T>;
+  combinedGroupIds: Set<number>;
+} {
+  const groups = new Map<string, T[]>();
+  for (const ad of accountDetails) {
+    const key = `${ad.personId}:${ad.accountType}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(ad);
+  }
+  const sharedMatchSource = new Map<number, T>();
+  // ids of every row (both the config-holding row and its sibling) in a
+  // group whose match is combined across a split — used to show the same
+  // "combined" note on both rows.
+  const combinedGroupIds = new Set<number>();
+  groups.forEach((group) => {
+    if (group.length <= 1) return;
+    const withMatch = group.filter(
+      (ad) => ad.liveMatchType && ad.liveMatchType !== "none",
+    );
+    const matchSource = withMatch[0];
+    if (withMatch.length !== 1 || !matchSource) return;
+    for (const ad of group) combinedGroupIds.add(ad.id);
+    for (const ad of group) {
+      if (ad.id !== matchSource.id) {
+        sharedMatchSource.set(ad.id, matchSource);
+      }
+    }
+  });
+  return { sharedMatchSource, combinedGroupIds };
+}
+
 // ---------------------------------------------------------------------------
 // Profile Detail Panel (right side)
 // ---------------------------------------------------------------------------
@@ -586,32 +643,8 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
               // actually has match data — if multiple rows carry (possibly
               // conflicting) match config, that's outside this assumption,
               // so leave them per-row rather than guess which is authoritative.
-              type AccountDetail = (typeof profile.accountDetails)[number];
-              const groups = new Map<string, AccountDetail[]>();
-              for (const ad of profile.accountDetails) {
-                const key = `${ad.personId}:${ad.accountType}`;
-                if (!groups.has(key)) groups.set(key, []);
-                groups.get(key)!.push(ad);
-              }
-              const sharedMatchSource = new Map<number, AccountDetail>();
-              // ids of every row (both the config-holding row and its
-              // sibling) in a group whose match is combined across a split
-              // — used to show the same "combined" note on both rows.
-              const combinedGroupIds = new Set<number>();
-              groups.forEach((group) => {
-                if (group.length <= 1) return;
-                const withMatch = group.filter(
-                  (ad) => ad.liveMatchType && ad.liveMatchType !== "none",
-                );
-                const matchSource = withMatch[0];
-                if (withMatch.length !== 1 || !matchSource) return;
-                for (const ad of group) combinedGroupIds.add(ad.id);
-                for (const ad of group) {
-                  if (ad.id !== matchSource.id) {
-                    sharedMatchSource.set(ad.id, matchSource);
-                  }
-                }
-              });
+              const { sharedMatchSource, combinedGroupIds } =
+                groupSharedMatchAccounts(profile.accountDetails);
 
               return profile.accountDetails.map((ad, rowIdx) => {
                 const af = ad.activeFields as Record<string, unknown> | null;
@@ -821,6 +854,7 @@ function ProfileEditor({
   >({});
 
   const { data: deductionRows } = trpc.settings.deductions.list.useQuery();
+  const { data: jobsList } = trpc.settings.jobs.list.useQuery();
 
   const createMutation = trpc.contributionProfile.create.useMutation({
     onSuccess: (created) => onSaved(created.id),
@@ -1191,42 +1225,48 @@ function ProfileEditor({
                 </tr>
               </thead>
               <tbody>
-                {deductionRows.map((d: DeductionRow, rowIdx: number) => (
-                  <tr
-                    key={d.id}
-                    className={`border-b border-subtle hover:bg-blue-50/60 transition-colors ${
-                      rowIdx % 2 === 1
-                        ? "bg-surface-sunken/60"
-                        : "bg-surface-primary"
-                    }`}
-                  >
-                    <td className="py-1.5 pl-4 pr-3 text-secondary">
-                      {d.deductionName}
-                    </td>
-                    <td className="py-1.5 px-3 text-muted">
-                      {d.isPretax ? "Pretax" : "Post-tax"}
-                    </td>
-                    <td className="py-1.5 px-3 text-right">
-                      <div className="flex items-center justify-end gap-0.5">
-                        <span className="text-caption text-faint w-3 text-right shrink-0">
-                          $
-                        </span>
-                        <input
-                          type="number"
-                          value={deductionValues[String(d.id)] ?? ""}
-                          onChange={(e) =>
-                            setDeductionValues((prev) => ({
-                              ...prev,
-                              [String(d.id)]: e.target.value,
-                            }))
-                          }
-                          placeholder="Not set"
-                          className="w-16 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {deductionRows.map((d: DeductionRow, rowIdx: number) => {
+                  const personName =
+                    jobsList?.find((j) => j.id === d.jobId)?.employerName ??
+                    `Job ${d.jobId}`;
+                  return (
+                    <tr
+                      key={d.id}
+                      className={`border-b border-subtle hover:bg-blue-50/60 transition-colors ${
+                        rowIdx % 2 === 1
+                          ? "bg-surface-sunken/60"
+                          : "bg-surface-primary"
+                      }`}
+                    >
+                      <td className="py-1.5 pl-4 pr-3 text-secondary">
+                        {d.deductionName}
+                        <span className="text-faint"> — {personName}</span>
+                      </td>
+                      <td className="py-1.5 px-3 text-muted">
+                        {d.isPretax ? "Pretax" : "Post-tax"}
+                      </td>
+                      <td className="py-1.5 px-3 text-right">
+                        <div className="flex items-center justify-end gap-0.5">
+                          <span className="text-caption text-faint w-3 text-right shrink-0">
+                            $
+                          </span>
+                          <input
+                            type="number"
+                            value={deductionValues[String(d.id)] ?? ""}
+                            onChange={(e) =>
+                              setDeductionValues((prev) => ({
+                                ...prev,
+                                [String(d.id)]: e.target.value,
+                              }))
+                            }
+                            placeholder="Not set"
+                            className="w-16 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -1282,6 +1322,35 @@ function ProfileInlineEditor({
   });
   const { data: deductionRows } = trpc.settings.deductions.list.useQuery();
   const { drafts, setDraft, clearDraft } = useDraftCommit();
+  const utils = trpc.useUtils();
+  const [addingDeduction, setAddingDeduction] = useState(false);
+  const createDeduction = trpc.settings.deductions.create.useMutation({
+    onSuccess: () => {
+      utils.settings.invalidate();
+      setAddingDeduction(false);
+    },
+  });
+  const updateDeduction = trpc.settings.deductions.update.useMutation({
+    onSuccess: () => utils.settings.invalidate(),
+  });
+  /** Same generic-field-patch pattern as paycheck/page.tsx's onUpdateDeduction
+   *  — one call site builds the full record from the current row plus the
+   *  one field being changed, instead of each editable cell hand-writing
+   *  its own copy of the other four fields. */
+  const patchDeductionRecord = (
+    d: DeductionRow,
+    changes: Partial<
+      Pick<DeductionRow, "deductionName" | "isPretax" | "ficaExempt">
+    >,
+  ) =>
+    updateDeduction.mutate({
+      id: d.id,
+      jobId: d.jobId,
+      deductionName: d.deductionName,
+      isPretax: d.isPretax,
+      ficaExempt: d.ficaExempt,
+      ...changes,
+    });
   const updateMutation = trpc.contributionProfile.update.useMutation({
     onSuccess: () => onSaved(),
   });
@@ -1445,30 +1514,10 @@ function ProfileInlineEditor({
             <tbody>
               {(() => {
                 // Same "combined across Roth/Trad splits" detection as the
-                // read-only Profiles summary table above — see its comment
-                // for the full rationale. Repeated here because this is a
-                // separate render path (the editable account table).
-                type AccountDetail = (typeof profile.accountDetails)[number];
-                const editGroups = new Map<string, AccountDetail[]>();
-                for (const ad of profile.accountDetails) {
-                  const key = `${ad.personId}:${ad.accountType}`;
-                  if (!editGroups.has(key)) editGroups.set(key, []);
-                  editGroups.get(key)!.push(ad);
-                }
-                const editSharedMatchSource = new Map<number, AccountDetail>();
-                editGroups.forEach((group) => {
-                  if (group.length <= 1) return;
-                  const withMatch = group.filter(
-                    (ad) => ad.liveMatchType && ad.liveMatchType !== "none",
-                  );
-                  const matchSource = withMatch[0];
-                  if (withMatch.length !== 1 || !matchSource) return;
-                  for (const ad of group) {
-                    if (ad.id !== matchSource.id) {
-                      editSharedMatchSource.set(ad.id, matchSource);
-                    }
-                  }
-                });
+                // read-only Profiles summary table above — shared via
+                // groupSharedMatchAccounts so both render paths stay in sync.
+                const { sharedMatchSource: editSharedMatchSource } =
+                  groupSharedMatchAccounts(profile.accountDetails);
                 return profile.accountDetails.map((ad, rowIdx) => {
                   const sharedFrom = editSharedMatchSource.get(ad.id);
                   const af = accountActiveFields(ad.id);
@@ -1713,11 +1762,33 @@ function ProfileInlineEditor({
           deduction is either given an amountPerPeriod by this profile, or
           it has none at all (same "not set" state as an unset contribution
           value, no live fallback). */}
-      {deductionRows && deductionRows.length > 0 && (
-        <div className="mb-5">
-          <h4 className="text-label font-semibold text-muted uppercase tracking-wide mb-2">
+      <div className="mb-5">
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="text-label font-semibold text-muted uppercase tracking-wide">
             Deductions
           </h4>
+          <button
+            type="button"
+            onClick={() => setAddingDeduction(true)}
+            className="text-caption font-medium text-blue-600 hover:text-blue-700"
+          >
+            + Add Deduction
+          </button>
+        </div>
+
+        <SlidePanel
+          isOpen={addingDeduction}
+          onClose={() => setAddingDeduction(false)}
+          title="Add Deduction"
+        >
+          <DeductionForm
+            onSave={(data: DeductionFormValues) => createDeduction.mutate(data)}
+            onCancel={() => setAddingDeduction(false)}
+            isPending={createDeduction.isPending}
+          />
+        </SlidePanel>
+
+        {deductionRows && deductionRows.length > 0 && (
           <table className="w-full text-xs border-collapse">
             <thead>
               <tr className="border-b-2 border-strong">
@@ -1742,6 +1813,7 @@ function ProfileInlineEditor({
                 const personName =
                   profile.deductionDetails.find((dd) => dd.id === d.id)
                     ?.employerName ?? `Job ${d.jobId}`;
+                const storedName = d.deductionName;
                 return (
                   <tr
                     key={d.id}
@@ -1752,11 +1824,45 @@ function ProfileInlineEditor({
                     }`}
                   >
                     <td className="py-1.5 pl-4 pr-3 text-secondary">
-                      {d.deductionName}
+                      <input
+                        type="text"
+                        value={drafts[`d${d.id}:name`] ?? storedName}
+                        onChange={(e) =>
+                          setDraft(`d${d.id}:name`, e.target.value)
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === "Escape") {
+                            clearDraft(`d${d.id}:name`);
+                            e.currentTarget.blur();
+                          } else if (e.key === "Enter") {
+                            e.currentTarget.blur();
+                          }
+                        }}
+                        onBlur={() => {
+                          const draft = drafts[`d${d.id}:name`];
+                          if (draft === undefined) return;
+                          clearDraft(`d${d.id}:name`);
+                          const trimmed = draft.trim();
+                          if (!trimmed || trimmed === storedName) return;
+                          patchDeductionRecord(d, { deductionName: trimmed });
+                        }}
+                        className="w-full px-1 py-0.5 border rounded bg-surface-primary text-primary"
+                      />
                       <span className="text-faint"> — {personName}</span>
                     </td>
                     <td className="py-1.5 px-3 text-muted">
-                      {d.isPretax ? "Pretax" : "Post-tax"}
+                      <select
+                        value={d.isPretax ? "pretax" : "posttax"}
+                        onChange={(e) =>
+                          patchDeductionRecord(d, {
+                            isPretax: e.target.value === "pretax",
+                          })
+                        }
+                        className="px-1 py-0.5 border rounded bg-surface-primary text-primary"
+                      >
+                        <option value="pretax">Pretax</option>
+                        <option value="posttax">Post-tax</option>
+                      </select>
                     </td>
                     <td className="py-1.5 px-3 text-right">
                       <div className="flex items-center justify-end gap-0.5">
@@ -1790,8 +1896,8 @@ function ProfileInlineEditor({
               })}
             </tbody>
           </table>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* The old "Employer & Bonus Handling" jobs active-fields section was
           removed in the Stage B migration — see the matching comment in

@@ -12,6 +12,7 @@ import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { ProfileViewingBadge } from "./profile-viewing-badge";
 import { confirm } from "@/components/ui/confirm-dialog";
 import { useDraftCommit } from "@/lib/hooks/use-draft-commit";
+import { PAY_PERIOD_CONFIG } from "@/lib/config/pay-periods";
 import {
   PAY_PERIOD_VALUES,
   PAY_WEEK_VALUES,
@@ -20,6 +21,8 @@ import {
   type PayWeek,
   type W4FilingStatus,
 } from "@/lib/config/enum-values";
+import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
+import { ExtraPaycheckDestinationToggle } from "@/components/savings/extra-paycheck-rules-editor";
 
 /**
  * Salary Profiles tab — the "what if I earned X" axis.
@@ -222,10 +225,14 @@ export function SalaryProfileManager({
             />
           ) : effectiveSelectedId != null ? (
             !canEdit || locked ? (
-              <ProfileDetail profileId={effectiveSelectedId} />
+              <ProfileDetail
+                profileId={effectiveSelectedId}
+                isActiveProfile={effectiveSelectedId === globalActiveSalaryId}
+              />
             ) : (
               <ProfileEditPanel
                 profileId={effectiveSelectedId}
+                isActiveProfile={effectiveSelectedId === globalActiveSalaryId}
                 onSaved={() => invalidateProfileDeps()}
               />
             )
@@ -338,6 +345,7 @@ type JobOption = {
   bonusDayOfMonth: number | null;
   include401kInBonus: boolean;
   includeBonusInContributions: boolean;
+  extraPaycheckRouting: ExtraPaycheckRoutingData | null;
 };
 
 /**
@@ -375,6 +383,7 @@ type Detail = {
   bonusDayOfMonth: number | null;
   include401kInBonus: boolean;
   includeBonusInContributions: boolean;
+  extraPaycheckRouting: ExtraPaycheckRoutingData | null;
 };
 
 /** The complete entry shape written to the profile's jsonb — all sixteen
@@ -399,6 +408,10 @@ type Entry = {
   bonusDayOfMonth: number | null;
   include401kInBonus: boolean;
   includeBonusInContributions: boolean;
+  /** Where this job's extra (3rd biweekly) paycheck routes, if configured —
+   *  edited via the extra-paycheck rules editor rendered below, not through
+   *  this panel's own field cells. */
+  extraPaycheckRouting: ExtraPaycheckRoutingData | null;
 };
 
 /** What a brand-new entry starts as when a job is explicitly added to a
@@ -424,6 +437,7 @@ const BLANK_ENTRY: Entry = {
   bonusDayOfMonth: null,
   include401kInBonus: false,
   includeBonusInContributions: true,
+  extraPaycheckRouting: null,
 };
 
 /**
@@ -458,6 +472,7 @@ function detailForJob(sd: Detail, jobId: number): Detail {
     bonusDayOfMonth: opt.bonusDayOfMonth,
     include401kInBonus: opt.include401kInBonus,
     includeBonusInContributions: opt.includeBonusInContributions,
+    extraPaycheckRouting: opt.extraPaycheckRouting,
   };
 }
 
@@ -694,9 +709,10 @@ function DetailStat({ label, value }: { label: string; value: string }) {
 
 /**
  * Read-only grid of the 11 pay/withholding/bonus-timing fields — too many to
- * fit as table columns (see EntryDetailsPanel's docblock in ProfileEditPanel
- * for the same tradeoff on the editable side). Shown behind the row's ▸
- * toggle rather than always-on, to keep the base table scannable.
+ * fit as table columns, so shown as a second row beneath each job (see
+ * PayTaxDetailsEdit's docblock for the same tradeoff on the editable side).
+ * Always shown, not behind a collapse toggle — extra-paycheck routing lives
+ * in this same panel now and must never be hidden by default.
  */
 function PayTaxDetailsView({ sd }: { sd: Detail }) {
   return (
@@ -712,7 +728,7 @@ function PayTaxDetailsView({ sd }: { sd: Detail }) {
         value={
           sd.budgetPeriodsPerMonth !== null
             ? fmt(sd.budgetPeriodsPerMonth)
-            : "— (derived)"
+            : `${PAY_PERIOD_CONFIG[sd.payPeriod]?.defaultBudgetPerMonth ?? "—"} (derived)`
         }
       />
       <DetailStat
@@ -836,7 +852,9 @@ function PayTaxDetailsEdit({
             setDraft(`${sd.personId}:budgetPeriodsPerMonth`, e.target.value)
           }
           onBlur={() => onCommitBudgetPeriodsPerMonth(sd)}
-          placeholder="derived"
+          placeholder={String(
+            PAY_PERIOD_CONFIG[sd.payPeriod]?.defaultBudgetPerMonth ?? "",
+          )}
         />
       </FormField>
       <FormField label="W-4 filing status">
@@ -939,13 +957,17 @@ function PayTaxDetailsEdit({
  * is locked. A job either has a real entry in this profile (shown plainly)
  * or it doesn't (shown as "—", contributing $0).
  */
-function ProfileDetail({ profileId }: { profileId: number }) {
+function ProfileDetail({
+  profileId,
+  isActiveProfile,
+}: {
+  profileId: number;
+  isActiveProfile: boolean;
+}) {
   const { data: profile } = trpc.salaryProfile.getById.useQuery({
     id: profileId,
   });
-  /** personId of the row whose pay/withholding details panel is open, if
-   *  any — view-only mirror of ProfileEditPanel's expandedPersonId. */
-  const [expandedPersonId, setExpandedPersonId] = useState<number | null>(null);
+  const { isInScenario } = useScenario();
   if (!profile) return null;
 
   const cell = (sd: Detail, field: FieldKey, suffix?: string) => (
@@ -980,7 +1002,6 @@ function ProfileDetail({ profileId }: { profileId: number }) {
         <SalaryTableHead editable={false} />
         <tbody>
           {profile.salaryDetails.map((sd, rowIdx) => {
-            const detailsExpanded = expandedPersonId === sd.personId;
             return (
               <React.Fragment key={sd.personId}>
                 <tr className={rowClass(rowIdx)}>
@@ -1017,31 +1038,37 @@ function ProfileDetail({ profileId }: { profileId: number }) {
                     {sd.hasEntry ? formatCurrency(sd.estimatedBonus) : "—"}
                   </td>
                   <td className="py-1.5 pr-4 pl-3 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <span className="tabular-nums font-medium text-secondary">
-                        {formatCurrency(sd.effectiveSalary + sd.estimatedBonus)}
-                      </span>
-                      {sd.hasEntry && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setExpandedPersonId(
-                              detailsExpanded ? null : sd.personId,
-                            )
-                          }
-                          title="Pay & withholding details"
-                          className="text-caption text-faint hover:text-blue-600 shrink-0"
-                        >
-                          {detailsExpanded ? "▾" : "▸"}
-                        </button>
-                      )}
-                    </div>
+                    <span className="tabular-nums font-medium text-secondary">
+                      {formatCurrency(sd.effectiveSalary + sd.estimatedBonus)}
+                    </span>
                   </td>
                 </tr>
-                {sd.hasEntry && detailsExpanded && (
+                {sd.hasEntry && (
                   <tr className={rowClass(rowIdx)}>
                     <td colSpan={8} className="py-3 px-4 bg-surface-sunken/60">
                       <PayTaxDetailsView sd={sd} />
+                      <div className="mt-4 pt-3 border-t border-subtle/50">
+                        <h5 className="text-caption text-faint font-medium uppercase tracking-wide mb-2">
+                          Extra Paycheck Routing
+                        </h5>
+                        {!isActiveProfile ? (
+                          <p className="text-xs text-muted">
+                            Extra-paycheck routing always applies to the
+                            globally-active Salary Profile. Activate this
+                            profile to edit routing here.
+                          </p>
+                        ) : sd.jobId === null ? (
+                          <p className="text-xs text-muted">
+                            No job selected for this row.
+                          </p>
+                        ) : (
+                          <ExtraPaycheckDestinationToggle
+                            jobId={sd.jobId}
+                            routing={sd.extraPaycheckRouting}
+                            disabled={isInScenario}
+                          />
+                        )}
+                      </div>
                     </td>
                   </tr>
                 )}
@@ -1142,14 +1169,22 @@ function ProfileCreatePanel({
  */
 function ProfileEditPanel({
   profileId,
+  isActiveProfile,
   onSaved,
 }: {
   profileId: number;
+  /** Extra-paycheck routing always reads/writes the globally-ACTIVE Salary
+   *  Profile (see writeJobExtraPaycheckRouting's docblock, savings.ts) —
+   *  never a profile a user is merely viewing. The routing editor below
+   *  only renders for that profile; a non-active one shows a note instead,
+   *  so edits here always land where this screen implies they do. */
+  isActiveProfile: boolean;
   onSaved: () => void;
 }) {
   const { data: profile } = trpc.salaryProfile.getById.useQuery({
     id: profileId,
   });
+  const { isInScenario } = useScenario();
   const [error, setError] = useState<string | null>(null);
   /** In-progress text per field; cleared once its mutation is sent. */
   const { drafts, setDraft, clearDraft } = useDraftCommit();
@@ -1158,9 +1193,6 @@ function ProfileEditPanel({
    *  the active one) — the row's job picker. Client-only until a field is
    *  actually set under that job. */
   const [jobOverride, setJobOverride] = useState<Record<number, number>>({});
-  /** personId of the row whose pay/withholding editor is open, if any —
-   *  mirrors ProfileDetail's read-only expandedPersonId. */
-  const [expandedPersonId, setExpandedPersonId] = useState<number | null>(null);
 
   const updateMutation = trpc.salaryProfile.update.useMutation({
     onSuccess: () => {
@@ -1400,7 +1432,6 @@ function ProfileEditPanel({
                     width={field === "salary" ? "w-28" : "w-20"}
                   />
                 );
-                const detailsExpanded = expandedPersonId === sd.personId;
                 return (
                   <React.Fragment key={rawSd.personId}>
                     <tr className={rowClass(rowIdx)}>
@@ -1452,18 +1483,6 @@ function ProfileEditPanel({
                               </span>
                               <button
                                 type="button"
-                                onClick={() =>
-                                  setExpandedPersonId(
-                                    detailsExpanded ? null : sd.personId,
-                                  )
-                                }
-                                title="Pay & withholding details"
-                                className="text-caption text-faint hover:text-blue-600 shrink-0"
-                              >
-                                {detailsExpanded ? "▾" : "▸"}
-                              </button>
-                              <button
-                                type="button"
                                 onClick={() => removeEntry(sd.jobId)}
                                 title="Remove this job from the profile"
                                 className="text-caption text-faint hover:text-red-500 shrink-0"
@@ -1492,7 +1511,7 @@ function ProfileEditPanel({
                         </td>
                       )}
                     </tr>
-                    {sd.hasEntry && detailsExpanded && (
+                    {sd.hasEntry && (
                       <tr className={rowClass(rowIdx)}>
                         <td
                           colSpan={8}
@@ -1513,6 +1532,28 @@ function ProfileEditPanel({
                             onCommitBonusMonth={commitBonusMonth}
                             onCommitBonusDayOfMonth={commitBonusDayOfMonth}
                           />
+                          <div className="mt-4 pt-3 border-t border-subtle/50">
+                            <h5 className="text-caption text-faint font-medium uppercase tracking-wide mb-2">
+                              Extra Paycheck Routing
+                            </h5>
+                            {!isActiveProfile ? (
+                              <p className="text-xs text-muted">
+                                Extra-paycheck routing always applies to the
+                                globally-active Salary Profile. Activate this
+                                profile to edit routing here.
+                              </p>
+                            ) : sd.jobId === null ? (
+                              <p className="text-xs text-muted">
+                                No job selected for this row.
+                              </p>
+                            ) : (
+                              <ExtraPaycheckDestinationToggle
+                                jobId={sd.jobId}
+                                routing={sd.extraPaycheckRouting}
+                                disabled={isInScenario}
+                              />
+                            )}
+                          </div>
                         </td>
                       </tr>
                     )}

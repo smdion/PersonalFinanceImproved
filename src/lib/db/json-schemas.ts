@@ -159,12 +159,63 @@ export const relocationScenarioParamsSchema = z.object({
   moveYear: z.number().nullable().optional().default(null),
 });
 
+// ── extra-paycheck routing (nested inside a salary entry) ───────
+
+/** One split target inside an ExtraPaycheckRule/Override. */
+const extraPaycheckSplitSchema = z.object({
+  goalId: z.number().int(),
+  pct: z.number(),
+});
+
+/** One date-ranged rule directing an extra paycheck to one or more goals. */
+const extraPaycheckRuleSchema = z.object({
+  from: z.string(),
+  to: z.string().nullable(),
+  splits: z.array(extraPaycheckSplitSchema),
+  /** @deprecated legacy fallback — see ExtraPaycheckRule in schema-pg.ts. */
+  netPaySnapshot: z.number().optional(),
+});
+
+/** A one-time per-month override that takes precedence over its rule. */
+const extraPaycheckOverrideSchema = z.object({
+  month: z.string(),
+  splits: z.array(extraPaycheckSplitSchema),
+});
+
+/** Per-year growth entry for projecting future extra-paycheck net pay. */
+const yearlyGrowthEntrySchema = z.object({
+  type: z.enum(["pct", "dollar"]),
+  value: z.number(),
+});
+
+/**
+ * A Salary Profile entry's `extraPaycheckRouting` field — see
+ * ExtraPaycheckRoutingData in schema-pg.ts for the full field-by-field
+ * rationale (this schema mirrors that type exactly). Moved here from
+ * `jobs.extra_paycheck_routing` because it's the same category of fact as
+ * `include401kInBonus`/`includeBonusInContributions` above: a comp-layer
+ * decision about how this job's pay gets treated, not a job identity fact.
+ * `.strict()` for the same reason as salaryEntrySchema itself.
+ */
+export const extraPaycheckRoutingSchema = z
+  .object({
+    rules: z.array(extraPaycheckRuleSchema),
+    overrides: z.array(extraPaycheckOverrideSchema).optional(),
+    baseNetPayPerCheck: z.number().optional(),
+    baseYear: z.number().optional(),
+    yearlyGrowth: z.record(z.string(), yearlyGrowthEntrySchema).optional(),
+    payPeriod: payPeriodSchema.optional(),
+    anchorPayDate: z.string().nullable().optional(),
+    enabled: z.boolean().optional(),
+  })
+  .strict();
+
 // ── salary_profiles ─────────────────────────────────────────────
 
 /**
  * salary_profiles.salaries — jobId → salary entry.
  *
- * A job either has a COMPLETE entry (all sixteen fields, a real
+ * A job either has a COMPLETE entry (all seventeen fields, a real
  * self-contained set of numbers/elections for this profile) or no key at
  * all (this profile says nothing about that job, which resolves to
  * $0/no bonus/incomplete — never a fallback to some other value). There is
@@ -175,14 +226,16 @@ export const relocationScenarioParamsSchema = z.object({
  * `.strict()` so a stale payload shape from an old client is rejected
  * loudly rather than being stored and silently ignored.
  *
- * Bonus terms, pay schedule, and W-4 elections all live HERE, not split
- * across `jobs` columns or a Contribution Profile: "what is my bonus,"
- * "when do I get paid," and "what withholding elections apply" are all the
- * same category of fact as "what is my salary" — this collapses income and
- * withholding/schedule elections into one axis (see RULES.md's Salary
- * Profile layer section for the accepted tradeoff). A Contribution Profile
- * still owns the *deductions* bucket (paycheck_deductions amounts) — a
- * distinct fact from what the job elects on its W-4/pay schedule.
+ * Bonus terms, pay schedule, W-4 elections, and extra-paycheck routing all
+ * live HERE, not split across `jobs` columns or a Contribution Profile:
+ * "what is my bonus," "when do I get paid," "what withholding elections
+ * apply," and "where does my extra paycheck go" are all the same category
+ * of fact as "what is my salary" — this collapses income, withholding/
+ * schedule elections, and comp-routing decisions into one axis (see
+ * RULES.md's Salary Profile layer section for the accepted tradeoff). A
+ * Contribution Profile still owns the *deductions* bucket (paycheck_
+ * deductions amounts) — a distinct fact from what the job elects on its
+ * W-4/pay schedule.
  */
 export const salaryEntrySchema = z
   .object({
@@ -209,6 +262,9 @@ export const salaryEntrySchema = z
     bonusDayOfMonth: z.number().nullable(),
     include401kInBonus: z.boolean(),
     includeBonusInContributions: z.boolean(),
+    /** `null` is a real, complete value ("no extra-paycheck routing
+     *  configured for this job"). See extraPaycheckRoutingSchema above. */
+    extraPaycheckRouting: extraPaycheckRoutingSchema.nullable(),
   })
   .strict();
 

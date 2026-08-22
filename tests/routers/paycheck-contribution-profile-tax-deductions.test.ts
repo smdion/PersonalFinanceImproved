@@ -27,6 +27,32 @@ import {
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
 import { eq } from "drizzle-orm";
 import { applyContributionAccountEdit } from "@/server/helpers";
+import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
+
+/** Read a job's extraPaycheckRouting straight from its entry in the
+ *  globally-active Salary Profile — same place writeJobExtraPaycheckRouting
+ *  (savings.ts) writes it now that it no longer lives on `jobs`. */
+function getRouting(
+  db: Awaited<ReturnType<typeof createTestCaller>>["db"],
+  jobId: number,
+) {
+  const activeSettingRow = db
+    .select()
+    .from(sqliteSchema.appSettings)
+    .where(eq(sqliteSchema.appSettings.key, SK_ACTIVE_SALARY_PROFILE_ID))
+    .get();
+  const activeSalaryProfileId = Number(activeSettingRow!.value);
+  const activeSalaryProfile = db
+    .select()
+    .from(sqliteSchema.salaryProfiles)
+    .where(eq(sqliteSchema.salaryProfiles.id, activeSalaryProfileId))
+    .get()!;
+  const salaries = activeSalaryProfile.salaries as Record<
+    string,
+    { extraPaycheckRouting?: Record<string, unknown> | null }
+  >;
+  return salaries[String(jobId)]?.extraPaycheckRouting ?? null;
+}
 
 describe("paycheck.computeSummary — tax-input active fields", () => {
   it("a different Salary Profile's w4FilingStatus/additionalFedWithholding change computed federal withholding", async () => {
@@ -357,23 +383,15 @@ describe("computeJobNetPayPerCheck / extraPaycheckRouting — Salary Profile res
         rules,
       });
 
-      const rows = await db
-        .select({
-          id: sqliteSchema.jobs.id,
-          extraPaycheckRouting: sqliteSchema.jobs.extraPaycheckRouting,
-        })
-        .from(sqliteSchema.jobs)
-        .where(eq(sqliteSchema.jobs.id, jobIdA));
-      const rowsB = await db
-        .select({
-          id: sqliteSchema.jobs.id,
-          extraPaycheckRouting: sqliteSchema.jobs.extraPaycheckRouting,
-        })
-        .from(sqliteSchema.jobs)
-        .where(eq(sqliteSchema.jobs.id, jobIdB));
+      const routingA = getRouting(db, jobIdA) as {
+        baseNetPayPerCheck: number;
+      };
+      const routingB = getRouting(db, jobIdB) as {
+        baseNetPayPerCheck: number;
+      };
 
-      const baseNetA = rows[0]!.extraPaycheckRouting!.baseNetPayPerCheck;
-      const baseNetB = rowsB[0]!.extraPaycheckRouting!.baseNetPayPerCheck;
+      const baseNetA = routingA.baseNetPayPerCheck;
+      const baseNetB = routingB.baseNetPayPerCheck;
       // $500 extra per-check withholding under Job B's profile reduces its
       // net pay by (approximately) $500 relative to the unaffected Job A.
       expect(baseNetA - baseNetB).toBeCloseTo(500, 0);
@@ -404,14 +422,12 @@ describe("computeJobNetPayPerCheck / extraPaycheckRouting — Salary Profile res
       });
       expect(saved).toEqual({ ok: true });
 
-      const [row] = await db
-        .select({
-          extraPaycheckRouting: sqliteSchema.jobs.extraPaycheckRouting,
-        })
-        .from(sqliteSchema.jobs)
-        .where(eq(sqliteSchema.jobs.id, jobId));
-      expect(row?.extraPaycheckRouting?.payPeriod).toBe("weekly");
-      expect(row?.extraPaycheckRouting?.anchorPayDate).toBe("2026-01-09");
+      const routing = getRouting(db, jobId) as {
+        payPeriod?: string;
+        anchorPayDate?: string | null;
+      };
+      expect(routing?.payPeriod).toBe("weekly");
+      expect(routing?.anchorPayDate).toBe("2026-01-09");
     } finally {
       cleanup();
     }
@@ -433,17 +449,11 @@ describe("computeJobNetPayPerCheck / extraPaycheckRouting — Salary Profile res
       });
       expect(saved).toEqual({ ok: true });
 
-      const [row] = await db
-        .select({
-          extraPaycheckRouting: sqliteSchema.jobs.extraPaycheckRouting,
-        })
-        .from(sqliteSchema.jobs)
-        .where(eq(sqliteSchema.jobs.id, jobId));
       // Empty rules → routing is cleared to null, not written with a
       // baseNetPayPerCheck — confirms the guard didn't block a legitimate
       // matching-schedule save (an empty-rules save short-circuits to
       // null before persisting a snapshot).
-      expect(row?.extraPaycheckRouting ?? null).toBeNull();
+      expect(getRouting(db, jobId)).toBeNull();
     } finally {
       cleanup();
     }

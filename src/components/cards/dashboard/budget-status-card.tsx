@@ -7,6 +7,7 @@ import { Card, ProgressBar } from "@/components/ui/card";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
+import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
 import { safeDivide, sumBy } from "@/lib/utils/math";
@@ -29,10 +30,7 @@ function BudgetStatusCardImpl() {
       localSelection: null,
       globalDefaultId: globalActiveBudgetId,
     });
-  const [activeContribProfileId] = usePersistedSetting<number | null>(
-    "active_contrib_profile_id",
-    null,
-  );
+  const [activeContribProfileId] = useActiveContribProfile();
   const { data: contribProfilesList } =
     trpc.contributionProfile.list.useQuery();
   const { planPinId: planContribProfileId } = useEffectiveProfileId(

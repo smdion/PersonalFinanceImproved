@@ -32,6 +32,7 @@ import type {
   PayWeek,
   W4FilingStatus,
 } from "@/lib/config/enum-values";
+import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
 
 export default function PaycheckPage() {
   const user = useUser();
@@ -208,6 +209,11 @@ export default function PaycheckPage() {
     bonusDayOfMonth: number | null;
     include401kInBonus: boolean;
     includeBonusInContributions: boolean;
+    /** Not editable from this page — preserved as-is (or defaulted to
+     *  "not configured" for a brand-new entry) whenever a Paycheck-page
+     *  field write creates/updates this job's entry. Edited from Salary
+     *  Profile Manager instead (see extra-paycheck-rules-editor.tsx). */
+    extraPaycheckRouting: ExtraPaycheckRoutingData | null;
   };
 
   /**
@@ -509,6 +515,7 @@ export default function PaycheckPage() {
                               include401kInBonus: job.include401kInBonus,
                               includeBonusInContributions:
                                 job.includeBonusInContributions,
+                              extraPaycheckRouting: null,
                             };
                           if (field === "annualSalary") {
                             const num = Number(value);

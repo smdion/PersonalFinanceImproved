@@ -27,6 +27,7 @@ vi.mock("@/lib/calculators/paycheck", () => ({
 describe("materializeExtraPaycheckOverrides", () => {
   let ctx: TestDbContext;
   let goalId: number;
+  let salaryProfileId: number;
 
   beforeEach(async () => {
     vi.useFakeTimers();
@@ -56,22 +57,12 @@ describe("materializeExtraPaycheckOverrides", () => {
         personId: 1,
         employerName: "TestCo",
         startDate: "2020-01-01",
-        extraPaycheckRouting: {
-          rules: [
-            {
-              from: "2026-01",
-              to: null,
-              splits: [{ goalId, pct: 100 }],
-              netPaySnapshot: 1000,
-            },
-          ],
-        },
       })
       .run();
-    // payPeriod/anchorPayDate/w4FilingStatus moved off `jobs` to the
-    // Salary Profile entry (Stage B) — the materializer's live-column
-    // fallback (used here, since the routing above has no payPeriod/
-    // anchorPayDate snapshot of its own) reads it from there.
+    // extraPaycheckRouting/payPeriod/anchorPayDate/w4FilingStatus all moved
+    // off `jobs` to the Salary Profile entry (Stage B, then this session's
+    // routing move) — the materializer reads them from the job's entry in
+    // the globally-active Salary Profile.
     const [salaryProfile] = ctx.db
       .insert(ctx.schema.salaryProfiles)
       .values({
@@ -94,11 +85,22 @@ describe("materializeExtraPaycheckOverrides", () => {
             bonusDayOfMonth: null,
             include401kInBonus: false,
             includeBonusInContributions: true,
+            extraPaycheckRouting: {
+              rules: [
+                {
+                  from: "2026-01",
+                  to: null,
+                  splits: [{ goalId, pct: 100 }],
+                  netPaySnapshot: 1000,
+                },
+              ],
+            },
           },
         },
       })
       .returning()
       .all();
+    salaryProfileId = salaryProfile!.id;
     ctx.db
       .insert(ctx.schema.appSettings)
       .values({
@@ -111,6 +113,28 @@ describe("materializeExtraPaycheckOverrides", () => {
       })
       .run();
   });
+
+  /** Patch job 1's extraPaycheckRouting field in the active Salary
+   *  Profile's entry — same read-modify-write shape
+   *  writeJobExtraPaycheckRouting (savings.ts) does. */
+  function updateRouting(routing: Record<string, unknown> | null): void {
+    const [row] = ctx.db
+      .select()
+      .from(ctx.schema.salaryProfiles)
+      .where(eq(ctx.schema.salaryProfiles.id, salaryProfileId))
+      .all();
+    const salaries = row!.salaries as Record<string, Record<string, unknown>>;
+    ctx.db
+      .update(ctx.schema.salaryProfiles)
+      .set({
+        salaries: {
+          ...salaries,
+          "1": { ...salaries["1"], extraPaycheckRouting: routing },
+        },
+      })
+      .where(eq(ctx.schema.salaryProfiles.id, salaryProfileId))
+      .run();
+  }
 
   afterEach(() => {
     ctx.cleanup();
@@ -134,6 +158,29 @@ describe("materializeExtraPaycheckOverrides", () => {
       "2026-07-01",
     ]);
     expect(Number(rows[0]!.amount)).toBe(1000);
+  });
+
+  it("materializes nothing for a job paused via the Savings/Budget toggle (enabled: false), and cleans up rows from a prior enabled run", async () => {
+    // First confirm rows exist while enabled (today's default).
+    await materializeExtraPaycheckOverrides(ctx.db as never);
+    expect(ruleRows().length).toBeGreaterThan(0);
+
+    // Pause routing without touching the configured rule — same shape the
+    // savings.extraPaycheckRouting.setEnabled mutation persists.
+    updateRouting({
+      rules: [
+        {
+          from: "2026-01",
+          to: null,
+          splits: [{ goalId, pct: 100 }],
+          netPaySnapshot: 1000,
+        },
+      ],
+      enabled: false,
+    });
+
+    await materializeExtraPaycheckOverrides(ctx.db as never);
+    expect(ruleRows()).toEqual([]);
   });
 
   it("preserves a rule row dated before the current month across regeneration", async () => {
@@ -170,22 +217,16 @@ describe("materializeExtraPaycheckOverrides", () => {
     // Change what the routing would generate for June, to prove the
     // preserved row keeps its original amount rather than being
     // regenerated with the new one.
-    ctx.db
-      .update(ctx.schema.jobs)
-      .set({
-        extraPaycheckRouting: {
-          rules: [
-            {
-              from: "2026-01",
-              to: null,
-              splits: [{ goalId, pct: 100 }],
-              netPaySnapshot: 5000,
-            },
-          ],
+    updateRouting({
+      rules: [
+        {
+          from: "2026-01",
+          to: null,
+          splits: [{ goalId, pct: 100 }],
+          netPaySnapshot: 5000,
         },
-      })
-      .where(eq(ctx.schema.jobs.id, 1))
-      .run();
+      ],
+    });
 
     await materializeExtraPaycheckOverrides(ctx.db as never);
 

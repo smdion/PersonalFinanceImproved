@@ -28,6 +28,7 @@ import {
   getPeriodsPerYear,
   resolveCompensation,
   loadEffectiveSalaryProfile,
+  resolveActiveSalaryProfileId,
   buildContribAccounts,
   getResolvedGoalAllocations,
   upsertGoalProfileAllocation,
@@ -43,6 +44,9 @@ import {
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { buildBracketInput } from "./paycheck";
 import type { DeductionLine } from "@/lib/calculators/types";
+import type { SalaryEntryMap } from "@/server/helpers/salary";
+import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
+import type { PayPeriod } from "@/lib/config/enum-values";
 import { materializeExtraPaycheckOverrides } from "@/server/helpers/extra-paycheck-materializer";
 import { zDecimal } from "./settings/_shared";
 import { targetModeSchema } from "@/lib/config/enum-values";
@@ -85,12 +89,12 @@ import type { BudgetCategoryGroup, BudgetTransaction } from "@/lib/budget-api";
  * rejection is the right behavior rather than silently persisting a
  * fabricated schedule.
  */
-async function computeJobNetPayPerCheck(
+export async function computeJobNetPayPerCheck(
   db: DbType,
   jobId: number,
 ): Promise<{
   netPayPerCheck: number;
-  payPeriod: string;
+  payPeriod: PayPeriod;
   anchorPayDate: string | null;
 }> {
   const taxYear = new Date().getFullYear();
@@ -256,6 +260,62 @@ async function computeJobNetPayPerCheck(
     payPeriod: salaryEntry.payPeriod,
     anchorPayDate: salaryEntry.anchorPayDate,
   };
+}
+
+/**
+ * Write a job's extraPaycheckRouting field into its entry in the globally-
+ * ACTIVE Salary Profile — never a locally-viewed/What-If-pinned one. This
+ * mirrors baseNetPayPerCheck's existing rule (see ExtraPaycheckRoutingData's
+ * docblock, schema-pg.ts): switching which profile a user is casually
+ * comparing must never silently rewrite already-materialized real
+ * savings_planned_transactions, so routing always targets whichever profile
+ * is the deliberate, globally-active one at write time.
+ *
+ * Throws PRECONDITION_FAILED when there's no active profile, or the job has
+ * no entry in it — same "explicit user-initiated save should reject rather
+ * than fabricate a home for the data" rule as computeJobNetPayPerCheck.
+ */
+async function writeJobExtraPaycheckRouting(
+  db: DbType,
+  jobId: number,
+  routing: ExtraPaycheckRoutingData | null,
+): Promise<void> {
+  const activeId = await resolveActiveSalaryProfileId(db);
+  if (activeId == null) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message:
+        "No Salary Profile is active — activate one before configuring extra-paycheck routing.",
+    });
+  }
+  const [row] = await db
+    .select()
+    .from(schema.salaryProfiles)
+    .where(eq(schema.salaryProfiles.id, activeId));
+  if (!row) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: "The active Salary Profile no longer exists.",
+    });
+  }
+  const salaries = (row.salaries ?? {}) as SalaryEntryMap;
+  const key = String(jobId);
+  const entry = salaries[key];
+  if (!entry) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: `Job ${jobId} has no entry in the active Salary Profile — add one before configuring extra-paycheck routing.`,
+    });
+  }
+  await db
+    .update(schema.salaryProfiles)
+    .set({
+      salaries: {
+        ...salaries,
+        [key]: { ...entry, extraPaycheckRouting: routing },
+      },
+    })
+    .where(eq(schema.salaryProfiles.id, activeId));
 }
 
 /** Sum essential budget items for a given tier/column, returning monthly. */
@@ -1925,7 +1985,6 @@ export const savingsRouter = createTRPCRouter({
           id: schema.jobs.id,
           personId: schema.jobs.personId,
           employerName: schema.jobs.employerName,
-          extraPaycheckRouting: schema.jobs.extraPaycheckRouting,
         })
         .from(schema.jobs)
         .where(
@@ -1954,13 +2013,15 @@ export const savingsRouter = createTRPCRouter({
       );
       return jobs.map((j) => {
         const entry = salaryProfileActiveMap.get(j.id);
+        const extraPaycheckRouting = entry?.extraPaycheckRouting ?? null;
         return {
           ...j,
+          extraPaycheckRouting,
           payPeriod:
-            j.extraPaycheckRouting?.payPeriod ?? entry?.payPeriod ?? null,
+            extraPaycheckRouting?.payPeriod ?? entry?.payPeriod ?? null,
           anchorPayDate:
-            j.extraPaycheckRouting?.anchorPayDate !== undefined
-              ? j.extraPaycheckRouting.anchorPayDate
+            extraPaycheckRouting?.anchorPayDate !== undefined
+              ? extraPaycheckRouting.anchorPayDate
               : (entry?.anchorPayDate ?? null),
           personName: personMap.get(j.personId) ?? "Unknown",
         };
@@ -2023,11 +2084,13 @@ export const savingsRouter = createTRPCRouter({
         }
 
         // Preserve existing overrides and growth settings when saving rules
-        const [existingJob] = await ctx.db
-          .select({ extraPaycheckRouting: schema.jobs.extraPaycheckRouting })
-          .from(schema.jobs)
-          .where(eq(schema.jobs.id, input.jobId));
-        const existing = existingJob?.extraPaycheckRouting;
+        const salaryProfileActiveMap = await loadEffectiveSalaryProfile(
+          ctx.db,
+          null,
+        );
+        const existing = salaryProfileActiveMap.get(
+          input.jobId,
+        )?.extraPaycheckRouting;
         const existingOverrides = existing?.overrides ?? [];
 
         // Always recompute net pay from the paycheck calculator — never trust a client-supplied value.
@@ -2037,26 +2100,24 @@ export const savingsRouter = createTRPCRouter({
           anchorPayDate,
         } = await computeJobNetPayPerCheck(ctx.db, input.jobId);
         const nowYear = new Date().getFullYear();
-        await ctx.db
-          .update(schema.jobs)
-          .set({
-            extraPaycheckRouting:
-              input.rules.length > 0
-                ? {
-                    rules: input.rules,
-                    overrides: existingOverrides,
-                    baseNetPayPerCheck,
-                    baseYear: nowYear,
-                    payPeriod,
-                    anchorPayDate,
-                    yearlyGrowth:
-                      input.yearlyGrowth !== undefined
-                        ? input.yearlyGrowth
-                        : existing?.yearlyGrowth,
-                  }
-                : null,
-          })
-          .where(eq(schema.jobs.id, input.jobId));
+        await writeJobExtraPaycheckRouting(
+          ctx.db,
+          input.jobId,
+          input.rules.length > 0
+            ? {
+                rules: input.rules,
+                overrides: existingOverrides,
+                baseNetPayPerCheck,
+                baseYear: nowYear,
+                payPeriod,
+                anchorPayDate,
+                yearlyGrowth:
+                  input.yearlyGrowth !== undefined
+                    ? input.yearlyGrowth
+                    : existing?.yearlyGrowth,
+              }
+            : null,
+        );
 
         await materializeExtraPaycheckOverrides(ctx.db);
         return { ok: true };
@@ -2074,11 +2135,14 @@ export const savingsRouter = createTRPCRouter({
         }),
       )
       .mutation(async ({ ctx, input }) => {
-        const [existingJob] = await ctx.db
-          .select({ extraPaycheckRouting: schema.jobs.extraPaycheckRouting })
-          .from(schema.jobs)
-          .where(eq(schema.jobs.id, input.jobId));
-        if (!existingJob?.extraPaycheckRouting) return { ok: true };
+        const salaryProfileActiveMap = await loadEffectiveSalaryProfile(
+          ctx.db,
+          null,
+        );
+        const existing = salaryProfileActiveMap.get(
+          input.jobId,
+        )?.extraPaycheckRouting;
+        if (!existing) return { ok: true };
 
         const {
           netPayPerCheck: baseNetPayPerCheck,
@@ -2086,19 +2150,43 @@ export const savingsRouter = createTRPCRouter({
           anchorPayDate,
         } = await computeJobNetPayPerCheck(ctx.db, input.jobId);
         const nowYear = new Date().getFullYear();
-        await ctx.db
-          .update(schema.jobs)
-          .set({
-            extraPaycheckRouting: {
-              ...existingJob.extraPaycheckRouting,
-              baseNetPayPerCheck,
-              baseYear: nowYear,
-              payPeriod,
-              anchorPayDate,
-              yearlyGrowth: input.yearlyGrowth,
-            },
-          })
-          .where(eq(schema.jobs.id, input.jobId));
+        await writeJobExtraPaycheckRouting(ctx.db, input.jobId, {
+          ...existing,
+          baseNetPayPerCheck,
+          baseYear: nowYear,
+          payPeriod,
+          anchorPayDate,
+          yearlyGrowth: input.yearlyGrowth,
+        });
+
+        await materializeExtraPaycheckOverrides(ctx.db);
+        return { ok: true };
+      }),
+
+    /**
+     * Pause or resume routing without touching the configured rules —
+     * "Budget" mode (enabled: false) means the extra paycheck isn't
+     * diverted to any goal and stays as regular income, same as a job with
+     * no routing at all; switching back to "Savings" (enabled: true)
+     * restores exactly what was configured before. A no-op if the job has
+     * no routing configured yet (nothing to pause).
+     */
+    setEnabled: savingsProcedure
+      .input(z.object({ jobId: z.number().int(), enabled: z.boolean() }))
+      .mutation(async ({ ctx, input }) => {
+        const salaryProfileActiveMap = await loadEffectiveSalaryProfile(
+          ctx.db,
+          null,
+        );
+        const existing = salaryProfileActiveMap.get(
+          input.jobId,
+        )?.extraPaycheckRouting;
+        if (!existing) return { ok: true };
+
+        await writeJobExtraPaycheckRouting(ctx.db, input.jobId, {
+          ...existing,
+          enabled: input.enabled,
+        });
 
         await materializeExtraPaycheckOverrides(ctx.db);
         return { ok: true };
@@ -2131,18 +2219,20 @@ export const savingsRouter = createTRPCRouter({
           }
         }
 
-        const [job] = await ctx.db
-          .select({ extraPaycheckRouting: schema.jobs.extraPaycheckRouting })
-          .from(schema.jobs)
-          .where(eq(schema.jobs.id, input.jobId));
-        if (!job?.extraPaycheckRouting) {
+        const salaryProfileActiveMap = await loadEffectiveSalaryProfile(
+          ctx.db,
+          null,
+        );
+        const routing = salaryProfileActiveMap.get(
+          input.jobId,
+        )?.extraPaycheckRouting;
+        if (!routing) {
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: "No routing rules for this job",
           });
         }
 
-        const routing = job.extraPaycheckRouting;
         let overrides = routing.overrides ?? [];
 
         if (input.splits === null) {
@@ -2161,10 +2251,10 @@ export const savingsRouter = createTRPCRouter({
           }
         }
 
-        await ctx.db
-          .update(schema.jobs)
-          .set({ extraPaycheckRouting: { ...routing, overrides } })
-          .where(eq(schema.jobs.id, input.jobId));
+        await writeJobExtraPaycheckRouting(ctx.db, input.jobId, {
+          ...routing,
+          overrides,
+        });
 
         await materializeExtraPaycheckOverrides(ctx.db);
         return { ok: true };
