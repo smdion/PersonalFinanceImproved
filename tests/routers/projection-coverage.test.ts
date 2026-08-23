@@ -206,7 +206,99 @@ describe("projection router — computeProjection full result path", () => {
       cleanup();
     }
   });
+});
 
+// ---------------------------------------------------------------------------
+// computeProjection — persistent projection cache
+// ---------------------------------------------------------------------------
+
+describe("projection router — computeProjection cache", () => {
+  it("a second identical call is served from cache (same result, one cache row)", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      const input = { accumulationOverrides: [], decumulationOverrides: [] };
+
+      const first = await caller.projection.computeProjection(input);
+      const second = await caller.projection.computeProjection(input);
+
+      expect(second.result).toEqual(first.result);
+      const rows = db.select().from(schema.projectionCache).all();
+      expect(rows).toHaveLength(1);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("a changed input misses the cache and computes fresh (different hash rows)", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const { personId } = seedFullProjectionData(db);
+
+      await caller.projection.computeProjection({
+        accumulationOverrides: [],
+        decumulationOverrides: [],
+      });
+      await caller.projection.computeProjection({
+        salaryActiveFields: [{ personId, salary: 200000 }],
+        accumulationOverrides: [],
+        decumulationOverrides: [],
+      });
+
+      const rows = db.select().from(schema.projectionCache).all();
+      expect(rows).toHaveLength(2);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("metadataOnly does not read or write the cache", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+
+      const response = await caller.projection.computeProjection({
+        metadataOnly: true,
+        accumulationOverrides: [],
+        decumulationOverrides: [],
+      });
+
+      expect(response.result).toBeNull();
+      const rows = db.select().from(schema.projectionCache).all();
+      expect(rows).toHaveLength(0);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("forceRefresh bypasses an existing cache hit and recomputes", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      const input = { accumulationOverrides: [], decumulationOverrides: [] };
+
+      await caller.projection.computeProjection(input);
+      const before = db.select().from(schema.projectionCache).all();
+      expect(before).toHaveLength(1);
+      const computedAtBefore = before[0]!.computedAt;
+
+      await caller.projection.computeProjection({
+        ...input,
+        forceRefresh: true,
+      });
+
+      const after = db.select().from(schema.projectionCache).all();
+      expect(after).toHaveLength(1);
+      expect(after[0]!.computedAt.getTime()).toBeGreaterThanOrEqual(
+        computedAtBefore.getTime(),
+      );
+    } finally {
+      cleanup();
+    }
+  });
+});
+
+describe("projection router — computeProjection edge cases (continued)", () => {
   it("applies decumulation defaults (custom routing mode)", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
