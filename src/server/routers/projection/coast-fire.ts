@@ -37,6 +37,25 @@ import {
   buildDecumulationDefaults,
   buildCoastFireProfileSwitches,
 } from "./_shared";
+import {
+  hashEngineInput,
+  readProjectionCache,
+  writeProjectionCache,
+} from "@/server/helpers/projection-cache";
+
+/** Shape of `computeCoastFireMC`'s cacheable result — every branch of the
+ *  search except the "preset not found" config error, which is never cached. */
+type CoastFireMcResult = {
+  coastFireAge: number | null;
+  status: "already_coast" | "unreachable" | "found";
+  successRate: number;
+  stopNowSuccessRate: number;
+  spendingStabilityRate: number;
+  confidenceThreshold: number;
+  probesRun: number;
+  warning: string | null;
+  mcResult: ReturnType<typeof calculateMonteCarlo>;
+};
 
 export const coastFireRouter = createTRPCRouter({
   /**
@@ -179,6 +198,8 @@ export const coastFireRouter = createTRPCRouter({
         decumulationBudgetColumn: z.number().int().min(0).optional(),
         decumulationExpenseOverride: z.number().min(0).optional(),
         snapshotId: z.number().int().optional(),
+        /** Bypass the projection cache and force a fresh search — the explicit "Re-run" action, not the default query path. */
+        forceRefresh: z.boolean().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -288,6 +309,25 @@ export const coastFireRouter = createTRPCRouter({
         stdDev: toNumber(preset.inflationStdDev),
       };
 
+      // The probe seed is a fixed constant (common random numbers across
+      // probes, for variance reduction within one search), not a per-run
+      // random seed — so unlike computeProjection/computeMonteCarloProjection
+      // this cache doesn't need to persist a seed; the whole search is
+      // already a pure function of its inputs.
+      const inputHash = hashEngineInput("coastFireMc", {
+        engineInput,
+        mcAssetClasses,
+        mcCorrelations,
+        mcGlidePath,
+        inflationRisk,
+      });
+      const cached = input.forceRefresh
+        ? null
+        : await readProjectionCache<CoastFireMcResult>(ctx.db, inputHash);
+      if (cached) {
+        return { result: cached.result };
+      }
+
       const CONFIDENCE = MC_CONFIDENCE_THRESHOLD;
       const NUM_TRIALS = 1000;
       const SEED = 42;
@@ -325,19 +365,19 @@ export const coastFireRouter = createTRPCRouter({
       // Edge case: already past retirement.
       if (engineInput.currentAge >= engineInput.retirementAge) {
         const fullResult = probeMC(engineInput.currentAge);
-        return {
-          result: {
-            coastFireAge: engineInput.currentAge,
-            status: "already_coast" as const,
-            successRate: fullResult.successRate,
-            stopNowSuccessRate: fullResult.successRate,
-            spendingStabilityRate: fullResult.spendingStabilityRate,
-            confidenceThreshold: CONFIDENCE,
-            probesRun,
-            warning: null,
-            mcResult: fullResult,
-          },
+        const result: CoastFireMcResult = {
+          coastFireAge: engineInput.currentAge,
+          status: "already_coast" as const,
+          successRate: fullResult.successRate,
+          stopNowSuccessRate: fullResult.successRate,
+          spendingStabilityRate: fullResult.spendingStabilityRate,
+          confidenceThreshold: CONFIDENCE,
+          probesRun,
+          warning: null,
+          mcResult: fullResult,
         };
+        await writeProjectionCache(ctx.db, inputHash, result, null);
+        return { result };
       }
 
       // Probe stopping today — captured for every branch so the client can
@@ -347,38 +387,38 @@ export const coastFireRouter = createTRPCRouter({
       const stopNowResult = probeMC(engineInput.currentAge);
       const stopNowSuccessRate = stopNowResult.successRate;
       if (passes(stopNowSuccessRate)) {
-        return {
-          result: {
-            coastFireAge: engineInput.currentAge,
-            status: "already_coast" as const,
-            successRate: stopNowSuccessRate,
-            stopNowSuccessRate,
-            spendingStabilityRate: stopNowResult.spendingStabilityRate,
-            confidenceThreshold: CONFIDENCE,
-            probesRun,
-            warning: null,
-            mcResult: stopNowResult,
-          },
+        const result: CoastFireMcResult = {
+          coastFireAge: engineInput.currentAge,
+          status: "already_coast" as const,
+          successRate: stopNowSuccessRate,
+          stopNowSuccessRate,
+          spendingStabilityRate: stopNowResult.spendingStabilityRate,
+          confidenceThreshold: CONFIDENCE,
+          probesRun,
+          warning: null,
+          mcResult: stopNowResult,
         };
+        await writeProjectionCache(ctx.db, inputHash, result, null);
+        return { result };
       }
 
       // Probe stopping the year before retirement — is the plan reachable at all?
       const maxCoastAge = engineInput.retirementAge - 1;
       const stopLateResult = probeMC(maxCoastAge);
       if (!passes(stopLateResult.successRate)) {
-        return {
-          result: {
-            coastFireAge: null,
-            status: "unreachable" as const,
-            successRate: stopLateResult.successRate,
-            stopNowSuccessRate,
-            spendingStabilityRate: stopLateResult.spendingStabilityRate,
-            confidenceThreshold: CONFIDENCE,
-            probesRun,
-            warning: null,
-            mcResult: stopLateResult,
-          },
+        const result: CoastFireMcResult = {
+          coastFireAge: null,
+          status: "unreachable" as const,
+          successRate: stopLateResult.successRate,
+          stopNowSuccessRate,
+          spendingStabilityRate: stopLateResult.spendingStabilityRate,
+          confidenceThreshold: CONFIDENCE,
+          probesRun,
+          warning: null,
+          mcResult: stopLateResult,
         };
+        await writeProjectionCache(ctx.db, inputHash, result, null);
+        return { result };
       }
 
       // Binary search for earliest passing age.
@@ -409,18 +449,18 @@ export const coastFireRouter = createTRPCRouter({
       // (chart and hero card consume the mcResult from this query).
       const finalResult = probeMC(lo);
 
-      return {
-        result: {
-          coastFireAge: lo,
-          status: "found" as const,
-          successRate: finalResult.successRate,
-          stopNowSuccessRate,
-          spendingStabilityRate: finalResult.spendingStabilityRate,
-          confidenceThreshold: CONFIDENCE,
-          probesRun,
-          warning,
-          mcResult: finalResult,
-        },
+      const result: CoastFireMcResult = {
+        coastFireAge: lo,
+        status: "found" as const,
+        successRate: finalResult.successRate,
+        stopNowSuccessRate,
+        spendingStabilityRate: finalResult.spendingStabilityRate,
+        confidenceThreshold: CONFIDENCE,
+        probesRun,
+        warning,
+        mcResult: finalResult,
       };
+      await writeProjectionCache(ctx.db, inputHash, result, null);
+      return { result };
     }),
 });

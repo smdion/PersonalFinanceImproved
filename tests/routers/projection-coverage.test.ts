@@ -1636,3 +1636,72 @@ describe("projection router — computeCoastFireMC", () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// computeCoastFireMC — persistent projection cache
+// ---------------------------------------------------------------------------
+
+function seedDefaultMcPreset(db: BetterSQLite3Database<typeof sqliteSchema>) {
+  db.insert(schema.mcPresets)
+    .values({
+      key: "default",
+      label: "Default",
+      description: "Default preset for testing",
+      returnMultiplier: "1.0",
+      volMultiplier: "1.0",
+      inflationMean: "0.025",
+      inflationStdDev: "0.012",
+      defaultTrials: 1000,
+      returnClampMin: "-0.5",
+      returnClampMax: "1.0",
+      sortOrder: 0,
+      isActive: true,
+    })
+    .run();
+}
+
+describe("projection router — computeCoastFireMC cache", () => {
+  it("a second identical call is served from cache (same result, one cache row)", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedDefaultMcPreset(db);
+
+      const first = await caller.projection.computeCoastFireMC({});
+      const second = await caller.projection.computeCoastFireMC({});
+
+      expect(second.result).toEqual(first.result);
+      const rows = db.select().from(schema.projectionCache).all();
+      expect(rows).toHaveLength(1);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("forceRefresh bypasses an existing cache hit and re-searches", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedDefaultMcPreset(db);
+
+      await caller.projection.computeCoastFireMC({});
+      const before = db.select().from(schema.projectionCache).all();
+      expect(before).toHaveLength(1);
+      const computedAtBefore = before[0]!.computedAt;
+
+      await caller.projection.computeCoastFireMC({ forceRefresh: true });
+
+      const after = db.select().from(schema.projectionCache).all();
+      expect(after).toHaveLength(1);
+      expect(after[0]!.computedAt.getTime()).toBeGreaterThanOrEqual(
+        computedAtBefore.getTime(),
+      );
+    } finally {
+      cleanup();
+    }
+  });
+});
