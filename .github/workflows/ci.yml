@@ -63,6 +63,9 @@ jobs:
       - name: Test with coverage thresholds
         run: pnpm test:coverage
 
+      - name: Benchmark tests
+        run: pnpm test:benchmarks
+
       - name: Cache Playwright browsers
         id: pw-cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5
