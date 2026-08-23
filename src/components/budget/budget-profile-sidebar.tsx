@@ -42,6 +42,7 @@ type Props = {
   onCreateProfile: (name: string, contributionProfileId: number | null) => void;
   onSetActiveProfile: (profileId: number) => void;
   onDeleteProfile: (profileId: number) => void;
+  onCloneProfile: (profileId: number, currentName: string) => void;
 };
 
 export function BudgetProfileSidebar({
@@ -62,6 +63,7 @@ export function BudgetProfileSidebar({
   onCreateProfile,
   onSetActiveProfile,
   onDeleteProfile,
+  onCloneProfile,
 }: Props) {
   const { persistedScenarios } = useScenario();
 
@@ -159,7 +161,7 @@ export function BudgetProfileSidebar({
               </div>
               {canEdit && renamingProfileId !== p.id && (
                 <div
-                  className="flex gap-1 shrink-0 md:max-w-0 md:overflow-hidden md:opacity-0 md:group-hover:max-w-[9rem] md:group-hover:opacity-100 transition-all"
+                  className="flex gap-1 shrink-0 md:max-w-0 md:overflow-hidden md:opacity-0 md:group-hover:max-w-[12rem] md:group-hover:opacity-100 transition-all"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {!p.isActive && (
@@ -177,6 +179,13 @@ export function BudgetProfileSidebar({
                     className="text-caption text-faint hover:text-blue-600"
                   >
                     edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onCloneProfile(p.id, p.name)}
+                    className="text-caption text-faint hover:text-blue-600"
+                  >
+                    clone
                   </button>
                   {!p.isActive && (
                     <button
