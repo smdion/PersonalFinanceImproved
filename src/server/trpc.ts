@@ -231,7 +231,22 @@ const authenticatedRateLimitMiddleware = t.middleware(async ({ ctx, next }) => {
 const RATE_LIMIT_EXPENSIVE = { maxRequests: 5, windowMs: 60_000 } as const;
 
 export const expensiveRateLimitMiddleware = t.middleware(
-  async ({ ctx, next, path }) => {
+  async ({ ctx, next, path, getRawInput }) => {
+    // peekOnly reads the projection cache and never runs the actual
+    // trials/search (see projection/monte-carlo.ts, coast-fire.ts) — it's a
+    // cheap DB read, not the expensive operation this limiter protects.
+    // Without this exemption, dashboard-tile peeks share the same bucket as
+    // real Retirement-page simulation runs (same path = same rate-limit
+    // key) and can starve them out.
+    const rawInput = await getRawInput().catch(() => undefined);
+    const isPeek =
+      !!rawInput &&
+      typeof rawInput === "object" &&
+      (rawInput as Record<string, unknown>).peekOnly === true;
+    if (isPeek) {
+      return next({ ctx });
+    }
+
     const key = ctx.session?.user?.id
       ? `expensive:${ctx.session.user.id}:${path}`
       : `expensive:${await getRateLimitKey()}:${path}`;

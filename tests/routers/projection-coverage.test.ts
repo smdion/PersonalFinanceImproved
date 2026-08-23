@@ -1613,7 +1613,7 @@ describe("projection router — computeCoastFireMC", () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
       const response = await caller.projection.computeCoastFireMC({});
-      expect(response).toEqual({ result: null });
+      expect(response).toEqual({ result: null, computedAt: null });
     } finally {
       cleanup();
     }

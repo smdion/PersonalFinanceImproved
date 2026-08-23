@@ -2,7 +2,11 @@
 
 /** Monte Carlo results — loading spinner, errors, warnings, depletion callout, and compact summary bar. */
 import { HelpTip } from "@/components/ui/help-tip";
-import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import {
+  formatCurrency,
+  formatPercent,
+  formatRelativeTime,
+} from "@/lib/utils/format";
 import type { ProjectionState } from "./projection-table-types";
 
 /** Compact depletion callout (1-liner) shown when MC has a depletion age. */
@@ -191,13 +195,20 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                       </div>
                     </>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => setShowAssumptions(true)}
-                    className={`ml-auto px-3 py-1.5 rounded-md text-label font-semibold border shadow-sm transition-colors ${ps.border} ${ps.accent} hover:bg-surface-primary/80`}
-                  >
-                    View Assumptions &rarr;
-                  </button>
+                  <div className="ml-auto flex items-center gap-3">
+                    {si.computedAt && (
+                      <span className="text-caption text-faint whitespace-nowrap">
+                        Simulated {formatRelativeTime(si.computedAt)}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setShowAssumptions(true)}
+                      className={`px-3 py-1.5 rounded-md text-label font-semibold border shadow-sm transition-colors ${ps.border} ${ps.accent} hover:bg-surface-primary/80`}
+                    >
+                      View Assumptions &rarr;
+                    </button>
+                  </div>
                 </div>
               );
             })()}

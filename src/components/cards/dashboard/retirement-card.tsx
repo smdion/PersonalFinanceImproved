@@ -24,6 +24,9 @@ import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-
 import {
   categoriesWithIrsLimit,
   getLimitGroup,
+  categoriesWithTaxPreference,
+  getDefaultDecumulationOrder,
+  DEFAULT_WITHDRAWAL_SPLITS,
 } from "@/lib/config/account-types";
 import { WITHDRAWAL_STRATEGY_LABELS } from "@/lib/config/withdrawal-strategies";
 import { PERF_CATEGORY_RETIREMENT } from "@/lib/config/display-labels";
@@ -66,10 +69,28 @@ function RetirementCardImpl() {
     "retirement_dec_expense_override",
     null,
   );
+  // Mirrors the Retirement page's default (un-customized) decumulation form
+  // state exactly (use-projection-form-state.ts) — the deterministic
+  // computeProjection query below doesn't care (buildDecumulationDefaults
+  // always uses settings.withdrawalRate regardless of client input), but
+  // the persistent projection cache hashes the FULL built engine input, so
+  // omitting this (letting it fall back to the bare Zod schema default,
+  // e.g. withdrawalTaxPreference: {} instead of the page's real
+  // {401k: "traditional", ...}) silently guarantees the peek queries below
+  // always miss the page's real cached run, even on default settings.
+  const decumulationDefaults = {
+    withdrawalRoutingMode: "bracket_filling" as const,
+    withdrawalOrder: getDefaultDecumulationOrder(),
+    withdrawalSplits: { ...DEFAULT_WITHDRAWAL_SPLITS },
+    withdrawalTaxPreference: Object.fromEntries(
+      categoriesWithTaxPreference().map((cat) => [cat, "traditional" as const]),
+    ),
+  };
   const engineInput = {
     ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     ...contribProfileInput,
     ...salaryProfileInput,
+    decumulationDefaults,
     ...(accBudgetProfileId != null
       ? { accumulationBudgetProfileId: accBudgetProfileId }
       : {}),
@@ -327,12 +348,14 @@ function RetirementCardImpl() {
         {coastFireData?.result &&
           (() => {
             const simResult = coastFireMcPeek?.result;
+            const simComputedAt = coastFireMcPeek?.computedAt;
             const simLabel = simResult
-              ? simResult.status === "unreachable"
-                ? "not reachable"
-                : simResult.status === "already_coast"
-                  ? "already coast"
-                  : `age ${simResult.coastFireAge}`
+              ? (simResult.status === "unreachable"
+                  ? "not reachable"
+                  : simResult.status === "already_coast"
+                    ? "already coast"
+                    : `age ${simResult.coastFireAge}`) +
+                (simComputedAt ? `, ${formatRelativeTime(simComputedAt)}` : "")
               : null;
             return (
               <div className="flex justify-between">

@@ -12,7 +12,11 @@
  */
 
 import { trpc } from "@/lib/trpc";
-import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import {
+  formatCurrency,
+  formatPercent,
+  formatRelativeTime,
+} from "@/lib/utils/format";
 import { KpiCard } from "./projection/projection-hero-kpis";
 
 type CoastFireInput = Parameters<
@@ -50,12 +54,17 @@ interface CoastFireCardProps {
   coastFireMcResult?: CoastFireMcResult;
   /** True while the shared coast MC query is fetching. */
   coastFireMcLoading?: boolean;
+  /** When the Coast FIRE MC result was computed — ISO string, or null when
+   *  it came from a fresh (uncached) run just now. Surfaced so the user can
+   *  tell a cached result apart from a just-computed one. */
+  coastFireMcComputedAt?: string | null;
 }
 
 export function CoastFireCard({
   input,
   coastFireMcResult,
   coastFireMcLoading = false,
+  coastFireMcComputedAt,
 }: CoastFireCardProps) {
   const { data: deterministic } = trpc.projection.computeCoastFire.useQuery(
     input,
@@ -91,7 +100,12 @@ export function CoastFireCard({
             Running simulations...
           </div>
         )}
-        {mcAvailable && <SimulatedDetail mc={coastFireMcResult} />}
+        {mcAvailable && (
+          <SimulatedDetail
+            mc={coastFireMcResult}
+            computedAt={coastFireMcComputedAt}
+          />
+        )}
       </div>
     </KpiCard>
   );
@@ -278,7 +292,13 @@ function DeterministicStatus({
  * simulated" so the user sees the raw confidence at the current age, and
  * indicates the age needed for the confidence threshold if there's a gap.
  */
-function SimulatedDetail({ mc }: { mc: CoastFireMcResult }) {
+function SimulatedDetail({
+  mc,
+  computedAt,
+}: {
+  mc: CoastFireMcResult;
+  computedAt?: string | null;
+}) {
   const threshold = mc.confidenceThreshold;
   const stopNowPasses = mc.stopNowSuccessRate >= threshold;
   const stopNowColor = stopNowPasses
@@ -308,6 +328,11 @@ function SimulatedDetail({ mc }: { mc: CoastFireMcResult }) {
       <span className="text-faint ml-1">{tail}</span>
       {mc.warning && (
         <div className="text-yellow-500 mt-0.5">⚠ non-monotone</div>
+      )}
+      {computedAt && (
+        <div className="text-faint mt-0.5">
+          Simulated {formatRelativeTime(computedAt)}
+        </div>
       )}
     </div>
   );
