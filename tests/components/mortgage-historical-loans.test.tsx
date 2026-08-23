@@ -48,6 +48,7 @@ describe("HistoricalLoans smoke", () => {
         loanId: 1,
         name: "Original 30yr",
         isActive: false,
+        interestRate: 0.065,
         refinancedInto: "Refi 20yr",
       },
     ];
