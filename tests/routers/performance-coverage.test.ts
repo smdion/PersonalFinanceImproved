@@ -1,5 +1,6 @@
 /**
- * Performance router coverage tests — targets uncovered lines 386-588 and 915-1424.
+ * Performance router coverage tests — targets uncovered lines 386-588, 915-1424,
+ * and 1524-1778.
  *
  * Lines 915-1424 (finalizeYear) use db.transaction(async ...) which is incompatible
  * with better-sqlite3. Core computation logic (computeReturn, sumAccounts, sumAnnualRows)
@@ -12,10 +13,18 @@
  * - Fill missing return % on rows with null return (lines 525-537)
  * - Lifetime cumulative computation for non-finalized rows (lines 539-570)
  * - Retirement parent-category rollup synthesis (lines 572-658)
+ *
+ * Lines 1524-1778 are the Pending Rollover CRUD + confirm procedures — previously
+ * untested despite real guard branches (editing/deleting/confirming a confirmed
+ * rollover, applying against a finalized source year). Unlike finalizeYear,
+ * confirmPendingRollover's db.transaction(async ...) runs fine under
+ * better-sqlite3 in this test harness (same pattern already exercised
+ * elsewhere, e.g. savings.ts), so it's tested directly through the caller.
  */
 import "./setup-mocks";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createTestCaller, seedPerson, seedPerformanceAccount } from "./setup";
+import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema-sqlite";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
@@ -651,6 +660,352 @@ describe("performance.computeSummary — enriched accountRows", () => {
       expect(summary.lifetimeTotals).toHaveProperty("distributions");
       expect(summary.lifetimeTotals).toHaveProperty("endingBalance");
     }
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pending Rollover CRUD — lines 1524-1608. Plain mutations (no db.transaction),
+// unlike finalizeYear below, so they're directly testable through the caller.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("performance.createPendingRollover / editPendingRollover / deletePendingRollover", () => {
+  let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
+  let db: BetterSQLite3Database<typeof sqliteSchema>;
+  let cleanup: () => void;
+  let sourcePerfAcctId: number;
+  let sourceAccountPerformanceId: number;
+  let destPerfAcctId: number;
+
+  beforeAll(async () => {
+    const ctx = await createTestCaller();
+    caller = ctx.caller;
+    db = ctx.db;
+    cleanup = ctx.cleanup;
+
+    sourcePerfAcctId = seedPerformanceAccount(db, {
+      institution: "Fidelity",
+      accountType: "espp",
+      accountLabel: "Fidelity ESPP",
+      parentCategory: "Brokerage",
+    });
+    sourceAccountPerformanceId = seedAccountPerf(db, sourcePerfAcctId, {
+      year: 2024,
+    });
+    destPerfAcctId = seedPerformanceAccount(db, {
+      institution: "Fidelity",
+      accountType: "brokerage",
+      accountLabel: "Fidelity Brokerage",
+      parentCategory: "Brokerage",
+    });
+  });
+
+  afterAll(() => cleanup());
+
+  it("creates a pending rollover", async () => {
+    const result = await caller.performance.createPendingRollover({
+      sourceAccountPerformanceId,
+      destinationPerformanceAccountId: destPerfAcctId,
+      amount: "5000",
+      saleDate: "2024-06-15",
+      saleYear: 2024,
+      applyYear: 2024,
+      notes: "ESPP sale",
+    });
+    expect(result.id).toBeGreaterThan(0);
+  });
+
+  it("edits a pending (unconfirmed) rollover", async () => {
+    const { id } = await caller.performance.createPendingRollover({
+      sourceAccountPerformanceId,
+      destinationPerformanceAccountId: destPerfAcctId,
+      amount: "5000",
+      saleDate: "2024-06-15",
+      saleYear: 2024,
+      applyYear: 2024,
+    });
+
+    const result = await caller.performance.editPendingRollover({
+      id,
+      amount: "5500",
+      notes: "corrected amount",
+    });
+    expect(result.success).toBe(true);
+
+    const [row] = await db
+      .select()
+      .from(schema.pendingRollovers)
+      .where(eq(schema.pendingRollovers.id, id));
+    expect(row!.amount).toBe("5500");
+    expect(row!.notes).toBe("corrected amount");
+  });
+
+  it("throws NOT_FOUND editing a nonexistent rollover", async () => {
+    await expect(
+      caller.performance.editPendingRollover({ id: 999999, amount: "100" }),
+    ).rejects.toThrow("Rollover not found");
+  });
+
+  it("throws BAD_REQUEST editing a confirmed rollover", async () => {
+    const { id } = await caller.performance.createPendingRollover({
+      sourceAccountPerformanceId,
+      destinationPerformanceAccountId: destPerfAcctId,
+      amount: "1000",
+      saleDate: "2024-06-15",
+      saleYear: 2024,
+      applyYear: 2024,
+    });
+    db.update(schema.pendingRollovers)
+      .set({ confirmedAt: new Date("2024-06-16T00:00:00.000Z") })
+      .where(eq(schema.pendingRollovers.id, id))
+      .run();
+
+    await expect(
+      caller.performance.editPendingRollover({ id, amount: "1100" }),
+    ).rejects.toThrow("Cannot edit a confirmed rollover");
+  });
+
+  it("deletes a pending (unconfirmed) rollover", async () => {
+    const { id } = await caller.performance.createPendingRollover({
+      sourceAccountPerformanceId,
+      destinationPerformanceAccountId: destPerfAcctId,
+      amount: "2000",
+      saleDate: "2024-06-15",
+      saleYear: 2024,
+      applyYear: 2024,
+    });
+
+    const result = await caller.performance.deletePendingRollover({ id });
+    expect(result.success).toBe(true);
+
+    const rows = await db
+      .select()
+      .from(schema.pendingRollovers)
+      .where(eq(schema.pendingRollovers.id, id));
+    expect(rows).toHaveLength(0);
+  });
+
+  it("throws NOT_FOUND deleting a nonexistent rollover", async () => {
+    await expect(
+      caller.performance.deletePendingRollover({ id: 999999 }),
+    ).rejects.toThrow("Rollover not found");
+  });
+
+  it("throws BAD_REQUEST deleting a confirmed rollover", async () => {
+    const { id } = await caller.performance.createPendingRollover({
+      sourceAccountPerformanceId,
+      destinationPerformanceAccountId: destPerfAcctId,
+      amount: "3000",
+      saleDate: "2024-06-15",
+      saleYear: 2024,
+      applyYear: 2024,
+    });
+    db.update(schema.pendingRollovers)
+      .set({ confirmedAt: new Date("2024-06-16T00:00:00.000Z") })
+      .where(eq(schema.pendingRollovers.id, id))
+      .run();
+
+    await expect(
+      caller.performance.deletePendingRollover({ id }),
+    ).rejects.toThrow("Cannot delete a confirmed rollover");
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// confirmPendingRollover — lines 1609-1778. Wrapped in db.transaction(async ...),
+// same pattern used successfully elsewhere in this codebase (e.g. savings.ts),
+// unlike finalizeYear below which has a documented, separate incompatibility.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("performance.confirmPendingRollover", () => {
+  let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
+  let db: BetterSQLite3Database<typeof sqliteSchema>;
+  let cleanup: () => void;
+  let sourcePerfAcctId: number;
+  let destPerfAcctId: number;
+
+  beforeAll(async () => {
+    const ctx = await createTestCaller();
+    caller = ctx.caller;
+    db = ctx.db;
+    cleanup = ctx.cleanup;
+
+    sourcePerfAcctId = seedPerformanceAccount(db, {
+      institution: "Fidelity",
+      accountType: "espp",
+      accountLabel: "Fidelity ESPP",
+      parentCategory: "Brokerage",
+    });
+    destPerfAcctId = seedPerformanceAccount(db, {
+      institution: "Fidelity",
+      accountType: "brokerage",
+      accountLabel: "Fidelity Brokerage",
+      parentCategory: "Brokerage",
+    });
+  });
+
+  afterAll(() => cleanup());
+
+  it("debits source, credits destination (new year row), and marks confirmed", async () => {
+    const sourceAccountPerformanceId = seedAccountPerf(db, sourcePerfAcctId, {
+      year: 2024,
+      beginningBalance: "20000",
+      endingBalance: "25000",
+      rollovers: "0",
+      isFinalized: false,
+    });
+    const { id } = await caller.performance.createPendingRollover({
+      sourceAccountPerformanceId,
+      destinationPerformanceAccountId: destPerfAcctId,
+      amount: "5000",
+      saleDate: "2024-06-15",
+      saleYear: 2024,
+      applyYear: 2024,
+    });
+
+    const result = await caller.performance.confirmPendingRollover({ id });
+    expect(result.success).toBe(true);
+
+    const [srcRow] = await db
+      .select()
+      .from(schema.accountPerformance)
+      .where(eq(schema.accountPerformance.id, sourceAccountPerformanceId));
+    expect(srcRow!.endingBalance).toBe("20000.00");
+    expect(srcRow!.rollovers).toBe("-5000.00");
+
+    const destRows = await db
+      .select()
+      .from(schema.accountPerformance)
+      .where(
+        eq(schema.accountPerformance.performanceAccountId, destPerfAcctId),
+      );
+    const destRow = destRows.find((r) => r.year === 2024);
+    expect(destRow).toBeDefined();
+    expect(destRow!.endingBalance).toBe("5000.00");
+    expect(destRow!.rollovers).toBe("5000.00");
+
+    const [pr] = await db
+      .select()
+      .from(schema.pendingRollovers)
+      .where(eq(schema.pendingRollovers.id, id));
+    expect(pr!.confirmedAt).not.toBeNull();
+    expect(pr!.amount).toBe("5000");
+  });
+
+  it("credits an existing destination year row instead of inserting a new one", async () => {
+    const sourceAccountPerformanceId = seedAccountPerf(db, sourcePerfAcctId, {
+      year: 2025,
+      beginningBalance: "10000",
+      endingBalance: "12000",
+      rollovers: "0",
+      isFinalized: false,
+    });
+    seedAccountPerf(db, destPerfAcctId, {
+      year: 2025,
+      beginningBalance: "1000",
+      endingBalance: "1000",
+      rollovers: "0",
+      isFinalized: false,
+    });
+    const { id } = await caller.performance.createPendingRollover({
+      sourceAccountPerformanceId,
+      destinationPerformanceAccountId: destPerfAcctId,
+      amount: "500",
+      saleDate: "2025-01-10",
+      saleYear: 2025,
+      applyYear: 2025,
+    });
+
+    await caller.performance.confirmPendingRollover({ id });
+
+    const destRows = await db
+      .select()
+      .from(schema.accountPerformance)
+      .where(
+        eq(schema.accountPerformance.performanceAccountId, destPerfAcctId),
+      );
+    const destRowsFor2025 = destRows.filter((r) => r.year === 2025);
+    expect(destRowsFor2025).toHaveLength(1);
+    expect(destRowsFor2025[0]!.endingBalance).toBe("1500.00");
+  });
+
+  it("uses actualAmount override instead of the recorded amount", async () => {
+    const sourceAccountPerformanceId = seedAccountPerf(db, sourcePerfAcctId, {
+      year: 2026,
+      beginningBalance: "8000",
+      endingBalance: "8000",
+      rollovers: "0",
+      isFinalized: false,
+    });
+    const { id } = await caller.performance.createPendingRollover({
+      sourceAccountPerformanceId,
+      destinationPerformanceAccountId: destPerfAcctId,
+      amount: "1000",
+      saleDate: "2026-01-10",
+      saleYear: 2026,
+      applyYear: 2026,
+    });
+
+    await caller.performance.confirmPendingRollover({
+      id,
+      actualAmount: "900",
+    });
+
+    const [pr] = await db
+      .select()
+      .from(schema.pendingRollovers)
+      .where(eq(schema.pendingRollovers.id, id));
+    expect(pr!.amount).toBe("900");
+  });
+
+  it("throws NOT_FOUND confirming a nonexistent rollover", async () => {
+    await expect(
+      caller.performance.confirmPendingRollover({ id: 999999 }),
+    ).rejects.toThrow("Rollover not found");
+  });
+
+  it("throws BAD_REQUEST confirming an already-confirmed rollover", async () => {
+    const sourceAccountPerformanceId = seedAccountPerf(db, sourcePerfAcctId, {
+      year: 2027,
+      beginningBalance: "1000",
+      endingBalance: "1000",
+      rollovers: "0",
+      isFinalized: false,
+    });
+    const { id } = await caller.performance.createPendingRollover({
+      sourceAccountPerformanceId,
+      destinationPerformanceAccountId: destPerfAcctId,
+      amount: "100",
+      saleDate: "2027-01-10",
+      saleYear: 2027,
+      applyYear: 2027,
+    });
+    await caller.performance.confirmPendingRollover({ id });
+
+    await expect(
+      caller.performance.confirmPendingRollover({ id }),
+    ).rejects.toThrow("Rollover already confirmed");
+  });
+
+  it("throws BAD_REQUEST when the source year is finalized", async () => {
+    const sourceAccountPerformanceId = seedAccountPerf(db, sourcePerfAcctId, {
+      year: 2028,
+      beginningBalance: "1000",
+      endingBalance: "1000",
+      rollovers: "0",
+      isFinalized: true,
+    });
+    const { id } = await caller.performance.createPendingRollover({
+      sourceAccountPerformanceId,
+      destinationPerformanceAccountId: destPerfAcctId,
+      amount: "100",
+      saleDate: "2028-01-10",
+      saleYear: 2028,
+      applyYear: 2028,
+    });
+
+    await expect(
+      caller.performance.confirmPendingRollover({ id }),
+    ).rejects.toThrow("Source year is finalized");
   });
 });
 
