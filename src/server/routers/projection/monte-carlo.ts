@@ -130,6 +130,8 @@ export const monteCarloRouter = createTRPCRouter({
         snapshotId: z.number().int().optional(),
         /** Bypass the projection cache and force a fresh run with a new seed — the explicit "Run Monte Carlo" action, not the default query path. */
         forceRefresh: z.boolean().optional(),
+        /** Read-only cache peek — never runs the (expensive) trials, just returns a cache hit or a null result. For cheap dashboard-tile display of "whatever the last real run found." */
+        peekOnly: z.boolean().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -448,11 +450,19 @@ export const monteCarloRouter = createTRPCRouter({
             mcInputHash,
           );
 
-      let result: ReturnType<typeof calculateMonteCarlo>;
-      let usedSeed: number;
+      let result: ReturnType<typeof calculateMonteCarlo> | null;
+      let usedSeed: number | null;
+      let computedAt: Date | null;
       if (mcCached) {
         result = mcCached.result;
         usedSeed = mcCached.seed ?? input.seed ?? generateSeed();
+        computedAt = mcCached.computedAt;
+      } else if (input.peekOnly) {
+        // Cache-read-only path for dashboard tiles: never runs the expensive
+        // trials, just reports whether a recent run already exists.
+        result = null;
+        usedSeed = null;
+        computedAt = null;
       } else {
         usedSeed = input.seed ?? generateSeed();
         result = calculateMonteCarlo({
@@ -466,6 +476,7 @@ export const monteCarloRouter = createTRPCRouter({
           returnClampMin,
           returnClampMax,
         });
+        computedAt = new Date();
         await writeProjectionCache(ctx.db, mcInputHash, result, usedSeed);
       }
 
@@ -496,6 +507,7 @@ export const monteCarloRouter = createTRPCRouter({
         result,
         simulationInputs: {
           seed: usedSeed,
+          computedAt: computedAt?.toISOString() ?? null,
           currentAge: age,
           retirementAge: avgRetirementAge,
           endAge: maxEndAge,

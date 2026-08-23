@@ -200,6 +200,8 @@ export const coastFireRouter = createTRPCRouter({
         snapshotId: z.number().int().optional(),
         /** Bypass the projection cache and force a fresh search — the explicit "Re-run" action, not the default query path. */
         forceRefresh: z.boolean().optional(),
+        /** Read-only cache peek — never runs the (expensive) binary search, just returns a cache hit or a null result. For cheap dashboard-tile display of "whatever the last real run found." */
+        peekOnly: z.boolean().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -280,6 +282,7 @@ export const coastFireRouter = createTRPCRouter({
             warning: "Default MC preset not found in database.",
             mcResult: null,
           },
+          computedAt: null,
         };
       }
 
@@ -325,7 +328,16 @@ export const coastFireRouter = createTRPCRouter({
         ? null
         : await readProjectionCache<CoastFireMcResult>(ctx.db, inputHash);
       if (cached) {
-        return { result: cached.result };
+        return {
+          result: cached.result,
+          computedAt: cached.computedAt.toISOString(),
+        };
+      }
+      if (input.peekOnly) {
+        // Cache-read-only path for dashboard tiles: never runs the
+        // (expensive) binary search, just reports a prior real run if one
+        // exists.
+        return { result: null, computedAt: null };
       }
 
       const CONFIDENCE = MC_CONFIDENCE_THRESHOLD;
@@ -377,7 +389,7 @@ export const coastFireRouter = createTRPCRouter({
           mcResult: fullResult,
         };
         await writeProjectionCache(ctx.db, inputHash, result, null);
-        return { result };
+        return { result, computedAt: new Date().toISOString() };
       }
 
       // Probe stopping today — captured for every branch so the client can
@@ -399,7 +411,7 @@ export const coastFireRouter = createTRPCRouter({
           mcResult: stopNowResult,
         };
         await writeProjectionCache(ctx.db, inputHash, result, null);
-        return { result };
+        return { result, computedAt: new Date().toISOString() };
       }
 
       // Probe stopping the year before retirement — is the plan reachable at all?
@@ -418,7 +430,7 @@ export const coastFireRouter = createTRPCRouter({
           mcResult: stopLateResult,
         };
         await writeProjectionCache(ctx.db, inputHash, result, null);
-        return { result };
+        return { result, computedAt: new Date().toISOString() };
       }
 
       // Binary search for earliest passing age.
@@ -461,6 +473,6 @@ export const coastFireRouter = createTRPCRouter({
         mcResult: finalResult,
       };
       await writeProjectionCache(ctx.db, inputHash, result, null);
-      return { result };
+      return { result, computedAt: new Date().toISOString() };
     }),
 });

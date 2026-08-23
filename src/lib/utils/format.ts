@@ -100,6 +100,22 @@ export function formatDate(
 }
 
 /**
+ * Format a timestamp as a short relative-time label (e.g., "just now",
+ * "12m ago", "3h ago"), falling back to `formatDate`'s "medium" preset once
+ * it's more than a day old. Accepts an ISO string or Date.
+ */
+export function formatRelativeTime(value: string | Date): string {
+  const date = typeof value === "string" ? new Date(value) : value;
+  const seconds = Math.round((Date.now() - date.getTime()) / 1000);
+  if (seconds < 60) return "just now";
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return formatDate(date, "medium");
+}
+
+/**
  * Format a large currency value in compact form (e.g., 1500000 → "$1.5M", 45000 → "$45k").
  * Suitable for chart axes and summary displays where full precision isn't needed.
  */

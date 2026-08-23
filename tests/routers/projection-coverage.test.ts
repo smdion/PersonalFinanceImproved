@@ -867,6 +867,54 @@ describe("projection router — computeMonteCarloProjection cache", () => {
       cleanup();
     }
   });
+
+  it("peekOnly returns a null result and never writes a cache row on a miss", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedGlidePath(db);
+
+      const response = await caller.projection.computeMonteCarloProjection({
+        numTrials: 100,
+        preset: "custom",
+        peekOnly: true,
+      });
+
+      expect(response.result).toBeNull();
+      expect(response.simulationInputs.seed).toBeNull();
+      const rows = db.select().from(schema.projectionCache).all();
+      expect(rows).toHaveLength(0);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("peekOnly returns the cached result without recomputing on a hit", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedGlidePath(db);
+      const input = { numTrials: 100, preset: "custom" as const };
+
+      const real = await caller.projection.computeMonteCarloProjection(input);
+      const peeked = await caller.projection.computeMonteCarloProjection({
+        ...input,
+        peekOnly: true,
+      });
+
+      expect(peeked.result).toEqual(real.result);
+      expect(peeked.simulationInputs.seed).toBe(real.simulationInputs.seed);
+      expect(peeked.simulationInputs.computedAt).not.toBeNull();
+      const rows = db.select().from(schema.projectionCache).all();
+      expect(rows).toHaveLength(1);
+    } finally {
+      cleanup();
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -1700,6 +1748,49 @@ describe("projection router — computeCoastFireMC cache", () => {
       expect(after[0]!.computedAt.getTime()).toBeGreaterThanOrEqual(
         computedAtBefore.getTime(),
       );
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("peekOnly returns a null result and never runs the search on a miss", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedDefaultMcPreset(db);
+
+      const response = await caller.projection.computeCoastFireMC({
+        peekOnly: true,
+      });
+
+      expect(response.result).toBeNull();
+      expect(response.computedAt).toBeNull();
+      const rows = db.select().from(schema.projectionCache).all();
+      expect(rows).toHaveLength(0);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("peekOnly returns the cached result without re-searching on a hit", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedDefaultMcPreset(db);
+
+      const real = await caller.projection.computeCoastFireMC({});
+      const peeked = await caller.projection.computeCoastFireMC({
+        peekOnly: true,
+      });
+
+      expect(peeked.result).toEqual(real.result);
+      expect(peeked.computedAt).not.toBeNull();
+      const rows = db.select().from(schema.projectionCache).all();
+      expect(rows).toHaveLength(1);
     } finally {
       cleanup();
     }

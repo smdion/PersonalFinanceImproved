@@ -80,6 +80,7 @@ export function hashEngineInput(
 export interface ProjectionCacheHit<TResult> {
   result: TResult;
   seed: number | null;
+  computedAt: Date;
 }
 
 /** Returns null on a miss (no row, expired, or wrong engine version). */
@@ -116,7 +117,11 @@ export async function readProjectionCache<TResult = unknown>(
       log("warn", "projection_cache_touch_failed", { error: String(err) }),
     );
 
-  return { result: row.result as TResult, seed: row.seed };
+  return {
+    result: row.result as TResult,
+    seed: row.seed,
+    computedAt: row.computedAt,
+  };
 }
 
 /** Generates a fresh seed, writes the row, and opportunistically evicts.
