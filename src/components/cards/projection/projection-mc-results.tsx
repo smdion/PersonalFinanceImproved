@@ -1,6 +1,7 @@
 "use client";
 
 /** Monte Carlo results — loading spinner, errors, warnings, depletion callout, and compact summary bar. */
+import { useState } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
 import {
   formatCurrency,
@@ -60,9 +61,30 @@ export function McDepletionCallout({ state }: { state: ProjectionState }) {
 
 /** MC loading, errors, warnings, and compact summary bar. */
 export function McResultsSection({ state }: { state: ProjectionState }) {
-  const { projectionMode, mcLoading, mcQuery, setShowAssumptions } = state;
+  const {
+    projectionMode,
+    mcLoading,
+    mcQuery,
+    setShowAssumptions,
+    runMonteCarlo,
+    runCoastFireMc,
+  } = state;
+  const [isRerunning, setIsRerunning] = useState(false);
 
   if (projectionMode !== "monteCarlo") return null;
+
+  const handleRerun = async () => {
+    setIsRerunning(true);
+    try {
+      // Refresh both cache-backed simulations shown on this page together —
+      // the baseline MC bar here and the Coast FIRE hero card both read from
+      // the persistent projection cache, so a "re-run" should mean "give me
+      // fresh randomness for both," not just one of the two.
+      await Promise.all([runMonteCarlo(), runCoastFireMc()]);
+    } finally {
+      setIsRerunning(false);
+    }
+  };
 
   return (
     <div className="space-y-3">
@@ -197,10 +219,21 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                   )}
                   <div className="ml-auto flex items-center gap-3">
                     {si.computedAt && (
-                      <span className="text-caption text-faint whitespace-nowrap">
-                        Simulated {formatRelativeTime(si.computedAt)}
-                      </span>
+                      <div className="text-center">
+                        <div className="font-semibold tabular-nums text-xs whitespace-nowrap">
+                          {formatRelativeTime(si.computedAt)}
+                        </div>
+                        <div className="text-micro text-faint">last run</div>
+                      </div>
                     )}
+                    <button
+                      type="button"
+                      onClick={handleRerun}
+                      disabled={isRerunning}
+                      className="px-3 py-1.5 rounded-md text-label font-semibold border border-subtle text-muted shadow-sm transition-colors hover:bg-surface-primary/80 disabled:opacity-50"
+                    >
+                      {isRerunning ? "Running…" : "Re-run"}
+                    </button>
                     <button
                       type="button"
                       onClick={() => setShowAssumptions(true)}

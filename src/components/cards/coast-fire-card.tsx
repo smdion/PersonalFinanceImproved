@@ -331,7 +331,7 @@ function SimulatedDetail({
       )}
       {computedAt && (
         <div className="text-faint mt-0.5">
-          Simulated {formatRelativeTime(computedAt)}
+          Last run: {formatRelativeTime(computedAt)}
         </div>
       )}
     </div>

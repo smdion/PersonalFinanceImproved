@@ -100,7 +100,8 @@ describe("RetirementCard dashboard cache-peek features", () => {
     render(<RetirementCard />);
     expect(screen.getByText("Simulated success")).toBeInTheDocument();
     expect(screen.getByText("92%")).toBeInTheDocument();
-    expect(screen.getByText("(just now)")).toBeInTheDocument();
+    expect(screen.getByText("Last simulation run")).toBeInTheDocument();
+    expect(screen.getByText("just now")).toBeInTheDocument();
   });
 
   it("shows the simulated Coast FIRE age next to the deterministic baseline", () => {

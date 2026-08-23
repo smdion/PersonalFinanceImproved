@@ -348,14 +348,12 @@ function RetirementCardImpl() {
         {coastFireData?.result &&
           (() => {
             const simResult = coastFireMcPeek?.result;
-            const simComputedAt = coastFireMcPeek?.computedAt;
             const simLabel = simResult
-              ? (simResult.status === "unreachable"
-                  ? "not reachable"
-                  : simResult.status === "already_coast"
-                    ? "already coast"
-                    : `age ${simResult.coastFireAge}`) +
-                (simComputedAt ? `, ${formatRelativeTime(simComputedAt)}` : "")
+              ? simResult.status === "unreachable"
+                ? "not reachable"
+                : simResult.status === "already_coast"
+                  ? "already coast"
+                  : `age ${simResult.coastFireAge}`
               : null;
             return (
               <div className="flex justify-between">
@@ -400,14 +398,29 @@ function RetirementCardImpl() {
               }
             >
               {formatPercent(mcPeek.result.successRate, 0)}
-              {mcPeek.simulationInputs.computedAt && (
-                <span className="text-caption text-faint ml-1">
-                  ({formatRelativeTime(mcPeek.simulationInputs.computedAt)})
-                </span>
-              )}
             </span>
           </div>
         )}
+        {(() => {
+          const lastRunAt = [
+            mcPeek && "simulationInputs" in mcPeek
+              ? mcPeek.simulationInputs.computedAt
+              : null,
+            coastFireMcPeek?.computedAt,
+          ]
+            .filter((v): v is string => !!v)
+            .sort()
+            .at(-1);
+          if (!lastRunAt) return null;
+          return (
+            <div className="flex justify-between">
+              <span className="text-muted">Last simulation run</span>
+              <span className="text-faint">
+                {formatRelativeTime(lastRunAt)}
+              </span>
+            </div>
+          );
+        })()}
         <div className="flex justify-between">
           <span className="text-muted">Duration</span>
           <span
