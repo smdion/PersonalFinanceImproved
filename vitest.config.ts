@@ -1,29 +1,86 @@
 import { defineConfig } from "vitest/config";
 import path from "path";
 
+// Newer Node ships its own native localStorage (Web Storage API), which
+// jsdom 29 defers to on Node versions that have it instead of using its
+// own implementation. Without a backing file, Node's native localStorage
+// is a non-functional stub (window.localStorage is undefined) — pass
+// --localstorage-file so it actually works under jsdom in tests. Feature
+// -detected via allowedNodeEnvironmentFlags (not a version-number check)
+// since older Node (still used by some local dev setups) doesn't
+// recognize the flag at all and errors out on an unknown option.
+const execArgv = process.allowedNodeEnvironmentFlags.has("--localstorage-file")
+  ? [
+      `--localstorage-file=${path.resolve(__dirname, ".vitest-localstorage.json")}`,
+    ]
+  : [];
+
 export default defineConfig({
   esbuild: {
     jsx: "automatic",
   },
   test: {
     globals: true,
-    include: ["tests/**/*.test.ts", "tests/**/*.test.tsx"],
-    environment: "jsdom",
-    setupFiles: ["tests/setup-component.ts"],
     testTimeout: 10000,
-    // Newer Node ships its own native localStorage (Web Storage API), which
-    // jsdom 29 defers to on Node versions that have it instead of using its
-    // own implementation. Without a backing file, Node's native localStorage
-    // is a non-functional stub (window.localStorage is undefined) — pass
-    // --localstorage-file so it actually works under jsdom in tests. Feature
-    // -detected via allowedNodeEnvironmentFlags (not a version-number check)
-    // since older Node (still used by some local dev setups) doesn't
-    // recognize the flag at all and errors out on an unknown option.
-    execArgv: process.allowedNodeEnvironmentFlags.has("--localstorage-file")
-      ? [
-          `--localstorage-file=${path.resolve(__dirname, ".vitest-localstorage.json")}`,
-        ]
-      : [],
+    execArgv,
+    // Most of the suite (server/routers/calculators/db/pure/helpers/etc.) is
+    // pure Node logic that never touches the DOM. Only the files that
+    // actually render components/hooks or assert on DOM output need jsdom —
+    // paying jsdom's setup cost for every file was a measured chunk of the
+    // suite's wall time. Split into projects so each file only pays for the
+    // environment it needs. `tests/benchmarks/**` gets its own project (not
+    // folded into `node`) so it can be excluded from the default run via
+    // `--project=!benchmarks` (a plain CLI --exclude doesn't apply per-
+    // project once `projects` is used) while still running via its own
+    // `pnpm test:benchmarks` script.
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: "node",
+          environment: "node",
+          include: ["tests/**/*.test.ts", "tests/**/*.test.tsx"],
+          // tests/components is flat (no subdirectories), so the extglob
+          // negation below excludes every file in it except the three that
+          // test exported pure helpers, not rendered components — those
+          // don't need jsdom and are handled by this project instead.
+          exclude: [
+            "tests/components/!(linked-balance-card|portfolio-quick-look-stats|projection-utils).test.ts*",
+            "tests/hooks/**",
+            "tests/accessibility/**",
+            "tests/benchmarks/**",
+          ],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: "benchmarks",
+          environment: "node",
+          include: ["tests/benchmarks/**/*.test.ts"],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: "jsdom",
+          environment: "jsdom",
+          setupFiles: ["tests/setup-component.ts"],
+          include: [
+            "tests/components/**/*.test.ts",
+            "tests/components/**/*.test.tsx",
+            "tests/hooks/**/*.test.ts",
+            "tests/accessibility/**/*.test.ts",
+            "tests/accessibility/**/*.test.tsx",
+          ],
+          exclude: [
+            "tests/components/linked-balance-card.test.ts",
+            "tests/components/portfolio-quick-look-stats.test.ts",
+            "tests/components/projection-utils.test.ts",
+          ],
+        },
+      },
+    ],
     coverage: {
       provider: "v8",
       include: [
