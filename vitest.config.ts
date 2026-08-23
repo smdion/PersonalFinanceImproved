@@ -88,6 +88,8 @@ export default defineConfig({
         "src/lib/config/**",
         "src/lib/budget-api/**",
         "src/lib/db/**",
+        "src/lib/pure/**",
+        "src/lib/simplefin/**",
         // src/lib/utils/** is file-by-file. Add utility files here as they
         // get first-class tests. Files not listed are NOT counted toward
         // coverage (neither numerator nor denominator), so gaps stay visible
