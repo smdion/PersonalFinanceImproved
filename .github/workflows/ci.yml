@@ -66,6 +66,12 @@ jobs:
       - name: Benchmark tests
         run: pnpm test:benchmarks
 
+      # Non-blocking — reports chunk/total sizes but doesn't fail the pipeline.
+      # Currently over its own thresholds (recharts/zod chunk weight, tracked
+      # as R31 in FEATURE-ROADMAP.md); flip to blocking once that's resolved.
+      - name: Check bundle size
+        run: pnpm check:bundle || true
+
       - name: Cache Playwright browsers
         id: pw-cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5
