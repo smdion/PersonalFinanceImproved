@@ -1,6 +1,7 @@
 // Cache read/write/invalidate helpers for budget API data.
 // Uses the budget_api_cache table as a local cache of remote API state.
 
+import "server-only";
 import { eq, and } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { BudgetApiService } from "./types";

@@ -10,6 +10,7 @@
 // transaction/category/budget concepts, so it queries api_connections
 // directly instead of widening that union.
 
+import "server-only";
 import { eq, sql } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { encryptJson, readMaybeEncrypted } from "@/lib/crypto";
