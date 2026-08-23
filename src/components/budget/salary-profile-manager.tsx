@@ -1227,6 +1227,26 @@ function ProfileEditPanel({
     },
     onError: (e) => setError(e.message),
   });
+  // patchEntry/removeEntry replace what used to be a client-side
+  // read-merge-write of the whole `salaries` blob (from a query snapshot
+  // that goes stale the instant a prior commit resolves) posted through
+  // `update`. Two fields committed in quick succession could silently
+  // clobber each other under the old path — these call the server-side
+  // patch procedures directly instead, which merge inside a transaction.
+  const patchEntryMutation = trpc.salaryProfile.patchEntry.useMutation({
+    onSuccess: () => {
+      setError(null);
+      onSaved();
+    },
+    onError: (e) => setError(e.message),
+  });
+  const removeEntryMutation = trpc.salaryProfile.removeEntry.useMutation({
+    onSuccess: () => {
+      setError(null);
+      onSaved();
+    },
+    onError: (e) => setError(e.message),
+  });
 
   if (!profile) return null;
 
@@ -1254,9 +1274,10 @@ function ProfileEditPanel({
    *  that turns a "—" row into an editable one. */
   const addEntry = (jobId: number | null) => {
     if (jobId === null) return;
-    updateMutation.mutate({
+    patchEntryMutation.mutate({
       id: profileId,
-      salaries: { ...profile.salaries, [String(jobId)]: BLANK_ENTRY },
+      jobId,
+      fields: BLANK_ENTRY,
     });
   };
 
@@ -1264,9 +1285,7 @@ function ProfileEditPanel({
    *  the same as a job that was never added. */
   const removeEntry = (jobId: number | null) => {
     if (jobId === null) return;
-    const salaries = { ...profile.salaries };
-    delete salaries[String(jobId)];
-    updateMutation.mutate({ id: profileId, salaries });
+    removeEntryMutation.mutate({ id: profileId, jobId });
   };
 
   /** Update one field of an already-existing entry. Entries are always
@@ -1283,12 +1302,10 @@ function ProfileEditPanel({
     const key = String(sd.jobId);
     const existing = profile.salaries[key];
     if (!existing) return;
-    updateMutation.mutate({
+    patchEntryMutation.mutate({
       id: profileId,
-      salaries: {
-        ...profile.salaries,
-        [key]: { ...existing, [field]: stored },
-      },
+      jobId: sd.jobId,
+      fields: { [field]: stored } as Partial<Entry>,
     });
   };
 
@@ -1458,9 +1475,18 @@ function ProfileEditPanel({
                     width={field === "salary" ? "w-28" : "w-20"}
                   />
                 );
+                const isSaving =
+                  sd.jobId !== null &&
+                  ((patchEntryMutation.isPending &&
+                    patchEntryMutation.variables?.jobId === sd.jobId) ||
+                    (removeEntryMutation.isPending &&
+                      removeEntryMutation.variables?.jobId === sd.jobId));
                 return (
                   <React.Fragment key={rawSd.personId}>
-                    <tr className={rowClass(rowIdx)}>
+                    <tr
+                      aria-busy={isSaving}
+                      className={`${rowClass(rowIdx)} ${isSaving ? "opacity-60 pointer-events-none" : ""}`}
+                    >
                       <td className="py-1.5 pl-4 pr-3 font-medium text-secondary">
                         {sd.personName}
                       </td>

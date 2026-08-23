@@ -1095,4 +1095,196 @@ describe("contributionProfiles coverage", () => {
       }
     });
   });
+
+  describe("setAccountActiveFields — field-level patch", () => {
+    it("patches a single field without disturbing sibling fields", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const personId = await seedPerson(db, "Alex");
+        const accountId = seedContribAccount(db, { personId });
+        const profileId = seedContribProfile(db, {
+          contributionActiveFields: {
+            contributionAccounts: {
+              [String(accountId)]: {
+                contributionValue: "5000",
+                contributionMethod: "dollar_amount",
+                isActive: true,
+              },
+            },
+          },
+        });
+
+        await caller.contributionProfile.setAccountActiveFields({
+          profileId,
+          accountId,
+          fields: { isActive: false },
+        });
+
+        const profile = await caller.contributionProfile.getById({
+          id: profileId,
+        });
+        const detail = profile!.accountDetails.find((a) => a.id === accountId)!;
+        const fields = detail.activeFields as Record<string, unknown>;
+        expect(fields.contributionValue).toBe("5000");
+        expect(fields.contributionMethod).toBe("dollar_amount");
+        expect(fields.isActive).toBe(false);
+      } finally {
+        cleanup();
+      }
+    });
+
+    it("unset removes only the named keys", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const personId = await seedPerson(db, "Alex");
+        const accountId = seedContribAccount(db, { personId });
+        const profileId = seedContribProfile(db, {
+          contributionActiveFields: {
+            contributionAccounts: {
+              [String(accountId)]: {
+                contributionValue: "5000",
+                contributionMethod: "dollar_amount",
+                isActive: false,
+              },
+            },
+          },
+        });
+
+        await caller.contributionProfile.setAccountActiveFields({
+          profileId,
+          accountId,
+          fields: {},
+          unset: ["contributionValue", "contributionMethod"],
+        });
+
+        const profile = await caller.contributionProfile.getById({
+          id: profileId,
+        });
+        const detail = profile!.accountDetails.find((a) => a.id === accountId)!;
+        const fields = detail.activeFields as Record<string, unknown>;
+        expect(fields.contributionValue).toBeUndefined();
+        expect(fields.contributionMethod).toBeUndefined();
+        expect(fields.isActive).toBe(false);
+      } finally {
+        cleanup();
+      }
+    });
+
+    it("fully-unsetting an entry removes the account key entirely", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const personId = await seedPerson(db, "Alex");
+        const accountId = seedContribAccount(db, { personId });
+        const profileId = seedContribProfile(db, {
+          contributionActiveFields: {
+            contributionAccounts: {
+              [String(accountId)]: { isActive: false },
+            },
+          },
+        });
+
+        await caller.contributionProfile.setAccountActiveFields({
+          profileId,
+          accountId,
+          fields: {},
+          unset: ["isActive"],
+        });
+
+        const compare = await caller.contributionProfile.compareData();
+        const profile = compare.profiles.find((p) => p.id === profileId)!;
+        expect(profile.accountActiveFields[String(accountId)]).toBeUndefined();
+      } finally {
+        cleanup();
+      }
+    });
+
+    it("rejects a merged result that pairs contributionValue without contributionMethod", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const personId = await seedPerson(db, "Alex");
+        const accountId = seedContribAccount(db, { personId });
+        const profileId = seedContribProfile(db, {
+          contributionActiveFields: { contributionAccounts: {} },
+        });
+
+        await expect(
+          caller.contributionProfile.setAccountActiveFields({
+            profileId,
+            accountId,
+            fields: { contributionValue: "5000" },
+          }),
+        ).rejects.toThrow(/must be set together/);
+      } finally {
+        cleanup();
+      }
+    });
+
+    it("throws for a non-existent profile", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const personId = await seedPerson(db, "Alex");
+        const accountId = seedContribAccount(db, { personId });
+        await expect(
+          caller.contributionProfile.setAccountActiveFields({
+            profileId: 999999,
+            accountId,
+            fields: { isActive: false },
+          }),
+        ).rejects.toThrow("Profile not found");
+      } finally {
+        cleanup();
+      }
+    });
+  });
+
+  describe("setDeductionActiveFields — field-level patch", () => {
+    it("sets and unsets amountPerPeriod", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const profileId = seedContribProfile(db, {
+          contributionActiveFields: { contributionAccounts: {} },
+        });
+
+        const updated =
+          await caller.contributionProfile.setDeductionActiveFields({
+            profileId,
+            deductionId: 1,
+            fields: { amountPerPeriod: "50" },
+          });
+        const afterSet = updated.contributionActiveFields as {
+          deductions?: Record<string, { amountPerPeriod?: string }>;
+        };
+        expect(afterSet.deductions?.["1"]?.amountPerPeriod).toBe("50");
+
+        const cleared =
+          await caller.contributionProfile.setDeductionActiveFields({
+            profileId,
+            deductionId: 1,
+            fields: {},
+            unset: ["amountPerPeriod"],
+          });
+        const afterUnset = cleared.contributionActiveFields as {
+          deductions?: Record<string, unknown>;
+        };
+        expect(afterUnset.deductions?.["1"]).toBeUndefined();
+      } finally {
+        cleanup();
+      }
+    });
+
+    it("throws for a non-existent profile", async () => {
+      const { caller, cleanup } = await createTestCaller(adminSession);
+      try {
+        await expect(
+          caller.contributionProfile.setDeductionActiveFields({
+            profileId: 999999,
+            deductionId: 1,
+            fields: { amountPerPeriod: "50" },
+          }),
+        ).rejects.toThrow("Profile not found");
+      } finally {
+        cleanup();
+      }
+    });
+  });
 });

@@ -494,6 +494,161 @@ describe("salaryProfile router", () => {
       }
     });
   });
+
+  describe("patchEntry / removeEntry", () => {
+    it("patches a single field without disturbing sibling fields", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const personId = await seedPerson(db, "Alex");
+        const jobId = seedJob(db, personId, { annualSalary: "100000" });
+        const profileId = seedSalaryProfile(db, {
+          salaries: {
+            [String(jobId)]: entry({ salary: 150000, bonusPercent: 0.1 }),
+          },
+        });
+
+        const updated = await caller.salaryProfile.patchEntry({
+          id: profileId,
+          jobId,
+          fields: { salary: 175000 },
+        });
+
+        const saved = (
+          updated.salaries as Record<
+            string,
+            { salary: number; bonusPercent: number }
+          >
+        )[String(jobId)]!;
+        expect(saved.salary).toBe(175000);
+        expect(saved.bonusPercent).toBe(0.1);
+      } finally {
+        cleanup();
+      }
+    });
+
+    it("creates a brand-new entry when patching a job with no existing entry", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const personId = await seedPerson(db, "Alex");
+        const jobId = seedJob(db, personId, { annualSalary: "100000" });
+        const profileId = seedSalaryProfile(db, { salaries: {} });
+
+        const updated = await caller.salaryProfile.patchEntry({
+          id: profileId,
+          jobId,
+          fields: entry({ salary: 90000 }),
+        });
+
+        const saved = (updated.salaries as Record<string, { salary: number }>)[
+          String(jobId)
+        ];
+        expect(saved).toBeDefined();
+        expect(saved!.salary).toBe(90000);
+      } finally {
+        cleanup();
+      }
+    });
+
+    it("rejects a merged entry missing a required field", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const personId = await seedPerson(db, "Alex");
+        const jobId = seedJob(db, personId, { annualSalary: "100000" });
+        const profileId = seedSalaryProfile(db, { salaries: {} });
+
+        // No existing entry to merge onto, and the patch alone is missing
+        // required fields (payPeriod, w4FilingStatus, etc.) — the merged
+        // result can't validate as a complete entry.
+        await expect(
+          caller.salaryProfile.patchEntry({
+            id: profileId,
+            jobId,
+            fields: { salary: 90000 },
+          }),
+        ).rejects.toThrow("Invalid salary entry after patch");
+      } finally {
+        cleanup();
+      }
+    });
+
+    it("unset clears a nullable field back to null", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const personId = await seedPerson(db, "Alex");
+        const jobId = seedJob(db, personId, { annualSalary: "100000" });
+        const profileId = seedSalaryProfile(db, {
+          salaries: {
+            [String(jobId)]: entry({ salary: 150000, bonusOverride: 5000 }),
+          },
+        });
+
+        const updated = await caller.salaryProfile.patchEntry({
+          id: profileId,
+          jobId,
+          fields: { bonusOverride: null },
+        });
+
+        const saved = (
+          updated.salaries as Record<string, { bonusOverride: number | null }>
+        )[String(jobId)]!;
+        expect(saved.bonusOverride).toBeNull();
+      } finally {
+        cleanup();
+      }
+    });
+
+    it("throws for a non-existent profile", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const personId = await seedPerson(db, "Alex");
+        const jobId = seedJob(db, personId, { annualSalary: "100000" });
+        await expect(
+          caller.salaryProfile.patchEntry({
+            id: 999999,
+            jobId,
+            fields: { salary: 90000 },
+          }),
+        ).rejects.toThrow("Profile not found");
+      } finally {
+        cleanup();
+      }
+    });
+
+    it("removeEntry deletes the job's entry entirely", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const personId = await seedPerson(db, "Alex");
+        const jobId = seedJob(db, personId, { annualSalary: "100000" });
+        const profileId = seedSalaryProfile(db, {
+          salaries: { [String(jobId)]: entry({ salary: 150000 }) },
+        });
+
+        const updated = await caller.salaryProfile.removeEntry({
+          id: profileId,
+          jobId,
+        });
+
+        expect(
+          (updated.salaries as Record<string, unknown>)[String(jobId)],
+        ).toBeUndefined();
+      } finally {
+        cleanup();
+      }
+    });
+
+    it("removeEntry throws for a non-existent profile", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const personId = await seedPerson(db, "Alex");
+        const jobId = seedJob(db, personId, { annualSalary: "100000" });
+        await expect(
+          caller.salaryProfile.removeEntry({ id: 999999, jobId }),
+        ).rejects.toThrow("Profile not found");
+      } finally {
+        cleanup();
+      }
+    });
+  });
 });
 
 describe("canDeleteSalaryProfile", () => {

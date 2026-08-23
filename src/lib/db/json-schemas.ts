@@ -290,7 +290,17 @@ export const salaryEntriesSchema = z.record(z.string(), salaryEntrySchema);
  * scenarioOverridesSchema at the structural level but the leaf objects have
  * a known shape.
  */
-export const contribAccountActiveFieldsSchema = z
+/**
+ * Base shape, all fields optional — used directly (without the refine
+ * below) to validate a single-field PATCH, where a caller legitimately
+ * sends just `{ isActive: false }` without touching contributionValue/
+ * contributionMethod. The paired-or-neither invariant only makes sense
+ * once applied to the full, merged entry — see
+ * setAccountActiveFields/setDeductionActiveFields in
+ * contribution-profiles.ts, which validate the post-merge result against
+ * `contribAccountActiveFieldsSchema` (below) before persisting.
+ */
+export const contribAccountActiveFieldsPatchSchema = z
   .object({
     contributionValue: z.union([z.string(), z.number()]).optional(),
     contributionMethod: z.string().optional(),
@@ -301,8 +311,10 @@ export const contribAccountActiveFieldsSchema = z
     isActive: z.boolean().optional(),
     displayNameActive: z.string().optional(),
   })
-  .strict()
-  .refine(
+  .strict();
+
+export const contribAccountActiveFieldsSchema =
+  contribAccountActiveFieldsPatchSchema.refine(
     (f) =>
       (f.contributionValue === undefined) ===
       (f.contributionMethod === undefined),

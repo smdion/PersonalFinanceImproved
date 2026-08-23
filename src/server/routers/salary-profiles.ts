@@ -39,7 +39,7 @@ import { createTRPCRouter } from "../trpc";
 import { protectedProcedure, contributionProfileProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { canDeleteSalaryProfile } from "@/lib/pure/profiles";
-import { salaryEntriesSchema } from "@/lib/db/json-schemas";
+import { salaryEntriesSchema, salaryEntrySchema } from "@/lib/db/json-schemas";
 import { resolveCompensation } from "@/server/helpers";
 import type { SalaryEntryMap } from "@/server/helpers";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
@@ -53,6 +53,68 @@ function summarizeEntries(salaries: SalaryEntryMap) {
     pinnedCount: entries.length,
     pinnedSalaryTotal: entries.reduce((s, e) => s + e.salary, 0),
   };
+}
+
+/**
+ * Refresh extraPaycheckRouting's baseNetPayPerCheck/payPeriod/anchorPayDate
+ * snapshot for any job whose routing is already configured — but only when
+ * `profileId` is the globally-ACTIVE profile. Editing an active profile's
+ * real values (a withholding correction, a raise) is not "browsing a
+ * what-if" — it's a correction to the one real number
+ * computeJobNetPayPerCheck already resolves against, so it should
+ * propagate immediately, the same way an explicit
+ * extraPaycheckRouting.save/saveGrowth would. Editing a NON-active profile
+ * must NOT trigger this — that's exactly the "routine profile switch
+ * silently rewrites a plan" case RULES.md's no-cascade-by-design note
+ * warns about; the distinction is active-vs-not, not edited-vs-not.
+ *
+ * Single computation path for this refresh — called from every mutation
+ * that can change a profile's `salaries` (update, patchEntry, removeEntry)
+ * instead of each reimplementing it.
+ *
+ * Returns the refreshed row, or undefined if nothing needed refreshing
+ * (not active, or no job had routing configured).
+ */
+async function refreshExtraPaycheckRoutingIfActive(
+  db: typeof import("@/lib/db").db,
+  profileId: number,
+  salaries: SalaryEntryMap,
+): Promise<typeof schema.salaryProfiles.$inferSelect | undefined> {
+  try {
+    const activeId = await resolveActiveSalaryProfileId(db);
+    if (activeId !== profileId) return undefined;
+
+    let anyRefreshed = false;
+    for (const [jobIdStr, entry] of Object.entries(salaries)) {
+      const routing = entry.extraPaycheckRouting;
+      if (!routing?.rules?.length) continue;
+      const jobId = Number(jobIdStr);
+      const refreshed = await computeJobNetPayPerCheck(db, jobId);
+      salaries[jobIdStr] = {
+        ...entry,
+        extraPaycheckRouting: {
+          ...routing,
+          baseNetPayPerCheck: refreshed.netPayPerCheck,
+          payPeriod: refreshed.payPeriod,
+          anchorPayDate: refreshed.anchorPayDate,
+        },
+      };
+      anyRefreshed = true;
+    }
+    if (!anyRefreshed) return undefined;
+
+    const [refreshedRow] = await db
+      .update(schema.salaryProfiles)
+      .set({ salaries })
+      .where(eq(schema.salaryProfiles.id, profileId))
+      .returning();
+    return refreshedRow;
+  } catch {
+    // The caller's actual edit (already written before this runs) must not
+    // fail just because the best-effort routing-snapshot refresh couldn't
+    // resolve (e.g. a mid-edit state with no matching tax bracket yet).
+    return undefined;
+  }
 }
 
 /**
@@ -375,58 +437,125 @@ export const salaryProfileRouter = createTRPCRouter({
         .returning();
       const updated = rows[0]!;
 
-      // Refresh extraPaycheckRouting's baseNetPayPerCheck/payPeriod/
-      // anchorPayDate snapshot for any job in THIS edit whose routing is
-      // already configured — but only when this is the globally-ACTIVE
-      // profile. Editing an active profile's real values (a withholding
-      // correction, a raise) is not "browsing a hypothetical" — it's a
-      // correction to the one real number computeJobNetPayPerCheck already
-      // resolves against, so it should propagate immediately, the same way
-      // an explicit extraPaycheckRouting.save/saveGrowth would. Editing a
-      // NON-active profile (a what-if comparison) must NOT trigger this —
-      // that's exactly the "routine profile switch silently rewrites a
-      // plan" case RULES.md's no-cascade-by-design note warns about; the
-      // distinction is active-vs-not, not edited-vs-not.
       if (input.salaries !== undefined) {
-        try {
-          const activeId = await resolveActiveSalaryProfileId(ctx.db);
-          if (activeId === input.id) {
-            const salaries = updated.salaries as SalaryEntryMap;
-            let anyRefreshed = false;
-            for (const [jobIdStr, entry] of Object.entries(salaries)) {
-              const routing = entry.extraPaycheckRouting;
-              if (!routing?.rules?.length) continue;
-              const jobId = Number(jobIdStr);
-              const refreshed = await computeJobNetPayPerCheck(ctx.db, jobId);
-              salaries[jobIdStr] = {
-                ...entry,
-                extraPaycheckRouting: {
-                  ...routing,
-                  baseNetPayPerCheck: refreshed.netPayPerCheck,
-                  payPeriod: refreshed.payPeriod,
-                  anchorPayDate: refreshed.anchorPayDate,
-                },
-              };
-              anyRefreshed = true;
-            }
-            if (anyRefreshed) {
-              const [refreshedRow] = await ctx.db
-                .update(schema.salaryProfiles)
-                .set({ salaries })
-                .where(eq(schema.salaryProfiles.id, input.id))
-                .returning();
-              return refreshedRow!;
-            }
-          }
-        } catch {
-          // The user's actual edit (already written above) must not fail
-          // just because the best-effort routing-snapshot refresh couldn't
-          // resolve (e.g. a mid-edit state with no matching tax bracket
-          // yet) — fall through and return the already-saved update.
-        }
+        const refreshed = await refreshExtraPaycheckRoutingIfActive(
+          ctx.db,
+          input.id,
+          updated.salaries as SalaryEntryMap,
+        );
+        if (refreshed) return refreshed;
       }
 
       return updated;
+    }),
+
+  /**
+   * Patch (merge) one job's entry within a profile — a true field-level
+   * patch, not a client-side-merged full-blob replace. `fields` only needs
+   * to carry the keys actually changing; `unset` explicitly names keys to
+   * clear back to their type's "unset" value where meaningful (most fields
+   * here don't have one — see the merged-result validation below, which
+   * requires every field to still resolve to a complete entry after the
+   * patch). Also used to create a brand-new entry by passing a complete
+   * `fields` object (e.g. BLANK_ENTRY) with no existing entry to merge
+   * onto.
+   *
+   * The read-merge-write happens inside a transaction so two overlapping
+   * patches to the same profile (two fields committed in quick succession,
+   * a second tab/device) can't silently clobber each other the way the
+   * previous design — read a snapshot client-side, merge client-side, PUT
+   * the whole blob back through `update` — could.
+   */
+  patchEntry: contributionProfileProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        jobId: z.number(),
+        fields: salaryEntrySchema.partial(),
+        unset: z.array(z.string()).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const updated = await ctx.db.transaction(async (tx) => {
+        const existing = await tx
+          .select()
+          .from(schema.salaryProfiles)
+          .where(eq(schema.salaryProfiles.id, input.id));
+        const profile = existing[0];
+        if (!profile) throw new Error("Profile not found");
+
+        const salaries = profile.salaries as SalaryEntryMap;
+        const key = String(input.jobId);
+        const mergedEntry: Record<string, unknown> = { ...salaries[key] };
+        for (const field of input.unset ?? []) delete mergedEntry[field];
+        Object.assign(mergedEntry, input.fields);
+
+        const parsed = salaryEntrySchema.safeParse(mergedEntry);
+        if (!parsed.success) {
+          throw new Error(
+            `Invalid salary entry after patch: ${parsed.error.issues[0]?.message}`,
+          );
+        }
+
+        const nextSalaries = { ...salaries, [key]: parsed.data };
+        await assertSalaryEntryTaxBracketsExist(tx, {
+          [key]: parsed.data,
+        });
+
+        const rows = await tx
+          .update(schema.salaryProfiles)
+          .set({ salaries: nextSalaries })
+          .where(eq(schema.salaryProfiles.id, input.id))
+          .returning();
+        return rows[0]!;
+      });
+
+      const refreshed = await refreshExtraPaycheckRoutingIfActive(
+        ctx.db,
+        input.id,
+        updated.salaries as SalaryEntryMap,
+      );
+      return refreshed ?? updated;
+    }),
+
+  /**
+   * Remove one job's entry from a profile entirely — it goes back to
+   * contributing $0, the same as a job that was never added. Same
+   * transactional read-merge-write pattern as patchEntry.
+   */
+  removeEntry: contributionProfileProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        jobId: z.number(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const updated = await ctx.db.transaction(async (tx) => {
+        const existing = await tx
+          .select()
+          .from(schema.salaryProfiles)
+          .where(eq(schema.salaryProfiles.id, input.id));
+        const profile = existing[0];
+        if (!profile) throw new Error("Profile not found");
+
+        const salaries = { ...(profile.salaries as SalaryEntryMap) };
+        delete salaries[String(input.jobId)];
+
+        const rows = await tx
+          .update(schema.salaryProfiles)
+          .set({ salaries })
+          .where(eq(schema.salaryProfiles.id, input.id))
+          .returning();
+        return rows[0]!;
+      });
+
+      const refreshed = await refreshExtraPaycheckRoutingIfActive(
+        ctx.db,
+        input.id,
+        updated.salaries as SalaryEntryMap,
+      );
+      return refreshed ?? updated;
     }),
 
   /**

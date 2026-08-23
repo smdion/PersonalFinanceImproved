@@ -34,6 +34,7 @@ import { getDisplayConfig } from "@/lib/config/account-types";
 import {
   contributionActiveFieldsSchema,
   contribAccountActiveFieldsSchema,
+  contribAccountActiveFieldsPatchSchema,
   deductionActiveFieldsSchema,
 } from "@/lib/db/json-schemas";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
@@ -523,19 +524,33 @@ export const contributionProfileRouter = createTRPCRouter({
     }),
 
   /**
-   * Set (merge) one account's active fields within a profile, without the
-   * caller needing to fetch/merge the full contributionActiveFields blob
-   * itself. Used right after creating a new contribution account (e.g.
-   * What-If's "Make real") to give it a real value in whichever profile is
-   * currently in effect — a brand-new account has no value anywhere until
-   * this runs.
+   * Patch (merge) one account's active fields within a profile — a true
+   * field-level patch, not a client-side-merged full-blob replace. `fields`
+   * only needs to carry the keys actually changing; `unset` explicitly
+   * names keys to remove (a JSON body can't transmit `undefined` as a
+   * distinguishable value from "key omitted", so field-level deletion
+   * needs its own signal). Keys not mentioned in either are left untouched.
+   *
+   * The read-merge-write happens inside a transaction so two overlapping
+   * patches to the same profile (two fields committed in quick succession,
+   * a second tab/device) can't silently clobber each other the way the
+   * previous design — read a snapshot client-side, merge client-side, PUT
+   * the whole blob back — could.
+   *
+   * `fields` is validated against the loose per-field patch schema (every
+   * field optional, no cross-field constraint); the paired-or-neither
+   * contributionValue/contributionMethod invariant is checked on the
+   * MERGED result below, not on the patch itself, since a legitimate
+   * single-field patch (e.g. just `{ isActive: false }`) must not be
+   * rejected for not also carrying an unrelated pair.
    */
   setAccountActiveFields: contributionProfileProcedure
     .input(
       z.object({
         profileId: z.number(),
         accountId: z.number(),
-        fields: contribAccountActiveFieldsSchema,
+        fields: contribAccountActiveFieldsPatchSchema,
+        unset: z.array(z.string()).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -554,44 +569,62 @@ export const contributionProfileRouter = createTRPCRouter({
         }
       }
 
-      const existing = await ctx.db
-        .select()
-        .from(schema.contributionProfiles)
-        .where(eq(schema.contributionProfiles.id, input.profileId));
-      const profile = existing[0];
-      if (!profile) throw new Error("Profile not found");
+      return ctx.db.transaction(async (tx) => {
+        const existing = await tx
+          .select()
+          .from(schema.contributionProfiles)
+          .where(eq(schema.contributionProfiles.id, input.profileId));
+        const profile = existing[0];
+        if (!profile) throw new Error("Profile not found");
 
-      const root = profile.contributionActiveFields as {
-        contributionAccounts?: Record<string, Record<string, unknown>>;
-      };
-      const nextActiveFields = {
-        ...root,
-        contributionAccounts: {
-          ...root.contributionAccounts,
-          [String(input.accountId)]: {
-            ...root.contributionAccounts?.[String(input.accountId)],
-            ...input.fields,
-          },
-        },
-      };
+        const root = profile.contributionActiveFields as {
+          contributionAccounts?: Record<string, Record<string, unknown>>;
+        };
+        const mergedEntry: Record<string, unknown> = {
+          ...root.contributionAccounts?.[String(input.accountId)],
+        };
+        for (const key of input.unset ?? []) delete mergedEntry[key];
+        Object.assign(mergedEntry, input.fields);
 
-      const rows = await ctx.db
-        .update(schema.contributionProfiles)
-        .set({
-          contributionActiveFields:
-            nextActiveFields as typeof profile.contributionActiveFields,
-        })
-        .where(eq(schema.contributionProfiles.id, input.profileId))
-        .returning();
-      return rows[0]!;
+        const parsed = contribAccountActiveFieldsSchema.safeParse(mergedEntry);
+        if (!parsed.success) {
+          throw new Error(
+            `Invalid contribution account fields after patch: ${parsed.error.issues[0]?.message}`,
+          );
+        }
+
+        // A fully-unset entry is removed entirely, not stored as `{}` — an
+        // absent key and an empty object mean the same thing here
+        // (getIncompleteContribAccountIds treats them identically), but
+        // only one of them should be the actual on-disk representation.
+        const nextAccounts = { ...root.contributionAccounts };
+        if (Object.keys(parsed.data).length === 0) {
+          delete nextAccounts[String(input.accountId)];
+        } else {
+          nextAccounts[String(input.accountId)] = parsed.data;
+        }
+        const nextActiveFields = {
+          ...root,
+          contributionAccounts: nextAccounts,
+        };
+
+        const rows = await tx
+          .update(schema.contributionProfiles)
+          .set({
+            contributionActiveFields:
+              nextActiveFields as typeof profile.contributionActiveFields,
+          })
+          .where(eq(schema.contributionProfiles.id, input.profileId))
+          .returning();
+        return rows[0]!;
+      });
     }),
 
   /**
-   * Set (merge) one deduction's active amount within a profile — same
-   * pattern as setAccountActiveFields, for the deductions section of the
-   * Contribution Profile editor. A deduction has no live amountPerPeriod
-   * any more (Stage B dropped the column) — this is the only way to give
-   * one a resolvable value.
+   * Patch (merge) one deduction's active amount within a profile — same
+   * field-level-patch, same-transaction pattern as setAccountActiveFields.
+   * A deduction has no live amountPerPeriod any more (Stage B dropped the
+   * column) — this is the only way to give one a resolvable value.
    */
   setDeductionActiveFields: contributionProfileProcedure
     .input(
@@ -599,40 +632,56 @@ export const contributionProfileRouter = createTRPCRouter({
         profileId: z.number(),
         deductionId: z.number(),
         fields: deductionActiveFieldsSchema,
+        unset: z.array(z.string()).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const existing = await ctx.db
-        .select()
-        .from(schema.contributionProfiles)
-        .where(eq(schema.contributionProfiles.id, input.profileId));
-      const profile = existing[0];
-      if (!profile) throw new Error("Profile not found");
+      return ctx.db.transaction(async (tx) => {
+        const existing = await tx
+          .select()
+          .from(schema.contributionProfiles)
+          .where(eq(schema.contributionProfiles.id, input.profileId));
+        const profile = existing[0];
+        if (!profile) throw new Error("Profile not found");
 
-      const root = profile.contributionActiveFields as {
-        contributionAccounts?: Record<string, Record<string, unknown>>;
-        deductions?: Record<string, Record<string, unknown>>;
-      };
-      const nextActiveFields = {
-        ...root,
-        deductions: {
-          ...root.deductions,
-          [String(input.deductionId)]: {
-            ...root.deductions?.[String(input.deductionId)],
-            ...input.fields,
-          },
-        },
-      };
+        const root = profile.contributionActiveFields as {
+          contributionAccounts?: Record<string, Record<string, unknown>>;
+          deductions?: Record<string, Record<string, unknown>>;
+        };
+        const mergedEntry: Record<string, unknown> = {
+          ...root.deductions?.[String(input.deductionId)],
+        };
+        for (const key of input.unset ?? []) delete mergedEntry[key];
+        Object.assign(mergedEntry, input.fields);
 
-      const rows = await ctx.db
-        .update(schema.contributionProfiles)
-        .set({
-          contributionActiveFields:
-            nextActiveFields as typeof profile.contributionActiveFields,
-        })
-        .where(eq(schema.contributionProfiles.id, input.profileId))
-        .returning();
-      return rows[0]!;
+        const parsed = deductionActiveFieldsSchema.safeParse(mergedEntry);
+        if (!parsed.success) {
+          throw new Error(
+            `Invalid deduction fields after patch: ${parsed.error.issues[0]?.message}`,
+          );
+        }
+
+        const nextDeductions = { ...root.deductions };
+        if (Object.keys(parsed.data).length === 0) {
+          delete nextDeductions[String(input.deductionId)];
+        } else {
+          nextDeductions[String(input.deductionId)] = parsed.data;
+        }
+        const nextActiveFields = {
+          ...root,
+          deductions: nextDeductions,
+        };
+
+        const rows = await tx
+          .update(schema.contributionProfiles)
+          .set({
+            contributionActiveFields:
+              nextActiveFields as typeof profile.contributionActiveFields,
+          })
+          .where(eq(schema.contributionProfiles.id, input.profileId))
+          .returning();
+        return rows[0]!;
+      });
     }),
 
   /**

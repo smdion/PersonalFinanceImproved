@@ -1377,6 +1377,34 @@ function ProfileInlineEditor({
     onSuccess: () => onSaved(),
   });
 
+  // patchAccount/patchDeduction used to read-merge-write the whole
+  // contributionActiveFields blob client-side (from a query snapshot that
+  // goes stale the instant a prior commit resolves) and PUT it back through
+  // `update` — a client-side reimplementation of what
+  // setAccountActiveFields/setDeductionActiveFields already do server-side,
+  // in one transaction, off the freshest row. Two fields committed in quick
+  // succession could silently clobber each other under the old path. These
+  // call the server-side patch procedures directly instead.
+  const [patchError, setPatchError] = useState<{ message: string } | null>(
+    null,
+  );
+  const setAccountFields =
+    trpc.contributionProfile.setAccountActiveFields.useMutation({
+      onSuccess: () => {
+        setPatchError(null);
+        onSaved();
+      },
+      onError: setPatchError,
+    });
+  const setDeductionFields =
+    trpc.contributionProfile.setDeductionActiveFields.useMutation({
+      onSuccess: () => {
+        setPatchError(null);
+        onSaved();
+      },
+      onError: setPatchError,
+    });
+
   if (!profile) return null;
 
   const root = (profile.contributionActiveFields ?? {}) as ActiveFieldsRoot;
@@ -1385,23 +1413,28 @@ function ProfileInlineEditor({
   const deductionActiveFields = (id: number) =>
     root.deductions?.[String(id)] ?? {};
 
+  /** Split a {key: value | undefined} changes record into a patch (fields
+   *  actually being set) and an unset list (fields being cleared) — the
+   *  wire format the server-side patch procedures expect, since a JSON
+   *  body can't carry `undefined` as a distinguishable value from "field
+   *  omitted". */
+  const splitChanges = (changes: Record<string, unknown>) => {
+    const fields: Record<string, unknown> = {};
+    const unset: string[] = [];
+    for (const [key, value] of Object.entries(changes)) {
+      if (value === undefined) unset.push(key);
+      else fields[key] = value;
+    }
+    return { fields, unset };
+  };
+
   /** Send a patch for one account. `undefined` removes that key. */
   const patchAccount = (
     accountId: number,
     changes: Record<string, unknown>,
   ) => {
-    const accounts = { ...(root.contributionAccounts ?? {}) };
-    const entry = { ...(accounts[String(accountId)] ?? {}) };
-    for (const [key, value] of Object.entries(changes)) {
-      if (value === undefined) delete entry[key];
-      else entry[key] = value;
-    }
-    if (Object.keys(entry).length === 0) delete accounts[String(accountId)];
-    else accounts[String(accountId)] = entry;
-    updateMutation.mutate({
-      id: profileId,
-      contributionActiveFields: { ...root, contributionAccounts: accounts },
-    });
+    const { fields, unset } = splitChanges(changes);
+    setAccountFields.mutate({ profileId, accountId, fields, unset });
   };
 
   /** Send a patch for one deduction. `undefined` removes that key. */
@@ -1409,18 +1442,8 @@ function ProfileInlineEditor({
     deductionId: number,
     changes: Record<string, unknown>,
   ) => {
-    const deductions = { ...(root.deductions ?? {}) };
-    const entry = { ...(deductions[String(deductionId)] ?? {}) };
-    for (const [key, value] of Object.entries(changes)) {
-      if (value === undefined) delete entry[key];
-      else entry[key] = value;
-    }
-    if (Object.keys(entry).length === 0) delete deductions[String(deductionId)];
-    else deductions[String(deductionId)] = entry;
-    updateMutation.mutate({
-      id: profileId,
-      contributionActiveFields: { ...root, deductions },
-    });
+    const { fields, unset } = splitChanges(changes);
+    setDeductionFields.mutate({ profileId, deductionId, fields, unset });
   };
 
   /**
@@ -1482,7 +1505,7 @@ function ProfileInlineEditor({
   return (
     <div>
       <FormError
-        error={updateMutation.error}
+        error={updateMutation.error ?? patchError}
         prefix="Failed to save profile"
         className="mb-3"
       />
@@ -1560,6 +1583,9 @@ function ProfileInlineEditor({
                   const hasMatch =
                     ad.liveMatchType !== "none" && ad.liveMatchType !== null;
                   const isDisabled = af.isActive === false;
+                  const isSaving =
+                    setAccountFields.isPending &&
+                    setAccountFields.variables?.accountId === ad.id;
                   const storedValue =
                     af.contributionValue !== undefined
                       ? String(af.contributionValue)
@@ -1579,11 +1605,12 @@ function ProfileInlineEditor({
                   return (
                     <tr
                       key={ad.id}
+                      aria-busy={isSaving}
                       className={`border-b border-subtle hover:bg-blue-50/60 transition-colors ${
                         rowIdx % 2 === 1
                           ? "bg-surface-sunken/60"
                           : "bg-surface-primary"
-                      } ${isDisabled ? "opacity-40" : ""}`}
+                      } ${isDisabled ? "opacity-40" : ""} ${isSaving ? "opacity-60 pointer-events-none" : ""}`}
                     >
                       <td className="py-1.5 pl-4 align-top">
                         <input
@@ -1836,14 +1863,18 @@ function ProfileInlineEditor({
                   profile.deductionDetails.find((dd) => dd.id === d.id)
                     ?.employerName ?? `Job ${d.jobId}`;
                 const storedName = d.deductionName;
+                const isSaving =
+                  setDeductionFields.isPending &&
+                  setDeductionFields.variables?.deductionId === d.id;
                 return (
                   <tr
                     key={d.id}
+                    aria-busy={isSaving}
                     className={`border-b border-subtle hover:bg-blue-50/60 transition-colors ${
                       rowIdx % 2 === 1
                         ? "bg-surface-sunken/60"
                         : "bg-surface-primary"
-                    }`}
+                    } ${isSaving ? "opacity-60 pointer-events-none" : ""}`}
                   >
                     <td className="py-1.5 pl-4 pr-3 text-secondary">
                       <input
