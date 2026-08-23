@@ -53,6 +53,12 @@ import {
   buildDecumulationDefaults,
   buildMcInputs,
 } from "./_shared";
+import {
+  hashEngineInput,
+  readProjectionCache,
+  writeProjectionCache,
+  generateSeed,
+} from "@/server/helpers/projection-cache";
 
 export const monteCarloRouter = createTRPCRouter({
   /**
@@ -122,6 +128,8 @@ export const monteCarloRouter = createTRPCRouter({
           .optional(),
         /** Optional snapshot ID — use a historical portfolio snapshot instead of the latest. */
         snapshotId: z.number().int().optional(),
+        /** Bypass the projection cache and force a fresh run with a new seed — the explicit "Run Monte Carlo" action, not the default query path. */
+        forceRefresh: z.boolean().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -416,17 +424,50 @@ export const monteCarloRouter = createTRPCRouter({
         returnRates: mcDeterministicRates,
       };
 
-      const result = calculateMonteCarlo({
-        engineInput: mcEngineInput,
+      // Cache key covers every input that feeds the trials themselves —
+      // NOT input.seed's absence/presence directly, but its explicit value
+      // (an explicit client seed is a distinct request from "give me
+      // whatever's cached or fresh"), so identical explicit-seed requests
+      // still hit cache while an unseeded request reuses whatever seed the
+      // cache already minted.
+      const mcInputHash = hashEngineInput("monteCarlo", {
+        mcEngineInput,
         numTrials: input.numTrials,
-        seed: input.seed,
-        assetClasses: mcAssetClasses,
-        correlations: mcCorrelations,
-        glidePath: mcGlidePath,
+        mcAssetClasses,
+        mcCorrelations,
+        mcGlidePath,
         inflationRisk: effectiveInflationRisk,
         returnClampMin,
         returnClampMax,
+        explicitSeed: input.seed ?? null,
       });
+      const mcCached = input.forceRefresh
+        ? null
+        : await readProjectionCache<ReturnType<typeof calculateMonteCarlo>>(
+            ctx.db,
+            mcInputHash,
+          );
+
+      let result: ReturnType<typeof calculateMonteCarlo>;
+      let usedSeed: number;
+      if (mcCached) {
+        result = mcCached.result;
+        usedSeed = mcCached.seed ?? input.seed ?? generateSeed();
+      } else {
+        usedSeed = input.seed ?? generateSeed();
+        result = calculateMonteCarlo({
+          engineInput: mcEngineInput,
+          numTrials: input.numTrials,
+          seed: usedSeed,
+          assetClasses: mcAssetClasses,
+          correlations: mcCorrelations,
+          glidePath: mcGlidePath,
+          inflationRisk: effectiveInflationRisk,
+          returnClampMin,
+          returnClampMax,
+        });
+        await writeProjectionCache(ctx.db, mcInputHash, result, usedSeed);
+      }
 
       // Build current glide path allocation for display (interpolate at current age)
       const currentGpEntry =
@@ -454,6 +495,7 @@ export const monteCarloRouter = createTRPCRouter({
       return {
         result,
         simulationInputs: {
+          seed: usedSeed,
           currentAge: age,
           retirementAge: avgRetirementAge,
           endAge: maxEndAge,

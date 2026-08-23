@@ -798,6 +798,78 @@ describe("projection router — computeMonteCarloProjection", () => {
 });
 
 // ---------------------------------------------------------------------------
+// computeMonteCarloProjection — persistent projection cache
+// ---------------------------------------------------------------------------
+
+describe("projection router — computeMonteCarloProjection cache", () => {
+  it("a second identical unseeded call reuses the same minted seed and result", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedGlidePath(db);
+      const input = { numTrials: 100, preset: "custom" as const };
+
+      const first = await caller.projection.computeMonteCarloProjection(input);
+      const second = await caller.projection.computeMonteCarloProjection(input);
+
+      expect(second.simulationInputs.seed).toBe(first.simulationInputs.seed);
+      expect(second.result).toEqual(first.result);
+      const rows = db.select().from(schema.projectionCache).all();
+      expect(rows).toHaveLength(1);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("an explicit seed is honored on a miss and reproducible on a hit", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedGlidePath(db);
+      const input = { numTrials: 100, preset: "custom" as const, seed: 777 };
+
+      const first = await caller.projection.computeMonteCarloProjection(input);
+      const second = await caller.projection.computeMonteCarloProjection(input);
+
+      expect(first.simulationInputs.seed).toBe(777);
+      expect(second.simulationInputs.seed).toBe(777);
+      expect(second.result).toEqual(first.result);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("forceRefresh mints a new seed and writes a fresh row", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedGlidePath(db);
+      const input = { numTrials: 100, preset: "custom" as const };
+
+      const first = await caller.projection.computeMonteCarloProjection(input);
+      const refreshed = await caller.projection.computeMonteCarloProjection({
+        ...input,
+        forceRefresh: true,
+      });
+
+      const rows = db.select().from(schema.projectionCache).all();
+      expect(rows).toHaveLength(1);
+      expect(refreshed.simulationInputs.seed).not.toBe(
+        first.simulationInputs.seed,
+      );
+    } finally {
+      cleanup();
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
 // computeStrategyComparison
 // ---------------------------------------------------------------------------
 
