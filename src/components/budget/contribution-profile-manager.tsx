@@ -13,6 +13,7 @@ import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile"
 import { useDraftCommit } from "@/lib/hooks/use-draft-commit";
 import { ProfileViewingBadge } from "./profile-viewing-badge";
 import { confirm, confirmWithDiff } from "@/components/ui/confirm-dialog";
+import { useCloneProfile } from "@/lib/hooks/use-clone-profile";
 import { diffContribProfileSwap } from "@/lib/pure/contrib-profile-diff";
 import { ContributionProfileCompare } from "./contribution-profile-compare";
 import { SlidePanel } from "@/components/ui/slide-panel";
@@ -95,6 +96,13 @@ export function ContributionProfileManager({
   const renameMutation = trpc.contributionProfile.update.useMutation({
     onSuccess: invalidateProfileDeps,
   });
+  const duplicateMutation = trpc.contributionProfile.duplicate.useMutation({
+    onSuccess: (created) => {
+      invalidateProfileDeps();
+      setSelectedProfileId(created.id);
+    },
+  });
+  const { clone: cloneProfile } = useCloneProfile(duplicateMutation);
 
   // Post-migration the active-profile setting always points at a real row;
   // useActiveContribProfile repairs it if that row ever goes missing.
@@ -343,6 +351,9 @@ export function ContributionProfileManager({
                         }
                       : undefined
                   }
+                  onClone={
+                    canEdit ? () => cloneProfile(p.id, p.name) : undefined
+                  }
                 />
               ))}
 
@@ -409,6 +420,7 @@ function ProfileListItem({
   onActivate,
   onDelete,
   onRename,
+  onClone,
   isRenaming,
   renameValue,
   onRenameValueChange,
@@ -423,6 +435,7 @@ function ProfileListItem({
   onActivate?: () => void;
   onDelete?: () => void;
   onRename?: () => void;
+  onClone?: () => void;
   isRenaming?: boolean;
   renameValue?: string;
   onRenameValueChange?: (value: string) => void;
@@ -473,9 +486,9 @@ function ProfileListItem({
             </span>
           )}
         </div>
-        {(onActivate || onDelete || onRename) && !isRenaming && (
+        {(onActivate || onDelete || onRename || onClone) && !isRenaming && (
           <div
-            className="flex gap-1 shrink-0 md:max-w-0 md:overflow-hidden md:opacity-0 md:group-hover:max-w-[9rem] md:group-hover:opacity-100 transition-all"
+            className="flex gap-1 shrink-0 md:max-w-0 md:overflow-hidden md:opacity-0 md:group-hover:max-w-[13rem] md:group-hover:opacity-100 transition-all"
             onClick={(e) => e.stopPropagation()}
           >
             {onActivate && !isActive && (
@@ -494,6 +507,15 @@ function ProfileListItem({
                 className="text-caption text-faint hover:text-blue-600"
               >
                 rename
+              </button>
+            )}
+            {onClone && (
+              <button
+                type="button"
+                onClick={onClone}
+                className="text-caption text-faint hover:text-blue-600"
+              >
+                clone
               </button>
             )}
             {onDelete && (

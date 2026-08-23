@@ -440,6 +440,49 @@ export const contributionProfileRouter = createTRPCRouter({
     }),
 
   /**
+   * Clone an existing profile's contributionActiveFields into a new
+   * profile, verbatim. Safe as a straight copy (unlike Salary Profile's
+   * extraPaycheckRouting, or Budget Profile's contributionAccountId):
+   * contributionActiveFields is a pure value-override map keyed by
+   * contributionAccountId (contributionValue/method/match fields/
+   * autoMaximize/isActive) with no FK to owned rows and no external
+   * write-through path — multiple profiles already reference the same
+   * account ids as normal steady state (that's what the compare view
+   * renders), so there's no double-counting or sync-conflict hazard here.
+   */
+  duplicate: contributionProfileProcedure
+    .input(
+      z.object({
+        sourceProfileId: z.number().int(),
+        name: z.string().min(1).max(100),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const source = await ctx.db
+        .select()
+        .from(schema.contributionProfiles)
+        .where(eq(schema.contributionProfiles.id, input.sourceProfileId))
+        .then((r) => r[0]);
+      if (!source) throw new Error("Source profile not found");
+
+      const contributionActiveFields = source.contributionActiveFields ?? {};
+      await assertNoJointPercentOfSalaryWithoutJob(
+        ctx.db,
+        contributionActiveFields,
+      );
+
+      const rows = await ctx.db
+        .insert(schema.contributionProfiles)
+        .values({
+          name: input.name,
+          description: source.description,
+          contributionActiveFields,
+        })
+        .returning();
+      return rows[0]!;
+    }),
+
+  /**
    * Update an existing contribution profile.
    */
   update: contributionProfileProcedure

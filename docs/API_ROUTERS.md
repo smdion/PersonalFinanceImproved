@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**329 procedures across 37 routers.**
+**331 procedures across 37 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -105,6 +105,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `compareData`              | query    | `protectedProcedure`           | map, keyed by account id. Deliberately skips what `getById` does per profile — perf-account fuzzy matching and full display-name disambiguation — since those only need to happen once per account row,  |
 | `create`                   | mutation | `contributionProfileProcedure` | Create a new contribution profile.                                                                                                                                                                       |
 | `delete`                   | mutation | `contributionProfileProcedure` | active-profile setting must always resolve to a real row), when it's the globally-active selection, and when any Plan still pins it — the scenarios FK is `set null`, so without that check deleting wou |
+| `duplicate`                | mutation | `contributionProfileProcedure` | contributionAccountId (contributionValue/method/match fields/ autoMaximize/isActive) with no FK to owned rows and no external write-through path — multiple profiles already reference the same account  |
 | `getById`                  | query    | `protectedProcedure`           | Get a single profile with fully resolved per-account details.                                                                                                                                            |
 | `list`                     | query    | `protectedProcedure`           | List all contribution profiles with resolved summary totals.                                                                                                                                             |
 | `resolve`                  | query    | `protectedProcedure`           | Resolve a profile to aggregate totals — used by the relocation tool and any other consumer that needs salary/contribution/match numbers for a given profile.                                             |
@@ -285,13 +286,14 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `salary-profiles`
 
-| Procedure | Kind     | Auth                           | Description                                                                                                                                                                                              |
-| --------- | -------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `create`  | mutation | `contributionProfileProcedure` | Create a profile. `salaries` defaults to EMPTY — genuinely no job entries, not copied from any other profile. A new what-if profile must never silently inherit whatever another profile happened to say |
-| `delete`  | mutation | `contributionProfileProcedure` | Delete a profile. Blocked when it's the last one left (the active-profile setting must always resolve to a real row), when it's the globally-active selection, and when any Plan still pins it — the sce |
-| `getById` | query    | `protectedProcedure`           | One profile plus per-person resolved rows, so the editor can show what this profile actually produces for each job without a second round trip.                                                          |
-| `list`    | query    | `protectedProcedure`           | All salary profiles, oldest first. Real rows only.                                                                                                                                                       |
-| `update`  | mutation | `contributionProfileProcedure` | (no description)                                                                                                                                                                                         |
+| Procedure   | Kind     | Auth                           | Description                                                                                                                                                                                              |
+| ----------- | -------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `create`    | mutation | `contributionProfileProcedure` | Create a profile. `salaries` defaults to EMPTY — genuinely no job entries, not copied from any other profile. A new what-if profile must never silently inherit whatever another profile happened to say |
+| `delete`    | mutation | `contributionProfileProcedure` | Delete a profile. Blocked when it's the last one left (the active-profile setting must always resolve to a real row), when it's the globally-active selection, and when any Plan still pins it — the sce |
+| `duplicate` | mutation | `contributionProfileProcedure` | reason someone clones a profile) would then immediately materialize real savings_planned_transactions off a stale, wrong number with no error surfaced — `update`'s active-profile-only refresh (below)  |
+| `getById`   | query    | `protectedProcedure`           | One profile plus per-person resolved rows, so the editor can show what this profile actually produces for each job without a second round trip.                                                          |
+| `list`      | query    | `protectedProcedure`           | All salary profiles, oldest first. Real rows only.                                                                                                                                                       |
+| `update`    | mutation | `contributionProfileProcedure` | (no description)                                                                                                                                                                                         |
 
 ## `savings`
 

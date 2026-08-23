@@ -425,6 +425,75 @@ describe("salaryProfile router", () => {
       }
     });
   });
+
+  describe("duplicate", () => {
+    it("copies entries into a new profile, nulling extraPaycheckRouting", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const personId = await seedPerson(db, "Alex");
+        const jobId = seedJob(db, personId, {
+          employerName: "TestCorp",
+          annualSalary: "100000",
+        });
+        const sourceId = seedSalaryProfile(db, {
+          name: "Source",
+          description: "original",
+          salaries: {
+            [String(jobId)]: entry({
+              salary: 150000,
+              extraPaycheckRouting: {
+                rules: [{ month: 6, amount: 500 }],
+                overrides: {},
+                baseNetPayPerCheck: 3000,
+                payPeriod: "biweekly",
+                anchorPayDate: "2025-01-03",
+              },
+            }),
+          },
+        });
+
+        const created = await caller.salaryProfile.duplicate({
+          sourceProfileId: sourceId,
+          name: "Clone",
+        });
+
+        expect(created.name).toBe("Clone");
+        expect(created.description).toBe("original");
+        const cloned = created.salaries as Record<
+          string,
+          { salary: number; extraPaycheckRouting: unknown }
+        >;
+        expect(cloned[String(jobId)]!.salary).toBe(150000);
+        expect(cloned[String(jobId)]!.extraPaycheckRouting).toBeNull();
+
+        // Source is untouched.
+        const source = await caller.salaryProfile.getById({ id: sourceId });
+        expect(
+          (
+            source!.salaryDetails.find((sd) => sd.jobId === jobId) as {
+              extraPaycheckRouting?: unknown;
+            }
+          )?.extraPaycheckRouting,
+        ).not.toBeNull();
+      } finally {
+        cleanup();
+      }
+    });
+
+    it("throws when the source profile doesn't exist", async () => {
+      const { caller, cleanup } = await createTestCaller(adminSession);
+      try {
+        await expect(
+          caller.salaryProfile.duplicate({
+            sourceProfileId: 999999,
+            name: "Clone",
+          }),
+        ).rejects.toThrow("Source profile not found");
+      } finally {
+        cleanup();
+      }
+    });
+  });
 });
 
 describe("canDeleteSalaryProfile", () => {

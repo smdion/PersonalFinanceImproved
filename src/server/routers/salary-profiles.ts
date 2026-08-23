@@ -295,6 +295,55 @@ export const salaryProfileRouter = createTRPCRouter({
       return rows[0]!;
     }),
 
+  /**
+   * Clone an existing profile's job entries into a new, inactive profile.
+   *
+   * Every entry's `extraPaycheckRouting` is reset to `null` (a valid,
+   * complete value — see salaryEntrySchema) rather than copied verbatim.
+   * That field is a RECORDED FACT — baseNetPayPerCheck/payPeriod/
+   * anchorPayDate snapshotted from whichever profile was active at save
+   * time — not a formula. Copying it verbatim would let the clone inherit
+   * the source's frozen net-pay figure; activating the clone (the entire
+   * reason someone clones a profile) would then immediately materialize
+   * real savings_planned_transactions off a stale, wrong number with no
+   * error surfaced — `update`'s active-profile-only refresh (below) never
+   * fires for a profile that isn't active yet. The user reconfigures
+   * routing on the clone afterward, which resolves correctly.
+   */
+  duplicate: contributionProfileProcedure
+    .input(
+      z.object({
+        sourceProfileId: z.number().int(),
+        name: z.string().min(1).max(100),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const source = await ctx.db
+        .select()
+        .from(schema.salaryProfiles)
+        .where(eq(schema.salaryProfiles.id, input.sourceProfileId))
+        .then((r) => r[0]);
+      if (!source) throw new Error("Source profile not found");
+
+      const sourceSalaries = (source.salaries ?? {}) as SalaryEntryMap;
+      const salaries: SalaryEntryMap = Object.fromEntries(
+        Object.entries(sourceSalaries).map(([jobId, entry]) => [
+          jobId,
+          { ...entry, extraPaycheckRouting: null },
+        ]),
+      );
+
+      const rows = await ctx.db
+        .insert(schema.salaryProfiles)
+        .values({
+          name: input.name,
+          description: source.description,
+          salaries,
+        })
+        .returning();
+      return rows[0]!;
+    }),
+
   update: contributionProfileProcedure
     .input(
       z.object({

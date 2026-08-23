@@ -248,4 +248,45 @@ describe("contributionProfiles router", () => {
   // salary-profiles.ts) — the Contribution Profile `jobs` bucket that used
   // to carry these fields is deleted wholesale. See
   // tests/routers/salary-profiles.test.ts for that coverage.
+
+  // ── DUPLICATE ──
+
+  describe("duplicate", () => {
+    it("copies contributionActiveFields verbatim into a new profile", async () => {
+      const source = await caller.contributionProfile.create({
+        name: "Source Profile",
+        description: "original description",
+        contributionActiveFields: {
+          contributionAccounts: {
+            "999": {
+              contributionValue: "5000",
+              contributionMethod: "dollar_amount",
+              isActive: true,
+            },
+          },
+        },
+      });
+
+      const cloned = await caller.contributionProfile.duplicate({
+        sourceProfileId: source.id,
+        name: "Clone Profile",
+      });
+
+      expect(cloned.name).toBe("Clone Profile");
+      expect(cloned.description).toBe("original description");
+      expect(cloned.contributionActiveFields).toEqual(
+        source.contributionActiveFields,
+      );
+      expect(cloned.id).not.toBe(source.id);
+    });
+
+    it("throws when the source profile doesn't exist", async () => {
+      await expect(
+        caller.contributionProfile.duplicate({
+          sourceProfileId: 999999,
+          name: "Clone",
+        }),
+      ).rejects.toThrow("Source profile not found");
+    });
+  });
 });
