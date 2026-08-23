@@ -516,6 +516,8 @@ export function RetirementContent() {
                     <IncomeSection
                       settings={settings}
                       combinedSalary={data.combinedSalary}
+                      people={data.people}
+                      salaryByPerson={data.salaryByPerson}
                       upsertSettings={upsertSettingsMutation}
                       handleSettingPercentUpdate={handleSettingPercentUpdate}
                       contribProfiles={contribProfiles}

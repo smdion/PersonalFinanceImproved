@@ -12,6 +12,7 @@
 
 import { HelpTip } from "@/components/ui/help-tip";
 import { InlineEdit } from "@/components/ui/inline-edit";
+import { Tooltip } from "@/components/ui/tooltip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import type {
   Settings,
@@ -24,6 +25,15 @@ import { decToWhole } from "./helpers";
 type Props = {
   settings: Settings;
   combinedSalary: number | null | undefined;
+  /** id/name for every household member — joined against salaryByPerson to
+   *  build the hover breakdown. Omit (or leave salaryByPerson empty) for a
+   *  single-person household; the breakdown only adds value once there's
+   *  more than one number to break down. */
+  people?: { id: number; name: string }[];
+  /** personId -> that person's share of combinedSalary. Same aggregate
+   *  (totalComp, includes bonus) as combinedSalary itself — the per-person
+   *  lines always sum to the displayed total. */
+  salaryByPerson?: Record<number, number>;
   upsertSettings: UpsertSettingsMutation;
   handleSettingPercentUpdate: (field: string, wholePercent: string) => void;
   contribProfiles: ContribProfile[];
@@ -45,6 +55,8 @@ type Props = {
 export function IncomeSection({
   settings,
   combinedSalary,
+  people,
+  salaryByPerson,
   upsertSettings,
   handleSettingPercentUpdate,
   contribProfiles,
@@ -72,7 +84,27 @@ export function IncomeSection({
             <HelpTip text="Combined annual salary from your jobs. This is your starting income — grows each year by the Pre-Retirement Raise rate until retirement." />
           </span>
           <div className="font-medium">
-            {combinedSalary != null ? formatCurrency(combinedSalary) : "—"}
+            {(() => {
+              const breakdown = (people ?? [])
+                .filter((p) => salaryByPerson?.[p.id])
+                .map((p) => ({ name: p.name, salary: salaryByPerson![p.id]! }));
+              const value =
+                combinedSalary != null ? formatCurrency(combinedSalary) : "—";
+              if (breakdown.length < 2) return value;
+              return (
+                <Tooltip
+                  lines={breakdown.map((b) => (
+                    <span key={b.name}>
+                      {b.name}: {formatCurrency(b.salary)}
+                    </span>
+                  ))}
+                >
+                  <span className="cursor-help underline decoration-dotted decoration-faint underline-offset-2">
+                    {value}
+                  </span>
+                </Tooltip>
+              );
+            })()}
             <span className="text-caption text-faint font-normal ml-1">
               from jobs
             </span>
