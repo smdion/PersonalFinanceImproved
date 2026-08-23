@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**63 tables.**
+**64 tables.**
 
 ## Mermaid diagram
 
@@ -143,6 +143,9 @@ erDiagram
   budget_api_cache {
     int id PK
   }
+  projection_cache {
+    int id PK
+  }
   simplefin_balance_snapshots {
     int id PK
   }
@@ -280,6 +283,7 @@ erDiagram
 - **performance_accounts** → people
 - **portfolio_accounts** → portfolio_snapshots, people
 - **portfolio_snapshots**
+- **projection_cache**
 - **projection_overrides**
 - **property_taxes** → mortgage_loans
 - **relocation_scenarios**

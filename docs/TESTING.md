@@ -38,7 +38,7 @@ Framework: [Vitest](https://vitest.dev/) with globals enabled. E2E: [Playwright]
 | **Lint**          | 2     | 23    | RULES.md rule sweeps + repo-convention checks                                           |
 | **E2E**           | 13    | 38    | Playwright smoke tests (health, navigation, page flows)                                 |
 
-Total: **<!-- AUTO-GEN:totalTests -->4309<!-- /AUTO-GEN --> tests** across **<!-- AUTO-GEN:vitestFiles -->247<!-- /AUTO-GEN --> vitest files** + **38 Playwright E2E tests** (<!-- AUTO-GEN:e2eFiles -->13<!-- /AUTO-GEN --> files).
+Total: **<!-- AUTO-GEN:totalTests -->4309<!-- /AUTO-GEN --> tests** across **<!-- AUTO-GEN:vitestFiles -->248<!-- /AUTO-GEN --> vitest files** + **38 Playwright E2E tests** (<!-- AUTO-GEN:e2eFiles -->13<!-- /AUTO-GEN --> files).
 
 _Note: `totalTests` above is not auto-verified by `pnpm docs:verify` (only `vitestFiles`/`e2eFiles` are) — update it by hand from `pnpm test:coverage` + `pnpm test:benchmarks` output when the per-suite table changes._
 

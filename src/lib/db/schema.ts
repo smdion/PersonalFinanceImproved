@@ -95,3 +95,4 @@ export const salaryProfiles = active.salaryProfiles;
 export const stateVersions = active.stateVersions;
 export const stateVersionTables = active.stateVersionTables;
 export const changeLog = active.changeLog;
+export const projectionCache = active.projectionCache;

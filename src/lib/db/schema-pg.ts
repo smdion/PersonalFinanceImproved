@@ -1697,6 +1697,63 @@ export const budgetApiCache = pgTable(
   ],
 );
 
+/**
+ * Server-side cache for retirement projection results (deterministic
+ * engine + Monte Carlo + Coast FIRE MC) — a new table rather than reusing
+ * budgetApiCache. That table's `service` column is the argument to a
+ * DESTRUCTIVE operation (cacheClear drops-and-repulls a remote budget-API
+ * mirror); a projection cache has no upstream to re-pull from, and
+ * `serverKnowledge` (a YNAB delta-sync cursor) has no equivalent here. Its
+ * keyspace is also small and bounded ("categories", "months/YYYY-MM-01");
+ * this one is a hash per distinct input combination, unbounded, so it
+ * needs its own eviction (expiresAt + lastReadAt), which budgetApiCache's
+ * helpers don't provide.
+ *
+ * `seed` is stored WITH the cached result, not as a separate persisted
+ * setting: on a cache miss a fresh random seed is generated and stored
+ * alongside the result; on a hit, the ALREADY-STORED seed is what
+ * determined that stored result, so returning it is honestly
+ * reproducible — "this exact run really would produce this answer" —
+ * rather than silently freezing a stochastic simulation's randomness
+ * under a key that implies full determinism. A cache MISS (new inputs)
+ * always gets a new seed; "Re-run simulation" forces a miss.
+ */
+export const projectionCache = pgTable(
+  "projection_cache",
+  {
+    id: serial("id").primaryKey(),
+    /** sha256 of the canonicalized engine input this row was computed
+     *  from — see hashEngineInput in server/helpers/projection-cache.ts.
+     *  Different per procedure (deterministic vs MC vs Coast-FIRE MC
+     *  inputs differ), so the kind is folded into the hash input itself
+     *  rather than a separate column. */
+    inputHash: text("input_hash").notNull(),
+    /** Random seed used for this computation — null for the deterministic
+     *  engine result, which has no randomness to seed. */
+    seed: integer("seed"),
+    result: jsonb("result").$type<unknown>().notNull(),
+    computedAt: timestamp("computed_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    lastReadAt: timestamp("last_read_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    /** Bumped whenever the engine's computation logic changes in a way
+     *  that could change output for the same inputs — auto-invalidates
+     *  stale-shaped/stale-computed rows after a deploy without needing a
+     *  manual cache-clear. See PROJECTION_CACHE_ENGINE_VERSION. */
+    engineVersion: integer("engine_version").notNull(),
+  },
+  (table) => [
+    uniqueIndex("projection_cache_hash_version_idx").on(
+      table.inputHash,
+      table.engineVersion,
+    ),
+    index("projection_cache_expires_at_idx").on(table.expiresAt),
+  ],
+);
+
 export const simplefinBalanceSnapshots = pgTable(
   "simplefin_balance_snapshots",
   {
