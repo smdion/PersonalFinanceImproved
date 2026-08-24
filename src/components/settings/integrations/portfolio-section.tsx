@@ -14,6 +14,10 @@ import { formatCurrency } from "@/lib/utils/format";
 import { mappingsWithTypedIds } from "@/lib/utils/account-mapping";
 import type { PreviewData, Service } from "../integrations-types";
 import type { PortfolioMutations } from "./hooks/use-portfolio-mutations";
+import {
+  SectionSummaryBadge,
+  SectionSummaryRow,
+} from "./section-summary-badge";
 
 type Props = {
   service: Service;
@@ -50,15 +54,20 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
         <span className="text-xs font-medium text-muted">
           Tracking Account Mappings
         </span>
-        {unmappedCount === 0 ? (
-          <span className="text-caption text-green-400">
-            {totalTracking}/{totalTracking} mapped
-          </span>
-        ) : (
-          <span className="text-caption text-amber-400">
-            {mappedCount}/{totalTracking} mapped
-          </span>
-        )}
+        <SectionSummaryRow>
+          <SectionSummaryBadge
+            value={mappedCount}
+            label="mapped"
+            tone="green"
+          />
+          {unmappedCount > 0 && (
+            <SectionSummaryBadge
+              value={unmappedCount}
+              label="unmapped"
+              tone="amber"
+            />
+          )}
+        </SectionSummaryRow>
       </summary>
       <div className="px-3 pb-3 space-y-2">
         {/* Existing mappings */}

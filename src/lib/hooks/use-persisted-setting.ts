@@ -26,20 +26,28 @@ export function usePersistedSetting<T extends string | number | boolean | null>(
     onSuccess: () => utils.settings.appSettings.list.invalidate(),
   });
 
-  // Optimistic local value — seeded from localStorage for instant first paint
-  const [localValue, setLocalValue] = useState<T>(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem(`setting:${key}`);
-      if (stored !== null) {
-        try {
-          return JSON.parse(stored) as T;
-        } catch {
-          // ignore invalid JSON
-        }
+  // Optimistic local value. Always starts at defaultValue — SSR has no
+  // window, so a lazy initializer that read localStorage here returned
+  // defaultValue server-side but the STORED value on the client's very
+  // first render (before hydration reconciles), a same-render server/client
+  // branch on `typeof window`, which is a textbook hydration mismatch (React
+  // flags this exact pattern in its own hydration-error guidance). Read
+  // localStorage in the effect below instead — after mount, so it can only
+  // ever update state post-hydration, never change what the first render
+  // produces.
+  const [localValue, setLocalValue] = useState<T>(defaultValue);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(`setting:${key}`);
+    if (stored !== null) {
+      try {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- seeding from localStorage, client-only by definition
+        setLocalValue(JSON.parse(stored) as T);
+      } catch {
+        // ignore invalid JSON
       }
     }
-    return defaultValue;
-  });
+  }, [key]);
 
   // Track whether the user has made a local change that hasn't been
   // confirmed by the query yet. Per-write generation counter (not a single

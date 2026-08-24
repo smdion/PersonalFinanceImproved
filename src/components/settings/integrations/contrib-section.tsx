@@ -11,6 +11,10 @@
  */
 import type { PreviewData } from "../integrations-types";
 import type { ContribMutations } from "./hooks/use-contrib-mutations";
+import {
+  SectionSummaryBadge,
+  SectionSummaryRow,
+} from "./section-summary-badge";
 
 type ContribAccount = {
   id: number;
@@ -50,9 +54,18 @@ export function ContribSection({ budget, contribAccounts, mutations }: Props) {
         <span className="text-xs font-medium text-muted">
           Contribution Account Linking
         </span>
-        <span className="text-caption text-faint">
-          {linkedItems.length} linked · {unlinkedContribs.length} unlinked
-        </span>
+        <SectionSummaryRow>
+          <SectionSummaryBadge
+            value={linkedItems.length}
+            label="linked"
+            tone="green"
+          />
+          <SectionSummaryBadge
+            value={unlinkedContribs.length}
+            label="unlinked"
+            tone={unlinkedContribs.length > 0 ? "amber" : "faint"}
+          />
+        </SectionSummaryRow>
       </summary>
       <div className="px-3 pb-3 space-y-2">
         {/* Already linked items */}
@@ -77,7 +90,12 @@ export function ContribSection({ budget, contribAccounts, mutations }: Props) {
                     {m.ledgrName}
                   </span>
                   <span className="text-faint">&rarr;</span>
-                  <span className="text-green-700 truncate flex-1">
+                  <span
+                    className="text-green-700 truncate flex-1"
+                    title={
+                      ca?.displayLabel ?? `Account #${m.contributionAccountId}`
+                    }
+                  >
                     {ca?.displayLabel ?? `Account #${m.contributionAccountId}`}
                   </span>
                   <button
@@ -113,7 +131,10 @@ export function ContribSection({ budget, contribAccounts, mutations }: Props) {
                 <span className="text-caption px-1.5 py-0.5 rounded bg-surface-elevated text-faint whitespace-nowrap">
                   Unlinked
                 </span>
-                <span className="text-secondary truncate min-w-[80px] max-w-[140px]">
+                <span
+                  className="text-secondary truncate min-w-[80px] max-w-[220px]"
+                  title={ca.displayLabel}
+                >
                   {ca.displayLabel}
                 </span>
                 <span className="text-faint">&rarr;</span>

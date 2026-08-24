@@ -37,6 +37,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **The "PC" badge always reflected the first budget column's contribution match, regardless of which column was actually selected** — it now follows the column you're viewing.
 - **A contribution account explicitly marked "not payroll deducted" despite being tied to a job** (funded manually from take-home) **is no longer wrongly excluded from the Budget page's unlinked-item name-matching.**
 - **Editing a linked Budget item's amount now updates its "PC" badge and category total immediately**, instead of only after the next refetch — and no longer shows a phantom update for an edit that legitimately didn't take effect (no resolvable pay period, a stale profile link, etc.).
+- **A long account name in the Contribution Account Linking list is no longer cut off with no way to see the rest** — hover now shows the full name, and the column is wider.
+- **The four collapsible sections in Settings → Integrations (Budget Category Matching, Sinking Fund Matching, Contribution Account Linking, Tracking Account Mappings) now show their status counts the same way** — labeled counts like "4 linked" and "2 unmapped," instead of three different, sometimes unlabeled, formats across the four sections.
+- **Fixed a hydration warning on initial page load** caused by a shared settings hook reading browser storage before the page had a chance to fully load, which could very rarely make a tab or toggle briefly flash the wrong state.
 
 ### Changed (internal)
 

@@ -50,6 +50,34 @@ describe("usePersistedSetting", () => {
     expect(result.current[0]).toBe("stored-value");
   });
 
+  /**
+   * Regression test for a real hydration-mismatch bug: reading localStorage
+   * inside the useState lazy initializer meant the value returned differed
+   * between SSR (no window, always defaultValue) and the client's very
+   * first synchronous render (window present, reads localStorage
+   * immediately) — a same-render server/client branch. The initial
+   * synchronous state produced by the hook (before React flushes any
+   * effects) must always be defaultValue, regardless of what's in
+   * localStorage; the stored value may only arrive via an effect, i.e.
+   * after the render React would have used to reconcile against SSR HTML.
+   */
+  it("returns defaultValue synchronously before effects flush, even when localStorage has a stored value", () => {
+    localStorage.setItem("setting:my_key", JSON.stringify("stored-value"));
+
+    let syncValue: string | undefined;
+    function useProbe() {
+      const [value] = usePersistedSetting("my_key", "default-value");
+      // Capture the FIRST render's value before any subsequent re-render
+      // (triggered by the mount effect's setState) can overwrite it.
+      if (syncValue === undefined) syncValue = value;
+      return value;
+    }
+
+    renderHook(() => useProbe());
+
+    expect(syncValue).toBe("default-value");
+  });
+
   it("falls back to defaultValue when nothing is in localStorage", () => {
     const { result } = renderHook(() =>
       usePersistedSetting("unset_key", "default-value"),

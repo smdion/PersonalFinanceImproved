@@ -17,6 +17,10 @@ import type { ApiCategoryOption, PreviewData } from "../integrations-types";
 import { StatusBadge } from "../integrations-status-badge";
 import { ApiCategorySelect } from "../integrations-api-category-select";
 import type { SavingsMutations } from "./hooks/use-savings-mutations";
+import {
+  SectionSummaryBadge,
+  SectionSummaryRow,
+} from "./section-summary-badge";
 
 type Props = {
   savings: NonNullable<PreviewData["savings"]>;
@@ -76,11 +80,23 @@ export function SavingsSection({
         <span className="text-xs font-medium text-muted">
           Sinking Fund Matching
         </span>
-        <span className="flex gap-2 text-caption">
-          <span className="text-green-400">{savings.summary.linked}</span>
-          <span className="text-yellow-400">{savings.summary.suggested}</span>
-          <span className="text-faint">{savings.summary.unmatched}</span>
-        </span>
+        <SectionSummaryRow>
+          <SectionSummaryBadge
+            value={savings.summary.linked}
+            label="linked"
+            tone="green"
+          />
+          <SectionSummaryBadge
+            value={savings.summary.suggested}
+            label="suggested"
+            tone="amber"
+          />
+          <SectionSummaryBadge
+            value={savings.summary.unmatched}
+            label="unmatched"
+            tone="faint"
+          />
+        </SectionSummaryRow>
       </summary>
       <div className="px-3 pb-3 space-y-2">
         {(savings.summary.suggested > 0 ||
