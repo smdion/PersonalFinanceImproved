@@ -18,3 +18,17 @@ src/server/routers/savings.ts
 # resolveLinkedBudgetItemAmounts, not raw amounts). Split candidate:
 # extract listProfiles' per-profile summary computation into a helper.
 src/server/routers/budget.ts
+
+# v0.7.7: auto-generated from schema-pg.ts (never edit directly — see
+# CLAUDE.md). Grows in lockstep with its already-exempt source; this entry
+# was missing even though schema-pg.ts's own growth (e.g. the new
+# projection_cache table) always regenerates this file to match. Not a
+# split candidate on its own — track alongside schema-pg.ts above.
+src/lib/db/schema-sqlite.ts
+
+# v0.7.7: crossed the limit via the closed-account/contribution-profile
+# display-state consolidation (resolveContribFieldDisplayState adoption,
+# employer match $ support, tax-treatment labeling). Split candidate:
+# ProfileEditor and ProfileInlineEditor are two large, largely-parallel
+# components in one file — extract one (or both) into sibling modules.
+src/components/budget/contribution-profile-manager.tsx
