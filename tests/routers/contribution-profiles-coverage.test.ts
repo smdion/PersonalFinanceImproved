@@ -1094,6 +1094,38 @@ describe("contributionProfiles coverage", () => {
         cleanup();
       }
     });
+
+    it("names an account by its own linked institution, not the owner's current employer", async () => {
+      // Real bug: an IRA (held at Vanguard, no employer relationship) was
+      // showing the person's CURRENT job's employer name instead — e.g.
+      // "Alex IRA (TechCorp)" instead of "Alex IRA (Vanguard)" — because
+      // compareData synthesized "institution" from the current job for
+      // every account type, ignoring the account's real linked institution.
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const personId = await seedPerson(db, "Alex");
+        seedJob(db, personId, { employerName: "TechCorp" });
+        const perfAccountId = seedPerformanceAccount(db, {
+          institution: "Vanguard",
+          accountType: "ira",
+          accountLabel: "IRA (Vanguard)",
+          ownerPersonId: personId,
+        });
+        const iraId = seedContribAccount(db, {
+          personId,
+          accountType: "ira",
+          performanceAccountId: perfAccountId,
+          employerMatchType: "none",
+        });
+
+        const result = await caller.contributionProfile.compareData();
+        const ira = result.accounts.find((a) => a.id === iraId)!;
+        expect(ira.accountName).toContain("Vanguard");
+        expect(ira.accountName).not.toContain("TechCorp");
+      } finally {
+        cleanup();
+      }
+    });
   });
 
   describe("setAccountActiveFields — field-level patch", () => {

@@ -171,26 +171,39 @@ export const contributionProfileRouter = createTRPCRouter({
       .from(schema.contributionProfiles)
       .orderBy(schema.contributionProfiles.createdAt);
 
-    const { rawContribRows, peopleMap, jobs } = await loadLiveContribData(
-      ctx.db,
-    );
+    const { rawContribRows, peopleMap, jobs, perfAccountMap } =
+      await loadLiveContribData(ctx.db);
 
     const accounts = rawContribRows.map((row) => {
       const person =
         row.personId != null ? peopleMap.get(row.personId) : undefined;
+      const perfAccount =
+        row.performanceAccountId != null
+          ? perfAccountMap.get(row.performanceAccountId)
+          : undefined;
+      // The real institution (where the account is actually held) comes
+      // from the linked performance account. Falling back to the person's
+      // current employer only covers the rare case of a contribution
+      // account with no performance-account link yet — using employer as
+      // a stand-in for institution is wrong for anything not actually
+      // employer-sponsored (e.g. an IRA), which is exactly what happened
+      // here before: every account showed the owner's current job's name
+      // regardless of where the account is actually held.
       const institution =
+        perfAccount?.institution ??
         jobs.find(
           (j) => j.personId === row.personId && !j.endDate && !j.isSpeculative,
-        )?.employerName ?? "";
+        )?.employerName ??
+        "";
       const accountName = accountDisplayName(
         {
           accountType: row.accountType,
           subType: row.subType,
           label: row.label,
           institution,
-          displayName: null,
-          accountLabel: null,
-          ownershipType: null,
+          displayName: perfAccount?.displayName ?? null,
+          accountLabel: perfAccount?.accountLabel ?? null,
+          ownershipType: perfAccount?.ownershipType ?? null,
         },
         person?.name,
       );
