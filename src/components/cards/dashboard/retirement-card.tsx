@@ -17,6 +17,7 @@ import {
   formatRelativeTime,
 } from "@/lib/utils/format";
 import { sumBy } from "@/lib/utils/math";
+import { STATUS_COLORS } from "@/lib/utils/colors";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
@@ -24,9 +25,7 @@ import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-
 import {
   categoriesWithIrsLimit,
   getLimitGroup,
-  categoriesWithTaxPreference,
-  getDefaultDecumulationOrder,
-  DEFAULT_WITHDRAWAL_SPLITS,
+  defaultDecumulationConfig,
 } from "@/lib/config/account-types";
 import { WITHDRAWAL_STRATEGY_LABELS } from "@/lib/config/withdrawal-strategies";
 import { PERF_CATEGORY_RETIREMENT } from "@/lib/config/display-labels";
@@ -69,23 +68,16 @@ function RetirementCardImpl() {
     "retirement_dec_expense_override",
     null,
   );
-  // Mirrors the Retirement page's default (un-customized) decumulation form
-  // state exactly (use-projection-form-state.ts) — the deterministic
-  // computeProjection query below doesn't care (buildDecumulationDefaults
-  // always uses settings.withdrawalRate regardless of client input), but
-  // the persistent projection cache hashes the FULL built engine input, so
-  // omitting this (letting it fall back to the bare Zod schema default,
-  // e.g. withdrawalTaxPreference: {} instead of the page's real
-  // {401k: "traditional", ...}) silently guarantees the peek queries below
-  // always miss the page's real cached run, even on default settings.
-  const decumulationDefaults = {
-    withdrawalRoutingMode: "bracket_filling" as const,
-    withdrawalOrder: getDefaultDecumulationOrder(),
-    withdrawalSplits: { ...DEFAULT_WITHDRAWAL_SPLITS },
-    withdrawalTaxPreference: Object.fromEntries(
-      categoriesWithTaxPreference().map((cat) => [cat, "traditional" as const]),
-    ),
-  };
+  // Must exactly match the Retirement page's own default (un-customized)
+  // decumulation form state (use-projection-form-state.ts) — the
+  // deterministic computeProjection query below doesn't care
+  // (buildDecumulationDefaults always uses settings.withdrawalRate
+  // regardless of client input), but the persistent projection cache
+  // hashes the FULL built engine input, so a mismatch here would silently
+  // guarantee the peek queries below always miss the page's real cached
+  // run, even on default settings. Shared via defaultDecumulationConfig()
+  // (account-types.ts) so the two call sites can't independently drift.
+  const decumulationDefaults = defaultDecumulationConfig();
   const engineInput = {
     ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     ...contribProfileInput,
@@ -389,13 +381,13 @@ function RetirementCardImpl() {
               />
             </span>
             <span
-              className={
+              className={`font-medium ${
                 mcPeek.result.successRate >= 0.9
-                  ? "text-green-600 font-medium"
+                  ? STATUS_COLORS.green.text
                   : mcPeek.result.successRate >= 0.75
-                    ? "text-amber-600 font-medium"
-                    : "text-red-600 font-medium"
-              }
+                    ? STATUS_COLORS.amber.text
+                    : STATUS_COLORS.red.text
+              }`}
             >
               {formatPercent(mcPeek.result.successRate, 0)}
             </span>

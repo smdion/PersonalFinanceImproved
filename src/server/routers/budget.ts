@@ -1568,6 +1568,13 @@ export const budgetRouter = createTRPCRouter({
       // to link it to. See portfolioAccountLabel's identical precedence
       // rule for the analogous portfolio-snapshot-row case.
       const ownerPersonId = c.ownership === "individual" ? c.personId : null;
+      // Always pass a perf-shaped object, even with no linked performance
+      // account — falling back to `undefined` here would drop this
+      // account's own ownership (c.ownership) entirely, since
+      // portfolioAccountLabel's internal fallback only ever consults
+      // perf.ownershipType, never the caller's own row. A joint
+      // contribution account with no performance account linked yet (the
+      // normal pre-linking state) would silently lose its "Joint" prefix.
       const label = portfolioAccountLabel(
         {
           accountType: c.accountType,
@@ -1581,7 +1588,11 @@ export const budgetRouter = createTRPCRouter({
               accountLabel: perf.accountLabel,
               ownershipType: perf.ownershipType,
             }
-          : undefined,
+          : {
+              displayName: null,
+              accountLabel: null,
+              ownershipType: c.ownership,
+            },
         ownerPersonId,
         personMap,
       );

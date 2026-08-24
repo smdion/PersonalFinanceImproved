@@ -561,6 +561,36 @@ describe("budget router — listContribAccountsForLinking", () => {
       cleanup();
     }
   });
+
+  /**
+   * Regression test: a joint contribution account with no linked
+   * performance account yet (the normal pre-linking state) used to lose
+   * its "Joint" prefix entirely once the ownership-precedence fix landed.
+   * The old code fell back to `perf?.ownershipType ?? c.ownership`, so
+   * with no perf it used the account's own ownership ("joint"). The new
+   * portfolioAccountLabel-based call only ever fell back to
+   * `perf?.ownershipType`, never the caller's own row, so a null perf
+   * silently dropped the owner prefix — making a joint account
+   * indistinguishable from an individual one in the linking dropdown.
+   */
+  it("keeps the 'Joint' label for a joint contribution account with no linked performance account", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const seed = seedStandardDataset(db);
+      await seedContribAccount(db, seed.personId, {
+        ownership: "joint",
+        personId: null,
+        accountType: "ira",
+        performanceAccountId: null,
+      });
+
+      const result = await caller.budget.listContribAccountsForLinking();
+      expect(result).toHaveLength(1);
+      expect(result[0]!.displayLabel).toMatch(/^Joint /);
+    } finally {
+      cleanup();
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------

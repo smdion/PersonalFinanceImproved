@@ -21,11 +21,8 @@ import {
   buildAccumulationOrder,
   computeCurrentStockAllocationPercent,
 } from "../projection-v5-helpers";
-import {
-  buildContributionDisplaySpecs,
-  accountDisplayName,
-  toNumber,
-} from "@/server/helpers";
+import { buildContributionDisplaySpecs, toNumber } from "@/server/helpers";
+import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
 import type {
   AccountCategory,
   AccumulationOverride,
@@ -250,6 +247,9 @@ export const scenariosRouter = createTRPCRouter({
       const accumulationOrder = buildAccumulationOrder(activeContribs);
       const currentStockAllocationPercent =
         await computeCurrentStockAllocationPercent(ctx.db, age);
+      // portfolioAccountLabel wants id → name, for the contributionSpecs
+      // perf-account-label fallback below.
+      const nameMap = new Map(people.map((p) => [p.id, p.name] as const));
 
       return {
         result,
@@ -321,31 +321,18 @@ export const scenariosRouter = createTRPCRouter({
             catAccts.find(
               (a) => (exactOwner(a) || noOwner(a)) && parentCatMatch(a),
             );
-          // Fallback: use linked performance account's display name. Force
-          // ownershipType to "individual" when THIS contribution row has
-          // its own real owner (personId) — perfAcct's own ownershipType
-          // is "joint" for a shared, jointly-tracked master (e.g. one
-          // Vanguard IRA both spouses contribute to separately), and
-          // letting that win over the row's real owner silently discards
-          // the already-correct rest.ownerName below, rendering "Joint ..."
-          // for every such row instead of each person's own name. Same
-          // precedence rule as portfolioAccountLabel (src/server/helpers/
-          // portfolio-labels.ts) for the analogous portfolio-row case —
-          // not routed through that helper here since it expects a
-          // peopleMap to resolve ownerName, and this scope already has
-          // rest.ownerName resolved directly.
+          // Fallback: use linked performance account's display name,
+          // routed through the shared precedence rule (portfolio-labels.ts)
+          // so THIS contribution row's own real owner (personId) wins over
+          // perfAcct's own ownershipType — a shared, jointly-tracked master
+          // (e.g. one Vanguard IRA both spouses contribute to separately)
+          // has ownershipType "joint", which would otherwise render "Joint
+          // ..." for every such row instead of each person's own name.
           const perfAcct = contrib?.performanceAccountId
             ? perfAccountMap.get(contrib.performanceAccountId)
             : undefined;
           const perfFallback = perfAcct
-            ? accountDisplayName(
-                {
-                  ...perfAcct,
-                  ownershipType:
-                    personId != null ? "individual" : perfAcct.ownershipType,
-                },
-                rest.ownerName ?? undefined,
-              )
+            ? portfolioAccountLabel(perfAcct, perfAcct, personId, nameMap)
             : undefined;
           return {
             ...rest,

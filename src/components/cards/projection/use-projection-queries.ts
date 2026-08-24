@@ -225,10 +225,18 @@ export function useProjectionQueries(
     });
     utils.projection.computeProjection.setData(debouncedInput, result);
   };
+  // Must mirror mcQuery's own input exactly — a fresh result written under
+  // any other key (e.g. the trial-count/preset DEFAULTS) lands somewhere
+  // mcQuery never reads from, so the UI keeps showing stale data while the
+  // "re-run succeeded" toast still fires. Invisible whenever the user
+  // hasn't customized MC assumptions, since the defaults and mcQuery's
+  // input coincide at their initial values — that's why this went unnoticed.
   const runMonteCarloInput = {
-    numTrials: MC_DEFAULT_TRIALS,
-    preset: "default" as const,
+    numTrials: mcTrials,
+    preset: mcPreset,
     taxMode: mcTaxMode,
+    assetClassOverrides:
+      mcAssetClassOverrides.length > 0 ? mcAssetClassOverrides : undefined,
     ...debouncedBaseInput,
   };
   const runMonteCarlo = async () => {

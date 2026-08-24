@@ -324,9 +324,12 @@ export const coastFireRouter = createTRPCRouter({
         mcGlidePath,
         inflationRisk,
       });
-      const cached = input.forceRefresh
-        ? null
-        : await readProjectionCache<CoastFireMcResult>(ctx.db, inputHash);
+      // peekOnly always reads the real cache regardless of forceRefresh —
+      // see the identical fix/rationale in monte-carlo.ts.
+      const cached =
+        input.forceRefresh && !input.peekOnly
+          ? null
+          : await readProjectionCache<CoastFireMcResult>(ctx.db, inputHash);
       if (cached) {
         return {
           result: cached.result,

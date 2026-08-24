@@ -443,12 +443,20 @@ export const monteCarloRouter = createTRPCRouter({
         returnClampMax,
         explicitSeed: input.seed ?? null,
       });
-      const mcCached = input.forceRefresh
-        ? null
-        : await readProjectionCache<ReturnType<typeof calculateMonteCarlo>>(
-            ctx.db,
-            mcInputHash,
-          );
+      // peekOnly always reads the real cache regardless of forceRefresh —
+      // its whole contract is "report what's cached, never compute," which
+      // forceRefresh's cache bypass would otherwise silently override,
+      // returning an empty peek instead of running a fresh computation OR
+      // honoring the peek. The two flags are semantically contradictory
+      // together (peek = don't compute, force = compute fresh); peekOnly
+      // wins since it's the one that promises never to run trials.
+      const mcCached =
+        input.forceRefresh && !input.peekOnly
+          ? null
+          : await readProjectionCache<ReturnType<typeof calculateMonteCarlo>>(
+              ctx.db,
+              mcInputHash,
+            );
 
       let result: ReturnType<typeof calculateMonteCarlo> | null;
       let usedSeed: number | null;

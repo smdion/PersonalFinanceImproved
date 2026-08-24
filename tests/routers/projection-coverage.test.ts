@@ -915,6 +915,42 @@ describe("projection router — computeMonteCarloProjection cache", () => {
       cleanup();
     }
   });
+
+  /**
+   * Regression test: forceRefresh + peekOnly together used to silently
+   * discard the real cached result. forceRefresh forced the cache read to
+   * null unconditionally, so a peekOnly request that ALSO happened to set
+   * forceRefresh fell into the "no cache, peekOnly" branch and returned an
+   * empty peek — even though a real cached run existed and peekOnly's own
+   * contract is "report what's cached, never compute." peekOnly must win:
+   * it always reads the real cache, regardless of forceRefresh.
+   */
+  it("peekOnly still returns the cached result even when forceRefresh is also set", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedGlidePath(db);
+      const input = { numTrials: 100, preset: "custom" as const };
+
+      const real = await caller.projection.computeMonteCarloProjection(input);
+      const peeked = await caller.projection.computeMonteCarloProjection({
+        ...input,
+        peekOnly: true,
+        forceRefresh: true,
+      });
+
+      expect(peeked.result).toEqual(real.result);
+      expect(peeked.simulationInputs.seed).toBe(real.simulationInputs.seed);
+      // Still exactly one row — peekOnly+forceRefresh together must not
+      // trigger a fresh computation/write.
+      const rows = db.select().from(schema.projectionCache).all();
+      expect(rows).toHaveLength(1);
+    } finally {
+      cleanup();
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------

@@ -78,37 +78,53 @@ function summarizeEntries(salaries: SalaryEntryMap) {
 async function refreshExtraPaycheckRoutingIfActive(
   db: typeof import("@/lib/db").db,
   profileId: number,
-  salaries: SalaryEntryMap,
 ): Promise<typeof schema.salaryProfiles.$inferSelect | undefined> {
   try {
     const activeId = await resolveActiveSalaryProfileId(db);
     if (activeId !== profileId) return undefined;
 
-    let anyRefreshed = false;
-    for (const [jobIdStr, entry] of Object.entries(salaries)) {
-      const routing = entry.extraPaycheckRouting;
-      if (!routing?.rules?.length) continue;
-      const jobId = Number(jobIdStr);
-      const refreshed = await computeJobNetPayPerCheck(db, jobId);
-      salaries[jobIdStr] = {
-        ...entry,
-        extraPaycheckRouting: {
-          ...routing,
-          baseNetPayPerCheck: refreshed.netPayPerCheck,
-          payPeriod: refreshed.payPeriod,
-          anchorPayDate: refreshed.anchorPayDate,
-        },
-      };
-      anyRefreshed = true;
-    }
-    if (!anyRefreshed) return undefined;
+    // Own transaction, re-reading the row fresh rather than trusting the
+    // caller's in-memory `salaries` (captured at the moment the caller's
+    // OWN transaction committed) — two concurrent patchEntry/removeEntry
+    // calls for different jobs on the same profile can both commit cleanly
+    // (no field overlap), but a stale in-memory blob written back here
+    // would silently clobber whichever one committed second. Re-reading
+    // inside this transaction closes that window.
+    return await db.transaction(async (tx) => {
+      const rows = await tx
+        .select()
+        .from(schema.salaryProfiles)
+        .where(eq(schema.salaryProfiles.id, profileId));
+      const profile = rows[0];
+      if (!profile) return undefined;
 
-    const [refreshedRow] = await db
-      .update(schema.salaryProfiles)
-      .set({ salaries })
-      .where(eq(schema.salaryProfiles.id, profileId))
-      .returning();
-    return refreshedRow;
+      const salaries = { ...(profile.salaries as SalaryEntryMap) };
+      let anyRefreshed = false;
+      for (const [jobIdStr, entry] of Object.entries(salaries)) {
+        const routing = entry.extraPaycheckRouting;
+        if (!routing?.rules?.length) continue;
+        const jobId = Number(jobIdStr);
+        const refreshed = await computeJobNetPayPerCheck(tx, jobId);
+        salaries[jobIdStr] = {
+          ...entry,
+          extraPaycheckRouting: {
+            ...routing,
+            baseNetPayPerCheck: refreshed.netPayPerCheck,
+            payPeriod: refreshed.payPeriod,
+            anchorPayDate: refreshed.anchorPayDate,
+          },
+        };
+        anyRefreshed = true;
+      }
+      if (!anyRefreshed) return undefined;
+
+      const [refreshedRow] = await tx
+        .update(schema.salaryProfiles)
+        .set({ salaries })
+        .where(eq(schema.salaryProfiles.id, profileId))
+        .returning();
+      return refreshedRow;
+    });
   } catch {
     // The caller's actual edit (already written before this runs) must not
     // fail just because the best-effort routing-snapshot refresh couldn't
@@ -441,7 +457,6 @@ export const salaryProfileRouter = createTRPCRouter({
         const refreshed = await refreshExtraPaycheckRoutingIfActive(
           ctx.db,
           input.id,
-          updated.salaries as SalaryEntryMap,
         );
         if (refreshed) return refreshed;
       }
@@ -513,7 +528,6 @@ export const salaryProfileRouter = createTRPCRouter({
       const refreshed = await refreshExtraPaycheckRoutingIfActive(
         ctx.db,
         input.id,
-        updated.salaries as SalaryEntryMap,
       );
       return refreshed ?? updated;
     }),
@@ -553,7 +567,6 @@ export const salaryProfileRouter = createTRPCRouter({
       const refreshed = await refreshExtraPaycheckRoutingIfActive(
         ctx.db,
         input.id,
-        updated.salaries as SalaryEntryMap,
       );
       return refreshed ?? updated;
     }),

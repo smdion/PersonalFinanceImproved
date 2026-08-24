@@ -83,6 +83,11 @@ export function ContributionRow({
     activeMatchFields?.employerMaxMatchPct ?? c.employerMaxMatchPct;
   const isPercentMatch = effectiveMatchType === "percent_of_contribution";
 
+  const matchText = formatEmployerMatch(
+    effectiveMatchType,
+    effectiveMatchValue,
+    effectiveMaxMatchPct,
+  );
   const sharedMatchText = sharedMatchFrom
     ? formatEmployerMatch(
         sharedMatchFrom.employerMatchType,
@@ -130,41 +135,28 @@ export function ContributionRow({
             <span className="text-muted">
               {TAX_LABELS[c.taxTreatment] ?? c.taxTreatment}
             </span>
-            {(() => {
-              const matchText = formatEmployerMatch(
-                effectiveMatchType,
-                effectiveMatchValue,
-                effectiveMaxMatchPct,
-              );
-              return (
-                matchText && (
-                  <>
-                    <span className="text-faint">·</span>
-                    <span className="text-faint">
-                      {matchText} match
-                      {sharedMatchFrom ? " (combined w/ other split)" : ""}
-                    </span>
-                  </>
-                )
-              );
-            })()}
+            {matchText && (
+              <>
+                <span className="text-faint">·</span>
+                <span className="text-faint">
+                  {matchText} match
+                  {sharedMatchFrom ? " (combined w/ other split)" : ""}
+                </span>
+              </>
+            )}
             {(!effectiveMatchType || effectiveMatchType === "none") &&
               sharedMatchFrom &&
-              (() => {
-                return (
-                  sharedMatchText && (
-                    <>
-                      <span className="text-faint">·</span>
-                      <span className="text-faint">
-                        {sharedMatchText} match (combined w/{" "}
-                        {TAX_LABELS[sharedMatchFrom.taxTreatment] ??
-                          sharedMatchFrom.taxTreatment}{" "}
-                        split)
-                      </span>
-                    </>
-                  )
-                );
-              })()}
+              sharedMatchText && (
+                <>
+                  <span className="text-faint">·</span>
+                  <span className="text-faint">
+                    {sharedMatchText} match (combined w/{" "}
+                    {TAX_LABELS[sharedMatchFrom.taxTreatment] ??
+                      sharedMatchFrom.taxTreatment}{" "}
+                    split)
+                  </span>
+                </>
+              )}
             {c.subType && (
               <>
                 <span className="text-faint">·</span>

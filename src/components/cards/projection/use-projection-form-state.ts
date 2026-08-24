@@ -3,12 +3,7 @@ import { useState } from "react";
 import type { AccountCategory } from "@/lib/calculators/types";
 import { trpc } from "@/lib/trpc";
 import { type AssetClassOverride } from "@/components/cards/mc-simulation-assumptions";
-import {
-  getAllCategories,
-  categoriesWithTaxPreference,
-  getDefaultDecumulationOrder,
-  ACCOUNT_TYPE_CONFIG,
-} from "@/lib/config/account-types";
+import { defaultDecumulationConfig } from "@/lib/config/account-types";
 import type {
   AccumOverrideForm,
   DecumOverrideForm,
@@ -20,30 +15,22 @@ import { usePersistedToggle } from "@/lib/hooks/use-persisted-setting";
 
 export function useProjectionFormState() {
   // --- Withdrawal config ---
+  // Each seeded from defaultDecumulationConfig() (account-types.ts) — the
+  // SAME shared default the dashboard Retirement tile's cache-key-matching
+  // "peek" queries reproduce, so the two can't independently drift the way
+  // they had before this was consolidated.
   const [withdrawalRoutingMode, setWithdrawalRoutingMode] = useState<
     "bracket_filling" | "waterfall" | "percentage"
-  >("bracket_filling");
+  >(() => defaultDecumulationConfig().withdrawalRoutingMode);
   const [withdrawalOrder, setWithdrawalOrder] = useState<AccountCategory[]>(
-    getDefaultDecumulationOrder,
+    () => defaultDecumulationConfig().withdrawalOrder,
   );
   const [withdrawalSplits, setWithdrawalSplits] = useState<
     Record<AccountCategory, number>
-  >(
-    () =>
-      Object.fromEntries(
-        getAllCategories().map((cat) => [
-          cat,
-          ACCOUNT_TYPE_CONFIG[cat].defaultWithdrawalSplit,
-        ]),
-      ) as Record<AccountCategory, number>,
-  );
+  >(() => defaultDecumulationConfig().withdrawalSplits);
   const [withdrawalTaxPref, setWithdrawalTaxPref] = useState<
     Partial<Record<AccountCategory, "traditional" | "roth">>
-  >(() =>
-    Object.fromEntries(
-      categoriesWithTaxPreference().map((cat) => [cat, "traditional" as const]),
-    ),
-  );
+  >(() => defaultDecumulationConfig().withdrawalTaxPreference);
 
   // --- Overrides (persisted to DB, loaded on mount) ---
   const accumQuery = trpc.retirement.projectionOverrides.get.useQuery({

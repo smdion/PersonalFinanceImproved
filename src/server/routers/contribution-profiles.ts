@@ -29,7 +29,7 @@ import {
   getIncompleteContribAccountIds,
   type Db,
 } from "@/server/helpers";
-import { accountDisplayName } from "@/lib/utils/format";
+import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
 import { getDisplayConfig } from "@/lib/config/account-types";
 import {
   contributionActiveFieldsSchema,
@@ -80,6 +80,72 @@ async function assertNoJointPercentOfSalaryWithoutJob(
       "Joint accounts using percent-of-salary contributions must be linked to a specific job",
     );
   }
+}
+
+/**
+ * Shared transactional read-merge-write for one active-fields sub-entry
+ * (an account or a deduction) inside a profile's `contributionActiveFields`
+ * blob — setAccountActiveFields and setDeductionActiveFields were
+ * near-identical copies of this same four-step sequence (merge → validate
+ * → delete-if-empty → write back), differing only in which sub-key/schema
+ * they touch. See setAccountActiveFields's doc comment for why this needs
+ * to be transactional at all.
+ */
+async function patchProfileSubEntry<T extends Record<string, unknown>>(
+  tx: Db,
+  profileId: number,
+  subKey: "contributionAccounts" | "deductions",
+  entryId: number,
+  fields: Record<string, unknown>,
+  unset: string[] | undefined,
+  entrySchema: z.ZodType<T>,
+  errorLabel: string,
+): Promise<typeof schema.contributionProfiles.$inferSelect> {
+  const existing = await tx
+    .select()
+    .from(schema.contributionProfiles)
+    .where(eq(schema.contributionProfiles.id, profileId));
+  const profile = existing[0];
+  if (!profile) throw new Error("Profile not found");
+
+  const root = profile.contributionActiveFields as Record<
+    string,
+    Record<string, Record<string, unknown>> | undefined
+  >;
+  const mergedEntry: Record<string, unknown> = {
+    ...root[subKey]?.[String(entryId)],
+  };
+  for (const key of unset ?? []) delete mergedEntry[key];
+  Object.assign(mergedEntry, fields);
+
+  const parsed = entrySchema.safeParse(mergedEntry);
+  if (!parsed.success) {
+    throw new Error(
+      `Invalid ${errorLabel} after patch: ${parsed.error.issues[0]?.message}`,
+    );
+  }
+
+  // A fully-unset entry is removed entirely, not stored as `{}` — an
+  // absent key and an empty object mean the same thing here
+  // (getIncompleteContribAccountIds treats them identically), but only
+  // one of them should be the actual on-disk representation.
+  const nextSub = { ...root[subKey] };
+  if (Object.keys(parsed.data).length === 0) {
+    delete nextSub[String(entryId)];
+  } else {
+    nextSub[String(entryId)] = parsed.data;
+  }
+  const nextActiveFields = { ...root, [subKey]: nextSub };
+
+  const rows = await tx
+    .update(schema.contributionProfiles)
+    .set({
+      contributionActiveFields:
+        nextActiveFields as typeof profile.contributionActiveFields,
+    })
+    .where(eq(schema.contributionProfiles.id, profileId))
+    .returning();
+  return rows[0]!;
 }
 
 export const contributionProfileRouter = createTRPCRouter({
@@ -173,10 +239,14 @@ export const contributionProfileRouter = createTRPCRouter({
 
     const { rawContribRows, peopleMap, jobs, perfAccountMap } =
       await loadLiveContribData(ctx.db);
+    // portfolioAccountLabel wants id → name, but loadLiveContribData's
+    // peopleMap is id → full person row (shared with other resolution here
+    // that needs more than the name) — derive once rather than twice below.
+    const nameMap = new Map(
+      Array.from(peopleMap.values(), (p) => [p.id, p.name] as const),
+    );
 
     const accounts = rawContribRows.map((row) => {
-      const person =
-        row.personId != null ? peopleMap.get(row.personId) : undefined;
       const perfAccount =
         row.performanceAccountId != null
           ? perfAccountMap.get(row.performanceAccountId)
@@ -205,22 +275,25 @@ export const contributionProfileRouter = createTRPCRouter({
       // "Joint IRA (Vanguard) — Trad" label with no way to tell them apart.
       // Genuinely joint contribution rows (row.personId == null) are
       // unaffected — they still correctly defer to the account's own
-      // ownershipType below.
-      const ownershipType =
-        row.personId != null
-          ? "individual"
-          : (perfAccount?.ownershipType ?? null);
-      const accountName = accountDisplayName(
+      // ownershipType below. Routed through the shared helper (see
+      // portfolio-labels.ts) so this precedence rule can't drift from the
+      // other 6 call sites that need it.
+      const accountName = portfolioAccountLabel(
         {
           accountType: row.accountType,
           subType: row.subType,
           label: row.label,
           institution,
-          displayName: perfAccount?.displayName ?? null,
-          accountLabel: perfAccount?.accountLabel ?? null,
-          ownershipType,
         },
-        person?.name,
+        perfAccount
+          ? {
+              displayName: perfAccount.displayName,
+              accountLabel: perfAccount.accountLabel,
+              ownershipType: perfAccount.ownershipType,
+            }
+          : undefined,
+        row.personId,
+        nameMap,
       );
       // Same-person/same-type siblings need disambiguating, same rule
       // getById's accountDetails uses — otherwise two 401k rows for one
@@ -287,6 +360,11 @@ export const contributionProfileRouter = createTRPCRouter({
         perfAccountMap,
         salaryProfileActiveMap,
       } = await loadLiveContribData(ctx.db);
+      // portfolioAccountLabel wants id → name; peopleMap here is id → full
+      // person row (still needed below for the fuzzy-suggestion matcher).
+      const nameMap = new Map(
+        Array.from(peopleMap.values(), (p) => [p.id, p.name] as const),
+      );
       const resolved = resolveProfile(
         profile,
         contribs,
@@ -356,25 +434,25 @@ export const contributionProfileRouter = createTRPCRouter({
         // person-specific even when the underlying performance account is
         // tracked jointly (e.g. 10+ years of combined-performance history
         // for one shared IRA holding both spouses' separate contribution
-        // configs) — see the matching comment in compareData above.
-        const ownershipType =
-          row.personId != null
-            ? "individual"
-            : (displayPerfAccount?.ownershipType ?? null);
-
-        // Use the shared accountDisplayName function — always pass institution so
-        // the fallback path produces "Alex 401(k) (TechCorp)" not just "401k"
-        const accountName = accountDisplayName(
+        // configs) — see the matching comment in compareData above. Routed
+        // through the shared helper (portfolio-labels.ts) so this
+        // precedence rule can't drift from the other call sites.
+        const accountName = portfolioAccountLabel(
           {
             accountType: row.accountType,
             subType: row.subType,
             label: row.label,
             institution,
-            displayName: displayPerfAccount?.displayName ?? null,
-            accountLabel: displayPerfAccount?.accountLabel ?? null,
-            ownershipType,
           },
-          person?.name,
+          displayPerfAccount
+            ? {
+                displayName: displayPerfAccount.displayName,
+                accountLabel: displayPerfAccount.accountLabel,
+                ownershipType: displayPerfAccount.ownershipType,
+              }
+            : undefined,
+          row.personId,
+          nameMap,
         );
 
         // Disambiguate when multiple contrib accounts share the same display name
@@ -607,55 +685,18 @@ export const contributionProfileRouter = createTRPCRouter({
         }
       }
 
-      return ctx.db.transaction(async (tx) => {
-        const existing = await tx
-          .select()
-          .from(schema.contributionProfiles)
-          .where(eq(schema.contributionProfiles.id, input.profileId));
-        const profile = existing[0];
-        if (!profile) throw new Error("Profile not found");
-
-        const root = profile.contributionActiveFields as {
-          contributionAccounts?: Record<string, Record<string, unknown>>;
-        };
-        const mergedEntry: Record<string, unknown> = {
-          ...root.contributionAccounts?.[String(input.accountId)],
-        };
-        for (const key of input.unset ?? []) delete mergedEntry[key];
-        Object.assign(mergedEntry, input.fields);
-
-        const parsed = contribAccountActiveFieldsSchema.safeParse(mergedEntry);
-        if (!parsed.success) {
-          throw new Error(
-            `Invalid contribution account fields after patch: ${parsed.error.issues[0]?.message}`,
-          );
-        }
-
-        // A fully-unset entry is removed entirely, not stored as `{}` — an
-        // absent key and an empty object mean the same thing here
-        // (getIncompleteContribAccountIds treats them identically), but
-        // only one of them should be the actual on-disk representation.
-        const nextAccounts = { ...root.contributionAccounts };
-        if (Object.keys(parsed.data).length === 0) {
-          delete nextAccounts[String(input.accountId)];
-        } else {
-          nextAccounts[String(input.accountId)] = parsed.data;
-        }
-        const nextActiveFields = {
-          ...root,
-          contributionAccounts: nextAccounts,
-        };
-
-        const rows = await tx
-          .update(schema.contributionProfiles)
-          .set({
-            contributionActiveFields:
-              nextActiveFields as typeof profile.contributionActiveFields,
-          })
-          .where(eq(schema.contributionProfiles.id, input.profileId))
-          .returning();
-        return rows[0]!;
-      });
+      return ctx.db.transaction((tx) =>
+        patchProfileSubEntry(
+          tx,
+          input.profileId,
+          "contributionAccounts",
+          input.accountId,
+          input.fields,
+          input.unset,
+          contribAccountActiveFieldsSchema,
+          "contribution account fields",
+        ),
+      );
     }),
 
   /**
@@ -674,52 +715,18 @@ export const contributionProfileRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      return ctx.db.transaction(async (tx) => {
-        const existing = await tx
-          .select()
-          .from(schema.contributionProfiles)
-          .where(eq(schema.contributionProfiles.id, input.profileId));
-        const profile = existing[0];
-        if (!profile) throw new Error("Profile not found");
-
-        const root = profile.contributionActiveFields as {
-          contributionAccounts?: Record<string, Record<string, unknown>>;
-          deductions?: Record<string, Record<string, unknown>>;
-        };
-        const mergedEntry: Record<string, unknown> = {
-          ...root.deductions?.[String(input.deductionId)],
-        };
-        for (const key of input.unset ?? []) delete mergedEntry[key];
-        Object.assign(mergedEntry, input.fields);
-
-        const parsed = deductionActiveFieldsSchema.safeParse(mergedEntry);
-        if (!parsed.success) {
-          throw new Error(
-            `Invalid deduction fields after patch: ${parsed.error.issues[0]?.message}`,
-          );
-        }
-
-        const nextDeductions = { ...root.deductions };
-        if (Object.keys(parsed.data).length === 0) {
-          delete nextDeductions[String(input.deductionId)];
-        } else {
-          nextDeductions[String(input.deductionId)] = parsed.data;
-        }
-        const nextActiveFields = {
-          ...root,
-          deductions: nextDeductions,
-        };
-
-        const rows = await tx
-          .update(schema.contributionProfiles)
-          .set({
-            contributionActiveFields:
-              nextActiveFields as typeof profile.contributionActiveFields,
-          })
-          .where(eq(schema.contributionProfiles.id, input.profileId))
-          .returning();
-        return rows[0]!;
-      });
+      return ctx.db.transaction((tx) =>
+        patchProfileSubEntry(
+          tx,
+          input.profileId,
+          "deductions",
+          input.deductionId,
+          input.fields,
+          input.unset,
+          deductionActiveFieldsSchema,
+          "deduction fields",
+        ),
+      );
     }),
 
   /**

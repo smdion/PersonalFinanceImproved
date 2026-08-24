@@ -33,7 +33,7 @@
  */
 
 import { createHash } from "crypto";
-import { and, eq, lt, asc, sql } from "drizzle-orm";
+import { and, eq, lt, asc, sql, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { Db } from "./transforms";
 import { log } from "@/lib/logger";
@@ -153,7 +153,13 @@ export async function writeProjectionCache(
       set: { seed, result, computedAt: now, expiresAt, lastReadAt: now },
     });
 
-  await evictProjectionCache(db).catch((err) =>
+  // Fire-and-forget, same as readProjectionCache's lastReadAt touch below —
+  // eviction is opportunistic housekeeping with no bearing on THIS
+  // request's own correctness, so it must not add its DB round trips to
+  // the response latency of every cache-miss request (exactly the request
+  // that already paid for the expensive computation this cache exists to
+  // avoid repeating).
+  evictProjectionCache(db).catch((err) =>
     log("warn", "projection_cache_evict_failed", { error: String(err) }),
   );
 }
@@ -182,9 +188,10 @@ async function evictProjectionCache(db: Db): Promise<void> {
     .orderBy(asc(schema.projectionCache.lastReadAt))
     .limit(over);
   if (oldest.length === 0) return;
-  for (const row of oldest) {
-    await db
-      .delete(schema.projectionCache)
-      .where(eq(schema.projectionCache.id, row.id));
-  }
+  await db.delete(schema.projectionCache).where(
+    inArray(
+      schema.projectionCache.id,
+      oldest.map((row) => row.id),
+    ),
+  );
 }

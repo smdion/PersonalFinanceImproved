@@ -749,6 +749,35 @@ export function getDefaultDecumulationOrder(): AccountCategory[] {
 }
 
 /**
+ * The Retirement page's DEFAULT (un-customized) decumulation withdrawal
+ * config — shared so the page's own form-state defaults
+ * (use-projection-form-state.ts) and any other consumer that needs to
+ * reproduce the SAME default engine input (e.g. the dashboard Retirement
+ * tile's cache-key-matching "peek" queries) can never independently drift.
+ * The persistent projection cache hashes the full built engine input, so
+ * even a cosmetic difference here (a category order, a fallback value)
+ * would silently turn into a permanent cache miss for one of the two call
+ * sites.
+ */
+export function defaultDecumulationConfig(): {
+  withdrawalRoutingMode: "bracket_filling";
+  withdrawalOrder: AccountCategory[];
+  withdrawalSplits: Record<AccountCategory, number>;
+  withdrawalTaxPreference: Partial<
+    Record<AccountCategory, "traditional" | "roth">
+  >;
+} {
+  return {
+    withdrawalRoutingMode: "bracket_filling",
+    withdrawalOrder: getDefaultDecumulationOrder(),
+    withdrawalSplits: { ...DEFAULT_WITHDRAWAL_SPLITS },
+    withdrawalTaxPreference: Object.fromEntries(
+      categoriesWithTaxPreference().map((cat) => [cat, "traditional" as const]),
+    ),
+  };
+}
+
+/**
  * Build an empty record keyed by all engine categories with a factory.
  */
 export function buildCategoryRecord<T>(
