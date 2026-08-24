@@ -1150,6 +1150,8 @@ describe("projection router — computeStrategyComparison cache", () => {
     }
   }, 30000);
 
+  // Same reason as the two tests above — computeStrategyComparison runs
+  // for real, twice, in this one test.
   it("forceRefresh bypasses an existing cache hit and recomputes", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
@@ -1175,7 +1177,7 @@ describe("projection router — computeStrategyComparison cache", () => {
     } finally {
       cleanup();
     }
-  });
+  }, 30000);
 });
 
 // ---------------------------------------------------------------------------

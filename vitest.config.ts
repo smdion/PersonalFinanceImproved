@@ -21,7 +21,15 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    testTimeout: 10000,
+    // Bumped from 10000: a handful of tests (full-repo static-analysis
+    // scans in tests/lint/violations.test.ts, real double-computation
+    // cache tests in tests/routers/projection-coverage.test.ts) are
+    // comfortably under 10s on typical hardware but marginal under a
+    // loaded/shared CI runner or coverage instrumentation — timed out
+    // there, not a correctness issue. A genuine hang still fails
+    // regardless of 10s vs 15s; this just adds headroom for load
+    // variance rather than masking anything.
+    testTimeout: 15000,
     execArgv,
     // Most of the suite (server/routers/calculators/db/pure/helpers/etc.) is
     // pure Node logic that never touches the DOM. Only the files that
