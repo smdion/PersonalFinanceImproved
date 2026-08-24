@@ -20,7 +20,10 @@ import {
   getDisplayConfig,
   getAccountTypeConfig,
 } from "@/lib/config/account-types";
-import { TAX_TREATMENT_LABELS as TAX_LABELS } from "@/lib/config/display-labels";
+import {
+  TAX_TREATMENT_LABELS as TAX_LABELS,
+  EMPLOYER_MATCH_VALUE_UNIT,
+} from "@/lib/config/display-labels";
 import type { AccountCategory } from "@/lib/config/account-types";
 
 export function ContribCard({
@@ -210,7 +213,7 @@ export function ContribCard({
               />
               <span>discount</span>
             </>
-          ) : c.employerMatchType === "fixed_annual" ? (
+          ) : EMPLOYER_MATCH_VALUE_UNIT[c.employerMatchType] === "$" ? (
             <>
               <span>Employer:</span>
               <InlineEdit
@@ -265,6 +268,7 @@ export function ContribCard({
           >
             <option value="none">No match</option>
             <option value="percent_of_contribution">% of contribution</option>
+            <option value="dollar_match">$ match</option>
             <option value="fixed_annual">Fixed annual</option>
           </select>
         </div>
@@ -291,6 +295,7 @@ export function ContribCard({
                 : "No employer match"}
             </option>
             <option value="percent_of_contribution">Add % match</option>
+            <option value="dollar_match">Add $ match</option>
             <option value="fixed_annual">Add fixed annual match</option>
           </select>
         </div>

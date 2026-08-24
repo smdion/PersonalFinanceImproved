@@ -98,6 +98,7 @@ export type PreviewData = {
       label: string;
       balance: number;
       performanceAccountId: number | null;
+      ownerPersonId: number | null;
     }[];
     assetAccounts: { label: string; balance: number; id: number }[];
     mortgageAccounts: {

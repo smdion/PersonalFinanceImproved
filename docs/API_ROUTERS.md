@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**333 procedures across 37 routers.**
+**334 procedures across 37 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -392,6 +392,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `list`               | query    | `protectedProcedure`           | (no description)                                                                                                                                                                                         |
 | `list`               | query    | `protectedProcedure`           | (no description)                                                                                                                                                                                         |
 | `list`               | query    | `protectedProcedure`           | (no description)                                                                                                                                                                                         |
+| `setActive`          | mutation | `adminProcedure`               | have the curated accountDetails/compareData view of an account, not every raw structural field. Deliberately separate from any profile-scoped mutation: this flag isn't profile-owned (it gates the acco |
 | `setPriorYearAmount` | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
 | `update`             | mutation | `adminProcedure`               | routing rules has no need for.                                                                                                                                                                           |
 | `update`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |

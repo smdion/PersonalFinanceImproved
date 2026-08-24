@@ -4,6 +4,7 @@
 
 import React, { useState } from "react";
 import { formatCurrency, accountDisplayName } from "@/lib/utils/format";
+import { confirm } from "@/components/ui/confirm-dialog";
 import {
   accountBorderColor,
   accountMatchColor,
@@ -33,6 +34,8 @@ export function AccountCard({
   personOptions,
   categoryOptions,
   accountTypeOptions,
+  activeProfileName,
+  activeProfileFields,
   isExpanded,
   onToggleExpand,
   onPerfUpdate,
@@ -68,6 +71,14 @@ export function AccountCard({
   personOptions: { value: string; label: string }[];
   categoryOptions: { value: string; label: string }[];
   accountTypeOptions: { value: string; label: string }[];
+  /** Name of the globally-active Contribution Profile, or null if none —
+   *  shown per contribution row so "why is this here" is answerable
+   *  without leaving the Portfolio page. */
+  activeProfileName: string | null;
+  /** That profile's raw active-fields map, keyed by contribution account id
+   *  — a key absent from this map means the account has no entry in the
+   *  active profile at all, not that it's `null`. */
+  activeProfileFields: Record<string, Record<string, unknown>>;
   isExpanded: boolean;
   onToggleExpand: () => void;
   onPerfUpdate?: (updates: Record<string, unknown>) => void;
@@ -317,9 +328,16 @@ export function AccountCard({
                     {showDanger && (
                       <div className="flex items-center gap-3 mt-2">
                         <button
-                          onClick={() =>
-                            onPerfUpdate({ isActive: !pa.isActive })
-                          }
+                          onClick={async () => {
+                            if (
+                              !pa.isActive ||
+                              (await confirm(
+                                "Close this account? Its balance will be recorded as $0 starting with your next portfolio snapshot — this snapshot's total won't change until then.",
+                              ))
+                            ) {
+                              onPerfUpdate({ isActive: !pa.isActive });
+                            }
+                          }}
                           className={`text-xs px-2.5 py-1 rounded border ${pa.isActive ? "border-red-200 text-red-500 hover:bg-red-50" : "border-green-200 text-green-600 hover:bg-green-50"}`}
                         >
                           {" "}
@@ -370,6 +388,11 @@ export function AccountCard({
               {openSection === "subs" && (
                 <div className="px-4 pb-3 space-y-2">
                   {" "}
+                  <p className="text-caption text-faint -mt-1 mb-1">
+                    Balance entries tracked in your portfolio snapshots for this
+                    account — distinct from the Contributions below, which is
+                    about where new money is directed.
+                  </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                     {" "}
                     {activeSubs.map((sub) => (
@@ -427,14 +450,7 @@ export function AccountCard({
               className="w-full flex items-center justify-between px-4 py-2 text-caption font-semibold text-muted uppercase tracking-wider hover:bg-surface-elevated/50"
             >
               {" "}
-              <span>
-                {" "}
-                Contributions ({activeContribs.length}{" "}
-                {inactiveContribs.length > 0
-                  ? ` + ${inactiveContribs.length} inactive`
-                  : ""}
-                )
-              </span>
+              <span> Contributions ({activeContribs.length})</span>
               <span
                 className={`transition-transform ${openSection === "contribs" ? "rotate-90" : ""}`}
               >
@@ -452,6 +468,10 @@ export function AccountCard({
                         people={people}
                         jobs={jobs}
                         accountTypeOptions={accountTypeOptions}
+                        activeProfileName={activeProfileName}
+                        activeProfileFields={
+                          activeProfileFields[String(c.id)] ?? null
+                        }
                         sharedMatchFrom={
                           (!c.employerMatchType ||
                             c.employerMatchType === "none") &&
@@ -478,7 +498,7 @@ export function AccountCard({
                       className="text-caption text-faint hover:text-secondary"
                     >
                       {showInactiveContribs ? "Hide" : "Show"}{" "}
-                      {inactiveContribs.length} inactive
+                      {inactiveContribs.length} not funding a target
                     </button>
                     {showInactiveContribs && (
                       <div className="space-y-2 mt-2">
@@ -489,6 +509,10 @@ export function AccountCard({
                             people={people}
                             jobs={jobs}
                             accountTypeOptions={accountTypeOptions}
+                            activeProfileName={activeProfileName}
+                            activeProfileFields={
+                              activeProfileFields[String(c.id)] ?? null
+                            }
                             onUpdate={
                               onContribUpdate
                                 ? (updates) => onContribUpdate(c, updates)

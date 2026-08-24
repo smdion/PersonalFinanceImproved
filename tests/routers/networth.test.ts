@@ -549,6 +549,24 @@ describe("networth.portfolioSnapshots createAccount/updateAccount/delete", () =>
     expect(result.performanceAccountId).toBe(perfAcctId);
   });
 
+  it("rejects creating an account row linked to a closed master account", async () => {
+    const closedPerfAcctId = seedPerformanceAccount(db, {
+      institution: "Valic",
+      isActive: false,
+    });
+    await expect(
+      caller.networth.portfolioSnapshots.createAccount({
+        snapshotId: snapId,
+        institution: "Valic",
+        taxType: "preTax",
+        amount: "5000",
+        accountType: "401k",
+        parentCategory: "Retirement",
+        performanceAccountId: closedPerfAcctId,
+      }),
+    ).rejects.toThrow(/closed/i);
+  });
+
   it("creates account with subType and label", async () => {
     const result = await caller.networth.portfolioSnapshots.createAccount({
       snapshotId: snapId,
@@ -665,6 +683,116 @@ describe("portfolioSnapshots.create", () => {
         .where(eq(schema.portfolioAccounts.snapshotId, result.id));
       expect(createdAccounts).toHaveLength(1);
       expect(createdAccounts[0]?.parentCategory).toBe("Portfolio");
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
+  it("zeroes the amount for a closed account's row instead of carrying forward its stale balance", async () => {
+    const ctx = await createTestCaller(adminSession);
+    try {
+      const closedPerfAcctId = seedPerformanceAccount(ctx.db, {
+        institution: "Valic",
+        isActive: false,
+      });
+      const openPerfAcctId = seedPerformanceAccount(ctx.db, {
+        institution: "Fidelity",
+      });
+      const result = await ctx.caller.networth.portfolioSnapshots.create({
+        snapshotDate: "2025-06-15",
+        accounts: [
+          {
+            institution: "Valic",
+            taxType: "preTax",
+            accountType: "401k",
+            amount: "15000",
+            ownerPersonId: null,
+            performanceAccountId: closedPerfAcctId,
+          },
+          {
+            institution: "Fidelity",
+            taxType: "preTax",
+            accountType: "401k",
+            amount: "20000",
+            ownerPersonId: null,
+            performanceAccountId: openPerfAcctId,
+          },
+        ],
+      });
+
+      const schema = await import("@/lib/db/schema");
+      const { eq } = await import("drizzle-orm");
+      const createdAccounts = await ctx.db
+        .select()
+        .from(schema.portfolioAccounts)
+        .where(eq(schema.portfolioAccounts.snapshotId, result.id));
+      const closedRow = createdAccounts.find(
+        (a) => a.performanceAccountId === closedPerfAcctId,
+      );
+      const openRow = createdAccounts.find(
+        (a) => a.performanceAccountId === openPerfAcctId,
+      );
+      // The row for a closed account still exists (not omitted — omitting
+      // it would break period conservation), but its amount is zeroed.
+      expect(closedRow).toBeDefined();
+      expect(closedRow?.amount).toBe("0");
+      expect(openRow?.amount).toBe("20000");
+
+      // account_performance's ending balance reflects the same zeroed
+      // total — not a second, independently-derived number.
+      const currentYearAcctPerf = await ctx.db
+        .select()
+        .from(schema.accountPerformance)
+        .where(
+          eq(schema.accountPerformance.performanceAccountId, closedPerfAcctId),
+        );
+      if (currentYearAcctPerf.length > 0) {
+        expect(Number(currentYearAcctPerf[0]?.endingBalance)).toBe(0);
+      }
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
+  it("leaves a historical snapshot's already-recorded row untouched", async () => {
+    const ctx = await createTestCaller(adminSession);
+    try {
+      const perfAcctId = seedPerformanceAccount(ctx.db, {
+        institution: "Milliman",
+      });
+      // A historical snapshot recorded while the account was still open.
+      const historicalSnapId = seedSnapshot(ctx.db, "2024-01-15", [
+        { performanceAccountId: perfAcctId, amount: "50000" },
+      ]);
+
+      // The account closes sometime after that snapshot was recorded.
+      const schema = await import("@/lib/db/schema");
+      const { eq } = await import("drizzle-orm");
+      await ctx.db
+        .update(schema.performanceAccounts)
+        .set({ isActive: false })
+        .where(eq(schema.performanceAccounts.id, perfAcctId));
+
+      // A new snapshot is created after closure.
+      await ctx.caller.networth.portfolioSnapshots.create({
+        snapshotDate: "2025-06-15",
+        accounts: [
+          {
+            institution: "Milliman",
+            taxType: "preTax",
+            accountType: "401k",
+            amount: "50000",
+            ownerPersonId: null,
+            performanceAccountId: perfAcctId,
+          },
+        ],
+      });
+
+      const historicalAccounts = await ctx.db
+        .select()
+        .from(schema.portfolioAccounts)
+        .where(eq(schema.portfolioAccounts.snapshotId, historicalSnapId));
+      expect(historicalAccounts[0]?.amount).toBe("50000");
     } finally {
       ctx.cleanup();
     }

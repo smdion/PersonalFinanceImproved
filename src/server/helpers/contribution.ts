@@ -27,7 +27,11 @@ import type {
 } from "@/lib/config/enum-values";
 import { toNumber, getPeriodsPerYear } from "./transforms";
 import type { Db } from "./transforms";
-import { filterActiveJobs } from "@/lib/pure/profiles";
+import {
+  filterActiveJobs,
+  resolveContribFieldDisplayState,
+  type ContribResolutionStatus,
+} from "@/lib/pure/profiles";
 import {
   getEffectiveIncome,
   getTotalCompensation,
@@ -1027,6 +1031,34 @@ export function getIncompleteContribAccountIds(
 }
 
 /**
+ * Classify why a linked contribution account resolves the way it does for
+ * one (profile, column) pair — reusing resolveContribFieldDisplayState so
+ * this can't drift from the Compare view/Profile Manager's own "why is this
+ * $0" logic (RULES.md Rule 6: those two already had to be de-duplicated
+ * once). Checked in this order because each check can only be meaningful
+ * once the earlier ones have passed: an account absent from the global
+ * active fetch has no per-profile active fields to look at; a profile with
+ * no value for it was never a candidate for the sandbox layer to disable.
+ */
+export function classifyContribResolution(
+  accountId: number,
+  rawContribIds: Set<number>,
+  profileActiveFields: Record<string, Record<string, unknown>>,
+  activeContribIds: Set<number>,
+  incompleteIds: Set<number>,
+): ContribResolutionStatus {
+  if (!rawContribIds.has(accountId)) return "account_unavailable";
+  const { hasValue, isDisabled } = resolveContribFieldDisplayState(
+    profileActiveFields[String(accountId)] ?? null,
+  );
+  if (!hasValue) return "not_in_profile";
+  if (isDisabled) return "inactive_in_profile";
+  if (!activeContribIds.has(accountId)) return "inactive_in_sandbox";
+  if (incompleteIds.has(accountId)) return "no_pay_period";
+  return "ok";
+}
+
+/**
  * Build a synthetic (no DB row) contribution account for the What-If tab's
  * hand-added hypothetical accounts. Negative `id`s so they can never
  * collide with a real autoincrement id; every field this app's calculators
@@ -1185,6 +1217,7 @@ export async function loadAndApplyContribProfile(
     typeof mergeSalaryProfileJobFields<(typeof allJobs)[number]>
   >;
   deductions: DeductionRowWithActiveFields[];
+  contribActiveFields: Record<string, Record<string, unknown>>;
 }> {
   const profile = await fetchContributionProfile(db, profileId);
   return applyContribProfileRow(
@@ -1215,6 +1248,7 @@ export function applyContribProfileRow(
     typeof mergeSalaryProfileJobFields<(typeof allJobs)[number]>
   >;
   deductions: DeductionRowWithActiveFields[];
+  contribActiveFields: Record<string, Record<string, unknown>>;
 } {
   const jobs = mergeSalaryProfileJobFields(allJobs, salaryProfileActiveMap);
   if (!profile) {
@@ -1225,23 +1259,22 @@ export function applyContribProfileRow(
       contribs: applyContribActiveFields(allContribs, {}),
       jobs,
       deductions: [],
+      contribActiveFields: {},
     };
   }
   const activeFieldsRoot = profile.contributionActiveFields as Record<
     string,
     Record<string, Record<string, unknown>>
   >;
-  const contribs = applyContribActiveFields(
-    allContribs,
-    activeFieldsRoot.contributionAccounts ?? {},
-  );
+  const contribActiveFields = activeFieldsRoot.contributionAccounts ?? {};
+  const contribs = applyContribActiveFields(allContribs, contribActiveFields);
   const deductions = allDeductions
     ? applyDeductionActiveFields(
         allDeductions,
         activeFieldsRoot.deductions ?? {},
       )
     : [];
-  return { contribs, jobs, deductions };
+  return { contribs, jobs, deductions, contribActiveFields };
 }
 
 // ---------------------------------------------------------------------------

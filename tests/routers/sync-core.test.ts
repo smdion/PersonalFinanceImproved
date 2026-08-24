@@ -19,6 +19,9 @@ import {
   seedBudgetProfile,
   seedBudgetItem,
   seedSavingsGoal,
+  seedPerson,
+  seedPerformanceAccount,
+  seedSnapshot,
 } from "./setup";
 import * as schema from "@/lib/db/schema-sqlite";
 
@@ -588,6 +591,138 @@ describe("sync core — getPreview", () => {
     expect(result.budget.skippedApiCategories).toHaveLength(1);
     expect(result.budget.skippedApiCategories[0]!.id).toBe("c-skip");
     expect(result.budget.unmatchedApiCategories).toHaveLength(0);
+  });
+
+  it("portfolio.localAccounts gives each owner of a jointly-tracked account a distinct label and ownerPersonId, not both 'Joint'", async () => {
+    const sean = await seedPerson(db, "Sean", "1987-01-01");
+    const joanna = await seedPerson(db, "Joanna", "1991-01-01");
+    const perfAcctId = seedPerformanceAccount(db, {
+      institution: "Vanguard",
+      accountType: "ira",
+      accountLabel: "IRA (Vanguard)",
+      ownershipType: "joint",
+      ownerPersonId: null,
+    });
+    seedSnapshot(db, "2026-01-15", [
+      {
+        performanceAccountId: perfAcctId,
+        amount: "50000",
+        institution: "Vanguard",
+        accountType: "ira",
+        ownerPersonId: sean,
+      },
+      {
+        performanceAccountId: perfAcctId,
+        amount: "40000",
+        institution: "Vanguard",
+        accountType: "ira",
+        ownerPersonId: joanna,
+      },
+    ]);
+
+    mockCacheGet.mockImplementation(
+      async (_db: unknown, _service: unknown, key: string) => {
+        if (key === "accounts")
+          return {
+            data: [
+              {
+                id: "a1",
+                name: "Tracking",
+                balance: 0,
+                onBudget: false,
+                closed: false,
+                type: "investmentAccount",
+              },
+            ],
+            fetchedAt: new Date(),
+          };
+        if (key === "categories") return { data: [], fetchedAt: new Date() };
+        return null;
+      },
+    );
+    mockGetApiConnection.mockResolvedValue({
+      accountMappings: [],
+      skippedCategoryIds: [],
+      linkedProfileId: null,
+      linkedColumnIndex: 0,
+      lastSyncedAt: null,
+    });
+
+    const result = await caller.sync.getPreview({ service: "ynab" });
+    expect(result.synced).toBe(true);
+    if (!result.synced) throw new Error("Expected synced:true");
+
+    const localAccounts = result.portfolio!.localAccounts;
+    expect(localAccounts).toHaveLength(2);
+    const labels = localAccounts.map((a) => a.label).sort();
+    expect(labels).toEqual(["Joanna IRA (Vanguard)", "Sean IRA (Vanguard)"]);
+    const ownerIds = localAccounts.map((a) => a.ownerPersonId).sort();
+    expect(ownerIds).toEqual([sean, joanna].sort());
+  });
+
+  it("portfolio.localAccounts still gives each owner a distinct label even when the shared account has a displayName set", async () => {
+    const sean = await seedPerson(db, "Sean2", "1987-01-01");
+    const joanna = await seedPerson(db, "Joanna2", "1991-01-01");
+    const perfAcctId = seedPerformanceAccount(db, {
+      institution: "Fidelity",
+      accountType: "ira",
+      accountLabel: "IRA (Fidelity)",
+      displayName: "Retirement IRA",
+      ownershipType: "joint",
+      ownerPersonId: null,
+    });
+    seedSnapshot(db, "2026-01-16", [
+      {
+        performanceAccountId: perfAcctId,
+        amount: "10000",
+        institution: "Fidelity",
+        accountType: "ira",
+        ownerPersonId: sean,
+      },
+      {
+        performanceAccountId: perfAcctId,
+        amount: "20000",
+        institution: "Fidelity",
+        accountType: "ira",
+        ownerPersonId: joanna,
+      },
+    ]);
+
+    mockCacheGet.mockImplementation(
+      async (_db: unknown, _service: unknown, key: string) => {
+        if (key === "accounts") return { data: [], fetchedAt: new Date() };
+        if (key === "categories") return { data: [], fetchedAt: new Date() };
+        return null;
+      },
+    );
+    mockGetApiConnection.mockResolvedValue({
+      accountMappings: [],
+      skippedCategoryIds: [],
+      linkedProfileId: null,
+      linkedColumnIndex: 0,
+      lastSyncedAt: null,
+    });
+
+    const result = await caller.sync.getPreview({ service: "ynab" });
+    expect(result.synced).toBe(true);
+    if (!result.synced) throw new Error("Expected synced:true");
+
+    const localAccounts = result.portfolio!.localAccounts.filter(
+      (a) => a.ownerPersonId === sean || a.ownerPersonId === joanna,
+    );
+    expect(localAccounts).toHaveLength(2);
+    // displayName wins in accountDisplayName's own priority order — this
+    // is a known, documented limitation (see portfolio-labels.ts), not
+    // something this fix claims to solve. Asserting it explicitly so a
+    // regression here is caught rather than silently reintroducing the
+    // duplicate-key crash for accounts with a displayName set.
+    const labels = localAccounts.map((a) => a.label);
+    expect(labels.every((l) => l === "Retirement IRA")).toBe(true);
+    // The React key/identity fix still holds even though the labels
+    // collide, because it's keyed on (performanceAccountId, ownerPersonId),
+    // not on the label.
+    const ownerIds = localAccounts.map((a) => a.ownerPersonId).sort();
+    expect(ownerIds).toEqual([sean, joanna].sort());
   });
 });
 

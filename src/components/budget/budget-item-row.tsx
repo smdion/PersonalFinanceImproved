@@ -5,6 +5,11 @@ import { formatCurrency } from "@/lib/utils/format";
 import { confirm } from "@/components/ui/confirm-dialog";
 import { ApiCategoryPicker } from "./api-category-picker";
 import type { RawItem } from "./types";
+import type { ContribResolutionStatus } from "@/lib/pure/profiles";
+import {
+  CONTRIB_RESOLUTION_LABELS,
+  CONTRIB_RESOLUTION_TOOLTIPS,
+} from "@/lib/config/display-labels";
 
 type BudgetItemRowProps = {
   item: RawItem;
@@ -22,6 +27,10 @@ type BudgetItemRowProps = {
   categoryNames: string[];
   currentCategory: string;
   contribMonthly: number | null;
+  /** Why a LINKED item's contribMonthly is what it is for the column being
+   *  viewed — "ok" for a normal resolved value. Ignored for unlinked items
+   *  (their contribMonthly is always the fuzzy match, never classified). */
+  contribStatus?: ContribResolutionStatus;
   canEdit?: boolean;
   apiActual?: { activity: number; balance: number; budgeted: number } | null;
   showApiColumn?: boolean;
@@ -56,6 +65,7 @@ export function BudgetItemRow({
   categoryNames,
   currentCategory,
   contribMonthly,
+  contribStatus = "ok",
   canEdit = true,
   apiActual,
   showApiColumn,
@@ -108,26 +118,29 @@ export function BudgetItemRow({
           >
             {item.subcategory}
           </span>
-          {contribMonthly !== null && (
-            <span
-              className="flex-shrink-0 text-caption font-semibold text-indigo-600 bg-indigo-50 rounded px-0.5 leading-tight"
-              title={
-                item.contributionAccountId
-                  ? `Linked to paycheck contribution (${formatCurrency(contribMonthly)}/mo) — editing here updates it everywhere.`
-                  : `Also tracked as paycheck contribution (${formatCurrency(contribMonthly)}/mo). Values are independent — editing here won't change the paycheck.`
-              }
-            >
-              PC
-            </span>
-          )}
-          {item.incomplete && (
-            <span
-              className="flex-shrink-0 text-caption font-semibold text-amber-700 bg-amber-50 rounded px-0.5 leading-tight"
-              title="Linked contribution account has no resolvable pay period (missing/ended job) — excluded from this total, not defaulted."
-            >
-              Incomplete
-            </span>
-          )}
+          {contribMonthly !== null &&
+            (item.contributionAccountId == null || contribStatus === "ok" ? (
+              <span
+                className="flex-shrink-0 text-caption font-semibold text-indigo-600 bg-indigo-50 rounded px-0.5 leading-tight"
+                title={
+                  item.contributionAccountId
+                    ? `Linked to paycheck contribution (${formatCurrency(contribMonthly)}/mo) — editing here updates it everywhere.`
+                    : `Also tracked as paycheck contribution (${formatCurrency(contribMonthly)}/mo). Values are independent — editing here won't change the paycheck.`
+                }
+              >
+                PC
+              </span>
+            ) : (
+              // Linked, but this column's amount is $0 for a reason other
+              // than a genuinely-configured zero — name the reason instead
+              // of showing a bare "PC" the user would read as a real $0.
+              <span
+                className="flex-shrink-0 text-caption font-semibold text-amber-700 bg-amber-50 rounded px-0.5 leading-tight"
+                title={CONTRIB_RESOLUTION_TOOLTIPS[contribStatus]}
+              >
+                {CONTRIB_RESOLUTION_LABELS[contribStatus]}
+              </span>
+            ))}
           {isLinked && (
             <span
               className={`flex-shrink-0 text-caption font-semibold text-blue-600 bg-blue-50 rounded px-0.5 leading-tight ${amountsOnly ? "" : "cursor-pointer"}`}

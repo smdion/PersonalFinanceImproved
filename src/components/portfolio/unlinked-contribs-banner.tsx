@@ -22,7 +22,6 @@ type ContribEntry = {
   employerMatchType: string;
   employerMatchValue: string | null;
   employerMaxMatchPct: string | null;
-  isActive: boolean;
   ownership: string;
 };
 
@@ -115,11 +114,6 @@ export function UnlinkedContribsBanner({
               <span className="text-amber-800 text-xs">
                 {taxLabel} {acctType}
                 {matchDetail} ({employer})
-                {!c.isActive && (
-                  <span className="ml-1 text-micro px-1 py-0.5 rounded bg-surface-strong text-muted font-semibold">
-                    INACTIVE
-                  </span>
-                )}
               </span>
               <select
                 value=""

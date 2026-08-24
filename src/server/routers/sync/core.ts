@@ -29,7 +29,7 @@ import type {
 } from "@/lib/budget-api";
 import { parseAppSettings, buildMortgageInputs } from "@/server/helpers";
 import { calculateMortgage } from "@/lib/calculators/mortgage";
-import { accountDisplayName } from "@/lib/utils/format";
+import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
 import { safeDivide } from "@/lib/utils/math";
 import { serviceEnum } from "./_shared";
 
@@ -623,6 +623,7 @@ export const syncCoreRouter = createTRPCRouter({
         label: string;
         balance: number;
         performanceAccountId: number | null;
+        ownerPersonId: number | null;
       }> = [];
       if (latestSnapshot) {
         const [snapAccts, allPeople, perfAccounts] = await Promise.all([
@@ -639,27 +640,30 @@ export const syncCoreRouter = createTRPCRouter({
         // Aggregate by performanceAccountId + ownerPersonId for stable identity.
         // Two people may share the same performanceAccountId (e.g. both have an IRA
         // at the same institution) — they must appear as separate line items.
+        // ownerPersonId is carried through to the client (not just used for
+        // the label) because the label alone isn't safe identity — two
+        // people's labels only differ when accountDisplayName resolves them
+        // differently, which silently stops being true if a displayName is
+        // ever set on the shared performance account. See
+        // portfolio-section.tsx, which keys/values its <option>s on the
+        // (performanceAccountId, ownerPersonId) tuple this map already dedupes on.
         const perfOwnerMap = new Map<
           string,
-          { perfId: number; label: string; balance: number }
+          {
+            perfId: number;
+            ownerPersonId: number | null;
+            label: string;
+            balance: number;
+          }
         >();
         for (const a of snapAccts) {
           if (!a.performanceAccountId) continue;
           const perf = perfMap.get(a.performanceAccountId);
-          const ownerName = a.ownerPersonId
-            ? peopleMap.get(a.ownerPersonId)
-            : undefined;
-          const label = accountDisplayName(
-            {
-              accountType: a.accountType,
-              subType: a.subType,
-              label: a.label,
-              institution: a.institution,
-              displayName: perf?.displayName,
-              accountLabel: perf?.accountLabel,
-              ownershipType: perf?.ownershipType,
-            },
-            ownerName ?? undefined,
+          const label = portfolioAccountLabel(
+            a,
+            perf,
+            a.ownerPersonId,
+            peopleMap,
           );
           const key = `${a.performanceAccountId}:${a.ownerPersonId ?? ""}`;
           const existing = perfOwnerMap.get(key);
@@ -668,16 +672,18 @@ export const syncCoreRouter = createTRPCRouter({
           } else {
             perfOwnerMap.set(key, {
               perfId: a.performanceAccountId,
+              ownerPersonId: a.ownerPersonId,
               label,
               balance: Number(a.amount),
             });
           }
         }
         portfolioLocalAccounts = Array.from(perfOwnerMap.values())
-          .map(({ perfId, label, balance }) => ({
+          .map(({ perfId, ownerPersonId, label, balance }) => ({
             label,
             balance,
             performanceAccountId: perfId,
+            ownerPersonId,
           }))
           .sort((a, b) => b.balance - a.balance);
       }

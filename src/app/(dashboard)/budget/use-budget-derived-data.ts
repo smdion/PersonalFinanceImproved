@@ -160,12 +160,44 @@ export function useBudgetDerivedData({
     [perColumnPaycheckData],
   );
 
+  // ---- Raw items ----
+  // Declared before contribByCanonicalPerCol so the fuzzy-match pool below
+  // can exclude accounts already linked to a budget item.
+
+  const allColumnResults =
+    (data?.allColumnResults as ColumnResult[] | null | undefined) ?? null;
+
+  const rawItems = useMemo(
+    () => (data?.rawItems as RawItem[] | undefined) ?? [],
+    [data?.rawItems],
+  );
+
+  // A contribution account already linked to a budget item (via
+  // contributionAccountId) has its real dollars resolved through that link
+  // (contribAmounts/contribAmount) — it must not ALSO be eligible for
+  // name-based matching against some OTHER unlinked item, or that other
+  // item's badge/total silently borrows the linked account's balance
+  // (e.g. two brokerage accounts sharing the keyword "brokerage", one
+  // linked and one not).
+  const linkedContributionAccountIds = useMemo(
+    () =>
+      new Set(
+        rawItems
+          .filter((it) => it.contributionAccountId != null)
+          .map((it) => it.contributionAccountId!),
+      ),
+    [rawItems],
+  );
+
   const contribByCanonicalPerCol: Map<string, number>[] = useMemo(() => {
     return perColumnPaycheckData.map((pData) => {
       const map = new Map<string, number>();
       if (!pData) return map;
 
-      const nonPayroll = buildNonPayrollContribs(pData.people);
+      const nonPayroll = buildNonPayrollContribs(
+        pData.people,
+        linkedContributionAccountIds,
+      );
       for (const [accountType, monthly] of Array.from(nonPayroll.entries())) {
         const key = normalizeContribKey(accountType);
         if (key) map.set(key, (map.get(key) ?? 0) + monthly);
@@ -173,10 +205,12 @@ export function useBudgetDerivedData({
 
       if (pData.jointContribs) {
         for (const c of pData.jointContribs as Array<{
+          id: number;
           accountType: string;
           contributionMethod: string;
           contributionValue: string | number;
         }>) {
+          if (linkedContributionAccountIds.has(c.id)) continue;
           const val = Number(c.contributionValue) || 0;
           const monthly =
             c.contributionMethod === "fixed_monthly" ? val : val / 12;
@@ -187,8 +221,12 @@ export function useBudgetDerivedData({
 
       return map;
     });
-  }, [perColumnPaycheckData]);
+  }, [perColumnPaycheckData, linkedContributionAccountIds]);
 
+  // matchContrib is a display-only estimate for UNLINKED items (the "PC"
+  // badge/tooltip) — it must never feed getCatTotals's total below, or the
+  // page's own category subtotal disagrees with the server-computed
+  // calculateBudget total (RULES.md Single Computation Path).
   const matchContrib = (
     subcategory: string,
     colIdx?: number,
@@ -199,15 +237,7 @@ export function useBudgetDerivedData({
     return key ? (map.get(key) ?? null) : null;
   };
 
-  // ---- Raw items + category derivation ----
-
-  const allColumnResults =
-    (data?.allColumnResults as ColumnResult[] | null | undefined) ?? null;
-
-  const rawItems = useMemo(
-    () => (data?.rawItems as RawItem[] | undefined) ?? [],
-    [data?.rawItems],
-  );
+  // ---- Category derivation ----
 
   const categoryMap = useMemo(() => {
     const map = new Map<string, RawItem[]>();
@@ -237,24 +267,20 @@ export function useBudgetDerivedData({
     (items: RawItem[]) =>
       Array.from({ length: numCols }, (_, col) =>
         items.reduce((s, it) => {
-          // Look up the per-column contribution profile before falling back
-          // to the raw amounts array, so each column reflects its own
-          // contribution profile rather than a single shared scalar.
-          const map = contribByCanonicalPerCol[col];
-          const key =
-            map && map.size > 0 ? normalizeContribKey(it.subcategory) : null;
-          const fromContrib = key != null ? (map!.get(key) ?? null) : null;
           // contribAmounts is the server's own per-column figure (column i
           // resolved with column i's profiles); contribAmount is only the
           // selected column's value and is the last resort before raw
-          // amounts. This is the SAME resolved value regardless of edit
-          // mode — editMode only adds a draft on TOP of it (via getDraft's
-          // `original` argument), it never bypasses this resolution chain.
-          // (Bypassing it here used to make a contribution-linked item's
-          // total silently change the instant edit mode turned on, before
-          // the user touched anything.)
+          // amounts. Fuzzy name-matching (matchContrib) never contributes
+          // here — it's a badge/tooltip-only estimate for UNLINKED items,
+          // and folding it into the total would make this page's own
+          // subtotal disagree with the server-computed calculateBudget
+          // total (RULES.md Single Computation Path). This is the SAME
+          // resolved value regardless of edit mode — editMode only adds a
+          // draft on TOP of it (via getDraft's `original` argument), it
+          // never bypasses this resolution chain. (Bypassing it here used
+          // to make a contribution-linked item's total silently change the
+          // instant edit mode turned on, before the user touched anything.)
           const resolved =
-            fromContrib ??
             it.contribAmounts?.[col] ??
             (it.contribAmount != null
               ? it.contribAmount
@@ -263,7 +289,7 @@ export function useBudgetDerivedData({
           return s + val;
         }, 0),
       ),
-    [numCols, editMode, getDraft, contribByCanonicalPerCol],
+    [numCols, editMode, getDraft],
   );
 
   // ---- Sinking funds (savings goals with monthly contributions) ----

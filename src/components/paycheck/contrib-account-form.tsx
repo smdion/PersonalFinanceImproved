@@ -34,10 +34,12 @@ import type { AccountCategory } from "@/lib/config/account-types";
 import {
   TAX_TREATMENT_LABELS as TAX_LABELS,
   EMPLOYER_MATCH_LABELS as MATCH_LABELS,
+  EMPLOYER_MATCH_VALUE_UNIT,
   MATCH_TAX_LABELS,
   HSA_COVERAGE_LABELS,
 } from "@/lib/config/display-labels";
 import { InstitutionPicker } from "./institution-picker";
+import { resolveContribFieldDisplayState } from "@/lib/pure/profiles";
 
 type TaxTreatment = "pre_tax" | "tax_free" | "after_tax" | "hsa";
 type EmployerMatchType =
@@ -167,7 +169,12 @@ export function ContribAccountForm({
   // surprise.
   const profileNamesFor = (accountId: number): string[] =>
     (compareData?.profiles ?? [])
-      .filter((p) => p.accountActiveFields[String(accountId)] != null)
+      .filter(
+        (p) =>
+          resolveContribFieldDisplayState(
+            p.accountActiveFields[String(accountId)] ?? null,
+          ).hasValue,
+      )
       .map((p) => p.name);
 
   const linkToExisting = (
@@ -238,7 +245,7 @@ export function ContribAccountForm({
       id: linkedExistingId ?? undefined,
       personId: v.ownership === "joint" ? null : effectivePersonId,
       employerMaxMatchPct:
-        v.employerMatchType !== "none" && matchCapPercent
+        v.employerMatchType === "percent_of_contribution" && matchCapPercent
           ? String(parseFloat(matchCapPercent) / 100)
           : null,
     });
@@ -264,7 +271,7 @@ export function ContribAccountForm({
               {(() => {
                 const names = profileNamesFor(linkedExistingId);
                 return names.length > 0
-                  ? ` Note: ${names.join(", ")} ${names.length > 1 ? "have" : "has"} an active value set for this account.`
+                  ? ` Note: ${names.join(", ")} ${names.length > 1 ? "have" : "has"} a value set for this account.`
                   : "";
               })()}
             </>
@@ -407,7 +414,13 @@ export function ContribAccountForm({
 
         {v.employerMatchType !== "none" && (
           <>
-            <FormField label="Match Value">
+            <FormField
+              label={
+                EMPLOYER_MATCH_VALUE_UNIT[v.employerMatchType] === "$"
+                  ? "Match Amount"
+                  : "Match Value"
+              }
+            >
               <FormInput
                 type="number"
                 step="any"
@@ -415,18 +428,24 @@ export function ContribAccountForm({
                 onChange={(e) =>
                   set("employerMatchValue", e.target.value || null)
                 }
-                placeholder="e.g. 50"
+                placeholder={
+                  EMPLOYER_MATCH_VALUE_UNIT[v.employerMatchType] === "$"
+                    ? "e.g. 400"
+                    : "e.g. 50"
+                }
               />
             </FormField>
-            <FormField label="Match Cap %">
-              <FormInput
-                type="number"
-                step="any"
-                value={matchCapPercent}
-                onChange={(e) => setMatchCapPercent(e.target.value)}
-                placeholder="e.g. 7"
-              />
-            </FormField>
+            {v.employerMatchType === "percent_of_contribution" && (
+              <FormField label="Match Cap %">
+                <FormInput
+                  type="number"
+                  step="any"
+                  value={matchCapPercent}
+                  onChange={(e) => setMatchCapPercent(e.target.value)}
+                  placeholder="e.g. 7"
+                />
+              </FormField>
+            )}
             <FormField
               label="Match Deposits To"
               tooltip="Where the employer match itself lands — applies to the account's whole match, regardless of how your own contributions are split between Roth and Traditional. Most 401(k) plans deposit match as Traditional even if you contribute Roth; some newer plans allow a real Roth match (SECURE 2.0)."
@@ -559,13 +578,13 @@ export function ContribAccountForm({
                   <span>
                     {TAX_LABELS[m.taxTreatment] ?? m.taxTreatment}
                     {!m.isActive && (
-                      <span className="ml-1 text-micro px-1 py-0.5 rounded bg-surface-strong text-muted font-semibold">
-                        INACTIVE
+                      <span className="ml-1 text-micro text-amber-600 font-semibold italic">
+                        not a funding target
                       </span>
                     )}
                     {profileNames.length > 0 && (
                       <span className="block text-micro text-amber-700/80">
-                        Active value set in: {profileNames.join(", ")}
+                        Has a value in: {profileNames.join(", ")}
                       </span>
                     )}
                   </span>

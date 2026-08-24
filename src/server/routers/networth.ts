@@ -1,6 +1,7 @@
 /** Net worth router that aggregates account snapshots, mortgage balances, cash, and other assets into a current and projected net worth summary, plus portfolio snapshot CRUD (including budget-API pull/push side-effects). */
 import { eq, asc, desc, sql, gte, lte, and, inArray } from "drizzle-orm";
 import { z } from "zod/v4";
+import { TRPCError } from "@trpc/server";
 import { DEFAULT_WITHDRAWAL_RATE, MS_PER_DAY } from "@/lib/constants";
 import {
   createTRPCRouter,
@@ -37,6 +38,7 @@ import {
   resolveAccountActiveStatus,
   computeSnapshotEndingBalances,
   resolveSnapshotParentCategory,
+  resolveSnapshotAccountAmounts,
 } from "@/lib/pure/portfolio";
 
 const portfolioSnapshotInput = z.object({
@@ -906,23 +908,41 @@ export const networthRouter = createTRPCRouter({
             })
             .returning();
           const snap = rows[0]!;
-          if (input.accounts.length > 0) {
-            // Build perfId → parentCategory map so parentCategory syncs from master
-            const perfIds = input.accounts
-              .map((a) => a.performanceAccountId)
-              .filter((id): id is number => id != null);
-            const perfCatMap = new Map<number, string>();
-            if (perfIds.length > 0) {
-              const perfRows = await tx
-                .select({
-                  id: schema.performanceAccounts.id,
-                  parentCategory: schema.performanceAccounts.parentCategory,
-                })
-                .from(schema.performanceAccounts)
-                .where(inArray(schema.performanceAccounts.id, perfIds));
-              for (const p of perfRows) perfCatMap.set(p.id, p.parentCategory);
-            }
 
+          // Build perfId → parentCategory map so parentCategory syncs from
+          // master, and the set of masters that are still open — computed
+          // once here and reused for BOTH the account insert below and the
+          // ending-balance computation further down, so there is exactly
+          // one resolved view of "this snapshot's accounts," never two.
+          const perfIds = input.accounts
+            .map((a) => a.performanceAccountId)
+            .filter((id): id is number => id != null);
+          const perfCatMap = new Map<number, string>();
+          const activeMasterIds = new Set<number>();
+          if (perfIds.length > 0) {
+            const perfRows = await tx
+              .select({
+                id: schema.performanceAccounts.id,
+                parentCategory: schema.performanceAccounts.parentCategory,
+                isActive: schema.performanceAccounts.isActive,
+              })
+              .from(schema.performanceAccounts)
+              .where(inArray(schema.performanceAccounts.id, perfIds));
+            for (const p of perfRows) {
+              perfCatMap.set(p.id, p.parentCategory);
+              if (p.isActive) activeMasterIds.add(p.id);
+            }
+          }
+          // A closed master's account keeps its row but its balance is
+          // zeroed rather than carried forward stale — see
+          // resolveSnapshotAccountAmounts's doc comment for why omitting
+          // the row instead would break period conservation.
+          const resolvedAccounts = resolveSnapshotAccountAmounts(
+            input.accounts,
+            activeMasterIds,
+          );
+
+          if (resolvedAccounts.length > 0) {
             // Carry forward isActive from previous snapshot's matching accounts
             const prevSnapshots = await tx
               .select({ id: schema.portfolioSnapshots.id })
@@ -948,7 +968,7 @@ export const networthRouter = createTRPCRouter({
             }
 
             await tx.insert(schema.portfolioAccounts).values(
-              input.accounts.map((a) => ({
+              resolvedAccounts.map((a) => ({
                 snapshotId: snap.id,
                 institution: a.institution,
                 taxType: a.taxType,
@@ -982,9 +1002,12 @@ export const networthRouter = createTRPCRouter({
             .from(schema.accountPerformance)
             .where(eq(schema.accountPerformance.year, snapshotYear));
 
-          // Group snapshot accounts by performanceAccountId, sum amounts
+          // Group snapshot accounts by performanceAccountId, sum amounts —
+          // same resolvedAccounts list used for the insert above, so a
+          // closed account's zeroed balance is reflected consistently here
+          // too (not a second, independently-derived total).
           const perfTotals = computeSnapshotEndingBalances(
-            input.accounts.map((a) => ({
+            resolvedAccounts.map((a) => ({
               performanceAccountId: a.performanceAccountId ?? null,
               amount: a.amount,
             })),
@@ -1184,6 +1207,28 @@ export const networthRouter = createTRPCRouter({
         }),
       )
       .mutation(async ({ ctx, input }) => {
+        // Defensive invariant, not a reachable UI path today: the only
+        // shipped caller (AddSubAccountForm) never sends a
+        // performanceAccountId. Kept so a closed account can't get a new
+        // balance row added out-of-band with no explanation, matching the
+        // "zero, don't silently omit" rule create() enforces for carried-
+        // forward rows — an explicit add should fail loudly instead.
+        if (input.performanceAccountId != null) {
+          const master = await ctx.db
+            .select({ isActive: schema.performanceAccounts.isActive })
+            .from(schema.performanceAccounts)
+            .where(
+              eq(schema.performanceAccounts.id, input.performanceAccountId),
+            )
+            .limit(1);
+          if (master[0] && !master[0].isActive) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message:
+                "Cannot add a balance row for a closed account. Reopen the account first.",
+            });
+          }
+        }
         const rows = await ctx.db
           .insert(schema.portfolioAccounts)
           .values({

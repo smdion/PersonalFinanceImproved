@@ -380,7 +380,7 @@ export function BudgetContent() {
       }),
     addItemPending: createItem.isPending,
     addItemError: createItem.error,
-    matchContrib: (sub: string) => matchContrib(sub),
+    matchContrib: (sub: string, colIdx?: number) => matchContrib(sub, colIdx),
     addingItemToCategory,
     onSetAddingItemToCategory: setAddingItemToCategory,
   };

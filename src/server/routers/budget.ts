@@ -844,10 +844,11 @@ export const budgetRouter = createTRPCRouter({
           apiCategoryName: i.apiCategoryName,
           apiSyncDirection: i.apiSyncDirection,
           contributionAccountId: i.contributionAccountId,
-          // Linked to a fixed_per_period contribution account with no
-          // resolvable job/pay period — excluded from amounts above (0),
-          // not a guessed pay period. See resolveContribPeriods.
-          incomplete: resolvedItemsById.get(i.id)?.incomplete ?? false,
+          // Per-column reason a linked item's amount is $0 for THAT column
+          // — never flattened across columns (a status true only under a
+          // different column's profile must not show while viewing this
+          // one). See classifyContribResolution.
+          contribStatus: resolvedItemsById.get(i.id)?.contribStatus ?? null,
         };
       });
 

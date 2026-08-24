@@ -1439,6 +1439,164 @@ describe("budget router", () => {
       expect(after.contribAmount).toBeCloseTo(before.contribAmount!, 2);
     });
   });
+
+  // -------------------------------------------------------------------------
+  // contribStatus — why a linked item's amount is $0 for a given column,
+  // distinguishing genuinely-zero from causes the "PC" badge used to be
+  // unable to tell apart (classifyContribResolution).
+  // -------------------------------------------------------------------------
+
+  describe("contribStatus on linked items", () => {
+    it("returns not_in_profile when the resolved profile has no entry for the account", async () => {
+      const personId = await seedPerson(db);
+      const contribAccountId = seedLinkableContributionAccount(db, personId);
+      const emptyProfileId = seedContributionProfile(db, {
+        name: "Empty Profile For Status Test",
+        contributionActiveFields: { contributionAccounts: {} },
+      });
+      const itemId = seedBudgetItem(db, profileId, {
+        category: "Investing",
+        subcategory: "Status Test Not In Profile",
+        amounts: [999],
+        contributionAccountId: contribAccountId,
+      });
+
+      const result = await caller.budget.computeActiveSummary({
+        contributionProfile: {
+          planPinId: null,
+          localSelectionId: null,
+          globalDefaultId: emptyProfileId,
+        },
+      });
+      const item = result.rawItems!.find((i) => i.id === itemId)!;
+      expect(item.contribAmount).toBe(0);
+      expect(item.contribStatus).toEqual(["not_in_profile"]);
+    });
+
+    it("returns inactive_in_profile when the profile's entry explicitly turns the account off", async () => {
+      const personId = await seedPerson(db);
+      const contribAccountId = seedLinkableContributionAccount(db, personId);
+      const offProfileId = seedContributionProfile(db, {
+        name: "Off Profile For Status Test",
+        contributionActiveFields: {
+          contributionAccounts: {
+            [String(contribAccountId)]: {
+              contributionValue: "100",
+              contributionMethod: "fixed_monthly",
+              isActive: false,
+            },
+          },
+        },
+      });
+      const itemId = seedBudgetItem(db, profileId, {
+        category: "Investing",
+        subcategory: "Status Test Inactive In Profile",
+        amounts: [999],
+        contributionAccountId: contribAccountId,
+      });
+
+      const result = await caller.budget.computeActiveSummary({
+        contributionProfile: {
+          planPinId: null,
+          localSelectionId: null,
+          globalDefaultId: offProfileId,
+        },
+      });
+      const item = result.rawItems!.find((i) => i.id === itemId)!;
+      expect(item.contribAmount).toBe(0);
+      expect(item.contribStatus).toEqual(["inactive_in_profile"]);
+    });
+
+    // "inactive_in_sandbox" is exercised directly against
+    // classifyContribResolution (tests/helpers/contribution-extended.test.ts)
+    // rather than end-to-end here: zSandboxContribActiveFields
+    // (server/routers/_shared.ts) only accepts { contributionValue }, so
+    // isActive is stripped before it ever reaches the resolver — a What-If
+    // override can change an account's value but cannot disable one today.
+    // The classifier still models what applyContribActiveFields's overlay
+    // layer supports in general, in case that schema is ever widened.
+
+    it("returns account_unavailable when the linked account is globally deactivated", async () => {
+      const personId = await seedPerson(db);
+      const contribAccountId = seedLinkableContributionAccount(db, personId, {
+        isActive: false,
+      });
+      const someProfileId = seedContributionProfile(db, {
+        name: "Deactivated Account Status Test",
+        contributionActiveFields: {
+          contributionAccounts: {
+            [String(contribAccountId)]: {
+              contributionValue: "100",
+              contributionMethod: "fixed_monthly",
+            },
+          },
+        },
+      });
+      const itemId = seedBudgetItem(db, profileId, {
+        category: "Investing",
+        subcategory: "Status Test Account Unavailable",
+        amounts: [999],
+        contributionAccountId: contribAccountId,
+      });
+
+      const result = await caller.budget.computeActiveSummary({
+        contributionProfile: {
+          planPinId: null,
+          localSelectionId: null,
+          globalDefaultId: someProfileId,
+        },
+      });
+      const item = result.rawItems!.find((i) => i.id === itemId)!;
+      expect(item.contribAmount).toBe(0);
+      expect(item.contribStatus).toEqual(["account_unavailable"]);
+    });
+
+    it("is per-column, not flattened across columns", async () => {
+      const personId = await seedPerson(db);
+      const contribAccountId = seedLinkableContributionAccount(db, personId);
+      const profileA = seedContributionProfile(db, {
+        name: "Two-Column Status Test — Profile A",
+        contributionActiveFields: {
+          contributionAccounts: {
+            [String(contribAccountId)]: {
+              contributionValue: "100",
+              contributionMethod: "fixed_monthly",
+            },
+          },
+        },
+      });
+      const profileB = seedContributionProfile(db, {
+        name: "Two-Column Status Test — Profile B",
+        contributionActiveFields: { contributionAccounts: {} },
+      });
+
+      const twoColProfileId = await seedBudgetProfile(
+        db,
+        "Two Column Status Test Budget",
+        false,
+      );
+      db.update(sqliteSchema.budgetProfiles)
+        .set({
+          columnLabels: ["Col A", "Col B"],
+          columnContributionProfileIds: [profileA, profileB],
+        })
+        .where(eq(sqliteSchema.budgetProfiles.id, twoColProfileId))
+        .run();
+      const itemId = seedBudgetItem(db, twoColProfileId, {
+        category: "Investing",
+        subcategory: "Two Column Status Test Item",
+        amounts: [999, 999],
+        contributionAccountId: contribAccountId,
+      });
+
+      const result = await caller.budget.computeActiveSummary({
+        profileId: twoColProfileId,
+      });
+      const item = result.rawItems!.find((i) => i.id === itemId)!;
+      expect(item.contribStatus).toEqual(["ok", "not_in_profile"]);
+      expect(item.contribAmounts).toEqual([100, 0]);
+    });
+  });
 });
 
 // =========================================================================

@@ -14,31 +14,29 @@
  * threshold) — see that file's `compareData` query, the single shared data
  * source this and the swap-time diff (R20 phase A) both consume.
  *
- * Cell display logic mirrors ProfileDetailPanel's per-account row in
- * contribution-profile-manager.tsx (hasActiveFields/value, amber highlight
- * when set, DISABLED badge when isActive:false) — same resolution rule,
- * just applied per cell instead of per row-of-one-profile.
+ * Cell display state (hasActiveFields/value, amber highlight when set,
+ * DISABLED badge when isActive:false) is resolved via the same
+ * resolveContribFieldDisplayState ProfileDetailPanel's per-account row in
+ * contribution-profile-manager.tsx uses — just applied per cell instead of
+ * per row-of-one-profile.
  */
 import { trpc } from "@/lib/trpc";
-
-type ActiveFields = {
-  contributionValue?: string | number;
-  contributionMethod?: string;
-  isActive?: boolean;
-} | null;
-
-function cellLabel(activeFields: ActiveFields) {
-  const hasActiveFields = activeFields != null;
-  const isDisabled = activeFields?.isActive === false;
-  const methodSuffix =
-    activeFields?.contributionMethod === "percent_of_salary" ? "%" : "";
-  const value = activeFields?.contributionValue;
-
-  return { hasActiveFields, isDisabled, value, methodSuffix };
-}
+import { formatCurrency } from "@/lib/utils/format";
+import {
+  resolveContribFieldDisplayState,
+  type ContribAccountActiveFields,
+} from "@/lib/pure/profiles";
 
 export function ContributionProfileCompare() {
   const { data, isLoading } = trpc.contributionProfile.compareData.useQuery();
+  const utils = trpc.useUtils();
+  const setAccountActive =
+    trpc.settings.contributionAccounts.setActive.useMutation({
+      onSuccess: () => {
+        utils.settings.contributionAccounts.invalidate();
+        utils.contributionProfile.invalidate();
+      },
+    });
 
   if (isLoading) {
     return (
@@ -81,28 +79,54 @@ export function ContributionProfileCompare() {
             >
               <td className="py-1.5 pl-4 pr-3 text-secondary sticky left-0 bg-inherit whitespace-nowrap">
                 {account.accountName}
+                {!account.live.isActive && (
+                  <>
+                    <span
+                      className="ml-1 text-micro text-amber-500 font-medium"
+                      title="This account isn't a funding target — any value set for it in any profile has no effect."
+                    >
+                      not a funding target
+                    </span>
+                    <button
+                      onClick={() =>
+                        setAccountActive.mutate({
+                          id: account.id,
+                          isActive: true,
+                        })
+                      }
+                      disabled={setAccountActive.isPending}
+                      className="ml-1 text-micro text-green-500 hover:text-green-700 disabled:opacity-50"
+                    >
+                      Restore as funding target
+                    </button>
+                  </>
+                )}
               </td>
               {data.profiles.map((p) => {
                 const activeFields = (p.accountActiveFields[
                   String(account.id)
-                ] ?? null) as ActiveFields;
-                const { hasActiveFields, isDisabled, value, methodSuffix } =
-                  cellLabel(activeFields);
+                ] ?? null) as ContribAccountActiveFields;
+                const { hasValue, isDisabled, value, methodSuffix } =
+                  resolveContribFieldDisplayState(activeFields);
                 return (
                   <td
                     key={p.id}
                     className={`py-1.5 px-3 text-right font-mono whitespace-nowrap ${
-                      hasActiveFields && !isDisabled
+                      hasValue && !isDisabled
                         ? "text-amber-600 font-medium"
                         : "text-faint"
                     }`}
                   >
                     {isDisabled ? (
-                      <span className="text-micro px-1 py-0.5 rounded bg-surface-strong text-muted font-semibold">
-                        DISABLED
+                      <span className="text-micro px-1 py-0.5 rounded border border-strong text-muted font-semibold">
+                        OFF HERE
                       </span>
-                    ) : hasActiveFields ? (
-                      `${value}${methodSuffix}`
+                    ) : hasValue ? (
+                      methodSuffix === "%" ? (
+                        `${value}%`
+                      ) : (
+                        formatCurrency(parseFloat(String(value)))
+                      )
                     ) : (
                       <span className="italic">Not set</span>
                     )}

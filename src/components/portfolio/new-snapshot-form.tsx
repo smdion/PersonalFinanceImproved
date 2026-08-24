@@ -29,6 +29,11 @@ type AccountRow = {
   amount: string; // editable string
   previousAmount: number; // from latest snapshot, 0 for new rows
   performanceAccountId: number | null; // FK to performance_accounts master
+  /** True when the linked master account is closed — the server always
+   *  records this row's balance as $0 regardless of what's submitted (see
+   *  resolveSnapshotAccountAmounts), so the row is shown/held at $0 here
+   *  too rather than displaying a stale total the save won't match. */
+  isClosedAccount: boolean;
 };
 
 let rowKeyCounter = 0;
@@ -198,23 +203,35 @@ export function NewSnapshotForm({
 
   // Once latest snapshot data loads, pre-fill rows (only once)
   useEffect(() => {
-    if (didInit.current || loadingLatest) return;
+    if (didInit.current || loadingLatest || loadingPerfAccounts) return;
     didInit.current = true;
+    const closedMasterIds = new Set(
+      (perfAccounts ?? []).filter((p) => !p.isActive).map((p) => p.id),
+    );
     const initial: AccountRow[] =
-      latestSnap?.accounts.map((a) => ({
-        key: nextKey(),
-        institution: a.institution,
-        accountType: a.accountType,
-        subType: a.subType ?? null,
-        label: a.label ?? null,
-        taxType: a.taxType,
-        ownerPersonId: a.ownerPersonId,
-        amount: a.amount,
-        previousAmount: parseFloat(a.amount),
-        performanceAccountId: a.performanceAccountId ?? null,
-      })) ?? [];
+      latestSnap?.accounts.map((a) => {
+        const isClosedAccount =
+          a.performanceAccountId != null &&
+          closedMasterIds.has(a.performanceAccountId);
+        return {
+          key: nextKey(),
+          institution: a.institution,
+          accountType: a.accountType,
+          subType: a.subType ?? null,
+          label: a.label ?? null,
+          taxType: a.taxType,
+          ownerPersonId: a.ownerPersonId,
+          // A closed account's balance is always recorded as $0 by the
+          // server (see resolveSnapshotAccountAmounts) — show it that way
+          // here too rather than a stale amount the save won't match.
+          amount: isClosedAccount ? "0" : a.amount,
+          previousAmount: isClosedAccount ? 0 : parseFloat(a.amount),
+          performanceAccountId: a.performanceAccountId ?? null,
+          isClosedAccount,
+        };
+      }) ?? [];
     setRows(initial);
-  }, [loadingLatest, latestSnap]);
+  }, [loadingLatest, latestSnap, loadingPerfAccounts, perfAccounts]);
 
   const updateRow = useCallback(
     (key: string, field: keyof AccountRow, value: string | number) => {
@@ -394,9 +411,21 @@ export function NewSnapshotForm({
                             >
                               <span className="flex-1 text-xs text-muted">
                                 {row.subLabel}
+                                {row.isClosedAccount && (
+                                  <span className="ml-1.5 text-micro px-1 py-0.5 rounded bg-surface-strong text-muted font-semibold">
+                                    CLOSED
+                                  </span>
+                                )}
                               </span>
                               <div className="flex flex-col items-end gap-0.5">
-                                <div className="flex items-center border border-default rounded focus-within:ring-1 focus-within:ring-blue-500">
+                                <div
+                                  className={`flex items-center border border-default rounded focus-within:ring-1 focus-within:ring-blue-500 ${row.isClosedAccount ? "opacity-50" : ""}`}
+                                  title={
+                                    row.isClosedAccount
+                                      ? "This account is closed — its balance is always recorded as $0"
+                                      : undefined
+                                  }
+                                >
                                   <span className="pl-1.5 text-xs text-muted select-none">
                                     $
                                   </span>
@@ -404,6 +433,7 @@ export function NewSnapshotForm({
                                     type="number"
                                     step="0.01"
                                     value={row.amount}
+                                    disabled={row.isClosedAccount}
                                     onChange={(e) =>
                                       updateRow(
                                         row.key,
@@ -411,10 +441,11 @@ export function NewSnapshotForm({
                                         e.target.value,
                                       )
                                     }
-                                    className="w-28 bg-transparent px-1 py-0.5 text-xs text-right text-primary focus:outline-none"
+                                    className="w-28 bg-transparent px-1 py-0.5 text-xs text-right text-primary focus:outline-none disabled:cursor-not-allowed"
                                   />
                                 </div>
-                                {row.previousAmount === 0 ? (
+                                {row.isClosedAccount ? null : row.previousAmount ===
+                                  0 ? (
                                   <span className="text-caption px-1 py-0.5 rounded bg-surface-sunken text-faint font-medium">
                                     new
                                   </span>

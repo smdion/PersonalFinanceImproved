@@ -364,14 +364,25 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                       <optgroup label="Portfolio Accounts">
                         {unmappedPortfolio.map((a) => (
                           <option
-                            // performanceAccountId alone isn't unique here —
-                            // two people can share one performance account
+                            // Keyed on (performanceAccountId, ownerPersonId)
+                            // — the same tuple the server already dedupes
+                            // portfolioLocalAccounts on — not the label.
+                            // Two people can share one performance account
                             // (e.g. both have an IRA at the same
-                            // institution), which the server surfaces as
-                            // separate line items with distinct labels. See
-                            // sync/core.ts's portfolioLocalAccounts
-                            // aggregation comment.
-                            key={`p:${a.performanceAccountId}:${a.label}`}
+                            // institution); their labels are normally
+                            // distinct, but the label alone isn't safe
+                            // identity (it silently collides if a
+                            // displayName is ever set on the shared
+                            // performance account — accountDisplayName
+                            // prefers displayName over the owner-specific
+                            // name). The option's `value` still has to stay
+                            // label-based below: AccountMapping (the stored
+                            // mapping shape) has no ownerPersonId field at
+                            // all, only localId ("performance:{perfId}",
+                            // ambiguous between owners) + localName — so
+                            // localName is the only thing that can actually
+                            // distinguish two owners' mappings once saved.
+                            key={`p:${a.performanceAccountId}:${a.ownerPersonId ?? ""}`}
                             value={`performance:${a.performanceAccountId}|${a.label}`}
                           >
                             {a.label} ({formatCurrency(a.balance)})

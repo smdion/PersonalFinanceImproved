@@ -9,6 +9,7 @@ import {
   computeSiblingTotal,
   isEligibleForPriorYear,
   validateContributionOrder,
+  formatEmployerMatch,
 } from "@/lib/pure/contributions";
 
 // These tests use the real account-type config, so they reflect actual IRS rules.
@@ -400,5 +401,45 @@ describe("validateContributionOrder (M1 — CFP heuristic)", () => {
     const result = validateContributionOrder(["brokerage", "hsa"]);
     const w = result.find((w) => w.category === "hsa" && w.severity === "warn");
     expect(w?.position).toBe(1);
+  });
+});
+
+describe("formatEmployerMatch", () => {
+  it("returns null for none/null/undefined match type", () => {
+    expect(formatEmployerMatch("none", "50", "0.07")).toBeNull();
+    expect(formatEmployerMatch(null, "50", "0.07")).toBeNull();
+    expect(formatEmployerMatch(undefined, "50", "0.07")).toBeNull();
+  });
+
+  it("formats percent_of_contribution with a cap", () => {
+    expect(formatEmployerMatch("percent_of_contribution", "50", "0.07")).toBe(
+      "50% of 7.00%",
+    );
+  });
+
+  it("formats percent_of_contribution with no cap (0 or unset)", () => {
+    expect(formatEmployerMatch("percent_of_contribution", "50", "0")).toBe(
+      "50%",
+    );
+    expect(
+      formatEmployerMatch("percent_of_contribution", "50", undefined),
+    ).toBe("50%");
+  });
+
+  it("formats dollar_match as a flat dollar amount, no cap suffix", () => {
+    expect(formatEmployerMatch("dollar_match", "400", "0.07")).toBe(
+      "$400.00/yr",
+    );
+  });
+
+  it("formats fixed_annual as a flat dollar amount, no cap suffix", () => {
+    expect(formatEmployerMatch("fixed_annual", "400", null)).toBe("$400.00/yr");
+  });
+
+  it("accepts numeric inputs, not just strings", () => {
+    expect(formatEmployerMatch("fixed_annual", 400, null)).toBe("$400.00/yr");
+    expect(formatEmployerMatch("percent_of_contribution", 50, 0.07)).toBe(
+      "50% of 7.00%",
+    );
   });
 });

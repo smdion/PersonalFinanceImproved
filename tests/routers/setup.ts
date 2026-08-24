@@ -503,6 +503,7 @@ export function seedSnapshot(
     taxType?: string;
     institution?: string;
     accountType?: string;
+    ownerPersonId?: number | null;
   }[] = [],
 ): number {
   const snap = db
@@ -519,6 +520,7 @@ export function seedSnapshot(
         taxType: a.taxType ?? "preTax",
         institution: a.institution ?? "Fidelity",
         accountType: a.accountType ?? "401k",
+        ownerPersonId: a.ownerPersonId ?? null,
       })
       .run();
   }

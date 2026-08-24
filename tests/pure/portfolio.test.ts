@@ -10,6 +10,7 @@ import {
   resolveAccountActiveStatus,
   computeSnapshotEndingBalances,
   resolveSnapshotParentCategory,
+  resolveSnapshotAccountAmounts,
 } from "@/lib/pure/portfolio";
 
 describe("buildPrevInactiveKeys", () => {
@@ -148,5 +149,40 @@ describe("resolveSnapshotParentCategory", () => {
     expect(resolveSnapshotParentCategory("Portfolio", 99, perfCatMap)).toBe(
       "Portfolio",
     );
+  });
+});
+
+describe("resolveSnapshotAccountAmounts", () => {
+  const activeMasterIds = new Set([1, 2]);
+
+  it("zeroes the amount for a closed-master account", () => {
+    const accounts = [
+      { performanceAccountId: 3, amount: "5000.25" },
+      { performanceAccountId: 1, amount: "10000" },
+    ];
+    const result = resolveSnapshotAccountAmounts(accounts, activeMasterIds);
+    expect(result[0]).toEqual({ performanceAccountId: 3, amount: "0" });
+    expect(result[1]).toEqual({ performanceAccountId: 1, amount: "10000" });
+  });
+
+  it("leaves an open-master account's amount unchanged", () => {
+    const accounts = [{ performanceAccountId: 2, amount: "20000" }];
+    expect(resolveSnapshotAccountAmounts(accounts, activeMasterIds)).toEqual([
+      { performanceAccountId: 2, amount: "20000" },
+    ]);
+  });
+
+  it("leaves an unlinked (null performanceAccountId) account unchanged", () => {
+    const accounts = [{ performanceAccountId: null, amount: "3000" }];
+    expect(resolveSnapshotAccountAmounts(accounts, activeMasterIds)).toEqual([
+      { performanceAccountId: null, amount: "3000" },
+    ]);
+  });
+
+  it("does not mutate the input array", () => {
+    const accounts = [{ performanceAccountId: 3, amount: "5000" }];
+    const result = resolveSnapshotAccountAmounts(accounts, activeMasterIds);
+    expect(result).not.toBe(accounts);
+    expect(accounts[0]!.amount).toBe("5000");
   });
 });

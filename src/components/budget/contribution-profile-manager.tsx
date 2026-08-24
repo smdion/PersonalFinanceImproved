@@ -2,8 +2,13 @@
 
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import { CONTRIBUTION_METHOD_LABELS } from "@/lib/config/display-labels";
+import { formatCurrency } from "@/lib/utils/format";
+import {
+  CONTRIBUTION_METHOD_LABELS,
+  EMPLOYER_MATCH_LABELS,
+  EMPLOYER_MATCH_VALUE_UNIT,
+} from "@/lib/config/display-labels";
+import { formatEmployerMatch } from "@/lib/pure/contributions";
 import { HelpTip } from "@/components/ui/help-tip";
 import { FormError } from "@/components/ui/form-error";
 import { FormField, FormInput } from "@/components/forms";
@@ -15,6 +20,10 @@ import { ProfileViewingBadge } from "./profile-viewing-badge";
 import { confirm, confirmWithDiff } from "@/components/ui/confirm-dialog";
 import { useCloneProfile } from "@/lib/hooks/use-clone-profile";
 import { diffContribProfileSwap } from "@/lib/pure/contrib-profile-diff";
+import {
+  resolveContribFieldDisplayState,
+  type ContribAccountActiveFields,
+} from "@/lib/pure/profiles";
 import { ContributionProfileCompare } from "./contribution-profile-compare";
 import { SlidePanel } from "@/components/ui/slide-panel";
 import {
@@ -669,15 +678,14 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
                 groupSharedMatchAccounts(profile.accountDetails);
 
               return profile.accountDetails.map((ad, rowIdx) => {
-                const af = ad.activeFields as Record<string, unknown> | null;
-                const hasActiveFields = af !== null;
-                const isProfileDisabled = af?.isActive === false;
-                const activeMethod = af?.contributionMethod as
-                  string | undefined;
-                const activeValue = af?.contributionValue as
-                  string | number | undefined;
-                const methodSuffix =
-                  activeMethod === "percent_of_salary" ? "%" : "";
+                const af = ad.activeFields as ContribAccountActiveFields;
+                const {
+                  hasValue,
+                  isDisabled: isProfileDisabled,
+                  value: activeValue,
+                  methodSuffix,
+                } = resolveContribFieldDisplayState(af);
+                const activeMethod = af?.contributionMethod;
                 const hasActiveName =
                   ad.liveAccountName && ad.accountName !== ad.liveAccountName;
                 const sharedFrom = sharedMatchSource.get(ad.id);
@@ -700,8 +708,16 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
                           {ad.accountName}
                         </span>
                         {isProfileDisabled && (
-                          <span className="text-micro px-1 py-0.5 rounded bg-surface-strong text-muted font-semibold shrink-0">
-                            DISABLED
+                          <span className="text-micro px-1 py-0.5 rounded border border-strong text-muted font-semibold shrink-0">
+                            OFF HERE
+                          </span>
+                        )}
+                        {!ad.liveIsActive && (
+                          <span
+                            className="text-micro text-amber-500 font-medium shrink-0"
+                            title="This account isn't a funding target — any value set for it here has no effect. Restore it from the profile editor."
+                          >
+                            not a funding target
                           </span>
                         )}
                       </span>
@@ -715,49 +731,45 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
                     </td>
                     <td
                       className={`py-1.5 px-3 text-right font-mono ${
-                        hasActiveFields && !isProfileDisabled
+                        hasValue && !isProfileDisabled
                           ? "text-amber-600 font-medium"
                           : "text-secondary"
                       }`}
                     >
-                      {hasActiveFields ? (
-                        <>
-                          {activeValue}
-                          {methodSuffix}
-                        </>
+                      {hasValue ? (
+                        methodSuffix === "%" ? (
+                          `${activeValue}%`
+                        ) : (
+                          formatCurrency(parseFloat(String(activeValue)))
+                        )
                       ) : (
                         <span className="italic text-faint">Not set</span>
                       )}
                     </td>
                     <td className="py-1.5 px-3 text-right text-faint whitespace-nowrap">
-                      {matchSource.liveMatchType &&
-                      matchSource.liveMatchType !== "none" ? (
-                        <span
-                          title={
-                            isCombined ? "Combined with other split" : undefined
-                          }
-                        >
-                          {matchSource.liveMatchType ===
-                          "percent_of_contribution" ? (
-                            <>
-                              {parseFloat(matchSource.liveMatchValue ?? "0")}%
-                              {matchSource.liveMaxMatchPct &&
-                              parseFloat(matchSource.liveMaxMatchPct) > 0
-                                ? ` of ${formatPercent(parseFloat(matchSource.liveMaxMatchPct), 2)}`
-                                : ""}
-                            </>
-                          ) : (
-                            // dollar_match / fixed_annual — a flat dollar
-                            // amount, not a rate, so no "%" suffix.
-                            `${formatCurrency(parseFloat(matchSource.liveMatchValue ?? "0"))}/yr`
-                          )}
-                          {isCombined && (
-                            <span className="italic"> (combined)</span>
-                          )}
-                        </span>
-                      ) : (
-                        <span className="text-faint">—</span>
-                      )}
+                      {(() => {
+                        const matchText = formatEmployerMatch(
+                          matchSource.liveMatchType,
+                          matchSource.liveMatchValue,
+                          matchSource.liveMaxMatchPct,
+                        );
+                        return matchText ? (
+                          <span
+                            title={
+                              isCombined
+                                ? "Combined with other split"
+                                : undefined
+                            }
+                          >
+                            {matchText}
+                            {isCombined && (
+                              <span className="italic"> (combined)</span>
+                            )}
+                          </span>
+                        ) : (
+                          <span className="text-faint">—</span>
+                        );
+                      })()}
                     </td>
                   </tr>
                 );
@@ -862,7 +874,10 @@ function ProfileEditor({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [matchValues, setMatchValues] = useState<
-    Record<string, { matchValue?: string; maxMatchPct?: string }>
+    Record<
+      string,
+      { matchType?: string; matchValue?: string; maxMatchPct?: string }
+    >
   >({});
   const [contribValues, setContribValues] = useState<
     Record<string, { method?: string; value?: string }>
@@ -920,8 +935,14 @@ function ProfileEditor({
         };
       }
     }
-    // Merge employer-match values into contrib accounts
+    // Merge employer-match type/values into contrib accounts
     for (const [accountId, mVal] of Object.entries(matchValues)) {
+      if (mVal.matchType) {
+        contribAccounts[accountId] = {
+          ...(contribAccounts[accountId] ?? {}),
+          employerMatchType: mVal.matchType,
+        };
+      }
       if (mVal.matchValue) {
         const num = parseFloat(mVal.matchValue);
         if (!isNaN(num)) {
@@ -1045,10 +1066,18 @@ function ProfileEditor({
             <table className="w-full text-xs">
               <thead>
                 <tr className="text-muted border-b">
-                  <th className="w-6 py-1.5"></th>
+                  <th
+                    className="w-6 py-1.5 text-left font-medium"
+                    title="Enabled in this profile"
+                  >
+                    On
+                  </th>
                   <th className="text-left py-1.5 font-medium">Account</th>
                   <th className="text-left py-1.5 font-medium w-28">Method</th>
                   <th className="text-right py-1.5 font-medium w-24">Value</th>
+                  <th className="text-left py-1.5 font-medium w-28">
+                    Match Type
+                  </th>
                   <th className="text-right py-1.5 font-medium w-24">
                     Employer Match
                   </th>
@@ -1059,8 +1088,12 @@ function ProfileEditor({
               </thead>
               <tbody>
                 {baseData.accountDetails.map((ad) => {
-                  const hasMatch =
-                    ad.liveMatchType !== "none" && ad.liveMatchType !== null;
+                  const mVal = matchValues[String(ad.id)] ?? {};
+                  const effectiveMatchType =
+                    mVal.matchType ?? ad.liveMatchType ?? "none";
+                  const hasMatch = effectiveMatchType !== "none";
+                  const isPercentMatch =
+                    effectiveMatchType === "percent_of_contribution";
                   const isDisabled = disabledAccounts[String(ad.id)] ?? false;
                   const contribVal = contribValues[String(ad.id)] ?? {};
                   const effectiveMethod =
@@ -1075,6 +1108,7 @@ function ProfileEditor({
                         <input
                           type="checkbox"
                           checked={!isDisabled}
+                          disabled={!ad.liveIsActive}
                           onChange={(e) =>
                             setDisabledAccounts((prev) => {
                               const next = { ...prev };
@@ -1083,11 +1117,20 @@ function ProfileEditor({
                               return next;
                             })
                           }
-                          className="rounded border-strong mt-0.5"
+                          className="rounded border-strong mt-0.5 disabled:opacity-40 disabled:cursor-not-allowed"
                           title={
-                            isDisabled
-                              ? "Account disabled in this profile"
-                              : "Account active"
+                            !ad.liveIsActive
+                              ? "This account isn't a funding target — this checkbox has no effect until it's restored"
+                              : isDisabled
+                                ? "Disabled in this profile"
+                                : "Enabled in this profile"
+                          }
+                          aria-label={
+                            !ad.liveIsActive
+                              ? "This account isn't a funding target — this checkbox has no effect until it's restored"
+                              : isDisabled
+                                ? "Disabled in this profile"
+                                : "Enabled in this profile"
                           }
                         />
                       </td>
@@ -1095,6 +1138,14 @@ function ProfileEditor({
                         <div className={isDisabled ? "line-through" : ""}>
                           {ad.liveAccountName ?? ad.accountName}
                         </div>
+                        {!ad.liveIsActive && (
+                          <div
+                            className="text-micro text-amber-500 font-medium"
+                            title="This account isn't a funding target — any value set for it here has no effect. Restore it from the profile editor once this profile is created."
+                          >
+                            Not a funding target
+                          </div>
+                        )}
                         {!isDisabled && (
                           <input
                             type="text"
@@ -1165,14 +1216,41 @@ function ProfileEditor({
                           </div>
                         )}
                       </td>
+                      <td className="py-1.5 px-1.5">
+                        <select
+                          value={effectiveMatchType}
+                          onChange={(e) =>
+                            setMatchValues((prev) => ({
+                              ...prev,
+                              [String(ad.id)]: {
+                                ...prev[String(ad.id)],
+                                matchType: e.target.value,
+                              },
+                            }))
+                          }
+                          className="w-full px-1.5 py-0.5 text-xs border rounded bg-surface-primary text-primary"
+                        >
+                          {Object.entries(EMPLOYER_MATCH_LABELS).map(
+                            ([k, label]) => (
+                              <option key={k} value={k}>
+                                {label}
+                              </option>
+                            ),
+                          )}
+                        </select>
+                      </td>
                       <td className="py-1.5 text-right">
                         {hasMatch ? (
                           <div className="flex items-center justify-end gap-0.5">
+                            {EMPLOYER_MATCH_VALUE_UNIT[effectiveMatchType] ===
+                              "$" && (
+                              <span className="text-caption text-faint w-3 text-right shrink-0">
+                                $
+                              </span>
+                            )}
                             <input
                               type="number"
-                              value={
-                                matchValues[String(ad.id)]?.matchValue ?? ""
-                              }
+                              value={mVal.matchValue ?? ""}
                               onChange={(e) =>
                                 setMatchValues((prev) => ({
                                   ...prev,
@@ -1185,20 +1263,21 @@ function ProfileEditor({
                               placeholder="—"
                               className="w-14 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
                             />
-                            <span className="text-caption text-faint">%</span>
+                            {EMPLOYER_MATCH_VALUE_UNIT[effectiveMatchType] ===
+                              "%" && (
+                              <span className="text-caption text-faint">%</span>
+                            )}
                           </div>
                         ) : (
                           <span className="text-faint">—</span>
                         )}
                       </td>
                       <td className="py-1.5 text-right">
-                        {hasMatch ? (
+                        {hasMatch && isPercentMatch ? (
                           <div className="flex items-center justify-end gap-0.5">
                             <input
                               type="number"
-                              value={
-                                matchValues[String(ad.id)]?.maxMatchPct ?? ""
-                              }
+                              value={mVal.maxMatchPct ?? ""}
                               onChange={(e) =>
                                 setMatchValues((prev) => ({
                                   ...prev,
@@ -1355,6 +1434,13 @@ function ProfileInlineEditor({
   const updateDeduction = trpc.settings.deductions.update.useMutation({
     onSuccess: () => utils.settings.invalidate(),
   });
+  const setAccountActive =
+    trpc.settings.contributionAccounts.setActive.useMutation({
+      onSuccess: () => {
+        utils.settings.contributionAccounts.invalidate();
+        utils.contributionProfile.invalidate();
+      },
+    });
   /** Same generic-field-patch pattern as paycheck/page.tsx's onUpdateDeduction
    *  — one call site builds the full record from the current row plus the
    *  one field being changed, instead of each editable cell hand-writing
@@ -1538,7 +1624,12 @@ function ProfileInlineEditor({
           <table className="w-full text-xs border-collapse">
             <thead>
               <tr className="border-b-2 border-strong">
-                <th className="w-6 py-2 pl-4"></th>
+                <th
+                  className="w-6 py-2 pl-4 text-left text-muted font-medium"
+                  title="Enabled in this profile"
+                >
+                  On
+                </th>
                 <th className="text-left py-2 px-3 text-muted font-medium">
                   Account
                 </th>
@@ -1547,6 +1638,9 @@ function ProfileInlineEditor({
                 </th>
                 <th className="text-right py-2 px-3 text-muted font-medium w-24">
                   Value
+                </th>
+                <th className="text-left py-2 px-3 text-muted font-medium w-28">
+                  Match Type
                 </th>
                 <th className="text-right py-2 px-3 text-muted font-medium w-24">
                   Employer Match
@@ -1580,8 +1674,24 @@ function ProfileInlineEditor({
                     drafts[`a${ad.id}:method`] ??
                     (storedMethod || "percent_of_salary");
                   const isPercent = effectiveMethod === "percent_of_salary";
-                  const hasMatch =
-                    ad.liveMatchType !== "none" && ad.liveMatchType !== null;
+                  // employerMatchType is itself profile-overridable (it's a
+                  // PROFILE_OWNED_CONTRIB_FIELDS member) — must resolve the
+                  // same way the server's applyContribActiveFields merge
+                  // does, or a profile that overrides type away from the
+                  // live account's own type shows no editor for it at all.
+                  const storedMatchType =
+                    af.employerMatchType !== undefined
+                      ? String(af.employerMatchType)
+                      : "";
+                  // The <select> below commits immediately on change (same
+                  // pattern as the "On" checkbox), not draft-then-blur, so
+                  // no drafts[] lookup here — patchAccount below is the
+                  // single source of truth the instant it fires.
+                  const effectiveMatchType =
+                    storedMatchType || ad.liveMatchType || "none";
+                  const hasMatch = effectiveMatchType !== "none";
+                  const isPercentMatch =
+                    effectiveMatchType === "percent_of_contribution";
                   const isDisabled = af.isActive === false;
                   const isSaving =
                     setAccountFields.isPending &&
@@ -1594,14 +1704,26 @@ function ProfileInlineEditor({
                     af.displayNameActive !== undefined
                       ? String(af.displayNameActive)
                       : "";
+                  // A profile that resolves no value for this account
+                  // (hasValue false) contributes nothing to the engine —
+                  // its live match is never actually "in effect" here, so
+                  // it must not be shown as if it were a real, applying
+                  // value. Same resolver used everywhere else this session
+                  // for this exact distinction (RULES.md Rule 6).
+                  const { hasValue: contribHasValue } =
+                    resolveContribFieldDisplayState(af);
                   const storedMatch =
                     af.employerMatchValue !== undefined
                       ? String(af.employerMatchValue)
-                      : "";
+                      : contribHasValue && ad.liveMatchValue != null
+                        ? String(ad.liveMatchValue)
+                        : "";
                   const storedCap =
                     af.employerMaxMatchPct !== undefined
                       ? String(Number(af.employerMaxMatchPct) * 100)
-                      : "";
+                      : contribHasValue && ad.liveMaxMatchPct != null
+                        ? String(Number(ad.liveMaxMatchPct) * 100)
+                        : "";
                   return (
                     <tr
                       key={ad.id}
@@ -1616,16 +1738,26 @@ function ProfileInlineEditor({
                         <input
                           type="checkbox"
                           checked={!isDisabled}
+                          disabled={!ad.liveIsActive}
                           onChange={(e) =>
                             patchAccount(ad.id, {
                               isActive: e.target.checked ? undefined : false,
                             })
                           }
-                          className="rounded border-strong mt-0.5"
+                          className="rounded border-strong mt-0.5 disabled:opacity-40 disabled:cursor-not-allowed"
                           title={
-                            isDisabled
-                              ? "Account disabled in this profile"
-                              : "Account active"
+                            !ad.liveIsActive
+                              ? "This account isn't a funding target — this checkbox has no effect until it's restored"
+                              : isDisabled
+                                ? "Disabled in this profile"
+                                : "Enabled in this profile"
+                          }
+                          aria-label={
+                            !ad.liveIsActive
+                              ? "This account isn't a funding target — this checkbox has no effect until it's restored"
+                              : isDisabled
+                                ? "Disabled in this profile"
+                                : "Enabled in this profile"
                           }
                         />
                       </td>
@@ -1633,6 +1765,28 @@ function ProfileInlineEditor({
                         <div className={isDisabled ? "line-through" : ""}>
                           {ad.liveAccountName ?? ad.accountName}
                         </div>
+                        {!ad.liveIsActive && (
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className="text-micro text-amber-500 font-medium"
+                              title="This account isn't a funding target — any value set for it here has no effect."
+                            >
+                              Not a funding target
+                            </span>
+                            <button
+                              onClick={() =>
+                                setAccountActive.mutate({
+                                  id: ad.id,
+                                  isActive: true,
+                                })
+                              }
+                              disabled={setAccountActive.isPending}
+                              className="text-micro text-green-500 hover:text-green-700 disabled:opacity-50"
+                            >
+                              Restore as funding target
+                            </button>
+                          </div>
+                        )}
                         {!isDisabled && (
                           <input
                             type="text"
@@ -1732,9 +1886,34 @@ function ProfileInlineEditor({
                           </span>
                         </div>
                       </td>
+                      <td className="py-1.5 px-3">
+                        <select
+                          value={effectiveMatchType}
+                          onChange={(e) =>
+                            patchAccount(ad.id, {
+                              employerMatchType: e.target.value,
+                            })
+                          }
+                          className="w-full px-1.5 py-0.5 text-xs border rounded bg-surface-primary text-primary"
+                        >
+                          {Object.entries(EMPLOYER_MATCH_LABELS).map(
+                            ([k, label]) => (
+                              <option key={k} value={k}>
+                                {label}
+                              </option>
+                            ),
+                          )}
+                        </select>
+                      </td>
                       <td className="py-1.5 px-3 text-right">
                         {hasMatch ? (
                           <div className="flex items-center justify-end gap-0.5">
+                            {EMPLOYER_MATCH_VALUE_UNIT[effectiveMatchType] ===
+                              "$" && (
+                              <span className="text-caption text-faint w-3 text-right shrink-0">
+                                $
+                              </span>
+                            )}
                             <input
                               type="number"
                               value={drafts[`a${ad.id}:match`] ?? storedMatch}
@@ -1752,10 +1931,24 @@ function ProfileInlineEditor({
                                   (num) => String(num),
                                 )
                               }
+                              title={
+                                af.employerMatchValue === undefined &&
+                                storedMatch !== ""
+                                  ? "Inherited from the account's own settings — editing this sets an override for this profile only"
+                                  : undefined
+                              }
                               placeholder="—"
-                              className="w-14 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
+                              className={`w-14 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary ${
+                                af.employerMatchValue === undefined &&
+                                storedMatch !== ""
+                                  ? "text-faint italic"
+                                  : "text-primary"
+                              }`}
                             />
-                            <span className="text-caption text-faint">%</span>
+                            {EMPLOYER_MATCH_VALUE_UNIT[effectiveMatchType] ===
+                              "%" && (
+                              <span className="text-caption text-faint">%</span>
+                            )}
                           </div>
                         ) : sharedFrom ? (
                           <span
@@ -1769,7 +1962,7 @@ function ProfileInlineEditor({
                         )}
                       </td>
                       <td className="py-1.5 px-3 text-right">
-                        {hasMatch ? (
+                        {hasMatch && isPercentMatch ? (
                           <div className="flex items-center justify-end gap-0.5">
                             <input
                               type="number"
@@ -1789,8 +1982,19 @@ function ProfileInlineEditor({
                                   (num) => String(num / 100),
                                 )
                               }
+                              title={
+                                af.employerMaxMatchPct === undefined &&
+                                storedCap !== ""
+                                  ? "Inherited from the account's own settings — editing this sets an override for this profile only"
+                                  : undefined
+                              }
                               placeholder="—"
-                              className="w-14 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
+                              className={`w-14 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary ${
+                                af.employerMaxMatchPct === undefined &&
+                                storedCap !== ""
+                                  ? "text-faint italic"
+                                  : "text-primary"
+                              }`}
                             />
                             <span className="text-caption text-faint">%</span>
                           </div>
@@ -1850,6 +2054,7 @@ function ProfileInlineEditor({
                 <th className="text-right py-2 px-3 text-muted font-medium w-28">
                   Amount / Period
                 </th>
+                <th className="w-16"></th>
               </tr>
             </thead>
             <tbody>
@@ -1943,6 +2148,22 @@ function ProfileInlineEditor({
                           className="w-16 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
                         />
                       </div>
+                    </td>
+                    <td className="py-1.5 pr-4 text-right">
+                      {storedAmount !== "" && (
+                        <button
+                          onClick={() => {
+                            clearDraft(`d${d.id}:amount`);
+                            patchDeduction(d.id, {
+                              amountPerPeriod: undefined,
+                            });
+                          }}
+                          title="Remove this deduction from this profile — its dollar amount is cleared, not just hidden"
+                          className="text-caption text-muted hover:text-secondary"
+                        >
+                          Remove
+                        </button>
+                      )}
                     </td>
                   </tr>
                 );
