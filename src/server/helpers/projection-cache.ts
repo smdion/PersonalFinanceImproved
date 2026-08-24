@@ -64,13 +64,12 @@ function canonicalize(value: unknown): unknown {
 }
 
 /**
- * Hash the exact engine input for one of the three cacheable computations.
- * `kind` namespaces the three procedures (deterministic/mc/coastFireMc) so
- * the same underlying engine input never collides across them — their
- * results are shaped completely differently.
+ * Hash the exact engine input for one of the cacheable computations. `kind`
+ * namespaces the procedures so the same underlying engine input never
+ * collides across them — their results are shaped completely differently.
  */
 export function hashEngineInput(
-  kind: "deterministic" | "monteCarlo" | "coastFireMc",
+  kind: "deterministic" | "monteCarlo" | "coastFireMc" | "strategyComparison",
   input: unknown,
 ): string {
   const canonical = canonicalize({ kind, input });

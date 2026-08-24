@@ -1066,6 +1066,78 @@ describe("projection router — computeStrategyComparison", () => {
 });
 
 // ---------------------------------------------------------------------------
+// computeStrategyComparison — persistent projection cache
+// ---------------------------------------------------------------------------
+
+describe("projection router — computeStrategyComparison cache", () => {
+  it("a second identical call is served from cache (same result, one cache row)", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedGlidePath(db);
+
+      const first = await caller.projection.computeStrategyComparison();
+      const second = await caller.projection.computeStrategyComparison();
+
+      expect(second).toEqual(first);
+      const rows = db.select().from(schema.projectionCache).all();
+      expect(rows).toHaveLength(1);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("a changed input misses the cache and computes fresh (different hash rows)", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedGlidePath(db);
+
+      await caller.projection.computeStrategyComparison();
+      await caller.projection.computeStrategyComparison({
+        decumulationExpenseOverride: 45000,
+      });
+
+      const rows = db.select().from(schema.projectionCache).all();
+      expect(rows).toHaveLength(2);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("forceRefresh bypasses an existing cache hit and recomputes", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedGlidePath(db);
+
+      await caller.projection.computeStrategyComparison();
+      const before = db.select().from(schema.projectionCache).all();
+      expect(before).toHaveLength(1);
+      const computedAtBefore = before[0]!.computedAt;
+
+      await caller.projection.computeStrategyComparison({
+        forceRefresh: true,
+      });
+
+      const after = db.select().from(schema.projectionCache).all();
+      expect(after).toHaveLength(1);
+      expect(after[0]!.computedAt.getTime()).toBeGreaterThanOrEqual(
+        computedAtBefore.getTime(),
+      );
+    } finally {
+      cleanup();
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
 // computeProjection — additional edge cases for coverage
 // ---------------------------------------------------------------------------
 
