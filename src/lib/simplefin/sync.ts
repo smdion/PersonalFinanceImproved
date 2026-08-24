@@ -31,6 +31,15 @@ export type SimplefinSyncResult = {
 };
 
 const LAST_ERROR_SETTING_KEY = "simplefin_last_error";
+const PARTIAL_SYNC_STATE_KEY = "simplefin_partial_sync_state";
+/** Cap same-day retries for a partial sync (an account silently missing from
+ *  SimpleFIN's response, no explicit error) — an account that's genuinely
+ *  broken (needs re-auth the user hasn't done yet) would otherwise get
+ *  retried every hourly cron tick, burning the whole ~24/day quota chasing
+ *  something a retry can't fix. After this many same-day attempts, give up
+ *  and mark the connection synced (stop retrying today) but keep the
+ *  warning visible. */
+export const MAX_PARTIAL_SYNC_RETRIES_PER_DAY = 3;
 
 /** Get the api_connections row for the simplefin service, or null if not configured. */
 export async function getSimplefinConnection(db: Db) {
@@ -86,6 +95,41 @@ export async function getSimplefinLastError(db: Db): Promise<string | null> {
     .where(eq(schema.appSettings.key, LAST_ERROR_SETTING_KEY))
     .limit(1);
   return (rows[0]?.value as string | undefined) ?? null;
+}
+
+type PartialSyncState = { date: string; attempts: number };
+
+/** Increment (or start) today's partial-sync retry counter, returning the
+ *  new attempt count for today. Resets to 1 whenever the stored date isn't
+ *  today's local date. */
+async function bumpPartialSyncAttempts(
+  db: Db,
+  asOfDate: Date,
+): Promise<number> {
+  const today = localDateStr(asOfDate);
+  const rows = await db
+    .select({ value: schema.appSettings.value })
+    .from(schema.appSettings)
+    .where(eq(schema.appSettings.key, PARTIAL_SYNC_STATE_KEY))
+    .limit(1);
+  const prev = (rows[0]?.value as PartialSyncState | undefined) ?? null;
+  const attempts = prev && prev.date === today ? prev.attempts + 1 : 1;
+  const next: PartialSyncState = { date: today, attempts };
+  await db
+    .insert(schema.appSettings)
+    .values({ key: PARTIAL_SYNC_STATE_KEY, value: next })
+    .onConflictDoUpdate({
+      target: schema.appSettings.key,
+      set: { value: next },
+    });
+  return attempts;
+}
+
+/** Clear the partial-sync retry counter — called on a fully-successful sync. */
+async function clearPartialSyncAttempts(db: Db): Promise<void> {
+  await db
+    .delete(schema.appSettings)
+    .where(eq(schema.appSettings.key, PARTIAL_SYNC_STATE_KEY));
 }
 
 /** Store (upsert) the SimpleFIN access URL, encrypted at rest. */
@@ -208,6 +252,16 @@ async function writeSnapshot(
  * plus a manual "Sync Now" — is safe and keeps the snapshot current,
  * without ever creating a duplicate row for the same day.
  *
+ * If SimpleFIN's response silently omits a previously-included account (no
+ * explicit error, just missing from the list), that's treated as a partial
+ * sync: today's snapshot still reflects whatever DID come back (mixed with
+ * the missing account's last-known balance), a warning is surfaced via
+ * getSimplefinLastError, and `lastSyncedAt` is deliberately NOT advanced —
+ * so hasSyncedToday() stays false and the next hourly cron tick retries,
+ * instead of the connection looking fully synced while one account is
+ * silently stuck. Capped at MAX_PARTIAL_SYNC_RETRIES_PER_DAY same-day
+ * attempts to protect the ~24/day quota from a permanently-broken account.
+ *
  * Throws if no SimpleFIN connection is configured — callers (cron route,
  * tRPC mutation) are responsible for translating that into a skip/error
  * response appropriate to their context.
@@ -223,26 +277,90 @@ export async function runSimplefinSync(
 
   try {
     const { accessUrl } = readMaybeEncrypted<SimplefinConfig>(conn.config);
+
+    // Snapshot which included accounts we expect BEFORE fetching, so a
+    // silent partial response (an account missing from SimpleFIN's
+    // `accounts` array with no explicit error — the provider doesn't have
+    // to signal a degraded response) can be detected instead of looking
+    // identical to a full success. upsertSimplefinAccounts only touches
+    // rows present in the fetch, so a missing account's row is silently
+    // never updated unless we check for it here.
+    const expectedIncluded = await db
+      .select({
+        externalAccountId: schema.simplefinAccounts.externalAccountId,
+        orgName: schema.simplefinAccounts.orgName,
+        accountName: schema.simplefinAccounts.accountName,
+      })
+      .from(schema.simplefinAccounts)
+      .where(eq(schema.simplefinAccounts.isIncluded, true));
+
     const { accounts: fetched, providerErrors } = await getAccounts(accessUrl);
-    const accounts = await upsertSimplefinAccounts(db, fetched);
-    const included = accounts.filter((a) => a.isIncluded);
-    const totalBalance = included.reduce((sum, a) => sum + a.lastBalance, 0);
-    const accountCount = included.length;
+    const fetchedIds = new Set(fetched.map((a) => a.id));
+    const missingAccounts = expectedIncluded.filter(
+      (a) => !fetchedIds.has(a.externalAccountId),
+    );
+
+    await upsertSimplefinAccounts(db, fetched);
+
+    // Re-query the full included set rather than trusting the upsert's
+    // RETURNING rows — those only cover accounts present in this fetch, so
+    // a missing account's stale (but still real) balance needs to be
+    // re-read from the DB to keep contributing to today's total.
+    const allIncluded = await db
+      .select()
+      .from(schema.simplefinAccounts)
+      .where(eq(schema.simplefinAccounts.isIncluded, true));
+    const totalBalance = allIncluded.reduce(
+      (sum, a) => sum + Number(a.lastBalance),
+      0,
+    );
+    const accountCount = allIncluded.length;
     const snapshotDate = localDateStr(asOfDate);
 
     await writeSnapshot(db, snapshotDate, totalBalance, accountCount);
 
-    await db
-      .update(schema.apiConnections)
-      .set({ lastSyncedAt: asOfDate })
-      .where(eq(schema.apiConnections.service, "simplefin"));
+    const missingWarning =
+      missingAccounts.length > 0
+        ? `${missingAccounts.length} of ${expectedIncluded.length} linked account${expectedIncluded.length === 1 ? "" : "s"} didn't respond this sync (will retry): ${missingAccounts.map((a) => `${a.orgName} ${a.accountName}`).join(", ")}`
+        : null;
 
+    if (missingAccounts.length === 0) {
+      // Full success — mark synced today and reset the retry counter.
+      await db
+        .update(schema.apiConnections)
+        .set({ lastSyncedAt: asOfDate })
+        .where(eq(schema.apiConnections.service, "simplefin"));
+      await clearPartialSyncAttempts(db);
+    } else {
+      const attempts = await bumpPartialSyncAttempts(db, asOfDate);
+      if (attempts >= MAX_PARTIAL_SYNC_RETRIES_PER_DAY) {
+        // Give up retrying today (protects the ~24/day quota from a
+        // permanently-broken account) but the warning below still says so.
+        await db
+          .update(schema.apiConnections)
+          .set({ lastSyncedAt: asOfDate })
+          .where(eq(schema.apiConnections.service, "simplefin"));
+      }
+      // Otherwise: deliberately leave lastSyncedAt at its previous value —
+      // hasSyncedToday() will then return false, so the next hourly cron
+      // tick retries instead of treating a partial sync as done for the day.
+    }
+
+    const allWarnings = [
+      ...providerErrors,
+      ...(missingWarning ? [missingWarning] : []),
+    ];
     await setSimplefinLastError(
       db,
-      providerErrors.length > 0 ? providerErrors.join("; ") : null,
+      allWarnings.length > 0 ? allWarnings.join("; ") : null,
     );
 
-    return { snapshotDate, totalBalance, accountCount, providerErrors };
+    return {
+      snapshotDate,
+      totalBalance,
+      accountCount,
+      providerErrors: allWarnings,
+    };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     await setSimplefinLastError(db, message);
