@@ -5,7 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
-import { safeDivide } from "@/lib/utils/math";
+import { safeDivide, roundToCents } from "@/lib/utils/math";
 import { getDisplayConfig } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types.types";
 import type { PortfolioTaxType } from "@/lib/config/enum-values";
@@ -81,9 +81,12 @@ function summarizeAccounts(
       key,
       label: group.label,
       balance: group.balance,
-      drift: Array.from(group.changeByPerfId.values()).reduce(
-        (s, c) => s + c,
-        0,
+      // Rounded to cents — summing several already-cents-rounded per-account
+      // changes can still reintroduce sub-cent float noise (e.g. multiple
+      // accounts under one group), which would otherwise show a "+$0.00"
+      // badge next to sibling groups with no badge at all for a true zero.
+      drift: roundToCents(
+        Array.from(group.changeByPerfId.values()).reduce((s, c) => s + c, 0),
       ),
     }));
 }
@@ -152,7 +155,11 @@ export function summarizeDrift(accounts: SimplefinAccountListItem[]): {
     if (change !== 0) driftedCount++;
     totalDrift += change;
   }
-  return { groupCount: changeByPerfId.size, driftedCount, totalDrift };
+  return {
+    groupCount: changeByPerfId.size,
+    driftedCount,
+    totalDrift: roundToCents(totalDrift),
+  };
 }
 
 /** balance is the category's CURRENT total — used only to back out its prior
