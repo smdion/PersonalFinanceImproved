@@ -19,6 +19,7 @@ import {
   adminSession,
   seedPerformanceAccount,
   seedContributionProfile,
+  seedPerson,
   viewerSession,
 } from "./setup";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
@@ -466,6 +467,96 @@ describe("budget router — listContribAccountsForLinking", () => {
       const result = await caller.budget.listContribAccountsForLinking();
       expect(result.length).toBeGreaterThanOrEqual(1);
       expect(typeof result[0]!.displayLabel).toBe("string");
+    } finally {
+      cleanup();
+    }
+  });
+
+  /**
+   * Regression test for a real, reported bug: two people's individual
+   * contribution accounts under one jointly-tracked performance account
+   * (e.g. one Vanguard IRA both spouses contribute to separately) both
+   * rendered as the identical generic "Joint IRA (Vanguard)" — the shared
+   * master's own ownershipType ("joint") was winning over each row's own
+   * real owner (ownership: "individual" + personId). This made it
+   * impossible to tell, in the "unlinked contribution accounts" list,
+   * which account belonged to which person.
+   */
+  it("distinguishes each person's own account under one jointly-tracked performance account", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const seed = seedStandardDataset(db);
+      const otherPersonId = await seedPerson(db, "Joanna");
+      const jointPerfAcctId = seedPerformanceAccount(db, {
+        accountType: "ira",
+        institution: "Vanguard",
+        accountLabel: "IRA (Vanguard)",
+        ownershipType: "joint",
+        parentCategory: "Retirement",
+      });
+      await seedContribAccount(db, seed.personId, {
+        performanceAccountId: jointPerfAcctId,
+        ownership: "individual",
+        accountType: "ira",
+        taxTreatment: "tax_free",
+      });
+      await seedContribAccount(db, otherPersonId, {
+        performanceAccountId: jointPerfAcctId,
+        ownership: "individual",
+        accountType: "ira",
+        taxTreatment: "tax_free",
+      });
+
+      const result = await caller.budget.listContribAccountsForLinking();
+      const labels = result.map((r) => r.displayLabel).sort();
+      expect(labels).toEqual([
+        "Joanna IRA (Vanguard) — Roth",
+        "Test Person IRA (Vanguard) — Roth",
+      ]);
+    } finally {
+      cleanup();
+    }
+  });
+
+  /**
+   * Regression test for a real, reported case: one person's OWN Roth and
+   * Traditional IRA at the same institution, linked to the same
+   * jointly-tracked performance account, otherwise share every label
+   * component (owner, institution, account type) — only tax treatment
+   * differs. Without it, a linked Roth IRA and an unlinked Traditional IRA
+   * for the same person both showed as the identical "Sean IRA (Vanguard)",
+   * making it look like the unlinked one was a duplicate of the linked one.
+   */
+  it("distinguishes one person's own Roth vs Traditional account under the same performance account", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const seed = seedStandardDataset(db);
+      const jointPerfAcctId = seedPerformanceAccount(db, {
+        accountType: "ira",
+        institution: "Vanguard",
+        accountLabel: "IRA (Vanguard)",
+        ownershipType: "joint",
+        parentCategory: "Retirement",
+      });
+      await seedContribAccount(db, seed.personId, {
+        performanceAccountId: jointPerfAcctId,
+        ownership: "individual",
+        accountType: "ira",
+        taxTreatment: "tax_free",
+      });
+      await seedContribAccount(db, seed.personId, {
+        performanceAccountId: jointPerfAcctId,
+        ownership: "individual",
+        accountType: "ira",
+        taxTreatment: "pre_tax",
+      });
+
+      const result = await caller.budget.listContribAccountsForLinking();
+      const labels = result.map((r) => r.displayLabel).sort();
+      expect(labels).toEqual([
+        "Test Person IRA (Vanguard) — Roth",
+        "Test Person IRA (Vanguard) — Traditional",
+      ]);
     } finally {
       cleanup();
     }

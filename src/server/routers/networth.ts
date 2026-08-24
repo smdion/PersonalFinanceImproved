@@ -9,8 +9,8 @@ import {
   portfolioProcedure,
 } from "../trpc";
 import * as schema from "@/lib/db/schema";
-import { accountDisplayName } from "@/lib/utils/format";
 import { roundToCents, safeDivide } from "@/lib/utils/math";
+import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
 import { log } from "@/lib/logger";
 import {
   toNumber,
@@ -102,6 +102,7 @@ export const networthRouter = createTRPCRouter({
           .select()
           .from(schema.performanceAccounts);
         const perfMap = new Map(perfAccounts.map((p) => [p.id, p]));
+        const personMap = new Map(people.map((p) => [p.id, p.name]));
 
         portfolioAccountDetails = snapshotData.accounts.map((a) => {
           const perf = a.performanceAccountId
@@ -114,7 +115,22 @@ export const networthRouter = createTRPCRouter({
             amount: a.amount,
             ownerPersonId: a.ownerPersonId,
             category: perf?.parentCategory ?? null,
-            accountLabel: perf ? accountDisplayName(perf) : null,
+            // This row's own ownerPersonId must win over a shared master's
+            // own ownershipType (e.g. one jointly-tracked IRA both spouses
+            // hold separate snapshot rows under) — see portfolioAccountLabel.
+            accountLabel: perf
+              ? portfolioAccountLabel(
+                  {
+                    accountType: a.accountType,
+                    subType: a.subType,
+                    label: a.label,
+                    institution: a.institution,
+                  },
+                  perf,
+                  a.ownerPersonId,
+                  personMap,
+                )
+              : null,
             ownershipType: perf?.ownershipType ?? null,
           };
         });

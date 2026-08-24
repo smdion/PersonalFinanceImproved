@@ -321,14 +321,31 @@ export const scenariosRouter = createTRPCRouter({
             catAccts.find(
               (a) => (exactOwner(a) || noOwner(a)) && parentCatMatch(a),
             );
-          // Fallback: use linked performance account's display name.
-          // perfAcct includes ownershipType so accountDisplayName applies
-          // "Joint" prefix for joint accounts automatically.
+          // Fallback: use linked performance account's display name. Force
+          // ownershipType to "individual" when THIS contribution row has
+          // its own real owner (personId) — perfAcct's own ownershipType
+          // is "joint" for a shared, jointly-tracked master (e.g. one
+          // Vanguard IRA both spouses contribute to separately), and
+          // letting that win over the row's real owner silently discards
+          // the already-correct rest.ownerName below, rendering "Joint ..."
+          // for every such row instead of each person's own name. Same
+          // precedence rule as portfolioAccountLabel (src/server/helpers/
+          // portfolio-labels.ts) for the analogous portfolio-row case —
+          // not routed through that helper here since it expects a
+          // peopleMap to resolve ownerName, and this scope already has
+          // rest.ownerName resolved directly.
           const perfAcct = contrib?.performanceAccountId
             ? perfAccountMap.get(contrib.performanceAccountId)
             : undefined;
           const perfFallback = perfAcct
-            ? accountDisplayName(perfAcct, rest.ownerName ?? undefined)
+            ? accountDisplayName(
+                {
+                  ...perfAcct,
+                  ownershipType:
+                    personId != null ? "individual" : perfAcct.ownershipType,
+                },
+                rest.ownerName ?? undefined,
+              )
             : undefined;
           return {
             ...rest,
