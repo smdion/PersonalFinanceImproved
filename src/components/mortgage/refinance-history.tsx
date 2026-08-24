@@ -1,7 +1,7 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
-import { formatDate } from "@/lib/utils/format";
+import { formatDate, formatPercent } from "@/lib/utils/format";
 import type { LoanHistoryEntry } from "./types";
 
 export function RefinanceHistory({
@@ -19,6 +19,9 @@ export function RefinanceHistory({
             />
             <span className={h.isActive ? "font-medium" : "text-muted"}>
               {h.name}
+            </span>
+            <span className="text-xs text-faint">
+              {formatPercent(h.interestRate, 3)}
             </span>
             {h.paidOffDate && (
               <span className="text-xs text-faint">

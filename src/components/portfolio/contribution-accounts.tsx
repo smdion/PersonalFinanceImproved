@@ -57,6 +57,19 @@ export function ContributionAccountsSettings() {
       globalDefaultId: rawActiveContribProfileId,
     },
   );
+  // Powers each contribution row's "$X in <profile name>" status line —
+  // the account itself carries no value, only the active Contribution
+  // Profile's own entry does (see applyContribActiveFields), and that fact
+  // otherwise lives entirely on the Budget page, two navigations away from
+  // where a user would actually notice a row behaving unexpectedly.
+  const { data: contribCompareData } =
+    trpc.contributionProfile.compareData.useQuery();
+  const activeProfileName =
+    contribProfilesList?.find((p) => p.id === activeContribProfileId)?.name ??
+    null;
+  const activeProfileFields =
+    contribCompareData?.profiles.find((p) => p.id === activeContribProfileId)
+      ?.accountActiveFields ?? {};
   const [showClosed, setShowClosed] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [expandedAcctId, setExpandedAcctId] = useState<number | null>(null);
@@ -300,6 +313,8 @@ export function ContributionAccountsSettings() {
                   personOptions={personOptions}
                   categoryOptions={categoryOptions}
                   accountTypeOptions={accountTypeOptions}
+                  activeProfileName={activeProfileName}
+                  activeProfileFields={activeProfileFields}
                   isExpanded={expandedAcctId === pa.id}
                   onToggleExpand={() =>
                     setExpandedAcctId(expandedAcctId === pa.id ? null : pa.id)

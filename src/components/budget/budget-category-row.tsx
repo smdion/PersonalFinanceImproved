@@ -33,7 +33,8 @@ type BudgetCategoryRowProps = {
   categoryNames: string[];
   addingItemToCategory: string | null;
   onSetAddingItemToCategory: (category: string | null) => void;
-  matchContrib: (subcategory: string) => number | null;
+  matchContrib: (subcategory: string, colIdx?: number) => number | null;
+  activeColumn: number;
   canEdit?: boolean;
   apiActualsMap?: Map<
     number,
@@ -71,6 +72,7 @@ export function BudgetCategoryRow({
   addingItemToCategory,
   onSetAddingItemToCategory,
   matchContrib,
+  activeColumn,
   canEdit = true,
   apiActualsMap,
   showApiColumn,
@@ -206,7 +208,20 @@ export function BudgetCategoryRow({
           onReorderItem={onReorderItem}
           categoryNames={categoryNames}
           currentCategory={categoryName}
-          contribMonthly={matchContrib(item.subcategory)}
+          contribMonthly={
+            // A linked item's own resolved amount is the real number
+            // (matches what getCatTotals uses) — the fuzzy name match is
+            // only ever a display estimate for items with NO real link,
+            // so a linked item must never show the fuzzy figure instead
+            // of its own (e.g. two accounts sharing a keyword like
+            // "brokerage", one linked, one not).
+            item.contributionAccountId != null
+              ? (item.contribAmounts?.[activeColumn] ??
+                item.contribAmount ??
+                null)
+              : matchContrib(item.subcategory, activeColumn)
+          }
+          contribStatus={item.contribStatus?.[activeColumn] ?? "ok"}
           canEdit={canEdit}
           apiActual={apiActualsMap?.get(item.id) ?? null}
           showApiColumn={showApiColumn}

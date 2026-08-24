@@ -10,7 +10,8 @@
 
 import React from "react";
 import { TAX_TREATMENT_LABELS as TAX_LABELS } from "@/lib/config/display-labels";
-import { formatPercent, accountDisplayName } from "@/lib/utils/format";
+import { accountDisplayName } from "@/lib/utils/format";
+import { formatEmployerMatch } from "@/lib/pure/contributions";
 
 type ContribEntry = {
   id: number;
@@ -22,7 +23,6 @@ type ContribEntry = {
   employerMatchType: string;
   employerMatchValue: string | null;
   employerMaxMatchPct: string | null;
-  isActive: boolean;
   ownership: string;
 };
 
@@ -76,10 +76,12 @@ export function UnlinkedContribsBanner({
         {unlinkedContribs.map((c) => {
           const taxLabel = TAX_LABELS[c.taxTreatment] ?? c.taxTreatment;
           const acctType = c.subType ?? c.accountType;
-          const matchDetail =
-            c.employerMatchType !== "none" && c.employerMatchValue
-              ? `, ${c.employerMatchValue}% match${c.employerMaxMatchPct ? ` up to ${formatPercent(parseFloat(c.employerMaxMatchPct))}` : ""}`
-              : "";
+          const matchText = formatEmployerMatch(
+            c.employerMatchType,
+            c.employerMatchValue,
+            c.employerMaxMatchPct,
+          );
+          const matchDetail = matchText ? `, ${matchText} match` : "";
           const employer = jobLabel(c.jobId);
           const compatibleAccounts = activeAccounts.filter(
             (pa) =>
@@ -115,11 +117,6 @@ export function UnlinkedContribsBanner({
               <span className="text-amber-800 text-xs">
                 {taxLabel} {acctType}
                 {matchDetail} ({employer})
-                {!c.isActive && (
-                  <span className="ml-1 text-micro px-1 py-0.5 rounded bg-surface-strong text-muted font-semibold">
-                    INACTIVE
-                  </span>
-                )}
               </span>
               <select
                 value=""

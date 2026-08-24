@@ -8,6 +8,45 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.7
 
+## [0.7.7] - 2026-08-24
+
+### Added
+
+- **Retirement simulations now persist across sessions and devices.** Both the standard and Coast FIRE simulation results are cached server-side instead of being lost every time you reload the Retirement page or switch devices — a repeat visit with the same inputs shows the same simulated result instantly instead of waiting for a fresh multi-second run. The dashboard's Retirement tile now shows the simulated success rate and simulated Coast FIRE age from your last real run, alongside a "Last simulation run" timestamp. A "Re-run" button on the Retirement page's Simulation tab forces a fresh run with new randomness whenever you actually want one.
+- **Hovering over the combined salary figure on the Retirement page now shows a per-person breakdown**, instead of just the household total.
+- **The Liabilities page's mortgage refinance history now shows the interest rate for each loan**, so you can see how your rate changed across refinances at a glance.
+- **"Clone to new" button added to Budget, Salary, and Contribution profiles** — duplicate an existing profile as a starting point instead of building one from scratch.
+- **A "Recalculating…" indicator now stays visible regardless of scroll position** whenever a change on the Retirement page triggers a new simulation, so it's clear something is happening even if the loading animation on the chart/table itself is scrolled out of view.
+- **Employer match now supports a flat dollar amount ("$ match")**, alongside the existing percent-of-contribution and fixed-annual options.
+- **The Portfolio page's Contribution Accounts card now shows what the currently active Contribution Profile actually resolves each account to**, right on the row (e.g. "$500 in Retirement Profile," "Off in Retirement Profile," or "No value in Retirement Profile") — an account's real contribution amount always comes from whichever Contribution Profile is active, not from the account itself, and that used to only be visible on the Budget page.
+- **The Contribution Account form now shows which Contribution Profiles already have a value set for an account** when you're about to link it to an existing one, so you can see at a glance whether you're about to shadow an existing setup.
+- **Closing a Portfolio account now asks for confirmation and explains that its balance will read $0 starting with the next snapshot**, instead of closing it silently.
+- **The Budget page's "PC" badge on a linked item now explains why its amount is $0** when that's not a plain, active zero — "Off" (turned off in this column's Contribution Profile), "Not Set" (the profile has no value for this account at all), "Incomplete" (no resolvable pay period), or "Unavailable" (the account was deactivated or deleted) — instead of a bare "$0" that read as a confidently-correct number no matter the real cause.
+
+### Fixed
+
+- **Adding a new Salary Profile entry could silently fail to save some entries** on a page refresh or when editing multiple fields quickly — fixed by moving profile edits to a proper server-side merge instead of a racy client-side one. The same fix was applied to Contribution Profile editing.
+- Fixed a build issue where server-only database code could end up in the browser bundle for the Expenses page.
+- Hardened the self-hosted upgrade path so an edge-case migration-recovery step could no longer silently strip Salary Profile details (pay schedule, W-4 elections, extra-paycheck routing) back to a bare-minimum shape on certain database states.
+- **A closed Portfolio account's balance is now correctly zeroed, not carried forward from its last known value, once a new snapshot is saved** — previously a closed account's stale balance kept counting toward that year's return, producing a phantom investment loss the following year once the balance actually dropped off. A new snapshot's entry rows for a closed account now show/hold $0 up front, matching what will actually be saved.
+- **Renamed "inactive" to "closed" for Portfolio/Performance accounts, and to "not funding a target" for Contribution accounts** — these were two different kinds of "off" (an account you no longer hold, vs. a contribution account with no value in the active profile) both labeled "inactive," which made it unclear which one applied to a given badge.
+- **"Match Cap %" no longer shows on the Contribution Account form for match types where it doesn't apply** (a dollar or fixed-annual match has no percentage cap concept).
+- **Two people's contribution accounts sharing one jointly-tracked Portfolio account** (e.g. a joint IRA held at one institution, contributed to separately by each spouse) **no longer render with an identical "Joint" label.** Fixed everywhere this showed up: the Settings → Integrations dropdown and Contribution Account Linking list, the Retirement page's projection table, and Net Worth's account details. Each account now shows its own owner's name instead.
+- **One person's own Roth and Traditional IRA at the same institution now show which is which** in the Contribution Account Linking list, instead of both appearing as the identical "\[Name] IRA (Institution)" with no way to tell them apart.
+- **A linked Budget item's "PC" badge no longer borrows a same-keyword unlinked or differently-linked item's dollar figure** (e.g. two brokerage accounts sharing the keyword "brokerage," only one of them linked) — a linked item's badge and category total now always reflect its own resolved amount, never a name-matched guess.
+- **The "PC" badge always reflected the first budget column's contribution match, regardless of which column was actually selected** — it now follows the column you're viewing.
+- **A contribution account explicitly marked "not payroll deducted" despite being tied to a job** (funded manually from take-home) **is no longer wrongly excluded from the Budget page's unlinked-item name-matching.**
+- **Editing a linked Budget item's amount now updates its "PC" badge and category total immediately**, instead of only after the next refetch — and no longer shows a phantom update for an edit that legitimately didn't take effect (no resolvable pay period, a stale profile link, etc.).
+- **A dollar-amount employer match (e.g. "$500/yr") on the Portfolio page's unlinked-contributions banner no longer displayed as a nonsensical percentage** (e.g. "500% match").
+- **Clicking "Re-run" on the Retirement page's Simulation tab after customizing trial count, preset, or asset-class overrides could show stale results from before the re-run**, even though a genuinely fresh simulation had completed — the success toast fired correctly, but the visible numbers didn't update. Only affected re-runs with customized settings; the default settings were unaffected.
+- **A long account name in the Contribution Account Linking list is no longer cut off with no way to see the rest** — hover now shows the full name, and the column is wider.
+- **The four collapsible sections in Settings → Integrations (Budget Category Matching, Sinking Fund Matching, Contribution Account Linking, Tracking Account Mappings) now show their status counts the same way** — labeled counts like "4 linked" and "2 unmapped," instead of three different, sometimes unlabeled, formats across the four sections.
+- **Fixed a hydration warning on initial page load** caused by a shared settings hook reading browser storage before the page had a chance to fully load, which could very rarely make a tab or toggle briefly flash the wrong state.
+
+### Changed (internal)
+
+- CI now tracks bundle size and lines-of-code trends (informational, no user-facing effect).
+
 ## [0.7.6] - 2026-08-22
 
 ### Added

@@ -14,7 +14,7 @@ import {
   getActiveBudgetApi,
   getApiConnection,
 } from "@/lib/budget-api";
-import { accountDisplayName } from "@/lib/utils/format";
+import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
 import { roundToCents, safeDivide } from "@/lib/utils/math";
 import { mappingsWithTypedIds } from "@/lib/utils/account-mapping";
 import { accountMappingSchema } from "@/lib/db/json-schemas";
@@ -378,20 +378,11 @@ export const syncMappingsRouter = createTRPCRouter({
         for (const acct of snapAccts) {
           if (!acct.performanceAccountId) continue;
           const perf = perfMap.get(acct.performanceAccountId);
-          const ownerName = acct.ownerPersonId
-            ? peopleMap.get(acct.ownerPersonId)
-            : undefined;
-          const label = accountDisplayName(
-            {
-              accountType: acct.accountType,
-              subType: acct.subType,
-              label: acct.label,
-              institution: acct.institution,
-              displayName: perf?.displayName,
-              accountLabel: perf?.accountLabel,
-              ownershipType: perf?.ownershipType,
-            },
-            ownerName ?? undefined,
+          const label = portfolioAccountLabel(
+            acct,
+            perf,
+            acct.ownerPersonId,
+            peopleMap,
           );
           if (!labelToPerfId.has(label)) {
             labelToPerfId.set(label, acct.performanceAccountId);

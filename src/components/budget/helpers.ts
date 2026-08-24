@@ -121,6 +121,12 @@ export function buildPayrollBreakdown(
 
 export function buildNonPayrollContribs(
   paycheckData: unknown,
+  // Contribution accounts already linked to a budget item (via
+  // RawItem.contributionAccountId) — excluded here so a linked account's
+  // real dollars can't ALSO get name-matched onto some other unlinked
+  // budget item and double-count. See portfolio label fix upstream for
+  // the sibling case of the same "one account, two identities" pattern.
+  linkedAccountIds: Set<number> = new Set(),
 ): Map<string, number> {
   if (!paycheckData || !Array.isArray(paycheckData)) return new Map();
   const data = paycheckData as Array<{
@@ -128,7 +134,9 @@ export function buildNonPayrollContribs(
     job: unknown;
     salary?: number;
     rawContribs?: Array<{
+      id: number;
       jobId: number | null;
+      isPayrollDeducted: boolean | null;
       contributionValue: string | number;
       contributionMethod: string;
       accountType: string;
@@ -138,7 +146,15 @@ export function buildNonPayrollContribs(
   for (const d of data) {
     if (!d.paycheck || !d.job) continue;
     for (const c of d.rawContribs ?? []) {
-      if (c.jobId !== null) continue;
+      // The canonical payroll-vs-net-level signal is isPayrollDeducted,
+      // falling back to jobId presence only when unset (same resolution
+      // used in src/lib/calculators/paycheck.ts and
+      // src/server/helpers/contribution.ts) — jobId alone just means "tied
+      // to this employer," not "deducted from that employer's paycheck." A
+      // job-tied account the user explicitly funds from take-home (box
+      // unchecked) must still land in this non-payroll pool.
+      if (c.isPayrollDeducted ?? c.jobId !== null) continue;
+      if (linkedAccountIds.has(c.id)) continue;
       const val = Number(c.contributionValue) || 0;
       const periodsPerYear = d.paycheck.periodsPerYear;
       let monthly: number;

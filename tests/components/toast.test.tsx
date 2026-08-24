@@ -8,7 +8,7 @@ const mockDismiss = vi.fn();
 let mockToasts: Array<{
   id: string;
   message: string;
-  variant: "success" | "error" | "info";
+  variant: "success" | "error" | "info" | "loading";
 }> = [];
 
 vi.mock("@/lib/hooks/use-toast", () => ({
@@ -111,5 +111,19 @@ describe("ToastContainer", () => {
     const alert = screen.getByRole("alert");
     expect(alert.className).toContain("bg-blue-100");
     expect(alert.className).toContain("border-blue-300");
+  });
+
+  it("applies loading variant styling and renders a spinner, not a static icon", () => {
+    mockToasts = [{ id: "t1", message: "Recalculating…", variant: "loading" }];
+    render(<ToastContainer />);
+    const alert = screen.getByRole("alert");
+    expect(alert.className).toContain("bg-blue-100");
+    expect(alert).toContainHTML("animate-spin");
+  });
+
+  it("does not render a manual dismiss button for a loading toast", () => {
+    mockToasts = [{ id: "t1", message: "Recalculating…", variant: "loading" }];
+    render(<ToastContainer />);
+    expect(screen.queryByLabelText("Dismiss notification")).toBeNull();
   });
 });

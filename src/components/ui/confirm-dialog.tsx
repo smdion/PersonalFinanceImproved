@@ -17,6 +17,9 @@ type PromptState = {
   mode: "prompt";
   message: string;
   placeholder?: string;
+  /** Pre-filled, editable starting value (distinct from `placeholder`,
+   *  which is only hint text and isn't submitted on an empty Enter). */
+  defaultValue?: string;
   resolve: (value: string | null) => void;
 };
 
@@ -101,13 +104,20 @@ export function confirmWithDiff(
 export function promptText(
   message: string,
   placeholder?: string,
+  defaultValue?: string,
 ): Promise<string | null> {
   if (!globalSetState)
     throw new Error(
       "ConfirmDialog not mounted — ensure <ConfirmDialog /> is in the app shell.",
     );
   return new Promise((resolve) => {
-    globalSetState!({ mode: "prompt", message, placeholder, resolve });
+    globalSetState!({
+      mode: "prompt",
+      message,
+      placeholder,
+      defaultValue,
+      resolve,
+    });
   });
 }
 
@@ -193,7 +203,7 @@ export function ConfirmDialog() {
     if (!state) return;
     if (state.mode === "prompt" || state.mode === "promptWithSelect") {
       // Small delay to let the input render
-      requestAnimationFrame(() => inputRef.current?.focus());
+      requestAnimationFrame(() => inputRef.current?.select());
     } else {
       actionRef.current?.focus();
     }
@@ -250,6 +260,7 @@ export function ConfirmDialog() {
           <input
             ref={inputRef}
             type="text"
+            defaultValue={state.defaultValue}
             placeholder={state.placeholder}
             onKeyDown={(e) => {
               if (e.key === "Enter") {

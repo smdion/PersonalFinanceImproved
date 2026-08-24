@@ -488,6 +488,34 @@ async function backfillHistoricalSalaries(
     );
     if (!tableCheck[0]?.exists) return;
 
+    // Guard against re-running this against a DB that's already past 0022
+    // (Stage B "full shape" migration) in real history. On a squash-upgrade
+    // replay, an earlier idempotent step can recreate `salary_changes` as an
+    // EMPTY table (it was for-real dropped long ago, so the replayed CREATE
+    // succeeds fresh) — tricking the check above into thinking this is a
+    // genuinely old pre-0016 database. Without this guard, the unconditional
+    // `UPDATE salary_profiles SET salaries = ...` below rebuilds every
+    // profile entry down to its OLD 4-field shape (salary/bonusPercent/
+    // bonusMultiplier/monthsInBonusYear), silently discarding the 12+ newer
+    // fields (payPeriod, w4FilingStatus, extraPaycheckRouting, etc.) that
+    // migration 0022 (or later app-level saves) already put there — real
+    // incident, 2026-08-23, root-caused and fixed here. `w4FilingStatus` is
+    // 0022-exclusive and NON-NULLABLE on every full-shape entry, so its
+    // presence anywhere is conclusive proof this DB is already current.
+    const { rows: alreadyModern } = await client.query<{ exists: boolean }>(
+      `SELECT EXISTS (
+        SELECT 1 FROM salary_profiles sp, jsonb_each(sp.salaries) e
+        WHERE e.value ? 'w4FilingStatus'
+      ) AS exists`,
+    );
+    if (alreadyModern[0]?.exists) {
+      log("info", "historical_salaries_backfill_skipped", {
+        reason:
+          "salary_profiles already has full-shape (post-0022) entries — this DB is already current, not a genuine pre-0016 upgrade",
+      });
+      return;
+    }
+
     const currentYear = new Date().getFullYear();
 
     await client.query("BEGIN");
@@ -1218,6 +1246,23 @@ export function backfillHistoricalSalariesSQLite(
     )
     .get();
   if (!tableCheck) return;
+
+  // See the matching guard + comment in backfillHistoricalSalaries (pg) —
+  // same squash-replay hazard applies to the SQLite path.
+  const alreadyModern = sqlite
+    .prepare(
+      `SELECT 1 FROM salary_profiles sp, json_each(sp.salaries) e
+       WHERE json_type(e.value, '$.w4FilingStatus') IS NOT NULL
+       LIMIT 1`,
+    )
+    .get();
+  if (alreadyModern) {
+    log("info", "historical_salaries_backfill_skipped", {
+      reason:
+        "salary_profiles already has full-shape (post-0022) entries — this DB is already current, not a genuine pre-0016 upgrade",
+    });
+    return;
+  }
 
   const currentYear = new Date().getFullYear();
 

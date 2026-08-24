@@ -29,11 +29,12 @@ import {
   getIncompleteContribAccountIds,
   type Db,
 } from "@/server/helpers";
-import { accountDisplayName } from "@/lib/utils/format";
+import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
 import { getDisplayConfig } from "@/lib/config/account-types";
 import {
   contributionActiveFieldsSchema,
   contribAccountActiveFieldsSchema,
+  contribAccountActiveFieldsPatchSchema,
   deductionActiveFieldsSchema,
 } from "@/lib/db/json-schemas";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
@@ -79,6 +80,72 @@ async function assertNoJointPercentOfSalaryWithoutJob(
       "Joint accounts using percent-of-salary contributions must be linked to a specific job",
     );
   }
+}
+
+/**
+ * Shared transactional read-merge-write for one active-fields sub-entry
+ * (an account or a deduction) inside a profile's `contributionActiveFields`
+ * blob — setAccountActiveFields and setDeductionActiveFields were
+ * near-identical copies of this same four-step sequence (merge → validate
+ * → delete-if-empty → write back), differing only in which sub-key/schema
+ * they touch. See setAccountActiveFields's doc comment for why this needs
+ * to be transactional at all.
+ */
+async function patchProfileSubEntry<T extends Record<string, unknown>>(
+  tx: Db,
+  profileId: number,
+  subKey: "contributionAccounts" | "deductions",
+  entryId: number,
+  fields: Record<string, unknown>,
+  unset: string[] | undefined,
+  entrySchema: z.ZodType<T>,
+  errorLabel: string,
+): Promise<typeof schema.contributionProfiles.$inferSelect> {
+  const existing = await tx
+    .select()
+    .from(schema.contributionProfiles)
+    .where(eq(schema.contributionProfiles.id, profileId));
+  const profile = existing[0];
+  if (!profile) throw new Error("Profile not found");
+
+  const root = profile.contributionActiveFields as Record<
+    string,
+    Record<string, Record<string, unknown>> | undefined
+  >;
+  const mergedEntry: Record<string, unknown> = {
+    ...root[subKey]?.[String(entryId)],
+  };
+  for (const key of unset ?? []) delete mergedEntry[key];
+  Object.assign(mergedEntry, fields);
+
+  const parsed = entrySchema.safeParse(mergedEntry);
+  if (!parsed.success) {
+    throw new Error(
+      `Invalid ${errorLabel} after patch: ${parsed.error.issues[0]?.message}`,
+    );
+  }
+
+  // A fully-unset entry is removed entirely, not stored as `{}` — an
+  // absent key and an empty object mean the same thing here
+  // (getIncompleteContribAccountIds treats them identically), but only
+  // one of them should be the actual on-disk representation.
+  const nextSub = { ...root[subKey] };
+  if (Object.keys(parsed.data).length === 0) {
+    delete nextSub[String(entryId)];
+  } else {
+    nextSub[String(entryId)] = parsed.data;
+  }
+  const nextActiveFields = { ...root, [subKey]: nextSub };
+
+  const rows = await tx
+    .update(schema.contributionProfiles)
+    .set({
+      contributionActiveFields:
+        nextActiveFields as typeof profile.contributionActiveFields,
+    })
+    .where(eq(schema.contributionProfiles.id, profileId))
+    .returning();
+  return rows[0]!;
 }
 
 export const contributionProfileRouter = createTRPCRouter({
@@ -170,28 +237,63 @@ export const contributionProfileRouter = createTRPCRouter({
       .from(schema.contributionProfiles)
       .orderBy(schema.contributionProfiles.createdAt);
 
-    const { rawContribRows, peopleMap, jobs } = await loadLiveContribData(
-      ctx.db,
+    const { rawContribRows, peopleMap, jobs, perfAccountMap } =
+      await loadLiveContribData(ctx.db);
+    // portfolioAccountLabel wants id → name, but loadLiveContribData's
+    // peopleMap is id → full person row (shared with other resolution here
+    // that needs more than the name) — derive once rather than twice below.
+    const nameMap = new Map(
+      Array.from(peopleMap.values(), (p) => [p.id, p.name] as const),
     );
 
     const accounts = rawContribRows.map((row) => {
-      const person =
-        row.personId != null ? peopleMap.get(row.personId) : undefined;
+      const perfAccount =
+        row.performanceAccountId != null
+          ? perfAccountMap.get(row.performanceAccountId)
+          : undefined;
+      // The real institution (where the account is actually held) comes
+      // from the linked performance account. Falling back to the person's
+      // current employer only covers the rare case of a contribution
+      // account with no performance-account link yet — using employer as
+      // a stand-in for institution is wrong for anything not actually
+      // employer-sponsored (e.g. an IRA), which is exactly what happened
+      // here before: every account showed the owner's current job's name
+      // regardless of where the account is actually held.
       const institution =
+        perfAccount?.institution ??
         jobs.find(
           (j) => j.personId === row.personId && !j.endDate && !j.isSpeculative,
-        )?.employerName ?? "";
-      const accountName = accountDisplayName(
+        )?.employerName ??
+        "";
+      // A contribution row with its own personId is inherently
+      // person-specific (contribution limits are always per-person) even
+      // when the underlying performance account is tracked jointly — e.g.
+      // 10+ years of combined-performance history for one shared IRA
+      // holding both spouses' separate contribution configs. Prefer that
+      // more specific fact over the account's own ownershipType, which
+      // would otherwise flatten both people's rows to the identical
+      // "Joint IRA (Vanguard) — Trad" label with no way to tell them apart.
+      // Genuinely joint contribution rows (row.personId == null) are
+      // unaffected — they still correctly defer to the account's own
+      // ownershipType below. Routed through the shared helper (see
+      // portfolio-labels.ts) so this precedence rule can't drift from the
+      // other 6 call sites that need it.
+      const accountName = portfolioAccountLabel(
         {
           accountType: row.accountType,
           subType: row.subType,
           label: row.label,
           institution,
-          displayName: null,
-          accountLabel: null,
-          ownershipType: null,
         },
-        person?.name,
+        perfAccount
+          ? {
+              displayName: perfAccount.displayName,
+              accountLabel: perfAccount.accountLabel,
+              ownershipType: perfAccount.ownershipType,
+            }
+          : undefined,
+        row.personId,
+        nameMap,
       );
       // Same-person/same-type siblings need disambiguating, same rule
       // getById's accountDetails uses — otherwise two 401k rows for one
@@ -258,6 +360,11 @@ export const contributionProfileRouter = createTRPCRouter({
         perfAccountMap,
         salaryProfileActiveMap,
       } = await loadLiveContribData(ctx.db);
+      // portfolioAccountLabel wants id → name; peopleMap here is id → full
+      // person row (still needed below for the fuzzy-suggestion matcher).
+      const nameMap = new Map(
+        Array.from(peopleMap.values(), (p) => [p.id, p.name] as const),
+      );
       const resolved = resolveProfile(
         profile,
         contribs,
@@ -323,19 +430,29 @@ export const contributionProfileRouter = createTRPCRouter({
           )?.employerName ??
           "";
 
-        // Use the shared accountDisplayName function — always pass institution so
-        // the fallback path produces "Alex 401(k) (TechCorp)" not just "401k"
-        const accountName = accountDisplayName(
+        // A contribution row with its own personId is inherently
+        // person-specific even when the underlying performance account is
+        // tracked jointly (e.g. 10+ years of combined-performance history
+        // for one shared IRA holding both spouses' separate contribution
+        // configs) — see the matching comment in compareData above. Routed
+        // through the shared helper (portfolio-labels.ts) so this
+        // precedence rule can't drift from the other call sites.
+        const accountName = portfolioAccountLabel(
           {
             accountType: row.accountType,
             subType: row.subType,
             label: row.label,
             institution,
-            displayName: displayPerfAccount?.displayName ?? null,
-            accountLabel: displayPerfAccount?.accountLabel ?? null,
-            ownershipType: displayPerfAccount?.ownershipType ?? null,
           },
-          person?.name,
+          displayPerfAccount
+            ? {
+                displayName: displayPerfAccount.displayName,
+                accountLabel: displayPerfAccount.accountLabel,
+                ownershipType: displayPerfAccount.ownershipType,
+              }
+            : undefined,
+          row.personId,
+          nameMap,
         );
 
         // Disambiguate when multiple contrib accounts share the same display name
@@ -440,6 +557,49 @@ export const contributionProfileRouter = createTRPCRouter({
     }),
 
   /**
+   * Clone an existing profile's contributionActiveFields into a new
+   * profile, verbatim. Safe as a straight copy (unlike Salary Profile's
+   * extraPaycheckRouting, or Budget Profile's contributionAccountId):
+   * contributionActiveFields is a pure value-override map keyed by
+   * contributionAccountId (contributionValue/method/match fields/
+   * autoMaximize/isActive) with no FK to owned rows and no external
+   * write-through path — multiple profiles already reference the same
+   * account ids as normal steady state (that's what the compare view
+   * renders), so there's no double-counting or sync-conflict hazard here.
+   */
+  duplicate: contributionProfileProcedure
+    .input(
+      z.object({
+        sourceProfileId: z.number().int(),
+        name: z.string().min(1).max(100),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const source = await ctx.db
+        .select()
+        .from(schema.contributionProfiles)
+        .where(eq(schema.contributionProfiles.id, input.sourceProfileId))
+        .then((r) => r[0]);
+      if (!source) throw new Error("Source profile not found");
+
+      const contributionActiveFields = source.contributionActiveFields ?? {};
+      await assertNoJointPercentOfSalaryWithoutJob(
+        ctx.db,
+        contributionActiveFields,
+      );
+
+      const rows = await ctx.db
+        .insert(schema.contributionProfiles)
+        .values({
+          name: input.name,
+          description: source.description,
+          contributionActiveFields,
+        })
+        .returning();
+      return rows[0]!;
+    }),
+
+  /**
    * Update an existing contribution profile.
    */
   update: contributionProfileProcedure
@@ -480,19 +640,33 @@ export const contributionProfileRouter = createTRPCRouter({
     }),
 
   /**
-   * Set (merge) one account's active fields within a profile, without the
-   * caller needing to fetch/merge the full contributionActiveFields blob
-   * itself. Used right after creating a new contribution account (e.g.
-   * What-If's "Make real") to give it a real value in whichever profile is
-   * currently in effect — a brand-new account has no value anywhere until
-   * this runs.
+   * Patch (merge) one account's active fields within a profile — a true
+   * field-level patch, not a client-side-merged full-blob replace. `fields`
+   * only needs to carry the keys actually changing; `unset` explicitly
+   * names keys to remove (a JSON body can't transmit `undefined` as a
+   * distinguishable value from "key omitted", so field-level deletion
+   * needs its own signal). Keys not mentioned in either are left untouched.
+   *
+   * The read-merge-write happens inside a transaction so two overlapping
+   * patches to the same profile (two fields committed in quick succession,
+   * a second tab/device) can't silently clobber each other the way the
+   * previous design — read a snapshot client-side, merge client-side, PUT
+   * the whole blob back — could.
+   *
+   * `fields` is validated against the loose per-field patch schema (every
+   * field optional, no cross-field constraint); the paired-or-neither
+   * contributionValue/contributionMethod invariant is checked on the
+   * MERGED result below, not on the patch itself, since a legitimate
+   * single-field patch (e.g. just `{ isActive: false }`) must not be
+   * rejected for not also carrying an unrelated pair.
    */
   setAccountActiveFields: contributionProfileProcedure
     .input(
       z.object({
         profileId: z.number(),
         accountId: z.number(),
-        fields: contribAccountActiveFieldsSchema,
+        fields: contribAccountActiveFieldsPatchSchema,
+        unset: z.array(z.string()).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -511,44 +685,25 @@ export const contributionProfileRouter = createTRPCRouter({
         }
       }
 
-      const existing = await ctx.db
-        .select()
-        .from(schema.contributionProfiles)
-        .where(eq(schema.contributionProfiles.id, input.profileId));
-      const profile = existing[0];
-      if (!profile) throw new Error("Profile not found");
-
-      const root = profile.contributionActiveFields as {
-        contributionAccounts?: Record<string, Record<string, unknown>>;
-      };
-      const nextActiveFields = {
-        ...root,
-        contributionAccounts: {
-          ...root.contributionAccounts,
-          [String(input.accountId)]: {
-            ...root.contributionAccounts?.[String(input.accountId)],
-            ...input.fields,
-          },
-        },
-      };
-
-      const rows = await ctx.db
-        .update(schema.contributionProfiles)
-        .set({
-          contributionActiveFields:
-            nextActiveFields as typeof profile.contributionActiveFields,
-        })
-        .where(eq(schema.contributionProfiles.id, input.profileId))
-        .returning();
-      return rows[0]!;
+      return ctx.db.transaction((tx) =>
+        patchProfileSubEntry(
+          tx,
+          input.profileId,
+          "contributionAccounts",
+          input.accountId,
+          input.fields,
+          input.unset,
+          contribAccountActiveFieldsSchema,
+          "contribution account fields",
+        ),
+      );
     }),
 
   /**
-   * Set (merge) one deduction's active amount within a profile — same
-   * pattern as setAccountActiveFields, for the deductions section of the
-   * Contribution Profile editor. A deduction has no live amountPerPeriod
-   * any more (Stage B dropped the column) — this is the only way to give
-   * one a resolvable value.
+   * Patch (merge) one deduction's active amount within a profile — same
+   * field-level-patch, same-transaction pattern as setAccountActiveFields.
+   * A deduction has no live amountPerPeriod any more (Stage B dropped the
+   * column) — this is the only way to give one a resolvable value.
    */
   setDeductionActiveFields: contributionProfileProcedure
     .input(
@@ -556,40 +711,22 @@ export const contributionProfileRouter = createTRPCRouter({
         profileId: z.number(),
         deductionId: z.number(),
         fields: deductionActiveFieldsSchema,
+        unset: z.array(z.string()).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const existing = await ctx.db
-        .select()
-        .from(schema.contributionProfiles)
-        .where(eq(schema.contributionProfiles.id, input.profileId));
-      const profile = existing[0];
-      if (!profile) throw new Error("Profile not found");
-
-      const root = profile.contributionActiveFields as {
-        contributionAccounts?: Record<string, Record<string, unknown>>;
-        deductions?: Record<string, Record<string, unknown>>;
-      };
-      const nextActiveFields = {
-        ...root,
-        deductions: {
-          ...root.deductions,
-          [String(input.deductionId)]: {
-            ...root.deductions?.[String(input.deductionId)],
-            ...input.fields,
-          },
-        },
-      };
-
-      const rows = await ctx.db
-        .update(schema.contributionProfiles)
-        .set({
-          contributionActiveFields:
-            nextActiveFields as typeof profile.contributionActiveFields,
-        })
-        .where(eq(schema.contributionProfiles.id, input.profileId))
-        .returning();
-      return rows[0]!;
+      return ctx.db.transaction((tx) =>
+        patchProfileSubEntry(
+          tx,
+          input.profileId,
+          "deductions",
+          input.deductionId,
+          input.fields,
+          input.unset,
+          deductionActiveFieldsSchema,
+          "deduction fields",
+        ),
+      );
     }),
 
   /**

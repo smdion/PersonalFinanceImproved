@@ -38,6 +38,7 @@ import {
   PieChart,
   Gauge,
   Hammer,
+  FlaskConical,
   type LucideIcon,
 } from "lucide-react";
 import { BRAND_COLORS } from "@/lib/utils/colors";
@@ -101,6 +102,11 @@ const navStructure: NavEntry[] = [
       { href: "/contributions", label: "Contributions", Icon: Layers },
       { href: "/analytics", label: "Analytics", Icon: PieChart },
       { href: "/tools", label: "Relocation", Icon: Wrench },
+      {
+        href: "/budget?tab=whatif",
+        label: "Budget Scenarios",
+        Icon: FlaskConical,
+      },
     ],
   },
   {

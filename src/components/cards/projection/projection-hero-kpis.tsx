@@ -315,6 +315,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
           coastFireMcLoading={
             coastFireMcQuery.isLoading || coastFireMcQuery.isFetching
           }
+          coastFireMcComputedAt={coastFireMcQuery.data?.computedAt}
         />
       </div>
     );

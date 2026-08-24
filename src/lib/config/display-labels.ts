@@ -1,6 +1,8 @@
 // Consolidated display label maps.
 // Components import from here — never define local label maps.
 
+import type { ContribResolutionStatus } from "@/lib/pure/profiles";
+
 export const PAY_PERIOD_LABELS: Record<string, string> = {
   weekly: "Weekly",
   biweekly: "Biweekly",
@@ -44,6 +46,53 @@ export const EMPLOYER_MATCH_LABELS: Record<string, string> = {
   percent_of_contribution: "% of Contrib",
   dollar_match: "$ Match",
   fixed_annual: "Fixed/Year",
+};
+
+/** Unit glyph for a match type's value field — null for "none" (no value
+ *  ever renders for it). Display-only: never use this for %-to-decimal
+ *  conversion math. Only percent_of_contribution has a cap concept at all
+ *  (see computeEmployerMatch) — that check stays a plain inline
+ *  `matchType === "percent_of_contribution"` at each call site rather than
+ *  living in this table, so the cap's ×100/÷100 conversion can never
+ *  accidentally piggyback on a future non-percent type gaining a cap. */
+export const EMPLOYER_MATCH_VALUE_UNIT: Record<string, "%" | "$" | null> = {
+  none: null,
+  percent_of_contribution: "%",
+  dollar_match: "$",
+  fixed_annual: "$",
+};
+
+/** Budget "PC" badge text for a linked item, per why it resolved the way
+ *  it did for the column being viewed. "ok" keeps the plain "PC" text —
+ *  the other five replace it so the badge itself names the real cause
+ *  instead of a bare $0 the amber "Incomplete" badge used to carry alone. */
+export const CONTRIB_RESOLUTION_LABELS: Record<
+  ContribResolutionStatus,
+  string
+> = {
+  ok: "PC",
+  not_in_profile: "Not Set",
+  inactive_in_profile: "Off",
+  inactive_in_sandbox: "Off (What-If)",
+  no_pay_period: "Incomplete",
+  account_unavailable: "Unavailable",
+};
+
+export const CONTRIB_RESOLUTION_TOOLTIPS: Record<
+  ContribResolutionStatus,
+  string
+> = {
+  ok: "",
+  not_in_profile:
+    "This column's Contribution Profile has no value set for this account — resolves to $0 here, not a guessed amount.",
+  inactive_in_profile:
+    "Turned off in this column's Contribution Profile — resolves to $0 here, not a guessed amount.",
+  inactive_in_sandbox:
+    "Turned off by a What-If override — resolves to $0 in this sandbox only.",
+  no_pay_period:
+    "Linked contribution account has no resolvable pay period (missing/ended job) — excluded from this total, not defaulted.",
+  account_unavailable:
+    "Linked contribution account is inactive or was deleted.",
 };
 
 export const MATCH_TAX_LABELS: Record<string, string> = {

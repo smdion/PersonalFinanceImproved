@@ -13,14 +13,16 @@ import { createTRPCRouter, protectedProcedure } from "../../trpc";
 import { DEFAULT_RETURN_RATE } from "@/lib/constants";
 import { calculateProjection } from "@/lib/calculators/engine";
 import {
+  hashEngineInput,
+  readProjectionCache,
+  writeProjectionCache,
+} from "@/server/helpers/projection-cache";
+import {
   buildAccumulationOrder,
   computeCurrentStockAllocationPercent,
 } from "../projection-v5-helpers";
-import {
-  buildContributionDisplaySpecs,
-  accountDisplayName,
-  toNumber,
-} from "@/server/helpers";
+import { buildContributionDisplaySpecs, toNumber } from "@/server/helpers";
+import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
 import type {
   AccountCategory,
   AccumulationOverride,
@@ -99,6 +101,9 @@ export const scenariosRouter = createTRPCRouter({
          *  for this query — Coast FIRE is a pure "stop contributing" scenario.
          *  Decumulation overrides are preserved. */
         coastFireOverrideAge: z.number().int().min(18).max(120).optional(),
+        /** Bypass the projection cache and force a fresh compute — the
+         *  explicit "Run Simulation" action, not the default query path. */
+        forceRefresh: z.boolean().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -196,21 +201,36 @@ export const scenariosRouter = createTRPCRouter({
 
       // When metadataOnly is true, skip the heavy projection calculation (used by the
       // retirement page which only needs settings/expenses/budget metadata).
-      const result = input.metadataOnly
-        ? null
-        : calculateProjection({
-            ...baseEngineInput,
-            profileSwitches: profileSwitchesForEngine,
-            decumulationDefaults: buildDecumulationDefaults(
-              settings,
-              input.decumulationDefaults,
-              distributionTaxRates,
-            ),
-            accumulationOverrides:
-              input.accumulationOverrides as AccumulationOverride[],
-            decumulationOverrides:
-              input.decumulationOverrides as DecumulationOverride[],
-          });
+      let result: ReturnType<typeof calculateProjection> | null = null;
+      if (!input.metadataOnly) {
+        const engineInput = {
+          ...baseEngineInput,
+          profileSwitches: profileSwitchesForEngine,
+          decumulationDefaults: buildDecumulationDefaults(
+            settings,
+            input.decumulationDefaults,
+            distributionTaxRates,
+          ),
+          accumulationOverrides:
+            input.accumulationOverrides as AccumulationOverride[],
+          decumulationOverrides:
+            input.decumulationOverrides as DecumulationOverride[],
+        };
+        const inputHash = hashEngineInput("deterministic", engineInput);
+
+        const cached = input.forceRefresh
+          ? null
+          : await readProjectionCache<ReturnType<typeof calculateProjection>>(
+              ctx.db,
+              inputHash,
+            );
+        if (cached) {
+          result = cached.result;
+        } else {
+          result = calculateProjection(engineInput);
+          await writeProjectionCache(ctx.db, inputHash, result, null);
+        }
+      }
 
       if (result && routerWarnings.length > 0) {
         result.warnings.unshift(...routerWarnings);
@@ -227,6 +247,9 @@ export const scenariosRouter = createTRPCRouter({
       const accumulationOrder = buildAccumulationOrder(activeContribs);
       const currentStockAllocationPercent =
         await computeCurrentStockAllocationPercent(ctx.db, age);
+      // portfolioAccountLabel wants id → name, for the contributionSpecs
+      // perf-account-label fallback below.
+      const nameMap = new Map(people.map((p) => [p.id, p.name] as const));
 
       return {
         result,
@@ -298,14 +321,18 @@ export const scenariosRouter = createTRPCRouter({
             catAccts.find(
               (a) => (exactOwner(a) || noOwner(a)) && parentCatMatch(a),
             );
-          // Fallback: use linked performance account's display name.
-          // perfAcct includes ownershipType so accountDisplayName applies
-          // "Joint" prefix for joint accounts automatically.
+          // Fallback: use linked performance account's display name,
+          // routed through the shared precedence rule (portfolio-labels.ts)
+          // so THIS contribution row's own real owner (personId) wins over
+          // perfAcct's own ownershipType — a shared, jointly-tracked master
+          // (e.g. one Vanguard IRA both spouses contribute to separately)
+          // has ownershipType "joint", which would otherwise render "Joint
+          // ..." for every such row instead of each person's own name.
           const perfAcct = contrib?.performanceAccountId
             ? perfAccountMap.get(contrib.performanceAccountId)
             : undefined;
           const perfFallback = perfAcct
-            ? accountDisplayName(perfAcct, rest.ownerName ?? undefined)
+            ? portfolioAccountLabel(perfAcct, perfAcct, personId, nameMap)
             : undefined;
           return {
             ...rest,

@@ -16,14 +16,22 @@ import {
 } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { ContribRow } from "./contribution-accounts-types";
-import { formatPercent } from "@/lib/utils/format";
+import { formatCurrency } from "@/lib/utils/format";
 import { InlineText, InlineSelect } from "./contribution-accounts-inline";
+import {
+  resolveContribFieldDisplayState,
+  type ContribAccountActiveFields,
+} from "@/lib/pure/profiles";
+import { formatEmployerMatch } from "@/lib/pure/contributions";
+import { EMPLOYER_MATCH_VALUE_UNIT } from "@/lib/config/display-labels";
 
 export function ContributionRow({
   contrib: c,
   people,
   jobs,
   accountTypeOptions,
+  activeProfileName,
+  activeProfileFields,
   sharedMatchFrom,
   onUpdate,
 }: {
@@ -31,6 +39,14 @@ export function ContributionRow({
   people: { id: number; name: string }[];
   jobs: { id: number; employerName: string }[];
   accountTypeOptions: { value: string; label: string }[];
+  /** Name of the globally-active Contribution Profile, or null if none is
+   *  resolvable — this account carries no value of its own; whatever this
+   *  profile has (or doesn't have) for it is the only real answer to
+   *  "why does this row look the way it does." */
+  activeProfileName: string | null;
+  /** That profile's raw active-fields entry for this specific account, or
+   *  null if it has none. */
+  activeProfileFields: Record<string, unknown> | null;
   /** Set when this row has no match config of its own but a sibling split
    *  of the same account does — that sibling's match is combined across
    *  both splits before capping, so this row still earns a real,
@@ -48,88 +64,146 @@ export function ContributionRow({
     ? (jobs.find((j) => j.id === c.jobId)?.employerName ?? String(c.jobId))
     : "Personal";
 
-  // Format match cap from decimal to percentage for display
-  const matchCapDisplay = c.employerMaxMatchPct
-    ? formatPercent(parseFloat(c.employerMaxMatchPct))
-    : "";
-  const sharedMatchCapDisplay = sharedMatchFrom?.employerMaxMatchPct
-    ? formatPercent(parseFloat(sharedMatchFrom.employerMaxMatchPct))
-    : "";
+  // employerMatchType/Value/MaxMatchPct are PROFILE_OWNED_CONTRIB_FIELDS —
+  // onUpdate already routes edits to the active profile when one is set
+  // (see handleContribUpdate), but `c` itself is the raw, unmerged account
+  // row. Display must merge the profile's own override over the live
+  // value the same way applyContribActiveFields does server-side, or this
+  // row shows/edits a number that isn't the one actually in effect.
+  const activeMatchFields = activeProfileFields as {
+    employerMatchType?: string;
+    employerMatchValue?: string | number;
+    employerMaxMatchPct?: string | number;
+  } | null;
+  const effectiveMatchType =
+    activeMatchFields?.employerMatchType ?? c.employerMatchType;
+  const effectiveMatchValue =
+    activeMatchFields?.employerMatchValue ?? c.employerMatchValue;
+  const effectiveMaxMatchPct =
+    activeMatchFields?.employerMaxMatchPct ?? c.employerMaxMatchPct;
+  const isPercentMatch = effectiveMatchType === "percent_of_contribution";
+
+  const matchText = formatEmployerMatch(
+    effectiveMatchType,
+    effectiveMatchValue,
+    effectiveMaxMatchPct,
+  );
+  const sharedMatchText = sharedMatchFrom
+    ? formatEmployerMatch(
+        sharedMatchFrom.employerMatchType,
+        sharedMatchFrom.employerMatchValue,
+        sharedMatchFrom.employerMaxMatchPct,
+      )
+    : null;
   const sharedMatchLabel = sharedMatchFrom
-    ? `${sharedMatchFrom.employerMatchValue}% match up to ${sharedMatchCapDisplay || "no cap"}, combined with this account's ${TAX_LABELS[c.taxTreatment] ?? c.taxTreatment} contribution — see the ${TAX_LABELS[sharedMatchFrom.taxTreatment] ?? sharedMatchFrom.taxTreatment} row`
+    ? `${sharedMatchText ?? "0"} match, combined with this account's ${TAX_LABELS[c.taxTreatment] ?? c.taxTreatment} contribution — see the ${TAX_LABELS[sharedMatchFrom.taxTreatment] ?? sharedMatchFrom.taxTreatment} row`
     : "";
+
+  // What this account is actually worth in the profile that's live right
+  // now — the account itself carries no value (applyContribActiveFields),
+  // so this is the one place on this page that answers "why is this row
+  // showing what it's showing" without a trip to the Budget page.
+  const profileStatus = resolveContribFieldDisplayState(
+    activeProfileFields as ContribAccountActiveFields,
+  );
+  const profileStatusValueText =
+    profileStatus.methodSuffix === "%"
+      ? `${profileStatus.value}%`
+      : formatCurrency(parseFloat(String(profileStatus.value)));
+  const profileStatusText = activeProfileName
+    ? profileStatus.isDisabled
+      ? `Off in ${activeProfileName}`
+      : profileStatus.hasValue
+        ? `${profileStatusValueText} in ${activeProfileName}`
+        : `No value in ${activeProfileName}`
+    : null;
+
   return (
     <div
       className={`border rounded-lg bg-surface-primary ${!c.isActive ? "opacity-50" : ""}`}
     >
       {/* Summary line — hidden when edit is open */}
       {!showAdvanced && (
-        <div className="flex items-center gap-2 px-3 py-2 text-xs">
-          <span className="text-secondary font-medium shrink-0">
-            {c.ownership === "joint" ? "Joint" : personLabel}
-          </span>
-          <span className="text-faint">·</span>
-          <span className="text-muted">{jLabel}</span>
-          <span className="text-faint">·</span>
-          <span className="text-muted">
-            {TAX_LABELS[c.taxTreatment] ?? c.taxTreatment}
-          </span>
-          {c.employerMatchType !== "none" && c.employerMatchValue && (
-            <>
-              <span className="text-faint">·</span>
-              <span className="text-faint">
-                {c.employerMatchValue}% match
-                {matchCapDisplay ? ` up to ${matchCapDisplay}` : ""}
-                {sharedMatchFrom ? " (combined w/ other split)" : ""}
-              </span>
-            </>
-          )}
-          {(!c.employerMatchType || c.employerMatchType === "none") &&
-            sharedMatchFrom && (
+        <>
+          <div className="flex items-center gap-2 px-3 py-2 text-xs">
+            <span className="text-secondary font-medium shrink-0">
+              {c.ownership === "joint" ? "Joint" : personLabel}
+            </span>
+            <span className="text-faint">·</span>
+            <span className="text-muted">{jLabel}</span>
+            <span className="text-faint">·</span>
+            <span className="text-muted">
+              {TAX_LABELS[c.taxTreatment] ?? c.taxTreatment}
+            </span>
+            {matchText && (
               <>
                 <span className="text-faint">·</span>
                 <span className="text-faint">
-                  {sharedMatchFrom.employerMatchValue}% match up to{" "}
-                  {sharedMatchCapDisplay || "no cap"} (combined w/{" "}
-                  {TAX_LABELS[sharedMatchFrom.taxTreatment] ??
-                    sharedMatchFrom.taxTreatment}{" "}
-                  split)
+                  {matchText} match
+                  {sharedMatchFrom ? " (combined w/ other split)" : ""}
                 </span>
               </>
             )}
-          {c.subType && (
-            <>
-              <span className="text-faint">·</span>
-              <span className="text-faint">{c.subType}</span>
-            </>
+            {(!effectiveMatchType || effectiveMatchType === "none") &&
+              sharedMatchFrom &&
+              sharedMatchText && (
+                <>
+                  <span className="text-faint">·</span>
+                  <span className="text-faint">
+                    {sharedMatchText} match (combined w/{" "}
+                    {TAX_LABELS[sharedMatchFrom.taxTreatment] ??
+                      sharedMatchFrom.taxTreatment}{" "}
+                    split)
+                  </span>
+                </>
+              )}
+            {c.subType && (
+              <>
+                <span className="text-faint">·</span>
+                <span className="text-faint">{c.subType}</span>
+              </>
+            )}
+            <span className="flex-1" />
+            {!c.isActive && (
+              <span className="text-caption text-amber-500 font-medium">
+                Not a funding target
+              </span>
+            )}
+            {/* Restoring only ever changes a flag on the account itself —
+             *  it can never do the thing "restore" implies (make it
+             *  actually funded), since values only ever live in a
+             *  Contribution Profile, not here. That action lives in the
+             *  Profile editor and Compare view instead, next to the value
+             *  field it needs. Removing stays here: it has a real,
+             *  immediate effect on its own (stops counting the account
+             *  toward the dashboard/net-worth totals). */}
+            {onUpdate && c.isActive && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onUpdate({ isActive: false });
+                }}
+                className="text-caption shrink-0 text-muted hover:text-secondary"
+                title="Keeps this account's history; stops it appearing as a place to direct contributions"
+              >
+                Remove as funding target
+              </button>
+            )}
+            {onUpdate && (
+              <button
+                onClick={() => setShowAdvanced(true)}
+                className="text-caption text-faint hover:text-secondary shrink-0"
+              >
+                Edit
+              </button>
+            )}
+          </div>
+          {profileStatusText && (
+            <div className="px-3 pb-1.5 -mt-1.5 text-caption text-faint">
+              {profileStatusText}
+            </div>
           )}
-          <span className="flex-1" />
-          {!c.isActive && (
-            <span className="text-caption text-amber-500 font-medium">
-              Inactive
-            </span>
-          )}
-          {onUpdate && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onUpdate({ isActive: !c.isActive });
-              }}
-              className={`text-caption shrink-0 ${c.isActive ? "text-red-400 hover:text-red-600" : "text-green-500 hover:text-green-700"}`}
-              title={c.isActive ? "Deactivate" : "Reactivate"}
-            >
-              {c.isActive ? "Deactivate" : "Reactivate"}
-            </button>
-          )}
-          {onUpdate && (
-            <button
-              onClick={() => setShowAdvanced(true)}
-              className="text-caption text-faint hover:text-secondary shrink-0"
-            >
-              Edit
-            </button>
-          )}
-        </div>
+        </>
       )}
 
       {/* Editable fields — replaces summary when open */}
@@ -204,7 +278,7 @@ export function ContributionRow({
             />
             <InlineSelect
               label="Match Type"
-              value={c.employerMatchType}
+              value={effectiveMatchType}
               options={Object.entries(MATCH_LABELS).map(([k, v]) => ({
                 value: k,
                 label: v,
@@ -212,40 +286,46 @@ export function ContributionRow({
               onChange={(val) => onUpdate?.({ employerMatchType: val })}
               disabled={!onUpdate}
             />
-            {(!c.employerMatchType || c.employerMatchType === "none") &&
+            {(!effectiveMatchType || effectiveMatchType === "none") &&
               sharedMatchFrom && (
                 <p className="col-span-2 md:col-span-4 text-caption text-faint -mt-1">
                   This account&apos;s match — {sharedMatchLabel}
                 </p>
               )}
-            {c.employerMatchType !== "none" && (
+            {effectiveMatchType !== "none" && (
               <>
                 <InlineText
-                  label="Match %"
-                  value={c.employerMatchValue ?? ""}
-                  placeholder="e.g. 50"
+                  label={
+                    EMPLOYER_MATCH_VALUE_UNIT[effectiveMatchType] === "$"
+                      ? "Match Amount"
+                      : "Match %"
+                  }
+                  value={String(effectiveMatchValue ?? "")}
+                  placeholder={isPercentMatch ? "e.g. 50" : "e.g. 400"}
                   onSave={(val) =>
                     onUpdate?.({ employerMatchValue: val || null })
                   }
                   disabled={!onUpdate}
                 />
-                <InlineText
-                  label="Match Cap %"
-                  value={
-                    c.employerMaxMatchPct
-                      ? String(parseFloat(c.employerMaxMatchPct) * 100)
-                      : ""
-                  }
-                  placeholder="e.g. 7"
-                  onSave={(val) =>
-                    onUpdate?.({
-                      employerMaxMatchPct: val
-                        ? String(parseFloat(val) / 100)
-                        : null,
-                    })
-                  }
-                  disabled={!onUpdate}
-                />
+                {isPercentMatch && (
+                  <InlineText
+                    label="Match Cap %"
+                    value={
+                      effectiveMaxMatchPct
+                        ? String(parseFloat(String(effectiveMaxMatchPct)) * 100)
+                        : ""
+                    }
+                    placeholder="e.g. 7"
+                    onSave={(val) =>
+                      onUpdate?.({
+                        employerMaxMatchPct: val
+                          ? String(parseFloat(val) / 100)
+                          : null,
+                      })
+                    }
+                    disabled={!onUpdate}
+                  />
+                )}
                 <InlineSelect
                   label="Match Deposits To"
                   value={c.employerMatchTaxTreatment}
@@ -398,7 +478,7 @@ export function AddContribForm({
       ...(matchType !== "none" && matchValue
         ? { employerMatchValue: matchValue }
         : {}),
-      ...(matchType !== "none" && maxMatchPct
+      ...(matchType === "percent_of_contribution" && maxMatchPct
         ? { employerMaxMatchPct: String(parseFloat(maxMatchPct) / 100) }
         : {}),
       isActive: true,
@@ -478,25 +558,35 @@ export function AddContribForm({
         {matchType !== "none" && (
           <>
             <div>
-              <label className="text-caption text-muted">Match Value</label>
+              <label className="text-caption text-muted">
+                {EMPLOYER_MATCH_VALUE_UNIT[matchType] === "$"
+                  ? "Match Amount"
+                  : "Match Value"}
+              </label>
               <input
                 type="number"
                 value={matchValue}
                 onChange={(e) => setMatchValue(e.target.value)}
-                placeholder="e.g. 50"
+                placeholder={
+                  EMPLOYER_MATCH_VALUE_UNIT[matchType] === "$"
+                    ? "e.g. 400"
+                    : "e.g. 50"
+                }
                 className="w-full border rounded px-1.5 py-1 text-xs bg-surface-primary"
               />
             </div>
-            <div>
-              <label className="text-caption text-muted">Max Match %</label>
-              <input
-                type="number"
-                value={maxMatchPct}
-                onChange={(e) => setMaxMatchPct(e.target.value)}
-                placeholder="e.g. 7"
-                className="w-full border rounded px-1.5 py-1 text-xs bg-surface-primary"
-              />
-            </div>
+            {matchType === "percent_of_contribution" && (
+              <div>
+                <label className="text-caption text-muted">Max Match %</label>
+                <input
+                  type="number"
+                  value={maxMatchPct}
+                  onChange={(e) => setMaxMatchPct(e.target.value)}
+                  placeholder="e.g. 7"
+                  className="w-full border rounded px-1.5 py-1 text-xs bg-surface-primary"
+                />
+              </div>
+            )}
           </>
         )}
       </div>

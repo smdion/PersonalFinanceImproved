@@ -7,7 +7,10 @@ import { roundToCents } from "@/lib/utils/math";
 import { toNumber } from "./transforms";
 import type { Db } from "./transforms";
 import { parseAppSettings } from "./settings";
-import { filterActiveJobs } from "@/lib/pure/profiles";
+import {
+  filterActiveJobs,
+  type ContribResolutionStatus,
+} from "@/lib/pure/profiles";
 import {
   loadEffectiveSalaryProfile,
   resolveCompensation,
@@ -23,6 +26,7 @@ import {
   computeAnnualContribution,
   resolveJoblessPeriodsPerYear,
   resolveContribPeriods,
+  classifyContribResolution,
 } from "./contribution";
 
 /** No TTL — cached YNAB data is kept until the user manually triggers a resync. */
@@ -306,7 +310,9 @@ export async function resolveLinkedBudgetItemAmounts<
     sandboxContribActiveFields?: Record<string, { contributionValue: string }>;
     sandboxSalaryEntries?: Record<string, SalaryOverrideEntry> | null;
   },
-): Promise<(T & { amounts: number[]; incomplete: boolean })[]> {
+): Promise<
+  (T & { amounts: number[]; contribStatus: ContribResolutionStatus[] | null })[]
+> {
   const linkedContribIds = new Set(
     items
       .filter((i) => i.contributionAccountId != null)
@@ -316,7 +322,7 @@ export async function resolveLinkedBudgetItemAmounts<
     return items.map((i) => ({
       ...i,
       amounts: i.amounts as number[],
-      incomplete: false,
+      contribStatus: null,
     }));
   }
 
@@ -324,6 +330,7 @@ export async function resolveLinkedBudgetItemAmounts<
     .select()
     .from(schema.contributionAccounts)
     .where(eq(schema.contributionAccounts.isActive, true));
+  const rawContribIds = new Set(rawContribs.map((c) => c.id));
   const allJobs = await db.select().from(schema.jobs);
   const effectiveSalaryMap: SalaryActiveMap = applySandboxSalaryEntries(
     opts?.sandboxSalaryEntries,
@@ -335,7 +342,7 @@ export async function resolveLinkedBudgetItemAmounts<
     salaryProfileId: number | null,
   ): Promise<{
     contribMonthlyById: Map<number, number>;
-    incompleteIds: Set<number>;
+    statusById: Map<number, ContribResolutionStatus>;
   }> => {
     const contribMonthlyById = new Map<number, number>();
     const incompleteIds = new Set<number>();
@@ -355,6 +362,7 @@ export async function resolveLinkedBudgetItemAmounts<
       opts?.sandboxContribActiveFields ?? {},
       true,
     );
+    const activeContribIds = new Set(activeContribs.map((c) => c.id));
     const activeJobs = filterActiveJobs(profileResult.jobs);
     const {
       periodsPerYear: defaultPeriodsPerYear,
@@ -403,15 +411,32 @@ export async function resolveLinkedBudgetItemAmounts<
       );
       contribMonthlyById.set(c.id, annual / 12);
     }
-    return { contribMonthlyById, incompleteIds };
+
+    const statusById = new Map<number, ContribResolutionStatus>();
+    for (const accountId of linkedContribIds) {
+      statusById.set(
+        accountId,
+        classifyContribResolution(
+          accountId,
+          rawContribIds,
+          profileResult.contribActiveFields,
+          activeContribIds,
+          incompleteIds,
+        ),
+      );
+    }
+    return { contribMonthlyById, statusById };
   };
 
   const contribMonthlyByPair = new Map<
     string,
-    { contribMonthlyById: Map<number, number>; incompleteIds: Set<number> }
+    {
+      contribMonthlyById: Map<number, number>;
+      statusById: Map<number, ContribResolutionStatus>;
+    }
   >();
   const contribMonthlyByColumn: Map<number, number>[] = [];
-  const incompleteAccountIds = new Set<number>();
+  const statusByColumn: Map<number, ContribResolutionStatus>[] = [];
   for (let col = 0; col < numColumns; col++) {
     const contribProfileId = contribProfileIdByColumn[col] ?? null;
     const salaryProfileId = salaryProfileIdByColumn[col] ?? null;
@@ -425,19 +450,23 @@ export async function resolveLinkedBudgetItemAmounts<
       contribMonthlyByPair.set(key, resolved);
     }
     contribMonthlyByColumn.push(resolved.contribMonthlyById);
-    for (const id of resolved.incompleteIds) incompleteAccountIds.add(id);
+    statusByColumn.push(resolved.statusById);
   }
 
   return items.map((i) => {
     if (i.contributionAccountId == null) {
-      return { ...i, amounts: i.amounts as number[], incomplete: false };
+      return { ...i, amounts: i.amounts as number[], contribStatus: null };
     }
     const accountId = i.contributionAccountId;
     const amounts = Array.from(
       { length: numColumns },
       (_, col) => contribMonthlyByColumn[col]?.get(accountId) ?? 0,
     );
-    return { ...i, amounts, incomplete: incompleteAccountIds.has(accountId) };
+    const contribStatus = Array.from(
+      { length: numColumns },
+      (_, col) => statusByColumn[col]?.get(accountId) ?? "ok",
+    );
+    return { ...i, amounts, contribStatus };
   });
 }
 

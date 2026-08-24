@@ -47,7 +47,8 @@ import {
   getResolvedGoalAllocations,
   resolveLinkedBudgetItemAmounts,
 } from "@/server/helpers";
-import { accountDisplayName } from "@/lib/utils/format";
+import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
+import { TAX_TREATMENT_LABELS } from "@/lib/config/display-labels";
 import {
   getActiveBudgetApi,
   getClientForService,
@@ -844,10 +845,11 @@ export const budgetRouter = createTRPCRouter({
           apiCategoryName: i.apiCategoryName,
           apiSyncDirection: i.apiSyncDirection,
           contributionAccountId: i.contributionAccountId,
-          // Linked to a fixed_per_period contribution account with no
-          // resolvable job/pay period — excluded from amounts above (0),
-          // not a guessed pay period. See resolveContribPeriods.
-          incomplete: resolvedItemsById.get(i.id)?.incomplete ?? false,
+          // Per-column reason a linked item's amount is $0 for THAT column
+          // — never flattened across columns (a status true only under a
+          // different column's profile must not show while viewing this
+          // one). See classifyContribResolution.
+          contribStatus: resolvedItemsById.get(i.id)?.contribStatus ?? null,
         };
       });
 
@@ -1555,28 +1557,58 @@ export const budgetRouter = createTRPCRouter({
       const perf = c.performanceAccountId
         ? perfMap.get(c.performanceAccountId)
         : null;
-      // Pass ownershipType so accountDisplayName applies "Joint" prefix for
-      // joint accounts and the individual owner name for individual accounts.
-      const ownerName =
-        c.ownership === "individual" && c.personId != null
-          ? personMap.get(c.personId)
-          : undefined;
-      const label = accountDisplayName(
+      // This account's own ownership (individual + personId) must win over
+      // the linked performance account's own ownershipType — a shared,
+      // jointly-tracked master (e.g. one Vanguard IRA both spouses
+      // contribute to separately) has ownershipType "joint", but each
+      // contribution_accounts row under it has its own real owner. Letting
+      // the master's "joint" win here made every such row render with the
+      // identical generic "Joint ..." label, with no way to tell which
+      // unlinked row belonged to which person when picking a budget item
+      // to link it to. See portfolioAccountLabel's identical precedence
+      // rule for the analogous portfolio-snapshot-row case.
+      const ownerPersonId = c.ownership === "individual" ? c.personId : null;
+      // Always pass a perf-shaped object, even with no linked performance
+      // account — falling back to `undefined` here would drop this
+      // account's own ownership (c.ownership) entirely, since
+      // portfolioAccountLabel's internal fallback only ever consults
+      // perf.ownershipType, never the caller's own row. A joint
+      // contribution account with no performance account linked yet (the
+      // normal pre-linking state) would silently lose its "Joint" prefix.
+      const label = portfolioAccountLabel(
         {
           accountType: c.accountType,
           subType: c.subType,
           label: c.label,
-          displayName: perf?.displayName,
-          accountLabel: perf?.accountLabel,
-          institution: perf?.institution,
-          ownershipType: perf?.ownershipType ?? c.ownership,
+          institution: perf?.institution ?? "",
         },
-        ownerName ?? undefined,
+        perf
+          ? {
+              displayName: perf.displayName,
+              accountLabel: perf.accountLabel,
+              ownershipType: perf.ownershipType,
+            }
+          : {
+              displayName: null,
+              accountLabel: null,
+              ownershipType: c.ownership,
+            },
+        ownerPersonId,
+        personMap,
       );
+      // Two of one person's own accounts (e.g. a Roth and a Traditional
+      // IRA) commonly share the same owner + institution + account type,
+      // so the label above alone doesn't distinguish them — always append
+      // tax treatment here rather than only on a detected collision, since
+      // a collision-only rule fails silently the moment a third account
+      // shares the same three fields. Matches how the Portfolio page
+      // always shows tax treatment as its own separate label, never
+      // conditionally.
+      const taxLabel = TAX_TREATMENT_LABELS[c.taxTreatment] ?? c.taxTreatment;
       return {
         id: c.id,
         accountType: c.accountType,
-        displayLabel: label,
+        displayLabel: `${label} — ${taxLabel}`,
       };
     });
   }),

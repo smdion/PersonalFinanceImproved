@@ -54,7 +54,7 @@ export type RowHandlers = {
   ) => void;
   addItemPending: boolean;
   addItemError: { message: string } | null;
-  matchContrib: (subcategory: string) => number | null;
+  matchContrib: (subcategory: string, colIdx?: number) => number | null;
   // Adding-item state bundled here so the standalone add-item form
   // outside the table can share the same handler via rowHandlers.
   addingItemToCategory: string | null;
@@ -86,6 +86,7 @@ export function BudgetTable({
 }: Props) {
   const {
     cols,
+    activeColumn,
     apiService,
     apiLinkedProfileId,
     profileId,
@@ -185,6 +186,7 @@ export function BudgetTable({
               addingItemToCategory={addingItemToCategory}
               onSetAddingItemToCategory={onSetAddingItemToCategory}
               matchContrib={rowHandlers.matchContrib}
+              activeColumn={activeColumn}
               canEdit={canEdit}
               apiActualsMap={apiActualsMap}
               showApiColumn={showApiColumn}

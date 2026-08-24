@@ -1,7 +1,7 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
-import { formatCurrency, formatDate } from "@/lib/utils/format";
+import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
 import { AmortizationTable } from "./amortization-table";
 import type { LoanSummary, LoanHistoryEntry } from "./types";
 
@@ -46,7 +46,7 @@ export function HistoricalLoans({
                   </span>
                 )}
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-3 text-sm">
+              <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-3 text-sm">
                 <div>
                   <p className="text-faint">Original Balance</p>
                   <p className="font-medium text-muted">
@@ -57,6 +57,12 @@ export function HistoricalLoans({
                             loan.amortizationSchedule[0].extraPayment
                         : 0,
                     )}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-faint">Rate</p>
+                  <p className="font-medium text-muted">
+                    {histEntry ? formatPercent(histEntry.interestRate, 3) : "—"}
                   </p>
                 </div>
                 <div>

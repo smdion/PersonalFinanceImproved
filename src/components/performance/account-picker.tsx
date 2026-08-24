@@ -151,7 +151,7 @@ export function AccountPicker({
                     checked={showInactive}
                     onChange={(e) => setShowInactive(e.target.checked)}
                   />
-                  Show inactive
+                  Show closed
                 </label>
               </div>
 
@@ -191,7 +191,7 @@ export function AccountPicker({
                         <span className={m.isActive ? "" : "text-faint"}>
                           {m.institution} —{" "}
                           {accountDisplayName(m, m.ownerName ?? undefined)}
-                          {!m.isActive && " (inactive)"}
+                          {!m.isActive && " (closed)"}
                         </span>
                       </label>
                     ))}

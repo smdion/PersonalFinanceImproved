@@ -1,3 +1,5 @@
+import type { ContribResolutionStatus } from "@/lib/pure/profiles";
+
 export type RawItem = {
   id: number;
   category: string;
@@ -19,10 +21,11 @@ export type RawItem = {
   apiSyncDirection?: "pull" | "push" | "both" | null;
   /** Linked contribution account ID */
   contributionAccountId?: number | null;
-  /** True when this item's linked contribution account is a
-   *  fixed_per_period account with no resolvable job/pay period —
-   *  amounts above are 0 (excluded), not a guessed pay period. */
-  incomplete?: boolean;
+  /** Per-column reason a linked item's amount is $0 for that column — see
+   *  ContribResolutionStatus. Null when unlinked. Index i is column i's own
+   *  reason; never flatten this across columns (a status true only under a
+   *  different column's profile must not show while viewing this one). */
+  contribStatus?: ContribResolutionStatus[] | null;
 };
 
 export type PayrollBreakdown = {

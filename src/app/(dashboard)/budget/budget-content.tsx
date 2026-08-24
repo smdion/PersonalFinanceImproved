@@ -11,6 +11,7 @@
  */
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission, isAdmin } from "@/lib/context/user-context";
@@ -19,6 +20,7 @@ import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { useScenario } from "@/lib/context/scenario-context";
+import { useCloneProfile } from "@/lib/hooks/use-clone-profile";
 import {
   ContributionProfileManager,
   SalaryProfileManager,
@@ -155,8 +157,14 @@ export function BudgetContent() {
     }));
 
   // ---- Mutations ----
-  const { setActiveProfile, createProfile, deleteProfile, renameProfile } =
-    useProfileMutations();
+  const {
+    setActiveProfile,
+    createProfile,
+    deleteProfile,
+    renameProfile,
+    duplicateProfile,
+  } = useProfileMutations();
+  const { clone: cloneProfile } = useCloneProfile(duplicateProfile);
   // While a Plan is selected, "activating" a profile pins it to that Plan
   // instead of changing the globally-active profile (which would affect
   // Main Plan and every other Plan too) — see docs/RULES.md "Profile Pins".
@@ -197,9 +205,13 @@ export function BudgetContent() {
   } = useItemMutations({ selectedColumnRef });
 
   // ---- Local UI state ----
+  // ?tab=whatif deep-links here from the sidebar's Analysis > What-If entry
+  // — read once on mount, not kept in sync afterward (tab clicks don't
+  // rewrite the URL).
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<
     "budget" | "contributions" | "salary" | "savings" | "what-if"
-  >("budget");
+  >(searchParams.get("tab") === "whatif" ? "what-if" : "budget");
   const [pushPreviewItems, setPushPreviewItems] = useState<ReturnType<
     typeof buildPushPreviewItems
   > | null>(null);
@@ -368,7 +380,7 @@ export function BudgetContent() {
       }),
     addItemPending: createItem.isPending,
     addItemError: createItem.error,
-    matchContrib: (sub: string) => matchContrib(sub),
+    matchContrib: (sub: string, colIdx?: number) => matchContrib(sub, colIdx),
     addingItemToCategory,
     onSetAddingItemToCategory: setAddingItemToCategory,
   };
@@ -560,6 +572,7 @@ export function BudgetContent() {
                 }
                 onSetActiveProfile={handleActivateBudgetProfile}
                 onDeleteProfile={(id) => deleteProfile.mutate({ id })}
+                onCloneProfile={cloneProfile}
               />
 
               <BudgetDetailPanel

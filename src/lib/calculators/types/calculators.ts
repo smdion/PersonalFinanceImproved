@@ -276,6 +276,7 @@ export type LoanHistoryEntry = {
   loanId: number;
   name: string;
   isActive: boolean;
+  interestRate: number;
   refinancedInto?: string;
   paidOffDate?: Date;
   endedBalance?: number;

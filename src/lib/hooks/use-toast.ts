@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore, useCallback } from "react";
 
-export type ToastVariant = "success" | "error" | "info";
+export type ToastVariant = "success" | "error" | "info" | "loading";
 
 /**
  * Optional action button on a toast (v0.5 expert-review M27).
@@ -48,13 +48,14 @@ function addToast(
   variant: ToastVariant = "info",
   duration = 4000,
   action?: ToastAction,
-) {
+): string {
   const id = `toast-${++counter}`;
   toasts = [...toasts, { id, message, variant, action }];
   emit();
   if (duration > 0) {
     setTimeout(() => removeToast(id), duration);
   }
+  return id;
 }
 
 function removeToast(id: string) {
@@ -75,8 +76,8 @@ export function toast(
   variant: ToastVariant = "info",
   duration = 4000,
   action?: ToastAction,
-) {
-  addToast(message, variant, duration, action);
+): string {
+  return addToast(message, variant, duration, action);
 }
 
 toast.success = (message: string, duration?: number, action?: ToastAction) =>
@@ -85,6 +86,13 @@ toast.error = (message: string, duration?: number, action?: ToastAction) =>
   addToast(message, "error", duration ?? 6000, action);
 toast.info = (message: string, duration?: number, action?: ToastAction) =>
   addToast(message, "info", duration, action);
+/**
+ * A persistent status toast (duration: 0 — the existing "don't
+ * auto-dismiss" convention) for an in-progress operation. Caller is
+ * responsible for dismissing it (via useToasts().dismiss(id)) once the
+ * operation settles.
+ */
+toast.loading = (message: string) => addToast(message, "loading", 0);
 
 /**
  * Convenience: show a "Done — Undo" toast for 5 seconds. Used by

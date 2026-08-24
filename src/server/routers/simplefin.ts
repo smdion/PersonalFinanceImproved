@@ -31,6 +31,7 @@ import { readMaybeEncrypted } from "@/lib/crypto";
 import type { SimplefinConfig } from "@/lib/simplefin/sync";
 import { getLatestSnapshot } from "@/server/helpers/snapshot";
 import { accountDisplayName } from "@/lib/utils/format";
+import { roundToCents } from "@/lib/utils/math";
 import {
   isRetirementParent,
   isPortfolioParent,
@@ -232,7 +233,16 @@ export const simplefinRouter = createTRPCRouter({
       return {
         ...base,
         snapshotBalance,
-        change: snapshotBalance == null ? null : linkedTotal - snapshotBalance,
+        // Rounded to cents — a performanceAccountId with multiple linked
+        // SimpleFIN rows (e.g. a 401k's Traditional + Roth sub-accounts)
+        // sums their balances via float addition, which can leave a
+        // sub-cent residue that's genuinely nonzero but renders as "$0.00"
+        // — real incident: a category showed a "+$0.00" drift badge next
+        // to sibling categories with no badge at all for a true zero.
+        change:
+          snapshotBalance == null
+            ? null
+            : roundToCents(linkedTotal - snapshotBalance),
         taxType: taxTypeByPerfId.get(r.linkedPerformanceAccountId) ?? null,
         parentCategory:
           parentCategoryByPerfId.get(r.linkedPerformanceAccountId) ?? null,

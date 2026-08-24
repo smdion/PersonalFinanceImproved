@@ -377,6 +377,27 @@ export const paycheckProcedures = {
           .returning()
           .then((r) => r[0]);
       }),
+    /**
+     * Toggle isActive alone, without the full contributionAccountInput
+     * shape `update` requires.
+     *
+     * Used by the Contribution Profile editor and Compare view, which only
+     * have the curated accountDetails/compareData view of an account, not
+     * every raw structural field. Deliberately separate from any
+     * profile-scoped mutation: this flag isn't profile-owned (it gates the
+     * account out of computeSummary before any profile is even resolved),
+     * so it's a plain row update, same as `update` above.
+     */
+    setActive: adminProcedure
+      .input(z.object({ id: z.number().int(), isActive: z.boolean() }))
+      .mutation(({ ctx, input }) =>
+        ctx.db
+          .update(schema.contributionAccounts)
+          .set({ isActive: input.isActive })
+          .where(eq(schema.contributionAccounts.id, input.id))
+          .returning()
+          .then((r) => r[0]),
+      ),
     setPriorYearAmount: adminProcedure
       .input(
         z.object({

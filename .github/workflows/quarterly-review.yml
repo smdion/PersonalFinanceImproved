@@ -51,6 +51,19 @@ jobs:
           # Docs freshness
           DOCS_OUTPUT=$(pnpm docs:verify 2>&1 || true)
 
+          # LOC trend — src/ vs tests/, compared against the last quarterly issue
+          SRC_LOC=$(find src -type f \( -name "*.ts" -o -name "*.tsx" \) | xargs wc -l | tail -1 | awk '{print $1}')
+          TESTS_LOC=$(find tests -type f \( -name "*.ts" -o -name "*.tsx" \) | xargs wc -l | tail -1 | awk '{print $1}')
+          PREV_ISSUE_BODY=$(gh issue list --label maintenance --state all --limit 5 \
+            --json title,body --jq '[.[] | select(.title | startswith("Quarterly review"))][0].body' 2>/dev/null || echo "")
+          PREV_SRC_LOC=$(echo "$PREV_ISSUE_BODY" | grep -oE 'src/ LOC: [0-9]+' | grep -oE '[0-9]+' || echo "")
+          if [ -n "$PREV_SRC_LOC" ]; then
+            LOC_DELTA=$((SRC_LOC - PREV_SRC_LOC))
+            LOC_TREND="src/ LOC: $SRC_LOC (was $PREV_SRC_LOC last quarter, $([ $LOC_DELTA -ge 0 ] && echo "+$LOC_DELTA" || echo "$LOC_DELTA"))"
+          else
+            LOC_TREND="src/ LOC: $SRC_LOC (no prior quarterly issue found to compare against)"
+          fi
+
           # Save to env
           {
             echo "SIZE_OUTPUT<<EOF"
@@ -76,6 +89,12 @@ jobs:
             echo "EOF"
             echo "DOCS_OUTPUT<<EOF"
             echo "$DOCS_OUTPUT"
+            echo "EOF"
+            echo "LOC_TREND<<EOF"
+            echo "$LOC_TREND"
+            echo "EOF"
+            echo "TESTS_LOC<<EOF"
+            echo "$TESTS_LOC"
             echo "EOF"
           } >> "$GITHUB_ENV"
         env:
@@ -139,6 +158,13 @@ jobs:
           Review open dependabot PRs for major version bumps. Test and merge or close with justification.
 
           $MAJOR_PRS
+
+          ### Codebase Size Trend
+
+          $LOC_TREND
+          tests/ LOC: $TESTS_LOC
+
+          - [ ] If src/ LOC grew significantly faster than shipped features this quarter, worth a look — otherwise no action needed. Raw growth isn't itself a problem.
 
           ### Docs Freshness
 

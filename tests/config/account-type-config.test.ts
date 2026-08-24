@@ -22,6 +22,7 @@ import {
   getColumnLabel,
   getDefaultAccumulationOrder,
   getDefaultDecumulationOrder,
+  defaultDecumulationConfig,
   buildCategoryRecord,
   accountCategoryEnum,
   DEFAULT_WITHDRAWAL_SPLITS,
@@ -358,6 +359,27 @@ describe("defaults", () => {
       0,
     );
     expect(total).toBeCloseTo(1.0, 2);
+  });
+
+  /**
+   * Regression test for a real risk: the Retirement page's own default
+   * decumulation form state (use-projection-form-state.ts) and the
+   * dashboard Retirement tile's cache-key-matching "peek" queries
+   * (retirement-card.tsx) used to hand-build this same shape independently
+   * — the projection cache hashes the full engine input, so any drift
+   * between the two would silently turn into a permanent cache miss for
+   * one of them. Both now call this one function; pin its exact shape so a
+   * future edit to one field can't accidentally change what the OTHER
+   * call site quietly assumes it still produces.
+   */
+  it("defaultDecumulationConfig matches the documented default shape", () => {
+    const config = defaultDecumulationConfig();
+    expect(config.withdrawalRoutingMode).toBe("bracket_filling");
+    expect(config.withdrawalOrder).toEqual(getDefaultDecumulationOrder());
+    expect(config.withdrawalSplits).toEqual(DEFAULT_WITHDRAWAL_SPLITS);
+    for (const cat of categoriesWithTaxPreference()) {
+      expect(config.withdrawalTaxPreference[cat]).toBe("traditional");
+    }
   });
 });
 

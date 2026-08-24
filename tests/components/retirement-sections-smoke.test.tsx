@@ -16,6 +16,8 @@ import { StrategyParamsSection } from "@/components/retirement/sections/strategy
 import { TaxesSection } from "@/components/retirement/sections/taxes";
 import { SocialSecuritySection } from "@/components/retirement/sections/social-security";
 import { PerPhaseBudgetSection } from "@/components/retirement/sections/per-phase-budget";
+import { IncomeSection } from "@/components/retirement/sections/income";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import type { Settings } from "@/components/retirement/sections/types";
 
 const baseSettings: Settings = {
@@ -216,5 +218,56 @@ describe("PerPhaseBudgetSection smoke", () => {
       />,
     );
     expect(screen.getByText("Using manual override")).toBeInTheDocument();
+  });
+});
+
+describe("IncomeSection smoke", () => {
+  const incomeProps: Parameters<typeof IncomeSection>[0] = {
+    settings: baseSettings,
+    combinedSalary: 250000,
+    upsertSettings: { mutate: vi.fn() },
+    handleSettingPercentUpdate: vi.fn(),
+    contribProfiles: [],
+    contribProfileId: null,
+    setContribProfileId: vi.fn(),
+    salaryProfiles: [],
+    salaryProfileId: null,
+    setSalaryProfileId: vi.fn(),
+  };
+
+  it("renders the plain total with no hover breakdown for a single-person household", () => {
+    render(
+      <IncomeSection
+        {...incomeProps}
+        people={[{ id: 1, name: "Alex" }]}
+        salaryByPerson={{ 1: 250000 }}
+      />,
+    );
+    expect(screen.getByText("$250,000.00")).toBeInTheDocument();
+    // Only one person contributes — no `cursor-help` breakdown trigger.
+    expect(document.querySelector(".cursor-help")).toBeNull();
+  });
+
+  it("wraps the total in a hover breakdown for a multi-person household", () => {
+    render(
+      <TooltipProvider>
+        <IncomeSection
+          {...incomeProps}
+          combinedSalary={250000}
+          people={[
+            { id: 1, name: "Alex" },
+            { id: 2, name: "Sam" },
+          ]}
+          salaryByPerson={{ 1: 150000, 2: 100000 }}
+        />
+      </TooltipProvider>,
+    );
+    expect(screen.getByText("$250,000.00")).toBeInTheDocument();
+    expect(document.querySelector(".cursor-help")).not.toBeNull();
+  });
+
+  it("renders the plain total with no crash when people/salaryByPerson are omitted", () => {
+    render(<IncomeSection {...incomeProps} />);
+    expect(screen.getByText("$250,000.00")).toBeInTheDocument();
   });
 });

@@ -11,6 +11,7 @@ import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { ProfileViewingBadge } from "./profile-viewing-badge";
 import { confirm } from "@/components/ui/confirm-dialog";
+import { useCloneProfile } from "@/lib/hooks/use-clone-profile";
 import { useDraftCommit } from "@/lib/hooks/use-draft-commit";
 import { PAY_PERIOD_CONFIG } from "@/lib/config/pay-periods";
 import {
@@ -89,6 +90,14 @@ export function SalaryProfileManager({
     },
     onError: (e) => setDeleteError(e.message),
   });
+
+  const duplicateMutation = trpc.salaryProfile.duplicate.useMutation({
+    onSuccess: (created) => {
+      invalidateProfileDeps();
+      setSelectedProfileId(created.id);
+    },
+  });
+  const { clone: cloneProfile } = useCloneProfile(duplicateMutation);
 
   // Post-migration the active-profile setting always points at a real row;
   // useActiveSalaryProfile repairs it if the row ever goes missing. There is
@@ -208,6 +217,7 @@ export function SalaryProfileManager({
                   ? () => handleDelete(p.id, p.name)
                   : undefined
               }
+              onClone={canEdit ? () => cloneProfile(p.id, p.name) : undefined}
             />
           ))}
         </div>
@@ -253,6 +263,7 @@ function ProfileListItem({
   isActive,
   onSelect,
   onDelete,
+  onClone,
 }: {
   name: string;
   description: string | null;
@@ -261,6 +272,7 @@ function ProfileListItem({
   isActive: boolean;
   onSelect: () => void;
   onDelete?: () => void;
+  onClone?: () => void;
 }) {
   return (
     <div
@@ -290,18 +302,32 @@ function ProfileListItem({
                 : `${pinnedCount} ${pinnedCount === 1 ? "job" : "jobs"} set`)}
           </div>
         </div>
-        {onDelete && (
-          <div className="flex items-center gap-1 shrink-0 md:max-w-0 md:overflow-hidden md:opacity-0 md:group-hover:max-w-[9rem] md:group-hover:opacity-100 transition-all">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete();
-              }}
-              className="text-caption text-faint hover:text-red-500"
-            >
-              ×
-            </button>
+        {(onDelete || onClone) && (
+          <div className="flex items-center gap-1 shrink-0 md:max-w-0 md:overflow-hidden md:opacity-0 md:group-hover:max-w-[11rem] md:group-hover:opacity-100 transition-all">
+            {onClone && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClone();
+                }}
+                className="text-caption text-faint hover:text-blue-600"
+              >
+                clone
+              </button>
+            )}
+            {onDelete && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete();
+                }}
+                className="text-caption text-faint hover:text-red-500"
+              >
+                ×
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -1201,6 +1227,26 @@ function ProfileEditPanel({
     },
     onError: (e) => setError(e.message),
   });
+  // patchEntry/removeEntry replace what used to be a client-side
+  // read-merge-write of the whole `salaries` blob (from a query snapshot
+  // that goes stale the instant a prior commit resolves) posted through
+  // `update`. Two fields committed in quick succession could silently
+  // clobber each other under the old path — these call the server-side
+  // patch procedures directly instead, which merge inside a transaction.
+  const patchEntryMutation = trpc.salaryProfile.patchEntry.useMutation({
+    onSuccess: () => {
+      setError(null);
+      onSaved();
+    },
+    onError: (e) => setError(e.message),
+  });
+  const removeEntryMutation = trpc.salaryProfile.removeEntry.useMutation({
+    onSuccess: () => {
+      setError(null);
+      onSaved();
+    },
+    onError: (e) => setError(e.message),
+  });
 
   if (!profile) return null;
 
@@ -1228,9 +1274,10 @@ function ProfileEditPanel({
    *  that turns a "—" row into an editable one. */
   const addEntry = (jobId: number | null) => {
     if (jobId === null) return;
-    updateMutation.mutate({
+    patchEntryMutation.mutate({
       id: profileId,
-      salaries: { ...profile.salaries, [String(jobId)]: BLANK_ENTRY },
+      jobId,
+      fields: BLANK_ENTRY,
     });
   };
 
@@ -1238,9 +1285,7 @@ function ProfileEditPanel({
    *  the same as a job that was never added. */
   const removeEntry = (jobId: number | null) => {
     if (jobId === null) return;
-    const salaries = { ...profile.salaries };
-    delete salaries[String(jobId)];
-    updateMutation.mutate({ id: profileId, salaries });
+    removeEntryMutation.mutate({ id: profileId, jobId });
   };
 
   /** Update one field of an already-existing entry. Entries are always
@@ -1257,12 +1302,10 @@ function ProfileEditPanel({
     const key = String(sd.jobId);
     const existing = profile.salaries[key];
     if (!existing) return;
-    updateMutation.mutate({
+    patchEntryMutation.mutate({
       id: profileId,
-      salaries: {
-        ...profile.salaries,
-        [key]: { ...existing, [field]: stored },
-      },
+      jobId: sd.jobId,
+      fields: { [field]: stored } as Partial<Entry>,
     });
   };
 
@@ -1432,9 +1475,18 @@ function ProfileEditPanel({
                     width={field === "salary" ? "w-28" : "w-20"}
                   />
                 );
+                const isSaving =
+                  sd.jobId !== null &&
+                  ((patchEntryMutation.isPending &&
+                    patchEntryMutation.variables?.jobId === sd.jobId) ||
+                    (removeEntryMutation.isPending &&
+                      removeEntryMutation.variables?.jobId === sd.jobId));
                 return (
                   <React.Fragment key={rawSd.personId}>
-                    <tr className={rowClass(rowIdx)}>
+                    <tr
+                      aria-busy={isSaving}
+                      className={`${rowClass(rowIdx)} ${isSaving ? "opacity-60 pointer-events-none" : ""}`}
+                    >
                       <td className="py-1.5 pl-4 pr-3 font-medium text-secondary">
                         {sd.personName}
                       </td>

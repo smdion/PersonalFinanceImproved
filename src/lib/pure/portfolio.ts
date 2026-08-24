@@ -73,6 +73,35 @@ export function computeSnapshotEndingBalances(
 }
 
 /**
+ * Zero out the amount for any account whose linked master
+ * (performance_accounts) record is closed, when building a NEW snapshot.
+ * Accounts with no linked performanceAccountId (unlinked/joint manual
+ * entries) have no master to check and pass through unchanged.
+ *
+ * Zeroing (not omitting) the row is deliberate: omitting it would break
+ * period conservation — the account_performance beginning balance for that
+ * account would survive untouched while the snapshot total driving ending
+ * balance silently dropped, producing a phantom loss equal to the closed
+ * account's balance in that year's return calculation. A `0` ending
+ * balance correctly reads as "this account's money left," which is what a
+ * closure/rollover actually is, and reopening the account naturally
+ * resumes picking up its balance with no separate recovery step.
+ */
+export function resolveSnapshotAccountAmounts<
+  T extends {
+    performanceAccountId?: number | null;
+    amount: string | number;
+  },
+>(accounts: T[], activeMasterIds: Set<number>): T[] {
+  return accounts.map((a) =>
+    a.performanceAccountId != null &&
+    !activeMasterIds.has(a.performanceAccountId)
+      ? { ...a, amount: "0" }
+      : a,
+  );
+}
+
+/**
  * Resolve parentCategory for a snapshot account — prefer master record's category.
  */
 export function resolveSnapshotParentCategory(

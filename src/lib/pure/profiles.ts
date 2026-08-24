@@ -142,6 +142,74 @@ export function resolveLinkedProfile<T extends ProfileLike>(
   return allProfiles.find((p) => p.isActive);
 }
 
+// --- Contribution account per-profile active-field resolution (concept 4) ---
+
+/** A contribution account's raw active-field entry under one Contribution
+ *  Profile — `null`/absent means the account carries no value in this
+ *  profile at all (excluded, see applyContribActiveFields); `isActive:
+ *  false` means it has a value but is switched off within this profile
+ *  (a distinct state from having no value). */
+export type ContribAccountActiveFields = {
+  contributionValue?: string | number;
+  contributionMethod?: string;
+  isActive?: boolean;
+} | null;
+
+export type ContribFieldDisplayState = {
+  /** True when this profile has a resolvable `contributionValue` for the
+   *  account, including an explicit value of "0" — absence, not zero, is
+   *  what excludes a row (matches getIncompleteContribAccountIds's own
+   *  definition of "incomplete"). An entry can exist without this being
+   *  true — e.g. a custom `displayNameActive` set on an account that was
+   *  never given a value — so this deliberately checks `contributionValue`
+   *  directly rather than "does an entry object exist at all," which
+   *  previously let a value-less entry fall through to rendering the
+   *  literal string "undefined" in the Compare matrix. */
+  hasValue: boolean;
+  /** True when the profile's entry explicitly turns the account off
+   *  (`isActive: false`) rather than merely omitting it. */
+  isDisabled: boolean;
+  value: string | number | undefined;
+  /** "%" for percent_of_salary, else "" — suffix for rendering `value`. */
+  methodSuffix: string;
+};
+
+/**
+ * Resolve a contribution account's display state from its raw per-profile
+ * active-field entry — shared by the Compare view (one column per profile)
+ * and the Profile Manager's read-only summary table (one row per account),
+ * which independently reimplemented this identical rule before (RULES.md
+ * Rule 6). Not used by the edit-form inputs, which read the same
+ * `contributionValue`/`isActive` fields directly since they bind to form
+ * state rather than rendering a label.
+ */
+export function resolveContribFieldDisplayState(
+  activeFields: ContribAccountActiveFields,
+): ContribFieldDisplayState {
+  const hasValue = activeFields?.contributionValue !== undefined;
+  const isDisabled = activeFields?.isActive === false;
+  const methodSuffix =
+    activeFields?.contributionMethod === "percent_of_salary" ? "%" : "";
+  const value = activeFields?.contributionValue;
+
+  return { hasValue, isDisabled, value, methodSuffix };
+}
+
+/**
+ * Why a linked budget item's contribution account resolved to $0 for a
+ * given column, distinguishing genuinely-zero from five different "there's
+ * no real value here" causes that used to collapse into an indistinguishable
+ * $0 — see classifyContribResolution (src/server/helpers/contribution.ts),
+ * which is the only place that computes this.
+ */
+export type ContribResolutionStatus =
+  | "ok"
+  | "not_in_profile"
+  | "inactive_in_profile"
+  | "inactive_in_sandbox"
+  | "no_pay_period"
+  | "account_unavailable";
+
 // --- Performance account deletion guard ---
 
 /**

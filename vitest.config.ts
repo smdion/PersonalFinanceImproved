@@ -160,6 +160,18 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // The "server-only" package throws unconditionally unless resolved
+      // under Next.js's "react-server" export condition, which Vitest
+      // doesn't set. Setting that condition broadly also changes how
+      // `react`/`react-dom` themselves resolve (breaks `createContext` in
+      // tests that use client React APIs), so alias straight to the
+      // package's own no-op build instead — the same file its own
+      // "react-server" condition would have selected — without touching
+      // React's resolution.
+      "server-only": path.resolve(
+        __dirname,
+        "node_modules/server-only/empty.js",
+      ),
     },
   },
 });

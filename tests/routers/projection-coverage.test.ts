@@ -206,7 +206,99 @@ describe("projection router — computeProjection full result path", () => {
       cleanup();
     }
   });
+});
 
+// ---------------------------------------------------------------------------
+// computeProjection — persistent projection cache
+// ---------------------------------------------------------------------------
+
+describe("projection router — computeProjection cache", () => {
+  it("a second identical call is served from cache (same result, one cache row)", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      const input = { accumulationOverrides: [], decumulationOverrides: [] };
+
+      const first = await caller.projection.computeProjection(input);
+      const second = await caller.projection.computeProjection(input);
+
+      expect(second.result).toEqual(first.result);
+      const rows = db.select().from(schema.projectionCache).all();
+      expect(rows).toHaveLength(1);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("a changed input misses the cache and computes fresh (different hash rows)", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const { personId } = seedFullProjectionData(db);
+
+      await caller.projection.computeProjection({
+        accumulationOverrides: [],
+        decumulationOverrides: [],
+      });
+      await caller.projection.computeProjection({
+        salaryActiveFields: [{ personId, salary: 200000 }],
+        accumulationOverrides: [],
+        decumulationOverrides: [],
+      });
+
+      const rows = db.select().from(schema.projectionCache).all();
+      expect(rows).toHaveLength(2);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("metadataOnly does not read or write the cache", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+
+      const response = await caller.projection.computeProjection({
+        metadataOnly: true,
+        accumulationOverrides: [],
+        decumulationOverrides: [],
+      });
+
+      expect(response.result).toBeNull();
+      const rows = db.select().from(schema.projectionCache).all();
+      expect(rows).toHaveLength(0);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("forceRefresh bypasses an existing cache hit and recomputes", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      const input = { accumulationOverrides: [], decumulationOverrides: [] };
+
+      await caller.projection.computeProjection(input);
+      const before = db.select().from(schema.projectionCache).all();
+      expect(before).toHaveLength(1);
+      const computedAtBefore = before[0]!.computedAt;
+
+      await caller.projection.computeProjection({
+        ...input,
+        forceRefresh: true,
+      });
+
+      const after = db.select().from(schema.projectionCache).all();
+      expect(after).toHaveLength(1);
+      expect(after[0]!.computedAt.getTime()).toBeGreaterThanOrEqual(
+        computedAtBefore.getTime(),
+      );
+    } finally {
+      cleanup();
+    }
+  });
+});
+
+describe("projection router — computeProjection edge cases (continued)", () => {
   it("applies decumulation defaults (custom routing mode)", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
@@ -706,6 +798,162 @@ describe("projection router — computeMonteCarloProjection", () => {
 });
 
 // ---------------------------------------------------------------------------
+// computeMonteCarloProjection — persistent projection cache
+// ---------------------------------------------------------------------------
+
+describe("projection router — computeMonteCarloProjection cache", () => {
+  it("a second identical unseeded call reuses the same minted seed and result", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedGlidePath(db);
+      const input = { numTrials: 100, preset: "custom" as const };
+
+      const first = await caller.projection.computeMonteCarloProjection(input);
+      const second = await caller.projection.computeMonteCarloProjection(input);
+
+      expect(second.simulationInputs.seed).toBe(first.simulationInputs.seed);
+      expect(second.result).toEqual(first.result);
+      const rows = db.select().from(schema.projectionCache).all();
+      expect(rows).toHaveLength(1);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("an explicit seed is honored on a miss and reproducible on a hit", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedGlidePath(db);
+      const input = { numTrials: 100, preset: "custom" as const, seed: 777 };
+
+      const first = await caller.projection.computeMonteCarloProjection(input);
+      const second = await caller.projection.computeMonteCarloProjection(input);
+
+      expect(first.simulationInputs.seed).toBe(777);
+      expect(second.simulationInputs.seed).toBe(777);
+      expect(second.result).toEqual(first.result);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("forceRefresh mints a new seed and writes a fresh row", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedGlidePath(db);
+      const input = { numTrials: 100, preset: "custom" as const };
+
+      const first = await caller.projection.computeMonteCarloProjection(input);
+      const refreshed = await caller.projection.computeMonteCarloProjection({
+        ...input,
+        forceRefresh: true,
+      });
+
+      const rows = db.select().from(schema.projectionCache).all();
+      expect(rows).toHaveLength(1);
+      expect(refreshed.simulationInputs.seed).not.toBe(
+        first.simulationInputs.seed,
+      );
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("peekOnly returns a null result and never writes a cache row on a miss", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedGlidePath(db);
+
+      const response = await caller.projection.computeMonteCarloProjection({
+        numTrials: 100,
+        preset: "custom",
+        peekOnly: true,
+      });
+
+      expect(response.result).toBeNull();
+      expect(response.simulationInputs.seed).toBeNull();
+      const rows = db.select().from(schema.projectionCache).all();
+      expect(rows).toHaveLength(0);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("peekOnly returns the cached result without recomputing on a hit", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedGlidePath(db);
+      const input = { numTrials: 100, preset: "custom" as const };
+
+      const real = await caller.projection.computeMonteCarloProjection(input);
+      const peeked = await caller.projection.computeMonteCarloProjection({
+        ...input,
+        peekOnly: true,
+      });
+
+      expect(peeked.result).toEqual(real.result);
+      expect(peeked.simulationInputs.seed).toBe(real.simulationInputs.seed);
+      expect(peeked.simulationInputs.computedAt).not.toBeNull();
+      const rows = db.select().from(schema.projectionCache).all();
+      expect(rows).toHaveLength(1);
+    } finally {
+      cleanup();
+    }
+  });
+
+  /**
+   * Regression test: forceRefresh + peekOnly together used to silently
+   * discard the real cached result. forceRefresh forced the cache read to
+   * null unconditionally, so a peekOnly request that ALSO happened to set
+   * forceRefresh fell into the "no cache, peekOnly" branch and returned an
+   * empty peek — even though a real cached run existed and peekOnly's own
+   * contract is "report what's cached, never compute." peekOnly must win:
+   * it always reads the real cache, regardless of forceRefresh.
+   */
+  it("peekOnly still returns the cached result even when forceRefresh is also set", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedGlidePath(db);
+      const input = { numTrials: 100, preset: "custom" as const };
+
+      const real = await caller.projection.computeMonteCarloProjection(input);
+      const peeked = await caller.projection.computeMonteCarloProjection({
+        ...input,
+        peekOnly: true,
+        forceRefresh: true,
+      });
+
+      expect(peeked.result).toEqual(real.result);
+      expect(peeked.simulationInputs.seed).toBe(real.simulationInputs.seed);
+      // Still exactly one row — peekOnly+forceRefresh together must not
+      // trigger a fresh computation/write.
+      const rows = db.select().from(schema.projectionCache).all();
+      expect(rows).toHaveLength(1);
+    } finally {
+      cleanup();
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
 // computeStrategyComparison
 // ---------------------------------------------------------------------------
 
@@ -847,6 +1095,83 @@ describe("projection router — computeStrategyComparison", () => {
           expect(strat.yearByYear[0]).toHaveProperty("endBalance");
         }
       }
+    } finally {
+      cleanup();
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// computeStrategyComparison — persistent projection cache
+// ---------------------------------------------------------------------------
+
+describe("projection router — computeStrategyComparison cache", () => {
+  it("a second identical call is served from cache (same result, one cache row)", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedGlidePath(db);
+
+      const first = await caller.projection.computeStrategyComparison();
+      const second = await caller.projection.computeStrategyComparison();
+
+      expect(second).toEqual(first);
+      const rows = db.select().from(schema.projectionCache).all();
+      expect(rows).toHaveLength(1);
+    } finally {
+      cleanup();
+    }
+  });
+
+  // computeStrategyComparison runs a full MC per withdrawal strategy (6+
+  // strategies); this test runs it TWICE for real (cache miss both times
+  // by design). Comfortably under the default 10s locally, but marginal
+  // in CI's coverage-instrumented run (V8 coverage collection adds real
+  // per-call overhead) — timed out there, not a correctness issue.
+  it("a changed input misses the cache and computes fresh (different hash rows)", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedGlidePath(db);
+
+      await caller.projection.computeStrategyComparison();
+      await caller.projection.computeStrategyComparison({
+        decumulationExpenseOverride: 45000,
+      });
+
+      const rows = db.select().from(schema.projectionCache).all();
+      expect(rows).toHaveLength(2);
+    } finally {
+      cleanup();
+    }
+  }, 30000);
+
+  it("forceRefresh bypasses an existing cache hit and recomputes", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedGlidePath(db);
+
+      await caller.projection.computeStrategyComparison();
+      const before = db.select().from(schema.projectionCache).all();
+      expect(before).toHaveLength(1);
+      const computedAtBefore = before[0]!.computedAt;
+
+      await caller.projection.computeStrategyComparison({
+        forceRefresh: true,
+      });
+
+      const after = db.select().from(schema.projectionCache).all();
+      expect(after).toHaveLength(1);
+      expect(after[0]!.computedAt.getTime()).toBeGreaterThanOrEqual(
+        computedAtBefore.getTime(),
+      );
     } finally {
       cleanup();
     }
@@ -1401,7 +1726,7 @@ describe("projection router — computeCoastFireMC", () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
       const response = await caller.projection.computeCoastFireMC({});
-      expect(response).toEqual({ result: null });
+      expect(response).toEqual({ result: null, computedAt: null });
     } finally {
       cleanup();
     }
@@ -1467,6 +1792,122 @@ describe("projection router — computeCoastFireMC", () => {
       });
       expect(response.result).not.toBeNull();
       expect(typeof response.result?.successRate).toBe("number");
+    } finally {
+      cleanup();
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// computeCoastFireMC — persistent projection cache
+// ---------------------------------------------------------------------------
+
+function seedDefaultMcPreset(db: BetterSQLite3Database<typeof sqliteSchema>) {
+  db.insert(schema.mcPresets)
+    .values({
+      key: "default",
+      label: "Default",
+      description: "Default preset for testing",
+      returnMultiplier: "1.0",
+      volMultiplier: "1.0",
+      inflationMean: "0.025",
+      inflationStdDev: "0.012",
+      defaultTrials: 1000,
+      returnClampMin: "-0.5",
+      returnClampMax: "1.0",
+      sortOrder: 0,
+      isActive: true,
+    })
+    .run();
+}
+
+describe("projection router — computeCoastFireMC cache", () => {
+  it("a second identical call is served from cache (same result, one cache row)", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedDefaultMcPreset(db);
+
+      const first = await caller.projection.computeCoastFireMC({});
+      const second = await caller.projection.computeCoastFireMC({});
+
+      expect(second.result).toEqual(first.result);
+      const rows = db.select().from(schema.projectionCache).all();
+      expect(rows).toHaveLength(1);
+    } finally {
+      cleanup();
+    }
+  });
+
+  // computeCoastFireMC runs a real binary search (multiple MC probes) for
+  // real, twice, by design (cache hit forced to miss). Marginal against
+  // the default 10s timeout under CI's coverage instrumentation — see the
+  // identical note on computeStrategyComparison's cache-miss test above.
+  it("forceRefresh bypasses an existing cache hit and re-searches", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedDefaultMcPreset(db);
+
+      await caller.projection.computeCoastFireMC({});
+      const before = db.select().from(schema.projectionCache).all();
+      expect(before).toHaveLength(1);
+      const computedAtBefore = before[0]!.computedAt;
+
+      await caller.projection.computeCoastFireMC({ forceRefresh: true });
+
+      const after = db.select().from(schema.projectionCache).all();
+      expect(after).toHaveLength(1);
+      expect(after[0]!.computedAt.getTime()).toBeGreaterThanOrEqual(
+        computedAtBefore.getTime(),
+      );
+    } finally {
+      cleanup();
+    }
+  }, 30000);
+
+  it("peekOnly returns a null result and never runs the search on a miss", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedDefaultMcPreset(db);
+
+      const response = await caller.projection.computeCoastFireMC({
+        peekOnly: true,
+      });
+
+      expect(response.result).toBeNull();
+      expect(response.computedAt).toBeNull();
+      const rows = db.select().from(schema.projectionCache).all();
+      expect(rows).toHaveLength(0);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("peekOnly returns the cached result without re-searching on a hit", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedDefaultMcPreset(db);
+
+      const real = await caller.projection.computeCoastFireMC({});
+      const peeked = await caller.projection.computeCoastFireMC({
+        peekOnly: true,
+      });
+
+      expect(peeked.result).toEqual(real.result);
+      expect(peeked.computedAt).not.toBeNull();
+      const rows = db.select().from(schema.projectionCache).all();
+      expect(rows).toHaveLength(1);
     } finally {
       cleanup();
     }

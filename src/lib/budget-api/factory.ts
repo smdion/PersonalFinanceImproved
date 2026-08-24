@@ -1,5 +1,6 @@
 // Factory: reads active_budget_api + api_connections, returns the correct client or null.
 
+import "server-only";
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { readMaybeEncrypted } from "@/lib/crypto";

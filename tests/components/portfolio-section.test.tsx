@@ -24,11 +24,13 @@ function makePortfolio(
         label: "Traditional IRA — Alice",
         balance: 50000,
         performanceAccountId: 5,
+        ownerPersonId: 1,
       },
       {
         label: "Traditional IRA — Bob",
         balance: 30000,
         performanceAccountId: 5,
+        ownerPersonId: 2,
       },
     ],
     assetAccounts: [],

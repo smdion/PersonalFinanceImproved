@@ -118,6 +118,39 @@ describe("summarizeByAccountType", () => {
     expect(result.find((r) => r.label === "IRA")?.drift).toBe(10); // 15 + -5
     expect(result.find((r) => r.label === "HSA")?.drift).toBe(0);
   });
+
+  it("collapses sub-cent float residue in a group's summed drift to exactly 0", () => {
+    // Real incident: three accounts under one 401k with per-account `change`
+    // values that sum to a true zero but land on a tiny nonzero float via
+    // IEEE-754 addition (0.1 + 0.2 + -0.3 === 5.55e-17, not 0) — this used
+    // to show a "+$0.00" drift badge next to sibling categories with no
+    // badge at all for an actual zero.
+    const accounts = [
+      account({
+        id: 1,
+        lastBalance: 100,
+        accountType: "401k",
+        linkedPerformanceAccountId: 10,
+        change: 0.1,
+      }),
+      account({
+        id: 2,
+        lastBalance: 50,
+        accountType: "401k",
+        linkedPerformanceAccountId: 20,
+        change: 0.2,
+      }),
+      account({
+        id: 3,
+        lastBalance: 25,
+        accountType: "401k",
+        linkedPerformanceAccountId: 30,
+        change: -0.3,
+      }),
+    ];
+    const result = summarizeByAccountType(accounts);
+    expect(result.find((r) => r.label === "401k")?.drift).toBe(0);
+  });
 });
 
 describe("summarizeDrift", () => {
@@ -141,5 +174,15 @@ describe("summarizeDrift", () => {
       driftedCount: 0,
       totalDrift: 0,
     });
+  });
+
+  it("collapses sub-cent float residue in the headline totalDrift to exactly 0", () => {
+    const accounts = [
+      account({ id: 1, linkedPerformanceAccountId: 10, change: 0.1 }),
+      account({ id: 2, linkedPerformanceAccountId: 20, change: 0.2 }),
+      account({ id: 3, linkedPerformanceAccountId: 30, change: -0.3 }),
+    ];
+    const result = summarizeDrift(accounts);
+    expect(result.totalDrift).toBe(0);
   });
 });

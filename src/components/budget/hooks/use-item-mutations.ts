@@ -59,10 +59,30 @@ export function useItemMutations({ selectedColumnRef }: UseItemMutationsOpts) {
             rawItems: previous.rawItems.map(
               (item: (typeof previous.rawItems)[number]) => {
                 if (item.id !== variables.id) return item;
-                // Linked items display contribAmount, not amounts[col] —
-                // patch both so the optimistic update is actually visible.
+                // Linked items display contribAmounts[col] (preferred) or
+                // contribAmount, not amounts[col] — patch those instead so
+                // the optimistic update is actually visible. Skip entirely
+                // when this column's contribStatus isn't "ok":
+                // applyContributionAccountEdit legitimately no-ops whenever
+                // the account isn't fully resolvable for this column (stale
+                // profile FK, unresolved fixed_per_period, sub-cent delta,
+                // not active for this column's profile, etc.), so an
+                // optimistic patch here would show a value the refetch
+                // silently reverts, which reads as a lost edit.
                 if (item.contributionAccountId) {
-                  return { ...item, contribAmount: variables.amount };
+                  const status = item.contribStatus?.[variables.colIndex];
+                  if (status && status !== "ok") return item;
+                  const newContribAmounts = item.contribAmounts
+                    ? [...item.contribAmounts]
+                    : null;
+                  if (newContribAmounts) {
+                    newContribAmounts[variables.colIndex] = variables.amount;
+                  }
+                  return {
+                    ...item,
+                    contribAmount: variables.amount,
+                    contribAmounts: newContribAmounts,
+                  };
                 }
                 const newAmounts = [...item.amounts];
                 newAmounts[variables.colIndex] = variables.amount;

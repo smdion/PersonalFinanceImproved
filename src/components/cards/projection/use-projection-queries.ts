@@ -211,6 +211,52 @@ export function useProjectionQueries(
       onSuccess: invalidateMc,
     });
 
+  // --- Explicit re-run actions ---
+  // A plain refetch() would re-request with the SAME input, which now hits
+  // the persistent cache and returns the same (possibly stale-feeling)
+  // seed/result. These instead fetch with forceRefresh so the server mints
+  // a new seed and recomputes, then write that result into the query cache
+  // at the plain (non-forceRefresh) input key so every consumer watching
+  // the normal query sees the fresh data immediately.
+  const runSimulation = async () => {
+    const result = await utils.projection.computeProjection.fetch({
+      ...debouncedInput,
+      forceRefresh: true,
+    });
+    utils.projection.computeProjection.setData(debouncedInput, result);
+  };
+  // Must mirror mcQuery's own input exactly — a fresh result written under
+  // any other key (e.g. the trial-count/preset DEFAULTS) lands somewhere
+  // mcQuery never reads from, so the UI keeps showing stale data while the
+  // "re-run succeeded" toast still fires. Invisible whenever the user
+  // hasn't customized MC assumptions, since the defaults and mcQuery's
+  // input coincide at their initial values — that's why this went unnoticed.
+  const runMonteCarloInput = {
+    numTrials: mcTrials,
+    preset: mcPreset,
+    taxMode: mcTaxMode,
+    assetClassOverrides:
+      mcAssetClassOverrides.length > 0 ? mcAssetClassOverrides : undefined,
+    ...debouncedBaseInput,
+  };
+  const runMonteCarlo = async () => {
+    const result = await utils.projection.computeMonteCarloProjection.fetch({
+      ...runMonteCarloInput,
+      forceRefresh: true,
+    });
+    utils.projection.computeMonteCarloProjection.setData(
+      runMonteCarloInput,
+      result,
+    );
+  };
+  const runCoastFireMc = async () => {
+    const result = await utils.projection.computeCoastFireMC.fetch({
+      ...debouncedBaseInput,
+      forceRefresh: true,
+    });
+    utils.projection.computeCoastFireMC.setData(debouncedBaseInput, result);
+  };
+
   // --- Monte Carlo queries ---
   // mcPrefetchQuery + mcQuery use debouncedBaseInput (never include the Coast
   // FIRE override). Coast FIRE scenario rendering is powered by
@@ -430,11 +476,11 @@ export function useProjectionQueries(
     coastFireMcQuery,
     coastFireMcResult,
     autoloadEnabled,
-    runSimulation: engineQuery.refetch,
+    runSimulation,
     mcAutoloadEnabled,
-    runMonteCarlo: mcPrefetchQuery.refetch,
+    runMonteCarlo,
     coastFireMcAutoloadEnabled,
-    runCoastFireMc: coastFireMcQuery.refetch,
+    runCoastFireMc,
     engineQuery,
     mcPrefetchQuery,
     mcQuery,

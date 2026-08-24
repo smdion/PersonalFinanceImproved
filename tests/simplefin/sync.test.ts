@@ -39,6 +39,7 @@ import {
   recomputeTodaySnapshotFromLocal,
   hasSyncedToday,
   getSimplefinLastError,
+  MAX_PARTIAL_SYNC_RETRIES_PER_DAY,
 } from "@/lib/simplefin/sync";
 
 const mockGetAccounts = vi.mocked(getAccounts);
@@ -51,6 +52,22 @@ describe("simplefin/sync", () => {
   });
 
   afterAll(() => ctx.cleanup());
+
+  /**
+   * runSimplefinSync now compares each fetch's account ids against every
+   * currently-included account to detect a partial (missing-account) sync
+   * — see the "partial sync" tests below. Since simplefin_accounts is
+   * shared across every test in this file, a test that wants a clean full
+   * sync (no accounts "unexpectedly missing") must first exclude whatever
+   * earlier tests left included, or its own narrower fetch would itself
+   * look like a partial sync.
+   */
+  async function excludeAllCurrentlyIncluded() {
+    await ctx.rawDb
+      .update(ctx.schema.simplefinAccounts)
+      .set({ isIncluded: false })
+      .where(eq(ctx.schema.simplefinAccounts.isIncluded, true));
+  }
 
   beforeEach(() => {
     mockGetAccounts.mockReset();
@@ -142,11 +159,12 @@ describe("simplefin/sync", () => {
         ctx.rawDb,
         "https://u:p@bridge.simplefin.org",
       );
+      await excludeAllCurrentlyIncluded();
       const asOfDate = new Date(2026, 1, 1);
 
       mockGetAccounts.mockResolvedValueOnce({
         accounts: [
-          { id: "a1", name: "Checking", balance: 100, orgName: "Bank" },
+          { id: "sync2-1", name: "Checking", balance: 100, orgName: "Bank" },
         ],
         providerErrors: [],
       });
@@ -154,7 +172,7 @@ describe("simplefin/sync", () => {
 
       mockGetAccounts.mockResolvedValueOnce({
         accounts: [
-          { id: "a1", name: "Checking", balance: 250, orgName: "Bank" },
+          { id: "sync2-1", name: "Checking", balance: 250, orgName: "Bank" },
         ],
         providerErrors: [],
       });
@@ -175,6 +193,7 @@ describe("simplefin/sync", () => {
         ctx.rawDb,
         "https://u:p@bridge.simplefin.org",
       );
+      await excludeAllCurrentlyIncluded();
       mockGetAccounts.mockResolvedValueOnce({
         accounts: [],
         providerErrors: [],
@@ -218,6 +237,7 @@ describe("simplefin/sync", () => {
       ).rejects.toThrow(/Connection refused/);
       expect(await getSimplefinLastError(ctx.rawDb)).toBe("Connection refused");
 
+      await excludeAllCurrentlyIncluded();
       mockGetAccounts.mockResolvedValueOnce({
         accounts: [],
         providerErrors: [],
@@ -231,9 +251,10 @@ describe("simplefin/sync", () => {
         ctx.rawDb,
         "https://u:p@bridge.simplefin.org",
       );
+      await excludeAllCurrentlyIncluded();
       mockGetAccounts.mockResolvedValueOnce({
         accounts: [
-          { id: "a1", name: "Checking", balance: 10, orgName: "Bank" },
+          { id: "provErr-1", name: "Checking", balance: 10, orgName: "Bank" },
         ],
         providerErrors: ["Institution X needs re-authentication"],
       });
@@ -257,6 +278,7 @@ describe("simplefin/sync", () => {
         ctx.rawDb,
         "https://u:p@bridge.simplefin.org",
       );
+      await excludeAllCurrentlyIncluded();
       const asOfDate = new Date(2026, 4, 1);
 
       // Seed: exclude "excluded-1" before the sync that would otherwise sum it in.
@@ -306,6 +328,100 @@ describe("simplefin/sync", () => {
       expect(result.totalBalance).toBeCloseTo(125.75);
       expect(result.totalBalance).not.toBe("100.5025.25"); // string-concat regression guard
     });
+
+    it("treats an account silently missing from the response as a partial sync: keeps its stale balance in the total, warns, and does not advance lastSyncedAt", async () => {
+      await saveSimplefinConnection(
+        ctx.rawDb,
+        "https://u:p@bridge.simplefin.org",
+      );
+      await excludeAllCurrentlyIncluded();
+
+      mockGetAccounts.mockResolvedValueOnce({
+        accounts: [
+          { id: "partial-1", name: "Checking", balance: 100, orgName: "Bank" },
+          { id: "partial-2", name: "Savings", balance: 50, orgName: "Bank" },
+        ],
+        providerErrors: [],
+      });
+      const firstDate = new Date(2026, 6, 1);
+      await runSimplefinSync(ctx.rawDb, firstDate);
+      const afterFirst = await getSimplefinConnection(ctx.rawDb);
+
+      // Second sync only returns partial-1 — partial-2 silently missing,
+      // no explicit provider error.
+      mockGetAccounts.mockResolvedValueOnce({
+        accounts: [
+          { id: "partial-1", name: "Checking", balance: 110, orgName: "Bank" },
+        ],
+        providerErrors: [],
+      });
+      const secondDate = new Date(2026, 6, 2);
+      const result = await runSimplefinSync(ctx.rawDb, secondDate);
+
+      // Total still includes partial-2's stale (last-known) balance.
+      expect(result.accountCount).toBe(2);
+      expect(result.totalBalance).toBeCloseTo(160);
+      expect(result.providerErrors).toEqual([
+        "1 of 2 linked accounts didn't respond this sync (will retry): Bank Savings",
+      ]);
+      expect(await getSimplefinLastError(ctx.rawDb)).toContain(
+        "1 of 2 linked accounts didn't respond",
+      );
+
+      // lastSyncedAt must NOT have advanced to secondDate.
+      const afterSecond = await getSimplefinConnection(ctx.rawDb);
+      expect(afterSecond!.lastSyncedAt).toEqual(afterFirst!.lastSyncedAt);
+    });
+
+    it("gives up retrying after MAX_PARTIAL_SYNC_RETRIES_PER_DAY same-day attempts, advancing lastSyncedAt anyway", async () => {
+      await saveSimplefinConnection(
+        ctx.rawDb,
+        "https://u:p@bridge.simplefin.org",
+      );
+      await excludeAllCurrentlyIncluded();
+
+      // Full sync on day 0 — lastSyncedAt should stay pinned here through
+      // every partial attempt on day 1, until the retry cap is hit.
+      mockGetAccounts.mockResolvedValueOnce({
+        accounts: [
+          { id: "cap-1", name: "Checking", balance: 100, orgName: "Bank" },
+          { id: "cap-2", name: "Savings", balance: 50, orgName: "Bank" },
+        ],
+        providerErrors: [],
+      });
+      const day0 = new Date(2026, 6, 10);
+      await runSimplefinSync(ctx.rawDb, day0);
+
+      // Day 1: cap-2 missing every time — simulates the hourly cron
+      // retrying a genuinely-broken account across the same calendar day.
+      const day1 = new Date(2026, 6, 11);
+      for (let i = 0; i < MAX_PARTIAL_SYNC_RETRIES_PER_DAY - 1; i++) {
+        mockGetAccounts.mockResolvedValueOnce({
+          accounts: [
+            { id: "cap-1", name: "Checking", balance: 100, orgName: "Bank" },
+          ],
+          providerErrors: [],
+        });
+        await runSimplefinSync(ctx.rawDb, day1);
+        const stillPending = await getSimplefinConnection(ctx.rawDb);
+        expect(stillPending!.lastSyncedAt).toEqual(day0);
+      }
+
+      // Final attempt hits the cap — gives up and advances to day1.
+      mockGetAccounts.mockResolvedValueOnce({
+        accounts: [
+          { id: "cap-1", name: "Checking", balance: 100, orgName: "Bank" },
+        ],
+        providerErrors: [],
+      });
+      await runSimplefinSync(ctx.rawDb, day1);
+      const after = await getSimplefinConnection(ctx.rawDb);
+      expect(after!.lastSyncedAt).toEqual(day1);
+      // The warning is still visible even though retries gave up.
+      expect(await getSimplefinLastError(ctx.rawDb)).toContain(
+        "didn't respond",
+      );
+    });
   });
 
   describe("hasSyncedToday", () => {
@@ -331,6 +447,7 @@ describe("simplefin/sync", () => {
         ctx.rawDb,
         "https://u:p@bridge.simplefin.org",
       );
+      await excludeAllCurrentlyIncluded();
       mockGetAccounts.mockResolvedValueOnce({
         accounts: [],
         providerErrors: [],

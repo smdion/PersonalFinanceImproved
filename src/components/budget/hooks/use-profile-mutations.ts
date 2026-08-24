@@ -30,8 +30,17 @@ export function useProfileMutations() {
   const renameProfile = trpc.budget.renameProfile.useMutation({
     onSuccess: invalidateProfiles,
   });
+  const duplicateProfile = trpc.budget.duplicateProfile.useMutation({
+    onSuccess: invalidateProfiles,
+  });
 
-  return { setActiveProfile, createProfile, deleteProfile, renameProfile };
+  return {
+    setActiveProfile,
+    createProfile,
+    deleteProfile,
+    renameProfile,
+    duplicateProfile,
+  };
 }
 
 export type ProfileMutations = ReturnType<typeof useProfileMutations>;

@@ -49,6 +49,11 @@ import {
   getStrategyDefaults,
 } from "@/lib/config/withdrawal-strategies";
 import { buildStrategyParams, buildMcInputs } from "./_shared";
+import {
+  hashEngineInput,
+  readProjectionCache,
+  writeProjectionCache,
+} from "@/server/helpers/projection-cache";
 
 export const strategyRouter = createTRPCRouter({
   /**
@@ -74,6 +79,8 @@ export const strategyRouter = createTRPCRouter({
           accumulationBudgetColumn: z.number().int().min(0).optional(),
           accumulationExpenseOverride: z.number().min(0).optional(),
           snapshotId: z.number().int().optional(),
+          /** Bypass the projection cache and force a fresh comparison — the explicit "Refresh" action, not the default query path. */
+          forceRefresh: z.boolean().optional(),
         })
         .optional(),
     )
@@ -136,103 +143,146 @@ export const strategyRouter = createTRPCRouter({
       const activeStrategy =
         (settings.withdrawalStrategy as WithdrawalStrategyType) ?? "fixed";
 
-      const strategies = getAllStrategyKeys().map((strategyKey) => {
-        const meta = getStrategyMeta(strategyKey);
-        // Use user-configured params for the active strategy, defaults for others
-        const params =
-          strategyKey === activeStrategy
-            ? userStrategyParams
-            : { [strategyKey]: getStrategyDefaults(strategyKey) };
-
-        const decumulationDefaults = {
-          withdrawalRate: toNumber(settings.withdrawalRate),
-          withdrawalRoutingMode: "bracket_filling" as const,
-          withdrawalOrder: getDefaultDecumulationOrder() as AccountCategory[],
-          withdrawalSplits: { ...CONFIG_WITHDRAWAL_SPLITS } as Record<
-            AccountCategory,
-            number
-          >,
-          withdrawalTaxPreference: {},
-          distributionTaxRates,
-          withdrawalStrategy: strategyKey,
-          strategyParams: params,
-        };
-
-        const result = calculateProjection({
-          ...baseEngineInput,
-          decumulationDefaults,
-          accumulationOverrides: [],
-          decumulationOverrides: [],
-        });
-
-        // Extract decumulation years for year-by-year data
-        const decYears = result.projectionByYear.filter(
-          (y): y is Extract<typeof y, { phase: "decumulation" }> =>
-            y.phase === "decumulation",
-        );
-
-        const withdrawals = decYears.map((y) => y.totalWithdrawal);
-        const avgWithdrawal =
-          withdrawals.length > 0
-            ? withdrawals.reduce((s, w) => s + w, 0) / withdrawals.length
-            : 0;
-
-        // Run lightweight MC (200 trials) for success rate + spending stability
-        let successRate: number | null = null;
-        let spendingStabilityRate: number | null = null;
-        let budgetStabilityRate: number | null = null;
-        if (hasMcData) {
-          const mcResult = calculateMonteCarlo({
-            engineInput: {
-              ...mcBaseEngineInput,
-              decumulationDefaults,
-              accumulationOverrides: [],
-              decumulationOverrides: [],
-            },
-            numTrials: 200,
-            seed: 42,
-            assetClasses: mcAssetClasses,
-            correlations: mcCorrelations,
-            glidePath: mcGlidePath,
-            inflationRisk: effectiveInflationRisk,
-          });
-          successRate = mcResult.successRate;
-          spendingStabilityRate = mcResult.spendingStabilityRate;
-          budgetStabilityRate = mcResult.budgetStabilityRate;
-        }
-
-        return {
-          strategy: strategyKey,
-          label: meta.label,
-          shortLabel: meta.shortLabel,
-          portfolioDepletionAge: result.portfolioDepletionAge,
-          sustainableWithdrawal: result.sustainableWithdrawal,
-          year1Withdrawal: decYears[0]?.totalWithdrawal ?? 0,
-          avgAnnualWithdrawal: roundToCents(avgWithdrawal),
-          minAnnualWithdrawal:
-            withdrawals.length > 0 ? roundToCents(Math.min(...withdrawals)) : 0,
-          maxAnnualWithdrawal:
-            withdrawals.length > 0 ? roundToCents(Math.max(...withdrawals)) : 0,
-          endBalance:
-            decYears.length > 0 ? decYears[decYears.length - 1]!.endBalance : 0,
-          legacyAmount:
-            decYears.length > 0 ? decYears[decYears.length - 1]!.endBalance : 0,
-          successRate,
-          spendingStabilityRate,
-          budgetStabilityRate,
-          yearByYear: decYears.map((y) => ({
-            age: y.age,
-            withdrawal: roundToCents(y.totalWithdrawal),
-            endBalance: roundToCents(y.endBalance),
-          })),
-        };
+      // Every strategy's lightweight MC uses a fixed seed (42, common random
+      // numbers across strategies for a fair comparison) — like Coast-FIRE
+      // MC's search, this whole computation is already a pure function of
+      // its inputs, so no seed persistence is needed, unlike
+      // computeMonteCarloProjection's per-run random seed.
+      type StrategyComparisonResult = {
+        strategies: ReturnType<typeof buildStrategyResults>;
+        activeStrategy: WithdrawalStrategyType;
+        retirementAge: number;
+      };
+      const inputHash = hashEngineInput("strategyComparison", {
+        baseEngineInput,
+        mcBaseEngineInput,
+        activeStrategy,
+        userStrategyParams,
+        hasMcData,
+        mcAssetClasses,
+        mcCorrelations,
+        mcGlidePath,
+        inflationRisk: effectiveInflationRisk,
       });
+      const cached = input?.forceRefresh
+        ? null
+        : await readProjectionCache<StrategyComparisonResult>(
+            ctx.db,
+            inputHash,
+          );
+      if (cached) {
+        return cached.result;
+      }
 
-      return {
-        strategies,
+      function buildStrategyResults() {
+        return getAllStrategyKeys().map((strategyKey) => {
+          const meta = getStrategyMeta(strategyKey);
+          // Use user-configured params for the active strategy, defaults for others
+          const params =
+            strategyKey === activeStrategy
+              ? userStrategyParams
+              : { [strategyKey]: getStrategyDefaults(strategyKey) };
+
+          const decumulationDefaults = {
+            withdrawalRate: toNumber(settings.withdrawalRate),
+            withdrawalRoutingMode: "bracket_filling" as const,
+            withdrawalOrder: getDefaultDecumulationOrder() as AccountCategory[],
+            withdrawalSplits: { ...CONFIG_WITHDRAWAL_SPLITS } as Record<
+              AccountCategory,
+              number
+            >,
+            withdrawalTaxPreference: {},
+            distributionTaxRates,
+            withdrawalStrategy: strategyKey,
+            strategyParams: params,
+          };
+
+          const result = calculateProjection({
+            ...baseEngineInput,
+            decumulationDefaults,
+            accumulationOverrides: [],
+            decumulationOverrides: [],
+          });
+
+          // Extract decumulation years for year-by-year data
+          const decYears = result.projectionByYear.filter(
+            (y): y is Extract<typeof y, { phase: "decumulation" }> =>
+              y.phase === "decumulation",
+          );
+
+          const withdrawals = decYears.map((y) => y.totalWithdrawal);
+          const avgWithdrawal =
+            withdrawals.length > 0
+              ? withdrawals.reduce((s, w) => s + w, 0) / withdrawals.length
+              : 0;
+
+          // Run lightweight MC (200 trials) for success rate + spending stability
+          let successRate: number | null = null;
+          let spendingStabilityRate: number | null = null;
+          let budgetStabilityRate: number | null = null;
+          if (hasMcData) {
+            const mcResult = calculateMonteCarlo({
+              engineInput: {
+                ...mcBaseEngineInput,
+                decumulationDefaults,
+                accumulationOverrides: [],
+                decumulationOverrides: [],
+              },
+              numTrials: 200,
+              seed: 42,
+              assetClasses: mcAssetClasses,
+              correlations: mcCorrelations,
+              glidePath: mcGlidePath,
+              inflationRisk: effectiveInflationRisk,
+            });
+            successRate = mcResult.successRate;
+            spendingStabilityRate = mcResult.spendingStabilityRate;
+            budgetStabilityRate = mcResult.budgetStabilityRate;
+          }
+
+          return {
+            strategy: strategyKey,
+            label: meta.label,
+            shortLabel: meta.shortLabel,
+            portfolioDepletionAge: result.portfolioDepletionAge,
+            sustainableWithdrawal: result.sustainableWithdrawal,
+            year1Withdrawal: decYears[0]?.totalWithdrawal ?? 0,
+            avgAnnualWithdrawal: roundToCents(avgWithdrawal),
+            minAnnualWithdrawal:
+              withdrawals.length > 0
+                ? roundToCents(Math.min(...withdrawals))
+                : 0,
+            maxAnnualWithdrawal:
+              withdrawals.length > 0
+                ? roundToCents(Math.max(...withdrawals))
+                : 0,
+            endBalance:
+              decYears.length > 0
+                ? decYears[decYears.length - 1]!.endBalance
+                : 0,
+            legacyAmount:
+              decYears.length > 0
+                ? decYears[decYears.length - 1]!.endBalance
+                : 0,
+            successRate,
+            spendingStabilityRate,
+            budgetStabilityRate,
+            yearByYear: decYears.map((y) => ({
+              age: y.age,
+              withdrawal: roundToCents(y.totalWithdrawal),
+              endBalance: roundToCents(y.endBalance),
+            })),
+          };
+        });
+      }
+
+      const result: StrategyComparisonResult = {
+        strategies: buildStrategyResults(),
         activeStrategy,
         retirementAge: avgRetirementAge,
       };
+      await writeProjectionCache(ctx.db, inputHash, result, null);
+      return result;
     }),
 
   /** Analyze the active strategy — run what-if MC scenarios and return ranked recommendations. */

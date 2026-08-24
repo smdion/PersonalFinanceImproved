@@ -8,7 +8,7 @@
 
 import { eq, sql } from "drizzle-orm";
 import * as schema from "./schema";
-import { accountDisplayName } from "@/lib/utils/format";
+import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
 import { log } from "@/lib/logger";
 import type { db as appDb } from "./index";
 import type { AccountMapping } from "./schema";
@@ -65,19 +65,11 @@ export async function backfillMappingLocalIds(db: Db) {
       for (const acct of snapAccts) {
         if (!acct.performanceAccountId) continue;
         const perf = perfMap.get(acct.performanceAccountId);
-        const ownerName = acct.ownerPersonId
-          ? peopleMap.get(acct.ownerPersonId)
-          : undefined;
-        const label = accountDisplayName(
-          {
-            accountType: acct.accountType,
-            subType: acct.subType,
-            label: acct.label,
-            institution: acct.institution,
-            displayName: perf?.displayName,
-            accountLabel: perf?.accountLabel,
-          },
-          ownerName ?? undefined,
+        const label = portfolioAccountLabel(
+          acct,
+          perf,
+          acct.ownerPersonId,
+          peopleMap,
         );
         if (!labelToPerfId.has(label)) {
           labelToPerfId.set(label, acct.performanceAccountId);

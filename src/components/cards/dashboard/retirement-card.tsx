@@ -11,8 +11,13 @@ import {
 import { useScenario } from "@/lib/context/scenario-context";
 import { Card, Metric } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
-import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import {
+  formatCurrency,
+  formatPercent,
+  formatRelativeTime,
+} from "@/lib/utils/format";
 import { sumBy } from "@/lib/utils/math";
+import { STATUS_COLORS } from "@/lib/utils/colors";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
@@ -20,6 +25,7 @@ import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-
 import {
   categoriesWithIrsLimit,
   getLimitGroup,
+  defaultDecumulationConfig,
 } from "@/lib/config/account-types";
 import { WITHDRAWAL_STRATEGY_LABELS } from "@/lib/config/withdrawal-strategies";
 import { PERF_CATEGORY_RETIREMENT } from "@/lib/config/display-labels";
@@ -62,10 +68,21 @@ function RetirementCardImpl() {
     "retirement_dec_expense_override",
     null,
   );
+  // Must exactly match the Retirement page's own default (un-customized)
+  // decumulation form state (use-projection-form-state.ts) — the
+  // deterministic computeProjection query below doesn't care
+  // (buildDecumulationDefaults always uses settings.withdrawalRate
+  // regardless of client input), but the persistent projection cache
+  // hashes the FULL built engine input, so a mismatch here would silently
+  // guarantee the peek queries below always miss the page's real cached
+  // run, even on default settings. Shared via defaultDecumulationConfig()
+  // (account-types.ts) so the two call sites can't independently drift.
+  const decumulationDefaults = defaultDecumulationConfig();
   const engineInput = {
     ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     ...contribProfileInput,
     ...salaryProfileInput,
+    decumulationDefaults,
     ...(accBudgetProfileId != null
       ? { accumulationBudgetProfileId: accBudgetProfileId }
       : {}),
@@ -117,6 +134,18 @@ function RetirementCardImpl() {
     {
       staleTime: 60_000,
     },
+  );
+  // Peek-only reads of the persistent projection cache — never trigger a
+  // fresh Monte Carlo run (that's a multi-second, rate-limited operation),
+  // just surface whatever the Retirement page's last real run already
+  // computed, if the inputs still match. Null result = nothing cached yet.
+  const { data: mcPeek } = trpc.projection.computeMonteCarloProjection.useQuery(
+    { ...engineInput, peekOnly: true },
+    { staleTime: 60_000 },
+  );
+  const { data: coastFireMcPeek } = trpc.projection.computeCoastFireMC.useQuery(
+    { ...engineInput, peekOnly: true },
+    { staleTime: 60_000 },
   );
   if (isLoading) return <LoadingCard title="Retirement" />;
   if (error) return <ErrorCard title="Retirement" message="Failed to load" />;
@@ -308,27 +337,82 @@ function RetirementCardImpl() {
               </div>
             );
           })()}
-        {coastFireData?.result && (
+        {coastFireData?.result &&
+          (() => {
+            const simResult = coastFireMcPeek?.result;
+            const simLabel = simResult
+              ? simResult.status === "unreachable"
+                ? "not reachable"
+                : simResult.status === "already_coast"
+                  ? "already coast"
+                  : `age ${simResult.coastFireAge}`
+              : null;
+            return (
+              <div className="flex justify-between">
+                <span className="text-muted">
+                  Coast FIRE
+                  <HelpTip
+                    text="The earliest age at which you can stop contributing and still fund your plan through end of plan. 'Already Coast' means you could stop today. This is the deterministic baseline — it doesn't account for market variance. The Retirement page's Plan Health tab runs a Simulation and can show a materially later age once you're asking 'stop today, and still succeed in ~90% of simulated outcomes.'"
+                    learnMoreHref="/retirement"
+                  />
+                </span>
+                <span className="text-primary">
+                  {coastFireData.result.status === "unreachable"
+                    ? "Not reachable"
+                    : coastFireData.result.status === "already_coast"
+                      ? "Already Coast"
+                      : `Age ${coastFireData.result.coastFireAge}`}
+                  <span className="text-caption text-faint ml-1">
+                    {simLabel
+                      ? `(simulated: ${simLabel})`
+                      : "(baseline; see Plan Health for simulated)"}
+                  </span>
+                </span>
+              </div>
+            );
+          })()}
+        {mcPeek?.result && (
           <div className="flex justify-between">
             <span className="text-muted">
-              Coast FIRE
+              Simulated success
               <HelpTip
-                text="The earliest age at which you can stop contributing and still fund your plan through end of plan. 'Already Coast' means you could stop today. This is the deterministic baseline — it doesn't account for market variance. The Retirement page's Plan Health tab runs a Simulation and can show a materially later age once you're asking 'stop today, and still succeed in ~90% of simulated outcomes.'"
+                text="The share of simulated market outcomes in which your plan doesn't run out of money, from the last Simulation you ran on the Retirement page. Not re-run automatically from the dashboard — visit the Retirement page's Plan Health tab to refresh it."
                 learnMoreHref="/retirement"
               />
             </span>
-            <span className="text-primary">
-              {coastFireData.result.status === "unreachable"
-                ? "Not reachable"
-                : coastFireData.result.status === "already_coast"
-                  ? "Already Coast"
-                  : `Age ${coastFireData.result.coastFireAge}`}
-              <span className="text-caption text-faint ml-1">
-                (baseline; see Plan Health for simulated)
-              </span>
+            <span
+              className={`font-medium ${
+                mcPeek.result.successRate >= 0.9
+                  ? STATUS_COLORS.green.text
+                  : mcPeek.result.successRate >= 0.75
+                    ? STATUS_COLORS.amber.text
+                    : STATUS_COLORS.red.text
+              }`}
+            >
+              {formatPercent(mcPeek.result.successRate, 0)}
             </span>
           </div>
         )}
+        {(() => {
+          const lastRunAt = [
+            mcPeek && "simulationInputs" in mcPeek
+              ? mcPeek.simulationInputs.computedAt
+              : null,
+            coastFireMcPeek?.computedAt,
+          ]
+            .filter((v): v is string => !!v)
+            .sort()
+            .at(-1);
+          if (!lastRunAt) return null;
+          return (
+            <div className="flex justify-between">
+              <span className="text-muted">Last simulation run</span>
+              <span className="text-faint">
+                {formatRelativeTime(lastRunAt)}
+              </span>
+            </div>
+          );
+        })()}
         <div className="flex justify-between">
           <span className="text-muted">Duration</span>
           <span

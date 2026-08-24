@@ -168,6 +168,35 @@ describe("computeEmployerMatch", () => {
     ).toBe(3000);
   });
 
+  // Guard for src/lib/config/display-labels.ts's EMPLOYER_MATCH_VALUE_UNIT
+  // table (unit-glyph-only, no cap concept for dollar_match/fixed_annual):
+  // if this ever goes false, that table's "no cap" assumption has silently
+  // drifted from the calculator, and the UI would start hiding a cap field
+  // that actually matters.
+  it("ignores maxMatchPct entirely for dollar_match and fixed_annual", () => {
+    for (const matchType of ["dollar_match", "fixed_annual"] as const) {
+      const withoutCap = computeEmployerMatch(
+        matchType,
+        1000,
+        0,
+        12000,
+        "percent_of_salary",
+        10,
+        120000,
+      );
+      const withCap = computeEmployerMatch(
+        matchType,
+        1000,
+        0.5,
+        12000,
+        "percent_of_salary",
+        10,
+        120000,
+      );
+      expect(withCap).toBe(withoutCap);
+    }
+  });
+
   it("returns 0 for unknown match type", () => {
     expect(
       computeEmployerMatch(

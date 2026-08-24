@@ -103,6 +103,7 @@ export function calculateMortgage(input: MortgageInput): MortgageResult {
       loanId: loan.id,
       name: loan.name,
       isActive: loan.isActive,
+      interestRate: loan.interestRate,
       refinancedInto: refinancedInto?.name,
       paidOffDate: histResult?.paidOffDate,
       endedBalance: histResult?.endedBalance,

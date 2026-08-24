@@ -1,7 +1,8 @@
 "use client";
 
 /** Top-level ProjectionCard component — orchestrates the projection state hook and delegates to sub-components. */
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { toast, useToasts } from "@/lib/hooks/use-toast";
 import dynamic from "next/dynamic";
 import { HelpTip } from "@/components/ui/help-tip";
 import { SlidePanel } from "@/components/ui/slide-panel";
@@ -142,6 +143,36 @@ export function ProjectionCard(props: {
     runCoastFireMc,
     coastFireMcQuery,
   } = state;
+
+  // "Recalculating…" toast — visible regardless of scroll position, unlike
+  // ProjectionLoader's in-place strip (deliberately positioned between the
+  // chart and table, per its own header comment, "so layout never shifts")
+  // which is invisible if the user is scrolled away from that spot, and
+  // doesn't cover the engine-fetch phase at all. Reuses the existing
+  // fixed-position toast system instead of adding a second one.
+  const { dismiss: dismissToast } = useToasts();
+  const isRecalculating =
+    engineQuery.isFetching ||
+    mcPrefetchQuery.isFetching ||
+    mcQuery.isFetching ||
+    coastFireMcQuery.isFetching;
+  const recalcToastId = useRef<string | null>(null);
+  useEffect(() => {
+    if (isRecalculating && recalcToastId.current === null) {
+      recalcToastId.current = toast.loading("Recalculating…");
+    } else if (!isRecalculating && recalcToastId.current !== null) {
+      dismissToast(recalcToastId.current);
+      recalcToastId.current = null;
+    }
+  }, [isRecalculating, dismissToast]);
+  // Dismiss on unmount so navigating away mid-fetch doesn't leave an
+  // orphaned toast with nothing left to clear it.
+  useEffect(() => {
+    return () => {
+      if (recalcToastId.current !== null) dismissToast(recalcToastId.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- unmount-only cleanup
+  }, []);
 
   // Allow page-level dollarMode override (for shared toggle across tabs).
   // Sync the prop into internal state so derived data (deflate) reads the correct value.

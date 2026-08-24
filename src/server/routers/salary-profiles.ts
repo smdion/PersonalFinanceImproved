@@ -39,7 +39,7 @@ import { createTRPCRouter } from "../trpc";
 import { protectedProcedure, contributionProfileProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { canDeleteSalaryProfile } from "@/lib/pure/profiles";
-import { salaryEntriesSchema } from "@/lib/db/json-schemas";
+import { salaryEntriesSchema, salaryEntrySchema } from "@/lib/db/json-schemas";
 import { resolveCompensation } from "@/server/helpers";
 import type { SalaryEntryMap } from "@/server/helpers";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
@@ -53,6 +53,84 @@ function summarizeEntries(salaries: SalaryEntryMap) {
     pinnedCount: entries.length,
     pinnedSalaryTotal: entries.reduce((s, e) => s + e.salary, 0),
   };
+}
+
+/**
+ * Refresh extraPaycheckRouting's baseNetPayPerCheck/payPeriod/anchorPayDate
+ * snapshot for any job whose routing is already configured — but only when
+ * `profileId` is the globally-ACTIVE profile. Editing an active profile's
+ * real values (a withholding correction, a raise) is not "browsing a
+ * what-if" — it's a correction to the one real number
+ * computeJobNetPayPerCheck already resolves against, so it should
+ * propagate immediately, the same way an explicit
+ * extraPaycheckRouting.save/saveGrowth would. Editing a NON-active profile
+ * must NOT trigger this — that's exactly the "routine profile switch
+ * silently rewrites a plan" case RULES.md's no-cascade-by-design note
+ * warns about; the distinction is active-vs-not, not edited-vs-not.
+ *
+ * Single computation path for this refresh — called from every mutation
+ * that can change a profile's `salaries` (update, patchEntry, removeEntry)
+ * instead of each reimplementing it.
+ *
+ * Returns the refreshed row, or undefined if nothing needed refreshing
+ * (not active, or no job had routing configured).
+ */
+async function refreshExtraPaycheckRoutingIfActive(
+  db: typeof import("@/lib/db").db,
+  profileId: number,
+): Promise<typeof schema.salaryProfiles.$inferSelect | undefined> {
+  try {
+    const activeId = await resolveActiveSalaryProfileId(db);
+    if (activeId !== profileId) return undefined;
+
+    // Own transaction, re-reading the row fresh rather than trusting the
+    // caller's in-memory `salaries` (captured at the moment the caller's
+    // OWN transaction committed) — two concurrent patchEntry/removeEntry
+    // calls for different jobs on the same profile can both commit cleanly
+    // (no field overlap), but a stale in-memory blob written back here
+    // would silently clobber whichever one committed second. Re-reading
+    // inside this transaction closes that window.
+    return await db.transaction(async (tx) => {
+      const rows = await tx
+        .select()
+        .from(schema.salaryProfiles)
+        .where(eq(schema.salaryProfiles.id, profileId));
+      const profile = rows[0];
+      if (!profile) return undefined;
+
+      const salaries = { ...(profile.salaries as SalaryEntryMap) };
+      let anyRefreshed = false;
+      for (const [jobIdStr, entry] of Object.entries(salaries)) {
+        const routing = entry.extraPaycheckRouting;
+        if (!routing?.rules?.length) continue;
+        const jobId = Number(jobIdStr);
+        const refreshed = await computeJobNetPayPerCheck(tx, jobId);
+        salaries[jobIdStr] = {
+          ...entry,
+          extraPaycheckRouting: {
+            ...routing,
+            baseNetPayPerCheck: refreshed.netPayPerCheck,
+            payPeriod: refreshed.payPeriod,
+            anchorPayDate: refreshed.anchorPayDate,
+          },
+        };
+        anyRefreshed = true;
+      }
+      if (!anyRefreshed) return undefined;
+
+      const [refreshedRow] = await tx
+        .update(schema.salaryProfiles)
+        .set({ salaries })
+        .where(eq(schema.salaryProfiles.id, profileId))
+        .returning();
+      return refreshedRow;
+    });
+  } catch {
+    // The caller's actual edit (already written before this runs) must not
+    // fail just because the best-effort routing-snapshot refresh couldn't
+    // resolve (e.g. a mid-edit state with no matching tax bracket yet).
+    return undefined;
+  }
 }
 
 /**
@@ -295,6 +373,55 @@ export const salaryProfileRouter = createTRPCRouter({
       return rows[0]!;
     }),
 
+  /**
+   * Clone an existing profile's job entries into a new, inactive profile.
+   *
+   * Every entry's `extraPaycheckRouting` is reset to `null` (a valid,
+   * complete value — see salaryEntrySchema) rather than copied verbatim.
+   * That field is a RECORDED FACT — baseNetPayPerCheck/payPeriod/
+   * anchorPayDate snapshotted from whichever profile was active at save
+   * time — not a formula. Copying it verbatim would let the clone inherit
+   * the source's frozen net-pay figure; activating the clone (the entire
+   * reason someone clones a profile) would then immediately materialize
+   * real savings_planned_transactions off a stale, wrong number with no
+   * error surfaced — `update`'s active-profile-only refresh (below) never
+   * fires for a profile that isn't active yet. The user reconfigures
+   * routing on the clone afterward, which resolves correctly.
+   */
+  duplicate: contributionProfileProcedure
+    .input(
+      z.object({
+        sourceProfileId: z.number().int(),
+        name: z.string().min(1).max(100),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const source = await ctx.db
+        .select()
+        .from(schema.salaryProfiles)
+        .where(eq(schema.salaryProfiles.id, input.sourceProfileId))
+        .then((r) => r[0]);
+      if (!source) throw new Error("Source profile not found");
+
+      const sourceSalaries = (source.salaries ?? {}) as SalaryEntryMap;
+      const salaries: SalaryEntryMap = Object.fromEntries(
+        Object.entries(sourceSalaries).map(([jobId, entry]) => [
+          jobId,
+          { ...entry, extraPaycheckRouting: null },
+        ]),
+      );
+
+      const rows = await ctx.db
+        .insert(schema.salaryProfiles)
+        .values({
+          name: input.name,
+          description: source.description,
+          salaries,
+        })
+        .returning();
+      return rows[0]!;
+    }),
+
   update: contributionProfileProcedure
     .input(
       z.object({
@@ -326,58 +453,122 @@ export const salaryProfileRouter = createTRPCRouter({
         .returning();
       const updated = rows[0]!;
 
-      // Refresh extraPaycheckRouting's baseNetPayPerCheck/payPeriod/
-      // anchorPayDate snapshot for any job in THIS edit whose routing is
-      // already configured — but only when this is the globally-ACTIVE
-      // profile. Editing an active profile's real values (a withholding
-      // correction, a raise) is not "browsing a hypothetical" — it's a
-      // correction to the one real number computeJobNetPayPerCheck already
-      // resolves against, so it should propagate immediately, the same way
-      // an explicit extraPaycheckRouting.save/saveGrowth would. Editing a
-      // NON-active profile (a what-if comparison) must NOT trigger this —
-      // that's exactly the "routine profile switch silently rewrites a
-      // plan" case RULES.md's no-cascade-by-design note warns about; the
-      // distinction is active-vs-not, not edited-vs-not.
       if (input.salaries !== undefined) {
-        try {
-          const activeId = await resolveActiveSalaryProfileId(ctx.db);
-          if (activeId === input.id) {
-            const salaries = updated.salaries as SalaryEntryMap;
-            let anyRefreshed = false;
-            for (const [jobIdStr, entry] of Object.entries(salaries)) {
-              const routing = entry.extraPaycheckRouting;
-              if (!routing?.rules?.length) continue;
-              const jobId = Number(jobIdStr);
-              const refreshed = await computeJobNetPayPerCheck(ctx.db, jobId);
-              salaries[jobIdStr] = {
-                ...entry,
-                extraPaycheckRouting: {
-                  ...routing,
-                  baseNetPayPerCheck: refreshed.netPayPerCheck,
-                  payPeriod: refreshed.payPeriod,
-                  anchorPayDate: refreshed.anchorPayDate,
-                },
-              };
-              anyRefreshed = true;
-            }
-            if (anyRefreshed) {
-              const [refreshedRow] = await ctx.db
-                .update(schema.salaryProfiles)
-                .set({ salaries })
-                .where(eq(schema.salaryProfiles.id, input.id))
-                .returning();
-              return refreshedRow!;
-            }
-          }
-        } catch {
-          // The user's actual edit (already written above) must not fail
-          // just because the best-effort routing-snapshot refresh couldn't
-          // resolve (e.g. a mid-edit state with no matching tax bracket
-          // yet) — fall through and return the already-saved update.
-        }
+        const refreshed = await refreshExtraPaycheckRoutingIfActive(
+          ctx.db,
+          input.id,
+        );
+        if (refreshed) return refreshed;
       }
 
       return updated;
+    }),
+
+  /**
+   * Patch (merge) one job's entry within a profile — a true field-level
+   * patch, not a client-side-merged full-blob replace. `fields` only needs
+   * to carry the keys actually changing; `unset` explicitly names keys to
+   * clear back to their type's "unset" value where meaningful (most fields
+   * here don't have one — see the merged-result validation below, which
+   * requires every field to still resolve to a complete entry after the
+   * patch). Also used to create a brand-new entry by passing a complete
+   * `fields` object (e.g. BLANK_ENTRY) with no existing entry to merge
+   * onto.
+   *
+   * The read-merge-write happens inside a transaction so two overlapping
+   * patches to the same profile (two fields committed in quick succession,
+   * a second tab/device) can't silently clobber each other the way the
+   * previous design — read a snapshot client-side, merge client-side, PUT
+   * the whole blob back through `update` — could.
+   */
+  patchEntry: contributionProfileProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        jobId: z.number(),
+        fields: salaryEntrySchema.partial(),
+        unset: z.array(z.string()).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const updated = await ctx.db.transaction(async (tx) => {
+        const existing = await tx
+          .select()
+          .from(schema.salaryProfiles)
+          .where(eq(schema.salaryProfiles.id, input.id));
+        const profile = existing[0];
+        if (!profile) throw new Error("Profile not found");
+
+        const salaries = profile.salaries as SalaryEntryMap;
+        const key = String(input.jobId);
+        const mergedEntry: Record<string, unknown> = { ...salaries[key] };
+        for (const field of input.unset ?? []) delete mergedEntry[field];
+        Object.assign(mergedEntry, input.fields);
+
+        const parsed = salaryEntrySchema.safeParse(mergedEntry);
+        if (!parsed.success) {
+          throw new Error(
+            `Invalid salary entry after patch: ${parsed.error.issues[0]?.message}`,
+          );
+        }
+
+        const nextSalaries = { ...salaries, [key]: parsed.data };
+        await assertSalaryEntryTaxBracketsExist(tx, {
+          [key]: parsed.data,
+        });
+
+        const rows = await tx
+          .update(schema.salaryProfiles)
+          .set({ salaries: nextSalaries })
+          .where(eq(schema.salaryProfiles.id, input.id))
+          .returning();
+        return rows[0]!;
+      });
+
+      const refreshed = await refreshExtraPaycheckRoutingIfActive(
+        ctx.db,
+        input.id,
+      );
+      return refreshed ?? updated;
+    }),
+
+  /**
+   * Remove one job's entry from a profile entirely — it goes back to
+   * contributing $0, the same as a job that was never added. Same
+   * transactional read-merge-write pattern as patchEntry.
+   */
+  removeEntry: contributionProfileProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        jobId: z.number(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const updated = await ctx.db.transaction(async (tx) => {
+        const existing = await tx
+          .select()
+          .from(schema.salaryProfiles)
+          .where(eq(schema.salaryProfiles.id, input.id));
+        const profile = existing[0];
+        if (!profile) throw new Error("Profile not found");
+
+        const salaries = { ...(profile.salaries as SalaryEntryMap) };
+        delete salaries[String(input.jobId)];
+
+        const rows = await tx
+          .update(schema.salaryProfiles)
+          .set({ salaries })
+          .where(eq(schema.salaryProfiles.id, input.id))
+          .returning();
+        return rows[0]!;
+      });
+
+      const refreshed = await refreshExtraPaycheckRoutingIfActive(
+        ctx.db,
+        input.id,
+      );
+      return refreshed ?? updated;
     }),
 
   /**

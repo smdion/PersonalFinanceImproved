@@ -24,6 +24,10 @@ import type {
   Service,
 } from "../integrations-types";
 import { StatusBadge } from "../integrations-status-badge";
+import {
+  SectionSummaryBadge,
+  SectionSummaryRow,
+} from "./section-summary-badge";
 import { ApiCategorySelect } from "../integrations-api-category-select";
 import type { BudgetMutations } from "./hooks/use-budget-mutations";
 
@@ -198,16 +202,30 @@ export function BudgetSection({
         <span className="text-xs font-medium text-muted">
           Budget Category Matching
         </span>
-        <span className="flex gap-2 text-caption">
-          <span className="text-green-400">{budget.summary.linked}</span>
-          <span className="text-yellow-400">{budget.summary.suggested}</span>
-          <span className="text-faint">{budget.summary.unmatched}</span>
+        <SectionSummaryRow>
+          <SectionSummaryBadge
+            value={budget.summary.linked}
+            label="linked"
+            tone="green"
+          />
+          <SectionSummaryBadge
+            value={budget.summary.suggested}
+            label="suggested"
+            tone="amber"
+          />
+          <SectionSummaryBadge
+            value={budget.summary.unmatched}
+            label="unmatched"
+            tone="faint"
+          />
           {budget.summary.apiOnly > 0 && (
-            <span className="text-purple-400">
-              {budget.summary.apiOnly} API-only
-            </span>
+            <SectionSummaryBadge
+              value={budget.summary.apiOnly}
+              label="API-only"
+              tone="purple"
+            />
           )}
-        </span>
+        </SectionSummaryRow>
       </summary>
       <div className="px-3 pb-3 space-y-2">
         {/* Inline details toggle for individual items */}

@@ -329,6 +329,67 @@ describe("contributionProfiles coverage", () => {
         cleanup();
       }
     });
+
+    it("names a person-specific contribution row by that person, even when the linked performance account is jointly owned", async () => {
+      // Real bug: a shared/jointly-tracked performance account (e.g. 10+
+      // years of combined-performance history for one IRA holding both
+      // spouses' separate contribution configs) made both people's
+      // contribution rows render as the identical "Joint IRA (...)"
+      // string — no way to tell them apart. The contribution row's own
+      // personId is more specific than the account's ownershipType and
+      // must win.
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const alexId = await seedPerson(db, "Alex");
+        const jordanId = await seedPerson(db, "Jordan");
+        const perfId = seedPerformanceAccount(db, {
+          institution: "Vanguard",
+          accountType: "ira",
+          accountLabel: "IRA (Vanguard)",
+          ownershipType: "joint",
+          ownerPersonId: null,
+        });
+        const alexIraId = seedContribAccount(db, {
+          personId: alexId,
+          accountType: "ira",
+          performanceAccountId: perfId,
+          employerMatchType: "none",
+        });
+        const jordanIraId = seedContribAccount(db, {
+          personId: jordanId,
+          accountType: "ira",
+          performanceAccountId: perfId,
+          employerMatchType: "none",
+        });
+
+        const profileId = seedContribProfile(db, { name: "JointIraTest" });
+        const result = await caller.contributionProfile.getById({
+          id: profileId,
+        });
+        const alexDetail = result!.accountDetails.find(
+          (d) => d.id === alexIraId,
+        )!;
+        const jordanDetail = result!.accountDetails.find(
+          (d) => d.id === jordanIraId,
+        )!;
+        expect(alexDetail.accountName).toContain("Alex");
+        expect(jordanDetail.accountName).toContain("Jordan");
+        expect(alexDetail.accountName).not.toBe(jordanDetail.accountName);
+
+        // compareData shares the identical fix.
+        const compareResult = await caller.contributionProfile.compareData();
+        const alexCompare = compareResult.accounts.find(
+          (a) => a.id === alexIraId,
+        )!;
+        const jordanCompare = compareResult.accounts.find(
+          (a) => a.id === jordanIraId,
+        )!;
+        expect(alexCompare.accountName).toContain("Alex");
+        expect(jordanCompare.accountName).toContain("Jordan");
+      } finally {
+        cleanup();
+      }
+    });
   });
 
   // ── GETBYID: deductionDetails with an active-field amount set ──
@@ -1090,6 +1151,230 @@ describe("contributionProfiles coverage", () => {
         const tradAccount = result.accounts.find((a) => a.id === trad)!;
         const rothAccount = result.accounts.find((a) => a.id === roth)!;
         expect(tradAccount.accountName).not.toBe(rothAccount.accountName);
+      } finally {
+        cleanup();
+      }
+    });
+
+    it("names an account by its own linked institution, not the owner's current employer", async () => {
+      // Real bug: an IRA (held at Vanguard, no employer relationship) was
+      // showing the person's CURRENT job's employer name instead — e.g.
+      // "Alex IRA (TechCorp)" instead of "Alex IRA (Vanguard)" — because
+      // compareData synthesized "institution" from the current job for
+      // every account type, ignoring the account's real linked institution.
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const personId = await seedPerson(db, "Alex");
+        seedJob(db, personId, { employerName: "TechCorp" });
+        const perfAccountId = seedPerformanceAccount(db, {
+          institution: "Vanguard",
+          accountType: "ira",
+          accountLabel: "IRA (Vanguard)",
+          ownerPersonId: personId,
+        });
+        const iraId = seedContribAccount(db, {
+          personId,
+          accountType: "ira",
+          performanceAccountId: perfAccountId,
+          employerMatchType: "none",
+        });
+
+        const result = await caller.contributionProfile.compareData();
+        const ira = result.accounts.find((a) => a.id === iraId)!;
+        expect(ira.accountName).toContain("Vanguard");
+        expect(ira.accountName).not.toContain("TechCorp");
+      } finally {
+        cleanup();
+      }
+    });
+  });
+
+  describe("setAccountActiveFields — field-level patch", () => {
+    it("patches a single field without disturbing sibling fields", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const personId = await seedPerson(db, "Alex");
+        const accountId = seedContribAccount(db, { personId });
+        const profileId = seedContribProfile(db, {
+          contributionActiveFields: {
+            contributionAccounts: {
+              [String(accountId)]: {
+                contributionValue: "5000",
+                contributionMethod: "dollar_amount",
+                isActive: true,
+              },
+            },
+          },
+        });
+
+        await caller.contributionProfile.setAccountActiveFields({
+          profileId,
+          accountId,
+          fields: { isActive: false },
+        });
+
+        const profile = await caller.contributionProfile.getById({
+          id: profileId,
+        });
+        const detail = profile!.accountDetails.find((a) => a.id === accountId)!;
+        const fields = detail.activeFields as Record<string, unknown>;
+        expect(fields.contributionValue).toBe("5000");
+        expect(fields.contributionMethod).toBe("dollar_amount");
+        expect(fields.isActive).toBe(false);
+      } finally {
+        cleanup();
+      }
+    });
+
+    it("unset removes only the named keys", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const personId = await seedPerson(db, "Alex");
+        const accountId = seedContribAccount(db, { personId });
+        const profileId = seedContribProfile(db, {
+          contributionActiveFields: {
+            contributionAccounts: {
+              [String(accountId)]: {
+                contributionValue: "5000",
+                contributionMethod: "dollar_amount",
+                isActive: false,
+              },
+            },
+          },
+        });
+
+        await caller.contributionProfile.setAccountActiveFields({
+          profileId,
+          accountId,
+          fields: {},
+          unset: ["contributionValue", "contributionMethod"],
+        });
+
+        const profile = await caller.contributionProfile.getById({
+          id: profileId,
+        });
+        const detail = profile!.accountDetails.find((a) => a.id === accountId)!;
+        const fields = detail.activeFields as Record<string, unknown>;
+        expect(fields.contributionValue).toBeUndefined();
+        expect(fields.contributionMethod).toBeUndefined();
+        expect(fields.isActive).toBe(false);
+      } finally {
+        cleanup();
+      }
+    });
+
+    it("fully-unsetting an entry removes the account key entirely", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const personId = await seedPerson(db, "Alex");
+        const accountId = seedContribAccount(db, { personId });
+        const profileId = seedContribProfile(db, {
+          contributionActiveFields: {
+            contributionAccounts: {
+              [String(accountId)]: { isActive: false },
+            },
+          },
+        });
+
+        await caller.contributionProfile.setAccountActiveFields({
+          profileId,
+          accountId,
+          fields: {},
+          unset: ["isActive"],
+        });
+
+        const compare = await caller.contributionProfile.compareData();
+        const profile = compare.profiles.find((p) => p.id === profileId)!;
+        expect(profile.accountActiveFields[String(accountId)]).toBeUndefined();
+      } finally {
+        cleanup();
+      }
+    });
+
+    it("rejects a merged result that pairs contributionValue without contributionMethod", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const personId = await seedPerson(db, "Alex");
+        const accountId = seedContribAccount(db, { personId });
+        const profileId = seedContribProfile(db, {
+          contributionActiveFields: { contributionAccounts: {} },
+        });
+
+        await expect(
+          caller.contributionProfile.setAccountActiveFields({
+            profileId,
+            accountId,
+            fields: { contributionValue: "5000" },
+          }),
+        ).rejects.toThrow(/must be set together/);
+      } finally {
+        cleanup();
+      }
+    });
+
+    it("throws for a non-existent profile", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const personId = await seedPerson(db, "Alex");
+        const accountId = seedContribAccount(db, { personId });
+        await expect(
+          caller.contributionProfile.setAccountActiveFields({
+            profileId: 999999,
+            accountId,
+            fields: { isActive: false },
+          }),
+        ).rejects.toThrow("Profile not found");
+      } finally {
+        cleanup();
+      }
+    });
+  });
+
+  describe("setDeductionActiveFields — field-level patch", () => {
+    it("sets and unsets amountPerPeriod", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const profileId = seedContribProfile(db, {
+          contributionActiveFields: { contributionAccounts: {} },
+        });
+
+        const updated =
+          await caller.contributionProfile.setDeductionActiveFields({
+            profileId,
+            deductionId: 1,
+            fields: { amountPerPeriod: "50" },
+          });
+        const afterSet = updated.contributionActiveFields as {
+          deductions?: Record<string, { amountPerPeriod?: string }>;
+        };
+        expect(afterSet.deductions?.["1"]?.amountPerPeriod).toBe("50");
+
+        const cleared =
+          await caller.contributionProfile.setDeductionActiveFields({
+            profileId,
+            deductionId: 1,
+            fields: {},
+            unset: ["amountPerPeriod"],
+          });
+        const afterUnset = cleared.contributionActiveFields as {
+          deductions?: Record<string, unknown>;
+        };
+        expect(afterUnset.deductions?.["1"]).toBeUndefined();
+      } finally {
+        cleanup();
+      }
+    });
+
+    it("throws for a non-existent profile", async () => {
+      const { caller, cleanup } = await createTestCaller(adminSession);
+      try {
+        await expect(
+          caller.contributionProfile.setDeductionActiveFields({
+            profileId: 999999,
+            deductionId: 1,
+            fields: { amountPerPeriod: "50" },
+          }),
+        ).rejects.toThrow("Profile not found");
       } finally {
         cleanup();
       }

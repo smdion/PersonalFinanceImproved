@@ -247,6 +247,66 @@ describe("settings.contributionAccounts — update with performanceAccountId", (
   });
 });
 
+// ── contributionAccounts.setActive ───────────────────────────────────────
+
+describe("settings.contributionAccounts.setActive", () => {
+  let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
+  let db: BetterSQLite3Database<typeof sqliteSchema>;
+  let cleanup: () => void;
+  let personId: number;
+
+  beforeAll(async () => {
+    const ctx = await createTestCaller();
+    caller = ctx.caller;
+    db = ctx.db;
+    cleanup = ctx.cleanup;
+    personId = await seedPerson(db, "Set Active", "1990-01-01");
+  });
+
+  afterAll(() => cleanup());
+
+  it("flips isActive without requiring the full account shape", async () => {
+    const acct = await caller.settings.contributionAccounts.create({
+      personId,
+      accountType: "brokerage",
+      taxTreatment: "after_tax",
+      employerMatchType: "none",
+      isActive: false,
+    });
+    expect(acct!.isActive).toBe(false);
+
+    const restored = await caller.settings.contributionAccounts.setActive({
+      id: acct!.id,
+      isActive: true,
+    });
+    expect(restored!.isActive).toBe(true);
+
+    const removed = await caller.settings.contributionAccounts.setActive({
+      id: acct!.id,
+      isActive: false,
+    });
+    expect(removed!.isActive).toBe(false);
+  });
+
+  it("leaves every other field on the row untouched", async () => {
+    const acct = await caller.settings.contributionAccounts.create({
+      personId,
+      accountType: "ira",
+      taxTreatment: "tax_free",
+      employerMatchType: "none",
+      label: "Keep me",
+    });
+
+    const updated = await caller.settings.contributionAccounts.setActive({
+      id: acct!.id,
+      isActive: false,
+    });
+    expect(updated!.label).toBe("Keep me");
+    expect(updated!.accountType).toBe("ira");
+    expect(updated!.taxTreatment).toBe("tax_free");
+  });
+});
+
 // ── contributionAccounts.setPriorYearAmount ──────────────────────────────
 
 describe("settings.contributionAccounts.setPriorYearAmount", () => {
