@@ -8,6 +8,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.7
 
+## [0.7.7] - 2026-08-24
+
+### Added
+
+- **Retirement simulations now persist across sessions and devices.** Monte Carlo and Coast FIRE simulation results are cached server-side instead of being lost every time you reload the Retirement page or switch devices — a repeat visit with the same inputs shows the same simulated result instantly instead of waiting for a fresh multi-second run. The dashboard's Retirement tile now shows the simulated success rate and simulated Coast FIRE age from your last real run, alongside a "Last simulation run" timestamp. A "Re-run" button on the Retirement page's Simulation tab forces a fresh run with new randomness whenever you actually want one.
+- **Hovering over the combined salary figure on the Retirement page now shows a per-person breakdown**, instead of just the household total.
+- **The Liabilities page's mortgage refinance history now shows the interest rate for each loan**, so you can see how your rate changed across refinances at a glance.
+- **"Clone to new" button added to Budget, Salary, and Contribution profiles** — duplicate an existing profile as a starting point instead of building one from scratch.
+- **A "Recalculating…" indicator now stays visible regardless of scroll position** whenever a change on the Retirement page triggers a new simulation, so it's clear something is happening even if the loading animation on the chart/table itself is scrolled out of view.
+
+### Fixed
+
+- **Adding a new Salary Profile entry could silently fail to save some entries** on a page refresh or when editing multiple fields quickly — fixed by moving profile edits to a proper server-side merge instead of a racy client-side one. The same fix was applied to Contribution Profile editing.
+- Fixed a build issue where server-only database code could end up in the browser bundle for the Expenses page.
+- Hardened the self-hosted upgrade path so an edge-case migration-recovery step could no longer silently strip Salary Profile details (pay schedule, W-4 elections, extra-paycheck routing) back to a bare-minimum shape on certain database states.
+
+### Changed (internal)
+
+- CI now tracks bundle size and lines-of-code trends (informational, no user-facing effect).
+
 ## [0.7.6] - 2026-08-22
 
 ### Added
