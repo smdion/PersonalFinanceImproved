@@ -1125,6 +1125,11 @@ describe("projection router — computeStrategyComparison cache", () => {
     }
   });
 
+  // computeStrategyComparison runs a full MC per withdrawal strategy (6+
+  // strategies); this test runs it TWICE for real (cache miss both times
+  // by design). Comfortably under the default 10s locally, but marginal
+  // in CI's coverage-instrumented run (V8 coverage collection adds real
+  // per-call overhead) — timed out there, not a correctness issue.
   it("a changed input misses the cache and computes fresh (different hash rows)", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
@@ -1143,7 +1148,7 @@ describe("projection router — computeStrategyComparison cache", () => {
     } finally {
       cleanup();
     }
-  });
+  }, 30000);
 
   it("forceRefresh bypasses an existing cache hit and recomputes", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
@@ -1836,6 +1841,10 @@ describe("projection router — computeCoastFireMC cache", () => {
     }
   });
 
+  // computeCoastFireMC runs a real binary search (multiple MC probes) for
+  // real, twice, by design (cache hit forced to miss). Marginal against
+  // the default 10s timeout under CI's coverage instrumentation — see the
+  // identical note on computeStrategyComparison's cache-miss test above.
   it("forceRefresh bypasses an existing cache hit and re-searches", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
@@ -1859,7 +1868,7 @@ describe("projection router — computeCoastFireMC cache", () => {
     } finally {
       cleanup();
     }
-  });
+  }, 30000);
 
   it("peekOnly returns a null result and never runs the search on a miss", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
