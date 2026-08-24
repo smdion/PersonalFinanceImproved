@@ -329,6 +329,67 @@ describe("contributionProfiles coverage", () => {
         cleanup();
       }
     });
+
+    it("names a person-specific contribution row by that person, even when the linked performance account is jointly owned", async () => {
+      // Real bug: a shared/jointly-tracked performance account (e.g. 10+
+      // years of combined-performance history for one IRA holding both
+      // spouses' separate contribution configs) made both people's
+      // contribution rows render as the identical "Joint IRA (...)"
+      // string — no way to tell them apart. The contribution row's own
+      // personId is more specific than the account's ownershipType and
+      // must win.
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const alexId = await seedPerson(db, "Alex");
+        const jordanId = await seedPerson(db, "Jordan");
+        const perfId = seedPerformanceAccount(db, {
+          institution: "Vanguard",
+          accountType: "ira",
+          accountLabel: "IRA (Vanguard)",
+          ownershipType: "joint",
+          ownerPersonId: null,
+        });
+        const alexIraId = seedContribAccount(db, {
+          personId: alexId,
+          accountType: "ira",
+          performanceAccountId: perfId,
+          employerMatchType: "none",
+        });
+        const jordanIraId = seedContribAccount(db, {
+          personId: jordanId,
+          accountType: "ira",
+          performanceAccountId: perfId,
+          employerMatchType: "none",
+        });
+
+        const profileId = seedContribProfile(db, { name: "JointIraTest" });
+        const result = await caller.contributionProfile.getById({
+          id: profileId,
+        });
+        const alexDetail = result!.accountDetails.find(
+          (d) => d.id === alexIraId,
+        )!;
+        const jordanDetail = result!.accountDetails.find(
+          (d) => d.id === jordanIraId,
+        )!;
+        expect(alexDetail.accountName).toContain("Alex");
+        expect(jordanDetail.accountName).toContain("Jordan");
+        expect(alexDetail.accountName).not.toBe(jordanDetail.accountName);
+
+        // compareData shares the identical fix.
+        const compareResult = await caller.contributionProfile.compareData();
+        const alexCompare = compareResult.accounts.find(
+          (a) => a.id === alexIraId,
+        )!;
+        const jordanCompare = compareResult.accounts.find(
+          (a) => a.id === jordanIraId,
+        )!;
+        expect(alexCompare.accountName).toContain("Alex");
+        expect(jordanCompare.accountName).toContain("Jordan");
+      } finally {
+        cleanup();
+      }
+    });
   });
 
   // ── GETBYID: deductionDetails with an active-field amount set ──

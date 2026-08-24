@@ -195,6 +195,21 @@ export const contributionProfileRouter = createTRPCRouter({
           (j) => j.personId === row.personId && !j.endDate && !j.isSpeculative,
         )?.employerName ??
         "";
+      // A contribution row with its own personId is inherently
+      // person-specific (contribution limits are always per-person) even
+      // when the underlying performance account is tracked jointly — e.g.
+      // 10+ years of combined-performance history for one shared IRA
+      // holding both spouses' separate contribution configs. Prefer that
+      // more specific fact over the account's own ownershipType, which
+      // would otherwise flatten both people's rows to the identical
+      // "Joint IRA (Vanguard) — Trad" label with no way to tell them apart.
+      // Genuinely joint contribution rows (row.personId == null) are
+      // unaffected — they still correctly defer to the account's own
+      // ownershipType below.
+      const ownershipType =
+        row.personId != null
+          ? "individual"
+          : (perfAccount?.ownershipType ?? null);
       const accountName = accountDisplayName(
         {
           accountType: row.accountType,
@@ -203,7 +218,7 @@ export const contributionProfileRouter = createTRPCRouter({
           institution,
           displayName: perfAccount?.displayName ?? null,
           accountLabel: perfAccount?.accountLabel ?? null,
-          ownershipType: perfAccount?.ownershipType ?? null,
+          ownershipType,
         },
         person?.name,
       );
@@ -337,6 +352,16 @@ export const contributionProfileRouter = createTRPCRouter({
           )?.employerName ??
           "";
 
+        // A contribution row with its own personId is inherently
+        // person-specific even when the underlying performance account is
+        // tracked jointly (e.g. 10+ years of combined-performance history
+        // for one shared IRA holding both spouses' separate contribution
+        // configs) — see the matching comment in compareData above.
+        const ownershipType =
+          row.personId != null
+            ? "individual"
+            : (displayPerfAccount?.ownershipType ?? null);
+
         // Use the shared accountDisplayName function — always pass institution so
         // the fallback path produces "Alex 401(k) (TechCorp)" not just "401k"
         const accountName = accountDisplayName(
@@ -347,7 +372,7 @@ export const contributionProfileRouter = createTRPCRouter({
             institution,
             displayName: displayPerfAccount?.displayName ?? null,
             accountLabel: displayPerfAccount?.accountLabel ?? null,
-            ownershipType: displayPerfAccount?.ownershipType ?? null,
+            ownershipType,
           },
           person?.name,
         );
