@@ -11,6 +11,7 @@
  */
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission, isAdmin } from "@/lib/context/user-context";
@@ -204,9 +205,13 @@ export function BudgetContent() {
   } = useItemMutations({ selectedColumnRef });
 
   // ---- Local UI state ----
+  // ?tab=whatif deep-links here from the sidebar's Analysis > What-If entry
+  // — read once on mount, not kept in sync afterward (tab clicks don't
+  // rewrite the URL).
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<
     "budget" | "contributions" | "salary" | "savings" | "what-if"
-  >("budget");
+  >(searchParams.get("tab") === "whatif" ? "what-if" : "budget");
   const [pushPreviewItems, setPushPreviewItems] = useState<ReturnType<
     typeof buildPushPreviewItems
   > | null>(null);
