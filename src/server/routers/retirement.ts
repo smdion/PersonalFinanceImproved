@@ -15,6 +15,7 @@ import {
   getSessionUserLabel,
 } from "../trpc";
 import * as schema from "@/lib/db/schema";
+import { log } from "@/lib/logger";
 import { calculateRelocation } from "@/lib/calculators/relocation";
 import {
   toNumber,
@@ -754,15 +755,24 @@ export const retirementRouter = createTRPCRouter({
           overrideType: z.enum(["accumulation", "decumulation", "brokerage"]),
         }),
       )
-      .query(({ ctx, input }) =>
-        ctx.db
+      .query(async ({ ctx, input }) => {
+        // TEMPORARY timing instrumentation — investigating a 3-4s client-
+        // observed latency on this procedure despite the underlying query
+        // executing in <1ms per EXPLAIN ANALYZE. Remove after diagnosis.
+        const t0 = performance.now();
+        const rows = await ctx.db
           .select()
           .from(schema.projectionOverrides)
           .where(
             eq(schema.projectionOverrides.overrideType, input.overrideType),
-          )
-          .then((r) => (r[0]?.overrides as Record<string, unknown>[]) ?? []),
-      ),
+          );
+        const elapsedMs = performance.now() - t0;
+        log("info", "projection_overrides_get_timing", {
+          overrideType: input.overrideType,
+          elapsedMs: Math.round(elapsedMs),
+        });
+        return (rows[0]?.overrides as Record<string, unknown>[]) ?? [];
+      }),
     save: brokerageProcedure
       .input(
         z.object({
