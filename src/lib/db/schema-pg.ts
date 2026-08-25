@@ -650,6 +650,12 @@ export const performanceAccounts = pgTable(
     costBasis: decimal("cost_basis", { precision: 14, scale: 2 })
       .notNull()
       .default("0"),
+    /** Date the account owner separated from the employer funding this plan
+     *  (401k/403b only) — durable, user-set source of truth for Rule of 55
+     *  eligibility (Tax Buckets tool). Null = not separated yet / not
+     *  applicable / not entered; the UI derives a default suggestion from
+     *  linked jobs but never writes it here automatically. */
+    separationDate: date("separation_date"),
     parentCategory: text("parent_category").notNull(),
     isActive: boolean("is_active").notNull().default(true),
     displayOrder: integer("display_order").notNull().default(0),
@@ -676,6 +682,53 @@ export const performanceAccounts = pgTable(
       "performance_accounts_parent_cat_check",
       sql`parent_category IN ('Retirement', 'Portfolio')`,
     ),
+  ],
+);
+
+/** Manually-tracked Roth basis for the Tax Buckets analysis tool — how much
+ *  of a Roth (taxFree) balance is contribution/conversion basis (accessible
+ *  penalty-free under IRS ordering rules, for a Roth IRA) vs. growth. Keyed
+ *  by (performanceAccountId, ownerPersonId), not a single column on
+ *  performanceAccounts, because one account can carry two people's balances
+ *  (e.g. a jointly-labeled Roth IRA with separate per-owner amounts). */
+export const rothBasis = pgTable(
+  "roth_basis",
+  {
+    id: serial("id").primaryKey(),
+    performanceAccountId: integer("performance_account_id")
+      .notNull()
+      .references(() => performanceAccounts.id, { onDelete: "cascade" }),
+    ownerPersonId: integer("owner_person_id")
+      .notNull()
+      .references(() => people.id, { onDelete: "restrict" }),
+    /** Contributions — always penalty-free and tax-free, no seasoning clock. */
+    contributionBasis: decimal("contribution_basis", {
+      precision: 14,
+      scale: 2,
+    })
+      .notNull()
+      .default("0"),
+    /** Roth conversions — always tax-free, but penalty-free only once
+     *  seasoned (see latestConversionYear). */
+    conversionBasis: decimal("conversion_basis", { precision: 14, scale: 2 })
+      .notNull()
+      .default("0"),
+    /** Most recent tax year a conversion was made, if conversionBasis > 0.
+     *  Gating the whole conversionBasis figure on the LATEST (not earliest)
+     *  tracked conversion year is deliberately conservative: this is a
+     *  pooled total across potentially several years of conversions, so
+     *  using the latest year only ever understates penalty-free access,
+     *  never overstates it. Null if conversionBasis = 0. */
+    latestConversionYear: integer("latest_conversion_year"),
+    asOfDate: date("as_of_date").notNull(),
+    notes: text("notes"),
+  },
+  (table) => [
+    uniqueIndex("roth_basis_account_owner_idx").on(
+      table.performanceAccountId,
+      table.ownerPersonId,
+    ),
+    index("roth_basis_owner_person_id_idx").on(table.ownerPersonId),
   ],
 );
 
