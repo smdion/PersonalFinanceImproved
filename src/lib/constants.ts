@@ -103,6 +103,23 @@ export const IRS_LIMIT_GROWTH_RATE = 0.02;
 export const RMD_EXCISE_TAX_RATE = 0.25;
 
 // ---------------------------------------------------------------------------
+// Early-Access Ages (Tax Buckets analysis tool)
+// ---------------------------------------------------------------------------
+
+/** Age at/after which separating from an employer grants penalty-free access
+ *  to that employer's 401k/403b (IRC §72(t)(2)(A)(v), the "Rule of 55"). */
+export const RULE_OF_55_AGE = 55;
+
+/** Age at which retirement-account withdrawals become penalty-free generally
+ *  (and, combined with the 5-year clock, "qualified"/tax-free for Roth). */
+export const PENALTY_FREE_AGE = 59.5;
+
+/** Years a Roth conversion must season before it's penalty-free to withdraw
+ *  (each conversion has its own clock — IRS ordering rules, ROTH_CONVERSION_SEASONING_YEARS
+ *  is applied per the user's tracked latest-conversion-year, conservatively). */
+export const ROTH_CONVERSION_SEASONING_YEARS = 5;
+
+// ---------------------------------------------------------------------------
 // Withdrawal Strategy Defaults
 // ---------------------------------------------------------------------------
 
