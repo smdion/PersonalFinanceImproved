@@ -25,7 +25,6 @@ import {
   getLatestSnapshot,
   computeBudgetAnnualTotal,
   requireLimit,
-  accountDisplayName,
   aggregateContributionsByCategory,
   applyContribProfileRow,
   loadAndApplyContribProfile,
@@ -39,12 +38,7 @@ import {
   resolveLinkedBudgetItemAmounts,
 } from "@/server/helpers";
 import type { SalaryEntryMap, SalaryProfileEntry } from "@/server/helpers";
-import type {
-  TaxBuckets,
-  AccountBalances,
-  AccountCategory,
-  ProfileSwitch,
-} from "@/lib/calculators/types";
+import type { AccountCategory, ProfileSwitch } from "@/lib/calculators/types";
 import {
   getAllCategories,
   categoriesWithIrsLimit,
@@ -52,14 +46,6 @@ import {
   getLimitGroup,
   getAccountTypeConfig,
   getDefaultAccumulationOrder,
-  zeroBalance,
-  addTraditional,
-  addRoth,
-  addBalance,
-  addBasis,
-  PARENT_CATEGORY_VALUES,
-  isTaxFreeBucket,
-  tracksCostBasis,
 } from "@/lib/config/account-types";
 import { roundToCents, sumBy, safeDivide } from "@/lib/utils/math";
 import {
@@ -72,12 +58,9 @@ import {
 } from "@/lib/calculators/engine";
 import type { db as _db } from "@/lib/db";
 import { filterActiveJobs } from "@/lib/pure/profiles";
+import { computeTaxBucketBreakdown } from "@/lib/pure/tax-buckets";
 
 type Db = typeof _db;
-
-/** parentCategory values that the projection engine should include in starting balances.
- *  Pages filter engine output by parentCategory (Retirement page → 'Retirement', Brokerage → 'Portfolio'). */
-const ENGINE_CATEGORIES = new Set<string>(PARENT_CATEGORY_VALUES);
 
 /**
  * Fetch all DB tables needed by the contribution engine / Monte Carlo projection.
@@ -438,176 +421,24 @@ export async function buildEnginePayload(
     (js) => js.totalCompFullFormula,
   );
 
-  // Portfolio by tax bucket + per-account balances (combined for engine)
-  const portfolioByTaxType: TaxBuckets = {
-    preTax: 0,
-    taxFree: 0,
-    hsa: 0,
-    afterTax: 0,
-    afterTaxBasis: 0,
-  };
-  // Per-parentCategory tax buckets (for per-page display)
-  const portfolioByTaxTypeByParentCat: Record<string, TaxBuckets> = {};
-  const portfolioByAccount: AccountBalances = Object.fromEntries(
-    getAllCategories().map((cat) => [cat, zeroBalance(cat)]),
-  ) as AccountBalances;
-  // Build owner-name lookup from people
+  // Portfolio by tax bucket + per-account balances (combined for engine).
+  // Shared with the Tax Buckets analysis tool — see src/lib/pure/tax-buckets.ts.
+  const {
+    portfolioByTaxType,
+    portfolioByTaxTypeByParentCat,
+    portfolioByAccount,
+    portfolioTotal,
+    accountOwnersByCategory,
+    ownershipByPerson,
+    accountBreakdownByCategory,
+  } = computeTaxBucketBreakdown(snapshotData, people, perfAccounts);
   const personNameById = new Map(people.map((p) => [p.id, p.name]));
-  // Track which people own accounts in each waterfall category + per-person balances
-  const accountOwnerSets: Record<string, Set<string>> = {};
-  const balanceByPersonByCategory: Record<string, Record<string, number>> = {};
-  // Per-category account breakdown with display names (for tooltips)
-  const accountBreakdownByCategory: Record<
-    string,
-    {
-      name: string;
-      amount: number;
-      taxType: string;
-      ownerName?: string;
-      ownerPersonId?: number;
-      accountType?: string;
-      parentCategory?: string;
-    }[]
-  > = {};
-  if (snapshotData) {
-    // Build parent account_type lookup: for sub-type rows (Rollover, Employer Match, etc.),
-    // the effective category should inherit from the parent performance account's primary type.
-    // Group by performance_account_id and find the primary type (rows without subType).
-    const parentTypeByPerfId = new Map<number, string>();
-    for (const a of snapshotData.accounts) {
-      if (a.performanceAccountId != null && !a.subType) {
-        // Primary row (no subType) — its accountType is the parent type
-        parentTypeByPerfId.set(a.performanceAccountId, a.accountType);
-      }
-    }
-
-    for (const a of snapshotData.accounts) {
-      // Only include engine-relevant categories (Retirement + Portfolio) in starting balances.
-      // Pages filter engine output by parentCategory to show the correct subset.
-      if (a.parentCategory && !ENGINE_CATEGORIES.has(a.parentCategory))
-        continue;
-      const ownerName = a.ownerPersonId
-        ? personNameById.get(a.ownerPersonId)
-        : undefined;
-      const displayName = accountDisplayName(a, ownerName);
-      // For sub-type rows, inherit the parent performance account's primary account_type
-      const cat =
-        a.subType && a.performanceAccountId != null
-          ? (parentTypeByPerfId.get(a.performanceAccountId) ?? a.accountType)
-          : a.accountType;
-      const key = a.taxType as "preTax" | "taxFree" | "hsa" | "afterTax";
-      portfolioByTaxType[key] += a.amount;
-      // Also accumulate per-parentCategory for per-page display
-      const pCat = a.parentCategory ?? "Retirement";
-      if (!portfolioByTaxTypeByParentCat[pCat]) {
-        portfolioByTaxTypeByParentCat[pCat] = {
-          preTax: 0,
-          taxFree: 0,
-          hsa: 0,
-          afterTax: 0,
-          afterTaxBasis: 0,
-        };
-      }
-      portfolioByTaxTypeByParentCat[pCat][key] += a.amount;
-      const catAsBal = cat as AccountCategory;
-      const bal = portfolioByAccount[catAsBal];
-      if (bal.structure === "roth_traditional") {
-        if (isTaxFreeBucket(a.taxType)) addRoth(bal, a.amount);
-        else addTraditional(bal, a.amount);
-      } else if (bal.structure === "single_bucket") {
-        addBalance(bal, a.amount);
-      } else {
-        addBalance(bal, a.amount);
-      }
-      // Track owner + per-person balance + account breakdown
-      if (ownerName) {
-        if (!accountOwnerSets[cat]) accountOwnerSets[cat] = new Set();
-        accountOwnerSets[cat].add(ownerName);
-        if (!balanceByPersonByCategory[ownerName])
-          balanceByPersonByCategory[ownerName] = {};
-        balanceByPersonByCategory[ownerName][cat] =
-          (balanceByPersonByCategory[ownerName][cat] ?? 0) + a.amount;
-      } else {
-        // Joint account — attribute to all people equally for ownership fractions
-        if (!accountOwnerSets[cat]) accountOwnerSets[cat] = new Set();
-        accountOwnerSets[cat].add("Joint");
-        for (const pName of Array.from(personNameById.values())) {
-          if (!balanceByPersonByCategory[pName])
-            balanceByPersonByCategory[pName] = {};
-          balanceByPersonByCategory[pName][cat] =
-            (balanceByPersonByCategory[pName][cat] ?? 0) +
-            a.amount / personNameById.size;
-        }
-      }
-      if (!accountBreakdownByCategory[cat])
-        accountBreakdownByCategory[cat] = [];
-      const existing = accountBreakdownByCategory[cat].find(
-        (e) => e.name === displayName && e.taxType === a.taxType,
-      );
-      if (existing) {
-        existing.amount += a.amount;
-      } else {
-        accountBreakdownByCategory[cat].push({
-          name: displayName,
-          amount: a.amount,
-          taxType: a.taxType,
-          ownerName,
-          ownerPersonId: a.ownerPersonId ?? undefined,
-          accountType: cat,
-          parentCategory: a.parentCategory ?? undefined,
-        });
-      }
-    }
-  }
-  const accountOwnersByCategory: Record<string, string> = {};
-  for (const [cat, names] of Object.entries(accountOwnerSets)) {
-    accountOwnersByCategory[cat] = Array.from(names).join(" + ");
-  }
-  // Per-person ownership fraction by category (based on actual portfolio $)
-  const totalByCategory: Record<string, number> = {};
-  for (const personBals of Object.values(balanceByPersonByCategory)) {
-    for (const [cat, amt] of Object.entries(personBals)) {
-      totalByCategory[cat] = (totalByCategory[cat] ?? 0) + amt;
-    }
-  }
-  const portfolioTotal = sumBy(Object.values(totalByCategory), (v) => v);
-  const ownershipByPerson: Record<string, Record<string, number>> = {};
-  for (const [name, personBals] of Object.entries(balanceByPersonByCategory)) {
-    ownershipByPerson[name] = {};
-    let personTotal = 0;
-    for (const [cat, amt] of Object.entries(personBals)) {
-      const catTotal = totalByCategory[cat] ?? 1;
-      ownershipByPerson[name][cat] = safeDivide(amt, catTotal, 0);
-      personTotal += amt;
-    }
-    ownershipByPerson[name]._overall = safeDivide(
-      personTotal,
-      portfolioTotal,
-      0,
-    );
-  }
-  // Cost basis from performance_accounts (per-account, user-maintained alongside portfolio updates)
   const settingsMap = new Map(
     allAppSettings.map((s: { key: string; value: unknown }) => [
       s.key,
       s.value,
     ]),
   );
-  const costBasisVal = sumBy(
-    perfAccounts.filter((p) => p.isActive && tracksCostBasis(p.accountType)),
-    (p) => toNumber(String(p.costBasis ?? "0")),
-  );
-  portfolioByTaxType.afterTaxBasis = costBasisVal;
-  // Distribute cost basis to per-parentCategory buckets proportionally by afterTax balance
-  const totalAfterTax = portfolioByTaxType.afterTax;
-  for (const pCat of Object.keys(portfolioByTaxTypeByParentCat)) {
-    const catBucket = portfolioByTaxTypeByParentCat[pCat]!;
-    catBucket.afterTaxBasis =
-      totalAfterTax > 0
-        ? roundToCents(costBasisVal * (catBucket.afterTax / totalAfterTax))
-        : 0;
-  }
-  addBasis(portfolioByAccount.brokerage, costBasisVal);
   const rampRaw = settingsMap.get("brokerage_contribution_increase");
   const brokerageContributionRamp =
     rampRaw != null && rampRaw !== "null" && rampRaw !== '"0"'
