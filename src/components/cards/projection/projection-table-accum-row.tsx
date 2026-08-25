@@ -245,6 +245,23 @@ export function AccumulationRow({
               style: "meta",
             });
           }
+          if (!personId && yr.projectedSalaryByPerson) {
+            const pp = people ?? enginePeople;
+            const breakdown = (pp ?? [])
+              .filter((p) => yr.projectedSalaryByPerson?.[p.id])
+              .map((p) => ({
+                name: p.name,
+                salary: yr.projectedSalaryByPerson![p.id]!,
+              }));
+            if (breakdown.length >= 2) {
+              lines.push(
+                ...breakdown.map((b) => ({
+                  text: `${b.name}: ${formatCurrency(deflate(b.salary, yr.year))}`,
+                  style: "meta" as const,
+                })),
+              );
+            }
+          }
           return renderTooltip({
             kind: "info",
             lines,
