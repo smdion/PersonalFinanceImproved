@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.7
 
+## [0.7.8] - Unreleased
+
+### Added
+
+- **The Household Income dashboard tile now shows an estimated MAGI (Modified Adjusted Gross Income)**, alongside net income and per-period take-home — computed from current salary minus pre-tax deductions, and salary-profile aware (respects whichever Salary/Contribution Profile is currently active, same as the rest of the tile). A tooltip explains it's an estimate: Ledgr doesn't track above-the-line deductions made outside payroll (e.g. a traditional IRA contribution) or MAGI add-backs (tax-exempt interest, foreign earned income exclusion).
+
 ## [0.7.7] - 2026-08-24
 
 ### Added

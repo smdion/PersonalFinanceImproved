@@ -3,6 +3,7 @@
 import React, { memo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
+import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency } from "@/lib/utils/format";
 import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { useScenario } from "@/lib/context/scenario-context";
@@ -173,6 +174,18 @@ function HouseholdIncomeCardImpl() {
             {people.map((d) => formatCurrency(d.paycheck!.netPay)).join(" /")}
           </span>
         </div>
+        {data?.householdTax && (
+          <div className="flex justify-between">
+            <span className="inline-flex items-center">
+              MAGI (est.)
+              <HelpTip
+                text="Modified Adjusted Gross Income, estimated from current salary minus pre-tax deductions (401k, HSA, health insurance). Doesn't account for above-the-line deductions made outside payroll (e.g. a traditional IRA contribution) or MAGI add-backs (tax-exempt interest, foreign earned income exclusion) — close enough for most working households, but treat it as a ballpark for things like Roth IRA contribution limits or ACA eligibility."
+                maxWidth={280}
+              />
+            </span>
+            <span>{formatCurrency(data.householdTax.agi)}</span>
+          </div>
+        )}
       </div>
     </Card>
   );

@@ -28,6 +28,11 @@ describe("calculateTax", () => {
     };
     const result = calculateTax(input);
 
+    it("computes AGI", () => {
+      // AGI = 230000 - 31276 = 198724
+      expect(result.agi).toBeCloseTo(198724, 0);
+    });
+
     it("computes taxable income after standard deduction", () => {
       // AGI = 230000 - 31276 = 198724
       // Taxable = 198724 - 30000 = 168724
