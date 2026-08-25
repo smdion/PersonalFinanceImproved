@@ -6,7 +6,11 @@
  * per RULES.md's Pure Business Logic Boundary.
  */
 import type { AccountCategory } from "@/lib/calculators/types";
-import { getAccountTypeConfig } from "@/lib/config/account-types";
+import {
+  getAccountTypeConfig,
+  isTaxFreeBucket,
+  tracksCostBasis,
+} from "@/lib/config/account-types";
 import type { TaxBucketBreakdown } from "@/lib/pure/tax-buckets";
 import {
   resolveSeparationYear,
@@ -126,8 +130,10 @@ export function computeTaxBucketAnalysis(input: {
     const perfAccount = perfAccountById.get(performanceAccountId);
     const person = peopleById.get(ownerPersonId);
     const targetAge = targetRetirementAgeByPerson[ownerPersonId] ?? 65;
+    // getUTCFullYear() — separationDate is a date-only column; see the same
+    // note in early-access.ts's resolveSeparationYear.
     const explicitYear = perfAccount?.separationDate
-      ? perfAccount.separationDate.getFullYear()
+      ? perfAccount.separationDate.getUTCFullYear()
       : null;
     const linkedJobs = (jobLinksByAccount.get(performanceAccountId) ?? []).map(
       (j) => ({ endDate: j.endDate, isSpeculative: j.isSpeculative }),
@@ -194,15 +200,9 @@ export function computeTaxBucketAnalysis(input: {
     let slices: EarlyAccessSlice[] = [];
     let ruleOf55: RuleOf55Status | null = null;
 
-    if (category === "brokerage") {
-      slices = computeBrokerageAccess(entry.amount, perfAccount.costBasis);
-    } else if (category === "hsa") {
-      // v1: static note only, no per-bucket boolean (no medical-spend
-      // tracking to key off).
-      slices = [];
-    } else if (cfg.rothOrderingRules === "basis_first") {
+    if (cfg.rothOrderingRules === "basis_first") {
       // Roth IRA
-      if (entry.taxType === "taxFree") {
+      if (isTaxFreeBucket(entry.taxType)) {
         slices = computeRothIraAccess({
           balance: entry.amount,
           currentAge,
@@ -225,7 +225,7 @@ export function computeTaxBucketAnalysis(input: {
         entry.ownerPersonId,
       );
       const eligible = ruleOf55.eligible ?? false;
-      if (entry.taxType === "taxFree") {
+      if (isTaxFreeBucket(entry.taxType)) {
         const enteredBasis =
           (rothBasis?.contributionBasis ?? 0) +
           (rothBasis?.conversionBasis ?? 0);
@@ -242,7 +242,13 @@ export function computeTaxBucketAnalysis(input: {
           eligible,
         );
       }
+    } else if (tracksCostBasis(category)) {
+      // Brokerage — the only other category with a basis concept.
+      slices = computeBrokerageAccess(entry.amount, perfAccount.costBasis);
     }
+    // Else: hsa (rothOrderingRules null, doesn't track cost basis) — v1
+    // shows a static note only, no per-bucket boolean (no medical-spend
+    // tracking to key off), so slices stays [].
 
     return {
       performanceAccountId: entry.performanceAccountId,

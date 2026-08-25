@@ -50,8 +50,11 @@ export function resolveSeparationYear(input: {
     return { year: null, source: "unknown" };
   }
   const projectedYear = input.birthYear + input.targetRetirementAge;
+  // getUTCFullYear(), not getFullYear() — endDate is a date-only DB column
+  // (no real time-of-day), parsed as UTC midnight; reading it back in local
+  // time can shift Jan-1-adjacent dates into the wrong year.
   const candidateYears = candidateJobs.map((j) =>
-    j.endDate ? j.endDate.getFullYear() : projectedYear,
+    j.endDate ? j.endDate.getUTCFullYear() : projectedYear,
   );
   return { year: Math.max(...candidateYears), source: "derived" };
 }
