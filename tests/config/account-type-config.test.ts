@@ -28,6 +28,7 @@ import {
   DEFAULT_WITHDRAWAL_SPLITS,
   getDisplayConfig,
   isDiscountBasisEmployerContrib,
+  tracksRothBasis,
   type AccountCategory,
   type AccountBalance,
 } from "@/lib/config/account-types";
@@ -433,5 +434,35 @@ describe("display labels", () => {
     expect(displayLabel(TAX_TREATMENT_LABELS, "unknown_type")).toBe(
       "unknown_type",
     );
+  });
+});
+
+describe("Roth ordering rules / Rule of 55 config (Tax Buckets tool)", () => {
+  it("401k and 403b use pro-rata ordering and are Rule-of-55 eligible", () => {
+    expect(ACCOUNT_TYPE_CONFIG["401k"].rothOrderingRules).toBe("pro_rata");
+    expect(ACCOUNT_TYPE_CONFIG["401k"].ruleOf55Eligible).toBe(true);
+    expect(ACCOUNT_TYPE_CONFIG["403b"].rothOrderingRules).toBe("pro_rata");
+    expect(ACCOUNT_TYPE_CONFIG["403b"].ruleOf55Eligible).toBe(true);
+  });
+
+  it("ira uses basis-first ordering and has no Rule-of-55 equivalent", () => {
+    expect(ACCOUNT_TYPE_CONFIG.ira.rothOrderingRules).toBe("basis_first");
+    expect(ACCOUNT_TYPE_CONFIG.ira.ruleOf55Eligible).toBe(false);
+  });
+
+  it("hsa and brokerage have no Roth ordering concept and no Rule of 55", () => {
+    expect(ACCOUNT_TYPE_CONFIG.hsa.rothOrderingRules).toBeNull();
+    expect(ACCOUNT_TYPE_CONFIG.hsa.ruleOf55Eligible).toBe(false);
+    expect(ACCOUNT_TYPE_CONFIG.brokerage.rothOrderingRules).toBeNull();
+    expect(ACCOUNT_TYPE_CONFIG.brokerage.ruleOf55Eligible).toBe(false);
+  });
+
+  it("tracksRothBasis mirrors tracksCostBasis for the roth_traditional structure", () => {
+    expect(tracksRothBasis("401k")).toBe(true);
+    expect(tracksRothBasis("403b")).toBe(true);
+    expect(tracksRothBasis("ira")).toBe(true);
+    expect(tracksRothBasis("hsa")).toBe(false);
+    expect(tracksRothBasis("brokerage")).toBe(false);
+    expect(tracksRothBasis("not_a_real_category")).toBe(false);
   });
 });

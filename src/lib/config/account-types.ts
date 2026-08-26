@@ -88,6 +88,8 @@ export const ACCOUNT_TYPE_CONFIG = {
     withdrawalTaxType: "income",
     taxBucketKey: "preTax",
     supportedTaxTreatments: ["pre_tax", "tax_free"],
+    rothOrderingRules: "pro_rata",
+    ruleOf55Eligible: true,
     hasIrsLimit: true,
     irsLimitGroup: "401k",
     irsLimitKeys: {
@@ -132,6 +134,8 @@ export const ACCOUNT_TYPE_CONFIG = {
     withdrawalTaxType: "income",
     taxBucketKey: "preTax",
     supportedTaxTreatments: ["pre_tax", "tax_free"],
+    rothOrderingRules: "pro_rata",
+    ruleOf55Eligible: true,
     hasIrsLimit: true,
     irsLimitGroup: "401k", // shares limit with 401k
     irsLimitKeys: {
@@ -176,6 +180,8 @@ export const ACCOUNT_TYPE_CONFIG = {
     withdrawalTaxType: "income",
     taxBucketKey: "preTax",
     supportedTaxTreatments: ["pre_tax", "tax_free"],
+    rothOrderingRules: "basis_first",
+    ruleOf55Eligible: false,
     hasIrsLimit: true,
     irsLimitGroup: "ira",
     irsLimitKeys: {
@@ -219,6 +225,8 @@ export const ACCOUNT_TYPE_CONFIG = {
     withdrawalTaxType: "none",
     taxBucketKey: "hsa",
     supportedTaxTreatments: ["hsa"],
+    rothOrderingRules: null,
+    ruleOf55Eligible: false,
     hasIrsLimit: true,
     irsLimitGroup: "hsa",
     irsLimitKeys: {
@@ -270,6 +278,8 @@ export const ACCOUNT_TYPE_CONFIG = {
     withdrawalTaxType: "capital_gains",
     taxBucketKey: "afterTax",
     supportedTaxTreatments: ["after_tax"],
+    rothOrderingRules: null,
+    ruleOf55Eligible: false,
     hasIrsLimit: false,
     irsLimitGroup: null,
     irsLimitKeys: null,
@@ -536,6 +546,13 @@ export function isInLimit401kGroup(category: string): boolean {
 export function tracksCostBasis(category: string): boolean {
   const cfg = ACCOUNT_TYPE_CONFIG[category as AccountCategory];
   return cfg?.balanceStructure === "basis_tracking";
+}
+
+/** Check if a category's Roth balance can carry a basis entry (401k/403b/ira —
+ *  anything with a Traditional/Roth split). Mirrors tracksCostBasis(). */
+export function tracksRothBasis(category: string): boolean {
+  const cfg = ACCOUNT_TYPE_CONFIG[category as AccountCategory];
+  return cfg?.balanceStructure === "roth_traditional";
 }
 
 /** Valid parentCategory values — shared by Zod schemas, DB checks, and UI dropdowns. */

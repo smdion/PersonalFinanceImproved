@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**64 tables.**
+**65 tables.**
 
 ## Mermaid diagram
 
@@ -57,6 +57,9 @@ erDiagram
     int id PK
   }
   performance_accounts {
+    int id PK
+  }
+  roth_basis {
     int id PK
   }
   portfolio_snapshots {
@@ -215,6 +218,8 @@ erDiagram
   self_loans }o--|| savings_goals : references
   self_loans }o--|| savings_goals : references
   performance_accounts }o--|| people : references
+  roth_basis }o--|| performance_accounts : references
+  roth_basis }o--|| people : references
   portfolio_accounts }o--|| portfolio_snapshots : references
   portfolio_accounts }o--|| people : references
   account_performance }o--|| people : references
@@ -292,6 +297,7 @@ erDiagram
 - **retirement_scenarios**
 - **retirement_settings** → people
 - **return_rate_table**
+- **roth_basis** → performance_accounts, people
 - **salary_profiles**
 - **savings_allocation_overrides** → savings_goals
 - **savings_goal_profile_allocations** → savings_goals, budget_profiles

@@ -24,6 +24,7 @@ import { demoRouter } from "./demo";
 import { dataBrowserRouter } from "./data-browser";
 import { testingRouter } from "./testing";
 import { analyticsRouter } from "./analytics";
+import { taxBucketsRouter } from "./tax-buckets";
 
 export const appRouter = createTRPCRouter({
   settings: settingsRouter,
@@ -50,6 +51,7 @@ export const appRouter = createTRPCRouter({
   dataBrowser: dataBrowserRouter,
   testing: testingRouter,
   analytics: analyticsRouter,
+  taxBuckets: taxBucketsRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -650,6 +650,12 @@ export const performanceAccounts = pgTable(
     costBasis: decimal("cost_basis", { precision: 14, scale: 2 })
       .notNull()
       .default("0"),
+    /** Date the account owner separated from the employer funding this plan
+     *  (401k/403b only) — durable, user-set source of truth for Rule of 55
+     *  eligibility (Tax Buckets tool). Null = not separated yet / not
+     *  applicable / not entered; the UI derives a default suggestion from
+     *  linked jobs but never writes it here automatically. */
+    separationDate: date("separation_date"),
     parentCategory: text("parent_category").notNull(),
     isActive: boolean("is_active").notNull().default(true),
     displayOrder: integer("display_order").notNull().default(0),
@@ -676,6 +682,69 @@ export const performanceAccounts = pgTable(
       "performance_accounts_parent_cat_check",
       sql`parent_category IN ('Retirement', 'Portfolio')`,
     ),
+  ],
+);
+
+/** Manually-tracked Roth basis for the Tax Buckets analysis tool — how much
+ *  of a Roth (taxFree) balance is contribution/conversion basis (accessible
+ *  penalty-free under IRS ordering rules, for a Roth IRA) vs. growth. Keyed
+ *  by (performanceAccountId, ownerPersonId), not a single column on
+ *  performanceAccounts, because one account can carry two people's balances
+ *  (e.g. a jointly-labeled Roth IRA with separate per-owner amounts). */
+/** Manually-tracked Roth basis for the Tax Buckets analysis tool, year-scoped
+ *  to mirror accountPerformance/annualPerformance's live-then-finalized
+ *  lifecycle: one row per (account, owner, year), mutable while current,
+ *  locked by finalizeRothBasisForYear() when performance.finalizeYear runs. */
+export const rothBasis = pgTable(
+  "roth_basis",
+  {
+    id: serial("id").primaryKey(),
+    performanceAccountId: integer("performance_account_id")
+      .notNull()
+      .references(() => performanceAccounts.id, { onDelete: "cascade" }),
+    ownerPersonId: integer("owner_person_id")
+      .notNull()
+      .references(() => people.id, { onDelete: "restrict" }),
+    year: integer("year").notNull(),
+    /** Contributions — always penalty-free and tax-free, no seasoning clock. */
+    contributionBasis: decimal("contribution_basis", {
+      precision: 14,
+      scale: 2,
+    })
+      .notNull()
+      .default("0"),
+    /** Roth conversions — always tax-free, but penalty-free only once
+     *  seasoned (see latestConversionYear). */
+    conversionBasis: decimal("conversion_basis", { precision: 14, scale: 2 })
+      .notNull()
+      .default("0"),
+    /** Most recent tax year a conversion was made, if conversionBasis > 0.
+     *  Gating the whole conversionBasis figure on the LATEST (not earliest)
+     *  tracked conversion year is deliberately conservative: this is a
+     *  pooled total across potentially several years of conversions, so
+     *  using the latest year only ever understates penalty-free access,
+     *  never overstates it. Null if conversionBasis = 0. */
+    latestConversionYear: integer("latest_conversion_year"),
+    isFinalized: boolean("is_finalized").notNull().default(false),
+    /** True for a row auto-seeded by finalizeRothBasisForYear (carried
+     *  forward from the prior year, not yet reviewed) vs. one the user
+     *  actually entered/confirmed. Basis normally grows each year, so an
+     *  unreviewed seeded row left as-is would silently understate
+     *  accessible funds — cleared the moment updateRothBasis touches it. */
+    isSeeded: boolean("is_seeded").notNull().default(false),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    notes: text("notes"),
+  },
+  (table) => [
+    uniqueIndex("roth_basis_account_owner_year_idx").on(
+      table.performanceAccountId,
+      table.ownerPersonId,
+      table.year,
+    ),
+    index("roth_basis_owner_person_id_idx").on(table.ownerPersonId),
+    index("roth_basis_year_idx").on(table.year),
   ],
 );
 
