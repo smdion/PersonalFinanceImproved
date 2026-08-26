@@ -138,7 +138,6 @@ export function resolveDecumulationConfig(
     withdrawalAccountCaps: buildCategoryRecord(() => null),
     withdrawalTaxTypeCaps: { traditional: null, roth: null },
     lumpSums: [],
-    preferPenaltyFreeSources: defaults.preferPenaltyFreeSources ?? true,
     avoidPenalizedWithdrawals: defaults.avoidPenalizedWithdrawals ?? true,
   };
 
@@ -163,7 +162,6 @@ export function resolveDecumulationConfig(
         withdrawalAccountCaps: buildCategoryRecord(() => null),
         withdrawalTaxTypeCaps: { traditional: null, roth: null },
         lumpSums: [],
-        preferPenaltyFreeSources: defaults.preferPenaltyFreeSources ?? true,
         avoidPenalizedWithdrawals: defaults.avoidPenalizedWithdrawals ?? true,
       };
       continue;
@@ -211,8 +209,6 @@ export function resolveDecumulationConfig(
     }
     if (o.rothConversionTarget !== undefined)
       config.rothConversionTarget = o.rothConversionTarget;
-    if (o.preferPenaltyFreeSources !== undefined)
-      config.preferPenaltyFreeSources = o.preferPenaltyFreeSources;
     if (o.avoidPenalizedWithdrawals !== undefined)
       config.avoidPenalizedWithdrawals = o.avoidPenalizedWithdrawals;
   }

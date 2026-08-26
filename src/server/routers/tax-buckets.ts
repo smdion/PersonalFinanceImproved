@@ -18,6 +18,7 @@ import {
 import * as schema from "@/lib/db/schema";
 import { getLatestSnapshot } from "@/server/helpers/snapshot";
 import { toNumber } from "@/server/helpers/transforms";
+import { zDecimal } from "@/server/routers/settings/_shared";
 import { computeTaxBucketBreakdown } from "@/lib/pure/tax-buckets";
 import { computeTaxBucketAnalysis } from "@/lib/pure/tax-bucket-analysis";
 import {
@@ -29,7 +30,7 @@ import type { AccountCategory } from "@/lib/calculators/types";
 export const taxBucketsRouter = createTRPCRouter({
   /** Real current-state tax-bucket breakdown from the latest snapshot, with
    *  Rule of 55 / Roth-basis-driven penalty-free/tax-free flags per account. */
-  getBreakdown: protectedProcedure.query(async ({ ctx }) => {
+  computeBreakdown: protectedProcedure.query(async ({ ctx }) => {
     const [people, perfAccounts, snapshotData, rothBasisRows, contribLinks] =
       await Promise.all([
         ctx.db.select().from(schema.people),
@@ -100,7 +101,7 @@ export const taxBucketsRouter = createTRPCRouter({
         ownerPersonId: p.ownerPersonId,
         isActive: p.isActive,
         separationDate: p.separationDate ? new Date(p.separationDate) : null,
-        costBasis: Number(p.costBasis ?? "0"),
+        costBasis: toNumber(p.costBasis),
         accountLabel: p.accountLabel,
         displayName: p.displayName,
         institution: p.institution,
@@ -140,7 +141,7 @@ export const taxBucketsRouter = createTRPCRouter({
 
   /** Upsert Roth contribution/conversion basis for one (account, owner)
    *  pair. Without an explicit `year`, targets that pair's current row
-   *  (the same selection getBreakdown uses) — no year-boundary awareness
+   *  (the same selection computeBreakdown uses) — no year-boundary awareness
    *  needed from the caller. An explicit `year` lets the caller
    *  deliberately correct an older, already-finalized year (no hard
    *  reject — matches how updateAccount already edits finalized
@@ -153,8 +154,8 @@ export const taxBucketsRouter = createTRPCRouter({
         performanceAccountId: z.number().int(),
         ownerPersonId: z.number().int(),
         year: z.number().int().optional(),
-        contributionBasis: z.string(),
-        conversionBasis: z.string(),
+        contributionBasis: zDecimal,
+        conversionBasis: zDecimal,
         latestConversionYear: z.number().int().nullable(),
         notes: z.string().nullable().optional(),
       }),
@@ -222,7 +223,7 @@ export const taxBucketsRouter = createTRPCRouter({
 
   /** Update every (account, owner) Roth basis entry in one screen/save,
    *  mirroring performance.batchUpdateAccounts — each entry targets its
-   *  own already-known current year (from getBreakdown's rothBasisMeta),
+   *  own already-known current year (from computeBreakdown's rothBasisMeta),
    *  so no per-row year resolution is needed here. */
   batchUpdateRothBasis: performanceProcedure
     .input(
@@ -232,8 +233,8 @@ export const taxBucketsRouter = createTRPCRouter({
             performanceAccountId: z.number().int(),
             ownerPersonId: z.number().int(),
             year: z.number().int(),
-            contributionBasis: z.string(),
-            conversionBasis: z.string(),
+            contributionBasis: zDecimal,
+            conversionBasis: zDecimal,
             latestConversionYear: z.number().int().nullable(),
           }),
         ),

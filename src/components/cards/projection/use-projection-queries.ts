@@ -499,6 +499,7 @@ export function useProjectionQueries(
     coastFireMcQuery,
     coastFireMcResult,
     coastFireTodayMcResult,
+    activeCoastFireMcResult,
     autoloadEnabled,
     runSimulation,
     mcAutoloadEnabled,

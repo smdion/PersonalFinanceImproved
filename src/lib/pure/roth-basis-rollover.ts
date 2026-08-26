@@ -5,7 +5,7 @@
  * finalized pattern accountPerformance/annualPerformance already use.
  */
 
-export type RothBasisRow = {
+export type RothBasisRollupRow = {
   id: number;
   performanceAccountId: number;
   ownerPersonId: number;
@@ -28,8 +28,8 @@ function pairKey(performanceAccountId: number, ownerPersonId: number): string {
  * locked-in basis figure back to "nothing entered."
  */
 export function selectCurrentRothBasisRow(
-  rowsForPair: RothBasisRow[],
-): RothBasisRow | null {
+  rowsForPair: RothBasisRollupRow[],
+): RothBasisRollupRow | null {
   if (rowsForPair.length === 0) return null;
   const nonFinalized = rowsForPair.filter((r) => !r.isFinalized);
   const pool = nonFinalized.length > 0 ? nonFinalized : rowsForPair;
@@ -37,21 +37,21 @@ export function selectCurrentRothBasisRow(
 }
 
 /**
- * Build a Map<"accountId|ownerId", RothBasisRow> of the current row per
+ * Build a Map<"accountId|ownerId", RothBasisRollupRow> of the current row per
  * pair, from the full flat row history across all accounts/owners.
  * Selection is per-pair — different pairs can have different histories.
  */
 export function buildCurrentRothBasisMap(
-  allRows: RothBasisRow[],
-): Map<string, RothBasisRow> {
-  const byPair = new Map<string, RothBasisRow[]>();
+  allRows: RothBasisRollupRow[],
+): Map<string, RothBasisRollupRow> {
+  const byPair = new Map<string, RothBasisRollupRow[]>();
   for (const r of allRows) {
     const key = pairKey(r.performanceAccountId, r.ownerPersonId);
     const arr = byPair.get(key) ?? [];
     arr.push(r);
     byPair.set(key, arr);
   }
-  const result = new Map<string, RothBasisRow>();
+  const result = new Map<string, RothBasisRollupRow>();
   for (const [key, rows] of byPair) {
     const current = selectCurrentRothBasisRow(rows);
     if (current) result.set(key, current);
@@ -80,7 +80,7 @@ export type SeedRothBasisRow = {
  * this year was finalized) is skipped — never overwritten.
  */
 export function computeRothBasisRollover(
-  rowsAtYear: RothBasisRow[],
+  rowsAtYear: RothBasisRollupRow[],
   existingNextYearPairs: Set<string>,
 ): {
   idsToFinalize: number[];

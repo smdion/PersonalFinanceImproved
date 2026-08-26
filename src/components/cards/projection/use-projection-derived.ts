@@ -56,18 +56,8 @@ export function useProjectionDerived(
     engineQuery,
     contribProfilesQuery,
     salaryProfilesQuery,
-    coastFireMcResult,
-    coastFireTodayMcResult,
+    activeCoastFireMcResult,
   } = queries;
-
-  // Picks between the found/passing-age result (scenarioView "coastFire")
-  // and the stop-at-current-age result (scenarioView "coastFireToday") —
-  // see use-projection-queries.ts's identically-named constant for why
-  // these are two different fields off the same underlying query.
-  const activeCoastFireMcResult =
-    scenarioView === "coastFireToday"
-      ? coastFireTodayMcResult
-      : coastFireMcResult;
 
   const {
     parentCategoryFilter,

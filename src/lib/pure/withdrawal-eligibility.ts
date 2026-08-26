@@ -44,9 +44,10 @@
  */
 import type { AccountCategory } from "@/lib/config/account-types";
 import {
-  getAccountTypeConfig,
   isTaxFreeBucket,
   isHsaCategory,
+  isIraCategory,
+  isRuleOf55EligibleCategory,
   getAllCategories,
 } from "@/lib/config/account-types";
 import {
@@ -55,6 +56,7 @@ import {
   computeEmployerPlanRothAccess,
   computeRothIraAccess,
   computeHsaAccess,
+  penaltyFreePrefixAmount,
   type EarlyAccessSlice,
 } from "@/lib/pure/early-access";
 import { projectRuleOf55 } from "@/lib/pure/tax-bucket-projection";
@@ -64,6 +66,7 @@ import type {
   RothBasisMeta,
 } from "@/lib/pure/tax-bucket-analysis";
 import { formatCurrency } from "@/lib/utils/format";
+import { PENALTY_FREE_AGE } from "@/lib/constants";
 import { roundToCents } from "@/lib/utils/math";
 import type { RothBasisState } from "@/lib/pure/roth-basis-tracking";
 
@@ -174,30 +177,6 @@ function allSlicesLocked(slices: EarlyAccessSlice[]): boolean {
 }
 
 /**
- * Penalty-free capacity = the sum of the LEADING, CONTIGUOUSLY penalty-free
- * PREFIX of an account's slices, in the order its own distribution
- * ordering rules release them (DESIGN-DECISION-v0.7.8-
- * penalty-hard-exclusion.md § Q1). NOT the sum of every penalty-free slice
- * regardless of position: a Roth IRA's ordering forces dollars out
- * contribution → conversion → growth, and an unseasoned conversion slice
- * (`penaltyFree: false`) blocks access to any penalty-free slice behind it
- * even if one existed. Today the prefix rule and a naive "sum every
- * penalty-free slice" rule happen to coincide for every account shape this
- * engine models (a pre-59½ owner always has penalized growth behind any
- * unseasoned conversion anyway) — the prefix rule is implemented regardless
- * of that coincidence, because summing would be wrong the moment a shape
- * existed where it mattered.
- */
-function penaltyFreePrefixAmount(slices: EarlyAccessSlice[]): number {
-  let sum = 0;
-  for (const s of slices) {
-    if (!s.penaltyFree) break;
-    sum += s.amount;
-  }
-  return roundToCents(sum);
-}
-
-/**
  * Computes per-account, per-dollar penalty exposure for one projected year.
  *
  * `indBal` supplies each account's *current* projected balance (not its
@@ -237,7 +216,6 @@ export function computeWithdrawalEligibility(input: {
   for (const ia of indAccts) {
     const key = indKey(ia);
     const balance = indBal.get(key) ?? 0;
-    const cfg = getAccountTypeConfig(ia.category);
     const birthYear = ia.ownerBirthYear;
 
     let reason = "No individual eligibility rule (joint account)";
@@ -261,7 +239,7 @@ export function computeWithdrawalEligibility(input: {
     // joint-account handling.
     if (birthYear != null) {
       const currentAge = ageInYear(birthYear, year);
-      if (cfg.rothOrderingRules === "basis_first") {
+      if (isIraCategory(ia.category)) {
         // IRA-type: 59½ flat age gate, or Roth IRA's own contribution/
         // conversion/growth ordering (contribution basis is always
         // penalty-free regardless of age).
@@ -285,7 +263,7 @@ export function computeWithdrawalEligibility(input: {
         const growthExposed = roundToCents(
           Math.max(0, balance - penaltyFreeAmount),
         );
-        if (currentAge >= 59.5) {
+        if (currentAge >= PENALTY_FREE_AGE) {
           reason = "Eligible — age 59½ or older";
         } else if (isRoth && !locked && growthExposed <= 0.005) {
           reason = `Eligible — ${formatCurrency(basisRemaining ?? 0)} basis remaining, always penalty-free`;
@@ -300,9 +278,14 @@ export function computeWithdrawalEligibility(input: {
         } else {
           reason = `Locked until age 59½ (currently ${currentAge})`;
         }
-      } else if (cfg.rothOrderingRules === "pro_rata") {
+      } else if (isRuleOf55EligibleCategory(ia.category)) {
         // 401k/403b: Rule of 55 (projected to `year`, reusing the same
         // resolver the Tax Buckets "at retirement" view uses) OR 59½.
+        // Dispatches on cfg.ruleOf55Eligible (a static, category-level
+        // "is IRC §72(t)(2)(A)(v) even applicable to this account type"
+        // fact), not the coincidentally-equivalent
+        // `rothOrderingRules === "pro_rata"` (a Roth-distribution-ordering
+        // concept, legally distinct — code review, 2026-08-27).
         const projected = projectRuleOf55(
           ia.ruleOf55 ?? null,
           year,
@@ -336,7 +319,7 @@ export function computeWithdrawalEligibility(input: {
             projected?.separationYear != null
               ? `Eligible — Rule of 55 met (separated ${projected.separationYear})`
               : "Eligible — Rule of 55 met";
-        } else if (currentAge >= 59.5) {
+        } else if (currentAge >= PENALTY_FREE_AGE) {
           reason = "Eligible — age 59½ or older";
         } else if (ia.ruleOf55ForceIneligible) {
           reason = `Locked until age 59½ — Rule of 55 marked unavailable for forecasting (currently ${currentAge})`;

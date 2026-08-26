@@ -191,6 +191,15 @@ export interface ComputeTaxFromSlotsInput {
 export interface ComputeTaxFromSlotsResult {
   taxCost: number;
   actualTraditionalRate: number;
+  /** `totalTraditionalWithdrawal + rothTaxableGrowth + taxableSS` — the
+   *  single source of truth for "real ordinary income this year," BEFORE
+   *  LTCG/bracket stacking. Callers must read this rather than
+   *  re-deriving their own copy (e.g. `totalTraditionalWithdrawal +
+   *  taxableSS` alone silently drops non-qualified Roth growth income —
+   *  exactly the bug this field was added to prevent, advisor review
+   *  2026-08-27). Feeds `revisedOrdinary`/MAGI/LTCG-bracket calculations
+   *  downstream in decumulation-year.ts. */
+  actualTaxableIncome: number;
   /** Return-of-basis portion of the brokerage withdrawal (tax-free). Caller
    *  is responsible for annotating the brokerage slot with this if needed —
    *  this function only reads slots, it doesn't mutate them. */
@@ -300,6 +309,7 @@ export function computeTaxFromSlots(
   return {
     taxCost,
     actualTraditionalRate,
+    actualTaxableIncome,
     brokerageBasisPortion,
     brokerageGainsPortion,
     brokerageTaxCost,

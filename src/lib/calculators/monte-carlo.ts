@@ -299,11 +299,17 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
     // Penalty-avoided shortfall (§ Q3/C3) -- any decumulation year whose
     // spending need went unfunded because penalty-exposed money was
     // excluded disqualifies this trial from counting as a success below,
-    // regardless of its terminal balance.
+    // regardless of its terminal balance. Materiality floor (advisor
+    // review, 2026-08-27, matching coast-fire.ts's identically-reasoned
+    // `passes()` floor): a rounding-scale shortfall in one of many
+    // decumulation years shouldn't disqualify an otherwise-successful
+    // trial.
     hadPenaltyAvoidedShortfall.push(
       result.projectionByYear.some(
         (y) =>
-          y.phase === "decumulation" && (y.penaltyAvoidedShortfall ?? 0) > 0.01,
+          y.phase === "decumulation" &&
+          (y.penaltyAvoidedShortfall ?? 0) >
+            Math.max(50, (y.afterTaxNeed ?? 0) * 0.01),
       ),
     );
     const totalPenaltyAvoidedShortfallNominal = sumBy(

@@ -496,7 +496,6 @@ describe("routeForMode (Tier B eligibility gate)", () => {
     const config = makeDecumulationConfig({
       withdrawalRoutingMode: "waterfall",
       withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
-      preferPenaltyFreeSources: true,
     });
     const result = routeForMode(
       20000,
@@ -556,7 +555,6 @@ describe("routeForMode (Tier B eligibility gate)", () => {
       // balance from it, waterfall mode would draw that cent from 401k
       // before touching brokerage.
       withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
-      preferPenaltyFreeSources: true,
     });
     const result = routeForMode(
       20000,
@@ -598,9 +596,11 @@ describe("routeForMode (Tier B eligibility gate)", () => {
   });
 
   it("avoidPenalizedWithdrawals: false routes against full balances, ignoring the exposure partition entirely (pre-v0.7.8-penalty-pass routing)", () => {
-    // avoidPenalizedWithdrawals (not preferPenaltyFreeSources) is now the
-    // lever that decides whether penalty-exposed money is reachable at
-    // all — DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md § Q4.
+    // avoidPenalizedWithdrawals is the only lever deciding whether
+    // penalty-exposed money is reachable at all —
+    // DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md § Q4. (The
+    // `preferPenaltyFreeSources` flag once proposed alongside it was
+    // never wired into routing and was deleted 2026-08-27.)
     const { balances, eligibility } = lockedBalances();
     const config = makeDecumulationConfig({
       withdrawalRoutingMode: "waterfall",
@@ -635,7 +635,6 @@ describe("routeForMode (Tier B eligibility gate)", () => {
     const config = makeDecumulationConfig({
       withdrawalRoutingMode: "waterfall",
       withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
-      preferPenaltyFreeSources: true,
     });
     const withRecord = routeForMode(
       20000,
@@ -734,9 +733,9 @@ describe("routeForMode (Tier B eligibility gate)", () => {
   });
 
   // Acceptance criterion 1: byte-identity fallthrough. When nothing is
-  // penalty-exposed, or the household explicitly opted out of BOTH levers
-  // (avoidPenalizedWithdrawals: false + preferPenaltyFreeSources: false),
-  // routeForMode must produce byte-identical output to calling the
+  // penalty-exposed, or the household explicitly opted out via
+  // avoidPenalizedWithdrawals: false, routeForMode must produce
+  // byte-identical output to calling the
   // underlying dispatch directly on the unmodified balances -- proving the
   // exclusion partition is a true no-op in these cases, not just close.
   it("criterion 1: byte-identical to the no-eligibility call when nothing is penalty-exposed", () => {
@@ -772,13 +771,12 @@ describe("routeForMode (Tier B eligibility gate)", () => {
     expect(withZeroExposure.warnings).toEqual(withNoExposureArg.warnings);
   });
 
-  it("criterion 1: byte-identical to the no-eligibility call when both levers are explicitly off, even with real exposure present", () => {
+  it("criterion 1: byte-identical to the no-eligibility call when avoidPenalizedWithdrawals is explicitly off, even with real exposure present", () => {
     const { balances, eligibility } = lockedBalances();
     const config = makeDecumulationConfig({
       withdrawalRoutingMode: "waterfall",
       withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
       avoidPenalizedWithdrawals: false,
-      preferPenaltyFreeSources: false,
     });
     const withEligibility = routeForMode(
       50000,

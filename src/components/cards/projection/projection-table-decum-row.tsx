@@ -66,7 +66,7 @@ import {
  */
 function buildEligibilityNote(
   ia: IndividualAccountYearBalance,
-  yr: EngineDecumulationYear,
+  year: EngineDecumulationYear,
   deflate: (v: number, yr: number) => number,
 ): { note?: string; noteLocked?: boolean } {
   const parts: string[] = [];
@@ -101,19 +101,19 @@ function buildEligibilityNote(
     const flag = ia.rothBasisUncertain ? " (est.)" : "";
     const label = growthDrawn > 0.01 ? "Partially eligible" : "Eligible";
     parts.push(
-      `${label} — ${formatCurrency(deflate(startBasis, yr.year))} basis remaining, always penalty-free${flag}`,
+      `${label} — ${formatCurrency(deflate(startBasis, year.year))} basis remaining, always penalty-free${flag}`,
     );
   } else if (ia.eligibilityReason) {
     parts.push(ia.eligibilityReason);
   }
   if (basisDrawn > 0.01) {
-    const drawn = formatCurrency(deflate(basisDrawn, yr.year));
+    const drawn = formatCurrency(deflate(basisDrawn, year.year));
     const remaining = formatCurrency(
-      deflate(ia.rothBasisRemaining ?? 0, yr.year),
+      deflate(ia.rothBasisRemaining ?? 0, year.year),
     );
     const flag = ia.rothBasisUncertain ? " (est.)" : "";
     if (growthDrawn > 0.01) {
-      const growth = formatCurrency(deflate(growthDrawn, yr.year));
+      const growth = formatCurrency(deflate(growthDrawn, year.year));
       const taxNote = !isAgeQualified
         ? ", taxable + penalized (under 59½)"
         : "";

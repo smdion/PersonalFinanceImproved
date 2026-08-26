@@ -13,6 +13,7 @@ import {
   ROTH_CONVERSION_SEASONING_YEARS,
   HSA_NON_MEDICAL_PENALTY_AGE,
 } from "@/lib/constants";
+import { roundToCents } from "@/lib/utils/math";
 
 export type SeparationSource = "explicit" | "derived" | "active" | "no_data";
 
@@ -81,6 +82,38 @@ export type EarlyAccessSlice = {
   penaltyFree: boolean;
   taxFree: boolean;
 };
+
+/**
+ * Penalty-free capacity = the sum of the LEADING, CONTIGUOUSLY penalty-free
+ * PREFIX of an account's slices, in the order its own distribution
+ * ordering rules release them (DESIGN-DECISION-v0.7.8-
+ * penalty-hard-exclusion.md § Q1). NOT the sum of every penalty-free slice
+ * regardless of position: a Roth IRA's ordering forces dollars out
+ * contribution → conversion → growth, and an unseasoned conversion slice
+ * (`penaltyFree: false`) blocks access to any penalty-free slice behind it
+ * even if one existed. Today the prefix rule and a naive "sum every
+ * penalty-free slice" rule happen to coincide for every account shape this
+ * engine models (a pre-59½ owner always has penalized growth behind any
+ * unseasoned conversion anyway) — the prefix rule is implemented regardless
+ * of that coincidence, because summing would be wrong the moment a shape
+ * existed where it mattered.
+ *
+ * Lives here (next to `EarlyAccessSlice`), not inside
+ * `withdrawal-eligibility.ts`, specifically so the Tax Buckets UI can
+ * import it directly rather than re-deriving "accessible now" with its own
+ * sum-every-penalty-free-slice loop — a real second definition of this
+ * quantity, found in code review (2026-08-27), that happened to agree with
+ * the prefix rule for every shape shipped so far only by the same
+ * coincidence this docblock already warns about.
+ */
+export function penaltyFreePrefixAmount(slices: EarlyAccessSlice[]): number {
+  let sum = 0;
+  for (const s of slices) {
+    if (!s.penaltyFree) break;
+    sum += s.amount;
+  }
+  return roundToCents(sum);
+}
 
 /** Brokerage: always accessible without penalty (no age/employer gate at
  *  all); only the gain portion is taxable. */

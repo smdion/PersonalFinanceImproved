@@ -97,7 +97,7 @@ export default function PerformancePage() {
   const updateRothBasis = trpc.taxBuckets.updateRothBasis.useMutation({
     onSuccess: () => {
       utils.performance.computeSummary.invalidate();
-      utils.taxBuckets.getBreakdown.invalidate();
+      utils.taxBuckets.computeBreakdown.invalidate();
     },
   });
   const finalizeYear = trpc.performance.finalizeYear.useMutation({

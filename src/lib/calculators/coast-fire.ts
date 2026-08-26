@@ -77,9 +77,17 @@ function passes(projection: ProjectionResult): boolean {
     (y) => y.phase === "decumulation",
   );
   if (!retirementYear) return false;
+  // Materiality floor (advisor review, 2026-08-27), matching
+  // decumulation-year.ts's identically-reasoned `finalUnmetNeed` floor: a
+  // rounding-scale penaltyAvoidedShortfall in any single one of ~40 years
+  // shouldn't flip an entire plan from "already coast" to "not coast" —
+  // reserve that verdict for a shortfall material enough to actually
+  // matter to the household.
   const hadPenaltyAvoidedShortfall = projection.projectionByYear.some(
     (y) =>
-      y.phase === "decumulation" && (y.penaltyAvoidedShortfall ?? 0) > 0.01,
+      y.phase === "decumulation" &&
+      (y.penaltyAvoidedShortfall ?? 0) >
+        Math.max(50, (y.afterTaxNeed ?? 0) * 0.01),
   );
   if (hadPenaltyAvoidedShortfall) return false;
   return projection.sustainableWithdrawal >= retirementYear.projectedExpenses;

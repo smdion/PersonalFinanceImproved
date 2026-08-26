@@ -550,13 +550,13 @@ export function distributeGoalWithdrawal(
  * separately to the correct tax-type accounts.
  *
  * `eligibility` (v0.7.8, PLAN-v0.7.8-v4 Group 2.2, Tier A) — when provided,
- * prefers eligible (not-yet-penalty-locked) accounts within each
- * category/tax-slot before falling back to locked ones once eligible money
- * runs out. Unconditional: this is the fan-out-only preference, distinct
- * from and independent of `preferPenaltyFreeSources`'s cross-category
- * `routeForMode` behavior (Tier B) — it only ever changes WHICH account
- * inside an already-decided category/slot supplies a given dollar, never
- * the slot totals themselves. Locked design:
+ * prefers eligible (not-yet-penalty-exposed) accounts within each
+ * category/tax-slot before reaching into penalty-exposed ones. Has no
+ * config lever, always applies: this is the fan-out-only preference,
+ * distinct from and independent of `avoidPenalizedWithdrawals`'s
+ * cross-category `routeForMode` behavior (Tier B) — it only ever changes
+ * WHICH account inside an already-decided category/slot supplies a given
+ * dollar, never the slot totals themselves. Locked design:
  * `.scratch/docs/plans/DESIGN-DECISION-v0.7.8-withdrawal-ordering-group0.md`
  * § Q1 Tier A.
  *

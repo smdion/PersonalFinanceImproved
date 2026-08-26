@@ -176,7 +176,7 @@ export async function fetchRetirementData(
     // no isActive filter — a separated employer's contribution-account link
     // is exactly the one likely to be inactive, and it's exactly the
     // evidence Rule of 55 needs to see. Same query tax-buckets.ts's
-    // getBreakdown procedure uses; kept identical rather than reusing
+    // computeBreakdown procedure uses; kept identical rather than reusing
     // allContribsRaw, which IS isActive-filtered and would silently drop
     // dormant former-employer plans.
     db
@@ -514,7 +514,7 @@ export async function buildEnginePayload(
       ownerPersonId: p.ownerPersonId,
       isActive: p.isActive,
       separationDate: p.separationDate ? new Date(p.separationDate) : null,
-      costBasis: Number(p.costBasis ?? "0"),
+      costBasis: toNumber(p.costBasis),
       accountLabel: p.accountLabel,
       displayName: p.displayName,
       institution: p.institution,

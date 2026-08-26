@@ -167,6 +167,12 @@ describe("monte carlo integration", () => {
     expect(result.percentileBands.length).toBeGreaterThan(0);
     expect(result.successRate).toBeGreaterThanOrEqual(0);
     expect(result.successRate).toBeLessThanOrEqual(1);
+    // Explicit value assertions (code review, 2026-08-27 -- seeded, so
+    // deterministic; matches the T13 convention engine-snapshot.test.ts
+    // uses for financial content that otherwise relies on
+    // toMatchSnapshot() alone).
+    expect(result.successRate).toBe(1);
+    expect(result.medianEndBalance).toBeCloseTo(25352863.62, 1);
 
     expect(extractSummary(result)).toMatchSnapshot();
   });
@@ -196,6 +202,8 @@ describe("monte carlo integration", () => {
     const result = calculateMonteCarlo(mcInput);
 
     expect(result.numTrials).toBe(50);
+    expect(result.successRate).toBe(1);
+    expect(result.medianEndBalance).toBe(22504931.93);
     expect(extractSummary(result)).toMatchSnapshot();
   });
 
@@ -223,6 +231,8 @@ describe("monte carlo integration", () => {
     const result = calculateMonteCarlo(mcInput);
 
     expect(result.numTrials).toBe(50);
+    expect(result.successRate).toBe(1);
+    expect(result.medianEndBalance).toBe(8880321.81);
     expect(extractSummary(result)).toMatchSnapshot();
   });
 
@@ -282,6 +292,8 @@ describe("monte carlo integration", () => {
     expect(result.numTrials).toBe(50);
     // Near-retirement with large balances should have high success rate
     expect(result.successRate).toBeGreaterThan(0);
+    expect(result.successRate).toBe(0.94);
+    expect(result.medianEndBalance).toBe(3136622.95);
     expect(extractSummary(result)).toMatchSnapshot();
   });
 });

@@ -7,12 +7,14 @@
  */
 import type { AccountCategory } from "@/lib/calculators/types";
 import {
-  getAccountTypeConfig,
   isTaxFreeBucket,
   isHsaCategory,
+  isIraCategory,
+  isRuleOf55EligibleCategory,
   tracksCostBasis,
 } from "@/lib/config/account-types";
 import { PENALTY_FREE_AGE, HSA_NON_MEDICAL_PENALTY_AGE } from "@/lib/constants";
+import { ageInYear } from "@/lib/utils/date";
 import type { TaxBucketBreakdown } from "@/lib/pure/tax-buckets";
 import {
   resolveSeparationYear,
@@ -129,10 +131,6 @@ export type AccountAnalysisEntry = {
   ageThresholdStatus: AgeThresholdStatus | null;
 };
 
-function ageInYear(birthYear: number, year: number): number {
-  return year - birthYear;
-}
-
 export function computeTaxBucketAnalysis(input: {
   breakdown: TaxBucketBreakdown;
   performanceAccounts: PerformanceAccountInfo[];
@@ -239,7 +237,6 @@ export function computeTaxBucketAnalysis(input: {
         : null;
     const displayName = entry.name;
     const category = entry.category as AccountCategory;
-    const cfg = getAccountTypeConfig(category);
 
     // No matching performance account at all — nothing to compute against
     // (no costBasis, no separationDate), regardless of ownership.
@@ -280,7 +277,7 @@ export function computeTaxBucketAnalysis(input: {
     // all in v1) and doesn't change based on taxType the way slices do.
     let ageThresholdStatus: AgeThresholdStatus | null = null;
     if (entry.ownerPersonId != null) {
-      if (cfg.rothOrderingRules === "basis_first") {
+      if (isIraCategory(category)) {
         ageThresholdStatus = {
           thresholdAge: PENALTY_FREE_AGE,
           eligible: currentAge >= PENALTY_FREE_AGE,
@@ -304,7 +301,7 @@ export function computeTaxBucketAnalysis(input: {
       if (costBasis != null) {
         slices = computeBrokerageAccess(entry.amount, costBasis);
       }
-    } else if (cfg.rothOrderingRules === "basis_first") {
+    } else if (isIraCategory(category)) {
       // Roth IRA
       if (isTaxFreeBucket(entry.taxType)) {
         slices = computeRothIraAccess({
@@ -320,7 +317,7 @@ export function computeTaxBucketAnalysis(input: {
         slices = computeTraditionalIraAccess(entry.amount, currentAge);
       }
     } else if (
-      cfg.rothOrderingRules === "pro_rata" &&
+      isRuleOf55EligibleCategory(category) &&
       entry.performanceAccountId != null
     ) {
       // 401k/403b — preTax and taxFree slices share one Rule-of-55 resolution.

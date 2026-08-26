@@ -27,6 +27,7 @@ import {
   tracksCostBasis,
   tracksRothBasis,
 } from "@/lib/config/account-types";
+import { penaltyFreePrefixAmount } from "@/lib/pure/early-access";
 
 // The pure type, not a tRPC-inferred one — inferRouterOutputs types
 // `rothBasisMeta.updatedAt` as `Date` (the procedure's TS return type),
@@ -76,10 +77,18 @@ function buildBuckets(entries: AccountEntry[]) {
     b.balance += entry.balance;
     b.entries.push(entry);
     if (entry.slices.length > 0) {
-      for (const slice of entry.slices) {
-        if (slice.penaltyFree) b.accessibleNow += slice.amount;
-        else b.locked += slice.amount;
-      }
+      // Penalty-free capacity is the LEADING, CONTIGUOUS prefix of
+      // penalty-free slices (penaltyFreePrefixAmount, @/lib/pure/early-access)
+      // — the SAME single computation path the withdrawal-routing engine
+      // uses — NOT a sum of every penalty-free slice regardless of
+      // position. An unseasoned Roth conversion slice blocks access to any
+      // penalty-free slice behind it even though that slice's own
+      // `penaltyFree` flag is true; summing them independently here would
+      // silently disagree with what the engine actually routes (code
+      // review, 2026-08-27).
+      const accessibleNow = penaltyFreePrefixAmount(entry.slices);
+      b.accessibleNow += accessibleNow;
+      b.locked += entry.balance - accessibleNow;
       // lint-violation-ok: `key` is this page's own BucketKey union, not an
       // AccountCategory — no account-types.ts predicate applies here.
     } else if (key === "brokerage") {
@@ -127,7 +136,12 @@ function bucketKeyFor(entry: AccountEntry): BucketKey {
   return isIraCategory(entry.category) ? "rothIra" : "rothEmployer";
 }
 
-function taxTypeLabel(category: string, taxType: string): string {
+/** Richer label ("Roth IRA", "Traditional 401k") than
+ *  `@/lib/utils/colors.ts`'s canonical `taxTypeLabel(taxType)` (which only
+ *  returns "Traditional"/"Roth"/"HSA"/"After-Tax") — deliberately named
+ *  differently to avoid a same-name, different-signature collision with
+ *  that function (code review, 2026-08-27). */
+function bucketTaxTypeLabel(category: string, taxType: string): string {
   if (isTaxFreeBucket(taxType)) {
     return isIraCategory(category) ? "Roth IRA" : `Roth ${category}`;
   }
@@ -160,7 +174,8 @@ export function TaxBucketsContent() {
   // (dollarMode "real"/"nominal") and default.
   const [dollarMode, setDollarMode] = useState<"real" | "nominal">("real");
 
-  const { data, isLoading, error } = trpc.taxBuckets.getBreakdown.useQuery();
+  const { data, isLoading, error } =
+    trpc.taxBuckets.computeBreakdown.useQuery();
   // Same Plan-pin → globally-active resolution every other engine-backed
   // page uses (Retirement page, Monte Carlo, Coast FIRE). Omitting these
   // does NOT fall back to "whatever's active" — the server has no default
@@ -180,17 +195,17 @@ export function TaxBucketsContent() {
   );
 
   const updateRothBasis = trpc.taxBuckets.updateRothBasis.useMutation({
-    onSuccess: () => utils.taxBuckets.getBreakdown.invalidate(),
+    onSuccess: () => utils.taxBuckets.computeBreakdown.invalidate(),
   });
   const updateSeparationDate = trpc.taxBuckets.updateSeparationDate.useMutation(
     {
-      onSuccess: () => utils.taxBuckets.getBreakdown.invalidate(),
+      onSuccess: () => utils.taxBuckets.computeBreakdown.invalidate(),
     },
   );
   const batchUpdateRothBasis = trpc.taxBuckets.batchUpdateRothBasis.useMutation(
     {
       onSuccess: () => {
-        utils.taxBuckets.getBreakdown.invalidate();
+        utils.taxBuckets.computeBreakdown.invalidate();
         setShowBulkBasis(false);
       },
     },
@@ -292,7 +307,7 @@ export function TaxBucketsContent() {
           <button
             type="button"
             onClick={() => setShowBulkBasis(true)}
-            className="px-3 py-1.5 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded"
+            className="px-3 py-1.5 text-sm text-white bg-primary rounded"
           >
             Update all basis
           </button>
@@ -562,7 +577,7 @@ function AccountDetailRow({
             </span>
           )}
           <span className="ml-2 text-caption text-faint">
-            {taxTypeLabel(entry.category, entry.taxType)}
+            {bucketTaxTypeLabel(entry.category, entry.taxType)}
           </span>
         </div>
         <span className="font-semibold tabular-nums">{fmt(entry.balance)}</span>
@@ -849,7 +864,7 @@ function BulkRothBasisForm({
         year: a.rothBasisMeta?.year ?? currentCalendarYear,
         displayName: a.displayName,
         ownerName: a.ownerName,
-        taxTypeLabel: taxTypeLabel(a.category, a.taxType),
+        taxTypeLabel: bucketTaxTypeLabel(a.category, a.taxType),
         contributionBasis: String(a.rothBasisMeta?.contributionBasis ?? 0),
         conversionBasis: String(a.rothBasisMeta?.conversionBasis ?? 0),
         latestConversionYear:
@@ -979,7 +994,7 @@ function BulkRothBasisForm({
           type="button"
           onClick={handleSave}
           disabled={isSaving}
-          className="px-4 py-1.5 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded disabled:opacity-50"
+          className="px-4 py-1.5 text-sm text-white bg-primary rounded disabled:opacity-50"
         >
           {isSaving ? "Saving..." : "Save all"}
         </button>

@@ -46,6 +46,22 @@ type CoastFireMcResult = {
   warning: string | null;
 };
 
+/** Below this fraction of stop-now trials hitting a penalty-avoided
+ *  shortfall, the "why stopping today fails" explanation isn't worth
+ *  surfacing — too small a share of outcomes to be the real story. Single
+ *  source for both the KPI card's tooltip line and its short headline
+ *  caption (previously duplicated as a literal `0.05` in each — code
+ *  review, 2026-08-27). */
+const COAST_FIRE_GAP_MATERIALITY_THRESHOLD = 0.05;
+
+function hasCoastFireGapAmount(mc: CoastFireMcResult): boolean {
+  return (
+    mc.stopNowPenaltyAvoidedShortfallRate >
+      COAST_FIRE_GAP_MATERIALITY_THRESHOLD &&
+    mc.stopNowMedianPenaltyAvoidedShortfallPV > 0
+  );
+}
+
 type DeterministicResult = {
   coastFireAge: number | null;
   status: "already_coast" | "found" | "unreachable";
@@ -85,10 +101,7 @@ export function CoastFireCard({
 
   const det = deterministic?.result ?? undefined;
   const mcAvailable = coastFireMcResult != null;
-  const hasGapAmount =
-    mcAvailable &&
-    coastFireMcResult.stopNowPenaltyAvoidedShortfallRate > 0.05 &&
-    coastFireMcResult.stopNowMedianPenaltyAvoidedShortfallPV > 0;
+  const hasGapAmount = mcAvailable && hasCoastFireGapAmount(coastFireMcResult);
 
   return (
     <KpiCard
@@ -190,9 +203,7 @@ function CombinedStatus({
   // via KpiCard's tooltip prop above) so this card doesn't blow out the
   // shared row height of the other 4 hero KPI cards next to it.
   if (det.status === "already_coast" && mc.status === "found") {
-    const hasGapAmount =
-      mc.stopNowPenaltyAvoidedShortfallRate > 0.05 &&
-      mc.stopNowMedianPenaltyAvoidedShortfallPV > 0;
+    const hasGapAmount = hasCoastFireGapAmount(mc);
     const shortLine = hasGapAmount
       ? `Stopping today: ~${formatCurrency(mc.stopNowMedianPenaltyAvoidedShortfallPV)} short before 59½ (locked, not broke)`
       : "Stopping today fails on real variance, not baseline's math";

@@ -23,10 +23,11 @@ import type {
   EngineYearProjection,
 } from "@/lib/calculators/types/engine-projection";
 import {
-  getAccountTypeConfig,
   isTaxFreeBucket,
   isAfterTaxType,
   isHsaCategory,
+  isIraCategory,
+  isRuleOf55EligibleCategory,
   tracksCostBasis,
 } from "@/lib/config/account-types";
 import { PENALTY_FREE_AGE, HSA_NON_MEDICAL_PENALTY_AGE } from "@/lib/constants";
@@ -268,7 +269,6 @@ export function computeTaxBucketProjection(input: {
     }
 
     const balance = projected.balance;
-    const cfg = getAccountTypeConfig(now.category);
     const person =
       now.ownerPersonId != null ? peopleById.get(now.ownerPersonId) : undefined;
 
@@ -325,7 +325,7 @@ export function computeTaxBucketProjection(input: {
 
     const ageAtTransition = ageInYear(person!.birthYear, transitionYear);
     let ageThresholdStatus: AgeThresholdStatus | null = null;
-    if (cfg.rothOrderingRules === "basis_first") {
+    if (isIraCategory(now.category)) {
       ageThresholdStatus = {
         thresholdAge: PENALTY_FREE_AGE,
         eligible: ageAtTransition >= PENALTY_FREE_AGE,
@@ -337,7 +337,7 @@ export function computeTaxBucketProjection(input: {
       };
     }
 
-    if (cfg.rothOrderingRules === "basis_first") {
+    if (isIraCategory(now.category)) {
       if (isTaxFreeBucket(now.taxType)) {
         const projectedContributionBasis = projectContributionBasis(
           now.rothBasisMeta,
@@ -361,7 +361,7 @@ export function computeTaxBucketProjection(input: {
       } else {
         slices = computeTraditionalIraAccess(balance, ageAtTransition);
       }
-    } else if (cfg.rothOrderingRules === "pro_rata") {
+    } else if (isRuleOf55EligibleCategory(now.category)) {
       ruleOf55 = projectRuleOf55(
         now.ruleOf55,
         transitionYear,

@@ -339,6 +339,11 @@ describe("engine snapshot parity", () => {
     // Already retired — should be decumulation phase
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect((metrics as any).year0?.phase).toBe("decumulation");
+    // T13: explicit numeric assertions (see fixture 1 comment) — added
+    // 2026-08-27, code review (this fixture previously relied on
+    // toMatchSnapshot() alone for its financial content).
+    expect(result.sustainableWithdrawal).toBe(37203.08);
+    expect(metrics.finalYear?.endBalance).toBe(1595973.16);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -3276,6 +3281,11 @@ describe("engine snapshot parity", () => {
     });
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
+    // T13: explicit numeric assertions (see fixture 1 comment) — added
+    // 2026-08-27, code review (this fixture previously relied on
+    // toMatchSnapshot() alone for its financial content).
+    expect(result.sustainableWithdrawal).toBe(82177.72);
+    expect(metrics.finalYear?.endBalance).toBe(4056953.22);
     expect(metrics).toMatchSnapshot();
   });
 });

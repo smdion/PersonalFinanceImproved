@@ -129,7 +129,7 @@ export function runDecumulationYear(
   // invariant routeForMode exists to preserve). Computed unconditionally
   // when individual accounts exist -- Tier A (distributeWithdrawals) has no
   // config lever and always applies; routeForMode itself checks
-  // config.preferPenaltyFreeSources before using this for Tier B. indAccts
+  // config.avoidPenalizedWithdrawals before using this for Tier B. indAccts
   // already carry their own ruleOf55/rothBasisMeta/ownerBirthYear ("now"
   // data, threaded by build-engine-payload.ts Group 1.1); this recomputes
   // locked/eligible fresh for the current projected `year` via
@@ -384,7 +384,12 @@ export function runDecumulationYear(
   const brokerageGainsPortion = taxFromSlots.brokerageGainsPortion;
   const hsaWithdrawal = taxFromSlots.hsaWithdrawal;
   const actualTraditionalRate = taxFromSlots.actualTraditionalRate;
-  const actualTaxableIncome = totalTraditionalWithdrawal + taxableSS;
+  // v0.7.8 advisor review (2026-08-27): this used to be re-derived locally
+  // as `totalTraditionalWithdrawal + taxableSS`, silently dropping
+  // non-qualified Roth growth income (rothTaxSplit.taxableGrowth) from
+  // everything downstream (LTCG bracket selection, MAGI). Read the single
+  // source of truth computeTaxFromSlots already computed instead.
+  const actualTaxableIncome = taxFromSlots.actualTaxableIncome;
   // Annotate the brokerage slot with its basis/gains breakdown -- same gate
   // computeTaxFromSlots uses internally to decide whether there's a real
   // split to report (leaves the slot's basisPortion/gainsPortion undefined
@@ -486,10 +491,20 @@ export function runDecumulationYear(
       revisedOrdinary + brokerageGainsPortion,
       filingStatus,
     );
-    // Recompute taxCost with revised brokerage tax
+    // Recompute taxCost with revised brokerage tax. v0.7.8 advisor review
+    // (2026-08-27): this used to tax the WHOLE Roth withdrawal at
+    // taxRates.roth (0 by default) — the pre-Roth-tax-basis formula,
+    // silently un-updated when that feature split Roth withdrawals into a
+    // taxable-growth portion (taxed at actualTraditionalRate, same as
+    // computeTaxFromSlots's own formula) and a tax-free portion. In a
+    // conversion year with brokerage gains AND a non-qualified Roth
+    // growth draw, tax on that growth vanished entirely. Mirrors
+    // computeTaxFromSlots's own taxCost formula exactly, just with the
+    // revised brokerageTaxCost substituted in.
     taxCost = roundToCents(
       totalTraditionalWithdrawal * actualTraditionalRate +
-        totalRothWithdrawal * taxRates.roth +
+        taxFromSlots.rothTaxableGrowth * actualTraditionalRate +
+        taxFromSlots.rothTaxFreePortion * taxRates.roth +
         hsaWithdrawal * taxRates.hsa +
         brokerageTaxCost,
     );
@@ -509,8 +524,13 @@ export function runDecumulationYear(
   // --- NIIT (Net Investment Income Tax, 3.8% surtax) ---
   // Applies to lesser of net investment income or MAGI exceeding threshold.
   // Roth conversions raise MAGI but are NOT net investment income.
+  // v0.7.8 advisor review (2026-08-27): non-qualified Roth growth income
+  // (taxFromSlots.rothTaxableGrowth) was missing here too, understating
+  // MAGI fed into NIIT, the 2-year IRMAA lookback, and the ACA subsidy
+  // check below — same root cause as the taxCost recompute fix above.
   const currentYearMagi =
     totalTraditionalWithdrawal +
+    taxFromSlots.rothTaxableGrowth +
     rothConversionAmount +
     brokerageGainsPortion +
     taxableSS;
@@ -542,8 +562,19 @@ export function runDecumulationYear(
   const fundingShortfall = roundToCents(
     Math.max(0, afterTaxNeed - deliveredAfterTax),
   );
+  // Materiality floor, not a correctness tolerance (advisor review,
+  // 2026-08-27): NIIT and the conversion-year LTCG recompute both run
+  // AFTER routing and are accepted, documented residual-gap sources (the
+  // gross-up estimate can't have grossed up for a cost that didn't exist
+  // yet when it ran) -- a $0.01 floor here flagged UNMET NEED on every
+  // ordinary NIIT year in an otherwise fully-solvent plan, drowning out
+  // the signal a REAL shortfall (balance exhaustion, hard-exclusion) is
+  // for. The greater of $50 or 1% of the need itself scales with plan
+  // size while still catching genuine shortfalls, which tend to be a
+  // large fraction of afterTaxNeed, not a rounding-scale sliver of it.
+  const shortfallMaterialityFloor = Math.max(50, afterTaxNeed * 0.01);
   const finalUnmetNeed =
-    fundingShortfall > 0.01
+    fundingShortfall > shortfallMaterialityFloor
       ? Math.max(routedUnmetNeed ?? 0, fundingShortfall)
       : routedUnmetNeed;
 

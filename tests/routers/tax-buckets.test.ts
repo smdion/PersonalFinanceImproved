@@ -1,6 +1,6 @@
 /**
- * Tax Buckets router integration tests — getBreakdown, updateRothBasis,
- * updateSeparationDate.
+ * Tax Buckets router integration tests — computeBreakdown, updateRothBasis,
+ * batchUpdateRothBasis, updateSeparationDate.
  */
 import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
@@ -62,7 +62,7 @@ describe("taxBuckets router", () => {
       },
     ]);
 
-    const result = await caller.taxBuckets.getBreakdown({
+    const result = await caller.taxBuckets.computeBreakdown({
       targetRetirementAges: [{ personId, age: 55 }],
     });
 
@@ -104,7 +104,7 @@ describe("taxBuckets router", () => {
       },
     ]);
 
-    const result = await caller.taxBuckets.getBreakdown();
+    const result = await caller.taxBuckets.computeBreakdown();
 
     const entry = result.accounts.find(
       (a) => a.performanceAccountId === perfAcctId,
@@ -114,7 +114,7 @@ describe("taxBuckets router", () => {
     expect(entry.ruleOf55?.separationYear).toBe(2020);
   });
 
-  it("updateRothBasis upserts and getBreakdown reflects it on the next call", async () => {
+  it("updateRothBasis upserts and computeBreakdown reflects it on the next call", async () => {
     const personId = await seedPerson(db, "Basis Test", "1980-01-01");
     const perfAcctId = seedPerformanceAccount(db, {
       institution: "Vanguard",
@@ -140,7 +140,7 @@ describe("taxBuckets router", () => {
       latestConversionYear: null,
     });
 
-    const first = await caller.taxBuckets.getBreakdown({
+    const first = await caller.taxBuckets.computeBreakdown({
       targetRetirementAges: [{ personId, age: 55 }],
     });
     const entry1 = first.accounts.find(
@@ -159,7 +159,7 @@ describe("taxBuckets router", () => {
       latestConversionYear: null,
     });
 
-    const second = await caller.taxBuckets.getBreakdown({
+    const second = await caller.taxBuckets.computeBreakdown({
       targetRetirementAges: [{ personId, age: 55 }],
     });
     const entry2 = second.accounts.find(
@@ -192,7 +192,7 @@ describe("taxBuckets router", () => {
       separationDate: "2030-01-01", // person is 50 that year — not Rule-of-55 eligible
     });
 
-    const result = await caller.taxBuckets.getBreakdown({
+    const result = await caller.taxBuckets.computeBreakdown({
       targetRetirementAges: [{ personId, age: 65 }],
     });
     const entry = result.accounts.find(
@@ -203,7 +203,114 @@ describe("taxBuckets router", () => {
     expect(entry.ruleOf55?.eligible).toBe(false);
   });
 
-  it("rejects updateRothBasis and updateSeparationDate for a viewer without the performance permission", async () => {
+  it("batchUpdateRothBasis upserts multiple (account, owner) entries in one transaction, computeBreakdown reflects all of them", async () => {
+    // Missing test coverage found in code review, 2026-08-27 — this
+    // mutation shipped live in the UI's batch-save flow with no test at
+    // all, auth or success-path, despite writing financial (tax-basis)
+    // figures used by IRS-related calculations.
+    const person1Id = await seedPerson(db, "Batch One", "1980-01-01");
+    const person2Id = await seedPerson(db, "Batch Two", "1985-01-01");
+    const acct1Id = seedPerformanceAccount(db, {
+      institution: "Vanguard",
+      accountType: "ira",
+      ownerPersonId: person1Id,
+      ownershipType: "individual",
+    });
+    const acct2Id = seedPerformanceAccount(db, {
+      institution: "Fidelity",
+      accountType: "ira",
+      ownerPersonId: person2Id,
+      ownershipType: "individual",
+    });
+    seedSnapshot(db, "2026-01-06", [
+      {
+        performanceAccountId: acct1Id,
+        amount: "80000",
+        taxType: "taxFree",
+        accountType: "ira",
+        ownerPersonId: person1Id,
+      },
+      {
+        performanceAccountId: acct2Id,
+        amount: "120000",
+        taxType: "taxFree",
+        accountType: "ira",
+        ownerPersonId: person2Id,
+      },
+    ]);
+
+    const result = await caller.taxBuckets.batchUpdateRothBasis({
+      entries: [
+        {
+          performanceAccountId: acct1Id,
+          ownerPersonId: person1Id,
+          year: 2026,
+          contributionBasis: "20000",
+          conversionBasis: "0",
+          latestConversionYear: null,
+        },
+        {
+          performanceAccountId: acct2Id,
+          ownerPersonId: person2Id,
+          year: 2026,
+          contributionBasis: "35000",
+          conversionBasis: "10000",
+          latestConversionYear: 2024,
+        },
+      ],
+    });
+    expect(result.success).toBe(true);
+
+    const breakdown = await caller.taxBuckets.computeBreakdown({
+      targetRetirementAges: [
+        { personId: person1Id, age: 55 },
+        { personId: person2Id, age: 55 },
+      ],
+    });
+    const entry1 = breakdown.accounts.find(
+      (a) => a.performanceAccountId === acct1Id,
+    )!;
+    const entry2 = breakdown.accounts.find(
+      (a) => a.performanceAccountId === acct2Id,
+    )!;
+    expect(
+      entry1.slices.find((s) => s.label === "Contribution basis")?.amount,
+    ).toBe(20000);
+    expect(
+      entry2.slices.find((s) => s.label === "Contribution basis")?.amount,
+    ).toBe(35000);
+    expect(
+      entry2.slices.find((s) => s.label === "Conversion basis")?.amount,
+    ).toBe(10000);
+
+    // Re-batch with revised amounts for the SAME (account, owner, year) key
+    // -- proves the onConflictDoUpdate upsert path, not just insert.
+    const revised = await caller.taxBuckets.batchUpdateRothBasis({
+      entries: [
+        {
+          performanceAccountId: acct1Id,
+          ownerPersonId: person1Id,
+          year: 2026,
+          contributionBasis: "25000",
+          conversionBasis: "0",
+          latestConversionYear: null,
+        },
+      ],
+    });
+    expect(revised.success).toBe(true);
+    const afterUpdate = await caller.taxBuckets.computeBreakdown({
+      targetRetirementAges: [{ personId: person1Id, age: 55 }],
+    });
+    const entry1Updated = afterUpdate.accounts.find(
+      (a) => a.performanceAccountId === acct1Id,
+    )!;
+    expect(
+      entry1Updated.slices.find((s) => s.label === "Contribution basis")
+        ?.amount,
+    ).toBe(25000);
+  });
+
+  it("rejects updateRothBasis, batchUpdateRothBasis, and updateSeparationDate for a viewer without the performance permission", async () => {
     await expect(
       viewerCaller.taxBuckets.updateRothBasis({
         performanceAccountId: 1,
@@ -211,6 +318,21 @@ describe("taxBuckets router", () => {
         contributionBasis: "1",
         conversionBasis: "0",
         latestConversionYear: null,
+      }),
+    ).rejects.toThrow(/permission/i);
+
+    await expect(
+      viewerCaller.taxBuckets.batchUpdateRothBasis({
+        entries: [
+          {
+            performanceAccountId: 1,
+            ownerPersonId: 1,
+            year: 2026,
+            contributionBasis: "1",
+            conversionBasis: "0",
+            latestConversionYear: null,
+          },
+        ],
       }),
     ).rejects.toThrow(/permission/i);
 

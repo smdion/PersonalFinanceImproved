@@ -124,8 +124,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
     debouncedBaseInput,
     scenarioView,
     coastFireMcQuery,
-    coastFireMcResult,
-    coastFireTodayMcResult,
+    activeCoastFireMcResult,
   } = state;
 
   const currentAge = result.projectionByYear[0]?.age ?? 0;
@@ -151,20 +150,20 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
   );
   // When scenarioView is a Coast FIRE variant, swap the MC data source so
   // all the hero KPIs — Portfolio Survival, Income Stability, Nest Egg, End
-  // Balance — reflect that scenario, not the baseline plan: "coastFire"
-  // uses the found/passing-age result, "coastFireToday" uses the
-  // stop-at-current-age result (same underlying query, different field —
-  // see use-projection-queries.ts). Intentionally returns null while coast
-  // MC is loading — the existing `!mc && mcLoading` skeleton branch below
+  // Balance — reflect that scenario, not the baseline plan. Reads the
+  // SAME `activeCoastFireMcResult` use-projection-queries.ts and
+  // use-projection-derived.ts consume — previously hand-derived a third
+  // time here with its own copy of the scenarioView ternary, which risked
+  // silently disagreeing with the other two on a future scenarioView
+  // change (code review, 2026-08-27). Intentionally null while coast MC is
+  // loading — the existing `!mc && mcLoading` skeleton branch below
   // handles the loading state.
   const mc =
-    scenarioView === "coastFire"
-      ? (coastFireMcResult ?? null)
-      : scenarioView === "coastFireToday"
-        ? (coastFireTodayMcResult ?? null)
-        : mcQuery.data?.result && !mcLoading
-          ? mcQuery.data.result
-          : null;
+    scenarioView === "coastFire" || scenarioView === "coastFireToday"
+      ? (activeCoastFireMcResult ?? null)
+      : mcQuery.data?.result && !mcLoading
+        ? mcQuery.data.result
+        : null;
   const mcBands = mc?.percentileBands ?? null;
   const mcRetBand = mcBands?.find((b) =>
     alreadyRetired

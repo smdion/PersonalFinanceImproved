@@ -555,19 +555,34 @@ export function tracksRothBasis(category: string): boolean {
   return cfg?.balanceStructure === "roth_traditional";
 }
 
-/** Check if a category is HSA — the one category with balanceStructure
- *  "single_bucket" (no Traditional/Roth split, no cost-basis tracking). */
+/** Check if a category is HSA. This file is the one place allowed to know
+ *  literal category strings (it's where they're defined as dictionary
+ *  keys) — a direct `category === "hsa"` check here, not a check against
+ *  balanceStructure/rothOrderingRules or another incidental structural
+ *  property that HAPPENS to be unique to HSA today (advisor review,
+ *  2026-08-27: those checks are fragile to a future account type that
+ *  legitimately reuses the same structural value for unrelated reasons). */
 export function isHsaCategory(category: string): boolean {
-  const cfg = ACCOUNT_TYPE_CONFIG[category as AccountCategory];
-  return cfg?.balanceStructure === "single_bucket";
+  return category === "hsa";
 }
 
-/** Check if a category is IRA — the one category with
- *  `rothOrderingRules === "basis_first"` (401k/403b use "pro_rata" instead;
- *  everything else has no Roth ordering at all). */
+/** Check if a category is IRA — see isHsaCategory's docblock for why this
+ *  is a direct identity check rather than a structural-property check. */
 export function isIraCategory(category: string): boolean {
+  return category === "ira";
+}
+
+/** Check if a category is eligible for the Rule of 55 exception (401k/403b
+ *  — IRC §72(t)(2)(A)(v)). Reads `ruleOf55Eligible` directly rather than
+ *  the coincidentally-equivalent `rothOrderingRules === "pro_rata"` (found
+ *  duplicated across 3 call sites in code review, 2026-08-27) — Roth
+ *  distribution ordering and Rule-of-55 eligibility are legally distinct
+ *  concepts (IRC §72(t)(2)(A)(v) vs. IRS Notice 2009-68) that happen to
+ *  coincide for today's 5 categories; a future account type where they
+ *  diverge needs its own field read, not a borrowed one. */
+export function isRuleOf55EligibleCategory(category: string): boolean {
   const cfg = ACCOUNT_TYPE_CONFIG[category as AccountCategory];
-  return cfg?.rothOrderingRules === "basis_first";
+  return cfg?.ruleOf55Eligible ?? false;
 }
 
 /** Valid parentCategory values — shared by Zod schemas, DB checks, and UI dropdowns. */

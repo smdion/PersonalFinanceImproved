@@ -6,6 +6,7 @@ import {
   formatPercent,
   accountDisplayName,
 } from "@/lib/utils/format";
+import { sumBy } from "@/lib/utils/math";
 import { EditableCell } from "./editable-cell";
 import {
   PARENT_CATEGORY_ROLLUPS,
@@ -76,25 +77,25 @@ export function YearRow({
   const costBasisAccountsForYear = accounts.filter((a) =>
     tracksCostBasis(a.accountType ?? ""),
   );
-  const yearCostBasis = costBasisAccountsForYear.reduce((sum, a) => {
+  const yearCostBasis = sumBy(costBasisAccountsForYear, (a) => {
     const master = masterAccounts?.find((m) => m.id === a.performanceAccountId);
-    return sum + Number(master?.costBasis ?? 0);
-  }, 0);
-  const yearCostBasisEnding = costBasisAccountsForYear.reduce(
-    (sum, a) => sum + a.endingBalance,
-    0,
+    return Number(master?.costBasis ?? 0);
+  });
+  const yearCostBasisEnding = sumBy(
+    costBasisAccountsForYear,
+    (a) => a.endingBalance,
   );
   const yearUnrealized = yearCostBasisEnding - yearCostBasis;
   const rothBasisAccountsForYear = accounts.filter(
     (a) => tracksRothBasis(a.accountType ?? "") && a.ownerPersonId != null,
   );
-  const yearContributionBasis = rothBasisAccountsForYear.reduce(
-    (sum, a) => sum + (a.contributionBasis ?? 0),
-    0,
+  const yearContributionBasis = sumBy(
+    rothBasisAccountsForYear,
+    (a) => a.contributionBasis ?? 0,
   );
-  const yearConversionBasis = rothBasisAccountsForYear.reduce(
-    (sum, a) => sum + (a.conversionBasis ?? 0),
-    0,
+  const yearConversionBasis = sumBy(
+    rothBasisAccountsForYear,
+    (a) => a.conversionBasis ?? 0,
   );
   const isEditable = canEdit;
   const isEditingAnnual = (field: string) =>
