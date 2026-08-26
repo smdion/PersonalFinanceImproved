@@ -180,8 +180,7 @@ export function drawFromBasis(input: {
 
 /** Applies a `BasisDraw` computed by `drawFromBasis`, decrementing the
  *  running totals. Floors at 0 (a rounding residual should never push
- *  basis negative, but this is the same defensive floor `subtractLocked`/
- *  `subtractSlots` use elsewhere in the engine for the identical reason —
+ *  basis negative, but this is the same defensive floor `subtractPenaltyExposed`/
  *  drift-safety, not an expected path). Never mutates `state`. */
 export function applyBasisDraw(
   state: RothBasisState,

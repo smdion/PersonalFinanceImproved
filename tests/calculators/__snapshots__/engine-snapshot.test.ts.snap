@@ -5,7 +5,7 @@ exports[`engine snapshot parity > fixture 1: standard dual-income household 1`] 
   "accountDepletions": [],
   "finalYear": {
     "age": 89,
-    "endBalance": 26132822.45,
+    "endBalance": 25464271.77,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -14,11 +14,11 @@ exports[`engine snapshot parity > fixture 1: standard dual-income household 1`] 
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 65,
-    "endBalance": 7546239.76,
+    "endBalance": 7536212.48,
     "projectedExpenses": 151024.87,
-    "totalWithdrawal": 184250.34,
+    "totalWithdrawal": 193621.63,
   },
-  "sustainableWithdrawal": 301849.59,
+  "sustainableWithdrawal": 301448.5,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -37,7 +37,7 @@ exports[`engine snapshot parity > fixture 2: single person, no employer match 1`
   "accountDepletions": [],
   "finalYear": {
     "age": 89,
-    "endBalance": 9958649.94,
+    "endBalance": 9555523.94,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -46,11 +46,11 @@ exports[`engine snapshot parity > fixture 2: single person, no employer match 1`
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 65,
-    "endBalance": 3394450.79,
+    "endBalance": 3387765.94,
     "projectedExpenses": 100683.24,
-    "totalWithdrawal": 122833.55,
+    "totalWithdrawal": 129081.08,
   },
-  "sustainableWithdrawal": 135778.03,
+  "sustainableWithdrawal": 135510.64,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -69,7 +69,7 @@ exports[`engine snapshot parity > fixture 3: all accounts maxed, overflow to bro
   "accountDepletions": [],
   "finalYear": {
     "age": 89,
-    "endBalance": 113356925.81,
+    "endBalance": 112688375.12,
   },
   "firstOverflowAge": 35,
   "firstOverflowAmount": 66700,
@@ -78,11 +78,11 @@ exports[`engine snapshot parity > fixture 3: all accounts maxed, overflow to bro
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 65,
-    "endBalance": 24742176.91,
+    "endBalance": 24732149.63,
     "projectedExpenses": 151024.87,
-    "totalWithdrawal": 184250.34,
+    "totalWithdrawal": 193621.63,
   },
-  "sustainableWithdrawal": 989687.08,
+  "sustainableWithdrawal": 989285.99,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -113,20 +113,20 @@ exports[`engine snapshot parity > fixture 4: retirement phase only (age > retire
     },
     {
       "category": "401k",
-      "depletionAge": 82,
-      "depletionYear": 2040,
+      "depletionAge": 81,
+      "depletionYear": 2039,
       "subType": "traditional",
     },
     {
       "category": "401k",
-      "depletionAge": 87,
-      "depletionYear": 2045,
+      "depletionAge": 86,
+      "depletionYear": 2044,
       "subType": "roth",
     },
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 1702018.54,
+    "endBalance": 1595973.16,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -135,18 +135,18 @@ exports[`engine snapshot parity > fixture 4: retirement phase only (age > retire
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 67,
-    "endBalance": 931670.4,
+    "endBalance": 930076.92,
     "projectedExpenses": 60000,
-    "totalWithdrawal": 29280,
+    "totalWithdrawal": 30769.23,
   },
-  "sustainableWithdrawal": 37266.82,
+  "sustainableWithdrawal": 37203.08,
   "totalYears": 23,
   "warningCount": 1,
   "year0": {
-    "endBalance": 931670.4,
+    "endBalance": 930076.92,
     "phase": "decumulation",
     "projectedExpenses": 60000,
-    "totalWithdrawal": 29280,
+    "totalWithdrawal": 30769.23,
   },
 }
 `;
@@ -250,7 +250,7 @@ exports[`engine snapshot parity > fixture 6: with contribution specs (per-accoun
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 26261845.38,
+    "endBalance": 25593294.62,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -259,11 +259,11 @@ exports[`engine snapshot parity > fixture 6: with contribution specs (per-accoun
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 65,
-    "endBalance": 7571676.15,
+    "endBalance": 7561648.87,
     "projectedExpenses": 151024.87,
-    "totalWithdrawal": 184250.34,
+    "totalWithdrawal": 193621.63,
   },
-  "sustainableWithdrawal": 302867.05,
+  "sustainableWithdrawal": 302465.95,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -282,7 +282,7 @@ exports[`engine snapshot parity > fixture 7: bracket filling routing mode 1`] = 
   "accountDepletions": [],
   "finalYear": {
     "age": 89,
-    "endBalance": 42269256.42,
+    "endBalance": 41600705.87,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -291,11 +291,11 @@ exports[`engine snapshot parity > fixture 7: bracket filling routing mode 1`] = 
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 65,
-    "endBalance": 10727483.18,
+    "endBalance": 10717455.9,
     "projectedExpenses": 151024.87,
-    "totalWithdrawal": 184250.34,
+    "totalWithdrawal": 193621.63,
   },
-  "sustainableWithdrawal": 429099.33,
+  "sustainableWithdrawal": 428698.24,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -314,7 +314,7 @@ exports[`engine snapshot parity > fixture 8: life change overrides — salary an
   "accountDepletions": [],
   "finalYear": {
     "age": 89,
-    "endBalance": 30913782.9,
+    "endBalance": 30308439.88,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -323,11 +323,11 @@ exports[`engine snapshot parity > fixture 8: life change overrides — salary an
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 65,
-    "endBalance": 8259438.14,
+    "endBalance": 8250206.82,
     "projectedExpenses": 139036.62,
-    "totalWithdrawal": 169624.68,
+    "totalWithdrawal": 178252.08,
   },
-  "sustainableWithdrawal": 330377.53,
+  "sustainableWithdrawal": 330008.27,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -346,7 +346,7 @@ exports[`engine snapshot parity > fixture 9: decumulation override with reset:tr
   "accountDepletions": [],
   "finalYear": {
     "age": 89,
-    "endBalance": 26132822.45,
+    "endBalance": 25464271.77,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -355,11 +355,11 @@ exports[`engine snapshot parity > fixture 9: decumulation override with reset:tr
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 65,
-    "endBalance": 7546239.76,
+    "endBalance": 7536212.48,
     "projectedExpenses": 151024.87,
-    "totalWithdrawal": 184250.34,
+    "totalWithdrawal": 193621.63,
   },
-  "sustainableWithdrawal": 301849.59,
+  "sustainableWithdrawal": 301448.5,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -378,7 +378,7 @@ exports[`engine snapshot parity > fixture 10: bracket-filling withdrawal with ro
   "accountDepletions": [],
   "finalYear": {
     "age": 89,
-    "endBalance": 43086291.38,
+    "endBalance": 42417740.69,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -387,11 +387,11 @@ exports[`engine snapshot parity > fixture 10: bracket-filling withdrawal with ro
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 65,
-    "endBalance": 10888558.82,
+    "endBalance": 10878531.54,
     "projectedExpenses": 151024.87,
-    "totalWithdrawal": 184250.34,
+    "totalWithdrawal": 193621.63,
   },
-  "sustainableWithdrawal": 435542.35,
+  "sustainableWithdrawal": 435141.26,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -416,20 +416,20 @@ exports[`engine snapshot parity > fixture 11: waterfall withdrawal order — bro
     },
     {
       "category": "ira",
-      "depletionAge": 83,
-      "depletionYear": 2073,
+      "depletionAge": 82,
+      "depletionYear": 2072,
       "subType": "traditional",
     },
     {
       "category": "ira",
-      "depletionAge": 87,
-      "depletionYear": 2077,
+      "depletionAge": 86,
+      "depletionYear": 2076,
       "subType": "roth",
     },
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 42282632.93,
+    "endBalance": 41953128.39,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -438,11 +438,11 @@ exports[`engine snapshot parity > fixture 11: waterfall withdrawal order — bro
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 65,
-    "endBalance": 10579651.71,
+    "endBalance": 10576079.2,
     "projectedExpenses": 151024.87,
-    "totalWithdrawal": 171872.78,
+    "totalWithdrawal": 175211.58,
   },
-  "sustainableWithdrawal": 423186.07,
+  "sustainableWithdrawal": 423043.17,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -461,8 +461,8 @@ exports[`engine snapshot parity > fixture 12: percentage withdrawal mode 1`] = `
   "accountDepletions": [
     {
       "category": "ira",
-      "depletionAge": 70,
-      "depletionYear": 2060,
+      "depletionAge": 69,
+      "depletionYear": 2059,
       "subType": "traditional",
     },
     {
@@ -486,7 +486,7 @@ exports[`engine snapshot parity > fixture 12: percentage withdrawal mode 1`] = `
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 26434304.37,
+    "endBalance": 25921712.64,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -495,11 +495,11 @@ exports[`engine snapshot parity > fixture 12: percentage withdrawal mode 1`] = `
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 65,
-    "endBalance": 7548931.5,
+    "endBalance": 7540544.26,
     "projectedExpenses": 151024.87,
-    "totalWithdrawal": 181734.7,
+    "totalWithdrawal": 189573.24,
   },
-  "sustainableWithdrawal": 301957.26,
+  "sustainableWithdrawal": 301621.77,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -524,20 +524,20 @@ exports[`engine snapshot parity > fixture 13: asymmetric retirement ages — ear
     },
     {
       "category": "401k",
-      "depletionAge": 75,
-      "depletionYear": 2060,
+      "depletionAge": 74,
+      "depletionYear": 2059,
       "subType": "roth",
     },
     {
       "category": "403b",
-      "depletionAge": 82,
-      "depletionYear": 2067,
+      "depletionAge": 80,
+      "depletionYear": 2065,
       "subType": "traditional",
     },
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 9966486.33,
+    "endBalance": 9337231.12,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -546,11 +546,11 @@ exports[`engine snapshot parity > fixture 13: asymmetric retirement ages — ear
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 55,
-    "endBalance": 3306623.25,
+    "endBalance": 3298930.49,
     "projectedExpenses": 115863.85,
-    "totalWithdrawal": 141353.9,
+    "totalWithdrawal": 148543.4,
   },
-  "sustainableWithdrawal": 132264.93,
+  "sustainableWithdrawal": 131957.22,
   "totalYears": 50,
   "warningCount": 0,
   "year0": {
@@ -588,7 +588,7 @@ exports[`engine snapshot parity > fixture 14: RMDs — birth year 1955 (RMD star
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 1858627.87,
+    "endBalance": 1763006.41,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -597,18 +597,18 @@ exports[`engine snapshot parity > fixture 14: RMDs — birth year 1955 (RMD star
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 68,
-    "endBalance": 1006570.4,
+    "endBalance": 1004976.92,
     "projectedExpenses": 60000,
-    "totalWithdrawal": 29280,
+    "totalWithdrawal": 30769.23,
   },
-  "sustainableWithdrawal": 40262.82,
+  "sustainableWithdrawal": 40199.08,
   "totalYears": 22,
   "warningCount": 1,
   "year0": {
-    "endBalance": 1006570.4,
+    "endBalance": 1004976.92,
     "phase": "decumulation",
     "projectedExpenses": 60000,
-    "totalWithdrawal": 29280,
+    "totalWithdrawal": 30769.23,
   },
 }
 `;
@@ -630,38 +630,38 @@ exports[`engine snapshot parity > fixture 15: RMDs — birth year 1965 (RMD star
     },
     {
       "category": "401k",
-      "depletionAge": 77,
-      "depletionYear": 2042,
+      "depletionAge": 76,
+      "depletionYear": 2041,
       "subType": "traditional",
     },
     {
       "category": "401k",
+      "depletionAge": 79,
+      "depletionYear": 2044,
+      "subType": "roth",
+    },
+    {
+      "category": "ira",
       "depletionAge": 81,
       "depletionYear": 2046,
-      "subType": "roth",
+      "subType": "traditional",
     },
     {
       "category": "ira",
       "depletionAge": 83,
       "depletionYear": 2048,
-      "subType": "traditional",
-    },
-    {
-      "category": "ira",
-      "depletionAge": 85,
-      "depletionYear": 2050,
       "subType": "roth",
     },
     {
       "category": "brokerage",
-      "depletionAge": 88,
-      "depletionYear": 2053,
+      "depletionAge": 86,
+      "depletionYear": 2051,
       "subType": undefined,
     },
     {
       "category": "hsa",
-      "depletionAge": 89,
-      "depletionYear": 2054,
+      "depletionAge": 87,
+      "depletionYear": 2052,
       "subType": undefined,
     },
   ],
@@ -672,15 +672,15 @@ exports[`engine snapshot parity > fixture 15: RMDs — birth year 1965 (RMD star
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
   "firstOverflowYear": null,
-  "portfolioDepletionAge": 89,
-  "portfolioDepletionYear": 2054,
+  "portfolioDepletionAge": 87,
+  "portfolioDepletionYear": 2052,
   "retirementYear": {
     "age": 62,
-    "endBalance": 814878.54,
+    "endBalance": 811041.96,
     "projectedExpenses": 57784.37,
-    "totalWithdrawal": 70496.93,
+    "totalWithdrawal": 74082.52,
   },
-  "sustainableWithdrawal": 32595.14,
+  "sustainableWithdrawal": 32441.68,
   "totalYears": 30,
   "warningCount": 0,
   "year0": {
@@ -718,7 +718,7 @@ exports[`engine snapshot parity > fixture 16: RMD forces withdrawal above bracke
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 3285682.55,
+    "endBalance": 3276808.2,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -727,18 +727,18 @@ exports[`engine snapshot parity > fixture 16: RMD forces withdrawal above bracke
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 70,
-    "endBalance": 1362024.4,
+    "endBalance": 1361094.87,
     "projectedExpenses": 50000,
-    "totalWithdrawal": 17080,
+    "totalWithdrawal": 17948.72,
   },
-  "sustainableWithdrawal": 54480.98,
+  "sustainableWithdrawal": 54443.79,
   "totalYears": 20,
   "warningCount": 1,
   "year0": {
-    "endBalance": 1362024.4,
+    "endBalance": 1361094.87,
     "phase": "decumulation",
     "projectedExpenses": 50000,
-    "totalWithdrawal": 17080,
+    "totalWithdrawal": 17948.72,
   },
 }
 `;
@@ -767,7 +767,7 @@ exports[`engine snapshot parity > fixture 17: RMD + Roth conversion targeting 1`
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 1939020.8,
+    "endBalance": 1923495.08,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -776,18 +776,18 @@ exports[`engine snapshot parity > fixture 17: RMD + Roth conversion targeting 1`
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 70,
-    "endBalance": 1080165,
+    "endBalance": 1078505.13,
     "projectedExpenses": 55000,
-    "totalWithdrawal": 30500,
+    "totalWithdrawal": 32051.28,
   },
-  "sustainableWithdrawal": 43206.6,
+  "sustainableWithdrawal": 43140.21,
   "totalYears": 20,
   "warningCount": 1,
   "year0": {
-    "endBalance": 1080165,
+    "endBalance": 1078505.13,
     "phase": "decumulation",
     "projectedExpenses": 55000,
-    "totalWithdrawal": 30500,
+    "totalWithdrawal": 32051.28,
   },
 }
 `;
@@ -855,9 +855,9 @@ exports[`engine snapshot parity > fixture 18: portfolio depletion — very low b
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 66,
-    "endBalance": 45785.58,
+    "endBalance": 45164.09,
     "projectedExpenses": 82000,
-    "totalWithdrawal": 100040,
+    "totalWithdrawal": 100620.84,
   },
   "sustainableWithdrawal": 5713.21,
   "totalYears": 25,
@@ -878,20 +878,20 @@ exports[`engine snapshot parity > fixture 19: brokerage-heavy portfolio — goal
   "accountDepletions": [
     {
       "category": "401k",
-      "depletionAge": 71,
-      "depletionYear": 2061,
+      "depletionAge": 70,
+      "depletionYear": 2060,
       "subType": "traditional",
     },
     {
       "category": "401k",
-      "depletionAge": 88,
-      "depletionYear": 2078,
+      "depletionAge": 87,
+      "depletionYear": 2077,
       "subType": "roth",
     },
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 32203370.27,
+    "endBalance": 31505708.24,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -900,11 +900,11 @@ exports[`engine snapshot parity > fixture 19: brokerage-heavy portfolio — goal
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 60,
-    "endBalance": 7454870.69,
+    "endBalance": 7443792.37,
     "projectedExpenses": 166854.97,
-    "totalWithdrawal": 203563.06,
+    "totalWithdrawal": 213916.63,
   },
-  "sustainableWithdrawal": 298194.83,
+  "sustainableWithdrawal": 297751.69,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -923,14 +923,14 @@ exports[`engine snapshot parity > fixture 20: catch-up contributions — age 50,
   "accountDepletions": [
     {
       "category": "401k",
-      "depletionAge": 76,
-      "depletionYear": 2052,
+      "depletionAge": 75,
+      "depletionYear": 2051,
       "subType": "traditional",
     },
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 3788674.62,
+    "endBalance": 3594808.65,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -939,11 +939,11 @@ exports[`engine snapshot parity > fixture 20: catch-up contributions — age 50,
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 65,
-    "endBalance": 2172455.27,
+    "endBalance": 2165358.7,
     "projectedExpenses": 106884.4,
-    "totalWithdrawal": 130398.97,
+    "totalWithdrawal": 137031.28,
   },
-  "sustainableWithdrawal": 86898.21,
+  "sustainableWithdrawal": 86614.35,
   "totalYears": 41,
   "warningCount": 0,
   "year0": {
@@ -974,20 +974,20 @@ exports[`engine snapshot parity > fixture 21: SS torpedo — MFJ filing status 1
     },
     {
       "category": "401k",
-      "depletionAge": 82,
-      "depletionYear": 2047,
+      "depletionAge": 80,
+      "depletionYear": 2045,
       "subType": "traditional",
     },
     {
       "category": "401k",
-      "depletionAge": 88,
-      "depletionYear": 2053,
+      "depletionAge": 87,
+      "depletionYear": 2052,
       "subType": "roth",
     },
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 1400395,
+    "endBalance": 1200119.95,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -996,11 +996,11 @@ exports[`engine snapshot parity > fixture 21: SS torpedo — MFJ filing status 1
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 65,
-    "endBalance": 1098575.19,
+    "endBalance": 1093316.82,
     "projectedExpenses": 79198.57,
-    "totalWithdrawal": 96622.26,
+    "totalWithdrawal": 101536.63,
   },
-  "sustainableWithdrawal": 43943.01,
+  "sustainableWithdrawal": 43732.67,
   "totalYears": 30,
   "warningCount": 0,
   "year0": {
@@ -1031,14 +1031,14 @@ exports[`engine snapshot parity > fixture 22: SS torpedo — Single filing statu
     },
     {
       "category": "401k",
-      "depletionAge": 75,
-      "depletionYear": 2040,
+      "depletionAge": 74,
+      "depletionYear": 2039,
       "subType": "traditional",
     },
     {
       "category": "401k",
-      "depletionAge": 78,
-      "depletionYear": 2043,
+      "depletionAge": 77,
+      "depletionYear": 2042,
       "subType": "roth",
     },
     {
@@ -1055,20 +1055,20 @@ exports[`engine snapshot parity > fixture 22: SS torpedo — Single filing statu
     },
     {
       "category": "brokerage",
-      "depletionAge": 83,
-      "depletionYear": 2048,
+      "depletionAge": 82,
+      "depletionYear": 2047,
       "subType": undefined,
     },
     {
       "category": "hsa",
-      "depletionAge": 84,
-      "depletionYear": 2049,
+      "depletionAge": 83,
+      "depletionYear": 2048,
       "subType": undefined,
     },
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 75268.9,
+    "endBalance": 75268.94,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -1077,11 +1077,11 @@ exports[`engine snapshot parity > fixture 22: SS torpedo — Single filing statu
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 65,
-    "endBalance": 690397.6,
+    "endBalance": 686266.01,
     "projectedExpenses": 62227.45,
-    "totalWithdrawal": 75917.49,
+    "totalWithdrawal": 79778.79,
   },
-  "sustainableWithdrawal": 27615.9,
+  "sustainableWithdrawal": 27450.64,
   "totalYears": 30,
   "warningCount": 0,
   "year0": {
@@ -1100,7 +1100,7 @@ exports[`engine snapshot parity > fixture 23: SS income = 0 (no Social Security)
   "accountDepletions": [],
   "finalYear": {
     "age": 89,
-    "endBalance": 25143703.07,
+    "endBalance": 24424844.17,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -1109,11 +1109,11 @@ exports[`engine snapshot parity > fixture 23: SS income = 0 (no Social Security)
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 65,
-    "endBalance": 7565406.92,
+    "endBalance": 7556354.53,
     "projectedExpenses": 136341.89,
-    "totalWithdrawal": 166337.11,
+    "totalWithdrawal": 174797.29,
   },
-  "sustainableWithdrawal": 302616.28,
+  "sustainableWithdrawal": 302254.18,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -1132,7 +1132,7 @@ exports[`engine snapshot parity > fixture 24: filing status absent — falls bac
   "accountDepletions": [],
   "finalYear": {
     "age": 89,
-    "endBalance": 28742102.66,
+    "endBalance": 28206264.21,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -1141,11 +1141,11 @@ exports[`engine snapshot parity > fixture 24: filing status absent — falls bac
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 65,
-    "endBalance": 7579097.75,
+    "endBalance": 7570741.68,
     "projectedExpenses": 125854.05,
-    "totalWithdrawal": 153541.94,
+    "totalWithdrawal": 161351.35,
   },
-  "sustainableWithdrawal": 303163.91,
+  "sustainableWithdrawal": 302829.67,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -1227,8 +1227,8 @@ exports[`engine snapshot parity > fixture 26: LTCG 15%/20% zone — higher incom
     },
     {
       "category": "401k",
-      "depletionAge": 87,
-      "depletionYear": 2047,
+      "depletionAge": 86,
+      "depletionYear": 2046,
       "subType": "traditional",
     },
     {
@@ -1240,7 +1240,7 @@ exports[`engine snapshot parity > fixture 26: LTCG 15%/20% zone — higher incom
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 1330589.13,
+    "endBalance": 1196346.01,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -1278,14 +1278,14 @@ exports[`engine snapshot parity > fixture 27: Roth conversion enabled via filing
     },
     {
       "category": "401k",
-      "depletionAge": 87,
-      "depletionYear": 2057,
+      "depletionAge": 85,
+      "depletionYear": 2055,
       "subType": "traditional",
     },
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 3389973.9,
+    "endBalance": 3141416.87,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -1294,11 +1294,11 @@ exports[`engine snapshot parity > fixture 27: Roth conversion enabled via filing
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 65,
-    "endBalance": 1874799.21,
+    "endBalance": 1868849.83,
     "projectedExpenses": 89605.92,
-    "totalWithdrawal": 109319.22,
+    "totalWithdrawal": 114879.39,
   },
-  "sustainableWithdrawal": 74991.97,
+  "sustainableWithdrawal": 74753.99,
   "totalYears": 35,
   "warningCount": 0,
   "year0": {
@@ -1335,14 +1335,20 @@ exports[`engine snapshot parity > fixture 28: Roth conversion constrained near I
     },
     {
       "category": "401k",
-      "depletionAge": 85,
-      "depletionYear": 2047,
+      "depletionAge": 83,
+      "depletionYear": 2045,
       "subType": "traditional",
+    },
+    {
+      "category": "401k",
+      "depletionAge": 89,
+      "depletionYear": 2051,
+      "subType": "roth",
     },
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 1193127.61,
+    "endBalance": 1033729.78,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -1351,11 +1357,11 @@ exports[`engine snapshot parity > fixture 28: Roth conversion constrained near I
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 65,
-    "endBalance": 1025972.78,
+    "endBalance": 1021438.63,
     "projectedExpenses": 68290.63,
-    "totalWithdrawal": 83314.57,
+    "totalWithdrawal": 87552.09,
   },
-  "sustainableWithdrawal": 41038.91,
+  "sustainableWithdrawal": 40857.55,
   "totalYears": 27,
   "warningCount": 0,
   "year0": {
@@ -1380,14 +1386,14 @@ exports[`engine snapshot parity > fixture 29: Roth conversion + ACA subsidy wind
     },
     {
       "category": "401k",
-      "depletionAge": 66,
-      "depletionYear": 2041,
+      "depletionAge": 65,
+      "depletionYear": 2040,
       "subType": "roth",
     },
     {
       "category": "403b",
-      "depletionAge": 66,
-      "depletionYear": 2041,
+      "depletionAge": 65,
+      "depletionYear": 2040,
       "subType": "traditional",
     },
     {
@@ -1398,26 +1404,26 @@ exports[`engine snapshot parity > fixture 29: Roth conversion + ACA subsidy wind
     },
     {
       "category": "ira",
-      "depletionAge": 68,
-      "depletionYear": 2043,
+      "depletionAge": 67,
+      "depletionYear": 2042,
       "subType": "traditional",
     },
     {
       "category": "ira",
-      "depletionAge": 68,
-      "depletionYear": 2043,
+      "depletionAge": 67,
+      "depletionYear": 2042,
       "subType": "roth",
     },
     {
       "category": "brokerage",
-      "depletionAge": 74,
-      "depletionYear": 2049,
+      "depletionAge": 73,
+      "depletionYear": 2048,
       "subType": undefined,
     },
     {
       "category": "hsa",
-      "depletionAge": 76,
-      "depletionYear": 2051,
+      "depletionAge": 75,
+      "depletionYear": 2050,
       "subType": undefined,
     },
   ],
@@ -1428,15 +1434,15 @@ exports[`engine snapshot parity > fixture 29: Roth conversion + ACA subsidy wind
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
   "firstOverflowYear": null,
-  "portfolioDepletionAge": 76,
-  "portfolioDepletionYear": 2051,
+  "portfolioDepletionAge": 75,
+  "portfolioDepletionYear": 2050,
   "retirementYear": {
     "age": 55,
-    "endBalance": 1079202.45,
+    "endBalance": 1074319.68,
     "projectedExpenses": 73541.53,
-    "totalWithdrawal": 89720.67,
+    "totalWithdrawal": 94284.01,
   },
-  "sustainableWithdrawal": 43168.1,
+  "sustainableWithdrawal": 42972.79,
   "totalYears": 40,
   "warningCount": 0,
   "year0": {
@@ -1479,26 +1485,26 @@ exports[`engine snapshot parity > fixture 30: Roth conversion skipped — zero b
     },
     {
       "category": "401k",
-      "depletionAge": 77,
-      "depletionYear": 2042,
+      "depletionAge": 76,
+      "depletionYear": 2041,
       "subType": "traditional",
     },
     {
       "category": "401k",
-      "depletionAge": 82,
-      "depletionYear": 2047,
+      "depletionAge": 81,
+      "depletionYear": 2046,
       "subType": "roth",
     },
     {
       "category": "ira",
-      "depletionAge": 83,
-      "depletionYear": 2048,
+      "depletionAge": 82,
+      "depletionYear": 2047,
       "subType": "traditional",
     },
     {
       "category": "hsa",
-      "depletionAge": 84,
-      "depletionYear": 2049,
+      "depletionAge": 83,
+      "depletionYear": 2048,
       "subType": undefined,
     },
   ],
@@ -1509,15 +1515,15 @@ exports[`engine snapshot parity > fixture 30: Roth conversion skipped — zero b
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
   "firstOverflowYear": null,
-  "portfolioDepletionAge": 84,
-  "portfolioDepletionYear": 2049,
+  "portfolioDepletionAge": 83,
+  "portfolioDepletionYear": 2048,
   "retirementYear": {
     "age": 65,
-    "endBalance": 662353.65,
+    "endBalance": 658597.66,
     "projectedExpenses": 56570.41,
-    "totalWithdrawal": 69015.9,
+    "totalWithdrawal": 72526.17,
   },
-  "sustainableWithdrawal": 26494.15,
+  "sustainableWithdrawal": 26343.91,
   "totalYears": 30,
   "warningCount": 0,
   "year0": {
@@ -1567,7 +1573,7 @@ exports[`engine snapshot parity > fixture 31: RMD + Roth conversion + IRMAA — 
   ],
   "finalYear": {
     "age": 94,
-    "endBalance": 4137312.2,
+    "endBalance": 4130354.41,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -1615,14 +1621,14 @@ exports[`engine snapshot parity > fixture 32: Guyton-Klinger — upper guardrail
     },
     {
       "category": "401k",
-      "depletionAge": 94,
-      "depletionYear": 2053,
+      "depletionAge": 93,
+      "depletionYear": 2052,
       "subType": "traditional",
     },
   ],
   "finalYear": {
     "age": 94,
-    "endBalance": 8159850.55,
+    "endBalance": 7972101.9,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -1631,18 +1637,18 @@ exports[`engine snapshot parity > fixture 32: Guyton-Klinger — upper guardrail
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 66,
-    "endBalance": 1393040,
+    "endBalance": 1392787.23,
     "projectedExpenses": 60000,
-    "totalWithdrawal": 63600,
+    "totalWithdrawal": 63829.79,
   },
-  "sustainableWithdrawal": 55721.6,
+  "sustainableWithdrawal": 55711.49,
   "totalYears": 29,
   "warningCount": 1,
   "year0": {
-    "endBalance": 1393040,
+    "endBalance": 1392787.23,
     "phase": "decumulation",
     "projectedExpenses": 60000,
-    "totalWithdrawal": 63600,
+    "totalWithdrawal": 63829.79,
   },
 }
 `;
@@ -1677,7 +1683,7 @@ exports[`engine snapshot parity > fixture 33: Guyton-Klinger — lower guardrail
   ],
   "finalYear": {
     "age": 94,
-    "endBalance": 402029.6,
+    "endBalance": 394213.98,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -1686,18 +1692,18 @@ exports[`engine snapshot parity > fixture 33: Guyton-Klinger — lower guardrail
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 66,
-    "endBalance": 749904,
+    "endBalance": 749591.49,
     "projectedExpenses": 80000,
-    "totalWithdrawal": 84800,
+    "totalWithdrawal": 85106.38,
   },
-  "sustainableWithdrawal": 37495.2,
+  "sustainableWithdrawal": 37479.57,
   "totalYears": 29,
   "warningCount": 1,
   "year0": {
-    "endBalance": 749904,
+    "endBalance": 749591.49,
     "phase": "decumulation",
     "projectedExpenses": 80000,
-    "totalWithdrawal": 84800,
+    "totalWithdrawal": 85106.38,
   },
 }
 `;
@@ -1726,7 +1732,7 @@ exports[`engine snapshot parity > fixture 34: Guyton-Klinger — prosperity rule
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 467267.27,
+    "endBalance": 464276.56,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -1735,18 +1741,18 @@ exports[`engine snapshot parity > fixture 34: Guyton-Klinger — prosperity rule
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 67,
-    "endBalance": 686730.56,
+    "endBalance": 686666.23,
     "projectedExpenses": 55000,
-    "totalWithdrawal": 20068.75,
+    "totalWithdrawal": 20132.45,
   },
-  "sustainableWithdrawal": 27469.22,
+  "sustainableWithdrawal": 27466.65,
   "totalYears": 23,
   "warningCount": 1,
   "year0": {
-    "endBalance": 686730.56,
+    "endBalance": 686666.23,
     "phase": "decumulation",
     "projectedExpenses": 55000,
-    "totalWithdrawal": 20068.75,
+    "totalWithdrawal": 20132.45,
   },
 }
 `;
@@ -1781,7 +1787,7 @@ exports[`engine snapshot parity > fixture 35: G-K with budget override in a loss
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 406735.71,
+    "endBalance": 408337.27,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -1790,18 +1796,18 @@ exports[`engine snapshot parity > fixture 35: G-K with budget override in a loss
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 68,
-    "endBalance": 586739.5,
+    "endBalance": 586656.63,
     "projectedExpenses": 60000,
-    "totalWithdrawal": 25350,
+    "totalWithdrawal": 25430.46,
   },
-  "sustainableWithdrawal": 23469.58,
+  "sustainableWithdrawal": 23466.27,
   "totalYears": 22,
   "warningCount": 1,
   "year0": {
-    "endBalance": 586739.5,
+    "endBalance": 586656.63,
     "phase": "decumulation",
     "projectedExpenses": 60000,
-    "totalWithdrawal": 25350,
+    "totalWithdrawal": 25430.46,
   },
 }
 `;
@@ -1811,7 +1817,7 @@ exports[`engine snapshot parity > fixture 36: Year-0 with real YTD contributions
   "accountDepletions": [],
   "finalYear": {
     "age": 89,
-    "endBalance": 26173674.32,
+    "endBalance": 25505123.57,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -1820,11 +1826,11 @@ exports[`engine snapshot parity > fixture 36: Year-0 with real YTD contributions
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 65,
-    "endBalance": 7554293.57,
+    "endBalance": 7544266.29,
     "projectedExpenses": 151024.87,
-    "totalWithdrawal": 184250.34,
+    "totalWithdrawal": 193621.63,
   },
-  "sustainableWithdrawal": 302171.74,
+  "sustainableWithdrawal": 301770.65,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -1856,7 +1862,7 @@ exports[`engine snapshot parity > fixture 37: routeFromSpecs with ContributionSp
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 26132823.3,
+    "endBalance": 25464272.52,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -1865,11 +1871,11 @@ exports[`engine snapshot parity > fixture 37: routeFromSpecs with ContributionSp
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 65,
-    "endBalance": 7546239.9,
+    "endBalance": 7536212.62,
     "projectedExpenses": 151024.87,
-    "totalWithdrawal": 184250.34,
+    "totalWithdrawal": 193621.63,
   },
-  "sustainableWithdrawal": 301849.6,
+  "sustainableWithdrawal": 301448.5,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -1901,7 +1907,7 @@ exports[`engine snapshot parity > fixture 38: routeFromSpecs with salary-fractio
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 18487085.22,
+    "endBalance": 17818534.53,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -1910,11 +1916,11 @@ exports[`engine snapshot parity > fixture 38: routeFromSpecs with salary-fractio
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 65,
-    "endBalance": 6038908.51,
+    "endBalance": 6028881.22,
     "projectedExpenses": 151024.87,
-    "totalWithdrawal": 184250.34,
+    "totalWithdrawal": 193621.63,
   },
-  "sustainableWithdrawal": 241556.34,
+  "sustainableWithdrawal": 241155.25,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -1933,7 +1939,7 @@ exports[`engine snapshot parity > fixture 39: Individual account tracking throug
   "accountDepletions": [],
   "finalYear": {
     "age": 89,
-    "endBalance": 26132822.45,
+    "endBalance": 25464271.77,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -1942,11 +1948,11 @@ exports[`engine snapshot parity > fixture 39: Individual account tracking throug
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 65,
-    "endBalance": 7546239.76,
+    "endBalance": 7536212.48,
     "projectedExpenses": 151024.87,
-    "totalWithdrawal": 184250.34,
+    "totalWithdrawal": 193621.63,
   },
-  "sustainableWithdrawal": 301849.59,
+  "sustainableWithdrawal": 301448.5,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -1965,7 +1971,7 @@ exports[`engine snapshot parity > fixture 40: Simple mode — collapsed single-b
   "accountDepletions": [],
   "finalYear": {
     "age": 89,
-    "endBalance": 6972331.94,
+    "endBalance": 6675906.14,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -1974,11 +1980,11 @@ exports[`engine snapshot parity > fixture 40: Simple mode — collapsed single-b
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 65,
-    "endBalance": 3046343.97,
+    "endBalance": 3040490.75,
     "projectedExpenses": 88989.32,
-    "totalWithdrawal": 108566.97,
+    "totalWithdrawal": 114088.87,
   },
-  "sustainableWithdrawal": 121853.76,
+  "sustainableWithdrawal": 121619.63,
   "totalYears": 50,
   "warningCount": 0,
   "year0": {
@@ -2022,7 +2028,7 @@ exports[`engine snapshot parity > fixture 41: rothConversionTarget override via 
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 2280291.58,
+    "endBalance": 2260207.33,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -2052,14 +2058,14 @@ exports[`engine snapshot parity > fixture 42: Multiple saving + withdrawal + lif
   "accountDepletions": [
     {
       "category": "401k",
-      "depletionAge": 73,
-      "depletionYear": 2053,
+      "depletionAge": 72,
+      "depletionYear": 2052,
       "subType": "traditional",
     },
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 12139722.67,
+    "endBalance": 11893891.2,
   },
   "firstOverflowAge": 52,
   "firstOverflowAmount": 2152.66,
@@ -2068,11 +2074,11 @@ exports[`engine snapshot parity > fixture 42: Multiple saving + withdrawal + lif
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 60,
-    "endBalance": 2893464.42,
+    "endBalance": 2888364.98,
     "projectedExpenses": 76805.07,
-    "totalWithdrawal": 93702.19,
+    "totalWithdrawal": 98468.03,
   },
-  "sustainableWithdrawal": 101271.25,
+  "sustainableWithdrawal": 101092.77,
   "totalYears": 45,
   "warningCount": 0,
   "year0": {
@@ -2104,7 +2110,7 @@ exports[`engine snapshot parity > fixture 43: High-income: RMD + SS + LTCG + Rot
   ],
   "finalYear": {
     "age": 94,
-    "endBalance": 10401155.66,
+    "endBalance": 10401155.64,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -2134,14 +2140,14 @@ exports[`engine snapshot parity > fixture 44: Brokerage ramp contribution across
   "accountDepletions": [
     {
       "category": "401k",
-      "depletionAge": 85,
-      "depletionYear": 2080,
+      "depletionAge": 83,
+      "depletionYear": 2078,
       "subType": "traditional",
     },
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 39930601.75,
+    "endBalance": 39134361.27,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -2150,11 +2156,11 @@ exports[`engine snapshot parity > fixture 44: Brokerage ramp contribution across
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 60,
-    "endBalance": 8420264.14,
+    "endBalance": 8410236.86,
     "projectedExpenses": 151024.87,
-    "totalWithdrawal": 184250.34,
+    "totalWithdrawal": 193621.63,
   },
-  "sustainableWithdrawal": 336810.57,
+  "sustainableWithdrawal": 336409.47,
   "totalYears": 60,
   "warningCount": 0,
   "year0": {
@@ -2170,10 +2176,17 @@ exports[`engine snapshot parity > fixture 44: Brokerage ramp contribution across
 
 exports[`engine snapshot parity > fixture 45: perPersonSalaryOverrides with asymmetric salary changes 1`] = `
 {
-  "accountDepletions": [],
+  "accountDepletions": [
+    {
+      "category": "401k",
+      "depletionAge": 88,
+      "depletionYear": 2073,
+      "subType": "traditional",
+    },
+  ],
   "finalYear": {
     "age": 89,
-    "endBalance": 24361125.75,
+    "endBalance": 23865028.56,
   },
   "firstOverflowAge": 41,
   "firstOverflowAmount": 4909,
@@ -2182,11 +2195,11 @@ exports[`engine snapshot parity > fixture 45: perPersonSalaryOverrides with asym
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 65,
-    "endBalance": 6861373.97,
+    "endBalance": 6852511.32,
     "projectedExpenses": 133483.98,
-    "totalWithdrawal": 162850.46,
+    "totalWithdrawal": 171133.31,
   },
-  "sustainableWithdrawal": 274454.96,
+  "sustainableWithdrawal": 274100.45,
   "totalYears": 50,
   "warningCount": 0,
   "year0": {
@@ -2205,8 +2218,8 @@ exports[`engine snapshot parity > fixture 46: Catch-up: super catch-up ages 60-6
   "accountDepletions": [
     {
       "category": "401k",
-      "depletionAge": 74,
-      "depletionYear": 2041,
+      "depletionAge": 73,
+      "depletionYear": 2040,
       "subType": "traditional",
     },
     {
@@ -2229,20 +2242,26 @@ exports[`engine snapshot parity > fixture 46: Catch-up: super catch-up ages 60-6
     },
     {
       "category": "ira",
-      "depletionAge": 87,
-      "depletionYear": 2054,
+      "depletionAge": 86,
+      "depletionYear": 2053,
       "subType": "traditional",
     },
     {
       "category": "ira",
-      "depletionAge": 88,
-      "depletionYear": 2055,
+      "depletionAge": 87,
+      "depletionYear": 2054,
       "subType": "roth",
+    },
+    {
+      "category": "brokerage",
+      "depletionAge": 89,
+      "depletionYear": 2056,
+      "subType": undefined,
     },
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 260046.49,
+    "endBalance": 126466.69,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -2251,11 +2270,11 @@ exports[`engine snapshot parity > fixture 46: Catch-up: super catch-up ages 60-6
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 67,
-    "endBalance": 1061339.54,
+    "endBalance": 1057759.65,
     "projectedExpenses": 89918.13,
-    "totalWithdrawal": 65780.12,
+    "totalWithdrawal": 69125.81,
   },
-  "sustainableWithdrawal": 42453.58,
+  "sustainableWithdrawal": 42310.39,
   "totalYears": 32,
   "warningCount": 0,
   "year0": {
@@ -2286,14 +2305,14 @@ exports[`engine snapshot parity > fixture 47: Waterfall withdrawal with rothBrac
     },
     {
       "category": "401k",
-      "depletionAge": 78,
-      "depletionYear": 2037,
+      "depletionAge": 77,
+      "depletionYear": 2036,
       "subType": "traditional",
     },
     {
       "category": "401k",
-      "depletionAge": 80,
-      "depletionYear": 2039,
+      "depletionAge": 79,
+      "depletionYear": 2038,
       "subType": "roth",
     },
     {
@@ -2311,7 +2330,7 @@ exports[`engine snapshot parity > fixture 47: Waterfall withdrawal with rothBrac
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 1308837.48,
+    "endBalance": 1279591.16,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -2320,18 +2339,18 @@ exports[`engine snapshot parity > fixture 47: Waterfall withdrawal with rothBrac
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 66,
-    "endBalance": 965208.48,
+    "endBalance": 964050.55,
     "projectedExpenses": 70000,
-    "totalWithdrawal": 77936,
+    "totalWithdrawal": 79018.18,
   },
-  "sustainableWithdrawal": 38608.34,
+  "sustainableWithdrawal": 38562.02,
   "totalYears": 24,
   "warningCount": 1,
   "year0": {
-    "endBalance": 965208.48,
+    "endBalance": 964050.55,
     "phase": "decumulation",
     "projectedExpenses": 70000,
-    "totalWithdrawal": 77936,
+    "totalWithdrawal": 79018.18,
   },
 }
 `;
@@ -2341,14 +2360,14 @@ exports[`engine snapshot parity > fixture 48: Override: accountCaps + taxTypeCap
   "accountDepletions": [
     {
       "category": "401k",
-      "depletionAge": 87,
-      "depletionYear": 2077,
+      "depletionAge": 85,
+      "depletionYear": 2075,
       "subType": "traditional",
     },
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 36702111.98,
+    "endBalance": 36218978.83,
   },
   "firstOverflowAge": 38,
   "firstOverflowAmount": 5134.77,
@@ -2357,11 +2376,11 @@ exports[`engine snapshot parity > fixture 48: Override: accountCaps + taxTypeCap
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 65,
-    "endBalance": 9603873.36,
+    "endBalance": 9593846.08,
     "projectedExpenses": 151024.87,
-    "totalWithdrawal": 184250.34,
+    "totalWithdrawal": 193621.63,
   },
-  "sustainableWithdrawal": 384154.93,
+  "sustainableWithdrawal": 383753.84,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -2380,7 +2399,7 @@ exports[`engine snapshot parity > fixture 49: Override: reset: true followed by 
   "accountDepletions": [],
   "finalYear": {
     "age": 89,
-    "endBalance": 32287918.18,
+    "endBalance": 31619367.46,
   },
   "firstOverflowAge": 38,
   "firstOverflowAmount": 3695.19,
@@ -2389,11 +2408,11 @@ exports[`engine snapshot parity > fixture 49: Override: reset: true followed by 
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 65,
-    "endBalance": 8759696.07,
+    "endBalance": 8749668.79,
     "projectedExpenses": 151024.87,
-    "totalWithdrawal": 184250.34,
+    "totalWithdrawal": 193621.63,
   },
-  "sustainableWithdrawal": 350387.84,
+  "sustainableWithdrawal": 349986.75,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -2412,7 +2431,7 @@ exports[`engine snapshot parity > fixture 50: HSA with employer match 1`] = `
   "accountDepletions": [],
   "finalYear": {
     "age": 89,
-    "endBalance": 20765186.27,
+    "endBalance": 20096635.66,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -2421,11 +2440,11 @@ exports[`engine snapshot parity > fixture 50: HSA with employer match 1`] = `
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 65,
-    "endBalance": 6488028.42,
+    "endBalance": 6478001.14,
     "projectedExpenses": 151024.87,
-    "totalWithdrawal": 184250.34,
+    "totalWithdrawal": 193621.63,
   },
-  "sustainableWithdrawal": 259521.14,
+  "sustainableWithdrawal": 259120.05,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -2474,8 +2493,8 @@ exports[`engine snapshot parity > fixture 51: Zero-balance account category with
     },
     {
       "category": "401k",
-      "depletionAge": 78,
-      "depletionYear": 2036,
+      "depletionAge": 77,
+      "depletionYear": 2035,
       "subType": "traditional",
     },
     {
@@ -2487,7 +2506,7 @@ exports[`engine snapshot parity > fixture 51: Zero-balance account category with
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 193896.88,
+    "endBalance": 132897.25,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -2496,18 +2515,18 @@ exports[`engine snapshot parity > fixture 51: Zero-balance account category with
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 67,
-    "endBalance": 409724.4,
+    "endBalance": 408794.87,
     "projectedExpenses": 50000,
-    "totalWithdrawal": 17080,
+    "totalWithdrawal": 17948.72,
   },
-  "sustainableWithdrawal": 16388.98,
+  "sustainableWithdrawal": 16351.79,
   "totalYears": 23,
   "warningCount": 1,
   "year0": {
-    "endBalance": 409724.4,
+    "endBalance": 408794.87,
     "phase": "decumulation",
     "projectedExpenses": 50000,
-    "totalWithdrawal": 17080,
+    "totalWithdrawal": 17948.72,
   },
 }
 `;
@@ -2517,7 +2536,7 @@ exports[`engine snapshot parity > fixture 52: 3+ individual accounts with unequa
   "accountDepletions": [],
   "finalYear": {
     "age": 89,
-    "endBalance": 26132822.45,
+    "endBalance": 25464271.77,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -2526,11 +2545,11 @@ exports[`engine snapshot parity > fixture 52: 3+ individual accounts with unequa
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 65,
-    "endBalance": 7546239.76,
+    "endBalance": 7536212.48,
     "projectedExpenses": 151024.87,
-    "totalWithdrawal": 184250.34,
+    "totalWithdrawal": 193621.63,
   },
-  "sustainableWithdrawal": 301849.59,
+  "sustainableWithdrawal": 301448.5,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -2592,7 +2611,7 @@ exports[`engine snapshot parity > fixture 53: Waterfall withdrawal with explicit
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 1091083.82,
+    "endBalance": 1073156.89,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -2653,7 +2672,7 @@ exports[`engine snapshot parity > fixture 54: IRMAA awareness enabled, income ne
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 2425946.09,
+    "endBalance": 2418826.05,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -2714,7 +2733,7 @@ exports[`engine snapshot parity > fixture 55: IRMAA awareness disabled, income n
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 2443356.67,
+    "endBalance": 2421851.06,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -2763,7 +2782,7 @@ exports[`engine snapshot parity > fixture 56: RMD excess above G-K spending (hig
   ],
   "finalYear": {
     "age": 94,
-    "endBalance": 5730578.49,
+    "endBalance": 5730446.7,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -2772,18 +2791,18 @@ exports[`engine snapshot parity > fixture 56: RMD excess above G-K spending (hig
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 75,
-    "endBalance": 2225441.43,
+    "endBalance": 2225438.97,
     "projectedExpenses": 40000,
-    "totalWithdrawal": 91900.81,
+    "totalWithdrawal": 91939.11,
   },
-  "sustainableWithdrawal": 89017.66,
+  "sustainableWithdrawal": 89017.56,
   "totalYears": 20,
   "warningCount": 1,
   "year0": {
-    "endBalance": 2225441.43,
+    "endBalance": 2225438.97,
     "phase": "decumulation",
     "projectedExpenses": 40000,
-    "totalWithdrawal": 91900.81,
+    "totalWithdrawal": 91939.11,
   },
 }
 `;
@@ -2812,7 +2831,7 @@ exports[`engine snapshot parity > fixture 57: RMD forces large withdrawal with G
   ],
   "finalYear": {
     "age": 94,
-    "endBalance": 2794438.52,
+    "endBalance": 2794409.88,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -2821,18 +2840,18 @@ exports[`engine snapshot parity > fixture 57: RMD forces large withdrawal with G
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 76,
-    "endBalance": 1631155.9,
+    "endBalance": 1631153.91,
     "projectedExpenses": 35000,
-    "totalWithdrawal": 73853.64,
+    "totalWithdrawal": 73887.17,
   },
-  "sustainableWithdrawal": 57090.46,
+  "sustainableWithdrawal": 57090.39,
   "totalYears": 19,
   "warningCount": 1,
   "year0": {
-    "endBalance": 1631155.9,
+    "endBalance": 1631153.91,
     "phase": "decumulation",
     "projectedExpenses": 35000,
-    "totalWithdrawal": 73853.64,
+    "totalWithdrawal": 73887.17,
   },
 }
 `;
@@ -2882,18 +2901,18 @@ exports[`engine snapshot parity > fixture 58: Convergence loop with withdrawalAc
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 67,
-    "endBalance": 945195.2,
+    "endBalance": 945014.89,
     "projectedExpenses": 80000,
-    "totalWithdrawal": 46640,
+    "totalWithdrawal": 46808.51,
   },
-  "sustainableWithdrawal": 37807.81,
+  "sustainableWithdrawal": 37800.6,
   "totalYears": 23,
   "warningCount": 1,
   "year0": {
-    "endBalance": 945195.2,
+    "endBalance": 945014.89,
     "phase": "decumulation",
     "projectedExpenses": 80000,
-    "totalWithdrawal": 46640,
+    "totalWithdrawal": 46808.51,
   },
 }
 `;
@@ -2909,8 +2928,8 @@ exports[`engine snapshot parity > fixture 59: decumulationAnnualExpenses + postR
     },
     {
       "category": "401k",
-      "depletionAge": 80,
-      "depletionYear": 2055,
+      "depletionAge": 79,
+      "depletionYear": 2054,
       "subType": "roth",
     },
     {
@@ -2921,8 +2940,8 @@ exports[`engine snapshot parity > fixture 59: decumulationAnnualExpenses + postR
     },
     {
       "category": "403b",
-      "depletionAge": 86,
-      "depletionYear": 2061,
+      "depletionAge": 85,
+      "depletionYear": 2060,
       "subType": "roth",
     },
     {
@@ -2939,20 +2958,20 @@ exports[`engine snapshot parity > fixture 59: decumulationAnnualExpenses + postR
     },
     {
       "category": "hsa",
-      "depletionAge": 90,
-      "depletionYear": 2065,
+      "depletionAge": 89,
+      "depletionYear": 2064,
       "subType": undefined,
     },
     {
       "category": "brokerage",
-      "depletionAge": 90,
-      "depletionYear": 2065,
+      "depletionAge": 89,
+      "depletionYear": 2064,
       "subType": undefined,
     },
   ],
   "finalYear": {
     "age": 94,
-    "endBalance": 207668.84,
+    "endBalance": 207668.87,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -2961,11 +2980,11 @@ exports[`engine snapshot parity > fixture 59: decumulationAnnualExpenses + postR
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 65,
-    "endBalance": 2114950.45,
+    "endBalance": 2106776.88,
     "projectedExpenses": 123105.34,
-    "totalWithdrawal": 150188.51,
+    "totalWithdrawal": 157827.36,
   },
-  "sustainableWithdrawal": 84598.02,
+  "sustainableWithdrawal": 84271.08,
   "totalYears": 45,
   "warningCount": 0,
   "year0": {
@@ -2997,7 +3016,7 @@ exports[`engine snapshot parity > fixture 60: traditionalFallbackRate with diffe
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 2271609.22,
+    "endBalance": 2215743.28,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -3006,11 +3025,11 @@ exports[`engine snapshot parity > fixture 60: traditionalFallbackRate with diffe
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 65,
-    "endBalance": 1112865.87,
+    "endBalance": 1111619.52,
     "projectedExpenses": 64004.23,
-    "totalWithdrawal": 70604.87,
+    "totalWithdrawal": 71769.68,
   },
-  "sustainableWithdrawal": 44514.63,
+  "sustainableWithdrawal": 44464.78,
   "totalYears": 35,
   "warningCount": 0,
   "year0": {
@@ -3054,7 +3073,7 @@ exports[`engine snapshot parity > fixture 61: Two-person household with age gap 
   ],
   "finalYear": {
     "age": 94,
-    "endBalance": 3321423.03,
+    "endBalance": 3276674.76,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -3086,14 +3105,20 @@ exports[`engine snapshot parity > fixture 62: Negative salaryGrowthRate with mul
   "accountDepletions": [
     {
       "category": "401k",
-      "depletionAge": 76,
-      "depletionYear": 2051,
+      "depletionAge": 75,
+      "depletionYear": 2050,
       "subType": "traditional",
+    },
+    {
+      "category": "401k",
+      "depletionAge": 89,
+      "depletionYear": 2064,
+      "subType": "roth",
     },
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 5818191.09,
+    "endBalance": 5615130.84,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -3102,11 +3127,11 @@ exports[`engine snapshot parity > fixture 62: Negative salaryGrowthRate with mul
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 65,
-    "endBalance": 2528720.11,
+    "endBalance": 2521796.62,
     "projectedExpenses": 104277.47,
-    "totalWithdrawal": 127218.51,
+    "totalWithdrawal": 133689.06,
   },
-  "sustainableWithdrawal": 101148.8,
+  "sustainableWithdrawal": 100871.86,
   "totalYears": 40,
   "warningCount": 0,
   "year0": {
@@ -3125,14 +3150,14 @@ exports[`engine snapshot parity > fixture 63: high-income single earner $250k (s
   "accountDepletions": [
     {
       "category": "401k",
-      "depletionAge": 81,
-      "depletionYear": 2066,
+      "depletionAge": 80,
+      "depletionYear": 2065,
       "subType": "traditional",
     },
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 27332016.96,
+    "endBalance": 26731358.84,
   },
   "firstOverflowAge": 41,
   "firstOverflowAmount": 4909,
@@ -3141,11 +3166,11 @@ exports[`engine snapshot parity > fixture 63: high-income single earner $250k (s
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 65,
-    "endBalance": 8901265.08,
+    "endBalance": 8886493.98,
     "projectedExpenses": 222473.29,
-    "totalWithdrawal": 271417.41,
+    "totalWithdrawal": 285222.17,
   },
-  "sustainableWithdrawal": 356050.6,
+  "sustainableWithdrawal": 355459.76,
   "totalYears": 50,
   "warningCount": 0,
   "year0": {
@@ -3164,14 +3189,26 @@ exports[`engine snapshot parity > fixture 64: pre-retiree age 60 at the accumula
   "accountDepletions": [
     {
       "category": "401k",
-      "depletionAge": 81,
-      "depletionYear": 2046,
+      "depletionAge": 80,
+      "depletionYear": 2045,
+      "subType": "traditional",
+    },
+    {
+      "category": "401k",
+      "depletionAge": 88,
+      "depletionYear": 2053,
+      "subType": "roth",
+    },
+    {
+      "category": "403b",
+      "depletionAge": 89,
+      "depletionYear": 2054,
       "subType": "traditional",
     },
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 4291066.47,
+    "endBalance": 4056953.22,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -3180,11 +3217,11 @@ exports[`engine snapshot parity > fixture 64: pre-retiree age 60 at the accumula
   "portfolioDepletionYear": null,
   "retirementYear": {
     "age": 65,
-    "endBalance": 2060452.55,
+    "endBalance": 2054442.98,
     "projectedExpenses": 90512.66,
-    "totalWithdrawal": 110425.45,
+    "totalWithdrawal": 116041.87,
   },
-  "sustainableWithdrawal": 82418.1,
+  "sustainableWithdrawal": 82177.72,
   "totalYears": 30,
   "warningCount": 0,
   "year0": {

@@ -361,8 +361,28 @@ export type EngineDecumulationYear = {
   estTraditionalPortion: number;
   /** Debug: bracket-filling traditional cap (income cap - taxable SS). */
   bracketTraditionalCap?: number;
-  /** Debug: unmet withdrawal need after routing (target - actual). */
+  /** Unmet withdrawal need after routing (target - actual) — a REAL output
+   *  now, not debug-only (v0.7.8 penalty-hard-exclusion follow-up,
+   *  DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md § Q3/C1): under the
+   *  default `avoidPenalizedWithdrawals: true`, a household whose
+   *  penalty-free money runs out shows a real, positive `unmetNeed` here
+   *  rather than silently drawing penalized money. Populated by all three
+   *  routing modes. */
   unmetNeed?: number;
+  /** Portion of `unmetNeed` attributable specifically to excluding
+   *  penalty-exposed money, not to the household being broke (§ Q3/C2) —
+   *  see `RouteResult`'s docblock in `withdrawal-routing.ts` for the exact
+   *  contract. A household can be short for both reasons, or either alone;
+   *  this field isolates the penalty-avoidance portion so the two are
+   *  never conflated. */
+  penaltyAvoidedShortfall?: number;
+  /** Early-withdrawal penalty cost actually charged this year (§ Q5) —
+   *  0 in the overwhelming default case, since `avoidPenalizedWithdrawals:
+   *  true` already excludes penalty-exposed money from routing. Nonzero
+   *  only when the lever is off and a penalized dollar was actually drawn.
+   *  NOT included in `taxCost` — see `ComputeTaxFromSlotsResult`'s
+   *  docblock in `tax-estimation.ts`. */
+  penaltyCost?: number;
   /** Debug: pre-withdrawal per-account balances (what the router sees). */
   preWithdrawalAcctBal?: AccountBalances;
   /** Portfolio balance at end of year (all buckets combined). */

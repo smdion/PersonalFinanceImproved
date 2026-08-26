@@ -4,7 +4,7 @@
  * Shared helpers for working with AccountBalances and TaxBuckets.
  * Used by the orchestrator and multiple extraction modules.
  */
-import type { TaxBuckets, AccountBalances, DecumulationSlot } from "../types";
+import type { TaxBuckets, AccountBalances } from "../types";
 import {
   getAllCategories,
   getLimitGroup,
@@ -66,19 +66,22 @@ export function cloneAccountBalances(a: AccountBalances): AccountBalances {
 }
 
 /**
- * Subtract a withdrawal-eligibility record's locked dollars from balances,
- * per category (v0.7.8, PLAN-v0.7.8-v4 Group 2.2, Tier B). Floors at 0 —
- * `lockedTrad`/`lockedRoth`/`lockedTotal` are sums of individual-account
- * lock amounts, which can't exceed the category total they're locked
- * within, but flooring keeps this safe against any future drift between
- * `acctBal` and the sum of individual accounts (the same drift
- * `decumulation-year.ts`'s `[DIAG] Roth divergence` check already watches
- * for). Locked design: `eligibleBalances` is derived by SUBTRACTION from
- * the real `acctBal`, never by summing `indBal` — see
- * `withdrawal-eligibility.ts`'s module docblock (Q3 part 2) for why the
- * other direction breaks byte-identity.
+ * Subtract a withdrawal-eligibility record's penalty-exposed dollars from
+ * balances, per category (v0.7.8 penalty-hard-exclusion follow-up,
+ * DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md § Q2 — supersedes the
+ * Tier B two-pass model this function was originally written for; renamed
+ * from `subtractLocked`). Floors at 0 —
+ * `penaltyExposedTrad`/`penaltyExposedRoth`/`penaltyExposedTotal` are sums
+ * of individual-account penalty-exposed amounts, which can't exceed the
+ * category total they're within, but flooring keeps this safe against any
+ * future drift between `acctBal` and the sum of individual accounts (the
+ * same drift `decumulation-year.ts`'s `[DIAG] Roth divergence` check
+ * already watches for). Locked design: the penalty-free balance is derived
+ * by SUBTRACTION from the real `acctBal`, never by summing `indBal` — see
+ * `withdrawal-eligibility.ts`'s module docblock for why the other direction
+ * breaks byte-identity.
  */
-export function subtractLocked(
+export function subtractPenaltyExposed(
   balances: AccountBalances,
   record: EligibilityRecord,
 ): AccountBalances {
@@ -88,39 +91,20 @@ export function subtractLocked(
     if (bal.structure === "roth_traditional") {
       setTraditional(
         bal,
-        Math.max(0, bal.traditional - (record.lockedTrad[cat] ?? 0)),
+        Math.max(0, bal.traditional - (record.penaltyExposedTrad[cat] ?? 0)),
       );
-      setRoth(bal, Math.max(0, bal.roth - (record.lockedRoth[cat] ?? 0)));
+      setRoth(
+        bal,
+        Math.max(0, bal.roth - (record.penaltyExposedRoth[cat] ?? 0)),
+      );
     } else {
       setBalance(
         bal,
-        Math.max(0, getTotalBalance(bal) - (record.lockedTotal[cat] ?? 0)),
+        Math.max(
+          0,
+          getTotalBalance(bal) - (record.penaltyExposedTotal[cat] ?? 0),
+        ),
       );
-    }
-  }
-  return result;
-}
-
-/**
- * Subtract already-drawn slot amounts from balances, per category (Tier B
- * pass 2's "remaining balances" — full balances minus pass 1's draws).
- * Floors at 0 for the same drift-safety reason as `subtractLocked`.
- */
-export function subtractSlots(
-  balances: AccountBalances,
-  slots: DecumulationSlot[],
-): AccountBalances {
-  const result = cloneAccountBalances(balances);
-  for (const slot of slots) {
-    const bal = result[slot.category];
-    if (bal.structure === "roth_traditional") {
-      setTraditional(
-        bal,
-        Math.max(0, bal.traditional - slot.traditionalWithdrawal),
-      );
-      setRoth(bal, Math.max(0, bal.roth - slot.rothWithdrawal));
-    } else {
-      setBalance(bal, Math.max(0, getTotalBalance(bal) - slot.withdrawal));
     }
   }
   return result;

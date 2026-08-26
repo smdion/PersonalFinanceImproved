@@ -57,7 +57,17 @@ export function useProjectionDerived(
     contribProfilesQuery,
     salaryProfilesQuery,
     coastFireMcResult,
+    coastFireTodayMcResult,
   } = queries;
+
+  // Picks between the found/passing-age result (scenarioView "coastFire")
+  // and the stop-at-current-age result (scenarioView "coastFireToday") —
+  // see use-projection-queries.ts's identically-named constant for why
+  // these are two different fields off the same underlying query.
+  const activeCoastFireMcResult =
+    scenarioView === "coastFireToday"
+      ? coastFireTodayMcResult
+      : coastFireMcResult;
 
   const {
     parentCategoryFilter,
@@ -90,15 +100,15 @@ export function useProjectionDerived(
     // at every consumer.
     if (!engineData?.result) return null;
     if (
-      scenarioView === "coastFire" &&
-      coastFireMcResult?.deterministicProjection
+      (scenarioView === "coastFire" || scenarioView === "coastFireToday") &&
+      activeCoastFireMcResult?.deterministicProjection
     ) {
-      return coastFireMcResult.deterministicProjection;
+      return activeCoastFireMcResult.deterministicProjection;
     }
     return engineData.result;
   }, [
     scenarioView,
-    coastFireMcResult?.deterministicProjection,
+    activeCoastFireMcResult?.deterministicProjection,
     engineData?.result,
   ]);
   const result = useMemo(() => {
@@ -410,6 +420,7 @@ export function useProjectionDerived(
                       parentCategory?: string;
                       contribution: number;
                       employerMatch: number;
+                      withdrawal?: number;
                     }[];
                   }
                 ).individualAccountBalances;
@@ -417,7 +428,9 @@ export function useProjectionDerived(
                   (ia) =>
                     ia.category === slotCat &&
                     ia.parentCategory === parentCategoryFilter &&
-                    (ia.contribution !== 0 || ia.employerMatch !== 0),
+                    (ia.contribution !== 0 ||
+                      ia.employerMatch !== 0 ||
+                      (ia.withdrawal ?? 0) !== 0),
                 );
                 if (hasMatchingContrib) contribCats.add(slotCat);
               } else {

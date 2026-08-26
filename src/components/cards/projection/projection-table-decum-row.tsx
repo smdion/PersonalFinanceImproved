@@ -7,11 +7,12 @@ import {
   taxTypeLabel,
 } from "@/lib/utils/colors";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import { safeDivide } from "@/lib/utils/math";
+import { safeDivide, roundToCents } from "@/lib/utils/math";
 import type {
   AccountCategory,
   EngineDecumulationYear,
   DecumulationSlot,
+  IndividualAccountYearBalance,
 } from "@/lib/calculators/types";
 import {
   getAccountSegments,
@@ -43,6 +44,101 @@ import {
   renderMcCell,
   type RenderMcCellOptions,
 } from "./projection-table-mc-cell";
+
+/**
+ * Builds the merged eligibility + tracked-basis note for one account's
+ * tooltip line. Bug fix (found live, real household data): the engine's
+ * `eligibilityReason` string bakes its "$X basis remaining" figure as plain
+ * NOMINAL dollars (it's built deep in withdrawal-eligibility.ts, which has
+ * no access to the page's real/nominal dollar-mode toggle) — but the
+ * rothBasisDrawn/rothBasisRemaining figures merged onto the same line ARE
+ * deflated. In real-dollar view mode the two halves of one line disagreed
+ * by exactly the household's cumulative inflation factor (confirmed:
+ * ratio was identical, ~1.99, across both the reason string's figure and
+ * the year's own withdrawal/growth figures). Reconstructs the basis-
+ * remaining clause from `rothBasisRemaining + rothBasisDrawn` (this year's
+ * start-of-year basis, tautologically consistent with the drawn/left
+ * figures since both add up from the same already-deflated fields) instead
+ * of reusing the engine string's embedded dollar figure — so every number
+ * on the line moves together with the SAME toggle, whichever way it's set.
+ * Non-basis reason text (Rule of 55 / age-59½ / locked wording, none of
+ * which embeds a dollar figure) is untouched.
+ */
+function buildEligibilityNote(
+  ia: IndividualAccountYearBalance,
+  yr: EngineDecumulationYear,
+  deflate: (v: number, yr: number) => number,
+): { note?: string; noteLocked?: boolean } {
+  const parts: string[] = [];
+  const isBasisRemainingReason =
+    ia.rothBasisRemaining != null &&
+    !ia.eligibilityLocked &&
+    (ia.eligibilityReason?.includes("basis remaining") ?? false);
+  // Age-59½ qualification (tax-free growth) is a DIFFERENT test than the
+  // Rule-of-55 wording above — Rule of 55 exempts the 10% penalty, never
+  // taxability (splitRothWithdrawalForTax only ever checks age 59½). Both
+  // the IRA (basis_first) and 401k/403b (pro_rata) branches of
+  // withdrawal-eligibility.ts emit this exact string when age-qualified,
+  // so checking for it (rather than reusing isBasisRemainingReason, which
+  // is IRA-reason-text-specific) correctly flags non-qualified growth as
+  // taxable for BOTH account types.
+  const isAgeQualified =
+    ia.eligibilityReason?.includes("age 59½ or older") ?? false;
+  const basisDrawn = ia.rothBasisDrawn ?? 0;
+  const totalWithdrawn = ia.withdrawal ?? 0;
+  // Basis-first ordering draws basis before growth. Under the v0.7.8
+  // penalty-hard-exclusion model growth this account hasn't earned
+  // penalty-free access to should never be drawn at all by default
+  // (DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md) — this is only
+  // nonzero when the household has explicitly opted out of that
+  // exclusion. Surfaced explicitly, and NEVER worded as plain "Eligible",
+  // so it's never read as a free lunch: growth drawn while not yet
+  // age-59½-qualified is flagged taxable (v0.7.8 Roth-tax-basis
+  // follow-up) and penalty-exposed (FEATURE-ROADMAP.md R39).
+  const growthDrawn = Math.max(0, roundToCents(totalWithdrawn - basisDrawn));
+  if (isBasisRemainingReason) {
+    const startBasis = (ia.rothBasisRemaining ?? 0) + basisDrawn;
+    const flag = ia.rothBasisUncertain ? " (est.)" : "";
+    const label = growthDrawn > 0.01 ? "Partially eligible" : "Eligible";
+    parts.push(
+      `${label} — ${formatCurrency(deflate(startBasis, yr.year))} basis remaining, always penalty-free${flag}`,
+    );
+  } else if (ia.eligibilityReason) {
+    parts.push(ia.eligibilityReason);
+  }
+  if (basisDrawn > 0.01) {
+    const drawn = formatCurrency(deflate(basisDrawn, yr.year));
+    const remaining = formatCurrency(
+      deflate(ia.rothBasisRemaining ?? 0, yr.year),
+    );
+    const flag = ia.rothBasisUncertain ? " (est.)" : "";
+    if (growthDrawn > 0.01) {
+      const growth = formatCurrency(deflate(growthDrawn, yr.year));
+      const taxNote = !isAgeQualified
+        ? ", taxable + penalized (under 59½)"
+        : "";
+      parts.push(
+        `basis ${drawn} + growth ${growth}${taxNote} drawn, ${remaining} basis left${flag}`,
+      );
+    } else {
+      parts.push(`basis ${drawn} drawn, ${remaining} left${flag}`);
+    }
+  }
+  if (parts.length === 0) return {};
+  return { note: parts.join(" · "), noteLocked: !!ia.eligibilityLocked };
+}
+
+/** Owner-prefixed account label for tooltip lines — omits the "Owner — "
+ *  prefix when the account's own name already starts with the owner's
+ *  name (many real account names, e.g. "Joanna IRA (Vanguard)", already
+ *  include it — prefixing again produced a visibly duplicated name). */
+function ownerAccountLabel(ia: { name: string; ownerName?: string }): string {
+  if (!ia.ownerName) return ia.name;
+  if (ia.name.toLowerCase().startsWith(ia.ownerName.toLowerCase())) {
+    return ia.name;
+  }
+  return `${ia.ownerName} — ${ia.name}`;
+}
 
 export type DecumulationRowProps = {
   yr: EngineDecumulationYear;
@@ -187,34 +283,11 @@ export function DecumulationRow({
                     // eligibility verdict and tracked Roth basis draw-down
                     // into ONE dim line under its amount, instead of
                     // repeating the account name on separate lines for each
-                    // fact. `eligibilityReason` already carries basis-
-                    // remaining context for accounts using tracked basis
-                    // (see withdrawal-eligibility.ts), so this only adds a
-                    // second clause for what was actually drawn *this year*.
-                    const buildNote = (
-                      ia: (typeof catAccts)[number],
-                    ): { note?: string; noteLocked?: boolean } => {
-                      const parts: string[] = [];
-                      if (ia.eligibilityReason)
-                        parts.push(ia.eligibilityReason);
-                      if ((ia.rothBasisDrawn ?? 0) > 0.01) {
-                        const drawn = formatCurrency(
-                          deflate(ia.rothBasisDrawn!, yr.year),
-                        );
-                        const remaining = formatCurrency(
-                          deflate(ia.rothBasisRemaining ?? 0, yr.year),
-                        );
-                        const flag = ia.rothBasisUncertain ? " (est.)" : "";
-                        parts.push(
-                          `basis ${drawn} drawn, ${remaining} left${flag}`,
-                        );
-                      }
-                      if (parts.length === 0) return {};
-                      return {
-                        note: parts.join(" · "),
-                        noteLocked: !!ia.eligibilityLocked,
-                      };
-                    };
+                    // fact. See buildEligibilityNote's docblock for why the
+                    // basis-remaining figure is reconstructed rather than
+                    // reusing eligibilityReason's embedded dollar amount.
+                    const buildNote = (ia: (typeof catAccts)[number]) =>
+                      buildEligibilityNote(ia, yr, deflate);
                     if (wd > 0) {
                       // Per-account breakdown ("no magic money"): when a
                       // category holds more than one tracked account (e.g.
@@ -239,9 +312,7 @@ export function DecumulationRow({
                         for (const ia of withdrawingAccts) {
                           items.push({
                             label: multiAcct
-                              ? ia.ownerName
-                                ? `${ia.ownerName} — ${ia.name}`
-                                : ia.name
+                              ? ownerAccountLabel(ia)
                               : catCfg.displayLabel,
                             amount: deflate(ia.withdrawal!, yr.year),
                             prefix: "-",
@@ -497,40 +568,21 @@ export function DecumulationRow({
                 // Merge this account's eligibility verdict + tracked Roth
                 // basis draw-down onto its own line (v0.7.8
                 // tooltip-readability pass) instead of a separate
-                // household-wide text block — see the identical
-                // `buildNote` in the per-category tooltip above. Bounded by
-                // construction: only accounts actually withdrawn from this
-                // year appear here, so this can't regrow into the old
-                // "every account in the household" wall of text.
-                const noteParts: string[] = [];
-                if (ia.eligibilityReason) noteParts.push(ia.eligibilityReason);
-                if ((ia.rothBasisDrawn ?? 0) > 0.01) {
-                  const drawn = formatCurrency(
-                    deflate(ia.rothBasisDrawn!, yr.year),
-                  );
-                  const remaining = formatCurrency(
-                    deflate(ia.rothBasisRemaining ?? 0, yr.year),
-                  );
-                  const flag = ia.rothBasisUncertain ? " (est.)" : "";
-                  noteParts.push(
-                    `basis ${drawn} drawn, ${remaining} left${flag}`,
-                  );
-                }
+                // household-wide text block — see `buildEligibilityNote`'s
+                // docblock above (and the fix note there) for why the
+                // basis-remaining dollar figure is reconstructed rather
+                // than reused verbatim. Bounded by construction: only
+                // accounts actually withdrawn from this year appear here,
+                // so this can't regrow into the old "every account in the
+                // household" wall of text.
                 items.push({
-                  label: ia.ownerName
-                    ? `${ia.ownerName} — ${ia.name}`
-                    : ia.name,
+                  label: ownerAccountLabel(ia),
                   amount: deflate(ia.withdrawal!, yr.year),
                   prefix: "-",
                   taxType: itemTaxType(ia.category, ia.taxType),
                   color: "red",
                   group: catDisplayLabel[ia.category] ?? ia.category,
-                  ...(noteParts.length > 0
-                    ? {
-                        note: noteParts.join(" · "),
-                        noteLocked: !!ia.eligibilityLocked,
-                      }
-                    : {}),
+                  ...buildEligibilityNote(ia, yr, deflate),
                 });
               }
             } else {

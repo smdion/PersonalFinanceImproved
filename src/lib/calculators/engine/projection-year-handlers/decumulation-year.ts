@@ -39,10 +39,12 @@ import {
   clampIndividualBalances,
   depleteIndividualBasis,
   clampIndividualBasis,
+  reconcileIndividualToAggregate,
 } from "../individual-account-tracking";
 import { computeWithdrawalEligibility } from "@/lib/pure/withdrawal-eligibility";
 import type { BasisDraw } from "@/lib/pure/roth-basis-tracking";
 import { splitRothWithdrawalForTax } from "@/lib/pure/roth-distribution-tax";
+import { computeEarlyWithdrawalPenalty } from "@/lib/pure/early-withdrawal-penalty";
 import {
   deductWithdrawals,
   clampBalances,
@@ -228,7 +230,12 @@ export function runDecumulationYear(
     eligibility,
   );
 
-  const { slots, warnings: routeWarnings } = routeResult;
+  const {
+    slots,
+    warnings: routeWarnings,
+    unmetNeed: routedUnmetNeed,
+    penaltyAvoidedShortfall,
+  } = routeResult;
   if (rothDivergence) routeWarnings.push(rothDivergence);
 
   let totalWithdrawal = roundToCents(sumBy(slots, (s) => s.withdrawal));
@@ -307,9 +314,11 @@ export function runDecumulationYear(
   // depleteIndividualBasis needs the pre-withdrawal balance for its
   // pro-rata ratio.
   const preWithdrawalIndBal = new Map(indBal);
-  const decIndWithdrawal = hasIndividualAccounts
+  const distributeResult = hasIndividualAccounts
     ? distributeWithdrawals(slots, indAccts, indKey, indBal, eligibility)
-    : new Map<string, number>();
+    : { decIndWithdrawal: new Map<string, number>(), warnings: [] };
+  const decIndWithdrawal = distributeResult.decIndWithdrawal;
+  routeWarnings.push(...distributeResult.warnings);
   const basisDraws = hasIndividualAccounts
     ? depleteIndividualBasis({
         indAccts,
@@ -337,6 +346,21 @@ export function runDecumulationYear(
       })
     : { taxableGrowth: 0, taxFreeAmount: 0, byKey: new Map() };
 
+  // Early-withdrawal penalty cost (v0.7.8 penalty-hard-exclusion follow-up,
+  // DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md § Q5) -- consumes this
+  // year's real per-account withdrawal map (never re-slices). Under the
+  // default avoidPenalizedWithdrawals: true, routeForMode already excluded
+  // penalty-exposed money from routing, so this should compute exactly 0 in
+  // the common case -- it prices whatever was actually withdrawn, whatever
+  // the reason (including the lever being off).
+  const earlyWithdrawalPenalty =
+    hasIndividualAccounts && eligibility
+      ? computeEarlyWithdrawalPenalty({
+          exposure: eligibility,
+          withdrawnByKey: decIndWithdrawal,
+        })
+      : { penaltyCost: 0, penalizedAmount: 0, byKey: new Map() };
+
   // Calculate tax cost per withdrawal type -- single source of truth shared
   // with tax-gross-up.ts's estimate (Phase 5 item 5.3).
   const taxFromSlots = computeTaxFromSlots({
@@ -353,6 +377,7 @@ export function runDecumulationYear(
     totalTraditionalWithdrawal,
     totalRothWithdrawal,
     rothTaxableGrowth: rothTaxSplit.taxableGrowth,
+    penaltyCost: earlyWithdrawalPenalty.penaltyCost,
   });
   let brokerageTaxCost = taxFromSlots.brokerageTaxCost;
   const brokerageBasisPortion = taxFromSlots.brokerageBasisPortion;
@@ -376,11 +401,19 @@ export function runDecumulationYear(
   }
 
   let taxCost = taxFromSlots.taxCost;
+  const penaltyCost = taxFromSlots.penaltyCost;
 
   // Recompute grossUpFactor post-RMD for accurate diagnostics (#45).
   // Pre-RMD estimate may understate tax when RMD forces additional Traditional withdrawals.
+  // Includes penaltyCost in the cost scalar alongside taxCost (v0.7.8
+  // penalty-hard-exclusion follow-up § Q5) -- RMD dollars are never
+  // penalty-exposed by construction (see this module's RMD-exempt note),
+  // so RMD enforcement itself never changes penaltyCost, but this recompute
+  // must still reflect whatever penaltyCost already was (nonzero only when
+  // avoidPenalizedWithdrawals is off).
   if (rmdOverrodeRouting && afterTaxNeed > 0) {
-    const postRmdEffRate = taxCost / (afterTaxNeed + taxCost);
+    const postRmdTotalCost = roundToCents(taxCost + penaltyCost);
+    const postRmdEffRate = postRmdTotalCost / (afterTaxNeed + postRmdTotalCost);
     // Not a safeDivide candidate (advisor-reviewed, 2026-08-19): the guard
     // is `< 1`, not a zero-denominator check — postRmdEffRate exceeding 1 is
     // a real, semantically distinct case (over-withheld/clawback) from it
@@ -487,6 +520,32 @@ export function runDecumulationYear(
   if (niitAmount > 0) {
     taxCost = roundToCents(taxCost + niitAmount);
   }
+
+  // Funding-shortfall reconciliation (advisor review, 2026-08-26, alongside
+  // the tax-gross-up.ts secant-convergence fix). routedUnmetNeed only fires
+  // when the ROUTER itself couldn't deliver the requested targetWithdrawal
+  // (account caps, exclusion, genuine balance exhaustion) -- it structurally
+  // cannot catch a funding gap caused by the gross-up under-sizing
+  // targetWithdrawal in the first place, or by taxCost/penaltyCost growing
+  // AFTER routing (RMD enforcement, Roth conversions, brokerage LTCG
+  // recompute, NIIT -- all of which run after routeForMode and are accepted,
+  // documented residual-gap sources per this file's RMD/Roth-conversion
+  // notes, not fixable pre-routing). Comparing what was actually delivered
+  // against what was actually needed catches ALL of those sources in one
+  // place, not just the router's own. `unmetNeed` for the CURRENT year's
+  // output is the max of the two signals -- never double-counted, since
+  // they measure the same failure from different vantage points and a real
+  // shortfall should show up in at least one.
+  const deliveredAfterTax = roundToCents(
+    totalWithdrawal - taxCost - penaltyCost,
+  );
+  const fundingShortfall = roundToCents(
+    Math.max(0, afterTaxNeed - deliveredAfterTax),
+  );
+  const finalUnmetNeed =
+    fundingShortfall > 0.01
+      ? Math.max(routedUnmetNeed ?? 0, fundingShortfall)
+      : routedUnmetNeed;
 
   // --- IRMAA Awareness (Phase 6) ---
   // Store MAGI for 2-year lookback (#18).
@@ -648,6 +707,21 @@ export function runDecumulationYear(
 
   // Zero out rounding dust -- extracted to balance-deduction.ts
   cleanupDust(balances, acctBal, indAccts, indKey, indBal);
+
+  // Reconcile indBal to acctBal once per year (v0.7.8 follow-up,
+  // DESIGN-DECISION-v0.7.8-indbal-reconciliation.md) -- the two tracks are
+  // "known to drift" (see withdrawal-eligibility.ts's module docblock, Q3
+  // of the original Group 0 design); left unreconciled, next year's
+  // eligibility gate can see a nonzero "eligible" balance for a category
+  // that's actually 100% locked. Runs AFTER cleanupDust so it reads final
+  // aggregate state for the year, and BEFORE the basis re-clamp below so
+  // tracked basis clamps to the reconciled (not pre-reconciliation) balance.
+  if (hasIndividualAccounts) {
+    routeWarnings.push(
+      ...reconcileIndividualToAggregate(indAccts, indKey, indBal, acctBal),
+    );
+  }
+
   // Re-clamp basis after dust cleanup -- a balance dust-cleaned to exactly
   // $0 must carry $0 basis into next year's state, even though this
   // year's already-built output row reflects the pre-dust-cleanup figure
@@ -687,7 +761,9 @@ export function runDecumulationYear(
     grossUpFactor,
     estTraditionalPortion,
     bracketTraditionalCap: routeResult.traditionalCap,
-    unmetNeed: routeResult.unmetNeed,
+    unmetNeed: finalUnmetNeed,
+    penaltyAvoidedShortfall,
+    penaltyCost,
     preWithdrawalAcctBal,
     endBalance,
     balanceByTaxType: { ...balances },

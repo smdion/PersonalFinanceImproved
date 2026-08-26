@@ -379,3 +379,159 @@ describe("findCoastFireAge", () => {
     }
   });
 });
+
+describe("findCoastFireAge — v0.7.8 penalty-hard-exclusion baseline honesty", () => {
+  // Same class of bug monte-carlo.ts's C3 fix addressed, but for the
+  // deterministic baseline's passes() function: neither
+  // portfolioDepletionAge nor the aggregate sustainableWithdrawal rate
+  // notices a specific year going unfunded because penalty-exposed money
+  // was excluded. A household coasting too early (age 37, well before
+  // their real coast age) doesn't accumulate enough penalty-free
+  // (brokerage/basis) money to bridge the 55->59.5 gap -- Monte Carlo
+  // reports this correctly (see
+  // tests/calculators/monte-carlo-penalty-honesty.test.ts), so the
+  // deterministic baseline must not say "already coast" for the same case.
+  const AS_OF_2 = new Date("2025-03-07");
+
+  function makeGapInput(
+    overrides: Partial<ProjectionInput> = {},
+  ): ProjectionInput {
+    return {
+      accumulationDefaults: {
+        contributionRate: 0.29,
+        routingMode: "waterfall",
+        accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
+        accountSplits: {
+          "401k": 0.5,
+          "403b": 0,
+          hsa: 0.05,
+          ira: 0.15,
+          brokerage: 0.3,
+        },
+        taxSplits: { "401k": 0.5, ira: 1.0 },
+      },
+      decumulationDefaults: {
+        withdrawalRate: 0.04,
+        withdrawalRoutingMode: "percentage",
+        withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
+        withdrawalSplits: {
+          "401k": 0.35,
+          "403b": 0,
+          ira: 0.25,
+          brokerage: 0.3,
+          hsa: 0.1,
+        },
+        withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
+        distributionTaxRates: {
+          traditionalFallbackRate: 0.22,
+          roth: 0,
+          hsa: 0,
+          brokerage: 0.15,
+        },
+        avoidPenalizedWithdrawals: true,
+      },
+      accumulationOverrides: [],
+      decumulationOverrides: [],
+      currentAge: 37,
+      retirementAge: 55,
+      projectionEndAge: 95,
+      currentSalary: 300000,
+      salaryGrowthRate: 0.03,
+      salaryCap: null,
+      salaryOverrides: [],
+      budgetOverrides: [],
+      baseLimits: {
+        "401k": 23500,
+        "403b": 23500,
+        hsa: 4300,
+        ira: 7000,
+        brokerage: 0,
+      },
+      limitGrowthRate: 0.02,
+      catchupLimits: {
+        "401k": 7500,
+        ira: 1000,
+        hsa: 1000,
+        "401k_super": 11250,
+      },
+      employerMatchRateByCategory: {
+        "401k": 0.03,
+        "403b": 0,
+        hsa: 0,
+        ira: 0,
+        brokerage: 0,
+      },
+      startingBalances: {
+        preTax: 900000,
+        taxFree: 1700000,
+        afterTax: 30000,
+        afterTaxBasis: 20000,
+        hsa: 260000,
+      },
+      startingAccountBalances: {
+        "401k": {
+          structure: "roth_traditional",
+          traditional: 900000,
+          roth: 0,
+        },
+        "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+        hsa: { structure: "single_bucket", balance: 260000 },
+        ira: { structure: "roth_traditional", traditional: 0, roth: 1700000 },
+        brokerage: {
+          structure: "basis_tracking",
+          balance: 30000,
+          basis: 20000,
+        },
+      },
+      annualExpenses: 94000,
+      inflationRate: 0.03,
+      returnRates: [{ label: "7%", rate: 0.0727 }],
+      socialSecurityAnnual: 0,
+      ssStartAge: 67,
+      asOfDate: AS_OF_2,
+      individualAccounts: [
+        {
+          name: "Roth IRA",
+          category: "ira",
+          taxType: "taxFree",
+          startingBalance: 1700000,
+          ownerName: "Owner",
+          ownerPersonId: 1,
+          ownerBirthYear: 1990,
+          parentCategory: "Retirement",
+          rothBasisMeta: {
+            year: 2025,
+            contributionBasis: 40000,
+            conversionBasis: 0,
+            latestConversionYear: null,
+            isSeeded: false,
+            updatedAt: new Date("2025-01-01"),
+          },
+        },
+      ],
+      ...overrides,
+    } as ProjectionInput;
+  }
+
+  it("does not report already_coast (stopping today) for a plan with a real, unfunded 55->59½ penalty-free gap", () => {
+    const input = makeGapInput();
+    const result = findCoastFireAge(input);
+    // Confirmed (via a Monte Carlo probe on the same household shape) that
+    // stopping contributions at the current age leaves the 55->59½ window
+    // genuinely short on penalty-free money. Before this fix, passes()
+    // never looked at penaltyAvoidedShortfall and could say "already
+    // coast" here anyway.
+    expect(result.status).not.toBe("already_coast");
+  });
+
+  it("without the exclusion (avoidPenalizedWithdrawals: false), the SAME household DOES pass stopping today -- isolates the fix to the exclusion's effect, not an unrelated change", () => {
+    const input = makeGapInput({
+      decumulationDefaults: {
+        ...makeGapInput().decumulationDefaults,
+        avoidPenalizedWithdrawals: false,
+      },
+    });
+    const result = findCoastFireAge(input);
+    expect(result.status).toBe("already_coast");
+  });
+});

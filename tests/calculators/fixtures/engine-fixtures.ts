@@ -101,6 +101,7 @@ export function makeDecumulationConfig(
     withdrawalTaxTypeCaps: { traditional: null, roth: null },
     lumpSums: [],
     preferPenaltyFreeSources: true,
+    avoidPenalizedWithdrawals: true,
     ...overrides,
   };
 }

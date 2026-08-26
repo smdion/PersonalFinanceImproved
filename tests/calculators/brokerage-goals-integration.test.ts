@@ -259,26 +259,31 @@ describe("brokerage goals integration", () => {
     ];
 
     const input = makeInput({
+      // Balances sum to startingAccountBalances.brokerage.balance (30000,
+      // set in makeInput() below) -- v0.7.8 indBal reconciliation follow-up
+      // (DESIGN-DECISION-v0.7.8-indbal-reconciliation.md): a mismatch here
+      // is no longer invisible drift, it's a real correction the engine
+      // applies at end of year, and this fixture isn't testing that.
       individualAccounts: [
         {
           name: "Taxable Brokerage",
           category: "brokerage",
           taxType: "afterTax",
-          startingBalance: 20000,
+          startingBalance: 18000,
           parentCategory: "Portfolio",
         },
         {
           name: "ESPP",
           category: "brokerage",
           taxType: "afterTax",
-          startingBalance: 10000,
+          startingBalance: 9000,
           parentCategory: "Portfolio",
         },
         {
           name: "Savings Brokerage",
           category: "brokerage",
           taxType: "afterTax",
-          startingBalance: 5000,
+          startingBalance: 3000,
           parentCategory: "Savings",
         },
       ],

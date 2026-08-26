@@ -49,13 +49,13 @@ export function ChartControls({ state }: { state: ProjectionState }) {
         label="Scenario"
         helpTip={
           <HelpTip
-            maxWidth={360}
+            maxWidth={380}
             lines={[
               "Active Plan: your plan as configured, with contributions continuing through retirement.",
-              "Coast FIRE: the same projection with contributions zeroed from your Coast FIRE age onward. Shows what your portfolio looks like if you stop saving at that age.",
               coastFireAvailable
-                ? `Your Coast FIRE age: ${coastFireAge}`
-                : "Coast FIRE age not yet available — the toggle activates once the baseline calculation completes.",
+                ? `Coast FIRE (Age ${coastFireAge}): contributions zeroed from age ${coastFireAge} onward — the earliest age that still passes.`
+                : "Coast FIRE (Age N): contributions zeroed from your Coast FIRE age onward — the earliest age that still passes. Not yet available.",
+              "Coast FIRE (Today): the SAME idea, but stopping right now instead of at the earliest passing age. Use this to see exactly what breaks (and when) if you stopped contributing today — often a shortfall in the years before 59½, which the passing-age view won't show since it's built to avoid it.",
             ]}
           />
         }
@@ -70,7 +70,19 @@ export function ChartControls({ state }: { state: ProjectionState }) {
           onClick={() => {
             if (coastFireAvailable) setScenarioView("coastFire");
           }}
-          label="Coast FIRE"
+          label={
+            coastFireAvailable
+              ? `Coast FIRE (Age ${coastFireAge})`
+              : "Coast FIRE"
+          }
+          disabled={!coastFireAvailable}
+        />
+        <PillBtn
+          active={scenarioView === "coastFireToday"}
+          onClick={() => {
+            if (coastFireAvailable) setScenarioView("coastFireToday");
+          }}
+          label="Coast FIRE (Today)"
           disabled={!coastFireAvailable}
         />
       </LabeledPillGroup>

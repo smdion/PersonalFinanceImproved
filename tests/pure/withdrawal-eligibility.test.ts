@@ -49,10 +49,10 @@ describe("computeWithdrawalEligibility", () => {
       indKey,
     });
     const entry = record.byKey.get(indKey(ia))!;
-    expect(entry.lockedAmount).toBe(100000);
-    expect(entry.eligibleAmount).toBe(0);
-    expect(record.totalLocked).toBe(100000);
-    expect(record.lockedTrad["401k"]).toBe(100000);
+    expect(entry.penaltyExposedAmount).toBe(100000);
+    expect(entry.penaltyFreeAmount).toBe(0);
+    expect(record.totalPenaltyExposed).toBe(100000);
+    expect(record.penaltyExposedTrad["401k"]).toBe(100000);
     expect(entry.reason).toBe(
       "Locked until Rule of 55 or age 59½ (currently 36)",
     );
@@ -76,9 +76,9 @@ describe("computeWithdrawalEligibility", () => {
       indKey,
     });
     const entry = record.byKey.get(indKey(ia))!;
-    expect(entry.lockedAmount).toBe(0);
-    expect(entry.eligibleAmount).toBe(100000);
-    expect(record.totalLocked).toBe(0);
+    expect(entry.penaltyExposedAmount).toBe(0);
+    expect(entry.penaltyFreeAmount).toBe(100000);
+    expect(record.totalPenaltyExposed).toBe(0);
     expect(entry.reason).toBe("Eligible — Rule of 55 met (separated 2026)");
   });
 
@@ -100,7 +100,7 @@ describe("computeWithdrawalEligibility", () => {
       indKey,
     });
     const entry = record.byKey.get(indKey(ia))!;
-    expect(entry.lockedAmount).toBe(0);
+    expect(entry.penaltyExposedAmount).toBe(0);
     // Both gates are satisfied here (age 60, and projectRuleOf55 also
     // resolves Rule of 55 as met by assuming separation in the projected
     // year itself, since source is "active" with no known future date) —
@@ -128,7 +128,7 @@ describe("computeWithdrawalEligibility", () => {
       indBal: new Map([[indKey(ia), 80000]]),
       indKey,
     }).byKey.get(indKey(ia))!;
-    expect(lockedIn2030.lockedAmount).toBe(80000);
+    expect(lockedIn2030.penaltyExposedAmount).toBe(80000);
 
     const eligibleIn2041 = computeWithdrawalEligibility({
       year: 2041, // age 56 — separating (projected) at 56, Rule of 55 met
@@ -136,7 +136,7 @@ describe("computeWithdrawalEligibility", () => {
       indBal: new Map([[indKey(ia), 80000]]),
       indKey,
     }).byKey.get(indKey(ia))!;
-    expect(eligibleIn2041.lockedAmount).toBe(0);
+    expect(eligibleIn2041.penaltyExposedAmount).toBe(0);
   });
 
   describe("ruleOf55ForceIneligible (v0.7.8 forecasting toggle)", () => {
@@ -165,7 +165,7 @@ describe("computeWithdrawalEligibility", () => {
         indBal: new Map([[indKey(ia), 80000]]),
         indKey,
       }).byKey.get(indKey(ia))!;
-      expect(entry.lockedAmount).toBe(80000);
+      expect(entry.penaltyExposedAmount).toBe(80000);
       expect(entry.reason).toContain("Rule of 55 marked unavailable");
     });
 
@@ -192,8 +192,8 @@ describe("computeWithdrawalEligibility", () => {
         indBal: new Map([[indKey(ia), 60000]]),
         indKey,
       }).byKey.get(indKey(ia))!;
-      expect(entry.lockedAmount).toBe(0);
-      expect(entry.eligibleAmount).toBe(60000);
+      expect(entry.penaltyExposedAmount).toBe(0);
+      expect(entry.penaltyFreeAmount).toBe(60000);
       expect(entry.reason).toBe("Eligible — age 59½ or older");
     });
 
@@ -225,7 +225,7 @@ describe("computeWithdrawalEligibility", () => {
         indKey,
       }).byKey.get(indKey(withOverrideFalseish))!;
       expect(a).toEqual(b);
-      expect(a.lockedAmount).toBe(0);
+      expect(a.penaltyExposedAmount).toBe(0);
     });
   });
 
@@ -242,7 +242,7 @@ describe("computeWithdrawalEligibility", () => {
       indBal: new Map([[indKey(under), 40000]]),
       indKey,
     }).byKey.get(indKey(under))!;
-    expect(lockedResult.lockedAmount).toBe(40000);
+    expect(lockedResult.penaltyExposedAmount).toBe(40000);
 
     const older = account({
       name: "Trad IRA",
@@ -256,7 +256,7 @@ describe("computeWithdrawalEligibility", () => {
       indBal: new Map([[indKey(older), 40000]]),
       indKey,
     }).byKey.get(indKey(older))!;
-    expect(eligibleResult.lockedAmount).toBe(0);
+    expect(eligibleResult.penaltyExposedAmount).toBe(0);
   });
 
   it("a Roth IRA with real contribution basis is not locked even for a young owner (contribution basis is always penalty-free)", () => {
@@ -281,12 +281,17 @@ describe("computeWithdrawalEligibility", () => {
       indKey,
     });
     const entry = record.byKey.get(indKey(ia))!;
-    // Contribution-basis slice is always penalty-free — not ALL slices are
-    // locked, so per this pass's binary (not partial) model the whole
-    // account counts as not-locked.
-    expect(entry.lockedAmount).toBe(0);
+    // Contribution-basis slice ($20k) is always penalty-free; the $5k of
+    // growth behind it in the prefix is not — per-dollar partition
+    // (DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md § Q1), not the
+    // old binary "any penalty-free slice ⇒ whole account not locked" model.
+    expect(entry.penaltyFreeAmount).toBe(20000);
+    expect(entry.penaltyExposedAmount).toBe(5000);
+    // Balance ($25k) exceeds basis ($20k) — some growth is penalty-exposed,
+    // so the reason text says "Partially eligible", never plain "Eligible"
+    // (that would read as a free lunch on the $5k of growth).
     expect(entry.reason).toBe(
-      "Eligible — $20,000.00 basis remaining, always penalty-free",
+      "Partially eligible — $20,000.00 basis penalty-free, $5,000.00 growth locked until 59½",
     );
     expect(entry.basisRemaining).toBe(20000);
   });
@@ -306,8 +311,8 @@ describe("computeWithdrawalEligibility", () => {
       indKey,
     });
     const entry = record.byKey.get(indKey(ia))!;
-    expect(entry.lockedAmount).toBe(10000);
-    expect(record.lockedRoth["ira"]).toBe(10000);
+    expect(entry.penaltyExposedAmount).toBe(10000);
+    expect(record.penaltyExposedRoth["ira"]).toBe(10000);
     expect(entry.reason).toBe("Locked until age 59½ — no basis remaining");
     expect(entry.basisRemaining).toBe(0);
   });
@@ -325,7 +330,7 @@ describe("computeWithdrawalEligibility", () => {
       indBal: new Map([[indKey(young), 15000]]),
       indKey,
     }).byKey.get(indKey(young))!;
-    expect(lockedResult.lockedAmount).toBe(15000);
+    expect(lockedResult.penaltyExposedAmount).toBe(15000);
     expect(lockedResult.reason).toBe(
       "Locked until age 65 — non-medical withdrawal penalty (currently 46)",
     );
@@ -342,7 +347,7 @@ describe("computeWithdrawalEligibility", () => {
       indBal: new Map([[indKey(old), 15000]]),
       indKey,
     }).byKey.get(indKey(old))!;
-    expect(eligibleResult.lockedAmount).toBe(0);
+    expect(eligibleResult.penaltyExposedAmount).toBe(0);
     expect(eligibleResult.reason).toBe("Eligible — age 65 or older");
   });
 
@@ -359,8 +364,8 @@ describe("computeWithdrawalEligibility", () => {
       indBal: new Map([[indKey(ia), 30000]]),
       indKey,
     });
-    expect(record.byKey.get(indKey(ia))!.lockedAmount).toBe(0);
-    expect(record.totalLocked).toBe(0);
+    expect(record.byKey.get(indKey(ia))!.penaltyExposedAmount).toBe(0);
+    expect(record.totalPenaltyExposed).toBe(0);
     expect(record.byKey.get(indKey(ia))!.reason).toBe(
       "Always accessible — no age or employer restriction",
     );
@@ -379,13 +384,13 @@ describe("computeWithdrawalEligibility", () => {
       indBal: new Map([[indKey(ia), 60000]]),
       indKey,
     });
-    expect(record.byKey.get(indKey(ia))!.lockedAmount).toBe(0);
+    expect(record.byKey.get(indKey(ia))!.penaltyExposedAmount).toBe(0);
     expect(record.byKey.get(indKey(ia))!.reason).toBe(
       "No individual eligibility rule (joint account)",
     );
   });
 
-  it("totalLocked is 0 when nothing is locked — the byte-identity no-op signal", () => {
+  it("totalPenaltyExposed is 0 when nothing is locked — the byte-identity no-op signal", () => {
     const ia = account({
       name: "Eligible 401k",
       ownerBirthYear: 1960,
@@ -402,11 +407,13 @@ describe("computeWithdrawalEligibility", () => {
       indBal: new Map([[indKey(ia), 100000]]),
       indKey,
     });
-    expect(record.totalLocked).toBe(0);
-    for (const cat of Object.keys(record.lockedTotal)) {
-      expect(record.lockedTotal[cat as keyof typeof record.lockedTotal]).toBe(
-        0,
-      );
+    expect(record.totalPenaltyExposed).toBe(0);
+    for (const cat of Object.keys(record.penaltyExposedTotal)) {
+      expect(
+        record.penaltyExposedTotal[
+          cat as keyof typeof record.penaltyExposedTotal
+        ],
+      ).toBe(0);
     }
   });
 
@@ -440,9 +447,9 @@ describe("computeWithdrawalEligibility", () => {
       ]),
       indKey,
     });
-    expect(record.totalLocked).toBe(85000);
-    expect(record.lockedTrad["401k"]).toBe(70000);
-    expect(record.lockedTotal["hsa"]).toBe(15000);
+    expect(record.totalPenaltyExposed).toBe(85000);
+    expect(record.penaltyExposedTrad["401k"]).toBe(70000);
+    expect(record.penaltyExposedTotal["hsa"]).toBe(15000);
   });
 });
 
@@ -486,10 +493,13 @@ describe("computeWithdrawalEligibility — tracked basis (indBasis)", () => {
       indBasis,
     });
     const entry = record.byKey.get(key)!;
-    expect(entry.lockedAmount).toBe(0); // eligible via tracked basis, NOT the stale $0 snapshot
+    // Penalty-free via tracked basis ($15k), NOT the stale $0 snapshot;
+    // the $5k of growth behind it is still penalty-exposed.
+    expect(entry.penaltyFreeAmount).toBe(15000);
+    expect(entry.penaltyExposedAmount).toBe(5000);
     expect(entry.basisRemaining).toBe(15000);
     expect(entry.basisUncertain).toBe(true); // stale source year disclosed
-    expect(entry.reason).toContain("$15,000.00 basis remaining");
+    expect(entry.reason).toContain("$15,000.00 basis penalty-free");
   });
 
   it("is byte-identical to the snapshot path when indBasis is omitted (existing behavior preserved)", () => {
@@ -546,7 +556,7 @@ describe("computeWithdrawalEligibility — tracked basis (indBasis)", () => {
         ],
       ]),
     }).byKey.get(key)!;
-    expect(withBasis.lockedAmount).toBe(0);
+    expect(withBasis.penaltyExposedAmount).toBe(0);
 
     // Same account, same year, basis now fully drawn down (e.g. by a prior
     // withdrawal this same projected year, per drawFromBasis/applyBasisDraw).
@@ -562,7 +572,7 @@ describe("computeWithdrawalEligibility — tracked basis (indBasis)", () => {
         ],
       ]),
     }).byKey.get(key)!;
-    expect(basisExhausted.lockedAmount).toBe(5000);
+    expect(basisExhausted.penaltyExposedAmount).toBe(5000);
     expect(basisExhausted.reason).toBe(
       "Locked until age 59½ — no basis remaining",
     );

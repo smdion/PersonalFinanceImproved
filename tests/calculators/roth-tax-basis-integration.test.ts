@@ -61,6 +61,11 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
         hsa: 0,
         brokerage: 0.15,
       },
+      // This suite isolates Roth growth-vs-basis taxability from the
+      // separate v0.7.8 penalty-hard-exclusion feature (which would
+      // otherwise stop growth from being drawn at all pre-59½, defeating
+      // the premise this test is built on).
+      avoidPenalizedWithdrawals: false,
     },
     accumulationOverrides: [],
     decumulationOverrides: [],

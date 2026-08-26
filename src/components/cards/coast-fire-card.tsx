@@ -32,6 +32,15 @@ type CoastFireMcResult = {
    *  divergence on the card: when deterministic says "already" but MC says
    *  "found at later age," stopNowSuccessRate is the rate at today. */
   stopNowSuccessRate: number;
+  /** % of stop-now trials that failed specifically because penalty-exposed
+   *  money was excluded (v0.7.8 penalty-hard-exclusion) rather than the
+   *  household genuinely running out — surfaced so a low stopNowSuccessRate
+   *  isn't read as "you'll be broke" when it actually means "your money is
+   *  there but locked until 59½." */
+  stopNowPenaltyAvoidedShortfallRate: number;
+  /** Median dollar shortfall (today's dollars) among stop-now trials that
+   *  hit a penalty-avoided shortfall — "how much," not just "how often." */
+  stopNowMedianPenaltyAvoidedShortfallPV: number;
   spendingStabilityRate: number;
   confidenceThreshold: number;
   warning: string | null;
@@ -76,6 +85,10 @@ export function CoastFireCard({
 
   const det = deterministic?.result ?? undefined;
   const mcAvailable = coastFireMcResult != null;
+  const hasGapAmount =
+    mcAvailable &&
+    coastFireMcResult.stopNowPenaltyAvoidedShortfallRate > 0.05 &&
+    coastFireMcResult.stopNowMedianPenaltyAvoidedShortfallPV > 0;
 
   return (
     <KpiCard
@@ -84,6 +97,12 @@ export function CoastFireCard({
         "The earliest age at which you can stop contributing and still fund your plan through end of plan.",
         "Success criterion: portfolio survives end-of-plan AND sustainable withdrawal at retirement covers projected expenses.",
         "Headline combines the Baseline answer (at expected returns) and the Simulated answer (90% confidence across 1,000 random market outcomes) — only shows 'Already ✓' when BOTH agree.",
+        "Baseline is a single expected-return path (same math as Active Plan) — it can't see that real returns vary, so it can't detect a case that only breaks under variance. Simulated (1,000 randomized sequences) is the one actually answering whether this works in practice.",
+        ...(hasGapAmount
+          ? [
+              `Why stopping today fails: in ${formatPercent(coastFireMcResult.stopNowPenaltyAvoidedShortfallRate, 0)} of simulated outcomes, retiring today leaves about ${formatCurrency(coastFireMcResult.stopNowMedianPenaltyAvoidedShortfallPV)} (today's $) short in the years before 59½ — money you'd have, but can't reach without a penalty. Building that much more in brokerage or Roth basis by then would close it.`,
+            ]
+          : []),
       ]}
     >
       {/* Headline upgrades automatically: baseline-only while simulated is
@@ -162,17 +181,28 @@ function CombinedStatus({
     );
   }
 
-  // Baseline says "already" but simulated says "found X" — simulated is
-  // more conservative because it accounts for sequence-of-returns risk.
-  // Show the simulated age as the headline with a color that signals caution.
+  // Baseline passes stopping today; simulated doesn't. Baseline is a
+  // SINGLE expected-return path (identical math to Active Plan) — it has
+  // no way to see that real returns vary, so it can't detect a case that
+  // only breaks under variance. Simulated (1,000 randomized sequences) is
+  // the one actually answering "does this work in practice." Kept to ONE
+  // short line here (with a "?" for the full explanation + dollar figure,
+  // via KpiCard's tooltip prop above) so this card doesn't blow out the
+  // shared row height of the other 4 hero KPI cards next to it.
   if (det.status === "already_coast" && mc.status === "found") {
+    const hasGapAmount =
+      mc.stopNowPenaltyAvoidedShortfallRate > 0.05 &&
+      mc.stopNowMedianPenaltyAvoidedShortfallPV > 0;
+    const shortLine = hasGapAmount
+      ? `Stopping today: ~${formatCurrency(mc.stopNowMedianPenaltyAvoidedShortfallPV)} short before 59½ (locked, not broke)`
+      : "Stopping today fails on real variance, not baseline's math";
     return (
       <>
         <div className="text-xl font-bold tabular-nums text-yellow-500">
           Age {mc.coastFireAge}
         </div>
         <div className="text-caption text-faint mt-1 leading-tight">
-          Baseline says today — simulated needs more margin.
+          {shortLine}
         </div>
       </>
     );
@@ -326,6 +356,11 @@ function SimulatedDetail({
         {formatPercent(mc.stopNowSuccessRate, 0)} simulated
       </span>
       <span className="text-faint ml-1">{tail}</span>
+      {/* Full "why" (with the dollar figure) lives in KpiCard's tooltip
+          ("?") now, not inline here -- an earlier version added a 2-line
+          paragraph in this spot which, stacked with CombinedStatus's own
+          explanation above, roughly doubled this card's height relative to
+          its 4 siblings in the hero KPI row. */}
       {mc.warning && (
         <div className="text-yellow-500 mt-0.5">⚠ non-monotone</div>
       )}

@@ -125,6 +125,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
     scenarioView,
     coastFireMcQuery,
     coastFireMcResult,
+    coastFireTodayMcResult,
   } = state;
 
   const currentAge = result.projectionByYear[0]?.age ?? 0;
@@ -148,18 +149,22 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
     peakPt ? peakPt.balance : peakYear.endBalance,
     peakYear.year,
   );
-  // When scenarioView === "coastFire", swap the MC data source to the
-  // Coast FIRE MC result (from computeCoastFireMC's final probe) so all the
-  // hero KPIs — Portfolio Survival, Income Stability, Nest Egg, End Balance —
-  // reflect the Coast FIRE scenario, not the baseline plan. Intentionally
-  // returns null while coast MC is loading — the existing `!mc && mcLoading`
-  // skeleton branch below handles the loading state.
+  // When scenarioView is a Coast FIRE variant, swap the MC data source so
+  // all the hero KPIs — Portfolio Survival, Income Stability, Nest Egg, End
+  // Balance — reflect that scenario, not the baseline plan: "coastFire"
+  // uses the found/passing-age result, "coastFireToday" uses the
+  // stop-at-current-age result (same underlying query, different field —
+  // see use-projection-queries.ts). Intentionally returns null while coast
+  // MC is loading — the existing `!mc && mcLoading` skeleton branch below
+  // handles the loading state.
   const mc =
     scenarioView === "coastFire"
       ? (coastFireMcResult ?? null)
-      : mcQuery.data?.result && !mcLoading
-        ? mcQuery.data.result
-        : null;
+      : scenarioView === "coastFireToday"
+        ? (coastFireTodayMcResult ?? null)
+        : mcQuery.data?.result && !mcLoading
+          ? mcQuery.data.result
+          : null;
   const mcBands = mc?.percentileBands ?? null;
   const mcRetBand = mcBands?.find((b) =>
     alreadyRetired

@@ -405,6 +405,25 @@ export type DecumulationDefaults = {
    * never changes a category's dollar total).
    */
   preferPenaltyFreeSources?: boolean;
+
+  /**
+   * Whether the engine may EVER draw a dollar that would incur the 10%
+   * early-withdrawal penalty — v0.7.8 penalty-hard-exclusion follow-up
+   * (DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md § Q4), supersedes
+   * `preferPenaltyFreeSources`'s old soft-lock consequence for penalized
+   * money specifically. Independent of `preferPenaltyFreeSources`: that
+   * flag controls ORDERING among penalty-free money; this one controls
+   * whether penalty-exposed money is reachable AT ALL. Default `true`
+   * (explicit user decision, 2026-08-26): "default to not taking it if a
+   * penalty exists." When on and a household's penalty-free money runs
+   * out, the shortfall is left unfunded and surfaced as
+   * `penaltyAvoidedShortfall` rather than silently drawing penalized money
+   * — see `RouteResult`'s docblock (`withdrawal-routing.ts`). Penalty
+   * COST itself (the 10% charged on any penalized dollar actually drawn,
+   * e.g. when this is `false`) is NOT gated by this flag — it applies
+   * unconditionally, a correctness floor rather than a preference.
+   */
+  avoidPenalizedWithdrawals?: boolean;
 };
 
 /**
@@ -485,6 +504,9 @@ export type DecumulationOverride = {
 
   /** Override for this year onward. See DecumulationDefaults.preferPenaltyFreeSources. */
   preferPenaltyFreeSources?: boolean;
+
+  /** Override for this year onward. See DecumulationDefaults.avoidPenalizedWithdrawals. */
+  avoidPenalizedWithdrawals?: boolean;
 };
 
 /**
@@ -508,6 +530,9 @@ export type ResolvedDecumulationConfig = {
   /** See DecumulationDefaults.preferPenaltyFreeSources. Always resolved
    *  (never undefined) — `resolveDecumulationConfig` defaults it to `true`. */
   preferPenaltyFreeSources: boolean;
+  /** See DecumulationDefaults.avoidPenalizedWithdrawals. Always resolved
+   *  (never undefined) — `resolveDecumulationConfig` defaults it to `true`. */
+  avoidPenalizedWithdrawals: boolean;
 };
 
 /**

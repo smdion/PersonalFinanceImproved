@@ -14,7 +14,7 @@ import type {
   AccountBalances,
   AccountCategory,
 } from "../types";
-import { roundToCents, sumBy } from "../../utils/math";
+import { roundToCents } from "../../utils/math";
 import {
   getAllCategories,
   getAccountTypeConfig,
@@ -27,7 +27,7 @@ import {
 } from "../../config/account-types";
 import { incomeCapForMarginalRate } from "./tax-estimation";
 import type { WithholdingBracket } from "./tax-estimation";
-import { subtractLocked, subtractSlots } from "./balance-utils";
+import { subtractPenaltyExposed } from "./balance-utils";
 import type { EligibilityRecord } from "@/lib/pure/withdrawal-eligibility";
 
 const ACCOUNT_CATEGORIES: AccountCategory[] = getAllCategories();
@@ -40,7 +40,7 @@ export function routeWithdrawals(
   targetWithdrawal: number,
   config: ResolvedDecumulationConfig,
   balances: AccountBalances,
-): { slots: DecumulationSlot[]; warnings: string[] } {
+): { slots: DecumulationSlot[]; warnings: string[]; unmetNeed?: number } {
   const warnings: string[] = [];
   let remaining = targetWithdrawal;
   const slots: DecumulationSlot[] = [];
@@ -168,7 +168,11 @@ export function routeWithdrawals(
     );
   }
 
-  return { slots, warnings };
+  return {
+    slots,
+    warnings,
+    unmetNeed: remaining > 0 ? roundToCents(remaining) : undefined,
+  };
 }
 
 /**
@@ -179,7 +183,7 @@ export function routeWithdrawalsPercentage(
   targetWithdrawal: number,
   config: ResolvedDecumulationConfig,
   balances: AccountBalances,
-): { slots: DecumulationSlot[]; warnings: string[] } {
+): { slots: DecumulationSlot[]; warnings: string[]; unmetNeed?: number } {
   const warnings: string[] = [];
   const slots: DecumulationSlot[] = [];
 
@@ -234,6 +238,7 @@ export function routeWithdrawalsPercentage(
       );
     }
   }
+  const unmetNeed = excess > 0 ? roundToCents(excess) : undefined;
 
   // Build slots with tax-type routing within each account
   let totalTradWithdrawn = 0;
@@ -310,7 +315,7 @@ export function routeWithdrawalsPercentage(
     });
   }
 
-  return { slots, warnings };
+  return { slots, warnings, unmetNeed };
 }
 
 /**
@@ -566,6 +571,16 @@ export type RouteResult = {
   warnings: string[];
   traditionalCap?: number;
   unmetNeed?: number;
+  /** Portion of `unmetNeed` attributable specifically to excluding
+   *  penalty-exposed money, not to the household being broke (v0.7.8
+   *  penalty-hard-exclusion follow-up, DESIGN-DECISION-v0.7.8-
+   *  penalty-hard-exclusion.md § Q3/C2). Distinct from `unmetNeed` itself:
+   *  a household can be short for BOTH reasons, or either alone — conflating
+   *  them would destroy the distinction this whole feature exists to
+   *  create. `min(unmetNeed, exposure.totalPenaltyExposed)` — never more
+   *  than either the amount actually unfunded or the amount that was
+   *  actually excluded. */
+  penaltyAvoidedShortfall?: number;
 };
 
 /**
@@ -653,183 +668,54 @@ function dispatchOnce(
 }
 
 /**
- * Pass-2 config: the household's caps/bracket-room decremented by pass 1's
- * draws, so pass 2 can't re-spend bracket room or account-cap headroom pass
- * 1 already consumed. Mandatory, not optional — see the design decision
- * doc's Q1 Tier B. Everything else (withdrawalOrder, withdrawalSplits,
- * withdrawalTaxPreference, routing mode) is unchanged: pass 2 still routes
- * according to the household's configured levers, just against smaller
- * caps and a smaller residual need.
- */
-function decrementConfigForPass2(
-  config: ResolvedDecumulationConfig,
-  pass1Slots: DecumulationSlot[],
-  totalTradWithdrawn1: number,
-  totalRothWithdrawn1: number,
-): ResolvedDecumulationConfig {
-  const drawnByCategory = new Map<AccountCategory, number>();
-  for (const s of pass1Slots) drawnByCategory.set(s.category, s.withdrawal);
-
-  const withdrawalAccountCaps = { ...config.withdrawalAccountCaps };
-  for (const cat of ACCOUNT_CATEGORIES) {
-    const cap = withdrawalAccountCaps[cat];
-    if (cap === null) continue;
-    withdrawalAccountCaps[cat] = Math.max(
-      0,
-      roundToCents(cap - (drawnByCategory.get(cat) ?? 0)),
-    );
-  }
-
-  const withdrawalTaxTypeCaps = {
-    traditional:
-      config.withdrawalTaxTypeCaps.traditional === null
-        ? null
-        : Math.max(
-            0,
-            roundToCents(
-              config.withdrawalTaxTypeCaps.traditional - totalTradWithdrawn1,
-            ),
-          ),
-    roth:
-      config.withdrawalTaxTypeCaps.roth === null
-        ? null
-        : Math.max(
-            0,
-            roundToCents(
-              config.withdrawalTaxTypeCaps.roth - totalRothWithdrawn1,
-            ),
-          ),
-  };
-
-  return { ...config, withdrawalAccountCaps, withdrawalTaxTypeCaps };
-}
-
-/**
- * Merge pass 1 and pass 2's RouteResults into one — sum per-category
- * amounts, OR the capped flags, take pass 2's remainingNeed/unmetNeed
- * (the final word on what's still unmet) and pass 1's traditionalCap
- * (a property of the bracket-filling call, not something pass 2 redefines),
- * concatenate warnings. Slot order follows pass 1's category order, with
- * any pass-2-only categories appended.
- */
-function mergeRouteResults(
-  pass1: RouteResult,
-  pass2: RouteResult,
-): RouteResult {
-  const merged = new Map<AccountCategory, DecumulationSlot>();
-  for (const s of pass1.slots) merged.set(s.category, s);
-  for (const s of pass2.slots) {
-    const existing = merged.get(s.category);
-    if (!existing) {
-      merged.set(s.category, s);
-      continue;
-    }
-    merged.set(s.category, {
-      category: s.category,
-      withdrawal: roundToCents(existing.withdrawal + s.withdrawal),
-      rothWithdrawal: roundToCents(existing.rothWithdrawal + s.rothWithdrawal),
-      traditionalWithdrawal: roundToCents(
-        existing.traditionalWithdrawal + s.traditionalWithdrawal,
-      ),
-      cappedByAccount: existing.cappedByAccount || s.cappedByAccount,
-      cappedByTaxType: existing.cappedByTaxType || s.cappedByTaxType,
-      remainingNeed: s.remainingNeed,
-    });
-  }
-  const order = [
-    ...pass1.slots.map((s) => s.category),
-    ...pass2.slots
-      .map((s) => s.category)
-      .filter((c) => !pass1.slots.some((s) => s.category === c)),
-  ];
-  // Pass 1 was only ever asked to draw from ELIGIBLE balances up to
-  // targetWithdrawal — under-delivering there is expected whenever eligible
-  // money is less than the need (that's precisely why pass 2 exists), so
-  // its own "insufficient funds across all accounts" warning is a false
-  // alarm once a pass 2 has run at all: only pass 2's warnings (against the
-  // true remaining balances) reflect whether the household is actually
-  // short. Other pass-1 warnings (e.g. an account-cap shift) are real and
-  // kept.
-  const pass1Warnings = pass1.warnings.filter(
-    (w) => !w.includes("insufficient funds across all accounts"),
-  );
-  return {
-    slots: order.map((cat) => merged.get(cat)!),
-    warnings: [...pass1Warnings, ...pass2.warnings],
-    traditionalCap: pass1.traditionalCap,
-    unmetNeed: pass2.unmetNeed,
-  };
-}
-
-/**
  * Route a withdrawal using whichever mode config.withdrawalRoutingMode
  * selects — the single dispatch point both the real decumulation-year
  * execution and tax-gross-up.ts's estimate call, so a routing-mode-specific
  * rule (like the Roth-bracket overlay) can't be applied in one path and
  * forgotten in the other.
  *
- * `eligibility` (v0.7.8, PLAN-v0.7.8-v4 Group 2.2, Tier B) — when provided,
- * `config.preferPenaltyFreeSources` is on, and something is actually
- * locked, routes in two passes: first against eligible-only balances
- * (`subtractLocked`), then any residual against the full balances minus
- * pass 1's draws, with pass 2's config/bracket room decremented by pass 1.
- * Falls through to a single unchanged `dispatchOnce` call whenever any of
- * those conditions doesn't hold — that fallthrough (not a separately
- * maintained branch) is what keeps a no-locked-accounts household, or a
- * household with `preferPenaltyFreeSources: false`, byte-identical to
- * pre-v0.7.8 output. Locked design:
- * `.scratch/docs/plans/DESIGN-DECISION-v0.7.8-withdrawal-ordering-group0.md`
- * § Q1 Tier B / Q3 part 3.
+ * `exposure` (v0.7.8 penalty-hard-exclusion follow-up,
+ * DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md § Q2 — supersedes the
+ * Tier B two-pass model this function used to implement) — when provided,
+ * `config.avoidPenalizedWithdrawals` is on, and something is actually
+ * penalty-exposed, dispatches ONCE against balances with every
+ * penalty-exposed dollar subtracted out (`subtractPenaltyExposed`).
+ * Penalty-exposed money is a hard exclusion now, not a last-resort
+ * fallback: there is no second pass. A resulting `unmetNeed` is real —
+ * `penaltyAvoidedShortfall` names how much of it is attributable
+ * specifically to the exclusion (see `RouteResult`'s docblock) rather than
+ * the household being broke. Falls through to a single unchanged
+ * `dispatchOnce` call whenever any of those conditions doesn't hold — that
+ * fallthrough (not a separately maintained branch) is what keeps a
+ * nothing-penalty-exposed household, or a household with
+ * `avoidPenalizedWithdrawals: false`, byte-identical to pre-this-pass
+ * output.
  */
 export function routeForMode(
   targetWithdrawal: number,
   config: ResolvedDecumulationConfig,
   balances: AccountBalances,
   bracketInfo: RouteBracketInfo,
-  eligibility?: EligibilityRecord,
+  exposure?: EligibilityRecord,
 ): RouteResult {
   if (
-    eligibility == null ||
-    eligibility.totalLocked === 0 ||
-    !config.preferPenaltyFreeSources
+    exposure == null ||
+    exposure.totalPenaltyExposed === 0 ||
+    !config.avoidPenalizedWithdrawals
   ) {
     return dispatchOnce(targetWithdrawal, config, balances, bracketInfo);
   }
 
-  const eligibleBalances = subtractLocked(balances, eligibility);
-  const pass1 = dispatchOnce(
+  const penaltyFreeBalances = subtractPenaltyExposed(balances, exposure);
+  const result = dispatchOnce(
     targetWithdrawal,
     config,
-    eligibleBalances,
+    penaltyFreeBalances,
     bracketInfo,
   );
-  const drawn1 = roundToCents(sumBy(pass1.slots, (s) => s.withdrawal));
-  const residual = roundToCents(targetWithdrawal - drawn1);
-  // Sub-cent residuals are rounding noise, not real unmet need.
-  if (residual <= 0.005) return pass1;
-
-  const totalTradWithdrawn1 = roundToCents(
-    sumBy(pass1.slots, (s) => s.traditionalWithdrawal),
+  if (result.unmetNeed == null || result.unmetNeed <= 0) return result;
+  const penaltyAvoidedShortfall = roundToCents(
+    Math.min(result.unmetNeed, exposure.totalPenaltyExposed),
   );
-  const totalRothWithdrawn1 = roundToCents(
-    sumBy(pass1.slots, (s) => s.rothWithdrawal),
-  );
-  const remainingBalances = subtractSlots(balances, pass1.slots);
-  const pass2Config = decrementConfigForPass2(
-    config,
-    pass1.slots,
-    totalTradWithdrawn1,
-    totalRothWithdrawn1,
-  );
-  const pass2BracketInfo: RouteBracketInfo = {
-    ...bracketInfo,
-    taxableSS: roundToCents(bracketInfo.taxableSS + totalTradWithdrawn1),
-  };
-  const pass2 = dispatchOnce(
-    residual,
-    pass2Config,
-    remainingBalances,
-    pass2BracketInfo,
-  );
-  return mergeRouteResults(pass1, pass2);
+  return { ...result, penaltyAvoidedShortfall };
 }

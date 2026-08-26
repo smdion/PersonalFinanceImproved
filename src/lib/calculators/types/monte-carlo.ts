@@ -83,6 +83,19 @@ export type MonteCarloResult = {
   /** % of trials where withdrawals stayed ≥75% of the user's retirement budget (inflation-adjusted) in every decumulation year.
    *  Null when no retirement budget is set (decumulationAnnualExpenses not provided). */
   budgetStabilityRate: number | null;
+  /** % of trials that failed `successRate`'s bar specifically because a
+   *  year's spending need went unfunded due to `avoidPenalizedWithdrawals`
+   *  excluding penalty-exposed money (v0.7.8 penalty-hard-exclusion follow-up,
+   *  C3) — as opposed to genuinely running out of money. Distinguishes "this
+   *  household can't legally reach its own savings before 59½" from "this
+   *  household is broke," which look identical in `successRate` alone. */
+  penaltyAvoidedShortfallRate: number;
+  /** Median total shortfall (today's dollars) among ONLY the trials that hit
+   *  a penalty-avoided shortfall — "how much," not just "how often." Answers
+   *  what a bare rate can't: roughly how much MORE penalty-free money
+   *  (basis, brokerage) would close the gap in a typical affected trial.
+   *  0 when `penaltyAvoidedShortfallRate` is 0. */
+  medianPenaltyAvoidedShortfallPV: number;
   /** 50th percentile terminal balance. */
   medianEndBalance: number;
   /** Average terminal balance. */

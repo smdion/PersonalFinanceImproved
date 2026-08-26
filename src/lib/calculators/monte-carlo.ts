@@ -174,6 +174,22 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
 
   // Per-trial outcome tracking
   const terminalBalances: number[] = [];
+  // v0.7.8 penalty-hard-exclusion follow-up
+  // (DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md § Q3/C3, BLOCKING):
+  // a trial whose spending need went unfunded specifically because
+  // penalty-exposed money was excluded (not because the household was
+  // broke) must NOT count as a success just because it kept a larger
+  // terminal balance from money it never spent. Parallel array to
+  // terminalBalances, indexed by trial.
+  const hadPenaltyAvoidedShortfall: boolean[] = [];
+  // Dollar magnitude alongside the boolean above -- per trial, the sum of
+  // every decumulation year's penaltyAvoidedShortfall, in TODAY's dollars
+  // (deflated by pvDeflator, same convention as sustainableWithdrawalsPV
+  // below). Lets a caller answer "how much" a household is short by the
+  // 55->59½ gap, not just "how often" -- a bare % rate doesn't tell anyone
+  // what to actually go build. Only meaningful for trials where the
+  // boolean above is true; 0 otherwise.
+  const penaltyAvoidedShortfallAmountsPV: number[] = [];
   const depletionAges: number[] = [];
   const sustainableWithdrawals: number[] = [];
   const sustainableWithdrawalsPV: number[] = [];
@@ -279,6 +295,25 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
     const lastYear =
       result.projectionByYear[result.projectionByYear.length - 1];
     terminalBalances.push(roundToCents(lastYear?.endBalance ?? 0));
+
+    // Penalty-avoided shortfall (§ Q3/C3) -- any decumulation year whose
+    // spending need went unfunded because penalty-exposed money was
+    // excluded disqualifies this trial from counting as a success below,
+    // regardless of its terminal balance.
+    hadPenaltyAvoidedShortfall.push(
+      result.projectionByYear.some(
+        (y) =>
+          y.phase === "decumulation" && (y.penaltyAvoidedShortfall ?? 0) > 0.01,
+      ),
+    );
+    const totalPenaltyAvoidedShortfallNominal = sumBy(
+      result.projectionByYear,
+      (y) =>
+        y.phase === "decumulation" ? (y.penaltyAvoidedShortfall ?? 0) : 0,
+    );
+    penaltyAvoidedShortfallAmountsPV.push(
+      safeDivide(totalPenaltyAvoidedShortfallNominal, pvDeflator, 0),
+    );
 
     // Depletion age
     if (result.portfolioDepletionAge !== null) {
@@ -438,9 +473,41 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
         }
       : null;
 
-  // Success rate: % of trials where portfolio balance stays above $0
-  const successCount = terminalBalances.filter((b) => b > 0).length;
+  // Success rate: % of trials where portfolio balance stays above $0 AND
+  // no year's spending need went unfunded specifically because penalty-
+  // exposed money was excluded (v0.7.8 penalty-hard-exclusion follow-up §
+  // Q3/C3, BLOCKING) -- without the second condition, a trial that
+  // under-spent every year (because its only remaining money was
+  // penalty-exposed and off-limits) would keep a LARGER terminal balance
+  // and score as MORE successful, exactly backwards.
+  const successCount = terminalBalances.filter(
+    (b, i) => b > 0 && !hadPenaltyAvoidedShortfall[i],
+  ).length;
   const successRate = safeDivide(successCount, numTrials, 0);
+
+  // Diagnostic split for the same signal: what fraction of trials hit a
+  // penalty-avoided shortfall at all (regardless of terminal balance) --
+  // lets a caller distinguish "can't legally reach the money before 59½"
+  // from "genuinely ran out," which successRate alone conflates.
+  const penaltyAvoidedShortfallCount =
+    hadPenaltyAvoidedShortfall.filter(Boolean).length;
+  const penaltyAvoidedShortfallRate = safeDivide(
+    penaltyAvoidedShortfallCount,
+    numTrials,
+    0,
+  );
+
+  // "How much," not just "how often" -- median total shortfall (today's
+  // dollars) among ONLY the trials that actually hit one. Answers the
+  // question a bare rate can't: how much MORE penalty-free money (basis,
+  // brokerage) would close the gap in a typical unlucky trial.
+  const shortfallAmountsAmongAffected = penaltyAvoidedShortfallAmountsPV
+    .filter((_, i) => hadPenaltyAvoidedShortfall[i])
+    .sort((a, b) => a - b);
+  const medianPenaltyAvoidedShortfallPV =
+    shortfallAmountsAmongAffected.length > 0
+      ? percentile(shortfallAmountsAmongAffected, 50)
+      : 0;
 
   // Spending stability: % of trials where withdrawals met ≥75% of initial (inflation-adjusted)
   const spendingStabilityRate = safeDivide(spendingStableCount, numTrials, 0);
@@ -475,6 +542,8 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
     successRate,
     spendingStabilityRate,
     budgetStabilityRate,
+    penaltyAvoidedShortfallRate,
+    medianPenaltyAvoidedShortfallPV,
     spendingStabilityBands,
     medianEndBalance,
     meanEndBalance,

@@ -169,6 +169,14 @@ export interface ComputeTaxFromSlotsInput {
    *  withdrawal at `taxRates.roth` (today's behavior) — see
    *  DESIGN-DECISION-v0.7.8-roth-tax-basis.md acceptance criterion 1. */
   rothTaxableGrowth?: number;
+  /** 10%/20% early-withdrawal penalty cost this year, from
+   *  `early-withdrawal-penalty.ts`'s `computeEarlyWithdrawalPenalty`
+   *  (v0.7.8 penalty-hard-exclusion follow-up). An EXCISE, not income tax —
+   *  must NOT enter `actualTaxableIncome` (would inflate the marginal rate
+   *  and the LTCG stacking base) and must NOT be summed into `taxCost`
+   *  (every downstream consumer reads `taxCost` as income tax only).
+   *  Omitted or undefined ⇒ the arithmetic reduces exactly to today's. */
+  penaltyCost?: number;
   taxRates: {
     traditionalFallbackRate: number;
     roth: number;
@@ -206,6 +214,10 @@ export interface ComputeTaxFromSlotsResult {
    *  `brokerageBasisPortion` is: callers must not reverse-derive an
    *  already-rounded component. */
   rothTaxFreePortion: number;
+  /** Echoes `input.penaltyCost`, defaulted to 0. NOT included in `taxCost`
+   *  — a separate output field for the same reason it's a separate input
+   *  (see `ComputeTaxFromSlotsInput.penaltyCost`'s docblock). */
+  penaltyCost: number;
 }
 
 /**
@@ -297,5 +309,6 @@ export function computeTaxFromSlots(
     brokerageWithdrawal,
     rothTaxableGrowth,
     rothTaxFreePortion,
+    penaltyCost: roundToCents(input.penaltyCost ?? 0),
   };
 }

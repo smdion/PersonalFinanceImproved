@@ -58,13 +58,30 @@ function resultFrom(
   };
 }
 
-/** Returns true iff the projection funds expenses through end of plan. */
+/** Returns true iff the projection funds expenses through end of plan.
+ *
+ *  v0.7.8 penalty-hard-exclusion follow-up: a plan can fail to fund a
+ *  specific year (money went unreached because it was penalty-exposed —
+ *  see `penaltyAvoidedShortfall` on `EngineDecumulationYear`) while still
+ *  passing both checks below, since neither one looks at individual years
+ *  -- `portfolioDepletionAge` only fires on a genuine zero-out, and
+ *  `sustainableWithdrawal` is an aggregate rate that a shortfall year the
+ *  household never spent (because it legally couldn't reach the money)
+ *  doesn't move. Same class of bug `monte-carlo.ts`'s C3 fix addressed for
+ *  the simulated success rate; this is the deterministic-baseline half of
+ *  the same fix. Without it, the baseline can say "already coast" for a
+ *  plan whose 55→59½ gap Monte Carlo correctly reports as failing. */
 function passes(projection: ProjectionResult): boolean {
   if (projection.portfolioDepletionAge !== null) return false;
   const retirementYear = projection.projectionByYear.find(
     (y) => y.phase === "decumulation",
   );
   if (!retirementYear) return false;
+  const hadPenaltyAvoidedShortfall = projection.projectionByYear.some(
+    (y) =>
+      y.phase === "decumulation" && (y.penaltyAvoidedShortfall ?? 0) > 0.01,
+  );
+  if (hadPenaltyAvoidedShortfall) return false;
   return projection.sustainableWithdrawal >= retirementYear.projectedExpenses;
 }
 

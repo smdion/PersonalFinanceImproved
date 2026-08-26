@@ -45,6 +45,7 @@ import {
   applyIndividualGrowth,
   buildIndividualYearBalances,
   accrueIndividualBasis,
+  reconcileIndividualToAggregate,
 } from "../individual-account-tracking";
 import { cloneAccountBalances } from "../balance-utils";
 import type {
@@ -569,6 +570,19 @@ export function runAccumulationYear(
         },
       )
     : [];
+
+  // Reconcile indBal to acctBal once per year (v0.7.8 follow-up,
+  // DESIGN-DECISION-v0.7.8-indbal-reconciliation.md) -- same mechanism and
+  // rationale as decumulation-year.ts's identical call. Runs after this
+  // year's output row is built (matching the existing pattern of "output
+  // reflects pre-cleanup figures, carried-forward state reflects
+  // post-cleanup") and before the divergence check below, which reads the
+  // same two tracks this closes the gap between.
+  if (hasIndividualAccounts) {
+    routeWarnings.push(
+      ...reconcileIndividualToAggregate(indAccts, indKey, indBal, acctBal),
+    );
+  }
 
   const endBalance = roundToCents(
     balances.preTax + balances.taxFree + balances.hsa + balances.afterTax,
