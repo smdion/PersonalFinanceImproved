@@ -21,6 +21,7 @@ import {
   addBasis,
   isTaxFreeBucket,
   tracksCostBasis,
+  isRetirementParent,
   PARENT_CATEGORY_VALUES,
 } from "@/lib/config/account-types";
 import { accountDisplayName } from "@/lib/utils/format";
@@ -50,10 +51,24 @@ export type TaxBucketPerfAccount = {
   costBasis: string | null;
 };
 
-/** Per-(account, owner, taxType) rollup — the join key the Tax Buckets tool
- *  needs to attach `rothBasis` rows and early-access flags to real balances
- *  without re-querying `portfolio_accounts` itself. */
+/** Per-(name, category, taxType, owner) rollup — the join key the Tax
+ *  Buckets tool needs to attach `rothBasis` rows and early-access flags to
+ *  real balances without re-querying `portfolio_accounts` itself.
+ *
+ *  Grouped on the SAME tuple as `accountBreakdownByCategory` (and, via that,
+ *  the engine's own `individualAccounts` keying) rather than on
+ *  `performanceAccountId` alone — a raw-ID key merges/splits sub-type rows
+ *  (Rollover, Employer Match, ...) differently than the name-based grouping
+ *  the engine payload uses, which can silently drop or double-count a
+ *  projected balance when the two sides are joined by name in v2. */
 export type AccountRollupEntry = {
+  name: string;
+  /** Null only when a merged group of same-(name,category,taxType,owner)
+   *  rows spans more than one real performance account — rare, since that
+   *  requires two distinct accounts to also share a display name. Per-
+   *  account edit actions (basis, separation date) key off
+   *  `performanceAccounts` directly, not off this rollup, so ambiguity
+   *  here doesn't block those. */
   performanceAccountId: number | null;
   ownerPersonId: number | null;
   taxType: string;
@@ -197,21 +212,37 @@ export function computeTaxBucketBreakdown(
         });
       }
 
-      // Per-(account, owner, taxType) rollup — merges sub-type rows
-      // (Rollover, Employer Match, ...) the same way accountBreakdownByCategory
-      // does, but keyed on real IDs instead of display name.
-      const rollupKey = `${a.performanceAccountId ?? "null"}|${a.ownerPersonId ?? "null"}|${a.taxType}`;
-      const rollupExisting = rollupByKey.get(rollupKey);
-      if (rollupExisting) {
-        rollupExisting.amount += a.amount;
-      } else {
-        rollupByKey.set(rollupKey, {
-          performanceAccountId: a.performanceAccountId,
-          ownerPersonId: a.ownerPersonId,
-          taxType: a.taxType,
-          category: cat,
-          amount: a.amount,
-        });
+      // Per-(name, category, taxType, owner) rollup — grouped on the exact
+      // same tuple as accountBreakdownByCategory above, so the two merge
+      // identically and a v2 join by name can't drop or double-count a row
+      // that the breakdown split/merged differently than a raw-ID key would.
+      //
+      // Retirement-only: unlike accountBreakdownByCategory (which the engine
+      // needs for its full net-worth projection, Portfolio category
+      // included), this rollup feeds the Tax Buckets tool specifically —
+      // early-access/Rule-of-55 questions don't apply to a taxable
+      // Portfolio-category brokerage account (e.g. "Long Term Brokerage"),
+      // only to Retirement-category holdings. Excluding it here means the
+      // v2 "at retirement" join (which matches by this same tuple against
+      // the engine's projected accounts) naturally excludes it too.
+      if (isRetirementParent(pCat)) {
+        const rollupKey = `${displayName}|${cat}|${a.taxType}|${a.ownerPersonId ?? "null"}`;
+        const rollupExisting = rollupByKey.get(rollupKey);
+        if (rollupExisting) {
+          rollupExisting.amount += a.amount;
+          if (rollupExisting.performanceAccountId !== a.performanceAccountId) {
+            rollupExisting.performanceAccountId = null;
+          }
+        } else {
+          rollupByKey.set(rollupKey, {
+            name: displayName,
+            performanceAccountId: a.performanceAccountId,
+            ownerPersonId: a.ownerPersonId,
+            taxType: a.taxType,
+            category: cat,
+            amount: a.amount,
+          });
+        }
       }
     }
   }

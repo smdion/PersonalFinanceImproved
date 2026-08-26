@@ -65,6 +65,7 @@ import {
   CONTRIBUTION_SCALING_VALUES,
 } from "@/lib/config/enum-values";
 import { recomputeAnnualRollups } from "./settings/_shared";
+import { finalizeRothBasisForYear } from "@/server/helpers/roth-basis";
 
 const performanceAccountInput = z.object({
   institution: z.string().trim().min(1),
@@ -1220,6 +1221,12 @@ export const performanceRouter = createTRPCRouter({
           .update(schema.accountPerformance)
           .set({ isFinalized: true })
           .where(eq(schema.accountPerformance.year, year));
+
+        // 4a-roth. Finalize this year's Roth basis rows and seed next
+        // year's — same year-boundary event, its own correctly-keyed table
+        // (accountPerformance doesn't split a jointly-labeled account per
+        // owner, which Roth basis correctness needs).
+        await finalizeRothBasisForYear(tx, year);
 
         // 4b. Load existing next-year rows to merge (create missing accounts, skip existing)
         const existingNext = await tx

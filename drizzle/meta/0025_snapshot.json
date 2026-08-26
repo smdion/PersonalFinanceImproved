@@ -1,5 +1,5 @@
 {
-  "id": "e99ce27b-5941-44ab-9793-4e08b6afbbd6",
+  "id": "4b91fc25-74e2-42ea-b400-2e686b9ac78a",
   "prevId": "0f6a5ca8-634b-45ce-b0ad-af090118ca02",
   "version": "7",
   "dialect": "postgresql",
@@ -5207,6 +5207,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "year": {
+          "name": "year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
         "contribution_basis": {
           "name": "contribution_basis",
           "type": "numeric(14, 2)",
@@ -5227,11 +5233,26 @@
           "primaryKey": false,
           "notNull": false
         },
-        "as_of_date": {
-          "name": "as_of_date",
-          "type": "date",
+        "is_finalized": {
+          "name": "is_finalized",
+          "type": "boolean",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "default": false
+        },
+        "is_seeded": {
+          "name": "is_seeded",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
         },
         "notes": {
           "name": "notes",
@@ -5241,8 +5262,8 @@
         }
       },
       "indexes": {
-        "roth_basis_account_owner_idx": {
-          "name": "roth_basis_account_owner_idx",
+        "roth_basis_account_owner_year_idx": {
+          "name": "roth_basis_account_owner_year_idx",
           "columns": [
             {
               "expression": "performance_account_id",
@@ -5252,6 +5273,12 @@
             },
             {
               "expression": "owner_person_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "year",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -5267,6 +5294,21 @@
           "columns": [
             {
               "expression": "owner_person_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "roth_basis_year_idx": {
+          "name": "roth_basis_year_idx",
+          "columns": [
+            {
+              "expression": "year",
               "isExpression": false,
               "asc": true,
               "nulls": "last"

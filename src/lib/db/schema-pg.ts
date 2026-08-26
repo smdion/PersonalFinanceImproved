@@ -691,6 +691,10 @@ export const performanceAccounts = pgTable(
  *  by (performanceAccountId, ownerPersonId), not a single column on
  *  performanceAccounts, because one account can carry two people's balances
  *  (e.g. a jointly-labeled Roth IRA with separate per-owner amounts). */
+/** Manually-tracked Roth basis for the Tax Buckets analysis tool, year-scoped
+ *  to mirror accountPerformance/annualPerformance's live-then-finalized
+ *  lifecycle: one row per (account, owner, year), mutable while current,
+ *  locked by finalizeRothBasisForYear() when performance.finalizeYear runs. */
 export const rothBasis = pgTable(
   "roth_basis",
   {
@@ -701,6 +705,7 @@ export const rothBasis = pgTable(
     ownerPersonId: integer("owner_person_id")
       .notNull()
       .references(() => people.id, { onDelete: "restrict" }),
+    year: integer("year").notNull(),
     /** Contributions — always penalty-free and tax-free, no seasoning clock. */
     contributionBasis: decimal("contribution_basis", {
       precision: 14,
@@ -720,15 +725,26 @@ export const rothBasis = pgTable(
      *  using the latest year only ever understates penalty-free access,
      *  never overstates it. Null if conversionBasis = 0. */
     latestConversionYear: integer("latest_conversion_year"),
-    asOfDate: date("as_of_date").notNull(),
+    isFinalized: boolean("is_finalized").notNull().default(false),
+    /** True for a row auto-seeded by finalizeRothBasisForYear (carried
+     *  forward from the prior year, not yet reviewed) vs. one the user
+     *  actually entered/confirmed. Basis normally grows each year, so an
+     *  unreviewed seeded row left as-is would silently understate
+     *  accessible funds — cleared the moment updateRothBasis touches it. */
+    isSeeded: boolean("is_seeded").notNull().default(false),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
     notes: text("notes"),
   },
   (table) => [
-    uniqueIndex("roth_basis_account_owner_idx").on(
+    uniqueIndex("roth_basis_account_owner_year_idx").on(
       table.performanceAccountId,
       table.ownerPersonId,
+      table.year,
     ),
     index("roth_basis_owner_person_id_idx").on(table.ownerPersonId),
+    index("roth_basis_year_idx").on(table.year),
   ],
 );
 

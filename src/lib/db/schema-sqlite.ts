@@ -672,6 +672,10 @@ export const performanceAccounts = sqliteTable(
  *  by (performanceAccountId, ownerPersonId), not a single column on
  *  performanceAccounts, because one account can carry two people's balances
  *  (e.g. a jointly-labeled Roth IRA with separate per-owner amounts). */
+/** Manually-tracked Roth basis for the Tax Buckets analysis tool, year-scoped
+ *  to mirror accountPerformance/annualPerformance's live-then-finalized
+ *  lifecycle: one row per (account, owner, year), mutable while current,
+ *  locked by finalizeRothBasisForYear() when performance.finalizeYear runs. */
 export const rothBasis = sqliteTable(
   "roth_basis",
   {
@@ -682,6 +686,7 @@ export const rothBasis = sqliteTable(
     ownerPersonId: integer("owner_person_id")
       .notNull()
       .references(() => people.id, { onDelete: "restrict" }),
+    year: integer("year").notNull(),
     /** Contributions — always penalty-free and tax-free, no seasoning clock. */
     contributionBasis: text("contribution_basis").notNull().default("0"),
     /** Roth conversions — always tax-free, but penalty-free only once
@@ -694,15 +699,30 @@ export const rothBasis = sqliteTable(
      *  using the latest year only ever understates penalty-free access,
      *  never overstates it. Null if conversionBasis = 0. */
     latestConversionYear: integer("latest_conversion_year"),
-    asOfDate: text("as_of_date").notNull(),
+    isFinalized: integer("is_finalized", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    /** True for a row auto-seeded by finalizeRothBasisForYear (carried
+     *  forward from the prior year, not yet reviewed) vs. one the user
+     *  actually entered/confirmed. Basis normally grows each year, so an
+     *  unreviewed seeded row left as-is would silently understate
+     *  accessible funds — cleared the moment updateRothBasis touches it. */
+    isSeeded: integer("is_seeded", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
     notes: text("notes"),
   },
   (table) => [
-    uniqueIndex("roth_basis_account_owner_idx").on(
+    uniqueIndex("roth_basis_account_owner_year_idx").on(
       table.performanceAccountId,
       table.ownerPersonId,
+      table.year,
     ),
     index("roth_basis_owner_person_id_idx").on(table.ownerPersonId),
+    index("roth_basis_year_idx").on(table.year),
   ],
 );
 

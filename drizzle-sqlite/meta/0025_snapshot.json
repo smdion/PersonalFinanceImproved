@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "7e6e1753-3e34-45c1-9ac0-cfe29a5c58c8",
+  "id": "8d95215c-767f-4480-b92a-1ec4ef1107f4",
   "prevId": "35446da8-d3a8-4e45-8c1b-c991c2d4ff13",
   "tables": {
     "account_holdings": {
@@ -4462,6 +4462,13 @@
           "notNull": true,
           "autoincrement": false
         },
+        "year": {
+          "name": "year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
         "contribution_basis": {
           "name": "contribution_basis",
           "type": "text",
@@ -4485,12 +4492,29 @@
           "notNull": false,
           "autoincrement": false
         },
-        "as_of_date": {
-          "name": "as_of_date",
-          "type": "text",
+        "is_finalized": {
+          "name": "is_finalized",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": false
+        },
+        "is_seeded": {
+          "name": "is_seeded",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
         },
         "notes": {
           "name": "notes",
@@ -4501,14 +4525,19 @@
         }
       },
       "indexes": {
-        "roth_basis_account_owner_idx": {
-          "name": "roth_basis_account_owner_idx",
-          "columns": ["performance_account_id", "owner_person_id"],
+        "roth_basis_account_owner_year_idx": {
+          "name": "roth_basis_account_owner_year_idx",
+          "columns": ["performance_account_id", "owner_person_id", "year"],
           "isUnique": true
         },
         "roth_basis_owner_person_id_idx": {
           "name": "roth_basis_owner_person_id_idx",
           "columns": ["owner_person_id"],
+          "isUnique": false
+        },
+        "roth_basis_year_idx": {
+          "name": "roth_basis_year_idx",
+          "columns": ["year"],
           "isUnique": false
         }
       },

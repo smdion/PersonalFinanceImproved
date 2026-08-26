@@ -13,30 +13,31 @@ import {
   ROTH_CONVERSION_SEASONING_YEARS,
 } from "@/lib/constants";
 
-export type SeparationSource = "explicit" | "derived" | "unknown";
+export type SeparationSource = "explicit" | "derived" | "active" | "no_data";
 
 export type SeparationResolution = {
-  /** Calendar year the person separated (or is projected to separate) from
-   *  the employer funding this account. Null when unknown. */
+  /** Calendar year the person actually separated from the employer funding
+   *  this account. Null when not yet separated (still employed there) or
+   *  when there's no data to resolve it at all — NEVER a hypothetical
+   *  future year. Rule of 55 requires separation to have already happened;
+   *  a plan to retire at some target age someday is not evidence of that. */
   year: number | null;
   source: SeparationSource;
 };
 
 /**
- * Resolve the separation year for a 401k/403b account. Prefers the durable,
- * user-set `performanceAccounts.separationDate`. Otherwise derives a
- * *default* from linked jobs: each job's candidate year is its real
- * `endDate` (already separated) or, for a still-active job, the year implied
- * by the target retirement age — then takes the MAX across all candidates.
- * Taking the max (not "latest-ended, else fallback to active") is
- * deliberate: it must not prefer a job the person left at 45 over a
- * still-active job that separates at 55.
+ * Resolve the separation year for a 401k/403b account — "now," using only
+ * real, already-happened separations. Prefers the durable, user-set
+ * `performanceAccounts.separationDate`. Otherwise derives from linked jobs'
+ * real `endDate`s that have actually passed as of `currentDate`. A linked
+ * job with no `endDate` (or one in the future) is still-employed, not
+ * "unknown" — reported distinctly as `source: "active"` since it's real,
+ * known information (just not separation evidence), not a data gap.
  */
 export function resolveSeparationYear(input: {
   explicitSeparationYear: number | null;
   linkedJobs: { endDate: Date | null; isSpeculative: boolean }[];
-  targetRetirementAge: number;
-  birthYear: number;
+  currentDate: Date;
 }): SeparationResolution {
   if (input.explicitSeparationYear != null) {
     return { year: input.explicitSeparationYear, source: "explicit" };
@@ -47,22 +48,25 @@ export function resolveSeparationYear(input: {
   // evidence Rule of 55 needs to see.
   const candidateJobs = input.linkedJobs.filter((j) => !j.isSpeculative);
   if (candidateJobs.length === 0) {
-    return { year: null, source: "unknown" };
+    return { year: null, source: "no_data" };
   }
-  const projectedYear = input.birthYear + input.targetRetirementAge;
   // getUTCFullYear(), not getFullYear() — endDate is a date-only DB column
   // (no real time-of-day), parsed as UTC midnight; reading it back in local
   // time can shift Jan-1-adjacent dates into the wrong year.
-  const candidateYears = candidateJobs.map((j) =>
-    j.endDate ? j.endDate.getUTCFullYear() : projectedYear,
-  );
-  return { year: Math.max(...candidateYears), source: "derived" };
+  const endedYears = candidateJobs
+    .filter((j) => j.endDate != null && j.endDate <= input.currentDate)
+    .map((j) => j.endDate!.getUTCFullYear());
+  if (endedYears.length === 0) {
+    return { year: null, source: "active" };
+  }
+  return { year: Math.max(...endedYears), source: "derived" };
 }
 
 /** Rule of 55: separating from that plan's employer in or after the
  *  calendar year the person turns 55 grants permanent penalty-free access
  *  to that plan — regardless of whether it's their *current* job, and
- *  regardless of whether the plan has sat dormant since. */
+ *  regardless of whether the plan has sat dormant since. Only meaningful
+ *  once separation has actually happened (see resolveSeparationYear). */
 export function isRuleOf55Eligible(
   separationYear: number,
   birthYear: number,
@@ -86,7 +90,7 @@ export function computeBrokerageAccess(
   const basis = Math.min(costBasis, balance);
   const growth = balance - basis;
   return [
-    { label: "Basis", amount: basis, penaltyFree: true, taxFree: true },
+    { label: "Cost basis", amount: basis, penaltyFree: true, taxFree: true },
     { label: "Growth", amount: growth, penaltyFree: true, taxFree: false },
   ];
 }

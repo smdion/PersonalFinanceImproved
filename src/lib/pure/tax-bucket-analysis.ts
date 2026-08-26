@@ -45,19 +45,49 @@ export type JobLinkInfo = {
   isSpeculative: boolean;
 };
 
+/** The already-selected "current" row for one (account, owner) pair — see
+ *  src/lib/pure/roth-basis-rollover.ts's buildCurrentRothBasisMap, which the
+ *  router uses before calling into this module. */
 export type RothBasisRow = {
   performanceAccountId: number;
   ownerPersonId: number;
+  year: number;
   contributionBasis: number;
   conversionBasis: number;
   latestConversionYear: number | null;
-  asOfDate: Date;
+  /** True if this row was auto-seeded at year-end rollover and never
+   *  reviewed/confirmed by the user for its own year. */
+  isSeeded: boolean;
+  updatedAt: Date;
+};
+
+export type RothBasisMeta = {
+  year: number;
+  contributionBasis: number;
+  conversionBasis: number;
+  latestConversionYear: number | null;
+  isSeeded: boolean;
+  /** `Date` when constructed server-side; arrives as an ISO `string` once
+   *  serialized over the wire to the client (no superjson transformer on
+   *  this tRPC setup) — same dual-shape `isoDateOnly()` in
+   *  tax-buckets-content.tsx already handles. Neither this module nor
+   *  tax-bucket-projection.ts reads this field, so the exact runtime shape
+   *  never matters to them. */
+  updatedAt: Date | string;
 };
 
 export type RuleOf55Status = {
   eligible: boolean | null; // null = unknown (no separation data)
   separationYear: number | null;
   source: SeparationSource;
+  /** Only set when source is "active" (still employed, not yet separated):
+   *  the earliest real (non-speculative) future endDate among this
+   *  account's linked jobs, if one is on record. Used by the "at
+   *  retirement" projection to cap an assumed retirement-transition
+   *  separation at a job's own already-known planned end date, rather than
+   *  assuming employment runs all the way to the household's retirement
+   *  transition. Null when no linked job has a known future end date. */
+  knownFutureSeparationYear: number | null;
 };
 
 export type AccountAnalysisEntry = {
@@ -73,7 +103,13 @@ export type AccountAnalysisEntry = {
   slices: EarlyAccessSlice[];
   /** Only present for 401k/403b accounts. */
   ruleOf55: RuleOf55Status | null;
-  rothBasisAsOfDate: Date | null;
+  rothBasisMeta: RothBasisMeta | null;
+  /** Raw `performance_accounts.costBasis` for a Brokerage-category account
+   *  (null otherwise). Carried as its own field — not re-derived by
+   *  scanning `slices` for a "Cost basis"-labeled entry — so a UI label
+   *  rename can never silently break the "at retirement" projection's
+   *  carry-forward the way string-matching against a rendered label would. */
+  costBasis: number | null;
 };
 
 function ageInYear(birthYear: number, year: number): number {
@@ -86,7 +122,6 @@ export function computeTaxBucketAnalysis(input: {
   jobLinks: JobLinkInfo[];
   rothBasisRows: RothBasisRow[];
   people: PersonInfo[];
-  targetRetirementAgeByPerson: Record<number, number>;
   currentDate: Date;
 }): AccountAnalysisEntry[] {
   const {
@@ -95,7 +130,6 @@ export function computeTaxBucketAnalysis(input: {
     jobLinks,
     rothBasisRows,
     people,
-    targetRetirementAgeByPerson,
     currentDate,
   } = input;
 
@@ -129,7 +163,6 @@ export function computeTaxBucketAnalysis(input: {
 
     const perfAccount = perfAccountById.get(performanceAccountId);
     const person = peopleById.get(ownerPersonId);
-    const targetAge = targetRetirementAgeByPerson[ownerPersonId] ?? 65;
     // getUTCFullYear() — separationDate is a date-only column; see the same
     // note in early-access.ts's resolveSeparationYear.
     const explicitYear = perfAccount?.separationDate
@@ -143,18 +176,36 @@ export function computeTaxBucketAnalysis(input: {
       ? resolveSeparationYear({
           explicitSeparationYear: explicitYear,
           linkedJobs,
-          targetRetirementAge: targetAge,
-          birthYear: person.birthYear,
+          currentDate,
         })
-      : { year: null, source: "unknown" as const };
+      : { year: null, source: "no_data" as const };
+
+    const knownFutureSeparationYear =
+      resolution.source === "active"
+        ? linkedJobs
+            .filter(
+              (j) =>
+                !j.isSpeculative &&
+                j.endDate != null &&
+                j.endDate > currentDate,
+            )
+            .map((j) => j.endDate!.getUTCFullYear())
+            .reduce(
+              (min, y) => (min == null || y < min ? y : min),
+              null as number | null,
+            )
+        : null;
 
     const status: RuleOf55Status = {
       eligible:
         resolution.year != null && person
           ? isRuleOf55Eligible(resolution.year, person.birthYear)
-          : null,
+          : resolution.source === "active"
+            ? false // known: still employed there, hasn't separated yet
+            : null, // genuinely unknown — no data to resolve either way
       separationYear: resolution.year,
       source: resolution.source,
+      knownFutureSeparationYear,
     };
     ruleOf55Cache.set(cacheKey, status);
     return status;
@@ -169,14 +220,13 @@ export function computeTaxBucketAnalysis(input: {
       entry.ownerPersonId != null
         ? (peopleById.get(entry.ownerPersonId)?.name ?? null)
         : null;
-    const displayName =
-      perfAccount?.displayName ?? perfAccount?.accountLabel ?? "Account";
+    const displayName = entry.name;
     const category = entry.category as AccountCategory;
     const cfg = getAccountTypeConfig(category);
 
-    // Joint (null ownerPersonId) accounts get no per-person early-access
-    // computation — no age to compute Rule of 55 or a 59½ gate against.
-    if (entry.ownerPersonId == null || !perfAccount) {
+    // No matching performance account at all — nothing to compute against
+    // (no costBasis, no separationDate), regardless of ownership.
+    if (!perfAccount) {
       return {
         performanceAccountId: entry.performanceAccountId,
         ownerPersonId: null,
@@ -187,20 +237,37 @@ export function computeTaxBucketAnalysis(input: {
         balance: entry.amount,
         slices: [],
         ruleOf55: null,
-        rothBasisAsOfDate: null,
+        rothBasisMeta: null,
+        costBasis: null,
       };
     }
 
-    const person = peopleById.get(entry.ownerPersonId);
+    const costBasis = tracksCostBasis(category) ? perfAccount.costBasis : null;
+    const person =
+      entry.ownerPersonId != null
+        ? peopleById.get(entry.ownerPersonId)
+        : undefined;
     const currentAge = person ? ageInYear(person.birthYear, currentYear) : 0;
-    const rothBasis = rothBasisByKey.get(
-      `${entry.performanceAccountId}|${entry.ownerPersonId}`,
-    );
+    const rothBasis =
+      entry.ownerPersonId != null
+        ? rothBasisByKey.get(
+            `${entry.performanceAccountId}|${entry.ownerPersonId}`,
+          )
+        : undefined;
 
     let slices: EarlyAccessSlice[] = [];
     let ruleOf55: RuleOf55Status | null = null;
 
-    if (cfg.rothOrderingRules === "basis_first") {
+    if (entry.ownerPersonId == null) {
+      // Joint account, no single owner — Roth/401k/Traditional-IRA rules
+      // all need an age to gate on and stay unattributed here (see
+      // RULES.md-flagged v1 design note). Brokerage's Cost basis/Growth
+      // split needs no person at all — computeBrokerageAccess only takes
+      // balance + costBasis — so it isn't blocked by the same gap.
+      if (costBasis != null) {
+        slices = computeBrokerageAccess(entry.amount, costBasis);
+      }
+    } else if (cfg.rothOrderingRules === "basis_first") {
       // Roth IRA
       if (isTaxFreeBucket(entry.taxType)) {
         slices = computeRothIraAccess({
@@ -242,9 +309,9 @@ export function computeTaxBucketAnalysis(input: {
           eligible,
         );
       }
-    } else if (tracksCostBasis(category)) {
+    } else if (costBasis != null) {
       // Brokerage — the only other category with a basis concept.
-      slices = computeBrokerageAccess(entry.amount, perfAccount.costBasis);
+      slices = computeBrokerageAccess(entry.amount, costBasis);
     }
     // Else: hsa (rothOrderingRules null, doesn't track cost basis) — v1
     // shows a static note only, no per-bucket boolean (no medical-spend
@@ -260,7 +327,17 @@ export function computeTaxBucketAnalysis(input: {
       balance: entry.amount,
       slices,
       ruleOf55,
-      rothBasisAsOfDate: rothBasis?.asOfDate ?? null,
+      rothBasisMeta: rothBasis
+        ? {
+            year: rothBasis.year,
+            contributionBasis: rothBasis.contributionBasis,
+            conversionBasis: rothBasis.conversionBasis,
+            latestConversionYear: rothBasis.latestConversionYear,
+            isSeeded: rothBasis.isSeeded,
+            updatedAt: rothBasis.updatedAt,
+          }
+        : null,
+      costBasis,
     };
   });
 }
