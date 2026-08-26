@@ -491,12 +491,12 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `tax-buckets`
 
-| Procedure              | Kind     | Auth                   | Description                                                                                                                  |
-| ---------------------- | -------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `getBreakdown`         | query    | `protectedProcedure`   | Rule of 55 / Roth-basis-driven penalty-free/tax-free flags per account.                                                      |
-| `getDefaultTargetAges` | query    | `protectedProcedure`   | read from retirementSettings — not a live coupling to the Retirement page's own scenario system, just a sane starting point. |
-| `updateRothBasis`      | mutation | `performanceProcedure` | Upsert Roth contribution/conversion basis for one (account, owner) pair.                                                     |
-| `updateSeparationDate` | mutation | `performanceProcedure` | Set the durable Rule of 55 source-of-truth date for a 401k/403b account.                                                     |
+| Procedure              | Kind     | Auth                   | Description                                                                                                                                                                                             |
+| ---------------------- | -------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `batchUpdateRothBasis` | mutation | `performanceProcedure` | mirroring performance.batchUpdateAccounts — each entry targets its own already-known current year (from getBreakdown's rothBasisMeta), so no per-row year resolution is needed here.                    |
+| `getBreakdown`         | query    | `protectedProcedure`   | Rule of 55 / Roth-basis-driven penalty-free/tax-free flags per account.                                                                                                                                 |
+| `updateRothBasis`      | mutation | `performanceProcedure` | needed from the caller. An explicit `year` lets the caller deliberately correct an older, already-finalized year (no hard reject — matches how updateAccount already edits finalized accountPerformance |
+| `updateSeparationDate` | mutation | `performanceProcedure` | Set the durable Rule of 55 source-of-truth date for a 401k/403b account.                                                                                                                                |
 
 ## `testing`
 
