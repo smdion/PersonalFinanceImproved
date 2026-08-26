@@ -21,17 +21,19 @@ import {
   type WithdrawalStrategyType,
 } from "@/lib/config/withdrawal-strategies";
 import { formatPercent } from "@/lib/utils/format";
-import type { Settings } from "./types";
+import type { Settings, IsEditable } from "./types";
 import { decToWhole } from "./helpers";
 
 type Props = {
   settings: Settings;
   handleSettingPercentUpdate: (field: string, wholePercent: string) => void;
+  isEditable: IsEditable;
 };
 
 export function RaiseAndRateSection({
   settings,
   handleSettingPercentUpdate,
+  isEditable,
 }: Props) {
   const s = (settings?.withdrawalStrategy ?? "fixed") as WithdrawalStrategyType;
   const meta = getStrategyMeta(s);
@@ -54,7 +56,7 @@ export function RaiseAndRateSection({
             parseInput={(v) => v.replace(/[^0-9.]/g, "")}
             type="number"
             className="text-sm"
-            isEditable={!!settings}
+            isEditable={isEditable}
           />
         </div>
       </div>
@@ -81,7 +83,7 @@ export function RaiseAndRateSection({
             parseInput={(v) => v.replace(/[^0-9.]/g, "")}
             type="number"
             className="text-sm"
-            isEditable={!!settings}
+            isEditable={isEditable}
           />
         </div>
       </div>

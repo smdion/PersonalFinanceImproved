@@ -11,14 +11,20 @@
 
 import { HelpTip } from "@/components/ui/help-tip";
 import { InlineEdit } from "@/components/ui/inline-edit";
-import type { Settings, PerPersonSettings } from "./types";
+import { Toggle } from "@/components/ui/toggle";
+import type { Settings, PerPersonSettings, IsEditable } from "./types";
 
 type Props = {
   settings: Settings;
   currentYear: number;
   perPersonSettings: PerPersonSettings;
   handlePerPersonRetirementAge: (personId: number, newAge: number) => void;
+  handlePerPersonRuleOf55Override: (
+    personId: number,
+    ruleOf55Override: boolean,
+  ) => void;
   handleRetirementSettingUpdate: (field: string, value: string) => void;
+  isEditable: IsEditable;
 };
 
 export function TimelineSection({
@@ -26,7 +32,9 @@ export function TimelineSection({
   currentYear,
   perPersonSettings,
   handlePerPersonRetirementAge,
+  handlePerPersonRuleOf55Override,
   handleRetirementSettingUpdate,
+  isEditable,
 }: Props) {
   return (
     <div>
@@ -55,11 +63,23 @@ export function TimelineSection({
                     }
                     type="number"
                     className="text-sm"
-                    isEditable={!!settings}
+                    isEditable={isEditable}
                   />
                   <span className="text-caption text-faint">
                     (now {currentYear - ps.birthYear})
                   </span>
+                </div>
+                <div className="mt-1">
+                  <Toggle
+                    isChecked={ps.ruleOf55Override}
+                    onChange={(checked) =>
+                      handlePerPersonRuleOf55Override(ps.personId, checked)
+                    }
+                    label="Rule of 55 eligible"
+                    size="xs"
+                    disabled={!isEditable}
+                    title="Turn off to forecast what happens if this person won't qualify for Rule of 55 (e.g. not at a qualifying job when they retire)"
+                  />
                 </div>
               </div>
             ))}
@@ -87,7 +107,7 @@ export function TimelineSection({
                 }
                 type="number"
                 className="text-sm"
-                isEditable={!!settings}
+                isEditable={isEditable}
               />
             </div>
           </div>
@@ -103,7 +123,7 @@ export function TimelineSection({
               onSave={(v) => handleRetirementSettingUpdate("endAge", v)}
               type="number"
               className="text-sm"
-              isEditable={!!settings}
+              isEditable={isEditable}
             />
           </div>
         </div>

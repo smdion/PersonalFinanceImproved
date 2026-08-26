@@ -50,6 +50,19 @@ export type AccountTypeConfig = {
   withdrawalTaxType: WithdrawalTaxType;
   taxBucketKey: string; // maps to byTaxType routing key
   supportedTaxTreatments: readonly string[];
+  /** How IRS ordering rules treat a distribution from this account type's
+   *  Roth (taxFree) balance: "basis_first" (a Roth IRA — contributions and
+   *  seasoned conversions come out before growth, always) vs "pro_rata" (a
+   *  designated Roth 401k/403b sub-election — any distribution is prorated
+   *  between basis and earnings, IRS Notice 2009-68). null where the
+   *  category has no Roth concept at all (hsa, brokerage). */
+  rothOrderingRules: "basis_first" | "pro_rata" | null;
+  /** Whether separating from the employer funding this account type at/after
+   *  age 55 grants penalty-free access to the whole plan (Rule of 55, IRC
+   *  §72(t)(2)(A)(v)) — true only for employer plans (401k/403b). IRAs have
+   *  no Rule-of-55 equivalent (only SEPP/72(t)); brokerage/HSA have no early-
+   *  withdrawal penalty concept this flag applies to. */
+  ruleOf55Eligible: boolean;
 
   // --- IRS limits ---
   hasIrsLimit: boolean;

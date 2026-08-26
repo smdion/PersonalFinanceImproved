@@ -163,6 +163,13 @@ describe("brokerage goals integration", () => {
 
     expect(bgResult.projectionByYear.length).toBeGreaterThan(0);
     expect(bgResult.goals).toHaveLength(2);
+    // Explicit value assertions (code review, 2026-08-27 — this fixture
+    // previously relied on toMatchSnapshot() alone for its financial
+    // content, matching the T13 convention engine-snapshot.test.ts uses).
+    const downPayment = bgResult.goals.find((g) => g.id === 1)!;
+    expect(downPayment.funded).toBe(false);
+    expect(downPayment.actualWithdrawal).toBe(15894.57);
+    expect(downPayment.shortfall).toBe(34105.43);
     expect(roundDeep(bgResult)).toMatchSnapshot();
   });
 
@@ -244,6 +251,10 @@ describe("brokerage goals integration", () => {
     });
 
     expect(bgResult.goals).toHaveLength(1);
+    // Explicit value assertions (code review, 2026-08-27).
+    expect(bgResult.goals[0]!.funded).toBe(true);
+    expect(bgResult.goals[0]!.actualWithdrawal).toBe(100000);
+    expect(bgResult.goals[0]!.shortfall).toBe(0);
     expect(roundDeep(bgResult)).toMatchSnapshot();
   });
 
@@ -259,26 +270,31 @@ describe("brokerage goals integration", () => {
     ];
 
     const input = makeInput({
+      // Balances sum to startingAccountBalances.brokerage.balance (30000,
+      // set in makeInput() below) -- v0.7.8 indBal reconciliation follow-up
+      // (DESIGN-DECISION-v0.7.8-indbal-reconciliation.md): a mismatch here
+      // is no longer invisible drift, it's a real correction the engine
+      // applies at end of year, and this fixture isn't testing that.
       individualAccounts: [
         {
           name: "Taxable Brokerage",
           category: "brokerage",
           taxType: "afterTax",
-          startingBalance: 20000,
+          startingBalance: 18000,
           parentCategory: "Portfolio",
         },
         {
           name: "ESPP",
           category: "brokerage",
           taxType: "afterTax",
-          startingBalance: 10000,
+          startingBalance: 9000,
           parentCategory: "Portfolio",
         },
         {
           name: "Savings Brokerage",
           category: "brokerage",
           taxType: "afterTax",
-          startingBalance: 5000,
+          startingBalance: 3000,
           parentCategory: "Savings",
         },
       ],
@@ -300,6 +316,10 @@ describe("brokerage goals integration", () => {
     });
 
     expect(bgResult.goals).toHaveLength(1);
+    // Explicit value assertions (code review, 2026-08-27).
+    expect(bgResult.goals[0]!.funded).toBe(true);
+    expect(bgResult.goals[0]!.actualWithdrawal).toBe(40000);
+    expect(bgResult.goals[0]!.projectedBalance).toBe(44065.36);
     expect(roundDeep(bgResult)).toMatchSnapshot();
   });
 });

@@ -247,4 +247,110 @@ describe("computeTaxFromSlots", () => {
       2,
     );
   });
+
+  describe("rothTaxableGrowth (v0.7.8 Roth-tax-basis follow-up)", () => {
+    it("undefined rothTaxableGrowth reduces to today's flat-rate behavior (acceptance criterion 1)", () => {
+      const slots = [
+        makeSlot("403b", { withdrawal: 10000, rothWithdrawal: 10000 }),
+      ];
+      const withField = computeTaxFromSlots({
+        slots,
+        taxableSS: 0,
+        balances: makeTaxBuckets(),
+        taxRates: { ...baseTaxRates, roth: 0.1 },
+        filingStatus: "MFJ",
+      });
+      const withoutField = computeTaxFromSlots({
+        slots,
+        taxableSS: 0,
+        balances: makeTaxBuckets(),
+        taxRates: { ...baseTaxRates, roth: 0.1 },
+        filingStatus: "MFJ",
+        rothTaxableGrowth: undefined,
+      });
+      expect(withField.taxCost).toBe(withoutField.taxCost);
+      expect(withField.rothTaxableGrowth).toBe(0);
+      expect(withField.rothTaxFreePortion).toBe(10000);
+    });
+
+    it("taxes the taxable-growth portion at the traditional rate, and the rest at taxRates.roth", () => {
+      const slots = [
+        makeSlot("403b", { withdrawal: 10000, rothWithdrawal: 10000 }),
+      ];
+      const result = computeTaxFromSlots({
+        slots,
+        taxableSS: 0,
+        balances: makeTaxBuckets(),
+        taxRates: { ...baseTaxRates, roth: 0 },
+        filingStatus: "MFJ",
+        rothTaxableGrowth: 4000,
+      });
+      expect(result.rothTaxableGrowth).toBe(4000);
+      expect(result.rothTaxFreePortion).toBe(6000);
+      // No traditional withdrawal, so actualTaxableIncome = rothTaxableGrowth (4000).
+      expect(result.actualTraditionalRate).toBeCloseTo(
+        computeTaxFromSlots({
+          slots: [
+            makeSlot("401k", {
+              withdrawal: 4000,
+              traditionalWithdrawal: 4000,
+            }),
+          ],
+          taxableSS: 0,
+          balances: makeTaxBuckets(),
+          taxRates: baseTaxRates,
+          filingStatus: "MFJ",
+        }).actualTraditionalRate,
+        6,
+      );
+      expect(result.taxCost).toBeCloseTo(
+        4000 * result.actualTraditionalRate,
+        2,
+      );
+    });
+
+    it("conservation: rothTaxableGrowth + rothTaxFreePortion === totalRothWithdrawal", () => {
+      const slots = [
+        makeSlot("403b", { withdrawal: 15000, rothWithdrawal: 15000 }),
+      ];
+      const result = computeTaxFromSlots({
+        slots,
+        taxableSS: 0,
+        balances: makeTaxBuckets(),
+        taxRates: baseTaxRates,
+        filingStatus: "MFJ",
+        rothTaxableGrowth: 6500,
+      });
+      expect(result.rothTaxableGrowth + result.rothTaxFreePortion).toBeCloseTo(
+        result.totalRothWithdrawal,
+        2,
+      );
+    });
+
+    it("pushes actualTaxableIncome (and so actualTraditionalRate) above the traditional-only base — acceptance criterion 7", () => {
+      const slots = [
+        makeSlot("401k", { withdrawal: 60000, traditionalWithdrawal: 60000 }),
+        makeSlot("403b", { withdrawal: 20000, rothWithdrawal: 20000 }),
+      ];
+      const withoutGrowth = computeTaxFromSlots({
+        slots,
+        taxableSS: 0,
+        balances: makeTaxBuckets(),
+        taxRates: baseTaxRates,
+        filingStatus: "MFJ",
+      });
+      const withGrowth = computeTaxFromSlots({
+        slots,
+        taxableSS: 0,
+        balances: makeTaxBuckets(),
+        taxRates: baseTaxRates,
+        filingStatus: "MFJ",
+        rothTaxableGrowth: 20000,
+      });
+      expect(withGrowth.actualTraditionalRate).toBeGreaterThan(
+        withoutGrowth.actualTraditionalRate,
+      );
+      expect(withGrowth.taxCost).toBeGreaterThan(withoutGrowth.taxCost);
+    });
+  });
 });

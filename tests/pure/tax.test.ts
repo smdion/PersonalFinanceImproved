@@ -21,10 +21,15 @@ describe("computeHouseholdTax", () => {
         ficaMedicare: 1160,
       },
     ];
-    const combinedTaxResult = { federalTax: 25000, marginalRate: 0.22 };
+    const combinedTaxResult = {
+      agi: 180000,
+      federalTax: 25000,
+      marginalRate: 0.22,
+    };
 
     const result = computeHouseholdTax(people, combinedTaxResult);
 
+    expect(result.agi).toBe(180000);
     expect(result.federalTax).toBe(25000);
     expect(result.ficaSS).toBe(11160); // 6200 + 4960
     expect(result.ficaMedicare).toBe(2610); // 1450 + 1160
@@ -38,6 +43,7 @@ describe("computeHouseholdTax", () => {
       { salary: 0, preTaxDeductionsAnnual: 0, ficaSS: 0, ficaMedicare: 0 },
     ];
     const result = computeHouseholdTax(people, {
+      agi: 0,
       federalTax: 0,
       marginalRate: 0,
     });
@@ -55,9 +61,11 @@ describe("computeHouseholdTax", () => {
       },
     ];
     const result = computeHouseholdTax(people, {
+      agi: 150000,
       federalTax: 30000,
       marginalRate: 0.24,
     });
+    expect(result.agi).toBe(150000);
     expect(result.totalTax).toBe(30000 + 9300 + 2175);
     expect(result.effectiveRate).toBeCloseTo(41475 / 150000);
   });

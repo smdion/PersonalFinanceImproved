@@ -27,6 +27,22 @@ export type TooltipLineItem = {
   associatedMatch?: number;
   color?: TipColor;
   sub?: TooltipLineItem[];
+  /** Section eyebrow key for a money tooltip's `items` list (v0.7.8
+   *  tooltip-readability pass, DESIGN-DECISION-v0.7.8-tooltip-readability.md
+   *  Option C). Items sharing a `group` render together under one uppercase
+   *  header instead of as an undifferentiated flat list — e.g. grouping a
+   *  household withdrawal breakdown by account category. Items without a
+   *  group render first, ungrouped. */
+  group?: string;
+  /** Dim secondary line rendered under this item — merges a fact that
+   *  describes the SAME account (withdrawal-ordering eligibility verdict,
+   *  tracked Roth basis draw-down) instead of repeating the account name on
+   *  its own separate line. Replaces the old flat `eligibilityNote` string,
+   *  which concatenated every account's verdict into one opaque paragraph
+   *  the renderer couldn't style per-line. */
+  note?: string;
+  /** Colors `note` amber with a ⚠ glyph instead of the default dim ✓. */
+  noteLocked?: boolean;
 };
 
 export type TooltipData =

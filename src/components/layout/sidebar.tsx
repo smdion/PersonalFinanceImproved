@@ -39,6 +39,7 @@ import {
   Gauge,
   Hammer,
   FlaskConical,
+  Unlock,
   type LucideIcon,
 } from "lucide-react";
 import { BRAND_COLORS } from "@/lib/utils/colors";
@@ -101,6 +102,7 @@ const navStructure: NavEntry[] = [
       { href: "/retirement", label: "Retirement", Icon: Palmtree },
       { href: "/contributions", label: "Contributions", Icon: Layers },
       { href: "/analytics", label: "Analytics", Icon: PieChart },
+      { href: "/tax-buckets", label: "Tax Buckets", Icon: Unlock },
       { href: "/tools", label: "Relocation", Icon: Wrench },
       {
         href: "/budget?tab=whatif",

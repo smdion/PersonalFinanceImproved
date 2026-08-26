@@ -7,11 +7,12 @@ import {
   taxTypeLabel,
 } from "@/lib/utils/colors";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import { safeDivide } from "@/lib/utils/math";
+import { safeDivide, roundToCents } from "@/lib/utils/math";
 import type {
   AccountCategory,
   EngineDecumulationYear,
   DecumulationSlot,
+  IndividualAccountYearBalance,
 } from "@/lib/calculators/types";
 import {
   getAccountSegments,
@@ -20,6 +21,7 @@ import {
   categoriesWithTaxPreference,
   getAccountTypeConfig,
   ACCOUNT_TYPE_CONFIG,
+  isTaxFreeBucket,
 } from "@/lib/config/account-types";
 import type { TipColor, TooltipLineItem } from "./types";
 import {
@@ -42,6 +44,101 @@ import {
   renderMcCell,
   type RenderMcCellOptions,
 } from "./projection-table-mc-cell";
+
+/**
+ * Builds the merged eligibility + tracked-basis note for one account's
+ * tooltip line. Bug fix (found live, real household data): the engine's
+ * `eligibilityReason` string bakes its "$X basis remaining" figure as plain
+ * NOMINAL dollars (it's built deep in withdrawal-eligibility.ts, which has
+ * no access to the page's real/nominal dollar-mode toggle) — but the
+ * rothBasisDrawn/rothBasisRemaining figures merged onto the same line ARE
+ * deflated. In real-dollar view mode the two halves of one line disagreed
+ * by exactly the household's cumulative inflation factor (confirmed:
+ * ratio was identical, ~1.99, across both the reason string's figure and
+ * the year's own withdrawal/growth figures). Reconstructs the basis-
+ * remaining clause from `rothBasisRemaining + rothBasisDrawn` (this year's
+ * start-of-year basis, tautologically consistent with the drawn/left
+ * figures since both add up from the same already-deflated fields) instead
+ * of reusing the engine string's embedded dollar figure — so every number
+ * on the line moves together with the SAME toggle, whichever way it's set.
+ * Non-basis reason text (Rule of 55 / age-59½ / locked wording, none of
+ * which embeds a dollar figure) is untouched.
+ */
+function buildEligibilityNote(
+  ia: IndividualAccountYearBalance,
+  year: EngineDecumulationYear,
+  deflate: (v: number, yr: number) => number,
+): { note?: string; noteLocked?: boolean } {
+  const parts: string[] = [];
+  const isBasisRemainingReason =
+    ia.rothBasisRemaining != null &&
+    !ia.eligibilityLocked &&
+    (ia.eligibilityReason?.includes("basis remaining") ?? false);
+  // Age-59½ qualification (tax-free growth) is a DIFFERENT test than the
+  // Rule-of-55 wording above — Rule of 55 exempts the 10% penalty, never
+  // taxability (splitRothWithdrawalForTax only ever checks age 59½). Both
+  // the IRA (basis_first) and 401k/403b (pro_rata) branches of
+  // withdrawal-eligibility.ts emit this exact string when age-qualified,
+  // so checking for it (rather than reusing isBasisRemainingReason, which
+  // is IRA-reason-text-specific) correctly flags non-qualified growth as
+  // taxable for BOTH account types.
+  const isAgeQualified =
+    ia.eligibilityReason?.includes("age 59½ or older") ?? false;
+  const basisDrawn = ia.rothBasisDrawn ?? 0;
+  const totalWithdrawn = ia.withdrawal ?? 0;
+  // Basis-first ordering draws basis before growth. Under the v0.7.8
+  // penalty-hard-exclusion model growth this account hasn't earned
+  // penalty-free access to should never be drawn at all by default
+  // (DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md) — this is only
+  // nonzero when the household has explicitly opted out of that
+  // exclusion. Surfaced explicitly, and NEVER worded as plain "Eligible",
+  // so it's never read as a free lunch: growth drawn while not yet
+  // age-59½-qualified is flagged taxable (v0.7.8 Roth-tax-basis
+  // follow-up) and penalty-exposed (FEATURE-ROADMAP.md R39).
+  const growthDrawn = Math.max(0, roundToCents(totalWithdrawn - basisDrawn));
+  if (isBasisRemainingReason) {
+    const startBasis = (ia.rothBasisRemaining ?? 0) + basisDrawn;
+    const flag = ia.rothBasisUncertain ? " (est.)" : "";
+    const label = growthDrawn > 0.01 ? "Partially eligible" : "Eligible";
+    parts.push(
+      `${label} — ${formatCurrency(deflate(startBasis, year.year))} basis remaining, always penalty-free${flag}`,
+    );
+  } else if (ia.eligibilityReason) {
+    parts.push(ia.eligibilityReason);
+  }
+  if (basisDrawn > 0.01) {
+    const drawn = formatCurrency(deflate(basisDrawn, year.year));
+    const remaining = formatCurrency(
+      deflate(ia.rothBasisRemaining ?? 0, year.year),
+    );
+    const flag = ia.rothBasisUncertain ? " (est.)" : "";
+    if (growthDrawn > 0.01) {
+      const growth = formatCurrency(deflate(growthDrawn, year.year));
+      const taxNote = !isAgeQualified
+        ? ", taxable + penalized (under 59½)"
+        : "";
+      parts.push(
+        `basis ${drawn} + growth ${growth}${taxNote} drawn, ${remaining} basis left${flag}`,
+      );
+    } else {
+      parts.push(`basis ${drawn} drawn, ${remaining} left${flag}`);
+    }
+  }
+  if (parts.length === 0) return {};
+  return { note: parts.join(" · "), noteLocked: !!ia.eligibilityLocked };
+}
+
+/** Owner-prefixed account label for tooltip lines — omits the "Owner — "
+ *  prefix when the account's own name already starts with the owner's
+ *  name (many real account names, e.g. "Joanna IRA (Vanguard)", already
+ *  include it — prefixing again produced a visibly duplicated name). */
+function ownerAccountLabel(ia: { name: string; ownerName?: string }): string {
+  if (!ia.ownerName) return ia.name;
+  if (ia.name.toLowerCase().startsWith(ia.ownerName.toLowerCase())) {
+    return ia.name;
+  }
+  return `${ia.ownerName} — ${ia.name}`;
+}
 
 export type DecumulationRowProps = {
   yr: EngineDecumulationYear;
@@ -180,29 +277,76 @@ export function DecumulationRow({
                     const dSlot = dSlotMap.get(cat);
                     const items: TooltipLineItem[] = [];
                     const catCfg = getAccountTypeConfig(cat);
-                    if (
-                      wd > 0 &&
-                      catCfg.supportsRothSplit &&
-                      dSlot &&
-                      (dSlot.traditionalWithdrawal > 0 ||
-                        dSlot.rothWithdrawal > 0)
-                    ) {
-                      if (dSlot.traditionalWithdrawal > 0)
-                        items.push({
-                          label: catCfg.displayLabel,
-                          amount: deflate(dSlot.traditionalWithdrawal, yr.year),
-                          prefix: "-",
-                          taxType: "traditional",
-                          color: "red",
+                    // Per-account note (v0.7.8 tooltip-readability pass,
+                    // DESIGN-DECISION-v0.7.8-tooltip-readability.md Option
+                    // C): merges this account's withdrawal-ordering
+                    // eligibility verdict and tracked Roth basis draw-down
+                    // into ONE dim line under its amount, instead of
+                    // repeating the account name on separate lines for each
+                    // fact. See buildEligibilityNote's docblock for why the
+                    // basis-remaining figure is reconstructed rather than
+                    // reusing eligibilityReason's embedded dollar amount.
+                    const buildNote = (ia: (typeof catAccts)[number]) =>
+                      buildEligibilityNote(ia, yr, deflate);
+                    if (wd > 0) {
+                      // Per-account breakdown ("no magic money"): when a
+                      // category holds more than one tracked account (e.g.
+                      // both spouses' 401ks, or a Trad + Roth sub-account),
+                      // show exactly which account(s) were drawn from
+                      // rather than one aggregated Trad/Roth line per
+                      // category. Falls back to the old aggregate when no
+                      // individual-account data exists for this category.
+                      const withdrawingAccts = catAccts
+                        .filter((ia) => (ia.withdrawal ?? 0) > 0.01)
+                        .sort((a, b) => {
+                          const taxDiff =
+                            (isTaxFreeBucket(a.taxType) ? 1 : 0) -
+                            (isTaxFreeBucket(b.taxType) ? 1 : 0);
+                          if (taxDiff !== 0) return taxDiff;
+                          return (a.ownerName ?? a.name).localeCompare(
+                            b.ownerName ?? b.name,
+                          );
                         });
-                      if (dSlot.rothWithdrawal > 0)
-                        items.push({
-                          label: catCfg.displayLabel,
-                          amount: deflate(dSlot.rothWithdrawal, yr.year),
-                          prefix: "-",
-                          taxType: "roth",
-                          color: "red",
-                        });
+                      if (withdrawingAccts.length > 0) {
+                        const multiAcct = withdrawingAccts.length > 1;
+                        for (const ia of withdrawingAccts) {
+                          items.push({
+                            label: multiAcct
+                              ? ownerAccountLabel(ia)
+                              : catCfg.displayLabel,
+                            amount: deflate(ia.withdrawal!, yr.year),
+                            prefix: "-",
+                            taxType: itemTaxType(ia.category, ia.taxType),
+                            color: "red",
+                            ...buildNote(ia),
+                          });
+                        }
+                      } else if (
+                        catCfg.supportsRothSplit &&
+                        dSlot &&
+                        (dSlot.traditionalWithdrawal > 0 ||
+                          dSlot.rothWithdrawal > 0)
+                      ) {
+                        if (dSlot.traditionalWithdrawal > 0)
+                          items.push({
+                            label: catCfg.displayLabel,
+                            amount: deflate(
+                              dSlot.traditionalWithdrawal,
+                              yr.year,
+                            ),
+                            prefix: "-",
+                            taxType: "traditional",
+                            color: "red",
+                          });
+                        if (dSlot.rothWithdrawal > 0)
+                          items.push({
+                            label: catCfg.displayLabel,
+                            amount: deflate(dSlot.rothWithdrawal, yr.year),
+                            prefix: "-",
+                            taxType: "roth",
+                            color: "red",
+                          });
+                      }
                     }
                     // Add lump sum items for this category
                     const catLumps = lumpSumsForCategory(yearLumpSums, cat);
@@ -235,6 +379,7 @@ export function DecumulationRow({
                     });
                   })()}
                   side="top"
+                  maxWidth={420}
                 >
                   <td
                     className={`text-right py-1.5 px-2 ${(() => {
@@ -390,39 +535,92 @@ export function DecumulationRow({
             })}
       <Tooltip
         content={(() => {
+          const iabs = yr.individualAccountBalances ?? [];
+          const filteredIabs = dpt
+            ? iabs.filter((ia) => ia.ownerPersonId === personFilter)
+            : iabs;
           const items: TooltipLineItem[] = [];
           if (dyr.totalWithdrawal > 0) {
-            if (dyr.totalTraditionalWithdrawal > 0)
-              items.push({
-                label: taxTypeLabel("preTax"),
-                amount: deflate(dyr.totalTraditionalWithdrawal, yr.year),
-                prefix: "-",
-                color: "blue",
+            // Per-account breakdown (v0.7.8 tracked-basis follow-up — "no
+            // magic money"): every account that was actually drawn from
+            // this year gets its own line, so the total isn't just an
+            // aggregate Trad/Roth split — the user can see exactly which
+            // account(s), whose, funded it. Ordered by category (accum
+            // order), then traditional before roth, then owner name.
+            const catOrder = new Map(getAllCategories().map((c, i) => [c, i]));
+            const withdrawingAccts = filteredIabs
+              .filter((ia) => (ia.withdrawal ?? 0) > 0.01)
+              .sort((a, b) => {
+                const catDiff =
+                  (catOrder.get(a.category) ?? 0) -
+                  (catOrder.get(b.category) ?? 0);
+                if (catDiff !== 0) return catDiff;
+                const taxDiff =
+                  (isTaxFreeBucket(a.taxType) ? 1 : 0) -
+                  (isTaxFreeBucket(b.taxType) ? 1 : 0);
+                if (taxDiff !== 0) return taxDiff;
+                return (a.ownerName ?? a.name).localeCompare(
+                  b.ownerName ?? b.name,
+                );
               });
-            if (dyr.totalRothWithdrawal > 0)
-              items.push({
-                label: taxTypeLabel("taxFree"),
-                amount: deflate(dyr.totalRothWithdrawal, yr.year),
-                prefix: "-",
-                color: "violet",
-              });
-            for (const sbCat of getAllCategories().filter(
-              (c) => !ACCOUNT_TYPE_CONFIG[c].supportsRothSplit,
-            )) {
-              const sbWd = dSlotMap.get(sbCat)?.withdrawal ?? 0;
-              if (sbWd > 0)
+            if (withdrawingAccts.length > 0) {
+              for (const ia of withdrawingAccts) {
+                // Merge this account's eligibility verdict + tracked Roth
+                // basis draw-down onto its own line (v0.7.8
+                // tooltip-readability pass) instead of a separate
+                // household-wide text block — see `buildEligibilityNote`'s
+                // docblock above (and the fix note there) for why the
+                // basis-remaining dollar figure is reconstructed rather
+                // than reused verbatim. Bounded by construction: only
+                // accounts actually withdrawn from this year appear here,
+                // so this can't regrow into the old "every account in the
+                // household" wall of text.
                 items.push({
-                  label: getAccountTypeConfig(sbCat).displayLabel,
-                  amount: deflate(sbWd, yr.year),
+                  label: ownerAccountLabel(ia),
+                  amount: deflate(ia.withdrawal!, yr.year),
                   prefix: "-",
-                  color:
-                    sbCat ===
-                    getAllCategories().find(
-                      (c) => ACCOUNT_TYPE_CONFIG[c].isOverflowTarget,
-                    )
-                      ? "amber"
-                      : "emerald",
+                  taxType: itemTaxType(ia.category, ia.taxType),
+                  color: "red",
+                  group: catDisplayLabel[ia.category] ?? ia.category,
+                  ...buildEligibilityNote(ia, yr, deflate),
                 });
+              }
+            } else {
+              // Fallback for households without per-account tracking data
+              // (e.g. simple-mode / no individual accounts modeled): the
+              // old aggregate Trad/Roth + non-split-category breakdown.
+              if (dyr.totalTraditionalWithdrawal > 0)
+                items.push({
+                  label: taxTypeLabel("preTax"),
+                  amount: deflate(dyr.totalTraditionalWithdrawal, yr.year),
+                  prefix: "-",
+                  color: "blue",
+                });
+              if (dyr.totalRothWithdrawal > 0)
+                items.push({
+                  label: taxTypeLabel("taxFree"),
+                  amount: deflate(dyr.totalRothWithdrawal, yr.year),
+                  prefix: "-",
+                  color: "violet",
+                });
+              for (const sbCat of getAllCategories().filter(
+                (c) => !ACCOUNT_TYPE_CONFIG[c].supportsRothSplit,
+              )) {
+                const sbWd = dSlotMap.get(sbCat)?.withdrawal ?? 0;
+                if (sbWd > 0)
+                  items.push({
+                    label: getAccountTypeConfig(sbCat).displayLabel,
+                    amount: deflate(sbWd, yr.year),
+                    prefix: "-",
+                    color:
+                      sbCat ===
+                      getAllCategories().find(
+                        (c) => ACCOUNT_TYPE_CONFIG[c].isOverflowTarget,
+                      )
+                        ? "amber"
+                        : "emerald",
+                  });
+              }
             }
           }
           // Add lump sum items
@@ -436,10 +634,7 @@ export function DecumulationRow({
               color: "emerald",
             });
           }
-          const iabs = yr.individualAccountBalances ?? [];
-          const totalGrowth = (
-            dpt ? iabs.filter((ia) => ia.ownerPersonId === personFilter) : iabs
-          ).reduce((s, ia) => s + ia.growth, 0);
+          const totalGrowth = filteredIabs.reduce((s, ia) => s + ia.growth, 0);
           const decBudgetProfile =
             decumulationBudgetProfileId != null
               ? budgetProfileSummaries?.find(
@@ -506,6 +701,7 @@ export function DecumulationRow({
           });
         })()}
         side="top"
+        maxWidth={460}
       >
         <td
           className={`text-right py-1.5 px-2 font-medium ${

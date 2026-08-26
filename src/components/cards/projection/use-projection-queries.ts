@@ -327,6 +327,18 @@ export function useProjectionQueries(
   // directly from calculateMonteCarlo() so the runtime shape is guaranteed.
   const coastFireMcResult = coastFireMcQuery.data?.result?.mcResult as
     MonteCarloResult | undefined;
+  // "Coast FIRE (Today)" scenario -- stopping contributions at the CURRENT
+  // age specifically, not the found/passing age above. The router already
+  // computes this (`stopNowMcResult`) as part of finding the passing age,
+  // so no extra MC run is needed here. When the found answer's own coastAge
+  // already IS today (status already_coast), stopNowMcResult is null and
+  // mcResult already covers "today" -- fall back to it rather than treating
+  // null as "not available yet".
+  const coastFireTodayMcResult = (
+    coastFireMcQuery.data?.result?.status === "already_coast"
+      ? coastFireMcQuery.data?.result?.mcResult
+      : coastFireMcQuery.data?.result?.stopNowMcResult
+  ) as MonteCarloResult | undefined;
 
   // Initialize asset class overrides from saved DB values on first MC query success
   const mcOverridesInitialized = useRef(false);
@@ -347,12 +359,23 @@ export function useProjectionQueries(
 
   // Two separate gates:
   // - inCoastFireScenario: which MC source to LOAD (controls mcLoading etc).
-  //   As soon as the user toggles Coast FIRE, we're waiting on coast MC —
-  //   the spinner should show even before coastFireMcResult arrives.
+  //   As soon as the user toggles Coast FIRE (either variant), we're
+  //   waiting on coast MC — the spinner should show even before the result
+  //   arrives.
   // - useCoastFireMc: which MC source to READ from once data is available
-  //   (controls band/detail selectors). Requires coastFireMcResult to exist.
-  const inCoastFireScenario = scenarioView === "coastFire";
-  const useCoastFireMc = inCoastFireScenario && !!coastFireMcResult;
+  //   (controls band/detail selectors). Requires the active result to exist.
+  // activeCoastFireMcResult picks between the found/passing-age result
+  // (scenarioView "coastFire") and the stop-at-current-age result
+  // (scenarioView "coastFireToday") — both come from the SAME query
+  // (computeCoastFireMC already computes both internally), just different
+  // fields of its response.
+  const inCoastFireScenario =
+    scenarioView === "coastFire" || scenarioView === "coastFireToday";
+  const activeCoastFireMcResult =
+    scenarioView === "coastFireToday"
+      ? coastFireTodayMcResult
+      : coastFireMcResult;
+  const useCoastFireMc = inCoastFireScenario && !!activeCoastFireMcResult;
 
   const mcLoading =
     projectionMode === "monteCarlo" &&
@@ -368,7 +391,7 @@ export function useProjectionQueries(
     )
       return null;
     if (useCoastFireMc) {
-      const bands = coastFireMcResult?.percentileBands ?? null;
+      const bands = activeCoastFireMcResult?.percentileBands ?? null;
       if (!bands) return null;
       return new Map<number, MonteCarloPercentileBand>(
         bands.map((b) => [b.year, b]),
@@ -390,7 +413,7 @@ export function useProjectionQueries(
     mcQuery.data?.result?.percentileBands,
     mcPrefetchQuery.data?.result?.percentileBands,
     useCoastFireMc,
-    coastFireMcResult?.percentileBands,
+    activeCoastFireMcResult?.percentileBands,
   ]);
 
   const mcStabilityBands = useMemo(() => {
@@ -401,7 +424,7 @@ export function useProjectionQueries(
     )
       return null;
     const bands = useCoastFireMc
-      ? (coastFireMcResult?.spendingStabilityBands ?? null)
+      ? (activeCoastFireMcResult?.spendingStabilityBands ?? null)
       : ((projectionMode === "monteCarlo"
           ? mcQuery.data?.result?.spendingStabilityBands
           : null) ??
@@ -420,7 +443,7 @@ export function useProjectionQueries(
     mcQuery.data?.result?.spendingStabilityBands,
     mcPrefetchQuery.data?.result?.spendingStabilityBands,
     useCoastFireMc,
-    coastFireMcResult?.spendingStabilityBands,
+    activeCoastFireMcResult?.spendingStabilityBands,
   ]);
 
   const mcIsPrefetch =
@@ -437,7 +460,7 @@ export function useProjectionQueries(
     )
       return null;
     const det = useCoastFireMc
-      ? (coastFireMcResult?.deterministicProjection ?? null)
+      ? (activeCoastFireMcResult?.deterministicProjection ?? null)
       : ((projectionMode === "monteCarlo"
           ? mcQuery.data?.result?.deterministicProjection
           : null) ??
@@ -459,7 +482,7 @@ export function useProjectionQueries(
     mcPrefetchQuery.data?.result?.deterministicProjection,
     parentCategoryFilter,
     useCoastFireMc,
-    coastFireMcResult?.deterministicProjection,
+    activeCoastFireMcResult?.deterministicProjection,
   ]);
 
   // Contribution profiles query
@@ -475,6 +498,8 @@ export function useProjectionQueries(
     coastFireAge,
     coastFireMcQuery,
     coastFireMcResult,
+    coastFireTodayMcResult,
+    activeCoastFireMcResult,
     autoloadEnabled,
     runSimulation,
     mcAutoloadEnabled,

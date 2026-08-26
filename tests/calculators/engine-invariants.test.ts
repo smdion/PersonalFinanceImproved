@@ -451,8 +451,12 @@ describe("engine invariants", () => {
               const catBal = year.balanceByAccount[cat as AccountCategory];
               if (!catBal) continue;
               const catTotal = getTotalBalance(catBal);
-              // Individual account sum should be close to category total
-              expect(Math.abs(indivTotal - catTotal)).toBeLessThan(1); // within $1
+              // Individual account sum should equal category total to the
+              // cent (v0.7.8 indBal reconciliation follow-up,
+              // DESIGN-DECISION-v0.7.8-indbal-reconciliation.md § Q4 —
+              // tightened from < $1 now that reconcileIndividualToAggregate
+              // runs every year).
+              expect(Math.abs(indivTotal - catTotal)).toBeLessThan(0.01);
             }
           }
         }),
@@ -602,6 +606,63 @@ describe("engine invariants", () => {
             expect(Math.abs(slotTotal - year.totalWithdrawal)).toBeLessThan(
               EPSILON + 1,
             );
+          }
+        }),
+        { numRuns: NUM_RUNS },
+      );
+    });
+
+    it("31 — no indBal/acctBal reconciliation diagnostic is emitted for any fixture (v0.7.8 indBal reconciliation follow-up)", () => {
+      // DESIGN-DECISION-v0.7.8-indbal-reconciliation.md § Q4 — a >$1
+      // indBal/acctBal drift is a structural finding, not rounding, and
+      // reconcileIndividualToAggregate surfaces it as a "[DIAG] indBal/
+      // acctBal reconciliation:"-prefixed warning rather than silently
+      // absorbing it. This invariant asserts that finding never actually
+      // fires for generated fixtures — if it does, that's real drift worth
+      // investigating, not a test to relax.
+      //
+      // Scoped to this specific prefix, not every "[DIAG]"-tagged warning:
+      // the pre-existing "[DIAG] Roth divergence" check (unrelated,
+      // out of scope for this fix) can legitimately fire for a degenerate
+      // fixture with a nonzero taxFree starting balance but zero individual
+      // accounts to reconcile against at all.
+      fc.assert(
+        fc.property(arbitraryInput(), (input) => {
+          const result = calculateProjection(input);
+          for (const year of result.projectionByYear) {
+            const reconciliationWarnings = (year.warnings ?? []).filter(
+              (w: string) => w.includes("[DIAG] indBal/acctBal reconciliation"),
+            );
+            expect(reconciliationWarnings).toEqual([]);
+          }
+        }),
+        { numRuns: NUM_RUNS },
+      );
+    });
+
+    it("30 — sum of individual-account withdrawals per category equals that category's slot withdrawal (v0.7.8 indBal reconciliation follow-up)", () => {
+      // DESIGN-DECISION-v0.7.8-indbal-reconciliation.md § Q3/Q4 — before
+      // that fix, distributeWithdrawals could silently under-distribute a
+      // slot's withdrawal across individual accounts (a shortfall re-routing
+      // gap, not the over-withdrawal originally suspected). This invariant
+      // guards the fix directly, at the category level (not just the
+      // household total, which invariant 23 already covers and could mask a
+      // per-category shortfall offset by a different category's surplus).
+      fc.assert(
+        fc.property(arbitraryRetiredInput(), (input) => {
+          const result = calculateProjection(input);
+          for (const year of result.projectionByYear) {
+            if (year.phase !== "decumulation") continue;
+            if (year.individualAccountBalances.length === 0) continue;
+            const indByCategory: Record<string, number> = {};
+            for (const acct of year.individualAccountBalances) {
+              indByCategory[acct.category] =
+                (indByCategory[acct.category] ?? 0) + (acct.withdrawal ?? 0);
+            }
+            for (const slot of year.slots) {
+              const indTotal = indByCategory[slot.category] ?? 0;
+              expect(Math.abs(indTotal - slot.withdrawal)).toBeLessThan(0.01);
+            }
           }
         }),
         { numRuns: NUM_RUNS },

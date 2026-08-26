@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**334 procedures across 37 routers.**
+**338 procedures across 38 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -488,6 +488,15 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `renameSavingsGoalApiName` | mutation | `syncProcedure` | Update a savings goal's stored API name to match its current Ledgr name.                      |
 | `renameSavingsGoalToApi`   | mutation | `syncProcedure` | Rename a savings goal to match the API category name.                                         |
 | `syncAllNames`             | mutation | `syncProcedure` | Batch rename all drifted items in one direction.                                              |
+
+## `tax-buckets`
+
+| Procedure              | Kind     | Auth                   | Description                                                                                                                                                                                             |
+| ---------------------- | -------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `batchUpdateRothBasis` | mutation | `performanceProcedure` | mirroring performance.batchUpdateAccounts — each entry targets its own already-known current year (from computeBreakdown's rothBasisMeta), so no per-row year resolution is needed here.                |
+| `computeBreakdown`     | query    | `protectedProcedure`   | Rule of 55 / Roth-basis-driven penalty-free/tax-free flags per account.                                                                                                                                 |
+| `updateRothBasis`      | mutation | `performanceProcedure` | needed from the caller. An explicit `year` lets the caller deliberately correct an older, already-finalized year (no hard reject — matches how updateAccount already edits finalized accountPerformance |
+| `updateSeparationDate` | mutation | `performanceProcedure` | Set the durable Rule of 55 source-of-truth date for a 401k/403b account.                                                                                                                                |
 
 ## `testing`
 

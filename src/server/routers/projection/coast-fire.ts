@@ -50,6 +50,23 @@ type CoastFireMcResult = {
   status: "already_coast" | "unreachable" | "found";
   successRate: number;
   stopNowSuccessRate: number;
+  /** % of stop-now trials that failed specifically because a year's need
+   *  went unfunded due to penalty-exposed money being excluded (v0.7.8
+   *  penalty-hard-exclusion, C3) — distinguishes "can't legally reach the
+   *  money before 59½" from "genuinely ran out" when stopNowSuccessRate is
+   *  low, since both look identical in the raw success rate alone. */
+  stopNowPenaltyAvoidedShortfallRate: number;
+  /** Median dollar shortfall (today's dollars) among stop-now trials that
+   *  hit a penalty-avoided shortfall -- see MonteCarloResult's
+   *  medianPenaltyAvoidedShortfallPV. */
+  stopNowMedianPenaltyAvoidedShortfallPV: number;
+  /** Full MC result for stopping contributions AT THE CURRENT AGE
+   *  specifically -- lets the chart/table render a genuine "Coast FIRE
+   *  (Today)" scenario, not just the found/passing age. Null when the
+   *  found answer's own coastAge already IS the current age (status
+   *  already_coast) -- in that case `mcResult` already covers "today", no
+   *  need to duplicate the (large) payload. */
+  stopNowMcResult: ReturnType<typeof calculateMonteCarlo> | null;
   spendingStabilityRate: number;
   confidenceThreshold: number;
   probesRun: number;
@@ -276,11 +293,14 @@ export const coastFireRouter = createTRPCRouter({
             status: "unreachable" as const,
             successRate: 0,
             stopNowSuccessRate: 0,
+            stopNowPenaltyAvoidedShortfallRate: 0,
+            stopNowMedianPenaltyAvoidedShortfallPV: 0,
             spendingStabilityRate: 0,
             confidenceThreshold: MC_CONFIDENCE_THRESHOLD,
             probesRun: 0,
             warning: "Default MC preset not found in database.",
             mcResult: null,
+            stopNowMcResult: null,
           },
           computedAt: null,
         };
@@ -385,11 +405,16 @@ export const coastFireRouter = createTRPCRouter({
           status: "already_coast" as const,
           successRate: fullResult.successRate,
           stopNowSuccessRate: fullResult.successRate,
+          stopNowPenaltyAvoidedShortfallRate:
+            fullResult.penaltyAvoidedShortfallRate,
+          stopNowMedianPenaltyAvoidedShortfallPV:
+            fullResult.medianPenaltyAvoidedShortfallPV,
           spendingStabilityRate: fullResult.spendingStabilityRate,
           confidenceThreshold: CONFIDENCE,
           probesRun,
           warning: null,
           mcResult: fullResult,
+          stopNowMcResult: null,
         };
         await writeProjectionCache(ctx.db, inputHash, result, null);
         return { result, computedAt: new Date().toISOString() };
@@ -407,11 +432,16 @@ export const coastFireRouter = createTRPCRouter({
           status: "already_coast" as const,
           successRate: stopNowSuccessRate,
           stopNowSuccessRate,
+          stopNowPenaltyAvoidedShortfallRate:
+            stopNowResult.penaltyAvoidedShortfallRate,
+          stopNowMedianPenaltyAvoidedShortfallPV:
+            stopNowResult.medianPenaltyAvoidedShortfallPV,
           spendingStabilityRate: stopNowResult.spendingStabilityRate,
           confidenceThreshold: CONFIDENCE,
           probesRun,
           warning: null,
           mcResult: stopNowResult,
+          stopNowMcResult: null,
         };
         await writeProjectionCache(ctx.db, inputHash, result, null);
         return { result, computedAt: new Date().toISOString() };
@@ -426,11 +456,16 @@ export const coastFireRouter = createTRPCRouter({
           status: "unreachable" as const,
           successRate: stopLateResult.successRate,
           stopNowSuccessRate,
+          stopNowPenaltyAvoidedShortfallRate:
+            stopNowResult.penaltyAvoidedShortfallRate,
+          stopNowMedianPenaltyAvoidedShortfallPV:
+            stopNowResult.medianPenaltyAvoidedShortfallPV,
           spendingStabilityRate: stopLateResult.spendingStabilityRate,
           confidenceThreshold: CONFIDENCE,
           probesRun,
           warning: null,
           mcResult: stopLateResult,
+          stopNowMcResult: stopNowResult,
         };
         await writeProjectionCache(ctx.db, inputHash, result, null);
         return { result, computedAt: new Date().toISOString() };
@@ -469,11 +504,16 @@ export const coastFireRouter = createTRPCRouter({
         status: "found" as const,
         successRate: finalResult.successRate,
         stopNowSuccessRate,
+        stopNowPenaltyAvoidedShortfallRate:
+          stopNowResult.penaltyAvoidedShortfallRate,
+        stopNowMedianPenaltyAvoidedShortfallPV:
+          stopNowResult.medianPenaltyAvoidedShortfallPV,
         spendingStabilityRate: finalResult.spendingStabilityRate,
         confidenceThreshold: CONFIDENCE,
         probesRun,
         warning,
         mcResult: finalResult,
+        stopNowMcResult: stopNowResult,
       };
       await writeProjectionCache(ctx.db, inputHash, result, null);
       return { result, computedAt: new Date().toISOString() };

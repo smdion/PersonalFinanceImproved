@@ -41,21 +41,28 @@ export function renderLineItem(
   if (item.sub) allSub.push(...item.sub);
   return (
     <div key={idx} className={nested ? "pl-2" : ""}>
-      <div>
+      <div className="flex items-baseline justify-between gap-3">
         <span className={`font-medium ${colorCls}`}>
           {item.label}
           {taxLabel}
         </span>
-        {":"}
-        <span className={colorCls}>
+        <span className={`tabular-nums shrink-0 ${colorCls}`}>
           {prefixStr}
           {formatCurrency(item.amount)}
+          {item.percent != null && (
+            // item.percent is already on a 0-100 scale (not 0-1) — render directly, no *100.
+            <span className="text-slate-400 ml-1">({item.percent}%)</span>
+          )}
         </span>
-        {item.percent != null && (
-          // item.percent is already on a 0-100 scale (not 0-1) — render directly, no *100.
-          <span className="text-faint ml-1">({item.percent}%)</span>
-        )}
       </div>
+      {item.note && (
+        <div
+          className={`text-caption ${item.noteLocked ? "text-amber-300" : "text-slate-400"}`}
+        >
+          {item.noteLocked ? "⚠ " : "✓ "}
+          {item.note}
+        </div>
+      )}
       {allSub.length > 0 && (
         <div className="space-y-0.5">
           {allSub.map((child, ci) => renderLineItem(child, ci, true))}
@@ -85,12 +92,15 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
             );
           if (l.style === "meta")
             return (
-              // eslint-disable-next-line react/no-array-index-key -- tooltip lines have no stable ID
-              <div key={`${i}-${l.text}`} className="text-faint text-caption">
+              <div
+                // eslint-disable-next-line react/no-array-index-key -- tooltip lines have no stable ID
+                key={`${i}-${l.text}`}
+                className="text-slate-400 text-caption"
+              >
                 {l.text}
               </div>
             );
-          const noteCls = l.color ? tipColorClass[l.color] : "text-faint";
+          const noteCls = l.color ? tipColorClass[l.color] : "text-slate-400";
           return (
             // eslint-disable-next-line react/no-array-index-key -- tooltip lines have no stable ID
             <div key={`${i}-${l.text}`} className={`text-caption ${noteCls}`}>
@@ -112,17 +122,34 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       {/* 1. HEADER */}
       <div className="font-medium">{d.header}</div>
       {/* 2. META */}
-      {d.meta && <div className="text-faint text-caption">{d.meta}</div>}
+      {d.meta && <div className="text-slate-400 text-caption">{d.meta}</div>}
       {/* 3. META2 */}
-      {d.meta2 && <div className="text-faint text-caption">{d.meta2}</div>}
+      {d.meta2 && <div className="text-slate-400 text-caption">{d.meta2}</div>}
       {/* 4. OVERRIDE NOTE */}
       {d.overrideNote && (
         <div className="text-caption text-emerald-300">{d.overrideNote}</div>
       )}
       {/* 5. ITEMS */}
       {d.items && d.items.length > 0 && (
-        <div className="space-y-0.5">
-          {d.items.map((item, ii) => renderLineItem(item, ii))}
+        <div className="space-y-1">
+          {(() => {
+            let lastGroup: string | undefined;
+            return d.items.map((item, ii) => {
+              const showGroup = !!item.group && item.group !== lastGroup;
+              lastGroup = item.group;
+              return (
+                // eslint-disable-next-line react/no-array-index-key -- tooltip items have no stable ID
+                <div key={`${ii}-${item.label}`}>
+                  {showGroup && (
+                    <div className="text-caption uppercase tracking-wide text-slate-400 mt-1.5 first:mt-0">
+                      {item.group}
+                    </div>
+                  )}
+                  {renderLineItem(item, ii)}
+                </div>
+              );
+            });
+          })()}
         </div>
       )}
       {/* 6. TOTAL */}
@@ -148,7 +175,7 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       )}
       {/* 7. TAX SPLIT */}
       {d.taxSplit && (d.taxSplit.traditional > 0 || d.taxSplit.roth > 0) && (
-        <div className="text-faint text-caption border-t pt-1">
+        <div className="text-slate-400 text-caption border-t pt-1">
           {d.taxSplit.traditional > 0 && (
             <span>Trad: {formatCurrency(d.taxSplit.traditional)}</span>
           )}
@@ -162,7 +189,9 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       )}
       {/* 8. GROWTH */}
       {d.growth && Math.abs(d.growth.amount) > 1 && (
-        <div className={`text-caption ${growthColor}`}>
+        <div
+          className={`text-caption ${growthColor} ${d.items && d.items.length > 0 ? "border-t border-white/10 pt-1" : ""}`}
+        >
           Growth: {growthPrefix}
           {formatCurrency(d.growth.amount)}
         </div>
@@ -221,17 +250,17 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       )}
       {/* 13. ROUTING NOTE */}
       {d.routingNote && (
-        <div className="text-faint text-caption">{d.routingNote}</div>
+        <div className="text-slate-400 text-caption">{d.routingNote}</div>
       )}
       {/* 14. BUDGET */}
       {d.budget && (
-        <div className="border-t pt-1 text-faint text-caption">
+        <div className="border-t pt-1 text-slate-400 text-caption">
           Budget: {d.budget.profile} — {formatCurrency(d.budget.amount)}/yr
         </div>
       )}
       {/* 15. IRS LIMIT */}
       {d.irsLimit && (
-        <div className="text-faint text-caption">
+        <div className="text-slate-400 text-caption">
           {d.irsLimit.category} limit: {formatCurrency(d.irsLimit.used)} of{" "}
           {formatCurrency(d.irsLimit.limit)}
           {d.irsLimit.used >= d.irsLimit.limit && (
@@ -241,7 +270,7 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       )}
       {/* 16. PRO-RATE */}
       {d.proRate && (
-        <div className="text-faint text-caption">
+        <div className="text-slate-400 text-caption">
           Pro-rated: {d.proRate.months}/12 mo ·{" "}
           {formatCurrency(d.proRate.annualAmount)}/yr →{" "}
           {formatCurrency(d.proRate.proRatedAmount)}
@@ -249,7 +278,7 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       )}
       {/* 16. BALANCE */}
       {d.balance != null && (
-        <div className="text-faint text-caption">
+        <div className="text-slate-400 text-caption">
           Balance: {formatCurrency(d.balance)}
         </div>
       )}

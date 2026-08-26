@@ -88,6 +88,8 @@ export const ACCOUNT_TYPE_CONFIG = {
     withdrawalTaxType: "income",
     taxBucketKey: "preTax",
     supportedTaxTreatments: ["pre_tax", "tax_free"],
+    rothOrderingRules: "pro_rata",
+    ruleOf55Eligible: true,
     hasIrsLimit: true,
     irsLimitGroup: "401k",
     irsLimitKeys: {
@@ -132,6 +134,8 @@ export const ACCOUNT_TYPE_CONFIG = {
     withdrawalTaxType: "income",
     taxBucketKey: "preTax",
     supportedTaxTreatments: ["pre_tax", "tax_free"],
+    rothOrderingRules: "pro_rata",
+    ruleOf55Eligible: true,
     hasIrsLimit: true,
     irsLimitGroup: "401k", // shares limit with 401k
     irsLimitKeys: {
@@ -176,6 +180,8 @@ export const ACCOUNT_TYPE_CONFIG = {
     withdrawalTaxType: "income",
     taxBucketKey: "preTax",
     supportedTaxTreatments: ["pre_tax", "tax_free"],
+    rothOrderingRules: "basis_first",
+    ruleOf55Eligible: false,
     hasIrsLimit: true,
     irsLimitGroup: "ira",
     irsLimitKeys: {
@@ -219,6 +225,8 @@ export const ACCOUNT_TYPE_CONFIG = {
     withdrawalTaxType: "none",
     taxBucketKey: "hsa",
     supportedTaxTreatments: ["hsa"],
+    rothOrderingRules: null,
+    ruleOf55Eligible: false,
     hasIrsLimit: true,
     irsLimitGroup: "hsa",
     irsLimitKeys: {
@@ -270,6 +278,8 @@ export const ACCOUNT_TYPE_CONFIG = {
     withdrawalTaxType: "capital_gains",
     taxBucketKey: "afterTax",
     supportedTaxTreatments: ["after_tax"],
+    rothOrderingRules: null,
+    ruleOf55Eligible: false,
     hasIrsLimit: false,
     irsLimitGroup: null,
     irsLimitKeys: null,
@@ -538,6 +548,43 @@ export function tracksCostBasis(category: string): boolean {
   return cfg?.balanceStructure === "basis_tracking";
 }
 
+/** Check if a category's Roth balance can carry a basis entry (401k/403b/ira —
+ *  anything with a Traditional/Roth split). Mirrors tracksCostBasis(). */
+export function tracksRothBasis(category: string): boolean {
+  const cfg = ACCOUNT_TYPE_CONFIG[category as AccountCategory];
+  return cfg?.balanceStructure === "roth_traditional";
+}
+
+/** Check if a category is HSA. This file is the one place allowed to know
+ *  literal category strings (it's where they're defined as dictionary
+ *  keys) — a direct `category === "hsa"` check here, not a check against
+ *  balanceStructure/rothOrderingRules or another incidental structural
+ *  property that HAPPENS to be unique to HSA today (advisor review,
+ *  2026-08-27: those checks are fragile to a future account type that
+ *  legitimately reuses the same structural value for unrelated reasons). */
+export function isHsaCategory(category: string): boolean {
+  return category === "hsa";
+}
+
+/** Check if a category is IRA — see isHsaCategory's docblock for why this
+ *  is a direct identity check rather than a structural-property check. */
+export function isIraCategory(category: string): boolean {
+  return category === "ira";
+}
+
+/** Check if a category is eligible for the Rule of 55 exception (401k/403b
+ *  — IRC §72(t)(2)(A)(v)). Reads `ruleOf55Eligible` directly rather than
+ *  the coincidentally-equivalent `rothOrderingRules === "pro_rata"` (found
+ *  duplicated across 3 call sites in code review, 2026-08-27) — Roth
+ *  distribution ordering and Rule-of-55 eligibility are legally distinct
+ *  concepts (IRC §72(t)(2)(A)(v) vs. IRS Notice 2009-68) that happen to
+ *  coincide for today's 5 categories; a future account type where they
+ *  diverge needs its own field read, not a borrowed one. */
+export function isRuleOf55EligibleCategory(category: string): boolean {
+  const cfg = ACCOUNT_TYPE_CONFIG[category as AccountCategory];
+  return cfg?.ruleOf55Eligible ?? false;
+}
+
 /** Valid parentCategory values — shared by Zod schemas, DB checks, and UI dropdowns. */
 export const PARENT_CATEGORY_VALUES = ["Retirement", "Portfolio"] as const;
 export type ParentCategory = (typeof PARENT_CATEGORY_VALUES)[number];
@@ -636,6 +683,16 @@ export function isPreTaxType(taxType: string): boolean {
 /** Check if an engine-internal taxType key is tax-free (Roth). */
 export function isRothType(taxType: string): boolean {
   return taxType === "roth";
+}
+
+/** Check if an engine-internal taxType key is after-tax (Brokerage). */
+export function isAfterTaxType(taxType: string): boolean {
+  return taxType === "afterTax";
+}
+
+/** Check if an engine-internal taxType key is the HSA bucket. */
+export function isHsaTaxType(taxType: string): boolean {
+  return taxType === "hsa";
 }
 
 /** Map engine-internal tax type keys to sub-keys used for balance columns. */

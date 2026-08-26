@@ -162,6 +162,21 @@ export interface ComputeTaxFromSlotsInput {
    *  RMD enforcement and has no other source of truth). */
   totalTraditionalWithdrawal?: number;
   totalRothWithdrawal?: number;
+  /** Growth drawn from NON-QUALIFIED Roth distributions this year — ordinary
+   *  income (v0.7.8 Roth-tax-basis follow-up, from
+   *  `roth-distribution-tax.ts`'s `splitRothWithdrawalForTax`). Omitted or
+   *  undefined ⇒ the arithmetic reduces exactly to treating the whole Roth
+   *  withdrawal at `taxRates.roth` (today's behavior) — see
+   *  DESIGN-DECISION-v0.7.8-roth-tax-basis.md acceptance criterion 1. */
+  rothTaxableGrowth?: number;
+  /** 10%/20% early-withdrawal penalty cost this year, from
+   *  `early-withdrawal-penalty.ts`'s `computeEarlyWithdrawalPenalty`
+   *  (v0.7.8 penalty-hard-exclusion follow-up). An EXCISE, not income tax —
+   *  must NOT enter `actualTaxableIncome` (would inflate the marginal rate
+   *  and the LTCG stacking base) and must NOT be summed into `taxCost`
+   *  (every downstream consumer reads `taxCost` as income tax only).
+   *  Omitted or undefined ⇒ the arithmetic reduces exactly to today's. */
+  penaltyCost?: number;
   taxRates: {
     traditionalFallbackRate: number;
     roth: number;
@@ -176,6 +191,15 @@ export interface ComputeTaxFromSlotsInput {
 export interface ComputeTaxFromSlotsResult {
   taxCost: number;
   actualTraditionalRate: number;
+  /** `totalTraditionalWithdrawal + rothTaxableGrowth + taxableSS` — the
+   *  single source of truth for "real ordinary income this year," BEFORE
+   *  LTCG/bracket stacking. Callers must read this rather than
+   *  re-deriving their own copy (e.g. `totalTraditionalWithdrawal +
+   *  taxableSS` alone silently drops non-qualified Roth growth income —
+   *  exactly the bug this field was added to prevent, advisor review
+   *  2026-08-27). Feeds `revisedOrdinary`/MAGI/LTCG-bracket calculations
+   *  downstream in decumulation-year.ts. */
+  actualTaxableIncome: number;
   /** Return-of-basis portion of the brokerage withdrawal (tax-free). Caller
    *  is responsible for annotating the brokerage slot with this if needed —
    *  this function only reads slots, it doesn't mutate them. */
@@ -191,6 +215,18 @@ export interface ComputeTaxFromSlotsResult {
   totalRothWithdrawal: number;
   hsaWithdrawal: number;
   brokerageWithdrawal: number;
+  /** Echoes `input.rothTaxableGrowth`, defaulted to 0 — the portion of
+   *  `totalRothWithdrawal` taxed as ordinary income this year. */
+  rothTaxableGrowth: number;
+  /** `totalRothWithdrawal - rothTaxableGrowth` — taxed at `taxRates.roth`
+   *  (0 by default). Exposed directly for the same reason
+   *  `brokerageBasisPortion` is: callers must not reverse-derive an
+   *  already-rounded component. */
+  rothTaxFreePortion: number;
+  /** Echoes `input.penaltyCost`, defaulted to 0. NOT included in `taxCost`
+   *  — a separate output field for the same reason it's a separate input
+   *  (see `ComputeTaxFromSlotsInput.penaltyCost`'s docblock). */
+  penaltyCost: number;
 }
 
 /**
@@ -218,8 +254,19 @@ export function computeTaxFromSlots(
     )?.withdrawal ?? 0;
   const brokerageSlot = slots.find((s) => isOverflowTarget(s.category));
   const brokerageWithdrawal = brokerageSlot?.withdrawal ?? 0;
+  // Taxable Roth growth (non-qualified distributions, v0.7.8
+  // Roth-tax-basis follow-up) is ordinary income — it must enter
+  // actualTaxableIncome BEFORE bracket/LTCG stacking below, not just get
+  // summed into taxCost afterward, or the marginal rate and the LTCG
+  // stacking base would both understate real taxable income. Undefined
+  // input reduces this to exactly 0, matching today's behavior.
+  const rothTaxableGrowth = roundToCents(input.rothTaxableGrowth ?? 0);
+  const rothTaxFreePortion = roundToCents(
+    totalRothWithdrawal - rothTaxableGrowth,
+  );
 
-  const actualTaxableIncome = totalTraditionalWithdrawal + taxableSS;
+  const actualTaxableIncome =
+    totalTraditionalWithdrawal + rothTaxableGrowth + taxableSS;
   const actualTraditionalRate =
     taxRates.taxBrackets && taxRates.taxBrackets.length > 0
       ? estimateEffectiveTaxRate(
@@ -253,7 +300,8 @@ export function computeTaxFromSlots(
 
   const taxCost = roundToCents(
     totalTraditionalWithdrawal * actualTraditionalRate +
-      totalRothWithdrawal * taxRates.roth +
+      rothTaxableGrowth * actualTraditionalRate +
+      rothTaxFreePortion * taxRates.roth +
       hsaWithdrawal * taxRates.hsa +
       brokerageTaxCost,
   );
@@ -261,6 +309,7 @@ export function computeTaxFromSlots(
   return {
     taxCost,
     actualTraditionalRate,
+    actualTaxableIncome,
     brokerageBasisPortion,
     brokerageGainsPortion,
     brokerageTaxCost,
@@ -268,5 +317,8 @@ export function computeTaxFromSlots(
     totalRothWithdrawal,
     hsaWithdrawal,
     brokerageWithdrawal,
+    rothTaxableGrowth,
+    rothTaxFreePortion,
+    penaltyCost: roundToCents(input.penaltyCost ?? 0),
   };
 }

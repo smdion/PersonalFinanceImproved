@@ -8,6 +8,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.7
 
+## [0.7.8] - 2026-08-26
+
+### Added
+
+- **The Household Income dashboard tile now shows an estimated MAGI (Modified Adjusted Gross Income)**, alongside net income and per-period take-home — computed from current salary minus pre-tax deductions, and salary-profile aware (respects whichever Salary/Contribution Profile is currently active, same as the rest of the tile). A tooltip explains it's an estimate: Ledgr doesn't track above-the-line deductions made outside payroll (e.g. a traditional IRA contribution) or MAGI add-backs (tax-exempt interest, foreign earned income exclusion).
+
+### Changed
+
+- **Retirement withdrawal strategies no longer take money that would trigger an early-withdrawal penalty**, even when doing so would technically cover that year's spending need — a penalty is now treated as fully off-limits rather than a last resort. Each year's withdrawal tooltip now always explains where every dollar came from.
+- **Coast FIRE result explanations now state the actual dollar shortfall** when a plan doesn't pass, instead of a generic explanation that didn't tell you what you were missing.
+
+### Fixed
+
+- **Fixed a rare tax-calculation error that could understate taxes owed** in a year combining a Roth conversion, brokerage account gains, and an early (pre-59½) withdrawal of Roth investment growth — all three needed to happen in the same year to trigger it.
+- **Fixed an edge case in the withdrawal tax gross-up calculation** that could leave a withdrawal slightly short of covering both spending and its own tax bill when the tax cost wasn't proportional to the withdrawal size.
+- **The Tax Buckets page's "penalty-free now" and "locked" amounts now always match the retirement projection engine's own calculation**, instead of a separate, simpler estimate that could disagree with it.
+
 ## [0.7.7] - 2026-08-24
 
 ### Added

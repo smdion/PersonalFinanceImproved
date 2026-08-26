@@ -394,10 +394,20 @@ describe("estimateWithdrawalTaxCost matches real routing (regression for Batch 2
     );
   });
 
-  it("estimate's implied tax exactly matches calling routeForMode + computeTaxFromSlots directly (single-pass case)", () => {
-    // No SS/filingStatus -> exactly 1 iteration, so this is a strict
-    // equality check that estimateWithdrawalTaxCost really does delegate
-    // to the shared functions rather than any separate internal math.
+  it("estimate's implied tax exactly matches calling routeForMode + computeTaxFromSlots directly, evaluated at the CONVERGED withdrawal amount", () => {
+    // v0.7.8 penalty-hard-exclusion gross-up fix (advisor review,
+    // 2026-08-26): estimateWithdrawalTaxCost now secant-converges on the
+    // withdrawal amount itself (previously a single Picard step that
+    // silently under-withdrew whenever cost wasn't proportional to
+    // withdrawal size — see
+    // tests/calculators/penalty-hard-exclusion-both-paths-agree.test.ts
+    // for the reproduction). So `est.estTax` is no longer tax evaluated at
+    // the raw pre-gross-up `afterTaxNeed` trial -- it's tax at
+    // `est.targetWithdrawal`, the amount actually routed. This test still
+    // proves the same structural invariant the original was written for
+    // (the estimate delegates to the SAME shared routeForMode +
+    // computeTaxFromSlots functions, not separate internal math) — just
+    // checked at the amount the estimate actually converged to.
     const config = makeDecumulationConfig({
       withdrawalRoutingMode: "bracket_filling",
     });
@@ -415,7 +425,7 @@ describe("estimateWithdrawalTaxCost matches real routing (regression for Batch 2
       totalBalance: 1050000,
     });
 
-    const routeResult = routeForMode(45000, config, acctBal, {
+    const routeResult = routeForMode(est.targetWithdrawal, config, acctBal, {
       taxBrackets: taxRates.taxBrackets,
       rothBracketTarget: taxRates.rothBracketTarget,
       taxableSS: 0,

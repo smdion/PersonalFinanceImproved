@@ -27,6 +27,8 @@ import {
 } from "../../config/account-types";
 import { incomeCapForMarginalRate } from "./tax-estimation";
 import type { WithholdingBracket } from "./tax-estimation";
+import { subtractPenaltyExposed } from "./balance-utils";
+import type { EligibilityRecord } from "@/lib/pure/withdrawal-eligibility";
 
 const ACCOUNT_CATEGORIES: AccountCategory[] = getAllCategories();
 
@@ -38,7 +40,7 @@ export function routeWithdrawals(
   targetWithdrawal: number,
   config: ResolvedDecumulationConfig,
   balances: AccountBalances,
-): { slots: DecumulationSlot[]; warnings: string[] } {
+): { slots: DecumulationSlot[]; warnings: string[]; unmetNeed?: number } {
   const warnings: string[] = [];
   let remaining = targetWithdrawal;
   const slots: DecumulationSlot[] = [];
@@ -166,7 +168,11 @@ export function routeWithdrawals(
     );
   }
 
-  return { slots, warnings };
+  return {
+    slots,
+    warnings,
+    unmetNeed: remaining > 0 ? roundToCents(remaining) : undefined,
+  };
 }
 
 /**
@@ -177,7 +183,7 @@ export function routeWithdrawalsPercentage(
   targetWithdrawal: number,
   config: ResolvedDecumulationConfig,
   balances: AccountBalances,
-): { slots: DecumulationSlot[]; warnings: string[] } {
+): { slots: DecumulationSlot[]; warnings: string[]; unmetNeed?: number } {
   const warnings: string[] = [];
   const slots: DecumulationSlot[] = [];
 
@@ -232,6 +238,7 @@ export function routeWithdrawalsPercentage(
       );
     }
   }
+  const unmetNeed = excess > 0 ? roundToCents(excess) : undefined;
 
   // Build slots with tax-type routing within each account
   let totalTradWithdrawn = 0;
@@ -308,7 +315,7 @@ export function routeWithdrawalsPercentage(
     });
   }
 
-  return { slots, warnings };
+  return { slots, warnings, unmetNeed };
 }
 
 /**
@@ -564,6 +571,16 @@ export type RouteResult = {
   warnings: string[];
   traditionalCap?: number;
   unmetNeed?: number;
+  /** Portion of `unmetNeed` attributable specifically to excluding
+   *  penalty-exposed money, not to the household being broke (v0.7.8
+   *  penalty-hard-exclusion follow-up, DESIGN-DECISION-v0.7.8-
+   *  penalty-hard-exclusion.md § Q3/C2). Distinct from `unmetNeed` itself:
+   *  a household can be short for BOTH reasons, or either alone — conflating
+   *  them would destroy the distinction this whole feature exists to
+   *  create. `min(unmetNeed, exposure.totalPenaltyExposed)` — never more
+   *  than either the amount actually unfunded or the amount that was
+   *  actually excluded. */
+  penaltyAvoidedShortfall?: number;
 };
 
 /**
@@ -623,13 +640,13 @@ export function applyRothBracketOverlay(
 }
 
 /**
- * Route a withdrawal using whichever mode config.withdrawalRoutingMode
- * selects — the single dispatch point both the real decumulation-year
- * execution and tax-gross-up.ts's estimate call, so a routing-mode-specific
- * rule (like the Roth-bracket overlay) can't be applied in one path and
- * forgotten in the other.
+ * One dispatch to whichever mode config.withdrawalRoutingMode selects —
+ * extracted verbatim from the pre-v0.7.8 `routeForMode` body. No mode
+ * function mutates `balances`, so `routeForMode`'s two-pass eligibility
+ * gate (below) works by substituting which `balances`/`config` object this
+ * receives, never by editing any of the three mode functions themselves.
  */
-export function routeForMode(
+function dispatchOnce(
   targetWithdrawal: number,
   config: ResolvedDecumulationConfig,
   balances: AccountBalances,
@@ -648,4 +665,57 @@ export function routeForMode(
   // Waterfall mode — apply Roth bracket optimization overlay if configured.
   const routeConfig = applyRothBracketOverlay(config, bracketInfo);
   return routeWithdrawals(targetWithdrawal, routeConfig, balances);
+}
+
+/**
+ * Route a withdrawal using whichever mode config.withdrawalRoutingMode
+ * selects — the single dispatch point both the real decumulation-year
+ * execution and tax-gross-up.ts's estimate call, so a routing-mode-specific
+ * rule (like the Roth-bracket overlay) can't be applied in one path and
+ * forgotten in the other.
+ *
+ * `exposure` (v0.7.8 penalty-hard-exclusion follow-up,
+ * DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md § Q2 — supersedes the
+ * Tier B two-pass model this function used to implement) — when provided,
+ * `config.avoidPenalizedWithdrawals` is on, and something is actually
+ * penalty-exposed, dispatches ONCE against balances with every
+ * penalty-exposed dollar subtracted out (`subtractPenaltyExposed`).
+ * Penalty-exposed money is a hard exclusion now, not a last-resort
+ * fallback: there is no second pass. A resulting `unmetNeed` is real —
+ * `penaltyAvoidedShortfall` names how much of it is attributable
+ * specifically to the exclusion (see `RouteResult`'s docblock) rather than
+ * the household being broke. Falls through to a single unchanged
+ * `dispatchOnce` call whenever any of those conditions doesn't hold — that
+ * fallthrough (not a separately maintained branch) is what keeps a
+ * nothing-penalty-exposed household, or a household with
+ * `avoidPenalizedWithdrawals: false`, byte-identical to pre-this-pass
+ * output.
+ */
+export function routeForMode(
+  targetWithdrawal: number,
+  config: ResolvedDecumulationConfig,
+  balances: AccountBalances,
+  bracketInfo: RouteBracketInfo,
+  exposure?: EligibilityRecord,
+): RouteResult {
+  if (
+    exposure == null ||
+    exposure.totalPenaltyExposed === 0 ||
+    !config.avoidPenalizedWithdrawals
+  ) {
+    return dispatchOnce(targetWithdrawal, config, balances, bracketInfo);
+  }
+
+  const penaltyFreeBalances = subtractPenaltyExposed(balances, exposure);
+  const result = dispatchOnce(
+    targetWithdrawal,
+    config,
+    penaltyFreeBalances,
+    bracketInfo,
+  );
+  if (result.unmetNeed == null || result.unmetNeed <= 0) return result;
+  const penaltyAvoidedShortfall = roundToCents(
+    Math.min(result.unmetNeed, exposure.totalPenaltyExposed),
+  );
+  return { ...result, penaltyAvoidedShortfall };
 }

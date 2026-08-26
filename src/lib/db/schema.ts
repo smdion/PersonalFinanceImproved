@@ -49,6 +49,7 @@ export const brokerageGoals = active.brokerageGoals;
 export const brokeragePlannedTransactions = active.brokeragePlannedTransactions;
 export const selfLoans = active.selfLoans;
 export const performanceAccounts = active.performanceAccounts;
+export const accountBasis = active.accountBasis;
 export const portfolioSnapshots = active.portfolioSnapshots;
 export const portfolioAccounts = active.portfolioAccounts;
 export const annualPerformance = active.annualPerformance;

@@ -10,8 +10,13 @@ import {
   getLimitGroup,
   zeroBalance,
   cloneBalance,
+  getTotalBalance,
+  setTraditional,
+  setRoth,
+  setBalance,
 } from "../../config/account-types";
 import { roundToCents } from "../../utils/math";
+import type { EligibilityRecord } from "@/lib/pure/withdrawal-eligibility";
 
 /** Derive AccountBalances from TaxBuckets using a config-derived split (fallback). */
 export function accountBalancesFromTaxBuckets(b: TaxBuckets): AccountBalances {
@@ -58,4 +63,49 @@ export function cloneAccountBalances(a: AccountBalances): AccountBalances {
   return Object.fromEntries(
     getAllCategories().map((cat) => [cat, cloneBalance(a[cat])]),
   ) as AccountBalances;
+}
+
+/**
+ * Subtract a withdrawal-eligibility record's penalty-exposed dollars from
+ * balances, per category (v0.7.8 penalty-hard-exclusion follow-up,
+ * DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md § Q2 — supersedes the
+ * Tier B two-pass model this function was originally written for; renamed
+ * from `subtractLocked`). Floors at 0 —
+ * `penaltyExposedTrad`/`penaltyExposedRoth`/`penaltyExposedTotal` are sums
+ * of individual-account penalty-exposed amounts, which can't exceed the
+ * category total they're within, but flooring keeps this safe against any
+ * future drift between `acctBal` and the sum of individual accounts (the
+ * same drift `decumulation-year.ts`'s `[DIAG] Roth divergence` check
+ * already watches for). Locked design: the penalty-free balance is derived
+ * by SUBTRACTION from the real `acctBal`, never by summing `indBal` — see
+ * `withdrawal-eligibility.ts`'s module docblock for why the other direction
+ * breaks byte-identity.
+ */
+export function subtractPenaltyExposed(
+  balances: AccountBalances,
+  record: EligibilityRecord,
+): AccountBalances {
+  const result = cloneAccountBalances(balances);
+  for (const cat of getAllCategories()) {
+    const bal = result[cat];
+    if (bal.structure === "roth_traditional") {
+      setTraditional(
+        bal,
+        Math.max(0, bal.traditional - (record.penaltyExposedTrad[cat] ?? 0)),
+      );
+      setRoth(
+        bal,
+        Math.max(0, bal.roth - (record.penaltyExposedRoth[cat] ?? 0)),
+      );
+    } else {
+      setBalance(
+        bal,
+        Math.max(
+          0,
+          getTotalBalance(bal) - (record.penaltyExposedTotal[cat] ?? 0),
+        ),
+      );
+    }
+  }
+  return result;
 }

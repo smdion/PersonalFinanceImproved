@@ -47,6 +47,14 @@ describe("engine input snapshot guard", () => {
     // Seed the canonical fixture (person id=1, job id=1, perfAcct id=1)
     const { personId, jobId, perfAcctId } = seedStandardDataset(db);
 
+    // seedStandardDataset's snapshot account is ownerPersonId: null (joint)
+    // by default — attribute it to the seeded person so the v0.7.8 Group 1.1
+    // ruleOf55ByIndKey/rothBasisByIndKey wiring (owner-keyed) has something
+    // real to join against below. Ownership only, doesn't touch amount/
+    // taxType, so it can't affect any of this file's other dollar-value
+    // assertions.
+    db.update(schema.portfolioAccounts).set({ ownerPersonId: personId }).run();
+
     // Seed a 401k contribution account so that baseLimits / catchupLimits
     // are populated (limit computation iterates activeContribs per person).
     // Accounts carry no value of their own — the Contribution Profile below
@@ -215,6 +223,24 @@ describe("engine input snapshot guard", () => {
         "retirementAgeIsNumber": true,
       }
     `);
+  });
+
+  it("individualAccounts entries carry ruleOf55/rothBasisMeta (v0.7.8 Group 1.1)", () => {
+    const bei = payload.baseEngineInput;
+    const acct = bei.individualAccounts?.find((a) => a.category === "401k");
+    expect(acct).toBeDefined();
+    expect(acct!.ownerPersonId).toBe(1);
+
+    // The seeded job has no endDate — still employed, never separated — so
+    // Rule of 55 is known-not-yet-eligible (source "active"), not
+    // "no data": a real, informative status, distinct from a data gap.
+    expect(acct!.ruleOf55).toBeDefined();
+    expect(acct!.ruleOf55!.source).toBe("active");
+    expect(acct!.ruleOf55!.eligible).toBe(false);
+
+    // No account_basis rows seeded for this fixture — the field must still
+    // be present on the account (proves the join runs), value null.
+    expect(acct!.rothBasisMeta).toBeNull();
   });
 
   it("derived retirement ages match the seeded settings", () => {

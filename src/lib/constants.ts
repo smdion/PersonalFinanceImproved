@@ -103,6 +103,58 @@ export const IRS_LIMIT_GROWTH_RATE = 0.02;
 export const RMD_EXCISE_TAX_RATE = 0.25;
 
 // ---------------------------------------------------------------------------
+// Early-Access Ages (shared by the Tax Buckets analysis tool and, since
+// v0.7.8, the retirement projection engine's withdrawal-eligibility gate —
+// both consume `src/lib/pure/early-access.ts`'s leaf predicates, which read
+// these constants)
+// ---------------------------------------------------------------------------
+
+/** Age at/after which separating from an employer grants penalty-free access
+ *  to that employer's 401k/403b (IRC §72(t)(2)(A)(v), the "Rule of 55"). */
+export const RULE_OF_55_AGE = 55;
+
+/** Age at which retirement-account withdrawals become penalty-free generally
+ *  (and, combined with the 5-year clock, "qualified"/tax-free for Roth).
+ *
+ *  Non-integer threshold under year-granularity age modeling
+ *  (`ageInYear` in `src/lib/utils/date.ts`, used everywhere the engine
+ *  reasons about age): `ageInYear(...) >= 59.5` is only ever true when
+ *  `ageInYear(...) >= 60` — integer age comparison against a `.5` threshold
+ *  rounds the eligibility start up to the year the person turns 60, not the
+ *  year they turn 59.5. Correct and intentional, not an off-by-one. */
+export const PENALTY_FREE_AGE = 59.5;
+
+/** Years a Roth conversion must season before it's penalty-free to withdraw
+ *  (each conversion has its own clock — IRS ordering rules, ROTH_CONVERSION_SEASONING_YEARS
+ *  is applied per the user's tracked latest-conversion-year, conservatively). */
+export const ROTH_CONVERSION_SEASONING_YEARS = 5;
+
+/** Age at which HSA withdrawals for non-medical expenses stop incurring the
+ *  20% penalty (ordinary income tax still applies — this only removes the
+ *  penalty, unlike the Medicare-eligibility age which is a separate, later
+ *  threshold). Qualified medical withdrawals are always penalty-free and
+ *  tax-free at any age, so this only matters for the non-medical case. */
+export const HSA_NON_MEDICAL_PENALTY_AGE = 65;
+
+/** 10% early-withdrawal penalty rate for Traditional/Roth IRA and 401k/403b
+ *  (IRC §72(t)) — every account type this module gates EXCEPT HSA, which
+ *  has its own, higher rate (see `HSA_NON_MEDICAL_PENALTY_RATE` immediately
+ *  below — this is NOT a uniform "one rate for every account type" the way
+ *  the age thresholds above are per-account-type but the penalty rate
+ *  itself is not: HSA's non-medical penalty is legally 20%, not 10%, and
+ *  applying 10% there would understate a real cost for exactly the account
+ *  type where this feature (v0.7.8 penalty-hard-exclusion follow-up) is
+ *  making the biggest behavior change). Used by
+ *  `src/lib/pure/early-withdrawal-penalty.ts`. */
+export const EARLY_WITHDRAWAL_PENALTY_RATE = 0.1;
+
+/** 20% early-withdrawal penalty rate for HSA non-medical distributions
+ *  before `HSA_NON_MEDICAL_PENALTY_AGE` (IRC §223(f)(4)) — double the
+ *  retirement-account rate above. Real, not a placeholder: this codebase's
+ *  own `computeHsaAccess` docblock already names the 20% figure. */
+export const HSA_NON_MEDICAL_PENALTY_RATE = 0.2;
+
+// ---------------------------------------------------------------------------
 // Withdrawal Strategy Defaults
 // ---------------------------------------------------------------------------
 

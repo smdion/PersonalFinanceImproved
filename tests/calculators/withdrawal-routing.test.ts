@@ -3,6 +3,7 @@ import {
   routeWithdrawals,
   routeWithdrawalsPercentage,
   routeWithdrawalsBracketFilling,
+  routeForMode,
 } from "@/lib/calculators/engine/withdrawal-routing";
 import {
   makeDecumulationConfig,
@@ -10,7 +11,8 @@ import {
   TEST_BRACKETS,
 } from "./fixtures/engine-fixtures";
 import { getAllCategories } from "@/lib/config/account-types";
-import type { AccountCategory } from "@/lib/calculators/types";
+import type { AccountCategory, AccountBalances } from "@/lib/calculators/types";
+import type { EligibilityRecord } from "@/lib/pure/withdrawal-eligibility";
 
 function slotFor(
   slots: { category: string; withdrawal: number }[],
@@ -444,5 +446,349 @@ describe("routeWithdrawalsBracketFilling", () => {
         s401k.traditionalWithdrawal + s401k.rothWithdrawal,
       );
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// routeForMode — Tier B eligibility gate (v0.7.8, PLAN-v0.7.8-v4 Group 2.2)
+// ---------------------------------------------------------------------------
+
+/** Balances with the 401k entirely locked (Rule-of-55/59½ not yet met) and
+ *  brokerage fully eligible — the plan's own canonical motivating scenario
+ *  (retire early, everything in a locked Traditional 401k). */
+function lockedBalances(overrides: Partial<AccountBalances> = {}): {
+  balances: AccountBalances;
+  eligibility: EligibilityRecord;
+} {
+  const balances: AccountBalances = {
+    "401k": { structure: "roth_traditional", traditional: 100000, roth: 0 },
+    "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+    ira: { structure: "roth_traditional", traditional: 0, roth: 0 },
+    hsa: { structure: "single_bucket", balance: 0 },
+    brokerage: { structure: "basis_tracking", balance: 60000, basis: 30000 },
+    ...overrides,
+  };
+  const eligibility: EligibilityRecord = {
+    byKey: new Map(),
+    totalPenaltyExposed: 100000,
+    penaltyExposedTrad: {
+      "401k": 100000,
+      "403b": 0,
+      ira: 0,
+      hsa: 0,
+      brokerage: 0,
+    },
+    penaltyExposedRoth: { "401k": 0, "403b": 0, ira: 0, hsa: 0, brokerage: 0 },
+    penaltyExposedTotal: {
+      "401k": 100000,
+      "403b": 0,
+      ira: 0,
+      hsa: 0,
+      brokerage: 0,
+    },
+  };
+  return { balances, eligibility };
+}
+
+describe("routeForMode (Tier B eligibility gate)", () => {
+  it("routes entirely away from a locked 401k to eligible brokerage, even though 401k is first in withdrawalOrder", () => {
+    const { balances, eligibility } = lockedBalances();
+    const config = makeDecumulationConfig({
+      withdrawalRoutingMode: "waterfall",
+      withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
+    });
+    const result = routeForMode(
+      20000,
+      config,
+      balances,
+      { taxableSS: 0 },
+      eligibility,
+    );
+    expect(slotFor(result.slots, "401k")?.withdrawal ?? 0).toBe(0);
+    expect(slotFor(result.slots, "brokerage")?.withdrawal).toBe(20000);
+  });
+
+  it("draws exactly $0 from a fully-locked category in pass 1 when penaltyExposedTrad equals the category's real balance exactly (v0.7.8 indBal reconciliation follow-up)", () => {
+    // Regression for the live bug found on the real household:
+    // DESIGN-DECISION-v0.7.8-indbal-reconciliation.md. Before
+    // reconcileIndividualToAggregate existed, eligibility.penaltyExposedTrad[cat]
+    // (summed from indBal-derived per-account locked amounts) could be a
+    // few cents LESS than balances[cat].traditional (the separately-
+    // maintained aggregate) even when the category was reported 100%
+    // locked -- subtractLocked would then leave that residual "eligible",
+    // and pass 1 would draw it from an account the engine had just
+    // declared locked. This test asserts subtractLocked's arithmetic is
+    // exact (draws exactly 0) when its two inputs agree exactly, which is
+    // the property reconciliation now guarantees upstream, in
+    // decumulation-year.ts, before eligibility is ever computed.
+    const balances = lockedBalances().balances;
+    const fullyLockedEligibility: EligibilityRecord = {
+      byKey: new Map(),
+      totalPenaltyExposed: 100000,
+      // Exactly equal to balances["401k"].traditional (100000) -- the
+      // no-drift case reconciliation guarantees.
+      penaltyExposedTrad: {
+        "401k": 100000,
+        "403b": 0,
+        ira: 0,
+        hsa: 0,
+        brokerage: 0,
+      },
+      penaltyExposedRoth: {
+        "401k": 0,
+        "403b": 0,
+        ira: 0,
+        hsa: 0,
+        brokerage: 0,
+      },
+      penaltyExposedTotal: {
+        "401k": 100000,
+        "403b": 0,
+        ira: 0,
+        hsa: 0,
+        brokerage: 0,
+      },
+    };
+    const config = makeDecumulationConfig({
+      withdrawalRoutingMode: "waterfall",
+      // 401k first in order -- if pass 1 leaked even a cent of "eligible"
+      // balance from it, waterfall mode would draw that cent from 401k
+      // before touching brokerage.
+      withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
+    });
+    const result = routeForMode(
+      20000,
+      config,
+      balances,
+      { taxableSS: 0 },
+      fullyLockedEligibility,
+    );
+    expect(slotFor(result.slots, "401k")?.withdrawal ?? 0).toBe(0);
+    expect(slotFor(result.slots, "brokerage")?.withdrawal).toBe(20000);
+  });
+
+  it("v0.7.8 penalty-hard-exclusion: leaves the need unfunded (penaltyAvoidedShortfall) instead of falling through to the locked 401k — hard exclusion, not the old soft model", () => {
+    // DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md § Q3 reverses
+    // Group 0 § Q0's soft-lock fallback (explicit user direction,
+    // 2026-08-26: "do not take money if it includes a penalty"). This
+    // replaces the old "falls through to the locked 401k... soft model"
+    // test, which asserted the exact behavior this pass exists to remove.
+    const { balances, eligibility } = lockedBalances();
+    const config = makeDecumulationConfig({
+      withdrawalRoutingMode: "waterfall",
+      withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
+      avoidPenalizedWithdrawals: true,
+    });
+    // Need ($90k) exceeds brokerage's full balance ($60k) — under hard
+    // exclusion the remaining $30k stays unmet, it never reaches the
+    // locked 401k.
+    const result = routeForMode(
+      90000,
+      config,
+      balances,
+      { taxableSS: 0 },
+      eligibility,
+    );
+    expect(slotFor(result.slots, "401k")?.withdrawal ?? 0).toBe(0);
+    expect(slotFor(result.slots, "brokerage")?.withdrawal).toBe(60000);
+    expect(result.unmetNeed).toBeCloseTo(30000, -1);
+    expect(result.penaltyAvoidedShortfall).toBeCloseTo(30000, -1);
+  });
+
+  it("avoidPenalizedWithdrawals: false routes against full balances, ignoring the exposure partition entirely (pre-v0.7.8-penalty-pass routing)", () => {
+    // avoidPenalizedWithdrawals is the only lever deciding whether
+    // penalty-exposed money is reachable at all —
+    // DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md § Q4. (The
+    // `preferPenaltyFreeSources` flag once proposed alongside it was
+    // never wired into routing and was deleted 2026-08-27.)
+    const { balances, eligibility } = lockedBalances();
+    const config = makeDecumulationConfig({
+      withdrawalRoutingMode: "waterfall",
+      withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
+      avoidPenalizedWithdrawals: false,
+    });
+    const result = routeForMode(
+      20000,
+      config,
+      balances,
+      { taxableSS: 0 },
+      eligibility,
+    );
+    // Configured order wins: 401k (first in withdrawalOrder) drawn from
+    // directly, brokerage untouched — identical to passing no eligibility
+    // record at all.
+    expect(slotFor(result.slots, "401k")?.withdrawal).toBe(20000);
+    expect(slotFor(result.slots, "brokerage")?.withdrawal ?? 0).toBe(0);
+
+    const withoutEligibility = routeForMode(20000, config, balances, {
+      taxableSS: 0,
+    });
+    expect(result.slots).toEqual(withoutEligibility.slots);
+  });
+
+  it("is a byte-identical no-op when eligibility.totalPenaltyExposed is 0", () => {
+    const { balances, eligibility } = lockedBalances();
+    const noLock: EligibilityRecord = {
+      ...eligibility,
+      totalPenaltyExposed: 0,
+    };
+    const config = makeDecumulationConfig({
+      withdrawalRoutingMode: "waterfall",
+      withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
+    });
+    const withRecord = routeForMode(
+      20000,
+      config,
+      balances,
+      { taxableSS: 0 },
+      noLock,
+    );
+    const withoutRecord = routeForMode(20000, config, balances, {
+      taxableSS: 0,
+    });
+    expect(withRecord.slots).toEqual(withoutRecord.slots);
+  });
+
+  it("account caps apply within the penalty-free partition — capped brokerage headroom is not backfilled from the locked 401k", () => {
+    // Formerly "decrements pass-2 config so it can't re-spend pass-1's
+    // account cap headroom" — that test asserted the old two-pass
+    // fallthrough (residual reaching the locked 401k). Pass 2 no longer
+    // exists (DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md § Q2): the
+    // $10k the brokerage cap can't cover now stays unmet instead.
+    const { balances, eligibility } = lockedBalances();
+    const config = makeDecumulationConfig({
+      withdrawalRoutingMode: "waterfall",
+      withdrawalOrder: ["brokerage", "401k", "403b", "ira", "hsa"],
+      withdrawalAccountCaps: {
+        "401k": null,
+        "403b": null,
+        ira: null,
+        hsa: null,
+        brokerage: 10000,
+      },
+      avoidPenalizedWithdrawals: true,
+    });
+    const result = routeForMode(
+      20000,
+      config,
+      balances,
+      { taxableSS: 0 },
+      eligibility,
+    );
+    expect(slotFor(result.slots, "brokerage")?.withdrawal).toBe(10000);
+    expect(slotFor(result.slots, "401k")?.withdrawal ?? 0).toBe(0);
+    expect(result.unmetNeed).toBeCloseTo(10000, -1);
+    expect(result.penaltyAvoidedShortfall).toBeCloseTo(10000, -1);
+  });
+
+  // Acceptance criterion 10: unmetNeed and penaltyAvoidedShortfall are both
+  // populated (typed and separated) in all three routing modes -- not just
+  // waterfall, which the tests above already cover.
+  it.each(["waterfall", "percentage", "bracket_filling"] as const)(
+    "criterion 10: populates unmetNeed AND penaltyAvoidedShortfall in %s mode when only penalty-exposed money remains",
+    (mode) => {
+      const { balances, eligibility } = lockedBalances();
+      const config = makeDecumulationConfig({
+        withdrawalRoutingMode: mode,
+        withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
+        withdrawalSplits: {
+          "401k": 0.5,
+          "403b": 0,
+          hsa: 0,
+          ira: 0,
+          brokerage: 0.5,
+        },
+        avoidPenalizedWithdrawals: true,
+      });
+      // Need exceeds eligible brokerage ($60k) -- the rest is only
+      // reachable via the locked 401k, which must stay untouched.
+      const result = routeForMode(
+        90000,
+        config,
+        balances,
+        { taxableSS: 0, taxBrackets: TEST_BRACKETS },
+        eligibility,
+      );
+      expect(slotFor(result.slots, "401k")?.withdrawal ?? 0).toBe(0);
+      expect(result.unmetNeed).toBeGreaterThan(0);
+      expect(result.penaltyAvoidedShortfall).toBeGreaterThan(0);
+    },
+  );
+
+  it("criterion 10: a genuinely broke household (no eligibility record at all) reports unmetNeed with penaltyAvoidedShortfall left undefined", () => {
+    const balances = makeAccountBalances({
+      preTax: 5000,
+      taxFree: 0,
+      hsa: 0,
+      afterTax: 0,
+      afterTaxBasis: 0,
+    });
+    const config = makeDecumulationConfig({
+      withdrawalRoutingMode: "waterfall",
+      withdrawalOrder: ["401k"],
+    });
+    const result = routeForMode(50000, config, balances, { taxableSS: 0 });
+    expect(result.unmetNeed).toBeGreaterThan(0);
+    expect(result.penaltyAvoidedShortfall ?? 0).toBe(0);
+  });
+
+  // Acceptance criterion 1: byte-identity fallthrough. When nothing is
+  // penalty-exposed, or the household explicitly opted out via
+  // avoidPenalizedWithdrawals: false, routeForMode must produce
+  // byte-identical output to calling the
+  // underlying dispatch directly on the unmodified balances -- proving the
+  // exclusion partition is a true no-op in these cases, not just close.
+  it("criterion 1: byte-identical to the no-eligibility call when nothing is penalty-exposed", () => {
+    const balances = makeAccountBalances({ preTax: 200000, taxFree: 100000 });
+    const config = makeDecumulationConfig({
+      withdrawalRoutingMode: "waterfall",
+      withdrawalOrder: ["401k", "ira", "brokerage", "hsa"],
+    });
+    const zeroExposure: EligibilityRecord = {
+      byKey: new Map(),
+      totalPenaltyExposed: 0,
+      penaltyExposedTrad: Object.fromEntries(
+        getAllCategories().map((c) => [c, 0]),
+      ) as Record<AccountCategory, number>,
+      penaltyExposedRoth: Object.fromEntries(
+        getAllCategories().map((c) => [c, 0]),
+      ) as Record<AccountCategory, number>,
+      penaltyExposedTotal: Object.fromEntries(
+        getAllCategories().map((c) => [c, 0]),
+      ) as Record<AccountCategory, number>,
+    };
+    const withZeroExposure = routeForMode(
+      50000,
+      config,
+      balances,
+      { taxableSS: 0 },
+      zeroExposure,
+    );
+    const withNoExposureArg = routeForMode(50000, config, balances, {
+      taxableSS: 0,
+    });
+    expect(withZeroExposure.slots).toEqual(withNoExposureArg.slots);
+    expect(withZeroExposure.warnings).toEqual(withNoExposureArg.warnings);
+  });
+
+  it("criterion 1: byte-identical to the no-eligibility call when avoidPenalizedWithdrawals is explicitly off, even with real exposure present", () => {
+    const { balances, eligibility } = lockedBalances();
+    const config = makeDecumulationConfig({
+      withdrawalRoutingMode: "waterfall",
+      withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
+      avoidPenalizedWithdrawals: false,
+    });
+    const withEligibility = routeForMode(
+      50000,
+      config,
+      balances,
+      { taxableSS: 0 },
+      eligibility,
+    );
+    const withNoEligibilityArg = routeForMode(50000, config, balances, {
+      taxableSS: 0,
+    });
+    expect(withEligibility.slots).toEqual(withNoEligibilityArg.slots);
+    expect(withEligibility.penaltyAvoidedShortfall).toBeUndefined();
   });
 });

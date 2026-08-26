@@ -7,15 +7,20 @@
 "use client";
 
 import { HelpTip } from "@/components/ui/help-tip";
-import type { Settings, UpsertSettingsMutation } from "./types";
+import type { Settings, UpsertSettingsMutation, IsEditable } from "./types";
 import { buildSettingsPatch } from "./settings-patch";
 
 type Props = {
   settings: Settings;
   upsertSettings: UpsertSettingsMutation;
+  isEditable: IsEditable;
 };
 
-export function HealthcareSection({ settings, upsertSettings }: Props) {
+export function HealthcareSection({
+  settings,
+  upsertSettings,
+  isEditable,
+}: Props) {
   return (
     <div className="bg-surface-sunken rounded-lg p-3">
       <div className="flex items-center gap-2 mb-2">
@@ -45,7 +50,8 @@ export function HealthcareSection({ settings, upsertSettings }: Props) {
                   }),
                 );
               }}
-              className={`text-sm px-2 py-0.5 rounded ${
+              disabled={!isEditable}
+              className={`text-sm px-2 py-0.5 rounded disabled:cursor-not-allowed disabled:opacity-50 ${
                 (settings?.enableIrmaaAwareness ?? false)
                   ? "bg-green-100 text-green-700"
                   : "bg-surface-elevated text-muted"
@@ -70,7 +76,8 @@ export function HealthcareSection({ settings, upsertSettings }: Props) {
                   }),
                 );
               }}
-              className={`text-sm px-2 py-0.5 rounded ${
+              disabled={!isEditable}
+              className={`text-sm px-2 py-0.5 rounded disabled:cursor-not-allowed disabled:opacity-50 ${
                 (settings?.enableAcaAwareness ?? false)
                   ? "bg-green-100 text-green-700"
                   : "bg-surface-elevated text-muted"
@@ -94,7 +101,8 @@ export function HealthcareSection({ settings, upsertSettings }: Props) {
                     }),
                   );
                 }}
-                className="text-sm border rounded px-1.5 py-0.5"
+                disabled={!isEditable}
+                className="text-sm border rounded px-1.5 py-0.5 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <option value="1">1</option>
                 <option value="2">2</option>

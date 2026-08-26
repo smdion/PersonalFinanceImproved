@@ -9,6 +9,10 @@ import {
   applyIndividualGrowth,
   clampIndividualBalances,
   buildIndividualYearBalances,
+  accrueIndividualBasis,
+  depleteIndividualBasis,
+  clampIndividualBasis,
+  reconcileIndividualToAggregate,
 } from "@/lib/calculators/engine/individual-account-tracking";
 import type {
   IndividualAccountInput,
@@ -16,6 +20,7 @@ import type {
   AccountCategory,
   ContributionSpec,
   AccumulationSlot,
+  AccountBalances,
 } from "@/lib/calculators/types";
 import {
   makeDecumulationSlot,
@@ -23,13 +28,35 @@ import {
   makeAccumulationSlot,
   makeContributionSpec,
 } from "./fixtures/engine-fixtures";
+import type { EligibilityRecord } from "@/lib/pure/withdrawal-eligibility";
+import { initRothBasisState } from "@/lib/pure/roth-basis-tracking";
+import type { RothBasisState } from "@/lib/pure/roth-basis-tracking";
 
 describe("makeIndKey", () => {
   it("creates composite key from name, category, and taxType", () => {
     const fn = makeIndKey();
     expect(fn({ name: "My 401k", category: "401k", taxType: "preTax" })).toBe(
-      "My 401k::401k::preTax",
+      "My 401k::401k::preTax::joint",
     );
+  });
+
+  it("includes ownerPersonId so two owners' same-named accounts don't collide", () => {
+    const fn = makeIndKey();
+    const alice = fn({
+      name: "401k",
+      category: "401k",
+      taxType: "preTax",
+      ownerPersonId: 1,
+    });
+    const bob = fn({
+      name: "401k",
+      category: "401k",
+      taxType: "preTax",
+      ownerPersonId: 2,
+    });
+    expect(alice).not.toBe(bob);
+    expect(alice).toBe("401k::401k::preTax::1");
+    expect(bob).toBe("401k::401k::preTax::2");
   });
 });
 
@@ -91,7 +118,7 @@ describe("buildSpecToAccountMapping", () => {
       parentCat,
     );
     expect(specToAccount.get("Alice 401k::pre_tax")).toBe(
-      "Alice 401k::401k::preTax",
+      "Alice 401k::401k::preTax::joint",
     );
   });
 
@@ -182,7 +209,12 @@ describe("distributeWithdrawals", () => {
     const slots: DecumulationSlot[] = [
       makeDecumulationSlot("brokerage", { withdrawal: 10000 }),
     ];
-    const result = distributeWithdrawals(slots, accounts, indKey, indBal);
+    const { decIndWithdrawal: result } = distributeWithdrawals(
+      slots,
+      accounts,
+      indKey,
+      indBal,
+    );
     // 60% to A, 40% to B
     const wdA = result.get(indKey(accounts[0]!)) ?? 0;
     const wdB = result.get(indKey(accounts[1]!)) ?? 0;
@@ -218,9 +250,180 @@ describe("distributeWithdrawals", () => {
         rothWithdrawal: 5000,
       }),
     ];
-    const result = distributeWithdrawals(slots, accounts, indKey, indBal);
+    const { decIndWithdrawal: result } = distributeWithdrawals(
+      slots,
+      accounts,
+      indKey,
+      indBal,
+    );
     expect(result.get(indKey(accounts[0]!))!).toBe(10000); // trad
     expect(result.get(indKey(accounts[1]!))!).toBe(5000); // roth
+  });
+
+  it("v0.7.8 Group 2.2 Tier A: prefers the eligible 401k over the locked one within the same category/tax-slot, until eligible money runs out", () => {
+    const eligible = makeIndividualAccount({
+      name: "Rule of 55 401k",
+      category: "401k",
+      taxType: "preTax",
+      ownerPersonId: 1,
+    });
+    const locked = makeIndividualAccount({
+      name: "Not Yet Eligible 401k",
+      category: "401k",
+      taxType: "preTax",
+      ownerPersonId: 2,
+    });
+    const indBal = new Map<string, number>();
+    indBal.set(indKey(eligible), 20000);
+    indBal.set(indKey(locked), 100000);
+
+    const eligibility: EligibilityRecord = {
+      byKey: new Map([
+        [
+          indKey(eligible),
+          {
+            indKey: indKey(eligible),
+            category: "401k",
+            taxType: "preTax",
+            penaltyFreeAmount: 20000,
+            penaltyExposedAmount: 0,
+            reason: "Eligible — Rule of 55 met",
+          },
+        ],
+        [
+          indKey(locked),
+          {
+            indKey: indKey(locked),
+            category: "401k",
+            taxType: "preTax",
+            penaltyFreeAmount: 0,
+            penaltyExposedAmount: 100000,
+            reason: "Locked until Rule of 55 or age 59½",
+          },
+        ],
+      ]),
+      totalPenaltyExposed: 100000,
+      penaltyExposedTrad: {
+        "401k": 100000,
+        "403b": 0,
+        ira: 0,
+        hsa: 0,
+        brokerage: 0,
+      },
+      penaltyExposedRoth: {
+        "401k": 0,
+        "403b": 0,
+        ira: 0,
+        hsa: 0,
+        brokerage: 0,
+      },
+      penaltyExposedTotal: {
+        "401k": 100000,
+        "403b": 0,
+        ira: 0,
+        hsa: 0,
+        brokerage: 0,
+      },
+    };
+
+    // Withdrawal need ($12k) fits entirely within the eligible account's
+    // balance ($20k) — the locked account should supply nothing at all.
+    const withinEligible: DecumulationSlot[] = [
+      makeDecumulationSlot("401k", {
+        withdrawal: 12000,
+        traditionalWithdrawal: 12000,
+      }),
+    ];
+    const { decIndWithdrawal: resultWithin } = distributeWithdrawals(
+      withinEligible,
+      [eligible, locked],
+      indKey,
+      new Map(indBal),
+      eligibility,
+    );
+    expect(resultWithin.get(indKey(eligible))).toBe(12000);
+    expect(resultWithin.get(indKey(locked)) ?? 0).toBe(0);
+
+    // Withdrawal need ($30k) exceeds the eligible account's balance ($20k)
+    // — eligible money is drawn first and fully, the remainder ($10k) falls
+    // through to the locked account (soft/penalized-but-available model,
+    // not a hard block).
+    const exceedsEligible: DecumulationSlot[] = [
+      makeDecumulationSlot("401k", {
+        withdrawal: 30000,
+        traditionalWithdrawal: 30000,
+      }),
+    ];
+    const { decIndWithdrawal: resultExceeds } = distributeWithdrawals(
+      exceedsEligible,
+      [eligible, locked],
+      indKey,
+      new Map(indBal),
+      eligibility,
+    );
+    expect(resultExceeds.get(indKey(eligible))).toBe(20000);
+    expect(resultExceeds.get(indKey(locked))).toBe(10000);
+  });
+
+  it("falls through to plain proportional distribution when eligibility.totalPenaltyExposed is 0 (byte-identity no-op)", () => {
+    const accounts: IndividualAccountInput[] = [
+      makeIndividualAccount({
+        name: "A",
+        category: "401k",
+        taxType: "preTax",
+        startingBalance: 60000,
+      }),
+      makeIndividualAccount({
+        name: "B",
+        category: "401k",
+        taxType: "preTax",
+        startingBalance: 40000,
+      }),
+    ];
+    const indBal = new Map<string, number>();
+    indBal.set(indKey(accounts[0]!), 60000);
+    indBal.set(indKey(accounts[1]!), 40000);
+    const eligibility: EligibilityRecord = {
+      byKey: new Map(),
+      totalPenaltyExposed: 0,
+      penaltyExposedTrad: {
+        "401k": 0,
+        "403b": 0,
+        ira: 0,
+        hsa: 0,
+        brokerage: 0,
+      },
+      penaltyExposedRoth: {
+        "401k": 0,
+        "403b": 0,
+        ira: 0,
+        hsa: 0,
+        brokerage: 0,
+      },
+      penaltyExposedTotal: {
+        "401k": 0,
+        "403b": 0,
+        ira: 0,
+        hsa: 0,
+        brokerage: 0,
+      },
+    };
+    const slots: DecumulationSlot[] = [
+      makeDecumulationSlot("401k", {
+        withdrawal: 10000,
+        traditionalWithdrawal: 10000,
+      }),
+    ];
+    const { decIndWithdrawal: result } = distributeWithdrawals(
+      slots,
+      accounts,
+      indKey,
+      indBal,
+      eligibility,
+    );
+    // Same 60/40 proportional split as the unmodified path.
+    expect(result.get(indKey(accounts[0]!))).toBeCloseTo(6000, -1);
+    expect(result.get(indKey(accounts[1]!))).toBeCloseTo(4000, -1);
   });
 
   it("skips slots with zero withdrawal", () => {
@@ -233,7 +436,12 @@ describe("distributeWithdrawals", () => {
     const slots: DecumulationSlot[] = [
       makeDecumulationSlot("hsa", { withdrawal: 0 }),
     ];
-    const result = distributeWithdrawals(slots, accounts, indKey, indBal);
+    const { decIndWithdrawal: result } = distributeWithdrawals(
+      slots,
+      accounts,
+      indKey,
+      indBal,
+    );
     expect(result.size).toBe(0);
     expect(indBal.get(indKey(accounts[0]!))!).toBe(10000); // unchanged
   });
@@ -329,6 +537,200 @@ describe("clampIndividualBalances", () => {
     clampIndividualBalances(accounts, indKey, indBal);
     expect(indBal.get(indKey(accounts[0]!))!).toBe(0);
     expect(indBal.get(indKey(accounts[1]!))!).toBe(5000);
+  });
+});
+
+describe("reconcileIndividualToAggregate (v0.7.8 follow-up, DESIGN-DECISION-v0.7.8-indbal-reconciliation.md)", () => {
+  const indKey = makeIndKey();
+
+  function baseBalances(
+    overrides: Partial<AccountBalances> = {},
+  ): AccountBalances {
+    return {
+      "401k": { structure: "roth_traditional", traditional: 0, roth: 0 },
+      "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+      ira: { structure: "roth_traditional", traditional: 0, roth: 0 },
+      hsa: { structure: "single_bucket", balance: 0 },
+      brokerage: { structure: "basis_tracking", balance: 0, basis: 0 },
+      ...overrides,
+    };
+  }
+
+  it("performs zero writes when every group already matches (byte-identity guard)", () => {
+    const accounts = [
+      makeIndividualAccount({
+        name: "A",
+        category: "401k",
+        taxType: "preTax",
+        ownerPersonId: 1,
+      }),
+      makeIndividualAccount({
+        name: "B",
+        category: "401k",
+        taxType: "preTax",
+        ownerPersonId: 2,
+      }),
+    ];
+    const indBal = new Map<string, number>([
+      [indKey(accounts[0]!), 6000],
+      [indKey(accounts[1]!), 4000],
+    ]);
+    const acctBal = baseBalances({
+      "401k": { structure: "roth_traditional", traditional: 10000, roth: 0 },
+    });
+    const diagnostics = reconcileIndividualToAggregate(
+      accounts,
+      indKey,
+      indBal,
+      acctBal,
+    );
+    expect(diagnostics).toEqual([]);
+    expect(indBal.get(indKey(accounts[0]!))).toBe(6000);
+    expect(indBal.get(indKey(accounts[1]!))).toBe(4000);
+  });
+
+  it("closes a seeded ±$0.09 gap exactly — group sum equals target to the cent", () => {
+    const accounts = [
+      makeIndividualAccount({
+        name: "A",
+        category: "ira",
+        taxType: "preTax",
+        ownerPersonId: 1,
+      }),
+      makeIndividualAccount({
+        name: "B",
+        category: "ira",
+        taxType: "preTax",
+        ownerPersonId: 2,
+      }),
+    ];
+    const indBal = new Map<string, number>([
+      [indKey(accounts[0]!), 6000],
+      [indKey(accounts[1]!), 4000],
+    ]);
+    // indBal sums to 10000; acctBal says 10000.09 -- a 9-cent gap.
+    const acctBal = baseBalances({
+      ira: { structure: "roth_traditional", traditional: 10000.09, roth: 0 },
+    });
+    const diagnostics = reconcileIndividualToAggregate(
+      accounts,
+      indKey,
+      indBal,
+      acctBal,
+    );
+    expect(diagnostics).toEqual([]); // < $1, no diagnostic
+    const sum =
+      (indBal.get(indKey(accounts[0]!)) ?? 0) +
+      (indBal.get(indKey(accounts[1]!)) ?? 0);
+    expect(sum).toBeCloseTo(10000.09, 2);
+  });
+
+  it("sumInd === 0, target > 0: leaves indBal untouched and returns a diagnostic when the gap is material", () => {
+    const accounts = [
+      makeIndividualAccount({
+        name: "A",
+        category: "hsa",
+        taxType: "hsa",
+        ownerPersonId: 1,
+      }),
+    ];
+    const indBal = new Map<string, number>([[indKey(accounts[0]!), 0]]);
+    const acctBal = baseBalances({
+      hsa: { structure: "single_bucket", balance: 5000 },
+    });
+    const diagnostics = reconcileIndividualToAggregate(
+      accounts,
+      indKey,
+      indBal,
+      acctBal,
+    );
+    expect(indBal.get(indKey(accounts[0]!))).toBe(0);
+    expect(diagnostics.length).toBeGreaterThan(0);
+  });
+
+  it("|delta| > $1 reconciles anyway and returns a diagnostic", () => {
+    const accounts = [
+      makeIndividualAccount({
+        name: "A",
+        category: "brokerage",
+        taxType: "afterTax",
+        ownerPersonId: 1,
+      }),
+      makeIndividualAccount({
+        name: "B",
+        category: "brokerage",
+        taxType: "afterTax",
+        ownerPersonId: 2,
+      }),
+    ];
+    const indBal = new Map<string, number>([
+      [indKey(accounts[0]!), 18000],
+      [indKey(accounts[1]!), 9000],
+    ]);
+    // Sums to 27000; acctBal says 30000 -- a real $3000 gap.
+    const acctBal = baseBalances({
+      brokerage: { structure: "basis_tracking", balance: 30000, basis: 0 },
+    });
+    const diagnostics = reconcileIndividualToAggregate(
+      accounts,
+      indKey,
+      indBal,
+      acctBal,
+    );
+    expect(diagnostics.length).toBeGreaterThan(0);
+    const sum =
+      (indBal.get(indKey(accounts[0]!)) ?? 0) +
+      (indBal.get(indKey(accounts[1]!)) ?? 0);
+    expect(sum).toBeCloseTo(30000, 2);
+  });
+
+  it("residual lands on the largest-balance account, independent of indAccts ordering", () => {
+    const a = makeIndividualAccount({
+      name: "Small",
+      category: "401k",
+      taxType: "preTax",
+      ownerPersonId: 1,
+    });
+    const b = makeIndividualAccount({
+      name: "Large",
+      category: "401k",
+      taxType: "preTax",
+      ownerPersonId: 2,
+    });
+    const acctBal = baseBalances({
+      // Chosen so proportional distribution of the delta leaves a
+      // sub-cent rounding residual to place.
+      "401k": { structure: "roth_traditional", traditional: 100.01, roth: 0 },
+    });
+
+    const indBalForward = new Map<string, number>([
+      [indKey(a), 1],
+      [indKey(b), 99],
+    ]);
+    reconcileIndividualToAggregate([a, b], indKey, indBalForward, acctBal);
+
+    const indBalReversed = new Map<string, number>([
+      [indKey(a), 1],
+      [indKey(b), 99],
+    ]);
+    reconcileIndividualToAggregate([b, a], indKey, indBalReversed, acctBal);
+
+    // Same result regardless of indAccts iteration order.
+    expect(indBalForward.get(indKey(a))).toBeCloseTo(
+      indBalReversed.get(indKey(a))!,
+      2,
+    );
+    expect(indBalForward.get(indKey(b))).toBeCloseTo(
+      indBalReversed.get(indKey(b))!,
+      2,
+    );
+    // The larger-balance account ("Large", 99) absorbs the residual.
+    expect(indBalForward.get(indKey(b))).toBeGreaterThan(
+      indBalForward.get(indKey(a))!,
+    );
+    const sum =
+      (indBalForward.get(indKey(a)) ?? 0) + (indBalForward.get(indKey(b)) ?? 0);
+    expect(sum).toBeCloseTo(100.01, 2);
   });
 });
 
@@ -968,6 +1370,87 @@ describe("buildIndividualYearBalances", () => {
     expect(result[0]!.balance).toBe(85000);
   });
 
+  it("passes eligibilityLocked/eligibilityReason through from the eligibility record (v0.7.8 follow-up)", () => {
+    const accounts: IndividualAccountInput[] = [
+      makeIndividualAccount({
+        name: "Locked 401k",
+        category: "401k",
+        taxType: "preTax",
+      }),
+      makeIndividualAccount({
+        name: "No Eligibility Data",
+        category: "brokerage",
+        taxType: "afterTax",
+      }),
+    ];
+    const kLocked = indKey(accounts[0]!);
+    const kNoData = indKey(accounts[1]!);
+    const indBal = new Map([
+      [kLocked, 50000],
+      [kNoData, 10000],
+    ]);
+    const eligibility: EligibilityRecord = {
+      byKey: new Map([
+        [
+          kLocked,
+          {
+            indKey: kLocked,
+            category: "401k",
+            taxType: "preTax",
+            penaltyFreeAmount: 0,
+            penaltyExposedAmount: 50000,
+            reason: "Locked until Rule of 55 or age 59½ (currently 40)",
+          },
+        ],
+      ]),
+      totalPenaltyExposed: 50000,
+      penaltyExposedTrad: {
+        "401k": 50000,
+        "403b": 0,
+        ira: 0,
+        hsa: 0,
+        brokerage: 0,
+      },
+      penaltyExposedRoth: {
+        "401k": 0,
+        "403b": 0,
+        ira: 0,
+        hsa: 0,
+        brokerage: 0,
+      },
+      penaltyExposedTotal: {
+        "401k": 50000,
+        "403b": 0,
+        ira: 0,
+        hsa: 0,
+        brokerage: 0,
+      },
+    };
+
+    const result = buildIndividualYearBalances(
+      accounts,
+      indKey,
+      indBal,
+      new Map(),
+      "decumulation",
+      {},
+      eligibility,
+    );
+
+    const locked = result.find((r) => r.name === "Locked 401k")!;
+    expect(locked.eligibilityLocked).toBe(true);
+    expect(locked.eligibilityReason).toBe(
+      "Locked until Rule of 55 or age 59½ (currently 40)",
+    );
+
+    // No entry in eligibility.byKey for this account (e.g. eligibility
+    // wasn't computed this year, or the account has no owner) — fields
+    // stay absent rather than defaulting to a misleading "not locked".
+    const noData = result.find((r) => r.name === "No Eligibility Data")!;
+    expect(noData.eligibilityLocked).toBeUndefined();
+    expect(noData.eligibilityReason).toBeUndefined();
+  });
+
   it("zeroes balance below $1 threshold", () => {
     const accounts: IndividualAccountInput[] = [
       makeIndividualAccount({ name: "A", category: "401k", taxType: "preTax" }),
@@ -1011,5 +1494,304 @@ describe("buildIndividualYearBalances", () => {
 
     expect(result).toHaveLength(3);
     expect(result.every((r) => r.balance === 10000)).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tracked Roth basis (v0.7.8 follow-up)
+// ---------------------------------------------------------------------------
+
+describe("accrueIndividualBasis", () => {
+  const indKey = makeIndKey();
+
+  it("grows an account's tracked basis by its contribution this year", () => {
+    const roth = makeIndividualAccount({
+      name: "Roth 401k",
+      category: "401k",
+      taxType: "taxFree",
+    });
+    const k = indKey(roth);
+    const indBasis = new Map<string, RothBasisState>([
+      [k, initRothBasisState(null, 2026)],
+    ]);
+    accrueIndividualBasis([roth], indKey, indBasis, new Map([[k, 8000]]));
+    expect(indBasis.get(k)!.contributionBasis).toBe(8000);
+  });
+
+  it("is a no-op for an account with no indBasis entry (non-Roth account)", () => {
+    const trad = makeIndividualAccount({
+      name: "Trad 401k",
+      category: "401k",
+      taxType: "preTax",
+    });
+    const k = indKey(trad);
+    const indBasis = new Map<string, RothBasisState>(); // no entry
+    accrueIndividualBasis([trad], indKey, indBasis, new Map([[k, 8000]]));
+    expect(indBasis.has(k)).toBe(false);
+  });
+});
+
+describe("depleteIndividualBasis", () => {
+  const indKey = makeIndKey();
+
+  it("decrements tracked basis by the basis portion of this year's withdrawal (basis_first / IRA)", () => {
+    const ira = makeIndividualAccount({
+      name: "Roth IRA",
+      category: "ira",
+      taxType: "taxFree",
+    });
+    const k = indKey(ira);
+    const indBasis = new Map<string, RothBasisState>([
+      [
+        k,
+        {
+          contributionBasis: 10000,
+          conversionBasis: 0,
+          latestConversionYear: null,
+          sourceYear: 2020,
+          isSeeded: false,
+          stale: false,
+        },
+      ],
+    ]);
+    const draws = depleteIndividualBasis({
+      indAccts: [ira],
+      indKey,
+      indBasis,
+      preWithdrawalBal: new Map([[k, 50000]]),
+      withdrawals: new Map([[k, 6000]]),
+    });
+    expect(indBasis.get(k)!.contributionBasis).toBe(4000);
+    expect(draws.get(k)!.contributionDrawn).toBe(6000);
+    // Conservation: basis + conversion + growth drawn equals the withdrawal.
+    const d = draws.get(k)!;
+    expect(d.contributionDrawn + d.conversionDrawn + d.growthDrawn).toBe(6000);
+  });
+
+  it("depletes proportionally for pro_rata (401k Roth sub-election)", () => {
+    const roth401k = makeIndividualAccount({
+      name: "Roth 401k",
+      category: "401k",
+      taxType: "taxFree",
+    });
+    const k = indKey(roth401k);
+    const indBasis = new Map<string, RothBasisState>([
+      [
+        k,
+        {
+          contributionBasis: 20000,
+          conversionBasis: 0,
+          latestConversionYear: null,
+          sourceYear: 2020,
+          isSeeded: false,
+          stale: false,
+        },
+      ],
+    ]);
+    // 20k basis / 100k balance = 20% basis ratio.
+    const draws = depleteIndividualBasis({
+      indAccts: [roth401k],
+      indKey,
+      indBasis,
+      preWithdrawalBal: new Map([[k, 100000]]),
+      withdrawals: new Map([[k, 10000]]),
+    });
+    expect(draws.get(k)!.contributionDrawn).toBeCloseTo(2000, 0);
+    expect(indBasis.get(k)!.contributionBasis).toBeCloseTo(18000, 0);
+  });
+
+  it("skips accounts with no withdrawal this year (no-op, no draw entry)", () => {
+    const ira = makeIndividualAccount({
+      name: "Roth IRA",
+      category: "ira",
+      taxType: "taxFree",
+    });
+    const k = indKey(ira);
+    const indBasis = new Map<string, RothBasisState>([
+      [k, initRothBasisState(null, 2026)],
+    ]);
+    const draws = depleteIndividualBasis({
+      indAccts: [ira],
+      indKey,
+      indBasis,
+      preWithdrawalBal: new Map([[k, 50000]]),
+      withdrawals: new Map(), // no withdrawal entry at all
+    });
+    expect(draws.has(k)).toBe(false);
+  });
+
+  it("conservation invariant holds across multiple mixed accounts", () => {
+    const iraRoth = makeIndividualAccount({
+      name: "Roth IRA",
+      category: "ira",
+      taxType: "taxFree",
+    });
+    const k401kRoth = makeIndividualAccount({
+      name: "Roth 401k",
+      category: "401k",
+      taxType: "taxFree",
+    });
+    const kIra = indKey(iraRoth);
+    const k401k = indKey(k401kRoth);
+    const indBasis = new Map<string, RothBasisState>([
+      [
+        kIra,
+        {
+          contributionBasis: 5000,
+          conversionBasis: 2000,
+          latestConversionYear: 2021,
+          sourceYear: 2020,
+          isSeeded: false,
+          stale: false,
+        },
+      ],
+      [
+        k401k,
+        {
+          contributionBasis: 15000,
+          conversionBasis: 0,
+          latestConversionYear: null,
+          sourceYear: 2020,
+          isSeeded: false,
+          stale: false,
+        },
+      ],
+    ]);
+    const withdrawals = new Map([
+      [kIra, 4000],
+      [k401k, 30000],
+    ]);
+    const draws = depleteIndividualBasis({
+      indAccts: [iraRoth, k401kRoth],
+      indKey,
+      indBasis,
+      preWithdrawalBal: new Map([
+        [kIra, 20000],
+        [k401k, 60000],
+      ]),
+      withdrawals,
+    });
+    for (const [key, wd] of withdrawals) {
+      const d = draws.get(key)!;
+      expect(
+        d.contributionDrawn + d.conversionDrawn + d.growthDrawn,
+      ).toBeCloseTo(wd, 0);
+    }
+  });
+});
+
+describe("clampIndividualBasis", () => {
+  const indKey = makeIndKey();
+
+  it("clamps tracked basis down when the balance has shrunk below it", () => {
+    const ira = makeIndividualAccount({
+      name: "Roth IRA",
+      category: "ira",
+      taxType: "taxFree",
+    });
+    const k = indKey(ira);
+    const indBasis = new Map<string, RothBasisState>([
+      [
+        k,
+        {
+          contributionBasis: 10000,
+          conversionBasis: 5000,
+          latestConversionYear: 2020,
+          sourceYear: 2020,
+          isSeeded: false,
+          stale: false,
+        },
+      ],
+    ]);
+    clampIndividualBasis([ira], indKey, indBasis, new Map([[k, 8000]]));
+    expect(
+      indBasis.get(k)!.contributionBasis + indBasis.get(k)!.conversionBasis,
+    ).toBeLessThanOrEqual(8000);
+  });
+
+  it("zeroes basis for a dust-cleaned ($0) account", () => {
+    const ira = makeIndividualAccount({
+      name: "Roth IRA",
+      category: "ira",
+      taxType: "taxFree",
+    });
+    const k = indKey(ira);
+    const indBasis = new Map<string, RothBasisState>([
+      [
+        k,
+        {
+          contributionBasis: 500,
+          conversionBasis: 0,
+          latestConversionYear: null,
+          sourceYear: 2020,
+          isSeeded: false,
+          stale: false,
+        },
+      ],
+    ]);
+    clampIndividualBasis([ira], indKey, indBasis, new Map([[k, 0]]));
+    expect(indBasis.get(k)!.contributionBasis).toBe(0);
+  });
+});
+
+describe("buildIndividualYearBalances — tracked basis fields", () => {
+  const indKey = makeIndKey();
+
+  it("populates rothBasisRemaining/rothBasisDrawn/rothBasisUncertain when basis/draws maps are supplied", () => {
+    const roth = makeIndividualAccount({
+      name: "Roth IRA",
+      category: "ira",
+      taxType: "taxFree",
+    });
+    const k = indKey(roth);
+    const indBal = new Map([[k, 20000]]);
+    const indBasis = new Map<string, RothBasisState>([
+      [
+        k,
+        {
+          contributionBasis: 6000,
+          conversionBasis: 0,
+          latestConversionYear: null,
+          sourceYear: 2019,
+          isSeeded: true,
+          stale: true,
+        },
+      ],
+    ]);
+    const draws = new Map([
+      [k, { contributionDrawn: 1000, conversionDrawn: 0, growthDrawn: 500 }],
+    ]);
+
+    const result = buildIndividualYearBalances(
+      [roth],
+      indKey,
+      indBal,
+      new Map(),
+      "decumulation",
+      { withdrawal: new Map([[k, 1500]]), basis: indBasis, draws },
+    );
+    expect(result[0]!.rothBasisRemaining).toBe(6000);
+    expect(result[0]!.rothBasisDrawn).toBe(1000);
+    expect(result[0]!.rothBasisUncertain).toBe(true);
+  });
+
+  it("leaves basis fields absent when no basis map is supplied (byte-identity for non-Roth callers)", () => {
+    const trad = makeIndividualAccount({
+      name: "Trad 401k",
+      category: "401k",
+      taxType: "preTax",
+    });
+    const k = indKey(trad);
+    const result = buildIndividualYearBalances(
+      [trad],
+      indKey,
+      new Map([[k, 20000]]),
+      new Map(),
+      "decumulation",
+      { withdrawal: new Map([[k, 1500]]) },
+    );
+    expect(result[0]!.rothBasisRemaining).toBeUndefined();
+    expect(result[0]!.rothBasisDrawn).toBeUndefined();
+    expect(result[0]!.rothBasisUncertain).toBeUndefined();
   });
 });

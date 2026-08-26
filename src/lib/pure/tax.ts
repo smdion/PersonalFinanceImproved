@@ -14,6 +14,7 @@ export type PersonTaxData = {
 
 /** Result of household tax computation. */
 export type HouseholdTaxResult = {
+  agi: number;
   federalTax: number;
   ficaSS: number;
   ficaMedicare: number;
@@ -31,7 +32,7 @@ export type HouseholdTaxResult = {
  */
 export function computeHouseholdTax(
   people: PersonTaxData[],
-  combinedTaxResult: { federalTax: number; marginalRate: number },
+  combinedTaxResult: { agi: number; federalTax: number; marginalRate: number },
 ): HouseholdTaxResult {
   const combinedGross = sumBy(people, (p) => p.salary);
   const perPersonFicaSS = sumBy(people, (p) => p.ficaSS);
@@ -41,6 +42,7 @@ export function computeHouseholdTax(
     combinedTaxResult.federalTax + perPersonFicaSS + perPersonFicaMed;
 
   return {
+    agi: combinedTaxResult.agi,
     federalTax: combinedTaxResult.federalTax,
     ficaSS: perPersonFicaSS,
     ficaMedicare: perPersonFicaMed,

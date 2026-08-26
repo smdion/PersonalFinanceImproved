@@ -111,6 +111,7 @@ export type TaxInput = {
 };
 
 export type TaxResult = {
+  agi: number;
   taxableIncome: number;
   federalTax: number;
   effectiveRate: number;

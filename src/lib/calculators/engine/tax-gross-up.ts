@@ -39,6 +39,7 @@ import type {
   AccountBalances,
   TaxBuckets,
   FilingStatusType,
+  IndividualAccountInput,
 } from "../types";
 import { roundToCents } from "../../utils/math";
 import { cloneAccountBalances } from "./balance-utils";
@@ -48,6 +49,15 @@ import {
   type WithholdingBracket,
 } from "./tax-estimation";
 import { routeForMode } from "./withdrawal-routing";
+import type { EligibilityRecord } from "@/lib/pure/withdrawal-eligibility";
+import {
+  distributeWithdrawals,
+  depleteIndividualBasis,
+  type IndKeyFn,
+} from "./individual-account-tracking";
+import { splitRothWithdrawalForTax } from "@/lib/pure/roth-distribution-tax";
+import type { RothBasisState } from "@/lib/pure/roth-basis-tracking";
+import { computeEarlyWithdrawalPenalty } from "@/lib/pure/early-withdrawal-penalty";
 
 /** Input for the convergence estimation. */
 export interface TaxEstimationInput {
@@ -76,6 +86,28 @@ export interface TaxEstimationInput {
   acctBal: AccountBalances;
   /** Total portfolio balance */
   totalBalance: number;
+  /** Withdrawal-ordering eligibility for this year (v0.7.8, PLAN-v0.7.8-v4
+   *  Group 2.2) — passed straight through to `routeForMode`. MUST be the
+   *  same record `decumulation-year.ts`'s real execution passes to its own
+   *  `routeForMode` call: the single-dispatch invariant this module's
+   *  header docblock documents applies to this parameter too — a mismatch
+   *  here would desync the tax-gross-up estimate's slot mix from the real
+   *  router's, the same class of bug the routeForMode extraction fixed for
+   *  the routing-mode-specific rules. */
+  eligibility?: EligibilityRecord;
+  /** Individual-account state for Roth growth-vs-basis taxability (v0.7.8
+   *  Roth-tax-basis follow-up, DESIGN-DECISION-v0.7.8-roth-tax-basis.md §
+   *  Q3) — this estimate must slice the SAME way the real execution does
+   *  (distributeWithdrawals + depleteIndividualBasis), against CLONED
+   *  indBal/indBasis so the estimate can never mutate real state. Omitted
+   *  ⇒ rothTaxableGrowth stays 0, same as before this pass. */
+  indAccts?: IndividualAccountInput[];
+  indKey?: IndKeyFn;
+  indBal?: Map<string, number>;
+  indBasis?: Map<string, RothBasisState>;
+  /** Projected calendar year -- required alongside the indAccts/indBal/
+   *  indBasis quartet above to compute Roth qualification (age gate). */
+  year?: number;
 }
 
 /** Output from the convergence estimation. */
@@ -92,87 +124,235 @@ export interface TaxEstimationResult {
   grossedUpNeed: number;
   /** Target withdrawal (capped at total balance) */
   targetWithdrawal: number;
+  /** Estimated early-withdrawal penalty cost (v0.7.8 penalty-hard-exclusion
+   *  follow-up) — 0 whenever `hasIndTracking` is false or nothing was
+   *  penalized (the overwhelming default case, since `routeForMode` already
+   *  excludes penalty-exposed money when `avoidPenalizedWithdrawals` is
+   *  on). Included in the gross-up cost scalar alongside `estTax` — see
+   *  the loop body. */
+  estPenalty: number;
 }
 
-/**
- * Run the SS convergence loop to estimate tax cost and compute gross-up factor.
- *
- * The convergence loop resolves the circular dependency:
- *   taxableSS depends on Traditional estimate → which depends on bracket cap →
- *   which depends on taxableSS.
- *
- * First pass uses flat 85% SS taxation, second pass uses accurate IRS formula
- * seeded by the first pass's Traditional estimate. Each pass routes a
- * candidate withdrawal of afterTaxNeed (pre-gross-up — the question being
- * answered is "what would it cost in tax to withdraw exactly the after-tax
- * need, before grossing up for that same tax") against a CLONED balance
- * snapshot via the real router, so routing never mutates the real balances.
- */
-export function estimateWithdrawalTaxCost(
+/** One trial evaluation: cost (tax + penalty) of withdrawing exactly
+ *  `trialWithdrawal`, routed and sliced EXACTLY the way the real execution
+ *  will (routeForMode -> distributeWithdrawals -> depleteIndividualBasis ->
+ *  splitRothWithdrawalForTax -> computeEarlyWithdrawalPenalty ->
+ *  computeTaxFromSlots), against CLONED balances so this never mutates real
+ *  state. Extracted to a single closure (advisor review, 2026-08-26,
+ *  v0.7.8 penalty-hard-exclusion gross-up fix) so the convergence loop
+ *  below can call it repeatedly without a second hand-copy of this
+ *  pipeline drifting from the first the way the pre-2026-08-19 hand-
+ *  simulated router drifted from the real one (see this file's header
+ *  docblock) — RULES.md's single-computation-path rule applies within a
+ *  function's own retries, not just across files. */
+function evaluateCost(
+  trialWithdrawal: number,
+  taxableSS: number,
   input: TaxEstimationInput,
-): TaxEstimationResult {
+) {
   const {
-    afterTaxNeed,
-    ssIncome,
-    filingStatus,
     config,
     taxRates,
     balances,
     acctBal,
-    totalBalance,
+    eligibility,
+    indAccts,
+    indKey,
+    indBal,
+    indBasis,
+    year,
+    filingStatus,
   } = input;
+  const hasIndTracking =
+    indAccts != null &&
+    indKey != null &&
+    indBal != null &&
+    indBasis != null &&
+    year != null;
 
-  let taxableSS = ssIncome * 0.85; // initial flat estimate
-  let taxCost = 0;
-  const ssIterations = filingStatus && ssIncome > 0 ? 2 : 1;
-
-  for (let ssIter = 0; ssIter < ssIterations; ssIter++) {
-    const clonedAcctBal = cloneAccountBalances(acctBal);
-    const routeResult = routeForMode(afterTaxNeed, config, clonedAcctBal, {
+  const clonedAcctBal = cloneAccountBalances(acctBal);
+  const routeResult = routeForMode(
+    trialWithdrawal,
+    config,
+    clonedAcctBal,
+    {
       taxBrackets: taxRates.taxBrackets,
       rothBracketTarget: taxRates.rothBracketTarget,
       taxableSS,
+    },
+    eligibility,
+  );
+  let rothTaxableGrowth = 0;
+  let iterPenaltyCost = 0;
+  if (hasIndTracking) {
+    const clonedIndBal = new Map(indBal);
+    const clonedIndBasis = new Map(indBasis);
+    const preWithdrawalIndBal = new Map(clonedIndBal);
+    const { decIndWithdrawal } = distributeWithdrawals(
+      routeResult.slots,
+      indAccts,
+      indKey,
+      clonedIndBal,
+      eligibility,
+    );
+    const basisDraws = depleteIndividualBasis({
+      indAccts,
+      indKey,
+      indBasis: clonedIndBasis,
+      preWithdrawalBal: preWithdrawalIndBal,
+      withdrawals: decIndWithdrawal,
     });
-    const taxResult = computeTaxFromSlots({
-      slots: routeResult.slots,
-      taxableSS,
-      balances,
-      taxRates,
-      filingStatus,
-    });
-    taxCost = taxResult.taxCost;
+    rothTaxableGrowth = splitRothWithdrawalForTax({
+      accounts: indAccts.map((ia) => ({
+        indKey: indKey(ia),
+        ownerBirthYear: ia.ownerBirthYear,
+      })),
+      draws: basisDraws,
+      year,
+    }).taxableGrowth;
+    if (eligibility) {
+      iterPenaltyCost = computeEarlyWithdrawalPenalty({
+        exposure: eligibility,
+        withdrawnByKey: decIndWithdrawal,
+      }).penaltyCost;
+    }
+  }
+  const taxResult = computeTaxFromSlots({
+    slots: routeResult.slots,
+    taxableSS,
+    balances,
+    taxRates,
+    filingStatus,
+    rothTaxableGrowth,
+    penaltyCost: iterPenaltyCost,
+  });
+  return {
+    taxCost: taxResult.taxCost,
+    penaltyCost: taxResult.penaltyCost,
+    totalCost: roundToCents(taxResult.taxCost + taxResult.penaltyCost),
+    totalTraditionalWithdrawal: taxResult.totalTraditionalWithdrawal,
+    // A trial can't be improved on by withdrawing more if the router
+    // already couldn't deliver the full trial amount (account caps,
+    // exclusion, or genuine balance exhaustion) — the clamp guard below
+    // uses this to stop iterating instead of chasing an unreachable W.
+    routedShort: (routeResult.unmetNeed ?? 0) > 0.01,
+  };
+}
 
-    // After first iteration, recompute taxableSS using accurate IRS formula
-    // seeded by the estimated Traditional withdrawal from this pass.
-    if (ssIter === 0 && filingStatus && ssIncome > 0) {
+/**
+ * Resolves decumulation-year.ts's circular dependency — the withdrawal
+ * amount depends on its own tax+penalty cost, which depends on the
+ * withdrawal amount — by solving `W - cost(W) = afterTaxNeed` for W.
+ *
+ * `cost(W)` is piecewise LINEAR in W (progressive tax brackets are
+ * piecewise linear; the early-withdrawal penalty is piecewise linear with
+ * a kink at each account's `penaltyFreeAmount` — 0% below, 10-20% above),
+ * and monotone with slope < 1 (no real tax+penalty system takes >100% of
+ * a marginal dollar). That makes `f(W) = W - cost(W) - afterTaxNeed` a
+ * monotone piecewise-linear root-finding problem: SECANT iteration lands
+ * on the root in one or two more evaluations once two points are known
+ * (exactly, when both points sit in the same linear segment), which is
+ * why this converges in ~3 evaluations rather than the ~7+ a repeated
+ * `W = need + cost(W)` (Picard) step would need for the same accuracy —
+ * that single-Picard-step version is what this function did before this
+ * fix, and it silently under-withdrew whenever a fixed-dollar-cap cost
+ * (the penalty) made the "rate measured at the smaller pre-gross-up
+ * trial" an underestimate of the true marginal rate on the larger grossed-
+ * up dollars (advisor review, 2026-08-26 — see criterion 7's test in
+ * tests/calculators/penalty-hard-exclusion-both-paths-agree.test.ts for
+ * the reproduction: a ~7% real shortfall, silent, no unmetNeed flagged).
+ *
+ * taxableSS's own circular dependency (taxableSS depends on the
+ * Traditional withdrawal, which depends on W) is resolved in the SAME
+ * loop rather than nested inside it (advisor review) — every evaluation
+ * both refines taxableSS (from that evaluation's totalTraditionalWithdrawal)
+ * and produces the next trial W, so the returned taxableSS/targetWithdrawal
+ * pair is always mutually consistent with a single accepted evaluation,
+ * never a stale taxableSS paired with an extrapolated W that was never
+ * itself evaluated.
+ */
+export function estimateWithdrawalTaxCost(
+  input: TaxEstimationInput,
+): TaxEstimationResult {
+  const { afterTaxNeed, ssIncome, filingStatus, totalBalance, taxRates } =
+    input;
+  const shouldGrossUp = taxRates.grossUpForTaxes !== false;
+  const MAX_EVALUATIONS = 4;
+  const RESIDUAL_TOLERANCE = 0.01;
+
+  let taxableSS = ssIncome * 0.85; // initial flat estimate
+  let W = afterTaxNeed;
+  let evalResult = evaluateCost(W, taxableSS, input);
+  if (filingStatus && ssIncome > 0) {
+    taxableSS = computeTaxableSS(
+      ssIncome,
+      evalResult.totalTraditionalWithdrawal,
+      filingStatus,
+    );
+    // taxableSS changed -> re-evaluate at the SAME trial W with the
+    // refined SS taxability before this point becomes the loop's first
+    // secant anchor (accepting the stale-taxableSS evaluation here would
+    // just reintroduce the same "extrapolate from a point that wasn't
+    // really evaluated" bug this whole rewrite exists to remove).
+    evalResult = evaluateCost(W, taxableSS, input);
+  }
+
+  let prevW: number | null = null;
+  let prevCost: number | null = null;
+  let evaluations = 1;
+
+  while (shouldGrossUp && evaluations < MAX_EVALUATIONS) {
+    const clamped = W >= totalBalance - 0.01 || evalResult.routedShort;
+    const proceeds = W - evalResult.totalCost;
+    const residual = afterTaxNeed - proceeds;
+    if (Math.abs(residual) <= RESIDUAL_TOLERANCE || clamped) break;
+
+    let nextW: number;
+    if (prevW == null || prevCost == null || Math.abs(W - prevW) < 0.01) {
+      // No usable second point yet for a secant slope -- one Picard step
+      // (W = need + cost(W)) to generate one.
+      nextW = roundToCents(afterTaxNeed + evalResult.totalCost);
+    } else {
+      const marginalRate = (evalResult.totalCost - prevCost) / (W - prevW);
+      nextW =
+        marginalRate < 1 && Number.isFinite(marginalRate)
+          ? roundToCents(W + residual / (1 - marginalRate))
+          : roundToCents(afterTaxNeed + evalResult.totalCost); // degenerate slope -> fall back to a Picard step
+    }
+    nextW = Math.min(nextW, totalBalance);
+    if (Math.abs(nextW - W) < 0.01) break; // no more progress possible (likely the balance clamp)
+
+    prevW = W;
+    prevCost = evalResult.totalCost;
+    W = nextW;
+    if (filingStatus && ssIncome > 0) {
       taxableSS = computeTaxableSS(
         ssIncome,
-        taxResult.totalTraditionalWithdrawal,
+        evalResult.totalTraditionalWithdrawal,
         filingStatus,
       );
     }
+    evalResult = evaluateCost(W, taxableSS, input);
+    evaluations++;
   }
 
-  const shouldGrossUp = taxRates.grossUpForTaxes !== false;
-  // Not safeDivide candidates (advisor-reviewed, 2026-08-19):
-  // effectiveTaxRate's guard variable (afterTaxNeed) differs from its actual
-  // denominator (afterTaxNeed + estTax) — safeDivide(estTax, afterTaxNeed +
-  // estTax, 0) is a different function (returns 1, not 0, when
-  // afterTaxNeed === 0 and estTax > 0). grossUpFactor's `< 1` guard is the
-  // same non-zero-denominator case as decumulation-year.ts's post-RMD
-  // recompute above.
+  const targetWithdrawal = roundToCents(Math.min(W, totalBalance));
+  const totalCost = evalResult.totalCost;
+  // Reporting-only from here -- grossUpFactor/effectiveTaxRate/grossedUpNeed
+  // no longer DRIVE targetWithdrawal (the loop above already converged it
+  // directly); they're derived from the accepted evaluation purely for
+  // display/diagnostics, matching what decumulation-year.ts's own post-RMD
+  // recompute already treats them as.
   const effectiveTaxRate =
-    afterTaxNeed > 0 ? taxCost / (afterTaxNeed + taxCost) : 0;
+    afterTaxNeed > 0 ? totalCost / (afterTaxNeed + totalCost) : 0;
   const grossUpFactor =
     shouldGrossUp && effectiveTaxRate < 1 ? 1 / (1 - effectiveTaxRate) : 1;
   const grossedUpNeed = roundToCents(afterTaxNeed * grossUpFactor);
-  // Withdraw what's needed to cover expenses (grossed up for taxes).
-  // Cap at total portfolio balance — can't withdraw more than you have.
-  const targetWithdrawal = roundToCents(Math.min(grossedUpNeed, totalBalance));
 
   return {
     taxableSS,
-    estTax: taxCost,
+    estTax: evalResult.taxCost,
+    estPenalty: evalResult.penaltyCost,
     effectiveTaxRate,
     grossUpFactor,
     grossedUpNeed,

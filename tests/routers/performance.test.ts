@@ -1002,6 +1002,197 @@ describe("performance router", () => {
       expect(summary.performanceLastUpdated).toBe("2025-03-20T12:00:00.000Z");
     });
   });
+
+  // ── computeSummary account_basis join ──
+
+  describe("computeSummary (account_basis join)", () => {
+    let personId: number;
+    let perfAcctId: number;
+
+    beforeAll(async () => {
+      personId = await seedPerson(db, "Basis Owner");
+      perfAcctId = seedPerformanceAccount(db, {
+        institution: "Vanguard",
+        accountType: "ira",
+        ownerPersonId: personId,
+      });
+
+      db.insert(schema.accountPerformance)
+        .values({
+          year: 2024,
+          institution: "Vanguard",
+          accountLabel: "Vanguard IRA",
+          ownerPersonId: personId,
+          parentCategory: "Retirement",
+          performanceAccountId: perfAcctId,
+          beginningBalance: "10000",
+          totalContributions: "1000",
+          yearlyGainLoss: "500",
+          endingBalance: "11500",
+          employerContributions: "0",
+          fees: "0",
+          distributions: "0",
+          isActive: true,
+        })
+        .run();
+      // A second year on the same account with no account_basis row —
+      // must come back null, never silently default to $0 (row-driven,
+      // not account-driven: see roth-basis-rollover.ts).
+      db.insert(schema.accountPerformance)
+        .values({
+          year: 2023,
+          institution: "Vanguard",
+          accountLabel: "Vanguard IRA",
+          ownerPersonId: personId,
+          parentCategory: "Retirement",
+          performanceAccountId: perfAcctId,
+          beginningBalance: "9000",
+          totalContributions: "1000",
+          yearlyGainLoss: "0",
+          endingBalance: "10000",
+          employerContributions: "0",
+          fees: "0",
+          distributions: "0",
+          isActive: true,
+        })
+        .run();
+
+      db.insert(schema.accountBasis)
+        .values({
+          performanceAccountId: perfAcctId,
+          ownerPersonId: personId,
+          year: 2024,
+          contributionBasis: "8000",
+          conversionBasis: "1200",
+          latestConversionYear: 2024,
+          isFinalized: true,
+          isSeeded: false,
+        })
+        .run();
+    });
+
+    it("attaches contributionBasis/conversionBasis/latestConversionYear for an exact (account, owner, year) match", async () => {
+      const summary = await caller.performance.computeSummary();
+      const row = summary.accountRows.find(
+        (r: { performanceAccountId: number | null; year: number }) =>
+          r.performanceAccountId === perfAcctId && r.year === 2024,
+      );
+      expect(row).toBeDefined();
+      expect(row!.contributionBasis).toBe(8000);
+      expect(row!.conversionBasis).toBe(1200);
+      expect(row!.latestConversionYear).toBe(2024);
+    });
+
+    it("leaves basis fields null for a year with no matching account_basis row", async () => {
+      const summary = await caller.performance.computeSummary();
+      const row = summary.accountRows.find(
+        (r: { performanceAccountId: number | null; year: number }) =>
+          r.performanceAccountId === perfAcctId && r.year === 2023,
+      );
+      expect(row).toBeDefined();
+      expect(row!.contributionBasis).toBeNull();
+      expect(row!.conversionBasis).toBeNull();
+      expect(row!.latestConversionYear).toBeNull();
+    });
+  });
+
+  // ── computeSummary Retirement rollup — regression: a stale stored
+  // "Retirement" annual_performance row must never shadow the freshly
+  // synthesized one (the bug this guards against: Array.find() returns the
+  // FIRST match for a year, so a stray historical row with a wrong
+  // isCurrentYear flag would silently win forever). ──
+
+  describe("computeSummary (Retirement rollup — no stale duplicate)", () => {
+    beforeAll(() => {
+      // currentYear is 2025 from the "currentYear detection" block above,
+      // which also seeded a fullyRetirementCats ("401k/IRA") row for 2025 —
+      // that's what puts 2025 in the Retirement synthesis loop's retYears.
+      // The Portfolio-synthesis loop separately only runs for years with a
+      // real account_performance row (allAccountYears), so seed one here
+      // too — otherwise 2025 never gets a Portfolio row synthesized at all
+      // and the double-count regression test below has nothing to check.
+      const acctId = seedPerformanceAccount(db, {
+        institution: "Schwab",
+        accountType: "401k",
+      });
+      db.insert(schema.accountPerformance)
+        .values({
+          year: 2025,
+          institution: "Schwab",
+          accountLabel: "Schwab 401k",
+          parentCategory: "Retirement",
+          performanceAccountId: acctId,
+          beginningBalance: "1000",
+          totalContributions: "100",
+          yearlyGainLoss: "50",
+          endingBalance: "1150",
+          employerContributions: "0",
+          fees: "0",
+          distributions: "0",
+          isActive: true,
+        })
+        .run();
+
+      // Insert a stale, wrongly-flagged "Retirement" row for that same
+      // year directly, exactly reproducing the historical-import bug.
+      db.insert(schema.annualPerformance)
+        .values({
+          year: 2025,
+          category: "Retirement",
+          beginningBalance: "1",
+          totalContributions: "1",
+          yearlyGainLoss: "1",
+          endingBalance: "1",
+          lifetimeGains: "1",
+          lifetimeContributions: "1",
+          lifetimeMatch: "1",
+          isCurrentYear: false,
+          isFinalized: false,
+        })
+        .run();
+    });
+
+    it("never returns more than one Retirement annual row for a given year", async () => {
+      const summary = await caller.performance.computeSummary();
+      const retirement2025 = summary.annualRows.filter(
+        (r: { year: number; category: string }) =>
+          r.year === 2025 && r.category === "Retirement",
+      );
+      expect(retirement2025.length).toBe(1);
+    });
+
+    it("the Retirement row for the current year is never shadowed by a stale isCurrentYear=false row", async () => {
+      const summary = await caller.performance.computeSummary();
+      const retirement2025 = summary.annualRows.find(
+        (r: { year: number; category: string }) =>
+          r.year === 2025 && r.category === "Retirement",
+      );
+      expect(retirement2025).toBeDefined();
+      expect(retirement2025!.isCurrentYear).toBe(true);
+    });
+
+    it("Portfolio never sums the stale Retirement row on top of the real account-type categories (double-count regression)", async () => {
+      const summary = await caller.performance.computeSummary();
+      const categoryRows2025 = summary.annualRows.filter(
+        (r: { year: number; category: string }) =>
+          r.year === 2025 &&
+          r.category !== "Portfolio" &&
+          r.category !== "Retirement",
+      );
+      const expectedEnding = categoryRows2025.reduce(
+        (sum: number, r: { endingBalance: number }) => sum + r.endingBalance,
+        0,
+      );
+      const portfolio2025 = summary.annualRows.find(
+        (r: { year: number; category: string }) =>
+          r.year === 2025 && r.category === "Portfolio",
+      );
+      expect(portfolio2025).toBeDefined();
+      // The stale Retirement row's endingBalance is 1 — if it leaked into
+      // Portfolio's sum, this would be off by exactly that much.
+      expect(portfolio2025!.endingBalance).toBeCloseTo(expectedEnding, 5);
+    });
+  });
 });
 
 describe("performance.performanceAccounts", () => {

@@ -12,6 +12,7 @@ import type {
   IndividualAccountYearBalance,
 } from "../../types";
 import { roundToCents, sumBy, safeDivide } from "../../../utils/math";
+import { ageInYear } from "../../../utils/date";
 import {
   getAllCategories,
   getAccountTypeConfig,
@@ -43,6 +44,8 @@ import {
   distributeGoalWithdrawal,
   applyIndividualGrowth,
   buildIndividualYearBalances,
+  accrueIndividualBasis,
+  reconcileIndividualToAggregate,
 } from "../individual-account-tracking";
 import { cloneAccountBalances } from "../balance-utils";
 import type {
@@ -103,6 +106,7 @@ export function runAccumulationYear(
     activeEmployerMatchByParentCat,
     accumulationDefaults,
     indBal,
+    indBasis,
     specToAccount,
     accountsWithSpecs,
   } = state;
@@ -173,7 +177,7 @@ export function runAccumulationYear(
       const participants = catchupGroupParticipants?.[group];
       if (participants) {
         for (const participant of participants) {
-          addCatchupForAge(cat, year - participant.birthYear);
+          addCatchupForAge(cat, ageInYear(participant.birthYear, year));
         }
       } else {
         addCatchupForAge(cat, currentAge + yearIndex);
@@ -470,6 +474,11 @@ export function runAccumulationYear(
     indIntentional = distResult.indIntentional;
     indOverflow = distResult.indOverflow;
     indRamp = distResult.indRamp;
+    // Tracked Roth basis (v0.7.8 follow-up) -- grows by this year's
+    // contribution, which distributeContributions already excludes
+    // employer match from (see roth-basis-tracking.ts's docblock for why
+    // that's load-bearing, not incidental).
+    accrueIndividualBasis(indAccts, indKey, indBasis, indContribs);
   }
 
   // Apply growth to each bucket (pro-rated for year 0)
@@ -557,9 +566,23 @@ export function runAccumulationYear(
           intentional: indIntentional,
           overflow: indOverflow,
           ramp: indRamp,
+          basis: indBasis,
         },
       )
     : [];
+
+  // Reconcile indBal to acctBal once per year (v0.7.8 follow-up,
+  // DESIGN-DECISION-v0.7.8-indbal-reconciliation.md) -- same mechanism and
+  // rationale as decumulation-year.ts's identical call. Runs after this
+  // year's output row is built (matching the existing pattern of "output
+  // reflects pre-cleanup figures, carried-forward state reflects
+  // post-cleanup") and before the divergence check below, which reads the
+  // same two tracks this closes the gap between.
+  if (hasIndividualAccounts) {
+    routeWarnings.push(
+      ...reconcileIndividualToAggregate(indAccts, indKey, indBal, acctBal),
+    );
+  }
 
   const endBalance = roundToCents(
     balances.preTax + balances.taxFree + balances.hsa + balances.afterTax,

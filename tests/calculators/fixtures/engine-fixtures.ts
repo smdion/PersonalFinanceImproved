@@ -100,6 +100,7 @@ export function makeDecumulationConfig(
     withdrawalAccountCaps: buildCategoryRecord(() => null),
     withdrawalTaxTypeCaps: { traditional: null, roth: null },
     lumpSums: [],
+    avoidPenalizedWithdrawals: true,
     ...overrides,
   };
 }

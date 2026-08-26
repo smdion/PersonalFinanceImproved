@@ -325,9 +325,21 @@ export type DecumulationDefaults = {
    *
    * If brackets are not provided, `traditionalFallbackRate` is used as a flat haircut.
    *
-   * - roth: 0% — qualified Roth withdrawals are tax-free
+   * - roth: 0% — applies to QUALIFIED Roth dollars only (contribution basis,
+   *   conversion basis, and growth once the owner is 59½+). Growth withdrawn
+   *   from a NON-qualified distribution is taxed as ordinary income instead —
+   *   see `computeTaxFromSlots`'s `rothTaxableGrowth` parameter and
+   *   `roth-distribution-tax.ts` (v0.7.8 Roth-tax-basis follow-up,
+   *   DESIGN-DECISION-v0.7.8-roth-tax-basis.md). This rate is NOT a lever
+   *   for non-qualified growth — that portion is always ordinary income by
+   *   law, computed automatically, never configurable here.
    * - hsa: 0% — qualified HSA withdrawals are tax-free
    * - brokerage: long-term capital gains rate (default 0.15)
+   *
+   * The 10%/20% early-withdrawal penalty is NOT modeled through these
+   * rates — it's a separate cost entirely (see `avoidPenalizedWithdrawals`
+   * below and `penaltyCost` on the year output), priced by
+   * `early-withdrawal-penalty.ts` and never folded into `taxCost`.
    */
   distributionTaxRates: {
     traditionalFallbackRate: number;
@@ -373,6 +385,29 @@ export type DecumulationDefaults = {
   strategyParams?: Partial<
     Record<WithdrawalStrategyType, Record<string, number | boolean>>
   >;
+
+  /**
+   * Whether the engine may EVER draw a dollar that would incur the 10%
+   * early-withdrawal penalty — v0.7.8 penalty-hard-exclusion follow-up
+   * (DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md § Q4). Default `true`
+   * (explicit user decision, 2026-08-26): "default to not taking it if a
+   * penalty exists." When on and a household's penalty-free money runs
+   * out, the shortfall is left unfunded and surfaced as
+   * `penaltyAvoidedShortfall` rather than silently drawing penalized money
+   * — see `RouteResult`'s docblock (`withdrawal-routing.ts`). Penalty
+   * COST itself (the 10% charged on any penalized dollar actually drawn,
+   * e.g. when this is `false`) is NOT gated by this flag — it applies
+   * unconditionally, a correctness floor rather than a preference.
+   *
+   * An earlier `preferPenaltyFreeSources` flag existed alongside this one
+   * (intended to control ORDERING among penalty-free money, independent
+   * of whether penalty-exposed money was reachable at all) but was never
+   * actually wired into routing — deleted 2026-08-27 (advisor review)
+   * rather than left as documented-but-dead config. If ordering
+   * preferences among penalty-free sources need their own lever in the
+   * future, design it fresh rather than resurrecting this name.
+   */
+  avoidPenalizedWithdrawals?: boolean;
 };
 
 /**
@@ -450,6 +485,9 @@ export type DecumulationOverride = {
 
   /** Optional note explaining why this override exists (shown in UI tooltip). */
   notes?: string;
+
+  /** Override for this year onward. See DecumulationDefaults.avoidPenalizedWithdrawals. */
+  avoidPenalizedWithdrawals?: boolean;
 };
 
 /**
@@ -470,6 +508,9 @@ export type ResolvedDecumulationConfig = {
   rothConversionTarget?: number;
   /** Lump sums for this year only (NOT sticky-forward). Empty if none. */
   lumpSums: LumpSum[];
+  /** See DecumulationDefaults.avoidPenalizedWithdrawals. Always resolved
+   *  (never undefined) — `resolveDecumulationConfig` defaults it to `true`. */
+  avoidPenalizedWithdrawals: boolean;
 };
 
 /**

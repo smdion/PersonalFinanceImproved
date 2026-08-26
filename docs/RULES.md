@@ -588,24 +588,24 @@ This mapping is defined in `accountTypeToCategory()` in `performance.ts`. Annual
 
 Each page owns its domain data. Users should never have to leave a page to configure its behavior.
 
-| Data                                               | Managed On               |
-| -------------------------------------------------- | ------------------------ |
-| Retirement ages, rates, scenarios                  | Retirement page (inline) |
-| Contribution accounts, deductions                  | Paycheck page (inline)   |
-| Current job salary changes                         | Paycheck page (inline)   |
-| Mortgage loans, extra payments                     | Mortgage page            |
-| Cash, house value, home improvements, other assets | Assets page              |
-| Savings goals, allocations                         | Savings page             |
-| Performance accounts                               | Performance page         |
-| Full job/salary history                            | Historical page          |
-| ESPP gain calculator, Relocation calculator        | Tools page               |
+| Data                                               | Managed On             |
+| -------------------------------------------------- | ---------------------- |
+| Contribution accounts, deductions                  | Paycheck page (inline) |
+| Current job salary changes                         | Paycheck page (inline) |
+| Mortgage loans, extra payments                     | Mortgage page          |
+| Cash, house value, home improvements, other assets | Assets page            |
+| Savings goals, allocations                         | Savings page           |
+| Performance accounts                               | Performance page       |
+| Full job/salary history                            | Historical page        |
+| ESPP gain calculator, Relocation calculator        | Tools page             |
 
 **Exceptions (centralized Settings page):**
 
 - **People** (name, DOB) — foundational identity used across all pages
 - **IRS Limits** — yearly reference data (401k/IRA/HSA caps, FICA rates, standard deductions)
 - **Tax Brackets** — yearly, multi-filing-status reference data
-- **Return Rates** (age-based expected rate of return) — reference/assumption data feeding projections broadly, not a single page's user-editable setting, despite superficially reading like the "Retirement ages, rates, scenarios" row above
+- **Return Rates** (age-based expected rate of return) — reference/assumption data feeding projections broadly, not a single page's user-editable setting, despite superficially reading like retirement-adjacent settings
+- **Retirement Profile** (retirement ages, timeline, income, decumulation plan, taxes, healthcare, Social Security — `retirement_settings`) — lives on the Budget page's Retirement Profile tab, not the Retirement page. Originally page-local, but the Budget page's other profile levers (Salary, Contributions, Budget, Savings) need visibility into these same assumptions, the same cross-cutting reasoning as Return Rates above — moved here in v0.7.8 rather than duplicated or left orphaned on a page that no longer owns it.
 
 These are true cross-cutting reference data that no single page owns.
 

@@ -10,7 +10,11 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Tooltip } from "@/components/ui/tooltip";
-import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import {
+  formatCurrency,
+  formatPercent,
+  accountDisplayName,
+} from "@/lib/utils/format";
 import { DEFAULT_INFLATION_RATE } from "@/lib/constants";
 import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
@@ -30,7 +34,7 @@ import {
   LumpSumForm,
   LumpSumBadge,
 } from "@/components/cards/projection/lump-sum-form";
-import { isPortfolioParent } from "@/lib/config/account-types";
+import { isPortfolioParent, tracksCostBasis } from "@/lib/config/account-types";
 import { sumBy, safeDivide } from "@/lib/utils/math";
 import { SkeletonTable } from "@/components/ui/skeleton";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
@@ -38,7 +42,23 @@ import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-pr
 export function BrokerageContent() {
   const user = useUser();
   const canEdit = hasPermission(user, "brokerage");
+  // updateCostBasis is gated on "performance" server-side (same gate as the
+  // Performance page's own cost-basis editor) — distinct from this page's
+  // "brokerage" permission, so check it separately for the Cost Basis card.
+  const canEditCostBasis = hasPermission(user, "performance");
   const utils = trpc.useUtils();
+  // Portfolio-category brokerage accounts only — Retirement-category ones
+  // (e.g. an ESPP or a "Retirement Brokerage") are Tax Buckets' scope, this
+  // page's scope is specifically the accounts Tax Buckets excludes.
+  const perfAccountsQuery =
+    trpc.performance.performanceAccounts.list.useQuery();
+  const portfolioBrokerageAccounts = (perfAccountsQuery.data ?? []).filter(
+    (a) =>
+      tracksCostBasis(a.accountType) && isPortfolioParent(a.parentCategory),
+  );
+  const updateCostBasis = trpc.performance.updateCostBasis.useMutation({
+    onSuccess: () => utils.performance.performanceAccounts.list.invalidate(),
+  });
   const salaryActiveFields = useActiveSalaries();
   // Independent Salary Profile axis (Plan pin -> globally-active setting).
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
@@ -263,6 +283,18 @@ export function BrokerageContent() {
         </div>
       )}
 
+      {portfolioBrokerageAccounts.length > 0 && (
+        <Card title="Cost Basis" className="mt-4">
+          <CostBasisEditor
+            accounts={portfolioBrokerageAccounts}
+            canEdit={canEditCostBasis}
+            onSave={(performanceAccountId, costBasis) =>
+              updateCostBasis.mutate({ performanceAccountId, costBasis })
+            }
+          />
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
         {/* Funding Sources */}
         <Card title="Funding Sources" className="lg:col-span-1">
@@ -418,6 +450,73 @@ export function BrokerageContent() {
 }
 
 // --- Sub-components ---
+
+/** Cost basis for Portfolio-category brokerage accounts — the accounts Tax
+ *  Buckets deliberately excludes (its scope is Retirement-category holdings
+ *  only), so this is their one home for basis editing. Reuses
+ *  performance.updateCostBasis, the same mutation the Performance page's
+ *  inline account-table editor calls. */
+function CostBasisEditor({
+  accounts,
+  canEdit,
+  onSave,
+}: {
+  accounts: {
+    id: number;
+    accountLabel: string;
+    displayName: string | null;
+    costBasis: string;
+    accountType?: string;
+    institution?: string;
+    ownershipType?: string | null;
+  }[];
+  canEdit: boolean;
+  onSave: (performanceAccountId: number, costBasis: string) => void;
+}) {
+  const [values, setValues] = useState<Record<number, string>>(() =>
+    Object.fromEntries(accounts.map((a) => [a.id, a.costBasis])),
+  );
+
+  return (
+    <div className="space-y-3">
+      <p className="text-caption text-muted">
+        What you originally paid for these holdings — the portion you can
+        withdraw without triggering capital gains tax. Only the growth above
+        this amount is taxable when sold.
+      </p>
+      {accounts.map((a) => (
+        <div
+          key={a.id}
+          className="flex items-center justify-between gap-3 border-b border-subtle pb-2 last:border-0 last:pb-0"
+        >
+          <span className="text-sm font-medium">{accountDisplayName(a)}</span>
+          {canEdit ? (
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                className="w-32 rounded border border-subtle bg-surface px-2 py-1 text-sm text-right"
+                value={values[a.id] ?? ""}
+                onChange={(e) =>
+                  setValues((prev) => ({ ...prev, [a.id]: e.target.value }))
+                }
+              />
+              <button
+                className="rounded bg-primary px-3 py-1 text-sm text-white"
+                onClick={() => onSave(a.id, values[a.id] || "0")}
+              >
+                Save
+              </button>
+            </div>
+          ) : (
+            <span className="text-sm tabular-nums">
+              {formatCurrency(Number(a.costBasis))}
+            </span>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function FundingSources({
   directContrib,

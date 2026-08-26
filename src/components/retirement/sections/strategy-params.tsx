@@ -18,15 +18,20 @@ import {
   type WithdrawalStrategyType,
 } from "@/lib/config/withdrawal-strategies";
 import { formatPercent } from "@/lib/utils/format";
-import type { Settings, UpsertSettingsMutation } from "./types";
+import type { Settings, UpsertSettingsMutation, IsEditable } from "./types";
 import { buildSettingsPatch } from "./settings-patch";
 
 type Props = {
   settings: Settings;
   upsertSettings: UpsertSettingsMutation;
+  isEditable: IsEditable;
 };
 
-export function StrategyParamsSection({ settings, upsertSettings }: Props) {
+export function StrategyParamsSection({
+  settings,
+  upsertSettings,
+  isEditable,
+}: Props) {
   const strategyKey = (settings?.withdrawalStrategy ??
     "fixed") as WithdrawalStrategyType;
   const meta = getStrategyMeta(strategyKey);
@@ -117,7 +122,8 @@ export function StrategyParamsSection({ settings, upsertSettings }: Props) {
                   } as Partial<Settings>),
                 );
               }}
-              className={`text-sm px-2 py-0.5 rounded ${
+              disabled={!isEditable}
+              className={`text-sm px-2 py-0.5 rounded disabled:cursor-not-allowed disabled:opacity-50 ${
                 boolVal
                   ? "bg-green-100 text-green-700"
                   : "bg-surface-elevated text-muted"
@@ -149,7 +155,8 @@ export function StrategyParamsSection({ settings, upsertSettings }: Props) {
                   } as Partial<Settings>),
                 );
               }}
-              className="text-sm border rounded px-1.5 py-0.5"
+              disabled={!isEditable}
+              className="text-sm border rounded px-1.5 py-0.5 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {Array.from(
                 {
@@ -191,7 +198,8 @@ export function StrategyParamsSection({ settings, upsertSettings }: Props) {
                   } as Partial<Settings>),
                 );
               }}
-              className="text-sm border rounded px-1.5 py-0.5"
+              disabled={!isEditable}
+              className="text-sm border rounded px-1.5 py-0.5 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {Array.from(
                 {
@@ -236,7 +244,8 @@ export function StrategyParamsSection({ settings, upsertSettings }: Props) {
                 } as Partial<Settings>),
               );
             }}
-            className="text-sm border rounded px-1.5 py-0.5"
+            disabled={!isEditable}
+            className="text-sm border rounded px-1.5 py-0.5 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {Array.from(
               {

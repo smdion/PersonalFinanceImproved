@@ -5,13 +5,15 @@
  * v0.5.2 refactor. Pure relocation — no logic changes.
  */
 import type { ProjectionInput, AccountBalances, TaxBuckets } from "../../types";
-import { isPreTaxType } from "../../../config/account-types";
+import { isPreTaxType, isTaxFreeBucket } from "../../../config/account-types";
 import {
   accountBalancesFromTaxBuckets,
   cloneAccountBalances,
 } from "../balance-utils";
 import { initialCrossYearState } from "../spending-strategy";
 import { buildSpecToAccountMapping } from "../individual-account-tracking";
+import { initRothBasisState } from "@/lib/pure/roth-basis-tracking";
+import type { RothBasisState } from "@/lib/pure/roth-basis-tracking";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
 
 /**
@@ -72,6 +74,20 @@ export function buildProjectionState(
   const indBal = new Map<string, number>();
   for (const ia of ctx.indAccts) indBal.set(ctx.indKey(ia), ia.startingBalance);
 
+  // Tracked Roth basis (v0.7.8 follow-up) — one entry per taxFree-bucket
+  // account, seeded from its "now" rothBasisMeta snapshot. Non-Roth
+  // accounts get no entry at all (absent, not zero — a missing key is
+  // unambiguous, see roth-basis-tracking.ts).
+  const indBasis = new Map<string, RothBasisState>();
+  const projectionStartYear = input.asOfDate.getFullYear();
+  for (const ia of ctx.indAccts) {
+    if (!isTaxFreeBucket(ia.taxType)) continue;
+    indBasis.set(
+      ctx.indKey(ia),
+      initRothBasisState(ia.rothBasisMeta ?? null, projectionStartYear),
+    );
+  }
+
   const { specToAccount, accountsWithSpecs } =
     ctx.hasIndividualAccounts && contributionSpecs
       ? buildSpecToAccountMapping(
@@ -102,6 +118,7 @@ export function buildProjectionState(
     projectedExpenses: input.annualExpenses,
     projectedSalaryByPerson,
     indBal,
+    indBasis,
     specToAccount,
     accountsWithSpecs,
     contributionSpecs,

@@ -25,7 +25,6 @@ import {
   getLatestSnapshot,
   computeBudgetAnnualTotal,
   requireLimit,
-  accountDisplayName,
   aggregateContributionsByCategory,
   applyContribProfileRow,
   loadAndApplyContribProfile,
@@ -39,12 +38,7 @@ import {
   resolveLinkedBudgetItemAmounts,
 } from "@/server/helpers";
 import type { SalaryEntryMap, SalaryProfileEntry } from "@/server/helpers";
-import type {
-  TaxBuckets,
-  AccountBalances,
-  AccountCategory,
-  ProfileSwitch,
-} from "@/lib/calculators/types";
+import type { AccountCategory, ProfileSwitch } from "@/lib/calculators/types";
 import {
   getAllCategories,
   categoriesWithIrsLimit,
@@ -52,14 +46,6 @@ import {
   getLimitGroup,
   getAccountTypeConfig,
   getDefaultAccumulationOrder,
-  zeroBalance,
-  addTraditional,
-  addRoth,
-  addBalance,
-  addBasis,
-  PARENT_CATEGORY_VALUES,
-  isTaxFreeBucket,
-  tracksCostBasis,
 } from "@/lib/config/account-types";
 import { roundToCents, sumBy, safeDivide } from "@/lib/utils/math";
 import {
@@ -72,12 +58,15 @@ import {
 } from "@/lib/calculators/engine";
 import type { db as _db } from "@/lib/db";
 import { filterActiveJobs } from "@/lib/pure/profiles";
+import { computeTaxBucketBreakdown } from "@/lib/pure/tax-buckets";
+import {
+  computeTaxBucketAnalysis,
+  type RuleOf55Status,
+  type RothBasisMeta,
+} from "@/lib/pure/tax-bucket-analysis";
+import { buildCurrentRothBasisMap } from "@/lib/pure/roth-basis-rollover";
 
 type Db = typeof _db;
-
-/** parentCategory values that the projection engine should include in starting balances.
- *  Pages filter engine output by parentCategory (Retirement page → 'Retirement', Brokerage → 'Portfolio'). */
-const ENGINE_CATEGORIES = new Set<string>(PARENT_CATEGORY_VALUES);
 
 /**
  * Fetch all DB tables needed by the contribution engine / Monte Carlo projection.
@@ -117,6 +106,8 @@ export async function fetchRetirementData(
     allAppSettings,
     contribProfileRow,
     salaryProfileRow,
+    jobLinkRows,
+    accountBasisRows,
   ] = await Promise.all([
     db.select().from(schema.people).orderBy(asc(schema.people.id)),
     db.select().from(schema.jobs),
@@ -180,6 +171,21 @@ export async function fetchRetirementData(
           .where(eq(schema.salaryProfiles.id, opts.salaryProfileId))
           .then((r) => r[0] ?? null)
       : Promise.resolve(undefined as undefined),
+    // Withdrawal-ordering eligibility (v0.7.8, PLAN-v0.7.8-v4 Group 1.1):
+    // which job funds which performance account. Deliberately unfiltered —
+    // no isActive filter — a separated employer's contribution-account link
+    // is exactly the one likely to be inactive, and it's exactly the
+    // evidence Rule of 55 needs to see. Same query tax-buckets.ts's
+    // computeBreakdown procedure uses; kept identical rather than reusing
+    // allContribsRaw, which IS isActive-filtered and would silently drop
+    // dormant former-employer plans.
+    db
+      .select({
+        performanceAccountId: schema.contributionAccounts.performanceAccountId,
+        jobId: schema.contributionAccounts.jobId,
+      })
+      .from(schema.contributionAccounts),
+    db.select().from(schema.accountBasis),
   ]);
   return {
     people,
@@ -200,6 +206,8 @@ export async function fetchRetirementData(
     allAppSettings,
     contribProfileRow,
     salaryProfileRow,
+    jobLinkRows,
+    accountBasisRows,
   };
 }
 
@@ -242,6 +250,8 @@ export async function buildEnginePayload(
     allTaxBrackets,
     brokerageGoalRows,
     allAppSettings,
+    jobLinkRows,
+    accountBasisRows,
   } = data;
 
   // All active contribution accounts feed the engine (both Retirement and Portfolio).
@@ -317,6 +327,7 @@ export async function buildEnginePayload(
       socialSecurityMonthly:
         ps?.socialSecurityMonthly ?? settings.socialSecurityMonthly,
       ssStartAge: ps?.ssStartAge ?? settings.ssStartAge,
+      ruleOf55Override: ps?.ruleOf55Override ?? settings.ruleOf55Override,
     };
   });
 
@@ -438,176 +449,135 @@ export async function buildEnginePayload(
     (js) => js.totalCompFullFormula,
   );
 
-  // Portfolio by tax bucket + per-account balances (combined for engine)
-  const portfolioByTaxType: TaxBuckets = {
-    preTax: 0,
-    taxFree: 0,
-    hsa: 0,
-    afterTax: 0,
-    afterTaxBasis: 0,
-  };
-  // Per-parentCategory tax buckets (for per-page display)
-  const portfolioByTaxTypeByParentCat: Record<string, TaxBuckets> = {};
-  const portfolioByAccount: AccountBalances = Object.fromEntries(
-    getAllCategories().map((cat) => [cat, zeroBalance(cat)]),
-  ) as AccountBalances;
-  // Build owner-name lookup from people
+  // Portfolio by tax bucket + per-account balances (combined for engine).
+  // Shared with the Tax Buckets analysis tool — see src/lib/pure/tax-buckets.ts.
+  const taxBucketBreakdown = computeTaxBucketBreakdown(
+    snapshotData,
+    people,
+    perfAccounts,
+  );
+  const {
+    portfolioByTaxType,
+    portfolioByTaxTypeByParentCat,
+    portfolioByAccount,
+    portfolioTotal,
+    accountOwnersByCategory,
+    ownershipByPerson,
+    accountBreakdownByCategory,
+  } = taxBucketBreakdown;
   const personNameById = new Map(people.map((p) => [p.id, p.name]));
-  // Track which people own accounts in each waterfall category + per-person balances
-  const accountOwnerSets: Record<string, Set<string>> = {};
-  const balanceByPersonByCategory: Record<string, Record<string, number>> = {};
-  // Per-category account breakdown with display names (for tooltips)
-  const accountBreakdownByCategory: Record<
-    string,
-    {
-      name: string;
-      amount: number;
-      taxType: string;
-      ownerName?: string;
-      ownerPersonId?: number;
-      accountType?: string;
-      parentCategory?: string;
-    }[]
-  > = {};
-  if (snapshotData) {
-    // Build parent account_type lookup: for sub-type rows (Rollover, Employer Match, etc.),
-    // the effective category should inherit from the parent performance account's primary type.
-    // Group by performance_account_id and find the primary type (rows without subType).
-    const parentTypeByPerfId = new Map<number, string>();
-    for (const a of snapshotData.accounts) {
-      if (a.performanceAccountId != null && !a.subType) {
-        // Primary row (no subType) — its accountType is the parent type
-        parentTypeByPerfId.set(a.performanceAccountId, a.accountType);
-      }
-    }
 
-    for (const a of snapshotData.accounts) {
-      // Only include engine-relevant categories (Retirement + Portfolio) in starting balances.
-      // Pages filter engine output by parentCategory to show the correct subset.
-      if (a.parentCategory && !ENGINE_CATEGORIES.has(a.parentCategory))
-        continue;
-      const ownerName = a.ownerPersonId
-        ? personNameById.get(a.ownerPersonId)
-        : undefined;
-      const displayName = accountDisplayName(a, ownerName);
-      // For sub-type rows, inherit the parent performance account's primary account_type
-      const cat =
-        a.subType && a.performanceAccountId != null
-          ? (parentTypeByPerfId.get(a.performanceAccountId) ?? a.accountType)
-          : a.accountType;
-      const key = a.taxType as "preTax" | "taxFree" | "hsa" | "afterTax";
-      portfolioByTaxType[key] += a.amount;
-      // Also accumulate per-parentCategory for per-page display
-      const pCat = a.parentCategory ?? "Retirement";
-      if (!portfolioByTaxTypeByParentCat[pCat]) {
-        portfolioByTaxTypeByParentCat[pCat] = {
-          preTax: 0,
-          taxFree: 0,
-          hsa: 0,
-          afterTax: 0,
-          afterTaxBasis: 0,
-        };
-      }
-      portfolioByTaxTypeByParentCat[pCat][key] += a.amount;
-      const catAsBal = cat as AccountCategory;
-      const bal = portfolioByAccount[catAsBal];
-      if (bal.structure === "roth_traditional") {
-        if (isTaxFreeBucket(a.taxType)) addRoth(bal, a.amount);
-        else addTraditional(bal, a.amount);
-      } else if (bal.structure === "single_bucket") {
-        addBalance(bal, a.amount);
-      } else {
-        addBalance(bal, a.amount);
-      }
-      // Track owner + per-person balance + account breakdown
-      if (ownerName) {
-        if (!accountOwnerSets[cat]) accountOwnerSets[cat] = new Set();
-        accountOwnerSets[cat].add(ownerName);
-        if (!balanceByPersonByCategory[ownerName])
-          balanceByPersonByCategory[ownerName] = {};
-        balanceByPersonByCategory[ownerName][cat] =
-          (balanceByPersonByCategory[ownerName][cat] ?? 0) + a.amount;
-      } else {
-        // Joint account — attribute to all people equally for ownership fractions
-        if (!accountOwnerSets[cat]) accountOwnerSets[cat] = new Set();
-        accountOwnerSets[cat].add("Joint");
-        for (const pName of Array.from(personNameById.values())) {
-          if (!balanceByPersonByCategory[pName])
-            balanceByPersonByCategory[pName] = {};
-          balanceByPersonByCategory[pName][cat] =
-            (balanceByPersonByCategory[pName][cat] ?? 0) +
-            a.amount / personNameById.size;
-        }
-      }
-      if (!accountBreakdownByCategory[cat])
-        accountBreakdownByCategory[cat] = [];
-      const existing = accountBreakdownByCategory[cat].find(
-        (e) => e.name === displayName && e.taxType === a.taxType,
-      );
-      if (existing) {
-        existing.amount += a.amount;
-      } else {
-        accountBreakdownByCategory[cat].push({
-          name: displayName,
-          amount: a.amount,
-          taxType: a.taxType,
-          ownerName,
-          ownerPersonId: a.ownerPersonId ?? undefined,
-          accountType: cat,
-          parentCategory: a.parentCategory ?? undefined,
-        });
-      }
-    }
+  // Per-account withdrawal-ordering eligibility (v0.7.8, PLAN-v0.7.8-v4
+  // Group 1.1) — reuses computeTaxBucketAnalysis verbatim (RULES.md § Single
+  // Computation Path) rather than re-deriving Rule of 55 / Roth-ordering
+  // resolution a third time. Keyed with the same indKey format the engine's
+  // individual-account-tracking module uses, so Group 2's eligibility gate
+  // can look a given `IndividualAccountInput` up directly. Retirement-only
+  // (computeTaxBucketAnalysis walks `accountRollup`, which excludes
+  // Portfolio-category holdings) — a Portfolio-category individualAccounts
+  // entry simply has no match here, which is correct: early-access rules
+  // don't apply to a taxable brokerage account.
+  const jobsById = new Map(allJobs.map((j) => [j.id, j]));
+  const jobLinks = jobLinkRows
+    .filter(
+      (l): l is { performanceAccountId: number; jobId: number } =>
+        l.performanceAccountId != null && l.jobId != null,
+    )
+    .map((l) => {
+      const job = jobsById.get(l.jobId);
+      return {
+        performanceAccountId: l.performanceAccountId,
+        endDate: job?.endDate ? new Date(job.endDate) : null,
+        isSpeculative: job?.isSpeculative ?? false,
+      };
+    });
+  const currentRothBasisRows = Array.from(
+    buildCurrentRothBasisMap(
+      accountBasisRows.map((r) => ({
+        id: r.id,
+        performanceAccountId: r.performanceAccountId,
+        ownerPersonId: r.ownerPersonId,
+        year: r.year,
+        contributionBasis: toNumber(r.contributionBasis),
+        conversionBasis: toNumber(r.conversionBasis),
+        latestConversionYear: r.latestConversionYear,
+        isFinalized: r.isFinalized,
+      })),
+    ).values(),
+  );
+  const accountBasisById = new Map(accountBasisRows.map((r) => [r.id, r]));
+  const accountAnalysis = computeTaxBucketAnalysis({
+    breakdown: taxBucketBreakdown,
+    performanceAccounts: perfAccounts.map((p) => ({
+      id: p.id,
+      accountType: p.accountType as AccountCategory,
+      ownerPersonId: p.ownerPersonId,
+      isActive: p.isActive,
+      separationDate: p.separationDate ? new Date(p.separationDate) : null,
+      costBasis: toNumber(p.costBasis),
+      accountLabel: p.accountLabel,
+      displayName: p.displayName,
+      institution: p.institution,
+    })),
+    jobLinks,
+    rothBasisRows: currentRothBasisRows.map((r) => {
+      const raw = accountBasisById.get(r.id)!;
+      return {
+        performanceAccountId: r.performanceAccountId,
+        ownerPersonId: r.ownerPersonId,
+        year: r.year,
+        contributionBasis: r.contributionBasis,
+        conversionBasis: r.conversionBasis,
+        latestConversionYear: r.latestConversionYear,
+        isSeeded: raw.isSeeded,
+        updatedAt: raw.updatedAt,
+      };
+    }),
+    people: people.map((p) => ({
+      id: p.id,
+      name: p.name,
+      birthYear: new Date(p.dateOfBirth).getFullYear(),
+    })),
+    currentDate: asOfDate,
+  });
+  // Local join key only — (name, category, taxType, ownerPersonId), same
+  // tuple `accountRollup`/`accountBreakdownByCategory` already merge on.
+  // Deliberately NOT the engine's own `makeIndKey()` format: that's an
+  // engine-internal concern (`@/lib/calculators/engine/*` absolute imports
+  // outside the barrel are a lint-enforced layering violation —
+  // tests/lint/violations.test.ts), and this data attaches directly onto
+  // each `individualAccounts` entry below rather than traveling as a
+  // separately-keyed side-map, so no shared key format is needed at all.
+  function eligibilityJoinKey(
+    name: string,
+    category: string,
+    taxType: string,
+    ownerPersonId: number | null,
+  ): string {
+    return `${name}|${category}|${taxType}|${ownerPersonId ?? "null"}`;
   }
-  const accountOwnersByCategory: Record<string, string> = {};
-  for (const [cat, names] of Object.entries(accountOwnerSets)) {
-    accountOwnersByCategory[cat] = Array.from(names).join(" + ");
-  }
-  // Per-person ownership fraction by category (based on actual portfolio $)
-  const totalByCategory: Record<string, number> = {};
-  for (const personBals of Object.values(balanceByPersonByCategory)) {
-    for (const [cat, amt] of Object.entries(personBals)) {
-      totalByCategory[cat] = (totalByCategory[cat] ?? 0) + amt;
-    }
-  }
-  const portfolioTotal = sumBy(Object.values(totalByCategory), (v) => v);
-  const ownershipByPerson: Record<string, Record<string, number>> = {};
-  for (const [name, personBals] of Object.entries(balanceByPersonByCategory)) {
-    ownershipByPerson[name] = {};
-    let personTotal = 0;
-    for (const [cat, amt] of Object.entries(personBals)) {
-      const catTotal = totalByCategory[cat] ?? 1;
-      ownershipByPerson[name][cat] = safeDivide(amt, catTotal, 0);
-      personTotal += amt;
-    }
-    ownershipByPerson[name]._overall = safeDivide(
-      personTotal,
-      portfolioTotal,
-      0,
+  const eligibilityByJoinKey = new Map<
+    string,
+    { ruleOf55: RuleOf55Status | null; rothBasisMeta: RothBasisMeta | null }
+  >();
+  for (const entry of accountAnalysis) {
+    if (entry.ownerPersonId == null) continue; // joint — no per-owner data to join
+    eligibilityByJoinKey.set(
+      eligibilityJoinKey(
+        entry.displayName,
+        entry.category,
+        entry.taxType,
+        entry.ownerPersonId,
+      ),
+      { ruleOf55: entry.ruleOf55, rothBasisMeta: entry.rothBasisMeta },
     );
   }
-  // Cost basis from performance_accounts (per-account, user-maintained alongside portfolio updates)
   const settingsMap = new Map(
     allAppSettings.map((s: { key: string; value: unknown }) => [
       s.key,
       s.value,
     ]),
   );
-  const costBasisVal = sumBy(
-    perfAccounts.filter((p) => p.isActive && tracksCostBasis(p.accountType)),
-    (p) => toNumber(String(p.costBasis ?? "0")),
-  );
-  portfolioByTaxType.afterTaxBasis = costBasisVal;
-  // Distribute cost basis to per-parentCategory buckets proportionally by afterTax balance
-  const totalAfterTax = portfolioByTaxType.afterTax;
-  for (const pCat of Object.keys(portfolioByTaxTypeByParentCat)) {
-    const catBucket = portfolioByTaxTypeByParentCat[pCat]!;
-    catBucket.afterTaxBasis =
-      totalAfterTax > 0
-        ? roundToCents(costBasisVal * (catBucket.afterTax / totalAfterTax))
-        : 0;
-  }
-  addBasis(portfolioByAccount.brokerage, costBasisVal);
   const rampRaw = settingsMap.get("brokerage_contribution_increase");
   const brokerageContributionRamp =
     rampRaw != null && rampRaw !== "null" && rampRaw !== '"0"'
@@ -661,6 +631,13 @@ export async function buildEnginePayload(
   const groupParticipants = new Map<string, Map<number, number>>(); // group -> personId -> birthYear
   const birthYearByPersonId = new Map(
     perPersonSettings.map((p) => [p.personId, p.birthYear]),
+  );
+  // Rule of 55 forecasting override (v0.7.8) -- see
+  // IndividualAccountInput.ruleOf55ForceIneligible's docblock for the full
+  // contract. Only ever set true (never false) below, so a household not
+  // using this feature gets a byte-identical engine input.
+  const ruleOf55OverrideByPerson = new Map(
+    perPersonSettings.map((p) => [p.personId, p.ruleOf55Override]),
   );
   const groupCounted = new Set<string>();
   for (const p of people) {
@@ -1369,16 +1346,34 @@ export async function buildEnginePayload(
     startingAccountBalances: portfolioByAccount,
     individualAccounts: Object.entries(accountBreakdownByCategory).flatMap(
       ([cat, accts]) =>
-        accts.map((a) => ({
-          name: a.name,
-          category: cat as AccountCategory,
-          taxType: a.taxType,
-          accountType: a.accountType,
-          startingBalance: a.amount,
-          ownerName: a.ownerName,
-          ownerPersonId: a.ownerPersonId,
-          parentCategory: a.parentCategory,
-        })),
+        accts.map((a) => {
+          const eligibility = a.ownerPersonId
+            ? eligibilityByJoinKey.get(
+                eligibilityJoinKey(a.name, cat, a.taxType, a.ownerPersonId),
+              )
+            : undefined;
+          return {
+            name: a.name,
+            category: cat as AccountCategory,
+            taxType: a.taxType,
+            accountType: a.accountType,
+            startingBalance: a.amount,
+            ownerName: a.ownerName,
+            ownerPersonId: a.ownerPersonId,
+            parentCategory: a.parentCategory,
+            ruleOf55: eligibility?.ruleOf55,
+            rothBasisMeta: eligibility?.rothBasisMeta,
+            ownerBirthYear:
+              a.ownerPersonId != null
+                ? birthYearByPersonId.get(a.ownerPersonId)
+                : undefined,
+            ruleOf55ForceIneligible:
+              a.ownerPersonId != null &&
+              ruleOf55OverrideByPerson.get(a.ownerPersonId) === false
+                ? true
+                : undefined,
+          };
+        }),
     ),
     annualExpenses: annualExpensesVal,
     // Always pass when user explicitly set a decumulation override, or when
