@@ -56,6 +56,7 @@ import {
   PARENT_CATEGORY_ROLLUPS,
   PERF_CATEGORY_BROKERAGE,
   PERF_CATEGORY_PORTFOLIO,
+  PERF_CATEGORY_RETIREMENT,
   PERF_CATEGORY_DISPLAY_ORDER,
   type PerfCategory,
 } from "@/lib/config/display-labels";
@@ -262,27 +263,41 @@ export const performanceRouter = createTRPCRouter({
    * Includes: annual rollups, account-level detail, master account list, and current-year status.
    */
   computeSummary: protectedProcedure.query(async ({ ctx }) => {
-    const [annual, accounts, perfAccounts, people] = await Promise.all([
-      ctx.db
-        .select()
-        .from(schema.annualPerformance)
-        .orderBy(asc(schema.annualPerformance.year)),
-      ctx.db
-        .select()
-        .from(schema.accountPerformance)
-        .orderBy(asc(schema.accountPerformance.year)),
-      ctx.db
-        .select()
-        .from(schema.performanceAccounts)
-        .orderBy(
-          asc(schema.performanceAccounts.displayOrder),
-          asc(schema.performanceAccounts.id),
-        ),
-      ctx.db.select().from(schema.people).orderBy(asc(schema.people.id)),
-    ]);
+    const [annual, accounts, perfAccounts, people, basisRows] =
+      await Promise.all([
+        ctx.db
+          .select()
+          .from(schema.annualPerformance)
+          .orderBy(asc(schema.annualPerformance.year)),
+        ctx.db
+          .select()
+          .from(schema.accountPerformance)
+          .orderBy(asc(schema.accountPerformance.year)),
+        ctx.db
+          .select()
+          .from(schema.performanceAccounts)
+          .orderBy(
+            asc(schema.performanceAccounts.displayOrder),
+            asc(schema.performanceAccounts.id),
+          ),
+        ctx.db.select().from(schema.people).orderBy(asc(schema.people.id)),
+        ctx.db.select().from(schema.accountBasis),
+      ]);
 
     const peopleMap = new Map(people.map((p) => [p.id, p.name]));
     const perfLookups = buildPerfAcctLookups(perfAccounts);
+    // Exact (account, owner, year) match — deliberately not the "current
+    // row per pair" fallback selectCurrentRothBasisRow()/buildCurrentRothBasisMap()
+    // use elsewhere: this table shows one column per historical year, so
+    // each year's cell must show that year's own finalized value, not a
+    // carried-forward guess. An account/year with no row is simply blank,
+    // same as an account with no roth_basis entry at all today.
+    const basisByKey = new Map(
+      basisRows.map((b) => [
+        `${b.performanceAccountId}|${b.ownerPersonId}|${b.year}`,
+        b,
+      ]),
+    );
 
     // Determine current year
     const currentYearRow = annual.find((r) => r.isCurrentYear);
@@ -419,15 +434,27 @@ export const performanceRouter = createTRPCRouter({
         }
       }
 
-      // Portfolio row = sum of all categories for this year
-      // For years where only one category existed (e.g., pre-2023 = 401k/IRA only),
-      // copy from that category's annual row to keep numbers consistent with stored data
+      // Portfolio row = sum of all ACCOUNT-TYPE categories for this year
+      // (401k/IRA, Brokerage, HSA) — never Retirement, which is itself a
+      // rollup of a subset of those same categories (see the synthesis
+      // below) and would double-count if summed in here too. This bit
+      // 'annualRows' can still contain a raw historical "Retirement" row
+      // at this point if one was ever mistakenly written directly to
+      // annual_performance (that's a real incident this guarded against —
+      // see the Retirement de-dup a few hundred lines down), so the filter
+      // must exclude it explicitly rather than assuming it's absent.
+      // For years where only one non-rollup category existed (e.g.
+      // pre-2023 = 401k/IRA only), copy from that category's annual row to
+      // keep numbers consistent with stored data.
       const portfolioKey = annualKey(year, "Portfolio");
       if (!existingAnnual.has(portfolioKey)) {
         // Check: does exactly one non-Portfolio annual row exist for this year?
         // If so, Portfolio = that category (copy stored data, not account sums, for consistency)
         const nonPortfolioCats = annualRows.filter(
-          (r) => r.year === year && r.category !== PERF_CATEGORY_PORTFOLIO,
+          (r) =>
+            r.year === year &&
+            r.category !== PERF_CATEGORY_PORTFOLIO &&
+            r.category !== PERF_CATEGORY_RETIREMENT,
         );
         if (nonPortfolioCats.length === 1 && nonPortfolioCats[0]) {
           const src = nonPortfolioCats[0];
@@ -486,7 +513,10 @@ export const performanceRouter = createTRPCRouter({
         // Existing Portfolio row: only recompute if not finalized
         const row = annualByKey.get(portfolioKey);
         const nonPortfolioForRecompute = annualRows.filter(
-          (r) => r.year === year && r.category !== PERF_CATEGORY_PORTFOLIO,
+          (r) =>
+            r.year === year &&
+            r.category !== PERF_CATEGORY_PORTFOLIO &&
+            r.category !== PERF_CATEGORY_RETIREMENT,
         );
         if (row && !row.isFinalized && nonPortfolioForRecompute.length > 0) {
           const ps = sumAnnualRows(nonPortfolioForRecompute);
@@ -589,6 +619,20 @@ export const performanceRouter = createTRPCRouter({
     }
     const retYears = Array.from(retYearsSet).sort((a, b) => a - b);
 
+    // Retirement is always a computed rollup, never a stored per-category
+    // row a user finalizes directly (unlike Portfolio, which legitimately
+    // copies stored data when exactly one category exists for a year) — so
+    // any pre-existing "Retirement" row here (e.g. a stray historical
+    // import) must not be allowed to silently shadow the fresh one pushed
+    // below. Array.find() elsewhere always returns the FIRST match for a
+    // given year, so leaving a stale row in place — even with a correct
+    // endingBalance — would keep serving its stale isCurrentYear/isFinalized
+    // flags forever, invisibly, since nothing else here ever inspects it.
+    for (let i = annualRows.length - 1; i >= 0; i--) {
+      if (annualRows[i]!.category === PERF_CATEGORY_RETIREMENT)
+        annualRows.splice(i, 1);
+    }
+
     let retLtGains = 0,
       retLtContribs = 0,
       retLtMatch = 0;
@@ -674,6 +718,12 @@ export const performanceRouter = createTRPCRouter({
       const distributions = toNumber(r.distributions);
       const fees = toNumber(r.fees);
       const rollovers = toNumber(r.rollovers);
+      const basis =
+        r.ownerPersonId != null
+          ? basisByKey.get(
+              `${r.performanceAccountId}|${r.ownerPersonId}|${r.year}`,
+            )
+          : undefined;
       return {
         id: r.id,
         year: r.year,
@@ -704,6 +754,9 @@ export const performanceRouter = createTRPCRouter({
         isActive: r.isActive,
         performanceAccountId: r.performanceAccountId,
         displayOrder: master.displayOrder,
+        contributionBasis: basis ? toNumber(basis.contributionBasis) : null,
+        conversionBasis: basis ? toNumber(basis.conversionBasis) : null,
+        latestConversionYear: basis?.latestConversionYear ?? null,
       };
     });
 

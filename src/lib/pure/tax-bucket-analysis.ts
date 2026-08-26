@@ -9,8 +9,10 @@ import type { AccountCategory } from "@/lib/calculators/types";
 import {
   getAccountTypeConfig,
   isTaxFreeBucket,
+  isHsaCategory,
   tracksCostBasis,
 } from "@/lib/config/account-types";
+import { PENALTY_FREE_AGE, HSA_NON_MEDICAL_PENALTY_AGE } from "@/lib/constants";
 import type { TaxBucketBreakdown } from "@/lib/pure/tax-buckets";
 import {
   resolveSeparationYear,
@@ -20,6 +22,7 @@ import {
   computeEmployerPlanPreTaxAccess,
   computeEmployerPlanRothAccess,
   computeRothIraAccess,
+  computeHsaAccess,
   type EarlyAccessSlice,
   type SeparationSource,
 } from "@/lib/pure/early-access";
@@ -90,6 +93,16 @@ export type RuleOf55Status = {
   knownFutureSeparationYear: number | null;
 };
 
+/** A simple age-threshold status — unlike RuleOf55Status, there's no
+ *  employer/separation concept involved, just "have they hit this age
+ *  yet." Used for IRA (59½, the penalty-free-withdrawal age) and HSA (65,
+ *  the non-medical-penalty age) — never for 401k/403b, which use
+ *  RuleOf55Status instead since Rule of 55 can free those funds earlier. */
+export type AgeThresholdStatus = {
+  thresholdAge: number;
+  eligible: boolean;
+};
+
 export type AccountAnalysisEntry = {
   performanceAccountId: number | null;
   ownerPersonId: number | null;
@@ -110,6 +123,10 @@ export type AccountAnalysisEntry = {
    *  rename can never silently break the "at retirement" projection's
    *  carry-forward the way string-matching against a rendered label would. */
   costBasis: number | null;
+  /** IRA (59½) or HSA (65) age-gate status — null for every other
+   *  category (401k/403b use `ruleOf55` instead; Brokerage has no age
+   *  gate at all). Also null when there's no resolvable owner/age. */
+  ageThresholdStatus: AgeThresholdStatus | null;
 };
 
 function ageInYear(birthYear: number, year: number): number {
@@ -239,6 +256,7 @@ export function computeTaxBucketAnalysis(input: {
         ruleOf55: null,
         rothBasisMeta: null,
         costBasis: null,
+        ageThresholdStatus: null,
       };
     }
 
@@ -257,13 +275,32 @@ export function computeTaxBucketAnalysis(input: {
 
     let slices: EarlyAccessSlice[] = [];
     let ruleOf55: RuleOf55Status | null = null;
+    // 59½ (IRA) / 65 (HSA) age-gate — independent of the slices branch
+    // below, since it applies even to HSA (which computes no slices at
+    // all in v1) and doesn't change based on taxType the way slices do.
+    let ageThresholdStatus: AgeThresholdStatus | null = null;
+    if (entry.ownerPersonId != null) {
+      if (cfg.rothOrderingRules === "basis_first") {
+        ageThresholdStatus = {
+          thresholdAge: PENALTY_FREE_AGE,
+          eligible: currentAge >= PENALTY_FREE_AGE,
+        };
+      } else if (isHsaCategory(category)) {
+        ageThresholdStatus = {
+          thresholdAge: HSA_NON_MEDICAL_PENALTY_AGE,
+          eligible: currentAge >= HSA_NON_MEDICAL_PENALTY_AGE,
+        };
+      }
+    }
 
     if (entry.ownerPersonId == null) {
       // Joint account, no single owner — Roth/401k/Traditional-IRA rules
       // all need an age to gate on and stay unattributed here (see
       // RULES.md-flagged v1 design note). Brokerage's Cost basis/Growth
       // split needs no person at all — computeBrokerageAccess only takes
-      // balance + costBasis — so it isn't blocked by the same gap.
+      // balance + costBasis — so it isn't blocked by the same gap. HSA
+      // (modeled as general spending, not medical) DOES need an age for
+      // its 65 gate, so it stays unattributed here same as Roth/401k.
       if (costBasis != null) {
         slices = computeBrokerageAccess(entry.amount, costBasis);
       }
@@ -312,10 +349,9 @@ export function computeTaxBucketAnalysis(input: {
     } else if (costBasis != null) {
       // Brokerage — the only other category with a basis concept.
       slices = computeBrokerageAccess(entry.amount, costBasis);
+    } else if (isHsaCategory(category)) {
+      slices = computeHsaAccess(entry.amount, currentAge);
     }
-    // Else: hsa (rothOrderingRules null, doesn't track cost basis) — v1
-    // shows a static note only, no per-bucket boolean (no medical-spend
-    // tracking to key off), so slices stays [].
 
     return {
       performanceAccountId: entry.performanceAccountId,
@@ -338,6 +374,7 @@ export function computeTaxBucketAnalysis(input: {
           }
         : null,
       costBasis,
+      ageThresholdStatus,
     };
   });
 }

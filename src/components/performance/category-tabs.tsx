@@ -60,11 +60,85 @@ export function TabGroup({
   );
 }
 
+type BasisToggleGroupProps = {
+  showBasis: boolean;
+  onToggleBasis: () => void;
+  showUnrealized: boolean;
+  onToggleUnrealized: () => void;
+  onlyBasis: boolean;
+  onToggleOnlyBasis: () => void;
+};
+
+/** Independent show/hide toggles for the basis columns (Cost Basis/
+ *  Contribution Basis and Unrealized/Conversion Basis) — not a category
+ *  filter like TabGroup (those change which accounts show; these change
+ *  which columns show for the same accounts), so both can be on/off at
+ *  once rather than exclusive. Hidden by default: most views don't need
+ *  basis detail, and the columns add width to every row. "Only" is a third,
+ *  independent toggle — it hides every OTHER column (Beginning through
+ *  Return) so just Year + whichever of Basis/Unrealized are on show,
+ *  without changing what Basis/Unrealized themselves are set to. */
+export function BasisToggleGroup({
+  showBasis,
+  onToggleBasis,
+  showUnrealized,
+  onToggleUnrealized,
+  onlyBasis,
+  onToggleOnlyBasis,
+}: BasisToggleGroupProps) {
+  const toggleBtn = (pressed: boolean) =>
+    `px-4 py-1.5 text-sm rounded-md transition-colors ${
+      pressed
+        ? "bg-surface-primary text-primary shadow-sm font-medium"
+        : "text-muted hover:text-primary"
+    }`;
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-xs text-muted uppercase tracking-wide font-medium inline-flex items-center gap-1">
+        Basis
+        <HelpTip text="Show cost/Roth basis columns in the table below — hidden by default." />
+      </span>
+      <div className="flex gap-1 bg-surface-elevated rounded-lg p-1">
+        <button
+          onClick={onToggleBasis}
+          aria-pressed={showBasis}
+          title="Cost Basis / Contribution Basis / Conversion Basis"
+          className={toggleBtn(showBasis)}
+        >
+          Basis
+        </button>
+        <button
+          onClick={onToggleUnrealized}
+          aria-pressed={showUnrealized}
+          title="Unrealized gain (Brokerage only)"
+          className={toggleBtn(showUnrealized)}
+        >
+          Unrealized
+        </button>
+        <button
+          onClick={onToggleOnlyBasis}
+          aria-pressed={onlyBasis}
+          title="Hide every other column — show just Year and the basis columns"
+          className={toggleBtn(onlyBasis)}
+        >
+          Only
+        </button>
+      </div>
+    </div>
+  );
+}
+
 type CategoryTabsProps = {
   accountTypeCategories: string[];
   parentCategories: string[];
   activeCategory: string;
   onCategoryChange: (category: string) => void;
+  showBasis: boolean;
+  onToggleBasis: () => void;
+  showUnrealized: boolean;
+  onToggleUnrealized: () => void;
+  onlyBasis: boolean;
+  onToggleOnlyBasis: () => void;
 };
 
 export function CategoryTabs({
@@ -72,6 +146,12 @@ export function CategoryTabs({
   parentCategories,
   activeCategory,
   onCategoryChange,
+  showBasis,
+  onToggleBasis,
+  showUnrealized,
+  onToggleUnrealized,
+  onlyBasis,
+  onToggleOnlyBasis,
 }: CategoryTabsProps) {
   return (
     <div className="flex flex-wrap items-center gap-4 mb-6">
@@ -88,6 +168,14 @@ export function CategoryTabs({
         categories={parentCategories}
         activeCategory={activeCategory}
         onCategoryChange={onCategoryChange}
+      />
+      <BasisToggleGroup
+        showBasis={showBasis}
+        onToggleBasis={onToggleBasis}
+        showUnrealized={showUnrealized}
+        onToggleUnrealized={onToggleUnrealized}
+        onlyBasis={onlyBasis}
+        onToggleOnlyBasis={onToggleOnlyBasis}
       />
     </div>
   );

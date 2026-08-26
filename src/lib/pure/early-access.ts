@@ -11,6 +11,7 @@ import {
   RULE_OF_55_AGE,
   PENALTY_FREE_AGE,
   ROTH_CONVERSION_SEASONING_YEARS,
+  HSA_NON_MEDICAL_PENALTY_AGE,
 } from "@/lib/constants";
 
 export type SeparationSource = "explicit" | "derived" | "active" | "no_data";
@@ -216,4 +217,24 @@ export function computeRothIraAccess(input: {
     taxFree: qualified,
   });
   return slices;
+}
+
+/** HSA: modeled as general retirement spending money, not qualified medical
+ *  expenses — deliberately NOT assuming the tax-free-for-medical treatment,
+ *  even though that's real and available. Under that assumption, an HSA
+ *  behaves exactly like a Traditional IRA: penalty-free at 65 (this
+ *  account's own age gate, not the 59½ IRA one), always ordinary income
+ *  tax. No basis concept, so no split — the whole balance moves together. */
+export function computeHsaAccess(
+  balance: number,
+  currentAge: number,
+): EarlyAccessSlice[] {
+  return [
+    {
+      label: "HSA (general retirement spending)",
+      amount: balance,
+      penaltyFree: currentAge >= HSA_NON_MEDICAL_PENALTY_AGE,
+      taxFree: false,
+    },
+  ];
 }

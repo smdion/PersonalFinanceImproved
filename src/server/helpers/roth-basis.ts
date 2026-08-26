@@ -24,11 +24,11 @@ export async function finalizeRothBasisForYear(
 ): Promise<void> {
   const rowsAtYear = await tx
     .select()
-    .from(schema.rothBasis)
+    .from(schema.accountBasis)
     .where(
       and(
-        eq(schema.rothBasis.year, year),
-        eq(schema.rothBasis.isFinalized, false),
+        eq(schema.accountBasis.year, year),
+        eq(schema.accountBasis.isFinalized, false),
       ),
     );
 
@@ -37,11 +37,11 @@ export async function finalizeRothBasisForYear(
   const nextYear = year + 1;
   const existingNext = await tx
     .select({
-      performanceAccountId: schema.rothBasis.performanceAccountId,
-      ownerPersonId: schema.rothBasis.ownerPersonId,
+      performanceAccountId: schema.accountBasis.performanceAccountId,
+      ownerPersonId: schema.accountBasis.ownerPersonId,
     })
-    .from(schema.rothBasis)
-    .where(eq(schema.rothBasis.year, nextYear));
+    .from(schema.accountBasis)
+    .where(eq(schema.accountBasis.year, nextYear));
   const existingNextYearPairs = new Set(
     existingNext.map((r) => `${r.performanceAccountId}|${r.ownerPersonId}`),
   );
@@ -62,14 +62,14 @@ export async function finalizeRothBasisForYear(
 
   for (const id of idsToFinalize) {
     await tx
-      .update(schema.rothBasis)
+      .update(schema.accountBasis)
       .set({ isFinalized: true })
-      .where(eq(schema.rothBasis.id, id));
+      .where(eq(schema.accountBasis.id, id));
   }
 
   if (rowsToSeed.length > 0) {
     await tx
-      .insert(schema.rothBasis)
+      .insert(schema.accountBasis)
       .values(
         rowsToSeed.map((r) => ({
           performanceAccountId: r.performanceAccountId,

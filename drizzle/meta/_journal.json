@@ -183,6 +183,13 @@
       "when": 1787683536370,
       "tag": "0025_nosy_korg",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1787712329159,
+      "tag": "0026_illegal_raider",
+      "breakpoints": true
     }
   ]
 }

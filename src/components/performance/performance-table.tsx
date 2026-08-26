@@ -12,7 +12,6 @@ import type {
 } from "./types";
 import {
   accountTypeToPerformanceCategory,
-  PERF_CATEGORY_BROKERAGE,
   PERF_CATEGORY_PORTFOLIO,
   PERF_CATEGORY_RETIREMENT,
 } from "@/lib/config/display-labels";
@@ -28,7 +27,7 @@ type PerformanceTableProps = {
   editingCell: EditingCell;
   editValue: string;
   onStartEdit: (
-    type: "annual" | "account" | "master",
+    type: "annual" | "account" | "master" | "basis",
     id: number,
     field: string,
     currentValue: number,
@@ -39,6 +38,9 @@ type PerformanceTableProps = {
   canEdit?: boolean;
   locked?: boolean;
   onToggleLock?: () => void;
+  showBasis: boolean;
+  showUnrealized: boolean;
+  onlyBasis: boolean;
 };
 
 export function PerformanceTable({
@@ -57,6 +59,9 @@ export function PerformanceTable({
   canEdit,
   locked,
   onToggleLock,
+  showBasis,
+  showUnrealized,
+  onlyBasis,
 }: PerformanceTableProps) {
   const years = Array.from(new Set(filtered.map((r) => r.year))).sort(
     (a, b) => b - a,
@@ -67,52 +72,72 @@ export function PerformanceTable({
       <table className="w-full text-sm">
         <thead>
           <tr className="bg-surface-sunken border-b">
-            <th className="text-left px-4 py-3 text-muted font-medium">Year</th>
-            <th className="text-right px-4 py-3 text-muted font-medium">
-              Beginning
+            <th className="text-left px-4 py-3 text-muted font-medium whitespace-nowrap">
+              Year
             </th>
-            <th className="text-right px-4 py-3 text-muted font-medium">
-              Total Contributions
-            </th>
-            <th className="text-right px-4 py-3 text-muted font-medium">
-              Employer Match
-              <HelpTip text="Employer contributions matched during the year. For ESPP accounts this is the purchase discount — not a cash contribution, but tracked here for consistency." />
-            </th>
-            <th className="text-right px-4 py-3 text-muted font-medium">
-              Distributions
-              <HelpTip text="Withdrawals or money taken out of accounts during the year. For ESPP this includes dividends kept in the ESPP account rather than wired out." />
-            </th>
-            <th className="text-right px-4 py-3 text-muted font-medium">
-              Rollovers
-              <HelpTip text="Internal transfers between accounts. Positive = money rolled in, negative = money rolled out. For ESPP, negative rollovers are share sale proceeds wired to the brokerage. Should net to zero at Portfolio level." />
-            </th>
-            <th className="text-right px-4 py-3 text-muted font-medium">
-              Fees
-            </th>
-            <th className="text-right px-4 py-3 text-muted font-medium">
-              Gain/Loss
-              <HelpTip text="Change in value after contributions, distributions, and fees. For ESPP accounts, this measures against the full market value at purchase — since shares are bought at a discount, your loss relative to what you actually paid is smaller than this figure alone shows." />
-            </th>
-            <th className="text-right px-4 py-3 text-muted font-medium">
-              Ending
-              <HelpTip text="Balance based on tracked performance data. For in-progress years this may lag behind the Portfolio Value (which uses the latest snapshot)." />
-            </th>
-            {activeCategory === PERF_CATEGORY_BROKERAGE && (
+            {!onlyBasis && (
               <>
-                <th className="text-right px-4 py-3 text-muted font-medium">
-                  Cost Basis
-                  <HelpTip text="Cumulative contributions — your original invested dollars. Only gains above basis are taxable on withdrawal." />
+                <th className="text-right px-4 py-3 text-muted font-medium whitespace-nowrap">
+                  Beginning
                 </th>
-                <th className="text-right px-4 py-3 text-muted font-medium">
-                  Unrealized
-                  <HelpTip text="Ending balance minus cost basis — the portion subject to capital gains tax if sold." />
+                <th className="text-right px-4 py-3 text-muted font-medium whitespace-nowrap">
+                  Total Contributions
+                </th>
+                <th className="text-right px-4 py-3 text-muted font-medium whitespace-nowrap">
+                  Employer Match
+                  <HelpTip text="Employer contributions matched during the year. For ESPP accounts this is the purchase discount — not a cash contribution, but tracked here for consistency." />
+                </th>
+                <th className="text-right px-4 py-3 text-muted font-medium whitespace-nowrap">
+                  Distributions
+                  <HelpTip text="Withdrawals or money taken out of accounts during the year. For ESPP this includes dividends kept in the ESPP account rather than wired out." />
+                </th>
+                <th className="text-right px-4 py-3 text-muted font-medium whitespace-nowrap">
+                  Rollovers
+                  <HelpTip text="Internal transfers between accounts. Positive = money rolled in, negative = money rolled out. For ESPP, negative rollovers are share sale proceeds wired to the brokerage. Should net to zero at Portfolio level." />
+                </th>
+                <th className="text-right px-4 py-3 text-muted font-medium whitespace-nowrap">
+                  Fees
+                </th>
+                <th className="text-right px-4 py-3 text-muted font-medium whitespace-nowrap">
+                  Gain/Loss
+                  <HelpTip text="Change in value after contributions, distributions, and fees. For ESPP accounts, this measures against the full market value at purchase — since shares are bought at a discount, your loss relative to what you actually paid is smaller than this figure alone shows." />
+                </th>
+                <th className="text-right px-4 py-3 text-muted font-medium whitespace-nowrap">
+                  Ending
+                  <HelpTip text="Balance based on tracked performance data. For in-progress years this may lag behind the Portfolio Value (which uses the latest snapshot)." />
                 </th>
               </>
             )}
-            <th className="text-right px-4 py-3 text-muted font-medium">
+            {showBasis && (
+              <>
+                <th className="text-right px-4 py-3 text-muted font-medium whitespace-nowrap">
+                  Cost Basis
+                  <HelpTip text="Cumulative contributions — your original invested dollars. Only gains above basis are taxable on withdrawal. Blank for accounts that don't track cost basis (Retirement, HSA)." />
+                </th>
+                <th className="text-right px-4 py-3 text-muted font-medium whitespace-nowrap">
+                  Contribution Basis
+                  <HelpTip text="Roth contribution/rollover basis, per (account, owner, year) — always penalty-free and tax-free. Blank for accounts that don't track Roth basis (HSA, brokerage). Edit on the current year to update Tax Buckets too — same underlying figure." />
+                </th>
+                <th className="text-right px-4 py-3 text-muted font-medium whitespace-nowrap">
+                  Conversion Basis
+                  <HelpTip text="Roth conversion basis — tax-free, but penalty-free only once its own 5-year clock has passed. See Tax Buckets for the accessible-now/locked split." />
+                </th>
+              </>
+            )}
+            {showUnrealized && (
+              <th className="text-right px-4 py-3 text-muted font-medium whitespace-nowrap">
+                Unrealized
+                <HelpTip text="Ending balance minus cost basis — the portion subject to capital gains tax if sold." />
+              </th>
+            )}
+            <th className="text-right px-4 py-3 text-muted font-medium whitespace-nowrap">
               <span className="inline-flex items-center gap-1 justify-end">
-                Return
-                <HelpTip text="Annual rate of return calculated from gains relative to average invested balance" />
+                {!onlyBasis && (
+                  <>
+                    Return
+                    <HelpTip text="Annual rate of return calculated from gains relative to average invested balance" />
+                  </>
+                )}
                 {onToggleLock && (
                   <button
                     onClick={onToggleLock}
@@ -181,8 +206,10 @@ export function PerformanceTable({
                 onEditValueChange={onEditValueChange}
                 onSaveEdit={onSaveEdit}
                 onKeyDown={onKeyDown}
-                activeCategory={activeCategory}
                 masterAccounts={masterAccounts}
+                showBasis={showBasis}
+                showUnrealized={showUnrealized}
+                onlyBasis={onlyBasis}
                 canEdit={canEdit}
               />
             );

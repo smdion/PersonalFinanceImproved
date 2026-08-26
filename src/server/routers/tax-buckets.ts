@@ -35,7 +35,7 @@ export const taxBucketsRouter = createTRPCRouter({
         ctx.db.select().from(schema.people),
         ctx.db.select().from(schema.performanceAccounts),
         getLatestSnapshot(ctx.db),
-        ctx.db.select().from(schema.rothBasis),
+        ctx.db.select().from(schema.accountBasis),
         ctx.db
           .select({
             performanceAccountId:
@@ -164,14 +164,14 @@ export const taxBucketsRouter = createTRPCRouter({
       if (targetYear == null) {
         const existingRows = await ctx.db
           .select()
-          .from(schema.rothBasis)
+          .from(schema.accountBasis)
           .where(
             and(
               eq(
-                schema.rothBasis.performanceAccountId,
+                schema.accountBasis.performanceAccountId,
                 input.performanceAccountId,
               ),
-              eq(schema.rothBasis.ownerPersonId, input.ownerPersonId),
+              eq(schema.accountBasis.ownerPersonId, input.ownerPersonId),
             ),
           );
         const current = selectCurrentRothBasisRow(
@@ -190,7 +190,7 @@ export const taxBucketsRouter = createTRPCRouter({
       }
 
       await ctx.db
-        .insert(schema.rothBasis)
+        .insert(schema.accountBasis)
         .values({
           performanceAccountId: input.performanceAccountId,
           ownerPersonId: input.ownerPersonId,
@@ -204,9 +204,9 @@ export const taxBucketsRouter = createTRPCRouter({
         })
         .onConflictDoUpdate({
           target: [
-            schema.rothBasis.performanceAccountId,
-            schema.rothBasis.ownerPersonId,
-            schema.rothBasis.year,
+            schema.accountBasis.performanceAccountId,
+            schema.accountBasis.ownerPersonId,
+            schema.accountBasis.year,
           ],
           set: {
             contributionBasis: input.contributionBasis,
@@ -244,7 +244,7 @@ export const taxBucketsRouter = createTRPCRouter({
       await ctx.db.transaction(async (tx) => {
         for (const e of input.entries) {
           await tx
-            .insert(schema.rothBasis)
+            .insert(schema.accountBasis)
             .values({
               performanceAccountId: e.performanceAccountId,
               ownerPersonId: e.ownerPersonId,
@@ -257,9 +257,9 @@ export const taxBucketsRouter = createTRPCRouter({
             })
             .onConflictDoUpdate({
               target: [
-                schema.rothBasis.performanceAccountId,
-                schema.rothBasis.ownerPersonId,
-                schema.rothBasis.year,
+                schema.accountBasis.performanceAccountId,
+                schema.accountBasis.ownerPersonId,
+                schema.accountBasis.year,
               ],
               set: {
                 contributionBasis: e.contributionBasis,

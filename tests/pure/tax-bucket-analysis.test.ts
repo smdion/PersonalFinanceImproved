@@ -107,7 +107,7 @@ describe("computeTaxBucketAnalysis", () => {
     ).toBe(20000);
   });
 
-  it("skips early-access computation for a jointly-owned (null ownerPersonId) account", () => {
+  it("computes Brokerage's age-independent cost-basis split for a jointly-owned (null ownerPersonId) account, but never Rule of 55 (no owner/age to resolve)", () => {
     const accounts: TaxBucketSnapshotAccount[] = [
       account({
         institution: "Vanguard",
@@ -139,14 +139,20 @@ describe("computeTaxBucketAnalysis", () => {
       jobLinks: [],
       rothBasisRows: [],
       people,
-      targetRetirementAgeByPerson: { 1: 55, 2: 55 },
       currentDate: new Date("2026-01-01"),
     });
 
     expect(result).toHaveLength(1);
     expect(result[0]!.ownerPersonId).toBeNull();
-    expect(result[0]!.slices).toEqual([]);
+    expect(result[0]!.costBasis).toBe(4942.56);
+    expect(
+      result[0]!.slices.find((s) => s.label === "Cost basis")?.amount,
+    ).toBe(4942.56);
+    expect(
+      result[0]!.slices.find((s) => s.label === "Growth")?.amount,
+    ).toBeCloseTo(7708.6 - 4942.56, 5);
     expect(result[0]!.ruleOf55).toBeNull();
+    expect(result[0]!.ageThresholdStatus).toBeNull();
   });
 
   it("computes brokerage access from the per-account costBasis for an individually-owned account", () => {
@@ -182,12 +188,14 @@ describe("computeTaxBucketAnalysis", () => {
       jobLinks: [],
       rothBasisRows: [],
       people,
-      targetRetirementAgeByPerson: { 1: 55, 2: 55 },
       currentDate: new Date("2026-01-01"),
     });
 
     const entry = result[0]!;
-    expect(entry.slices.find((s) => s.label === "Basis")?.amount).toBe(1500);
+    expect(entry.costBasis).toBe(1500);
+    expect(entry.slices.find((s) => s.label === "Cost basis")?.amount).toBe(
+      1500,
+    );
     expect(entry.slices.find((s) => s.label === "Growth")?.amount).toBeCloseTo(
       3979.81 - 1500,
       2,
@@ -288,14 +296,14 @@ describe("computeTaxBucketAnalysis", () => {
       jobLinks: [], // no linked job at all
       rothBasisRows: [],
       people,
-      targetRetirementAgeByPerson: { 1: 55 },
       currentDate: new Date("2026-01-01"),
     });
 
     expect(result[0]!.ruleOf55).toEqual({
       eligible: null,
       separationYear: null,
-      source: "unknown",
+      source: "no_data",
+      knownFutureSeparationYear: null,
     });
   });
 });

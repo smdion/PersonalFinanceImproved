@@ -55,6 +55,18 @@ export default function PerformancePage() {
   const [showFinalizeModal, setShowFinalizeModal] = useState(false);
   const [showUpdatePerformance, setShowUpdatePerformance] = useState(false);
   const [tableLocked, setTableLocked] = useState(true);
+  // Basis columns are hidden by default — most views don't need them, and
+  // they add width to every row.
+  const [showBasisColumn, setShowBasisColumn] = usePersistedSetting<boolean>(
+    "performance_show_basis_column",
+    false,
+  );
+  const [showUnrealizedColumn, setShowUnrealizedColumn] =
+    usePersistedSetting<boolean>("performance_show_unrealized_column", false);
+  const [onlyBasisColumn, setOnlyBasisColumn] = usePersistedSetting<boolean>(
+    "performance_only_basis_column",
+    false,
+  );
 
   // ── Custom account/year filtering (additive — CategoryTabs still work
   // standalone; this is a separate, opt-in view). Persisted as string-
@@ -80,6 +92,14 @@ export default function PerformancePage() {
   const updateCostBasis = trpc.performance.updateCostBasis.useMutation({
     onSuccess: () => utils.performance.computeSummary.invalidate(),
   });
+  // Reuses Tax Buckets' own mutation (not a second write path for the same
+  // account_basis row) — this table and Tax Buckets edit the same figure.
+  const updateRothBasis = trpc.taxBuckets.updateRothBasis.useMutation({
+    onSuccess: () => {
+      utils.performance.computeSummary.invalidate();
+      utils.taxBuckets.getBreakdown.invalidate();
+    },
+  });
   const finalizeYear = trpc.performance.finalizeYear.useMutation({
     onSuccess: () => utils.performance.computeSummary.invalidate(),
   });
@@ -97,13 +117,36 @@ export default function PerformancePage() {
         updateAnnual.mutate({ id, [field]: value });
       } else if (type === "master") {
         updateCostBasis.mutate({ performanceAccountId: id, costBasis: value });
+      } else if (type === "basis") {
+        const row = data?.accountRows.find((r) => r.id === id) as
+          AccountRow | undefined;
+        if (
+          !row ||
+          row.performanceAccountId == null ||
+          row.ownerPersonId == null
+        )
+          return;
+        updateRothBasis.mutate({
+          performanceAccountId: row.performanceAccountId,
+          ownerPersonId: row.ownerPersonId,
+          year: row.year,
+          contributionBasis: String(
+            field === "contributionBasis"
+              ? value
+              : (row.contributionBasis ?? 0),
+          ),
+          conversionBasis: String(
+            field === "conversionBasis" ? value : (row.conversionBasis ?? 0),
+          ),
+          latestConversionYear: row.latestConversionYear,
+        });
       } else {
         updateAccount.mutate({ id, [field]: value });
       }
     },
   });
   const startEdit = (
-    type: "annual" | "account" | "master",
+    type: "annual" | "account" | "master" | "basis",
     id: number,
     field: string,
     currentValue: number,
@@ -507,12 +550,20 @@ export default function PerformancePage() {
 
       {!useCustomFilter && (
         <>
-          <div className="flex items-center justify-between mb-1">
+          <div className="flex items-start justify-between mb-1 flex-wrap gap-2">
             <CategoryTabs
               accountTypeCategories={accountTypeCategories ?? []}
               parentCategories={parentCategories ?? []}
               activeCategory={activeCategory}
               onCategoryChange={setActiveCategory}
+              showBasis={showBasisColumn}
+              onToggleBasis={() => setShowBasisColumn(!showBasisColumn)}
+              showUnrealized={showUnrealizedColumn}
+              onToggleUnrealized={() =>
+                setShowUnrealizedColumn(!showUnrealizedColumn)
+              }
+              onlyBasis={onlyBasisColumn}
+              onToggleOnlyBasis={() => setOnlyBasisColumn(!onlyBasisColumn)}
             />
             <button
               onClick={() => setUseCustomFilter(true)}
@@ -528,6 +579,9 @@ export default function PerformancePage() {
             accountRows={accountRows}
             masterAccounts={masterAccounts}
             activeCategory={activeCategory}
+            showBasis={showBasisColumn}
+            showUnrealized={showUnrealizedColumn}
+            onlyBasis={onlyBasisColumn}
             expandedYears={expandedYears}
             onToggleYear={(year) =>
               setExpandedYears((prev) => {

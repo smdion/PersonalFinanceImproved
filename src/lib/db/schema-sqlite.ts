@@ -666,18 +666,22 @@ export const performanceAccounts = sqliteTable(
   ],
 );
 
-/** Manually-tracked Roth basis for the Tax Buckets analysis tool — how much
- *  of a Roth (taxFree) balance is contribution/conversion basis (accessible
+/** Manually-tracked basis for the Tax Buckets analysis tool — how much of a
+ *  Roth (taxFree) balance is contribution/conversion basis (accessible
  *  penalty-free under IRS ordering rules, for a Roth IRA) vs. growth. Keyed
  *  by (performanceAccountId, ownerPersonId), not a single column on
  *  performanceAccounts, because one account can carry two people's balances
- *  (e.g. a jointly-labeled Roth IRA with separate per-owner amounts). */
-/** Manually-tracked Roth basis for the Tax Buckets analysis tool, year-scoped
- *  to mirror accountPerformance/annualPerformance's live-then-finalized
- *  lifecycle: one row per (account, owner, year), mutable while current,
- *  locked by finalizeRothBasisForYear() when performance.finalizeYear runs. */
-export const rothBasis = sqliteTable(
-  "roth_basis",
+ *  (e.g. a jointly-labeled Roth IRA with separate per-owner amounts).
+ *  Named `account_basis` (not `roth_basis`) since it's the intended future
+ *  home for other basis kinds (e.g. brokerage cost basis) — currently holds
+ *  Roth fields only; brokerage cost basis still lives as a single live
+ *  column on performanceAccounts (see tracksCostBasis()), unmigrated. */
+/** Year-scoped to mirror accountPerformance/annualPerformance's
+ *  live-then-finalized lifecycle: one row per (account, owner, year),
+ *  mutable while current, locked by finalizeRothBasisForYear() when
+ *  performance.finalizeYear runs. */
+export const accountBasis = sqliteTable(
+  "account_basis",
   {
     id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
     performanceAccountId: integer("performance_account_id")
@@ -716,13 +720,13 @@ export const rothBasis = sqliteTable(
     notes: text("notes"),
   },
   (table) => [
-    uniqueIndex("roth_basis_account_owner_year_idx").on(
+    uniqueIndex("account_basis_account_owner_year_idx").on(
       table.performanceAccountId,
       table.ownerPersonId,
       table.year,
     ),
-    index("roth_basis_owner_person_id_idx").on(table.ownerPersonId),
-    index("roth_basis_year_idx").on(table.year),
+    index("account_basis_owner_person_id_idx").on(table.ownerPersonId),
+    index("account_basis_year_idx").on(table.year),
   ],
 );
 

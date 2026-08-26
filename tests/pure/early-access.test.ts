@@ -18,8 +18,7 @@ describe("resolveSeparationYear", () => {
     const result = resolveSeparationYear({
       explicitSeparationYear: 2040,
       linkedJobs: [{ endDate: new Date("2020-01-01"), isSpeculative: false }],
-      targetRetirementAge: 55,
-      birthYear: 1987,
+      currentDate: new Date("2026-01-01"),
     });
     expect(result).toEqual({ year: 2040, source: "explicit" });
   });
@@ -29,46 +28,51 @@ describe("resolveSeparationYear", () => {
     // excluded the way filterActiveJobs()/isActive filtering would exclude it.
     const result = resolveSeparationYear({
       explicitSeparationYear: null,
-      linkedJobs: [{ endDate: new Date("2042-06-01"), isSpeculative: false }],
-      targetRetirementAge: 65,
-      birthYear: 1987,
+      linkedJobs: [{ endDate: new Date("2020-06-01"), isSpeculative: false }],
+      currentDate: new Date("2026-01-01"),
     });
-    expect(result).toEqual({ year: 2042, source: "derived" });
+    expect(result).toEqual({ year: 2020, source: "derived" });
   });
 
-  it("picks the MAX across multiple linked jobs — a still-active job projected later beats an already-ended job", () => {
-    // Left job A at 45 (year 2032); still at job B, projected to separate at
-    // target age 55 (year 2042). Must pick 2042, not 2032.
+  it("picks the MAX across multiple already-ended linked jobs", () => {
+    // Left job A in 2015, left job B (a later employer) in 2020 — both real,
+    // already-happened separations. Must pick 2020, the latest, not 2015.
     const result = resolveSeparationYear({
       explicitSeparationYear: null,
       linkedJobs: [
-        { endDate: new Date("2032-01-01"), isSpeculative: false }, // ended at 45
-        { endDate: null, isSpeculative: false }, // still active
+        { endDate: new Date("2015-01-01"), isSpeculative: false },
+        { endDate: new Date("2020-01-01"), isSpeculative: false },
       ],
-      targetRetirementAge: 55,
-      birthYear: 1987,
+      currentDate: new Date("2026-01-01"),
     });
-    expect(result).toEqual({ year: 2042, source: "derived" });
+    expect(result).toEqual({ year: 2020, source: "derived" });
+  });
+
+  it("reports 'active' (not 'no_data') when the only linked job has no real endDate yet — still employed, not unknown", () => {
+    const result = resolveSeparationYear({
+      explicitSeparationYear: null,
+      linkedJobs: [{ endDate: null, isSpeculative: false }],
+      currentDate: new Date("2026-01-01"),
+    });
+    expect(result).toEqual({ year: null, source: "active" });
   });
 
   it("filters out speculative what-if jobs", () => {
     const result = resolveSeparationYear({
       explicitSeparationYear: null,
       linkedJobs: [{ endDate: new Date("2020-01-01"), isSpeculative: true }],
-      targetRetirementAge: 55,
-      birthYear: 1987,
+      currentDate: new Date("2026-01-01"),
     });
-    expect(result).toEqual({ year: null, source: "unknown" });
+    expect(result).toEqual({ year: null, source: "no_data" });
   });
 
-  it("returns unknown, not ineligible, when no linked job and no explicit date", () => {
+  it("returns no_data, not ineligible, when no linked job and no explicit date", () => {
     const result = resolveSeparationYear({
       explicitSeparationYear: null,
       linkedJobs: [],
-      targetRetirementAge: 55,
-      birthYear: 1987,
+      currentDate: new Date("2026-01-01"),
     });
-    expect(result).toEqual({ year: null, source: "unknown" });
+    expect(result).toEqual({ year: null, source: "no_data" });
   });
 });
 
@@ -92,7 +96,12 @@ describe("computeBrokerageAccess", () => {
   it("is always penalty-free; only growth is taxable", () => {
     const slices = computeBrokerageAccess(23697.52, 10120.24);
     expect(slices).toEqual([
-      { label: "Basis", amount: 10120.24, penaltyFree: true, taxFree: true },
+      {
+        label: "Cost basis",
+        amount: 10120.24,
+        penaltyFree: true,
+        taxFree: true,
+      },
       {
         label: "Growth",
         amount: 23697.52 - 10120.24,

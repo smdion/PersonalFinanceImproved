@@ -119,6 +119,13 @@ export const PENALTY_FREE_AGE = 59.5;
  *  is applied per the user's tracked latest-conversion-year, conservatively). */
 export const ROTH_CONVERSION_SEASONING_YEARS = 5;
 
+/** Age at which HSA withdrawals for non-medical expenses stop incurring the
+ *  20% penalty (ordinary income tax still applies — this only removes the
+ *  penalty, unlike the Medicare-eligibility age which is a separate, later
+ *  threshold). Qualified medical withdrawals are always penalty-free and
+ *  tax-free at any age, so this only matters for the non-medical case. */
+export const HSA_NON_MEDICAL_PENALTY_AGE = 65;
+
 // ---------------------------------------------------------------------------
 // Withdrawal Strategy Defaults
 // ---------------------------------------------------------------------------

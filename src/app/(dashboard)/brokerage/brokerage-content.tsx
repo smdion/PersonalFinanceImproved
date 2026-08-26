@@ -10,7 +10,11 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Tooltip } from "@/components/ui/tooltip";
-import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import {
+  formatCurrency,
+  formatPercent,
+  accountDisplayName,
+} from "@/lib/utils/format";
 import { DEFAULT_INFLATION_RATE } from "@/lib/constants";
 import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
@@ -30,7 +34,7 @@ import {
   LumpSumForm,
   LumpSumBadge,
 } from "@/components/cards/projection/lump-sum-form";
-import { isPortfolioParent } from "@/lib/config/account-types";
+import { isPortfolioParent, tracksCostBasis } from "@/lib/config/account-types";
 import { sumBy, safeDivide } from "@/lib/utils/math";
 import { SkeletonTable } from "@/components/ui/skeleton";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
@@ -49,7 +53,8 @@ export function BrokerageContent() {
   const perfAccountsQuery =
     trpc.performance.performanceAccounts.list.useQuery();
   const portfolioBrokerageAccounts = (perfAccountsQuery.data ?? []).filter(
-    (a) => a.accountType === "brokerage" && a.parentCategory === "Portfolio",
+    (a) =>
+      tracksCostBasis(a.accountType) && isPortfolioParent(a.parentCategory),
   );
   const updateCostBasis = trpc.performance.updateCostBasis.useMutation({
     onSuccess: () => utils.performance.performanceAccounts.list.invalidate(),
@@ -461,6 +466,9 @@ function CostBasisEditor({
     accountLabel: string;
     displayName: string | null;
     costBasis: string;
+    accountType?: string;
+    institution?: string;
+    ownershipType?: string | null;
   }[];
   canEdit: boolean;
   onSave: (performanceAccountId: number, costBasis: string) => void;
@@ -481,9 +489,7 @@ function CostBasisEditor({
           key={a.id}
           className="flex items-center justify-between gap-3 border-b border-subtle pb-2 last:border-0 last:pb-0"
         >
-          <span className="text-sm font-medium">
-            {a.displayName ?? a.accountLabel}
-          </span>
+          <span className="text-sm font-medium">{accountDisplayName(a)}</span>
           {canEdit ? (
             <div className="flex items-center gap-2">
               <input

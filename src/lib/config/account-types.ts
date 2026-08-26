@@ -555,6 +555,21 @@ export function tracksRothBasis(category: string): boolean {
   return cfg?.balanceStructure === "roth_traditional";
 }
 
+/** Check if a category is HSA — the one category with balanceStructure
+ *  "single_bucket" (no Traditional/Roth split, no cost-basis tracking). */
+export function isHsaCategory(category: string): boolean {
+  const cfg = ACCOUNT_TYPE_CONFIG[category as AccountCategory];
+  return cfg?.balanceStructure === "single_bucket";
+}
+
+/** Check if a category is IRA — the one category with
+ *  `rothOrderingRules === "basis_first"` (401k/403b use "pro_rata" instead;
+ *  everything else has no Roth ordering at all). */
+export function isIraCategory(category: string): boolean {
+  const cfg = ACCOUNT_TYPE_CONFIG[category as AccountCategory];
+  return cfg?.rothOrderingRules === "basis_first";
+}
+
 /** Valid parentCategory values — shared by Zod schemas, DB checks, and UI dropdowns. */
 export const PARENT_CATEGORY_VALUES = ["Retirement", "Portfolio"] as const;
 export type ParentCategory = (typeof PARENT_CATEGORY_VALUES)[number];
@@ -653,6 +668,16 @@ export function isPreTaxType(taxType: string): boolean {
 /** Check if an engine-internal taxType key is tax-free (Roth). */
 export function isRothType(taxType: string): boolean {
   return taxType === "roth";
+}
+
+/** Check if an engine-internal taxType key is after-tax (Brokerage). */
+export function isAfterTaxType(taxType: string): boolean {
+  return taxType === "afterTax";
+}
+
+/** Check if an engine-internal taxType key is the HSA bucket. */
+export function isHsaTaxType(taxType: string): boolean {
+  return taxType === "hsa";
 }
 
 /** Map engine-internal tax type keys to sub-keys used for balance columns. */

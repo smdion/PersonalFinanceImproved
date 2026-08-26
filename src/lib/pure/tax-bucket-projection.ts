@@ -25,8 +25,11 @@ import type {
 import {
   getAccountTypeConfig,
   isTaxFreeBucket,
+  isAfterTaxType,
+  isHsaCategory,
   tracksCostBasis,
 } from "@/lib/config/account-types";
+import { PENALTY_FREE_AGE, HSA_NON_MEDICAL_PENALTY_AGE } from "@/lib/constants";
 import {
   isRuleOf55Eligible,
   computeBrokerageAccess,
@@ -34,10 +37,12 @@ import {
   computeEmployerPlanPreTaxAccess,
   computeEmployerPlanRothAccess,
   computeRothIraAccess,
+  computeHsaAccess,
   type EarlyAccessSlice,
 } from "@/lib/pure/early-access";
 import type {
   AccountAnalysisEntry,
+  AgeThresholdStatus,
   PersonInfo,
   RothBasisMeta,
   RuleOf55Status,
@@ -181,7 +186,8 @@ export function computeTaxBucketProjection(input: {
   const contributionsByKey = new Map<string, Map<number, number>>();
   for (const yr of accumulationYears) {
     for (const bal of yr.individualAccountBalances) {
-      if (!isTaxFreeBucket(bal.taxType) && bal.taxType !== "afterTax") continue;
+      if (!isTaxFreeBucket(bal.taxType) && !isAfterTaxType(bal.taxType))
+        continue;
       const key = matchKey(
         bal.name,
         bal.category,
@@ -234,6 +240,7 @@ export function computeTaxBucketProjection(input: {
         slices: [],
         ruleOf55: null,
         rothBasisMeta: null,
+        ageThresholdStatus: null,
       };
     }
 
@@ -276,6 +283,18 @@ export function computeTaxBucketProjection(input: {
     }
 
     const ageAtTransition = ageInYear(person!.birthYear, transitionYear);
+    let ageThresholdStatus: AgeThresholdStatus | null = null;
+    if (cfg.rothOrderingRules === "basis_first") {
+      ageThresholdStatus = {
+        thresholdAge: PENALTY_FREE_AGE,
+        eligible: ageAtTransition >= PENALTY_FREE_AGE,
+      };
+    } else if (isHsaCategory(now.category)) {
+      ageThresholdStatus = {
+        thresholdAge: HSA_NON_MEDICAL_PENALTY_AGE,
+        eligible: ageAtTransition >= HSA_NON_MEDICAL_PENALTY_AGE,
+      };
+    }
 
     if (cfg.rothOrderingRules === "basis_first") {
       if (isTaxFreeBucket(now.taxType)) {
@@ -351,9 +370,19 @@ export function computeTaxBucketProjection(input: {
         transitionYear,
       );
       slices = computeBrokerageAccess(balance, costBasis);
+    } else if (isHsaCategory(now.category)) {
+      slices = computeHsaAccess(balance, ageAtTransition);
     }
 
-    return { ...now, balance, slices, ruleOf55, rothBasisMeta, costBasis };
+    return {
+      ...now,
+      balance,
+      slices,
+      ruleOf55,
+      rothBasisMeta,
+      costBasis,
+      ageThresholdStatus,
+    };
   });
 
   return {

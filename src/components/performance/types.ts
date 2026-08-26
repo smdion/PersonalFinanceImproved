@@ -2,7 +2,7 @@ import React from "react";
 import type { PerfCategory } from "@/lib/config/display-labels";
 
 export type EditingCell = {
-  type: "annual" | "account" | "master";
+  type: "annual" | "account" | "master" | "basis";
   id: number;
   field: string;
 } | null;
@@ -50,6 +50,12 @@ export type AccountRow = {
   performanceAccountId: number | null;
   displayOrder: number;
   year: number;
+  /** Roth basis (account_basis, exact-year match) — null when the category
+   *  doesn't track Roth basis (HSA/brokerage) or no row exists for this
+   *  year yet. See tracksRothBasis() in lib/config/account-types.ts. */
+  contributionBasis: number | null;
+  conversionBasis: number | null;
+  latestConversionYear: number | null;
 };
 
 export type MasterAccount = {
@@ -102,7 +108,7 @@ export type YearRowProps = {
   editingCell: EditingCell;
   editValue: string;
   onStartEdit: (
-    type: "annual" | "account" | "master",
+    type: "annual" | "account" | "master" | "basis",
     id: number,
     field: string,
     currentValue: number,
@@ -110,8 +116,10 @@ export type YearRowProps = {
   onEditValueChange: (v: string) => void;
   onSaveEdit: () => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
-  activeCategory: string;
   masterAccounts: MasterAccount[];
+  showBasis: boolean;
+  showUnrealized: boolean;
+  onlyBasis: boolean;
   canEdit?: boolean;
 };
 

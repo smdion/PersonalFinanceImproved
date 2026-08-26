@@ -75,18 +75,20 @@ describe("taxBuckets router", () => {
   });
 
   it("resolves Rule of 55 from a linked job's real endDate — a dormant former-employer plan stays eligible", async () => {
-    const personId = await seedPerson(db, "Joanna", "1991-01-10");
+    const personId = await seedPerson(db, "Joanna", "1960-01-10");
     const perfAcctId = seedPerformanceAccount(db, {
       institution: "Voya",
       accountType: "401k",
       ownerPersonId: personId,
       ownershipType: "individual",
     });
-    // Joanna turns 55 in 2046. Separate her from this job in 2046 — Rule of
-    // 55 should apply, even though this isn't her current job by the time
-    // we check (no other job seeded means this is moot here, but exercises
-    // the real endDate-based derivation path end to end).
-    const jobId = seedJob(db, personId, { endDate: "2046-06-01" });
+    // Joanna turned 55 in 2015. She separated from this job in 2020 — Rule
+    // of 55 applies (permanently, once already separated), even though
+    // this isn't her current job by the time we check. endDate must be a
+    // real PAST date — resolveSeparationYear only derives from a job that
+    // has actually already ended (never a future one, which would mean
+    // assuming a not-yet-real separation).
+    const jobId = seedJob(db, personId, { endDate: "2020-06-01" });
     seedContributionAccount(db, {
       jobId,
       performanceAccountId: perfAcctId,
@@ -102,16 +104,14 @@ describe("taxBuckets router", () => {
       },
     ]);
 
-    const result = await caller.taxBuckets.getBreakdown({
-      targetRetirementAges: [{ personId, age: 65 }], // irrelevant — real endDate wins
-    });
+    const result = await caller.taxBuckets.getBreakdown();
 
     const entry = result.accounts.find(
       (a) => a.performanceAccountId === perfAcctId,
     )!;
     expect(entry.ruleOf55?.eligible).toBe(true);
     expect(entry.ruleOf55?.source).toBe("derived");
-    expect(entry.ruleOf55?.separationYear).toBe(2046);
+    expect(entry.ruleOf55?.separationYear).toBe(2020);
   });
 
   it("updateRothBasis upserts and getBreakdown reflects it on the next call", async () => {

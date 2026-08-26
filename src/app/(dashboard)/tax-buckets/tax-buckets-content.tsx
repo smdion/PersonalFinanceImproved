@@ -12,10 +12,21 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SlidePanel } from "@/components/ui/slide-panel";
 import { KpiCard } from "@/components/cards/projection/projection-hero-kpis";
 import { formatCurrency } from "@/lib/utils/format";
+import { DEFAULT_INFLATION_RATE } from "@/lib/constants";
 import { computeTaxBucketProjection } from "@/lib/pure/tax-bucket-projection";
 import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 import type { AccountAnalysisEntry } from "@/lib/pure/tax-bucket-analysis";
+import {
+  isTaxFreeBucket,
+  isPreTaxType,
+  isAfterTaxType,
+  isHsaTaxType,
+  isHsaCategory,
+  isIraCategory,
+  tracksCostBasis,
+  tracksRothBasis,
+} from "@/lib/config/account-types";
 
 // The pure type, not a tRPC-inferred one — inferRouterOutputs types
 // `rothBasisMeta.updatedAt` as `Date` (the procedure's TS return type),
@@ -69,6 +80,8 @@ function buildBuckets(entries: AccountEntry[]) {
         if (slice.penaltyFree) b.accessibleNow += slice.amount;
         else b.locked += slice.amount;
       }
+      // lint-violation-ok: `key` is this page's own BucketKey union, not an
+      // AccountCategory — no account-types.ts predicate applies here.
     } else if (key === "brokerage") {
       b.accessibleNow += entry.balance;
     } else if (entry.ownerPersonId == null) {
@@ -108,25 +121,23 @@ const BUCKET_META: Record<BucketKey, { label: string; helpText?: string }> = {
 };
 
 function bucketKeyFor(entry: AccountEntry): BucketKey {
-  if (entry.category === "brokerage") return "brokerage";
-  if (entry.category === "hsa") return "hsa";
-  if (entry.taxType !== "taxFree") return "traditional";
-  return entry.category === "ira" ? "rothIra" : "rothEmployer";
+  if (tracksCostBasis(entry.category)) return "brokerage";
+  if (isHsaCategory(entry.category)) return "hsa";
+  if (!isTaxFreeBucket(entry.taxType)) return "traditional";
+  return isIraCategory(entry.category) ? "rothIra" : "rothEmployer";
 }
 
 function taxTypeLabel(category: string, taxType: string): string {
-  const categoryLabel =
-    category === "401k" ? "401k" : category === "403b" ? "403b" : category;
-  if (taxType === "taxFree") {
-    return category === "ira" ? "Roth IRA" : `Roth ${categoryLabel}`;
+  if (isTaxFreeBucket(taxType)) {
+    return isIraCategory(category) ? "Roth IRA" : `Roth ${category}`;
   }
-  if (taxType === "preTax") {
-    return category === "ira"
+  if (isPreTaxType(taxType)) {
+    return isIraCategory(category)
       ? "Traditional IRA"
-      : `Traditional ${categoryLabel}`;
+      : `Traditional ${category}`;
   }
-  if (taxType === "afterTax") return "Brokerage";
-  if (taxType === "hsa") return "HSA";
+  if (isAfterTaxType(taxType)) return "Brokerage";
+  if (isHsaTaxType(taxType)) return "HSA";
   return taxType;
 }
 
@@ -143,6 +154,11 @@ export function TaxBucketsContent() {
 
   const [showBulkBasis, setShowBulkBasis] = useState(false);
   const [view, setView] = useState<ViewMode>("now");
+  // "At Retirement" only — "Now" figures are already today's dollars, so
+  // deflating them would be a no-op at best and confusing at worst.
+  // Mirrors the Retirement page's own "Today's $"/"Future $" toggle
+  // (dollarMode "real"/"nominal") and default.
+  const [dollarMode, setDollarMode] = useState<"real" | "nominal">("real");
 
   const { data, isLoading, error } = trpc.taxBuckets.getBreakdown.useQuery();
   // Same Plan-pin → globally-active resolution every other engine-backed
@@ -188,6 +204,28 @@ export function TaxBucketsContent() {
       people: data.people,
     });
   }, [data, projectionQuery.data]);
+
+  // Same deflation formula as the Retirement page's own dollarMode —
+  // real (today's $) divides out inflation between now and the
+  // transition year; nominal shows the figure exactly as projected.
+  const projectionSettings =
+    projectionQuery.data && "settings" in projectionQuery.data
+      ? projectionQuery.data.settings
+      : undefined;
+  const inflationRate =
+    projectionSettings?.annualInflation != null
+      ? Number(projectionSettings.annualInflation)
+      : DEFAULT_INFLATION_RATE;
+  const baseYear = new Date().getFullYear();
+  const deflate = (amount: number) => {
+    if (dollarMode === "nominal") return amount;
+    if (!projection?.transitionYear) return amount;
+    const years = projection.transitionYear - baseYear;
+    if (years <= 0) return amount;
+    return amount / Math.pow(1 + inflationRate, years);
+  };
+  const fmt = (amount: number) =>
+    formatCurrency(view === "atRetirement" ? deflate(amount) : amount);
 
   if (isLoading) {
     return (
@@ -249,24 +287,49 @@ export function TaxBucketsContent() {
       {/* "Now" / "At Retirement" toggle — two clearly-labeled tabs, never a
           silent switch. Default "now"; "at retirement" only fetches the
           (heavier, cache-backed) projection once selected. */}
-      <div className="flex gap-1 border-b border-subtle">
-        {[
-          { key: "now" as const, label: "Now" },
-          { key: "atRetirement" as const, label: "At Retirement" },
-        ].map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => setView(tab.key)}
-            className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px ${
-              view === tab.key
-                ? "border-primary text-primary"
-                : "border-transparent text-muted hover:text-primary"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div className="flex items-center justify-between border-b border-subtle">
+        <div className="flex gap-1">
+          {[
+            { key: "now" as const, label: "Now" },
+            { key: "atRetirement" as const, label: "At Retirement" },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setView(tab.key)}
+              className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px ${
+                view === tab.key
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted hover:text-primary"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        {/* Only meaningful for "At Retirement" — "Now" figures are already
+            today's dollars, so deflating them is a no-op there. */}
+        {view === "atRetirement" && (
+          <div className="mb-1 inline-flex rounded-md border border-subtle bg-surface p-0.5">
+            {[
+              { key: "real" as const, label: "Today's $" },
+              { key: "nominal" as const, label: "Future $" },
+            ].map((mode) => (
+              <button
+                key={mode.key}
+                type="button"
+                onClick={() => setDollarMode(mode.key)}
+                className={`rounded px-2.5 py-1 text-xs font-medium ${
+                  dollarMode === mode.key
+                    ? "bg-primary text-white"
+                    : "text-muted hover:text-primary"
+                }`}
+              >
+                {mode.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {view === "atRetirement" && projectionQuery.isLoading && (
@@ -313,7 +376,7 @@ export function TaxBucketsContent() {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           <KpiCard label="Total across these buckets">
             <div className="text-xl font-bold tabular-nums text-primary">
-              {formatCurrency(householdTotal)}
+              {fmt(householdTotal)}
             </div>
           </KpiCard>
           <KpiCard
@@ -327,7 +390,7 @@ export function TaxBucketsContent() {
             ]}
           >
             <div className="text-xl font-bold tabular-nums text-green-600">
-              {formatCurrency(householdAccessible)}
+              {fmt(householdAccessible)}
             </div>
           </KpiCard>
           <KpiCard
@@ -339,7 +402,7 @@ export function TaxBucketsContent() {
             ]}
           >
             <div className="text-xl font-bold tabular-nums text-amber-600">
-              {formatCurrency(householdLocked)}
+              {fmt(householdLocked)}
             </div>
           </KpiCard>
         </div>
@@ -364,7 +427,7 @@ export function TaxBucketsContent() {
               }
               headerRight={
                 <span className="text-lg font-semibold tabular-nums">
-                  {formatCurrency(b.balance)}
+                  {fmt(b.balance)}
                 </span>
               }
             >
@@ -376,20 +439,16 @@ export function TaxBucketsContent() {
                         ? "accessible now"
                         : "accessible at retirement"}
                     </Badge>
-                    <span className="tabular-nums">
-                      {formatCurrency(b.accessibleNow)}
-                    </span>
+                    <span className="tabular-nums">{fmt(b.accessibleNow)}</span>
                   </span>
                   <span className="flex items-center gap-1">
                     <Badge color="amber">locked</Badge>
-                    <span className="tabular-nums">
-                      {formatCurrency(b.locked)}
-                    </span>
+                    <span className="tabular-nums">{fmt(b.locked)}</span>
                   </span>
                   {b.excludedJoint > 0 && (
                     <span className="text-faint">
-                      +{formatCurrency(b.excludedJoint)} in joint accounts not
-                      included in this split
+                      +{fmt(b.excludedJoint)} in joint accounts not included in
+                      this split
                     </span>
                   )}
                 </div>
@@ -405,6 +464,7 @@ export function TaxBucketsContent() {
                       key={`${entry.performanceAccountId}-${entry.taxType}-${entry.ownerPersonId}`}
                       entry={entry}
                       view={view}
+                      fmt={fmt}
                       canEdit={canEdit && view === "now"}
                       onSaveRothBasis={(v) =>
                         updateRothBasis.mutate({
@@ -446,12 +506,14 @@ export function TaxBucketsContent() {
 function AccountDetailRow({
   entry,
   view,
+  fmt,
   canEdit,
   onSaveRothBasis,
   onSaveSeparationDate,
 }: {
   entry: AccountEntry;
   view: ViewMode;
+  fmt: (amount: number) => string;
   canEdit: boolean;
   onSaveRothBasis: (v: {
     contributionBasis: string;
@@ -461,8 +523,8 @@ function AccountDetailRow({
   onSaveSeparationDate: (date: string | null) => void;
 }) {
   const isRothEditable =
-    entry.taxType === "taxFree" &&
-    ["ira", "401k", "403b"].includes(entry.category) &&
+    isTaxFreeBucket(entry.taxType) &&
+    tracksRothBasis(entry.category) &&
     entry.performanceAccountId != null &&
     entry.ownerPersonId != null;
   // Hidden while still employed there (source "active") — there's no real
@@ -488,9 +550,7 @@ function AccountDetailRow({
             {taxTypeLabel(entry.category, entry.taxType)}
           </span>
         </div>
-        <span className="font-semibold tabular-nums">
-          {formatCurrency(entry.balance)}
-        </span>
+        <span className="font-semibold tabular-nums">{fmt(entry.balance)}</span>
       </div>
 
       {entry.ruleOf55 && (
@@ -521,6 +581,22 @@ function AccountDetailRow({
         </div>
       )}
 
+      {entry.ageThresholdStatus && (
+        <div className="mt-1 flex items-center gap-2 text-caption">
+          <Badge color={entry.ageThresholdStatus.eligible ? "green" : "amber"}>
+            Age {entry.ageThresholdStatus.thresholdAge}:{" "}
+            {entry.ageThresholdStatus.eligible ? "eligible" : "not yet"}
+          </Badge>
+          <HelpTip
+            text={
+              entry.ageThresholdStatus.thresholdAge === 65
+                ? "At 65, non-medical HSA withdrawals stop incurring the 20% penalty — ordinary income tax still applies. Qualified medical withdrawals are always penalty-free and tax-free at any age."
+                : "At 59½, retirement-account withdrawals become penalty-free generally. There's no Rule-of-55 equivalent for an IRA (only SEPP/72(t), not modeled here)."
+            }
+          />
+        </div>
+      )}
+
       {entry.slices.length > 0 && (
         <div className="mt-2 space-y-1">
           {entry.slices.map((slice) => (
@@ -530,9 +606,7 @@ function AccountDetailRow({
             >
               <span className="text-muted">{slice.label}</span>
               <span className="flex items-center gap-2">
-                <span className="tabular-nums">
-                  {formatCurrency(slice.amount)}
-                </span>
+                <span className="tabular-nums">{fmt(slice.amount)}</span>
                 <Badge color={slice.penaltyFree ? "green" : "amber"}>
                   {slice.penaltyFree ? "penalty-free" : "10% penalty"}
                 </Badge>
@@ -542,6 +616,16 @@ function AccountDetailRow({
               </span>
             </div>
           ))}
+          {isHsaCategory(entry.category) && (
+            <div className="flex items-center justify-between text-caption">
+              <span className="text-muted">Qualified medical expenses</span>
+              <span className="flex items-center gap-2">
+                <span className="tabular-nums">{fmt(entry.balance)}</span>
+                <Badge color="green">penalty-free</Badge>
+                <Badge color="green">tax-free</Badge>
+              </span>
+            </div>
+          )}
         </div>
       )}
 
@@ -739,8 +823,8 @@ function BulkRothBasisForm({
           performanceAccountId: number;
           ownerPersonId: number;
         } =>
-          a.taxType === "taxFree" &&
-          ["ira", "401k", "403b"].includes(a.category) &&
+          isTaxFreeBucket(a.taxType) &&
+          tracksRothBasis(a.category) &&
           a.performanceAccountId != null &&
           a.ownerPersonId != null,
       )
