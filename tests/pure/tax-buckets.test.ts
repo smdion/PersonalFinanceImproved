@@ -88,6 +88,21 @@ describe("computeTaxBucketBreakdown", () => {
     expect(sean.amount).toBeCloseTo(188268.24, 2);
     expect(sean.performanceAccountId).toBe(5);
     expect(joanna.amount).toBeCloseTo(101817.45, 2);
+
+    // v0.7.8 Group 1 prerequisite (advisor finding S3): accountBreakdownByCategory
+    // used to merge on (name, taxType) only, so these two identically-labeled
+    // "IRA (Vanguard)" rows from different owners collapsed into ONE entry,
+    // silently keeping only Sean's ownerPersonId — this feeds
+    // build-engine-payload.ts's individualAccounts directly (the engine's
+    // per-owner eligibility data), so a wrong owner here means Rule of 55 /
+    // 59½ gating resolves the wrong person's access for Joanna's half of the
+    // money. Owner is now part of the merge key: two separate entries.
+    const breakdown = result.accountBreakdownByCategory["ira"];
+    expect(breakdown).toHaveLength(2);
+    const seanEntry = breakdown!.find((e) => e.ownerPersonId === 1)!;
+    const joannaEntry = breakdown!.find((e) => e.ownerPersonId === 2)!;
+    expect(seanEntry.amount).toBeCloseTo(188268.24, 2);
+    expect(joannaEntry.amount).toBeCloseTo(101817.45, 2);
   });
 
   it("keeps a jointly-owned (null ownerPersonId) account in the rollup without a person attribution", () => {

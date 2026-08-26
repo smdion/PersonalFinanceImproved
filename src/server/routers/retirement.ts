@@ -82,6 +82,7 @@ const retirementSettingsInput = z.object({
   salaryAnnualIncrease: zDecimal,
   salaryCap: zDecimal.nullable().optional(),
   raisesDuringRetirement: z.boolean().default(false),
+  ruleOf55Override: z.boolean().optional(),
   withdrawalRate: zDecimal.optional(),
   taxMultiplier: zDecimal.optional(),
   grossUpForTaxes: z.boolean().optional(),

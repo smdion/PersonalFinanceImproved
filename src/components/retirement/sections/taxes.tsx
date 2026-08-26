@@ -17,6 +17,7 @@ import type {
   Settings,
   SelectedScenario,
   UpsertSettingsMutation,
+  IsEditable,
 } from "./types";
 import { buildSettingsPatch } from "./settings-patch";
 
@@ -24,12 +25,14 @@ type Props = {
   settings: Settings;
   selectedScenario: SelectedScenario;
   upsertSettings: UpsertSettingsMutation;
+  isEditable: IsEditable;
 };
 
 export function TaxesSection({
   settings,
   selectedScenario,
   upsertSettings,
+  isEditable,
 }: Props) {
   const filingStatus = settings.filingStatus;
   return (
@@ -39,8 +42,9 @@ export function TaxesSection({
           Taxes in Retirement
         </h4>
         <select
-          className="text-caption text-faint bg-transparent border border-transparent hover:border-border rounded px-1 py-0.5 cursor-pointer focus:outline-none focus:border-accent"
+          className="text-caption text-faint bg-transparent border border-transparent hover:border-border rounded px-1 py-0.5 cursor-pointer focus:outline-none focus:border-accent disabled:cursor-not-allowed disabled:opacity-50"
           value={settings.filingStatusExplicit ?? ""}
+          disabled={!isEditable}
           onChange={(e) => {
             const val = e.target.value || null;
             upsertSettings.mutate(
@@ -115,7 +119,7 @@ export function TaxesSection({
               parseInput={(v) => v.replace(/[^0-9.]/g, "")}
               type="number"
               className="text-sm"
-              isEditable={!!settings}
+              isEditable={isEditable}
             />
             <span className="text-caption text-faint">
               {Number(settings.taxMultiplier) < 1
@@ -141,7 +145,8 @@ export function TaxesSection({
                   }),
                 );
               }}
-              className={`text-sm px-2 py-0.5 rounded ${
+              disabled={!isEditable}
+              className={`text-sm px-2 py-0.5 rounded disabled:cursor-not-allowed disabled:opacity-50 ${
                 (settings?.grossUpForTaxes ?? true)
                   ? "bg-green-100 text-green-700"
                   : "bg-surface-elevated text-muted"
@@ -167,7 +172,8 @@ export function TaxesSection({
                   }),
                 );
               }}
-              className="text-sm border rounded px-1.5 py-0.5"
+              disabled={!isEditable}
+              className="text-sm border rounded px-1.5 py-0.5 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <option value="0.1">10% (~$30k MFJ)</option>
               <option value="0.12">12% (~$116k MFJ)</option>
@@ -194,7 +200,8 @@ export function TaxesSection({
                   }),
                 );
               }}
-              className={`text-sm px-2 py-0.5 rounded ${
+              disabled={!isEditable}
+              className={`text-sm px-2 py-0.5 rounded disabled:cursor-not-allowed disabled:opacity-50 ${
                 (settings?.enableRothConversions ?? false)
                   ? "bg-green-100 text-green-700"
                   : "bg-surface-elevated text-muted"
@@ -219,7 +226,8 @@ export function TaxesSection({
                     }),
                   );
                 }}
-                className="text-sm border rounded px-1.5 py-0.5"
+                disabled={!isEditable}
+                className="text-sm border rounded px-1.5 py-0.5 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <option value="0.1">10%</option>
                 <option value="0.12">12%</option>

@@ -14,6 +14,7 @@ import type {
   Settings,
   PerPersonSettings,
   UpsertSettingsMutation,
+  IsEditable,
 } from "./types";
 import { buildSettingsPatch } from "./settings-patch";
 
@@ -21,12 +22,14 @@ type Props = {
   settings: Settings;
   perPersonSettings: PerPersonSettings;
   upsertSettings: UpsertSettingsMutation;
+  isEditable: IsEditable;
 };
 
 export function SocialSecuritySection({
   settings,
   perPersonSettings,
   upsertSettings,
+  isEditable,
 }: Props) {
   return (
     <div className="bg-surface-sunken rounded-lg p-3">
@@ -69,7 +72,7 @@ export function SocialSecuritySection({
                   parseInput={(v) => v.replace(/[^0-9.]/g, "")}
                   type="number"
                   className="text-sm"
-                  isEditable={!!settings}
+                  isEditable={isEditable}
                 />
                 <span className="text-caption text-faint">
                   {formatCurrency(Number(ps.socialSecurityMonthly) * 12)}
@@ -101,7 +104,7 @@ export function SocialSecuritySection({
                 parseInput={(v) => v.replace(/[^0-9.]/g, "")}
                 type="number"
                 className="text-sm"
-                isEditable={!!settings}
+                isEditable={isEditable}
               />
               <span className="text-caption text-faint">
                 {formatCurrency(Number(settings.socialSecurityMonthly) * 12)}
@@ -128,7 +131,7 @@ export function SocialSecuritySection({
               }}
               type="number"
               className="text-sm"
-              isEditable={!!settings}
+              isEditable={isEditable}
             />
           </div>
         </div>

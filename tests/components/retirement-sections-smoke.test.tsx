@@ -40,6 +40,7 @@ describe("StrategyParamsSection smoke", () => {
       <StrategyParamsSection
         settings={baseSettings}
         upsertSettings={{ mutate: vi.fn() }}
+        isEditable={true}
       />,
     );
     expect(container).toBeEmptyDOMElement();
@@ -50,6 +51,7 @@ describe("StrategyParamsSection smoke", () => {
       <StrategyParamsSection
         settings={{ ...baseSettings, withdrawalStrategy: "guyton_klinger" }}
         upsertSettings={{ mutate: vi.fn() }}
+        isEditable={true}
       />,
     );
     expect(screen.getByText("Upper Guardrail")).toBeInTheDocument();
@@ -62,6 +64,7 @@ describe("StrategyParamsSection smoke", () => {
       <StrategyParamsSection
         settings={{ ...baseSettings, withdrawalStrategy: "endowment" }}
         upsertSettings={{ mutate: vi.fn() }}
+        isEditable={true}
       />,
     );
     expect(screen.getByText("Rolling Window (years)")).toBeInTheDocument();
@@ -76,6 +79,7 @@ describe("TaxesSection smoke", () => {
         settings={baseSettings}
         selectedScenario={null}
         upsertSettings={{ mutate: vi.fn() }}
+        isEditable={true}
       />,
     );
     expect(screen.getByText("Taxes in Retirement")).toBeInTheDocument();
@@ -92,6 +96,7 @@ describe("TaxesSection smoke", () => {
         settings={baseSettings}
         selectedScenario={null}
         upsertSettings={{ mutate: vi.fn() }}
+        isEditable={true}
       />,
     );
     expect(screen.getByText(/15%LTCG/)).toBeInTheDocument();
@@ -103,6 +108,7 @@ describe("TaxesSection smoke", () => {
         settings={{ ...baseSettings, enableRothConversions: true }}
         selectedScenario={null}
         upsertSettings={{ mutate: vi.fn() }}
+        isEditable={true}
       />,
     );
     // Only rendered when enableRothConversions is true — the extra select's
@@ -120,6 +126,7 @@ describe("SocialSecuritySection smoke", () => {
         settings={baseSettings}
         perPersonSettings={null}
         upsertSettings={{ mutate: vi.fn() }}
+        isEditable={true}
       />,
     );
     expect(screen.getByText("Monthly Benefit")).toBeInTheDocument();
@@ -149,6 +156,7 @@ describe("SocialSecuritySection smoke", () => {
           },
         ]}
         upsertSettings={{ mutate: vi.fn() }}
+        isEditable={true}
       />,
     );
     expect(screen.getByText(/Alice.*Benefit/)).toBeInTheDocument();
@@ -226,6 +234,7 @@ describe("IncomeSection smoke", () => {
     settings: baseSettings,
     combinedSalary: 250000,
     upsertSettings: { mutate: vi.fn() },
+    isEditable: true,
     handleSettingPercentUpdate: vi.fn(),
     contribProfiles: [],
     contribProfileId: null,
@@ -269,5 +278,75 @@ describe("IncomeSection smoke", () => {
   it("renders the plain total with no crash when people/salaryByPerson are omitted", () => {
     render(<IncomeSection {...incomeProps} />);
     expect(screen.getByText("$250,000.00")).toBeInTheDocument();
+  });
+
+  it("Group B: Pre-Retirement Raise / Salary Cap render read-only when isEditable is false", () => {
+    render(
+      <IncomeSection
+        {...incomeProps}
+        isEditable={false}
+        people={[{ id: 1, name: "Alex" }]}
+        salaryByPerson={{ 1: 250000 }}
+      />,
+    );
+    expect(screen.getByText("$250,000.00")).toBeInTheDocument();
+    expect(screen.queryByRole("spinbutton")).toBeNull();
+  });
+});
+
+// Group B (v0.7.8) — retirementSettings.upsert is adminProcedure server-side,
+// but these sections had zero client-side gating. isEditable now threads an
+// isAdmin(user) check from retirement-content.tsx into every mutating
+// control. Non-admin must see read-only (values visible, no editable input)
+// — never hidden, never a control the click on which would just 403.
+describe("isEditable={false} gating (Group B)", () => {
+  it("StrategyParamsSection: param controls disabled but values visible", () => {
+    render(
+      <StrategyParamsSection
+        settings={{ ...baseSettings, withdrawalStrategy: "guyton_klinger" }}
+        upsertSettings={{ mutate: vi.fn() }}
+        isEditable={false}
+      />,
+    );
+    expect(screen.getByText("Upper Guardrail")).toBeInTheDocument();
+    for (const btn of screen.getAllByRole("button")) expect(btn).toBeDisabled();
+    for (const sel of screen.queryAllByRole("combobox"))
+      expect(sel).toBeDisabled();
+  });
+
+  it("TaxesSection: filing status / bracket ceiling selects and toggle buttons disabled, values still shown", () => {
+    render(
+      <TaxesSection
+        settings={baseSettings}
+        selectedScenario={null}
+        upsertSettings={{ mutate: vi.fn() }}
+        isEditable={false}
+      />,
+    );
+    for (const sel of screen.getAllByRole("combobox"))
+      expect(sel).toBeDisabled();
+    for (const btn of screen.getAllByRole("button")) expect(btn).toBeDisabled();
+    // Values remain visible — read-only, not hidden.
+    expect(screen.getByText("Taxes in Retirement")).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("button", { name: "Off" }).length,
+    ).toBeGreaterThan(0);
+  });
+
+  it("SocialSecuritySection: benefit InlineEdit renders as plain text, not an editable control", () => {
+    render(
+      <SocialSecuritySection
+        settings={baseSettings}
+        perPersonSettings={null}
+        upsertSettings={{ mutate: vi.fn() }}
+        isEditable={false}
+      />,
+    );
+    // Value still visible...
+    expect(screen.getByText("$2,000.00/mo")).toBeInTheDocument();
+    // ...but not as a clickable/editable element (InlineEdit isEditable=false
+    // renders a bare <span>, no input, no button role).
+    expect(screen.queryByRole("textbox")).toBeNull();
+    expect(screen.queryByRole("spinbutton")).toBeNull();
   });
 });

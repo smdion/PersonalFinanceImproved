@@ -20,6 +20,7 @@ import {
   categoriesWithTaxPreference,
   getAccountTypeConfig,
   ACCOUNT_TYPE_CONFIG,
+  isTaxFreeBucket,
 } from "@/lib/config/account-types";
 import type { TipColor, TooltipLineItem } from "./types";
 import {
@@ -180,29 +181,101 @@ export function DecumulationRow({
                     const dSlot = dSlotMap.get(cat);
                     const items: TooltipLineItem[] = [];
                     const catCfg = getAccountTypeConfig(cat);
-                    if (
-                      wd > 0 &&
-                      catCfg.supportsRothSplit &&
-                      dSlot &&
-                      (dSlot.traditionalWithdrawal > 0 ||
-                        dSlot.rothWithdrawal > 0)
-                    ) {
-                      if (dSlot.traditionalWithdrawal > 0)
-                        items.push({
-                          label: catCfg.displayLabel,
-                          amount: deflate(dSlot.traditionalWithdrawal, yr.year),
-                          prefix: "-",
-                          taxType: "traditional",
-                          color: "red",
+                    // Per-account note (v0.7.8 tooltip-readability pass,
+                    // DESIGN-DECISION-v0.7.8-tooltip-readability.md Option
+                    // C): merges this account's withdrawal-ordering
+                    // eligibility verdict and tracked Roth basis draw-down
+                    // into ONE dim line under its amount, instead of
+                    // repeating the account name on separate lines for each
+                    // fact. `eligibilityReason` already carries basis-
+                    // remaining context for accounts using tracked basis
+                    // (see withdrawal-eligibility.ts), so this only adds a
+                    // second clause for what was actually drawn *this year*.
+                    const buildNote = (
+                      ia: (typeof catAccts)[number],
+                    ): { note?: string; noteLocked?: boolean } => {
+                      const parts: string[] = [];
+                      if (ia.eligibilityReason)
+                        parts.push(ia.eligibilityReason);
+                      if ((ia.rothBasisDrawn ?? 0) > 0.01) {
+                        const drawn = formatCurrency(
+                          deflate(ia.rothBasisDrawn!, yr.year),
+                        );
+                        const remaining = formatCurrency(
+                          deflate(ia.rothBasisRemaining ?? 0, yr.year),
+                        );
+                        const flag = ia.rothBasisUncertain ? " (est.)" : "";
+                        parts.push(
+                          `basis ${drawn} drawn, ${remaining} left${flag}`,
+                        );
+                      }
+                      if (parts.length === 0) return {};
+                      return {
+                        note: parts.join(" · "),
+                        noteLocked: !!ia.eligibilityLocked,
+                      };
+                    };
+                    if (wd > 0) {
+                      // Per-account breakdown ("no magic money"): when a
+                      // category holds more than one tracked account (e.g.
+                      // both spouses' 401ks, or a Trad + Roth sub-account),
+                      // show exactly which account(s) were drawn from
+                      // rather than one aggregated Trad/Roth line per
+                      // category. Falls back to the old aggregate when no
+                      // individual-account data exists for this category.
+                      const withdrawingAccts = catAccts
+                        .filter((ia) => (ia.withdrawal ?? 0) > 0.01)
+                        .sort((a, b) => {
+                          const taxDiff =
+                            (isTaxFreeBucket(a.taxType) ? 1 : 0) -
+                            (isTaxFreeBucket(b.taxType) ? 1 : 0);
+                          if (taxDiff !== 0) return taxDiff;
+                          return (a.ownerName ?? a.name).localeCompare(
+                            b.ownerName ?? b.name,
+                          );
                         });
-                      if (dSlot.rothWithdrawal > 0)
-                        items.push({
-                          label: catCfg.displayLabel,
-                          amount: deflate(dSlot.rothWithdrawal, yr.year),
-                          prefix: "-",
-                          taxType: "roth",
-                          color: "red",
-                        });
+                      if (withdrawingAccts.length > 0) {
+                        const multiAcct = withdrawingAccts.length > 1;
+                        for (const ia of withdrawingAccts) {
+                          items.push({
+                            label: multiAcct
+                              ? ia.ownerName
+                                ? `${ia.ownerName} — ${ia.name}`
+                                : ia.name
+                              : catCfg.displayLabel,
+                            amount: deflate(ia.withdrawal!, yr.year),
+                            prefix: "-",
+                            taxType: itemTaxType(ia.category, ia.taxType),
+                            color: "red",
+                            ...buildNote(ia),
+                          });
+                        }
+                      } else if (
+                        catCfg.supportsRothSplit &&
+                        dSlot &&
+                        (dSlot.traditionalWithdrawal > 0 ||
+                          dSlot.rothWithdrawal > 0)
+                      ) {
+                        if (dSlot.traditionalWithdrawal > 0)
+                          items.push({
+                            label: catCfg.displayLabel,
+                            amount: deflate(
+                              dSlot.traditionalWithdrawal,
+                              yr.year,
+                            ),
+                            prefix: "-",
+                            taxType: "traditional",
+                            color: "red",
+                          });
+                        if (dSlot.rothWithdrawal > 0)
+                          items.push({
+                            label: catCfg.displayLabel,
+                            amount: deflate(dSlot.rothWithdrawal, yr.year),
+                            prefix: "-",
+                            taxType: "roth",
+                            color: "red",
+                          });
+                      }
                     }
                     // Add lump sum items for this category
                     const catLumps = lumpSumsForCategory(yearLumpSums, cat);
@@ -235,6 +308,7 @@ export function DecumulationRow({
                     });
                   })()}
                   side="top"
+                  maxWidth={420}
                 >
                   <td
                     className={`text-right py-1.5 px-2 ${(() => {
@@ -390,39 +464,111 @@ export function DecumulationRow({
             })}
       <Tooltip
         content={(() => {
+          const iabs = yr.individualAccountBalances ?? [];
+          const filteredIabs = dpt
+            ? iabs.filter((ia) => ia.ownerPersonId === personFilter)
+            : iabs;
           const items: TooltipLineItem[] = [];
           if (dyr.totalWithdrawal > 0) {
-            if (dyr.totalTraditionalWithdrawal > 0)
-              items.push({
-                label: taxTypeLabel("preTax"),
-                amount: deflate(dyr.totalTraditionalWithdrawal, yr.year),
-                prefix: "-",
-                color: "blue",
+            // Per-account breakdown (v0.7.8 tracked-basis follow-up — "no
+            // magic money"): every account that was actually drawn from
+            // this year gets its own line, so the total isn't just an
+            // aggregate Trad/Roth split — the user can see exactly which
+            // account(s), whose, funded it. Ordered by category (accum
+            // order), then traditional before roth, then owner name.
+            const catOrder = new Map(getAllCategories().map((c, i) => [c, i]));
+            const withdrawingAccts = filteredIabs
+              .filter((ia) => (ia.withdrawal ?? 0) > 0.01)
+              .sort((a, b) => {
+                const catDiff =
+                  (catOrder.get(a.category) ?? 0) -
+                  (catOrder.get(b.category) ?? 0);
+                if (catDiff !== 0) return catDiff;
+                const taxDiff =
+                  (isTaxFreeBucket(a.taxType) ? 1 : 0) -
+                  (isTaxFreeBucket(b.taxType) ? 1 : 0);
+                if (taxDiff !== 0) return taxDiff;
+                return (a.ownerName ?? a.name).localeCompare(
+                  b.ownerName ?? b.name,
+                );
               });
-            if (dyr.totalRothWithdrawal > 0)
-              items.push({
-                label: taxTypeLabel("taxFree"),
-                amount: deflate(dyr.totalRothWithdrawal, yr.year),
-                prefix: "-",
-                color: "violet",
-              });
-            for (const sbCat of getAllCategories().filter(
-              (c) => !ACCOUNT_TYPE_CONFIG[c].supportsRothSplit,
-            )) {
-              const sbWd = dSlotMap.get(sbCat)?.withdrawal ?? 0;
-              if (sbWd > 0)
+            if (withdrawingAccts.length > 0) {
+              for (const ia of withdrawingAccts) {
+                // Merge this account's eligibility verdict + tracked Roth
+                // basis draw-down onto its own line (v0.7.8
+                // tooltip-readability pass) instead of a separate
+                // household-wide text block — see the identical
+                // `buildNote` in the per-category tooltip above. Bounded by
+                // construction: only accounts actually withdrawn from this
+                // year appear here, so this can't regrow into the old
+                // "every account in the household" wall of text.
+                const noteParts: string[] = [];
+                if (ia.eligibilityReason) noteParts.push(ia.eligibilityReason);
+                if ((ia.rothBasisDrawn ?? 0) > 0.01) {
+                  const drawn = formatCurrency(
+                    deflate(ia.rothBasisDrawn!, yr.year),
+                  );
+                  const remaining = formatCurrency(
+                    deflate(ia.rothBasisRemaining ?? 0, yr.year),
+                  );
+                  const flag = ia.rothBasisUncertain ? " (est.)" : "";
+                  noteParts.push(
+                    `basis ${drawn} drawn, ${remaining} left${flag}`,
+                  );
+                }
                 items.push({
-                  label: getAccountTypeConfig(sbCat).displayLabel,
-                  amount: deflate(sbWd, yr.year),
+                  label: ia.ownerName
+                    ? `${ia.ownerName} — ${ia.name}`
+                    : ia.name,
+                  amount: deflate(ia.withdrawal!, yr.year),
                   prefix: "-",
-                  color:
-                    sbCat ===
-                    getAllCategories().find(
-                      (c) => ACCOUNT_TYPE_CONFIG[c].isOverflowTarget,
-                    )
-                      ? "amber"
-                      : "emerald",
+                  taxType: itemTaxType(ia.category, ia.taxType),
+                  color: "red",
+                  group: catDisplayLabel[ia.category] ?? ia.category,
+                  ...(noteParts.length > 0
+                    ? {
+                        note: noteParts.join(" · "),
+                        noteLocked: !!ia.eligibilityLocked,
+                      }
+                    : {}),
                 });
+              }
+            } else {
+              // Fallback for households without per-account tracking data
+              // (e.g. simple-mode / no individual accounts modeled): the
+              // old aggregate Trad/Roth + non-split-category breakdown.
+              if (dyr.totalTraditionalWithdrawal > 0)
+                items.push({
+                  label: taxTypeLabel("preTax"),
+                  amount: deflate(dyr.totalTraditionalWithdrawal, yr.year),
+                  prefix: "-",
+                  color: "blue",
+                });
+              if (dyr.totalRothWithdrawal > 0)
+                items.push({
+                  label: taxTypeLabel("taxFree"),
+                  amount: deflate(dyr.totalRothWithdrawal, yr.year),
+                  prefix: "-",
+                  color: "violet",
+                });
+              for (const sbCat of getAllCategories().filter(
+                (c) => !ACCOUNT_TYPE_CONFIG[c].supportsRothSplit,
+              )) {
+                const sbWd = dSlotMap.get(sbCat)?.withdrawal ?? 0;
+                if (sbWd > 0)
+                  items.push({
+                    label: getAccountTypeConfig(sbCat).displayLabel,
+                    amount: deflate(sbWd, yr.year),
+                    prefix: "-",
+                    color:
+                      sbCat ===
+                      getAllCategories().find(
+                        (c) => ACCOUNT_TYPE_CONFIG[c].isOverflowTarget,
+                      )
+                        ? "amber"
+                        : "emerald",
+                  });
+              }
             }
           }
           // Add lump sum items
@@ -436,10 +582,7 @@ export function DecumulationRow({
               color: "emerald",
             });
           }
-          const iabs = yr.individualAccountBalances ?? [];
-          const totalGrowth = (
-            dpt ? iabs.filter((ia) => ia.ownerPersonId === personFilter) : iabs
-          ).reduce((s, ia) => s + ia.growth, 0);
+          const totalGrowth = filteredIabs.reduce((s, ia) => s + ia.growth, 0);
           const decBudgetProfile =
             decumulationBudgetProfileId != null
               ? budgetProfileSummaries?.find(
@@ -506,6 +649,7 @@ export function DecumulationRow({
           });
         })()}
         side="top"
+        maxWidth={460}
       >
         <td
           className={`text-right py-1.5 px-2 font-medium ${

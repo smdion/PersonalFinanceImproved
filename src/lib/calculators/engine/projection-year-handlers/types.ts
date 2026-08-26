@@ -23,6 +23,7 @@ import type {
 import type { SpendingCrossYearState } from "../spending-strategy";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import type { makeIndKey } from "../individual-account-tracking";
+import type { RothBasisState } from "@/lib/pure/roth-basis-tracking";
 
 // ---------------------------------------------------------------------------
 // Local type used by brokerage goals (defined locally in projection.ts)
@@ -55,6 +56,10 @@ export type ProjectionLoopState = {
 
   // Individual account tracking
   indBal: Map<string, number>;
+  /** Tracked Roth basis per taxFree-bucket account (v0.7.8 follow-up —
+   *  see `@/lib/pure/roth-basis-tracking`). Present only for accounts
+   *  where `isTaxFreeBucket(ia.taxType)`; absent for everything else. */
+  indBasis: Map<string, RothBasisState>;
   specToAccount: Map<string, string>;
   accountsWithSpecs: Set<string>;
 

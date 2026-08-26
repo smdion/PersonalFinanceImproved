@@ -59,6 +59,12 @@ import {
 import type { db as _db } from "@/lib/db";
 import { filterActiveJobs } from "@/lib/pure/profiles";
 import { computeTaxBucketBreakdown } from "@/lib/pure/tax-buckets";
+import {
+  computeTaxBucketAnalysis,
+  type RuleOf55Status,
+  type RothBasisMeta,
+} from "@/lib/pure/tax-bucket-analysis";
+import { buildCurrentRothBasisMap } from "@/lib/pure/roth-basis-rollover";
 
 type Db = typeof _db;
 
@@ -100,6 +106,8 @@ export async function fetchRetirementData(
     allAppSettings,
     contribProfileRow,
     salaryProfileRow,
+    jobLinkRows,
+    accountBasisRows,
   ] = await Promise.all([
     db.select().from(schema.people).orderBy(asc(schema.people.id)),
     db.select().from(schema.jobs),
@@ -163,6 +171,21 @@ export async function fetchRetirementData(
           .where(eq(schema.salaryProfiles.id, opts.salaryProfileId))
           .then((r) => r[0] ?? null)
       : Promise.resolve(undefined as undefined),
+    // Withdrawal-ordering eligibility (v0.7.8, PLAN-v0.7.8-v4 Group 1.1):
+    // which job funds which performance account. Deliberately unfiltered —
+    // no isActive filter — a separated employer's contribution-account link
+    // is exactly the one likely to be inactive, and it's exactly the
+    // evidence Rule of 55 needs to see. Same query tax-buckets.ts's
+    // getBreakdown procedure uses; kept identical rather than reusing
+    // allContribsRaw, which IS isActive-filtered and would silently drop
+    // dormant former-employer plans.
+    db
+      .select({
+        performanceAccountId: schema.contributionAccounts.performanceAccountId,
+        jobId: schema.contributionAccounts.jobId,
+      })
+      .from(schema.contributionAccounts),
+    db.select().from(schema.accountBasis),
   ]);
   return {
     people,
@@ -183,6 +206,8 @@ export async function fetchRetirementData(
     allAppSettings,
     contribProfileRow,
     salaryProfileRow,
+    jobLinkRows,
+    accountBasisRows,
   };
 }
 
@@ -225,6 +250,8 @@ export async function buildEnginePayload(
     allTaxBrackets,
     brokerageGoalRows,
     allAppSettings,
+    jobLinkRows,
+    accountBasisRows,
   } = data;
 
   // All active contribution accounts feed the engine (both Retirement and Portfolio).
@@ -300,6 +327,7 @@ export async function buildEnginePayload(
       socialSecurityMonthly:
         ps?.socialSecurityMonthly ?? settings.socialSecurityMonthly,
       ssStartAge: ps?.ssStartAge ?? settings.ssStartAge,
+      ruleOf55Override: ps?.ruleOf55Override ?? settings.ruleOf55Override,
     };
   });
 
@@ -423,6 +451,11 @@ export async function buildEnginePayload(
 
   // Portfolio by tax bucket + per-account balances (combined for engine).
   // Shared with the Tax Buckets analysis tool — see src/lib/pure/tax-buckets.ts.
+  const taxBucketBreakdown = computeTaxBucketBreakdown(
+    snapshotData,
+    people,
+    perfAccounts,
+  );
   const {
     portfolioByTaxType,
     portfolioByTaxTypeByParentCat,
@@ -431,8 +464,114 @@ export async function buildEnginePayload(
     accountOwnersByCategory,
     ownershipByPerson,
     accountBreakdownByCategory,
-  } = computeTaxBucketBreakdown(snapshotData, people, perfAccounts);
+  } = taxBucketBreakdown;
   const personNameById = new Map(people.map((p) => [p.id, p.name]));
+
+  // Per-account withdrawal-ordering eligibility (v0.7.8, PLAN-v0.7.8-v4
+  // Group 1.1) — reuses computeTaxBucketAnalysis verbatim (RULES.md § Single
+  // Computation Path) rather than re-deriving Rule of 55 / Roth-ordering
+  // resolution a third time. Keyed with the same indKey format the engine's
+  // individual-account-tracking module uses, so Group 2's eligibility gate
+  // can look a given `IndividualAccountInput` up directly. Retirement-only
+  // (computeTaxBucketAnalysis walks `accountRollup`, which excludes
+  // Portfolio-category holdings) — a Portfolio-category individualAccounts
+  // entry simply has no match here, which is correct: early-access rules
+  // don't apply to a taxable brokerage account.
+  const jobsById = new Map(allJobs.map((j) => [j.id, j]));
+  const jobLinks = jobLinkRows
+    .filter(
+      (l): l is { performanceAccountId: number; jobId: number } =>
+        l.performanceAccountId != null && l.jobId != null,
+    )
+    .map((l) => {
+      const job = jobsById.get(l.jobId);
+      return {
+        performanceAccountId: l.performanceAccountId,
+        endDate: job?.endDate ? new Date(job.endDate) : null,
+        isSpeculative: job?.isSpeculative ?? false,
+      };
+    });
+  const currentRothBasisRows = Array.from(
+    buildCurrentRothBasisMap(
+      accountBasisRows.map((r) => ({
+        id: r.id,
+        performanceAccountId: r.performanceAccountId,
+        ownerPersonId: r.ownerPersonId,
+        year: r.year,
+        contributionBasis: toNumber(r.contributionBasis),
+        conversionBasis: toNumber(r.conversionBasis),
+        latestConversionYear: r.latestConversionYear,
+        isFinalized: r.isFinalized,
+      })),
+    ).values(),
+  );
+  const accountBasisById = new Map(accountBasisRows.map((r) => [r.id, r]));
+  const accountAnalysis = computeTaxBucketAnalysis({
+    breakdown: taxBucketBreakdown,
+    performanceAccounts: perfAccounts.map((p) => ({
+      id: p.id,
+      accountType: p.accountType as AccountCategory,
+      ownerPersonId: p.ownerPersonId,
+      isActive: p.isActive,
+      separationDate: p.separationDate ? new Date(p.separationDate) : null,
+      costBasis: Number(p.costBasis ?? "0"),
+      accountLabel: p.accountLabel,
+      displayName: p.displayName,
+      institution: p.institution,
+    })),
+    jobLinks,
+    rothBasisRows: currentRothBasisRows.map((r) => {
+      const raw = accountBasisById.get(r.id)!;
+      return {
+        performanceAccountId: r.performanceAccountId,
+        ownerPersonId: r.ownerPersonId,
+        year: r.year,
+        contributionBasis: r.contributionBasis,
+        conversionBasis: r.conversionBasis,
+        latestConversionYear: r.latestConversionYear,
+        isSeeded: raw.isSeeded,
+        updatedAt: raw.updatedAt,
+      };
+    }),
+    people: people.map((p) => ({
+      id: p.id,
+      name: p.name,
+      birthYear: new Date(p.dateOfBirth).getFullYear(),
+    })),
+    currentDate: asOfDate,
+  });
+  // Local join key only — (name, category, taxType, ownerPersonId), same
+  // tuple `accountRollup`/`accountBreakdownByCategory` already merge on.
+  // Deliberately NOT the engine's own `makeIndKey()` format: that's an
+  // engine-internal concern (`@/lib/calculators/engine/*` absolute imports
+  // outside the barrel are a lint-enforced layering violation —
+  // tests/lint/violations.test.ts), and this data attaches directly onto
+  // each `individualAccounts` entry below rather than traveling as a
+  // separately-keyed side-map, so no shared key format is needed at all.
+  function eligibilityJoinKey(
+    name: string,
+    category: string,
+    taxType: string,
+    ownerPersonId: number | null,
+  ): string {
+    return `${name}|${category}|${taxType}|${ownerPersonId ?? "null"}`;
+  }
+  const eligibilityByJoinKey = new Map<
+    string,
+    { ruleOf55: RuleOf55Status | null; rothBasisMeta: RothBasisMeta | null }
+  >();
+  for (const entry of accountAnalysis) {
+    if (entry.ownerPersonId == null) continue; // joint — no per-owner data to join
+    eligibilityByJoinKey.set(
+      eligibilityJoinKey(
+        entry.displayName,
+        entry.category,
+        entry.taxType,
+        entry.ownerPersonId,
+      ),
+      { ruleOf55: entry.ruleOf55, rothBasisMeta: entry.rothBasisMeta },
+    );
+  }
   const settingsMap = new Map(
     allAppSettings.map((s: { key: string; value: unknown }) => [
       s.key,
@@ -492,6 +631,13 @@ export async function buildEnginePayload(
   const groupParticipants = new Map<string, Map<number, number>>(); // group -> personId -> birthYear
   const birthYearByPersonId = new Map(
     perPersonSettings.map((p) => [p.personId, p.birthYear]),
+  );
+  // Rule of 55 forecasting override (v0.7.8) -- see
+  // IndividualAccountInput.ruleOf55ForceIneligible's docblock for the full
+  // contract. Only ever set true (never false) below, so a household not
+  // using this feature gets a byte-identical engine input.
+  const ruleOf55OverrideByPerson = new Map(
+    perPersonSettings.map((p) => [p.personId, p.ruleOf55Override]),
   );
   const groupCounted = new Set<string>();
   for (const p of people) {
@@ -1200,16 +1346,34 @@ export async function buildEnginePayload(
     startingAccountBalances: portfolioByAccount,
     individualAccounts: Object.entries(accountBreakdownByCategory).flatMap(
       ([cat, accts]) =>
-        accts.map((a) => ({
-          name: a.name,
-          category: cat as AccountCategory,
-          taxType: a.taxType,
-          accountType: a.accountType,
-          startingBalance: a.amount,
-          ownerName: a.ownerName,
-          ownerPersonId: a.ownerPersonId,
-          parentCategory: a.parentCategory,
-        })),
+        accts.map((a) => {
+          const eligibility = a.ownerPersonId
+            ? eligibilityByJoinKey.get(
+                eligibilityJoinKey(a.name, cat, a.taxType, a.ownerPersonId),
+              )
+            : undefined;
+          return {
+            name: a.name,
+            category: cat as AccountCategory,
+            taxType: a.taxType,
+            accountType: a.accountType,
+            startingBalance: a.amount,
+            ownerName: a.ownerName,
+            ownerPersonId: a.ownerPersonId,
+            parentCategory: a.parentCategory,
+            ruleOf55: eligibility?.ruleOf55,
+            rothBasisMeta: eligibility?.rothBasisMeta,
+            ownerBirthYear:
+              a.ownerPersonId != null
+                ? birthYearByPersonId.get(a.ownerPersonId)
+                : undefined,
+            ruleOf55ForceIneligible:
+              a.ownerPersonId != null &&
+              ruleOf55OverrideByPerson.get(a.ownerPersonId) === false
+                ? true
+                : undefined,
+          };
+        }),
     ),
     annualExpenses: annualExpensesVal,
     // Always pass when user explicitly set a decumulation override, or when

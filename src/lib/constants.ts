@@ -103,7 +103,10 @@ export const IRS_LIMIT_GROWTH_RATE = 0.02;
 export const RMD_EXCISE_TAX_RATE = 0.25;
 
 // ---------------------------------------------------------------------------
-// Early-Access Ages (Tax Buckets analysis tool)
+// Early-Access Ages (shared by the Tax Buckets analysis tool and, since
+// v0.7.8, the retirement projection engine's withdrawal-eligibility gate —
+// both consume `src/lib/pure/early-access.ts`'s leaf predicates, which read
+// these constants)
 // ---------------------------------------------------------------------------
 
 /** Age at/after which separating from an employer grants penalty-free access
@@ -111,7 +114,14 @@ export const RMD_EXCISE_TAX_RATE = 0.25;
 export const RULE_OF_55_AGE = 55;
 
 /** Age at which retirement-account withdrawals become penalty-free generally
- *  (and, combined with the 5-year clock, "qualified"/tax-free for Roth). */
+ *  (and, combined with the 5-year clock, "qualified"/tax-free for Roth).
+ *
+ *  Non-integer threshold under year-granularity age modeling
+ *  (`ageInYear` in `src/lib/utils/date.ts`, used everywhere the engine
+ *  reasons about age): `ageInYear(...) >= 59.5` is only ever true when
+ *  `ageInYear(...) >= 60` — integer age comparison against a `.5` threshold
+ *  rounds the eligibility start up to the year the person turns 60, not the
+ *  year they turn 59.5. Correct and intentional, not an off-by-one. */
 export const PENALTY_FREE_AGE = 59.5;
 
 /** Years a Roth conversion must season before it's penalty-free to withdraw

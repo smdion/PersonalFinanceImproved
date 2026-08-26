@@ -26,6 +26,15 @@ import {
 } from "../../config/account-types";
 import { TAX_TREATMENT_TO_TAX_TYPE } from "../../config/display-labels";
 import { projectSpecAmount } from "./contribution-projection";
+import type { EligibilityRecord } from "@/lib/pure/withdrawal-eligibility";
+import {
+  accrueContributionBasis,
+  drawFromBasis,
+  applyBasisDraw,
+  clampBasisToBalance,
+  type RothBasisState,
+  type BasisDraw,
+} from "@/lib/pure/roth-basis-tracking";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -36,11 +45,23 @@ export type IndKeyFn = (ia: {
   name: string;
   category: string;
   taxType: string;
+  ownerPersonId?: number;
 }) => string;
 
-/** Creates the standard composite key function. */
+/** Creates the standard composite key function.
+ *
+ * Includes `ownerPersonId` (v0.7.8, PLAN-v0.7.8-v4 Group 1 prerequisite,
+ * advisor finding S3): two different people's accounts that happen to share
+ * a display name within the same category/taxType previously collided into
+ * one `indBal` entry, silently merging their balances and keeping only one
+ * owner's ID. Eligibility gating (Rule of 55, 59½, etc.) is per-owner, so
+ * that collision would resolve the wrong person's access for the merged
+ * money. A joint account (`ownerPersonId` undefined) still keys on `"joint"`
+ * — unchanged from before, since joint accounts have no per-owner
+ * eligibility question to get wrong. */
 export function makeIndKey(): IndKeyFn {
-  return (ia) => `${ia.name}::${ia.category}::${ia.taxType}`;
+  return (ia) =>
+    `${ia.name}::${ia.category}::${ia.taxType}::${ia.ownerPersonId ?? "joint"}`;
 }
 
 /** Creates spec key from contribution spec fields. */
@@ -524,6 +545,17 @@ export function distributeGoalWithdrawal(
  * For roth_traditional categories, routes traditional and roth withdrawals
  * separately to the correct tax-type accounts.
  *
+ * `eligibility` (v0.7.8, PLAN-v0.7.8-v4 Group 2.2, Tier A) — when provided,
+ * prefers eligible (not-yet-penalty-locked) accounts within each
+ * category/tax-slot before falling back to locked ones once eligible money
+ * runs out. Unconditional: this is the fan-out-only preference, distinct
+ * from and independent of `preferPenaltyFreeSources`'s cross-category
+ * `routeForMode` behavior (Tier B) — it only ever changes WHICH account
+ * inside an already-decided category/slot supplies a given dollar, never
+ * the slot totals themselves. Locked design:
+ * `.scratch/docs/plans/DESIGN-DECISION-v0.7.8-withdrawal-ordering-group0.md`
+ * § Q1 Tier A.
+ *
  * Mutates `indBal` in place. Returns per-account withdrawal amounts.
  */
 export function distributeWithdrawals(
@@ -531,6 +563,7 @@ export function distributeWithdrawals(
   indAccts: IndividualAccountInput[],
   indKey: IndKeyFn,
   indBal: Map<string, number>,
+  eligibility?: EligibilityRecord,
 ): Map<string, number> {
   const decIndWithdrawal = new Map<string, number>();
 
@@ -548,39 +581,97 @@ export function distributeWithdrawals(
 
       // Distribute traditional withdrawal to preTax accounts (#33/#35)
       if (slot.traditionalWithdrawal > 0 && tradAccts.length > 0) {
-        distributeProportionally(
+        distributeProportionallyPreferringEligible(
           slot.traditionalWithdrawal,
           tradAccts,
           indKey,
           indBal,
           decIndWithdrawal,
+          eligibility,
         );
       }
       // Distribute roth withdrawal to taxFree accounts (#33/#35)
       if (slot.rothWithdrawal > 0 && rothAccts.length > 0) {
-        distributeProportionally(
+        distributeProportionallyPreferringEligible(
           slot.rothWithdrawal,
           rothAccts,
           indKey,
           indBal,
           decIndWithdrawal,
+          eligibility,
         );
       }
     } else {
       // Single-bucket / brokerage / fallback (#33/#35)
       if (catAccts.length > 0) {
-        distributeProportionally(
+        distributeProportionallyPreferringEligible(
           slot.withdrawal,
           catAccts,
           indKey,
           indBal,
           decIndWithdrawal,
+          eligibility,
         );
       }
     }
   }
 
   return decIndWithdrawal;
+}
+
+/**
+ * Wraps `distributeProportionally` with an eligible-first, locked-second
+ * two-pass split (Tier A — see `distributeWithdrawals`'s docblock).
+ * Falls through to a single unchanged `distributeProportionally` call
+ * whenever the partition would be a no-op (no `eligibility` passed, nothing
+ * locked at all, or nothing locked among *this specific* account list) —
+ * that fallthrough is what keeps a no-locked-accounts household's output
+ * byte-identical, not a separate code path that has to be kept in sync.
+ */
+function distributeProportionallyPreferringEligible(
+  amount: number,
+  accounts: IndividualAccountInput[],
+  indKey: IndKeyFn,
+  indBal: Map<string, number>,
+  withdrawalMap: Map<string, number>,
+  eligibility: EligibilityRecord | undefined,
+): void {
+  if (!eligibility || eligibility.totalLocked === 0) {
+    distributeProportionally(amount, accounts, indKey, indBal, withdrawalMap);
+    return;
+  }
+  const isLocked = (ia: IndividualAccountInput) =>
+    (eligibility.byKey.get(indKey(ia))?.lockedAmount ?? 0) > 0;
+  const lockedAccts = accounts.filter(isLocked);
+  if (lockedAccts.length === 0) {
+    distributeProportionally(amount, accounts, indKey, indBal, withdrawalMap);
+    return;
+  }
+  const eligibleAccts = accounts.filter((ia) => !isLocked(ia));
+  const eligibleTotal = eligibleAccts.reduce(
+    (s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0),
+    0,
+  );
+  const firstDraw = roundToCents(Math.min(amount, eligibleTotal));
+  if (firstDraw > 0) {
+    distributeProportionally(
+      firstDraw,
+      eligibleAccts,
+      indKey,
+      indBal,
+      withdrawalMap,
+    );
+  }
+  const remaining = roundToCents(amount - firstDraw);
+  if (remaining > 0) {
+    distributeProportionally(
+      remaining,
+      lockedAccts,
+      indKey,
+      indBal,
+      withdrawalMap,
+    );
+  }
 }
 
 /**
@@ -660,11 +751,95 @@ export function applyIndividualGrowth(
 }
 
 // ---------------------------------------------------------------------------
+// Tracked Roth Basis (v0.7.8 follow-up)
+// ---------------------------------------------------------------------------
+//
+// Thin per-account loops — all arithmetic delegates to the pure module
+// (@/lib/pure/roth-basis-tracking). This "aspect module" (see file
+// docblock) branches on isTaxFreeBucket + rothOrderingRules and calls the
+// pure functions; it owns no basis math of its own.
+
+/**
+ * Grows tracked basis by this accumulation year's contributions.
+ * `indContribs` is the same map `distributeContributions` returns —
+ * already excludes employer match (see roth-basis-tracking.ts's
+ * docblock for why that exclusion is load-bearing). Mutates `indBasis`
+ * in place; no-op for accounts with no entry (non-Roth accounts never
+ * get one — see `buildProjectionState`).
+ */
+export function accrueIndividualBasis(
+  indAccts: IndividualAccountInput[],
+  indKey: IndKeyFn,
+  indBasis: Map<string, RothBasisState>,
+  indContribs: Map<string, number>,
+): void {
+  for (const ia of indAccts) {
+    const k = indKey(ia);
+    const state = indBasis.get(k);
+    if (!state) continue;
+    const contribution = indContribs.get(k) ?? 0;
+    indBasis.set(k, accrueContributionBasis(state, contribution));
+  }
+}
+
+/**
+ * Depletes tracked basis by however much of each account's withdrawal
+ * this year was actually basis, per the account category's own
+ * `rothOrderingRules`. Must run AFTER `distributeWithdrawals` — needs
+ * both the pre-withdrawal balance (for the pro-rata ratio) and the actual
+ * per-account withdrawal amount it returned. Mutates `indBasis` in place.
+ * Returns the per-account `BasisDraw`s for the caller to attach to
+ * `buildIndividualYearBalances`'s output (`rothBasisDrawn`).
+ */
+export function depleteIndividualBasis(input: {
+  indAccts: IndividualAccountInput[];
+  indKey: IndKeyFn;
+  indBasis: Map<string, RothBasisState>;
+  preWithdrawalBal: Map<string, number>;
+  withdrawals: Map<string, number>;
+}): Map<string, BasisDraw> {
+  const { indAccts, indKey, indBasis, preWithdrawalBal, withdrawals } = input;
+  const draws = new Map<string, BasisDraw>();
+  for (const ia of indAccts) {
+    const k = indKey(ia);
+    const state = indBasis.get(k);
+    if (!state) continue;
+    const withdrawal = withdrawals.get(k) ?? 0;
+    if (withdrawal <= 0) continue;
+    const orderingRule = getAccountTypeConfig(ia.category).rothOrderingRules;
+    if (orderingRule !== "basis_first" && orderingRule !== "pro_rata") continue;
+    const draw = drawFromBasis({
+      state,
+      orderingRule,
+      balanceBeforeWithdrawal: preWithdrawalBal.get(k) ?? 0,
+      withdrawal,
+    });
+    draws.set(k, draw);
+    indBasis.set(k, applyBasisDraw(state, draw));
+  }
+  return draws;
+}
+
+// ---------------------------------------------------------------------------
 // Individual Account Year Balance Construction
 // ---------------------------------------------------------------------------
 
 /**
  * Build individual account year balance records for output.
+ *
+ * `eligibility` (decumulation only; v0.7.8, PLAN-v0.7.8-v4 follow-up) —
+ * when provided, each output record's `eligibilityLocked`/`eligibilityReason`
+ * are read straight from the matching `AccountEligibility` entry, so the
+ * UI can show why the engine did or didn't prefer an account this year.
+ * Purely a read/pass-through here — this module never computes eligibility
+ * itself (see `@/lib/pure/withdrawal-eligibility`).
+ *
+ * `maps.basis`/`maps.draws` (tracked Roth basis follow-up) — when
+ * provided, populate `rothBasisRemaining`/`rothBasisDrawn`/
+ * `rothBasisUncertain`. Called AFTER accrual (accumulation) or depletion
+ * (decumulation) has already run for this year, so this reads end-of-year
+ * state directly out of `indBasis` — no `start − drawn` recomputation to
+ * drift out of sync with it.
  */
 export function buildIndividualYearBalances(
   indAccts: IndividualAccountInput[],
@@ -680,13 +855,34 @@ export function buildIndividualYearBalances(
     intentional?: Map<string, number>;
     overflow?: Map<string, number>;
     ramp?: Map<string, number>;
+    basis?: Map<string, RothBasisState>;
+    draws?: Map<string, BasisDraw>;
   },
+  eligibility?: EligibilityRecord,
 ): IndividualAccountYearBalance[] {
   return indAccts.map((ia) => {
     const k = indKey(ia);
     const isOverflow = isOverflowTarget(ia.category);
     const balance =
       Math.abs(indBal.get(k) ?? 0) < 1 ? 0 : roundToCents(indBal.get(k) ?? 0);
+    const basisState = maps.basis?.get(k);
+    const basisFields = basisState
+      ? {
+          rothBasisRemaining: roundToCents(
+            basisState.contributionBasis + basisState.conversionBasis,
+          ),
+          rothBasisUncertain: basisState.stale || basisState.isSeeded,
+        }
+      : {};
+    const draw = maps.draws?.get(k);
+    const drawnFields =
+      draw != null
+        ? {
+            rothBasisDrawn: roundToCents(
+              draw.contributionDrawn + draw.conversionDrawn,
+            ),
+          }
+        : {};
 
     if (phase === "accumulation") {
       return {
@@ -707,9 +903,11 @@ export function buildIndividualYearBalances(
               rampContribution: maps.ramp?.get(k) ?? 0,
             }
           : {}),
+        ...basisFields,
       };
     }
 
+    const acctEligibility = eligibility?.byKey.get(k);
     return {
       name: ia.name,
       category: ia.category,
@@ -722,6 +920,14 @@ export function buildIndividualYearBalances(
       employerMatch: 0,
       growth: maps.growth?.get(k) ?? 0,
       withdrawal: maps.withdrawal?.get(k) ?? 0,
+      ...(acctEligibility
+        ? {
+            eligibilityLocked: acctEligibility.lockedAmount > 0,
+            eligibilityReason: acctEligibility.reason,
+          }
+        : {}),
+      ...basisFields,
+      ...drawnFields,
     };
   });
 }
@@ -743,5 +949,28 @@ export function clampIndividualBalances(
     const k = indKey(ia);
     const v = indBal.get(k) ?? 0;
     if (v < 0) indBal.set(k, 0);
+  }
+}
+
+/**
+ * Clamps tracked Roth basis to each account's (already-clamped) balance —
+ * market losses, or a dust-cleaned zero balance, can otherwise leave
+ * tracked basis exceeding what the account actually holds. Mirrors
+ * `early-access.ts`'s own balance clamp (see `clampBasisToBalance`'s
+ * docblock). Call AFTER balance clamping/dust cleanup, so it reads the
+ * final balance for the year. Mutates `indBasis` in place.
+ */
+export function clampIndividualBasis(
+  indAccts: IndividualAccountInput[],
+  indKey: IndKeyFn,
+  indBasis: Map<string, RothBasisState>,
+  indBal: Map<string, number>,
+): void {
+  for (const ia of indAccts) {
+    const k = indKey(ia);
+    const state = indBasis.get(k);
+    if (!state) continue;
+    const balance = Math.max(0, indBal.get(k) ?? 0);
+    indBasis.set(k, clampBasisToBalance(state, balance));
   }
 }

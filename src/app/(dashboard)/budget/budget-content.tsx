@@ -54,6 +54,7 @@ import {
 import { BudgetDetailPanel } from "./budget-detail-panel";
 import { WhatIfTab } from "./what-if-tab";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
+import { RetirementProfileTab } from "@/components/retirement/retirement-profile-tab";
 
 export function BudgetContent() {
   const user = useUser();
@@ -210,7 +211,7 @@ export function BudgetContent() {
   // rewrite the URL).
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<
-    "budget" | "contributions" | "salary" | "savings" | "what-if"
+    "budget" | "contributions" | "salary" | "savings" | "retirement" | "what-if"
   >(searchParams.get("tab") === "whatif" ? "what-if" : "budget");
   const [pushPreviewItems, setPushPreviewItems] = useState<ReturnType<
     typeof buildPushPreviewItems
@@ -410,7 +411,11 @@ export function BudgetContent() {
 
         {/* Ordered to match the actual dependency chain: Salary sets gross
             pay, Contributions (often % of salary) derive take-home,
-            Budget spends it, which feeds Savings — see docs/RULES.md. */}
+            Budget spends it, which feeds Savings — see docs/RULES.md.
+            Retirement Profile sits after all four: it's a consumer of
+            these assumptions (age, income, decumulation plan), not a peer
+            input in that chain, so it's placed last among the profile
+            levers, immediately before What-If. */}
         <div className="flex items-center justify-between border-b mb-4">
           <div className="flex gap-1">
             <button
@@ -443,7 +448,14 @@ export function BudgetContent() {
                 Savings Profiles
               </button>
             )}
-            {/* Last, after the four real levers: it previews combinations of
+            <button
+              type="button"
+              onClick={() => setActiveTab("retirement")}
+              className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === "retirement" ? "border-blue-600 text-blue-600" : "border-transparent text-muted hover:text-secondary"}`}
+            >
+              Retirement Profile
+            </button>
+            {/* Last, after the five real levers: it previews combinations of
                 them rather than being a lever of its own. */}
             <button
               type="button"
@@ -676,6 +688,8 @@ export function BudgetContent() {
             />
           </CardBoundary>
         )}
+
+        {activeTab === "retirement" && <RetirementProfileTab />}
 
         {pushPreviewItems && (
           <BudgetPushYnabModal

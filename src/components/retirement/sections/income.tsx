@@ -18,6 +18,7 @@ import type {
   Settings,
   UpsertSettingsMutation,
   ContribProfileListEntry as ContribProfile,
+  IsEditable,
 } from "./types";
 import { buildSettingsPatch } from "./settings-patch";
 import { decToWhole } from "./helpers";
@@ -50,6 +51,7 @@ type Props = {
   isSalaryPinned?: boolean;
   /** Name of the Plan doing the pinning, shown in the note next to either select. */
   pinnedPlanName?: string;
+  isEditable: IsEditable;
 };
 
 export function IncomeSection({
@@ -68,6 +70,7 @@ export function IncomeSection({
   setSalaryProfileId,
   isSalaryPinned,
   pinnedPlanName,
+  isEditable,
 }: Props) {
   return (
     <div>
@@ -125,7 +128,7 @@ export function IncomeSection({
               parseInput={(v) => v.replace(/[^0-9.]/g, "")}
               type="number"
               className="text-sm"
-              isEditable={!!settings}
+              isEditable={isEditable}
             />
           </div>
         </div>
@@ -154,7 +157,7 @@ export function IncomeSection({
               parseInput={(v) => v.replace(/[^0-9]/g, "")}
               type="number"
               className="text-sm"
-              isEditable={!!settings}
+              isEditable={isEditable}
             />
           </div>
         </div>

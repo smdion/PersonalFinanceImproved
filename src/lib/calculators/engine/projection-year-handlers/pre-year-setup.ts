@@ -7,6 +7,7 @@
  * v0.5.2 refactor. Pure relocation — no logic changes.
  */
 import { MIN_RETURN_RATE } from "../../../constants";
+import { ageInYear } from "../../../utils/date";
 import { WITHDRAWAL_STRATEGY_CONFIG } from "@/lib/config/withdrawal-strategies";
 import { applySpendingStrategy } from "../spending-strategy";
 import { buildSpecToAccountMapping } from "../individual-account-tracking";
@@ -239,7 +240,7 @@ export function runPreYearSetup(
   if (!isAccumulation && activeStrategy !== "fixed") {
     // Use primary person's actual age for RMD factor lookup (not household average)
     const primaryAge =
-      input.birthYear != null ? year - input.birthYear : undefined;
+      input.birthYear != null ? ageInYear(input.birthYear, year) : undefined;
     const result = applySpendingStrategy(activeStrategy, activeStrategyParams, {
       projectedExpenses: state.projectedExpenses,
       portfolioBalance: preTotalBalance,

@@ -1232,6 +1232,18 @@ export const retirementSettings = sqliteTable(
     })
       .notNull()
       .default(false),
+    /** Per-person Rule of 55 forecasting override (v0.7.8). True (default)
+     *  ⇒ no override — the engine's computed Rule of 55 status (from real
+     *  job separation data) is used unchanged. False ⇒ force this person's
+     *  employer-plan accounts ineligible for Rule of 55, regardless of what
+     *  the computed status says — for forecasting "what if I'm not at a
+     *  qualifying job when I retire." Deliberately one-directional: this
+     *  never forces eligibility TRUE, only FALSE, so a default-true row can
+     *  never silently paint an account eligible when the real computed
+     *  status says otherwise. */
+    ruleOf55Override: integer("rule_of_55_override", { mode: "boolean" })
+      .notNull()
+      .default(true),
     withdrawalRate: text("withdrawal_rate")
       .notNull()
       .default(DEFAULT_WITHDRAWAL_RATE.toString()),

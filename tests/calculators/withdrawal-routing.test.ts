@@ -3,6 +3,7 @@ import {
   routeWithdrawals,
   routeWithdrawalsPercentage,
   routeWithdrawalsBracketFilling,
+  routeForMode,
 } from "@/lib/calculators/engine/withdrawal-routing";
 import {
   makeDecumulationConfig,
@@ -10,7 +11,8 @@ import {
   TEST_BRACKETS,
 } from "./fixtures/engine-fixtures";
 import { getAllCategories } from "@/lib/config/account-types";
-import type { AccountCategory } from "@/lib/calculators/types";
+import type { AccountCategory, AccountBalances } from "@/lib/calculators/types";
+import type { EligibilityRecord } from "@/lib/pure/withdrawal-eligibility";
 
 function slotFor(
   slots: { category: string; withdrawal: number }[],
@@ -444,5 +446,166 @@ describe("routeWithdrawalsBracketFilling", () => {
         s401k.traditionalWithdrawal + s401k.rothWithdrawal,
       );
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// routeForMode — Tier B eligibility gate (v0.7.8, PLAN-v0.7.8-v4 Group 2.2)
+// ---------------------------------------------------------------------------
+
+/** Balances with the 401k entirely locked (Rule-of-55/59½ not yet met) and
+ *  brokerage fully eligible — the plan's own canonical motivating scenario
+ *  (retire early, everything in a locked Traditional 401k). */
+function lockedBalances(overrides: Partial<AccountBalances> = {}): {
+  balances: AccountBalances;
+  eligibility: EligibilityRecord;
+} {
+  const balances: AccountBalances = {
+    "401k": { structure: "roth_traditional", traditional: 100000, roth: 0 },
+    "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+    ira: { structure: "roth_traditional", traditional: 0, roth: 0 },
+    hsa: { structure: "single_bucket", balance: 0 },
+    brokerage: { structure: "basis_tracking", balance: 60000, basis: 30000 },
+    ...overrides,
+  };
+  const eligibility: EligibilityRecord = {
+    byKey: new Map(),
+    totalLocked: 100000,
+    lockedTrad: {
+      "401k": 100000,
+      "403b": 0,
+      ira: 0,
+      hsa: 0,
+      brokerage: 0,
+    },
+    lockedRoth: { "401k": 0, "403b": 0, ira: 0, hsa: 0, brokerage: 0 },
+    lockedTotal: {
+      "401k": 100000,
+      "403b": 0,
+      ira: 0,
+      hsa: 0,
+      brokerage: 0,
+    },
+  };
+  return { balances, eligibility };
+}
+
+describe("routeForMode (Tier B eligibility gate)", () => {
+  it("routes entirely away from a locked 401k to eligible brokerage, even though 401k is first in withdrawalOrder", () => {
+    const { balances, eligibility } = lockedBalances();
+    const config = makeDecumulationConfig({
+      withdrawalRoutingMode: "waterfall",
+      withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
+      preferPenaltyFreeSources: true,
+    });
+    const result = routeForMode(
+      20000,
+      config,
+      balances,
+      { taxableSS: 0 },
+      eligibility,
+    );
+    expect(slotFor(result.slots, "401k")?.withdrawal ?? 0).toBe(0);
+    expect(slotFor(result.slots, "brokerage")?.withdrawal).toBe(20000);
+  });
+
+  it("falls through to the locked 401k once eligible money (brokerage) runs out — soft model, not a hard block", () => {
+    const { balances, eligibility } = lockedBalances();
+    const config = makeDecumulationConfig({
+      withdrawalRoutingMode: "waterfall",
+      withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
+      preferPenaltyFreeSources: true,
+    });
+    // Need ($90k) exceeds brokerage's full balance ($60k) — the remaining
+    // $30k must come from the locked 401k, not go unmet.
+    const result = routeForMode(
+      90000,
+      config,
+      balances,
+      { taxableSS: 0 },
+      eligibility,
+    );
+    expect(result.warnings.some((w) => w.includes("insufficient"))).toBe(false);
+    const total =
+      (slotFor(result.slots, "401k")?.withdrawal ?? 0) +
+      (slotFor(result.slots, "brokerage")?.withdrawal ?? 0);
+    expect(total).toBeCloseTo(90000, -1);
+    expect(slotFor(result.slots, "401k")?.withdrawal ?? 0).toBeGreaterThan(0);
+  });
+
+  it("preferPenaltyFreeSources: false routes strictly per withdrawalOrder, ignoring eligibility entirely", () => {
+    const { balances, eligibility } = lockedBalances();
+    const config = makeDecumulationConfig({
+      withdrawalRoutingMode: "waterfall",
+      withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
+      preferPenaltyFreeSources: false,
+    });
+    const result = routeForMode(
+      20000,
+      config,
+      balances,
+      { taxableSS: 0 },
+      eligibility,
+    );
+    // Configured order wins: 401k (first in withdrawalOrder) drawn from
+    // directly, brokerage untouched — identical to passing no eligibility
+    // record at all.
+    expect(slotFor(result.slots, "401k")?.withdrawal).toBe(20000);
+    expect(slotFor(result.slots, "brokerage")?.withdrawal ?? 0).toBe(0);
+
+    const withoutEligibility = routeForMode(20000, config, balances, {
+      taxableSS: 0,
+    });
+    expect(result.slots).toEqual(withoutEligibility.slots);
+  });
+
+  it("is a byte-identical no-op when eligibility.totalLocked is 0", () => {
+    const { balances, eligibility } = lockedBalances();
+    const noLock: EligibilityRecord = { ...eligibility, totalLocked: 0 };
+    const config = makeDecumulationConfig({
+      withdrawalRoutingMode: "waterfall",
+      withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
+      preferPenaltyFreeSources: true,
+    });
+    const withRecord = routeForMode(
+      20000,
+      config,
+      balances,
+      { taxableSS: 0 },
+      noLock,
+    );
+    const withoutRecord = routeForMode(20000, config, balances, {
+      taxableSS: 0,
+    });
+    expect(withRecord.slots).toEqual(withoutRecord.slots);
+  });
+
+  it("decrements pass-2 config so it can't re-spend pass-1's account cap headroom", () => {
+    const { balances, eligibility } = lockedBalances();
+    // Cap brokerage (the eligible source) at $10k/year — pass 1 can only
+    // draw $10k from it even though its balance is $60k, so the $10k
+    // residual correctly falls to the locked 401k, not a re-application of
+    // the same $10k cap "resetting" in a naive two-pass implementation.
+    const config = makeDecumulationConfig({
+      withdrawalRoutingMode: "waterfall",
+      withdrawalOrder: ["brokerage", "401k", "403b", "ira", "hsa"],
+      withdrawalAccountCaps: {
+        "401k": null,
+        "403b": null,
+        ira: null,
+        hsa: null,
+        brokerage: 10000,
+      },
+      preferPenaltyFreeSources: true,
+    });
+    const result = routeForMode(
+      20000,
+      config,
+      balances,
+      { taxableSS: 0 },
+      eligibility,
+    );
+    expect(slotFor(result.slots, "brokerage")?.withdrawal).toBe(10000);
+    expect(slotFor(result.slots, "401k")?.withdrawal).toBe(10000);
   });
 });

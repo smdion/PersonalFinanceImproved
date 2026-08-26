@@ -10,6 +10,7 @@ import type {
   IndividualAccountYearBalance,
 } from "../../types";
 import { roundToCents, sumBy } from "../../../utils/math";
+import { ageInYear } from "../../../utils/date";
 import {
   getAllCategories,
   isOverflowTarget,
@@ -36,7 +37,12 @@ import {
   applyIndividualGrowth,
   buildIndividualYearBalances,
   clampIndividualBalances,
+  depleteIndividualBasis,
+  clampIndividualBasis,
 } from "../individual-account-tracking";
+import { computeWithdrawalEligibility } from "@/lib/pure/withdrawal-eligibility";
+import type { BasisDraw } from "@/lib/pure/roth-basis-tracking";
+import { splitRothWithdrawalForTax } from "@/lib/pure/roth-distribution-tax";
 import {
   deductWithdrawals,
   clampBalances,
@@ -87,6 +93,7 @@ export function runDecumulationYear(
     priorYearEndTradBalance,
     priorYearEndTradByPerson,
     indBal,
+    indBasis,
     spendingState,
     magiHistory,
     depletionTracked,
@@ -110,6 +117,30 @@ export function runDecumulationYear(
     sortedDecOverrides,
   );
 
+  // Withdrawal-ordering eligibility (v0.7.8, PLAN-v0.7.8-v4 Group 2.2) --
+  // per-account penalty-free/locked split for this projected year. Computed
+  // once, here, BEFORE either routeForMode call site (this function's real
+  // execution below and tax-gross-up.ts's independent estimate) -- both
+  // must see the exact same eligibility record, or the gross-up estimate
+  // would target money the real router can't (or won't prefer to) reach,
+  // desyncing the tax estimate from actual routing (the single-dispatch
+  // invariant routeForMode exists to preserve). Computed unconditionally
+  // when individual accounts exist -- Tier A (distributeWithdrawals) has no
+  // config lever and always applies; routeForMode itself checks
+  // config.preferPenaltyFreeSources before using this for Tier B. indAccts
+  // already carry their own ruleOf55/rothBasisMeta/ownerBirthYear ("now"
+  // data, threaded by build-engine-payload.ts Group 1.1); this recomputes
+  // locked/eligible fresh for the current projected `year` via
+  // projectRuleOf55. `indBasis` (tracked Roth basis follow-up) is passed
+  // through so the gate reads the SAME running basis figure the UI shows
+  // -- reading a stale snapshot for the gate while showing tracked basis
+  // in the tooltip would be two numbers for one quantity (see
+  // withdrawal-eligibility.ts's docblock and
+  // DESIGN-DECISION-v0.7.8-tracked-basis.md § Q6).
+  const eligibility = hasIndividualAccounts
+    ? computeWithdrawalEligibility({ year, indAccts, indBal, indKey, indBasis })
+    : undefined;
+
   // Reconciliation check: acctBal Roth total should match balances.taxFree
   const acctBalRothTotal = getAllCategories().reduce((s, cat) => {
     const b = acctBal[cat];
@@ -127,7 +158,7 @@ export function runDecumulationYear(
     { personId: number; personName: string; amount: number }[] | undefined;
   if (input.socialSecurityEntries && input.socialSecurityEntries.length > 0) {
     ssIncomeByPerson = input.socialSecurityEntries.map((entry) => {
-      const personAge = year - entry.birthYear;
+      const personAge = ageInYear(entry.birthYear, year);
       return {
         personId: entry.personId,
         personName: entry.personName,
@@ -158,6 +189,12 @@ export function runDecumulationYear(
     balances,
     acctBal,
     totalBalance,
+    eligibility,
+    indAccts: hasIndividualAccounts ? indAccts : undefined,
+    indKey: hasIndividualAccounts ? indKey : undefined,
+    indBal: hasIndividualAccounts ? indBal : undefined,
+    indBasis: hasIndividualAccounts ? indBasis : undefined,
+    year,
   });
   let { taxableSS } = taxEst;
   let { grossUpFactor } = taxEst;
@@ -179,11 +216,17 @@ export function runDecumulationYear(
   //
   // For waterfall/percentage, Roth bracket optimization can still overlay
   // via rothBracketTarget (sets a traditional tax-type cap).
-  const routeResult = routeForMode(targetWithdrawal, config, acctBalances, {
-    taxBrackets: taxRates.taxBrackets,
-    rothBracketTarget: taxRates.rothBracketTarget,
-    taxableSS,
-  });
+  const routeResult = routeForMode(
+    targetWithdrawal,
+    config,
+    acctBalances,
+    {
+      taxBrackets: taxRates.taxBrackets,
+      rothBracketTarget: taxRates.rothBracketTarget,
+      taxableSS,
+    },
+    eligibility,
+  );
 
   const { slots, warnings: routeWarnings } = routeResult;
   if (rothDivergence) routeWarnings.push(rothDivergence);
@@ -205,7 +248,7 @@ export function runDecumulationYear(
     rmdByPerson = [];
     let total = 0;
     for (const [personId, { startAge, birthYear }] of rmdStartAgeByPerson) {
-      const personAge = year - birthYear;
+      const personAge = ageInYear(birthYear, year);
       const personTrad = priorYearEndTradByPerson.get(personId) ?? 0;
       if (personAge >= startAge && personTrad > 0) {
         const factor = getRmdFactor(personAge);
@@ -251,6 +294,49 @@ export function runDecumulationYear(
     );
   }
 
+  // Distribute withdrawals to individual accounts -- extracted to individual-account-tracking.ts
+  // Moved ABOVE computeTaxFromSlots (v0.7.8 Roth-tax-basis follow-up,
+  // DESIGN-DECISION-v0.7.8-roth-tax-basis.md § Q3): tax computation needs
+  // this year's BasisDraws to know how much of each Roth withdrawal was
+  // growth (taxable, if non-qualified) vs. basis (always tax-free). Safe
+  // to hoist: distributeWithdrawals/depleteIndividualBasis mutate only
+  // indBal/indBasis, never balances/acctBal, which is all
+  // computeTaxFromSlots reads. deductWithdrawals (which DOES mutate
+  // balances/acctBal) stays below, after tax, unchanged.
+  // Snapshot indBal BEFORE distributeWithdrawals mutates it in place --
+  // depleteIndividualBasis needs the pre-withdrawal balance for its
+  // pro-rata ratio.
+  const preWithdrawalIndBal = new Map(indBal);
+  const decIndWithdrawal = hasIndividualAccounts
+    ? distributeWithdrawals(slots, indAccts, indKey, indBal, eligibility)
+    : new Map<string, number>();
+  const basisDraws = hasIndividualAccounts
+    ? depleteIndividualBasis({
+        indAccts,
+        indKey,
+        indBasis,
+        preWithdrawalBal: preWithdrawalIndBal,
+        withdrawals: decIndWithdrawal,
+      })
+    : new Map<string, BasisDraw>();
+
+  // Roth growth-vs-basis taxability (v0.7.8 Roth-tax-basis follow-up,
+  // DESIGN-DECISION-v0.7.8-roth-tax-basis.md) -- consumes this year's
+  // BasisDraws (never re-slices), decides per-account whether the
+  // already-sliced growth portion is taxable (non-qualified distribution:
+  // owner under 59 1/2). Undefined ownerBirthYear (joint accounts) is
+  // treated as qualified, matching withdrawal-eligibility.ts.
+  const rothTaxSplit = hasIndividualAccounts
+    ? splitRothWithdrawalForTax({
+        accounts: indAccts.map((ia) => ({
+          indKey: indKey(ia),
+          ownerBirthYear: ia.ownerBirthYear,
+        })),
+        draws: basisDraws,
+        year,
+      })
+    : { taxableGrowth: 0, taxFreeAmount: 0, byKey: new Map() };
+
   // Calculate tax cost per withdrawal type -- single source of truth shared
   // with tax-gross-up.ts's estimate (Phase 5 item 5.3).
   const taxFromSlots = computeTaxFromSlots({
@@ -266,6 +352,7 @@ export function runDecumulationYear(
     // roundToCents(sumBy(slots, ...)) over the same mutated slots.
     totalTraditionalWithdrawal,
     totalRothWithdrawal,
+    rothTaxableGrowth: rothTaxSplit.taxableGrowth,
   });
   let brokerageTaxCost = taxFromSlots.brokerageTaxCost;
   const brokerageBasisPortion = taxFromSlots.brokerageBasisPortion;
@@ -304,11 +391,6 @@ export function runDecumulationYear(
 
   // Deduct withdrawals from tax buckets and per-account balances -- extracted to balance-deduction.ts
   deductWithdrawals({ slots, balances, acctBal, brokerageBasisPortion });
-
-  // Distribute withdrawals to individual accounts -- extracted to individual-account-tracking.ts
-  const decIndWithdrawal = hasIndividualAccounts
-    ? distributeWithdrawals(slots, indAccts, indKey, indBal)
-    : new Map<string, number>();
 
   // Ensure no negative balances -- extracted to balance-deduction.ts
   clampBalances(balances, acctBal);
@@ -535,6 +617,15 @@ export function runDecumulationYear(
   const decIndContribs =
     decumContribByAccount.size > 0 ? decumContribByAccount : undefined;
 
+  // Tracked Roth basis (v0.7.8 follow-up): clamp to this year's balance
+  // before building output -- market losses (or a shrunk-to-near-zero
+  // account) could otherwise leave tracked basis exceeding what the
+  // account actually holds. Mirrors early-access.ts's own balance clamp
+  // (clampBasisToBalance's docblock).
+  if (hasIndividualAccounts) {
+    clampIndividualBasis(indAccts, indKey, indBasis, indBal);
+  }
+
   // Build individual account year balances (decumulation) -- extracted to individual-account-tracking.ts
   const decIndYearBalances: IndividualAccountYearBalance[] =
     hasIndividualAccounts
@@ -548,12 +639,22 @@ export function runDecumulationYear(
             contribs: decIndContribs,
             growth: decIndGrowth,
             withdrawal: decIndWithdrawal,
+            basis: indBasis,
+            draws: basisDraws,
           },
+          eligibility,
         )
       : [];
 
   // Zero out rounding dust -- extracted to balance-deduction.ts
   cleanupDust(balances, acctBal, indAccts, indKey, indBal);
+  // Re-clamp basis after dust cleanup -- a balance dust-cleaned to exactly
+  // $0 must carry $0 basis into next year's state, even though this
+  // year's already-built output row reflects the pre-dust-cleanup figure
+  // (the dust amount is by definition negligible).
+  if (hasIndividualAccounts) {
+    clampIndividualBasis(indAccts, indKey, indBasis, indBal);
+  }
   const endBalance = roundToCents(
     balances.preTax + balances.taxFree + balances.hsa + balances.afterTax,
   );

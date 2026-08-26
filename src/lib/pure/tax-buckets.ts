@@ -195,8 +195,17 @@ export function computeTaxBucketBreakdown(
 
       if (!accountBreakdownByCategory[cat])
         accountBreakdownByCategory[cat] = [];
+      // Owner included in the merge key (v0.7.8 Group 1 prerequisite,
+      // advisor finding S3): two different people's accounts sharing a
+      // display name within the same category/taxType must stay separate
+      // rows — merging them silently kept only the first owner's
+      // ownerPersonId, which downstream per-owner eligibility gating
+      // (Rule of 55, 59½, etc.) needs to be correct.
       const existing = accountBreakdownByCategory[cat].find(
-        (e) => e.name === displayName && e.taxType === a.taxType,
+        (e) =>
+          e.name === displayName &&
+          e.taxType === a.taxType &&
+          e.ownerPersonId === (a.ownerPersonId ?? undefined),
       );
       if (existing) {
         existing.amount += a.amount;

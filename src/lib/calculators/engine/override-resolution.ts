@@ -138,6 +138,7 @@ export function resolveDecumulationConfig(
     withdrawalAccountCaps: buildCategoryRecord(() => null),
     withdrawalTaxTypeCaps: { traditional: null, roth: null },
     lumpSums: [],
+    preferPenaltyFreeSources: defaults.preferPenaltyFreeSources ?? true,
   };
 
   for (const o of overrides) {
@@ -161,6 +162,7 @@ export function resolveDecumulationConfig(
         withdrawalAccountCaps: buildCategoryRecord(() => null),
         withdrawalTaxTypeCaps: { traditional: null, roth: null },
         lumpSums: [],
+        preferPenaltyFreeSources: defaults.preferPenaltyFreeSources ?? true,
       };
       continue;
     }
@@ -207,6 +209,8 @@ export function resolveDecumulationConfig(
     }
     if (o.rothConversionTarget !== undefined)
       config.rothConversionTarget = o.rothConversionTarget;
+    if (o.preferPenaltyFreeSources !== undefined)
+      config.preferPenaltyFreeSources = o.preferPenaltyFreeSources;
   }
 
   // Lump sums: exact-year match only (NOT sticky-forward)

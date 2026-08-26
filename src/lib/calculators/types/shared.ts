@@ -5,6 +5,10 @@ import type {
   AccountCategory,
   AccountBalance,
 } from "@/lib/config/account-types";
+import type {
+  RuleOf55Status,
+  RothBasisMeta,
+} from "@/lib/pure/tax-bucket-analysis";
 
 export type ViewMode = "projected" | "blended" | "ytd";
 
@@ -106,6 +110,45 @@ export type IndividualAccountInput = {
   ownerPersonId?: number;
   /** Parent category from contribution account config (e.g. "Retirement", "Portfolio"). */
   parentCategory?: string;
+  /** "Now" Rule of 55 / separation resolution for this account (v0.7.8,
+   *  PLAN-v0.7.8-v4 Group 1.1) — only present for 401k/403b-type accounts
+   *  (`accountType` config's `rothOrderingRules === "pro_rata"`) with a
+   *  resolvable owner. The engine re-evaluates this for a future projected
+   *  year itself via `projectRuleOf55`
+   *  (`src/lib/pure/tax-bucket-projection.ts`) rather than trusting a
+   *  precomputed "now" answer for a different year. Not yet consumed by
+   *  the engine (Group 2 wires the withdrawal-ordering eligibility gate) —
+   *  purely additive data threading in this pass. */
+  ruleOf55?: RuleOf55Status | null;
+  /** Companion to `ruleOf55` — Roth contribution/conversion basis "now",
+   *  same scope/caveats. Not yet consumed (see above). */
+  rothBasisMeta?: RothBasisMeta | null;
+  /** `ownerPersonId`'s birth year (v0.7.8 Group 1.1) — carried directly on
+   *  the account rather than requiring a separate personId→birthYear
+   *  lookup at consumption time. No general "every household member's
+   *  birth year, keyed by personId" map exists elsewhere in `EngineInput`:
+   *  `perPersonBirthYears` is a positional array (no personId link), and
+   *  `socialSecurityEntries`/`rmdStartAgeByPerson` are only populated for
+   *  multi-person households. Attaching it here means the withdrawal-
+   *  eligibility gate (Group 2) never depends on which of those partial
+   *  sources happened to cover a given owner. */
+  ownerBirthYear?: number;
+  /** Rule of 55 forecasting override (v0.7.8) — per-person, forces the
+   *  PROJECTED (future-year) Rule of 55 verdict to ineligible for this
+   *  account's owner, regardless of what the real job-separation
+   *  computation says. Only ever set `true` (never `false`) — omitted
+   *  entirely for the default (no override) case, so every household not
+   *  using this feature has a byte-identical engine input (and so an
+   *  unchanged projection-cache hash — see `hashEngineInput` in
+   *  `server/helpers/projection-cache.ts`). One-directional: can only push
+   *  eligibility from true to false. See `projectRuleOf55`'s
+   *  `opts.forceIneligible` docblock (`lib/pure/tax-bucket-projection.ts`)
+   *  for the full contract, and why this is threaded as a parameter INTO
+   *  that function rather than checked by either of its two callers —
+   *  short-circuiting to "locked" in the consumer was a real bug caught in
+   *  advisor review (Rule-of-55-ineligible isn't the same as locked; the
+   *  59½ path must still apply). */
+  ruleOf55ForceIneligible?: boolean;
 };
 
 /** Per-account balance tracked through the engine projection. */
@@ -128,6 +171,33 @@ export type IndividualAccountYearBalance = {
   intentionalContribution?: number;
   overflowContribution?: number;
   rampContribution?: number;
+  /** Withdrawal-ordering eligibility for this account, this year
+   *  (decumulation only; v0.7.8, PLAN-v0.7.8-v4 follow-up). `true` = the
+   *  full balance was treated as locked (penalty-preferred-against) when
+   *  withdrawal routing ran this year — never "inaccessible", the engine's
+   *  soft/penalized-but-available model always allows drawing from a
+   *  locked account once eligible sources run out (see
+   *  `withdrawal-eligibility.ts`'s module docblock). `reason` explains why,
+   *  from `AccountEligibility.reason`. Absent when the account has no
+   *  resolvable eligibility question for this category (e.g. brokerage —
+   *  though that case still gets a reason string, just never `locked`) or
+   *  during accumulation. */
+  eligibilityLocked?: boolean;
+  eligibilityReason?: string;
+  /** Tracked Roth basis remaining at END of this year, both phases
+   *  (v0.7.8 tracked-basis follow-up — see
+   *  `@/lib/pure/roth-basis-tracking`). Contribution + conversion basis
+   *  combined. Present only for taxFree-bucket accounts; absent (not
+   *  zero) for everything else, so "no data" is never confused with
+   *  "$0 left". */
+  rothBasisRemaining?: number;
+  /** Basis dollars THIS year's withdrawal actually consumed (decumulation
+   *  only) — the portion of the withdrawal that was basis, not growth. */
+  rothBasisDrawn?: number;
+  /** True when `rothBasisRemaining` rests on a stale (pre-projection) or
+   *  auto-seeded, never-reviewed `account_basis` row — the figure may
+   *  understate real basis, never overstate it. */
+  rothBasisUncertain?: boolean;
 };
 
 /** Account category — auto-derived from ACCOUNT_TYPE_CONFIG keys. Re-exported for convenience. */

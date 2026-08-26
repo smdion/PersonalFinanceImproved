@@ -67,6 +67,12 @@ export type PerPersonSettings = ReadonlyArray<{
   endAge: number | null;
   socialSecurityMonthly: string;
   ssStartAge?: number | null;
+  /** Rule of 55 forecasting override (v0.7.8) — true (default) = no
+   *  override, false = force this person's employer-plan accounts
+   *  ineligible for Rule of 55 regardless of computed job-separation
+   *  status. See retirementSettings.ruleOf55Override's docblock in
+   *  schema-pg.ts. */
+  ruleOf55Override: boolean;
 }> | null;
 
 /** Typed payload for `retirementSettings.upsert`. The six required fields
@@ -120,3 +126,9 @@ export type ContribProfileListEntry = {
   id: number;
   name: string;
 };
+
+/** Whether the current user may edit `retirement_settings` via
+ *  `retirementSettings.upsert` (adminProcedure server-side). Sections use
+ *  this to render read-only instead of hiding controls entirely — a
+ *  non-admin can still see the values, just not change them. */
+export type IsEditable = boolean;

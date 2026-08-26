@@ -198,10 +198,25 @@ export function TaxBucketsContent() {
 
   const projection = useMemo(() => {
     if (!data || !projectionQuery.data?.result) return null;
+    // Rule of 55 forecasting override (v0.7.8) -- must read the SAME
+    // per-person setting the retirement engine reads, or this page and the
+    // retirement projection would disagree about the same account's
+    // eligibility. `perPersonSettings` rides on the same query result.
+    const ruleOf55OverrideByPersonId =
+      "perPersonSettings" in projectionQuery.data &&
+      projectionQuery.data.perPersonSettings
+        ? new Map(
+            projectionQuery.data.perPersonSettings.map((ps) => [
+              ps.personId,
+              ps.ruleOf55Override,
+            ]),
+          )
+        : undefined;
     return computeTaxBucketProjection({
       nowEntries: data.accounts,
       projectionByYear: projectionQuery.data.result.projectionByYear,
       people: data.people,
+      ruleOf55OverrideByPersonId,
     });
   }, [data, projectionQuery.data]);
 

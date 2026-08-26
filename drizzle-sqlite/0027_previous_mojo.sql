@@ -1,0 +1,1 @@
+ALTER TABLE `retirement_settings` ADD `rule_of_55_override` integer DEFAULT true NOT NULL;

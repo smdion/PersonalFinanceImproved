@@ -325,9 +325,25 @@ export type DecumulationDefaults = {
    *
    * If brackets are not provided, `traditionalFallbackRate` is used as a flat haircut.
    *
-   * - roth: 0% — qualified Roth withdrawals are tax-free
+   * - roth: 0% — applies to QUALIFIED Roth dollars only (contribution basis,
+   *   conversion basis, and growth once the owner is 59½+). Growth withdrawn
+   *   from a NON-qualified distribution is taxed as ordinary income instead —
+   *   see `computeTaxFromSlots`'s `rothTaxableGrowth` parameter and
+   *   `roth-distribution-tax.ts` (v0.7.8 Roth-tax-basis follow-up,
+   *   DESIGN-DECISION-v0.7.8-roth-tax-basis.md). This rate is NOT a lever
+   *   for non-qualified growth — that portion is always ordinary income by
+   *   law, computed automatically, never configurable here.
    * - hsa: 0% — qualified HSA withdrawals are tax-free
    * - brokerage: long-term capital gains rate (default 0.15)
+   *
+   * NO EARLY-WITHDRAWAL PENALTY IS MODELED HERE, for any account type
+   * (Traditional, Roth, or HSA). `withdrawal-eligibility.ts`'s eligibility
+   * gate only ever *prefers* not to draw from a locked account (soft-lock
+   * routing preference); if the engine draws from one anyway once eligible
+   * sources run out, this rate config charges the account's normal tax
+   * treatment and nothing more — no 10% excise cost. See
+   * FEATURE-ROADMAP.md's R39 for the tracked gap and what a real pass would
+   * need.
    */
   distributionTaxRates: {
     traditionalFallbackRate: number;
@@ -373,6 +389,22 @@ export type DecumulationDefaults = {
   strategyParams?: Partial<
     Record<WithdrawalStrategyType, Record<string, number | boolean>>
   >;
+
+  /**
+   * Whether withdrawal routing may prefer penalty-free sources (Rule of 55,
+   * 59½, HSA 65, Roth ordering) over the household's configured
+   * `withdrawalOrder` / `withdrawalSplits` — v0.7.8, PLAN-v0.7.8-v4 Tier B.
+   * When a household has a locked (not-yet-penalty-free) account, this can
+   * change which categories money is drawn from, not just which account
+   * within a category — a real, user-visible change to the household's own
+   * configured levers. Default `true` (user decision, 2026-08-26): the
+   * engine avoids early-withdrawal penalties by default; set `false` to
+   * keep pre-v0.7.8 behavior (route strictly per the configured levers,
+   * ignoring locked/eligible status at the routing-mode level — Tier A's
+   * per-account fan-out preference still applies regardless, since it
+   * never changes a category's dollar total).
+   */
+  preferPenaltyFreeSources?: boolean;
 };
 
 /**
@@ -450,6 +482,9 @@ export type DecumulationOverride = {
 
   /** Optional note explaining why this override exists (shown in UI tooltip). */
   notes?: string;
+
+  /** Override for this year onward. See DecumulationDefaults.preferPenaltyFreeSources. */
+  preferPenaltyFreeSources?: boolean;
 };
 
 /**
@@ -470,6 +505,9 @@ export type ResolvedDecumulationConfig = {
   rothConversionTarget?: number;
   /** Lump sums for this year only (NOT sticky-forward). Empty if none. */
   lumpSums: LumpSum[];
+  /** See DecumulationDefaults.preferPenaltyFreeSources. Always resolved
+   *  (never undefined) — `resolveDecumulationConfig` defaults it to `true`. */
+  preferPenaltyFreeSources: boolean;
 };
 
 /**

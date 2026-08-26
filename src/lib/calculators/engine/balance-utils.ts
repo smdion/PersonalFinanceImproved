@@ -4,14 +4,19 @@
  * Shared helpers for working with AccountBalances and TaxBuckets.
  * Used by the orchestrator and multiple extraction modules.
  */
-import type { TaxBuckets, AccountBalances } from "../types";
+import type { TaxBuckets, AccountBalances, DecumulationSlot } from "../types";
 import {
   getAllCategories,
   getLimitGroup,
   zeroBalance,
   cloneBalance,
+  getTotalBalance,
+  setTraditional,
+  setRoth,
+  setBalance,
 } from "../../config/account-types";
 import { roundToCents } from "../../utils/math";
+import type { EligibilityRecord } from "@/lib/pure/withdrawal-eligibility";
 
 /** Derive AccountBalances from TaxBuckets using a config-derived split (fallback). */
 export function accountBalancesFromTaxBuckets(b: TaxBuckets): AccountBalances {
@@ -58,4 +63,65 @@ export function cloneAccountBalances(a: AccountBalances): AccountBalances {
   return Object.fromEntries(
     getAllCategories().map((cat) => [cat, cloneBalance(a[cat])]),
   ) as AccountBalances;
+}
+
+/**
+ * Subtract a withdrawal-eligibility record's locked dollars from balances,
+ * per category (v0.7.8, PLAN-v0.7.8-v4 Group 2.2, Tier B). Floors at 0 —
+ * `lockedTrad`/`lockedRoth`/`lockedTotal` are sums of individual-account
+ * lock amounts, which can't exceed the category total they're locked
+ * within, but flooring keeps this safe against any future drift between
+ * `acctBal` and the sum of individual accounts (the same drift
+ * `decumulation-year.ts`'s `[DIAG] Roth divergence` check already watches
+ * for). Locked design: `eligibleBalances` is derived by SUBTRACTION from
+ * the real `acctBal`, never by summing `indBal` — see
+ * `withdrawal-eligibility.ts`'s module docblock (Q3 part 2) for why the
+ * other direction breaks byte-identity.
+ */
+export function subtractLocked(
+  balances: AccountBalances,
+  record: EligibilityRecord,
+): AccountBalances {
+  const result = cloneAccountBalances(balances);
+  for (const cat of getAllCategories()) {
+    const bal = result[cat];
+    if (bal.structure === "roth_traditional") {
+      setTraditional(
+        bal,
+        Math.max(0, bal.traditional - (record.lockedTrad[cat] ?? 0)),
+      );
+      setRoth(bal, Math.max(0, bal.roth - (record.lockedRoth[cat] ?? 0)));
+    } else {
+      setBalance(
+        bal,
+        Math.max(0, getTotalBalance(bal) - (record.lockedTotal[cat] ?? 0)),
+      );
+    }
+  }
+  return result;
+}
+
+/**
+ * Subtract already-drawn slot amounts from balances, per category (Tier B
+ * pass 2's "remaining balances" — full balances minus pass 1's draws).
+ * Floors at 0 for the same drift-safety reason as `subtractLocked`.
+ */
+export function subtractSlots(
+  balances: AccountBalances,
+  slots: DecumulationSlot[],
+): AccountBalances {
+  const result = cloneAccountBalances(balances);
+  for (const slot of slots) {
+    const bal = result[slot.category];
+    if (bal.structure === "roth_traditional") {
+      setTraditional(
+        bal,
+        Math.max(0, bal.traditional - slot.traditionalWithdrawal),
+      );
+      setRoth(bal, Math.max(0, bal.roth - slot.rothWithdrawal));
+    } else {
+      setBalance(bal, Math.max(0, getTotalBalance(bal) - slot.withdrawal));
+    }
+  }
+  return result;
 }

@@ -47,10 +47,7 @@ import type {
   RothBasisMeta,
   RuleOf55Status,
 } from "@/lib/pure/tax-bucket-analysis";
-
-function ageInYear(birthYear: number, year: number): number {
-  return year - birthYear;
-}
+import { ageInYear } from "@/lib/utils/date";
 
 function matchKey(
   name: string,
@@ -128,38 +125,82 @@ function projectCostBasis(
   return sum;
 }
 
-/** Substitutes the retirement-transition year as the separation year for a
+/** Substitutes a future assumed year as the separation year for a
  *  still-active job (source "active") and re-evaluates Rule of 55 from
- *  there — the entire premise of this view. A job with a real, already-
- *  known future end date caps the assumed separation at that date instead
- *  of assuming employment runs all the way to the household transition.
- *  Any other source (already separated, or genuinely no data) is reused
- *  unchanged — the future can't move a real past separation, and can't
- *  manufacture data that doesn't exist. */
-function projectRuleOf55(
+ *  there. A job with a real, already-known future end date caps the
+ *  assumed separation at that date instead of assuming employment runs all
+ *  the way to `assumedYear`. Any other source (already separated, or
+ *  genuinely no data) is reused unchanged — the future can't move a real
+ *  past separation, and can't manufacture data that doesn't exist.
+ *
+ *  Exported (v0.7.8, PLAN-v0.7.8-v4 Group 1.2) — the retirement projection
+ *  engine's decumulation-year handler reuses this verbatim as its
+ *  "will this person have separated by projected year N" resolver, rather
+ *  than duplicating the logic. Originally written for this module's own
+ *  "at retirement" transition-year question (`assumedYear` was always
+ *  `transitionYear`); the parameter name reflects that it now answers the
+ *  same question for any assumed future year, not only the household's
+ *  retirement transition. */
+export function projectRuleOf55(
   now: RuleOf55Status | null,
-  transitionYear: number,
+  assumedYear: number,
   birthYear: number,
+  opts?: {
+    /** Rule of 55 forecasting override (v0.7.8) — forces the PROJECTED
+     *  verdict to ineligible, applied AFTER the recompute below so it can
+     *  never be silently discarded by it (the bug a first attempt at this
+     *  feature hit: mutating `now.eligible` before this function ran did
+     *  nothing, because the `source === "active"` branch recomputes
+     *  `eligible` from scratch and ignores whatever `now.eligible` was).
+     *  One-directional by construction — this can only ever push `eligible`
+     *  from true to false, never the reverse. `separationYear`/`source`/
+     *  `knownFutureSeparationYear` are preserved, so the UI can still show
+     *  "separates 2034" alongside "ineligible". Advisor-reviewed,
+     *  2026-08-26 — both call sites (withdrawal-eligibility.ts,
+     *  computeTaxBucketProjection below) must pass this identically or the
+     *  Tax Buckets page and the retirement engine would disagree about the
+     *  same account (Single Computation Path). Never applied to the "now"
+     *  view (tax-bucket-analysis.ts) — this is a forecasting assumption
+     *  about a future year, not a correction to today's real status. */
+    forceIneligible?: boolean;
+  },
 ): RuleOf55Status | null {
-  if (!now || now.source !== "active") return now;
-  const separationYear =
-    now.knownFutureSeparationYear != null
-      ? Math.min(now.knownFutureSeparationYear, transitionYear)
-      : transitionYear;
-  return {
-    eligible: isRuleOf55Eligible(separationYear, birthYear),
-    separationYear,
-    source: now.source,
-    knownFutureSeparationYear: now.knownFutureSeparationYear,
-  };
+  let projected: RuleOf55Status | null = now;
+  if (now && now.source === "active") {
+    const separationYear =
+      now.knownFutureSeparationYear != null
+        ? Math.min(now.knownFutureSeparationYear, assumedYear)
+        : assumedYear;
+    projected = {
+      eligible: isRuleOf55Eligible(separationYear, birthYear),
+      separationYear,
+      source: now.source,
+      knownFutureSeparationYear: now.knownFutureSeparationYear,
+    };
+  }
+  if (!projected || !opts?.forceIneligible) return projected;
+  return { ...projected, eligible: false };
 }
 
 export function computeTaxBucketProjection(input: {
   nowEntries: AccountAnalysisEntry[];
   projectionByYear: EngineYearProjection[];
   people: PersonInfo[];
+  /** Rule of 55 forecasting override (v0.7.8), keyed by personId — same
+   *  contract as `projectRuleOf55`'s `opts.forceIneligible` and
+   *  `IndividualAccountInput.ruleOf55ForceIneligible`. Must be populated
+   *  from the SAME per-person setting the retirement engine reads
+   *  (`perPersonSettings[].ruleOf55Override === false`), or this page and
+   *  the retirement projection would disagree about the same account's
+   *  eligibility (Single Computation Path). Deliberately NOT threaded onto
+   *  `PersonInfo` — that type is shared with `computeTaxBucketAnalysis`'s
+   *  "now" path, and the override must never reach "now" (see
+   *  `projectRuleOf55`'s docblock: this is a forecasting assumption about a
+   *  future year, not a correction to today's real status). */
+  ruleOf55OverrideByPersonId?: Map<number, boolean>;
 }): TaxBucketProjectionResult {
-  const { nowEntries, projectionByYear, people } = input;
+  const { nowEntries, projectionByYear, people, ruleOf55OverrideByPersonId } =
+    input;
   const peopleById = new Map(people.map((p) => [p.id, p]));
 
   const accumulationYears = projectionByYear.filter(
@@ -325,6 +366,12 @@ export function computeTaxBucketProjection(input: {
         now.ruleOf55,
         transitionYear,
         person!.birthYear,
+        {
+          forceIneligible:
+            now.ownerPersonId != null
+              ? ruleOf55OverrideByPersonId?.get(now.ownerPersonId) === false
+              : false,
+        },
       );
       const eligible = ruleOf55?.eligible ?? false;
       if (isTaxFreeBucket(now.taxType)) {
