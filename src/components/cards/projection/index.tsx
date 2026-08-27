@@ -1,7 +1,7 @@
 "use client";
 
 /** Top-level ProjectionCard component — orchestrates the projection state hook and delegates to sub-components. */
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast, useToasts } from "@/lib/hooks/use-toast";
 import dynamic from "next/dynamic";
 import { HelpTip } from "@/components/ui/help-tip";
@@ -18,6 +18,8 @@ import { ProjectionTable } from "./projection-table";
 import { ProjectionHeroKpis } from "./projection-hero-kpis";
 import { ProjectionChartSkeleton } from "./projection-chart-skeleton";
 import { ProjectionTableSkeleton } from "./projection-table-skeleton";
+import { ReportHeader, ReportFooter } from "./report-header";
+import { ReportAssumptionsSummary } from "./report-assumptions-summary";
 
 // Code-split Recharts-heavy children (v0.5 expert-review M8). Each chart is
 // ~250KB of recharts payload that loads only when the projection card mounts.
@@ -198,6 +200,34 @@ export function ProjectionCard(props: {
     decumulationExpenseOverride,
   } = props;
 
+  // R42 — print/export report. "none" = normal screen view (default print
+  // behavior, unchanged). "basic" prints just the chart+table with page
+  // chrome hidden. "fancy" additionally mounts the report header, hero KPI
+  // summary, and assumptions section (all print-only — hidden on screen via
+  // `hidden print:block`, so this is a no-op on layout until printed).
+  const [reportMode, setReportMode] = useState<"none" | "basic" | "fancy">(
+    "none",
+  );
+  const originalTitleRef = useRef<string>("");
+  const handlePrint = (mode: "basic" | "fancy") => {
+    originalTitleRef.current = document.title;
+    setReportMode(mode);
+    document.title = `Retirement Projection - ${new Date().toLocaleDateString()}`;
+    // Two rAFs: one for React to commit the report-only DOM, one for the
+    // browser to paint it, before the print dialog captures the page.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => window.print());
+    });
+  };
+  useEffect(() => {
+    const reset = () => {
+      setReportMode("none");
+      if (originalTitleRef.current) document.title = originalTitleRef.current;
+    };
+    window.addEventListener("afterprint", reset);
+    return () => window.removeEventListener("afterprint", reset);
+  }, []);
+
   return (
     <>
       <div className="space-y-6 mb-6">
@@ -212,36 +242,74 @@ export function ProjectionCard(props: {
             </div>
           )}
 
+          {/* R42 — print/export report controls. print:hidden so the
+              buttons themselves never appear in the printed output. */}
+          {result && (
+            <div className="print:hidden flex items-center gap-3 text-caption">
+              <button
+                type="button"
+                onClick={() => handlePrint("basic")}
+                className="text-muted hover:text-secondary underline"
+              >
+                Print Chart &amp; Table
+              </button>
+              <button
+                type="button"
+                onClick={() => handlePrint("fancy")}
+                className="text-muted hover:text-secondary underline"
+              >
+                Print Full Report
+              </button>
+            </div>
+          )}
+
+          {/* Fancy-report-only header — mounted only in "fancy" mode, hidden
+              on screen, print-visible. */}
+          {reportMode === "fancy" && (
+            <div className="hidden print:block">
+              <ReportHeader
+                peopleNames={(people ?? enginePeople ?? []).map((p) => p.name)}
+                generatedAt={new Date()}
+              />
+            </div>
+          )}
+
           {/* ── CONTENT BLOCK ────────────────────────────────────────────────
                Every section renders a skeleton or real content at the SAME
                DOM position so the layout never shifts during loading. */}
           {(engineQuery.isLoading || !!result) && (
             <div className="space-y-4">
-              {/* Hero KPIs — skeleton during engine load, real once data arrives */}
-              {engineQuery.isLoading ? (
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
-                  {[0, 1, 2, 3, 4].map((i) => (
-                    <div
-                      key={i}
-                      className="min-h-[128px] animate-pulse rounded-lg border border-subtle bg-surface-primary/40 p-3"
-                      style={{
-                        animationDelay: `${i * 80}ms`,
-                        animationDuration: "1.8s",
-                      }}
-                    >
-                      <div className="h-2.5 w-20 rounded bg-surface-strong/20" />
-                      <div className="mt-4 h-8 w-24 rounded bg-surface-strong/20" />
-                      <div className="mt-2 h-2 w-16 rounded bg-surface-strong/20" />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <ProjectionHeroKpis state={state} />
-              )}
+              {/* Hero KPIs (headline numbers) — always shown on screen;
+                  print-visible only in the "fancy" report tier (basic tier
+                  prints just the chart+table, per R42 scope). */}
+              <div
+                className={reportMode === "fancy" ? undefined : "print:hidden"}
+              >
+                {engineQuery.isLoading ? (
+                  <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
+                    {[0, 1, 2, 3, 4].map((i) => (
+                      <div
+                        key={i}
+                        className="min-h-[128px] animate-pulse rounded-lg border border-subtle bg-surface-primary/40 p-3"
+                        style={{
+                          animationDelay: `${i * 80}ms`,
+                          animationDuration: "1.8s",
+                        }}
+                      >
+                        <div className="h-2.5 w-20 rounded bg-surface-strong/20" />
+                        <div className="mt-4 h-8 w-24 rounded bg-surface-strong/20" />
+                        <div className="mt-2 h-2 w-16 rounded bg-surface-strong/20" />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <ProjectionHeroKpis state={state} />
+                )}
+              </div>
 
               {/* MC auto-load disabled notice — only when real data */}
               {result && !mcAutoloadEnabled && !mcPrefetchQuery.data && (
-                <div className="flex items-center justify-between rounded-lg border border-subtle bg-surface-sunken px-3 py-2">
+                <div className="print:hidden flex items-center justify-between rounded-lg border border-subtle bg-surface-sunken px-3 py-2">
                   <span className="text-xs text-muted">
                     Simulation auto-load is off — chart bands unavailable.
                   </span>
@@ -255,7 +323,11 @@ export function ProjectionCard(props: {
               )}
 
               {/* MC assumptions summary — only when real data */}
-              {result && <McResultsSection state={state} />}
+              {result && (
+                <div className="print:hidden">
+                  <McResultsSection state={state} />
+                </div>
+              )}
 
               {/* Toolbar — skeleton during engine load, real controls once data arrives */}
               {engineQuery.isLoading ? (
@@ -290,7 +362,7 @@ export function ProjectionCard(props: {
                   const pp = people ?? enginePeople;
                   const isMc = projectionMode === "monteCarlo";
                   return (
-                    <div className="bg-surface-sunken rounded-lg px-3 py-2 space-y-1.5">
+                    <div className="print:hidden bg-surface-sunken rounded-lg px-3 py-2 space-y-1.5">
                       {/* Row 1: VIEW | PROJECTION | DOLLARS */}
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                         {/* Person filter */}
@@ -647,15 +719,17 @@ export function ProjectionCard(props: {
               !autoloadEnabled && !engineQuery.data && !engineQuery.isLoading;
 
             return (
-              <ProjectionLoader
-                enginePhase={enginePhase}
-                mcPhase={mcPhase}
-                coastFireMcPhase={coastFireMcPhase}
-                showActionState={showActionState}
-                onRunSimulation={runSimulation}
-                onRunMonteCarlo={runMonteCarlo}
-                onRunCoastFireMc={runCoastFireMc}
-              />
+              <div className="print:hidden">
+                <ProjectionLoader
+                  enginePhase={enginePhase}
+                  mcPhase={mcPhase}
+                  coastFireMcPhase={coastFireMcPhase}
+                  showActionState={showActionState}
+                  onRunSimulation={runSimulation}
+                  onRunMonteCarlo={runMonteCarlo}
+                  onRunCoastFireMc={runCoastFireMc}
+                />
+              </div>
             );
           })()}
 
@@ -677,28 +751,43 @@ export function ProjectionCard(props: {
             />
           )}
 
+          {/* Fancy-report-only "behind the scenes" assumptions + footer —
+              mounted only in "fancy" mode, hidden on screen, print-visible.
+              Placed right after the table so it reads as the report's
+              closing section rather than interrupting the chart/table. */}
+          {reportMode === "fancy" && (
+            <div className="hidden print:block">
+              <ReportAssumptionsSummary settings={engineSettings} />
+              <ReportFooter generatedAt={new Date()} />
+            </div>
+          )}
+
           {/* DECUMULATION DEFAULTS */}
-          <DecumulationConfig
-            isPersonFiltered={isPersonFiltered}
-            personFilterName={personFilterName}
-            showDecumConfig={showDecumConfig}
-            setShowDecumConfig={setShowDecumConfig}
-            withdrawalRoutingMode={withdrawalRoutingMode}
-            setWithdrawalRoutingMode={setWithdrawalRoutingMode}
-            withdrawalOrder={withdrawalOrder}
-            setWithdrawalOrder={setWithdrawalOrder}
-            withdrawalSplits={withdrawalSplits}
-            setWithdrawalSplits={setWithdrawalSplits}
-            withdrawalTaxPref={withdrawalTaxPref}
-            setWithdrawalTaxPref={setWithdrawalTaxPref}
-            activeSpendingStrategy={engineSettings?.withdrawalStrategy}
-          />
+          <div className="print:hidden">
+            <DecumulationConfig
+              isPersonFiltered={isPersonFiltered}
+              personFilterName={personFilterName}
+              showDecumConfig={showDecumConfig}
+              setShowDecumConfig={setShowDecumConfig}
+              withdrawalRoutingMode={withdrawalRoutingMode}
+              setWithdrawalRoutingMode={setWithdrawalRoutingMode}
+              withdrawalOrder={withdrawalOrder}
+              setWithdrawalOrder={setWithdrawalOrder}
+              withdrawalSplits={withdrawalSplits}
+              setWithdrawalSplits={setWithdrawalSplits}
+              withdrawalTaxPref={withdrawalTaxPref}
+              setWithdrawalTaxPref={setWithdrawalTaxPref}
+              activeSpendingStrategy={engineSettings?.withdrawalStrategy}
+            />
+          </div>
 
           {/* UNIFIED OVERRIDES */}
-          <OverridesPanel
-            state={state}
-            accumulationExpenseOverride={accumulationExpenseOverride}
-          />
+          <div className="print:hidden">
+            <OverridesPanel
+              state={state}
+              accumulationExpenseOverride={accumulationExpenseOverride}
+            />
+          </div>
         </div>
       </div>
       <SlidePanel

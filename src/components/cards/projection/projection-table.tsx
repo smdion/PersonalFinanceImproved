@@ -385,7 +385,12 @@ export function ProjectionTable({
         </>
       )}
 
-      <ContribMethodologySection state={state} />
+      {/* R42: methodology links/validation-evidence are engine-internal
+          detail, not report content — the print report's own "Behind the
+          Scenes" section covers assumptions instead. */}
+      <div className="print:hidden">
+        <ContribMethodologySection state={state} />
+      </div>
     </>
   );
 }

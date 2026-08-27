@@ -10,6 +10,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.7.9] - 2026-08-27
 
+### Added
+
+- **A new per-account setting lets you allow the 10%/20% early-withdrawal penalty on one specific account**, if drawing from it avoids an otherwise-real shortfall — the household still avoids the penalty everywhere else. Set it from that account's "Danger Zone" on the Portfolio page (confirmation required, since it authorizes a real tax cost). Not available on joint accounts.
+- **Two new "Print" buttons on the Retirement page's Projection card** — "Print Chart & Table" for a plain export of just the chart and table, and "Print Full Report" for a polished, client-facing report with headline numbers and a "Behind the Scenes" summary of the assumptions the projection is built on. Both use your browser's own print dialog (Ctrl/Cmd+P), so "Save as PDF" works out of the box.
+
 ### Changed
 
 - **In "Bracket Filling" mode (the default), once your Traditional withdrawals hit the target tax bracket, the retirement projection now compares that year's real cost of drawing further from Roth versus your brokerage account and picks whichever is actually cheaper**, instead of always draining Roth first. A non-qualified Roth withdrawal isn't automatically tax-free once you've used up your contributed basis — this keeps the engine from reflexively taking the more expensive source in years your brokerage account happens to sit in the 0% long-term capital gains zone. This is a single-year decision, not a lifetime plan.

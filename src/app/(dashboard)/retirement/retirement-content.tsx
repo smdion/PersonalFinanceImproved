@@ -187,15 +187,17 @@ export function RetirementContent() {
 
   return (
     <div>
-      <PageHeader
-        title="Retirement Projection"
-        subtitle={
-          accColumnLabel ? `Budget scenario: ${accColumnLabel}` : undefined
-        }
-      />
+      <div className="print:hidden">
+        <PageHeader
+          title="Retirement Projection"
+          subtitle={
+            accColumnLabel ? `Budget scenario: ${accColumnLabel}` : undefined
+          }
+        />
+      </div>
 
       {/* Page-level tabs */}
-      <div className="flex flex-wrap rounded-md border bg-surface-primary/60 p-0.5 mb-4 w-fit max-w-full">
+      <div className="print:hidden flex flex-wrap rounded-md border bg-surface-primary/60 p-0.5 mb-4 w-fit max-w-full">
         <button
           type="button"
           onClick={() => setPageTab("projection")}
@@ -242,7 +244,7 @@ export function RetirementContent() {
 
       {/* Snapshot selector */}
       {snapshotOptions.length > 1 && (
-        <div className="flex items-center gap-2 mb-3">
+        <div className="print:hidden flex items-center gap-2 mb-3">
           <label className="text-xs text-muted">Portfolio Snapshot:</label>
           <select
             className="text-xs bg-surface-elevated border rounded px-2 py-1 text-primary"
