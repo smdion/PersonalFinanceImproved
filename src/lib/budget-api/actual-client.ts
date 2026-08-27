@@ -53,13 +53,22 @@ type ActualCategory = {
   goal?: number | null; // cents
 };
 
+// Field names AND shape re-verified LIVE against the deployed wrapper —
+// GET /months/:month does NOT return a flat `income`/`budgeted`/`spent`/
+// `to_budget`/`categories` object; it returns `totalIncome`/`totalBudgeted`/
+// `totalSpent`/`toBudget`/`categoryGroups` (categories nested one level
+// deeper, per group, not a flat top-level array). The old flat-shaped type
+// here silently read every field as `undefined` (NaN after fromCents) and
+// `categories` as always empty — getMonthDetail() never actually returned
+// any category data, breaking budget.syncBudgetFromApi's real pull for
+// every Actual household.
 type ActualMonth = {
   month: string;
-  income: number;
-  budgeted: number;
-  spent: number;
-  to_budget: number;
-  categories?: ActualCategory[];
+  totalIncome: number;
+  totalBudgeted: number;
+  totalSpent: number;
+  toBudget: number;
+  categoryGroups?: ActualCategoryGroup[];
 };
 
 type ActualTransaction = {
@@ -73,6 +82,7 @@ type ActualTransaction = {
   category?: string;
   category_name?: string;
   notes?: string;
+  imported_id?: string;
   cleared: boolean;
   reconciled: boolean;
 };
@@ -130,17 +140,24 @@ function mapCategoryGroup(g: ActualCategoryGroup): BudgetCategoryGroup {
 function mapMonth(m: ActualMonth): BudgetMonth {
   return {
     month: m.month,
-    income: fromCents(m.income),
-    budgeted: fromCents(m.budgeted),
-    activity: fromCents(m.spent),
-    toBeBudgeted: fromCents(m.to_budget),
+    income: fromCents(m.totalIncome),
+    // Real totalBudgeted comes back negative (an outflow-from-ready-to-
+    // assign figure) while every per-category `budgeted` is positive —
+    // Math.abs so this summary matches that same "positive = allocated"
+    // convention instead of surprising a caller expecting YNAB's sign.
+    budgeted: Math.abs(fromCents(m.totalBudgeted)),
+    activity: fromCents(m.totalSpent),
+    toBeBudgeted: fromCents(m.toBudget),
   };
 }
 
 function mapMonthDetail(m: ActualMonth): BudgetMonthDetail {
+  const categories = (m.categoryGroups ?? []).flatMap((g) =>
+    g.categories.map((c) => mapCategory(c, g.name)),
+  );
   return {
     ...mapMonth(m),
-    categories: (m.categories ?? []).map((c) => mapCategory(c, "")),
+    categories,
   };
 }
 
@@ -284,11 +301,21 @@ export class ActualClient implements BudgetAPIClient {
     }));
   }
 
-  async getMonths(_start: string, _end: string): Promise<BudgetMonth[]> {
-    const res = await this.request<{ data: ActualMonth[] }>("/months");
-    return res.data
-      .filter((m) => m.month >= _start && m.month <= _end)
-      .map(mapMonth);
+  /** `GET /months` (no month id) does NOT return `ActualMonth` objects —
+   * re-verified LIVE against the deployed wrapper: it's a bare array of
+   * month-id strings (`["2020-01", ..., "2027-07"]`), each of which needs
+   * its own `GET /months/:id` call to get real data (only that endpoint
+   * returns income/budgeted/spent — see mapMonth's docblock). The old code
+   * here treated each string as an `ActualMonth` object, reading every
+   * field off a string primitive — always NaN/undefined, though this
+   * method currently has no live caller in the app so it never surfaced. */
+  async getMonths(start: string, end: string): Promise<BudgetMonth[]> {
+    const res = await this.request<{ data: string[] }>("/months");
+    const inRange = res.data.filter((id) => id >= start && id <= end);
+    const details = await Promise.all(
+      inRange.map((id) => this.getMonthDetail(id)),
+    );
+    return details.map(({ categories: _categories, ...month }) => month);
   }
 
   async getMonthDetail(month: string): Promise<BudgetMonthDetail> {
@@ -411,35 +438,51 @@ export class ActualClient implements BudgetAPIClient {
     });
     const importedId = `ledgr:${idempotencyKey.slice(0, 30)}`;
 
-    // The wrapper's `POST /accounts/:id/transactions` route handler returns
-    // `res.json({ message: await budget.addTransaction(...) })`, and
-    // addTransaction resolves to the created transaction's id string
-    // directly (`transactionIds[0]`) — verified against actual-http-api's
-    // literal route + budget.js source, 26.8.1. The response is
-    // `{ message: "<id>" }`, NOT `{ data: { id: "<id>" } }`. Reading
-    // `res.data.id` (the old code here) threw a TypeError on every call
-    // (`res.data` is undefined) — pushSnapshotToBudgetApi's transaction
-    // push was completely broken for every Actual household, not just
-    // silently wrong.
-    const res = await this.request<{ message: string }>(
-      `/accounts/${tx.accountId}/transactions`,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          transaction: {
-            account: tx.accountId,
-            date: tx.date,
-            amount: toCents(tx.amount),
-            payee_name: tx.payeeName,
-            category: tx.categoryId,
-            notes: tx.memo,
-            cleared: tx.cleared ?? false,
-            imported_id: importedId,
-          },
-        }),
-      },
+    // The wrapper's `POST /accounts/:id/transactions` request body must be
+    // nested under a `transaction` key (verified against the route's
+    // literal source, and reconfirmed live: an un-nested body 400s). Its
+    // response, however, does NOT return the created transaction's id —
+    // this was re-checked LIVE against the deployed image (both with and
+    // without `imported_id` set) and it always replies `{"message":"ok"}`,
+    // contradicting what actual-http-api's own budget.js source appeared
+    // to promise (`addTransaction` resolving to `transactionIds[0]`) for
+    // whatever reason (version drift between the pinned source read and
+    // the deployed `:latest` build, a code path this wrapper's `addTransaction`
+    // doesn't actually take, etc.) — don't trust that source reading over
+    // this live-confirmed behavior again without re-verifying live.
+    //
+    // So: look the transaction back up by its own deterministic
+    // `imported_id` immediately after creating it — the only way this
+    // client gets a real id back, which `deleteTransaction`,
+    // `pushSnapshotToBudgetApi`'s in-run rollback, and any future caller
+    // that needs the id all depend on.
+    await this.request(`/accounts/${tx.accountId}/transactions`, {
+      method: "POST",
+      body: JSON.stringify({
+        transaction: {
+          account: tx.accountId,
+          date: tx.date,
+          amount: toCents(tx.amount),
+          payee_name: tx.payeeName,
+          category: tx.categoryId,
+          notes: tx.memo,
+          cleared: tx.cleared ?? false,
+          imported_id: importedId,
+        },
+      }),
+    });
+    const res = await this.request<{ data: ActualTransaction[] }>(
+      `/accounts/${tx.accountId}/transactions?since_date=${tx.date}`,
     );
-    return res.message;
+    const created = res.data.find((t) => t.imported_id === importedId);
+    if (!created) {
+      throw new BudgetApiError(
+        `Created a transaction on Actual (account ${tx.accountId}, imported_id ${importedId}) but couldn't find it back afterward to return its id.`,
+        "server",
+        null,
+      );
+    }
+    return created.id;
   }
 
   async deleteTransaction(transactionId: string): Promise<void> {

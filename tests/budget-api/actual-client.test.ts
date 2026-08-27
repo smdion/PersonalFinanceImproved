@@ -143,46 +143,110 @@ describe("ActualClient", () => {
   });
 
   describe("getMonths", () => {
-    it("filters months by date range", async () => {
+    // GET /months returns a bare array of month-id strings, NOT rich
+    // month objects — re-verified live against a deployed actual-http-api
+    // instance (148-entry array of strings like "2027-07"). Real data only
+    // comes from GET /months/:id, so getMonths filters the id list to the
+    // requested range and fetches each one's detail.
+    it("filters month ids by date range, then fetches each one's real detail", async () => {
       mockFetch.mockReturnValueOnce(
-        jsonResponse({
-          data: [
-            {
-              month: "2025-12",
-              income: 500000,
-              budgeted: 400000,
-              spent: -350000,
-              to_budget: 100000,
-            },
-            {
-              month: "2026-01",
-              income: 600000,
-              budgeted: 500000,
-              spent: -450000,
-              to_budget: 50000,
-            },
-            {
-              month: "2026-02",
-              income: 600000,
-              budgeted: 500000,
-              spent: -450000,
-              to_budget: 50000,
-            },
-          ],
-        }),
+        jsonResponse({ data: ["2025-12", "2026-01", "2026-02"] }),
       );
+      const monthDetail = (month: string, totalIncome: number) =>
+        jsonResponse({
+          data: {
+            month,
+            totalIncome,
+            totalBudgeted: -500000,
+            totalSpent: -450000,
+            toBudget: 50000,
+            categoryGroups: [],
+          },
+        });
+      mockFetch.mockReturnValueOnce(monthDetail("2026-01", 600000));
+      mockFetch.mockReturnValueOnce(monthDetail("2026-02", 600000));
+
       const months = await client.getMonths("2026-01", "2026-02");
       expect(months).toHaveLength(2);
       expect(months[0].month).toBe("2026-01");
       expect(months[0].income).toBe(6000); // 600000 cents = $6000
+      // 2025-12 is out of range — only 3 fetch calls total (list + 2 details).
+      expect(mockFetch).toHaveBeenCalledTimes(3);
     });
   });
 
   describe("createTransaction", () => {
-    it("sends correctly formatted payload in cents, nested under `transaction` (actual-http-api's real request shape)", async () => {
-      // Real response shape is { message: "<id>" }, not { data: { id } } —
-      // see actual-client.ts's createTransaction docblock.
-      mockFetch.mockReturnValueOnce(jsonResponse({ message: "new-tx" }));
+    // Real response is `{"message":"ok"}` — confirmed LIVE against a
+    // deployed actual-http-api instance, both with and without imported_id
+    // set. It never returns the created transaction's id, so the client
+    // looks it back up by its own deterministic imported_id immediately
+    // after POSTing — that's what these mocks exercise (POST, then a GET
+    // whose data includes the newly "created" row).
+    it("sends correctly formatted payload in cents, nested under `transaction`", async () => {
+      let sentImportedId = "";
+      mockFetch.mockImplementationOnce(
+        async (_url: string, init: RequestInit) => {
+          sentImportedId = JSON.parse(init.body as string).transaction
+            .imported_id;
+          return jsonResponse({ message: "ok" });
+        },
+      );
+      mockFetch.mockImplementationOnce(async () =>
+        jsonResponse({
+          data: [
+            {
+              id: "new-tx",
+              account: "acct-1",
+              date: "2026-01-20",
+              amount: -5000,
+              cleared: true,
+              reconciled: false,
+              imported_id: sentImportedId,
+            },
+          ],
+        }),
+      );
+
+      await client.createTransaction({
+        accountId: "acct-1",
+        date: "2026-01-20",
+        amount: -50,
+        payeeName: "Store",
+        categoryId: "cat-1",
+        memo: "Test",
+        cleared: true,
+      });
+      const postBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(postBody.transaction.account).toBe("acct-1");
+      expect(postBody.transaction.amount).toBe(-5000); // dollars → cents
+      expect(postBody.transaction.cleared).toBe(true);
+    });
+
+    it("looks the transaction up by imported_id and returns its real id, not the POST response", async () => {
+      const importedIdCapture: { value?: string } = {};
+      mockFetch.mockImplementationOnce(
+        async (_url: string, init: RequestInit) => {
+          importedIdCapture.value = JSON.parse(
+            init.body as string,
+          ).transaction.imported_id;
+          return jsonResponse({ message: "ok" });
+        },
+      );
+      mockFetch.mockImplementationOnce(async () =>
+        jsonResponse({
+          data: [
+            {
+              id: "real-tx-id",
+              account: "acct-1",
+              date: "2026-01-20",
+              amount: -5000,
+              cleared: true,
+              reconciled: false,
+              imported_id: importedIdCapture.value,
+            },
+          ],
+        }),
+      );
       const id = await client.createTransaction({
         accountId: "acct-1",
         date: "2026-01-20",
@@ -192,16 +256,60 @@ describe("ActualClient", () => {
         memo: "Test",
         cleared: true,
       });
-      expect(id).toBe("new-tx");
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-      expect(body.transaction.account).toBe("acct-1");
-      expect(body.transaction.amount).toBe(-5000); // dollars → cents
-      expect(body.transaction.cleared).toBe(true);
+      expect(id).toBe("real-tx-id");
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(mockFetch.mock.calls[1][0]).toContain(
+        "/accounts/acct-1/transactions?since_date=2026-01-20",
+      );
+    });
+
+    it("throws when the created transaction can't be found back by imported_id", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ message: "ok" })); // POST
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: [] })); // GET — nothing found
+      await expect(
+        client.createTransaction({
+          accountId: "acct-1",
+          date: "2026-01-20",
+          amount: -50,
+          payeeName: "Store",
+          categoryId: "cat-1",
+          memo: "Test",
+          cleared: true,
+        }),
+      ).rejects.toBeInstanceOf(BudgetApiError);
     });
 
     it("includes a deterministic ledgr-prefixed imported_id (M20)", async () => {
-      mockFetch.mockReturnValueOnce(jsonResponse({ message: "tx-a" }));
-      mockFetch.mockReturnValueOnce(jsonResponse({ message: "tx-b" }));
+      const capture: string[] = [];
+      const fakeLookup = () =>
+        jsonResponse({
+          data: [
+            {
+              id: "tx-x",
+              account: "acct-1",
+              date: "2026-01-20",
+              amount: -5000,
+              cleared: true,
+              reconciled: false,
+              imported_id: capture[capture.length - 1],
+            },
+          ],
+        });
+      mockFetch.mockImplementationOnce(
+        async (_url: string, init: RequestInit) => {
+          capture.push(JSON.parse(init.body as string).transaction.imported_id);
+          return jsonResponse({ message: "ok" });
+        },
+      );
+      mockFetch.mockImplementationOnce(fakeLookup);
+      mockFetch.mockImplementationOnce(
+        async (_url: string, init: RequestInit) => {
+          capture.push(JSON.parse(init.body as string).transaction.imported_id);
+          return jsonResponse({ message: "ok" });
+        },
+      );
+      mockFetch.mockImplementationOnce(fakeLookup);
+
       const payload = {
         accountId: "acct-1",
         date: "2026-01-20",
@@ -213,10 +321,8 @@ describe("ActualClient", () => {
       } as const;
       await client.createTransaction(payload);
       await client.createTransaction(payload);
-      const body1 = JSON.parse(mockFetch.mock.calls[0][1].body);
-      const body2 = JSON.parse(mockFetch.mock.calls[1][1].body);
-      expect(body1.transaction.imported_id).toMatch(/^ledgr:/);
-      expect(body1.transaction.imported_id).toBe(body2.transaction.imported_id);
+      expect(capture[0]).toMatch(/^ledgr:/);
+      expect(capture[0]).toBe(capture[1]);
     });
   });
 
@@ -345,24 +451,55 @@ describe("ActualClient", () => {
   });
 
   describe("getMonthDetail", () => {
-    it("maps the month with its categories", async () => {
+    // Real shape re-verified live: totalIncome/totalBudgeted/totalSpent/
+    // toBudget at the top level, categories nested under categoryGroups —
+    // NOT a flat top-level `categories` array. The old flat-shaped mock
+    // (and matching client code) meant this ALWAYS returned an empty
+    // categories array against the real wrapper — see mapMonthDetail's
+    // docblock.
+    it("maps the month summary and flattens categoryGroups into one categories array", async () => {
       mockFetch.mockReturnValueOnce(
         jsonResponse({
           data: {
             month: "2026-01",
-            income: 500000,
-            budgeted: 400000,
-            spent: -350000,
-            to_budget: 100000,
-            categories: [
+            totalIncome: 500000,
+            totalBudgeted: -400000,
+            totalSpent: -350000,
+            toBudget: 100000,
+            categoryGroups: [
               {
-                id: "c1",
-                name: "Rent",
-                group_id: "g1",
+                id: "g1",
+                name: "Housing",
+                is_income: false,
                 hidden: false,
-                budgeted: 150000,
-                spent: -140000,
-                balance: 10000,
+                categories: [
+                  {
+                    id: "c1",
+                    name: "Rent",
+                    group_id: "g1",
+                    hidden: false,
+                    budgeted: 150000,
+                    spent: -140000,
+                    balance: 10000,
+                  },
+                ],
+              },
+              {
+                id: "g2",
+                name: "Food",
+                is_income: false,
+                hidden: false,
+                categories: [
+                  {
+                    id: "c2",
+                    name: "Groceries",
+                    group_id: "g2",
+                    hidden: false,
+                    budgeted: 60000,
+                    spent: -55000,
+                    balance: 5000,
+                  },
+                ],
               },
             ],
           },
@@ -371,7 +508,16 @@ describe("ActualClient", () => {
       const detail = await client.getMonthDetail("2026-01");
       expect(detail.month).toBe("2026-01");
       expect(detail.income).toBe(5000);
-      expect(detail.categories).toHaveLength(1);
+      // totalBudgeted comes back negative from Actual — mapped to a
+      // positive dollar amount matching the per-category convention.
+      expect(detail.budgeted).toBe(4000);
+      expect(detail.categories).toHaveLength(2);
+      expect(detail.categories.map((c) => c.name)).toEqual([
+        "Rent",
+        "Groceries",
+      ]);
+      expect(detail.categories[0].groupName).toBe("Housing");
+      expect(detail.categories[1].groupName).toBe("Food");
     });
   });
 

@@ -10,7 +10,10 @@ import {
   accountMatchColor,
   accountColor,
 } from "@/lib/utils/colors";
-import { getAccountTypeConfig } from "@/lib/config/account-types";
+import {
+  getAccountTypeConfig,
+  isHsaCategory,
+} from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { ContribRow, PortfolioSub } from "./contribution-accounts-types";
 import { InlineText, InlineSelect } from "./contribution-accounts-inline";
@@ -365,8 +368,9 @@ export function AccountCard({
                           checked={pa.allowPenalizedWithdrawals ?? false}
                           onChange={async (e) => {
                             const checked = e.target.checked;
-                            const rate =
-                              pa.accountType === "hsa" ? "20%" : "10%";
+                            const rate = isHsaCategory(pa.accountType)
+                              ? "20%"
+                              : "10%";
                             if (
                               !checked ||
                               (await confirm(

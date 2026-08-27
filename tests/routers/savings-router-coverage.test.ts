@@ -36,14 +36,20 @@ const mockGetClientForService = vi.fn().mockResolvedValue(null);
 const mockCacheGet = vi.fn().mockResolvedValue(null);
 const mockRefreshCategoryCache = vi.fn().mockResolvedValue(undefined);
 
-vi.mock("@/lib/budget-api", () => ({
-  getActiveBudgetApi: (...args: unknown[]) => mockGetActiveBudgetApi(...args),
-  getBudgetAPIClient: (...args: unknown[]) => mockGetBudgetAPIClient(...args),
-  getClientForService: (...args: unknown[]) => mockGetClientForService(...args),
-  cacheGet: (...args: unknown[]) => mockCacheGet(...args),
-  refreshCategoryCache: (...args: unknown[]) =>
-    mockRefreshCategoryCache(...args),
-}));
+vi.mock("@/lib/budget-api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/budget-api")>();
+  return {
+    getActiveBudgetApi: (...args: unknown[]) => mockGetActiveBudgetApi(...args),
+    getBudgetAPIClient: (...args: unknown[]) => mockGetBudgetAPIClient(...args),
+    getClientForService: (...args: unknown[]) =>
+      mockGetClientForService(...args),
+    cacheGet: (...args: unknown[]) => mockCacheGet(...args),
+    refreshCategoryCache: (...args: unknown[]) =>
+      mockRefreshCategoryCache(...args),
+    // Real class — router code does `err instanceof BudgetApiError`.
+    BudgetApiError: actual.BudgetApiError,
+  };
+});
 
 /** Patch rawDb.execute so computeSummary's raw balance query works in SQLite. */
 function patchExecute(
