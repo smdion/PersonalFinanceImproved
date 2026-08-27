@@ -2,8 +2,10 @@ import { describe, it, expect } from "vitest";
 import {
   accountBalancesFromTaxBuckets,
   cloneAccountBalances,
+  subtractPenaltyExposed,
 } from "@/lib/calculators/engine/balance-utils";
-import type { TaxBuckets } from "@/lib/calculators/types";
+import type { AccountBalances, TaxBuckets } from "@/lib/calculators/types";
+import type { EligibilityRecord } from "@/lib/pure/withdrawal-eligibility";
 import {
   getAllCategories,
   getTotalBalance,
@@ -132,5 +134,118 @@ describe("cloneAccountBalances", () => {
     // Original unchanged
     expect(getTotalBalance(original.hsa)).toBe(10000);
     expect(getTotalBalance(original.brokerage)).toBe(20000);
+  });
+});
+
+describe("subtractPenaltyExposed", () => {
+  function zeroByCat() {
+    return Object.fromEntries(getAllCategories().map((c) => [c, 0])) as Record<
+      ReturnType<typeof getAllCategories>[number],
+      number
+    >;
+  }
+
+  it("no-flags-set case (no account has the R41 override): identical to subtracting the plain aggregates", () => {
+    const balances: AccountBalances = accountBalancesFromTaxBuckets(
+      makeBuckets({ hsa: 20000, afterTax: 50000 }),
+    );
+    // accountBalancesFromTaxBuckets splits preTax proportionally across
+    // every roth_traditional category's limit group — pin "401k" directly
+    // to a known value instead, same pattern withdrawal-routing.test.ts's
+    // lockedBalances() helper uses.
+    balances["401k"] = {
+      structure: "roth_traditional",
+      traditional: 100000,
+      roth: 0,
+    };
+    const trad = zeroByCat();
+    trad["401k"] = 40000;
+    const total = zeroByCat();
+    total["401k"] = 40000;
+    total.hsa = 20000;
+    const record: EligibilityRecord = {
+      byKey: new Map(),
+      totalPenaltyExposed: 60000,
+      penaltyExposedTrad: trad,
+      penaltyExposedRoth: zeroByCat(),
+      penaltyExposedTotal: total,
+      // Nothing allowed — "still excluded" is byte-identical to the plain
+      // aggregates above.
+      penaltyExposedTradStillExcluded: trad,
+      penaltyExposedRothStillExcluded: zeroByCat(),
+      penaltyExposedTotalStillExcluded: total,
+      totalPenaltyExposedStillExcluded: 60000,
+    };
+    const result = subtractPenaltyExposed(balances, record);
+    expect(getTotalBalance(result["401k"])).toBe(60000); // 100000 - 40000
+    expect(getTotalBalance(result.hsa)).toBe(0); // 20000 - 20000, HSA (single_bucket)
+    expect(getTotalBalance(result.brokerage)).toBe(50000); // untouched
+  });
+
+  it("HSA (single_bucket structure): an allowed HSA's exposed dollars stay in the pool, a disallowed one's don't", () => {
+    // Two households worth of HSA balance combined into one category total
+    // (subtractPenaltyExposed operates at category grain) — $12k allowed,
+    // $8k not.
+    const balances: AccountBalances = accountBalancesFromTaxBuckets(
+      makeBuckets({ hsa: 20000 }),
+    );
+    const total = zeroByCat();
+    total.hsa = 20000; // blind total: both accounts' exposure
+    const stillExcludedTotal = zeroByCat();
+    stillExcludedTotal.hsa = 8000; // only the disallowed account's exposure
+    const record: EligibilityRecord = {
+      byKey: new Map(),
+      totalPenaltyExposed: 20000,
+      penaltyExposedTrad: zeroByCat(),
+      penaltyExposedRoth: zeroByCat(),
+      penaltyExposedTotal: total,
+      penaltyExposedTradStillExcluded: zeroByCat(),
+      penaltyExposedRothStillExcluded: zeroByCat(),
+      penaltyExposedTotalStillExcluded: stillExcludedTotal,
+      totalPenaltyExposedStillExcluded: 8000,
+    };
+    const result = subtractPenaltyExposed(balances, record);
+    // Only the disallowed $8k is excluded; the allowed $12k stays reachable.
+    expect(getTotalBalance(result.hsa)).toBe(12000);
+  });
+
+  it("roth_traditional structure: subtracts the Trad/Roth StillExcluded aggregates separately, not the blind ones", () => {
+    const balances: AccountBalances =
+      accountBalancesFromTaxBuckets(makeBuckets());
+    balances["401k"] = {
+      structure: "roth_traditional",
+      traditional: 100000,
+      roth: 50000,
+    };
+    const trad = zeroByCat();
+    trad["401k"] = 60000; // blind: both a disallowed and an allowed account
+    const roth = zeroByCat();
+    roth["401k"] = 30000;
+    const tradStillExcluded = zeroByCat();
+    tradStillExcluded["401k"] = 20000; // only the disallowed account's trad exposure
+    const rothStillExcluded = zeroByCat();
+    rothStillExcluded["401k"] = 10000; // only the disallowed account's roth exposure
+    const record: EligibilityRecord = {
+      byKey: new Map(),
+      totalPenaltyExposed: 90000,
+      penaltyExposedTrad: trad,
+      penaltyExposedRoth: roth,
+      penaltyExposedTotal: zeroByCat(),
+      penaltyExposedTradStillExcluded: tradStillExcluded,
+      penaltyExposedRothStillExcluded: rothStillExcluded,
+      penaltyExposedTotalStillExcluded: zeroByCat(),
+      totalPenaltyExposedStillExcluded: 30000,
+    };
+    const result = subtractPenaltyExposed(balances, record);
+    expect(
+      result["401k"].structure === "roth_traditional"
+        ? result["401k"].traditional
+        : NaN,
+    ).toBe(80000); // 100000 - 20000, NOT 100000 - 60000
+    expect(
+      result["401k"].structure === "roth_traditional"
+        ? result["401k"].roth
+        : NaN,
+    ).toBe(40000); // 50000 - 10000, NOT 50000 - 30000
   });
 });

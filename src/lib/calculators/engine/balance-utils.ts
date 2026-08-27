@@ -91,18 +91,25 @@ export function subtractPenaltyExposed(
     if (bal.structure === "roth_traditional") {
       setTraditional(
         bal,
-        Math.max(0, bal.traditional - (record.penaltyExposedTrad[cat] ?? 0)),
+        Math.max(
+          0,
+          bal.traditional - (record.penaltyExposedTradStillExcluded[cat] ?? 0),
+        ),
       );
       setRoth(
         bal,
-        Math.max(0, bal.roth - (record.penaltyExposedRoth[cat] ?? 0)),
+        Math.max(
+          0,
+          bal.roth - (record.penaltyExposedRothStillExcluded[cat] ?? 0),
+        ),
       );
     } else {
       setBalance(
         bal,
         Math.max(
           0,
-          getTotalBalance(bal) - (record.penaltyExposedTotal[cat] ?? 0),
+          getTotalBalance(bal) -
+            (record.penaltyExposedTotalStillExcluded[cat] ?? 0),
         ),
       );
     }

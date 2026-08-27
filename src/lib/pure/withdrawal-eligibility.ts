@@ -94,6 +94,17 @@ export type EligibilityAccountInput = {
    *  since Rule-of-55-ineligible is not the same as locked (the pro_rata
    *  branch below is "Rule of 55 OR 59½"). */
   ruleOf55ForceIneligible?: boolean;
+  /** Household is fine paying the penalty on THIS account if it avoids an
+   *  otherwise-real shortfall (R41). Only ever `true` when set — see
+   *  `IndividualAccountInput.allowPenalizedWithdrawals`'s docblock
+   *  (`lib/calculators/types/shared.ts`) for the full contract. This
+   *  module doesn't gate on it directly (same "compute the partition,
+   *  don't decide policy" boundary as the module docblock's § Q0 note) —
+   *  it just carries the flag onto `AccountEligibility` and folds it into
+   *  the record's "still excluded" aggregates below, which
+   *  `subtractPenaltyExposed` (`engine/balance-utils.ts`) is the one that
+   *  actually acts on. */
+  allowPenalizedWithdrawals?: boolean;
 };
 
 /** Composite-key function — deliberately the same shape as the engine's own
@@ -140,6 +151,11 @@ export type AccountEligibility = {
    *  `RothBasisState.stale`/`isSeeded`. The figure may understate real
    *  basis; never overstates it. */
   basisUncertain?: boolean;
+  /** Copied straight from `EligibilityAccountInput.allowPenalizedWithdrawals`
+   *  (R41) — always present (defaults `false`), unlike the input's own
+   *  omit-when-false convention, since this is an internal record read by
+   *  the engine rather than a cache-hashed payload field. */
+  allowPenalizedWithdrawals: boolean;
 };
 
 export type EligibilityRecord = {
@@ -151,6 +167,22 @@ export type EligibilityRecord = {
   penaltyExposedTrad: Record<AccountCategory, number>;
   penaltyExposedRoth: Record<AccountCategory, number>;
   penaltyExposedTotal: Record<AccountCategory, number>;
+  /** Same three aggregates, but excluding any account with
+   *  `allowPenalizedWithdrawals: true` (R41) — the narrower total that
+   *  `subtractPenaltyExposed` actually excludes from the routable pool, so
+   *  an allowed account's exposed dollars stay reachable while every other
+   *  account's stay excluded. Identical to the aggregates above whenever no
+   *  account has the override set (the default), by construction. */
+  penaltyExposedTradStillExcluded: Record<AccountCategory, number>;
+  penaltyExposedRothStillExcluded: Record<AccountCategory, number>;
+  penaltyExposedTotalStillExcluded: Record<AccountCategory, number>;
+  /** Scalar sum of `penaltyExposedTotalStillExcluded` across every category
+   *  — the R41 counterpart to `totalPenaltyExposed`. `routeForMode` MUST
+   *  gate its early-out and price `penaltyAvoidedShortfall` off THIS value,
+   *  not `totalPenaltyExposed`: once any account opts in, the two diverge,
+   *  and using the blind total would attribute a real household shortfall
+   *  to "penalty avoidance" for dollars that were never excluded at all. */
+  totalPenaltyExposedStillExcluded: number;
 };
 
 function zeroByCategory(): Record<AccountCategory, number> {
@@ -211,7 +243,11 @@ export function computeWithdrawalEligibility(input: {
   const penaltyExposedTrad = zeroByCategory();
   const penaltyExposedRoth = zeroByCategory();
   const penaltyExposedTotal = zeroByCategory();
+  const penaltyExposedTradStillExcluded = zeroByCategory();
+  const penaltyExposedRothStillExcluded = zeroByCategory();
+  const penaltyExposedTotalStillExcluded = zeroByCategory();
   let totalPenaltyExposed = 0;
+  let totalPenaltyExposedStillExcluded = 0;
 
   for (const ia of indAccts) {
     const key = indKey(ia);
@@ -357,6 +393,7 @@ export function computeWithdrawalEligibility(input: {
       reason,
       ...(basisRemaining != null ? { basisRemaining } : {}),
       ...(basisUncertain ? { basisUncertain } : {}),
+      allowPenalizedWithdrawals: ia.allowPenalizedWithdrawals ?? false,
     });
 
     if (penaltyExposedAmount > 0) {
@@ -367,6 +404,15 @@ export function computeWithdrawalEligibility(input: {
       } else {
         penaltyExposedTrad[ia.category] += penaltyExposedAmount;
       }
+      if (!ia.allowPenalizedWithdrawals) {
+        totalPenaltyExposedStillExcluded += penaltyExposedAmount;
+        penaltyExposedTotalStillExcluded[ia.category] += penaltyExposedAmount;
+        if (isTaxFreeBucket(ia.taxType)) {
+          penaltyExposedRothStillExcluded[ia.category] += penaltyExposedAmount;
+        } else {
+          penaltyExposedTradStillExcluded[ia.category] += penaltyExposedAmount;
+        }
+      }
     }
   }
 
@@ -376,5 +422,9 @@ export function computeWithdrawalEligibility(input: {
     penaltyExposedTrad,
     penaltyExposedRoth,
     penaltyExposedTotal,
+    penaltyExposedTradStillExcluded,
+    penaltyExposedRothStillExcluded,
+    penaltyExposedTotalStillExcluded,
+    totalPenaltyExposedStillExcluded,
   };
 }

@@ -545,24 +545,39 @@ function lockedBalances(overrides: Partial<AccountBalances> = {}): {
     brokerage: { structure: "basis_tracking", balance: 60000, basis: 30000 },
     ...overrides,
   };
+  const penaltyExposedTrad = {
+    "401k": 100000,
+    "403b": 0,
+    ira: 0,
+    hsa: 0,
+    brokerage: 0,
+  };
+  const penaltyExposedRoth = {
+    "401k": 0,
+    "403b": 0,
+    ira: 0,
+    hsa: 0,
+    brokerage: 0,
+  };
+  const penaltyExposedTotal = {
+    "401k": 100000,
+    "403b": 0,
+    ira: 0,
+    hsa: 0,
+    brokerage: 0,
+  };
   const eligibility: EligibilityRecord = {
     byKey: new Map(),
     totalPenaltyExposed: 100000,
-    penaltyExposedTrad: {
-      "401k": 100000,
-      "403b": 0,
-      ira: 0,
-      hsa: 0,
-      brokerage: 0,
-    },
-    penaltyExposedRoth: { "401k": 0, "403b": 0, ira: 0, hsa: 0, brokerage: 0 },
-    penaltyExposedTotal: {
-      "401k": 100000,
-      "403b": 0,
-      ira: 0,
-      hsa: 0,
-      brokerage: 0,
-    },
+    penaltyExposedTrad,
+    penaltyExposedRoth,
+    penaltyExposedTotal,
+    // No account has the R41 override in this fixture, so "still excluded"
+    // is identical to the plain aggregates above.
+    penaltyExposedTradStillExcluded: penaltyExposedTrad,
+    penaltyExposedRothStillExcluded: penaltyExposedRoth,
+    penaltyExposedTotalStillExcluded: penaltyExposedTotal,
+    totalPenaltyExposedStillExcluded: 100000,
   };
   return { balances, eligibility };
 }
@@ -599,32 +614,39 @@ describe("routeForMode (Tier B eligibility gate)", () => {
     // the property reconciliation now guarantees upstream, in
     // decumulation-year.ts, before eligibility is ever computed.
     const balances = lockedBalances().balances;
+    // Exactly equal to balances["401k"].traditional (100000) -- the
+    // no-drift case reconciliation guarantees.
+    const lockedTrad = {
+      "401k": 100000,
+      "403b": 0,
+      ira: 0,
+      hsa: 0,
+      brokerage: 0,
+    };
+    const lockedRoth = {
+      "401k": 0,
+      "403b": 0,
+      ira: 0,
+      hsa: 0,
+      brokerage: 0,
+    };
+    const lockedTotal = {
+      "401k": 100000,
+      "403b": 0,
+      ira: 0,
+      hsa: 0,
+      brokerage: 0,
+    };
     const fullyLockedEligibility: EligibilityRecord = {
       byKey: new Map(),
       totalPenaltyExposed: 100000,
-      // Exactly equal to balances["401k"].traditional (100000) -- the
-      // no-drift case reconciliation guarantees.
-      penaltyExposedTrad: {
-        "401k": 100000,
-        "403b": 0,
-        ira: 0,
-        hsa: 0,
-        brokerage: 0,
-      },
-      penaltyExposedRoth: {
-        "401k": 0,
-        "403b": 0,
-        ira: 0,
-        hsa: 0,
-        brokerage: 0,
-      },
-      penaltyExposedTotal: {
-        "401k": 100000,
-        "403b": 0,
-        ira: 0,
-        hsa: 0,
-        brokerage: 0,
-      },
+      penaltyExposedTrad: lockedTrad,
+      penaltyExposedRoth: lockedRoth,
+      penaltyExposedTotal: lockedTotal,
+      penaltyExposedTradStillExcluded: lockedTrad,
+      penaltyExposedRothStillExcluded: lockedRoth,
+      penaltyExposedTotalStillExcluded: lockedTotal,
+      totalPenaltyExposedStillExcluded: 100000,
     };
     const config = makeDecumulationConfig({
       withdrawalRoutingMode: "waterfall",
@@ -708,6 +730,7 @@ describe("routeForMode (Tier B eligibility gate)", () => {
     const noLock: EligibilityRecord = {
       ...eligibility,
       totalPenaltyExposed: 0,
+      totalPenaltyExposedStillExcluded: 0,
     };
     const config = makeDecumulationConfig({
       withdrawalRoutingMode: "waterfall",
@@ -821,18 +844,21 @@ describe("routeForMode (Tier B eligibility gate)", () => {
       withdrawalRoutingMode: "waterfall",
       withdrawalOrder: ["401k", "ira", "brokerage", "hsa"],
     });
+    const zeroByCat = () =>
+      Object.fromEntries(getAllCategories().map((c) => [c, 0])) as Record<
+        AccountCategory,
+        number
+      >;
     const zeroExposure: EligibilityRecord = {
       byKey: new Map(),
       totalPenaltyExposed: 0,
-      penaltyExposedTrad: Object.fromEntries(
-        getAllCategories().map((c) => [c, 0]),
-      ) as Record<AccountCategory, number>,
-      penaltyExposedRoth: Object.fromEntries(
-        getAllCategories().map((c) => [c, 0]),
-      ) as Record<AccountCategory, number>,
-      penaltyExposedTotal: Object.fromEntries(
-        getAllCategories().map((c) => [c, 0]),
-      ) as Record<AccountCategory, number>,
+      penaltyExposedTrad: zeroByCat(),
+      penaltyExposedRoth: zeroByCat(),
+      penaltyExposedTotal: zeroByCat(),
+      penaltyExposedTradStillExcluded: zeroByCat(),
+      penaltyExposedRothStillExcluded: zeroByCat(),
+      penaltyExposedTotalStillExcluded: zeroByCat(),
+      totalPenaltyExposedStillExcluded: 0,
     };
     const withZeroExposure = routeForMode(
       50000,

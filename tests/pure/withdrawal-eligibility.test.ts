@@ -577,4 +577,77 @@ describe("computeWithdrawalEligibility — tracked basis (indBasis)", () => {
       "Locked until age 59½ — no basis remaining",
     );
   });
+
+  // R41 — per-account penalty-allowance override
+  describe("allowPenalizedWithdrawals (R41)", () => {
+    it("defaults to false and leaves the *StillExcluded aggregates identical to the plain ones when no account opts in", () => {
+      const ia = account({
+        name: "Old Employer 401k",
+        ownerBirthYear: 1990, // age 36 in 2026
+        ruleOf55: {
+          eligible: false,
+          separationYear: 2020,
+          source: "derived",
+          knownFutureSeparationYear: null,
+        },
+      });
+      const record = computeWithdrawalEligibility({
+        year: 2026,
+        indAccts: [ia],
+        indBal: new Map([[indKey(ia), 100000]]),
+        indKey,
+      });
+      const entry = record.byKey.get(indKey(ia))!;
+      expect(entry.allowPenalizedWithdrawals).toBe(false);
+      expect(record.penaltyExposedTradStillExcluded).toEqual(
+        record.penaltyExposedTrad,
+      );
+      expect(record.penaltyExposedRothStillExcluded).toEqual(
+        record.penaltyExposedRoth,
+      );
+      expect(record.penaltyExposedTotalStillExcluded).toEqual(
+        record.penaltyExposedTotal,
+      );
+    });
+
+    it("excludes an allowed account's exposed dollars from *StillExcluded while keeping a disallowed sibling's in both", () => {
+      const lockedRuleOf55 = {
+        eligible: false,
+        separationYear: 2020,
+        source: "derived" as const,
+        knownFutureSeparationYear: null,
+      };
+      const allowedAcct = account({
+        name: "Allowed 401k",
+        ownerBirthYear: 1990,
+        ruleOf55: lockedRuleOf55,
+        allowPenalizedWithdrawals: true,
+      });
+      const disallowedAcct = account({
+        name: "Disallowed 401k",
+        ownerBirthYear: 1990,
+        ruleOf55: lockedRuleOf55,
+      });
+      const record = computeWithdrawalEligibility({
+        year: 2026,
+        indAccts: [allowedAcct, disallowedAcct],
+        indBal: new Map([
+          [indKey(allowedAcct), 40000],
+          [indKey(disallowedAcct), 60000],
+        ]),
+        indKey,
+      });
+      // Both accounts are fully penalty-exposed (Rule of 55 not met, under
+      // 59.5) -- the plain aggregate sums both.
+      expect(record.penaltyExposedTrad["401k"]).toBe(100000);
+      // The "still excluded" aggregate only counts the disallowed account.
+      expect(record.penaltyExposedTradStillExcluded["401k"]).toBe(60000);
+      expect(
+        record.byKey.get(indKey(allowedAcct))?.allowPenalizedWithdrawals,
+      ).toBe(true);
+      expect(
+        record.byKey.get(indKey(disallowedAcct))?.allowPenalizedWithdrawals,
+      ).toBe(false);
+    });
+  });
 });

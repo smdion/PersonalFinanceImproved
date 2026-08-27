@@ -14,6 +14,7 @@ import { getAccountTypeConfig } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { ContribRow, PortfolioSub } from "./contribution-accounts-types";
 import { InlineText, InlineSelect } from "./contribution-accounts-inline";
+import { HelpTip } from "@/components/ui/help-tip";
 import {
   SubAccountRow,
   SubAccountInactiveSection,
@@ -59,6 +60,7 @@ export function AccountCard({
     ownershipType: string;
     retirementBehavior?: string;
     contributionScaling?: string;
+    allowPenalizedWithdrawals?: boolean;
     parentCategory: string;
     isActive: boolean;
     displayOrder: number;
@@ -354,6 +356,39 @@ export function AccountCard({
                             Delete Account{" "}
                           </button>
                         )}{" "}
+                      </div>
+                    )}{" "}
+                    {showDanger && pa.ownershipType !== "joint" && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <input
+                          type="checkbox"
+                          checked={pa.allowPenalizedWithdrawals ?? false}
+                          onChange={async (e) => {
+                            const checked = e.target.checked;
+                            const rate =
+                              pa.accountType === "hsa" ? "20%" : "10%";
+                            if (
+                              !checked ||
+                              (await confirm(
+                                `Allow the retirement projection to draw from this account even when it's early-withdrawal penalty-exposed? The projection will pay the ${rate} penalty on any exposed dollars it draws here. The household still avoids the penalty on every other account.`,
+                              ))
+                            ) {
+                              onPerfUpdate({
+                                allowPenalizedWithdrawals: checked,
+                              });
+                            }
+                          }}
+                          disabled={!onPerfUpdate}
+                          className="rounded border-strong"
+                          id={`allow-penalty-${pa.id}`}
+                        />
+                        <label
+                          htmlFor={`allow-penalty-${pa.id}`}
+                          className="text-xs text-muted"
+                        >
+                          Allow early-withdrawal penalty on this account
+                        </label>
+                        <HelpTip text="If checked, the retirement projection may draw penalty-exposed money from this specific account, paying the 10% (20% for HSA) penalty when it does. The household still avoids the penalty on every other account. This is not a last-resort-only setting — normal withdrawal order decides when it's drawn." />
                       </div>
                     )}{" "}
                   </div>{" "}

@@ -596,6 +596,51 @@ export async function buildEnginePayload(
       { ruleOf55: entry.ruleOf55, rothBasisMeta: entry.rothBasisMeta },
     );
   }
+  // Per-account penalty-allowance override (R41) — account-level, not
+  // person-level, so (unlike ruleOf55/rothBasisMeta above) joint accounts
+  // are included, not skipped. Only ever records `true`: same omit-when-
+  // false cache-hash-stability convention as `ruleOf55ForceIneligible`.
+  const allowPenalizedByPerfAccountId = new Map(
+    perfAccounts.map((p) => [p.id, p.allowPenalizedWithdrawals]),
+  );
+  // The join key (name/category/taxType/owner) is NOT guaranteed unique —
+  // `performanceAccounts`' own unique index is on
+  // (institution, accountType, subType, label, ownerPersonId), a different
+  // tuple. Two distinct real accounts can collide onto the same join key
+  // (e.g. same display name, different institution). Fail CLOSED on that
+  // ambiguity: never allow the penalty on a join key that maps to more than
+  // one distinct performanceAccountId, even if one of the colliding
+  // accounts has the override set — this flag only ever authorizes a real
+  // tax penalty, so an ambiguous match must default to "not allowed", never
+  // silently apply to an account the user never touched.
+  const perfAccountIdsByJoinKey = new Map<string, Set<number>>();
+  for (const entry of accountAnalysis) {
+    if (entry.performanceAccountId == null) continue;
+    const key = eligibilityJoinKey(
+      entry.displayName,
+      entry.category,
+      entry.taxType,
+      entry.ownerPersonId,
+    );
+    const ids = perfAccountIdsByJoinKey.get(key) ?? new Set<number>();
+    ids.add(entry.performanceAccountId);
+    perfAccountIdsByJoinKey.set(key, ids);
+  }
+  const allowPenalizedByJoinKey = new Map<string, true>();
+  for (const entry of accountAnalysis) {
+    if (entry.performanceAccountId == null) continue;
+    const key = eligibilityJoinKey(
+      entry.displayName,
+      entry.category,
+      entry.taxType,
+      entry.ownerPersonId,
+    );
+    const ids = perfAccountIdsByJoinKey.get(key);
+    if (!ids || ids.size > 1) continue; // ambiguous join key — fail closed
+    if (!allowPenalizedByPerfAccountId.get(entry.performanceAccountId))
+      continue;
+    allowPenalizedByJoinKey.set(key, true);
+  }
   const settingsMap = new Map(
     allAppSettings.map((s: { key: string; value: unknown }) => [
       s.key,
@@ -1406,6 +1451,14 @@ export async function buildEnginePayload(
               ruleOf55OverrideByPerson.get(a.ownerPersonId) === false
                 ? true
                 : undefined,
+            allowPenalizedWithdrawals: allowPenalizedByJoinKey.get(
+              eligibilityJoinKey(
+                a.name,
+                cat,
+                a.taxType,
+                a.ownerPersonId ?? null,
+              ),
+            ),
           };
         }),
     ),

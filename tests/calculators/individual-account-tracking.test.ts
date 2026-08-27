@@ -365,6 +365,194 @@ describe("distributeWithdrawals", () => {
     expect(resultExceeds.get(indKey(locked))).toBe(10000);
   });
 
+  it("R41: a residual that must reach into penalty-exposed money draws from an allowed account before a disallowed sibling's", () => {
+    const allowed = makeIndividualAccount({
+      name: "Allowed 401k",
+      category: "401k",
+      taxType: "preTax",
+      ownerPersonId: 1,
+    });
+    const disallowed = makeIndividualAccount({
+      name: "Disallowed 401k",
+      category: "401k",
+      taxType: "preTax",
+      ownerPersonId: 2,
+    });
+    const indBal = new Map<string, number>();
+    indBal.set(indKey(allowed), 20000);
+    indBal.set(indKey(disallowed), 20000);
+
+    const zeroByCat = (v = 0) => ({
+      "401k": v,
+      "403b": 0,
+      ira: 0,
+      hsa: 0,
+      brokerage: 0,
+    });
+    const eligibility: EligibilityRecord = {
+      byKey: new Map([
+        [
+          indKey(allowed),
+          {
+            indKey: indKey(allowed),
+            category: "401k",
+            taxType: "preTax",
+            penaltyFreeAmount: 0,
+            penaltyExposedAmount: 20000,
+            reason: "Locked until Rule of 55 or age 59½",
+            allowPenalizedWithdrawals: true,
+          },
+        ],
+        [
+          indKey(disallowed),
+          {
+            indKey: indKey(disallowed),
+            category: "401k",
+            taxType: "preTax",
+            penaltyFreeAmount: 0,
+            penaltyExposedAmount: 20000,
+            reason: "Locked until Rule of 55 or age 59½",
+            allowPenalizedWithdrawals: false,
+          },
+        ],
+      ]),
+      totalPenaltyExposed: 40000,
+      penaltyExposedTrad: zeroByCat(40000),
+      penaltyExposedRoth: zeroByCat(),
+      penaltyExposedTotal: zeroByCat(40000),
+      // Only the disallowed account's exposure remains "still excluded" —
+      // matches what subtractPenaltyExposed would have already pulled out
+      // of the category pool upstream in routeForMode.
+      penaltyExposedTradStillExcluded: zeroByCat(20000),
+      penaltyExposedRothStillExcluded: zeroByCat(),
+      penaltyExposedTotalStillExcluded: zeroByCat(20000),
+    };
+
+    // routeForMode already decided the category needs $15k, which the
+    // (now partially-included) pool can supply — this call only tests the
+    // fan-out's account-level preference among the two individual accounts.
+    const slots: DecumulationSlot[] = [
+      makeDecumulationSlot("401k", {
+        withdrawal: 15000,
+        traditionalWithdrawal: 15000,
+      }),
+    ];
+    const { decIndWithdrawal } = distributeWithdrawals(
+      slots,
+      [allowed, disallowed],
+      indKey,
+      new Map(indBal),
+      eligibility,
+    );
+    expect(decIndWithdrawal.get(indKey(allowed))).toBe(15000);
+    expect(decIndWithdrawal.get(indKey(disallowed)) ?? 0).toBe(0);
+
+    // Need exceeds the allowed account's entire balance ($20k) — the
+    // residual is reported as a shortfall rather than falling through to
+    // the disallowed sibling's exposed balance, which must stay fully
+    // unreachable regardless (R41 — see `distributeProportionallyPreferring
+    // PenaltyFree`'s docblock).
+    const bigSlots: DecumulationSlot[] = [
+      makeDecumulationSlot("401k", {
+        withdrawal: 30000,
+        traditionalWithdrawal: 30000,
+      }),
+    ];
+    const { decIndWithdrawal: bigResult, warnings } = distributeWithdrawals(
+      bigSlots,
+      [allowed, disallowed],
+      indKey,
+      new Map(indBal),
+      eligibility,
+    );
+    expect(bigResult.get(indKey(allowed))).toBe(20000);
+    expect(bigResult.get(indKey(disallowed)) ?? 0).toBe(0);
+    expect(warnings.length).toBeGreaterThan(0);
+    expect(warnings[0]).toContain("$10000.00");
+  });
+
+  it("R41: a residual splits proportionally across MULTIPLE allowed accounts by exposed balance", () => {
+    const allowedA = makeIndividualAccount({
+      name: "Allowed A",
+      category: "401k",
+      taxType: "preTax",
+      ownerPersonId: 1,
+    });
+    const allowedB = makeIndividualAccount({
+      name: "Allowed B",
+      category: "401k",
+      taxType: "preTax",
+      ownerPersonId: 1,
+    });
+    const disallowed = makeIndividualAccount({
+      name: "Disallowed",
+      category: "401k",
+      taxType: "preTax",
+      ownerPersonId: 2,
+    });
+    const indBal = new Map<string, number>();
+    indBal.set(indKey(allowedA), 30000); // 3x allowedB's balance
+    indBal.set(indKey(allowedB), 10000);
+    indBal.set(indKey(disallowed), 50000);
+
+    const zeroByCat = (v = 0) => ({
+      "401k": v,
+      "403b": 0,
+      ira: 0,
+      hsa: 0,
+      brokerage: 0,
+    });
+    const acctEligibility = (
+      k: string,
+      penaltyExposedAmount: number,
+      allowPenalizedWithdrawals: boolean,
+    ) => ({
+      indKey: k,
+      category: "401k" as const,
+      taxType: "preTax",
+      penaltyFreeAmount: 0,
+      penaltyExposedAmount,
+      reason: "Locked until Rule of 55 or age 59½",
+      allowPenalizedWithdrawals,
+    });
+    const eligibility: EligibilityRecord = {
+      byKey: new Map([
+        [indKey(allowedA), acctEligibility(indKey(allowedA), 30000, true)],
+        [indKey(allowedB), acctEligibility(indKey(allowedB), 10000, true)],
+        [indKey(disallowed), acctEligibility(indKey(disallowed), 50000, false)],
+      ]),
+      totalPenaltyExposed: 90000,
+      penaltyExposedTrad: zeroByCat(90000),
+      penaltyExposedRoth: zeroByCat(),
+      penaltyExposedTotal: zeroByCat(90000),
+      penaltyExposedTradStillExcluded: zeroByCat(50000),
+      penaltyExposedRothStillExcluded: zeroByCat(),
+      penaltyExposedTotalStillExcluded: zeroByCat(50000),
+      totalPenaltyExposedStillExcluded: 50000,
+    };
+
+    // routeForMode already decided the category needs $20k, entirely from
+    // penalty-exposed money (both allowed accounts are 100% exposed) —
+    // this only tests the proportional split ACROSS the two allowed
+    // accounts, by their exposed balance (30k : 10k, a 3:1 ratio).
+    const slots: DecumulationSlot[] = [
+      makeDecumulationSlot("401k", {
+        withdrawal: 20000,
+        traditionalWithdrawal: 20000,
+      }),
+    ];
+    const { decIndWithdrawal } = distributeWithdrawals(
+      slots,
+      [allowedA, allowedB, disallowed],
+      indKey,
+      new Map(indBal),
+      eligibility,
+    );
+    expect(decIndWithdrawal.get(indKey(allowedA))).toBe(15000); // 3/4 of 20k
+    expect(decIndWithdrawal.get(indKey(allowedB))).toBe(5000); // 1/4 of 20k
+    expect(decIndWithdrawal.get(indKey(disallowed)) ?? 0).toBe(0);
+  });
+
   it("falls through to plain proportional distribution when eligibility.totalPenaltyExposed is 0 (byte-identity no-op)", () => {
     const accounts: IndividualAccountInput[] = [
       makeIndividualAccount({

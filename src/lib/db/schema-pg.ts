@@ -656,6 +656,22 @@ export const performanceAccounts = pgTable(
      *  applicable / not entered; the UI derives a default suggestion from
      *  linked jobs but never writes it here automatically. */
     separationDate: date("separation_date"),
+    /** Household is fine paying the 10%/20% early-withdrawal penalty on
+     *  THIS account when the projection needs to draw from it. Default
+     *  false = today's behavior (this account participates in the
+     *  household-wide hard exclusion like every other account, never
+     *  touched while penalty-free money exists anywhere). True makes this
+     *  account's penalty-exposed balance normally withdrawable again —
+     *  ordinary routing order (waterfall/bracket-filling) decides WHEN it's
+     *  drawn, same as any other reachable dollar. This is NOT a strict
+     *  "only as a true last resort, after every other account is
+     *  exhausted" guarantee — that would require reordering withdrawal
+     *  routing across account categories, a larger change tracked
+     *  separately (FEATURE-ROADMAP.md R41 follow-up). One-way opt-in per
+     *  account, set by the user — never inferred. See R41. */
+    allowPenalizedWithdrawals: boolean("allow_penalized_withdrawals")
+      .notNull()
+      .default(false),
     parentCategory: text("parent_category").notNull(),
     isActive: boolean("is_active").notNull().default(true),
     displayOrder: integer("display_order").notNull().default(0),

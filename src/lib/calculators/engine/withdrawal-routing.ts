@@ -891,7 +891,11 @@ export function routeForMode(
 ): RouteResult {
   if (
     exposure == null ||
-    exposure.totalPenaltyExposed === 0 ||
+    // R41: gate on the STILL-excluded total, not the blind total — once any
+    // account has opted in, the two diverge, and this early-out must only
+    // fire when there is truly nothing left excluded (see
+    // EligibilityRecord.totalPenaltyExposedStillExcluded's docblock).
+    exposure.totalPenaltyExposedStillExcluded === 0 ||
     !config.avoidPenalizedWithdrawals
   ) {
     return dispatchOnce(targetWithdrawal, config, balances, bracketInfo);
@@ -905,8 +909,11 @@ export function routeForMode(
     bracketInfo,
   );
   if (result.unmetNeed == null || result.unmetNeed <= 0) return result;
+  // R41: cap against the STILL-excluded total, not the blind total — an
+  // allowed account's exposed dollars were never excluded from this
+  // dispatch, so a real shortfall must never be attributed to them.
   const penaltyAvoidedShortfall = roundToCents(
-    Math.min(result.unmetNeed, exposure.totalPenaltyExposed),
+    Math.min(result.unmetNeed, exposure.totalPenaltyExposedStillExcluded),
   );
   return { ...result, penaltyAvoidedShortfall };
 }
