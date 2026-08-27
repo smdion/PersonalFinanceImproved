@@ -13,6 +13,7 @@ import type {
   ResolvedDecumulationConfig,
   AccountBalances,
   AccountCategory,
+  FilingStatusType,
 } from "../types";
 import { roundToCents } from "../../utils/math";
 import {
@@ -29,6 +30,8 @@ import { incomeCapForMarginalRate } from "./tax-estimation";
 import type { WithholdingBracket } from "./tax-estimation";
 import { subtractPenaltyExposed } from "./balance-utils";
 import type { EligibilityRecord } from "@/lib/pure/withdrawal-eligibility";
+import { rankWithdrawalTiers } from "./withdrawal-cost-ranking";
+import type { WithdrawalSourceKind } from "./withdrawal-cost-ranking";
 
 const ACCOUNT_CATEGORIES: AccountCategory[] = getAllCategories();
 
@@ -337,11 +340,7 @@ export function routeWithdrawalsBracketFilling(
   targetWithdrawal: number,
   config: ResolvedDecumulationConfig,
   balances: AccountBalances,
-  bracketInfo: {
-    taxBrackets?: WithholdingBracket[];
-    rothBracketTarget?: number;
-    taxableSS: number;
-  },
+  bracketInfo: RouteBracketInfo,
 ): {
   slots: DecumulationSlot[];
   warnings: string[];
@@ -419,103 +418,258 @@ export function routeWithdrawalsBracketFilling(
     }
   }
 
-  // --- Phase 2: Roth from 401k/403b + IRA (tax-free, no bracket impact) ---
-  for (const category of categoriesWithTaxPreference()) {
-    if (remaining <= 0) break;
+  // --- Phases 2-4: cost-ranked sources (v0.7.9 R40 follow-up) ---
+  // Roth, brokerage, and HSA no longer drain in a fixed order — a
+  // non-qualified Roth growth withdrawal is real ordinary-rate income
+  // (v0.7.8), so draining it before brokerage sitting in the real 0%/15%
+  // LTCG zone can pick the more expensive source purely from sequencing.
+  // rankWithdrawalTiers (withdrawal-cost-ranking.ts) orders the remaining
+  // need by actual marginal cost instead; this loop just mechanically
+  // drains whatever order it returns, reusing the same per-category
+  // draw/cap/merge logic each source always used.
 
-    const accountCap = config.withdrawalAccountCaps[category];
-    const catDrawn = categoryWithdrawn.get(category) ?? 0;
-    const accountRoom =
-      accountCap !== null ? Math.max(0, accountCap - catDrawn) : Infinity;
-    const rothTypeRoom =
-      rothTypeCap !== null
-        ? Math.max(0, rothTypeCap - totalRothWithdrawn)
-        : Infinity;
+  function drawRothTierCapped(cap: number): void {
+    let tierRemaining = Math.min(remaining, cap);
+    for (const category of categoriesWithTaxPreference()) {
+      if (remaining <= 0 || tierRemaining <= 0) break;
 
-    const rothAvailable = getRothBalance(balances[category]);
-    const rothDraw = roundToCents(
-      Math.min(remaining, rothAvailable, accountRoom, rothTypeRoom),
-    );
+      const accountCap = config.withdrawalAccountCaps[category];
+      const catDrawn = categoryWithdrawn.get(category) ?? 0;
+      const accountRoom =
+        accountCap !== null ? Math.max(0, accountCap - catDrawn) : Infinity;
+      const rothTypeRoom =
+        rothTypeCap !== null
+          ? Math.max(0, rothTypeCap - totalRothWithdrawn)
+          : Infinity;
 
-    if (rothDraw > 0) {
-      remaining = roundToCents(remaining - rothDraw);
-      totalRothWithdrawn += rothDraw;
-      categoryWithdrawn.set(category, catDrawn + rothDraw);
+      const rothAvailable = Math.max(
+        0,
+        getRothBalance(balances[category]) -
+          (categoryRothDrawn.get(category) ?? 0),
+      );
+      const rothDraw = roundToCents(
+        Math.min(
+          remaining,
+          tierRemaining,
+          rothAvailable,
+          accountRoom,
+          rothTypeRoom,
+        ),
+      );
 
-      // Merge with existing slot for this category if we already drew traditional
-      const existing = slots.find((s) => s.category === category);
-      if (existing) {
-        existing.rothWithdrawal = rothDraw;
-        existing.withdrawal = roundToCents(existing.withdrawal + rothDraw);
-        existing.cappedByAccount =
-          existing.cappedByAccount ||
-          (accountCap !== null && rothDraw >= accountRoom);
-        existing.cappedByTaxType =
-          existing.cappedByTaxType ||
-          (rothTypeCap !== null && rothDraw >= rothTypeRoom);
-        existing.remainingNeed = remaining > 0 ? remaining : 0;
-      } else {
-        slots.push({
+      if (rothDraw > 0) {
+        remaining = roundToCents(remaining - rothDraw);
+        tierRemaining = roundToCents(tierRemaining - rothDraw);
+        totalRothWithdrawn += rothDraw;
+        categoryWithdrawn.set(category, catDrawn + rothDraw);
+        categoryRothDrawn.set(
           category,
-          withdrawal: rothDraw,
-          rothWithdrawal: rothDraw,
-          traditionalWithdrawal: 0,
-          cappedByAccount: accountCap !== null && rothDraw >= accountRoom,
-          cappedByTaxType: rothTypeCap !== null && rothDraw >= rothTypeRoom,
-          remainingNeed: remaining > 0 ? remaining : 0,
-        });
+          (categoryRothDrawn.get(category) ?? 0) + rothDraw,
+        );
+
+        const existing = slots.find((s) => s.category === category);
+        if (existing) {
+          existing.rothWithdrawal = roundToCents(
+            existing.rothWithdrawal + rothDraw,
+          );
+          existing.withdrawal = roundToCents(existing.withdrawal + rothDraw);
+          existing.cappedByAccount =
+            existing.cappedByAccount ||
+            (accountCap !== null && rothDraw >= accountRoom);
+          existing.cappedByTaxType =
+            existing.cappedByTaxType ||
+            (rothTypeCap !== null && rothDraw >= rothTypeRoom);
+          existing.remainingNeed = remaining > 0 ? remaining : 0;
+        } else {
+          slots.push({
+            category,
+            withdrawal: rothDraw,
+            rothWithdrawal: rothDraw,
+            traditionalWithdrawal: 0,
+            cappedByAccount: accountCap !== null && rothDraw >= accountRoom,
+            cappedByTaxType: rothTypeCap !== null && rothDraw >= rothTypeRoom,
+            remainingNeed: remaining > 0 ? remaining : 0,
+          });
+        }
       }
     }
   }
 
-  // --- Phase 3: Overflow target (e.g. brokerage — capital gains rate) ---
   const overflowCats = ACCOUNT_CATEGORIES.filter(isOverflowTarget);
-  for (const brokCat of overflowCats) {
-    if (remaining <= 0) break;
-    const accountCap = config.withdrawalAccountCaps[brokCat];
-    const accountRoom = accountCap !== null ? accountCap : Infinity;
-    const available = getTotalBalance(balances[brokCat]);
-    const draw = roundToCents(Math.min(remaining, available, accountRoom));
-    if (draw > 0) {
-      remaining = roundToCents(remaining - draw);
+  function drawBrokerageTierCapped(cap: number): void {
+    let tierRemaining = Math.min(remaining, cap);
+    for (const brokCat of overflowCats) {
+      if (remaining <= 0 || tierRemaining <= 0) break;
+      const accountCap = config.withdrawalAccountCaps[brokCat];
+      const alreadyDrawn = categoryWithdrawn.get(brokCat) ?? 0;
+      const accountRoom =
+        accountCap !== null ? Math.max(0, accountCap - alreadyDrawn) : Infinity;
+      const available = Math.max(
+        0,
+        getTotalBalance(balances[brokCat]) - alreadyDrawn,
+      );
+      const draw = roundToCents(
+        Math.min(remaining, tierRemaining, available, accountRoom),
+      );
+      if (draw > 0) {
+        remaining = roundToCents(remaining - draw);
+        tierRemaining = roundToCents(tierRemaining - draw);
+        categoryWithdrawn.set(brokCat, alreadyDrawn + draw);
+        const existing = slots.find((s) => s.category === brokCat);
+        if (existing) {
+          existing.withdrawal = roundToCents(existing.withdrawal + draw);
+          existing.cappedByAccount =
+            existing.cappedByAccount ||
+            (accountCap !== null &&
+              alreadyDrawn + draw >= (accountCap ?? Infinity));
+          existing.remainingNeed = remaining > 0 ? remaining : 0;
+        } else {
+          slots.push({
+            category: brokCat,
+            withdrawal: draw,
+            rothWithdrawal: 0,
+            traditionalWithdrawal: 0,
+            cappedByAccount: accountCap !== null && draw >= accountRoom,
+            cappedByTaxType: false,
+            remainingNeed: remaining > 0 ? remaining : 0,
+          });
+        }
+      }
     }
-    slots.push({
-      category: brokCat,
-      withdrawal: draw,
-      rothWithdrawal: 0,
-      traditionalWithdrawal: 0,
-      cappedByAccount: accountCap !== null && draw >= accountRoom,
-      cappedByTaxType: false,
-      remainingNeed: remaining > 0 ? remaining : 0,
-    });
   }
 
-  // --- Phase 4: Single-bucket accounts last resort (e.g. HSA — most tax-advantaged) ---
   const singleBucketCats = ACCOUNT_CATEGORIES.filter(
     (cat) => getAccountTypeConfig(cat).balanceStructure === "single_bucket",
   );
-  for (const sbCat of singleBucketCats) {
-    if (remaining > 0) {
+  function drawHsaTierCapped(cap: number): void {
+    let tierRemaining = Math.min(remaining, cap);
+    for (const sbCat of singleBucketCats) {
+      if (remaining <= 0 || tierRemaining <= 0) break;
       const accountCap = config.withdrawalAccountCaps[sbCat];
-      const accountRoom = accountCap !== null ? accountCap : Infinity;
-      const available = getTotalBalance(balances[sbCat]);
-      const draw = roundToCents(Math.min(remaining, available, accountRoom));
+      const alreadyDrawn = categoryWithdrawn.get(sbCat) ?? 0;
+      const accountRoom =
+        accountCap !== null ? Math.max(0, accountCap - alreadyDrawn) : Infinity;
+      const available = Math.max(
+        0,
+        getTotalBalance(balances[sbCat]) - alreadyDrawn,
+      );
+      const draw = roundToCents(
+        Math.min(remaining, tierRemaining, available, accountRoom),
+      );
       if (draw > 0) {
         remaining = roundToCents(remaining - draw);
+        tierRemaining = roundToCents(tierRemaining - draw);
+        categoryWithdrawn.set(sbCat, alreadyDrawn + draw);
+        const existing = slots.find((s) => s.category === sbCat);
+        if (existing) {
+          existing.withdrawal = roundToCents(existing.withdrawal + draw);
+          existing.traditionalWithdrawal = roundToCents(
+            existing.traditionalWithdrawal + draw,
+          );
+          existing.remainingNeed = remaining > 0 ? remaining : 0;
+        } else {
+          slots.push({
+            category: sbCat,
+            withdrawal: draw,
+            rothWithdrawal: 0,
+            traditionalWithdrawal: draw, // Single-bucket = pre-tax for tax purposes
+            cappedByAccount: accountCap !== null && draw >= accountRoom,
+            cappedByTaxType: false,
+            remainingNeed: remaining > 0 ? remaining : 0,
+          });
+        }
       }
+    }
+  }
+
+  const categoryRothDrawn = new Map<string, number>();
+  const rothAvailableTotal = categoriesWithTaxPreference().reduce(
+    (s, cat) => s + getRothBalance(balances[cat]),
+    0,
+  );
+  const brokerageAvailableTotal = overflowCats.reduce(
+    (s, cat) => s + getTotalBalance(balances[cat]),
+    0,
+  );
+  const hsaAvailableTotal = singleBucketCats.reduce(
+    (s, cat) => s + getTotalBalance(balances[cat]),
+    0,
+  );
+
+  // Self-referential fixed point (design decision #6): the LTCG-room
+  // computation depends on ordinary income, which includes Roth growth —
+  // itself an OUTPUT of this ranking. Re-rank up to 3 times, refining the
+  // ordinary-income-floor estimate by the previous pass's implied Roth
+  // growth draw, converging before drawing for real. Bounded like the
+  // gross-up secant loop's own iteration cap, for the same reason: a real
+  // tax system's cost curve doesn't move enough for more iterations to
+  // matter, and unbounded iteration risks non-termination on pathological
+  // inputs.
+  const conversionReservedRoom = bracketInfo.conversionsEnabled
+    ? Math.max(0, roundToCents(traditionalCap - totalTradWithdrawn))
+    : 0;
+  const baseOrdinaryFloor =
+    (bracketInfo.taxableSS ?? 0) + totalTradWithdrawn + conversionReservedRoom;
+  let impliedRothGrowth = 0;
+  let tiers = rankWithdrawalTiers({
+    filingStatus: bracketInfo.filingStatus,
+    ordinaryIncomeFloor: baseOrdinaryFloor,
+    targetRate: bracketInfo.rothBracketTarget ?? 0,
+    taxBrackets: bracketInfo.taxBrackets ?? [],
+    ltcgBrackets: bracketInfo.ltcgBrackets,
+    rothBasisAvailable: bracketInfo.rothBasisAvailable ?? rothAvailableTotal,
+    rothAvailable: rothAvailableTotal,
+    brokerageAvailable: brokerageAvailableTotal,
+    brokerageBasisRatio: bracketInfo.brokerageBasisRatio ?? 0,
+    hsaAvailable: hsaAvailableTotal,
+    magiBeforeThisDraw: bracketInfo.magiBeforeThisDraw ?? baseOrdinaryFloor,
+  });
+  for (let iter = 0; iter < 3; iter++) {
+    let capacitySoFar = 0;
+    let growthTierCapacity = 0;
+    for (const tier of tiers) {
+      if (tier.source === "roth" && tier.costRate > 0) {
+        growthTierCapacity = Math.max(
+          0,
+          Math.min(remaining - capacitySoFar, tier.capacity),
+        );
+        break;
+      }
+      capacitySoFar += tier.capacity;
+    }
+    if (Math.abs(growthTierCapacity - impliedRothGrowth) < 1) break;
+    impliedRothGrowth = growthTierCapacity;
+    tiers = rankWithdrawalTiers({
+      filingStatus: bracketInfo.filingStatus,
+      ordinaryIncomeFloor: baseOrdinaryFloor + impliedRothGrowth,
+      targetRate: bracketInfo.rothBracketTarget ?? 0,
+      taxBrackets: bracketInfo.taxBrackets ?? [],
+      ltcgBrackets: bracketInfo.ltcgBrackets,
+      rothBasisAvailable: bracketInfo.rothBasisAvailable ?? rothAvailableTotal,
+      rothAvailable: rothAvailableTotal,
+      brokerageAvailable: brokerageAvailableTotal,
+      brokerageBasisRatio: bracketInfo.brokerageBasisRatio ?? 0,
+      hsaAvailable: hsaAvailableTotal,
+      magiBeforeThisDraw: bracketInfo.magiBeforeThisDraw ?? baseOrdinaryFloor,
+    });
+  }
+
+  const tierDrawers: Record<WithdrawalSourceKind, (cap: number) => void> = {
+    roth: drawRothTierCapped,
+    brokerage: drawBrokerageTierCapped,
+    hsa: drawHsaTierCapped,
+  };
+  for (const tier of tiers) {
+    if (remaining <= 0) break;
+    tierDrawers[tier.source](tier.capacity);
+  }
+
+  // Ensure every category has a slot even if this ranking never drew from
+  // it (e.g. brokerage/HSA untouched because Roth alone covered the need).
+  for (const cat of singleBucketCats) {
+    if (!slots.find((s) => s.category === cat)) {
       slots.push({
-        category: sbCat,
-        withdrawal: draw,
-        rothWithdrawal: 0,
-        traditionalWithdrawal: draw, // Single-bucket = pre-tax for tax purposes
-        cappedByAccount: accountCap !== null && draw >= accountRoom,
-        cappedByTaxType: false,
-        remainingNeed: remaining > 0 ? remaining : 0,
-      });
-    } else {
-      // Include slot with zero withdrawal for consistency
-      slots.push({
-        category: sbCat,
+        category: cat,
         withdrawal: 0,
         rothWithdrawal: 0,
         traditionalWithdrawal: 0,
@@ -564,6 +718,42 @@ export interface RouteBracketInfo {
   taxBrackets?: WithholdingBracket[];
   rothBracketTarget?: number;
   taxableSS: number;
+  /** Below fields power v0.7.9 R40's cost-aware post-bracket-cap ranking
+   *  (bracket_filling mode only — see `routeWithdrawalsBracketFilling`,
+   *  `withdrawal-cost-ranking.ts`). All optional: omitted ⇒ the ranking
+   *  degrades to the pre-v0.7.9 fixed Roth→brokerage→HSA order (no
+   *  filingStatus at all skips LTCG/NIIT lookups entirely; the others
+   *  default to "no basis tracking / no MAGI headroom known"). */
+  filingStatus?: FilingStatusType | null;
+  ltcgBrackets?: Record<string, { threshold: number | null; rate: number }[]>;
+  /** Total Roth BASIS dollars (tax-free, non-qualified-growth-free) still
+   *  available across the accounts routing will draw from, from
+   *  individual-account tracking. Omitted (not 0!) ⇒ the ranking treats
+   *  the WHOLE Roth balance as basis, matching today's "Roth is free"
+   *  behavior exactly when individual tracking isn't enabled (design
+   *  decision #4) — pass 0 explicitly only when tracking IS enabled and
+   *  genuinely confirms no basis remains. */
+  rothBasisAvailable?: number;
+  /** `afterTaxBasis / afterTax` for brokerage, 0..1. Omitted/0 ⇒ every
+   *  brokerage dollar is treated as a taxable gain (conservative). */
+  brokerageBasisRatio?: number;
+  /** MAGI before this year's gains/growth, for the NIIT headroom check.
+   *  Omitted ⇒ NIIT check uses the ordinary-income floor as a MAGI proxy
+   *  (slightly conservative when other MAGI add-ins exist). */
+  magiBeforeThisDraw?: number;
+  /** Whether this year's Roth conversion optimizer
+   *  (`performRothConversion`, post-withdrawal-optimizer.ts) is enabled —
+   *  when true, `routeWithdrawalsBracketFilling` reserves any Traditional
+   *  bracket room Phase 1 left unused (`traditionalCap - totalTradWithdrawn`)
+   *  from the LTCG-room floor, since the conversion is unconditional and
+   *  will claim that same room later this same year — otherwise routing's
+   *  LTCG-0% estimate assumes headroom the conversion is about to consume
+   *  (design decision #5). Deliberately NOT a duplicate computation of
+   *  `performRothConversion`'s own room formula: Phase 1 already fills
+   *  Traditional up to the identical `rothBracketTarget` cap using the
+   *  identical balance data, so `traditionalCap - totalTradWithdrawn` IS
+   *  that same "unused room" quantity, not an approximation of it. */
+  conversionsEnabled?: boolean;
 }
 
 export type RouteResult = {
@@ -653,11 +843,12 @@ function dispatchOnce(
   bracketInfo: RouteBracketInfo,
 ): RouteResult {
   if (config.withdrawalRoutingMode === "bracket_filling") {
-    return routeWithdrawalsBracketFilling(targetWithdrawal, config, balances, {
-      taxBrackets: bracketInfo.taxBrackets,
-      rothBracketTarget: bracketInfo.rothBracketTarget,
-      taxableSS: bracketInfo.taxableSS,
-    });
+    return routeWithdrawalsBracketFilling(
+      targetWithdrawal,
+      config,
+      balances,
+      bracketInfo,
+    );
   }
   if (config.withdrawalRoutingMode === "percentage") {
     return routeWithdrawalsPercentage(targetWithdrawal, config, balances);

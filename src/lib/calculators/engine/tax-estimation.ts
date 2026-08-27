@@ -79,6 +79,26 @@ export function incomeCapForMarginalRate(
   return Infinity;
 }
 
+/**
+ * The marginal ordinary rate that applies to a dollar of income sitting
+ * JUST ABOVE `targetRate`'s bracket ceiling — i.e. the rate on the next
+ * bracket up. Companion to `incomeCapForMarginalRate` (same bracket walk,
+ * returns `.rate` instead of `.threshold`) — used by v0.7.9's cost-aware
+ * withdrawal ranking to price a non-qualified Roth growth withdrawal, which
+ * stacks as ordinary income on top of whatever Phase 1 already filled up to
+ * the target bracket cap. Falls back to `targetRate` itself (not a real
+ * bracket rate, but the least-wrong value) when no bracket exceeds it.
+ */
+export function marginalRateAboveTarget(
+  targetRate: number,
+  brackets: WithholdingBracket[],
+): number {
+  for (const b of brackets) {
+    if (b.rate > targetRate) return b.rate;
+  }
+  return targetRate;
+}
+
 // ---------------------------------------------------------------------------
 // Social Security taxation — IRS provisional income formula (Phase 2)
 // ---------------------------------------------------------------------------
@@ -184,6 +204,7 @@ export interface ComputeTaxFromSlotsInput {
     brokerage: number;
     taxBrackets?: WithholdingBracket[];
     taxMultiplier?: number;
+    ltcgBrackets?: Record<string, { threshold: number | null; rate: number }[]>;
   };
   filingStatus: FilingStatusType | null | undefined;
 }
@@ -293,6 +314,7 @@ export function computeTaxFromSlots(
             actualTaxableIncome,
             brokerageGainsPortion,
             filingStatus,
+            taxRates.ltcgBrackets,
           ),
         )
       : roundToCents(brokerageGainsPortion * taxRates.brokerage);

@@ -428,6 +428,83 @@ describe("routeWithdrawalsBracketFilling", () => {
     expect(result.warnings.some((w) => w.includes("unmet"))).toBe(true);
   });
 
+  // -------------------------------------------------------------------------
+  // v0.7.9 R40 follow-up: cost-aware post-Traditional-cap ranking
+  // -------------------------------------------------------------------------
+
+  it("draws from brokerage sitting in the 0% LTCG zone instead of Roth growth, when filingStatus is provided and Roth has no basis left", () => {
+    const config = makeDecumulationConfig();
+    const balances = makeAccountBalances({
+      preTax: 10000,
+      taxFree: 100000,
+      afterTax: 100000,
+      afterTaxBasis: 50000,
+    });
+    const result = routeWithdrawalsBracketFilling(60000, config, balances, {
+      taxBrackets: TEST_BRACKETS,
+      rothBracketTarget: 0.12,
+      taxableSS: 0,
+      filingStatus: "MFJ",
+      rothBasisAvailable: 0, // force any Roth draw to be growth
+      brokerageBasisRatio: 0.5,
+    });
+    const rothSlot =
+      slotFor(result.slots, "401k") ?? slotFor(result.slots, "ira");
+    const brokSlot = slotFor(result.slots, "brokerage")!;
+    // 0%-LTCG brokerage room comfortably covers the remaining need here --
+    // the cost-aware ranking should prefer it over taxable Roth growth.
+    expect(brokSlot.withdrawal).toBeGreaterThan(0);
+    expect(rothSlot?.rothWithdrawal ?? 0).toBe(0);
+  });
+
+  it("draws Roth growth instead of brokerage once ordinary income has pushed past the 0%/15% LTCG zones and Roth's marginal rate is cheaper", () => {
+    const config = makeDecumulationConfig();
+    const balances = makeAccountBalances({
+      preTax: 10000,
+      taxFree: 100000,
+      afterTax: 100000,
+      afterTaxBasis: 0, // all gains -- worst case for brokerage's cost
+    });
+    const result = routeWithdrawalsBracketFilling(60000, config, balances, {
+      taxBrackets: TEST_BRACKETS,
+      rothBracketTarget: 0.1, // next bracket up is 12% -- cheaper than 20% LTCG
+      taxableSS: 700000, // pushes past MFJ's $613,700 15%/20% LTCG threshold
+      filingStatus: "MFJ",
+      rothBasisAvailable: 0,
+      brokerageBasisRatio: 0,
+      magiBeforeThisDraw: 0, // keep NIIT out of it
+    });
+    const rothSlot =
+      slotFor(result.slots, "401k") ?? slotFor(result.slots, "ira");
+    const brokSlot = slotFor(result.slots, "brokerage")!;
+    expect(rothSlot?.rothWithdrawal ?? 0).toBeGreaterThan(0);
+    expect(brokSlot.withdrawal).toBe(0);
+  });
+
+  it("without filingStatus, degenerates to the pre-v0.7.9 fixed Roth-then-brokerage order (no regression for callers that don't pass it)", () => {
+    const config = makeDecumulationConfig();
+    const balances = makeAccountBalances({
+      preTax: 10000,
+      taxFree: 30000,
+      afterTax: 100000,
+      afterTaxBasis: 0,
+    });
+    // Need exceeds Traditional-cap + all available Roth, so brokerage must
+    // be touched too -- proves it's drawn AFTER Roth is exhausted, not
+    // instead of/before it.
+    const result = routeWithdrawalsBracketFilling(120000, config, balances, {
+      taxBrackets: TEST_BRACKETS,
+      rothBracketTarget: 0.12,
+      taxableSS: 0,
+      // filingStatus intentionally omitted
+    });
+    const rothSlot =
+      slotFor(result.slots, "401k") ?? slotFor(result.slots, "ira");
+    const brokSlot = slotFor(result.slots, "brokerage")!;
+    expect(rothSlot?.rothWithdrawal ?? 0).toBeGreaterThan(0);
+    expect(brokSlot.withdrawal).toBeGreaterThan(0);
+  });
+
   it("merges traditional and roth slots for the same category", () => {
     const config = makeDecumulationConfig();
     const balances = makeAccountBalances({

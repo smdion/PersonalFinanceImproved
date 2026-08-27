@@ -25,6 +25,7 @@ import { applyGrowth } from "../growth-application";
 import { computeTaxableSS, computeTaxFromSlots } from "../tax-estimation";
 import { estimateWithdrawalTaxCost } from "../tax-gross-up";
 import { routeForMode } from "../withdrawal-routing";
+import { deriveBasisRankingInputs } from "../withdrawal-cost-ranking";
 import { enforceRmd } from "../rmd-enforcement";
 import {
   performRothConversion,
@@ -218,6 +219,19 @@ export function runDecumulationYear(
   //
   // For waterfall/percentage, Roth bracket optimization can still overlay
   // via rothBracketTarget (sets a traditional tax-type cap).
+  // v0.7.9 R40 follow-up: cost-aware post-bracket-cap ranking inputs
+  // (bracket_filling mode only; ignored by waterfall/percentage). See
+  // deriveBasisRankingInputs's docblock for why the basis-derived fields
+  // are shared with tax-gross-up.ts's estimate but magiBeforeThisDraw
+  // isn't -- the real execution has the precise magiHistory lookback the
+  // estimate doesn't.
+  const { rothBasisAvailable, brokerageBasisRatio } = deriveBasisRankingInputs({
+    balances,
+    indBasis: hasIndividualAccounts ? indBasis : undefined,
+  });
+  const priorYearMagi =
+    magiHistory.length > 0 ? magiHistory[magiHistory.length - 1] : undefined;
+
   const routeResult = routeForMode(
     targetWithdrawal,
     config,
@@ -226,6 +240,12 @@ export function runDecumulationYear(
       taxBrackets: taxRates.taxBrackets,
       rothBracketTarget: taxRates.rothBracketTarget,
       taxableSS,
+      filingStatus,
+      ltcgBrackets: taxRates.ltcgBrackets,
+      rothBasisAvailable,
+      brokerageBasisRatio,
+      magiBeforeThisDraw: priorYearMagi,
+      conversionsEnabled: taxRates.enableRothConversions,
     },
     eligibility,
   );
@@ -484,12 +504,18 @@ export function runDecumulationYear(
   const revisedOrdinary = actualTaxableIncome + rothConversionAmount;
   if (rothConversionAmount > 0 && filingStatus && brokerageGainsPortion > 0) {
     brokerageTaxCost = roundToCents(
-      computeLtcgTax(revisedOrdinary, brokerageGainsPortion, filingStatus),
+      computeLtcgTax(
+        revisedOrdinary,
+        brokerageGainsPortion,
+        filingStatus,
+        taxRates.ltcgBrackets,
+      ),
     );
     // Marginal rate at the top of the gains stack — display only, tax is in brokerageTaxCost
     postConversionLtcgRate = getLtcgRate(
       revisedOrdinary + brokerageGainsPortion,
       filingStatus,
+      taxRates.ltcgBrackets,
     );
     // Recompute taxCost with revised brokerage tax. v0.7.8 advisor review
     // (2026-08-27): this used to tax the WHOLE Roth withdrawal at
@@ -513,11 +539,15 @@ export function runDecumulationYear(
     // No tax is actually computed from this value.
     postConversionLtcgRate =
       brokerageGainsPortion > 0 && filingStatus
-        ? getLtcgRate(revisedOrdinary + brokerageGainsPortion, filingStatus)
+        ? getLtcgRate(
+            revisedOrdinary + brokerageGainsPortion,
+            filingStatus,
+            taxRates.ltcgBrackets,
+          )
         : brokerageGainsPortion > 0
           ? taxRates.brokerage
           : filingStatus
-            ? getLtcgRate(revisedOrdinary, filingStatus)
+            ? getLtcgRate(revisedOrdinary, filingStatus, taxRates.ltcgBrackets)
             : taxRates.brokerage;
   }
 

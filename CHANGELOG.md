@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.7
 
+## [0.7.9] - 2026-08-27
+
+### Changed
+
+- **In "Bracket Filling" mode (the default), once your Traditional withdrawals hit the target tax bracket, the retirement projection now compares that year's real cost of drawing further from Roth versus your brokerage account and picks whichever is actually cheaper**, instead of always draining Roth first. A non-qualified Roth withdrawal isn't automatically tax-free once you've used up your contributed basis — this keeps the engine from reflexively taking the more expensive source in years your brokerage account happens to sit in the 0% long-term capital gains zone. This is a single-year decision, not a lifetime plan.
+- **A new "Update Basis" button next to "Update Performance"** lets you bulk-enter Roth contribution/conversion basis across accounts at once, instead of only one row at a time.
+- **The sidebar's data-freshness indicator and the Performance page now show when your Roth basis figures were last updated**, matching the existing balance/performance indicators.
+
+### Fixed
+
+- Corrected several places in the app (a projection-table tooltip, two summary cards, the Decumulation Methodology page) that still described withdrawal routing as always draining Roth before brokerage — now reflect the cost-aware behavior above.
+
 ## [0.7.8] - 2026-08-26
 
 ### Added

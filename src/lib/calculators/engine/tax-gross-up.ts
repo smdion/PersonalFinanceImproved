@@ -49,6 +49,7 @@ import {
   type WithholdingBracket,
 } from "./tax-estimation";
 import { routeForMode } from "./withdrawal-routing";
+import { deriveBasisRankingInputs } from "./withdrawal-cost-ranking";
 import type { EligibilityRecord } from "@/lib/pure/withdrawal-eligibility";
 import {
   distributeWithdrawals,
@@ -79,6 +80,8 @@ export interface TaxEstimationInput {
     taxBrackets?: WithholdingBracket[];
     rothBracketTarget?: number;
     taxMultiplier?: number;
+    ltcgBrackets?: Record<string, { threshold: number | null; rate: number }[]>;
+    enableRothConversions?: boolean;
   };
   /** Current balances by tax bucket */
   balances: TaxBuckets;
@@ -171,6 +174,15 @@ function evaluateCost(
     year != null;
 
   const clonedAcctBal = cloneAccountBalances(acctBal);
+  // v0.7.9 R40 follow-up: same basis-derived ranking inputs the real
+  // execution passes (deriveBasisRankingInputs's docblock) — no
+  // magiBeforeThisDraw here (this file has no magiHistory access; falls
+  // back to routeForMode's own ordinary-income-floor proxy, acceptable
+  // for a convergence-loop trial, not final pricing).
+  const { rothBasisAvailable, brokerageBasisRatio } = deriveBasisRankingInputs({
+    balances,
+    indBasis: hasIndTracking ? indBasis : undefined,
+  });
   const routeResult = routeForMode(
     trialWithdrawal,
     config,
@@ -179,6 +191,11 @@ function evaluateCost(
       taxBrackets: taxRates.taxBrackets,
       rothBracketTarget: taxRates.rothBracketTarget,
       taxableSS,
+      filingStatus,
+      ltcgBrackets: taxRates.ltcgBrackets,
+      rothBasisAvailable,
+      brokerageBasisRatio,
+      conversionsEnabled: taxRates.enableRothConversions,
     },
     eligibility,
   );

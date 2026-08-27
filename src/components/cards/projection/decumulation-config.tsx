@@ -121,7 +121,7 @@ export function DecumulationConfig({
 
   const modeDescription =
     withdrawalRoutingMode === "bracket_filling"
-      ? "Tax-optimal: Traditional up to bracket ceiling → Roth → Brokerage (graduated LTCG) → HSA. Includes RMDs, SS taxation, Roth conversions, and IRMAA/ACA awareness."
+      ? "Tax-optimal: Traditional up to bracket ceiling, then whichever of Roth or Brokerage (graduated LTCG) costs less that year, HSA last. Includes RMDs, SS taxation, Roth conversions, and IRMAA/ACA awareness."
       : withdrawalRoutingMode === "waterfall"
         ? "Drain accounts in priority order. Customize the order below."
         : "Split withdrawals by fixed percentages across accounts.";
@@ -129,7 +129,7 @@ export function DecumulationConfig({
   // Compact order display for collapsed view
   const orderSummary =
     withdrawalRoutingMode === "bracket_filling"
-      ? `${taxTypeLabel("preTax")} → ${taxTypeLabel("taxFree")} → Brokerage → HSA`
+      ? `${taxTypeLabel("preTax")} → ${taxTypeLabel("taxFree")}/Brokerage (cost-ranked) → HSA`
       : withdrawalRoutingMode === "waterfall"
         ? withdrawalOrder
             .map((c) => getAccountTypeConfig(c).displayLabel)

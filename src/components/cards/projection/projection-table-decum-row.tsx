@@ -1042,7 +1042,7 @@ export function DecumulationRow({
       <td className="py-1.5 pl-2 text-caption text-faint whitespace-nowrap border-l border-subtle">
         {dyr.taxCost > 0 && (
           <Tooltip
-            content="Effective tax rate = total tax / total withdrawal. Traditional taxed at marginal rate, Brokerage at LTCG rate, Roth/HSA tax-free."
+            content="Eff. rate = total tax / total withdrawal. Traditional: marginal rate. Brokerage: LTCG rate. Roth growth beyond basis: ordinary rate. Once at the bracket cap, the engine picks whichever's cheaper that year."
             side="left"
             maxWidth={240}
           >

@@ -371,6 +371,12 @@ export type DecumulationDefaults = {
     enableRothConversions?: boolean;
     /** Target marginal rate for Roth conversions (null/undefined = use rothBracketTarget). */
     rothConversionTarget?: number;
+    /** DB-loaded LTCG brackets by filing status, from the `ltcg_brackets`
+     *  table (v0.7.9 R40 follow-up). Overrides `LTCG_BRACKETS`' hardcoded
+     *  defaults in `tax-tables.ts` when present — mirrors how `taxBrackets`
+     *  above overrides the ordinary W-4 defaults. Threshold `null` = the top
+     *  (Infinity) bracket. Undefined = fall back to the hardcoded table. */
+    ltcgBrackets?: Record<string, { threshold: number | null; rate: number }[]>;
   };
 
   /** Withdrawal/spending strategy. Defaults to 'fixed'. */

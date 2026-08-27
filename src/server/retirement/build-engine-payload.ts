@@ -52,10 +52,8 @@ import {
   IRS_LIMIT_GROWTH_RATE,
   FALLBACK_CONTRIBUTION_RATE,
 } from "@/lib/constants";
-import {
-  estimateEffectiveTaxRate,
-  incomeCapForMarginalRate,
-} from "@/lib/calculators/engine";
+import { estimateEffectiveTaxRate } from "@/lib/calculators/engine";
+import { getLtcgRate } from "@/lib/config/tax-tables";
 import type { db as _db } from "@/lib/db";
 import { filterActiveJobs } from "@/lib/pure/profiles";
 import { computeTaxBucketBreakdown } from "@/lib/pure/tax-buckets";
@@ -102,6 +100,7 @@ export async function fetchRetirementData(
     allBudgetItems,
     perfAccounts,
     allTaxBrackets,
+    allLtcgBrackets,
     brokerageGoalRows,
     allAppSettings,
     contribProfileRow,
@@ -146,6 +145,7 @@ export async function fetchRetirementData(
     db.select().from(schema.budgetItems),
     db.select().from(schema.performanceAccounts),
     db.select().from(schema.taxBrackets),
+    db.select().from(schema.ltcgBrackets),
     db
       .select()
       .from(schema.brokerageGoals)
@@ -202,6 +202,7 @@ export async function fetchRetirementData(
     allBudgetItems,
     perfAccounts,
     allTaxBrackets,
+    allLtcgBrackets,
     brokerageGoalRows,
     allAppSettings,
     contribProfileRow,
@@ -248,6 +249,7 @@ export async function buildEnginePayload(
     allBudgetItems,
     perfAccounts,
     allTaxBrackets,
+    allLtcgBrackets,
     brokerageGoalRows,
     allAppSettings,
     jobLinkRows,
@@ -313,6 +315,28 @@ export async function buildEnginePayload(
     baseWithholding: number;
     rate: number;
   }[];
+
+  // DB-loaded LTCG brackets (v0.7.9 R40 follow-up) — mirrors bracketData
+  // above, but ltcg_brackets is keyed by filing status per row (one row per
+  // (taxYear, filingStatus)), not a single flat table, so build a
+  // Record<filingStatus, brackets[]> covering every filing status found in
+  // the latest tax year rather than filtering to just this household's own
+  // status — `computeLtcgTax`/`getLtcgRate` index into it by filing status
+  // themselves. Undefined (not an empty object) when nothing's seeded, so
+  // `computeLtcgTax`/`getLtcgRate` fall back to their hardcoded defaults
+  // exactly as before this change.
+  const latestLtcgTaxYear =
+    allLtcgBrackets.length > 0
+      ? Math.max(...allLtcgBrackets.map((b) => b.taxYear))
+      : new Date().getFullYear();
+  const ltcgBracketData =
+    allLtcgBrackets.length > 0
+      ? Object.fromEntries(
+          allLtcgBrackets
+            .filter((b) => b.taxYear === latestLtcgTaxYear)
+            .map((b) => [b.filingStatus, b.brackets]),
+        )
+      : undefined;
 
   // Per-person retirement settings (for per-person age display + editing)
   const perPersonSettings = people.map((p) => {
@@ -1249,10 +1273,19 @@ export async function buildEnginePayload(
     if (estimatedRate > 0) {
       effectiveTraditionalRate = estimatedRate;
     }
-    // LTCG: if retirement income fits within 12% marginal bracket, 0% LTCG rate applies (MFJ ~$94K)
-    const ltcgThreshold = incomeCapForMarginalRate(0.12, bracketData);
-    effectiveBrokerageRate =
-      retirementIncome < ltcgThreshold ? 0 : dbBrokerageRate;
+    // LTCG fallback flat rate: real bracket-based rate at this income level,
+    // via the same LTCG bracket table (DB-loaded when seeded, hardcoded
+    // 2026 federal defaults otherwise) the actual per-year tax pricing
+    // uses — replaces a prior heuristic that checked retirement income
+    // against the *ordinary* 12%-bracket threshold as a proxy for the LTCG
+    // 0% zone, which silently overstated 0%-LTCG headroom (the two bracket
+    // tables have different thresholds; code review + advisor, v0.7.9 R40).
+    // This value is only ever the FALLBACK used when filingStatus is
+    // unavailable to a caller — the primary pricing path always uses
+    // computeLtcgTax with the real bracket table directly.
+    effectiveBrokerageRate = filingStatus
+      ? getLtcgRate(retirementIncome, filingStatus, ltcgBracketData)
+      : dbBrokerageRate;
   }
 
   const distributionTaxRates = {
@@ -1265,6 +1298,7 @@ export async function buildEnginePayload(
       : 0,
     brokerage: effectiveBrokerageRate,
     taxBrackets: bracketData.length > 0 ? bracketData : undefined,
+    ltcgBrackets: ltcgBracketData,
     taxMultiplier: taxMult,
     grossUpForTaxes: settings.grossUpForTaxes,
     rothBracketTarget: toNumber(settings.rothBracketTarget ?? "0.12"),

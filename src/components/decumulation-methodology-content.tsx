@@ -119,11 +119,19 @@ export function DecumulationMethodologyContent() {
           <li>
             <strong>Bracket filling (default)</strong> — the tax-optimal
             approach. Draws from Traditional accounts up to a target tax bracket
-            threshold, then fills the remainder from Roth (tax-free) and
-            brokerage (taxed at LTCG rates). This minimizes your lifetime tax
-            bill by never withdrawing more from Traditional than necessary to
-            stay in a low bracket. Requires tax brackets to be configured; falls
-            back to waterfall if not available.
+            threshold (your &ldquo;Bracket Ceiling&rdquo; setting), then covers
+            any remaining need from whichever of Roth or your brokerage account
+            is actually cheaper <em>this year</em>, instead of a fixed order.
+            Roth isn&apos;t automatically free once you&apos;ve drawn down what
+            you originally contributed — the growth portion is taxed as ordinary
+            income, so in a year your brokerage account happens to sit in the 0%
+            long-term capital gains zone, the engine draws from brokerage first
+            and leaves your Roth balance compounding tax-free for longer. In a
+            year brokerage gains would cost more than Roth growth, it flips
+            back. This is a single-year decision, not a lifetime plan — it
+            doesn&apos;t look ahead to how today&apos;s choice affects a future
+            Required Minimum Distribution. Requires tax brackets to be
+            configured; falls back to waterfall if not available.
           </li>
           <li>
             <strong>Waterfall</strong> — drains accounts in a fixed priority
@@ -694,13 +702,39 @@ export function DecumulationMethodologyContent() {
           after-tax proceeds equal your expense need. For Traditional
           withdrawals, it applies your effective income tax rate (from W-4
           brackets or the fallback flat rate). For brokerage withdrawals, only
-          gains are taxed at the applicable LTCG rate (0%/15%/20% based on total
-          income). Roth and HSA withdrawals are tax-free.
+          gains are taxed, at the real progressive LTCG bracket rate
+          (0%/15%/20%, stacked on top of your other ordinary income — not a flat
+          rate) plus the 3.8% NIIT surtax once your MAGI is above its threshold.
+          Roth withdrawals are tax-free only up to your tracked
+          contribution/conversion basis; a non-qualified withdrawal of growth
+          beyond that basis is taxed as ordinary income (and may carry the 10%
+          early-withdrawal penalty pre-59½ — see the Withdrawal Ordering
+          methodology page). HSA withdrawals are tax-free when qualified.
         </p>
         <p>
           Example: you need $40,000 after tax. At a 22% effective rate, the
           engine withdraws ~$51,282 from Traditional to net $40,000 after the
           $11,282 tax cost.
+        </p>
+
+        <h4 className="font-semibold text-secondary mt-4">
+          Cost-aware source selection (bracket filling mode)
+        </h4>
+        <p>
+          Once Traditional withdrawals hit the bracket-ceiling cap, the engine
+          ranks the remaining sources — Roth, brokerage, HSA — by their actual
+          marginal cost for that specific year rather than a fixed order. Basis
+          (in either Roth or brokerage) is always free and drawn first. For the
+          rest, it compares the ordinary-income rate a non-qualified Roth
+          withdrawal would cost against the real LTCG-bracket rate (plus NIIT
+          where it applies) a brokerage withdrawal would cost, and draws from
+          whichever is cheaper. This estimate assumes your configured Roth
+          conversion (if enabled) claims its usual bracket room first, so the
+          two features don&apos;t both assume the same cheap room is available.
+          HSA is always last — its combined ordinary-rate-plus-20%- penalty cost
+          (when withdrawn non-medically pre-65) is realistically never the
+          cheapest option. None of this looks ahead to IRMAA or ACA cliffs, or
+          to future tax years — those are handled by the separate checks below.
         </p>
 
         <h4 className="font-semibold text-secondary mt-4">
