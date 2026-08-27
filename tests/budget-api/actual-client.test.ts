@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ActualClient } from "@/lib/budget-api/actual-client";
+import { BudgetApiError } from "@/lib/budget-api/errors";
 
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
@@ -68,7 +69,7 @@ describe("ActualClient", () => {
         }),
       );
       // Second call: /accounts/{id}/balance
-      mockFetch.mockReturnValueOnce(jsonResponse({ data: { balance: 15000 } }));
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: 15000 }));
 
       const accounts = await client.getAccounts();
       expect(accounts).toHaveLength(1);
@@ -123,7 +124,7 @@ describe("ActualClient", () => {
       );
       // Balance calls for each
       for (let i = 0; i < 4; i++) {
-        mockFetch.mockReturnValueOnce(jsonResponse({ data: { balance: 0 } }));
+        mockFetch.mockReturnValueOnce(jsonResponse({ data: 0 }));
       }
 
       const accounts = await client.getAccounts();
@@ -136,7 +137,7 @@ describe("ActualClient", () => {
 
   describe("getAccountBalance", () => {
     it("returns balance in dollars from cents", async () => {
-      mockFetch.mockReturnValueOnce(jsonResponse({ data: { balance: 5000 } }));
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: 5000 }));
       expect(await client.getAccountBalance("acct-1")).toBe(50);
     });
   });
@@ -178,8 +179,10 @@ describe("ActualClient", () => {
   });
 
   describe("createTransaction", () => {
-    it("sends correctly formatted payload in cents", async () => {
-      mockFetch.mockReturnValueOnce(jsonResponse({ data: { id: "new-tx" } }));
+    it("sends correctly formatted payload in cents, nested under `transaction` (actual-http-api's real request shape)", async () => {
+      // Real response shape is { message: "<id>" }, not { data: { id } } —
+      // see actual-client.ts's createTransaction docblock.
+      mockFetch.mockReturnValueOnce(jsonResponse({ message: "new-tx" }));
       const id = await client.createTransaction({
         accountId: "acct-1",
         date: "2026-01-20",
@@ -191,13 +194,14 @@ describe("ActualClient", () => {
       });
       expect(id).toBe("new-tx");
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-      expect(body.amount).toBe(-5000); // dollars → cents
-      expect(body.cleared).toBe(true);
+      expect(body.transaction.account).toBe("acct-1");
+      expect(body.transaction.amount).toBe(-5000); // dollars → cents
+      expect(body.transaction.cleared).toBe(true);
     });
 
     it("includes a deterministic ledgr-prefixed imported_id (M20)", async () => {
-      mockFetch.mockReturnValueOnce(jsonResponse({ data: { id: "tx-a" } }));
-      mockFetch.mockReturnValueOnce(jsonResponse({ data: { id: "tx-b" } }));
+      mockFetch.mockReturnValueOnce(jsonResponse({ message: "tx-a" }));
+      mockFetch.mockReturnValueOnce(jsonResponse({ message: "tx-b" }));
       const payload = {
         accountId: "acct-1",
         date: "2026-01-20",
@@ -211,29 +215,87 @@ describe("ActualClient", () => {
       await client.createTransaction(payload);
       const body1 = JSON.parse(mockFetch.mock.calls[0][1].body);
       const body2 = JSON.parse(mockFetch.mock.calls[1][1].body);
-      expect(body1.imported_id).toMatch(/^ledgr:/);
-      expect(body1.imported_id).toBe(body2.imported_id);
+      expect(body1.transaction.imported_id).toMatch(/^ledgr:/);
+      expect(body1.transaction.imported_id).toBe(body2.transaction.imported_id);
     });
   });
 
   describe("updateTransaction", () => {
-    it("sends partial update with cents conversion", async () => {
+    it("sends partial update with cents conversion, nested under `transaction`", async () => {
       mockFetch.mockReturnValueOnce(jsonResponse({}));
       await client.updateTransaction("tx-1", {
         amount: -75,
         memo: "Updated",
       });
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-      expect(body.amount).toBe(-7500);
-      expect(body.notes).toBe("Updated");
+      expect(body.transaction.amount).toBe(-7500);
+      expect(body.transaction.notes).toBe("Updated");
     });
   });
 
+  // updateCategoryGoalTarget / updateCategoryTargetBalance write via
+  // Actual's note-based #template mechanism — there's no structured goal
+  // field the API can write (verified against @actual-app/api's docs).
+  // See actual-goal-notes.ts for the pure merge logic; these tests cover
+  // the HTTP plumbing (GET note → merge → PUT note) around it.
   describe("updateCategoryGoalTarget", () => {
-    it("is a no-op (Actual does not support goals)", async () => {
-      // Should not throw, should not call fetch
-      await client.updateCategoryGoalTarget("cat-1", 500);
-      expect(mockFetch).not.toHaveBeenCalled();
+    it("appends a fresh #template line when the category has no note yet", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: null })); // GET
+      mockFetch.mockReturnValueOnce(jsonResponse({ message: "ok" })); // PUT
+      await client.updateCategoryGoalTarget("cat-1", 250);
+      const [getCall, putCall] = mockFetch.mock.calls;
+      expect(getCall[0]).toContain("/notes/category/cat-1");
+      expect(putCall[0]).toContain("/notes/category/cat-1");
+      expect(putCall[1].method).toBe("PUT");
+      expect(JSON.parse(putCall[1].body).data).toBe("#template 250");
+    });
+
+    it("replaces just the amount when a matching-shape #template already exists, preserving other note text", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({ data: "Rent category\n#template 100" }),
+      );
+      mockFetch.mockReturnValueOnce(jsonResponse({ message: "ok" }));
+      await client.updateCategoryGoalTarget("cat-1", 175);
+      const putCall = mockFetch.mock.calls[1];
+      expect(JSON.parse(putCall[1].body).data).toBe(
+        "Rent category\n#template 175",
+      );
+    });
+
+    it("throws a BudgetApiError with code 'conflict' and does NOT call PUT when an incompatible #template already exists", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({ data: "#template 10% of Paycheck" }),
+      );
+      await expect(
+        client.updateCategoryGoalTarget("cat-1", 250),
+      ).rejects.toMatchObject({ name: "BudgetApiError", code: "conflict" });
+      expect(mockFetch).toHaveBeenCalledTimes(1); // only the GET
+    });
+
+    it("rejects with a real BudgetApiError instance on conflict (not a generic Error)", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({ data: "#template 10% of Paycheck" }),
+      );
+      await expect(
+        client.updateCategoryGoalTarget("cat-1", 250),
+      ).rejects.toBeInstanceOf(BudgetApiError);
+    });
+  });
+
+  describe("updateCategoryTargetBalance", () => {
+    it("writes an 'up to' template, distinct from the fixed-amount shape", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: null }));
+      mockFetch.mockReturnValueOnce(jsonResponse({ message: "ok" }));
+      await client.updateCategoryTargetBalance("cat-1", 5000);
+      const putCall = mockFetch.mock.calls[1];
+      expect(JSON.parse(putCall[1].body).data).toBe("#template up to 5000");
+    });
+
+    it("a fixed-amount template does not satisfy a target-balance write — treated as conflict, not replaced", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: "#template 100" }));
+      await expect(
+        client.updateCategoryTargetBalance("cat-1", 5000),
+      ).rejects.toMatchObject({ code: "conflict" });
     });
   });
 
@@ -314,12 +376,12 @@ describe("ActualClient", () => {
   });
 
   describe("updateCategoryBudgeted", () => {
-    it("PATCHes with cents conversion", async () => {
+    it("PATCHes with cents conversion, nested under `category` (actual-http-api's real request shape)", async () => {
       mockFetch.mockReturnValueOnce(jsonResponse({}));
       await client.updateCategoryBudgeted("2026-01", "cat-1", 150);
       const [, init] = mockFetch.mock.calls[0]!;
       expect(init.method).toBe("PATCH");
-      expect(JSON.parse(init.body).budgeted).toBe(15000);
+      expect(JSON.parse(init.body).category.budgeted).toBe(15000);
     });
   });
 

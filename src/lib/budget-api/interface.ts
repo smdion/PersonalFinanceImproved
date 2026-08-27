@@ -48,7 +48,16 @@ export interface BudgetAPIClient {
    * "NEED"/"MF" — same concept, old vs. new name) via the plan-level
    * endpoint: goal_target + goal_frequency: "monthly". Note goal_type
    * itself is a read-only, derived field in YNAB's API — it cannot be set
-   * directly; see the implementation for the full explanation. */
+   * directly; see the implementation for the full explanation.
+   *
+   * Actual: writes a `#template <amount>` note-based template (Actual has
+   * no structured goal field the API can write — see ActualClient's
+   * implementation / actual-goal-notes.ts for the full mechanism). Merges
+   * into whatever the category's note already contains rather than
+   * clobbering it. Throws `BudgetApiError` (code `"conflict"`) if the note
+   * already has a `#template` of a different, incompatible shape — callers
+   * must handle this the same way they'd handle any other typed
+   * BudgetApiError, not assume every push always lands. */
   updateCategoryGoalTarget(
     categoryId: string,
     targetAmount: number,
@@ -63,7 +72,11 @@ export interface BudgetAPIClient {
    * The goal's type must be configured once, manually, in the YNAB app —
    * this sends a single `goal_target` PATCH and nothing else, which per the
    * spec updates only the amount and leaves the existing shape untouched.
-   * See the implementation for the full history of what was tried. */
+   * See the implementation for the full history of what was tried.
+   *
+   * Actual: writes a `#template up to <amount>` note-based template — same
+   * merge-not-clobber mechanism and `"conflict"` error as
+   * `updateCategoryGoalTarget` above. */
   updateCategoryTargetBalance(
     categoryId: string,
     targetAmount: number,

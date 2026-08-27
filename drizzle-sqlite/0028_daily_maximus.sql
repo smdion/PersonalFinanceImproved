@@ -1,0 +1,1 @@
+ALTER TABLE `performance_accounts` ADD `allow_penalized_withdrawals` integer DEFAULT false NOT NULL;

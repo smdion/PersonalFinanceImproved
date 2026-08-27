@@ -15,6 +15,14 @@ export type BudgetApiErrorCode =
   | "server" // 5xx — transient or upstream broken
   | "network" // fetch threw — DNS / TLS / connectivity
   | "timeout" // AbortController fired
+  | "unsupported" // the connected provider has no API for this operation at
+  // all — not an HTTP failure, retrying or re-authing never helps.
+  | "conflict" // the provider CAN perform this operation in general, but
+  // the target already has state that can't be safely overwritten without
+  // clobbering something the household configured directly — e.g. Actual's
+  // note-based goal write finding an existing #template of a different
+  // shape already there. See ActualClient.updateCategoryGoalTarget/
+  // updateCategoryTargetBalance and actual-goal-notes.ts.
   | "unknown";
 
 export class BudgetApiError extends Error {

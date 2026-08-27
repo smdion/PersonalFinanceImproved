@@ -15,7 +15,11 @@ import type {
   NewBudgetTransaction,
 } from "./types";
 import { fromCents, toCents } from "./conversions";
-import { budgetApiRequest } from "./errors";
+import { budgetApiRequest, BudgetApiError } from "./errors";
+import {
+  mergeGoalIntoNote,
+  type ActualTemplateShape,
+} from "./actual-goal-notes";
 import { transactionIdempotencyKey } from "./idempotency";
 import { log } from "@/lib/logger";
 
@@ -220,11 +224,14 @@ export class ActualClient implements BudgetAPIClient {
     await Promise.all(
       accounts.map(async (acct) => {
         try {
-          const balRes = await this.request<{ data: { balance: number } }>(
-            `/accounts/${acct.id}/balance`,
-          );
-          acct.balance = fromCents(balRes.data.balance);
-          acct.clearedBalance = acct.balance;
+          // Same endpoint/shape as getAccountBalance below — call it
+          // directly instead of re-duplicating the (previously wrong)
+          // response parsing here. This duplicate site had the identical
+          // `data.balance` bug, silently producing NaN for every account's
+          // balance (no throw, so the catch below never caught it).
+          const balance = await this.getAccountBalance(acct.id);
+          acct.balance = balance;
+          acct.clearedBalance = balance;
         } catch (err) {
           // Balance may already be included in the account data, but this
           // could also be a real failure (auth, network, etc.) — log it so
@@ -239,11 +246,18 @@ export class ActualClient implements BudgetAPIClient {
     return accounts;
   }
 
+  /**
+   * The wrapper's `GET /accounts/:id/balance` returns the balance as the
+   * bare `data` value (`res.json({ data: balance || 0 })` — verified
+   * against actual-http-api's literal route source, 26.8.1), NOT nested
+   * under `data.balance`. Reading `res.data.balance` (the old code here)
+   * silently produced NaN on every call — pushSnapshotToBudgetApi's
+   * delta-vs-live-balance math was broken for every Actual household. */
   async getAccountBalance(accountId: string): Promise<number> {
-    const res = await this.request<{ data: { balance: number } }>(
+    const res = await this.request<{ data: number }>(
       `/accounts/${accountId}/balance`,
     );
-    return fromCents(res.data.balance);
+    return fromCents(res.data);
   }
 
   // -- Categories & Months --
@@ -282,6 +296,11 @@ export class ActualClient implements BudgetAPIClient {
     return mapMonthDetail(res.data);
   }
 
+  /** The wrapper's `PATCH /months/:month/categories/:id` requires
+   * `req.body.category` (a non-empty object — `isEmpty(req.body.category)`
+   * throws otherwise), not a flat top-level body. Verified against the
+   * route's literal source, 26.8.1. The old flat `{budgeted}` body made
+   * every budgeted-amount push to Actual fail. */
   async updateCategoryBudgeted(
     month: string,
     categoryId: string,
@@ -289,22 +308,66 @@ export class ActualClient implements BudgetAPIClient {
   ): Promise<void> {
     await this.request(`/months/${month}/categories/${categoryId}`, {
       method: "PATCH",
-      body: JSON.stringify({ budgeted: toCents(amount) }),
+      body: JSON.stringify({ category: { budgeted: toCents(amount) } }),
+    });
+  }
+
+  /**
+   * There is no STRUCTURED field to write a category's goal amount —
+   * verified against `@actual-app/api`'s own docs: `updateCategory` only
+   * ever accepts name/group_id/is_income, on any release channel. Actual's
+   * newer Budget Automations engine stores a goal as `goal_def` directly on
+   * the category row (what `getCategories`' `cat.goal` reads — read-only
+   * via this wrapper), but that field is never exposed for writing.
+   *
+   * The REAL, working mechanism is Actual's older note-based template
+   * syntax (`#template <amount>` for a recurring monthly assignment,
+   * `#template up to <amount>` for a refill-to-balance target) — written
+   * through the actual-http-api wrapper's `PUT /notes/category/:id`
+   * endpoint, the same place a household's own free-text category notes
+   * live. `mergeGoalIntoNote` (`actual-goal-notes.ts`) does the actual
+   * read-merge-write so this never clobbers unrelated note content or a
+   * differently-shaped template the household configured directly in
+   * Actual — it either updates a matching-shape template in place, appends
+   * a fresh one if none exists, or throws `BudgetApiError` (code
+   * `"conflict"`) if an incompatible template is already there.
+   *
+   * Known caveat: this writes the OLD note-based mechanism, not the newer
+   * `goal_def` field `getCategories` reads back — so a goal pushed here
+   * won't appear in `cat.goal`/`goalTarget` reads until the household (or
+   * Actual itself) also sets it through the newer mechanism. The note-based
+   * `#template` IS what Actual's own "Apply Budget Template" action reads,
+   * though, so the push still does something real. */
+  private async writeGoalNote(
+    categoryId: string,
+    shape: ActualTemplateShape,
+    amount: number,
+  ): Promise<void> {
+    const noteRes = await this.request<{ data: string | null }>(
+      `/notes/category/${categoryId}`,
+    );
+    const merged = mergeGoalIntoNote(noteRes.data, shape, amount);
+    if (!merged.ok) {
+      throw new BudgetApiError(merged.reason, "conflict", null);
+    }
+    await this.request(`/notes/category/${categoryId}`, {
+      method: "PUT",
+      body: JSON.stringify({ data: merged.note }),
     });
   }
 
   async updateCategoryGoalTarget(
-    _categoryId: string,
-    _targetAmount: number,
+    categoryId: string,
+    targetAmount: number,
   ): Promise<void> {
-    // Actual Budget doesn't support goal targets natively — no-op
+    await this.writeGoalNote(categoryId, "fixed", targetAmount);
   }
 
   async updateCategoryTargetBalance(
-    _categoryId: string,
-    _targetAmount: number,
+    categoryId: string,
+    targetAmount: number,
   ): Promise<void> {
-    // Actual Budget doesn't support goal targets natively — no-op
+    await this.writeGoalNote(categoryId, "target-balance", targetAmount);
   }
 
   // -- Transactions --
@@ -348,22 +411,35 @@ export class ActualClient implements BudgetAPIClient {
     });
     const importedId = `ledgr:${idempotencyKey.slice(0, 30)}`;
 
-    const res = await this.request<{ data: { id: string } }>(
+    // The wrapper's `POST /accounts/:id/transactions` route handler returns
+    // `res.json({ message: await budget.addTransaction(...) })`, and
+    // addTransaction resolves to the created transaction's id string
+    // directly (`transactionIds[0]`) — verified against actual-http-api's
+    // literal route + budget.js source, 26.8.1. The response is
+    // `{ message: "<id>" }`, NOT `{ data: { id: "<id>" } }`. Reading
+    // `res.data.id` (the old code here) threw a TypeError on every call
+    // (`res.data` is undefined) — pushSnapshotToBudgetApi's transaction
+    // push was completely broken for every Actual household, not just
+    // silently wrong.
+    const res = await this.request<{ message: string }>(
       `/accounts/${tx.accountId}/transactions`,
       {
         method: "POST",
         body: JSON.stringify({
-          date: tx.date,
-          amount: toCents(tx.amount),
-          payee_name: tx.payeeName,
-          category: tx.categoryId,
-          notes: tx.memo,
-          cleared: tx.cleared ?? false,
-          imported_id: importedId,
+          transaction: {
+            account: tx.accountId,
+            date: tx.date,
+            amount: toCents(tx.amount),
+            payee_name: tx.payeeName,
+            category: tx.categoryId,
+            notes: tx.memo,
+            cleared: tx.cleared ?? false,
+            imported_id: importedId,
+          },
         }),
       },
     );
-    return res.data.id;
+    return res.message;
   }
 
   async deleteTransaction(transactionId: string): Promise<void> {
@@ -380,21 +456,25 @@ export class ActualClient implements BudgetAPIClient {
     return res.data.map((t) => mapTransaction(t));
   }
 
+  /** Same request-body nesting fix as `createTransaction` — the wrapper's
+   * `PATCH /transactions/:id` requires `req.body.transaction` (a non-empty
+   * object; validated via the same `validateTransactionBody`), not a flat
+   * top-level body. Verified against the route's literal source, 26.8.1. */
   async updateTransaction(
     txId: string,
     tx: Partial<NewBudgetTransaction>,
   ): Promise<void> {
-    const body: Record<string, unknown> = {};
-    if (tx.date !== undefined) body.date = tx.date;
-    if (tx.amount !== undefined) body.amount = toCents(tx.amount);
-    if (tx.payeeName !== undefined) body.payee_name = tx.payeeName;
-    if (tx.categoryId !== undefined) body.category = tx.categoryId;
-    if (tx.memo !== undefined) body.notes = tx.memo;
-    if (tx.cleared !== undefined) body.cleared = tx.cleared;
+    const transaction: Record<string, unknown> = {};
+    if (tx.date !== undefined) transaction.date = tx.date;
+    if (tx.amount !== undefined) transaction.amount = toCents(tx.amount);
+    if (tx.payeeName !== undefined) transaction.payee_name = tx.payeeName;
+    if (tx.categoryId !== undefined) transaction.category = tx.categoryId;
+    if (tx.memo !== undefined) transaction.notes = tx.memo;
+    if (tx.cleared !== undefined) transaction.cleared = tx.cleared;
 
     await this.request(`/transactions/${txId}`, {
       method: "PATCH",
-      body: JSON.stringify(body),
+      body: JSON.stringify({ transaction }),
     });
   }
 }

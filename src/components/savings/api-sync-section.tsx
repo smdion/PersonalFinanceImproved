@@ -3,7 +3,10 @@
 import React, { useState, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "@/lib/hooks/use-toast";
-import { formatSyncResultToast } from "@/lib/utils/format";
+import {
+  formatSyncResultToast,
+  budgetApiServiceLabel,
+} from "@/lib/utils/format";
 import { resolveEffectiveMonthlyContribution } from "@/lib/calculators/savings-capacity";
 import {
   PushPreviewModal,
@@ -283,7 +286,14 @@ export function useApiSync() {
   const pushToApi = trpc.savings.pushContributionsToApi.useMutation({
     onSuccess: (data) => {
       utils.savings.invalidate();
-      toast.success(formatSyncResultToast(data.pushed, "push", "YNAB"));
+      toast.success(
+        formatSyncResultToast(
+          data.pushed,
+          "push",
+          budgetApiServiceLabel(data.service),
+          data.skippedUnsupported,
+        ),
+      );
     },
   });
   const deleteOverride = trpc.savings.allocationOverrides.delete.useMutation({
