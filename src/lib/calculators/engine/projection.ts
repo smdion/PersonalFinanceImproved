@@ -156,6 +156,35 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
     retirementBalance * retirementConfig.withdrawalRate,
   );
 
+  // Household's stated need, inflated to the first decumulation year's
+  // nominal dollars — same formula pre-year-setup.ts:209-211 uses to seed
+  // year-1 decumulation spending, before any strategy adjusts it. Computed
+  // independently here (post-hoc, like sustainableWithdrawal above) since
+  // the per-strategy dispatch overwrites state.projectedExpenses before the
+  // loop ends, so the pre-strategy "need" value isn't otherwise retained.
+  //
+  // The exponent MUST be the actual first decumulation year's offset from
+  // asOfDate, not `retirementAge - currentAge` — pre-year-setup.ts's mid-year
+  // retirement handling can defer the first decumulation year by one extra
+  // year (when retirementAge === currentAge but the current date isn't
+  // exactly year-start), and a naive age-based exponent silently
+  // under-inflates relative to what the loop actually produced. Reading the
+  // loop's own first decumulation row keeps this a single source of truth
+  // instead of a second, divergence-prone computation of "which year."
+  const firstDecumYear = state.projectionByYear.find(
+    (p) => p.phase === "decumulation",
+  );
+  const firstDecumulationYearStatedNeed =
+    input.decumulationAnnualExpenses != null && firstDecumYear
+      ? roundToCents(
+          input.decumulationAnnualExpenses *
+            Math.pow(
+              1 + ctx.inflationRate,
+              Math.max(0, firstDecumYear.year - input.asOfDate.getFullYear()),
+            ),
+        )
+      : null;
+
   return {
     projectionByYear: state.projectionByYear,
     firstOverflowYear: state.firstOverflowYear,
@@ -164,6 +193,7 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
     portfolioDepletionYear: state.portfolioDepletionYear,
     portfolioDepletionAge: state.portfolioDepletionAge,
     sustainableWithdrawal,
+    firstDecumulationYearStatedNeed,
     accountDepletions: state.accountDepletions,
     warnings,
   };

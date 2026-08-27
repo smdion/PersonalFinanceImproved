@@ -30,7 +30,13 @@ import {
   getDefaultDecumulationOrder,
   DEFAULT_WITHDRAWAL_SPLITS as CONFIG_WITHDRAWAL_SPLITS,
 } from "@/lib/config/account-types";
-import { calculateLoanMonthlyPayment, safeDivide } from "@/lib/utils/math";
+import { safeDivide } from "@/lib/utils/math";
+import {
+  precomputePurchases,
+  purchaseMonthlyForYear,
+  steadyStateMonthly,
+  type RelocationPurchaseInput,
+} from "@/lib/calculators/relocation";
 import * as schema from "@/lib/db/schema";
 import type {
   AccumulationOverride,
@@ -38,20 +44,12 @@ import type {
 } from "@/lib/calculators/types";
 import { relocationScenarioParamsSchema } from "@/lib/db/json-schemas";
 
-/** Pre-computed large purchase data used for ongoing-cost budget overrides
- *  and the per-row portfolio impact indicator. */
-type PurchasePrecomp = {
-  cashOutlay: number;
-  saleProceeds: number;
-  monthlyPayment: number;
-  paymentEndYear: number; // exclusive — last payment year is paymentEndYear - 1
-  ongoingMonthlyCost: number;
-  purchaseYear: number;
-  /** Net one-time portfolio impact: saleProceeds - cashOutlay (negative = loss). */
-  netPortfolioImpact: number;
-};
-
-function precomputePurchases(
+/** Router's large-purchase input is zod-nullable, not optional-undefined like
+ *  `RelocationPurchaseInput` — convert once so every call site shares the
+ *  same precomputed data (Finding 12: previously reimplemented this math
+ *  independently of lib/calculators/relocation.ts, with a `roundToCents`
+ *  drift between the two copies). */
+function toRelocationPurchaseInput(
   purchases: {
     purchaseYear: number;
     purchasePrice: number;
@@ -61,43 +59,16 @@ function precomputePurchases(
     ongoingMonthlyCost: number | null;
     saleProceeds: number | null;
   }[],
-): PurchasePrecomp[] {
-  return purchases.map((p) => {
-    const downPct = p.downPaymentPercent ?? 1;
-    const cashOutlay = p.purchasePrice * downPct;
-    const financedPrincipal = p.purchasePrice * (1 - downPct);
-    const termYears = p.loanTermYears ?? 0;
-    const monthlyPayment = calculateLoanMonthlyPayment(
-      financedPrincipal,
-      p.loanRate ?? 0,
-      termYears,
-    );
-    const saleProceeds = p.saleProceeds ?? 0;
-    return {
-      cashOutlay,
-      saleProceeds,
-      monthlyPayment,
-      paymentEndYear: p.purchaseYear + termYears,
-      ongoingMonthlyCost: p.ongoingMonthlyCost ?? 0,
-      purchaseYear: p.purchaseYear,
-      netPortfolioImpact: saleProceeds - cashOutlay,
-    };
-  });
-}
-
-/** Ongoing monthly cost from all purchases active in a given year. */
-function purchaseOngoingMonthlyForYear(
-  year: number,
-  pcs: PurchasePrecomp[],
-): number {
-  let total = 0;
-  for (const pc of pcs) {
-    if (year >= pc.purchaseYear) {
-      total += pc.ongoingMonthlyCost;
-      if (year < pc.paymentEndYear) total += pc.monthlyPayment;
-    }
-  }
-  return total;
+): RelocationPurchaseInput[] {
+  return purchases.map((p) => ({
+    purchasePrice: p.purchasePrice,
+    downPaymentPercent: p.downPaymentPercent ?? undefined,
+    loanRate: p.loanRate ?? undefined,
+    loanTermYears: p.loanTermYears ?? undefined,
+    ongoingMonthlyCost: p.ongoingMonthlyCost ?? undefined,
+    saleProceeds: p.saleProceeds ?? undefined,
+    purchaseYear: p.purchaseYear,
+  }));
 }
 
 export const relocationProjectionRouter = createTRPCRouter({
@@ -308,7 +279,9 @@ export const relocationProjectionRouter = createTRPCRouter({
       // value from leaking forward via inflation carry, generate an explicit
       // override schedule for ALL years from the first affected year to retirement,
       // using inflation-indexed baseline for non-adjusted years.
-      const purchasePrecomp = precomputePurchases(input.largePurchases);
+      const purchasePrecomp = precomputePurchases(
+        toRelocationPurchaseInput(input.largePurchases),
+      );
       const adjustmentByYear = new Map(
         input.yearAdjustments.map((a) => [a.year, a.monthlyExpenses]),
       );
@@ -334,10 +307,7 @@ export const relocationProjectionRouter = createTRPCRouter({
           const base = adjustmentByYear.has(y)
             ? adjustmentByYear.get(y)!
             : baseMonthly * Math.pow(1 + inflationRate, y - currentYear);
-          const purchaseAddl = purchaseOngoingMonthlyForYear(
-            y,
-            purchasePrecomp,
-          );
+          const purchaseAddl = purchaseMonthlyForYear(y, purchasePrecomp);
           relocBudgetOverrides.push({ year: y, value: base + purchaseAddl });
         }
       }
@@ -374,9 +344,26 @@ export const relocationProjectionRouter = createTRPCRouter({
       const relocationBalanceAtRetirement =
         relocAccRows[relocAccRows.length - 1]?.endBalance ?? 0;
 
+      // Delegates to lib/calculators/relocation.ts's real formula (Single
+      // Computation Path — this endpoint used to reimplement it and drop
+      // the steady-state purchase-cost term, drifting from
+      // lib/calculators/relocation.ts's calculateRelocation()). Reuses the
+      // same purchasePrecomp computed above for the budget-override loop —
+      // one precomputation, not two independently-rounded copies.
       const withdrawalRate = toNumber(relocPayload.settings.withdrawalRate);
+      const ssMonthly = steadyStateMonthly(purchasePrecomp);
       const relocationFiTarget = safeDivide(
-        relocationAnnualExpenses,
+        relocationAnnualExpenses + ssMonthly * 12,
+        withdrawalRate,
+        0,
+      );
+      // Same formula/rate as relocationFiTarget above — so the "Additional
+      // Nest Egg Needed" figure the UI derives from these two never
+      // subtracts a value from this endpoint from a value the client-side
+      // calculator computed independently (was a Single Computation Path
+      // violation; see metrics-and-banner.tsx).
+      const currentFiTarget = safeDivide(
+        currentAnnualExpenses,
         withdrawalRate,
         0,
       );
@@ -393,9 +380,10 @@ export const relocationProjectionRouter = createTRPCRouter({
       const largePurchaseImpactByYear = new Map<number, number>();
       for (const pc of purchasePrecomp) {
         const prev = largePurchaseImpactByYear.get(pc.purchaseYear) ?? 0;
+        // Net one-time portfolio impact: saleProceeds - cashOutlay (negative = loss).
         largePurchaseImpactByYear.set(
           pc.purchaseYear,
-          prev + pc.netPortfolioImpact,
+          prev + (pc.saleProceeds - pc.cashOutlay),
         );
       }
 
@@ -569,6 +557,7 @@ export const relocationProjectionRouter = createTRPCRouter({
         currentBalanceAtRetirement,
         relocationBalanceAtRetirement,
         relocationFiTarget,
+        currentFiTarget,
         isViableNow,
         earliestRelocateAge,
         earliestRelocateYear,

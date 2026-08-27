@@ -123,8 +123,11 @@ export type BlendedProjectionRow = {
 export type RelocationEngineResult = {
   currentBalanceAtRetirement: number;
   relocationBalanceAtRetirement: number;
-  /** Relocation annual expenses ÷ withdrawal rate (no SS adjustment). */
+  /** (Relocation annual expenses + steady-state purchase costs) ÷ withdrawal rate. */
   relocationFiTarget: number;
+  /** Current-scenario annual expenses ÷ withdrawal rate — same formula/rate as
+   *  relocationFiTarget, so the two can be safely subtracted. */
+  currentFiTarget: number;
   isViableNow: boolean;
   earliestRelocateAge: number | null;
   earliestRelocateYear: number | null;

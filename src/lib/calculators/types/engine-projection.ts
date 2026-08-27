@@ -450,8 +450,16 @@ export type ProjectionResult = {
   /** The year the portfolio is projected to run out (null if it never does). */
   portfolioDepletionYear: number | null;
   portfolioDepletionAge: number | null;
-  /** Sustainable annual withdrawal at retirement (portfolio × withdrawal rate). */
+  /** Sustainable annual withdrawal at retirement (portfolio × withdrawal rate).
+   *  Not what any strategy actually spends — a reference "4%-rule-style" figure. */
   sustainableWithdrawal: number;
+  /** The household's stated retirement need (decumulationAnnualExpenses),
+   *  inflated by CPI to the first decumulation year's nominal dollars —
+   *  same formula pre-year-setup.ts uses to seed year-1 spending, before any
+   *  strategy adjusts it. Null when no retirement budget is set. Used to
+   *  check a strategy's actual spending against the household's real need,
+   *  independent of `sustainableWithdrawal` (see coast-fire.ts). */
+  firstDecumulationYearStatedNeed: number | null;
   /** Per-account depletion tracking: first year each account category hits zero. */
   accountDepletions: {
     category: AccountCategory;

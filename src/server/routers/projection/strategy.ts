@@ -482,15 +482,6 @@ export const strategyRouter = createTRPCRouter({
           max: baseEngineInput.projectionEndAge - 5,
         },
         {
-          field: "withdrawalRate",
-          delta: -0.005,
-          unit: "absolute",
-          targets: ["survival"],
-          label: "Withdrawal Rate",
-          currentValue: toNumber(settings.withdrawalRate),
-          max: 1,
-        },
-        {
           field: "ssStartAge",
           delta: 3,
           unit: "absolute",
@@ -568,14 +559,6 @@ export const strategyRouter = createTRPCRouter({
           // Global lever — modify the engine input field directly
           if (lever.field === "retirementAge") {
             variantInput = { ...variantInput, retirementAge: rounded };
-          } else if (lever.field === "withdrawalRate") {
-            variantInput = {
-              ...variantInput,
-              decumulationDefaults: {
-                ...variantInput.decumulationDefaults,
-                withdrawalRate: rounded,
-              },
-            };
           } else if (lever.field === "ssStartAge") {
             variantInput = { ...variantInput, ssStartAge: rounded };
           }
@@ -601,8 +584,6 @@ export const strategyRouter = createTRPCRouter({
             (l.field === "retirementAge" || l.field === "ssStartAge")
           )
             return String(Math.round(v));
-          if (l.kind === "global" && l.field === "withdrawalRate")
-            return formatPercent(v, 2);
           // Strategy param — check field type
           const field = strategyMeta.paramFields.find(
             (f) => f.key === (l as { key: string }).key,
