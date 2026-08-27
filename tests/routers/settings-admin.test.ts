@@ -459,12 +459,14 @@ describe("settings.getDataFreshness", () => {
 
   afterAll(() => cleanup());
 
-  it("returns null for both dates on a fresh database", async () => {
+  it("returns null for all three dates on a fresh database", async () => {
     const result = await caller.settings.getDataFreshness();
     expect(result).toHaveProperty("balanceDate");
     expect(result).toHaveProperty("performanceDate");
+    expect(result).toHaveProperty("basisDate");
     expect(result.balanceDate).toBeNull();
     expect(result.performanceDate).toBeNull();
+    expect(result.basisDate).toBeNull();
   });
 
   it("balanceDate reflects the most recent portfolio snapshot", async () => {
@@ -509,6 +511,13 @@ describe("settings.getDataFreshness", () => {
     } finally {
       fresh.cleanup();
     }
+  });
+
+  it("basisDate reflects the basis_last_updated app setting", async () => {
+    seedAppSetting(db, "basis_last_updated", "2025-12-31");
+
+    const result = await caller.settings.getDataFreshness();
+    expect(result.basisDate).toBe("2025-12-31");
   });
 });
 
@@ -658,6 +667,16 @@ describe("settings.updateDataFreshness", () => {
 
     const freshness = await caller.settings.getDataFreshness();
     expect(freshness.performanceDate).toBe("2025-09-30T15:00:00.000Z");
+  });
+
+  it("updates basisDate via app settings", async () => {
+    const result = await caller.settings.updateDataFreshness({
+      basisDate: "2025-12-31",
+    });
+    expect(result).toEqual({ ok: true });
+
+    const freshness = await caller.settings.getDataFreshness();
+    expect(freshness.basisDate).toBe("2025-12-31");
   });
 });
 

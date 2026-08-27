@@ -44,9 +44,14 @@ export const adminProcedures = {
       .select({ value: schema.appSettings.value })
       .from(schema.appSettings)
       .where(eq(schema.appSettings.key, "performance_last_updated"));
+    const basisSetting = await ctx.db
+      .select({ value: schema.appSettings.value })
+      .from(schema.appSettings)
+      .where(eq(schema.appSettings.key, "basis_last_updated"));
     return {
       balanceDate: latestSnapshot[0]?.snapshotDate ?? null,
       performanceDate: (perfSetting[0]?.value as string) ?? null,
+      basisDate: (basisSetting[0]?.value as string) ?? null,
     };
   }),
 
@@ -55,6 +60,7 @@ export const adminProcedures = {
       z.object({
         balanceDate: z.string().optional(),
         performanceDate: z.string().optional(),
+        basisDate: z.string().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -82,6 +88,15 @@ export const adminProcedures = {
           .onConflictDoUpdate({
             target: schema.appSettings.key,
             set: { value: input.performanceDate },
+          });
+      }
+      if (input.basisDate) {
+        await ctx.db
+          .insert(schema.appSettings)
+          .values({ key: "basis_last_updated", value: input.basisDate })
+          .onConflictDoUpdate({
+            target: schema.appSettings.key,
+            set: { value: input.basisDate },
           });
       }
       return { ok: true };
