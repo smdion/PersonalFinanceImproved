@@ -22,6 +22,7 @@ import {
   getAccountTypeConfig,
   ACCOUNT_TYPE_CONFIG,
   isTaxFreeBucket,
+  isIraCategory,
 } from "@/lib/config/account-types";
 import type { TipColor, TooltipLineItem } from "./types";
 import {
@@ -358,28 +359,61 @@ export function DecumulationRow({
                         color: "emerald",
                       });
                     }
-                    // R46 Phase 1: RMD-forced excess (beyond stated spending
-                    // need) reinvested into this account this year — real
-                    // money, forced out of Traditional by the RMD floor
-                    // regardless of what the strategy needed, previously
-                    // invisible anywhere in the UI. Only ever lands in the
-                    // overflow-target category (brokerage).
-                    const rmdExcess = yr.rmdExcessReinvested ?? 0;
+                    // R46: RMD-forced excess (beyond stated spending need)
+                    // — real money, forced out of Traditional by the RMD
+                    // floor regardless of what the strategy needed,
+                    // previously invisible anywhere in the UI. What
+                    // happened to it depends on the household's
+                    // rmdExcessHandling setting: "reinvest" (default)
+                    // actually credits this account (overflow target,
+                    // always brokerage), so shown as a real "+" line there;
+                    // "spend" never credits any account (the household
+                    // consumed it), so shown as an informational note
+                    // instead, not implied to have landed in this balance.
+                    const rmdExcess = yr.rmdExcessAmount ?? 0;
+                    const rmdMode = engineSettings?.rmdExcessHandling;
                     if (
                       rmdExcess > 0.01 &&
                       ACCOUNT_TYPE_CONFIG[cat].isOverflowTarget
                     ) {
+                      if (rmdMode === "spend") {
+                        items.push({
+                          label: "RMD excess spent (not reinvested)",
+                          amount: deflate(rmdExcess, yr.year),
+                          color: "gray",
+                        });
+                      } else {
+                        items.push({
+                          label: "RMD excess reinvested",
+                          amount: deflate(rmdExcess, yr.year),
+                          prefix: "+",
+                          color: "amber",
+                        });
+                      }
+                    }
+                    // R46: Qualified Charitable Distribution — money sent
+                    // directly from this account to charity, satisfying
+                    // part of the RMD without counting as taxable income.
+                    // Real money leaving the account (a "-" like any other
+                    // withdrawal), but was completely invisible previously
+                    // — QCD bypasses withdrawal routing entirely (it's
+                    // deducted before routing even runs), so there was no
+                    // slot/withdrawal line item anywhere that would have
+                    // shown it. Only ever deducted from "ira" (QCDs are
+                    // IRA-only under current law).
+                    const qcdAmount = yr.qcdAmount ?? 0;
+                    if (qcdAmount > 0.01 && isIraCategory(cat)) {
                       items.push({
-                        label: "RMD excess reinvested",
-                        amount: deflate(rmdExcess, yr.year),
-                        prefix: "+",
-                        color: "amber",
+                        label: "QCD to charity (excluded from taxable income)",
+                        amount: deflate(qcdAmount, yr.year),
+                        prefix: "-",
+                        color: "violet",
                       });
                     }
                     const catLumpTotal = lumpSumTotal(catLumps);
                     return renderTooltip({
                       kind: "money",
-                      header: `${catDisplayLabel[cat] ?? cat}${catLumpTotal > 0 || rmdExcess > 0.01 ? " Activity" : " Withdrawals"}`,
+                      header: `${catDisplayLabel[cat] ?? cat}${catLumpTotal > 0 || rmdExcess > 0.01 || qcdAmount > 0.01 ? " Activity" : " Withdrawals"}`,
                       items: items.length > 0 ? items : undefined,
                       withdrawals:
                         wd > 0 && items.length === 0

@@ -404,13 +404,25 @@ export type EngineDecumulationYear = {
   rmdByPerson?: { personId: number; personName: string; amount: number }[];
   /** True if the RMD forced additional Traditional withdrawals beyond what routing chose. */
   rmdOverrodeRouting: boolean;
-  /** R46 Phase 1: dollars of RMD-forced excess (beyond the strategy's stated
-   *  need + tax cost) reinvested into brokerage this year — 0 in the
-   *  overwhelmingly common case (`rmdOverrodeRouting` false, or the RMD
-   *  didn't exceed need). Previously computed and silently discarded —
-   *  this money is real, forced out of Traditional by the RMD floor
-   *  regardless of what the strategy needed, with no prior UI trace. */
-  rmdExcessReinvested: number;
+  /** R46: dollars of RMD-forced excess (beyond the strategy's stated need +
+   *  tax cost) this year — 0 in the overwhelmingly common case
+   *  (`rmdOverrodeRouting` false, or the RMD didn't exceed need). What
+   *  happened to it depends on the household's `rmdExcessHandling`
+   *  setting (see `ResolvedDecumulationConfig`) — reinvested into
+   *  brokerage (default) or spent; this field is the dollar amount either
+   *  way, not a statement of which. Previously computed and silently
+   *  discarded — this money is real, forced out of Traditional by the RMD
+   *  floor regardless of what the strategy needed, with no prior UI
+   *  trace. */
+  rmdExcessAmount: number;
+  /** R46 Phase 2: total Qualified Charitable Distribution amount applied
+   *  this year (0 unless `qcdMaximize` is on and this household has a
+   *  QCD-eligible RMD). Satisfies that much of `rmdAmount` directly,
+   *  excluded from taxable income — see `qcd.ts` for the approximation
+   *  this uses. */
+  qcdAmount: number;
+  /** Per-person QCD breakdown, when nonzero. */
+  qcdByPerson?: { personId: number; qcdAmount: number }[];
   // --- SS Tax fields (Phase 2) ---
   /** Taxable portion of Social Security income (IRS provisional income formula). */
   taxableSS: number;

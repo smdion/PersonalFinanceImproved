@@ -258,6 +258,21 @@ export const MIN_INFLATION_RATE = -0.1;
 export const MAX_BROKERAGE_RAMP_YEARS = 40;
 
 // ---------------------------------------------------------------------------
+// RMD / Qualified Charitable Distribution (R46)
+// ---------------------------------------------------------------------------
+
+/** Annual per-person cap on Qualified Charitable Distributions from an IRA
+ *  (IRC §408(d)(8)). IRS-indexed annually for inflation — NOT tied to the
+ *  household's own inflation assumption, which is why this is a flat
+ *  constant rather than derived from `annualInflation`. $105,000 is the
+ *  2024 figure; update this constant (not a formula) when the IRS
+ *  publishes a new figure. Held flat across the whole projection horizon
+ *  (no attempt to model future IRS indexing) — same simplification this
+ *  engine already applies to IRS contribution limits via
+ *  `limitGrowthRate` rather than real published figures. */
+export const QCD_ANNUAL_CAP_PER_PERSON = 105000;
+
+// ---------------------------------------------------------------------------
 // Analytics
 // ---------------------------------------------------------------------------
 

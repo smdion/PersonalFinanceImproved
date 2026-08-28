@@ -133,14 +133,25 @@ export function clampBalances(
 // ---------------------------------------------------------------------------
 
 /**
- * Reinvest RMD excess into brokerage (#39).
- * When RMD forces withdrawal above spending need, excess is after-tax cash
- * reinvested as basis.
+ * Handle RMD-forced withdrawal beyond spending need (#39, mode-aware R46).
+ * When RMD forces withdrawal above spending need + tax cost, the excess is
+ * real after-tax cash the household didn't ask for. What happens to it
+ * depends on `mode`:
+ * - "reinvest" (default, matches all pre-R46 behavior): credited to
+ *   brokerage as basis.
+ * - "spend": NOT credited anywhere — the household is modeled as consuming
+ *   it. Net worth ends up genuinely lower than "reinvest", by design.
  *
- * Mutates `balances` and `acctBal` in place. Returns amount reinvested.
+ * Either way, returns the excess amount for reporting (R46 Phase 1
+ * visibility) — the UI is responsible for wording it correctly per mode
+ * (`rmdExcessHandling` on the resolved config), since "reinvested" isn't
+ * an accurate description of what happened under "spend".
+ *
+ * Mutates `balances` and `acctBal` in place only under "reinvest".
  */
 export function reinvestRmdExcess(
-  reinvestEnabled: boolean,
+  mode: "reinvest" | "spend",
+  enabled: boolean,
   rmdOverrodeRouting: boolean,
   totalWithdrawal: number,
   afterTaxNeed: number,
@@ -149,22 +160,26 @@ export function reinvestRmdExcess(
   acctBal: AccountBalances,
 ): number {
   if (
-    !reinvestEnabled ||
+    !enabled ||
     !rmdOverrodeRouting ||
     totalWithdrawal <= afterTaxNeed + taxCost
   ) {
     return 0;
   }
   const excess = roundToCents(totalWithdrawal - afterTaxNeed - taxCost);
-  balances.afterTax = roundToCents(balances.afterTax + excess);
-  balances.afterTaxBasis = roundToCents(balances.afterTaxBasis + excess);
-  for (const cat of getAllCategories()) {
-    if (isOverflowTarget(cat)) {
-      addBalance(acctBal[cat], excess);
-      addBasis(acctBal[cat], excess);
-      break;
+  if (mode === "reinvest") {
+    balances.afterTax = roundToCents(balances.afterTax + excess);
+    balances.afterTaxBasis = roundToCents(balances.afterTaxBasis + excess);
+    for (const cat of getAllCategories()) {
+      if (isOverflowTarget(cat)) {
+        addBalance(acctBal[cat], excess);
+        addBasis(acctBal[cat], excess);
+        break;
+      }
     }
   }
+  // "spend": intentionally no balance mutation — the money is modeled as
+  // consumed, not reinvested. Still returned so the UI can report it.
   return excess;
 }
 

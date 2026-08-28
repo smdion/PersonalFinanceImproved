@@ -1321,6 +1321,22 @@ export const retirementSettings = sqliteTable(
     vdFloorPercent: text("vd_floor_percent").default("0.025"),
     /** RMD Spending: multiplier on IRS RMD amount. */
     rmdMultiplier: text("rmd_multiplier").default("1.0"),
+    /** R46: what to do with RMD-forced withdrawal beyond stated spending
+     *  need (after any QCD reduces the taxable RMD first) — "reinvest"
+     *  into brokerage (default, matches all pre-R46 behavior) or "spend"
+     *  (household consumes it; net worth ends up lower, by design). */
+    rmdExcessHandling: text("rmd_excess_handling")
+      .notNull()
+      .default("reinvest"),
+    /** R46: automatically apply the largest Qualified Charitable
+     *  Distribution the household's RMD situation allows each year
+     *  (capped by QCD_ANNUAL_CAP_PER_PERSON and the person's IRA-only
+     *  Traditional balance — see constants.ts and
+     *  PLAN-rmd-excess-handling.md for the approximation this uses).
+     *  Excludes that portion of RMD from taxable income entirely. */
+    qcdMaximize: integer("qcd_maximize", { mode: "boolean" })
+      .notNull()
+      .default(false),
     /** Enable IRMAA awareness — constrain Roth conversions/withdrawals near Medicare surcharge cliffs (65+). */
     enableIrmaaAwareness: integer("enable_irmaa_awareness", { mode: "boolean" })
       .notNull()

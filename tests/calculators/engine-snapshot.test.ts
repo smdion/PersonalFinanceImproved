@@ -3288,6 +3288,390 @@ describe("engine snapshot parity", () => {
     expect(metrics.finalYear?.endBalance).toBe(4056953.22);
     expect(metrics).toMatchSnapshot();
   });
+
+  // R46: QCD + rmdExcessHandling fixtures. All three share the same
+  // household shape (per-person RMD tracking via individualAccounts +
+  // socialSecurityEntries, required for qcdMaximize to take effect —
+  // see qcd.ts's docblock) so the only variable between them is the R46
+  // settings themselves.
+  it("fixture 65: qcdMaximize fully covers a modest RMD (no taxable distribution forced)", () => {
+    const input = makeInput({
+      currentAge: 75,
+      retirementAge: 65,
+      projectionEndAge: 85,
+      birthYear: 1950,
+      currentSalary: 0,
+      annualExpenses: 40000,
+      socialSecurityAnnual: 30000,
+      ssStartAge: 70,
+      socialSecurityEntries: [
+        {
+          personId: 1,
+          personName: "Alice",
+          birthYear: 1950,
+          startAge: 70,
+          annualAmount: 30000,
+        },
+      ],
+      individualAccounts: [
+        {
+          name: "Alice 401k",
+          category: "401k",
+          taxType: "preTax",
+          startingBalance: 1200000,
+          ownerName: "Alice",
+          ownerPersonId: 1,
+        },
+        {
+          name: "Alice IRA",
+          category: "ira",
+          taxType: "preTax",
+          startingBalance: 800000,
+          ownerName: "Alice",
+          ownerPersonId: 1,
+        },
+        {
+          name: "Alice IRA Roth",
+          category: "ira",
+          taxType: "taxFree",
+          startingBalance: 50000,
+          ownerName: "Alice",
+          ownerPersonId: 1,
+        },
+        {
+          name: "Alice HSA",
+          category: "hsa",
+          taxType: "hsa",
+          startingBalance: 10000,
+          ownerName: "Alice",
+          ownerPersonId: 1,
+        },
+        {
+          name: "Alice Brokerage",
+          category: "brokerage",
+          taxType: "afterTax",
+          startingBalance: 50000,
+          ownerName: "Alice",
+          ownerPersonId: 1,
+        },
+      ],
+      startingBalances: {
+        preTax: 2000000,
+        taxFree: 50000,
+        afterTax: 50000,
+        afterTaxBasis: 30000,
+        hsa: 10000,
+      },
+      startingAccountBalances: {
+        "401k": {
+          structure: "roth_traditional",
+          traditional: 1200000,
+          roth: 0,
+        },
+        "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+        hsa: { structure: "single_bucket", balance: 10000 },
+        ira: {
+          structure: "roth_traditional",
+          traditional: 800000,
+          roth: 50000,
+        },
+        brokerage: {
+          structure: "basis_tracking",
+          balance: 50000,
+          basis: 30000,
+        },
+      },
+      decumulationDefaults: {
+        withdrawalRate: 0.04,
+        withdrawalRoutingMode: "waterfall",
+        withdrawalOrder: ["brokerage", "401k", "ira", "hsa"],
+        withdrawalSplits: {
+          "401k": 0.35,
+          "403b": 0,
+          ira: 0.25,
+          brokerage: 0.3,
+          hsa: 0.1,
+        },
+        withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
+        withdrawalStrategy: "guyton_klinger",
+        strategyParams: {
+          guyton_klinger: {
+            upperGuardrail: 0.8,
+            lowerGuardrail: 1.2,
+            increasePercent: 0.1,
+            decreasePercent: 0.1,
+            skipInflationAfterLoss: true,
+          },
+        },
+        distributionTaxRates: {
+          traditionalFallbackRate: 0.24,
+          roth: 0,
+          hsa: 0,
+          brokerage: 0.15,
+        },
+        qcdMaximize: true,
+        rmdExcessHandling: "reinvest",
+      },
+    });
+    const result = calculateProjection(input);
+    const decYears = result.projectionByYear.filter(
+      (y): y is Extract<typeof y, { phase: "decumulation" }> =>
+        y.phase === "decumulation",
+    );
+    // RMD ($81,300.81 at age 75) is well under the $105k/person QCD cap
+    // and the IRA Traditional balance ($800k) — the whole thing gets
+    // QCD'd, so no taxable Traditional distribution is forced and there's
+    // no leftover excess to reinvest.
+    expect(decYears[0]?.rmdAmount).toBe(81300.81);
+    expect(decYears[0]?.qcdAmount).toBe(81300.81);
+    expect(decYears[0]?.totalTraditionalWithdrawal).toBe(0);
+    expect(decYears[0]?.rmdExcessAmount).toBe(0);
+    expect(result.sustainableWithdrawal).toBe(10638.3);
+    const metrics = extractMetrics(result);
+    expect(metrics.finalYear?.endBalance).toBe(2472743.69);
+    expect(metrics).toMatchSnapshot();
+  });
+
+  it("fixture 66: qcdMaximize capped below a large RMD — remainder still forces a taxable distribution + reinvested excess", () => {
+    const input = makeInput({
+      currentAge: 75,
+      retirementAge: 65,
+      projectionEndAge: 78,
+      birthYear: 1950,
+      currentSalary: 0,
+      annualExpenses: 40000,
+      socialSecurityAnnual: 30000,
+      ssStartAge: 70,
+      socialSecurityEntries: [
+        {
+          personId: 1,
+          personName: "Alice",
+          birthYear: 1950,
+          startAge: 70,
+          annualAmount: 30000,
+        },
+      ],
+      individualAccounts: [
+        {
+          name: "Alice 401k",
+          category: "401k",
+          taxType: "preTax",
+          startingBalance: 3200000,
+          ownerName: "Alice",
+          ownerPersonId: 1,
+        },
+        {
+          name: "Alice IRA",
+          category: "ira",
+          taxType: "preTax",
+          startingBalance: 2800000,
+          ownerName: "Alice",
+          ownerPersonId: 1,
+        },
+        {
+          name: "Alice Brokerage",
+          category: "brokerage",
+          taxType: "afterTax",
+          startingBalance: 50000,
+          ownerName: "Alice",
+          ownerPersonId: 1,
+        },
+      ],
+      startingBalances: {
+        preTax: 6000000,
+        taxFree: 0,
+        afterTax: 50000,
+        afterTaxBasis: 30000,
+        hsa: 0,
+      },
+      startingAccountBalances: {
+        "401k": {
+          structure: "roth_traditional",
+          traditional: 3200000,
+          roth: 0,
+        },
+        "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+        hsa: { structure: "single_bucket", balance: 0 },
+        ira: {
+          structure: "roth_traditional",
+          traditional: 2800000,
+          roth: 0,
+        },
+        brokerage: {
+          structure: "basis_tracking",
+          balance: 50000,
+          basis: 30000,
+        },
+      },
+      decumulationDefaults: {
+        withdrawalRate: 0.04,
+        withdrawalRoutingMode: "waterfall",
+        withdrawalOrder: ["brokerage", "401k", "ira", "hsa"],
+        withdrawalSplits: {
+          "401k": 0.35,
+          "403b": 0,
+          ira: 0.25,
+          brokerage: 0.3,
+          hsa: 0.1,
+        },
+        withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
+        withdrawalStrategy: "guyton_klinger",
+        strategyParams: {
+          guyton_klinger: {
+            upperGuardrail: 0.8,
+            lowerGuardrail: 1.2,
+            increasePercent: 0.1,
+            decreasePercent: 0.1,
+            skipInflationAfterLoss: true,
+          },
+        },
+        distributionTaxRates: {
+          traditionalFallbackRate: 0.24,
+          roth: 0,
+          hsa: 0,
+          brokerage: 0.15,
+        },
+        qcdMaximize: true,
+        rmdExcessHandling: "reinvest",
+      },
+    });
+    const result = calculateProjection(input);
+    const decYears = result.projectionByYear.filter(
+      (y): y is Extract<typeof y, { phase: "decumulation" }> =>
+        y.phase === "decumulation",
+    );
+    // RMD ($243,902.44 at age 75) exceeds the $105k/person QCD cap — QCD
+    // caps at exactly $105,000, and enforceRmd still forces the remaining
+    // $138,902.44 through as a real taxable Traditional distribution.
+    expect(decYears[0]?.rmdAmount).toBe(243902.44);
+    expect(decYears[0]?.qcdAmount).toBe(105000);
+    expect(decYears[0]?.totalTraditionalWithdrawal).toBe(138902.44);
+    expect(decYears[0]?.rmdExcessAmount).toBe(105565.85);
+    expect(result.sustainableWithdrawal).toBe(10638.3);
+    const metrics = extractMetrics(result);
+    expect(metrics.finalYear?.endBalance).toBe(6890746.66);
+    expect(metrics).toMatchSnapshot();
+  });
+
+  it("fixture 67: same as fixture 66 but rmdExcessHandling='spend' — lower end balance, by design", () => {
+    const input = makeInput({
+      currentAge: 75,
+      retirementAge: 65,
+      projectionEndAge: 78,
+      birthYear: 1950,
+      currentSalary: 0,
+      annualExpenses: 40000,
+      socialSecurityAnnual: 30000,
+      ssStartAge: 70,
+      socialSecurityEntries: [
+        {
+          personId: 1,
+          personName: "Alice",
+          birthYear: 1950,
+          startAge: 70,
+          annualAmount: 30000,
+        },
+      ],
+      individualAccounts: [
+        {
+          name: "Alice 401k",
+          category: "401k",
+          taxType: "preTax",
+          startingBalance: 3200000,
+          ownerName: "Alice",
+          ownerPersonId: 1,
+        },
+        {
+          name: "Alice IRA",
+          category: "ira",
+          taxType: "preTax",
+          startingBalance: 2800000,
+          ownerName: "Alice",
+          ownerPersonId: 1,
+        },
+        {
+          name: "Alice Brokerage",
+          category: "brokerage",
+          taxType: "afterTax",
+          startingBalance: 50000,
+          ownerName: "Alice",
+          ownerPersonId: 1,
+        },
+      ],
+      startingBalances: {
+        preTax: 6000000,
+        taxFree: 0,
+        afterTax: 50000,
+        afterTaxBasis: 30000,
+        hsa: 0,
+      },
+      startingAccountBalances: {
+        "401k": {
+          structure: "roth_traditional",
+          traditional: 3200000,
+          roth: 0,
+        },
+        "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+        hsa: { structure: "single_bucket", balance: 0 },
+        ira: {
+          structure: "roth_traditional",
+          traditional: 2800000,
+          roth: 0,
+        },
+        brokerage: {
+          structure: "basis_tracking",
+          balance: 50000,
+          basis: 30000,
+        },
+      },
+      decumulationDefaults: {
+        withdrawalRate: 0.04,
+        withdrawalRoutingMode: "waterfall",
+        withdrawalOrder: ["brokerage", "401k", "ira", "hsa"],
+        withdrawalSplits: {
+          "401k": 0.35,
+          "403b": 0,
+          ira: 0.25,
+          brokerage: 0.3,
+          hsa: 0.1,
+        },
+        withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
+        withdrawalStrategy: "guyton_klinger",
+        strategyParams: {
+          guyton_klinger: {
+            upperGuardrail: 0.8,
+            lowerGuardrail: 1.2,
+            increasePercent: 0.1,
+            decreasePercent: 0.1,
+            skipInflationAfterLoss: true,
+          },
+        },
+        distributionTaxRates: {
+          traditionalFallbackRate: 0.24,
+          roth: 0,
+          hsa: 0,
+          brokerage: 0.15,
+        },
+        qcdMaximize: true,
+        rmdExcessHandling: "spend",
+      },
+    });
+    const result = calculateProjection(input);
+    const decYears = result.projectionByYear.filter(
+      (y): y is Extract<typeof y, { phase: "decumulation" }> =>
+        y.phase === "decumulation",
+    );
+    // Same RMD/QCD/excess amounts as fixture 66 — only the DESTINATION of
+    // the excess differs (spent, not reinvested), so end balance is lower.
+    expect(decYears[0]?.rmdAmount).toBe(243902.44);
+    expect(decYears[0]?.qcdAmount).toBe(105000);
+    expect(decYears[0]?.rmdExcessAmount).toBe(105565.85);
+    expect(result.sustainableWithdrawal).toBe(10638.3);
+    const metrics = extractMetrics(result);
+    expect(metrics.finalYear?.endBalance).toBe(6508080.04);
+    expect(metrics.finalYear?.endBalance).toBeLessThan(6890746.66); // vs. fixture 66's "reinvest"
+    expect(metrics).toMatchSnapshot();
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────

@@ -49,6 +49,13 @@ export type Settings = {
   vdCeilingPercent?: string | null;
   vdFloorPercent?: string | null;
   rmdMultiplier?: string | null;
+  /** R46: what to do with RMD-forced withdrawal beyond stated spending
+   *  need — "reinvest" (default) or "spend". */
+  rmdExcessHandling?: string | null;
+  /** R46: automatically maximize Qualified Charitable Distributions
+   *  against the RMD each year (IRA-only, capped, approximation — see
+   *  PLAN-rmd-excess-handling.md). */
+  qcdMaximize?: boolean;
   // Feature flags + filing
   enableIrmaaAwareness?: boolean;
   enableAcaAwareness?: boolean;

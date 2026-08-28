@@ -763,7 +763,13 @@ export function ProjectionCard(props: {
                   result?.projectionByYear.filter(
                     (y) =>
                       y.phase === "decumulation" &&
-                      (y.rmdExcessReinvested ?? 0) > 0.01,
+                      (y.rmdExcessAmount ?? 0) > 0.01,
+                  ).length ?? 0
+                }
+                qcdYears={
+                  result?.projectionByYear.filter(
+                    (y) =>
+                      y.phase === "decumulation" && (y.qcdAmount ?? 0) > 0.01,
                   ).length ?? 0
                 }
               />

@@ -43,6 +43,7 @@ import { recommendWithdrawalStrategy } from "@/lib/pure/withdrawal-strategy-reco
 import { SocialSecuritySection } from "@/components/retirement/sections/social-security";
 import { TaxesSection } from "@/components/retirement/sections/taxes";
 import { HealthcareSection } from "@/components/retirement/sections/healthcare";
+import { RmdHandlingSection } from "@/components/retirement/sections/rmd-handling";
 import { GlidePathSection } from "@/components/retirement/sections/glide-path";
 import { TimelineSection } from "@/components/retirement/sections/timeline";
 import { IncomeSection } from "@/components/retirement/sections/income";
@@ -479,6 +480,12 @@ export function RetirementProfileTab() {
             />
 
             <HealthcareSection
+              settings={settings}
+              upsertSettings={upsertSettingsMutation}
+              isEditable={admin}
+            />
+
+            <RmdHandlingSection
               settings={settings}
               upsertSettings={upsertSettingsMutation}
               isEditable={admin}

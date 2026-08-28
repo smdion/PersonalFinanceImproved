@@ -3234,3 +3234,180 @@ exports[`engine snapshot parity > fixture 64: pre-retiree age 60 at the accumula
   },
 }
 `;
+
+exports[`engine snapshot parity > fixture 65: qcdMaximize fully covers a modest RMD (no taxable distribution forced) 1`] = `
+{
+  "accountDepletions": [
+    {
+      "category": "401k",
+      "depletionAge": 75,
+      "depletionYear": 2025,
+      "subType": "roth",
+    },
+    {
+      "category": "403b",
+      "depletionAge": 75,
+      "depletionYear": 2025,
+      "subType": "traditional",
+    },
+    {
+      "category": "403b",
+      "depletionAge": 75,
+      "depletionYear": 2025,
+      "subType": "roth",
+    },
+    {
+      "category": "brokerage",
+      "depletionAge": 79,
+      "depletionYear": 2029,
+      "subType": undefined,
+    },
+  ],
+  "finalYear": {
+    "age": 84,
+    "endBalance": 2472743.69,
+  },
+  "firstOverflowAge": null,
+  "firstOverflowAmount": null,
+  "firstOverflowYear": null,
+  "portfolioDepletionAge": null,
+  "portfolioDepletionYear": null,
+  "retirementYear": {
+    "age": 75,
+    "endBalance": 2159325.15,
+    "projectedExpenses": 40000,
+    "totalWithdrawal": 10638.3,
+  },
+  "sustainableWithdrawal": 10638.3,
+  "totalYears": 10,
+  "warningCount": 1,
+  "year0": {
+    "endBalance": 2159325.15,
+    "phase": "decumulation",
+    "projectedExpenses": 40000,
+    "totalWithdrawal": 10638.3,
+  },
+}
+`;
+
+exports[`engine snapshot parity > fixture 66: qcdMaximize capped below a large RMD — remainder still forces a taxable distribution + reinvested excess 1`] = `
+{
+  "accountDepletions": [
+    {
+      "category": "401k",
+      "depletionAge": 75,
+      "depletionYear": 2025,
+      "subType": "roth",
+    },
+    {
+      "category": "403b",
+      "depletionAge": 75,
+      "depletionYear": 2025,
+      "subType": "traditional",
+    },
+    {
+      "category": "403b",
+      "depletionAge": 75,
+      "depletionYear": 2025,
+      "subType": "roth",
+    },
+    {
+      "category": "ira",
+      "depletionAge": 75,
+      "depletionYear": 2025,
+      "subType": "roth",
+    },
+    {
+      "category": "hsa",
+      "depletionAge": 75,
+      "depletionYear": 2025,
+      "subType": undefined,
+    },
+  ],
+  "finalYear": {
+    "age": 77,
+    "endBalance": 6890746.66,
+  },
+  "firstOverflowAge": null,
+  "firstOverflowAmount": null,
+  "firstOverflowYear": null,
+  "portfolioDepletionAge": null,
+  "portfolioDepletionYear": null,
+  "retirementYear": {
+    "age": 75,
+    "endBalance": 6314096.87,
+    "projectedExpenses": 40000,
+    "totalWithdrawal": 149540.74,
+  },
+  "sustainableWithdrawal": 10638.3,
+  "totalYears": 3,
+  "warningCount": 1,
+  "year0": {
+    "endBalance": 6314096.87,
+    "phase": "decumulation",
+    "projectedExpenses": 40000,
+    "totalWithdrawal": 149540.74,
+  },
+}
+`;
+
+exports[`engine snapshot parity > fixture 67: same as fixture 66 but rmdExcessHandling='spend' — lower end balance, by design 1`] = `
+{
+  "accountDepletions": [
+    {
+      "category": "401k",
+      "depletionAge": 75,
+      "depletionYear": 2025,
+      "subType": "roth",
+    },
+    {
+      "category": "403b",
+      "depletionAge": 75,
+      "depletionYear": 2025,
+      "subType": "traditional",
+    },
+    {
+      "category": "403b",
+      "depletionAge": 75,
+      "depletionYear": 2025,
+      "subType": "roth",
+    },
+    {
+      "category": "ira",
+      "depletionAge": 75,
+      "depletionYear": 2025,
+      "subType": "roth",
+    },
+    {
+      "category": "hsa",
+      "depletionAge": 75,
+      "depletionYear": 2025,
+      "subType": undefined,
+    },
+  ],
+  "finalYear": {
+    "age": 77,
+    "endBalance": 6508080.04,
+  },
+  "firstOverflowAge": null,
+  "firstOverflowAmount": null,
+  "firstOverflowYear": null,
+  "portfolioDepletionAge": null,
+  "portfolioDepletionYear": null,
+  "retirementYear": {
+    "age": 75,
+    "endBalance": 6201141.41,
+    "projectedExpenses": 40000,
+    "totalWithdrawal": 149540.74,
+  },
+  "sustainableWithdrawal": 10638.3,
+  "totalYears": 3,
+  "warningCount": 1,
+  "year0": {
+    "endBalance": 6201141.41,
+    "phase": "decumulation",
+    "projectedExpenses": 40000,
+    "totalWithdrawal": 149540.74,
+  },
+}
+`;

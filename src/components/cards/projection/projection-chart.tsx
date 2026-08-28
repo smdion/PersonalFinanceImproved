@@ -194,7 +194,13 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
       // `_rmdStart` (which only flags the single year RMDs begin), this can
       // be nonzero in ANY decumulation year, so it's shown on hover
       // whenever it happens, not just at the milestone.
-      datum._rmdExcessReinvested = yr.rmdExcessReinvested ?? 0;
+      datum._rmdExcessAmount = yr.rmdExcessAmount ?? 0;
+      // R46: QCD amount — money sent directly to charity, satisfying part
+      // of the RMD without counting as taxable income. Same "invisible
+      // unless surfaced explicitly" issue as the excess line above; QCD
+      // bypasses withdrawal routing entirely, so there's no slot/
+      // withdrawal line item that would show it otherwise.
+      datum._qcdAmount = yr.qcdAmount ?? 0;
       // Guardrail event (R45 Step 5 follow-up) — the ReferenceLine markers
       // added a visual "▲ raise" flag on the chart but the hover tooltip
       // never carried the underlying detail, so hovering that exact year
@@ -409,7 +415,8 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                       Number(d._rmdStart) === 1 ||
                       Number(d._ssIncome) > 0 ||
                       Number(d._rmdAmount) > 0 ||
-                      Number(d._rmdExcessReinvested) > 0) && (
+                      Number(d._rmdExcessAmount) > 0 ||
+                      Number(d._qcdAmount) > 0) && (
                       <div className="border-t mt-1 pt-1 space-y-0.5">
                         {Number(d._ssStart) === 1 && (
                           <div className="flex justify-between gap-4 text-teal-400 font-medium">
@@ -445,17 +452,38 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                               </span>
                             </div>
                           )}
-                        {/* R46 Phase 1: RMD-forced excess reinvested into
-                            brokerage — real money forced out by the RMD
-                            floor beyond what the strategy needed, with no
-                            prior UI trace anywhere. Can recur every year
-                            once RMDs start, unlike the one-time "RMDs
-                            begin" milestone above. */}
-                        {Number(d._rmdExcessReinvested) > 0 && (
+                        {/* R46: RMD-forced excess — real money forced out
+                            by the RMD floor beyond what the strategy
+                            needed, with no prior UI trace anywhere. Can
+                            recur every year once RMDs start, unlike the
+                            one-time "RMDs begin" milestone above. Wording
+                            (not just the amount) depends on the
+                            household's rmdExcessHandling setting — nothing
+                            was actually reinvested under "spend". */}
+                        {Number(d._rmdExcessAmount) > 0 && (
                           <div className="flex justify-between gap-4 text-amber-400/70 text-caption">
-                            <span>RMD excess reinvested</span>
+                            <span>
+                              {engineSettings?.rmdExcessHandling === "spend"
+                                ? "RMD excess spent"
+                                : "RMD excess reinvested"}
+                            </span>
                             <span className="tabular-nums">
-                              +{formatCurrency(Number(d._rmdExcessReinvested))}
+                              {engineSettings?.rmdExcessHandling === "spend"
+                                ? ""
+                                : "+"}
+                              {formatCurrency(Number(d._rmdExcessAmount))}
+                            </span>
+                          </div>
+                        )}
+                        {/* R46: QCD — money sent directly to charity,
+                            satisfying part of the RMD tax-free. Shown
+                            separately from "RMD" above since it's the
+                            portion that never became taxable income. */}
+                        {Number(d._qcdAmount) > 0 && (
+                          <div className="flex justify-between gap-4 text-violet-400/70 text-caption">
+                            <span>QCD to charity</span>
+                            <span className="tabular-nums">
+                              {formatCurrency(Number(d._qcdAmount))}
                             </span>
                           </div>
                         )}

@@ -36,6 +36,8 @@ export type ReportEngineSettings = {
   enableAcaAwareness?: boolean | null;
   householdSize?: NumLike | null;
   filingStatus?: string | null;
+  /** R46: what happens to RMD-forced excess beyond stated spending need. */
+  rmdExcessHandling?: string | null;
   // Per-strategy params (R45 Step 3, Finding 3) — one strategy's fields are
   // actually read at a time, keyed by WITHDRAWAL_STRATEGY_CONFIG's
   // paramFields for the active withdrawalStrategy, same source
@@ -92,6 +94,7 @@ function Section({
 export function ReportAssumptionsSummary({
   settings,
   rmdExcessYears = 0,
+  qcdYears = 0,
 }: {
   settings: ReportEngineSettings | undefined;
   /** R46 Phase 1: count of years in this projection where RMD forced more
@@ -100,6 +103,9 @@ export function ReportAssumptionsSummary({
    *  summary even though per-year detail belongs on the live page, not a
    *  printed report. 0 = don't show the note. */
   rmdExcessYears?: number;
+  /** R46 Phase 2: count of years with a Qualified Charitable Distribution
+   *  applied. 0 = don't show the note. */
+  qcdYears?: number;
 }) {
   if (!settings) return null;
   const strategyKey = settings.withdrawalStrategy as
@@ -259,9 +265,21 @@ export function ReportAssumptionsSummary({
         <p className="text-xs text-faint mt-2">
           Note: {rmdExcessYears} year{rmdExcessYears === 1 ? "" : "s"} in this
           projection {rmdExcessYears === 1 ? "has" : "have"} Required Minimum
-          Distributions exceeding this plan&apos;s stated spending need — the
-          excess is reinvested into a taxable brokerage account. See the
-          Retirement page for year-by-year detail.
+          Distributions exceeding this plan&apos;s stated spending need —
+          {settings.rmdExcessHandling === "spend"
+            ? " the excess is treated as spent, not reinvested."
+            : " the excess is reinvested into a taxable brokerage account."}{" "}
+          See the Retirement page for year-by-year detail.
+        </p>
+      )}
+
+      {qcdYears > 0 && (
+        <p className="text-xs text-faint mt-2">
+          Note: {qcdYears} year{qcdYears === 1 ? "" : "s"} in this projection{" "}
+          {qcdYears === 1 ? "applies" : "apply"} a Qualified Charitable
+          Distribution — money sent directly to charity from an IRA, satisfying
+          part of the RMD without counting as taxable income. See the Retirement
+          page for year-by-year detail.
         </p>
       )}
     </div>

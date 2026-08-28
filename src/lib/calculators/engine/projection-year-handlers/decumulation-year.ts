@@ -15,7 +15,11 @@ import {
   getAllCategories,
   isOverflowTarget,
   isPortfolioParent,
+  isPreTaxType,
+  isIraCategory,
+  addTraditional,
 } from "../../../config/account-types";
+import { computeQcdAmounts, totalQcdAmount } from "../qcd";
 import { MAX_BROKERAGE_RAMP_YEARS } from "../../../constants";
 import { cloneAccountBalances } from "../balance-utils";
 import { getLtcgRate, computeLtcgTax } from "../../../config/tax-tables";
@@ -176,6 +180,89 @@ export function runDecumulationYear(
     Math.max(0, state.projectedExpenses - ssIncome),
   );
 
+  // --- Per-person RMD (moved ahead of routing/tax gross-up, R46) ---
+  // Compute each person's RMD from their own Traditional balance and age.
+  // Previously computed AFTER routing (only needed for enforceRmd's
+  // override), but R46's QCD step needs the RMD amount BEFORE tax
+  // gross-up runs -- a QCD reduces taxable income for the year, so it has
+  // to be known (and deducted) before estimateWithdrawalTaxCost, not
+  // after. Pure computation, no dependency on routing -- safe to hoist.
+  let perPersonRmdTotal: number | undefined;
+  let rmdByPerson:
+    { personId: number; personName: string; amount: number }[] | undefined;
+  if (rmdStartAgeByPerson.size > 0 && priorYearEndTradByPerson.size > 0) {
+    rmdByPerson = [];
+    let total = 0;
+    for (const [personId, { startAge, birthYear }] of rmdStartAgeByPerson) {
+      const personAge = ageInYear(birthYear, year);
+      const personTrad = priorYearEndTradByPerson.get(personId) ?? 0;
+      if (personAge >= startAge && personTrad > 0) {
+        const factor = getRmdFactor(personAge);
+        if (factor != null && factor > 0) {
+          const rmdAmount = roundToCents(personTrad / factor);
+          rmdByPerson.push({
+            personId,
+            personName:
+              input.socialSecurityEntries?.find((e) => e.personId === personId)
+                ?.personName ?? `Person ${personId}`,
+            amount: rmdAmount,
+          });
+          total += rmdAmount;
+        }
+      }
+    }
+    if (total > 0) perPersonRmdTotal = roundToCents(total);
+  }
+
+  // --- Qualified Charitable Distribution (R46) ---
+  // A QCD is a direct IRA-to-charity transfer that satisfies part of the
+  // RMD without counting as taxable income -- a proactive election on the
+  // RMD itself, not a rule for leftover money (see reinvestRmdExcess for
+  // that, unchanged, later in this function). Must run here, BEFORE tax
+  // gross-up, so the reduced taxable Traditional withdrawal is what
+  // estimateWithdrawalTaxCost/routing/computeTaxFromSlots all see -- see
+  // qcd.ts's docblock for the IRA-only-pooling approximation this uses.
+  // Only meaningful with individual accounts tracked (same limitation
+  // per-person RMD itself already has).
+  let totalQcd = 0;
+  let qcdByPerson: { personId: number; qcdAmount: number }[] = [];
+  if (hasIndividualAccounts && rmdByPerson && rmdByPerson.length > 0) {
+    const iraTradByPerson = new Map<number, number>();
+    for (const ia of indAccts) {
+      if (
+        isIraCategory(ia.category) &&
+        ia.ownerPersonId != null &&
+        isPreTaxType(ia.taxType)
+      ) {
+        const bal = indBal.get(indKey(ia)) ?? 0;
+        iraTradByPerson.set(
+          ia.ownerPersonId,
+          (iraTradByPerson.get(ia.ownerPersonId) ?? 0) + bal,
+        );
+      }
+    }
+    qcdByPerson = computeQcdAmounts(
+      config.qcdMaximize,
+      rmdByPerson.map((r) => ({
+        personId: r.personId,
+        rmdAmount: r.amount,
+        iraTraditionalBalance: iraTradByPerson.get(r.personId) ?? 0,
+      })),
+    );
+    totalQcd = totalQcdAmount(qcdByPerson);
+    if (totalQcd > 0) {
+      // Deduct from the aggregate tracks only (matches reinvestRmdExcess's
+      // own pattern) -- indBal isn't touched directly here; the existing
+      // end-of-year reconcileIndividualToAggregate call (already present,
+      // unchanged) pulls individual balances into agreement with the now
+      // -reduced aggregate the same way it already reconciles any other
+      // aggregate/individual drift, rather than this function hand-rolling
+      // a second, bespoke individual-account mutation path.
+      balances.preTax = roundToCents(balances.preTax - totalQcd);
+      addTraditional(acctBal.ira, -totalQcd);
+    }
+  }
+
   // Tax gross-up: estimate tax from expected withdrawal routing, then
   // increase withdrawal so after-tax proceeds cover the expense need.
   const taxRates = decumulationDefaults.distributionTaxRates;
@@ -267,33 +354,16 @@ export function runDecumulationYear(
   );
 
   // --- RMD enforcement (Phase 1) ---
-  // Per-person RMD: compute each person's RMD from their own Traditional balance and age.
-  let perPersonRmdTotal: number | undefined;
-  let rmdByPerson:
-    { personId: number; personName: string; amount: number }[] | undefined;
-  if (rmdStartAgeByPerson.size > 0 && priorYearEndTradByPerson.size > 0) {
-    rmdByPerson = [];
-    let total = 0;
-    for (const [personId, { startAge, birthYear }] of rmdStartAgeByPerson) {
-      const personAge = ageInYear(birthYear, year);
-      const personTrad = priorYearEndTradByPerson.get(personId) ?? 0;
-      if (personAge >= startAge && personTrad > 0) {
-        const factor = getRmdFactor(personAge);
-        if (factor != null && factor > 0) {
-          const rmdAmount = roundToCents(personTrad / factor);
-          rmdByPerson.push({
-            personId,
-            personName:
-              input.socialSecurityEntries?.find((e) => e.personId === personId)
-                ?.personName ?? `Person ${personId}`,
-            amount: rmdAmount,
-          });
-          total += rmdAmount;
-        }
-      }
-    }
-    if (total > 0) perPersonRmdTotal = roundToCents(total);
-  }
+  // perPersonRmdTotal/rmdByPerson computed earlier now (R46, see above --
+  // QCD needed them before tax gross-up). The override passed here is
+  // reduced by whatever QCD already satisfied directly, so enforceRmd only
+  // tops up routing to cover the REMAINING (non-QCD) RMD requirement --
+  // the QCD'd portion already left the account above, tax-free, and must
+  // not also be forced through as a second, taxable distribution.
+  const rmdRequiredAfterQcd =
+    perPersonRmdTotal != null
+      ? roundToCents(Math.max(0, perPersonRmdTotal - totalQcd))
+      : undefined;
 
   // Extracted to rmd-enforcement.ts -- enforces minimum Traditional withdrawals per IRS rules.
   const rmdResult = enforceRmd({
@@ -304,12 +374,20 @@ export function runDecumulationYear(
     totalTraditionalWithdrawal,
     totalWithdrawal,
     acctBal,
-    overrideRmdRequired: perPersonRmdTotal,
+    overrideRmdRequired: rmdRequiredAfterQcd,
   });
-  const { rmdAmount, rmdOverrodeRouting } = rmdResult;
+  const { rmdOverrodeRouting } = rmdResult;
   totalTraditionalWithdrawal = rmdResult.totalTraditionalWithdrawal;
   totalWithdrawal = rmdResult.totalWithdrawal;
   routeWarnings.push(...rmdResult.warnings);
+  // The row's public rmdAmount must be the TRUE full RMD requirement, not
+  // the QCD-reduced figure enforceRmd used internally to decide how much
+  // MORE to force through routing -- otherwise a household with QCD
+  // active would see an understated "your RMD this year" number. QCD
+  // still counts toward satisfying the real RMD; it just doesn't route
+  // through a taxable distribution to get there.
+  const rmdAmount =
+    perPersonRmdTotal != null ? perPersonRmdTotal : rmdResult.rmdAmount;
 
   // Recompute taxableSS with actual Traditional withdrawal (post-RMD) for final tax cost.
   // TODO(F2): If muni bond income tracking is added, pass taxExemptInterest as 4th arg.
@@ -456,15 +534,16 @@ export function runDecumulationYear(
   // Apply decumulation lump sums (one-time injections/windfalls, NOT subject to limits)
   applyLumpSums(config.lumpSums, ctx, state);
 
-  // Reinvest RMD excess into brokerage (#39) -- extracted to balance-deduction.ts
-  const shouldReinvestRmdExcess = input.reinvestRmdExcess !== false; // default: true
+  // Handle RMD-forced excess (#39, mode-aware R46) -- extracted to balance-deduction.ts
+  const shouldHandleRmdExcess = input.reinvestRmdExcess !== false; // default: true
   // R46 Phase 1: capture the excess amount (previously discarded) so it can
   // be surfaced in the UI — this money is real, forced out of Traditional
-  // by the RMD floor regardless of what the strategy needed, and reinvested
-  // right back into brokerage with zero trace anywhere a household could
-  // see it happened.
-  const rmdExcessReinvested = reinvestRmdExcess(
-    shouldReinvestRmdExcess,
+  // by the RMD floor regardless of what the strategy needed, with no prior
+  // UI trace. R46 Phase 2: what happens to it depends on the household's
+  // rmdExcessHandling setting (reinvest into brokerage, or spend it).
+  const rmdExcessAmount = reinvestRmdExcess(
+    config.rmdExcessHandling,
+    shouldHandleRmdExcess,
     rmdOverrodeRouting,
     totalWithdrawal,
     afterTaxNeed,
@@ -840,7 +919,9 @@ export function runDecumulationYear(
     rmdAmount,
     rmdByPerson,
     rmdOverrodeRouting,
-    rmdExcessReinvested,
+    rmdExcessAmount,
+    qcdAmount: totalQcd,
+    qcdByPerson: qcdByPerson.length > 0 ? qcdByPerson : undefined,
     taxableSS,
     ltcgRate: postConversionLtcgRate,
     rothConversionAmount,

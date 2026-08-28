@@ -105,6 +105,8 @@ const retirementSettingsInput = z.object({
   vdCeilingPercent: zDecimal.optional(),
   vdFloorPercent: zDecimal.optional(),
   rmdMultiplier: zDecimal.optional(),
+  rmdExcessHandling: z.enum(["reinvest", "spend"]).optional(),
+  qcdMaximize: z.boolean().optional(),
   enableIrmaaAwareness: z.boolean().optional(),
   enableAcaAwareness: z.boolean().optional(),
   householdSize: z.number().int().min(1).max(8).optional(),

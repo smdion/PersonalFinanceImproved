@@ -414,6 +414,33 @@ export type DecumulationDefaults = {
    * future, design it fresh rather than resurrecting this name.
    */
   avoidPenalizedWithdrawals?: boolean;
+
+  /**
+   * R46: what to do with RMD-forced withdrawal beyond stated spending need,
+   * after any QCD (`qcdMaximize`) already reduced the taxable RMD.
+   * - "reinvest" (default): excess reinvested into brokerage — matches
+   *   every pre-R46 projection (this field defaults to `"reinvest"` when
+   *   unset, so an old saved plan is byte-identical).
+   * - "spend": excess is NOT reinvested anywhere — recorded as consumed.
+   *   A real behavior change: net worth ends up lower than "reinvest",
+   *   by design, for any household that picks this.
+   */
+  rmdExcessHandling?: "reinvest" | "spend";
+
+  /**
+   * R46: when true, every year with an active RMD automatically applies
+   * the largest Qualified Charitable Distribution the approximation in
+   * `qcd.ts` allows (capped by `QCD_ANNUAL_CAP_PER_PERSON` and each
+   * person's own IRA-only Traditional balance — NOT full IRS per-account-
+   * type RMD accuracy, see `PLAN-rmd-excess-handling.md`). The QCD'd
+   * amount satisfies that much of the RMD directly and is excluded from
+   * taxable income; it does not fund spending need. Only takes effect
+   * when individual accounts are tracked (`hasIndividualAccounts`) — same
+   * limitation per-person RMD tracking itself already has, since QCD is
+   * inherently a per-person, per-IRA-account concept. Default `false`
+   * (no behavior change for a household that never opts in).
+   */
+  qcdMaximize?: boolean;
 };
 
 /**
@@ -517,6 +544,12 @@ export type ResolvedDecumulationConfig = {
   /** See DecumulationDefaults.avoidPenalizedWithdrawals. Always resolved
    *  (never undefined) — `resolveDecumulationConfig` defaults it to `true`. */
   avoidPenalizedWithdrawals: boolean;
+  /** See DecumulationDefaults.rmdExcessHandling. Always resolved (never
+   *  undefined) — defaults to `"reinvest"`. */
+  rmdExcessHandling: "reinvest" | "spend";
+  /** See DecumulationDefaults.qcdMaximize. Always resolved (never
+   *  undefined) — defaults to `false`. */
+  qcdMaximize: boolean;
 };
 
 /**

@@ -139,6 +139,8 @@ export function resolveDecumulationConfig(
     withdrawalTaxTypeCaps: { traditional: null, roth: null },
     lumpSums: [],
     avoidPenalizedWithdrawals: defaults.avoidPenalizedWithdrawals ?? true,
+    rmdExcessHandling: defaults.rmdExcessHandling ?? "reinvest",
+    qcdMaximize: defaults.qcdMaximize ?? false,
   };
 
   for (const o of overrides) {
@@ -163,6 +165,8 @@ export function resolveDecumulationConfig(
         withdrawalTaxTypeCaps: { traditional: null, roth: null },
         lumpSums: [],
         avoidPenalizedWithdrawals: defaults.avoidPenalizedWithdrawals ?? true,
+        rmdExcessHandling: defaults.rmdExcessHandling ?? "reinvest",
+        qcdMaximize: defaults.qcdMaximize ?? false,
       };
       continue;
     }
