@@ -376,6 +376,13 @@ export type EngineDecumulationYear = {
    *  this field isolates the penalty-avoidance portion so the two are
    *  never conflated. */
   penaltyAvoidedShortfall?: number;
+  /** Portion of `unmetNeed` attributable specifically to excluding
+   *  Portfolio-parented ("non-retirement") money (R49) — see
+   *  `RouteResult`'s docblock in `withdrawal-routing.ts` for the exact
+   *  contract. Same isolation principle as `penaltyAvoidedShortfall`: a
+   *  household can be short for this reason, the penalty-avoidance reason,
+   *  both, or neither. */
+  nonRetirementShortfall?: number;
   /** Early-withdrawal penalty cost actually charged this year (§ Q5) —
    *  0 in the overwhelming default case, since `avoidPenalizedWithdrawals:
    *  true` already excludes penalty-exposed money from routing. Nonzero
@@ -404,6 +411,14 @@ export type EngineDecumulationYear = {
   rmdByPerson?: { personId: number; personName: string; amount: number }[];
   /** True if the RMD forced additional Traditional withdrawals beyond what routing chose. */
   rmdOverrodeRouting: boolean;
+  /** R49: dollars of `rmdAmount` that could NOT be forced through as a real
+   *  taxable distribution — 0 in the overwhelmingly common case. Real IRS
+   *  exposure (a 25% excise tax applies to the shortfall), not a display
+   *  nicety: possible now that Retirement-only Traditional capacity can be
+   *  genuinely insufficient to cover a real RMD requirement (Portfolio-
+   *  parented balances no longer count). See `rmd-enforcement.ts`'s
+   *  `RmdEnforcementResult.rmdShortfallAmount` docblock. */
+  rmdShortfallAmount: number;
   /** R46: dollars of RMD-forced excess (beyond the strategy's stated need +
    *  tax cost) this year — 0 in the overwhelmingly common case
    *  (`rmdOverrodeRouting` false, or the RMD didn't exceed need). What

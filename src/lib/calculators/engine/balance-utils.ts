@@ -16,7 +16,10 @@ import {
   setBalance,
 } from "../../config/account-types";
 import { roundToCents } from "../../utils/math";
-import type { EligibilityRecord } from "@/lib/pure/withdrawal-eligibility";
+import type {
+  EligibilityRecord,
+  NonRetirementExclusion,
+} from "@/lib/pure/withdrawal-eligibility";
 
 /** Derive AccountBalances from TaxBuckets using a config-derived split (fallback). */
 export function accountBalancesFromTaxBuckets(b: TaxBuckets): AccountBalances {
@@ -112,6 +115,50 @@ export function subtractPenaltyExposed(
             (record.penaltyExposedTotalStillExcluded[cat] ?? 0),
         ),
       );
+    }
+  }
+  return result;
+}
+
+/**
+ * Subtract BOTH still-excluded penalty exposure and Portfolio-parented
+ * ("non-retirement") balances from `balances`, per category (R49). Sums
+ * the two sources before a single floor-at-0 per bucket — mathematically
+ * equivalent to two sequential `subtractPenaltyExposed`-style clamps
+ * (`max(0, max(0, x-a)-b) === max(0, x-a-b)` for non-negative `a`/`b`), so
+ * this isn't about floor-order correctness; it's simply the natural shape
+ * once there are two sources instead of one. The property that actually
+ * matters — and the reason the two sources are safe to add together at
+ * all — is that they're guaranteed not to double-count the same dollar:
+ * `computeWithdrawalEligibility` never adds a Portfolio-parented account's
+ * exposure to its `*StillExcluded` aggregates (see that function's
+ * `isRetirementParent` gate), so `exposure`'s totals and `nonRetirement`'s
+ * totals never overlap. Either argument may be omitted/all-zero; degrades
+ * to `subtractPenaltyExposed`'s exact behavior, or a no-op clone,
+ * accordingly.
+ */
+export function subtractExcluded(
+  balances: AccountBalances,
+  exposure: EligibilityRecord | undefined,
+  nonRetirement: NonRetirementExclusion | undefined,
+): AccountBalances {
+  const result = cloneAccountBalances(balances);
+  for (const cat of getAllCategories()) {
+    const bal = result[cat];
+    if (bal.structure === "roth_traditional") {
+      const tradExcl =
+        (exposure?.penaltyExposedTradStillExcluded[cat] ?? 0) +
+        (nonRetirement?.trad[cat] ?? 0);
+      const rothExcl =
+        (exposure?.penaltyExposedRothStillExcluded[cat] ?? 0) +
+        (nonRetirement?.roth[cat] ?? 0);
+      setTraditional(bal, Math.max(0, bal.traditional - tradExcl));
+      setRoth(bal, Math.max(0, bal.roth - rothExcl));
+    } else {
+      const totalExcl =
+        (exposure?.penaltyExposedTotalStillExcluded[cat] ?? 0) +
+        (nonRetirement?.total[cat] ?? 0);
+      setBalance(bal, Math.max(0, getTotalBalance(bal) - totalExcl));
     }
   }
   return result;

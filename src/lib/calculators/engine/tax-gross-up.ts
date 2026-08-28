@@ -50,7 +50,10 @@ import {
 } from "./tax-estimation";
 import { routeForMode } from "./withdrawal-routing";
 import { deriveBasisRankingInputs } from "./withdrawal-cost-ranking";
-import type { EligibilityRecord } from "@/lib/pure/withdrawal-eligibility";
+import type {
+  EligibilityRecord,
+  NonRetirementExclusion,
+} from "@/lib/pure/withdrawal-eligibility";
 import {
   distributeWithdrawals,
   depleteIndividualBasis,
@@ -98,6 +101,13 @@ export interface TaxEstimationInput {
    *  router's, the same class of bug the routeForMode extraction fixed for
    *  the routing-mode-specific rules. */
   eligibility?: EligibilityRecord;
+  /** Portfolio-parented ("non-retirement") exclusion for this year (R49)
+   *  — passed straight through to `routeForMode`, same single-dispatch
+   *  invariant as `eligibility` above: MUST be the same record
+   *  `decumulation-year.ts`'s real execution passes to its own
+   *  `routeForMode` call, or this estimate and the real router disagree
+   *  about how much money is available. */
+  nonRetirement?: NonRetirementExclusion;
   /** Individual-account state for Roth growth-vs-basis taxability (v0.7.8
    *  Roth-tax-basis follow-up, DESIGN-DECISION-v0.7.8-roth-tax-basis.md §
    *  Q3) — this estimate must slice the SAME way the real execution does
@@ -159,6 +169,7 @@ function evaluateCost(
     balances,
     acctBal,
     eligibility,
+    nonRetirement,
     indAccts,
     indKey,
     indBal,
@@ -198,6 +209,7 @@ function evaluateCost(
       conversionsEnabled: taxRates.enableRothConversions,
     },
     eligibility,
+    nonRetirement,
   );
   let rothTaxableGrowth = 0;
   let iterPenaltyCost = 0;

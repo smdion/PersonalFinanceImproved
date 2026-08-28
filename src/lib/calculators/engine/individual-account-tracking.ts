@@ -27,6 +27,7 @@ import {
   getTraditionalBalance,
   getRothBalance,
   getTotalBalance,
+  isRetirementParent,
 } from "../../config/account-types";
 import { TAX_TREATMENT_TO_TAX_TYPE } from "../../config/display-labels";
 import { projectSpecAmount } from "./contribution-projection";
@@ -591,7 +592,18 @@ export function distributeWithdrawals(
 
   for (const slot of slots) {
     if (slot.withdrawal <= 0) continue;
-    const catAccts = indAccts.filter((ia) => ia.category === slot.category);
+    // R49: Portfolio-parented accounts are never a withdrawal fan-out
+    // target — defense-in-depth alongside the category-level exclusion
+    // routeForMode already applies (subtractExcluded); the category total
+    // decided upstream should already fit within Retirement-parented
+    // accounts' balances, so this filter should be a no-op in practice,
+    // but it's what makes the exclusion a hard guarantee rather than
+    // "should never happen if the upstream math is right."
+    const catAccts = indAccts.filter(
+      (ia) =>
+        ia.category === slot.category &&
+        isRetirementParent(ia.parentCategory ?? "Retirement"),
+    );
     const bs = getAccountTypeConfig(slot.category).balanceStructure;
 
     if (

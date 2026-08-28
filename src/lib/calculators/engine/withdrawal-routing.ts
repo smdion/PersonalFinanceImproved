@@ -28,8 +28,11 @@ import {
 } from "../../config/account-types";
 import { incomeCapForMarginalRate } from "./tax-estimation";
 import type { WithholdingBracket } from "./tax-estimation";
-import { subtractPenaltyExposed } from "./balance-utils";
-import type { EligibilityRecord } from "@/lib/pure/withdrawal-eligibility";
+import { subtractExcluded } from "./balance-utils";
+import type {
+  EligibilityRecord,
+  NonRetirementExclusion,
+} from "@/lib/pure/withdrawal-eligibility";
 import { rankWithdrawalTiers } from "./withdrawal-cost-ranking";
 import type { WithdrawalSourceKind } from "./withdrawal-cost-ranking";
 
@@ -771,6 +774,14 @@ export type RouteResult = {
    *  than either the amount actually unfunded or the amount that was
    *  actually excluded. */
   penaltyAvoidedShortfall?: number;
+  /** Portion of `unmetNeed` attributable specifically to excluding
+   *  Portfolio-parented ("non-retirement") money (R49). Same shape and
+   *  same reasoning as `penaltyAvoidedShortfall` — a household can be
+   *  short for this reason, the penalty-exclusion reason, both, or neither,
+   *  and conflating any of them with plain "the household is broke" would
+   *  destroy the distinction this field exists to preserve.
+   *  `min(unmetNeed, nonRetirement.grandTotal)`. */
+  nonRetirementShortfall?: number;
 };
 
 /**
@@ -869,18 +880,24 @@ function dispatchOnce(
  * DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md § Q2 — supersedes the
  * Tier B two-pass model this function used to implement) — when provided,
  * `config.avoidPenalizedWithdrawals` is on, and something is actually
- * penalty-exposed, dispatches ONCE against balances with every
- * penalty-exposed dollar subtracted out (`subtractPenaltyExposed`).
- * Penalty-exposed money is a hard exclusion now, not a last-resort
- * fallback: there is no second pass. A resulting `unmetNeed` is real —
- * `penaltyAvoidedShortfall` names how much of it is attributable
- * specifically to the exclusion (see `RouteResult`'s docblock) rather than
- * the household being broke. Falls through to a single unchanged
- * `dispatchOnce` call whenever any of those conditions doesn't hold — that
- * fallthrough (not a separately maintained branch) is what keeps a
- * nothing-penalty-exposed household, or a household with
- * `avoidPenalizedWithdrawals: false`, byte-identical to pre-this-pass
- * output.
+ * penalty-exposed, dispatches against balances with every penalty-exposed
+ * dollar subtracted out. `nonRetirement` (R49 — see
+ * `.scratch/docs/plans/PLAN-retirement-only-withdrawal-scope.md`) is the
+ * same idea for Portfolio-parented ("not part of the retirement plan")
+ * money — always excluded, no config lever, no opt-out. Both sources are
+ * subtracted together in ONE dispatch (`subtractExcluded`) whenever either
+ * has anything to exclude — there is no second pass for either. A
+ * resulting `unmetNeed` is real — `penaltyAvoidedShortfall` and
+ * `nonRetirementShortfall` each name how much of it is attributable to
+ * their own exclusion (see `RouteResult`'s docblocks) rather than the
+ * household being broke; a household can be short for either reason, both,
+ * or neither. Falls through to a single unchanged `dispatchOnce` call
+ * against the RAW balances whenever NEITHER source has anything to
+ * exclude — that fallthrough (not a separately maintained branch) is what
+ * keeps a household with nothing penalty-exposed AND nothing
+ * Portfolio-parented (every household before R49; every existing test
+ * fixture), or a household with `avoidPenalizedWithdrawals: false` and no
+ * Portfolio-parented accounts, byte-identical to pre-R49 output.
  */
 export function routeForMode(
   targetWithdrawal: number,
@@ -888,32 +905,46 @@ export function routeForMode(
   balances: AccountBalances,
   bracketInfo: RouteBracketInfo,
   exposure?: EligibilityRecord,
+  nonRetirement?: NonRetirementExclusion,
 ): RouteResult {
-  if (
-    exposure == null ||
-    // R41: gate on the STILL-excluded total, not the blind total — once any
-    // account has opted in, the two diverge, and this early-out must only
-    // fire when there is truly nothing left excluded (see
-    // EligibilityRecord.totalPenaltyExposedStillExcluded's docblock).
-    exposure.totalPenaltyExposedStillExcluded === 0 ||
-    !config.avoidPenalizedWithdrawals
-  ) {
+  const penaltyExclusionActive =
+    exposure != null &&
+    exposure.totalPenaltyExposedStillExcluded !== 0 &&
+    config.avoidPenalizedWithdrawals;
+  const nonRetirementExclusionActive =
+    nonRetirement != null && nonRetirement.grandTotal !== 0;
+
+  if (!penaltyExclusionActive && !nonRetirementExclusionActive) {
     return dispatchOnce(targetWithdrawal, config, balances, bracketInfo);
   }
 
-  const penaltyFreeBalances = subtractPenaltyExposed(balances, exposure);
+  const excludedBalances = subtractExcluded(
+    balances,
+    penaltyExclusionActive ? exposure : undefined,
+    nonRetirementExclusionActive ? nonRetirement : undefined,
+  );
   const result = dispatchOnce(
     targetWithdrawal,
     config,
-    penaltyFreeBalances,
+    excludedBalances,
     bracketInfo,
   );
   if (result.unmetNeed == null || result.unmetNeed <= 0) return result;
-  // R41: cap against the STILL-excluded total, not the blind total — an
-  // allowed account's exposed dollars were never excluded from this
-  // dispatch, so a real shortfall must never be attributed to them.
-  const penaltyAvoidedShortfall = roundToCents(
-    Math.min(result.unmetNeed, exposure.totalPenaltyExposedStillExcluded),
-  );
-  return { ...result, penaltyAvoidedShortfall };
+  // R41/R49: cap each against its own STILL-excluded/grand total, not a
+  // blended figure — an allowed account's exposed dollars (R41) were never
+  // excluded from this dispatch, and a real shortfall must never be
+  // attributed to either source beyond what it actually excluded.
+  const penaltyAvoidedShortfall = penaltyExclusionActive
+    ? roundToCents(
+        Math.min(result.unmetNeed, exposure.totalPenaltyExposedStillExcluded),
+      )
+    : undefined;
+  const nonRetirementShortfall = nonRetirementExclusionActive
+    ? roundToCents(Math.min(result.unmetNeed, nonRetirement.grandTotal))
+    : undefined;
+  return {
+    ...result,
+    ...(penaltyAvoidedShortfall != null ? { penaltyAvoidedShortfall } : {}),
+    ...(nonRetirementShortfall != null ? { nonRetirementShortfall } : {}),
+  };
 }

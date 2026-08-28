@@ -212,12 +212,92 @@ export function filterYearByParentCategory(
   const endBalance = roundToCents(
     byTax.preTax + byTax.taxFree + byTax.hsa + byTax.afterTax,
   );
+
+  if (yr.phase !== "decumulation") {
+    return {
+      ...yr,
+      individualAccountBalances: filtered,
+      balanceByTaxType: byTax,
+      balanceByAccount: byAcct,
+      endBalance,
+    };
+  }
+
+  // Rescope withdrawals to the same account subset as the balances above —
+  // otherwise a filtered "After-Tax: $32k" balance sits next to an
+  // unfiltered "Brokerage: -$30k" withdrawal that was mostly drawn from a
+  // Portfolio-parented account this page never shows, making it look like
+  // the account is being overdrawn. `slots` has no per-account structure
+  // in the engine (it's a per-category routing decision), so this sums the
+  // withdrawal each filtered *account* actually recorded rather than
+  // re-deriving what routing would have decided for a smaller pool — the
+  // routing-decision flags below (cappedByAccount/cappedByTaxType/
+  // remainingNeed) are left as the true household-wide values since they
+  // reflect a real global constraint (bracket-filling, account limits) that
+  // doesn't change based on this page's display-only account grouping.
+  const filteredSlots = yr.slots.map((slot) => {
+    const catIabs = filtered.filter((ia) => ia.category === slot.category);
+    const cfg = getAccountTypeConfig(slot.category);
+    let withdrawal: number;
+    let rothWithdrawal: number;
+    let traditionalWithdrawal: number;
+    if (cfg.balanceStructure === "roth_traditional") {
+      traditionalWithdrawal = roundToCents(
+        catIabs
+          .filter((ia) => !isTaxFreeBucket(ia.taxType))
+          .reduce((s, ia) => s + (ia.withdrawal ?? 0), 0),
+      );
+      rothWithdrawal = roundToCents(
+        catIabs
+          .filter((ia) => isTaxFreeBucket(ia.taxType))
+          .reduce((s, ia) => s + (ia.withdrawal ?? 0), 0),
+      );
+      withdrawal = roundToCents(traditionalWithdrawal + rothWithdrawal);
+    } else {
+      withdrawal = roundToCents(
+        catIabs.reduce((s, ia) => s + (ia.withdrawal ?? 0), 0),
+      );
+      rothWithdrawal = 0;
+      traditionalWithdrawal = 0;
+    }
+    // Basis/gains aren't tracked per individual account — prorate by the
+    // same withdrawal ratio, mirroring the basis proration above.
+    const ratio = safeDivide(withdrawal, slot.withdrawal);
+    return {
+      ...slot,
+      withdrawal,
+      rothWithdrawal,
+      traditionalWithdrawal,
+      basisPortion:
+        slot.basisPortion != null
+          ? roundToCents(slot.basisPortion * ratio)
+          : slot.basisPortion,
+      gainsPortion:
+        slot.gainsPortion != null
+          ? roundToCents(slot.gainsPortion * ratio)
+          : slot.gainsPortion,
+    };
+  });
+  const totalWithdrawal = roundToCents(
+    filteredSlots.reduce((s, sl) => s + sl.withdrawal, 0),
+  );
+  const totalTraditionalWithdrawal = roundToCents(
+    filteredSlots.reduce((s, sl) => s + sl.traditionalWithdrawal, 0),
+  );
+  const totalRothWithdrawal = roundToCents(
+    filteredSlots.reduce((s, sl) => s + sl.rothWithdrawal, 0),
+  );
+
   return {
     ...yr,
     individualAccountBalances: filtered,
     balanceByTaxType: byTax,
     balanceByAccount: byAcct,
     endBalance,
+    slots: filteredSlots,
+    totalWithdrawal,
+    totalTraditionalWithdrawal,
+    totalRothWithdrawal,
   };
 }
 

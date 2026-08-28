@@ -22,8 +22,9 @@ import {
   setRoth,
   setBalance,
   setBasis,
+  isPortfolioParent,
 } from "../../config/account-types";
-import type { AccountBalances } from "../types";
+import type { AccountBalances, IndividualAccountInput } from "../types";
 import { getIrmaaCost, getNextIrmaaCliff } from "../../config/irmaa-tables";
 import { getAcaSubsidyCliff } from "../../config/aca-tables";
 import {
@@ -31,6 +32,10 @@ import {
   incomeCapForMarginalRate,
 } from "./tax-estimation";
 import type { WithholdingBracket } from "./tax-estimation";
+import type {
+  IndKeyFn,
+  NonRetirementExclusion,
+} from "@/lib/pure/withdrawal-eligibility";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -55,6 +60,28 @@ export interface RothConversionInput {
   balances: TaxBuckets;
   /** Per-account balances (mutated in place). */
   acctBal: AccountBalances;
+  /** Portfolio-parented ("non-retirement") exclusion for this year (R49) —
+   *  when supplied, both the conversion SOURCE amount and the tax-payment
+   *  capacity gate are capped to Retirement-only money (this half needs
+   *  only the pre-aggregated exclusion record, not the raw account list).
+   *  When ALSO supplied alongside `indAccts`/`indBal`/`indKey`, the
+   *  per-account debit is additionally applied directly to
+   *  Retirement-parented accounts' `indBal` instead of being left to
+   *  `reconcileIndividualToAggregate`'s parentCategory-blind proportional
+   *  redistribution. `decumulation-year.ts`'s real call site always
+   *  computes and passes all four together (or none), gated on the same
+   *  `hasIndividualAccounts` check — omitting all four ⇒ byte-identical to
+   *  pre-R49 aggregate-only behavior, since there's no Portfolio/Retirement
+   *  distinction possible without per-account data anyway. See
+   *  `.scratch/docs/plans/PLAN-retirement-only-withdrawal-scope.md` § 7. */
+  nonRetirement?: NonRetirementExclusion;
+  /** Individual accounts, current per-account balances, and the engine's
+   *  key function — same triple every other individual-tracking-aware
+   *  module in this engine takes. Only used when `nonRetirement` is also
+   *  supplied. */
+  indAccts?: IndividualAccountInput[];
+  indBal?: Map<string, number>;
+  indKey?: IndKeyFn;
 }
 
 export interface RothConversionResult {
@@ -123,7 +150,20 @@ export function performRothConversion(
     taxableSS,
     balances,
     acctBal,
+    nonRetirement,
+    indAccts,
+    indBal,
+    indKey,
   } = input;
+  const hasIndTracking =
+    nonRetirement != null &&
+    indAccts != null &&
+    indBal != null &&
+    indKey != null;
+  // Single isOverflowTarget category (brokerage today) — hoisted so both
+  // the tax-payment capacity gate and the later per-account debit loop can
+  // use it without duplicating the search.
+  const overflowCat = getAllCategories().find((c) => isOverflowTarget(c));
 
   if (
     !enableRothConversions ||
@@ -156,8 +196,21 @@ export function performRothConversion(
     return { rothConversionAmount: 0, rothConversionTaxCost: 0 };
   }
 
-  // Cap at available Traditional balance
-  let conversion = roundToCents(Math.min(conversionRoom, balances.preTax));
+  // Cap at available Traditional balance -- Retirement-only when R49
+  // exclusion data is available (a Portfolio-parented pretax account isn't
+  // retirement money and can't fund a Roth conversion's source amount).
+  const retirementOnlyPreTax = nonRetirement
+    ? roundToCents(
+        balances.preTax -
+          getAllCategories().reduce((s, cat) => {
+            if (acctBal[cat].structure !== "roth_traditional") return s;
+            return s + (nonRetirement.trad[cat] ?? 0);
+          }, 0),
+      )
+    : balances.preTax;
+  let conversion = roundToCents(
+    Math.min(conversionRoom, Math.max(0, retirementOnlyPreTax)),
+  );
 
   // IRMAA-aware cap (#38): reduce conversion to stay below next IRMAA cliff.
   if (input.irmaaAwareRothConversions && input.filingStatus && conversion > 0) {
@@ -205,8 +258,17 @@ export function performRothConversion(
     Math.max(0, taxWithConversion - taxWithout),
   );
 
-  // Pay tax from brokerage (after-tax) if available, otherwise skip
-  if (balances.afterTax < taxCostOfConversion) {
+  // Pay tax from brokerage (after-tax) if available, otherwise skip --
+  // Retirement-only capacity when R49 exclusion data is available (a hard
+  // "don't even start the conversion" gate, matching this whole feature's
+  // hard-exclusion philosophy, not a soft preference).
+  const retirementOnlyAfterTax =
+    nonRetirement && overflowCat
+      ? roundToCents(
+          balances.afterTax - (nonRetirement.total[overflowCat] ?? 0),
+        )
+      : balances.afterTax;
+  if (retirementOnlyAfterTax < taxCostOfConversion) {
     // If brokerage can't cover tax, skip conversion (don't sell Traditional to pay tax on itself)
     return { rothConversionAmount: 0, rothConversionTaxCost: 0 };
   }
@@ -227,24 +289,39 @@ export function performRothConversion(
     );
   }
 
-  // Update per-account balances: distribute proportionally across Traditional accounts
+  // Update per-account balances: distribute proportionally across Traditional
+  // accounts. R49: the WEIGHT used to size each category's share must also
+  // be Retirement-only (`bal.traditional - nonRetirement.trad[cat]`), not
+  // the raw blended `bal.traditional` — otherwise a category whose blended
+  // balance is inflated by a Portfolio-parented account gets an oversized
+  // share of an already-correctly-capped `conversion` total, and the
+  // aggregate mutation below (still full-category-sized, by design — both
+  // trackers must move together) would disagree with what the individual
+  // debit further down can actually place in Retirement-only accounts.
   const tradAccounts: { cat: AccountCategory; balance: number }[] = [];
   for (const cat of getAllCategories()) {
     const bal = acctBal[cat];
-    if (bal.structure === "roth_traditional" && bal.traditional > 0) {
-      tradAccounts.push({ cat, balance: bal.traditional });
-    }
+    if (bal.structure !== "roth_traditional") continue;
+    const weight = nonRetirement
+      ? Math.max(0, bal.traditional - (nonRetirement.trad[cat] ?? 0))
+      : bal.traditional;
+    if (weight > 0) tradAccounts.push({ cat, balance: weight });
   }
   const totalTradBal = tradAccounts.reduce((s, a) => s + a.balance, 0);
+  const categoryShare = new Map<AccountCategory, number>();
   if (totalTradBal > 0) {
     let distributed = 0;
     for (const account of tradAccounts) {
       const bal = acctBal[account.cat];
       if (bal.structure !== "roth_traditional") continue;
       const share = roundToCents(conversion * (account.balance / totalTradBal));
-      const capped = Math.min(share, account.balance);
+      const capped = Math.min(share, bal.traditional);
       setTraditional(bal, roundToCents(bal.traditional - capped));
       setRoth(bal, roundToCents(bal.roth + capped));
+      categoryShare.set(
+        account.cat,
+        (categoryShare.get(account.cat) ?? 0) + capped,
+      );
       distributed += capped;
     }
     // Handle rounding remainder
@@ -256,6 +333,48 @@ export function performRothConversion(
         const extra = Math.min(remainder, firstBal.traditional);
         setTraditional(firstBal, roundToCents(firstBal.traditional - extra));
         setRoth(firstBal, roundToCents(firstBal.roth + extra));
+        categoryShare.set(
+          firstAcct.cat,
+          (categoryShare.get(firstAcct.cat) ?? 0) + extra,
+        );
+      }
+    }
+  }
+
+  // R49: with the category weight above already Retirement-only-scoped,
+  // each category's captured `categoryShare` is guaranteed <= what
+  // Retirement-parented accounts in it actually hold — so debiting them
+  // directly here, instead of leaving it to
+  // reconcileIndividualToAggregate's parentCategory-blind proportional
+  // redistribution, keeps indBal and acctBal in agreement rather than
+  // letting the reconcile pass silently pull the difference from a
+  // Portfolio-parented account.
+  if (hasIndTracking) {
+    for (const [cat, amount] of categoryShare) {
+      if (amount <= 0) continue;
+      const catAccts = indAccts.filter(
+        (ia) => ia.category === cat && !isPortfolioParent(ia.parentCategory),
+      );
+      const catTotal = catAccts.reduce(
+        (s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0),
+        0,
+      );
+      if (catTotal <= 0) continue;
+      let acctDistributed = 0;
+      for (const ia of catAccts) {
+        const k = indKey(ia);
+        const bal = Math.max(0, indBal.get(k) ?? 0);
+        const share = roundToCents(amount * (bal / catTotal));
+        const capped = Math.min(share, bal);
+        indBal.set(k, roundToCents(bal - capped));
+        acctDistributed += capped;
+      }
+      const remainder = roundToCents(amount - acctDistributed);
+      if (remainder > 0.005 && catAccts.length > 0) {
+        const first = catAccts[0]!;
+        const k = indKey(first);
+        const bal = Math.max(0, indBal.get(k) ?? 0);
+        indBal.set(k, roundToCents(Math.max(0, bal - remainder)));
       }
     }
   }
@@ -274,6 +393,38 @@ export function performRothConversion(
           acctBal[cat],
           roundToCents(Math.min(currentBasis, currentBalance)),
         );
+      }
+      // R49: same direct-debit approach as the Traditional→Roth move above
+      // — the aggregate mutation stays full-category-sized (unchanged), but
+      // when individual tracking is available, distribute the ACTUAL tax
+      // payment across Retirement-parented accounts in this category only,
+      // proportional to their own balance.
+      if (hasIndTracking) {
+        const catAccts = indAccts.filter(
+          (ia) => ia.category === cat && !isPortfolioParent(ia.parentCategory),
+        );
+        const catTotal = catAccts.reduce(
+          (s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0),
+          0,
+        );
+        if (catTotal > 0) {
+          let taxDistributed = 0;
+          for (const ia of catAccts) {
+            const k = indKey(ia);
+            const bal = Math.max(0, indBal.get(k) ?? 0);
+            const share = roundToCents(taxCostOfConversion * (bal / catTotal));
+            const capped = Math.min(share, bal);
+            indBal.set(k, roundToCents(bal - capped));
+            taxDistributed += capped;
+          }
+          const remainder = roundToCents(taxCostOfConversion - taxDistributed);
+          if (remainder > 0.005 && catAccts.length > 0) {
+            const first = catAccts[0]!;
+            const k = indKey(first);
+            const bal = Math.max(0, indBal.get(k) ?? 0);
+            indBal.set(k, roundToCents(Math.max(0, bal - remainder)));
+          }
+        }
       }
       break;
     }

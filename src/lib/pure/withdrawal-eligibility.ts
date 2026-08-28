@@ -48,7 +48,9 @@ import {
   isHsaCategory,
   isIraCategory,
   isRuleOf55EligibleCategory,
+  isRetirementParent,
   getAllCategories,
+  getAccountTypeConfig,
 } from "@/lib/config/account-types";
 import {
   computeTraditionalIraAccess,
@@ -105,6 +107,16 @@ export type EligibilityAccountInput = {
    *  `subtractPenaltyExposed` (`engine/balance-utils.ts`) is the one that
    *  actually acts on. */
   allowPenalizedWithdrawals?: boolean;
+  /** "Retirement" | "Portfolio" | undefined (undefined means Retirement,
+   *  same convention as `build-engine-payload.ts`'s
+   *  `a.parentCategory ?? "Retirement"`). Not used by this module's own
+   *  age/penalty logic — carried through so the aggregation step below can
+   *  exclude a Portfolio-parented account's penalty exposure from the
+   *  category-level totals (R49 — see `computeNonRetirementExclusion`,
+   *  which handles Portfolio-parented accounts as a wholly separate,
+   *  unconditional exclusion; this field's only job here is to keep the
+   *  two exclusion sources from double-counting the same dollar). */
+  parentCategory?: string;
 };
 
 /** Composite-key function — deliberately the same shape as the engine's own
@@ -396,7 +408,20 @@ export function computeWithdrawalEligibility(input: {
       allowPenalizedWithdrawals: ia.allowPenalizedWithdrawals ?? false,
     });
 
-    if (penaltyExposedAmount > 0) {
+    // R49: a Portfolio-parented account's penalty exposure is never added
+    // to these category-level aggregates — it's excluded from routing
+    // wholesale via computeNonRetirementExclusion instead (see
+    // parentCategory's docblock above). Without this gate, a hypothetical
+    // Portfolio-parented pre-59½ 401k/IRA would have the same dollars
+    // counted in both exclusion mechanisms, and the two subtractions
+    // applied to `balances` downstream would double-remove them. The
+    // per-account `byKey` entry above is NOT gated — it still gets a
+    // normal, informative reason string for the UI regardless of
+    // parentCategory.
+    if (
+      penaltyExposedAmount > 0 &&
+      isRetirementParent(ia.parentCategory ?? "Retirement")
+    ) {
       totalPenaltyExposed += penaltyExposedAmount;
       penaltyExposedTotal[ia.category] += penaltyExposedAmount;
       if (isTaxFreeBucket(ia.taxType)) {
@@ -426,5 +451,76 @@ export function computeWithdrawalEligibility(input: {
     penaltyExposedRothStillExcluded,
     penaltyExposedTotalStillExcluded,
     totalPenaltyExposedStillExcluded,
+  };
+}
+
+/**
+ * Per-category totals of Portfolio-parented account balances (R49 — see
+ * `.scratch/docs/plans/PLAN-retirement-only-withdrawal-scope.md`). A
+ * Portfolio-parented account (e.g. a taxable brokerage the household
+ * doesn't consider part of the retirement plan) is excluded from
+ * retirement withdrawal routing WHOLESALE and unconditionally — no age
+ * gate, no penalty, no opt-out lever. This is a fully separate exclusion
+ * from `computeWithdrawalEligibility`'s penalty-exposure partition (which
+ * explicitly does NOT count a Portfolio-parented account's exposure — see
+ * that function's `isRetirementParent` gate — so the two sources never
+ * overlap on the same dollar and can be summed together safely by
+ * `subtractExcluded`, `balance-utils.ts`).
+ *
+ * Portfolio-parented accounts are NOT removed from `indAccts`/`indBal`
+ * themselves — they still receive contributions and growth normally; only
+ * the routing-time VIEW computed here excludes their balance. Mirrors
+ * `computeWithdrawalEligibility`'s "recomputed fresh every year from
+ * current indBal" discipline, not a persistent removal.
+ */
+export type NonRetirementExclusion = {
+  total: Record<AccountCategory, number>;
+  trad: Record<AccountCategory, number>;
+  roth: Record<AccountCategory, number>;
+  grandTotal: number;
+};
+
+export function computeNonRetirementExclusion(
+  indAccts: {
+    name: string;
+    category: AccountCategory;
+    taxType: string;
+    ownerPersonId?: number;
+    parentCategory?: string;
+  }[],
+  indBal: Map<string, number>,
+  indKey: IndKeyFn,
+): NonRetirementExclusion {
+  const total = zeroByCategory();
+  const trad = zeroByCategory();
+  const roth = zeroByCategory();
+  let grandTotal = 0;
+
+  for (const ia of indAccts) {
+    if (isRetirementParent(ia.parentCategory ?? "Retirement")) continue;
+    const balance = Math.max(0, indBal.get(indKey(ia)) ?? 0);
+    if (balance <= 0) continue;
+    total[ia.category] += balance;
+    grandTotal += balance;
+    if (
+      getAccountTypeConfig(ia.category).balanceStructure === "roth_traditional"
+    ) {
+      if (isTaxFreeBucket(ia.taxType)) roth[ia.category] += balance;
+      else trad[ia.category] += balance;
+    }
+  }
+
+  const roundCategoryMap = (
+    m: Record<AccountCategory, number>,
+  ): Record<AccountCategory, number> =>
+    Object.fromEntries(
+      Object.entries(m).map(([k, v]) => [k, roundToCents(v)]),
+    ) as Record<AccountCategory, number>;
+
+  return {
+    total: roundCategoryMap(total),
+    trad: roundCategoryMap(trad),
+    roth: roundCategoryMap(roth),
+    grandTotal: roundToCents(grandTotal),
   };
 }

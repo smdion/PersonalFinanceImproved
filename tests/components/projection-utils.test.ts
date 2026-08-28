@@ -601,6 +601,106 @@ describe("filterYearByParentCategory", () => {
     filterYearByParentCategory(original, "Retirement");
     expect(original.individualAccountBalances).toHaveLength(originalLen);
   });
+
+  // Regression coverage for the "balance says $32k, withdrawal says $30k+"
+  // report: a decumulation year where most of a category's withdrawal came
+  // from a Portfolio-parented account must not leak into the Retirement-
+  // filtered slots/totals, or the filtered balance and filtered withdrawal
+  // describe two different pools of money.
+  function makeDecumYear(): EngineYearProjection {
+    return {
+      year: 2077,
+      age: 88,
+      phase: "decumulation",
+      individualAccountBalances: [
+        {
+          name: "Retirement Brokerage (Vanguard)",
+          category: "brokerage",
+          taxType: "afterTax",
+          parentCategory: "Retirement",
+          balance: 141113.51,
+          withdrawal: 14466.75,
+          contribution: 0,
+          employerMatch: 0,
+          growth: 7356.63,
+        },
+        {
+          name: "Long Term Brokerage (Vanguard)",
+          category: "brokerage",
+          taxType: "afterTax",
+          parentCategory: "Portfolio",
+          balance: 1540684.43,
+          withdrawal: 157948.73,
+          contribution: 31297.79,
+          employerMatch: 0,
+          growth: 80320.04,
+        },
+      ],
+      balanceByTaxType: {
+        preTax: 0,
+        taxFree: 0,
+        hsa: 0,
+        afterTax: 1681797.94,
+        afterTaxBasis: 117901.77,
+      },
+      balanceByAccount: accountBalancesFromTaxBuckets({
+        preTax: 0,
+        taxFree: 0,
+        hsa: 0,
+        afterTax: 1681797.94,
+        afterTaxBasis: 117901.77,
+      }),
+      endBalance: 1681797.94,
+      slots: [
+        {
+          category: "brokerage",
+          withdrawal: 177209.74,
+          rothWithdrawal: 0,
+          traditionalWithdrawal: 0,
+          cappedByAccount: false,
+          cappedByTaxType: false,
+          remainingNeed: 0,
+          basisPortion: 12751.91,
+          gainsPortion: 164457.83,
+        },
+      ],
+      totalWithdrawal: 177209.74,
+      totalTraditionalWithdrawal: 0,
+      totalRothWithdrawal: 0,
+    } as unknown as EngineYearProjection;
+  }
+
+  it("rescopes decumulation withdrawal slots to the filtered accounts", () => {
+    const result = filterYearByParentCategory(makeDecumYear(), "Retirement");
+    if (result.phase !== "decumulation")
+      throw new Error("expected decumulation");
+    const brokSlot = result.slots.find((s) => s.category === "brokerage")!;
+    // Only the Retirement-parented account's $14,466.75 — not the
+    // Portfolio-parented account's $157,948.73 — should remain.
+    expect(brokSlot.withdrawal).toBeCloseTo(14466.75, 2);
+    expect(result.totalWithdrawal).toBeCloseTo(14466.75, 2);
+  });
+
+  it("keeps the filtered withdrawal consistent with the filtered balance", () => {
+    const result = filterYearByParentCategory(makeDecumYear(), "Retirement");
+    if (result.phase !== "decumulation")
+      throw new Error("expected decumulation");
+    const brokSlot = result.slots.find((s) => s.category === "brokerage")!;
+    // The filtered balance ($141,113.51) must exceed what the filtered
+    // withdrawal took out of it this year — the original bug had the
+    // withdrawal (unfiltered, $177,209.74) exceed the filtered balance.
+    expect(brokSlot.withdrawal).toBeLessThan(result.balanceByTaxType.afterTax);
+  });
+
+  it("prorates basis/gains portions by the same withdrawal ratio", () => {
+    const result = filterYearByParentCategory(makeDecumYear(), "Retirement");
+    if (result.phase !== "decumulation")
+      throw new Error("expected decumulation");
+    const brokSlot = result.slots.find((s) => s.category === "brokerage")!;
+    const ratio = 14466.75 / 177209.74;
+    expect(brokSlot.basisPortion).toBeCloseTo(12751.91 * ratio, 1);
+    expect(brokSlot.gainsPortion).toBeCloseTo(164457.83 * ratio, 1);
+  });
 });
 
 // ---------------------------------------------------------------------------

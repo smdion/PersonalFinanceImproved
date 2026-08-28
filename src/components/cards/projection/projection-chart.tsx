@@ -201,6 +201,12 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
       // bypasses withdrawal routing entirely, so there's no slot/
       // withdrawal line item that would show it otherwise.
       datum._qcdAmount = yr.qcdAmount ?? 0;
+      // R49: dollars of this year's RMD that could NOT be forced through as
+      // a real taxable distribution — 0 in the overwhelmingly common case.
+      // See rmd-enforcement.ts's rmdShortfallAmount docblock for why this
+      // is now possible (Retirement-only capacity can be genuinely
+      // insufficient once Portfolio-parented balances no longer count).
+      datum._rmdShortfallAmount = yr.rmdShortfallAmount ?? 0;
       // Guardrail event (R45 Step 5 follow-up) — the ReferenceLine markers
       // added a visual "▲ raise" flag on the chart but the hover tooltip
       // never carried the underlying detail, so hovering that exact year
@@ -365,6 +371,18 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                   (s, k) => s + (Number(d[k.key]) || 0),
                   0,
                 );
+                // R49 (UI/UX design pass): "was the RMD satisfied" status
+                // for the RMD line(s) below. Ordinary case (no excess, no
+                // QCD, no shortfall) stays silent — satisfaction is the
+                // boring default and shouldn't cost pixels. A checkmark
+                // suffix closes the loop on the "eventful" case (excess
+                // and/or QCD already explain HOW below); a shortfall
+                // breaks the amber color family entirely since it's the
+                // only state with real IRS excise-tax consequences.
+                const rmdShortfall = Number(d._rmdShortfallAmount) > 0;
+                const rmdSatisfiedNotably =
+                  !rmdShortfall &&
+                  (Number(d._rmdExcessAmount) > 0 || Number(d._qcdAmount) > 0);
                 return (
                   <div className="bg-surface-primary text-primary text-xs rounded-md px-3 py-2 shadow-lg max-w-xs">
                     <div className="font-medium mb-1">
@@ -416,7 +434,8 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                       Number(d._ssIncome) > 0 ||
                       Number(d._rmdAmount) > 0 ||
                       Number(d._rmdExcessAmount) > 0 ||
-                      Number(d._qcdAmount) > 0) && (
+                      Number(d._qcdAmount) > 0 ||
+                      rmdShortfall) && (
                       <div className="border-t mt-1 pt-1 space-y-0.5">
                         {Number(d._ssStart) === 1 && (
                           <div className="flex justify-between gap-4 text-teal-400 font-medium">
@@ -427,8 +446,12 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                           </div>
                         )}
                         {Number(d._rmdStart) === 1 && (
-                          <div className="flex justify-between gap-4 text-amber-400 font-medium">
-                            <span>RMDs begin</span>
+                          <div
+                            className={`flex justify-between gap-4 font-medium ${rmdShortfall ? "text-red-400" : "text-amber-400"}`}
+                          >
+                            <span>
+                              RMDs begin{rmdSatisfiedNotably ? " ✓" : ""}
+                            </span>
                             <span className="tabular-nums">
                               {formatCurrency(Number(d._rmdAmount))}
                             </span>
@@ -445,13 +468,32 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                           )}
                         {Number(d._rmdStart) !== 1 &&
                           Number(d._rmdAmount) > 0 && (
-                            <div className="flex justify-between gap-4 text-amber-400/70 text-caption">
-                              <span>RMD</span>
+                            <div
+                              className={`flex justify-between gap-4 text-caption ${rmdShortfall ? "text-red-400" : "text-amber-400/70"}`}
+                            >
+                              <span>RMD{rmdSatisfiedNotably ? " ✓" : ""}</span>
                               <span className="tabular-nums">
                                 {formatCurrency(Number(d._rmdAmount))}
                               </span>
                             </div>
                           )}
+                        {/* R49: real IRS exposure — the only RMD-related
+                            state that earns its own extra line, since it's
+                            the only one with actual tax-penalty
+                            consequences. Deliberately breaks the amber
+                            RMD/QCD color family above (red, not amber) to
+                            read as an alarm rather than routine detail. */}
+                        {rmdShortfall && (
+                          <div className="text-red-400/70 text-caption">
+                            Only{" "}
+                            {formatCurrency(
+                              Number(d._rmdAmount) -
+                                Number(d._rmdShortfallAmount),
+                            )}{" "}
+                            of {formatCurrency(Number(d._rmdAmount))} required
+                            met · 25% excise tax risk
+                          </div>
+                        )}
                         {/* R46: RMD-forced excess — real money forced out
                             by the RMD floor beyond what the strategy
                             needed, with no prior UI trace anywhere. Can

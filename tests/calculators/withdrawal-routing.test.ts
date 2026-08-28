@@ -895,3 +895,100 @@ describe("routeForMode (Tier B eligibility gate)", () => {
     expect(withEligibility.penaltyAvoidedShortfall).toBeUndefined();
   });
 });
+
+// ---------------------------------------------------------------------------
+// routeForMode — nonRetirement exclusion (R49)
+// ---------------------------------------------------------------------------
+
+describe("routeForMode (nonRetirement exclusion, R49)", () => {
+  function zeroByCat() {
+    return Object.fromEntries(getAllCategories().map((c) => [c, 0])) as Record<
+      AccountCategory,
+      number
+    >;
+  }
+  function nonRetirementFor(cat: AccountCategory, amount: number) {
+    const total = zeroByCat();
+    total[cat] = amount;
+    return {
+      total,
+      trad: zeroByCat(),
+      roth: zeroByCat(),
+      grandTotal: amount,
+    };
+  }
+
+  it("excludes the Portfolio-parented amount from the category's routable balance", () => {
+    const balances = makeAccountBalances({ afterTax: 100000 });
+    const config = makeDecumulationConfig({
+      withdrawalRoutingMode: "waterfall",
+      withdrawalOrder: ["brokerage"],
+    });
+    const nonRetirement = nonRetirementFor("brokerage", 80000);
+    const result = routeForMode(
+      50000,
+      config,
+      balances,
+      { taxableSS: 0 },
+      undefined,
+      nonRetirement,
+    );
+    // Only $20,000 of the $100,000 brokerage balance is Retirement-parented
+    // -- the category can supply at most that much.
+    expect(slotFor(result.slots, "brokerage")?.withdrawal ?? 0).toBe(20000);
+    expect(result.unmetNeed).toBeCloseTo(30000, 2);
+    expect(result.nonRetirementShortfall).toBeCloseTo(30000, 2);
+  });
+
+  it("names the shortfall distinctly from penaltyAvoidedShortfall when both sources are active", () => {
+    const { balances, eligibility } = lockedBalances({
+      brokerage: { structure: "basis_tracking", balance: 100000, basis: 0 },
+    });
+    const config = makeDecumulationConfig({
+      withdrawalRoutingMode: "waterfall",
+      withdrawalOrder: ["401k", "brokerage"],
+    });
+    const nonRetirement = nonRetirementFor("brokerage", 90000);
+    const result = routeForMode(
+      50000,
+      config,
+      balances,
+      { taxableSS: 0 },
+      eligibility, // 401k fully penalty-exposed, still excluded
+      nonRetirement, // brokerage 90% Portfolio-parented
+    );
+    expect(result.unmetNeed).toBeGreaterThan(0);
+    expect(result.penaltyAvoidedShortfall).toBeGreaterThan(0);
+    expect(result.nonRetirementShortfall).toBeGreaterThan(0);
+    // Neither figure alone accounts for the full unmet need, and neither
+    // exceeds it -- they're independent, bounded partitions of the same
+    // shortfall, not a blended figure.
+    expect(result.penaltyAvoidedShortfall!).toBeLessThanOrEqual(
+      result.unmetNeed!,
+    );
+    expect(result.nonRetirementShortfall!).toBeLessThanOrEqual(
+      result.unmetNeed!,
+    );
+  });
+
+  it("byte-identical fallthrough when nonRetirement is undefined or all-zero", () => {
+    const balances = makeAccountBalances({ afterTax: 100000 });
+    const config = makeDecumulationConfig({
+      withdrawalRoutingMode: "waterfall",
+      withdrawalOrder: ["brokerage"],
+    });
+    const withUndefined = routeForMode(50000, config, balances, {
+      taxableSS: 0,
+    });
+    const withAllZero = routeForMode(
+      50000,
+      config,
+      balances,
+      { taxableSS: 0 },
+      undefined,
+      nonRetirementFor("brokerage", 0),
+    );
+    expect(withUndefined.slots).toEqual(withAllZero.slots);
+    expect(withAllZero.nonRetirementShortfall).toBeUndefined();
+  });
+});

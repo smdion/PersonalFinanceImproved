@@ -23,7 +23,7 @@
 import { describe, it, expect } from "vitest";
 import { calculateProjection } from "@/lib/calculators/engine";
 
-const LAST_REVIEWED_AT = "2026-08-26";
+const LAST_REVIEWED_AT = "2026-08-27";
 const FRESHNESS_DAYS = 180;
 import type {
   ProjectionInput,
@@ -1588,7 +1588,10 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(28000);
-    expect(metrics.finalYear?.endBalance).toBe(4130354.41);
+    // R49 (see SNAPSHOT-REVIEW-LOG.md): rmd-enforcement.ts's rounding-
+    // residual fallback no longer force-feeds a genuine capacity shortfall
+    // past an account's real remaining room.
+    expect(metrics.finalYear?.endBalance).toBe(4133719.39);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -2727,7 +2730,9 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(46000);
-    expect(metrics.finalYear?.endBalance).toBe(2418826.05);
+    // R49 (see SNAPSHOT-REVIEW-LOG.md): same rmd-enforcement.ts residual fix
+    // as fixture 31.
+    expect(metrics.finalYear?.endBalance).toBe(2419205.76);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -2803,7 +2808,9 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(46000);
-    expect(metrics.finalYear?.endBalance).toBe(2421851.06);
+    // R49 (see SNAPSHOT-REVIEW-LOG.md): same rmd-enforcement.ts residual fix
+    // as fixture 31.
+    expect(metrics.finalYear?.endBalance).toBe(2423603.86);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -3428,7 +3435,13 @@ describe("engine snapshot parity", () => {
     expect(decYears[0]?.rmdExcessAmount).toBe(0);
     expect(result.sustainableWithdrawal).toBe(10638.3);
     const metrics = extractMetrics(result);
-    expect(metrics.finalYear?.endBalance).toBe(2472743.69);
+    // R49 (see SNAPSHOT-REVIEW-LOG.md): the QCD debit now applies directly
+    // to the IRA's individual-account balance instead of being deferred to
+    // reconcileIndividualToAggregate — the withdrawal fan-out now correctly
+    // sees the post-QCD capacity mid-year instead of a stale pre-QCD figure,
+    // so it can no longer over-draw the account for spending need before
+    // reconcile silently "fixes" the balance at year-end.
+    expect(metrics.finalYear?.endBalance).toBe(2499086.87);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -3549,7 +3562,8 @@ describe("engine snapshot parity", () => {
     expect(decYears[0]?.rmdExcessAmount).toBe(105565.85);
     expect(result.sustainableWithdrawal).toBe(10638.3);
     const metrics = extractMetrics(result);
-    expect(metrics.finalYear?.endBalance).toBe(6890746.66);
+    // R49 (see SNAPSHOT-REVIEW-LOG.md) — same fix as fixture 65.
+    expect(metrics.finalYear?.endBalance).toBe(6893089.39);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -3668,8 +3682,9 @@ describe("engine snapshot parity", () => {
     expect(decYears[0]?.rmdExcessAmount).toBe(105565.85);
     expect(result.sustainableWithdrawal).toBe(10638.3);
     const metrics = extractMetrics(result);
-    expect(metrics.finalYear?.endBalance).toBe(6508080.04);
-    expect(metrics.finalYear?.endBalance).toBeLessThan(6890746.66); // vs. fixture 66's "reinvest"
+    // R49 (see SNAPSHOT-REVIEW-LOG.md) — same fix as fixture 65.
+    expect(metrics.finalYear?.endBalance).toBe(6517851.49);
+    expect(metrics.finalYear?.endBalance).toBeLessThan(6893089.39); // vs. fixture 66's "reinvest"
     expect(metrics).toMatchSnapshot();
   });
 });

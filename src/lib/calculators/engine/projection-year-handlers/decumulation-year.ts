@@ -46,7 +46,10 @@ import {
   clampIndividualBasis,
   reconcileIndividualToAggregate,
 } from "../individual-account-tracking";
-import { computeWithdrawalEligibility } from "@/lib/pure/withdrawal-eligibility";
+import {
+  computeWithdrawalEligibility,
+  computeNonRetirementExclusion,
+} from "@/lib/pure/withdrawal-eligibility";
 import type { BasisDraw } from "@/lib/pure/roth-basis-tracking";
 import { splitRothWithdrawalForTax } from "@/lib/pure/roth-distribution-tax";
 import { computeEarlyWithdrawalPenalty } from "@/lib/pure/early-withdrawal-penalty";
@@ -147,6 +150,16 @@ export function runDecumulationYear(
   const eligibility = hasIndividualAccounts
     ? computeWithdrawalEligibility({ year, indAccts, indBal, indKey, indBasis })
     : undefined;
+  // R49: Portfolio-parented accounts (e.g. a taxable brokerage the
+  // household doesn't consider part of the retirement plan) never fund
+  // retirement spending need — computed once per year here, threaded to
+  // every consumer that decides how much money is "available"
+  // (routeForMode's two call sites, performRothConversion, enforceRmd, and
+  // QCD's capacity/debit below) so they can't disagree with each other.
+  // See .scratch/docs/plans/PLAN-retirement-only-withdrawal-scope.md.
+  const nonRetirement = hasIndividualAccounts
+    ? computeNonRetirementExclusion(indAccts, indBal, indKey)
+    : undefined;
 
   // Reconciliation check: acctBal Roth total should match balances.taxFree
   const acctBalRothTotal = getAllCategories().reduce((s, cat) => {
@@ -232,7 +245,10 @@ export function runDecumulationYear(
       if (
         isIraCategory(ia.category) &&
         ia.ownerPersonId != null &&
-        isPreTaxType(ia.taxType)
+        isPreTaxType(ia.taxType) &&
+        // R49: a Portfolio-parented IRA (nothing prevents one existing)
+        // isn't retirement money -- must not inflate QCD-eligible capacity.
+        !isPortfolioParent(ia.parentCategory)
       ) {
         const bal = indBal.get(indKey(ia)) ?? 0;
         iraTradByPerson.set(
@@ -251,15 +267,55 @@ export function runDecumulationYear(
     );
     totalQcd = totalQcdAmount(qcdByPerson);
     if (totalQcd > 0) {
-      // Deduct from the aggregate tracks only (matches reinvestRmdExcess's
-      // own pattern) -- indBal isn't touched directly here; the existing
-      // end-of-year reconcileIndividualToAggregate call (already present,
-      // unchanged) pulls individual balances into agreement with the now
-      // -reduced aggregate the same way it already reconciles any other
-      // aggregate/individual drift, rather than this function hand-rolling
-      // a second, bespoke individual-account mutation path.
+      // Aggregate tracks (matches reinvestRmdExcess's own pattern -- both
+      // trackers must still move together regardless of the per-account
+      // debit below).
       balances.preTax = roundToCents(balances.preTax - totalQcd);
       addTraditional(acctBal.ira, -totalQcd);
+      // R49: the aggregate deduction above is correctly SIZED (totalQcd
+      // only ever reflects Retirement-parented IRA capacity, per the
+      // filter above), but leaving the individual side to
+      // reconcileIndividualToAggregate would spread it proportionally
+      // across every IRA in the category -- a hypothetical
+      // Portfolio-parented IRA included -- undoing the point of that
+      // filter one step later. Debit each person's OWN qcdAmount from
+      // only THAT person's own Retirement-parented IRA indBal entries
+      // (proportional to each account's own balance): a QCD is legally a
+      // transfer from one specific owner's IRA, so this must be per-person,
+      // never pooled across the household.
+      for (const { personId, qcdAmount } of qcdByPerson) {
+        if (qcdAmount <= 0) continue;
+        const personIraAccts = indAccts.filter(
+          (ia) =>
+            isIraCategory(ia.category) &&
+            ia.ownerPersonId === personId &&
+            isPreTaxType(ia.taxType) &&
+            !isPortfolioParent(ia.parentCategory),
+        );
+        const personIraTotal = personIraAccts.reduce(
+          (s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0),
+          0,
+        );
+        if (personIraTotal <= 0) continue;
+        let distributed = 0;
+        for (const ia of personIraAccts) {
+          const k = indKey(ia);
+          const bal = Math.max(0, indBal.get(k) ?? 0);
+          const share = roundToCents(qcdAmount * (bal / personIraTotal));
+          const capped = Math.min(share, bal);
+          indBal.set(k, roundToCents(bal - capped));
+          distributed += capped;
+        }
+        // Rounding remainder mop-up, same convention as elsewhere in this
+        // file (e.g. Roth conversion's tradAccounts loop).
+        const remainder = roundToCents(qcdAmount - distributed);
+        if (remainder > 0.005 && personIraAccts.length > 0) {
+          const first = personIraAccts[0]!;
+          const k = indKey(first);
+          const bal = Math.max(0, indBal.get(k) ?? 0);
+          indBal.set(k, roundToCents(Math.max(0, bal - remainder)));
+        }
+      }
     }
   }
 
@@ -280,6 +336,7 @@ export function runDecumulationYear(
     acctBal,
     totalBalance,
     eligibility,
+    nonRetirement,
     indAccts: hasIndividualAccounts ? indAccts : undefined,
     indKey: hasIndividualAccounts ? indKey : undefined,
     indBal: hasIndividualAccounts ? indBal : undefined,
@@ -335,6 +392,7 @@ export function runDecumulationYear(
       conversionsEnabled: taxRates.enableRothConversions,
     },
     eligibility,
+    nonRetirement,
   );
 
   const {
@@ -342,6 +400,7 @@ export function runDecumulationYear(
     warnings: routeWarnings,
     unmetNeed: routedUnmetNeed,
     penaltyAvoidedShortfall,
+    nonRetirementShortfall,
   } = routeResult;
   if (rothDivergence) routeWarnings.push(rothDivergence);
 
@@ -375,8 +434,9 @@ export function runDecumulationYear(
     totalWithdrawal,
     acctBal,
     overrideRmdRequired: rmdRequiredAfterQcd,
+    nonRetirement,
   });
-  const { rmdOverrodeRouting } = rmdResult;
+  const { rmdOverrodeRouting, rmdShortfallAmount } = rmdResult;
   totalTraditionalWithdrawal = rmdResult.totalTraditionalWithdrawal;
   totalWithdrawal = rmdResult.totalWithdrawal;
   routeWarnings.push(...rmdResult.warnings);
@@ -550,6 +610,9 @@ export function runDecumulationYear(
     taxCost,
     balances,
     acctBal,
+    hasIndividualAccounts ? indAccts : undefined,
+    hasIndividualAccounts ? indBal : undefined,
+    hasIndividualAccounts ? indKey : undefined,
   );
 
   // Clamp individual account balances -- extracted to individual-account-tracking.ts
@@ -578,6 +641,14 @@ export function runDecumulationYear(
     filingStatus,
     balances,
     acctBal,
+    // R49 — advisor round 4: without this, performRothConversion's own
+    // fixes above are fully implemented and fully unit-tested but never
+    // execute in production, since "params omitted" is deliberately the
+    // unchanged-behavior fallback.
+    nonRetirement,
+    indAccts: hasIndividualAccounts ? indAccts : undefined,
+    indBal: hasIndividualAccounts ? indBal : undefined,
+    indKey: hasIndividualAccounts ? indKey : undefined,
   });
   const { rothConversionAmount, rothConversionTaxCost } = rothResult;
 
@@ -908,6 +979,7 @@ export function runDecumulationYear(
     bracketTraditionalCap: routeResult.traditionalCap,
     unmetNeed: finalUnmetNeed,
     penaltyAvoidedShortfall,
+    nonRetirementShortfall,
     penaltyCost,
     preWithdrawalAcctBal,
     endBalance,
@@ -919,6 +991,7 @@ export function runDecumulationYear(
     rmdAmount,
     rmdByPerson,
     rmdOverrodeRouting,
+    rmdShortfallAmount,
     rmdExcessAmount,
     qcdAmount: totalQcd,
     qcdByPerson: qcdByPerson.length > 0 ? qcdByPerson : undefined,

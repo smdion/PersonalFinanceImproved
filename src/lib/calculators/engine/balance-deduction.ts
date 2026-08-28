@@ -19,6 +19,7 @@ import {
   getAllCategories,
   getAccountTypeConfig,
   isOverflowTarget,
+  isPortfolioParent,
   getTraditionalBalance,
   getRothBalance,
   getTotalBalance,
@@ -147,7 +148,23 @@ export function clampBalances(
  * (`rmdExcessHandling` on the resolved config), since "reinvested" isn't
  * an accurate description of what happened under "spend".
  *
- * Mutates `balances` and `acctBal` in place only under "reinvest".
+ * Mutates `balances` and `acctBal` in place only under "reinvest". When
+ * `indAccts`/`indBal`/`indKey` are also supplied (R49), the reinvestment
+ * additionally credits Retirement-parented overflow-target accounts'
+ * `indBal` directly, proportional to their own balance — this money is
+ * forced out of a Traditional account by the RMD floor (which, per R49,
+ * only ever forces Retirement-parented money), so it must land back in a
+ * Retirement-parented account too. Without this, the credit only touches
+ * the blended aggregate, and `reconcileIndividualToAggregate`'s
+ * parentCategory-blind proportional redistribution can hand most of it to
+ * a much-larger Portfolio-parented account instead — the same leak R49
+ * already closed for Roth-conversion tax funding and QCD, found here via
+ * a live `[DIAG] indBal/acctBal reconciliation` drift report on a real
+ * household. Falls back to crediting proportionally across every
+ * overflow-target account (pre-R49 behavior) only if the household has NO
+ * Retirement-parented overflow-target account at all — an edge case, but
+ * inventing a Retirement-parented destination that doesn't exist would be
+ * a second allocation policy.
  */
 export function reinvestRmdExcess(
   mode: "reinvest" | "spend",
@@ -158,6 +175,9 @@ export function reinvestRmdExcess(
   taxCost: number,
   balances: TaxBuckets,
   acctBal: AccountBalances,
+  indAccts?: IndividualAccountInput[],
+  indBal?: Map<string, number>,
+  indKey?: IndKeyFn,
 ): number {
   if (
     !enabled ||
@@ -174,6 +194,42 @@ export function reinvestRmdExcess(
       if (isOverflowTarget(cat)) {
         addBalance(acctBal[cat], excess);
         addBasis(acctBal[cat], excess);
+        if (indAccts && indBal && indKey) {
+          const overflowAccts = indAccts.filter((ia) => ia.category === cat);
+          const retirementAccts = overflowAccts.filter(
+            (ia) => !isPortfolioParent(ia.parentCategory),
+          );
+          const target =
+            retirementAccts.length > 0 ? retirementAccts : overflowAccts;
+          const targetTotal = target.reduce(
+            (s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0),
+            0,
+          );
+          if (target.length > 0) {
+            if (targetTotal > 0) {
+              let credited = 0;
+              for (const ia of target) {
+                const k = indKey(ia);
+                const bal = Math.max(0, indBal.get(k) ?? 0);
+                const share = roundToCents(excess * (bal / targetTotal));
+                indBal.set(k, roundToCents(bal + share));
+                credited += share;
+              }
+              const remainder = roundToCents(excess - credited);
+              if (remainder !== 0) {
+                const first = target[0]!;
+                const k = indKey(first);
+                indBal.set(k, roundToCents((indBal.get(k) ?? 0) + remainder));
+              }
+            } else {
+              // No weight to distribute by (every target account is at
+              // $0) -- credit the first one entirely rather than inventing
+              // a different allocation policy.
+              const k = indKey(target[0]!);
+              indBal.set(k, roundToCents((indBal.get(k) ?? 0) + excess));
+            }
+          }
+        }
         break;
       }
     }

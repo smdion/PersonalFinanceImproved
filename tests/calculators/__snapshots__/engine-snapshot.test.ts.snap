@@ -1573,7 +1573,7 @@ exports[`engine snapshot parity > fixture 31: RMD + Roth conversion + IRMAA — 
   ],
   "finalYear": {
     "age": 94,
-    "endBalance": 4130354.41,
+    "endBalance": 4133719.39,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -2672,7 +2672,7 @@ exports[`engine snapshot parity > fixture 54: IRMAA awareness enabled, income ne
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 2418826.05,
+    "endBalance": 2419205.76,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -2733,7 +2733,7 @@ exports[`engine snapshot parity > fixture 55: IRMAA awareness disabled, income n
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 2421851.06,
+    "endBalance": 2423603.86,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -3265,7 +3265,7 @@ exports[`engine snapshot parity > fixture 65: qcdMaximize fully covers a modest 
   ],
   "finalYear": {
     "age": 84,
-    "endBalance": 2472743.69,
+    "endBalance": 2499086.87,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -3326,7 +3326,7 @@ exports[`engine snapshot parity > fixture 66: qcdMaximize capped below a large R
   ],
   "finalYear": {
     "age": 77,
-    "endBalance": 6890746.66,
+    "endBalance": 6893089.39,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -3387,7 +3387,7 @@ exports[`engine snapshot parity > fixture 67: same as fixture 66 but rmdExcessHa
   ],
   "finalYear": {
     "age": 77,
-    "endBalance": 6508080.04,
+    "endBalance": 6517851.49,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,

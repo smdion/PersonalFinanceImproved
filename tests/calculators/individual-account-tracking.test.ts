@@ -633,6 +633,72 @@ describe("distributeWithdrawals", () => {
     expect(result.size).toBe(0);
     expect(indBal.get(indKey(accounts[0]!))!).toBe(10000); // unchanged
   });
+
+  // -------------------------------------------------------------------
+  // R49: Portfolio-parented accounts are never a fan-out target
+  // -------------------------------------------------------------------
+
+  it("never assigns a withdrawal to a Portfolio-parented account, even when it's the only large balance in its category", () => {
+    const accounts: IndividualAccountInput[] = [
+      makeIndividualAccount({
+        name: "Retirement Brokerage",
+        category: "brokerage",
+        taxType: "afterTax",
+        startingBalance: 10000,
+        parentCategory: "Retirement",
+      }),
+      makeIndividualAccount({
+        name: "Long Term Brokerage",
+        category: "brokerage",
+        taxType: "afterTax",
+        startingBalance: 1_000_000,
+        parentCategory: "Portfolio",
+      }),
+    ];
+    const indBal = new Map<string, number>();
+    indBal.set(indKey(accounts[0]!), 10000);
+    indBal.set(indKey(accounts[1]!), 1_000_000);
+
+    // A withdrawal within the Retirement-parented account's own capacity --
+    // routeForMode's own category-level exclusion should already guarantee
+    // this, but the fan-out filter must hold even if it didn't.
+    const slots: DecumulationSlot[] = [
+      makeDecumulationSlot("brokerage", { withdrawal: 5000 }),
+    ];
+    const { decIndWithdrawal: result } = distributeWithdrawals(
+      slots,
+      accounts,
+      indKey,
+      indBal,
+    );
+    expect(result.get(indKey(accounts[1]!)) ?? 0).toBe(0);
+    expect(result.get(indKey(accounts[0]!)) ?? 0).toBe(5000);
+    expect(indBal.get(indKey(accounts[1]!))).toBe(1_000_000); // untouched
+  });
+
+  it("treats an account with no parentCategory as Retirement (default)", () => {
+    const accounts: IndividualAccountInput[] = [
+      makeIndividualAccount({
+        name: "No Parent Category Set",
+        category: "brokerage",
+        taxType: "afterTax",
+        startingBalance: 10000,
+        parentCategory: undefined,
+      }),
+    ];
+    const indBal = new Map<string, number>();
+    indBal.set(indKey(accounts[0]!), 10000);
+    const slots: DecumulationSlot[] = [
+      makeDecumulationSlot("brokerage", { withdrawal: 5000 }),
+    ];
+    const { decIndWithdrawal: result } = distributeWithdrawals(
+      slots,
+      accounts,
+      indKey,
+      indBal,
+    );
+    expect(result.get(indKey(accounts[0]!))).toBe(5000);
+  });
 });
 
 describe("distributeGoalWithdrawal", () => {
