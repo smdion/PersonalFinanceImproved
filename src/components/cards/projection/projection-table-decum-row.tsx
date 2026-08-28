@@ -854,6 +854,40 @@ export function DecumulationRow({
                       color: "emerald",
                     });
                   }
+                  // R46: same RMD-excess / QCD visibility as the
+                  // contribution-view tooltips (per user follow-up — the
+                  // BALANCE tooltip needs to explain its own number too,
+                  // not just the contribution/withdrawal column). afterTax
+                  // is where reinvested excess actually lands (or would
+                  // have, under "spend"); preTax is where QCD money left
+                  // from.
+                  const bucketRmdExcess = yr.rmdExcessAmount ?? 0;
+                  const bucketRmdMode = engineSettings?.rmdExcessHandling;
+                  if (bucket === "afterTax" && bucketRmdExcess > 0.01) {
+                    if (bucketRmdMode === "spend") {
+                      wdLineItems.push({
+                        label: "RMD excess spent (not reinvested)",
+                        amount: deflate(bucketRmdExcess, yr.year),
+                        color: "gray",
+                      });
+                    } else {
+                      wdLineItems.push({
+                        label: "RMD excess reinvested",
+                        amount: deflate(bucketRmdExcess, yr.year),
+                        prefix: "+",
+                        color: "amber",
+                      });
+                    }
+                  }
+                  const bucketQcd = yr.qcdAmount ?? 0;
+                  if (bucket === "preTax" && bucketQcd > 0.01) {
+                    wdLineItems.push({
+                      label: "QCD to charity (excluded from taxable income)",
+                      amount: deflate(bucketQcd, yr.year),
+                      prefix: "-",
+                      color: "violet",
+                    });
+                  }
                   return renderTooltip({
                     kind: "money",
                     header: `${taxTypeLabel(bucket)}: ${pct}% of portfolio`,
@@ -964,6 +998,41 @@ export function DecumulationRow({
                     sub: subItems.length > 0 ? subItems : undefined,
                   });
                 }
+              }
+              // R46: same RMD-excess / QCD visibility as the taxType-view
+              // balance tooltips and the contribution-view tooltips —
+              // gated on the account-view column's own category rather
+              // than a fixed bucket, so this fires no matter which
+              // overflow/IRA-category column the segment maps to.
+              const colRmdExcess = yr.rmdExcessAmount ?? 0;
+              const colRmdMode = engineSettings?.rmdExcessHandling;
+              if (
+                colRmdExcess > 0.01 &&
+                ACCOUNT_TYPE_CONFIG[catKey as AccountCategory].isOverflowTarget
+              ) {
+                if (colRmdMode === "spend") {
+                  decAcctItems.push({
+                    label: "RMD excess spent (not reinvested)",
+                    amount: deflate(colRmdExcess, yr.year),
+                    color: "gray",
+                  });
+                } else {
+                  decAcctItems.push({
+                    label: "RMD excess reinvested",
+                    amount: deflate(colRmdExcess, yr.year),
+                    prefix: "+",
+                    color: "amber",
+                  });
+                }
+              }
+              const colQcd = yr.qcdAmount ?? 0;
+              if (colQcd > 0.01 && isIraCategory(catKey)) {
+                decAcctItems.push({
+                  label: "QCD to charity (excluded from taxable income)",
+                  amount: deflate(colQcd, yr.year),
+                  prefix: "-",
+                  color: "violet",
+                });
               }
               // Calculate total withdrawal from slot data (data-driven via colWithdrawal)
               const decTotalWd = colWithdrawal(dyr.slots, col.key);
