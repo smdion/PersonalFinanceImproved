@@ -140,21 +140,46 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
     }
   }
 
-  // Compute sustainable withdrawal at retirement
-  // When already retired (currentAge >= retirementAge), use the first year's balance
-  const retirementYear =
-    input.currentAge >= input.retirementAge
-      ? state.projectionByYear[0]
-      : state.projectionByYear.find((p) => p.age === input.retirementAge);
-  const retirementBalance = retirementYear?.endBalance ?? 0;
-  const retirementConfig = resolveDecumulationConfig(
-    input.asOfDate.getFullYear() + (input.retirementAge - input.currentAge),
-    input.decumulationDefaults,
-    ctx.sortedDecOverrides,
+  // Sustainable withdrawal at retirement — the strategy's own actual first
+  // decumulation year withdrawal (R45 Step 2, Job (i) "make it strategy-real":
+  // reads the already-recorded first decumulation year, rather than a
+  // `balance × withdrawalRate` figure only 4 of 8 strategies' spending math
+  // actually reads).
+  //
+  // `targetWithdrawal` (advisor-corrected — NOT `totalWithdrawal`) is the
+  // right field: it's the tax-grossed-up amount the strategy actually
+  // determined it needs to withdraw to cover its spending need
+  // (`decumulation-year.ts`'s `taxEst.targetWithdrawal`, computed BEFORE
+  // statutory RMD enforcement can force `totalWithdrawal` above it).
+  // `totalWithdrawal` can be materially larger than what the household is
+  // actually spending in an RMD-active year — the excess over need gets
+  // reinvested into brokerage (`reinvestRmdExcess`), never spent — so using
+  // it here would report a "sustainable withdrawal" inflated by money the
+  // household never touches. `targetWithdrawal` avoids that distortion.
+  const firstDecumYear = state.projectionByYear.find(
+    (p) => p.phase === "decumulation",
   );
-  const sustainableWithdrawal = roundToCents(
-    retirementBalance * retirementConfig.withdrawalRate,
-  );
+  const sustainableWithdrawal = firstDecumYear
+    ? roundToCents(firstDecumYear.targetWithdrawal)
+    : // Fallback for inputs where decumulation is never reached within the
+      // projection window (e.g. retirementAge beyond projectionEndAge) —
+      // no strategy actually ran, so there's no real number to read. Same
+      // `balance × withdrawalRate` reference-figure formula used before
+      // this fix, applied only to this now-rare edge case. Depends on the
+      // invariant (verified in pre-year-setup.ts's isAccumulation logic)
+      // that every currentAge >= retirementAge input lands in the branch
+      // above instead — if that invariant is ever broken, this silently
+      // falls back to $0 rather than erroring.
+      roundToCents(
+        (state.projectionByYear.find((p) => p.age === input.retirementAge)
+          ?.endBalance ?? 0) *
+          resolveDecumulationConfig(
+            input.asOfDate.getFullYear() +
+              (input.retirementAge - input.currentAge),
+            input.decumulationDefaults,
+            ctx.sortedDecOverrides,
+          ).withdrawalRate,
+      );
 
   // Household's stated need, inflated to the first decumulation year's
   // nominal dollars — same formula pre-year-setup.ts:209-211 uses to seed
@@ -171,9 +196,6 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
   // under-inflates relative to what the loop actually produced. Reading the
   // loop's own first decumulation row keeps this a single source of truth
   // instead of a second, divergence-prone computation of "which year."
-  const firstDecumYear = state.projectionByYear.find(
-    (p) => p.phase === "decumulation",
-  );
   const firstDecumulationYearStatedNeed =
     input.decumulationAnnualExpenses != null && firstDecumYear
       ? roundToCents(

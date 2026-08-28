@@ -287,8 +287,22 @@ describe("runStressTestScenarios (M2)", () => {
     expect(optimistic.nestEggAtRetirement).toBeGreaterThan(
       conservative.nestEggAtRetirement,
     );
-    expect(optimistic.sustainableWithdrawal).toBeGreaterThan(
-      conservative.sustainableWithdrawal,
+    // sustainableWithdrawal no longer tracks nestEggAtRetirement here (R45
+    // Step 2, Job (i)): for the "fixed" strategy under test,
+    // sustainableWithdrawal is the strategy's actual first decumulation
+    // year withdrawal, not a `balance × withdrawalRate` reference figure.
+    // makeBaseInput() sets no `decumulationAnnualExpenses`, so year-1
+    // spending is whatever accumulation-phase `annualExpenses` inflates to
+    // by retirement — 30 years compounded at each SCENARIO's OWN
+    // inflationRate (conservative 4% vs optimistic 2%, see
+    // lib/pure/stress-test.ts). Higher assumed inflation produces a bigger
+    // nominal-dollar year-1 budget regardless of portfolio size, so
+    // conservative's sustainableWithdrawal is correctly LARGER than
+    // optimistic's here — the opposite of nestEggAtRetirement's ordering,
+    // and no longer meaningfully comparable to it. See
+    // .scratch/docs/plans/REVIEW-decumulation-strategy-ui-divergence.md.
+    expect(conservative.sustainableWithdrawal).toBeGreaterThan(
+      optimistic.sustainableWithdrawal,
     );
   });
 
