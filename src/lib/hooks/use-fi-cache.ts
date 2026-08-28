@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { computeFiTarget } from "@/lib/calculators/net-worth";
 
 export type FICache = {
   fiYear: number | null;
@@ -46,13 +47,20 @@ export function useFICache(): [FICache, (v: FICache) => void] {
  * target" — both writers (dashboard retirement card, retirement page) must
  * call this instead of each re-deriving the same scan independently, or the
  * two WILL diverge (docs/RULES.md — single computation path).
+ *
+ * R45 Step 4 (Findings 8/13): the FI target itself is computed by
+ * `computeFiTarget` (lib/calculators/net-worth.ts) — the same function
+ * `calculateNetWorth` uses server-side — instead of reimplementing
+ * `annualExpenses / withdrawalRate` here with no divide-by-zero guard. The
+ * two used to independently compute the same formula and could show
+ * different numbers on the same Net Worth page render.
  */
 export function deriveFI(
   projectionByYear: { year: number; age: number; endBalance: number }[],
   annualExpenses: number,
   withdrawalRate: number,
 ): { fiYear: number | null; fiAge: number | null; inputKey: string } {
-  const fiTarget = annualExpenses / withdrawalRate;
+  const fiTarget = computeFiTarget(annualExpenses, withdrawalRate);
   const hit = projectionByYear.find((y) => y.endBalance >= fiTarget);
   return {
     fiYear: hit?.year ?? null,
