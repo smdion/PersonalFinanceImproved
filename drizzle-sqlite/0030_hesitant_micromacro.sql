@@ -1,0 +1,1 @@
+ALTER TABLE `retirement_settings` ADD `rmd_smoothing_enabled` integer DEFAULT false NOT NULL;

@@ -56,6 +56,13 @@ export type Settings = {
    *  against the RMD each year (IRA-only, capped, approximation — see
    *  PLAN-rmd-excess-handling.md). */
   qcdMaximize?: boolean;
+  /** R47: proactively size Roth conversions to shrink a future RMD toward
+   *  projected spending need. Requires individual-account tracking. */
+  rmdSmoothingEnabled?: boolean;
+  /** R47: how far smoothing may elevate the effective conversion target
+   *  rate above rothBracketTarget/rothConversionTarget — can only raise,
+   *  never lower. Null/unset = UI should seed from rothBracketTarget. */
+  rmdSmoothingMaxBracketTarget?: string | null;
   // Feature flags + filing
   enableIrmaaAwareness?: boolean;
   enableAcaAwareness?: boolean;

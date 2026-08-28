@@ -3411,3 +3411,129 @@ exports[`engine snapshot parity > fixture 67: same as fixture 66 but rmdExcessHa
   },
 }
 `;
+
+exports[`engine snapshot parity > fixture 68: rmdSmoothingEnabled converts pre-RMD without enableRothConversions set (self-contained toggle) 1`] = `
+{
+  "accountDepletions": [
+    {
+      "category": "401k",
+      "depletionAge": 66,
+      "depletionYear": 2026,
+      "subType": "roth",
+    },
+    {
+      "category": "403b",
+      "depletionAge": 66,
+      "depletionYear": 2026,
+      "subType": "traditional",
+    },
+    {
+      "category": "403b",
+      "depletionAge": 66,
+      "depletionYear": 2026,
+      "subType": "roth",
+    },
+    {
+      "category": "ira",
+      "depletionAge": 66,
+      "depletionYear": 2026,
+      "subType": "roth",
+    },
+    {
+      "category": "hsa",
+      "depletionAge": 66,
+      "depletionYear": 2026,
+      "subType": undefined,
+    },
+  ],
+  "finalYear": {
+    "age": 79,
+    "endBalance": 5027879.8,
+  },
+  "firstOverflowAge": null,
+  "firstOverflowAmount": null,
+  "firstOverflowYear": null,
+  "portfolioDepletionAge": null,
+  "portfolioDepletionYear": null,
+  "retirementYear": {
+    "age": 66,
+    "endBalance": 3034325.85,
+    "projectedExpenses": 92250,
+    "totalWithdrawal": 105584.62,
+  },
+  "sustainableWithdrawal": 105584.62,
+  "totalYears": 15,
+  "warningCount": 1,
+  "year0": {
+    "endBalance": 2962405.55,
+    "phase": "accumulation",
+    "projectedSalary": 0,
+    "slotCount": 5,
+    "totalEmployee": 0,
+    "totalEmployer": 0,
+  },
+}
+`;
+
+exports[`engine snapshot parity > fixture 69: same household with rmdSmoothingEnabled=false — no pre-RMD conversions, and a measurably LARGER RMD at age 75 than fixture 68 1`] = `
+{
+  "accountDepletions": [
+    {
+      "category": "401k",
+      "depletionAge": 66,
+      "depletionYear": 2026,
+      "subType": "roth",
+    },
+    {
+      "category": "403b",
+      "depletionAge": 66,
+      "depletionYear": 2026,
+      "subType": "traditional",
+    },
+    {
+      "category": "403b",
+      "depletionAge": 66,
+      "depletionYear": 2026,
+      "subType": "roth",
+    },
+    {
+      "category": "ira",
+      "depletionAge": 66,
+      "depletionYear": 2026,
+      "subType": "roth",
+    },
+    {
+      "category": "hsa",
+      "depletionAge": 66,
+      "depletionYear": 2026,
+      "subType": undefined,
+    },
+  ],
+  "finalYear": {
+    "age": 79,
+    "endBalance": 5223091.19,
+  },
+  "firstOverflowAge": null,
+  "firstOverflowAmount": null,
+  "firstOverflowYear": null,
+  "portfolioDepletionAge": null,
+  "portfolioDepletionYear": null,
+  "retirementYear": {
+    "age": 66,
+    "endBalance": 3056798.39,
+    "projectedExpenses": 92250,
+    "totalWithdrawal": 105584.62,
+  },
+  "sustainableWithdrawal": 105584.62,
+  "totalYears": 15,
+  "warningCount": 1,
+  "year0": {
+    "endBalance": 2962405.55,
+    "phase": "accumulation",
+    "projectedSalary": 0,
+    "slotCount": 5,
+    "totalEmployee": 0,
+    "totalEmployer": 0,
+  },
+}
+`;

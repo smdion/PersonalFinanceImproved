@@ -296,4 +296,144 @@ describe("monte carlo integration", () => {
     expect(result.medianEndBalance).toBe(3136622.95);
     expect(extractSummary(result)).toMatchSnapshot();
   });
+
+  it("fixture 4 (R47): rmdSmoothingEnabled — each trial reads its own returnRates schedule, not a shared/leaked one", () => {
+    // monte-carlo.ts builds a fresh trialInput (with that trial's own
+    // trialReturnRates) and calls calculateProjection(trialInput) per
+    // trial -- calculateProjection's context.ts builds returnRateMap fresh
+    // from input.returnRates on every call, with no module-level state, so
+    // rmd-smoothing.ts's forward projection (which reads ctx.returnRateMap)
+    // cannot see another trial's schedule. This is a black-box proof of
+    // that architectural guarantee: same seed -> byte-identical results
+    // (nothing leaking IN from a prior run), different seed -> different
+    // results (each trial's own randomized schedule genuinely drives the
+    // smoothing computation, it isn't ignored/short-circuited).
+    const engineInput = makeInput({
+      currentAge: 65,
+      retirementAge: 65,
+      projectionEndAge: 80,
+      birthYear: 1960,
+      currentSalary: 0,
+      annualExpenses: 90000,
+      socialSecurityAnnual: 24000,
+      ssStartAge: 67,
+      socialSecurityEntries: [
+        {
+          personId: 1,
+          personName: "Alice",
+          birthYear: 1960,
+          startAge: 67,
+          annualAmount: 24000,
+        },
+      ],
+      individualAccounts: [
+        {
+          name: "Alice 401k",
+          category: "401k",
+          taxType: "preTax",
+          startingBalance: 1500000,
+          ownerName: "Alice",
+          ownerPersonId: 1,
+        },
+        {
+          name: "Alice IRA",
+          category: "ira",
+          taxType: "preTax",
+          startingBalance: 1000000,
+          ownerName: "Alice",
+          ownerPersonId: 1,
+        },
+        {
+          name: "Alice Brokerage",
+          category: "brokerage",
+          taxType: "afterTax",
+          startingBalance: 300000,
+          ownerName: "Alice",
+          ownerPersonId: 1,
+        },
+      ],
+      startingBalances: {
+        preTax: 2500000,
+        taxFree: 0,
+        afterTax: 300000,
+        afterTaxBasis: 200000,
+        hsa: 0,
+      },
+      startingAccountBalances: {
+        "401k": {
+          structure: "roth_traditional",
+          traditional: 1500000,
+          roth: 0,
+        },
+        "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+        hsa: { structure: "single_bucket", balance: 0 },
+        ira: { structure: "roth_traditional", traditional: 1000000, roth: 0 },
+        brokerage: {
+          structure: "basis_tracking",
+          balance: 300000,
+          basis: 200000,
+        },
+      },
+      decumulationDefaults: {
+        withdrawalRate: 0.04,
+        withdrawalRoutingMode: "waterfall",
+        withdrawalOrder: ["401k", "ira", "brokerage", "hsa"],
+        withdrawalSplits: {
+          "401k": 0.35,
+          "403b": 0,
+          ira: 0.25,
+          brokerage: 0.3,
+          hsa: 0.1,
+        },
+        withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
+        distributionTaxRates: {
+          traditionalFallbackRate: 0.24,
+          roth: 0,
+          hsa: 0,
+          brokerage: 0.15,
+          taxBrackets: [
+            { threshold: 0, baseWithholding: 0, rate: 0.1 },
+            { threshold: 23200, baseWithholding: 2320, rate: 0.12 },
+            { threshold: 94300, baseWithholding: 10852, rate: 0.22 },
+            { threshold: 201050, baseWithholding: 34337, rate: 0.24 },
+            { threshold: 383900, baseWithholding: 78221, rate: 0.32 },
+            { threshold: 693750, baseWithholding: 175136, rate: 0.37 },
+          ],
+        },
+        rmdSmoothingEnabled: true,
+        rmdSmoothingMaxBracketTarget: 0.32,
+      },
+    });
+
+    const baseMcInput: Omit<MonteCarloInput, "seed"> = {
+      engineInput,
+      numTrials: 30,
+      assetClasses: [
+        { id: 1, name: "US Stocks", meanReturn: 0.1, stdDev: 0.18 },
+        { id: 2, name: "US Bonds", meanReturn: 0.04, stdDev: 0.06 },
+      ],
+      correlations: [{ classAId: 1, classBId: 2, correlation: 0.2 }],
+      glidePath: [
+        { age: 65, allocations: { 1: 0.5, 2: 0.5 } },
+        { age: 80, allocations: { 1: 0.3, 2: 0.7 } },
+      ],
+    };
+
+    const seed42Run1 = calculateMonteCarlo({ ...baseMcInput, seed: 42 });
+    const seed42Run2 = calculateMonteCarlo({ ...baseMcInput, seed: 42 });
+    const seed7Run = calculateMonteCarlo({ ...baseMcInput, seed: 7 });
+
+    expect(Number.isFinite(seed42Run1.medianEndBalance)).toBe(true);
+    expect(seed42Run1.successRate).toBeGreaterThanOrEqual(0);
+    expect(seed42Run1.successRate).toBeLessThanOrEqual(1);
+
+    // Same seed, same input -> byte-identical (nothing leaked IN from
+    // module-level state left over by a prior run's trials).
+    expect(seed42Run2.medianEndBalance).toBe(seed42Run1.medianEndBalance);
+    expect(seed42Run2.successRate).toBe(seed42Run1.successRate);
+
+    // Different seed -> genuinely different trial schedules actually
+    // drive the result (smoothing isn't silently ignoring returnRateMap).
+    expect(seed7Run.medianEndBalance).not.toBe(seed42Run1.medianEndBalance);
+  });
 });

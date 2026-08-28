@@ -1337,6 +1337,26 @@ export const retirementSettings = sqliteTable(
     qcdMaximize: integer("qcd_maximize", { mode: "boolean" })
       .notNull()
       .default(false),
+    /** R47: proactively size Roth conversions to shrink a FUTURE RMD
+     *  toward projected spending need, not just fill this year's bracket
+     *  room opportunistically — default false, byte-identical for every
+     *  existing household until explicitly turned on (converting more
+     *  Traditional-to-Roth earlier is a real pay-tax-now-vs-later
+     *  tradeoff). Per-person, requires individual-account tracking — see
+     *  PLAN-r47-rmd-aware-roth-smoothing.md. */
+    rmdSmoothingEnabled: integer("rmd_smoothing_enabled", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    /** R47: how far smoothing may raise the EFFECTIVE conversion target
+     *  rate above the household's own `rothBracketTarget`/
+     *  `rothConversionTarget` when it needs more room than those provide
+     *  — can only RAISE the effective ceiling, never lower it (a
+     *  household's existing, separately-configured target always wins if
+     *  it's already higher). Null = not yet set; UI should seed a new
+     *  household's default from their current `rothBracketTarget`, not a
+     *  hardcoded value, so opting into smoothing can never look like it
+     *  silently lowered an existing target. */
+    rmdSmoothingMaxBracketTarget: text("rmd_smoothing_max_bracket_target"),
     /** Enable IRMAA awareness — constrain Roth conversions/withdrawals near Medicare surcharge cliffs (65+). */
     enableIrmaaAwareness: integer("enable_irmaa_awareness", { mode: "boolean" })
       .notNull()

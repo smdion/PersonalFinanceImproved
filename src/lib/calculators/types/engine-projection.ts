@@ -430,6 +430,14 @@ export type EngineDecumulationYear = {
    *  floor regardless of what the strategy needed, with no prior UI
    *  trace. */
   rmdExcessAmount: number;
+  /** R47: portion of this year's combined household RMD-smoothing target
+   *  (see `rmd-smoothing.ts`) that did NOT end up converted — undefined
+   *  when smoothing is off or had nothing to convert, 0 in the common
+   *  case when smoothing is on and fully achieved. A real, expected
+   *  shortfall (elevated ceiling, IRMAA-cliff cap, or available balance
+   *  still wasn't enough), not silently dropped. See
+   *  `RothConversionResult.rmdSmoothingShortfall` docblock. */
+  rmdSmoothingShortfall?: number;
   /** R46 Phase 2: total Qualified Charitable Distribution amount applied
    *  this year (0 unless `qcdMaximize` is on and this household has a
    *  QCD-eligible RMD). Satisfies that much of `rmdAmount` directly,

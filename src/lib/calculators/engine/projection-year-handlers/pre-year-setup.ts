@@ -6,11 +6,11 @@
  * Extracted from the old single-file `projection-year-handlers.ts` in the
  * v0.5.2 refactor. Pure relocation — no logic changes.
  */
-import { MIN_RETURN_RATE } from "../../../constants";
 import { ageInYear } from "../../../utils/date";
 import { WITHDRAWAL_STRATEGY_CONFIG } from "@/lib/config/withdrawal-strategies";
 import { applySpendingStrategy } from "../spending-strategy";
 import { buildSpecToAccountMapping } from "../individual-account-tracking";
+import { resolveReturnRateForAge } from "../growth-application";
 import type {
   PreYearSetup,
   ProjectionContext,
@@ -66,22 +66,10 @@ export function runPreYearSetup(
       age === input.retirementAge &&
       ctx.firstYearFraction < 1);
 
-  // Get return rate for this age (fall back to last available)
-  let returnRate = returnRateMap.get(age);
-  if (returnRate === undefined) {
-    // Use closest available rate
-    let closestAge = 0;
-    returnRateMap.forEach((_rate, rateAge) => {
-      if (rateAge <= age) closestAge = rateAge;
-    });
-    returnRate = returnRateMap.get(closestAge);
-    if (returnRate === undefined) {
-      throw new Error(
-        `No return rate configured for age ${age}. Add return rates in retirement settings.`,
-      );
-    }
-  }
-  returnRate = Math.max(MIN_RETURN_RATE, returnRate);
+  // Get return rate for this age (fall back to closest configured age at
+  // or below it, floored at MIN_RETURN_RATE) -- shared with R47's
+  // RMD-smoothing forward projection via resolveReturnRateForAge.
+  const returnRate = resolveReturnRateForAge(returnRateMap, age);
 
   // Check for contribution profile switch at this year (sticky-forward).
   // If multiple switches share the same year, last one wins (sorted ascending).

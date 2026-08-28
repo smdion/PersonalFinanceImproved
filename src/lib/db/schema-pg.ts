@@ -1516,6 +1516,29 @@ export const retirementSettings = pgTable(
      *  PLAN-rmd-excess-handling.md for the approximation this uses).
      *  Excludes that portion of RMD from taxable income entirely. */
     qcdMaximize: boolean("qcd_maximize").notNull().default(false),
+    /** R47: proactively size Roth conversions to shrink a FUTURE RMD
+     *  toward projected spending need, not just fill this year's bracket
+     *  room opportunistically — default false, byte-identical for every
+     *  existing household until explicitly turned on (converting more
+     *  Traditional-to-Roth earlier is a real pay-tax-now-vs-later
+     *  tradeoff). Per-person, requires individual-account tracking — see
+     *  PLAN-r47-rmd-aware-roth-smoothing.md. */
+    rmdSmoothingEnabled: boolean("rmd_smoothing_enabled")
+      .notNull()
+      .default(false),
+    /** R47: how far smoothing may raise the EFFECTIVE conversion target
+     *  rate above the household's own `rothBracketTarget`/
+     *  `rothConversionTarget` when it needs more room than those provide
+     *  — can only RAISE the effective ceiling, never lower it (a
+     *  household's existing, separately-configured target always wins if
+     *  it's already higher). Null = not yet set; UI should seed a new
+     *  household's default from their current `rothBracketTarget`, not a
+     *  hardcoded value, so opting into smoothing can never look like it
+     *  silently lowered an existing target. */
+    rmdSmoothingMaxBracketTarget: decimal("rmd_smoothing_max_bracket_target", {
+      precision: 8,
+      scale: 6,
+    }),
     /** Enable IRMAA awareness — constrain Roth conversions/withdrawals near Medicare surcharge cliffs (65+). */
     enableIrmaaAwareness: boolean("enable_irmaa_awareness")
       .notNull()

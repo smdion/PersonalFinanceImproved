@@ -441,6 +441,33 @@ export type DecumulationDefaults = {
    * (no behavior change for a household that never opts in).
    */
   qcdMaximize?: boolean;
+
+  /**
+   * R47: proactively size Roth conversions to shrink a FUTURE RMD toward
+   * projected spending need, not just fill this year's bracket room
+   * opportunistically. Per-person forward projection nets out both
+   * growth and estimated future Traditional withdrawal (see
+   * `rmd-smoothing.ts` and `PLAN-r47-rmd-aware-roth-smoothing.md`) —
+   * never pushes a conversion above the household's own
+   * `rothBracketTarget` ceiling. Only takes effect when individual
+   * accounts are tracked (`hasIndividualAccounts`) — RMD smoothing is
+   * inherently per-person. Default `false` (no behavior change for a
+   * household that never opts in).
+   */
+  rmdSmoothingEnabled?: boolean;
+
+  /**
+   * R47: how far smoothing may raise the EFFECTIVE conversion target rate
+   * above `rothBracketTarget`/`rothConversionTarget` when it needs more
+   * room than those provide — can only RAISE the effective ceiling, never
+   * lower a value the household already configured through those other
+   * fields. `undefined`/unset resolves to a moderate default (see
+   * `override-resolution.ts`) only for households that have opted into
+   * `rmdSmoothingEnabled` without setting this — the UI should seed a new
+   * household's default from their current `rothBracketTarget` at the
+   * point they turn smoothing on, not rely on this fallback silently.
+   */
+  rmdSmoothingMaxBracketTarget?: number;
 };
 
 /**
@@ -550,6 +577,13 @@ export type ResolvedDecumulationConfig = {
   /** See DecumulationDefaults.qcdMaximize. Always resolved (never
    *  undefined) — defaults to `false`. */
   qcdMaximize: boolean;
+  /** See DecumulationDefaults.rmdSmoothingEnabled. Always resolved (never
+   *  undefined) — defaults to `false`. */
+  rmdSmoothingEnabled: boolean;
+  /** See DecumulationDefaults.rmdSmoothingMaxBracketTarget. Always
+   *  resolved (never undefined) — defaults to
+   *  `RMD_SMOOTHING_MAX_BRACKET_TARGET_FALLBACK`. */
+  rmdSmoothingMaxBracketTarget: number;
 };
 
 /**

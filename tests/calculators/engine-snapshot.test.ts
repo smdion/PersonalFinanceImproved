@@ -3687,6 +3687,183 @@ describe("engine snapshot parity", () => {
     expect(metrics.finalYear?.endBalance).toBeLessThan(6893089.39); // vs. fixture 66's "reinvest"
     expect(metrics).toMatchSnapshot();
   });
+
+  // R47: RMD smoothing fixtures. Both share one household shape (a single
+  // large pre-tax balance, well past the point where the projected future
+  // RMD would exceed spending need — same scale as rmd-smoothing.test.ts's
+  // "produces a positive target" case) so the only variable is
+  // rmdSmoothingEnabled itself. Neither sets enableRothConversions,
+  // proving smoothing is a fully self-contained activation path (see
+  // rmd-handling.tsx's docblock / PLAN-r47-rmd-aware-roth-smoothing.md).
+  const r47HouseholdInput = (rmdSmoothingEnabled: boolean) =>
+    makeInput({
+      currentAge: 65,
+      retirementAge: 65,
+      projectionEndAge: 80,
+      birthYear: 1960,
+      currentSalary: 0,
+      annualExpenses: 90000,
+      socialSecurityAnnual: 24000,
+      ssStartAge: 67,
+      socialSecurityEntries: [
+        {
+          personId: 1,
+          personName: "Alice",
+          birthYear: 1960,
+          startAge: 67,
+          annualAmount: 24000,
+        },
+      ],
+      individualAccounts: [
+        {
+          name: "Alice 401k",
+          category: "401k",
+          taxType: "preTax",
+          startingBalance: 1500000,
+          ownerName: "Alice",
+          ownerPersonId: 1,
+        },
+        {
+          name: "Alice IRA",
+          category: "ira",
+          taxType: "preTax",
+          startingBalance: 1000000,
+          ownerName: "Alice",
+          ownerPersonId: 1,
+        },
+        {
+          name: "Alice Brokerage",
+          category: "brokerage",
+          taxType: "afterTax",
+          startingBalance: 300000,
+          ownerName: "Alice",
+          ownerPersonId: 1,
+        },
+      ],
+      startingBalances: {
+        preTax: 2500000,
+        taxFree: 0,
+        afterTax: 300000,
+        afterTaxBasis: 200000,
+        hsa: 0,
+      },
+      startingAccountBalances: {
+        "401k": {
+          structure: "roth_traditional",
+          traditional: 1500000,
+          roth: 0,
+        },
+        "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+        hsa: { structure: "single_bucket", balance: 0 },
+        ira: {
+          structure: "roth_traditional",
+          traditional: 1000000,
+          roth: 0,
+        },
+        brokerage: {
+          structure: "basis_tracking",
+          balance: 300000,
+          basis: 200000,
+        },
+      },
+      decumulationDefaults: {
+        withdrawalRate: 0.04,
+        withdrawalRoutingMode: "waterfall",
+        // Traditional-first (not brokerage-first, unlike most other
+        // fixtures in this file) -- deliberately so this household draws
+        // down Traditional from year one, matching the "actively drawing
+        // down Traditional pre-RMD" population R47 targets, and so the
+        // brokerage balance survives to fund conversion tax costs instead
+        // of being exhausted covering ordinary spending first.
+        withdrawalOrder: ["401k", "ira", "brokerage", "hsa"],
+        withdrawalSplits: {
+          "401k": 0.35,
+          "403b": 0,
+          ira: 0.25,
+          brokerage: 0.3,
+          hsa: 0.1,
+        },
+        withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
+        withdrawalStrategy: "guyton_klinger",
+        strategyParams: {
+          guyton_klinger: {
+            upperGuardrail: 0.8,
+            lowerGuardrail: 1.2,
+            increasePercent: 0.1,
+            decreasePercent: 0.1,
+            skipInflationAfterLoss: true,
+          },
+        },
+        distributionTaxRates: {
+          traditionalFallbackRate: 0.24,
+          roth: 0,
+          hsa: 0,
+          brokerage: 0.15,
+          taxBrackets: [
+            { threshold: 0, baseWithholding: 0, rate: 0.1 },
+            { threshold: 23200, baseWithholding: 2320, rate: 0.12 },
+            { threshold: 94300, baseWithholding: 10852, rate: 0.22 },
+            { threshold: 201050, baseWithholding: 34337, rate: 0.24 },
+            { threshold: 383900, baseWithholding: 78221, rate: 0.32 },
+            { threshold: 693750, baseWithholding: 175136, rate: 0.37 },
+          ],
+        },
+        rmdSmoothingEnabled,
+        rmdSmoothingMaxBracketTarget: 0.32,
+      },
+    });
+
+  it("fixture 68: rmdSmoothingEnabled converts pre-RMD without enableRothConversions set (self-contained toggle)", () => {
+    const result = calculateProjection(r47HouseholdInput(true));
+    const decYears = result.projectionByYear.filter(
+      (y): y is Extract<typeof y, { phase: "decumulation" }> =>
+        y.phase === "decumulation",
+    );
+    // Pre-RMD years (birthYear 1960 -> RMD starts at 75, SECURE 2.0) should
+    // show real conversions even though
+    // enableRothConversions was never set -- rmdSmoothingEnabled alone is
+    // sufficient, same self-contained pattern as R46's qcdMaximize/
+    // rmdExcessHandling.
+    const preRmdYears = decYears.filter((y) => y.age < 75);
+    expect(preRmdYears.length).toBeGreaterThan(0);
+    expect(preRmdYears.some((y) => (y.rothConversionAmount ?? 0) > 0)).toBe(
+      true,
+    );
+    const metrics = extractMetrics(result);
+    expect(metrics).toMatchSnapshot();
+  });
+
+  it("fixture 69: same household with rmdSmoothingEnabled=false — no pre-RMD conversions, and a measurably LARGER RMD at age 75 than fixture 68", () => {
+    const smoothedResult = calculateProjection(r47HouseholdInput(true));
+    const unsmoothedResult = calculateProjection(r47HouseholdInput(false));
+    const smoothedDecYears = smoothedResult.projectionByYear.filter(
+      (y): y is Extract<typeof y, { phase: "decumulation" }> =>
+        y.phase === "decumulation",
+    );
+    const unsmoothedDecYears = unsmoothedResult.projectionByYear.filter(
+      (y): y is Extract<typeof y, { phase: "decumulation" }> =>
+        y.phase === "decumulation",
+    );
+    // Control: no conversions at all pre-RMD without the toggle.
+    const unsmoothedPreRmdYears = unsmoothedDecYears.filter((y) => y.age < 75);
+    expect(
+      unsmoothedPreRmdYears.every((y) => (y.rothConversionAmount ?? 0) === 0),
+    ).toBe(true);
+    // The claim R47 exists to prove: shrinking the pre-RMD Traditional
+    // balance via smoothing produces a measurably SMALLER forced RMD at
+    // age 75 than the same household that never smoothed.
+    const smoothedRmdAt75 = smoothedDecYears.find(
+      (y) => y.age === 75,
+    )?.rmdAmount;
+    const unsmoothedRmdAt75 = unsmoothedDecYears.find(
+      (y) => y.age === 75,
+    )?.rmdAmount;
+    expect(smoothedRmdAt75).toBeGreaterThan(0);
+    expect(unsmoothedRmdAt75).toBeGreaterThan(0);
+    expect(smoothedRmdAt75!).toBeLessThan(unsmoothedRmdAt75!);
+    const metrics = extractMetrics(unsmoothedResult);
+    expect(metrics).toMatchSnapshot();
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────

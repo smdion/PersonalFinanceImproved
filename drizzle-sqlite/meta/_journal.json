@@ -211,6 +211,20 @@
       "when": 1787884590618,
       "tag": "0029_stale_richard_fisk",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "6",
+      "when": 1787924176756,
+      "tag": "0030_hesitant_micromacro",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "6",
+      "when": 1787924913271,
+      "tag": "0031_mighty_energizer",
+      "breakpoints": true
     }
   ]
 }

@@ -273,6 +273,24 @@ export const MAX_BROKERAGE_RAMP_YEARS = 40;
 export const QCD_ANNUAL_CAP_PER_PERSON = 105000;
 
 // ---------------------------------------------------------------------------
+// RMD-aware Roth conversion smoothing (R47)
+// ---------------------------------------------------------------------------
+
+/** Fallback ceiling for how far RMD smoothing may elevate a household's
+ *  effective Roth-conversion target rate above their own
+ *  `rothBracketTarget`/`rothConversionTarget`, used only when a household
+ *  has `rmdSmoothingEnabled` on but never explicitly set
+ *  `rmdSmoothingMaxBracketTarget` — the UI's own default for a NEWLY
+ *  enabled household should seed from that household's current
+ *  `rothBracketTarget` instead of relying on this constant, so opting in
+ *  never visibly changes a rate the household already chose. This is a
+ *  last-resort backstop (e.g. for direct API/engine-input use bypassing
+ *  the UI), not the primary default path. 24% keeps the backstop below
+ *  the two highest ordinary brackets, matching the same "moderate, not
+ *  the top bracket" intent as the schema/UI default. */
+export const RMD_SMOOTHING_MAX_BRACKET_TARGET_FALLBACK = 0.24;
+
+// ---------------------------------------------------------------------------
 // Analytics
 // ---------------------------------------------------------------------------
 

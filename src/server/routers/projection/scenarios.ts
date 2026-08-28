@@ -447,6 +447,8 @@ export const scenariosRouter = createTRPCRouter({
           rmdMultiplier: settings.rmdMultiplier,
           rmdExcessHandling: settings.rmdExcessHandling,
           qcdMaximize: settings.qcdMaximize,
+          rmdSmoothingEnabled: settings.rmdSmoothingEnabled,
+          rmdSmoothingMaxBracketTarget: settings.rmdSmoothingMaxBracketTarget,
           socialSecurityMonthly: settings.socialSecurityMonthly,
           ssStartAge: settings.ssStartAge,
           enableIrmaaAwareness: settings.enableIrmaaAwareness,

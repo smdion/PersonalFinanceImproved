@@ -20,6 +20,7 @@ import {
   addTraditional,
 } from "../../../config/account-types";
 import { computeQcdAmounts, totalQcdAmount } from "../qcd";
+import { computeRmdSmoothingTargets } from "../rmd-smoothing";
 import { MAX_BROKERAGE_RAMP_YEARS } from "../../../constants";
 import { cloneAccountBalances } from "../balance-utils";
 import { getLtcgRate, computeLtcgTax } from "../../../config/tax-tables";
@@ -623,6 +624,50 @@ export function runDecumulationYear(
   // Track per-account depletions -- extracted to balance-deduction.ts
   trackDepletions(acctBal, depletionTracked, accountDepletions, year, age);
 
+  // --- R47: RMD-aware Roth conversion smoothing ---
+  // Computed fresh every year (adaptive, not a one-time plan) from each
+  // person's CURRENT Traditional balance (post this year's withdrawal/
+  // RMD/QCD, via indBal -- more accurate than the stale
+  // priorYearEndTradByPerson snapshot). See rmd-smoothing.ts and
+  // .scratch/docs/plans/PLAN-r47-rmd-aware-roth-smoothing.md. Requires
+  // individual-account tracking -- entirely per-person by design, same
+  // precondition R46/R49's per-person RMD/QCD already have.
+  let rmdSmoothingTarget: number | undefined;
+  if (
+    config.rmdSmoothingEnabled &&
+    hasIndividualAccounts &&
+    rmdStartAgeByPerson.size > 0
+  ) {
+    const smoothingPeople = Array.from(rmdStartAgeByPerson.entries()).map(
+      ([personId, { startAge, birthYear }]) => {
+        const personTraditionalBalance = indAccts
+          .filter(
+            (ia) => ia.ownerPersonId === personId && isPreTaxType(ia.taxType),
+          )
+          .reduce((s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0), 0);
+        return {
+          personId,
+          currentAge: ageInYear(birthYear, year),
+          rmdStartAge: startAge,
+          personTraditionalBalance,
+        };
+      },
+    );
+    const smoothingResult = computeRmdSmoothingTargets({
+      enabled: true,
+      people: smoothingPeople,
+      householdTraditionalBalance: balances.preTax,
+      returnRateMap: ctx.returnRateMap,
+      totalTraditionalWithdrawal,
+      totalWithdrawal,
+      currentProjectedAnnualSpendingNeed: state.projectedExpenses,
+      postRetirementInflationRate: ctx.validatedPostRetirementInflation,
+    });
+    if (smoothingResult.householdSmoothingTarget > 0) {
+      rmdSmoothingTarget = smoothingResult.householdSmoothingTarget;
+    }
+  }
+
   // --- Roth Conversions (Phase 4) ---
   // Extracted to post-withdrawal-optimizer.ts -- Roth conversion + IRMAA + ACA chain.
   const rothResult = performRothConversion({
@@ -649,8 +694,11 @@ export function runDecumulationYear(
     indAccts: hasIndividualAccounts ? indAccts : undefined,
     indBal: hasIndividualAccounts ? indBal : undefined,
     indKey: hasIndividualAccounts ? indKey : undefined,
+    rmdSmoothingTarget,
+    rmdSmoothingMaxBracketTarget: config.rmdSmoothingMaxBracketTarget,
   });
-  const { rothConversionAmount, rothConversionTaxCost } = rothResult;
+  const { rothConversionAmount, rothConversionTaxCost, rmdSmoothingShortfall } =
+    rothResult;
 
   // Recompute LTCG tax including Roth conversion income (#37).
   // Roth conversions are taxed as ordinary income and push total taxable income
@@ -993,6 +1041,7 @@ export function runDecumulationYear(
     rmdOverrodeRouting,
     rmdShortfallAmount,
     rmdExcessAmount,
+    rmdSmoothingShortfall,
     qcdAmount: totalQcd,
     qcdByPerson: qcdByPerson.length > 0 ? qcdByPerson : undefined,
     taxableSS,

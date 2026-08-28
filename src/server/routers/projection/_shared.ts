@@ -198,6 +198,8 @@ export function buildDecumulationDefaults(
     withdrawalStrategy: string | null;
     rmdExcessHandling?: string | null;
     qcdMaximize?: boolean | null;
+    rmdSmoothingEnabled?: boolean | null;
+    rmdSmoothingMaxBracketTarget?: string | null;
   },
   clientDefaults: {
     withdrawalRoutingMode: string;
@@ -226,6 +228,10 @@ export function buildDecumulationDefaults(
     rmdExcessHandling:
       settings.rmdExcessHandling === "spend" ? "spend" : "reinvest",
     qcdMaximize: settings.qcdMaximize ?? false,
+    rmdSmoothingEnabled: settings.rmdSmoothingEnabled ?? false,
+    rmdSmoothingMaxBracketTarget: settings.rmdSmoothingMaxBracketTarget
+      ? toNumber(settings.rmdSmoothingMaxBracketTarget)
+      : undefined,
   };
 }
 

@@ -82,11 +82,36 @@ export interface RothConversionInput {
   indAccts?: IndividualAccountInput[];
   indBal?: Map<string, number>;
   indKey?: IndKeyFn;
+  /** R47: this year's combined household RMD-smoothing minimum (sum of
+   *  every person's own target — see `rmd-smoothing.ts`'s
+   *  `computeRmdSmoothingTargets`), 0/undefined when smoothing is off or
+   *  has nothing to convert this year. When present and positive, this
+   *  function proceeds even if `enableRothConversions` is off (smoothing
+   *  is a self-contained toggle), and the effective conversion target
+   *  rate may be ELEVATED (never lowered) up to
+   *  `rmdSmoothingMaxBracketTarget` if the household's own
+   *  `rothBracketTarget`/`rothConversionTarget` doesn't provide enough
+   *  room. `rothConversionTarget === 0` (an explicit "never convert"
+   *  opt-out) still wins regardless — see
+   *  `.scratch/docs/plans/PLAN-r47-rmd-aware-roth-smoothing.md` Part 2. */
+  rmdSmoothingTarget?: number;
+  /** R47: ceiling on how far smoothing may elevate the effective target
+   *  rate — see `rmdSmoothingTarget`'s docblock. Always resolved by the
+   *  caller (never undefined when `rmdSmoothingTarget` is supplied) —
+   *  `ResolvedDecumulationConfig.rmdSmoothingMaxBracketTarget` is never
+   *  itself undefined. */
+  rmdSmoothingMaxBracketTarget?: number;
 }
 
 export interface RothConversionResult {
   rothConversionAmount: number;
   rothConversionTaxCost: number;
+  /** R47: portion of `rmdSmoothingTarget` that did NOT end up converted
+   *  this year (0 in the common case) — a real, expected shortfall when
+   *  even the elevated ceiling, IRMAA-cliff cap, or available balance
+   *  isn't enough to hit the target, not silently dropped. Only ever
+   *  set when `rmdSmoothingTarget` was supplied and positive. */
+  rmdSmoothingShortfall?: number;
 }
 
 export interface IrmaaInput {
@@ -154,6 +179,8 @@ export function performRothConversion(
     indAccts,
     indBal,
     indKey,
+    rmdSmoothingTarget,
+    rmdSmoothingMaxBracketTarget,
   } = input;
   const hasIndTracking =
     nonRetirement != null &&
@@ -164,36 +191,87 @@ export function performRothConversion(
   // the tax-payment capacity gate and the later per-account debit loop can
   // use it without duplicating the search.
   const overflowCat = getAllCategories().find((c) => isOverflowTarget(c));
+  // R47: smoothing is a self-contained reason to proceed -- it must not
+  // require the household to separately flip the unrelated
+  // enableRothConversions toggle (same "own complete toggle" pattern
+  // rmdExcessHandling/qcdMaximize already use). `zero()` below carries
+  // rmdSmoothingShortfall on every early-return path when smoothing was
+  // active, so a shortfall is never silently dropped just because some
+  // OTHER gate (no tax brackets, no Traditional balance, an explicit
+  // opt-out) stopped the conversion before smoothing's own logic ran.
+  const smoothingActive = (rmdSmoothingTarget ?? 0) > 0;
+  const zero = (): RothConversionResult => ({
+    rothConversionAmount: 0,
+    rothConversionTaxCost: 0,
+    ...(smoothingActive ? { rmdSmoothingShortfall: rmdSmoothingTarget } : {}),
+  });
 
   if (
-    !enableRothConversions ||
+    (!enableRothConversions && !smoothingActive) ||
     !taxBrackets ||
     taxBrackets.length === 0 ||
     balances.preTax <= 0
   ) {
-    return { rothConversionAmount: 0, rothConversionTaxCost: 0 };
+    return zero();
   }
 
-  // Override can disable conversions with target=0
+  // Override can disable conversions with target=0 -- an EXPLICIT
+  // household opt-out, stronger and more deliberate than the default-off
+  // enableRothConversions toggle. Smoothing must not silently override
+  // this even when active (R47 Part 2).
   const configTarget = input.rothConversionTarget;
   if (configTarget === 0) {
-    return { rothConversionAmount: 0, rothConversionTaxCost: 0 };
+    return zero();
   }
 
-  const conversionTarget = configTarget ?? input.rothBracketTarget;
+  // Total taxable income this year (Traditional withdrawals + taxable SS)
+  // -- needed before target resolution now, since smoothing's elevated
+  // target (if any) is sized against it.
+  const yearTaxableIncome = totalTraditionalWithdrawal + taxableSS;
+
+  let conversionTarget = configTarget ?? input.rothBracketTarget;
+  if (smoothingActive) {
+    // R47 Part 2: find the MINIMUM marginal rate whose cap accommodates
+    // this year's income plus the smoothing target, by reusing the
+    // already-tested incomeCapForMarginalRate over each bracket's own
+    // rate (ascending, ordinary array order) -- not a new reverse
+    // bracket-walk, which would carry real off-by-one risk at a value
+    // landing exactly on a threshold. The top bracket's cap is always
+    // Infinity, so this always finds SOME rate -- "no bracket
+    // accommodates it" is not a real failure mode here.
+    const neededIncome = yearTaxableIncome + rmdSmoothingTarget!;
+    let minimumRateNeeded: number | undefined;
+    for (const b of taxBrackets) {
+      if (incomeCapForMarginalRate(b.rate, taxBrackets) >= neededIncome) {
+        minimumRateNeeded = b.rate;
+        break;
+      }
+    }
+    if (minimumRateNeeded != null) {
+      // Can only RAISE the effective ceiling above whatever the household
+      // already configured, never lower it -- a household already above
+      // rmdSmoothingMaxBracketTarget keeps their own higher target.
+      const effectiveCeiling = Math.max(
+        conversionTarget ?? -Infinity,
+        rmdSmoothingMaxBracketTarget ?? -Infinity,
+      );
+      conversionTarget = Math.min(
+        Math.max(conversionTarget ?? -Infinity, minimumRateNeeded),
+        effectiveCeiling,
+      );
+    }
+  }
   if (conversionTarget == null) {
-    return { rothConversionAmount: 0, rothConversionTaxCost: 0 };
+    return zero();
   }
 
   const bracketCap = incomeCapForMarginalRate(conversionTarget, taxBrackets);
-  // Total taxable income this year (Traditional withdrawals + taxable SS)
-  const yearTaxableIncome = totalTraditionalWithdrawal + taxableSS;
   const conversionRoom = roundToCents(
     Math.max(0, bracketCap - yearTaxableIncome),
   );
 
   if (conversionRoom <= 0) {
-    return { rothConversionAmount: 0, rothConversionTaxCost: 0 };
+    return zero();
   }
 
   // Cap at available Traditional balance -- Retirement-only when R49
@@ -231,7 +309,7 @@ export function performRothConversion(
   }
 
   if (conversion <= 0) {
-    return { rothConversionAmount: 0, rothConversionTaxCost: 0 };
+    return zero();
   }
 
   // Compute incremental tax cost of the conversion:
@@ -270,7 +348,7 @@ export function performRothConversion(
       : balances.afterTax;
   if (retirementOnlyAfterTax < taxCostOfConversion) {
     // If brokerage can't cover tax, skip conversion (don't sell Traditional to pay tax on itself)
-    return { rothConversionAmount: 0, rothConversionTaxCost: 0 };
+    return zero();
   }
 
   // Move balance: Traditional → Roth
@@ -433,6 +511,13 @@ export function performRothConversion(
   return {
     rothConversionAmount: conversion,
     rothConversionTaxCost: taxCostOfConversion,
+    ...(smoothingActive
+      ? {
+          rmdSmoothingShortfall: roundToCents(
+            Math.max(0, rmdSmoothingTarget! - conversion),
+          ),
+        }
+      : {}),
   };
 }
 
