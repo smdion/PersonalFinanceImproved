@@ -190,6 +190,11 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
       datum._ssIncome = yr.ssIncome;
       datum._rmdAmount = yr.rmdAmount;
       datum._totalWithdrawal = yr.totalWithdrawal;
+      // R46 Phase 1: RMD-forced excess reinvested into brokerage — unlike
+      // `_rmdStart` (which only flags the single year RMDs begin), this can
+      // be nonzero in ANY decumulation year, so it's shown on hover
+      // whenever it happens, not just at the milestone.
+      datum._rmdExcessReinvested = yr.rmdExcessReinvested ?? 0;
       // Guardrail event (R45 Step 5 follow-up) — the ReferenceLine markers
       // added a visual "▲ raise" flag on the chart but the hover tooltip
       // never carried the underlying detail, so hovering that exact year
@@ -403,7 +408,8 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                     {(Number(d._ssStart) === 1 ||
                       Number(d._rmdStart) === 1 ||
                       Number(d._ssIncome) > 0 ||
-                      Number(d._rmdAmount) > 0) && (
+                      Number(d._rmdAmount) > 0 ||
+                      Number(d._rmdExcessReinvested) > 0) && (
                       <div className="border-t mt-1 pt-1 space-y-0.5">
                         {Number(d._ssStart) === 1 && (
                           <div className="flex justify-between gap-4 text-teal-400 font-medium">
@@ -439,6 +445,20 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                               </span>
                             </div>
                           )}
+                        {/* R46 Phase 1: RMD-forced excess reinvested into
+                            brokerage — real money forced out by the RMD
+                            floor beyond what the strategy needed, with no
+                            prior UI trace anywhere. Can recur every year
+                            once RMDs start, unlike the one-time "RMDs
+                            begin" milestone above. */}
+                        {Number(d._rmdExcessReinvested) > 0 && (
+                          <div className="flex justify-between gap-4 text-amber-400/70 text-caption">
+                            <span>RMD excess reinvested</span>
+                            <span className="tabular-nums">
+                              +{formatCurrency(Number(d._rmdExcessReinvested))}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     )}
                     {/* Strategy event detail — same data the chart's

@@ -91,8 +91,15 @@ function Section({
 
 export function ReportAssumptionsSummary({
   settings,
+  rmdExcessYears = 0,
 }: {
   settings: ReportEngineSettings | undefined;
+  /** R46 Phase 1: count of years in this projection where RMD forced more
+   *  out of Traditional than the strategy needed, with the excess
+   *  reinvested into brokerage — a plan-level fact worth disclosing in
+   *  summary even though per-year detail belongs on the live page, not a
+   *  printed report. 0 = don't show the note. */
+  rmdExcessYears?: number;
 }) {
   if (!settings) return null;
   const strategyKey = settings.withdrawalStrategy as
@@ -246,6 +253,16 @@ export function ReportAssumptionsSummary({
             <Row label="ACA subsidy awareness" value="Enabled" />
           )}
         </Section>
+      )}
+
+      {rmdExcessYears > 0 && (
+        <p className="text-xs text-faint mt-2">
+          Note: {rmdExcessYears} year{rmdExcessYears === 1 ? "" : "s"} in this
+          projection {rmdExcessYears === 1 ? "has" : "have"} Required Minimum
+          Distributions exceeding this plan&apos;s stated spending need — the
+          excess is reinvested into a taxable brokerage account. See the
+          Retirement page for year-by-year detail.
+        </p>
       )}
     </div>
   );

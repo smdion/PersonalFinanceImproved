@@ -458,7 +458,12 @@ export function runDecumulationYear(
 
   // Reinvest RMD excess into brokerage (#39) -- extracted to balance-deduction.ts
   const shouldReinvestRmdExcess = input.reinvestRmdExcess !== false; // default: true
-  reinvestRmdExcess(
+  // R46 Phase 1: capture the excess amount (previously discarded) so it can
+  // be surfaced in the UI — this money is real, forced out of Traditional
+  // by the RMD floor regardless of what the strategy needed, and reinvested
+  // right back into brokerage with zero trace anywhere a household could
+  // see it happened.
+  const rmdExcessReinvested = reinvestRmdExcess(
     shouldReinvestRmdExcess,
     rmdOverrodeRouting,
     totalWithdrawal,
@@ -835,6 +840,7 @@ export function runDecumulationYear(
     rmdAmount,
     rmdByPerson,
     rmdOverrodeRouting,
+    rmdExcessReinvested,
     taxableSS,
     ltcgRate: postConversionLtcgRate,
     rothConversionAmount,

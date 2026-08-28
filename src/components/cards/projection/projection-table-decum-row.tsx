@@ -358,10 +358,28 @@ export function DecumulationRow({
                         color: "emerald",
                       });
                     }
+                    // R46 Phase 1: RMD-forced excess (beyond stated spending
+                    // need) reinvested into this account this year — real
+                    // money, forced out of Traditional by the RMD floor
+                    // regardless of what the strategy needed, previously
+                    // invisible anywhere in the UI. Only ever lands in the
+                    // overflow-target category (brokerage).
+                    const rmdExcess = yr.rmdExcessReinvested ?? 0;
+                    if (
+                      rmdExcess > 0.01 &&
+                      ACCOUNT_TYPE_CONFIG[cat].isOverflowTarget
+                    ) {
+                      items.push({
+                        label: "RMD excess reinvested",
+                        amount: deflate(rmdExcess, yr.year),
+                        prefix: "+",
+                        color: "amber",
+                      });
+                    }
                     const catLumpTotal = lumpSumTotal(catLumps);
                     return renderTooltip({
                       kind: "money",
-                      header: `${catDisplayLabel[cat] ?? cat}${catLumpTotal > 0 ? " Activity" : " Withdrawals"}`,
+                      header: `${catDisplayLabel[cat] ?? cat}${catLumpTotal > 0 || rmdExcess > 0.01 ? " Activity" : " Withdrawals"}`,
                       items: items.length > 0 ? items : undefined,
                       withdrawals:
                         wd > 0 && items.length === 0

@@ -757,7 +757,16 @@ export function ProjectionCard(props: {
               closing section rather than interrupting the chart/table. */}
           {reportMode === "fancy" && (
             <div className="hidden print:block">
-              <ReportAssumptionsSummary settings={engineSettings} />
+              <ReportAssumptionsSummary
+                settings={engineSettings}
+                rmdExcessYears={
+                  result?.projectionByYear.filter(
+                    (y) =>
+                      y.phase === "decumulation" &&
+                      (y.rmdExcessReinvested ?? 0) > 0.01,
+                  ).length ?? 0
+                }
+              />
               <ReportFooter generatedAt={new Date()} />
             </div>
           )}

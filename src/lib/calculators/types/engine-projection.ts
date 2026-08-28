@@ -404,6 +404,13 @@ export type EngineDecumulationYear = {
   rmdByPerson?: { personId: number; personName: string; amount: number }[];
   /** True if the RMD forced additional Traditional withdrawals beyond what routing chose. */
   rmdOverrodeRouting: boolean;
+  /** R46 Phase 1: dollars of RMD-forced excess (beyond the strategy's stated
+   *  need + tax cost) reinvested into brokerage this year — 0 in the
+   *  overwhelmingly common case (`rmdOverrodeRouting` false, or the RMD
+   *  didn't exceed need). Previously computed and silently discarded —
+   *  this money is real, forced out of Traditional by the RMD floor
+   *  regardless of what the strategy needed, with no prior UI trace. */
+  rmdExcessReinvested: number;
   // --- SS Tax fields (Phase 2) ---
   /** Taxable portion of Social Security income (IRS provisional income formula). */
   taxableSS: number;
