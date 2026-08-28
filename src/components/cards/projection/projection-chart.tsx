@@ -8,7 +8,11 @@ import {
   CHART_COLORS,
 } from "@/lib/utils/colors";
 import { ChartControls } from "./chart-controls";
-import { formatCurrency, compactCurrency } from "@/lib/utils/format";
+import {
+  formatCurrency,
+  compactCurrency,
+  formatPercent,
+} from "@/lib/utils/format";
 import type { EngineYearProjection } from "@/lib/calculators/types";
 import {
   ComposedChart,
@@ -32,6 +36,20 @@ import type { ProjectionState } from "./projection-table-types";
 // Skeleton lives in its own file so the parent (cards/projection/index.tsx)
 // can render it without pulling recharts in via this module's import graph.
 export { ProjectionChartSkeleton } from "./projection-chart-skeleton";
+
+// Recognized sporadic per-strategy spending-adjustment events (R45 Step 5 +
+// follow-up) — shared between the early chart-data pinning pass and the
+// later marker-style/tooltip build, so the two can't drift on which action
+// strings are "an event worth marking" vs. background noise. RMD-Based and
+// Spending-Decline fire an action every year (not an event) and are
+// deliberately excluded.
+const STRATEGY_EVENT_KEYS = [
+  "increase",
+  "decrease",
+  "skip_inflation",
+  "ceiling_applied",
+  "floor_applied",
+] as const;
 
 export function ProjectionChart({ state }: { state: ProjectionState }) {
   // Check via `state.result` before destructuring — result truthy always
@@ -82,9 +100,8 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
       .filter(
         ({ y }) =>
           y.phase === "decumulation" &&
-          (y.strategyAction === "increase" ||
-            y.strategyAction === "decrease" ||
-            y.strategyAction === "skip_inflation"),
+          y.strategyAction != null &&
+          (STRATEGY_EVENT_KEYS as readonly string[]).includes(y.strategyAction),
       )
       .map(({ i }) => i),
   );
@@ -203,17 +220,43 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
   // Keep hasMc for backward compat in data building (always build MC data points)
   const hasMc = hasMcData;
 
-  // R45 Step 5: guardrail event markers, one per triggering year.
-  const GUARDRAIL_MARKER_STYLE = {
+  // R45 Step 5 + follow-up: per-strategy spending-adjustment event markers,
+  // one per triggering year. Covers every strategy with a real, SPORADIC
+  // action worth flagging — Guyton-Klinger's guardrails, and Vanguard
+  // Dynamic / Constant % / Endowment's clamp events. RMD-Based and
+  // Spending-Decline fire an action every single year (not an event), so
+  // they're deliberately excluded — marking every year would be noise, not
+  // a signal.
+  //
+  // Percent context (user follow-up): GK's raise/cut % come straight from
+  // its own settings (gkIncreasePct/gkDecreasePct) — the actual % applied
+  // that year, not a guess. Vanguard's ceiling/floor % are its YoY change
+  // bounds (vdCeilingPercent/vdFloorPercent); Constant %/Endowment's floor
+  // is a NOMINAL floor relative to the initial withdrawal
+  // (cpFloorPercent/enFloorPercent), a different mechanism from Vanguard's
+  // YoY-relative floor, so the wording is strategy-specific, not shared.
+  const pct = (v: unknown) => (v != null ? formatPercent(Number(v), 0) : null);
+  const gkIncreasePct = pct(engineSettings.gkIncreasePct);
+  const gkDecreasePct = pct(engineSettings.gkDecreasePct);
+  const vdCeilingPct = pct(engineSettings.vdCeilingPercent);
+  const vdFloorPct = pct(engineSettings.vdFloorPercent);
+  const cpFloorPct = pct(engineSettings.cpFloorPercent);
+  const enFloorPct = pct(engineSettings.enFloorPercent);
+  const activeStrategy = engineSettings.withdrawalStrategy;
+
+  const STRATEGY_EVENT_STYLE: Record<
+    string,
+    { color: string; label: string; tooltipText: string }
+  > = {
     increase: {
       color: CHART_COLORS.guardrailIncreaseMarker,
-      label: "▲ raise",
-      tooltipText: "Upper guardrail triggered — spending raised",
+      label: gkIncreasePct ? `▲ raise +${gkIncreasePct}` : "▲ raise",
+      tooltipText: `Upper guardrail triggered — spending raised${gkIncreasePct ? ` ${gkIncreasePct}` : ""}`,
     },
     decrease: {
       color: CHART_COLORS.guardrailDecreaseMarker,
-      label: "▼ cut",
-      tooltipText: "Lower guardrail triggered — spending cut",
+      label: gkDecreasePct ? `▼ cut -${gkDecreasePct}` : "▼ cut",
+      tooltipText: `Lower guardrail triggered — spending cut${gkDecreasePct ? ` ${gkDecreasePct}` : ""}`,
     },
     skip_inflation: {
       color: CHART_COLORS.guardrailSkipInflationMarker,
@@ -221,21 +264,42 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
       tooltipText:
         "Prosperity rule — inflation raise skipped after a loss year",
     },
-  } as const;
+    ceiling_applied: {
+      color: CHART_COLORS.guardrailIncreaseMarker,
+      label: vdCeilingPct ? `▲ capped @${vdCeilingPct}` : "▲ capped",
+      tooltipText: `Year-over-year ceiling reached${vdCeilingPct ? ` (max +${vdCeilingPct}/yr)` : ""} — raise capped, spending still rose just not as much as your balance alone would set`,
+    },
+    floor_applied: {
+      color: CHART_COLORS.guardrailSkipInflationMarker,
+      label:
+        activeStrategy === "vanguard_dynamic" && vdFloorPct
+          ? `▼ floor @${vdFloorPct}`
+          : "▼ floor",
+      tooltipText:
+        activeStrategy === "vanguard_dynamic"
+          ? `Year-over-year floor reached${vdFloorPct ? ` (max -${vdFloorPct}/yr)` : ""} — cut limited, spending still fell just not as much as your balance alone would set`
+          : `Nominal floor reached${
+              activeStrategy === "endowment"
+                ? enFloorPct
+                  ? ` (${enFloorPct} of your initial withdrawal)`
+                  : ""
+                : cpFloorPct
+                  ? ` (${cpFloorPct} of your initial withdrawal)`
+                  : ""
+            } — spending held at the floor instead of following your balance down further`,
+    },
+  };
+  const strategyEventStyleKeys = Object.keys(STRATEGY_EVENT_STYLE);
   const guardrailEvents = years
     .filter(
       (y): y is Extract<typeof y, { phase: "decumulation" }> =>
         y.phase === "decumulation" &&
-        (y.strategyAction === "increase" ||
-          y.strategyAction === "decrease" ||
-          y.strategyAction === "skip_inflation"),
+        y.strategyAction != null &&
+        strategyEventStyleKeys.includes(y.strategyAction),
     )
     .map((y) => ({
       age: y.age,
-      style:
-        GUARDRAIL_MARKER_STYLE[
-          y.strategyAction as keyof typeof GUARDRAIL_MARKER_STYLE
-        ],
+      style: STRATEGY_EVENT_STYLE[y.strategyAction as string]!,
     }));
 
   return (
@@ -377,30 +441,25 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                           )}
                       </div>
                     )}
-                    {/* Guardrail event detail — same data the chart's
+                    {/* Strategy event detail — same data the chart's
                         ReferenceLine markers flag, now actually explained
                         on hover instead of just labeled. */}
-                    {typeof d._strategyAction === "string" &&
-                      d._strategyAction in GUARDRAIL_MARKER_STYLE && (
+                    {(() => {
+                      const eventStyle =
+                        typeof d._strategyAction === "string"
+                          ? STRATEGY_EVENT_STYLE[d._strategyAction]
+                          : undefined;
+                      if (!eventStyle) return null;
+                      return (
                         <div
                           className="border-t mt-1 pt-1 flex justify-between gap-4 font-medium"
-                          style={{
-                            color:
-                              GUARDRAIL_MARKER_STYLE[
-                                d._strategyAction as keyof typeof GUARDRAIL_MARKER_STYLE
-                              ].color,
-                          }}
+                          style={{ color: eventStyle.color }}
                         >
-                          <span>Guardrail</span>
-                          <span>
-                            {
-                              GUARDRAIL_MARKER_STYLE[
-                                d._strategyAction as keyof typeof GUARDRAIL_MARKER_STYLE
-                              ].tooltipText
-                            }
-                          </span>
+                          <span>Strategy</span>
+                          <span>{eventStyle.tooltipText}</span>
                         </div>
-                      )}
+                      );
+                    })()}
                   </div>
                 );
               }}
