@@ -245,7 +245,17 @@ export const strategyRouter = createTRPCRouter({
             label: meta.label,
             shortLabel: meta.shortLabel,
             portfolioDepletionAge: result.portfolioDepletionAge,
-            sustainableWithdrawal: result.sustainableWithdrawal,
+            // R45 Step 3, Finding 11: sustainableWithdrawal dropped from
+            // this comparison — it's never rendered by
+            // withdrawal-comparison.tsx (year1Withdrawal/avgAnnualWithdrawal/
+            // min/max already give the real per-strategy withdrawal picture,
+            // sourced from the same totalWithdrawal figures), and after
+            // Step 2 made it strategy-real it would either duplicate
+            // year1Withdrawal (common case) or read as a second, differently
+            // -computed one (RMD-active years, where it reflects the target
+            // before RMD-forced excess rather than what was actually
+            // withdrawn) — a Single Computation Path risk with no UI
+            // consumer to justify it.
             year1Withdrawal: decYears[0]?.totalWithdrawal ?? 0,
             avgAnnualWithdrawal: roundToCents(avgWithdrawal),
             minAnnualWithdrawal:

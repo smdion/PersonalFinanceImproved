@@ -65,18 +65,40 @@ export function DecumulationMethodologyContent() {
         <h4 className="font-semibold text-secondary mt-4">
           What it computes each year
         </h4>
+        <p className="text-caption text-faint">
+          Steps 1–2 below work differently depending on your selected strategy —
+          4 of the 8 strategies (Fixed, Forgo Inflation After Loss, Spending
+          Decline, Guardrails) start from your stated budget and adjust it; the
+          other 4 (RMD-Based, Constant Percentage, Endowment, Vanguard Dynamic)
+          compute spending directly from your portfolio balance and never read
+          the budget figure at all. See the per-strategy descriptions further
+          down this page for exactly how each one works.
+        </p>
         <ol className="list-decimal pl-5 space-y-1.5">
           <li>
-            <strong>Annual expense need</strong> — your retirement
-            &ldquo;salary&rdquo; (set by the Retirement Budget), grown each year
-            by the Post-Retirement Raise rate. Budget overrides (sticky-forward
-            by year) can change the base amount at any point.
+            <strong>Annual expense need (budget-seeded strategies)</strong> —
+            for Fixed, Forgo Inflation After Loss, Spending Decline, and
+            Guardrails, your retirement &ldquo;salary&rdquo; (set by the
+            Retirement Budget) is the starting point. Fixed and Guardrails grow
+            it each year by the Post-Retirement Raise rate (Guardrails then
+            applies guardrail raises/cuts on top); Spending Decline compounds it
+            by inflation minus its own decline rate instead, never reading the
+            raise rate; Forgo Inflation After Loss grows it like Fixed except
+            skips the raise the year after a loss. Budget overrides
+            (sticky-forward by year) can change the base amount at any point for
+            all four.
           </li>
           <li>
-            <strong>Dynamic spending (optional)</strong> — if a dynamic spending
-            strategy is selected, spending is adjusted each year based on
-            portfolio performance, age, or spending patterns. Eight strategies
-            are available, from fixed inflation-adjusted to dynamic guardrails.
+            <strong>
+              Portfolio-derived spending (balance-based strategies)
+            </strong>{" "}
+            — RMD-Based Spending, Constant Percentage, Endowment, and Vanguard
+            Dynamic compute the year&apos;s spending directly from your current
+            portfolio balance (or a rolling average, for Endowment) each year —
+            the Retirement Budget figure is not read at all for these four;
+            it&apos;s replaced outright by each strategy&apos;s own formula, not
+            adjusted from it. RMD-Based falls back to budget-seeded spending
+            only before RMD age (72–75).
           </li>
           <li>
             <strong>Tax estimation</strong> — the engine estimates the tax cost
@@ -306,7 +328,12 @@ export function DecumulationMethodologyContent() {
                 </td>
                 <td className="pr-3">Decimal</td>
                 <td>
-                  Fraction of portfolio to withdraw annually (e.g. 0.04 = 4%)
+                  A reference rate (e.g. 0.04 = 4%) used to size the &ldquo;FI
+                  target&rdquo; estimate on other pages. None of the 8
+                  withdrawal strategies below read this field to compute actual
+                  spending — see &ldquo;What it computes each year&rdquo; above
+                  for what really drives the withdrawal amount for your selected
+                  strategy.
                 </td>
               </tr>
               <tr>

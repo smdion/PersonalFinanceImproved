@@ -7,6 +7,10 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency } from "@/lib/utils/format";
 import type { ProjectionState } from "./projection-table-types";
 import { CoastFireCard } from "@/components/cards/coast-fire-card";
+import {
+  WITHDRAWAL_STRATEGY_CONFIG,
+  type WithdrawalStrategyType,
+} from "@/lib/config/withdrawal-strategies";
 
 // ---------------------------------------------------------------------------
 // Unified card chrome — matches projection-mc-results.tsx summary bar
@@ -205,6 +209,22 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
     const retSpan =
       (engineSettings?.endAge ?? 95) - (engineSettings?.retirementAge ?? 65);
 
+    // R45 Step 3, Finding 5: the long-horizon tip used to blanket-suggest
+    // "a lower withdrawal rate (3-3.5%)" — accurate advice for the budget-
+    // continuation strategies, but there's no user-set rate to lower for
+    // RMD-Based Spending (IRS-formula-driven), and the real knob for
+    // Constant %/Endowment/Vanguard Dynamic is their own Strategy Params
+    // field, not the Initial Withdrawal Rate this tooltip sits near.
+    const activeStrategy = (engineSettings?.withdrawalStrategy ??
+      "fixed") as WithdrawalStrategyType;
+    const strategyMeta = WITHDRAWAL_STRATEGY_CONFIG[activeStrategy];
+    const longHorizonTip =
+      strategyMeta.incomeSource === "formula"
+        ? `Your plan spans ${retSpan} years — longer than the classic 30-year 4% rule. ${strategyMeta.label} has no user-set rate to lower; consider a lower RMD Multiplier in Strategy Params if you want to slow spending.`
+        : strategyMeta.usesWithdrawalRate
+          ? `Your plan spans ${retSpan} years — longer than the classic 30-year 4% rule. Early retirees often need a lower withdrawal rate — for ${strategyMeta.label}, that means a smaller Retirement Budget, not this Initial Withdrawal Rate field.`
+          : `Your plan spans ${retSpan} years — longer than the classic 30-year 4% rule. For ${strategyMeta.label}, the knob to lower is ${strategyMeta.paramFields.find((f) => typeof f.default === "number")?.label ?? "your Strategy Params rate"}, not this Initial Withdrawal Rate field.`;
+
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
         {/* Card 1: Portfolio Survival */}
@@ -215,11 +235,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
             "90%+ — Strong. Most planners consider this the target.",
             "75–89% — Moderate. Workable but with meaningful risk.",
             "Below 75% — Elevated risk. Review your assumptions.",
-            ...(retSpan > 30
-              ? [
-                  `Your plan spans ${retSpan} years — longer than the classic 30-year 4% rule. Early retirees often need a lower withdrawal rate (3-3.5%).`,
-                ]
-              : []),
+            ...(retSpan > 30 ? [longHorizonTip] : []),
             "For dynamic strategies that reduce spending, see Spending Stability for the full picture.",
           ]}
         >

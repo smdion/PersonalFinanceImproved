@@ -150,8 +150,14 @@ describe("OverridesPanelV2", () => {
     render(<OverridesPanelV2 state={baseMockState()} />);
     openWizardToTypeStep(String(RET_YEAR + 5));
     expect(screen.getByText(/post-retirement/)).toBeInTheDocument();
-    expect(screen.getByText(/Withdrawal Rate/)).toBeInTheDocument();
+    expect(screen.getByText(/Budget Change/)).toBeInTheDocument();
     expect(screen.queryByText(/Contribution Rate/)).not.toBeInTheDocument();
+  });
+
+  it("does not offer Withdrawal Rate as a new-override type (R45 Step 3, Finding 2 — inert for every strategy)", () => {
+    render(<OverridesPanelV2 state={baseMockState()} />);
+    openWizardToTypeStep(String(RET_YEAR + 5));
+    expect(screen.queryByText(/Withdrawal Rate/)).not.toBeInTheDocument();
   });
 
   it("always shows phase-agnostic options (Lump Sum, Account Routing, Reset)", () => {
@@ -191,14 +197,22 @@ describe("OverridesPanelV2", () => {
     expect(setAccumOverrides).not.toHaveBeenCalled();
   });
 
-  it("completes the withdrawal_rate flow and calls setDecumOverrides", () => {
+  // "withdrawal_rate" is no longer offered from the type picker (R45 Step 3,
+  // Finding 2 — inert for every strategy, not just 4/8), but a household
+  // with a pre-existing saved override of this type can still edit or
+  // delete it, so that path stays covered via the edit flow instead of the
+  // picker.
+  it("edits a pre-existing withdrawal_rate override and calls setDecumOverrides", () => {
     const setDecumOverrides = vi.fn();
-    const s = baseMockState({ setDecumOverrides });
+    const s = baseMockState({
+      decumOverrides: [{ year: RET_YEAR + 5, withdrawalRate: 0.035 }],
+      setDecumOverrides,
+    });
     render(<OverridesPanelV2 state={s} />);
-    openWizardToTypeStep(String(RET_YEAR + 5));
-    fireEvent.click(screen.getByText(/Withdrawal Rate/));
+    fireEvent.click(screen.getByLabelText("Edit"));
 
-    const rateInput = screen.getByPlaceholderText("3.5");
+    const rateInput = screen.getByPlaceholderText("3.5") as HTMLInputElement;
+    expect(Number(rateInput.value)).toBeCloseTo(3.5);
     fireEvent.change(rateInput, { target: { value: "4" } });
     fireEvent.click(screen.getByText("Save"));
 
@@ -207,20 +221,20 @@ describe("OverridesPanelV2", () => {
     expect(result).toEqual([{ year: RET_YEAR + 5, withdrawalRate: 0.04 }]);
   });
 
-  it("shows a strategy-specific note for dynamic withdrawal strategies", () => {
+  it("shows the legacy/no-effect note when editing a pre-existing withdrawal_rate override", () => {
     const s = baseMockState({
+      decumOverrides: [{ year: RET_YEAR + 5, withdrawalRate: 0.035 }],
       engineSettings: {
         retirementAge: RETIREMENT_AGE,
         withdrawalStrategy: "guyton_klinger",
       },
     });
     render(<OverridesPanelV2 state={s} />);
-    openWizardToTypeStep(String(RET_YEAR + 5));
-    fireEvent.click(screen.getByText(/Withdrawal Rate/));
-    expect(screen.getByText(/adjusts this rate yearly/)).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Edit"));
+    expect(screen.getByText(/doesn.t change your plan/)).toBeInTheDocument();
     expect(
       screen.getByPlaceholderText("3.5").closest("label"),
-    ).toHaveTextContent("New Initial Withdrawal Rate");
+    ).toHaveTextContent("legacy, has no effect");
   });
 
   it("completes the lump_sum flow for a pre-retirement year via setAccumOverrides", () => {

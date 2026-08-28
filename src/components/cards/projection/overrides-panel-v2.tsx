@@ -14,10 +14,6 @@ import type { ProjectionState } from "./projection-table-types";
 import type { AccumOverride, DecumOverride } from "./types";
 import { catDisplayLabel } from "./utils";
 import { LumpSumForm } from "./lump-sum-form";
-import {
-  WITHDRAWAL_STRATEGY_CONFIG,
-  type WithdrawalStrategyType,
-} from "@/lib/config/withdrawal-strategies";
 
 export type OverridesPanelV2Props = {
   state: ProjectionState;
@@ -48,13 +44,14 @@ const OVERRIDE_OPTIONS: {
     icon: "📈",
     phase: "pre",
   },
-  {
-    key: "withdrawal_rate",
-    label: "Withdrawal Rate",
-    description: "Change how much you withdraw",
-    icon: "📉",
-    phase: "post",
-  },
+  // "withdrawal_rate" removed from the picker (R45 Step 3, Finding 2):
+  // config.withdrawalRate is never read by any of the 8 strategies' real
+  // spending math (Finding 0), and after Step 2's fix to
+  // ProjectionResult.sustainableWithdrawal, it no longer even feeds that
+  // reference figure — a year-specific override here now changes nothing
+  // about the plan for any strategy. The "withdrawal_rate" case below and
+  // the edit path for pre-existing saved overrides are kept so a household
+  // with an old override can still view/edit/delete it.
   {
     key: "lump_sum",
     label: "Lump Sum",
@@ -351,25 +348,21 @@ export function OverridesPanelV2({
         );
 
       case "withdrawal_rate": {
-        const strategy = (state.engineSettings?.withdrawalStrategy ??
-          "fixed") as WithdrawalStrategyType;
-        const strategyCfg = WITHDRAWAL_STRATEGY_CONFIG[strategy];
-        const isDynamic = strategy !== "fixed";
+        // Legacy edit-only path (R45 Step 3, Finding 2) — no longer
+        // reachable from the type picker. Kept so a household with a
+        // pre-existing saved override can still view/edit/delete it. None
+        // of the 8 strategies' real spending reads this value for any
+        // year, and it no longer feeds any reported figure either.
         return (
           <div className="space-y-2">
-            {isDynamic && (
-              <p className="text-xs text-amber-600 bg-amber-50 rounded px-2 py-1.5">
-                Your {strategyCfg?.label ?? strategy} strategy adjusts this rate
-                yearly based on portfolio performance. This override changes the
-                base rate the strategy starts from.
-              </p>
-            )}
+            <p className="text-xs text-amber-600 bg-amber-50 rounded px-2 py-1.5">
+              This override type doesn&apos;t change your plan — no
+              strategy&apos;s withdrawal math reads it, and it no longer feeds
+              any figure shown on this page. Kept here only so you can edit or
+              remove this pre-existing override.
+            </p>
             <SimpleNumberForm
-              label={
-                isDynamic
-                  ? "New Initial Withdrawal Rate (%)"
-                  : "New Withdrawal Rate (%)"
-              }
+              label="Withdrawal Rate (%) — legacy, has no effect"
               placeholder="3.5"
               step={0.1}
               initialValue={editingOverride?.initialValue}

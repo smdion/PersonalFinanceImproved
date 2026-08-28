@@ -172,18 +172,16 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                       <div className="font-semibold tabular-nums">
                         {formatPercent(si.withdrawalRate, 2)}
                       </div>
-                      <div className="text-micro text-faint">
-                        {si.withdrawalStrategy &&
-                        si.withdrawalStrategy !== "fixed"
-                          ? "initial rate"
-                          : "withdrawal"}
-                      </div>
-                      <div className="text-micro text-faint">
-                        {si.withdrawalStrategy &&
-                        si.withdrawalStrategy !== "fixed"
-                          ? "4–6%"
-                          : "3–4%"}
-                      </div>
+                      {/* R45 Step 3, Finding 4: this is the flat "Initial
+                          Withdrawal Rate" household setting, an input echo
+                          like the return/volatility/inflation figures beside
+                          it — not what any of the 8 strategies actually
+                          spend (Finding 0). The old label/range split on
+                          `!== "fixed"` implied Fixed uses this rate directly;
+                          it doesn't either, so the label no longer varies by
+                          strategy. */}
+                      <div className="text-micro text-faint">ref. rate</div>
+                      <div className="text-micro text-faint">3–5%</div>
                     </div>
                     <div className="text-center">
                       <div className="font-semibold tabular-nums">

@@ -7,7 +7,7 @@
  *  drove the numbers above it rather than a second, possibly-stale query.
  */
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import { WITHDRAWAL_STRATEGY_LABELS } from "@/lib/config/withdrawal-strategies";
+import { WITHDRAWAL_STRATEGY_CONFIG } from "@/lib/config/withdrawal-strategies";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 
 /** Numeric fields on the echo'd settings object come back as decimal
@@ -36,6 +36,24 @@ export type ReportEngineSettings = {
   enableAcaAwareness?: boolean | null;
   householdSize?: NumLike | null;
   filingStatus?: string | null;
+  // Per-strategy params (R45 Step 3, Finding 3) — one strategy's fields are
+  // actually read at a time, keyed by WITHDRAWAL_STRATEGY_CONFIG's
+  // paramFields for the active withdrawalStrategy, same source
+  // strategy-params.tsx uses so this can't drift from the real fields.
+  gkUpperGuardrail?: NumLike | null;
+  gkLowerGuardrail?: NumLike | null;
+  gkIncreasePct?: NumLike | null;
+  gkDecreasePct?: NumLike | null;
+  sdAnnualDeclineRate?: NumLike | null;
+  cpWithdrawalPercent?: NumLike | null;
+  cpFloorPercent?: NumLike | null;
+  enWithdrawalPercent?: NumLike | null;
+  enRollingYears?: NumLike | null;
+  enFloorPercent?: NumLike | null;
+  vdBasePercent?: NumLike | null;
+  vdCeilingPercent?: NumLike | null;
+  vdFloorPercent?: NumLike | null;
+  rmdMultiplier?: NumLike | null;
 };
 
 /** `null`/`undefined` → `undefined`; otherwise coerce to a real number. */
@@ -77,11 +95,42 @@ export function ReportAssumptionsSummary({
   settings: ReportEngineSettings | undefined;
 }) {
   if (!settings) return null;
-  const strategyLabel = settings.withdrawalStrategy
-    ? (WITHDRAWAL_STRATEGY_LABELS[
-        settings.withdrawalStrategy as WithdrawalStrategyType
-      ] ?? settings.withdrawalStrategy)
-    : "—";
+  const strategyKey = settings.withdrawalStrategy as
+    WithdrawalStrategyType | undefined;
+  const strategyCfg = strategyKey
+    ? WITHDRAWAL_STRATEGY_CONFIG[strategyKey]
+    : undefined;
+  const strategyLabel =
+    strategyCfg?.label ?? settings.withdrawalStrategy ?? "—";
+  // The strategy's own real params (R45 Step 3, Finding 3) — same
+  // paramFields strategy-params.tsx renders for editing, read-only here.
+  // Explicit lookup (not a cast off `settings`) so this stays typed to the
+  // fields ReportEngineSettings actually declares.
+  const strategyParamValues: Record<string, NumLike | null | undefined> = {
+    gkUpperGuardrail: settings.gkUpperGuardrail,
+    gkLowerGuardrail: settings.gkLowerGuardrail,
+    gkIncreasePct: settings.gkIncreasePct,
+    gkDecreasePct: settings.gkDecreasePct,
+    sdAnnualDeclineRate: settings.sdAnnualDeclineRate,
+    cpWithdrawalPercent: settings.cpWithdrawalPercent,
+    cpFloorPercent: settings.cpFloorPercent,
+    enWithdrawalPercent: settings.enWithdrawalPercent,
+    enRollingYears: settings.enRollingYears,
+    enFloorPercent: settings.enFloorPercent,
+    vdBasePercent: settings.vdBasePercent,
+    vdCeilingPercent: settings.vdCeilingPercent,
+    vdFloorPercent: settings.vdFloorPercent,
+    rmdMultiplier: settings.rmdMultiplier,
+  };
+  const strategyParamRows = (strategyCfg?.paramFields ?? [])
+    .filter((f) => typeof f.default !== "boolean")
+    .map((f) => {
+      const v = num(strategyParamValues[f.key]);
+      if (v == null) return null;
+      const formatted = f.type === "percent" ? formatPercent(v, 1) : String(v);
+      return <Row key={f.key} label={f.label} value={formatted} />;
+    })
+    .filter((row): row is React.ReactElement => row != null);
 
   const retirementAge = num(settings.retirementAge);
   const endAge = num(settings.endAge);
@@ -150,12 +199,18 @@ export function ReportAssumptionsSummary({
 
       <Section title="Withdrawal Strategy">
         <Row label="Strategy" value={strategyLabel} />
+        {strategyParamRows}
         <Row
-          label="Withdrawal rate"
+          label="Initial withdrawal rate (reference only)"
           value={
             withdrawalRate != null ? formatPercent(withdrawalRate, 1) : "—"
           }
         />
+        <p className="text-xs text-faint mt-0.5">
+          {strategyLabel} doesn&apos;t spend based on this rate — none of the 8
+          withdrawal strategies do. It&apos;s a reference figure only (also used
+          to size the &ldquo;years to FI&rdquo; estimate elsewhere in the app).
+        </p>
         {settings.enableRothConversions && (
           <Row
             label="Roth conversions"

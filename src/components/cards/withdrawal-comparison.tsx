@@ -27,7 +27,6 @@ type StrategyResult = {
   label: string;
   shortLabel: string;
   portfolioDepletionAge: number | null;
-  sustainableWithdrawal: number;
   year1Withdrawal: number;
   avgAnnualWithdrawal: number;
   minAnnualWithdrawal: number;
