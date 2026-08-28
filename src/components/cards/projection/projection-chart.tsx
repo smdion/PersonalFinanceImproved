@@ -323,6 +323,9 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
     <div className="bg-surface-sunken rounded-lg p-3 chart-fade-in">
       <div className="flex items-start justify-between mb-2 gap-2">
         <h5 className="text-xs font-medium text-muted uppercase">
+          <span className="text-micro font-semibold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded mr-1.5 normal-case">
+            $
+          </span>
           Balance Projection
           {isPersonFiltered && (
             <span className="text-caption text-faint font-normal normal-case ml-2">

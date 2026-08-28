@@ -351,32 +351,26 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
         });
       if (isStable) spendingStableCount++;
 
-      // Budget stability: same check but against the user's retirement budget
-      // (inflation-adjusted from today's dollars to each year's nominal dollars).
-      // Use trialInflationRate (not the deterministic rate) so accumulation and
-      // decumulation are in the same nominal frame within each trial.
+      // Budget stability: same check but against the user's ACTUAL per-year
+      // budget (y.projectedExpenses — the engine's own real budget figure
+      // for that specific year, already reflecting any raises/phase
+      // changes the household's Budget Profile defines) rather than a
+      // synthetic flat-inflation reprojection of the day-0 number. The old
+      // reprojection could silently diverge from the real budget schedule
+      // for any household with non-flat raises, making "budget stability"
+      // partly an artifact of this metric's own approximation rather than
+      // a real signal (found via live user confusion, 2026-08-28).
       if (retirementBudget !== null) {
-        const budgetAtRetirement =
-          retirementBudget *
-          Math.pow(1 + trialInflationRate, yearsToRetirement);
-        const isBudgetStable =
-          budgetAtRetirement === 0 ||
-          decYears.every((y, i) => {
-            const inflationFactor = Math.pow(1 + trialInflationRate, i);
-            const baseline = budgetAtRetirement * inflationFactor;
-            return (
-              y.totalWithdrawal >= MC_SPENDING_STABILITY_THRESHOLD * baseline
-            );
-          });
+        const isBudgetStable = decYears.every((y) => {
+          const baseline = y.projectedExpenses;
+          return (
+            baseline === 0 ||
+            y.totalWithdrawal >= MC_SPENDING_STABILITY_THRESHOLD * baseline
+          );
+        });
         if (isBudgetStable) budgetStableCount++;
       }
       // Per-year spending ratios for stability chart bands.
-      // Same trialInflationRate for consistency within each trial.
-      const budgetAtRet =
-        retirementBudget !== null
-          ? retirementBudget *
-            Math.pow(1 + trialInflationRate, yearsToRetirement)
-          : null;
       for (let di = 0; di < decYears.length && di < numDecYears; di++) {
         const yr = decYears[di]!;
         const stratBase = strategyUsesRaise
@@ -385,11 +379,9 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
         stratRatiosByDecYear[di]!.push(
           safeDivide(yr.totalWithdrawal, stratBase, 0),
         );
-        if (budgetAtRet !== null) {
-          const budgetInflFactor = Math.pow(1 + trialInflationRate, di);
-          const budgetBase = budgetAtRet * budgetInflFactor;
+        if (retirementBudget !== null) {
           budgetRatiosByDecYear[di]!.push(
-            safeDivide(yr.totalWithdrawal, budgetBase, 0),
+            safeDivide(yr.totalWithdrawal, yr.projectedExpenses, 0),
           );
         }
       }

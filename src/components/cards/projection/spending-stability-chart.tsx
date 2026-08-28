@@ -14,6 +14,10 @@ import { DEFAULT_INFLATION_RATE } from "@/lib/constants";
 import { safeDivide } from "@/lib/utils/math";
 import type { EngineDecumulationYear } from "@/lib/calculators/types";
 import {
+  WITHDRAWAL_STRATEGY_CONFIG,
+  type WithdrawalStrategyType,
+} from "@/lib/config/withdrawal-strategies";
+import {
   ComposedChart,
   Bar,
   Area,
@@ -38,14 +42,8 @@ export function SpendingStabilityChart({
   state: ProjectionState;
   view: "strategy" | "budget";
 }) {
-  const {
-    result,
-    engineSettings,
-    annualExpenses,
-    decumulationExpenses,
-    mcStabilityBands,
-    fanBandRange,
-  } = state;
+  const { result, engineSettings, mcStabilityBands, fanBandRange, deflate } =
+    state;
 
   if (!result) return null;
 
@@ -74,16 +72,21 @@ export function SpendingStabilityChart({
       ? parseFloat(engineSettings.annualInflation)
       : DEFAULT_INFLATION_RATE;
 
-  // Budget baseline
-  const retirementAge = engineSettings?.retirementAge ?? 65;
-  const currentAge = decYears[0]!.age;
-  const yearsToRetirement = Math.max(0, retirementAge - currentAge);
-  const budgetToday = decumulationExpenses ?? annualExpenses;
-  const budgetAtRetirement =
-    budgetToday * Math.pow(1 + inflationRate, yearsToRetirement);
-
   const isStrategy = view === "strategy";
   const baselineLabel = isStrategy ? "Strategy" : "Budget";
+
+  // monte-carlo.ts's own "vs strategy" KPI (Income Stability card) uses
+  // each year's real, guardrail/raise-adjusted `targetWithdrawal` for any
+  // strategy with usesPostRetirementRaise — NOT a flat CPI-inflated line
+  // off year 1. This chart used to always use the flat line regardless,
+  // which converges toward the "Budget" view for budget-based strategies
+  // (Fixed, Forgo, G-K) since their year-1 spending IS the budget, making
+  // "Strategy" and "Budget" look like near-duplicates. Mirroring the same
+  // flag here keeps the chart honest about what "vs Strategy" means.
+  const activeStrategy = (engineSettings?.withdrawalStrategy ??
+    "fixed") as WithdrawalStrategyType;
+  const usesPostRetirementRaise =
+    WITHDRAWAL_STRATEGY_CONFIG[activeStrategy]?.usesPostRetirementRaise ?? true;
 
   const hasMcData = !!mcStabilityBands;
   const mcBandMap = isStrategy
@@ -107,11 +110,20 @@ export function SpendingStabilityChart({
       const inflationFactor = Math.pow(1 + inflationRate, decIdx);
 
       const baseline = isStrategy
-        ? year1Withdrawal * inflationFactor
-        : budgetAtRetirement * inflationFactor;
+        ? usesPostRetirementRaise
+          ? yr.targetWithdrawal
+          : year1Withdrawal * inflationFactor
+        : yr.projectedExpenses;
       // Matches monte-carlo.ts's own convention for a zero baseline (e.g.
       // Social Security fully covers year-1 spending): 0%, not a misleading
       // 100% that would hide real spending variability in later years.
+      // Ratio itself is deflate-agnostic (numerator/denominator are the
+      // same year's nominal dollars, so any deflation factor cancels) —
+      // only the DISPLAY dollar figures below need `deflate` applied, same
+      // as every sibling chart (projection-chart.tsx, hero KPIs, MC
+      // results) already does, so this chart stops silently showing
+      // nominal/future dollars while the rest of the page respects the
+      // Today's $ / Future $ toggle.
       const ratio = safeDivide(yr.totalWithdrawal, baseline, 0);
 
       const band = mcBandMap?.get(yr.age);
@@ -121,8 +133,8 @@ export function SpendingStabilityChart({
       const datum: Record<string, number | undefined> = {
         age: yr.age,
         ratio: pct(ratio),
-        withdrawal: Math.round(yr.totalWithdrawal),
-        baseline: Math.round(baseline),
+        withdrawal: Math.round(deflate(yr.totalWithdrawal, yr.year)),
+        baseline: Math.round(deflate(baseline, yr.year)),
       };
 
       if (band) {
@@ -161,21 +173,46 @@ export function SpendingStabilityChart({
       return datum;
     });
 
-  // Year-1 baseline for right axis dollar conversion (100% = this amount)
-  const year1Baseline = isStrategy ? year1Withdrawal : budgetAtRetirement;
+  // Year-1 baseline for left axis dollar conversion (100% = this amount) —
+  // deflated at decYears[0]'s year so this label matches the Today's $ /
+  // Future $ toggle like the rest of the chart, not raw nominal dollars.
+  const year1Baseline = deflate(
+    isStrategy
+      ? usesPostRetirementRaise
+        ? decYears[0]!.targetWithdrawal
+        : year1Withdrawal
+      : decYears[0]!.projectedExpenses,
+    decYears[0]!.year,
+  );
 
   return (
     <div className="bg-surface-sunken rounded-lg p-3">
       <div className="flex items-start justify-between mb-2 gap-2">
         <h5 className="text-xs font-medium text-muted uppercase">
+          <span className="text-micro font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded mr-1.5 normal-case">
+            %
+          </span>
           Spending Stability — vs {baselineLabel}
           <span className="text-micro text-faint font-normal ml-2 normal-case">
             Withdrawal as % of{" "}
-            {isStrategy ? "year-1 plan" : "retirement budget"}{" "}
+            {isStrategy
+              ? usesPostRetirementRaise
+                ? "the strategy's own year-by-year target"
+                : "year-1 plan"
+              : "retirement budget"}{" "}
             (inflation-adjusted)
           </span>
         </h5>
         <ChartControls state={state} />
+      </div>
+      {/* Always-visible explainer, not buried in a HelpTip — the flat-vs-
+          drifting contrast between these two views reads as a bug at a
+          glance without it. See PLAN-... UI/UX consultation for why this
+          stays two separate views instead of one overlaid chart. */}
+      <div className="text-micro text-faint mb-2">
+        {isStrategy
+          ? "Strategy bars stay near 100% by design — they compare spending to the strategy's own year-by-year target. They only dip when something (an RMD, a shortfall) forces spending away from that target."
+          : "Budget bars can drift — they compare spending to your fixed, inflation-only starting budget, which doesn't know about guardrail raises or cuts. Drift here is a real signal, not an error."}
       </div>
       <ResponsiveContainer width="100%" height={320}>
         <ComposedChart

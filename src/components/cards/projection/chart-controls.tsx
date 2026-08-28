@@ -25,23 +25,61 @@ export function ChartControls({ state }: { state: ProjectionState }) {
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      <LabeledPillGroup label="Show">
+      <LabeledPillGroup
+        label="Chart"
+        helpTip={
+          <HelpTip
+            maxWidth={380}
+            lines={[
+              "Balance ($): your projected account balances over time — the main chart.",
+              'Spending Stability (%): a completely different chart — each year\'s spending as a % of a baseline, instead of a dollar balance. Pick which baseline with "Compare vs" once selected.',
+            ]}
+          />
+        }
+      >
         <PillBtn
           active={chartView === "balance"}
           onClick={() => setChartView("balance")}
           label="Balance"
         />
         <PillBtn
-          active={chartView === "strategy"}
-          onClick={() => setChartView("strategy")}
-          label="Strategy"
-        />
-        <PillBtn
-          active={chartView === "budget"}
-          onClick={() => setChartView("budget")}
-          label="Budget"
+          active={chartView !== "balance"}
+          onClick={() => {
+            if (chartView === "balance") setChartView("strategy");
+          }}
+          label="Spending Stability"
         />
       </LabeledPillGroup>
+
+      {chartView !== "balance" && (
+        <>
+          <div className="w-px h-4 bg-surface-strong" />
+          <LabeledPillGroup
+            label="Compare vs"
+            helpTip={
+              <HelpTip
+                maxWidth={380}
+                lines={[
+                  "Strategy: each year's spending as a % of what your withdrawal strategy actually targets that year (its real, guardrail/raise-adjusted number — not just year 1 grown by inflation). Measures self-consistency: is the strategy delivering what it promised itself?",
+                  "Budget: the same spending, but as a % of your stated retirement budget instead. Measures whether your real-world needs are met.",
+                  "For budget-based strategies (Fixed, Forgo, Guyton-Klinger) these two often look similar, since year-1 spending IS the budget for those — the gap opens up for portfolio-linked strategies (Constant %, Vanguard Dynamic) or once guardrails start adjusting spending away from the original budget.",
+                ]}
+              />
+            }
+          >
+            <PillBtn
+              active={chartView === "strategy"}
+              onClick={() => setChartView("strategy")}
+              label="Strategy"
+            />
+            <PillBtn
+              active={chartView === "budget"}
+              onClick={() => setChartView("budget")}
+              label="Budget"
+            />
+          </LabeledPillGroup>
+        </>
+      )}
 
       <div className="w-px h-4 bg-surface-strong" />
 
