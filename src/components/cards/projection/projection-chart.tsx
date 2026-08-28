@@ -173,6 +173,12 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
       datum._ssIncome = yr.ssIncome;
       datum._rmdAmount = yr.rmdAmount;
       datum._totalWithdrawal = yr.totalWithdrawal;
+      // Guardrail event (R45 Step 5 follow-up) — the ReferenceLine markers
+      // added a visual "▲ raise" flag on the chart but the hover tooltip
+      // never carried the underlying detail, so hovering that exact year
+      // showed nothing about why it was marked. Threaded through the same
+      // way SS/RMD milestones are.
+      datum._strategyAction = yr.strategyAction ?? "";
     }
 
     return datum;
@@ -202,14 +208,18 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
     increase: {
       color: CHART_COLORS.guardrailIncreaseMarker,
       label: "▲ raise",
+      tooltipText: "Upper guardrail triggered — spending raised",
     },
     decrease: {
       color: CHART_COLORS.guardrailDecreaseMarker,
       label: "▼ cut",
+      tooltipText: "Lower guardrail triggered — spending cut",
     },
     skip_inflation: {
       color: CHART_COLORS.guardrailSkipInflationMarker,
       label: "⏸ no raise",
+      tooltipText:
+        "Prosperity rule — inflation raise skipped after a loss year",
     },
   } as const;
   const guardrailEvents = years
@@ -367,6 +377,30 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                           )}
                       </div>
                     )}
+                    {/* Guardrail event detail — same data the chart's
+                        ReferenceLine markers flag, now actually explained
+                        on hover instead of just labeled. */}
+                    {typeof d._strategyAction === "string" &&
+                      d._strategyAction in GUARDRAIL_MARKER_STYLE && (
+                        <div
+                          className="border-t mt-1 pt-1 flex justify-between gap-4 font-medium"
+                          style={{
+                            color:
+                              GUARDRAIL_MARKER_STYLE[
+                                d._strategyAction as keyof typeof GUARDRAIL_MARKER_STYLE
+                              ].color,
+                          }}
+                        >
+                          <span>Guardrail</span>
+                          <span>
+                            {
+                              GUARDRAIL_MARKER_STYLE[
+                                d._strategyAction as keyof typeof GUARDRAIL_MARKER_STYLE
+                              ].tooltipText
+                            }
+                          </span>
+                        </div>
+                      )}
                   </div>
                 );
               }}

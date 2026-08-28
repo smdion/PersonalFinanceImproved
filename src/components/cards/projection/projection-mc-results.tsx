@@ -62,6 +62,7 @@ export function McDepletionCallout({ state }: { state: ProjectionState }) {
 /** MC loading, errors, warnings, and compact summary bar. */
 export function McResultsSection({ state }: { state: ProjectionState }) {
   const {
+    result,
     projectionMode,
     mcLoading,
     mcQuery,
@@ -109,6 +110,30 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
             (() => {
               const si = mcQuery.data.simulationInputs;
               const mcr = mcQuery.data.result!;
+
+              // Guyton-Klinger's actual starting rate (not the flat
+              // "Initial Withdrawal Rate" setting) — captured once, on the
+              // first decumulation year, as that year's spending ÷ the
+              // portfolio balance carried in from the last accumulation
+              // year. GK uses this number (not si.withdrawalRate) to decide
+              // every future raise/cut. Computed here from the same
+              // deterministic result already loaded for the chart/table —
+              // no new query.
+              let gkImpliedRate: number | null = null;
+              if (si.withdrawalStrategy === "guyton_klinger" && result) {
+                const years = result.projectionByYear;
+                for (let i = 0; i < years.length; i++) {
+                  const y = years[i]!;
+                  if (y.phase === "decumulation") {
+                    const priorEnd = i > 0 ? years[i - 1]!.endBalance : null;
+                    if (priorEnd != null && priorEnd > 0) {
+                      gkImpliedRate = y.projectedExpenses / priorEnd;
+                    }
+                    break;
+                  }
+                }
+              }
+
               const presetBar: Record<
                 string,
                 {
@@ -169,19 +194,37 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                       <div className="text-micro text-faint">8–16%</div>
                     </div>
                     <div className="text-center">
-                      <div className="font-semibold tabular-nums">
-                        {formatPercent(si.withdrawalRate, 2)}
+                      <div className="font-semibold tabular-nums flex items-center justify-center gap-0.5">
+                        {gkImpliedRate != null
+                          ? formatPercent(gkImpliedRate, 2)
+                          : formatPercent(si.withdrawalRate, 2)}
+                        {gkImpliedRate != null && (
+                          <HelpTip
+                            maxWidth={260}
+                            text={`Your Retirement Budget doesn't set a rate directly — Guyton-Klinger captures ${formatPercent(gkImpliedRate, 2)} on your first retirement year (that year's spending ÷ your projected portfolio balance) and defends THIS rate with guardrails for the rest of retirement. It's not the "Initial Withdrawal Rate" setting (${formatPercent(si.withdrawalRate, 2)}) — that field is never read by any strategy, including this one.`}
+                          />
+                        )}
                       </div>
-                      {/* R45 Step 3, Finding 4: this is the flat "Initial
-                          Withdrawal Rate" household setting, an input echo
-                          like the return/volatility/inflation figures beside
-                          it — not what any of the 8 strategies actually
-                          spend (Finding 0). The old label/range split on
-                          `!== "fixed"` implied Fixed uses this rate directly;
-                          it doesn't either, so the label no longer varies by
-                          strategy. */}
-                      <div className="text-micro text-faint">ref. rate</div>
-                      <div className="text-micro text-faint">3–5%</div>
+                      {/* R45 Step 3, Finding 4 (base case) + this session
+                          (GK case): for every other strategy this is still
+                          the flat "Initial Withdrawal Rate" household
+                          setting, an input echo like the return/volatility/
+                          inflation figures beside it — not what any
+                          strategy's spending math reads (Finding 0). For
+                          Guyton-Klinger specifically, it's replaced with the
+                          rate GK actually captured and will defend — a real
+                          number, not a reference figure — since a user
+                          could otherwise read "ref. rate" here and
+                          reasonably ask why GK's spending seems to track it
+                          anyway. */}
+                      <div className="text-micro text-faint">
+                        {gkImpliedRate != null ? "GK anchor rate" : "ref. rate"}
+                      </div>
+                      <div className="text-micro text-faint">
+                        {gkImpliedRate != null
+                          ? "captured, not chosen"
+                          : "3–5%"}
+                      </div>
                     </div>
                     <div className="text-center">
                       <div className="font-semibold tabular-nums">
