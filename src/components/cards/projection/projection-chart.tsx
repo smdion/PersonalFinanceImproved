@@ -71,12 +71,30 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
   const ssIdx = years.findIndex((y) => y.age === ssStartAge);
   const rmdIdx =
     rmdStartAge != null ? years.findIndex((y) => y.age === rmdStartAge) : -1;
+  // R45 Step 5: Guyton-Klinger guardrail events (data already computed and
+  // shown in the table-row tooltip — see projection-table-decum-row.tsx —
+  // just not previously marked on the chart). Pin every triggering year the
+  // same way SS/RMD start ages are pinned, or a guardrail event on an
+  // odd-indexed year would silently vanish from the downsampled chart data.
+  const guardrailIdxs = new Set(
+    years
+      .map((y, i) => ({ y, i }))
+      .filter(
+        ({ y }) =>
+          y.phase === "decumulation" &&
+          (y.strategyAction === "increase" ||
+            y.strategyAction === "decrease" ||
+            y.strategyAction === "skip_inflation"),
+      )
+      .map(({ i }) => i),
+  );
   const filtered = years.filter(
     (_, i) =>
       i % 2 === 0 ||
       i === retIdx ||
       i === ssIdx ||
-      (rmdIdx !== -1 && i === rmdIdx),
+      (rmdIdx !== -1 && i === rmdIdx) ||
+      guardrailIdxs.has(i),
   );
 
   const TAX_KEYS = (["preTax", "taxFree", "hsa", "afterTax"] as const).filter(
@@ -178,6 +196,37 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
   const { showBars } = state;
   // Keep hasMc for backward compat in data building (always build MC data points)
   const hasMc = hasMcData;
+
+  // R45 Step 5: guardrail event markers, one per triggering year.
+  const GUARDRAIL_MARKER_STYLE = {
+    increase: {
+      color: CHART_COLORS.guardrailIncreaseMarker,
+      label: "▲ raise",
+    },
+    decrease: {
+      color: CHART_COLORS.guardrailDecreaseMarker,
+      label: "▼ cut",
+    },
+    skip_inflation: {
+      color: CHART_COLORS.guardrailSkipInflationMarker,
+      label: "⏸ no raise",
+    },
+  } as const;
+  const guardrailEvents = years
+    .filter(
+      (y): y is Extract<typeof y, { phase: "decumulation" }> =>
+        y.phase === "decumulation" &&
+        (y.strategyAction === "increase" ||
+          y.strategyAction === "decrease" ||
+          y.strategyAction === "skip_inflation"),
+    )
+    .map((y) => ({
+      age: y.age,
+      style:
+        GUARDRAIL_MARKER_STYLE[
+          y.strategyAction as keyof typeof GUARDRAIL_MARKER_STYLE
+        ],
+    }));
 
   return (
     <div className="bg-surface-sunken rounded-lg p-3 chart-fade-in">
@@ -469,6 +518,29 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                   }}
                 />
               )}
+
+            {/* Guyton-Klinger guardrail event markers (R45 Step 5) — a
+                household running Guardrails could previously only see
+                which years triggered a raise/cut via the table-row
+                tooltip; now visible at a glance on the chart too. */}
+            {guardrailEvents.map(
+              (ev) =>
+                chartData.some((d) => Number(d.age) === ev.age) && (
+                  <ReferenceLine
+                    key={`guardrail-${ev.age}`}
+                    x={ev.age}
+                    stroke={ev.style.color}
+                    strokeDasharray="2 2"
+                    strokeWidth={1}
+                    label={{
+                      value: ev.style.label,
+                      position: "insideTopRight",
+                      fontSize: CHART_FONT.tiny,
+                      fill: ev.style.color,
+                    }}
+                  />
+                ),
+            )}
           </ComposedChart>
         </ResponsiveContainer>
       </div>

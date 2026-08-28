@@ -215,6 +215,10 @@ export const CHART_COLORS = {
   // Projection chart reference-line markers (age axis + legend swatch)
   ssMarker: "#2dd4bf", // teal-400 — Social Security start-age marker
   rmdMarker: "#f59e0b", // amber-500 — RMD start-age marker
+  // Guyton-Klinger guardrail event markers (R45 Step 5)
+  guardrailIncreaseMarker: "#22c55e", // green-500 — spending raised
+  guardrailDecreaseMarker: "#ef4444", // red-500 — spending cut
+  guardrailSkipInflationMarker: "#f59e0b", // amber-500 — inflation raise skipped
   // Spending-stability chart's deterministic ratio bars
   spendingRatioBar: "#3b82f6", // blue-500
   // Fund mini-chart (savings goal sparkline)
