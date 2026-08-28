@@ -21,7 +21,7 @@ describe("recommendWithdrawalStrategy", () => {
       ...basePlan,
       retirementHorizonYears: 30,
     });
-    expect(rec.strategy).toBe("guyton-klinger");
+    expect(rec.strategy).toBe("guyton_klinger");
     expect(rec.label).toBe("Guyton-Klinger guardrails");
     expect(rec.rationale).toMatch(/30\+ year/);
   });
@@ -31,7 +31,7 @@ describe("recommendWithdrawalStrategy", () => {
       ...basePlan,
       retirementHorizonYears: 45,
     });
-    expect(rec.strategy).toBe("guyton-klinger");
+    expect(rec.strategy).toBe("guyton_klinger");
   });
 
   it("recommends Vanguard Dynamic for 20-29 years with a budget link", () => {
@@ -40,7 +40,7 @@ describe("recommendWithdrawalStrategy", () => {
       retirementHorizonYears: 25,
       hasBudgetLink: true,
     });
-    expect(rec.strategy).toBe("vanguard-dynamic");
+    expect(rec.strategy).toBe("vanguard_dynamic");
     expect(rec.label).toBe("Vanguard Dynamic Spending");
     expect(rec.rationale).toMatch(/budget linked/);
   });
@@ -51,7 +51,7 @@ describe("recommendWithdrawalStrategy", () => {
       retirementHorizonYears: 25,
       hasBudgetLink: false,
     });
-    expect(rec.strategy).toBe("guyton-klinger");
+    expect(rec.strategy).toBe("guyton_klinger");
     expect(rec.rationale).toMatch(/20–30 year horizon/);
   });
 
@@ -101,7 +101,7 @@ describe("recommendWithdrawalStrategy", () => {
       expect(
         recommendWithdrawalStrategy({ ...basePlan, retirementHorizonYears: 20 })
           .strategy,
-      ).toBe("guyton-klinger");
+      ).toBe("guyton_klinger");
     });
     it("horizon 20 with budget link: Vanguard Dynamic", () => {
       expect(
@@ -110,13 +110,13 @@ describe("recommendWithdrawalStrategy", () => {
           retirementHorizonYears: 20,
           hasBudgetLink: true,
         }).strategy,
-      ).toBe("vanguard-dynamic");
+      ).toBe("vanguard_dynamic");
     });
     it("horizon 29: still in 20-29 band (Guyton-Klinger, no budget link)", () => {
       expect(
         recommendWithdrawalStrategy({ ...basePlan, retirementHorizonYears: 29 })
           .strategy,
-      ).toBe("guyton-klinger");
+      ).toBe("guyton_klinger");
     });
     it("horizon 30: crosses into 30+ band (Guyton-Klinger regardless of budget link)", () => {
       expect(
@@ -125,7 +125,7 @@ describe("recommendWithdrawalStrategy", () => {
           retirementHorizonYears: 30,
           hasBudgetLink: true,
         }).strategy,
-      ).toBe("guyton-klinger");
+      ).toBe("guyton_klinger");
     });
   });
 

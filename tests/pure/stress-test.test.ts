@@ -137,7 +137,7 @@ describe("recommendWithdrawalStrategy", () => {
       ...base,
       retirementHorizonYears: 35,
     });
-    expect(r.strategy).toBe("guyton-klinger");
+    expect(r.strategy).toBe("guyton_klinger");
     expect(r.rationale).toMatch(/sequence/i);
   });
 
@@ -147,7 +147,7 @@ describe("recommendWithdrawalStrategy", () => {
       retirementHorizonYears: 25,
       hasBudgetLink: true,
     });
-    expect(r.strategy).toBe("vanguard-dynamic");
+    expect(r.strategy).toBe("vanguard_dynamic");
   });
 
   it("recommends Guyton-Klinger for 20-29 years without budget link", () => {
@@ -156,7 +156,7 @@ describe("recommendWithdrawalStrategy", () => {
       retirementHorizonYears: 25,
       hasBudgetLink: false,
     });
-    expect(r.strategy).toBe("guyton-klinger");
+    expect(r.strategy).toBe("guyton_klinger");
     expect(r.rationale).toMatch(/budget/i);
   });
 

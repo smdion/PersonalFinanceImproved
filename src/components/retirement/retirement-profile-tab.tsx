@@ -63,20 +63,6 @@ import { useScenario } from "@/lib/context/scenario-context";
 import { StrategyGuideButton } from "@/components/cards/strategy-guide-panel";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 
-// Same mapping as the Retirement page previously carried — bridges the
-// recommendation helper's kebab-case strategy keys to the snake_case keys in
-// WITHDRAWAL_STRATEGY_CONFIG / settings.withdrawalStrategy.
-const RECOMMENDED_KEY_MAP: Record<string, WithdrawalStrategyType> = {
-  fixed: "fixed",
-  "guyton-klinger": "guyton_klinger",
-  "vanguard-dynamic": "vanguard_dynamic",
-  "constant-percentage": "constant_percentage",
-  endowment: "endowment",
-  "spending-decline": "spending_decline",
-  "forgo-inflation": "forgo_inflation_after_loss",
-  "rmd-spending": "rmd_spending",
-};
-
 export function RetirementProfileTab() {
   const currentYear = new Date().getFullYear();
   const user = useUser();
@@ -384,11 +370,9 @@ export function RetirementProfileTab() {
                             Number(settings.socialSecurityMonthly) > 0,
                           mostlyTaxAdvantaged: false,
                         });
-                        const recKey =
-                          RECOMMENDED_KEY_MAP[rec.strategy] ?? "fixed";
                         return getAllStrategyKeys().map((key) => {
                           const meta = getStrategyMeta(key);
-                          const isRecommended = key === recKey;
+                          const isRecommended = key === rec.strategy;
                           return (
                             <option key={key} value={key}>
                               {isRecommended ? "★ " : ""}
