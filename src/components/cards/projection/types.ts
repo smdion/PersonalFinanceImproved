@@ -51,6 +51,20 @@ export type TooltipData =
       header: string;
       meta?: string;
       meta2?: string;
+      /** RMD-satisfaction status — mirrors the chart tooltip's "was the RMD
+       *  satisfied" treatment (R47 follow-up, table/chart parity). Silent
+       *  in the ordinary case; `satisfiedNotably` adds a checkmark when met
+       *  via excess/QCD; `shortfallAmount > 0` earns its own red line with
+       *  real IRS excise-tax framing. `excessAmount`'s wording follows the
+       *  household's `rmdExcessHandling` toggle via `excessMode`. */
+      rmd?: {
+        amount: number;
+        isStartYear: boolean;
+        satisfiedNotably: boolean;
+        shortfallAmount: number;
+        excessAmount: number;
+        excessMode: "reinvest" | "spend";
+      };
       items?: TooltipLineItem[];
       total?: {
         label: string;

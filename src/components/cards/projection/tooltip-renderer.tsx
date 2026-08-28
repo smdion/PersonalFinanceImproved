@@ -125,6 +125,39 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       {d.meta && <div className="text-slate-400 text-caption">{d.meta}</div>}
       {/* 3. META2 */}
       {d.meta2 && <div className="text-slate-400 text-caption">{d.meta2}</div>}
+      {/* 3b. RMD (R47 follow-up — table/chart parity, see types.ts docblock) */}
+      {d.rmd && (
+        <div className="space-y-0.5">
+          <div
+            className={`flex justify-between gap-4 font-medium ${d.rmd.shortfallAmount > 0 ? "text-red-400" : "text-amber-400"}`}
+          >
+            <span>
+              {d.rmd.isStartYear ? "RMDs begin" : "RMD"}
+              {d.rmd.satisfiedNotably ? " ✓" : ""}
+            </span>
+            <span className="tabular-nums">{formatCurrency(d.rmd.amount)}</span>
+          </div>
+          {d.rmd.shortfallAmount > 0 && (
+            <div className="text-red-400/70 text-caption">
+              Only {formatCurrency(d.rmd.amount - d.rmd.shortfallAmount)} of{" "}
+              {formatCurrency(d.rmd.amount)} required met · 25% excise tax risk
+            </div>
+          )}
+          {d.rmd.excessAmount > 0 && (
+            <div className="flex justify-between gap-4 text-amber-400/70 text-caption">
+              <span>
+                {d.rmd.excessMode === "spend"
+                  ? "RMD excess spent"
+                  : "RMD excess reinvested"}
+              </span>
+              <span className="tabular-nums">
+                {d.rmd.excessMode === "spend" ? "" : "+"}
+                {formatCurrency(d.rmd.excessAmount)}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
       {/* 4. OVERRIDE NOTE */}
       {d.overrideNote && (
         <div className="text-caption text-emerald-300">{d.overrideNote}</div>

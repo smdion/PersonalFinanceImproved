@@ -717,16 +717,31 @@ export function DecumulationRow({
             : hasSs
               ? `Incl. SS income — ${formatCurrency(deflate(dyr.ssIncome, yr.year))}/yr${ssDetail ? ` (${ssDetail})` : ""}`
               : undefined;
-          const rmdMeta = isRmdStartRow
-            ? `RMDs begin — ${formatCurrency(deflate(dyr.rmdAmount, yr.year))} required`
-            : hasRmd
-              ? `RMD: ${formatCurrency(deflate(dyr.rmdAmount, yr.year))}`
-              : undefined;
+          // R47 follow-up: full satisfaction status (checkmark/shortfall/
+          // excess wording), not just the bare amount — parity with the
+          // chart tooltip's rmd block (see tooltip-renderer.tsx).
+          const rmdShortfallAmount = dyr.rmdShortfallAmount ?? 0;
+          const rmdExcessAmount = dyr.rmdExcessAmount ?? 0;
+          const rmdSatisfiedNotably =
+            rmdShortfallAmount <= 0 &&
+            (rmdExcessAmount > 0 || (dyr.qcdAmount ?? 0) > 0);
           return renderTooltip({
             kind: "money",
             header: "Total Withdrawals",
             meta: ssMeta,
-            meta2: rmdMeta,
+            rmd: hasRmd
+              ? {
+                  amount: deflate(dyr.rmdAmount, yr.year),
+                  isStartYear: isRmdStartRow,
+                  satisfiedNotably: rmdSatisfiedNotably,
+                  shortfallAmount: deflate(rmdShortfallAmount, yr.year),
+                  excessAmount: deflate(rmdExcessAmount, yr.year),
+                  excessMode:
+                    engineSettings?.rmdExcessHandling === "spend"
+                      ? "spend"
+                      : "reinvest",
+                }
+              : undefined,
             items: items.length > 0 ? items : undefined,
             growth:
               Math.abs(totalGrowth) > 1
