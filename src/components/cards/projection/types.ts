@@ -51,6 +51,49 @@ export type TooltipData =
       header: string;
       meta?: string;
       meta2?: string;
+      /** RMD-satisfaction status — mirrors the chart tooltip's "was the RMD
+       *  satisfied" treatment (R47 follow-up, table/chart parity). Silent
+       *  in the ordinary case; `satisfiedNotably` adds a checkmark when met
+       *  via excess/QCD; `shortfallAmount > 0` earns its own red line with
+       *  real IRS excise-tax framing. `excessAmount`'s wording follows the
+       *  household's `rmdExcessHandling` toggle via `excessMode`. */
+      rmd?: {
+        amount: number;
+        isStartYear: boolean;
+        satisfiedNotably: boolean;
+        shortfallAmount: number;
+        excessAmount: number;
+        excessMode: "reinvest" | "spend";
+        /** Money sent directly to charity, satisfying part of the RMD
+         *  tax-free (R46 QCD) — already shown in the chart tooltip and in
+         *  this same table's per-category/bucket tooltips, but was missing
+         *  from this specific "Total Withdrawals" rmd block (UI/UX review,
+         *  2026-08-28). */
+        qcdAmount?: number;
+      };
+      /** Real, material spending-need shortfall for this year (engine's
+       *  `unmetNeedMaterial` verdict — advisor review, 2026-08-28). Was
+       *  previously only visible behind the hidden diagMode dev toggle;
+       *  this promotes it to a real, always-visible alert. Only ever set
+       *  when the engine's own materiality floor is cleared — never
+       *  re-derive that threshold in a component. */
+      shortfall?: {
+        amount: number;
+        /** Portion attributable to excluding penalty-exposed money
+         *  (avoidPenalizedWithdrawals) — see RouteResult's docblock. */
+        penaltyAvoidedAmount?: number;
+        /** Portion attributable to excluding Portfolio-parented
+         *  ("non-retirement") money (R49) — see RouteResult's docblock. */
+        nonRetirementAmount?: number;
+      };
+      /** Guardrail/spending-strategy event explanation for this year (e.g.
+       *  Guyton-Klinger raise/cut, Vanguard Dynamic ceiling/floor) — the
+       *  same data the Balance chart's ReferenceLine markers already show,
+       *  but previously invisible here except behind the hidden diagMode
+       *  dev toggle (UI/UX review, 2026-08-28). Build via
+       *  `buildStrategyEventStyle` in utils.ts so this can't drift from
+       *  the chart's own wording/color. */
+      strategyEvent?: { color: string; text: string };
       items?: TooltipLineItem[];
       total?: {
         label: string;

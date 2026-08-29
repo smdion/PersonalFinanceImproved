@@ -170,6 +170,36 @@ describe("taxBuckets router", () => {
     ).toBe(45000);
   });
 
+  it("updateRothBasis stamps basis_last_updated so the sidebar/Performance-page freshness display stays current (fresh DB — this file's tests share a caller/db with no per-test cleanup, so a null-before assertion needs its own isolated context)", async () => {
+    const fresh = await createTestCaller(adminSession);
+    try {
+      const personId = await seedPerson(fresh.db, "Stamp Test", "1980-01-01");
+      const perfAcctId = seedPerformanceAccount(fresh.db, {
+        institution: "Fidelity",
+        accountType: "ira",
+        ownerPersonId: personId,
+        ownershipType: "individual",
+      });
+
+      const before = await fresh.caller.settings.getDataFreshness();
+      expect(before.basisDate).toBeNull();
+
+      await fresh.caller.taxBuckets.updateRothBasis({
+        performanceAccountId: perfAcctId,
+        ownerPersonId: personId,
+        contributionBasis: "10000",
+        conversionBasis: "0",
+        latestConversionYear: null,
+      });
+
+      const after = await fresh.caller.settings.getDataFreshness();
+      expect(after.basisDate).not.toBeNull();
+      expect(new Date(after.basisDate!).getTime()).not.toBeNaN();
+    } finally {
+      fresh.cleanup();
+    }
+  });
+
   it("updateSeparationDate sets the explicit date, overriding any derived job link", async () => {
     const personId = await seedPerson(db, "Sep Test", "1980-01-01");
     const perfAcctId = seedPerformanceAccount(db, {
@@ -308,6 +338,41 @@ describe("taxBuckets router", () => {
       entry1Updated.slices.find((s) => s.label === "Contribution basis")
         ?.amount,
     ).toBe(25000);
+  });
+
+  it("batchUpdateRothBasis also stamps basis_last_updated (fresh DB, isolated from the shared-caller tests above)", async () => {
+    const fresh = await createTestCaller(adminSession);
+    try {
+      const personId = await seedPerson(fresh.db, "Batch Stamp", "1980-01-01");
+      const acctId = seedPerformanceAccount(fresh.db, {
+        institution: "Schwab",
+        accountType: "ira",
+        ownerPersonId: personId,
+        ownershipType: "individual",
+      });
+
+      const before = await fresh.caller.settings.getDataFreshness();
+      expect(before.basisDate).toBeNull();
+
+      await fresh.caller.taxBuckets.batchUpdateRothBasis({
+        entries: [
+          {
+            performanceAccountId: acctId,
+            ownerPersonId: personId,
+            year: 2026,
+            contributionBasis: "5000",
+            conversionBasis: "0",
+            latestConversionYear: null,
+          },
+        ],
+      });
+
+      const after = await fresh.caller.settings.getDataFreshness();
+      expect(after.basisDate).not.toBeNull();
+      expect(new Date(after.basisDate!).getTime()).not.toBeNaN();
+    } finally {
+      fresh.cleanup();
+    }
   });
 
   it("rejects updateRothBasis, batchUpdateRothBasis, and updateSeparationDate for a viewer without the performance permission", async () => {

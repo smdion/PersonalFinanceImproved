@@ -27,6 +27,7 @@ import {
   getTraditionalBalance,
   getRothBalance,
   getTotalBalance,
+  isRetirementParent,
 } from "../../config/account-types";
 import { TAX_TREATMENT_TO_TAX_TYPE } from "../../config/display-labels";
 import { projectSpecAmount } from "./contribution-projection";
@@ -591,7 +592,18 @@ export function distributeWithdrawals(
 
   for (const slot of slots) {
     if (slot.withdrawal <= 0) continue;
-    const catAccts = indAccts.filter((ia) => ia.category === slot.category);
+    // R49: Portfolio-parented accounts are never a withdrawal fan-out
+    // target — defense-in-depth alongside the category-level exclusion
+    // routeForMode already applies (subtractExcluded); the category total
+    // decided upstream should already fit within Retirement-parented
+    // accounts' balances, so this filter should be a no-op in practice,
+    // but it's what makes the exclusion a hard guarantee rather than
+    // "should never happen if the upstream math is right."
+    const catAccts = indAccts.filter(
+      (ia) =>
+        ia.category === slot.category &&
+        isRetirementParent(ia.parentCategory ?? "Retirement"),
+    );
     const bs = getAccountTypeConfig(slot.category).balanceStructure;
 
     if (
@@ -730,8 +742,46 @@ function distributeProportionallyPreferringPenaltyFree(
     penaltyFreeCapacity,
   );
   if (shortfall <= 0) return 0;
+  // Second pass (R41): a category pool that includes an allowed account's
+  // penalty-exposed dollars (see `subtractPenaltyExposed`) can leave
+  // `routeForMode` deciding to draw more than the penalty-free total — that
+  // residual must come from an ALLOWED account's exposed balance before it
+  // touches any other account's. Capacity here is the full remaining
+  // balance for an allowed account, 0 for everyone else.
+  const hasAllowedInList = accounts.some(
+    (ia) => exposure.byKey.get(indKey(ia))?.allowPenalizedWithdrawals,
+  );
+  if (hasAllowedInList) {
+    const allowedExposedCapacity = new Map<string, number>(
+      accounts.map((ia) => {
+        const k = indKey(ia);
+        const allowed = exposure.byKey.get(k)?.allowPenalizedWithdrawals;
+        return [k, allowed ? Math.max(0, indBal.get(k) ?? 0) : 0];
+      }),
+    );
+    const shortfall2 = distributeProportionally(
+      shortfall,
+      accounts,
+      indKey,
+      indBal,
+      withdrawalMap,
+      allowedExposedCapacity,
+    );
+    // Still short even after every allowed account's exposed money —
+    // report it (reportShortfall, in the caller) rather than falling
+    // through to a disallowed sibling's exposed balance. A disallowed
+    // account's penalty-exposed dollars must stay fully unreachable, even
+    // when the allowed pool in this list can't cover the residual (R41) —
+    // `routeForMode`'s category-level total already accounted for only the
+    // allowed pool, so this really is a genuine indBal-vs-acctBal drift
+    // case, not a place to silently spend a disallowed account's money.
+    return shortfall2;
+  }
   // Residual reaches into penalty-exposed capacity — no capacity ceiling
   // here, whatever balance remains at this point IS the exposed portion.
+  // Structurally unreachable when `avoidPenalizedWithdrawals` is on and no
+  // account in this list has the R41 override, mirroring the un-excluded
+  // total when the household has the lever off entirely.
   return distributeProportionally(
     shortfall,
     accounts,

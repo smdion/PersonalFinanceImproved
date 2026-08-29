@@ -243,6 +243,18 @@ export function accountDisplayName(
   return "Unknown";
 }
 
+/** Display label for a budget API service — shared so a sync toast always
+ * names the ACTUAL connected provider instead of a hardcoded "YNAB" (every
+ * sync toast used to say "YNAB" literally, even when Actual Budget was the
+ * active connected service). */
+export function budgetApiServiceLabel(
+  service: "ynab" | "actual" | "none" | null | undefined,
+): string {
+  if (service === "actual") return "Actual Budget";
+  if (service === "ynab") return "YNAB";
+  return "the budget API";
+}
+
 /**
  * Success-toast wording for a push/pull-to-external-API result. Shared by
  * the budget page's sync mutations and the savings page's push-to-API
@@ -253,11 +265,27 @@ export function formatSyncResultToast(
   count: number,
   action: "push" | "pull",
   destination: string,
+  /** Items that couldn't be pushed even though the request itself
+   * succeeded/didn't error generically — either the provider has no API for
+   * this operation at all, or (Actual specifically) it does but the target
+   * already has incompatible state that can't be safely merged into
+   * without clobbering something configured directly in the provider (see
+   * BudgetApiError's "unsupported"/"conflict" codes). Distinct from
+   * `count === 0`: "already up to date" is actively misleading when the
+   * real reason nothing moved is that the push couldn't land, not that
+   * there was nothing to send. */
+  skippedUnsupported = 0,
 ): string {
+  if (skippedUnsupported > 0 && count === 0) {
+    return `Couldn't ${action === "push" ? "set" : "read"} goal amounts in ${destination} for ${skippedUnsupported} item${skippedUnsupported !== 1 ? "s" : ""} — check ${skippedUnsupported !== 1 ? "these goals" : "this goal"} in ${destination}.`;
+  }
   if (count === 0) {
     return `No changes to ${action} — already up to date`;
   }
   const verb = action === "push" ? "Pushed" : "Pulled";
   const preposition = action === "push" ? "to" : "from";
-  return `${verb} ${count} item${count !== 1 ? "s" : ""} ${preposition} ${destination}`;
+  const base = `${verb} ${count} item${count !== 1 ? "s" : ""} ${preposition} ${destination}`;
+  return skippedUnsupported > 0
+    ? `${base} (${skippedUnsupported} skipped — check ${destination})`
+    : base;
 }

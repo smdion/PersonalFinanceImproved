@@ -1,0 +1,2 @@
+ALTER TABLE "retirement_settings" ADD COLUMN "rmd_excess_handling" varchar(20) DEFAULT 'reinvest' NOT NULL;--> statement-breakpoint
+ALTER TABLE "retirement_settings" ADD COLUMN "qcd_maximize" boolean DEFAULT false NOT NULL;

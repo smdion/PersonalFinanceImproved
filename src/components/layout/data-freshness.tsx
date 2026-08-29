@@ -90,6 +90,7 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
   const oldestRaw = findOldestDateSource([
     data.balanceDate,
     data.performanceDate,
+    data.basisDate,
     syncStatus?.lastSynced?.toString(),
     simplefinStatus?.connected
       ? simplefinStatus.lastSyncedAt?.toString()
@@ -112,6 +113,12 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
         <div className="flex justify-between gap-4">
           <span className="text-slate-400">Performance</span>
           <span>{formatDate(data.performanceDate)}</span>
+        </div>
+      )}
+      {data.basisDate && (
+        <div className="flex justify-between gap-4">
+          <span className="text-slate-400">Basis</span>
+          <span>{formatDate(data.basisDate)}</span>
         </div>
       )}
       {syncLabel && (

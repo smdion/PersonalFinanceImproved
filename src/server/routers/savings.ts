@@ -57,6 +57,7 @@ import {
   getClientForService,
   cacheGet,
   refreshCategoryCache,
+  BudgetApiError,
 } from "@/lib/budget-api";
 import type { BudgetCategoryGroup, BudgetTransaction } from "@/lib/budget-api";
 
@@ -1571,7 +1572,8 @@ export const savingsRouter = createTRPCRouter({
         ? linked.filter((g) => g.id === input.goalId)
         : linked;
 
-      if (toPush.length === 0) return { pushed: 0 };
+      if (toPush.length === 0)
+        return { pushed: 0, skippedUnsupported: 0, service: active };
 
       // Same tier resolution as computeSummary — see resolveEfundTierIndex.
       const efundTierIndex = resolveEfundTierIndex(
@@ -1602,6 +1604,17 @@ export const savingsRouter = createTRPCRouter({
       );
 
       let pushed = 0;
+      // Counted separately from a generic failure (network/auth/rate-limit,
+      // still just logged and skipped below) — the provider COULDN'T
+      // perform this specific write, either because it has no API for the
+      // operation at all ("unsupported") or because the target already has
+      // incompatible state that can't be safely merged into ("conflict" —
+      // e.g. Actual's note-based goal write finding a differently-shaped
+      // #template already there; see ActualClient.updateCategoryGoalTarget/
+      // updateCategoryTargetBalance / actual-goal-notes.ts). Surfaced
+      // distinctly to the caller so the UI doesn't tell the user "already
+      // up to date" when nothing was ever pushed.
+      let skippedUnsupported = 0;
       for (const goal of toPush) {
         try {
           if (goal.isEmergencyFund) {
@@ -1638,10 +1651,17 @@ export const savingsRouter = createTRPCRouter({
             }
           }
         } catch (err) {
-          log("warn", "push_goal_target_failed", {
-            goalId: goal.id,
-            error: err instanceof Error ? err.message : String(err),
-          });
+          if (
+            err instanceof BudgetApiError &&
+            (err.code === "unsupported" || err.code === "conflict")
+          ) {
+            skippedUnsupported++;
+          } else {
+            log("warn", "push_goal_target_failed", {
+              goalId: goal.id,
+              error: err instanceof Error ? err.message : String(err),
+            });
+          }
         }
       }
 
@@ -1652,7 +1672,7 @@ export const savingsRouter = createTRPCRouter({
         await refreshCategoryCache(ctx.db, active, client);
       }
 
-      return { pushed };
+      return { pushed, skippedUnsupported, service: active };
     }),
 
   /**

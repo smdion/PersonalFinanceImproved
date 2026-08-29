@@ -22,6 +22,8 @@ import {
   roundToCents,
   safeDivide as canonicalSafeDivide,
 } from "@/lib/utils/math";
+import { formatPercent } from "@/lib/utils/format";
+import { CHART_COLORS } from "@/lib/utils/colors";
 import type {
   TipColor,
   AccountSplitsResult,
@@ -142,6 +144,15 @@ export function filterYearByParentCategory(
   yr: EngineYearProjection,
   parentCategory: string,
 ): EngineYearProjection {
+  // No individual-account data to filter by at all (MC "Simple" tax mode —
+  // see monte-carlo.ts's Simple-mode block — has no per-account/parent-
+  // category structure left once it collapses to one fictional bucket).
+  // Filtering by parent category is meaningless here; returning `yr`
+  // unchanged is the honest degradation, not zeroing every balance/
+  // withdrawal field below to match an empty account list (live-user
+  // finding, 2026-08-28 — Rate-Seeded showed $0 balances everywhere
+  // because this function was doing exactly that).
+  if (yr.individualAccountBalances.length === 0) return yr;
   const filtered = yr.individualAccountBalances.filter(
     (ia) => ia.parentCategory === parentCategory,
   );
@@ -212,12 +223,120 @@ export function filterYearByParentCategory(
   const endBalance = roundToCents(
     byTax.preTax + byTax.taxFree + byTax.hsa + byTax.afterTax,
   );
+
+  if (yr.phase !== "decumulation") {
+    return {
+      ...yr,
+      individualAccountBalances: filtered,
+      balanceByTaxType: byTax,
+      balanceByAccount: byAcct,
+      endBalance,
+    };
+  }
+
+  // Rescope withdrawals to the same account subset as the balances above —
+  // otherwise a filtered "After-Tax: $32k" balance sits next to an
+  // unfiltered "Brokerage: -$30k" withdrawal that was mostly drawn from a
+  // Portfolio-parented account this page never shows, making it look like
+  // the account is being overdrawn. `slots` has no per-account structure
+  // in the engine (it's a per-category routing decision), so this sums the
+  // withdrawal each filtered *account* actually recorded rather than
+  // re-deriving what routing would have decided for a smaller pool — the
+  // routing-decision flags below (cappedByAccount/cappedByTaxType/
+  // remainingNeed) are left as the true household-wide values since they
+  // reflect a real global constraint (bracket-filling, account limits) that
+  // doesn't change based on this page's display-only account grouping.
+  const filteredSlots = yr.slots.map((slot) => {
+    const catIabs = filtered.filter((ia) => ia.category === slot.category);
+    const cfg = getAccountTypeConfig(slot.category);
+    let withdrawal: number;
+    let rothWithdrawal: number;
+    let traditionalWithdrawal: number;
+    if (cfg.balanceStructure === "roth_traditional") {
+      traditionalWithdrawal = roundToCents(
+        catIabs
+          .filter((ia) => !isTaxFreeBucket(ia.taxType))
+          .reduce((s, ia) => s + (ia.withdrawal ?? 0), 0),
+      );
+      rothWithdrawal = roundToCents(
+        catIabs
+          .filter((ia) => isTaxFreeBucket(ia.taxType))
+          .reduce((s, ia) => s + (ia.withdrawal ?? 0), 0),
+      );
+      withdrawal = roundToCents(traditionalWithdrawal + rothWithdrawal);
+    } else {
+      withdrawal = roundToCents(
+        catIabs.reduce((s, ia) => s + (ia.withdrawal ?? 0), 0),
+      );
+      rothWithdrawal = 0;
+      traditionalWithdrawal = 0;
+    }
+    // Basis/gains aren't tracked per individual account — prorate by the
+    // same withdrawal ratio, mirroring the basis proration above.
+    const ratio = safeDivide(withdrawal, slot.withdrawal);
+    return {
+      ...slot,
+      withdrawal,
+      rothWithdrawal,
+      traditionalWithdrawal,
+      basisPortion:
+        slot.basisPortion != null
+          ? roundToCents(slot.basisPortion * ratio)
+          : slot.basisPortion,
+      gainsPortion:
+        slot.gainsPortion != null
+          ? roundToCents(slot.gainsPortion * ratio)
+          : slot.gainsPortion,
+    };
+  });
+  const totalWithdrawal = roundToCents(
+    filteredSlots.reduce((s, sl) => s + sl.withdrawal, 0),
+  );
+  const totalTraditionalWithdrawal = roundToCents(
+    filteredSlots.reduce((s, sl) => s + sl.traditionalWithdrawal, 0),
+  );
+  const totalRothWithdrawal = roundToCents(
+    filteredSlots.reduce((s, sl) => s + sl.rothWithdrawal, 0),
+  );
+
+  // Rescope targetWithdrawal/taxCost by the SAME filtered/unfiltered ratio
+  // as the slots above, instead of leaving them at their household-wide
+  // values (advisor review, 2026-08-29). Leaving targetWithdrawal
+  // household-wide while totalWithdrawal is Retirement-scoped meant a
+  // FULLY-funded plan could still compare as "underfunded" — the amber
+  // withdrawal-cell coloring, the tooltip's "Eff. rate = tax / withdrawal"
+  // claim, and a literal false SHORTFALL string in diag mode all read off
+  // that same mismatch. taxCost is prorated the same way, matching the
+  // proration this function already applies to basis/gains above —
+  // effectiveTaxRate (taxCost/totalWithdrawal) is invariant under a
+  // shared scale factor, so it stays correct with no separate change.
+  // projectedExpenses/rmdAmount/qcdAmount/rmdExcessAmount are
+  // DELIBERATELY left household-wide: RMD is a real IRS obligation on the
+  // full Traditional balance regardless of account grouping (same
+  // rationale rmd-smoothing.ts's docblock gives for never scoping the
+  // balance an RMD is measured against), and projectedExpenses is the
+  // household's real stated spending need, independent of which accounts
+  // this display-only filter happens to be scoped to.
+  const targetRatio = canonicalSafeDivide(
+    totalWithdrawal,
+    yr.totalWithdrawal,
+    1,
+  );
+  const targetWithdrawal = roundToCents(yr.targetWithdrawal * targetRatio);
+  const taxCost = roundToCents(yr.taxCost * targetRatio);
+
   return {
     ...yr,
     individualAccountBalances: filtered,
     balanceByTaxType: byTax,
     balanceByAccount: byAcct,
     endBalance,
+    slots: filteredSlots,
+    totalWithdrawal,
+    totalTraditionalWithdrawal,
+    totalRothWithdrawal,
+    targetWithdrawal,
+    taxCost,
   };
 }
 
@@ -551,4 +670,90 @@ export function lumpSumsForCategory(
 /** Total dollar amount of lump sums. */
 export function lumpSumTotal(lumpSums: LumpSum[]): number {
   return lumpSums.reduce((s, ls) => s + ls.amount, 0);
+}
+
+// ---------------------------------------------------------------------------
+// Guardrail/strategy event styling (shared between the Balance chart's
+// ReferenceLine markers and the table's "Total Withdrawals" tooltip —
+// UI/UX review, 2026-08-28: the table tooltip previously had no
+// user-visible explanation for a spending jump/drop, only the hidden
+// diagMode diagnostic dump. Factored out here so both call sites can never
+// independently drift on color/wording.)
+// ---------------------------------------------------------------------------
+
+export type StrategyEventStyle = {
+  color: string;
+  label: string;
+  tooltipText: string;
+};
+
+/** Per-strategy spending-adjustment event styling, keyed by
+ *  `EngineDecumulationYear.strategyAction`. Percent context (raise/cut/
+ *  ceiling/floor %) comes straight from the household's own settings —
+ *  the actual % applied that year, not a guess. */
+export function buildStrategyEventStyle(
+  engineSettings:
+    | {
+        withdrawalStrategy?: string | null;
+        gkIncreasePct?: string | number | null;
+        gkDecreasePct?: string | number | null;
+        vdCeilingPercent?: string | number | null;
+        vdFloorPercent?: string | number | null;
+        cpFloorPercent?: string | number | null;
+        enFloorPercent?: string | number | null;
+      }
+    | null
+    | undefined,
+): Record<string, StrategyEventStyle> {
+  const pct = (v: unknown) => (v != null ? formatPercent(Number(v), 0) : null);
+  const gkIncreasePct = pct(engineSettings?.gkIncreasePct);
+  const gkDecreasePct = pct(engineSettings?.gkDecreasePct);
+  const vdCeilingPct = pct(engineSettings?.vdCeilingPercent);
+  const vdFloorPct = pct(engineSettings?.vdFloorPercent);
+  const cpFloorPct = pct(engineSettings?.cpFloorPercent);
+  const enFloorPct = pct(engineSettings?.enFloorPercent);
+  const activeStrategy = engineSettings?.withdrawalStrategy;
+
+  return {
+    increase: {
+      color: CHART_COLORS.guardrailIncreaseMarker,
+      label: gkIncreasePct ? `▲ raise +${gkIncreasePct}` : "▲ raise",
+      tooltipText: `Upper guardrail triggered — spending raised${gkIncreasePct ? ` ${gkIncreasePct}` : ""}`,
+    },
+    decrease: {
+      color: CHART_COLORS.guardrailDecreaseMarker,
+      label: gkDecreasePct ? `▼ cut -${gkDecreasePct}` : "▼ cut",
+      tooltipText: `Lower guardrail triggered — spending cut${gkDecreasePct ? ` ${gkDecreasePct}` : ""}`,
+    },
+    skip_inflation: {
+      color: CHART_COLORS.guardrailSkipInflationMarker,
+      label: "⏸ no raise",
+      tooltipText:
+        "Prosperity rule — inflation raise skipped after a loss year",
+    },
+    ceiling_applied: {
+      color: CHART_COLORS.guardrailIncreaseMarker,
+      label: vdCeilingPct ? `▲ capped @${vdCeilingPct}` : "▲ capped",
+      tooltipText: `Year-over-year ceiling reached${vdCeilingPct ? ` (max +${vdCeilingPct}/yr)` : ""} — raise capped, spending still rose just not as much as your balance alone would set`,
+    },
+    floor_applied: {
+      color: CHART_COLORS.guardrailSkipInflationMarker,
+      label:
+        activeStrategy === "vanguard_dynamic" && vdFloorPct
+          ? `▼ floor @${vdFloorPct}`
+          : "▼ floor",
+      tooltipText:
+        activeStrategy === "vanguard_dynamic"
+          ? `Year-over-year floor reached${vdFloorPct ? ` (max -${vdFloorPct}/yr)` : ""} — cut limited, spending still fell just not as much as your balance alone would set`
+          : `Nominal floor reached${
+              activeStrategy === "endowment"
+                ? enFloorPct
+                  ? ` (${enFloorPct} of your initial withdrawal)`
+                  : ""
+                : cpFloorPct
+                  ? ` (${cpFloorPct} of your initial withdrawal)`
+                  : ""
+            } — spending held at the floor instead of following your balance down further`,
+    },
+  };
 }

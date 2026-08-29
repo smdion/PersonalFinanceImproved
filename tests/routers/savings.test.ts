@@ -19,18 +19,34 @@ import {
   createTestCaller,
   seedStandardDataset,
   seedSavingsGoal,
+  seedSavingsGoalAllocation,
   seedBudgetItem,
   seedBudgetProfile,
 } from "./setup";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
+import {
+  getActiveBudgetApi,
+  getClientForService,
+  BudgetApiError,
+} from "@/lib/budget-api";
+import type { BudgetAPIClient } from "@/lib/budget-api";
 
-vi.mock("@/lib/budget-api", () => ({
-  getActiveBudgetApi: vi.fn().mockResolvedValue("none"),
-  getBudgetAPIClient: vi.fn().mockResolvedValue(null),
-  cacheGet: vi.fn().mockResolvedValue(null),
-  getClientForService: vi.fn().mockResolvedValue(null),
-}));
+vi.mock("@/lib/budget-api", async () => {
+  const actual =
+    await vi.importActual<typeof import("@/lib/budget-api")>(
+      "@/lib/budget-api",
+    );
+  return {
+    getActiveBudgetApi: vi.fn().mockResolvedValue("none"),
+    getBudgetAPIClient: vi.fn().mockResolvedValue(null),
+    cacheGet: vi.fn().mockResolvedValue(null),
+    getClientForService: vi.fn().mockResolvedValue(null),
+    refreshCategoryCache: vi.fn().mockResolvedValue(undefined),
+    // Real class — pushContributionsToApi does `err instanceof BudgetApiError`.
+    BudgetApiError: actual.BudgetApiError,
+  };
+});
 
 /**
  * Patch rawDb.execute so computeSummary's raw balance query works in SQLite.
@@ -1244,6 +1260,97 @@ describe("savings.computeSummary", () => {
       expect(result.allocationOverrides[0].amount).toBe(175);
     } finally {
       freshCtx.cleanup();
+    }
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// savings.pushContributionsToApi — the active provider having no API for
+// this write at all (currently only Actual) must be counted and reported
+// separately from a real success, not silently treated as "nothing to
+// push". See ActualClient.updateCategoryGoalTarget/updateCategoryTargetBalance.
+// ══════════════════════════════════════════════════════════════════════════════
+
+describe("savings.pushContributionsToApi", () => {
+  it("counts a BudgetApiError('unsupported') as skippedUnsupported, not pushed — and never throws", async () => {
+    const ctx = await createTestCaller();
+    try {
+      const { profileId } = seedStandardDataset(ctx.db);
+      const goalId = seedSavingsGoal(ctx.db, {
+        name: "Synced Goal",
+        isApiSyncEnabled: true,
+        apiCategoryId: "cat-unsupported",
+        isEmergencyFund: false,
+      });
+      seedSavingsGoalAllocation(ctx.db, goalId, profileId, {
+        monthlyContribution: "100",
+      });
+
+      vi.mocked(getActiveBudgetApi).mockResolvedValueOnce("actual");
+      vi.mocked(getClientForService).mockResolvedValueOnce({
+        updateCategoryGoalTarget: vi
+          .fn()
+          .mockRejectedValue(
+            new BudgetApiError(
+              "Actual Budget has no API to set a category's goal amount",
+              "unsupported",
+              null,
+            ),
+          ),
+        updateCategoryTargetBalance: vi
+          .fn()
+          .mockRejectedValue(
+            new BudgetApiError(
+              "Actual Budget has no API to set a category's goal amount",
+              "unsupported",
+              null,
+            ),
+          ),
+      } as unknown as BudgetAPIClient);
+
+      const result = await ctx.caller.savings.pushContributionsToApi();
+      expect(result).toEqual({
+        pushed: 0,
+        skippedUnsupported: 1,
+        service: "actual",
+      });
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
+  it("a generic (non-unsupported) error is still logged and skipped, not counted as skippedUnsupported", async () => {
+    const ctx = await createTestCaller();
+    try {
+      const { profileId } = seedStandardDataset(ctx.db);
+      const goalId = seedSavingsGoal(ctx.db, {
+        name: "Synced Goal",
+        isApiSyncEnabled: true,
+        apiCategoryId: "cat-network-fail",
+        isEmergencyFund: false,
+      });
+      seedSavingsGoalAllocation(ctx.db, goalId, profileId, {
+        monthlyContribution: "100",
+      });
+
+      vi.mocked(getActiveBudgetApi).mockResolvedValueOnce("ynab");
+      vi.mocked(getClientForService).mockResolvedValueOnce({
+        updateCategoryGoalTarget: vi
+          .fn()
+          .mockRejectedValue(new Error("network blip")),
+        updateCategoryTargetBalance: vi
+          .fn()
+          .mockRejectedValue(new Error("network blip")),
+      } as unknown as BudgetAPIClient);
+
+      const result = await ctx.caller.savings.pushContributionsToApi();
+      expect(result).toEqual({
+        pushed: 0,
+        skippedUnsupported: 0,
+        service: "ynab",
+      });
+    } finally {
+      ctx.cleanup();
     }
   });
 });

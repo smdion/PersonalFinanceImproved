@@ -245,7 +245,17 @@ export const strategyRouter = createTRPCRouter({
             label: meta.label,
             shortLabel: meta.shortLabel,
             portfolioDepletionAge: result.portfolioDepletionAge,
-            sustainableWithdrawal: result.sustainableWithdrawal,
+            // R45 Step 3, Finding 11: sustainableWithdrawal dropped from
+            // this comparison — it's never rendered by
+            // withdrawal-comparison.tsx (year1Withdrawal/avgAnnualWithdrawal/
+            // min/max already give the real per-strategy withdrawal picture,
+            // sourced from the same totalWithdrawal figures), and after
+            // Step 2 made it strategy-real it would either duplicate
+            // year1Withdrawal (common case) or read as a second, differently
+            // -computed one (RMD-active years, where it reflects the target
+            // before RMD-forced excess rather than what was actually
+            // withdrawn) — a Single Computation Path risk with no UI
+            // consumer to justify it.
             year1Withdrawal: decYears[0]?.totalWithdrawal ?? 0,
             avgAnnualWithdrawal: roundToCents(avgWithdrawal),
             minAnnualWithdrawal:
@@ -482,15 +492,6 @@ export const strategyRouter = createTRPCRouter({
           max: baseEngineInput.projectionEndAge - 5,
         },
         {
-          field: "withdrawalRate",
-          delta: -0.005,
-          unit: "absolute",
-          targets: ["survival"],
-          label: "Withdrawal Rate",
-          currentValue: toNumber(settings.withdrawalRate),
-          max: 1,
-        },
-        {
           field: "ssStartAge",
           delta: 3,
           unit: "absolute",
@@ -568,14 +569,6 @@ export const strategyRouter = createTRPCRouter({
           // Global lever — modify the engine input field directly
           if (lever.field === "retirementAge") {
             variantInput = { ...variantInput, retirementAge: rounded };
-          } else if (lever.field === "withdrawalRate") {
-            variantInput = {
-              ...variantInput,
-              decumulationDefaults: {
-                ...variantInput.decumulationDefaults,
-                withdrawalRate: rounded,
-              },
-            };
           } else if (lever.field === "ssStartAge") {
             variantInput = { ...variantInput, ssStartAge: rounded };
           }
@@ -601,8 +594,6 @@ export const strategyRouter = createTRPCRouter({
             (l.field === "retirementAge" || l.field === "ssStartAge")
           )
             return String(Math.round(v));
-          if (l.kind === "global" && l.field === "withdrawalRate")
-            return formatPercent(v, 2);
           // Strategy param — check field type
           const field = strategyMeta.paramFields.find(
             (f) => f.key === (l as { key: string }).key,

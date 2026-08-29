@@ -7,12 +7,49 @@
  */
 import type { TaxBuckets, AccountBalances } from "../types";
 import { roundToCents } from "../../utils/math";
+import { MIN_RETURN_RATE } from "../../constants";
 import {
   getAllCategories,
   setTraditional,
   setRoth,
   setBalance,
 } from "../../config/account-types";
+
+// ---------------------------------------------------------------------------
+// Return rate lookup
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolve the effective return rate for a given age from a sparse
+ * age→rate map (populated only at configured breakpoint ages, e.g. "Age
+ * 39") — falls back to the closest configured age at or below the
+ * requested one, throws if nothing qualifies, then floors at
+ * `MIN_RETURN_RATE`. Extracted from `pre-year-setup.ts` (R47) so the real
+ * per-year growth application and any forward-looking projection (e.g.
+ * R47's RMD-smoothing lookahead) can't quietly diverge on how a sparse
+ * map is resolved — Single Computation Path, `docs/RULES.md`. The
+ * `MIN_RETURN_RATE` floor travels WITH the lookup, not as a separate step
+ * a caller might forget to apply.
+ */
+export function resolveReturnRateForAge(
+  returnRateMap: Map<number, number>,
+  age: number,
+): number {
+  let rate = returnRateMap.get(age);
+  if (rate === undefined) {
+    let closestAge = 0;
+    returnRateMap.forEach((_rate, rateAge) => {
+      if (rateAge <= age) closestAge = rateAge;
+    });
+    rate = returnRateMap.get(closestAge);
+    if (rate === undefined) {
+      throw new Error(
+        `No return rate configured for age ${age}. Add return rates in retirement settings.`,
+      );
+    }
+  }
+  return Math.max(MIN_RETURN_RATE, rate);
+}
 
 // ---------------------------------------------------------------------------
 // Types

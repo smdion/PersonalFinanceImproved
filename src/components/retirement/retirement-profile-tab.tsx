@@ -43,6 +43,7 @@ import { recommendWithdrawalStrategy } from "@/lib/pure/withdrawal-strategy-reco
 import { SocialSecuritySection } from "@/components/retirement/sections/social-security";
 import { TaxesSection } from "@/components/retirement/sections/taxes";
 import { HealthcareSection } from "@/components/retirement/sections/healthcare";
+import { RmdHandlingSection } from "@/components/retirement/sections/rmd-handling";
 import { GlidePathSection } from "@/components/retirement/sections/glide-path";
 import { TimelineSection } from "@/components/retirement/sections/timeline";
 import { IncomeSection } from "@/components/retirement/sections/income";
@@ -62,20 +63,6 @@ import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useScenario } from "@/lib/context/scenario-context";
 import { StrategyGuideButton } from "@/components/cards/strategy-guide-panel";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
-
-// Same mapping as the Retirement page previously carried — bridges the
-// recommendation helper's kebab-case strategy keys to the snake_case keys in
-// WITHDRAWAL_STRATEGY_CONFIG / settings.withdrawalStrategy.
-const RECOMMENDED_KEY_MAP: Record<string, WithdrawalStrategyType> = {
-  fixed: "fixed",
-  "guyton-klinger": "guyton_klinger",
-  "vanguard-dynamic": "vanguard_dynamic",
-  "constant-percentage": "constant_percentage",
-  endowment: "endowment",
-  "spending-decline": "spending_decline",
-  "forgo-inflation": "forgo_inflation_after_loss",
-  "rmd-spending": "rmd_spending",
-};
 
 export function RetirementProfileTab() {
   const currentYear = new Date().getFullYear();
@@ -384,11 +371,9 @@ export function RetirementProfileTab() {
                             Number(settings.socialSecurityMonthly) > 0,
                           mostlyTaxAdvantaged: false,
                         });
-                        const recKey =
-                          RECOMMENDED_KEY_MAP[rec.strategy] ?? "fixed";
                         return getAllStrategyKeys().map((key) => {
                           const meta = getStrategyMeta(key);
-                          const isRecommended = key === recKey;
+                          const isRecommended = key === rec.strategy;
                           return (
                             <option key={key} value={key}>
                               {isRecommended ? "★ " : ""}
@@ -495,6 +480,12 @@ export function RetirementProfileTab() {
             />
 
             <HealthcareSection
+              settings={settings}
+              upsertSettings={upsertSettingsMutation}
+              isEditable={admin}
+            />
+
+            <RmdHandlingSection
               settings={settings}
               upsertSettings={upsertSettingsMutation}
               isEditable={admin}

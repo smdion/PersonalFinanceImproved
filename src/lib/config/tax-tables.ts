@@ -111,3 +111,41 @@ export function computeLtcgTax(
 
   return Math.round(tax * 100) / 100; // round to cents
 }
+
+/**
+ * How much LTCG headroom remains before crossing above `targetRate`, given
+ * ordinary taxable income already occupying the bottom of the stack.
+ *
+ * NOT a reuse of `incomeCapForMarginalRate` (ordinary W-4 brackets) — the
+ * two tables use opposite threshold semantics. Ordinary brackets store the
+ * bracket's floor (matched with `>=` in `estimateEffectiveTaxRate`); LTCG
+ * brackets store the bracket's ceiling (matched with `<=` in `getLtcgRate`
+ * above). Casting one against the other silently returns the wrong number
+ * (verified: overstates MFJ 0%-LTCG headroom by $514,800) — this function
+ * exists so nothing needs to make that mistake.
+ */
+export function ltcgRoomForRate(
+  targetRate: number,
+  ordinaryTaxableIncome: number,
+  filingStatus: FilingStatusType,
+  dbBrackets?: Record<string, { threshold: number | null; rate: number }[]>,
+): number {
+  const raw = dbBrackets
+    ? dbBrackets[filingStatus]
+    : LTCG_BRACKETS[filingStatus];
+  if (!raw) return 0;
+  const brackets = raw.map((b) => ({
+    threshold: b.threshold ?? Infinity,
+    rate: b.rate,
+  }));
+  for (const b of brackets) {
+    // LTCG brackets store the bracket's OWN ceiling (unlike ordinary
+    // brackets, which store the NEXT bracket's floor) — so the room for
+    // staying AT `targetRate` is that bracket's own threshold, found via
+    // `>=` (the first bracket whose rate reaches targetRate), not `>`.
+    if (b.rate >= targetRate) {
+      return Math.max(0, b.threshold - ordinaryTaxableIncome);
+    }
+  }
+  return Infinity;
+}

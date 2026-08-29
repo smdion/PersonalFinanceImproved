@@ -6,11 +6,12 @@
  * Extracted from the old single-file `projection-year-handlers.ts` in the
  * v0.5.2 refactor. Pure relocation — no logic changes.
  */
-import { MIN_RETURN_RATE } from "../../../constants";
 import { ageInYear } from "../../../utils/date";
+import { roundToCents } from "../../../utils/math";
 import { WITHDRAWAL_STRATEGY_CONFIG } from "@/lib/config/withdrawal-strategies";
 import { applySpendingStrategy } from "../spending-strategy";
 import { buildSpecToAccountMapping } from "../individual-account-tracking";
+import { resolveReturnRateForAge } from "../growth-application";
 import type {
   PreYearSetup,
   ProjectionContext,
@@ -66,22 +67,10 @@ export function runPreYearSetup(
       age === input.retirementAge &&
       ctx.firstYearFraction < 1);
 
-  // Get return rate for this age (fall back to last available)
-  let returnRate = returnRateMap.get(age);
-  if (returnRate === undefined) {
-    // Use closest available rate
-    let closestAge = 0;
-    returnRateMap.forEach((_rate, rateAge) => {
-      if (rateAge <= age) closestAge = rateAge;
-    });
-    returnRate = returnRateMap.get(closestAge);
-    if (returnRate === undefined) {
-      throw new Error(
-        `No return rate configured for age ${age}. Add return rates in retirement settings.`,
-      );
-    }
-  }
-  returnRate = Math.max(MIN_RETURN_RATE, returnRate);
+  // Get return rate for this age (fall back to closest configured age at
+  // or below it, floored at MIN_RETURN_RATE) -- shared with R47's
+  // RMD-smoothing forward projection via resolveReturnRateForAge.
+  const returnRate = resolveReturnRateForAge(returnRateMap, age);
 
   // Check for contribution profile switch at this year (sticky-forward).
   // If multiple switches share the same year, last one wins (sorted ascending).
@@ -194,6 +183,15 @@ export function runPreYearSetup(
     }
   }
 
+  // Hoisted above the expenses block (was originally computed just before
+  // the strategy dispatch below) — the Rate-Seeded year-1 seed needs the
+  // starting balance available at seed time, not after.
+  const preTotalBalance =
+    state.balances.preTax +
+    state.balances.taxFree +
+    state.balances.hsa +
+    state.balances.afterTax;
+
   // Reset expenses to decumulation budget on the FIRST decumulation year.
   // Do NOT key on `age === retirementAge`: that check fails in the mid-year
   // case (retirementAge === currentAge) because by yearIndex=1 the age has already
@@ -204,11 +202,27 @@ export function runPreYearSetup(
   const decumulationExpensesJustSet =
     !isAccumulation &&
     !state.decumulationExpensesSet &&
-    input.decumulationAnnualExpenses != null;
+    (input.decumulationAnnualExpenses != null ||
+      input.rateSeededDecumulationYear1 === true);
   if (decumulationExpensesJustSet) {
-    state.projectedExpenses =
-      input.decumulationAnnualExpenses! *
-      Math.pow(1 + inflationRate, yearIndex);
+    // Rate-Seeded scenario (advisor review, 2026-08-28): ignore the stated
+    // budget entirely for year 1 -- seed from the household's Initial
+    // Withdrawal Rate × starting balance instead. Every strategy's ongoing
+    // per-year mechanism (applySpendingStrategy below, unchanged) evolves
+    // this exactly the same way it evolves a budget-seeded year 1 -- this
+    // only changes where the number starts.
+    state.projectedExpenses = input.rateSeededDecumulationYear1
+      ? roundToCents(
+          input.decumulationDefaults.withdrawalRate * preTotalBalance,
+        )
+      : input.decumulationAnnualExpenses! *
+        Math.pow(1 + inflationRate, yearIndex);
+    // budgetOnlyExpenses seeds identically -- a rate-seeded run has no
+    // independent "budget" concept to track (it deliberately ignores the
+    // budget entirely), so both start from the same rate-seed value; for
+    // a normal run this is the same budget-derived number projectedExpenses
+    // just got, before anything downstream can mutate the latter.
+    state.budgetOnlyExpenses = state.projectedExpenses;
     state.decumulationExpensesSet = true;
   }
 
@@ -223,18 +237,30 @@ export function runPreYearSetup(
     : validatedPostRetirementInflation;
   const expenseInflation =
     !isAccumulation && !strategyUsesRaise ? 0 : effectiveInflation;
-  if (budgetOverrideMap.has(year)) {
+  // Rate-Seeded year 1 deliberately ignores a same-year budget override too
+  // -- the scenario exists specifically to answer "what if the budget/
+  // override didn't drive this," so letting an override immediately
+  // clobber the rate seed on the very year it's set would silently make
+  // the scenario a no-op for any household with a year-1 decumulation
+  // override configured (advisor review, 2026-08-28). Overrides in LATER
+  // years still apply normally -- only the starting point is affected.
+  const skipOverrideThisYear =
+    decumulationExpensesJustSet && input.rateSeededDecumulationYear1 === true;
+  if (budgetOverrideMap.has(year) && !skipOverrideThisYear) {
     state.projectedExpenses = budgetOverrideMap.get(year)!;
+    state.budgetOnlyExpenses = budgetOverrideMap.get(year)!;
   } else if (yearIndex > 0 && !decumulationExpensesJustSet) {
     state.projectedExpenses = state.projectedExpenses * (1 + expenseInflation);
+    // budgetOnlyExpenses grows on its OWN prior value, never on
+    // projectedExpenses -- by this point in a later year, projectedExpenses
+    // may already carry last year's guardrail adjustment (Spending
+    // Strategy Dispatch below mutates it in place), which must never leak
+    // into the budget-only line.
+    state.budgetOnlyExpenses =
+      state.budgetOnlyExpenses * (1 + expenseInflation);
   }
 
   // --- Spending Strategy Dispatch ---
-  const preTotalBalance =
-    state.balances.preTax +
-    state.balances.taxFree +
-    state.balances.hsa +
-    state.balances.afterTax;
   let strategyAction: string | null = null;
 
   if (!isAccumulation && activeStrategy !== "fixed") {

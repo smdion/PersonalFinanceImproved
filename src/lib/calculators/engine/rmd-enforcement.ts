@@ -13,8 +13,9 @@ import {
   categoriesWithTaxPreference,
   getTraditionalBalance,
 } from "../../config/account-types";
-import { getRmdFactor } from "../../config/rmd-tables";
+import { computeRmdAmount } from "../../config/rmd-tables";
 import { RMD_EXCISE_TAX_RATE } from "../../constants";
+import type { NonRetirementExclusion } from "@/lib/pure/withdrawal-eligibility";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -30,6 +31,15 @@ export interface RmdEnforcementInput {
   acctBal: AccountBalances;
   /** When provided, overrides the internal RMD calculation (used for per-person RMD). */
   overrideRmdRequired?: number;
+  /** Portfolio-parented ("non-retirement") exclusion for this year (R49).
+   *  The RMD REQUIREMENT itself (`rmdRequired`, derived from
+   *  `priorYearEndTradBalance` upstream of this module) stays computed off
+   *  the full blended balance — RMDs are a real IRS obligation on real
+   *  dollars regardless of this app's internal parentCategory tagging, and
+   *  that must NOT change. Only the shortfall's per-category DISTRIBUTION
+   *  CAPACITY (`tradBalByCategory` below) is scoped: a Portfolio-parented
+   *  account can't be forced to cover a Retirement-plan RMD shortfall. */
+  nonRetirement?: NonRetirementExclusion;
 }
 
 export interface RmdEnforcementResult {
@@ -38,6 +48,15 @@ export interface RmdEnforcementResult {
   totalTraditionalWithdrawal: number;
   totalWithdrawal: number;
   warnings: string[];
+  /** Portion of `rmdAmount` that could NOT be forced through as a real
+   *  taxable distribution (0 in the overwhelmingly common case) — real IRS
+   *  exposure, not a display nicety: the same shortfall this function
+   *  already prices into the `RMD SHORTFALL` warning string's 25% excise
+   *  tax estimate, just also exposed as a number so the UI can show it
+   *  without parsing a warning string. Possible now that R49 can leave
+   *  Retirement-only Traditional capacity genuinely insufficient to cover
+   *  a real RMD requirement. */
+  rmdShortfallAmount: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -57,16 +76,15 @@ export function enforceRmd(input: RmdEnforcementInput): RmdEnforcementResult {
   const warnings: string[] = [];
   let rmdAmount = 0;
   let rmdOverrodeRouting = false;
+  let rmdShortfallAmount = 0;
 
   if (
     (input.overrideRmdRequired != null && input.overrideRmdRequired > 0) ||
     (rmdStartAge != null && age >= rmdStartAge && priorYearEndTradBalance > 0)
   ) {
-    const factor = getRmdFactor(age);
-    if (input.overrideRmdRequired != null || (factor != null && factor > 0)) {
-      const rmdRequired =
-        input.overrideRmdRequired ??
-        roundToCents(priorYearEndTradBalance / factor!);
+    const computedRmd = computeRmdAmount(priorYearEndTradBalance, age);
+    if (input.overrideRmdRequired != null || computedRmd != null) {
+      const rmdRequired = input.overrideRmdRequired ?? computedRmd!;
       rmdAmount = rmdRequired;
       if (totalTraditionalWithdrawal < rmdRequired) {
         const rmdShortfall = roundToCents(
@@ -81,9 +99,13 @@ export function enforceRmd(input: RmdEnforcementInput): RmdEnforcementResult {
           const fullBal = getTraditionalBalance(acctBal[cat]);
           const alreadyRouted =
             slots.find((s) => s.category === cat)?.traditionalWithdrawal ?? 0;
+          const nonRetirementAmount = input.nonRetirement?.trad[cat] ?? 0;
           return {
             cat,
-            bal: Math.max(0, roundToCents(fullBal - alreadyRouted)),
+            bal: Math.max(
+              0,
+              roundToCents(fullBal - nonRetirementAmount - alreadyRouted),
+            ),
           };
         });
         const totalTradBal = tradBalByCategory.reduce((s, x) => s + x.bal, 0);
@@ -117,6 +139,7 @@ export function enforceRmd(input: RmdEnforcementInput): RmdEnforcementResult {
 
           // Apply allocations to slots, assign rounding residual to last
           let lastSlot: DecumulationSlot | null = null;
+          let lastCat: AccountCategory | null = null;
           for (const { cat } of tradBalByCategory) {
             const amount = allocated.get(cat) ?? 0;
             if (amount <= 0) continue;
@@ -137,15 +160,36 @@ export function enforceRmd(input: RmdEnforcementInput): RmdEnforcementResult {
             }
             distributed += amount;
             lastSlot = slot;
+            lastCat = cat;
           }
-          // Assign rounding residual to last category
+          // Assign rounding residual to last category -- capped at that
+          // category's own remaining capacity (R49: `residual` here used
+          // to always be rounding-cents-scale, since totalTradBal covered
+          // the full blended balance and could always absorb the whole
+          // shortfall; now that capacity can be genuinely, non-trivially
+          // less than rmdShortfall (Retirement-only scoping), blindly
+          // force-feeding the full residual into the last touched account
+          // would silently exceed its capacity and defeat the cap this
+          // function exists to enforce -- a real bug caught by a direct
+          // repro during this session, not a hypothetical).
           const residual = roundToCents(rmdShortfall - distributed);
-          if (residual > 0 && lastSlot) {
-            lastSlot.traditionalWithdrawal = roundToCents(
-              lastSlot.traditionalWithdrawal + residual,
+          if (residual > 0 && lastSlot && lastCat) {
+            const lastCatCapacity =
+              tradBalByCategory.find((x) => x.cat === lastCat)?.bal ?? 0;
+            const lastCatAllocated = allocated.get(lastCat) ?? 0;
+            const cappedResidual = Math.min(
+              residual,
+              Math.max(0, roundToCents(lastCatCapacity - lastCatAllocated)),
             );
-            lastSlot.withdrawal = roundToCents(lastSlot.withdrawal + residual);
-            distributed += residual;
+            if (cappedResidual > 0) {
+              lastSlot.traditionalWithdrawal = roundToCents(
+                lastSlot.traditionalWithdrawal + cappedResidual,
+              );
+              lastSlot.withdrawal = roundToCents(
+                lastSlot.withdrawal + cappedResidual,
+              );
+              distributed = roundToCents(distributed + cappedResidual);
+            }
           }
         }
         totalTraditionalWithdrawal = roundToCents(
@@ -153,11 +197,22 @@ export function enforceRmd(input: RmdEnforcementInput): RmdEnforcementResult {
         );
         totalWithdrawal = roundToCents(totalWithdrawal + distributed);
         if (distributed < rmdShortfall - 0.01) {
-          const penalty = roundToCents(
-            (rmdRequired - totalTraditionalWithdrawal) * RMD_EXCISE_TAX_RATE,
+          rmdShortfallAmount = roundToCents(
+            rmdRequired - totalTraditionalWithdrawal,
           );
+          const penalty = roundToCents(
+            rmdShortfallAmount * RMD_EXCISE_TAX_RATE,
+          );
+          // `rmdRequired` here is whatever this call was asked to enforce —
+          // when a QCD already satisfied part of the real RMD (see
+          // decumulation-year.ts's `overrideRmdRequired`), this is the
+          // REMAINING taxable amount, not the household's full legal RMD.
+          // Worded to stay honest in both cases rather than implying
+          // "Required" means the gross RMD (advisor review, 2026-08-29 —
+          // the QCD-net figure was rendering under a gross-sounding
+          // label).
           warnings.push(
-            `RMD SHORTFALL: Required $${rmdRequired.toFixed(0)} but only $${totalTraditionalWithdrawal.toFixed(0)} Traditional available. ` +
+            `RMD SHORTFALL: $${rmdRequired.toFixed(0)} of Traditional distribution still required this year but only $${totalTraditionalWithdrawal.toFixed(0)} available. ` +
               `IRS penalty (25% excise tax) on the $${(rmdRequired - totalTraditionalWithdrawal).toFixed(0)} shortfall would be ~$${penalty.toFixed(0)}. ` +
               `Consider Roth conversions or other strategies to meet RMD obligations.`,
           );
@@ -172,5 +227,6 @@ export function enforceRmd(input: RmdEnforcementInput): RmdEnforcementResult {
     totalTraditionalWithdrawal,
     totalWithdrawal,
     warnings,
+    rmdShortfallAmount,
   };
 }

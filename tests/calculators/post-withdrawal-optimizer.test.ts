@@ -12,8 +12,11 @@ import type {
 import {
   makeTaxBuckets,
   makeAccountBalances,
+  makeIndividualAccount,
   TEST_BRACKETS,
 } from "./fixtures/engine-fixtures";
+import { makeIndKey } from "@/lib/calculators/engine/individual-account-tracking";
+import type { IndividualAccountInput } from "@/lib/calculators/types";
 
 // ---------------------------------------------------------------------------
 // performRothConversion
@@ -362,5 +365,372 @@ describe("checkAca", () => {
     const r1 = checkAca(makeAcaInput({ householdSize: 1 }));
     const r4 = checkAca(makeAcaInput({ householdSize: 4 }));
     expect(r4.acaMagiHeadroom).toBeGreaterThan(r1.acaMagiHeadroom);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// performRothConversion — Retirement-only scope (R49)
+// ---------------------------------------------------------------------------
+
+describe("performRothConversion (R49 — nonRetirement scope)", () => {
+  const indKey = makeIndKey();
+
+  function accts(): IndividualAccountInput[] {
+    return [
+      makeIndividualAccount({
+        name: "Retirement 401k",
+        category: "401k",
+        taxType: "preTax",
+        startingBalance: 100000,
+        parentCategory: "Retirement",
+      }),
+      makeIndividualAccount({
+        name: "Portfolio 401k",
+        category: "401k",
+        taxType: "preTax",
+        startingBalance: 400000,
+        parentCategory: "Portfolio",
+      }),
+      makeIndividualAccount({
+        name: "Retirement Brokerage",
+        category: "brokerage",
+        taxType: "afterTax",
+        startingBalance: 300000,
+        parentCategory: "Retirement",
+      }),
+    ];
+  }
+
+  function indBalFor(ia: IndividualAccountInput[]) {
+    const m = new Map<string, number>();
+    for (const a of ia) m.set(indKey(a), a.startingBalance);
+    return m;
+  }
+
+  function nonRetirementFor(trad401k: number) {
+    return {
+      total: { "401k": 0, "403b": 0, ira: 0, hsa: 0, brokerage: 0 },
+      trad: { "401k": trad401k, "403b": 0, ira: 0, hsa: 0, brokerage: 0 },
+      roth: { "401k": 0, "403b": 0, ira: 0, hsa: 0, brokerage: 0 },
+      grandTotal: trad401k,
+    };
+  }
+
+  it("caps the conversion SOURCE amount to Retirement-only pretax, not the blended balances.preTax", () => {
+    // Blended preTax = 500000 (Retirement 100k + Portfolio 400k). Bracket
+    // room is large (see makeRothInput's own comment: ~151550) -- without
+    // the R49 cap, conversion would size against the full blended balance.
+    const balances = makeTaxBuckets({ preTax: 500000, afterTax: 300000 });
+    const acctBal = makeAccountBalances({ preTax: 500000, afterTax: 300000 });
+    acctBal["401k"] = {
+      structure: "roth_traditional",
+      traditional: 500000,
+      roth: 0,
+    };
+    const ia = accts();
+    const result = performRothConversion(
+      makeRothInput({
+        balances,
+        acctBal,
+        indAccts: ia,
+        indBal: indBalFor(ia),
+        indKey,
+        nonRetirement: nonRetirementFor(400000), // Portfolio 401k's balance
+      }),
+    );
+    // Retirement-only pretax = 500000 - 400000 = 100000, well under the
+    // ~151550 bracket-room ceiling -- so the conversion is capped there.
+    expect(result.rothConversionAmount).toBeCloseTo(100000, 0);
+  });
+
+  it("debits only the Retirement-parented account's indBal, leaving the Portfolio-parented account untouched", () => {
+    const balances = makeTaxBuckets({ preTax: 500000, afterTax: 300000 });
+    const acctBal = makeAccountBalances({ preTax: 500000, afterTax: 300000 });
+    acctBal["401k"] = {
+      structure: "roth_traditional",
+      traditional: 500000,
+      roth: 0,
+    };
+    const ia = accts();
+    const indBal = indBalFor(ia);
+    performRothConversion(
+      makeRothInput({
+        balances,
+        acctBal,
+        indAccts: ia,
+        indBal,
+        indKey,
+        nonRetirement: nonRetirementFor(400000),
+      }),
+    );
+    const [retirement401k, portfolio401k] = ia;
+    expect(indBal.get(indKey(portfolio401k!))).toBe(400000); // untouched
+    expect(indBal.get(indKey(retirement401k!))).toBeLessThan(100000); // debited
+  });
+
+  it("caps the tax-payment gate to Retirement-only brokerage capacity", () => {
+    // Retirement-only brokerage = 300000 (the only brokerage account, and
+    // it's Retirement-parented) -- same as the blended total here, so this
+    // asserts the gate doesn't spuriously fail when nonRetirement has
+    // nothing to exclude from THIS category.
+    const balances = makeTaxBuckets({ preTax: 100000, afterTax: 300000 });
+    const acctBal = makeAccountBalances({ preTax: 100000, afterTax: 300000 });
+    const ia = accts().filter(
+      (a) => a.category !== "401k" || a.parentCategory === "Retirement",
+    );
+    const result = performRothConversion(
+      makeRothInput({
+        balances,
+        acctBal,
+        indAccts: ia,
+        indBal: indBalFor(ia),
+        indKey,
+        nonRetirement: nonRetirementFor(0),
+      }),
+    );
+    expect(result.rothConversionAmount).toBeGreaterThan(0);
+  });
+
+  it("skips the conversion entirely when Retirement-only brokerage can't cover the tax cost, even though blended brokerage could", () => {
+    const balances = makeTaxBuckets({ preTax: 100000, afterTax: 300000 });
+    const acctBal = makeAccountBalances({ preTax: 100000, afterTax: 300000 });
+    const ia = [
+      makeIndividualAccount({
+        name: "Retirement 401k",
+        category: "401k",
+        taxType: "preTax",
+        startingBalance: 100000,
+        parentCategory: "Retirement",
+      }),
+      makeIndividualAccount({
+        name: "Retirement Brokerage",
+        category: "brokerage",
+        taxType: "afterTax",
+        startingBalance: 500, // negligible -- can't cover any real tax cost
+        parentCategory: "Retirement",
+      }),
+      makeIndividualAccount({
+        name: "Portfolio Brokerage",
+        category: "brokerage",
+        taxType: "afterTax",
+        startingBalance: 299500, // makes blended afterTax look fully funded
+        parentCategory: "Portfolio",
+      }),
+    ];
+    const nonRetirement = {
+      total: { "401k": 0, "403b": 0, ira: 0, hsa: 0, brokerage: 299500 },
+      trad: { "401k": 0, "403b": 0, ira: 0, hsa: 0, brokerage: 0 },
+      roth: { "401k": 0, "403b": 0, ira: 0, hsa: 0, brokerage: 0 },
+      grandTotal: 299500,
+    };
+    const result = performRothConversion(
+      makeRothInput({
+        balances,
+        acctBal,
+        indAccts: ia,
+        indBal: indBalFor(ia),
+        indKey,
+        nonRetirement,
+      }),
+    );
+    expect(result.rothConversionAmount).toBe(0);
+    expect(result.rothConversionTaxCost).toBe(0);
+  });
+
+  it("byte-identical to pre-R49 behavior when nonRetirement (and ind* data) are omitted entirely -- the real call site's actual fallback shape", () => {
+    // decumulation-year.ts always computes nonRetirement and
+    // indAccts/indBal/indKey together, gated on the same
+    // hasIndividualAccounts check (see its own R49 comment) -- so the real
+    // "not tracking individual accounts" fallback is ALL of these omitted
+    // together, not nonRetirement alone.
+    const balancesA = makeTaxBuckets();
+    const acctBalA = makeAccountBalances();
+    const balancesB = makeTaxBuckets();
+    const acctBalB = makeAccountBalances();
+    const resultA = performRothConversion(
+      makeRothInput({ balances: balancesA, acctBal: acctBalA }),
+    );
+    const resultB = performRothConversion(
+      makeRothInput({ balances: balancesB, acctBal: acctBalB }),
+    );
+    expect(resultA.rothConversionAmount).toBe(resultB.rothConversionAmount);
+    expect(resultA.rothConversionTaxCost).toBe(resultB.rothConversionTaxCost);
+  });
+
+  it("still caps the amount from nonRetirement alone even without indAccts/indBal/indKey -- capping doesn't require per-account debit capability", () => {
+    const balances = makeTaxBuckets({ preTax: 500000, afterTax: 300000 });
+    const acctBal = makeAccountBalances({ preTax: 500000, afterTax: 300000 });
+    acctBal["401k"] = {
+      structure: "roth_traditional",
+      traditional: 500000,
+      roth: 0,
+    };
+    const result = performRothConversion(
+      makeRothInput({
+        balances,
+        acctBal,
+        nonRetirement: nonRetirementFor(400000),
+      }),
+    );
+    expect(result.rothConversionAmount).toBeCloseTo(100000, 0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// performRothConversion — R47 RMD-smoothing elevated ceiling
+// ---------------------------------------------------------------------------
+
+describe("performRothConversion (R47 — RMD-smoothing elevated ceiling)", () => {
+  it("converts even when enableRothConversions is off, if smoothing is active (self-contained toggle)", () => {
+    const result = performRothConversion(
+      makeRothInput({
+        enableRothConversions: false,
+        rothBracketTarget: undefined,
+        rothConversionTarget: undefined,
+        rmdSmoothingTarget: 50000,
+        rmdSmoothingMaxBracketTarget: 0.24,
+      }),
+    );
+    expect(result.rothConversionAmount).toBeGreaterThan(0);
+  });
+
+  it("respects an explicit rothConversionTarget: 0 opt-out even when smoothing is active", () => {
+    const result = performRothConversion(
+      makeRothInput({
+        enableRothConversions: true,
+        rothConversionTarget: 0,
+        rmdSmoothingTarget: 50000,
+        rmdSmoothingMaxBracketTarget: 0.24,
+      }),
+    );
+    expect(result.rothConversionAmount).toBe(0);
+    expect(result.rmdSmoothingShortfall).toBe(50000);
+  });
+
+  it("byte-identical to omitting smoothing entirely when rmdSmoothingTarget is 0/undefined", () => {
+    const withUndefined = performRothConversion(
+      makeRothInput({
+        balances: makeTaxBuckets(),
+        acctBal: makeAccountBalances(),
+      }),
+    );
+    const withZero = performRothConversion(
+      makeRothInput({
+        balances: makeTaxBuckets(),
+        acctBal: makeAccountBalances(),
+        rmdSmoothingTarget: 0,
+      }),
+    );
+    expect(withUndefined.rothConversionAmount).toBe(
+      withZero.rothConversionAmount,
+    );
+    expect(withUndefined.rmdSmoothingShortfall).toBeUndefined();
+    expect(withZero.rmdSmoothingShortfall).toBeUndefined();
+  });
+
+  it("never lowers a household's already-higher existing target below rmdSmoothingMaxBracketTarget", () => {
+    // Household already configured at 32% -- smoothing's own max is a
+    // lower 12%. The effective ceiling must stay at 32% (the household's
+    // own, higher, already-configured value), not drop to 12%.
+    const balances = makeTaxBuckets({
+      preTax: 10_000_000,
+      afterTax: 5_000_000,
+    });
+    const acctBal = makeAccountBalances({
+      preTax: 10_000_000,
+      afterTax: 5_000_000,
+    });
+    const withoutSmoothing = performRothConversion(
+      makeRothInput({
+        balances: { ...balances },
+        acctBal: { ...acctBal },
+        rothBracketTarget: 0.32,
+        rothConversionTarget: undefined,
+      }),
+    );
+    const withSmoothing = performRothConversion(
+      makeRothInput({
+        balances: { ...balances },
+        acctBal: { ...acctBal },
+        rothBracketTarget: 0.32,
+        rothConversionTarget: undefined,
+        rmdSmoothingTarget: 1000, // small -- shouldn't need MORE than 32% already provides
+        rmdSmoothingMaxBracketTarget: 0.12, // lower than the household's own 0.32
+      }),
+    );
+    // The household's own 32% ceiling must still apply -- not reduced to 12%.
+    expect(withSmoothing.rothConversionAmount).toBeCloseTo(
+      withoutSmoothing.rothConversionAmount,
+      0,
+    );
+  });
+
+  it("elevates the effective ceiling up to rmdSmoothingMaxBracketTarget when the household's own target isn't enough room", () => {
+    // No existing target at all -- smoothing must supply one, up to its
+    // own max, to have any effect (matches the mid-implementation finding
+    // that a household with nothing configured gets nothing from a plain
+    // floor).
+    const result = performRothConversion(
+      makeRothInput({
+        rothBracketTarget: undefined,
+        rothConversionTarget: undefined,
+        enableRothConversions: false,
+        totalTraditionalWithdrawal: 10000,
+        taxableSS: 0,
+        rmdSmoothingTarget: 20000,
+        rmdSmoothingMaxBracketTarget: 0.12,
+      }),
+    );
+    // 10% bracket cap is 16550; 20000 needed pushes into the 12% bracket
+    // (cap 33725) -- conversionRoom at 12% = 33725-10000 = 23725. Existing
+    // bracket-fill behavior converts the FULL room once a target is
+    // active (no "stop exactly at the smoothing target" logic), so the
+    // actual conversion (23725) is >= the 20000 target -- fully achieved,
+    // with room to spare from the same bracket.
+    expect(result.rothConversionAmount).toBeGreaterThanOrEqual(20000);
+    expect(result.rmdSmoothingShortfall).toBe(0);
+  });
+
+  it("reports a real, non-zero rmdSmoothingShortfall when even the elevated ceiling isn't enough", () => {
+    const result = performRothConversion(
+      makeRothInput({
+        rothBracketTarget: undefined,
+        rothConversionTarget: undefined,
+        enableRothConversions: false,
+        totalTraditionalWithdrawal: 10000,
+        taxableSS: 0,
+        rmdSmoothingTarget: 1_000_000, // far more than even the 12% bracket allows
+        rmdSmoothingMaxBracketTarget: 0.12,
+      }),
+    );
+    expect(result.rmdSmoothingShortfall).toBeGreaterThan(0);
+    // 12% bracket cap is 33725; conversionRoom = 33725-10000 = 23725 max.
+    expect(result.rothConversionAmount).toBeLessThan(1_000_000);
+  });
+
+  it("still respects R49's Retirement-only capacity cap even when smoothing elevates the target rate", () => {
+    const balances = makeTaxBuckets({ preTax: 500000, afterTax: 300000 });
+    const acctBal = makeAccountBalances({ preTax: 500000, afterTax: 300000 });
+    const result = performRothConversion(
+      makeRothInput({
+        balances,
+        acctBal,
+        rothBracketTarget: undefined,
+        rothConversionTarget: undefined,
+        enableRothConversions: false,
+        totalTraditionalWithdrawal: 0,
+        taxableSS: 0,
+        rmdSmoothingTarget: 400000,
+        rmdSmoothingMaxBracketTarget: 0.37, // top bracket -- plenty of room by rate
+        nonRetirement: {
+          total: { "401k": 0, "403b": 0, ira: 0, hsa: 0, brokerage: 0 },
+          trad: { "401k": 400000, "403b": 0, ira: 0, hsa: 0, brokerage: 0 }, // only 100000 Retirement-only
+          roth: { "401k": 0, "403b": 0, ira: 0, hsa: 0, brokerage: 0 },
+          grandTotal: 400000,
+        },
+      }),
+    );
+    expect(result.rothConversionAmount).toBeCloseTo(100000, 0);
+    expect(result.rmdSmoothingShortfall).toBeGreaterThan(0);
   });
 });

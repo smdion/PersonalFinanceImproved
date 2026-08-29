@@ -193,6 +193,15 @@ export const MC_RETURN_CLAMP_MAX = 1.0;
  *  decumulation year. */
 export const MC_SPENDING_STABILITY_THRESHOLD = 0.75;
 
+/** When Lifetime Income Stability's "vs strategy" rate trails Portfolio
+ *  Survival by more than this many percentage points, something is
+ *  forcing real deviations from the strategy's own plan (RMDs, routing/
+ *  liquidity constraints, penalty-avoidance) even though the portfolio
+ *  itself survives — a real, if narrow, signal worth flagging urgently
+ *  rather than letting it sit as a quiet secondary ring (advisor review,
+ *  2026-08-28 — see PLAN-shortfall-alerting-and-strategy-scenario.md). */
+export const MC_STRATEGY_STABILITY_GAP_ALERT_THRESHOLD = 0.1;
+
 /** Default inflation risk assumption for Monte Carlo simulations when no
  *  preset-specific value is configured. */
 export const DEFAULT_MC_INFLATION_RISK = { meanRate: 0.025, stdDev: 0.012 };
@@ -256,6 +265,55 @@ export const MIN_INFLATION_RATE = -0.1;
 
 /** Cap the brokerage ramp multiplier year to prevent unbounded growth. */
 export const MAX_BROKERAGE_RAMP_YEARS = 40;
+
+// ---------------------------------------------------------------------------
+// RMD / Qualified Charitable Distribution (R46)
+// ---------------------------------------------------------------------------
+
+/** Annual per-person cap on Qualified Charitable Distributions from an IRA
+ *  (IRC §408(d)(8)). IRS-indexed annually for inflation — NOT tied to the
+ *  household's own inflation assumption, which is why this is a flat
+ *  constant rather than derived from `annualInflation`. $115,000 is the
+ *  2026 figure (was $105,000 for 2024, $108,000 for 2025 — this constant
+ *  was found stale by two years' worth of indexing during advisor review,
+ *  2026-08-29; update it annually when the IRS publishes a new figure,
+ *  same discipline `TAX_PARAMETER_RUNBOOK.md` already documents for
+ *  bracket/contribution-limit updates). Held flat across the whole
+ *  projection horizon (no attempt to model future IRS indexing) — same
+ *  simplification this engine already applies to IRS contribution limits
+ *  via `limitGrowthRate` rather than real published figures. */
+export const QCD_ANNUAL_CAP_PER_PERSON = 115000;
+
+/** Minimum age for QCD eligibility (IRC §408(d)(8)(B)(ii): age 70½) — the
+ *  engine tracks whole-year ages only, so this rounds DOWN to 70 rather
+ *  than 71, since someone who turns 70 mid-year is already 70½-eligible
+ *  for part of that projection year and the engine has no sub-year
+ *  granularity to model the exact month. Deliberately independent of
+ *  `getRmdStartAge` (72/73/75 by birth year) — QCD eligibility was NOT
+ *  moved by SECURE 2.0's RMD-age delay, so a household can (and often
+ *  should, to shrink a future RMD) start QCDs years before RMDs are even
+ *  required (advisor review, 2026-08-29 — QCD was previously computed
+ *  only for people who'd already reached RMD age, silently zeroing out
+ *  this whole pre-RMD window, its highest-value use case). */
+export const QCD_MIN_ELIGIBILITY_AGE = 70;
+
+// ---------------------------------------------------------------------------
+// RMD-aware Roth conversion smoothing (R47)
+// ---------------------------------------------------------------------------
+
+/** Fallback ceiling for how far RMD smoothing may elevate a household's
+ *  effective Roth-conversion target rate above their own
+ *  `rothBracketTarget`/`rothConversionTarget`, used only when a household
+ *  has `rmdSmoothingEnabled` on but never explicitly set
+ *  `rmdSmoothingMaxBracketTarget` — the UI's own default for a NEWLY
+ *  enabled household should seed from that household's current
+ *  `rothBracketTarget` instead of relying on this constant, so opting in
+ *  never visibly changes a rate the household already chose. This is a
+ *  last-resort backstop (e.g. for direct API/engine-input use bypassing
+ *  the UI), not the primary default path. 24% keeps the backstop below
+ *  the two highest ordinary brackets, matching the same "moderate, not
+ *  the top bracket" intent as the schema/UI default. */
+export const RMD_SMOOTHING_MAX_BRACKET_TARGET_FALLBACK = 0.24;
 
 // ---------------------------------------------------------------------------
 // Analytics

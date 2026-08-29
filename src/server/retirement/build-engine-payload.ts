@@ -52,10 +52,8 @@ import {
   IRS_LIMIT_GROWTH_RATE,
   FALLBACK_CONTRIBUTION_RATE,
 } from "@/lib/constants";
-import {
-  estimateEffectiveTaxRate,
-  incomeCapForMarginalRate,
-} from "@/lib/calculators/engine";
+import { estimateEffectiveTaxRate } from "@/lib/calculators/engine";
+import { getLtcgRate } from "@/lib/config/tax-tables";
 import type { db as _db } from "@/lib/db";
 import { filterActiveJobs } from "@/lib/pure/profiles";
 import { computeTaxBucketBreakdown } from "@/lib/pure/tax-buckets";
@@ -102,6 +100,7 @@ export async function fetchRetirementData(
     allBudgetItems,
     perfAccounts,
     allTaxBrackets,
+    allLtcgBrackets,
     brokerageGoalRows,
     allAppSettings,
     contribProfileRow,
@@ -146,6 +145,7 @@ export async function fetchRetirementData(
     db.select().from(schema.budgetItems),
     db.select().from(schema.performanceAccounts),
     db.select().from(schema.taxBrackets),
+    db.select().from(schema.ltcgBrackets),
     db
       .select()
       .from(schema.brokerageGoals)
@@ -202,6 +202,7 @@ export async function fetchRetirementData(
     allBudgetItems,
     perfAccounts,
     allTaxBrackets,
+    allLtcgBrackets,
     brokerageGoalRows,
     allAppSettings,
     contribProfileRow,
@@ -248,6 +249,7 @@ export async function buildEnginePayload(
     allBudgetItems,
     perfAccounts,
     allTaxBrackets,
+    allLtcgBrackets,
     brokerageGoalRows,
     allAppSettings,
     jobLinkRows,
@@ -313,6 +315,32 @@ export async function buildEnginePayload(
     baseWithholding: number;
     rate: number;
   }[];
+
+  // DB-loaded LTCG brackets (v0.7.9 R40 follow-up) — mirrors bracketData
+  // above, but ltcg_brackets is keyed by filing status per row (one row per
+  // (taxYear, filingStatus)), not a single flat table, so build a
+  // Record<filingStatus, brackets[]> covering every filing status found in
+  // the latest tax year rather than filtering to just this household's own
+  // status — `computeLtcgTax`/`getLtcgRate` index into it by filing status
+  // themselves. Undefined (not an empty object) when nothing's seeded, so
+  // `computeLtcgTax`/`getLtcgRate` fall back to their hardcoded defaults
+  // exactly as before this change.
+  // (advisor review, 2026-08-29): the `new Date().getFullYear()` fallback
+  // this used to have was dead code — latestLtcgTaxYear is only ever
+  // needed inside the `allLtcgBrackets.length > 0` branch below, so it's
+  // only computed there now, where Math.max has real data to work with.
+  let ltcgBracketData:
+    Record<string, { threshold: number | null; rate: number }[]> | undefined;
+  if (allLtcgBrackets.length > 0) {
+    const latestLtcgTaxYear = Math.max(
+      ...allLtcgBrackets.map((b) => b.taxYear),
+    );
+    ltcgBracketData = Object.fromEntries(
+      allLtcgBrackets
+        .filter((b) => b.taxYear === latestLtcgTaxYear)
+        .map((b) => [b.filingStatus, b.brackets]),
+    );
+  }
 
   // Per-person retirement settings (for per-person age display + editing)
   const perPersonSettings = people.map((p) => {
@@ -571,6 +599,51 @@ export async function buildEnginePayload(
       ),
       { ruleOf55: entry.ruleOf55, rothBasisMeta: entry.rothBasisMeta },
     );
+  }
+  // Per-account penalty-allowance override (R41) — account-level, not
+  // person-level, so (unlike ruleOf55/rothBasisMeta above) joint accounts
+  // are included, not skipped. Only ever records `true`: same omit-when-
+  // false cache-hash-stability convention as `ruleOf55ForceIneligible`.
+  const allowPenalizedByPerfAccountId = new Map(
+    perfAccounts.map((p) => [p.id, p.allowPenalizedWithdrawals]),
+  );
+  // The join key (name/category/taxType/owner) is NOT guaranteed unique —
+  // `performanceAccounts`' own unique index is on
+  // (institution, accountType, subType, label, ownerPersonId), a different
+  // tuple. Two distinct real accounts can collide onto the same join key
+  // (e.g. same display name, different institution). Fail CLOSED on that
+  // ambiguity: never allow the penalty on a join key that maps to more than
+  // one distinct performanceAccountId, even if one of the colliding
+  // accounts has the override set — this flag only ever authorizes a real
+  // tax penalty, so an ambiguous match must default to "not allowed", never
+  // silently apply to an account the user never touched.
+  const perfAccountIdsByJoinKey = new Map<string, Set<number>>();
+  for (const entry of accountAnalysis) {
+    if (entry.performanceAccountId == null) continue;
+    const key = eligibilityJoinKey(
+      entry.displayName,
+      entry.category,
+      entry.taxType,
+      entry.ownerPersonId,
+    );
+    const ids = perfAccountIdsByJoinKey.get(key) ?? new Set<number>();
+    ids.add(entry.performanceAccountId);
+    perfAccountIdsByJoinKey.set(key, ids);
+  }
+  const allowPenalizedByJoinKey = new Map<string, true>();
+  for (const entry of accountAnalysis) {
+    if (entry.performanceAccountId == null) continue;
+    const key = eligibilityJoinKey(
+      entry.displayName,
+      entry.category,
+      entry.taxType,
+      entry.ownerPersonId,
+    );
+    const ids = perfAccountIdsByJoinKey.get(key);
+    if (!ids || ids.size > 1) continue; // ambiguous join key — fail closed
+    if (!allowPenalizedByPerfAccountId.get(entry.performanceAccountId))
+      continue;
+    allowPenalizedByJoinKey.set(key, true);
   }
   const settingsMap = new Map(
     allAppSettings.map((s: { key: string; value: unknown }) => [
@@ -1249,10 +1322,19 @@ export async function buildEnginePayload(
     if (estimatedRate > 0) {
       effectiveTraditionalRate = estimatedRate;
     }
-    // LTCG: if retirement income fits within 12% marginal bracket, 0% LTCG rate applies (MFJ ~$94K)
-    const ltcgThreshold = incomeCapForMarginalRate(0.12, bracketData);
-    effectiveBrokerageRate =
-      retirementIncome < ltcgThreshold ? 0 : dbBrokerageRate;
+    // LTCG fallback flat rate: real bracket-based rate at this income level,
+    // via the same LTCG bracket table (DB-loaded when seeded, hardcoded
+    // 2026 federal defaults otherwise) the actual per-year tax pricing
+    // uses — replaces a prior heuristic that checked retirement income
+    // against the *ordinary* 12%-bracket threshold as a proxy for the LTCG
+    // 0% zone, which silently overstated 0%-LTCG headroom (the two bracket
+    // tables have different thresholds; code review + advisor, v0.7.9 R40).
+    // This value is only ever the FALLBACK used when filingStatus is
+    // unavailable to a caller — the primary pricing path always uses
+    // computeLtcgTax with the real bracket table directly.
+    effectiveBrokerageRate = filingStatus
+      ? getLtcgRate(retirementIncome, filingStatus, ltcgBracketData)
+      : dbBrokerageRate;
   }
 
   const distributionTaxRates = {
@@ -1265,6 +1347,7 @@ export async function buildEnginePayload(
       : 0,
     brokerage: effectiveBrokerageRate,
     taxBrackets: bracketData.length > 0 ? bracketData : undefined,
+    ltcgBrackets: ltcgBracketData,
     taxMultiplier: taxMult,
     grossUpForTaxes: settings.grossUpForTaxes,
     rothBracketTarget: toNumber(settings.rothBracketTarget ?? "0.12"),
@@ -1372,6 +1455,14 @@ export async function buildEnginePayload(
               ruleOf55OverrideByPerson.get(a.ownerPersonId) === false
                 ? true
                 : undefined,
+            allowPenalizedWithdrawals: allowPenalizedByJoinKey.get(
+              eligibilityJoinKey(
+                a.name,
+                cat,
+                a.taxType,
+                a.ownerPersonId ?? null,
+              ),
+            ),
           };
         }),
     ),

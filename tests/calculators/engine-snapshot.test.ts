@@ -23,7 +23,7 @@
 import { describe, it, expect } from "vitest";
 import { calculateProjection } from "@/lib/calculators/engine";
 
-const LAST_REVIEWED_AT = "2026-08-26";
+const LAST_REVIEWED_AT = "2026-08-27";
 const FRESHNESS_DAYS = 180;
 import type {
   ProjectionInput,
@@ -223,7 +223,7 @@ describe("engine snapshot parity", () => {
     // failing diff reads as "sustainable withdrawal changed from X to Y"
     // instead of an opaque snapshot blob. Values spot-checked per the
     // freshness guard above (LAST_REVIEWED_AT).
-    expect(result.sustainableWithdrawal).toBe(301448.5);
+    expect(result.sustainableWithdrawal).toBe(193621.63);
     expect(result.portfolioDepletionYear).toBeNull();
     expect(metrics.finalYear?.endBalance).toBe(25464271.77);
 
@@ -265,7 +265,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
 
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(135510.64);
+    expect(result.sustainableWithdrawal).toBe(129081.08);
     expect(metrics.finalYear?.endBalance).toBe(9555523.94);
     expect(metrics).toMatchSnapshot();
   });
@@ -293,7 +293,7 @@ describe("engine snapshot parity", () => {
     // With 50% contribution rate at $300k salary, overflow SHOULD occur
     expect(result.firstOverflowYear).not.toBeNull();
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(989285.99);
+    expect(result.sustainableWithdrawal).toBe(193621.63);
     expect(metrics.finalYear?.endBalance).toBe(112688375.12);
     expect(metrics).toMatchSnapshot();
   });
@@ -342,7 +342,7 @@ describe("engine snapshot parity", () => {
     // T13: explicit numeric assertions (see fixture 1 comment) — added
     // 2026-08-27, code review (this fixture previously relied on
     // toMatchSnapshot() alone for its financial content).
-    expect(result.sustainableWithdrawal).toBe(37203.08);
+    expect(result.sustainableWithdrawal).toBe(30769.23);
     expect(metrics.finalYear?.endBalance).toBe(1595973.16);
     expect(metrics).toMatchSnapshot();
   });
@@ -467,7 +467,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
 
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(302465.95);
+    expect(result.sustainableWithdrawal).toBe(193621.63);
     expect(metrics.finalYear?.endBalance).toBe(25593294.62);
     expect(metrics).toMatchSnapshot();
   });
@@ -524,7 +524,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
 
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(428698.24);
+    expect(result.sustainableWithdrawal).toBe(193621.63);
     expect(metrics.finalYear?.endBalance).toBe(41600705.87);
     expect(metrics).toMatchSnapshot();
   });
@@ -544,7 +544,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(330008.27);
+    expect(result.sustainableWithdrawal).toBe(178252.08);
     expect(metrics.finalYear?.endBalance).toBe(30308439.88);
     expect(metrics).toMatchSnapshot();
   });
@@ -564,7 +564,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(301448.5);
+    expect(result.sustainableWithdrawal).toBe(193621.63);
     expect(metrics.finalYear?.endBalance).toBe(25464271.77);
     expect(metrics).toMatchSnapshot();
   });
@@ -624,7 +624,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(435141.26);
+    expect(result.sustainableWithdrawal).toBe(193621.63);
     expect(metrics.finalYear?.endBalance).toBe(42417740.69);
     expect(metrics).toMatchSnapshot();
   });
@@ -677,7 +677,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(423043.17);
+    expect(result.sustainableWithdrawal).toBe(175211.58);
     expect(metrics.finalYear?.endBalance).toBe(41953128.39);
     expect(metrics).toMatchSnapshot();
   });
@@ -707,7 +707,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(301621.77);
+    expect(result.sustainableWithdrawal).toBe(189573.24);
     expect(metrics.finalYear?.endBalance).toBe(25921712.64);
     expect(metrics).toMatchSnapshot();
   });
@@ -747,7 +747,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(131957.22);
+    expect(result.sustainableWithdrawal).toBe(148543.4);
     expect(metrics.finalYear?.endBalance).toBe(9337231.12);
     expect(metrics).toMatchSnapshot();
   });
@@ -790,7 +790,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
 
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(40199.08);
+    expect(result.sustainableWithdrawal).toBe(30769.23);
     expect(result.portfolioDepletionYear).toBeNull();
     expect(metrics.finalYear?.endBalance).toBe(1763006.41);
 
@@ -837,7 +837,7 @@ describe("engine snapshot parity", () => {
     // T13: explicit numeric assertions (see fixture 1 comment). This
     // fixture is the depletion case — portfolio hits $0 before projection
     // end, so both depletion fields are non-null.
-    expect(result.sustainableWithdrawal).toBe(32441.68);
+    expect(result.sustainableWithdrawal).toBe(74082.52);
     expect(result.portfolioDepletionYear).toBe(2052);
     expect(result.portfolioDepletionAge).toBe(87);
     expect(metrics.finalYear?.endBalance).toBe(0);
@@ -902,7 +902,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
 
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(54443.79);
+    expect(result.sustainableWithdrawal).toBe(17948.72);
     expect(result.portfolioDepletionYear).toBeNull();
     expect(metrics.finalYear?.endBalance).toBe(3276808.2);
 
@@ -954,7 +954,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
 
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(43140.21);
+    expect(result.sustainableWithdrawal).toBe(32051.28);
     expect(result.portfolioDepletionYear).toBeNull();
     expect(metrics.finalYear?.endBalance).toBe(1923495.08);
 
@@ -997,7 +997,7 @@ describe("engine snapshot parity", () => {
     // the projection window rather than fully depleting — a low but
     // nonzero final balance, not a null-vs-actual-depletion edge case
     // (fixture 15 covers actual depletion).
-    expect(result.sustainableWithdrawal).toBe(5713.21);
+    expect(result.sustainableWithdrawal).toBe(100620.84);
     expect(result.portfolioDepletionYear).toBeNull();
     expect(metrics.finalYear?.endBalance).toBe(53665.66);
 
@@ -1050,7 +1050,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(297751.69);
+    expect(result.sustainableWithdrawal).toBe(213916.63);
     expect(metrics.finalYear?.endBalance).toBe(31505708.24);
     expect(metrics).toMatchSnapshot();
   });
@@ -1073,7 +1073,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
 
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(86614.35);
+    expect(result.sustainableWithdrawal).toBe(137031.28);
     expect(result.portfolioDepletionYear).toBeNull();
     expect(metrics.finalYear?.endBalance).toBe(3594808.65);
 
@@ -1117,7 +1117,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(43732.67);
+    expect(result.sustainableWithdrawal).toBe(101536.63);
     expect(metrics.finalYear?.endBalance).toBe(1200119.95);
     expect(metrics).toMatchSnapshot();
   });
@@ -1158,7 +1158,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(27450.64);
+    expect(result.sustainableWithdrawal).toBe(79778.79);
     expect(metrics.finalYear?.endBalance).toBe(75268.94);
     expect(metrics).toMatchSnapshot();
   });
@@ -1172,7 +1172,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(302254.18);
+    expect(result.sustainableWithdrawal).toBe(174797.29);
     expect(metrics.finalYear?.endBalance).toBe(24424844.17);
     expect(metrics).toMatchSnapshot();
   });
@@ -1188,7 +1188,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(302829.67);
+    expect(result.sustainableWithdrawal).toBe(161351.35);
     expect(metrics.finalYear?.endBalance).toBe(28206264.21);
     expect(metrics).toMatchSnapshot();
   });
@@ -1249,7 +1249,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(19890.44);
+    expect(result.sustainableWithdrawal).toBe(11000);
     expect(metrics.finalYear?.endBalance).toBe(1208073.6);
     expect(metrics).toMatchSnapshot();
   });
@@ -1313,7 +1313,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(65596.12);
+    expect(result.sustainableWithdrawal).toBe(75000);
     expect(metrics.finalYear?.endBalance).toBe(1196346.01);
     expect(metrics).toMatchSnapshot();
   });
@@ -1360,7 +1360,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(74753.99);
+    expect(result.sustainableWithdrawal).toBe(114879.39);
     expect(metrics.finalYear?.endBalance).toBe(3141416.87);
     expect(metrics).toMatchSnapshot();
   });
@@ -1409,7 +1409,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(40857.55);
+    expect(result.sustainableWithdrawal).toBe(87552.09);
     expect(metrics.finalYear?.endBalance).toBe(1033729.78);
     expect(metrics).toMatchSnapshot();
   });
@@ -1458,7 +1458,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(42972.79);
+    expect(result.sustainableWithdrawal).toBe(94284.01);
     expect(result.portfolioDepletionYear).toBe(2050);
     expect(result.portfolioDepletionAge).toBe(75);
     expect(metrics.finalYear?.endBalance).toBe(0);
@@ -1505,7 +1505,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(26343.91);
+    expect(result.sustainableWithdrawal).toBe(72526.17);
     expect(result.portfolioDepletionYear).toBe(2048);
     expect(result.portfolioDepletionAge).toBe(83);
     expect(metrics.finalYear?.endBalance).toBe(0);
@@ -1587,8 +1587,11 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(65442.83);
-    expect(metrics.finalYear?.endBalance).toBe(4130354.41);
+    expect(result.sustainableWithdrawal).toBe(28000);
+    // R49 (see SNAPSHOT-REVIEW-LOG.md): rmd-enforcement.ts's rounding-
+    // residual fallback no longer force-feeds a genuine capacity shortfall
+    // past an account's real remaining room.
+    expect(metrics.finalYear?.endBalance).toBe(4133719.39);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -1660,7 +1663,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(55711.49);
+    expect(result.sustainableWithdrawal).toBe(63829.79);
     expect(metrics.finalYear?.endBalance).toBe(7972101.9);
     expect(metrics).toMatchSnapshot();
   });
@@ -1729,7 +1732,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(37479.57);
+    expect(result.sustainableWithdrawal).toBe(85106.38);
     expect(metrics.finalYear?.endBalance).toBe(394213.98);
     expect(metrics).toMatchSnapshot();
   });
@@ -1799,7 +1802,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(27466.65);
+    expect(result.sustainableWithdrawal).toBe(20132.45);
     expect(metrics.finalYear?.endBalance).toBe(464276.56);
     expect(metrics).toMatchSnapshot();
   });
@@ -1870,7 +1873,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(23466.27);
+    expect(result.sustainableWithdrawal).toBe(25430.46);
     expect(metrics.finalYear?.endBalance).toBe(408337.27);
     expect(metrics).toMatchSnapshot();
   });
@@ -1895,7 +1898,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(301770.65);
+    expect(result.sustainableWithdrawal).toBe(193621.63);
     expect(metrics.finalYear?.endBalance).toBe(25505123.57);
     expect(metrics).toMatchSnapshot();
   });
@@ -1955,7 +1958,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(301448.5);
+    expect(result.sustainableWithdrawal).toBe(193621.63);
     expect(metrics.finalYear?.endBalance).toBe(25464272.52);
     expect(metrics).toMatchSnapshot();
   });
@@ -2008,7 +2011,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(241155.25);
+    expect(result.sustainableWithdrawal).toBe(193621.63);
     expect(metrics.finalYear?.endBalance).toBe(17818534.53);
     expect(metrics).toMatchSnapshot();
   });
@@ -2061,7 +2064,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(301448.5);
+    expect(result.sustainableWithdrawal).toBe(193621.63);
     expect(metrics.finalYear?.endBalance).toBe(25464271.77);
     expect(metrics).toMatchSnapshot();
   });
@@ -2079,7 +2082,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(121619.63);
+    expect(result.sustainableWithdrawal).toBe(114088.87);
     expect(metrics.finalYear?.endBalance).toBe(6675906.14);
     expect(metrics).toMatchSnapshot();
   });
@@ -2153,7 +2156,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(40837.53);
+    expect(result.sustainableWithdrawal).toBe(60000);
     expect(metrics.finalYear?.endBalance).toBe(2260207.33);
     expect(metrics).toMatchSnapshot();
   });
@@ -2196,7 +2199,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(101092.77);
+    expect(result.sustainableWithdrawal).toBe(98468.03);
     expect(metrics.finalYear?.endBalance).toBe(11893891.2);
     expect(metrics).toMatchSnapshot();
   });
@@ -2276,7 +2279,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(161769.1);
+    expect(result.sustainableWithdrawal).toBe(83777.38);
     expect(metrics.finalYear?.endBalance).toBe(10401155.64);
     expect(metrics).toMatchSnapshot();
   });
@@ -2292,7 +2295,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(336409.47);
+    expect(result.sustainableWithdrawal).toBe(193621.63);
     expect(metrics.finalYear?.endBalance).toBe(39134361.27);
     expect(metrics).toMatchSnapshot();
   });
@@ -2313,7 +2316,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(274100.45);
+    expect(result.sustainableWithdrawal).toBe(171133.31);
     expect(metrics.finalYear?.endBalance).toBe(23865028.56);
     expect(metrics).toMatchSnapshot();
   });
@@ -2334,7 +2337,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(42310.39);
+    expect(result.sustainableWithdrawal).toBe(69125.81);
     expect(metrics.finalYear?.endBalance).toBe(126466.69);
     expect(metrics).toMatchSnapshot();
   });
@@ -2403,7 +2406,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(38562.02);
+    expect(result.sustainableWithdrawal).toBe(79018.18);
     expect(metrics.finalYear?.endBalance).toBe(1279591.16);
     expect(metrics).toMatchSnapshot();
   });
@@ -2426,7 +2429,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(383753.84);
+    expect(result.sustainableWithdrawal).toBe(193621.63);
     expect(metrics.finalYear?.endBalance).toBe(36218978.83);
     expect(metrics).toMatchSnapshot();
   });
@@ -2446,7 +2449,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(349986.75);
+    expect(result.sustainableWithdrawal).toBe(193621.63);
     expect(metrics.finalYear?.endBalance).toBe(31619367.46);
     expect(metrics).toMatchSnapshot();
   });
@@ -2465,7 +2468,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(259120.05);
+    expect(result.sustainableWithdrawal).toBe(193621.63);
     expect(metrics.finalYear?.endBalance).toBe(20096635.66);
     expect(metrics).toMatchSnapshot();
   });
@@ -2518,7 +2521,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(16351.79);
+    expect(result.sustainableWithdrawal).toBe(17948.72);
     expect(metrics.finalYear?.endBalance).toBe(132897.25);
     expect(metrics).toMatchSnapshot();
   });
@@ -2587,7 +2590,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(301448.5);
+    expect(result.sustainableWithdrawal).toBe(193621.63);
     expect(metrics.finalYear?.endBalance).toBe(25464271.77);
     expect(metrics).toMatchSnapshot();
   });
@@ -2651,7 +2654,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(32528);
+    expect(result.sustainableWithdrawal).toBe(65000);
     expect(metrics.finalYear?.endBalance).toBe(1073156.89);
     expect(metrics).toMatchSnapshot();
   });
@@ -2726,8 +2729,10 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(58320.22);
-    expect(metrics.finalYear?.endBalance).toBe(2418826.05);
+    expect(result.sustainableWithdrawal).toBe(46000);
+    // R49 (see SNAPSHOT-REVIEW-LOG.md): same rmd-enforcement.ts residual fix
+    // as fixture 31.
+    expect(metrics.finalYear?.endBalance).toBe(2419205.76);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -2802,8 +2807,10 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(58193.58);
-    expect(metrics.finalYear?.endBalance).toBe(2421851.06);
+    expect(result.sustainableWithdrawal).toBe(46000);
+    // R49 (see SNAPSHOT-REVIEW-LOG.md): same rmd-enforcement.ts residual fix
+    // as fixture 31.
+    expect(metrics.finalYear?.endBalance).toBe(2423603.86);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -2877,7 +2884,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(89017.56);
+    expect(result.sustainableWithdrawal).toBe(10638.3);
     expect(metrics.finalYear?.endBalance).toBe(5730446.7);
     expect(metrics).toMatchSnapshot();
   });
@@ -2953,7 +2960,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(57090.39);
+    expect(result.sustainableWithdrawal).toBe(10596.03);
     expect(metrics.finalYear?.endBalance).toBe(2794409.88);
     expect(metrics).toMatchSnapshot();
   });
@@ -3021,7 +3028,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(37800.6);
+    expect(result.sustainableWithdrawal).toBe(46808.51);
     expect(metrics.finalYear?.endBalance).toBe(1918528.66);
     expect(metrics).toMatchSnapshot();
   });
@@ -3040,7 +3047,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(84271.08);
+    expect(result.sustainableWithdrawal).toBe(157827.36);
     expect(metrics.finalYear?.endBalance).toBe(207668.87);
     expect(metrics).toMatchSnapshot();
   });
@@ -3076,7 +3083,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(44464.78);
+    expect(result.sustainableWithdrawal).toBe(71769.68);
     expect(metrics.finalYear?.endBalance).toBe(2215743.28);
     expect(metrics).toMatchSnapshot();
   });
@@ -3153,7 +3160,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(49416.28);
+    expect(result.sustainableWithdrawal).toBe(75645);
     expect(metrics.finalYear?.endBalance).toBe(3276674.76);
     expect(metrics).toMatchSnapshot();
   });
@@ -3173,7 +3180,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(100871.86);
+    expect(result.sustainableWithdrawal).toBe(133689.06);
     expect(metrics.finalYear?.endBalance).toBe(5615130.84);
     expect(metrics).toMatchSnapshot();
   });
@@ -3220,7 +3227,7 @@ describe("engine snapshot parity", () => {
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
-    expect(result.sustainableWithdrawal).toBe(355459.76);
+    expect(result.sustainableWithdrawal).toBe(285222.17);
     expect(metrics.finalYear?.endBalance).toBe(26731358.84);
     expect(metrics).toMatchSnapshot();
   });
@@ -3284,8 +3291,694 @@ describe("engine snapshot parity", () => {
     // T13: explicit numeric assertions (see fixture 1 comment) — added
     // 2026-08-27, code review (this fixture previously relied on
     // toMatchSnapshot() alone for its financial content).
-    expect(result.sustainableWithdrawal).toBe(82177.72);
+    expect(result.sustainableWithdrawal).toBe(116041.87);
     expect(metrics.finalYear?.endBalance).toBe(4056953.22);
+    expect(metrics).toMatchSnapshot();
+  });
+
+  // R46: QCD + rmdExcessHandling fixtures. All three share the same
+  // household shape (per-person RMD tracking via individualAccounts +
+  // socialSecurityEntries, required for qcdMaximize to take effect —
+  // see qcd.ts's docblock) so the only variable between them is the R46
+  // settings themselves.
+  it("fixture 65: qcdMaximize fully covers a modest RMD (no taxable distribution forced)", () => {
+    const input = makeInput({
+      currentAge: 75,
+      retirementAge: 65,
+      projectionEndAge: 85,
+      birthYear: 1950,
+      currentSalary: 0,
+      annualExpenses: 40000,
+      socialSecurityAnnual: 30000,
+      ssStartAge: 70,
+      socialSecurityEntries: [
+        {
+          personId: 1,
+          personName: "Alice",
+          birthYear: 1950,
+          startAge: 70,
+          annualAmount: 30000,
+        },
+      ],
+      individualAccounts: [
+        {
+          name: "Alice 401k",
+          category: "401k",
+          taxType: "preTax",
+          startingBalance: 1200000,
+          ownerName: "Alice",
+          ownerPersonId: 1,
+        },
+        {
+          name: "Alice IRA",
+          category: "ira",
+          taxType: "preTax",
+          startingBalance: 800000,
+          ownerName: "Alice",
+          ownerPersonId: 1,
+        },
+        {
+          name: "Alice IRA Roth",
+          category: "ira",
+          taxType: "taxFree",
+          startingBalance: 50000,
+          ownerName: "Alice",
+          ownerPersonId: 1,
+        },
+        {
+          name: "Alice HSA",
+          category: "hsa",
+          taxType: "hsa",
+          startingBalance: 10000,
+          ownerName: "Alice",
+          ownerPersonId: 1,
+        },
+        {
+          name: "Alice Brokerage",
+          category: "brokerage",
+          taxType: "afterTax",
+          startingBalance: 50000,
+          ownerName: "Alice",
+          ownerPersonId: 1,
+        },
+      ],
+      startingBalances: {
+        preTax: 2000000,
+        taxFree: 50000,
+        afterTax: 50000,
+        afterTaxBasis: 30000,
+        hsa: 10000,
+      },
+      startingAccountBalances: {
+        "401k": {
+          structure: "roth_traditional",
+          traditional: 1200000,
+          roth: 0,
+        },
+        "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+        hsa: { structure: "single_bucket", balance: 10000 },
+        ira: {
+          structure: "roth_traditional",
+          traditional: 800000,
+          roth: 50000,
+        },
+        brokerage: {
+          structure: "basis_tracking",
+          balance: 50000,
+          basis: 30000,
+        },
+      },
+      decumulationDefaults: {
+        withdrawalRate: 0.04,
+        withdrawalRoutingMode: "waterfall",
+        withdrawalOrder: ["brokerage", "401k", "ira", "hsa"],
+        withdrawalSplits: {
+          "401k": 0.35,
+          "403b": 0,
+          ira: 0.25,
+          brokerage: 0.3,
+          hsa: 0.1,
+        },
+        withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
+        withdrawalStrategy: "guyton_klinger",
+        strategyParams: {
+          guyton_klinger: {
+            upperGuardrail: 0.8,
+            lowerGuardrail: 1.2,
+            increasePercent: 0.1,
+            decreasePercent: 0.1,
+            skipInflationAfterLoss: true,
+          },
+        },
+        distributionTaxRates: {
+          traditionalFallbackRate: 0.24,
+          roth: 0,
+          hsa: 0,
+          brokerage: 0.15,
+        },
+        qcdMaximize: true,
+        rmdExcessHandling: "reinvest",
+      },
+    });
+    const result = calculateProjection(input);
+    const decYears = result.projectionByYear.filter(
+      (y): y is Extract<typeof y, { phase: "decumulation" }> =>
+        y.phase === "decumulation",
+    );
+    // RMD ($81,300.81 at age 75) is well under the IRA Traditional
+    // balance ($800k), and QCD is no longer capped at the RMD amount
+    // (advisor review, 2026-08-29 — a QCD can legally exceed the RMD, up
+    // to the annual $115k/person cap) — so QCD maximizes to the $115k
+    // cap itself, still comfortably covering the RMD with room to spare,
+    // so no taxable Traditional distribution is forced and there's no
+    // leftover excess to reinvest.
+    expect(decYears[0]?.rmdAmount).toBe(81300.81);
+    expect(decYears[0]?.qcdAmount).toBe(115000);
+    expect(decYears[0]?.totalTraditionalWithdrawal).toBe(0);
+    expect(decYears[0]?.rmdExcessAmount).toBe(0);
+    const metrics = extractMetrics(result);
+    // R49 (see SNAPSHOT-REVIEW-LOG.md): the QCD debit now applies directly
+    // to the IRA's individual-account balance instead of being deferred to
+    // reconcileIndividualToAggregate — the withdrawal fan-out now correctly
+    // sees the post-QCD capacity mid-year instead of a stale pre-QCD figure,
+    // so it can no longer over-draw the account for spending need before
+    // reconcile silently "fixes" the balance at year-end.
+    // Lower than before the QCD-cap fix (was 2499086.87) — the extra
+    // ~$33.7k/yr now going out as QCD (maximized to the cap instead of
+    // stopping at the RMD) never gets to compound in the account across
+    // the remaining 10-year horizon, same direction the endBalance drop
+    // in fixture 66/67 shows.
+    expect(metrics.finalYear?.endBalance).toBe(2299622.5);
+    expect(metrics).toMatchSnapshot();
+  });
+
+  it("fixture 66: qcdMaximize capped below a large RMD — remainder still forces a taxable distribution + reinvested excess", () => {
+    const input = makeInput({
+      currentAge: 75,
+      retirementAge: 65,
+      projectionEndAge: 78,
+      birthYear: 1950,
+      currentSalary: 0,
+      annualExpenses: 40000,
+      socialSecurityAnnual: 30000,
+      ssStartAge: 70,
+      socialSecurityEntries: [
+        {
+          personId: 1,
+          personName: "Alice",
+          birthYear: 1950,
+          startAge: 70,
+          annualAmount: 30000,
+        },
+      ],
+      individualAccounts: [
+        {
+          name: "Alice 401k",
+          category: "401k",
+          taxType: "preTax",
+          startingBalance: 3200000,
+          ownerName: "Alice",
+          ownerPersonId: 1,
+        },
+        {
+          name: "Alice IRA",
+          category: "ira",
+          taxType: "preTax",
+          startingBalance: 2800000,
+          ownerName: "Alice",
+          ownerPersonId: 1,
+        },
+        {
+          name: "Alice Brokerage",
+          category: "brokerage",
+          taxType: "afterTax",
+          startingBalance: 50000,
+          ownerName: "Alice",
+          ownerPersonId: 1,
+        },
+      ],
+      startingBalances: {
+        preTax: 6000000,
+        taxFree: 0,
+        afterTax: 50000,
+        afterTaxBasis: 30000,
+        hsa: 0,
+      },
+      startingAccountBalances: {
+        "401k": {
+          structure: "roth_traditional",
+          traditional: 3200000,
+          roth: 0,
+        },
+        "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+        hsa: { structure: "single_bucket", balance: 0 },
+        ira: {
+          structure: "roth_traditional",
+          traditional: 2800000,
+          roth: 0,
+        },
+        brokerage: {
+          structure: "basis_tracking",
+          balance: 50000,
+          basis: 30000,
+        },
+      },
+      decumulationDefaults: {
+        withdrawalRate: 0.04,
+        withdrawalRoutingMode: "waterfall",
+        withdrawalOrder: ["brokerage", "401k", "ira", "hsa"],
+        withdrawalSplits: {
+          "401k": 0.35,
+          "403b": 0,
+          ira: 0.25,
+          brokerage: 0.3,
+          hsa: 0.1,
+        },
+        withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
+        withdrawalStrategy: "guyton_klinger",
+        strategyParams: {
+          guyton_klinger: {
+            upperGuardrail: 0.8,
+            lowerGuardrail: 1.2,
+            increasePercent: 0.1,
+            decreasePercent: 0.1,
+            skipInflationAfterLoss: true,
+          },
+        },
+        distributionTaxRates: {
+          traditionalFallbackRate: 0.24,
+          roth: 0,
+          hsa: 0,
+          brokerage: 0.15,
+        },
+        qcdMaximize: true,
+        rmdExcessHandling: "reinvest",
+      },
+    });
+    const result = calculateProjection(input);
+    const decYears = result.projectionByYear.filter(
+      (y): y is Extract<typeof y, { phase: "decumulation" }> =>
+        y.phase === "decumulation",
+    );
+    // RMD ($243,902.44 at age 75) exceeds the $115k/person QCD annual cap
+    // (2026 figure — was $105k, stale by two years' indexing; advisor
+    // review 2026-08-29) — QCD caps at exactly $115,000, and enforceRmd
+    // still forces the remaining $128,902.44 through as a real taxable
+    // Traditional distribution.
+    expect(decYears[0]?.rmdAmount).toBe(243902.44);
+    expect(decYears[0]?.qcdAmount).toBe(115000);
+    expect(decYears[0]?.totalTraditionalWithdrawal).toBe(128902.44);
+    const metrics = extractMetrics(result);
+    // R49 (see SNAPSHOT-REVIEW-LOG.md) — same fix as fixture 65. Lower
+    // than before the QCD-cap fix (was 6893089.39) — the extra $10k/yr
+    // QCD (cap raised 105k->115k) leaves the account as charity instead
+    // of compounding.
+    expect(metrics.finalYear?.endBalance).toBe(6866927.14);
+    expect(metrics).toMatchSnapshot();
+  });
+
+  it("fixture 67: same as fixture 66 but rmdExcessHandling='spend' — lower end balance, by design", () => {
+    const input = makeInput({
+      currentAge: 75,
+      retirementAge: 65,
+      projectionEndAge: 78,
+      birthYear: 1950,
+      currentSalary: 0,
+      annualExpenses: 40000,
+      socialSecurityAnnual: 30000,
+      ssStartAge: 70,
+      socialSecurityEntries: [
+        {
+          personId: 1,
+          personName: "Alice",
+          birthYear: 1950,
+          startAge: 70,
+          annualAmount: 30000,
+        },
+      ],
+      individualAccounts: [
+        {
+          name: "Alice 401k",
+          category: "401k",
+          taxType: "preTax",
+          startingBalance: 3200000,
+          ownerName: "Alice",
+          ownerPersonId: 1,
+        },
+        {
+          name: "Alice IRA",
+          category: "ira",
+          taxType: "preTax",
+          startingBalance: 2800000,
+          ownerName: "Alice",
+          ownerPersonId: 1,
+        },
+        {
+          name: "Alice Brokerage",
+          category: "brokerage",
+          taxType: "afterTax",
+          startingBalance: 50000,
+          ownerName: "Alice",
+          ownerPersonId: 1,
+        },
+      ],
+      startingBalances: {
+        preTax: 6000000,
+        taxFree: 0,
+        afterTax: 50000,
+        afterTaxBasis: 30000,
+        hsa: 0,
+      },
+      startingAccountBalances: {
+        "401k": {
+          structure: "roth_traditional",
+          traditional: 3200000,
+          roth: 0,
+        },
+        "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+        hsa: { structure: "single_bucket", balance: 0 },
+        ira: {
+          structure: "roth_traditional",
+          traditional: 2800000,
+          roth: 0,
+        },
+        brokerage: {
+          structure: "basis_tracking",
+          balance: 50000,
+          basis: 30000,
+        },
+      },
+      decumulationDefaults: {
+        withdrawalRate: 0.04,
+        withdrawalRoutingMode: "waterfall",
+        withdrawalOrder: ["brokerage", "401k", "ira", "hsa"],
+        withdrawalSplits: {
+          "401k": 0.35,
+          "403b": 0,
+          ira: 0.25,
+          brokerage: 0.3,
+          hsa: 0.1,
+        },
+        withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
+        withdrawalStrategy: "guyton_klinger",
+        strategyParams: {
+          guyton_klinger: {
+            upperGuardrail: 0.8,
+            lowerGuardrail: 1.2,
+            increasePercent: 0.1,
+            decreasePercent: 0.1,
+            skipInflationAfterLoss: true,
+          },
+        },
+        distributionTaxRates: {
+          traditionalFallbackRate: 0.24,
+          roth: 0,
+          hsa: 0,
+          brokerage: 0.15,
+        },
+        qcdMaximize: true,
+        rmdExcessHandling: "spend",
+      },
+    });
+    const result = calculateProjection(input);
+    const decYears = result.projectionByYear.filter(
+      (y): y is Extract<typeof y, { phase: "decumulation" }> =>
+        y.phase === "decumulation",
+    );
+    // Same RMD/QCD/excess amounts as fixture 66 — only the DESTINATION of
+    // the excess differs (spent, not reinvested), so end balance is lower.
+    expect(decYears[0]?.rmdAmount).toBe(243902.44);
+    expect(decYears[0]?.qcdAmount).toBe(115000);
+    expect(decYears[0]?.rmdExcessAmount).toBe(97965.85);
+    const metrics = extractMetrics(result);
+    // R49 (see SNAPSHOT-REVIEW-LOG.md) — same fix as fixture 65. Unchanged
+    // from before the QCD-cap fix -- with rmdExcessHandling="spend", the
+    // extra $10k/yr QCD (cap raised 105k->115k) reduces what's left to
+    // spend as "excess" by the same amount, so the portfolio's own
+    // trajectory nets out the same either way.
+    expect(metrics.finalYear?.endBalance).toBe(6517851.49);
+    expect(metrics.finalYear?.endBalance).toBeLessThan(6866927.14); // vs. fixture 66's "reinvest"
+    expect(metrics).toMatchSnapshot();
+  });
+
+  // R47: RMD smoothing fixtures. Both share one household shape (a single
+  // large pre-tax balance, well past the point where the projected future
+  // RMD would exceed spending need — same scale as rmd-smoothing.test.ts's
+  // "produces a positive target" case) so the only variable is
+  // rmdSmoothingEnabled itself. Neither sets enableRothConversions,
+  // proving smoothing is a fully self-contained activation path (see
+  // rmd-handling.tsx's docblock / PLAN-r47-rmd-aware-roth-smoothing.md).
+  const r47HouseholdInput = (rmdSmoothingEnabled: boolean) =>
+    makeInput({
+      currentAge: 65,
+      retirementAge: 65,
+      projectionEndAge: 80,
+      birthYear: 1960,
+      currentSalary: 0,
+      annualExpenses: 90000,
+      socialSecurityAnnual: 24000,
+      ssStartAge: 67,
+      socialSecurityEntries: [
+        {
+          personId: 1,
+          personName: "Alice",
+          birthYear: 1960,
+          startAge: 67,
+          annualAmount: 24000,
+        },
+      ],
+      individualAccounts: [
+        {
+          name: "Alice 401k",
+          category: "401k",
+          taxType: "preTax",
+          startingBalance: 1500000,
+          ownerName: "Alice",
+          ownerPersonId: 1,
+        },
+        {
+          name: "Alice IRA",
+          category: "ira",
+          taxType: "preTax",
+          startingBalance: 1000000,
+          ownerName: "Alice",
+          ownerPersonId: 1,
+        },
+        {
+          name: "Alice Brokerage",
+          category: "brokerage",
+          taxType: "afterTax",
+          startingBalance: 300000,
+          ownerName: "Alice",
+          ownerPersonId: 1,
+        },
+      ],
+      startingBalances: {
+        preTax: 2500000,
+        taxFree: 0,
+        afterTax: 300000,
+        afterTaxBasis: 200000,
+        hsa: 0,
+      },
+      startingAccountBalances: {
+        "401k": {
+          structure: "roth_traditional",
+          traditional: 1500000,
+          roth: 0,
+        },
+        "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+        hsa: { structure: "single_bucket", balance: 0 },
+        ira: {
+          structure: "roth_traditional",
+          traditional: 1000000,
+          roth: 0,
+        },
+        brokerage: {
+          structure: "basis_tracking",
+          balance: 300000,
+          basis: 200000,
+        },
+      },
+      decumulationDefaults: {
+        withdrawalRate: 0.04,
+        withdrawalRoutingMode: "waterfall",
+        // Traditional-first (not brokerage-first, unlike most other
+        // fixtures in this file) -- deliberately so this household draws
+        // down Traditional from year one, matching the "actively drawing
+        // down Traditional pre-RMD" population R47 targets, and so the
+        // brokerage balance survives to fund conversion tax costs instead
+        // of being exhausted covering ordinary spending first.
+        withdrawalOrder: ["401k", "ira", "brokerage", "hsa"],
+        withdrawalSplits: {
+          "401k": 0.35,
+          "403b": 0,
+          ira: 0.25,
+          brokerage: 0.3,
+          hsa: 0.1,
+        },
+        withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
+        withdrawalStrategy: "guyton_klinger",
+        strategyParams: {
+          guyton_klinger: {
+            upperGuardrail: 0.8,
+            lowerGuardrail: 1.2,
+            increasePercent: 0.1,
+            decreasePercent: 0.1,
+            skipInflationAfterLoss: true,
+          },
+        },
+        distributionTaxRates: {
+          traditionalFallbackRate: 0.24,
+          roth: 0,
+          hsa: 0,
+          brokerage: 0.15,
+          taxBrackets: [
+            { threshold: 0, baseWithholding: 0, rate: 0.1 },
+            { threshold: 23200, baseWithholding: 2320, rate: 0.12 },
+            { threshold: 94300, baseWithholding: 10852, rate: 0.22 },
+            { threshold: 201050, baseWithholding: 34337, rate: 0.24 },
+            { threshold: 383900, baseWithholding: 78221, rate: 0.32 },
+            { threshold: 693750, baseWithholding: 175136, rate: 0.37 },
+          ],
+        },
+        rmdSmoothingEnabled,
+        rmdSmoothingMaxBracketTarget: 0.32,
+      },
+    });
+
+  it("fixture 68: rmdSmoothingEnabled converts pre-RMD without enableRothConversions set (self-contained toggle)", () => {
+    const result = calculateProjection(r47HouseholdInput(true));
+    const decYears = result.projectionByYear.filter(
+      (y): y is Extract<typeof y, { phase: "decumulation" }> =>
+        y.phase === "decumulation",
+    );
+    // Pre-RMD years (birthYear 1960 -> RMD starts at 75, SECURE 2.0) should
+    // show real conversions even though
+    // enableRothConversions was never set -- rmdSmoothingEnabled alone is
+    // sufficient, same self-contained pattern as R46's qcdMaximize/
+    // rmdExcessHandling.
+    const preRmdYears = decYears.filter((y) => y.age < 75);
+    expect(preRmdYears.length).toBeGreaterThan(0);
+    expect(preRmdYears.some((y) => (y.rothConversionAmount ?? 0) > 0)).toBe(
+      true,
+    );
+    const metrics = extractMetrics(result);
+    expect(metrics).toMatchSnapshot();
+  });
+
+  it("fixture 69: same household with rmdSmoothingEnabled=false — no pre-RMD conversions, and a measurably LARGER RMD at age 75 than fixture 68", () => {
+    const smoothedResult = calculateProjection(r47HouseholdInput(true));
+    const unsmoothedResult = calculateProjection(r47HouseholdInput(false));
+    const smoothedDecYears = smoothedResult.projectionByYear.filter(
+      (y): y is Extract<typeof y, { phase: "decumulation" }> =>
+        y.phase === "decumulation",
+    );
+    const unsmoothedDecYears = unsmoothedResult.projectionByYear.filter(
+      (y): y is Extract<typeof y, { phase: "decumulation" }> =>
+        y.phase === "decumulation",
+    );
+    // Control: no conversions at all pre-RMD without the toggle.
+    const unsmoothedPreRmdYears = unsmoothedDecYears.filter((y) => y.age < 75);
+    expect(
+      unsmoothedPreRmdYears.every((y) => (y.rothConversionAmount ?? 0) === 0),
+    ).toBe(true);
+    // The claim R47 exists to prove: shrinking the pre-RMD Traditional
+    // balance via smoothing produces a measurably SMALLER forced RMD at
+    // age 75 than the same household that never smoothed.
+    const smoothedRmdAt75 = smoothedDecYears.find(
+      (y) => y.age === 75,
+    )?.rmdAmount;
+    const unsmoothedRmdAt75 = unsmoothedDecYears.find(
+      (y) => y.age === 75,
+    )?.rmdAmount;
+    expect(smoothedRmdAt75).toBeGreaterThan(0);
+    expect(unsmoothedRmdAt75).toBeGreaterThan(0);
+    expect(smoothedRmdAt75!).toBeLessThan(unsmoothedRmdAt75!);
+    const metrics = extractMetrics(unsmoothedResult);
+    expect(metrics).toMatchSnapshot();
+  });
+
+  // R47 Feature B (advisor review, 2026-08-28) — rateSeededDecumulationYear1.
+  // Guyton-Klinger household with a stated budget deliberately far from
+  // what withdrawalRate x balance would produce, so the two runs' year-1
+  // spending provably differs when the flag is set.
+  const rateSeededHouseholdInput = (rateSeeded: boolean) =>
+    makeInput({
+      currentAge: 60,
+      retirementAge: 65,
+      projectionEndAge: 75,
+      currentSalary: 0,
+      annualExpenses: 85000,
+      decumulationAnnualExpenses: 85000,
+      startingBalances: {
+        preTax: 1000000,
+        taxFree: 500000,
+        afterTax: 300000,
+        afterTaxBasis: 200000,
+        hsa: 200000,
+      },
+      startingAccountBalances: {
+        "401k": {
+          structure: "roth_traditional",
+          traditional: 1000000,
+          roth: 0,
+        },
+        "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+        hsa: { structure: "single_bucket", balance: 200000 },
+        ira: { structure: "roth_traditional", traditional: 0, roth: 500000 },
+        brokerage: {
+          structure: "basis_tracking",
+          balance: 300000,
+          basis: 200000,
+        },
+      },
+      decumulationDefaults: {
+        withdrawalRate: 0.05,
+        withdrawalRoutingMode: "waterfall",
+        withdrawalOrder: ["401k", "ira", "brokerage", "hsa"],
+        withdrawalSplits: {
+          "401k": 0.35,
+          "403b": 0,
+          ira: 0.25,
+          brokerage: 0.3,
+          hsa: 0.1,
+        },
+        withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
+        withdrawalStrategy: "guyton_klinger",
+        strategyParams: {
+          guyton_klinger: {
+            upperGuardrail: 0.8,
+            lowerGuardrail: 1.2,
+            increasePercent: 0.1,
+            decreasePercent: 0.1,
+            skipInflationAfterLoss: true,
+          },
+        },
+        distributionTaxRates: {
+          traditionalFallbackRate: 0.24,
+          roth: 0,
+          hsa: 0,
+          brokerage: 0.15,
+        },
+      },
+      ...(rateSeeded ? { rateSeededDecumulationYear1: true } : {}),
+    });
+
+  it("fixture 70: rateSeededDecumulationYear1 seeds year 1 from withdrawalRate x balance, ignoring the stated budget", () => {
+    const result = calculateProjection(rateSeededHouseholdInput(true));
+    const decYears = result.projectionByYear.filter(
+      (y): y is Extract<typeof y, { phase: "decumulation" }> =>
+        y.phase === "decumulation",
+    );
+    const year1 = decYears[0]!;
+    // Year 1's target/spending is driven by 5% of the actual (grown) year-1
+    // balance, NOT the stated $85k budget -- close to $100k (5% of the
+    // $2M starting balance, before 5 years of pre-retirement growth), well
+    // above the budget the run otherwise ignores entirely.
+    expect(year1.projectedExpenses).toBeGreaterThan(90000);
+    expect(year1.projectedExpenses).not.toBe(85000);
+    const metrics = extractMetrics(result);
+    expect(metrics).toMatchSnapshot();
+  });
+
+  it("fixture 71: rateSeededDecumulationYear1 omitted is byte-identical to today's budget-seeded behavior", () => {
+    const withFlagOmitted = calculateProjection(
+      rateSeededHouseholdInput(false),
+    );
+    const explicitlyFalse = calculateProjection({
+      ...rateSeededHouseholdInput(false),
+      rateSeededDecumulationYear1: false,
+    });
+    expect(explicitlyFalse).toEqual(withFlagOmitted);
+    const decYears = withFlagOmitted.projectionByYear.filter(
+      (y): y is Extract<typeof y, { phase: "decumulation" }> =>
+        y.phase === "decumulation",
+    );
+    // Budget-seeded year 1 (today's only behavior, still the default) DOES
+    // start from the stated $85k budget (inflated to the retirement year).
+    expect(decYears[0]!.projectedExpenses).toBeGreaterThan(85000);
+    expect(decYears[0]!.projectedExpenses).toBeLessThan(100000);
+    const metrics = extractMetrics(withFlagOmitted);
     expect(metrics).toMatchSnapshot();
   });
 });

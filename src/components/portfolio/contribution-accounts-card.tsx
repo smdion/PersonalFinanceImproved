@@ -3,17 +3,29 @@
 /** Expandable account card that composes settings, sub-accounts, and contributions sections for a single performance account. */
 
 import React, { useState } from "react";
-import { formatCurrency, accountDisplayName } from "@/lib/utils/format";
+import {
+  formatCurrency,
+  formatPercent,
+  accountDisplayName,
+} from "@/lib/utils/format";
+import {
+  EARLY_WITHDRAWAL_PENALTY_RATE,
+  HSA_NON_MEDICAL_PENALTY_RATE,
+} from "@/lib/constants";
 import { confirm } from "@/components/ui/confirm-dialog";
 import {
   accountBorderColor,
   accountMatchColor,
   accountColor,
 } from "@/lib/utils/colors";
-import { getAccountTypeConfig } from "@/lib/config/account-types";
+import {
+  getAccountTypeConfig,
+  isHsaCategory,
+} from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { ContribRow, PortfolioSub } from "./contribution-accounts-types";
 import { InlineText, InlineSelect } from "./contribution-accounts-inline";
+import { HelpTip } from "@/components/ui/help-tip";
 import {
   SubAccountRow,
   SubAccountInactiveSection,
@@ -59,6 +71,7 @@ export function AccountCard({
     ownershipType: string;
     retirementBehavior?: string;
     contributionScaling?: string;
+    allowPenalizedWithdrawals?: boolean;
     parentCategory: string;
     isActive: boolean;
     displayOrder: number;
@@ -354,6 +367,45 @@ export function AccountCard({
                             Delete Account{" "}
                           </button>
                         )}{" "}
+                      </div>
+                    )}{" "}
+                    {showDanger && pa.ownershipType !== "joint" && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <input
+                          type="checkbox"
+                          checked={pa.allowPenalizedWithdrawals ?? false}
+                          onChange={async (e) => {
+                            const checked = e.target.checked;
+                            const rate = formatPercent(
+                              isHsaCategory(pa.accountType)
+                                ? HSA_NON_MEDICAL_PENALTY_RATE
+                                : EARLY_WITHDRAWAL_PENALTY_RATE,
+                              0,
+                            );
+                            if (
+                              !checked ||
+                              (await confirm(
+                                `Allow the retirement projection to draw from this account even when it's early-withdrawal penalty-exposed? The projection will pay the ${rate} penalty on any exposed dollars it draws here. The household still avoids the penalty on every other account.`,
+                              ))
+                            ) {
+                              onPerfUpdate({
+                                allowPenalizedWithdrawals: checked,
+                              });
+                            }
+                          }}
+                          disabled={!onPerfUpdate}
+                          className="rounded border-strong"
+                          id={`allow-penalty-${pa.id}`}
+                        />
+                        <label
+                          htmlFor={`allow-penalty-${pa.id}`}
+                          className="text-xs text-muted"
+                        >
+                          Allow early-withdrawal penalty on this account
+                        </label>
+                        <HelpTip
+                          text={`If checked, the retirement projection may draw penalty-exposed money from this specific account, paying the ${formatPercent(EARLY_WITHDRAWAL_PENALTY_RATE, 0)} (${formatPercent(HSA_NON_MEDICAL_PENALTY_RATE, 0)} for HSA) penalty when it does. The household still avoids the penalty on every other account. This is not a last-resort-only setting — normal withdrawal order decides when it's drawn.`}
+                        />
                       </div>
                     )}{" "}
                   </div>{" "}

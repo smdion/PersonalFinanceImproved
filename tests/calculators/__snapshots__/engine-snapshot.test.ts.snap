@@ -18,7 +18,7 @@ exports[`engine snapshot parity > fixture 1: standard dual-income household 1`] 
     "projectedExpenses": 151024.87,
     "totalWithdrawal": 193621.63,
   },
-  "sustainableWithdrawal": 301448.5,
+  "sustainableWithdrawal": 193621.63,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -50,7 +50,7 @@ exports[`engine snapshot parity > fixture 2: single person, no employer match 1`
     "projectedExpenses": 100683.24,
     "totalWithdrawal": 129081.08,
   },
-  "sustainableWithdrawal": 135510.64,
+  "sustainableWithdrawal": 129081.08,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -82,7 +82,7 @@ exports[`engine snapshot parity > fixture 3: all accounts maxed, overflow to bro
     "projectedExpenses": 151024.87,
     "totalWithdrawal": 193621.63,
   },
-  "sustainableWithdrawal": 989285.99,
+  "sustainableWithdrawal": 193621.63,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -139,7 +139,7 @@ exports[`engine snapshot parity > fixture 4: retirement phase only (age > retire
     "projectedExpenses": 60000,
     "totalWithdrawal": 30769.23,
   },
-  "sustainableWithdrawal": 37203.08,
+  "sustainableWithdrawal": 30769.23,
   "totalYears": 23,
   "warningCount": 1,
   "year0": {
@@ -263,7 +263,7 @@ exports[`engine snapshot parity > fixture 6: with contribution specs (per-accoun
     "projectedExpenses": 151024.87,
     "totalWithdrawal": 193621.63,
   },
-  "sustainableWithdrawal": 302465.95,
+  "sustainableWithdrawal": 193621.63,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -295,7 +295,7 @@ exports[`engine snapshot parity > fixture 7: bracket filling routing mode 1`] = 
     "projectedExpenses": 151024.87,
     "totalWithdrawal": 193621.63,
   },
-  "sustainableWithdrawal": 428698.24,
+  "sustainableWithdrawal": 193621.63,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -327,7 +327,7 @@ exports[`engine snapshot parity > fixture 8: life change overrides — salary an
     "projectedExpenses": 139036.62,
     "totalWithdrawal": 178252.08,
   },
-  "sustainableWithdrawal": 330008.27,
+  "sustainableWithdrawal": 178252.08,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -359,7 +359,7 @@ exports[`engine snapshot parity > fixture 9: decumulation override with reset:tr
     "projectedExpenses": 151024.87,
     "totalWithdrawal": 193621.63,
   },
-  "sustainableWithdrawal": 301448.5,
+  "sustainableWithdrawal": 193621.63,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -391,7 +391,7 @@ exports[`engine snapshot parity > fixture 10: bracket-filling withdrawal with ro
     "projectedExpenses": 151024.87,
     "totalWithdrawal": 193621.63,
   },
-  "sustainableWithdrawal": 435141.26,
+  "sustainableWithdrawal": 193621.63,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -442,7 +442,7 @@ exports[`engine snapshot parity > fixture 11: waterfall withdrawal order — bro
     "projectedExpenses": 151024.87,
     "totalWithdrawal": 175211.58,
   },
-  "sustainableWithdrawal": 423043.17,
+  "sustainableWithdrawal": 175211.58,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -499,7 +499,7 @@ exports[`engine snapshot parity > fixture 12: percentage withdrawal mode 1`] = `
     "projectedExpenses": 151024.87,
     "totalWithdrawal": 189573.24,
   },
-  "sustainableWithdrawal": 301621.77,
+  "sustainableWithdrawal": 189573.24,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -550,7 +550,7 @@ exports[`engine snapshot parity > fixture 13: asymmetric retirement ages — ear
     "projectedExpenses": 115863.85,
     "totalWithdrawal": 148543.4,
   },
-  "sustainableWithdrawal": 131957.22,
+  "sustainableWithdrawal": 148543.4,
   "totalYears": 50,
   "warningCount": 0,
   "year0": {
@@ -601,7 +601,7 @@ exports[`engine snapshot parity > fixture 14: RMDs — birth year 1955 (RMD star
     "projectedExpenses": 60000,
     "totalWithdrawal": 30769.23,
   },
-  "sustainableWithdrawal": 40199.08,
+  "sustainableWithdrawal": 30769.23,
   "totalYears": 22,
   "warningCount": 1,
   "year0": {
@@ -680,7 +680,7 @@ exports[`engine snapshot parity > fixture 15: RMDs — birth year 1965 (RMD star
     "projectedExpenses": 57784.37,
     "totalWithdrawal": 74082.52,
   },
-  "sustainableWithdrawal": 32441.68,
+  "sustainableWithdrawal": 74082.52,
   "totalYears": 30,
   "warningCount": 0,
   "year0": {
@@ -731,7 +731,7 @@ exports[`engine snapshot parity > fixture 16: RMD forces withdrawal above bracke
     "projectedExpenses": 50000,
     "totalWithdrawal": 17948.72,
   },
-  "sustainableWithdrawal": 54443.79,
+  "sustainableWithdrawal": 17948.72,
   "totalYears": 20,
   "warningCount": 1,
   "year0": {
@@ -780,7 +780,7 @@ exports[`engine snapshot parity > fixture 17: RMD + Roth conversion targeting 1`
     "projectedExpenses": 55000,
     "totalWithdrawal": 32051.28,
   },
-  "sustainableWithdrawal": 43140.21,
+  "sustainableWithdrawal": 32051.28,
   "totalYears": 20,
   "warningCount": 1,
   "year0": {
@@ -859,7 +859,7 @@ exports[`engine snapshot parity > fixture 18: portfolio depletion — very low b
     "projectedExpenses": 82000,
     "totalWithdrawal": 100620.84,
   },
-  "sustainableWithdrawal": 5713.21,
+  "sustainableWithdrawal": 100620.84,
   "totalYears": 25,
   "warningCount": 1,
   "year0": {
@@ -904,7 +904,7 @@ exports[`engine snapshot parity > fixture 19: brokerage-heavy portfolio — goal
     "projectedExpenses": 166854.97,
     "totalWithdrawal": 213916.63,
   },
-  "sustainableWithdrawal": 297751.69,
+  "sustainableWithdrawal": 213916.63,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -943,7 +943,7 @@ exports[`engine snapshot parity > fixture 20: catch-up contributions — age 50,
     "projectedExpenses": 106884.4,
     "totalWithdrawal": 137031.28,
   },
-  "sustainableWithdrawal": 86614.35,
+  "sustainableWithdrawal": 137031.28,
   "totalYears": 41,
   "warningCount": 0,
   "year0": {
@@ -1000,7 +1000,7 @@ exports[`engine snapshot parity > fixture 21: SS torpedo — MFJ filing status 1
     "projectedExpenses": 79198.57,
     "totalWithdrawal": 101536.63,
   },
-  "sustainableWithdrawal": 43732.67,
+  "sustainableWithdrawal": 101536.63,
   "totalYears": 30,
   "warningCount": 0,
   "year0": {
@@ -1081,7 +1081,7 @@ exports[`engine snapshot parity > fixture 22: SS torpedo — Single filing statu
     "projectedExpenses": 62227.45,
     "totalWithdrawal": 79778.79,
   },
-  "sustainableWithdrawal": 27450.64,
+  "sustainableWithdrawal": 79778.79,
   "totalYears": 30,
   "warningCount": 0,
   "year0": {
@@ -1113,7 +1113,7 @@ exports[`engine snapshot parity > fixture 23: SS income = 0 (no Social Security)
     "projectedExpenses": 136341.89,
     "totalWithdrawal": 174797.29,
   },
-  "sustainableWithdrawal": 302254.18,
+  "sustainableWithdrawal": 174797.29,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -1145,7 +1145,7 @@ exports[`engine snapshot parity > fixture 24: filing status absent — falls bac
     "projectedExpenses": 125854.05,
     "totalWithdrawal": 161351.35,
   },
-  "sustainableWithdrawal": 302829.67,
+  "sustainableWithdrawal": 161351.35,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -1190,7 +1190,7 @@ exports[`engine snapshot parity > fixture 25: LTCG 0% zone — low income retire
     "projectedExpenses": 41000,
     "totalWithdrawal": 11000,
   },
-  "sustainableWithdrawal": 19890.44,
+  "sustainableWithdrawal": 11000,
   "totalYears": 25,
   "warningCount": 1,
   "year0": {
@@ -1253,7 +1253,7 @@ exports[`engine snapshot parity > fixture 26: LTCG 15%/20% zone — higher incom
     "projectedExpenses": 123000,
     "totalWithdrawal": 75000,
   },
-  "sustainableWithdrawal": 65596.12,
+  "sustainableWithdrawal": 75000,
   "totalYears": 25,
   "warningCount": 1,
   "year0": {
@@ -1298,7 +1298,7 @@ exports[`engine snapshot parity > fixture 27: Roth conversion enabled via filing
     "projectedExpenses": 89605.92,
     "totalWithdrawal": 114879.39,
   },
-  "sustainableWithdrawal": 74753.99,
+  "sustainableWithdrawal": 114879.39,
   "totalYears": 35,
   "warningCount": 0,
   "year0": {
@@ -1361,7 +1361,7 @@ exports[`engine snapshot parity > fixture 28: Roth conversion constrained near I
     "projectedExpenses": 68290.63,
     "totalWithdrawal": 87552.09,
   },
-  "sustainableWithdrawal": 40857.55,
+  "sustainableWithdrawal": 87552.09,
   "totalYears": 27,
   "warningCount": 0,
   "year0": {
@@ -1442,7 +1442,7 @@ exports[`engine snapshot parity > fixture 29: Roth conversion + ACA subsidy wind
     "projectedExpenses": 73541.53,
     "totalWithdrawal": 94284.01,
   },
-  "sustainableWithdrawal": 42972.79,
+  "sustainableWithdrawal": 94284.01,
   "totalYears": 40,
   "warningCount": 0,
   "year0": {
@@ -1523,7 +1523,7 @@ exports[`engine snapshot parity > fixture 30: Roth conversion skipped — zero b
     "projectedExpenses": 56570.41,
     "totalWithdrawal": 72526.17,
   },
-  "sustainableWithdrawal": 26343.91,
+  "sustainableWithdrawal": 72526.17,
   "totalYears": 30,
   "warningCount": 0,
   "year0": {
@@ -1573,7 +1573,7 @@ exports[`engine snapshot parity > fixture 31: RMD + Roth conversion + IRMAA — 
   ],
   "finalYear": {
     "age": 94,
-    "endBalance": 4130354.41,
+    "endBalance": 4133719.39,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -1586,7 +1586,7 @@ exports[`engine snapshot parity > fixture 31: RMD + Roth conversion + IRMAA — 
     "projectedExpenses": 70000,
     "totalWithdrawal": 28000,
   },
-  "sustainableWithdrawal": 65442.83,
+  "sustainableWithdrawal": 28000,
   "totalYears": 23,
   "warningCount": 1,
   "year0": {
@@ -1641,7 +1641,7 @@ exports[`engine snapshot parity > fixture 32: Guyton-Klinger — upper guardrail
     "projectedExpenses": 60000,
     "totalWithdrawal": 63829.79,
   },
-  "sustainableWithdrawal": 55711.49,
+  "sustainableWithdrawal": 63829.79,
   "totalYears": 29,
   "warningCount": 1,
   "year0": {
@@ -1696,7 +1696,7 @@ exports[`engine snapshot parity > fixture 33: Guyton-Klinger — lower guardrail
     "projectedExpenses": 80000,
     "totalWithdrawal": 85106.38,
   },
-  "sustainableWithdrawal": 37479.57,
+  "sustainableWithdrawal": 85106.38,
   "totalYears": 29,
   "warningCount": 1,
   "year0": {
@@ -1745,7 +1745,7 @@ exports[`engine snapshot parity > fixture 34: Guyton-Klinger — prosperity rule
     "projectedExpenses": 55000,
     "totalWithdrawal": 20132.45,
   },
-  "sustainableWithdrawal": 27466.65,
+  "sustainableWithdrawal": 20132.45,
   "totalYears": 23,
   "warningCount": 1,
   "year0": {
@@ -1800,7 +1800,7 @@ exports[`engine snapshot parity > fixture 35: G-K with budget override in a loss
     "projectedExpenses": 60000,
     "totalWithdrawal": 25430.46,
   },
-  "sustainableWithdrawal": 23466.27,
+  "sustainableWithdrawal": 25430.46,
   "totalYears": 22,
   "warningCount": 1,
   "year0": {
@@ -1830,7 +1830,7 @@ exports[`engine snapshot parity > fixture 36: Year-0 with real YTD contributions
     "projectedExpenses": 151024.87,
     "totalWithdrawal": 193621.63,
   },
-  "sustainableWithdrawal": 301770.65,
+  "sustainableWithdrawal": 193621.63,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -1875,7 +1875,7 @@ exports[`engine snapshot parity > fixture 37: routeFromSpecs with ContributionSp
     "projectedExpenses": 151024.87,
     "totalWithdrawal": 193621.63,
   },
-  "sustainableWithdrawal": 301448.5,
+  "sustainableWithdrawal": 193621.63,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -1920,7 +1920,7 @@ exports[`engine snapshot parity > fixture 38: routeFromSpecs with salary-fractio
     "projectedExpenses": 151024.87,
     "totalWithdrawal": 193621.63,
   },
-  "sustainableWithdrawal": 241155.25,
+  "sustainableWithdrawal": 193621.63,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -1952,7 +1952,7 @@ exports[`engine snapshot parity > fixture 39: Individual account tracking throug
     "projectedExpenses": 151024.87,
     "totalWithdrawal": 193621.63,
   },
-  "sustainableWithdrawal": 301448.5,
+  "sustainableWithdrawal": 193621.63,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -1984,7 +1984,7 @@ exports[`engine snapshot parity > fixture 40: Simple mode — collapsed single-b
     "projectedExpenses": 88989.32,
     "totalWithdrawal": 114088.87,
   },
-  "sustainableWithdrawal": 121619.63,
+  "sustainableWithdrawal": 114088.87,
   "totalYears": 50,
   "warningCount": 0,
   "year0": {
@@ -2041,7 +2041,7 @@ exports[`engine snapshot parity > fixture 41: rothConversionTarget override via 
     "projectedExpenses": 60000,
     "totalWithdrawal": 60000,
   },
-  "sustainableWithdrawal": 40837.53,
+  "sustainableWithdrawal": 60000,
   "totalYears": 24,
   "warningCount": 1,
   "year0": {
@@ -2078,7 +2078,7 @@ exports[`engine snapshot parity > fixture 42: Multiple saving + withdrawal + lif
     "projectedExpenses": 76805.07,
     "totalWithdrawal": 98468.03,
   },
-  "sustainableWithdrawal": 101092.77,
+  "sustainableWithdrawal": 98468.03,
   "totalYears": 45,
   "warningCount": 0,
   "year0": {
@@ -2123,7 +2123,7 @@ exports[`engine snapshot parity > fixture 43: High-income: RMD + SS + LTCG + Rot
     "projectedExpenses": 120000,
     "totalWithdrawal": 94339.62,
   },
-  "sustainableWithdrawal": 161769.1,
+  "sustainableWithdrawal": 83777.38,
   "totalYears": 22,
   "warningCount": 1,
   "year0": {
@@ -2160,7 +2160,7 @@ exports[`engine snapshot parity > fixture 44: Brokerage ramp contribution across
     "projectedExpenses": 151024.87,
     "totalWithdrawal": 193621.63,
   },
-  "sustainableWithdrawal": 336409.47,
+  "sustainableWithdrawal": 193621.63,
   "totalYears": 60,
   "warningCount": 0,
   "year0": {
@@ -2199,7 +2199,7 @@ exports[`engine snapshot parity > fixture 45: perPersonSalaryOverrides with asym
     "projectedExpenses": 133483.98,
     "totalWithdrawal": 171133.31,
   },
-  "sustainableWithdrawal": 274100.45,
+  "sustainableWithdrawal": 171133.31,
   "totalYears": 50,
   "warningCount": 0,
   "year0": {
@@ -2274,7 +2274,7 @@ exports[`engine snapshot parity > fixture 46: Catch-up: super catch-up ages 60-6
     "projectedExpenses": 89918.13,
     "totalWithdrawal": 69125.81,
   },
-  "sustainableWithdrawal": 42310.39,
+  "sustainableWithdrawal": 69125.81,
   "totalYears": 32,
   "warningCount": 0,
   "year0": {
@@ -2343,7 +2343,7 @@ exports[`engine snapshot parity > fixture 47: Waterfall withdrawal with rothBrac
     "projectedExpenses": 70000,
     "totalWithdrawal": 79018.18,
   },
-  "sustainableWithdrawal": 38562.02,
+  "sustainableWithdrawal": 79018.18,
   "totalYears": 24,
   "warningCount": 1,
   "year0": {
@@ -2380,7 +2380,7 @@ exports[`engine snapshot parity > fixture 48: Override: accountCaps + taxTypeCap
     "projectedExpenses": 151024.87,
     "totalWithdrawal": 193621.63,
   },
-  "sustainableWithdrawal": 383753.84,
+  "sustainableWithdrawal": 193621.63,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -2412,7 +2412,7 @@ exports[`engine snapshot parity > fixture 49: Override: reset: true followed by 
     "projectedExpenses": 151024.87,
     "totalWithdrawal": 193621.63,
   },
-  "sustainableWithdrawal": 349986.75,
+  "sustainableWithdrawal": 193621.63,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -2444,7 +2444,7 @@ exports[`engine snapshot parity > fixture 50: HSA with employer match 1`] = `
     "projectedExpenses": 151024.87,
     "totalWithdrawal": 193621.63,
   },
-  "sustainableWithdrawal": 259120.05,
+  "sustainableWithdrawal": 193621.63,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -2519,7 +2519,7 @@ exports[`engine snapshot parity > fixture 51: Zero-balance account category with
     "projectedExpenses": 50000,
     "totalWithdrawal": 17948.72,
   },
-  "sustainableWithdrawal": 16351.79,
+  "sustainableWithdrawal": 17948.72,
   "totalYears": 23,
   "warningCount": 1,
   "year0": {
@@ -2549,7 +2549,7 @@ exports[`engine snapshot parity > fixture 52: 3+ individual accounts with unequa
     "projectedExpenses": 151024.87,
     "totalWithdrawal": 193621.63,
   },
-  "sustainableWithdrawal": 301448.5,
+  "sustainableWithdrawal": 193621.63,
   "totalYears": 55,
   "warningCount": 0,
   "year0": {
@@ -2624,7 +2624,7 @@ exports[`engine snapshot parity > fixture 53: Waterfall withdrawal with explicit
     "projectedExpenses": 65000,
     "totalWithdrawal": 65000,
   },
-  "sustainableWithdrawal": 32528,
+  "sustainableWithdrawal": 65000,
   "totalYears": 24,
   "warningCount": 1,
   "year0": {
@@ -2672,7 +2672,7 @@ exports[`engine snapshot parity > fixture 54: IRMAA awareness enabled, income ne
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 2418826.05,
+    "endBalance": 2419205.76,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -2685,7 +2685,7 @@ exports[`engine snapshot parity > fixture 54: IRMAA awareness enabled, income ne
     "projectedExpenses": 90000,
     "totalWithdrawal": 46000,
   },
-  "sustainableWithdrawal": 58320.22,
+  "sustainableWithdrawal": 46000,
   "totalYears": 24,
   "warningCount": 1,
   "year0": {
@@ -2733,7 +2733,7 @@ exports[`engine snapshot parity > fixture 55: IRMAA awareness disabled, income n
   ],
   "finalYear": {
     "age": 89,
-    "endBalance": 2421851.06,
+    "endBalance": 2423603.86,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -2746,7 +2746,7 @@ exports[`engine snapshot parity > fixture 55: IRMAA awareness disabled, income n
     "projectedExpenses": 90000,
     "totalWithdrawal": 46000,
   },
-  "sustainableWithdrawal": 58193.58,
+  "sustainableWithdrawal": 46000,
   "totalYears": 24,
   "warningCount": 1,
   "year0": {
@@ -2795,7 +2795,7 @@ exports[`engine snapshot parity > fixture 56: RMD excess above G-K spending (hig
     "projectedExpenses": 40000,
     "totalWithdrawal": 91939.11,
   },
-  "sustainableWithdrawal": 89017.56,
+  "sustainableWithdrawal": 10638.3,
   "totalYears": 20,
   "warningCount": 1,
   "year0": {
@@ -2844,7 +2844,7 @@ exports[`engine snapshot parity > fixture 57: RMD forces large withdrawal with G
     "projectedExpenses": 35000,
     "totalWithdrawal": 73887.17,
   },
-  "sustainableWithdrawal": 57090.39,
+  "sustainableWithdrawal": 10596.03,
   "totalYears": 19,
   "warningCount": 1,
   "year0": {
@@ -2905,7 +2905,7 @@ exports[`engine snapshot parity > fixture 58: Convergence loop with withdrawalAc
     "projectedExpenses": 80000,
     "totalWithdrawal": 46808.51,
   },
-  "sustainableWithdrawal": 37800.6,
+  "sustainableWithdrawal": 46808.51,
   "totalYears": 23,
   "warningCount": 1,
   "year0": {
@@ -2984,7 +2984,7 @@ exports[`engine snapshot parity > fixture 59: decumulationAnnualExpenses + postR
     "projectedExpenses": 123105.34,
     "totalWithdrawal": 157827.36,
   },
-  "sustainableWithdrawal": 84271.08,
+  "sustainableWithdrawal": 157827.36,
   "totalYears": 45,
   "warningCount": 0,
   "year0": {
@@ -3029,7 +3029,7 @@ exports[`engine snapshot parity > fixture 60: traditionalFallbackRate with diffe
     "projectedExpenses": 64004.23,
     "totalWithdrawal": 71769.68,
   },
-  "sustainableWithdrawal": 44464.78,
+  "sustainableWithdrawal": 71769.68,
   "totalYears": 35,
   "warningCount": 0,
   "year0": {
@@ -3086,7 +3086,7 @@ exports[`engine snapshot parity > fixture 61: Two-person household with age gap 
     "projectedExpenses": 75645,
     "totalWithdrawal": 75645,
   },
-  "sustainableWithdrawal": 49416.28,
+  "sustainableWithdrawal": 75645,
   "totalYears": 32,
   "warningCount": 0,
   "year0": {
@@ -3131,7 +3131,7 @@ exports[`engine snapshot parity > fixture 62: Negative salaryGrowthRate with mul
     "projectedExpenses": 104277.47,
     "totalWithdrawal": 133689.06,
   },
-  "sustainableWithdrawal": 100871.86,
+  "sustainableWithdrawal": 133689.06,
   "totalYears": 40,
   "warningCount": 0,
   "year0": {
@@ -3170,7 +3170,7 @@ exports[`engine snapshot parity > fixture 63: high-income single earner $250k (s
     "projectedExpenses": 222473.29,
     "totalWithdrawal": 285222.17,
   },
-  "sustainableWithdrawal": 355459.76,
+  "sustainableWithdrawal": 285222.17,
   "totalYears": 50,
   "warningCount": 0,
   "year0": {
@@ -3221,7 +3221,7 @@ exports[`engine snapshot parity > fixture 64: pre-retiree age 60 at the accumula
     "projectedExpenses": 90512.66,
     "totalWithdrawal": 116041.87,
   },
-  "sustainableWithdrawal": 82177.72,
+  "sustainableWithdrawal": 116041.87,
   "totalYears": 30,
   "warningCount": 0,
   "year0": {
@@ -3231,6 +3231,429 @@ exports[`engine snapshot parity > fixture 64: pre-retiree age 60 at the accumula
     "slotCount": 5,
     "totalEmployee": 45000,
     "totalEmployer": 4500,
+  },
+}
+`;
+
+exports[`engine snapshot parity > fixture 65: qcdMaximize fully covers a modest RMD (no taxable distribution forced) 1`] = `
+{
+  "accountDepletions": [
+    {
+      "category": "401k",
+      "depletionAge": 75,
+      "depletionYear": 2025,
+      "subType": "roth",
+    },
+    {
+      "category": "403b",
+      "depletionAge": 75,
+      "depletionYear": 2025,
+      "subType": "traditional",
+    },
+    {
+      "category": "403b",
+      "depletionAge": 75,
+      "depletionYear": 2025,
+      "subType": "roth",
+    },
+    {
+      "category": "brokerage",
+      "depletionAge": 79,
+      "depletionYear": 2029,
+      "subType": undefined,
+    },
+    {
+      "category": "ira",
+      "depletionAge": 83,
+      "depletionYear": 2033,
+      "subType": "traditional",
+    },
+  ],
+  "finalYear": {
+    "age": 84,
+    "endBalance": 2299622.5,
+  },
+  "firstOverflowAge": null,
+  "firstOverflowAmount": null,
+  "firstOverflowYear": null,
+  "portfolioDepletionAge": null,
+  "portfolioDepletionYear": null,
+  "retirementYear": {
+    "age": 75,
+    "endBalance": 2123267.02,
+    "projectedExpenses": 40000,
+    "totalWithdrawal": 10638.3,
+  },
+  "sustainableWithdrawal": 10638.3,
+  "totalYears": 10,
+  "warningCount": 1,
+  "year0": {
+    "endBalance": 2123267.02,
+    "phase": "decumulation",
+    "projectedExpenses": 40000,
+    "totalWithdrawal": 10638.3,
+  },
+}
+`;
+
+exports[`engine snapshot parity > fixture 66: qcdMaximize capped below a large RMD — remainder still forces a taxable distribution + reinvested excess 1`] = `
+{
+  "accountDepletions": [
+    {
+      "category": "401k",
+      "depletionAge": 75,
+      "depletionYear": 2025,
+      "subType": "roth",
+    },
+    {
+      "category": "403b",
+      "depletionAge": 75,
+      "depletionYear": 2025,
+      "subType": "traditional",
+    },
+    {
+      "category": "403b",
+      "depletionAge": 75,
+      "depletionYear": 2025,
+      "subType": "roth",
+    },
+    {
+      "category": "ira",
+      "depletionAge": 75,
+      "depletionYear": 2025,
+      "subType": "roth",
+    },
+    {
+      "category": "hsa",
+      "depletionAge": 75,
+      "depletionYear": 2025,
+      "subType": undefined,
+    },
+  ],
+  "finalYear": {
+    "age": 77,
+    "endBalance": 6866927.14,
+  },
+  "firstOverflowAge": null,
+  "firstOverflowAmount": null,
+  "firstOverflowYear": null,
+  "portfolioDepletionAge": null,
+  "portfolioDepletionYear": null,
+  "retirementYear": {
+    "age": 75,
+    "endBalance": 6305964.87,
+    "projectedExpenses": 40000,
+    "totalWithdrawal": 139540.74,
+  },
+  "sustainableWithdrawal": 10638.3,
+  "totalYears": 3,
+  "warningCount": 1,
+  "year0": {
+    "endBalance": 6305964.87,
+    "phase": "decumulation",
+    "projectedExpenses": 40000,
+    "totalWithdrawal": 139540.74,
+  },
+}
+`;
+
+exports[`engine snapshot parity > fixture 67: same as fixture 66 but rmdExcessHandling='spend' — lower end balance, by design 1`] = `
+{
+  "accountDepletions": [
+    {
+      "category": "401k",
+      "depletionAge": 75,
+      "depletionYear": 2025,
+      "subType": "roth",
+    },
+    {
+      "category": "403b",
+      "depletionAge": 75,
+      "depletionYear": 2025,
+      "subType": "traditional",
+    },
+    {
+      "category": "403b",
+      "depletionAge": 75,
+      "depletionYear": 2025,
+      "subType": "roth",
+    },
+    {
+      "category": "ira",
+      "depletionAge": 75,
+      "depletionYear": 2025,
+      "subType": "roth",
+    },
+    {
+      "category": "hsa",
+      "depletionAge": 75,
+      "depletionYear": 2025,
+      "subType": undefined,
+    },
+  ],
+  "finalYear": {
+    "age": 77,
+    "endBalance": 6517851.49,
+  },
+  "firstOverflowAge": null,
+  "firstOverflowAmount": null,
+  "firstOverflowYear": null,
+  "portfolioDepletionAge": null,
+  "portfolioDepletionYear": null,
+  "retirementYear": {
+    "age": 75,
+    "endBalance": 6201141.41,
+    "projectedExpenses": 40000,
+    "totalWithdrawal": 139540.74,
+  },
+  "sustainableWithdrawal": 10638.3,
+  "totalYears": 3,
+  "warningCount": 1,
+  "year0": {
+    "endBalance": 6201141.41,
+    "phase": "decumulation",
+    "projectedExpenses": 40000,
+    "totalWithdrawal": 139540.74,
+  },
+}
+`;
+
+exports[`engine snapshot parity > fixture 68: rmdSmoothingEnabled converts pre-RMD without enableRothConversions set (self-contained toggle) 1`] = `
+{
+  "accountDepletions": [
+    {
+      "category": "401k",
+      "depletionAge": 66,
+      "depletionYear": 2026,
+      "subType": "roth",
+    },
+    {
+      "category": "403b",
+      "depletionAge": 66,
+      "depletionYear": 2026,
+      "subType": "traditional",
+    },
+    {
+      "category": "403b",
+      "depletionAge": 66,
+      "depletionYear": 2026,
+      "subType": "roth",
+    },
+    {
+      "category": "ira",
+      "depletionAge": 66,
+      "depletionYear": 2026,
+      "subType": "roth",
+    },
+    {
+      "category": "hsa",
+      "depletionAge": 66,
+      "depletionYear": 2026,
+      "subType": undefined,
+    },
+  ],
+  "finalYear": {
+    "age": 79,
+    "endBalance": 5027879.8,
+  },
+  "firstOverflowAge": null,
+  "firstOverflowAmount": null,
+  "firstOverflowYear": null,
+  "portfolioDepletionAge": null,
+  "portfolioDepletionYear": null,
+  "retirementYear": {
+    "age": 66,
+    "endBalance": 3034325.85,
+    "projectedExpenses": 92250,
+    "totalWithdrawal": 105584.62,
+  },
+  "sustainableWithdrawal": 105584.62,
+  "totalYears": 15,
+  "warningCount": 1,
+  "year0": {
+    "endBalance": 2962405.55,
+    "phase": "accumulation",
+    "projectedSalary": 0,
+    "slotCount": 5,
+    "totalEmployee": 0,
+    "totalEmployer": 0,
+  },
+}
+`;
+
+exports[`engine snapshot parity > fixture 69: same household with rmdSmoothingEnabled=false — no pre-RMD conversions, and a measurably LARGER RMD at age 75 than fixture 68 1`] = `
+{
+  "accountDepletions": [
+    {
+      "category": "401k",
+      "depletionAge": 66,
+      "depletionYear": 2026,
+      "subType": "roth",
+    },
+    {
+      "category": "403b",
+      "depletionAge": 66,
+      "depletionYear": 2026,
+      "subType": "traditional",
+    },
+    {
+      "category": "403b",
+      "depletionAge": 66,
+      "depletionYear": 2026,
+      "subType": "roth",
+    },
+    {
+      "category": "ira",
+      "depletionAge": 66,
+      "depletionYear": 2026,
+      "subType": "roth",
+    },
+    {
+      "category": "hsa",
+      "depletionAge": 66,
+      "depletionYear": 2026,
+      "subType": undefined,
+    },
+  ],
+  "finalYear": {
+    "age": 79,
+    "endBalance": 5223091.19,
+  },
+  "firstOverflowAge": null,
+  "firstOverflowAmount": null,
+  "firstOverflowYear": null,
+  "portfolioDepletionAge": null,
+  "portfolioDepletionYear": null,
+  "retirementYear": {
+    "age": 66,
+    "endBalance": 3056798.39,
+    "projectedExpenses": 92250,
+    "totalWithdrawal": 105584.62,
+  },
+  "sustainableWithdrawal": 105584.62,
+  "totalYears": 15,
+  "warningCount": 1,
+  "year0": {
+    "endBalance": 2962405.55,
+    "phase": "accumulation",
+    "projectedSalary": 0,
+    "slotCount": 5,
+    "totalEmployee": 0,
+    "totalEmployer": 0,
+  },
+}
+`;
+
+exports[`engine snapshot parity > fixture 70: rateSeededDecumulationYear1 seeds year 1 from withdrawalRate x balance, ignoring the stated budget 1`] = `
+{
+  "accountDepletions": [
+    {
+      "category": "401k",
+      "depletionAge": 65,
+      "depletionYear": 2030,
+      "subType": "roth",
+    },
+    {
+      "category": "403b",
+      "depletionAge": 65,
+      "depletionYear": 2030,
+      "subType": "traditional",
+    },
+    {
+      "category": "403b",
+      "depletionAge": 65,
+      "depletionYear": 2030,
+      "subType": "roth",
+    },
+    {
+      "category": "ira",
+      "depletionAge": 65,
+      "depletionYear": 2030,
+      "subType": "traditional",
+    },
+  ],
+  "finalYear": {
+    "age": 74,
+    "endBalance": 2995086.79,
+  },
+  "firstOverflowAge": null,
+  "firstOverflowAmount": null,
+  "firstOverflowYear": null,
+  "portfolioDepletionAge": null,
+  "portfolioDepletionYear": null,
+  "retirementYear": {
+    "age": 65,
+    "endBalance": 2772554.69,
+    "projectedExpenses": 138682.48,
+    "totalWithdrawal": 182476.95,
+  },
+  "sustainableWithdrawal": 182476.95,
+  "totalYears": 15,
+  "warningCount": 0,
+  "year0": {
+    "endBalance": 2116003.96,
+    "phase": "accumulation",
+    "projectedSalary": 0,
+    "slotCount": 5,
+    "totalEmployee": 0,
+    "totalEmployer": 0,
+  },
+}
+`;
+
+exports[`engine snapshot parity > fixture 71: rateSeededDecumulationYear1 omitted is byte-identical to today's budget-seeded behavior 1`] = `
+{
+  "accountDepletions": [
+    {
+      "category": "401k",
+      "depletionAge": 65,
+      "depletionYear": 2030,
+      "subType": "roth",
+    },
+    {
+      "category": "403b",
+      "depletionAge": 65,
+      "depletionYear": 2030,
+      "subType": "traditional",
+    },
+    {
+      "category": "403b",
+      "depletionAge": 65,
+      "depletionYear": 2030,
+      "subType": "roth",
+    },
+    {
+      "category": "ira",
+      "depletionAge": 65,
+      "depletionYear": 2030,
+      "subType": "traditional",
+    },
+  ],
+  "finalYear": {
+    "age": 74,
+    "endBalance": 3908939.43,
+  },
+  "firstOverflowAge": null,
+  "firstOverflowAmount": null,
+  "firstOverflowYear": null,
+  "portfolioDepletionAge": null,
+  "portfolioDepletionYear": null,
+  "retirementYear": {
+    "age": 65,
+    "endBalance": 2832408.22,
+    "projectedExpenses": 96169.7,
+    "totalWithdrawal": 126539.07,
+  },
+  "sustainableWithdrawal": 126539.07,
+  "totalYears": 15,
+  "warningCount": 0,
+  "year0": {
+    "endBalance": 2116003.96,
+    "phase": "accumulation",
+    "projectedSalary": 0,
+    "slotCount": 5,
+    "totalEmployee": 0,
+    "totalEmployer": 0,
   },
 }
 `;

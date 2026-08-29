@@ -16,6 +16,7 @@ import {
   createTRPCRouter,
   protectedProcedure,
   scenarioProcedure,
+  adminProcedure,
   expensiveRateLimitMiddleware,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
@@ -58,6 +59,7 @@ import {
   readProjectionCache,
   writeProjectionCache,
   generateSeed,
+  clearProjectionCache,
 } from "@/server/helpers/projection-cache";
 
 export const monteCarloRouter = createTRPCRouter({
@@ -128,6 +130,14 @@ export const monteCarloRouter = createTRPCRouter({
           .optional(),
         /** Optional snapshot ID — use a historical portfolio snapshot instead of the latest. */
         snapshotId: z.number().int().optional(),
+        /** Rate-Seeded scenario (advisor review, 2026-08-28 — Feature B,
+         *  PLAN-shortfall-alerting-and-strategy-scenario.md): re-seed year
+         *  1 of decumulation from the Initial Withdrawal Rate × starting
+         *  balance instead of the stated budget/override. See
+         *  ProjectionInput.rateSeededDecumulationYear1's docblock for the
+         *  full contract. Default false/undefined — byte-identical to
+         *  today's behavior. */
+        rateSeededDecumulationYear1: z.boolean().optional(),
         /** Bypass the projection cache and force a fresh run with a new seed — the explicit "Run Monte Carlo" action, not the default query path. */
         forceRefresh: z.boolean().optional(),
         /** Read-only cache peek — never runs the (expensive) trials, just returns a cache hit or a null result. For cheap dashboard-tile display of "whatever the last real run found." */
@@ -216,6 +226,7 @@ export const monteCarloRouter = createTRPCRouter({
           input.accumulationOverrides as AccumulationOverride[],
         decumulationOverrides:
           input.decumulationOverrides as DecumulationOverride[],
+        rateSeededDecumulationYear1: input.rateSeededDecumulationYear1,
       };
 
       // Simple tax mode: collapse all balances into a single tax-free portfolio (cFIREsim-comparable)
@@ -260,6 +271,27 @@ export const monteCarloRouter = createTRPCRouter({
           brokerage: 0,
           grossUpForTaxes: false,
         };
+
+        // Simple mode discards tax-type/account identity for the AGGREGATE
+        // math above — `individualAccounts` must follow suit rather than
+        // keeping each account's real balance around. Leaving it real
+        // while the aggregate is fictional doesn't just risk a stale
+        // display: withdrawals only ever route against the collapsed
+        // brokerage category, so a real Traditional/IRA account never gets
+        // drawn down in decumulation while the real brokerage account gets
+        // exhausted, and the per-account total silently overstates the
+        // real portfolio (advisor review, 2026-08-28, after a live-user
+        // finding — a partial fix that only skipped the yearly indBal/
+        // acctBal reconciliation stopped the correction but not this
+        // divergence). Dropping individualAccounts to empty makes Simple
+        // mode's ONE fictional bucket the only representation, so nothing
+        // downstream can disagree with it. The per-account table/chart and
+        // the person-filtered ("Sean"/"Joanna") view both already degrade
+        // gracefully when there's no individual data (see
+        // ProjectionCard's disabled-pill guard + reconcileIndividualToAggregate's
+        // existing `hasIndividualAccounts` gate) — no engine-level flag
+        // needed.
+        engineInput.individualAccounts = [];
       }
 
       // ----- Monte Carlo: Fetch preset from DB -----
@@ -641,4 +673,12 @@ export const monteCarloRouter = createTRPCRouter({
         .where(eq(schema.mcPresets.key, input.preset));
       return { updated: true };
     }),
+
+  /** Wipes every cached deterministic/MC/Coast-FIRE projection row —
+   *  forces a full recompute without bumping PROJECTION_CACHE_ENGINE_VERSION
+   *  and redeploying. Admin-only: destructive against shared cache state. */
+  clearCache: adminProcedure.mutation(async ({ ctx }) => {
+    const cleared = await clearProjectionCache(ctx.db);
+    return { cleared };
+  }),
 });

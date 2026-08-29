@@ -8,14 +8,43 @@
  * engine with an accumulationOverride that zeros contributionRate at a
  * candidate "coast age" and binary-searches for the earliest passing age.
  *
- * Success criterion: `portfolioDepletionAge === null` AND
- * `sustainableWithdrawal >= projectedExpenses` at the first decumulation year.
+ * Success criterion: `portfolioDepletionAge === null` AND the strategy's
+ * actual first-decumulation-year spending
+ * (`projectionByYear[firstDecumYear].projectedExpenses` — already the real
+ * per-strategy output, not a generic rate) covers the household's stated
+ * need (`firstDecumulationYearStatedNeed`, the inflated retirement budget).
  * The first check ensures the portfolio survives through end-of-plan; the
- * second ensures the initial retirement withdrawal covers initial retirement
- * expenses. Together they answer "funds annual expenses through end of plan".
+ * second ensures the strategy's actual withdrawal covers what the household
+ * said they need. Together they answer "funds annual expenses through end
+ * of plan".
+ *
+ * v0.7.9 R45 fix: previously compared `sustainableWithdrawal` (a flat
+ * `balance × withdrawalRate` reference figure that only 4 of 8 strategies'
+ * spending math ever reads) against `projectedExpenses`. For the other 4
+ * strategies (RMD-Based, Constant %, Endowment, Vanguard Dynamic),
+ * `projectedExpenses` IS the strategy's own computed spending by this point
+ * in the year (see pre-year-setup.ts's spending-strategy dispatch), so the
+ * old check compared an unrelated rate against the strategy's real number
+ * instead of against the household's need — comparing against
+ * `sustainableWithdrawal` here would make the check `X >= X` (always true)
+ * once that field is made strategy-real, so this deliberately compares
+ * against the stated need instead, never against `sustainableWithdrawal`.
+ *
+ * Note this check has real discriminating power only for the 4
+ * balance-derived strategies above. For the 4 budget-continuation strategies
+ * (Fixed, Forgo-Inflation-After-Loss, Spending-Decline, Guyton-Klinger on an
+ * ordinary first year), `projectedExpenses` passes through unchanged from
+ * the same stated-need value on the first decumulation year — so
+ * `projectedExpenses >= firstDecumulationYearStatedNeed` is `X >= X` by
+ * construction for those 4, and this check contributes nothing beyond the
+ * `portfolioDepletionAge`/penalty-shortfall checks above. That's correct,
+ * not a bug — those strategies' entire premise is "spend what you said you
+ * need" — but it means their Coast FIRE result rests entirely on those other
+ * two checks, same as before this fix.
  */
 import { calculateProjection } from "./engine";
 import type { ProjectionInput, ProjectionResult } from "./types";
+import { roundToCents } from "../utils/math";
 
 export type CoastFireStatus = "already_coast" | "found" | "unreachable";
 
@@ -90,7 +119,46 @@ function passes(projection: ProjectionResult): boolean {
         Math.max(50, (y.afterTaxNeed ?? 0) * 0.01),
   );
   if (hadPenaltyAvoidedShortfall) return false;
-  return projection.sustainableWithdrawal >= retirementYear.projectedExpenses;
+  // Advisor review, 2026-08-29 (finding #8): `nonRetirementShortfall` is
+  // structurally identical to `penaltyAvoidedShortfall` above — a real
+  // household shortfall (R49: money in a Portfolio-parented account
+  // routing unconditionally excludes) that neither `portfolioDepletionAge`
+  // nor `sustainableWithdrawal` would ever notice, for the same reason the
+  // comment above `passes()` explains for the penalty-exclusion case.
+  const hadNonRetirementShortfall = projection.projectionByYear.some(
+    (y) =>
+      y.phase === "decumulation" &&
+      (y.nonRetirementShortfall ?? 0) >
+        Math.max(50, (y.afterTaxNeed ?? 0) * 0.01),
+  );
+  if (hadNonRetirementShortfall) return false;
+  // Compare the strategy's actual first-year spending against the
+  // household's stated need — NOT against `sustainableWithdrawal` (see the
+  // R45 fix note above). When no retirement budget is set
+  // (`firstDecumulationYearStatedNeed` is null), there's no stated need to
+  // check against — fall back to the old behavior so an unconfigured
+  // household doesn't get a spurious failure.
+  if (projection.firstDecumulationYearStatedNeed == null) {
+    // Advisor review, 2026-08-29 (finding #9): R45 Step 2 changed
+    // `sustainableWithdrawal`'s meaning to the strategy's actual
+    // tax-grossed-up withdrawal (`targetWithdrawal` — gross of tax, net of
+    // Social Security), but this fallback still compared it directly
+    // against `projectedExpenses` (gross of Social Security, net of tax) —
+    // mixed units, systematically wrong by both the tax bill and whatever
+    // Social Security covers. Undo both adjustments before comparing so
+    // both sides are in the same "total household spending" terms
+    // `projectedExpenses` is in.
+    const netSustainableWithdrawal = roundToCents(
+      projection.sustainableWithdrawal -
+        retirementYear.taxCost +
+        retirementYear.ssIncome,
+    );
+    return netSustainableWithdrawal >= retirementYear.projectedExpenses;
+  }
+  return (
+    retirementYear.projectedExpenses >=
+    projection.firstDecumulationYearStatedNeed
+  );
 }
 
 /**

@@ -1,0 +1,1 @@
+ALTER TABLE `retirement_settings` ADD `rmd_smoothing_max_bracket_target` text;

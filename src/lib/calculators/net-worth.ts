@@ -35,6 +35,22 @@ import {
   WEALTH_FORMULA_BASE_DENOMINATOR,
 } from "../constants";
 
+/**
+ * FI Target = Annual Expenses ÷ Withdrawal Rate — the accumulation-phase
+ * "how big does my portfolio need to be" figure (Findings 8/13, R45 Step 4).
+ * Single computation path: this is the only place the formula is written;
+ * `deriveFI` (lib/hooks/use-fi-cache.ts, client-side) calls this instead of
+ * reimplementing raw division with no divide-by-zero guard — the two used
+ * to independently compute the same thing and could show different numbers
+ * on the same Net Worth page render.
+ */
+export function computeFiTarget(
+  annualExpenses: number,
+  withdrawalRate: number,
+): number {
+  return Number(safeDivide(annualExpenses, withdrawalRate) ?? 0);
+}
+
 export function calculateNetWorth(input: NetWorthInput): NetWorthResult {
   const warnings: string[] = [];
   const {
@@ -103,7 +119,7 @@ export function calculateNetWorth(input: NetWorthInput): NetWorthResult {
   );
 
   // FI Progress uses portfolio (investable assets, not home equity)
-  const fiTarget = Number(safeDivide(annualExpenses, withdrawalRate) ?? 0);
+  const fiTarget = computeFiTarget(annualExpenses, withdrawalRate);
   const fiProgress = Number(safeDivide(portfolioTotal + cash, fiTarget) ?? 0);
 
   return {

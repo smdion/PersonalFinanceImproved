@@ -39,3 +39,5 @@ export {
   YNAB_EXPENSE_EXCLUDED_CATEGORIES,
   YNAB_EXPENSE_EXCLUDED_GROUPS,
 } from "./ynab-client";
+export { BudgetApiError } from "./errors";
+export type { BudgetApiErrorCode } from "./errors";

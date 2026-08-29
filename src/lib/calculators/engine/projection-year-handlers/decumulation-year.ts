@@ -15,8 +15,16 @@ import {
   getAllCategories,
   isOverflowTarget,
   isPortfolioParent,
+  isPreTaxType,
+  isIraCategory,
+  addTraditional,
 } from "../../../config/account-types";
-import { MAX_BROKERAGE_RAMP_YEARS } from "../../../constants";
+import { computeQcdAmounts, totalQcdAmount } from "../qcd";
+import { computeRmdSmoothingTargets } from "../rmd-smoothing";
+import {
+  MAX_BROKERAGE_RAMP_YEARS,
+  QCD_MIN_ELIGIBILITY_AGE,
+} from "../../../constants";
 import { cloneAccountBalances } from "../balance-utils";
 import { getLtcgRate, computeLtcgTax } from "../../../config/tax-tables";
 import { computeNiit } from "../../../config/niit";
@@ -25,6 +33,7 @@ import { applyGrowth } from "../growth-application";
 import { computeTaxableSS, computeTaxFromSlots } from "../tax-estimation";
 import { estimateWithdrawalTaxCost } from "../tax-gross-up";
 import { routeForMode } from "../withdrawal-routing";
+import { deriveBasisRankingInputs } from "../withdrawal-cost-ranking";
 import { enforceRmd } from "../rmd-enforcement";
 import {
   performRothConversion,
@@ -41,7 +50,10 @@ import {
   clampIndividualBasis,
   reconcileIndividualToAggregate,
 } from "../individual-account-tracking";
-import { computeWithdrawalEligibility } from "@/lib/pure/withdrawal-eligibility";
+import {
+  computeWithdrawalEligibility,
+  computeNonRetirementExclusion,
+} from "@/lib/pure/withdrawal-eligibility";
 import type { BasisDraw } from "@/lib/pure/roth-basis-tracking";
 import { splitRothWithdrawalForTax } from "@/lib/pure/roth-distribution-tax";
 import { computeEarlyWithdrawalPenalty } from "@/lib/pure/early-withdrawal-penalty";
@@ -52,7 +64,7 @@ import {
   trackDepletions,
   cleanupDust,
 } from "../balance-deduction";
-import { getRmdFactor } from "../../../config/rmd-tables";
+import { computeRmdAmount } from "../../../config/rmd-tables";
 import type {
   PreYearSetup,
   ProjectionContext,
@@ -142,6 +154,16 @@ export function runDecumulationYear(
   const eligibility = hasIndividualAccounts
     ? computeWithdrawalEligibility({ year, indAccts, indBal, indKey, indBasis })
     : undefined;
+  // R49: Portfolio-parented accounts (e.g. a taxable brokerage the
+  // household doesn't consider part of the retirement plan) never fund
+  // retirement spending need — computed once per year here, threaded to
+  // every consumer that decides how much money is "available"
+  // (routeForMode's two call sites, performRothConversion, enforceRmd, and
+  // QCD's capacity/debit below) so they can't disagree with each other.
+  // See .scratch/docs/plans/PLAN-retirement-only-withdrawal-scope.md.
+  const nonRetirement = hasIndividualAccounts
+    ? computeNonRetirementExclusion(indAccts, indBal, indKey)
+    : undefined;
 
   // Reconciliation check: acctBal Roth total should match balances.taxFree
   const acctBalRothTotal = getAllCategories().reduce((s, cat) => {
@@ -175,6 +197,147 @@ export function runDecumulationYear(
     Math.max(0, state.projectedExpenses - ssIncome),
   );
 
+  // --- Per-person RMD (moved ahead of routing/tax gross-up, R46) ---
+  // Compute each person's RMD from their own Traditional balance and age.
+  // Previously computed AFTER routing (only needed for enforceRmd's
+  // override), but R46's QCD step needs the RMD amount BEFORE tax
+  // gross-up runs -- a QCD reduces taxable income for the year, so it has
+  // to be known (and deducted) before estimateWithdrawalTaxCost, not
+  // after. Pure computation, no dependency on routing -- safe to hoist.
+  let perPersonRmdTotal: number | undefined;
+  let rmdByPerson:
+    { personId: number; personName: string; amount: number }[] | undefined;
+  if (rmdStartAgeByPerson.size > 0 && priorYearEndTradByPerson.size > 0) {
+    rmdByPerson = [];
+    let total = 0;
+    for (const [personId, { startAge, birthYear }] of rmdStartAgeByPerson) {
+      const personAge = ageInYear(birthYear, year);
+      const personTrad = priorYearEndTradByPerson.get(personId) ?? 0;
+      if (personAge >= startAge && personTrad > 0) {
+        const rmdAmount = computeRmdAmount(personTrad, personAge);
+        if (rmdAmount != null) {
+          rmdByPerson.push({
+            personId,
+            personName:
+              input.socialSecurityEntries?.find((e) => e.personId === personId)
+                ?.personName ?? `Person ${personId}`,
+            amount: rmdAmount,
+          });
+          total += rmdAmount;
+        }
+      }
+    }
+    if (total > 0) perPersonRmdTotal = roundToCents(total);
+  }
+
+  // --- Qualified Charitable Distribution (R46) ---
+  // A QCD is a direct IRA-to-charity transfer that satisfies part of the
+  // RMD without counting as taxable income -- a proactive election on the
+  // RMD itself, not a rule for leftover money (see reinvestRmdExcess for
+  // that, unchanged, later in this function). Must run here, BEFORE tax
+  // gross-up, so the reduced taxable Traditional withdrawal is what
+  // estimateWithdrawalTaxCost/routing/computeTaxFromSlots all see -- see
+  // qcd.ts's docblock for the IRA-only-pooling approximation this uses.
+  // Only meaningful with individual accounts tracked (same limitation
+  // per-person RMD itself already has).
+  //
+  // Eligibility is QCD_MIN_ELIGIBILITY_AGE (70), NOT rmdByPerson's
+  // RMD-start-age gate (advisor review, 2026-08-29) -- QCD eligibility
+  // predates SECURE 2.0's RMD-age delay, so someone with startAge 75 is
+  // still QCD-eligible for years before any RMD is even required. Built
+  // straight from rmdStartAgeByPerson (has every tracked person's
+  // birthYear) rather than reusing rmdByPerson, which only contains
+  // people who've already reached their RMD start age.
+  let totalQcd = 0;
+  let qcdByPerson: { personId: number; qcdAmount: number }[] = [];
+  const qcdEligiblePersonIds =
+    hasIndividualAccounts && rmdStartAgeByPerson.size > 0
+      ? Array.from(rmdStartAgeByPerson.entries())
+          .filter(
+            ([, { birthYear }]) =>
+              ageInYear(birthYear, year) >= QCD_MIN_ELIGIBILITY_AGE,
+          )
+          .map(([personId]) => personId)
+      : [];
+  if (qcdEligiblePersonIds.length > 0) {
+    const iraTradByPerson = new Map<number, number>();
+    for (const ia of indAccts) {
+      if (
+        isIraCategory(ia.category) &&
+        ia.ownerPersonId != null &&
+        isPreTaxType(ia.taxType) &&
+        // R49: a Portfolio-parented IRA (nothing prevents one existing)
+        // isn't retirement money -- must not inflate QCD-eligible capacity.
+        !isPortfolioParent(ia.parentCategory)
+      ) {
+        const bal = indBal.get(indKey(ia)) ?? 0;
+        iraTradByPerson.set(
+          ia.ownerPersonId,
+          (iraTradByPerson.get(ia.ownerPersonId) ?? 0) + bal,
+        );
+      }
+    }
+    qcdByPerson = computeQcdAmounts(
+      config.qcdMaximize,
+      qcdEligiblePersonIds.map((personId) => ({
+        personId,
+        iraTraditionalBalance: iraTradByPerson.get(personId) ?? 0,
+      })),
+    );
+    totalQcd = totalQcdAmount(qcdByPerson);
+    if (totalQcd > 0) {
+      // Aggregate tracks (matches reinvestRmdExcess's own pattern -- both
+      // trackers must still move together regardless of the per-account
+      // debit below).
+      balances.preTax = roundToCents(balances.preTax - totalQcd);
+      addTraditional(acctBal.ira, -totalQcd);
+      // R49: the aggregate deduction above is correctly SIZED (totalQcd
+      // only ever reflects Retirement-parented IRA capacity, per the
+      // filter above), but leaving the individual side to
+      // reconcileIndividualToAggregate would spread it proportionally
+      // across every IRA in the category -- a hypothetical
+      // Portfolio-parented IRA included -- undoing the point of that
+      // filter one step later. Debit each person's OWN qcdAmount from
+      // only THAT person's own Retirement-parented IRA indBal entries
+      // (proportional to each account's own balance): a QCD is legally a
+      // transfer from one specific owner's IRA, so this must be per-person,
+      // never pooled across the household.
+      for (const { personId, qcdAmount } of qcdByPerson) {
+        if (qcdAmount <= 0) continue;
+        const personIraAccts = indAccts.filter(
+          (ia) =>
+            isIraCategory(ia.category) &&
+            ia.ownerPersonId === personId &&
+            isPreTaxType(ia.taxType) &&
+            !isPortfolioParent(ia.parentCategory),
+        );
+        const personIraTotal = personIraAccts.reduce(
+          (s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0),
+          0,
+        );
+        if (personIraTotal <= 0) continue;
+        let distributed = 0;
+        for (const ia of personIraAccts) {
+          const k = indKey(ia);
+          const bal = Math.max(0, indBal.get(k) ?? 0);
+          const share = roundToCents(qcdAmount * (bal / personIraTotal));
+          const capped = Math.min(share, bal);
+          indBal.set(k, roundToCents(bal - capped));
+          distributed += capped;
+        }
+        // Rounding remainder mop-up, same convention as elsewhere in this
+        // file (e.g. Roth conversion's tradAccounts loop).
+        const remainder = roundToCents(qcdAmount - distributed);
+        if (remainder > 0.005 && personIraAccts.length > 0) {
+          const first = personIraAccts[0]!;
+          const k = indKey(first);
+          const bal = Math.max(0, indBal.get(k) ?? 0);
+          indBal.set(k, roundToCents(Math.max(0, bal - remainder)));
+        }
+      }
+    }
+  }
+
   // Tax gross-up: estimate tax from expected withdrawal routing, then
   // increase withdrawal so after-tax proceeds cover the expense need.
   const taxRates = decumulationDefaults.distributionTaxRates;
@@ -192,6 +355,7 @@ export function runDecumulationYear(
     acctBal,
     totalBalance,
     eligibility,
+    nonRetirement,
     indAccts: hasIndividualAccounts ? indAccts : undefined,
     indKey: hasIndividualAccounts ? indKey : undefined,
     indBal: hasIndividualAccounts ? indBal : undefined,
@@ -218,6 +382,29 @@ export function runDecumulationYear(
   //
   // For waterfall/percentage, Roth bracket optimization can still overlay
   // via rothBracketTarget (sets a traditional tax-type cap).
+  // v0.7.9 R40 follow-up: cost-aware post-bracket-cap ranking inputs
+  // (bracket_filling mode only; ignored by waterfall/percentage). See
+  // deriveBasisRankingInputs's docblock for why the basis-derived fields
+  // are shared with tax-gross-up.ts's estimate.
+  //
+  // magiBeforeThisDraw is intentionally OMITTED here (advisor review,
+  // 2026-08-29 -- was previously magiHistory's prior-YEAR MAGI, a real
+  // bug: NIIT's MAGI test has no lookback, unlike IRMAA's genuine 2-year
+  // lookback that magiHistory exists for; RouteBracketInfo's own docblock
+  // says "MAGI before THIS YEAR'S gains/growth," which prior-year data
+  // never was). Omitting it lets withdrawal-routing.ts's own `??
+  // baseOrdinaryFloor` fallback apply -- the correct current-year
+  // pre-this-draw figure (taxableSS + totalTradWithdrawn +
+  // conversionReservedRoom) -- which is also exactly what
+  // tax-gross-up.ts's estimate already falls back to, so the two paths
+  // can no longer disagree on this number.
+  const { rothBasisAvailable, brokerageBasisRatio } = deriveBasisRankingInputs({
+    balances,
+    indBasis: hasIndividualAccounts ? indBasis : undefined,
+    indAccts: hasIndividualAccounts ? indAccts : undefined,
+    indKey: hasIndividualAccounts ? indKey : undefined,
+  });
+
   const routeResult = routeForMode(
     targetWithdrawal,
     config,
@@ -226,8 +413,14 @@ export function runDecumulationYear(
       taxBrackets: taxRates.taxBrackets,
       rothBracketTarget: taxRates.rothBracketTarget,
       taxableSS,
+      filingStatus,
+      ltcgBrackets: taxRates.ltcgBrackets,
+      rothBasisAvailable,
+      brokerageBasisRatio,
+      conversionsEnabled: taxRates.enableRothConversions,
     },
     eligibility,
+    nonRetirement,
   );
 
   const {
@@ -235,6 +428,7 @@ export function runDecumulationYear(
     warnings: routeWarnings,
     unmetNeed: routedUnmetNeed,
     penaltyAvoidedShortfall,
+    nonRetirementShortfall,
   } = routeResult;
   if (rothDivergence) routeWarnings.push(rothDivergence);
 
@@ -247,33 +441,16 @@ export function runDecumulationYear(
   );
 
   // --- RMD enforcement (Phase 1) ---
-  // Per-person RMD: compute each person's RMD from their own Traditional balance and age.
-  let perPersonRmdTotal: number | undefined;
-  let rmdByPerson:
-    { personId: number; personName: string; amount: number }[] | undefined;
-  if (rmdStartAgeByPerson.size > 0 && priorYearEndTradByPerson.size > 0) {
-    rmdByPerson = [];
-    let total = 0;
-    for (const [personId, { startAge, birthYear }] of rmdStartAgeByPerson) {
-      const personAge = ageInYear(birthYear, year);
-      const personTrad = priorYearEndTradByPerson.get(personId) ?? 0;
-      if (personAge >= startAge && personTrad > 0) {
-        const factor = getRmdFactor(personAge);
-        if (factor != null && factor > 0) {
-          const rmdAmount = roundToCents(personTrad / factor);
-          rmdByPerson.push({
-            personId,
-            personName:
-              input.socialSecurityEntries?.find((e) => e.personId === personId)
-                ?.personName ?? `Person ${personId}`,
-            amount: rmdAmount,
-          });
-          total += rmdAmount;
-        }
-      }
-    }
-    if (total > 0) perPersonRmdTotal = roundToCents(total);
-  }
+  // perPersonRmdTotal/rmdByPerson computed earlier now (R46, see above --
+  // QCD needed them before tax gross-up). The override passed here is
+  // reduced by whatever QCD already satisfied directly, so enforceRmd only
+  // tops up routing to cover the REMAINING (non-QCD) RMD requirement --
+  // the QCD'd portion already left the account above, tax-free, and must
+  // not also be forced through as a second, taxable distribution.
+  const rmdRequiredAfterQcd =
+    perPersonRmdTotal != null
+      ? roundToCents(Math.max(0, perPersonRmdTotal - totalQcd))
+      : undefined;
 
   // Extracted to rmd-enforcement.ts -- enforces minimum Traditional withdrawals per IRS rules.
   const rmdResult = enforceRmd({
@@ -284,12 +461,21 @@ export function runDecumulationYear(
     totalTraditionalWithdrawal,
     totalWithdrawal,
     acctBal,
-    overrideRmdRequired: perPersonRmdTotal,
+    overrideRmdRequired: rmdRequiredAfterQcd,
+    nonRetirement,
   });
-  const { rmdAmount, rmdOverrodeRouting } = rmdResult;
+  const { rmdOverrodeRouting, rmdShortfallAmount } = rmdResult;
   totalTraditionalWithdrawal = rmdResult.totalTraditionalWithdrawal;
   totalWithdrawal = rmdResult.totalWithdrawal;
   routeWarnings.push(...rmdResult.warnings);
+  // The row's public rmdAmount must be the TRUE full RMD requirement, not
+  // the QCD-reduced figure enforceRmd used internally to decide how much
+  // MORE to force through routing -- otherwise a household with QCD
+  // active would see an understated "your RMD this year" number. QCD
+  // still counts toward satisfying the real RMD; it just doesn't route
+  // through a taxable distribution to get there.
+  const rmdAmount =
+    perPersonRmdTotal != null ? perPersonRmdTotal : rmdResult.rmdAmount;
 
   // Recompute taxableSS with actual Traditional withdrawal (post-RMD) for final tax cost.
   // TODO(F2): If muni bond income tracking is added, pass taxExemptInterest as 4th arg.
@@ -436,16 +622,25 @@ export function runDecumulationYear(
   // Apply decumulation lump sums (one-time injections/windfalls, NOT subject to limits)
   applyLumpSums(config.lumpSums, ctx, state);
 
-  // Reinvest RMD excess into brokerage (#39) -- extracted to balance-deduction.ts
-  const shouldReinvestRmdExcess = input.reinvestRmdExcess !== false; // default: true
-  reinvestRmdExcess(
-    shouldReinvestRmdExcess,
+  // Handle RMD-forced excess (#39, mode-aware R46) -- extracted to balance-deduction.ts
+  const shouldHandleRmdExcess = input.reinvestRmdExcess !== false; // default: true
+  // R46 Phase 1: capture the excess amount (previously discarded) so it can
+  // be surfaced in the UI — this money is real, forced out of Traditional
+  // by the RMD floor regardless of what the strategy needed, with no prior
+  // UI trace. R46 Phase 2: what happens to it depends on the household's
+  // rmdExcessHandling setting (reinvest into brokerage, or spend it).
+  const rmdExcessAmount = reinvestRmdExcess(
+    config.rmdExcessHandling,
+    shouldHandleRmdExcess,
     rmdOverrodeRouting,
     totalWithdrawal,
     afterTaxNeed,
     taxCost,
     balances,
     acctBal,
+    hasIndividualAccounts ? indAccts : undefined,
+    hasIndividualAccounts ? indBal : undefined,
+    hasIndividualAccounts ? indKey : undefined,
   );
 
   // Clamp individual account balances -- extracted to individual-account-tracking.ts
@@ -455,6 +650,50 @@ export function runDecumulationYear(
 
   // Track per-account depletions -- extracted to balance-deduction.ts
   trackDepletions(acctBal, depletionTracked, accountDepletions, year, age);
+
+  // --- R47: RMD-aware Roth conversion smoothing ---
+  // Computed fresh every year (adaptive, not a one-time plan) from each
+  // person's CURRENT Traditional balance (post this year's withdrawal/
+  // RMD/QCD, via indBal -- more accurate than the stale
+  // priorYearEndTradByPerson snapshot). See rmd-smoothing.ts and
+  // .scratch/docs/plans/PLAN-r47-rmd-aware-roth-smoothing.md. Requires
+  // individual-account tracking -- entirely per-person by design, same
+  // precondition R46/R49's per-person RMD/QCD already have.
+  let rmdSmoothingTarget: number | undefined;
+  if (
+    config.rmdSmoothingEnabled &&
+    hasIndividualAccounts &&
+    rmdStartAgeByPerson.size > 0
+  ) {
+    const smoothingPeople = Array.from(rmdStartAgeByPerson.entries()).map(
+      ([personId, { startAge, birthYear }]) => {
+        const personTraditionalBalance = indAccts
+          .filter(
+            (ia) => ia.ownerPersonId === personId && isPreTaxType(ia.taxType),
+          )
+          .reduce((s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0), 0);
+        return {
+          personId,
+          currentAge: ageInYear(birthYear, year),
+          rmdStartAge: startAge,
+          personTraditionalBalance,
+        };
+      },
+    );
+    const smoothingResult = computeRmdSmoothingTargets({
+      enabled: true,
+      people: smoothingPeople,
+      householdTraditionalBalance: balances.preTax,
+      returnRateMap: ctx.returnRateMap,
+      totalTraditionalWithdrawal,
+      totalWithdrawal,
+      currentProjectedAnnualSpendingNeed: state.projectedExpenses,
+      postRetirementInflationRate: ctx.validatedPostRetirementInflation,
+    });
+    if (smoothingResult.householdSmoothingTarget > 0) {
+      rmdSmoothingTarget = smoothingResult.householdSmoothingTarget;
+    }
+  }
 
   // --- Roth Conversions (Phase 4) ---
   // Extracted to post-withdrawal-optimizer.ts -- Roth conversion + IRMAA + ACA chain.
@@ -474,8 +713,19 @@ export function runDecumulationYear(
     filingStatus,
     balances,
     acctBal,
+    // R49 — advisor round 4: without this, performRothConversion's own
+    // fixes above are fully implemented and fully unit-tested but never
+    // execute in production, since "params omitted" is deliberately the
+    // unchanged-behavior fallback.
+    nonRetirement,
+    indAccts: hasIndividualAccounts ? indAccts : undefined,
+    indBal: hasIndividualAccounts ? indBal : undefined,
+    indKey: hasIndividualAccounts ? indKey : undefined,
+    rmdSmoothingTarget,
+    rmdSmoothingMaxBracketTarget: config.rmdSmoothingMaxBracketTarget,
   });
-  const { rothConversionAmount, rothConversionTaxCost } = rothResult;
+  const { rothConversionAmount, rothConversionTaxCost, rmdSmoothingShortfall } =
+    rothResult;
 
   // Recompute LTCG tax including Roth conversion income (#37).
   // Roth conversions are taxed as ordinary income and push total taxable income
@@ -484,12 +734,18 @@ export function runDecumulationYear(
   const revisedOrdinary = actualTaxableIncome + rothConversionAmount;
   if (rothConversionAmount > 0 && filingStatus && brokerageGainsPortion > 0) {
     brokerageTaxCost = roundToCents(
-      computeLtcgTax(revisedOrdinary, brokerageGainsPortion, filingStatus),
+      computeLtcgTax(
+        revisedOrdinary,
+        brokerageGainsPortion,
+        filingStatus,
+        taxRates.ltcgBrackets,
+      ),
     );
     // Marginal rate at the top of the gains stack — display only, tax is in brokerageTaxCost
     postConversionLtcgRate = getLtcgRate(
       revisedOrdinary + brokerageGainsPortion,
       filingStatus,
+      taxRates.ltcgBrackets,
     );
     // Recompute taxCost with revised brokerage tax. v0.7.8 advisor review
     // (2026-08-27): this used to tax the WHOLE Roth withdrawal at
@@ -513,11 +769,15 @@ export function runDecumulationYear(
     // No tax is actually computed from this value.
     postConversionLtcgRate =
       brokerageGainsPortion > 0 && filingStatus
-        ? getLtcgRate(revisedOrdinary + brokerageGainsPortion, filingStatus)
+        ? getLtcgRate(
+            revisedOrdinary + brokerageGainsPortion,
+            filingStatus,
+            taxRates.ltcgBrackets,
+          )
         : brokerageGainsPortion > 0
           ? taxRates.brokerage
           : filingStatus
-            ? getLtcgRate(revisedOrdinary, filingStatus)
+            ? getLtcgRate(revisedOrdinary, filingStatus, taxRates.ltcgBrackets)
             : taxRates.brokerage;
   }
 
@@ -577,6 +837,40 @@ export function runDecumulationYear(
     fundingShortfall > shortfallMaterialityFloor
       ? Math.max(routedUnmetNeed ?? 0, fundingShortfall)
       : routedUnmetNeed;
+  // Single canonical "is this a REAL shortfall worth alerting on" verdict
+  // (advisor review, 2026-08-28) -- `finalUnmetNeed` above intentionally
+  // preserves its existing byte-identical value/undefined-ness for
+  // existing consumers (no cache-version bump needed for an additive
+  // field), but its own two branches apply the materiality floor
+  // inconsistently: the `routedUnmetNeed` fallback branch is NEVER
+  // floor-filtered, so a rounding-scale routed residual could read as
+  // `unmetNeed > 0` without being material. Chart/table/KPI alerting
+  // should all key off THIS field, not re-derive materiality themselves
+  // (three independent re-derivations is how a chart marker and a table
+  // line end up disagreeing about the same year).
+  //
+  // grossUpForTaxes:false households net out the tax+penalty portion of
+  // fundingShortfall before checking materiality (live-user finding,
+  // 2026-08-28): with that setting off, the household has deliberately
+  // chosen to withdraw the raw need and let tax/penalty come out of it
+  // uncompensated -- fundingShortfall then equals ~taxCost+penaltyCost
+  // EVERY single year, by design, forever. That's not a real/unexpected
+  // shortfall the way a router failure or RMD-forced gap is; alerting on
+  // it every year for the life of the plan would drown out the genuine
+  // signal. routedUnmetNeed is untouched by this netting -- it's a
+  // separate, always-real "the router couldn't reach the money" signal,
+  // unrelated to the gross-up policy choice.
+  const shouldGrossUp = taxRates.grossUpForTaxes !== false;
+  const grossUpExplainedGap = shouldGrossUp
+    ? 0
+    : roundToCents(Math.min(taxCost + penaltyCost, fundingShortfall));
+  const netFundingShortfall = Math.max(
+    0,
+    roundToCents(fundingShortfall - grossUpExplainedGap),
+  );
+  const unmetNeedMaterial =
+    Math.max(routedUnmetNeed ?? 0, netFundingShortfall) >
+    shortfallMaterialityFloor;
 
   // --- IRMAA Awareness (Phase 6) ---
   // Store MAGI for 2-year lookback (#18).
@@ -775,6 +1069,7 @@ export function runDecumulationYear(
     age,
     phase: "decumulation",
     projectedExpenses: roundToCents(state.projectedExpenses),
+    budgetOnlyExpenses: roundToCents(state.budgetOnlyExpenses),
     hasBudgetOverride: budgetOverrideMap.has(year),
     brokerageContribution: decumBrokerageContrib,
     brokerageRampContribution: decumRampAmount,
@@ -793,7 +1088,9 @@ export function runDecumulationYear(
     estTraditionalPortion,
     bracketTraditionalCap: routeResult.traditionalCap,
     unmetNeed: finalUnmetNeed,
+    unmetNeedMaterial,
     penaltyAvoidedShortfall,
+    nonRetirementShortfall,
     penaltyCost,
     preWithdrawalAcctBal,
     endBalance,
@@ -805,6 +1102,11 @@ export function runDecumulationYear(
     rmdAmount,
     rmdByPerson,
     rmdOverrodeRouting,
+    rmdShortfallAmount,
+    rmdExcessAmount,
+    rmdSmoothingShortfall,
+    qcdAmount: totalQcd,
+    qcdByPerson: qcdByPerson.length > 0 ? qcdByPerson : undefined,
     taxableSS,
     ltcgRate: postConversionLtcgRate,
     rothConversionAmount,

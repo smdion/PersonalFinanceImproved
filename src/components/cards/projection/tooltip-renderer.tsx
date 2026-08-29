@@ -125,6 +125,87 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       {d.meta && <div className="text-slate-400 text-caption">{d.meta}</div>}
       {/* 3. META2 */}
       {d.meta2 && <div className="text-slate-400 text-caption">{d.meta2}</div>}
+      {/* 3a. SHORTFALL (real, material unmet need — see types.ts docblock) */}
+      {d.shortfall && (
+        <div className="space-y-0.5">
+          <div className="flex justify-between gap-4 font-medium text-red-400">
+            <span>⚠ Unmet need</span>
+            <span className="tabular-nums">
+              -{formatCurrency(d.shortfall.amount)}
+            </span>
+          </div>
+          {(d.shortfall.nonRetirementAmount ?? 0) > 0 && (
+            <div className="flex justify-between gap-4 text-red-400/70 text-caption">
+              <span>· excluding non-retirement (Portfolio) accounts</span>
+              <span className="tabular-nums">
+                -{formatCurrency(d.shortfall.nonRetirementAmount!)}
+              </span>
+            </div>
+          )}
+          {(d.shortfall.penaltyAvoidedAmount ?? 0) > 0 && (
+            <div className="flex justify-between gap-4 text-red-400/70 text-caption">
+              <span>· excluding penalty-exposed money</span>
+              <span className="tabular-nums">
+                -{formatCurrency(d.shortfall.penaltyAvoidedAmount!)}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+      {/* 3b. RMD (R47 follow-up — table/chart parity, see types.ts docblock) */}
+      {d.rmd && (
+        <div className="space-y-0.5">
+          <div
+            className={`flex justify-between gap-4 font-medium ${d.rmd.shortfallAmount > 0 ? "text-red-400" : "text-amber-400"}`}
+          >
+            <span>{d.rmd.isStartYear ? "RMDs begin" : "RMD"}</span>
+            <span className="tabular-nums">{formatCurrency(d.rmd.amount)}</span>
+          </div>
+          {d.rmd.shortfallAmount > 0 && (
+            <div className="text-red-400/70 text-caption">
+              Only {formatCurrency(d.rmd.amount - d.rmd.shortfallAmount)} of{" "}
+              {formatCurrency(d.rmd.amount)} required met · 25% excise tax risk
+            </div>
+          )}
+          {d.rmd.satisfiedNotably &&
+            d.rmd.shortfallAmount <= 0 &&
+            d.rmd.excessAmount <= 0 && (
+              <div className="text-amber-400/70 text-caption">
+                Met in full by your withdrawals.
+              </div>
+            )}
+          {d.rmd.excessAmount > 0 && (
+            <div className="flex justify-between gap-4 text-amber-400/70 text-caption">
+              <span>
+                {d.rmd.excessMode === "spend"
+                  ? "RMD excess spent"
+                  : "RMD excess reinvested"}
+              </span>
+              <span className="tabular-nums">
+                {d.rmd.excessMode === "spend" ? "" : "+"}
+                {formatCurrency(d.rmd.excessAmount)}
+              </span>
+            </div>
+          )}
+          {(d.rmd.qcdAmount ?? 0) > 0 && (
+            <div className="flex justify-between gap-4 text-violet-400/70 text-caption">
+              <span>QCD to charity</span>
+              <span className="tabular-nums">
+                {formatCurrency(d.rmd.qcdAmount!)}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+      {/* 3c. STRATEGY EVENT (UI/UX review, 2026-08-28 — see types.ts docblock) */}
+      {d.strategyEvent && (
+        <div
+          className="font-medium text-caption"
+          style={{ color: d.strategyEvent.color }}
+        >
+          Strategy: {d.strategyEvent.text}
+        </div>
+      )}
       {/* 4. OVERRIDE NOTE */}
       {d.overrideNote && (
         <div className="text-caption text-emerald-300">{d.overrideNote}</div>

@@ -223,7 +223,7 @@ export function ContribMethodologySection({ state }: ContribMethodologyProps) {
                   Security at age {engineSettings?.ssStartAge ?? "?"}), grosses
                   up for taxes, and routes withdrawals via{" "}
                   {withdrawalRoutingMode === "bracket_filling"
-                    ? "bracket filling (Traditional → Roth → Brokerage → HSA)"
+                    ? "bracket filling (Traditional to bracket cap, then whichever of Roth or Brokerage is cheaper that year, HSA last)"
                     : withdrawalRoutingMode === "waterfall"
                       ? `waterfall (${withdrawalOrder.map((c) => getAccountTypeConfig(c).displayLabel).join(" →")})`
                       : "percentage split"}

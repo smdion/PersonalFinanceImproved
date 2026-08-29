@@ -56,7 +56,7 @@ export function useProjectionDerived(
     engineQuery,
     contribProfilesQuery,
     salaryProfilesQuery,
-    activeCoastFireMcResult,
+    activeAltMcResult,
   } = queries;
 
   const {
@@ -89,16 +89,22 @@ export function useProjectionDerived(
     // `engineSettings` defined below, removing the need for `!` assertions
     // at every consumer.
     if (!engineData?.result) return null;
+    // Rate-Seeded (Feature B) joins the same swap Coast FIRE already uses —
+    // both source their deterministic line from their own MonteCarloResult
+    // rather than the baseline engineQuery, via the shared activeAltMcResult
+    // selector (use-projection-queries.ts).
     if (
-      (scenarioView === "coastFire" || scenarioView === "coastFireToday") &&
-      activeCoastFireMcResult?.deterministicProjection
+      (scenarioView === "coastFire" ||
+        scenarioView === "coastFireToday" ||
+        scenarioView === "rateSeeded") &&
+      activeAltMcResult?.deterministicProjection
     ) {
-      return activeCoastFireMcResult.deterministicProjection;
+      return activeAltMcResult.deterministicProjection;
     }
     return engineData.result;
   }, [
     scenarioView,
-    activeCoastFireMcResult?.deterministicProjection,
+    activeAltMcResult?.deterministicProjection,
     engineData?.result,
   ]);
   const result = useMemo(() => {
@@ -110,6 +116,19 @@ export function useProjectionDerived(
       ),
     };
   }, [rawResult, parentCategoryFilter]);
+
+  // MC "Simple" tax mode (the client default) collapses per-account
+  // balances into one fictional bucket server-side — a scenario sourced
+  // from an MC result under that mode (Rate-Seeded today, potentially
+  // others later) has NO real per-account data at all. Computed once here
+  // so every consumer (person-filter pills, visibleColumns' balance-by-
+  // tax-type/account gating below) reads the same signal instead of each
+  // re-deriving it (live-user finding, 2026-08-28 — showing a fake
+  // "everything in Brokerage" breakdown as if it were the real account
+  // split was actively misleading, not just an unfamiliar simplification).
+  const hasIndividualAccountData = !!result?.projectionByYear.some(
+    (y) => (y.individualAccountBalances?.length ?? 0) > 0,
+  );
 
   const combinedSalary =
     engineData && engineData.result ? engineData.combinedSalary : 0;
@@ -447,23 +466,33 @@ export function useProjectionDerived(
             }
           }
         }
-        if (yr.balanceByAccount) {
-          for (const seg of getAccountSegments()) {
-            if (getSegmentBalance(yr.balanceByAccount, seg) !== 0)
-              balanceAccts.add(seg.key);
+        // Skip entirely when there's no individual-account data (MC Simple
+        // tax mode) — yr.balanceByAccount/balanceByTaxType still hold
+        // NUMBERS in that case (the honestly-collapsed aggregate), but
+        // showing them broken out by account/tax-type dresses up a
+        // fictional single bucket as if it were the household's real
+        // account split (live-user finding, 2026-08-28). Leaving both sets
+        // empty collapses the "Balances" column group down to just the
+        // real, correct Balance total — see hasIndividualAccountData above.
+        if (hasIndividualAccountData) {
+          if (yr.balanceByAccount) {
+            for (const seg of getAccountSegments()) {
+              if (getSegmentBalance(yr.balanceByAccount, seg) !== 0)
+                balanceAccts.add(seg.key);
+            }
           }
-        }
-        if (yr.balanceByTaxType) {
-          const bt = yr.balanceByTaxType;
-          if (bt.preTax !== 0) balanceTaxTypes.add("preTax");
-          if (bt.taxFree !== 0) balanceTaxTypes.add("taxFree");
-          if (bt.hsa !== 0) balanceTaxTypes.add("hsa");
-          if (bt.afterTax !== 0) balanceTaxTypes.add("afterTax");
+          if (yr.balanceByTaxType) {
+            const bt = yr.balanceByTaxType;
+            if (bt.preTax !== 0) balanceTaxTypes.add("preTax");
+            if (bt.taxFree !== 0) balanceTaxTypes.add("taxFree");
+            if (bt.hsa !== 0) balanceTaxTypes.add("hsa");
+            if (bt.afterTax !== 0) balanceTaxTypes.add("afterTax");
+          }
         }
       }
     }
     return { contribCats, contribTaxTypes, balanceAccts, balanceTaxTypes };
-  }, [result, parentCategoryFilter]);
+  }, [result, parentCategoryFilter, hasIndividualAccountData]);
 
   // --- Column labels and tooltips ---
   const columnLabel: Record<string, string> = Object.fromEntries(
@@ -614,6 +643,7 @@ export function useProjectionDerived(
   const commonReturn = {
     engineData,
     rawResult,
+    hasIndividualAccountData,
     combinedSalary,
     enginePeople,
     realDefaults,

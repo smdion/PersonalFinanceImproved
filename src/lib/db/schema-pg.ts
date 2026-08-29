@@ -656,6 +656,22 @@ export const performanceAccounts = pgTable(
      *  applicable / not entered; the UI derives a default suggestion from
      *  linked jobs but never writes it here automatically. */
     separationDate: date("separation_date"),
+    /** Household is fine paying the 10%/20% early-withdrawal penalty on
+     *  THIS account when the projection needs to draw from it. Default
+     *  false = today's behavior (this account participates in the
+     *  household-wide hard exclusion like every other account, never
+     *  touched while penalty-free money exists anywhere). True makes this
+     *  account's penalty-exposed balance normally withdrawable again —
+     *  ordinary routing order (waterfall/bracket-filling) decides WHEN it's
+     *  drawn, same as any other reachable dollar. This is NOT a strict
+     *  "only as a true last resort, after every other account is
+     *  exhausted" guarantee — that would require reordering withdrawal
+     *  routing across account categories, a larger change tracked
+     *  separately (FEATURE-ROADMAP.md R41 follow-up). One-way opt-in per
+     *  account, set by the user — never inferred. See R41. */
+    allowPenalizedWithdrawals: boolean("allow_penalized_withdrawals")
+      .notNull()
+      .default(false),
     parentCategory: text("parent_category").notNull(),
     isActive: boolean("is_active").notNull().default(true),
     displayOrder: integer("display_order").notNull().default(0),
@@ -1486,6 +1502,43 @@ export const retirementSettings = pgTable(
       precision: 12,
       scale: 6,
     }).default("1.0"),
+    /** R46: what to do with RMD-forced withdrawal beyond stated spending
+     *  need (after any QCD reduces the taxable RMD first) — "reinvest"
+     *  into brokerage (default, matches all pre-R46 behavior) or "spend"
+     *  (household consumes it; net worth ends up lower, by design). */
+    rmdExcessHandling: varchar("rmd_excess_handling", { length: 20 })
+      .notNull()
+      .default("reinvest"),
+    /** R46: automatically apply the largest Qualified Charitable
+     *  Distribution the household's RMD situation allows each year
+     *  (capped by QCD_ANNUAL_CAP_PER_PERSON and the person's IRA-only
+     *  Traditional balance — see constants.ts and
+     *  PLAN-rmd-excess-handling.md for the approximation this uses).
+     *  Excludes that portion of RMD from taxable income entirely. */
+    qcdMaximize: boolean("qcd_maximize").notNull().default(false),
+    /** R47: proactively size Roth conversions to shrink a FUTURE RMD
+     *  toward projected spending need, not just fill this year's bracket
+     *  room opportunistically — default false, byte-identical for every
+     *  existing household until explicitly turned on (converting more
+     *  Traditional-to-Roth earlier is a real pay-tax-now-vs-later
+     *  tradeoff). Per-person, requires individual-account tracking — see
+     *  PLAN-r47-rmd-aware-roth-smoothing.md. */
+    rmdSmoothingEnabled: boolean("rmd_smoothing_enabled")
+      .notNull()
+      .default(false),
+    /** R47: how far smoothing may raise the EFFECTIVE conversion target
+     *  rate above the household's own `rothBracketTarget`/
+     *  `rothConversionTarget` when it needs more room than those provide
+     *  — can only RAISE the effective ceiling, never lower it (a
+     *  household's existing, separately-configured target always wins if
+     *  it's already higher). Null = not yet set; UI should seed a new
+     *  household's default from their current `rothBracketTarget`, not a
+     *  hardcoded value, so opting into smoothing can never look like it
+     *  silently lowered an existing target. */
+    rmdSmoothingMaxBracketTarget: decimal("rmd_smoothing_max_bracket_target", {
+      precision: 8,
+      scale: 6,
+    }),
     /** Enable IRMAA awareness — constrain Roth conversions/withdrawals near Medicare surcharge cliffs (65+). */
     enableIrmaaAwareness: boolean("enable_irmaa_awareness")
       .notNull()

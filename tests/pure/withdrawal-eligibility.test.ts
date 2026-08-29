@@ -5,7 +5,10 @@
  * these are pure-function tests against the locked designs.
  */
 import { describe, it, expect } from "vitest";
-import { computeWithdrawalEligibility } from "@/lib/pure/withdrawal-eligibility";
+import {
+  computeWithdrawalEligibility,
+  computeNonRetirementExclusion,
+} from "@/lib/pure/withdrawal-eligibility";
 import type { EligibilityAccountInput } from "@/lib/pure/withdrawal-eligibility";
 import { initRothBasisState } from "@/lib/pure/roth-basis-tracking";
 
@@ -576,5 +579,219 @@ describe("computeWithdrawalEligibility — tracked basis (indBasis)", () => {
     expect(basisExhausted.reason).toBe(
       "Locked until age 59½ — no basis remaining",
     );
+  });
+
+  // R41 — per-account penalty-allowance override
+  describe("allowPenalizedWithdrawals (R41)", () => {
+    it("defaults to false and leaves the *StillExcluded aggregates identical to the plain ones when no account opts in", () => {
+      const ia = account({
+        name: "Old Employer 401k",
+        ownerBirthYear: 1990, // age 36 in 2026
+        ruleOf55: {
+          eligible: false,
+          separationYear: 2020,
+          source: "derived",
+          knownFutureSeparationYear: null,
+        },
+      });
+      const record = computeWithdrawalEligibility({
+        year: 2026,
+        indAccts: [ia],
+        indBal: new Map([[indKey(ia), 100000]]),
+        indKey,
+      });
+      const entry = record.byKey.get(indKey(ia))!;
+      expect(entry.allowPenalizedWithdrawals).toBe(false);
+      expect(record.penaltyExposedTradStillExcluded).toEqual(
+        record.penaltyExposedTrad,
+      );
+      expect(record.penaltyExposedRothStillExcluded).toEqual(
+        record.penaltyExposedRoth,
+      );
+      expect(record.penaltyExposedTotalStillExcluded).toEqual(
+        record.penaltyExposedTotal,
+      );
+    });
+
+    it("excludes an allowed account's exposed dollars from *StillExcluded while keeping a disallowed sibling's in both", () => {
+      const lockedRuleOf55 = {
+        eligible: false,
+        separationYear: 2020,
+        source: "derived" as const,
+        knownFutureSeparationYear: null,
+      };
+      const allowedAcct = account({
+        name: "Allowed 401k",
+        ownerBirthYear: 1990,
+        ruleOf55: lockedRuleOf55,
+        allowPenalizedWithdrawals: true,
+      });
+      const disallowedAcct = account({
+        name: "Disallowed 401k",
+        ownerBirthYear: 1990,
+        ruleOf55: lockedRuleOf55,
+      });
+      const record = computeWithdrawalEligibility({
+        year: 2026,
+        indAccts: [allowedAcct, disallowedAcct],
+        indBal: new Map([
+          [indKey(allowedAcct), 40000],
+          [indKey(disallowedAcct), 60000],
+        ]),
+        indKey,
+      });
+      // Both accounts are fully penalty-exposed (Rule of 55 not met, under
+      // 59.5) -- the plain aggregate sums both.
+      expect(record.penaltyExposedTrad["401k"]).toBe(100000);
+      // The "still excluded" aggregate only counts the disallowed account.
+      expect(record.penaltyExposedTradStillExcluded["401k"]).toBe(60000);
+      expect(
+        record.byKey.get(indKey(allowedAcct))?.allowPenalizedWithdrawals,
+      ).toBe(true);
+      expect(
+        record.byKey.get(indKey(disallowedAcct))?.allowPenalizedWithdrawals,
+      ).toBe(false);
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// R49: computeNonRetirementExclusion + the double-count guard
+// ---------------------------------------------------------------------------
+
+describe("computeNonRetirementExclusion", () => {
+  it("excludes a Portfolio-parented account's full balance, regardless of age", () => {
+    const portfolioBrokerage = account({
+      name: "Long Term Brokerage",
+      category: "brokerage",
+      taxType: "afterTax",
+      parentCategory: "Portfolio",
+      ownerBirthYear: 1990, // young, would be penalty-exposed if it mattered
+    });
+    const result = computeNonRetirementExclusion(
+      [portfolioBrokerage],
+      new Map([[indKey(portfolioBrokerage), 1_500_000]]),
+      indKey,
+    );
+    expect(result.total.brokerage).toBe(1_500_000);
+    expect(result.grandTotal).toBe(1_500_000);
+  });
+
+  it("never counts a Retirement-parented account (explicit or default-undefined)", () => {
+    const explicit = account({
+      name: "Retirement Brokerage",
+      category: "brokerage",
+      taxType: "afterTax",
+      parentCategory: "Retirement",
+    });
+    const implicit = account({
+      name: "401k",
+      category: "401k",
+      taxType: "preTax",
+      parentCategory: undefined,
+    });
+    const result = computeNonRetirementExclusion(
+      [explicit, implicit],
+      new Map([
+        [indKey(explicit), 200000],
+        [indKey(implicit), 300000],
+      ]),
+      indKey,
+    );
+    expect(result.grandTotal).toBe(0);
+    expect(result.total.brokerage).toBe(0);
+    expect(result.total["401k"]).toBe(0);
+  });
+
+  it("splits a roth_traditional category's Portfolio-parented balance into trad/roth", () => {
+    const portfolioTrad = account({
+      name: "Portfolio 401k Trad",
+      category: "401k",
+      taxType: "preTax",
+      parentCategory: "Portfolio",
+    });
+    const portfolioRoth = account({
+      name: "Portfolio 401k Roth",
+      category: "401k",
+      taxType: "taxFree",
+      parentCategory: "Portfolio",
+    });
+    const result = computeNonRetirementExclusion(
+      [portfolioTrad, portfolioRoth],
+      new Map([
+        [indKey(portfolioTrad), 100000],
+        [indKey(portfolioRoth), 40000],
+      ]),
+      indKey,
+    );
+    expect(result.trad["401k"]).toBe(100000);
+    expect(result.roth["401k"]).toBe(40000);
+    expect(result.total["401k"]).toBe(140000);
+    expect(result.grandTotal).toBe(140000);
+  });
+
+  it("returns an all-zero result for an empty account list", () => {
+    const result = computeNonRetirementExclusion([], new Map(), indKey);
+    expect(result.grandTotal).toBe(0);
+  });
+});
+
+describe("computeWithdrawalEligibility — Portfolio-parented double-count guard (R49)", () => {
+  it("still returns a normal, informative byKey entry for a Portfolio-parented account", () => {
+    const portfolio401k = account({
+      name: "Portfolio 401k",
+      category: "401k",
+      taxType: "preTax",
+      parentCategory: "Portfolio",
+      ownerBirthYear: 1990, // pre-59½, would be locked if this were Retirement
+      ruleOf55: {
+        eligible: false,
+        separationYear: null,
+        source: "derived",
+        knownFutureSeparationYear: null,
+      },
+    });
+    const record = computeWithdrawalEligibility({
+      year: 2026,
+      indAccts: [portfolio401k],
+      indBal: new Map([[indKey(portfolio401k), 500000]]),
+      indKey,
+    });
+    const entry = record.byKey.get(indKey(portfolio401k))!;
+    expect(entry.penaltyExposedAmount).toBe(500000);
+    expect(entry.reason).toBe(
+      "Locked until Rule of 55 or age 59½ (currently 36)",
+    );
+  });
+
+  it("excludes a Portfolio-parented account's exposure from the category aggregates entirely", () => {
+    const portfolio401k = account({
+      name: "Portfolio 401k",
+      category: "401k",
+      taxType: "preTax",
+      parentCategory: "Portfolio",
+      ownerBirthYear: 1990,
+      ruleOf55: {
+        eligible: false,
+        separationYear: null,
+        source: "derived",
+        knownFutureSeparationYear: null,
+      },
+    });
+    const record = computeWithdrawalEligibility({
+      year: 2026,
+      indAccts: [portfolio401k],
+      indBal: new Map([[indKey(portfolio401k), 500000]]),
+      indKey,
+    });
+    // The per-account entry above shows $500,000 exposed -- but NONE of it
+    // reaches the category-level aggregates, since it's excluded wholesale
+    // via computeNonRetirementExclusion instead (see that function's tests
+    // above). Without this gate, subtractExcluded would double-subtract
+    // this account's dollars.
+    expect(record.totalPenaltyExposed).toBe(0);
+    expect(record.penaltyExposedTrad["401k"]).toBe(0);
+    expect(record.penaltyExposedTotalStillExcluded["401k"]).toBe(0);
+    expect(record.totalPenaltyExposedStillExcluded).toBe(0);
   });
 });

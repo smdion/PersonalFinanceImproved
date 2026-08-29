@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**338 procedures across 38 routers.**
+**339 procedures across 38 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -213,6 +213,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 | Procedure                     | Kind     | Auth                 | Description                                                                                                                                                                                              |
 | ----------------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `clearCache`                  | mutation | `adminProcedure`     | forces a full recompute without bumping PROJECTION_CACHE_ENGINE_VERSION and redeploying. Admin-only: destructive against shared cache state.                                                             |
 | `computeMonteCarloProjection` | query    | `protectedProcedure` | Runs N trials of the contribution engine with randomized return rates sampled from correlated log-normal distributions based on asset class parameters and glide path allocations from the DB. Returns p |
 | `updateClampBounds`           | mutation | `scenarioProcedure`  | (no description)                                                                                                                                                                                         |
 | `updateGlidePathAllocations`  | mutation | `scenarioProcedure`  | (no description)                                                                                                                                                                                         |

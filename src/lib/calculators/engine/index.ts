@@ -13,6 +13,8 @@
  *   tax-gross-up.ts        — SS torpedo convergence + gross-up (calls
  *                            withdrawal-routing.ts's routeForMode)
  *   withdrawal-routing.ts  — bracket-filling / waterfall / percentage
+ *   withdrawal-cost-ranking.ts — cost-tier ordering for post-bracket-cap
+ *                            sources (v0.7.9 R40 follow-up)
  *   balance-utils.ts       — cloning, conversion helpers
  *
  *   rmd-enforcement.ts    — RMD factor lookup + shortfall distribution
@@ -28,7 +30,15 @@ export { calculateProjection } from "./projection";
 export {
   estimateEffectiveTaxRate,
   incomeCapForMarginalRate,
+  marginalRateAboveTarget,
   computeTaxableSS,
 } from "./tax-estimation";
 
 export type { WithholdingBracket } from "./tax-estimation";
+
+export { rankWithdrawalTiers } from "./withdrawal-cost-ranking";
+export type {
+  WithdrawalTier,
+  WithdrawalSourceKind,
+  RankWithdrawalTiersInput,
+} from "./withdrawal-cost-ranking";

@@ -11,20 +11,21 @@
  * The recommendation is heuristic, not prescriptive. Users override
  * freely. The goal is to give first-time users a defensible starting
  * point, not to lock anyone in.
+ *
+ * R45 Step 6: previously declared its own hyphenated `WithdrawalStrategy`
+ * union, parallel to (and misspelled relative to) the canonical
+ * underscored `WithdrawalStrategyType` in `withdrawal-strategies.ts` —
+ * exactly the "looks like one canonical value, isn't" gap this review was
+ * built to catch. The one call site that read `.strategy` bridged the two
+ * spellings with a manual translation map (`RECOMMENDED_KEY_MAP` in
+ * `retirement-profile-tab.tsx`); not a live bug (the map was complete and
+ * correct), but a maintainability trap the next new strategy could fall
+ * into. Now imports and reuses the canonical type directly.
  */
-
-export type WithdrawalStrategy =
-  | "fixed"
-  | "guyton-klinger"
-  | "vanguard-dynamic"
-  | "constant-percentage"
-  | "endowment"
-  | "spending-decline"
-  | "forgo-inflation"
-  | "rmd-spending";
+import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 
 export interface WithdrawalStrategyRecommendation {
-  strategy: WithdrawalStrategy;
+  strategy: WithdrawalStrategyType;
   /** UI label. */
   label: string;
   /** One-sentence rationale to render as a tooltip / callout body. */
@@ -66,7 +67,7 @@ export function recommendWithdrawalStrategy(
 
   if (horizon >= 30) {
     return {
-      strategy: "guyton-klinger",
+      strategy: "guyton_klinger",
       label: "Guyton-Klinger guardrails",
       rationale:
         "For your 30+ year retirement horizon, Guyton-Klinger guardrails " +
@@ -78,7 +79,7 @@ export function recommendWithdrawalStrategy(
 
   if (horizon >= 20 && plan.hasBudgetLink) {
     return {
-      strategy: "vanguard-dynamic",
+      strategy: "vanguard_dynamic",
       label: "Vanguard Dynamic Spending",
       rationale:
         "You have a budget linked, so Vanguard Dynamic Spending can use " +
@@ -90,7 +91,7 @@ export function recommendWithdrawalStrategy(
 
   if (horizon >= 20) {
     return {
-      strategy: "guyton-klinger",
+      strategy: "guyton_klinger",
       label: "Guyton-Klinger guardrails",
       rationale:
         "For a 20–30 year horizon, Guyton-Klinger guardrails balance " +

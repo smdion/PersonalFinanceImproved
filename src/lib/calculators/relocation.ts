@@ -45,7 +45,7 @@ function growOneYear(
 }
 
 /** Pre-computed per-purchase data used during the year-by-year loop. */
-type PurchasePrecomputed = {
+export type PurchasePrecomputed = {
   cashOutlay: number; // withdrawn from portfolio in purchase year
   saleProceeds: number; // added back to portfolio in purchase year
   monthlyPayment: number; // loan payment (0 if all-cash)
@@ -55,8 +55,22 @@ type PurchasePrecomputed = {
   purchaseYear: number;
 };
 
-function precomputePurchases(
-  purchases: RelocationLargePurchase[],
+/** Only the fields the year-by-year model actually reads — callers building
+ *  purchase rows that don't carry a `name` (e.g. the router's zod input)
+ *  can pass this shape directly instead of the full `RelocationLargePurchase`. */
+export type RelocationPurchaseInput = Pick<
+  RelocationLargePurchase,
+  | "purchasePrice"
+  | "downPaymentPercent"
+  | "loanRate"
+  | "loanTermYears"
+  | "ongoingMonthlyCost"
+  | "saleProceeds"
+  | "purchaseYear"
+>;
+
+export function precomputePurchases(
+  purchases: RelocationPurchaseInput[],
 ): PurchasePrecomputed[] {
   return purchases.map((p) => {
     const downPct = p.downPaymentPercent ?? 1; // default = all-cash
@@ -84,7 +98,7 @@ function precomputePurchases(
 }
 
 /** Get total monthly cost from purchases active in a given year. */
-function purchaseMonthlyForYear(
+export function purchaseMonthlyForYear(
   year: number,
   pcs: PurchasePrecomputed[],
 ): number {
@@ -116,7 +130,7 @@ function purchasePortfolioImpactForYear(
 }
 
 /** Steady-state monthly cost: ongoing costs + loan payments for loans still active at the last purchase year. */
-function steadyStateMonthly(pcs: PurchasePrecomputed[]): number {
+export function steadyStateMonthly(pcs: PurchasePrecomputed[]): number {
   if (pcs.length === 0) return 0;
   // Use the max purchase year as the reference point for "steady state"
   const maxYear = Math.max(...pcs.map((pc) => pc.purchaseYear));

@@ -90,7 +90,14 @@ export function useProjectionFormState() {
   const [mcPreset, setMcPreset] = useState<
     "aggressive" | "default" | "conservative" | "custom"
   >("default");
-  const [mcTaxMode, setMcTaxMode] = useState<"simple" | "advanced">("simple");
+  // Default to Advanced (real per-account tax tracking) rather than
+  // Simple (cFIREsim-style single-bucket comparison) — most households
+  // have real Traditional/Roth/HSA/brokerage splits they care about
+  // seeing, and Simple mode's collapse turned out to actively mislead
+  // when displayed as if it were a real account breakdown (live-user
+  // finding, 2026-08-28). Simple stays available for anyone who
+  // specifically wants the cFIREsim-comparable view.
+  const [mcTaxMode, setMcTaxMode] = useState<"simple" | "advanced">("advanced");
   const [mcAssetClassOverrides, setMcAssetClassOverrides] = useState<
     AssetClassOverride[]
   >([]);
@@ -105,10 +112,21 @@ export function useProjectionFormState() {
     "balance",
   );
   const [scenarioView, setScenarioView] = useState<
-    "baseline" | "coastFire" | "coastFireToday"
+    "baseline" | "coastFire" | "coastFireToday" | "rateSeeded"
   >("baseline");
   const [showAllYears, setShowAllYears] = useState(false);
   const [showBars, setShowBars] = useState(true);
+  // Separate from `showBars` (the Balance chart's own baseline toggle) so
+  // the Yearly Income Stability chart can default this off for a
+  // reactive strategy (Guyton-Klinger etc. -- flat/uneventful without
+  // real volatility) without silently also hiding the Balance chart's
+  // baseline, which is meaningful regardless of strategy. The shared
+  // BASELINE pill in index.tsx's toolbar reads/writes whichever of the two
+  // is relevant for the currently-active chart, so there's still only one
+  // visible toggle -- not two overlapping ones (user feedback, 2026-08-28:
+  // a separate "Show anyway" link was confusing because the real BASELINE
+  // toggle appeared to do nothing on this chart).
+  const [showStabilityBars, setShowStabilityBars] = useState(true);
   const [fanBandRange, setFanBandRange] = useState<
     "off" | "p25-p75" | "p10-p90" | "p5-p95"
   >("p25-p75");
@@ -196,6 +214,8 @@ export function useProjectionFormState() {
     setShowAllYears,
     showBars,
     setShowBars,
+    showStabilityBars,
+    setShowStabilityBars,
     fanBandRange,
     setFanBandRange,
     diagMode,

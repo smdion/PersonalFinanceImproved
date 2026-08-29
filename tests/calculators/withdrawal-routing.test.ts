@@ -428,6 +428,91 @@ describe("routeWithdrawalsBracketFilling", () => {
     expect(result.warnings.some((w) => w.includes("unmet"))).toBe(true);
   });
 
+  // -------------------------------------------------------------------------
+  // v0.7.9 R40 follow-up: cost-aware post-Traditional-cap ranking
+  // -------------------------------------------------------------------------
+
+  it("draws from brokerage sitting in the 0% LTCG zone instead of Roth growth, when filingStatus is provided and Roth has no basis left", () => {
+    const config = makeDecumulationConfig();
+    const balances = makeAccountBalances({
+      preTax: 10000,
+      taxFree: 100000,
+      afterTax: 100000,
+      afterTaxBasis: 50000,
+    });
+    const result = routeWithdrawalsBracketFilling(60000, config, balances, {
+      taxBrackets: TEST_BRACKETS,
+      rothBracketTarget: 0.12,
+      taxableSS: 0,
+      filingStatus: "MFJ",
+      rothBasisAvailable: 0, // force any Roth draw to be growth
+      brokerageBasisRatio: 0.5,
+    });
+    const rothSlot =
+      slotFor(result.slots, "401k") ?? slotFor(result.slots, "ira");
+    const brokSlot = slotFor(result.slots, "brokerage")!;
+    // 0%-LTCG brokerage room comfortably covers the remaining need here --
+    // the cost-aware ranking should prefer it over taxable Roth growth.
+    expect(brokSlot.withdrawal).toBeGreaterThan(0);
+    expect(rothSlot?.rothWithdrawal ?? 0).toBe(0);
+  });
+
+  it("draws brokerage instead of Roth once real ordinary income is high enough that Roth's REAL bracket rate exceeds LTCG (advisor review, 2026-08-29)", () => {
+    // Before the fix, Roth growth was priced off `rothBracketTarget`
+    // (here 0.1, "next bracket up is 12%") regardless of the household's
+    // REAL income level -- so a household with $700k of taxable SS still
+    // looked like it only owed 12% on Roth growth, wrongly cheaper than
+    // 20% LTCG. Roth growth is now priced off the household's actual
+    // ordinaryIncomeFloor, which at this income sits in TEST_BRACKETS'
+    // 35% bracket -- genuinely far more expensive than 20% LTCG, so
+    // brokerage must be drawn instead.
+    const config = makeDecumulationConfig();
+    const balances = makeAccountBalances({
+      preTax: 10000,
+      taxFree: 100000,
+      afterTax: 100000,
+      afterTaxBasis: 0, // all gains -- worst case for brokerage's cost
+    });
+    const result = routeWithdrawalsBracketFilling(60000, config, balances, {
+      taxBrackets: TEST_BRACKETS,
+      rothBracketTarget: 0.1, // no longer read for Roth-growth pricing
+      taxableSS: 700000, // real ordinary income lands in the 35% bracket
+      filingStatus: "MFJ",
+      rothBasisAvailable: 0,
+      brokerageBasisRatio: 0,
+      magiBeforeThisDraw: 0, // keep NIIT out of it
+    });
+    const rothSlot =
+      slotFor(result.slots, "401k") ?? slotFor(result.slots, "ira");
+    const brokSlot = slotFor(result.slots, "brokerage")!;
+    expect(brokSlot.withdrawal).toBeGreaterThan(0);
+    expect(rothSlot?.rothWithdrawal ?? 0).toBe(0);
+  });
+
+  it("without filingStatus, degenerates to the pre-v0.7.9 fixed Roth-then-brokerage order (no regression for callers that don't pass it)", () => {
+    const config = makeDecumulationConfig();
+    const balances = makeAccountBalances({
+      preTax: 10000,
+      taxFree: 30000,
+      afterTax: 100000,
+      afterTaxBasis: 0,
+    });
+    // Need exceeds Traditional-cap + all available Roth, so brokerage must
+    // be touched too -- proves it's drawn AFTER Roth is exhausted, not
+    // instead of/before it.
+    const result = routeWithdrawalsBracketFilling(120000, config, balances, {
+      taxBrackets: TEST_BRACKETS,
+      rothBracketTarget: 0.12,
+      taxableSS: 0,
+      // filingStatus intentionally omitted
+    });
+    const rothSlot =
+      slotFor(result.slots, "401k") ?? slotFor(result.slots, "ira");
+    const brokSlot = slotFor(result.slots, "brokerage")!;
+    expect(rothSlot?.rothWithdrawal ?? 0).toBeGreaterThan(0);
+    expect(brokSlot.withdrawal).toBeGreaterThan(0);
+  });
+
   it("merges traditional and roth slots for the same category", () => {
     const config = makeDecumulationConfig();
     const balances = makeAccountBalances({
@@ -468,24 +553,39 @@ function lockedBalances(overrides: Partial<AccountBalances> = {}): {
     brokerage: { structure: "basis_tracking", balance: 60000, basis: 30000 },
     ...overrides,
   };
+  const penaltyExposedTrad = {
+    "401k": 100000,
+    "403b": 0,
+    ira: 0,
+    hsa: 0,
+    brokerage: 0,
+  };
+  const penaltyExposedRoth = {
+    "401k": 0,
+    "403b": 0,
+    ira: 0,
+    hsa: 0,
+    brokerage: 0,
+  };
+  const penaltyExposedTotal = {
+    "401k": 100000,
+    "403b": 0,
+    ira: 0,
+    hsa: 0,
+    brokerage: 0,
+  };
   const eligibility: EligibilityRecord = {
     byKey: new Map(),
     totalPenaltyExposed: 100000,
-    penaltyExposedTrad: {
-      "401k": 100000,
-      "403b": 0,
-      ira: 0,
-      hsa: 0,
-      brokerage: 0,
-    },
-    penaltyExposedRoth: { "401k": 0, "403b": 0, ira: 0, hsa: 0, brokerage: 0 },
-    penaltyExposedTotal: {
-      "401k": 100000,
-      "403b": 0,
-      ira: 0,
-      hsa: 0,
-      brokerage: 0,
-    },
+    penaltyExposedTrad,
+    penaltyExposedRoth,
+    penaltyExposedTotal,
+    // No account has the R41 override in this fixture, so "still excluded"
+    // is identical to the plain aggregates above.
+    penaltyExposedTradStillExcluded: penaltyExposedTrad,
+    penaltyExposedRothStillExcluded: penaltyExposedRoth,
+    penaltyExposedTotalStillExcluded: penaltyExposedTotal,
+    totalPenaltyExposedStillExcluded: 100000,
   };
   return { balances, eligibility };
 }
@@ -522,32 +622,39 @@ describe("routeForMode (Tier B eligibility gate)", () => {
     // the property reconciliation now guarantees upstream, in
     // decumulation-year.ts, before eligibility is ever computed.
     const balances = lockedBalances().balances;
+    // Exactly equal to balances["401k"].traditional (100000) -- the
+    // no-drift case reconciliation guarantees.
+    const lockedTrad = {
+      "401k": 100000,
+      "403b": 0,
+      ira: 0,
+      hsa: 0,
+      brokerage: 0,
+    };
+    const lockedRoth = {
+      "401k": 0,
+      "403b": 0,
+      ira: 0,
+      hsa: 0,
+      brokerage: 0,
+    };
+    const lockedTotal = {
+      "401k": 100000,
+      "403b": 0,
+      ira: 0,
+      hsa: 0,
+      brokerage: 0,
+    };
     const fullyLockedEligibility: EligibilityRecord = {
       byKey: new Map(),
       totalPenaltyExposed: 100000,
-      // Exactly equal to balances["401k"].traditional (100000) -- the
-      // no-drift case reconciliation guarantees.
-      penaltyExposedTrad: {
-        "401k": 100000,
-        "403b": 0,
-        ira: 0,
-        hsa: 0,
-        brokerage: 0,
-      },
-      penaltyExposedRoth: {
-        "401k": 0,
-        "403b": 0,
-        ira: 0,
-        hsa: 0,
-        brokerage: 0,
-      },
-      penaltyExposedTotal: {
-        "401k": 100000,
-        "403b": 0,
-        ira: 0,
-        hsa: 0,
-        brokerage: 0,
-      },
+      penaltyExposedTrad: lockedTrad,
+      penaltyExposedRoth: lockedRoth,
+      penaltyExposedTotal: lockedTotal,
+      penaltyExposedTradStillExcluded: lockedTrad,
+      penaltyExposedRothStillExcluded: lockedRoth,
+      penaltyExposedTotalStillExcluded: lockedTotal,
+      totalPenaltyExposedStillExcluded: 100000,
     };
     const config = makeDecumulationConfig({
       withdrawalRoutingMode: "waterfall",
@@ -631,6 +738,7 @@ describe("routeForMode (Tier B eligibility gate)", () => {
     const noLock: EligibilityRecord = {
       ...eligibility,
       totalPenaltyExposed: 0,
+      totalPenaltyExposedStillExcluded: 0,
     };
     const config = makeDecumulationConfig({
       withdrawalRoutingMode: "waterfall",
@@ -744,18 +852,21 @@ describe("routeForMode (Tier B eligibility gate)", () => {
       withdrawalRoutingMode: "waterfall",
       withdrawalOrder: ["401k", "ira", "brokerage", "hsa"],
     });
+    const zeroByCat = () =>
+      Object.fromEntries(getAllCategories().map((c) => [c, 0])) as Record<
+        AccountCategory,
+        number
+      >;
     const zeroExposure: EligibilityRecord = {
       byKey: new Map(),
       totalPenaltyExposed: 0,
-      penaltyExposedTrad: Object.fromEntries(
-        getAllCategories().map((c) => [c, 0]),
-      ) as Record<AccountCategory, number>,
-      penaltyExposedRoth: Object.fromEntries(
-        getAllCategories().map((c) => [c, 0]),
-      ) as Record<AccountCategory, number>,
-      penaltyExposedTotal: Object.fromEntries(
-        getAllCategories().map((c) => [c, 0]),
-      ) as Record<AccountCategory, number>,
+      penaltyExposedTrad: zeroByCat(),
+      penaltyExposedRoth: zeroByCat(),
+      penaltyExposedTotal: zeroByCat(),
+      penaltyExposedTradStillExcluded: zeroByCat(),
+      penaltyExposedRothStillExcluded: zeroByCat(),
+      penaltyExposedTotalStillExcluded: zeroByCat(),
+      totalPenaltyExposedStillExcluded: 0,
     };
     const withZeroExposure = routeForMode(
       50000,
@@ -790,5 +901,102 @@ describe("routeForMode (Tier B eligibility gate)", () => {
     });
     expect(withEligibility.slots).toEqual(withNoEligibilityArg.slots);
     expect(withEligibility.penaltyAvoidedShortfall).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// routeForMode — nonRetirement exclusion (R49)
+// ---------------------------------------------------------------------------
+
+describe("routeForMode (nonRetirement exclusion, R49)", () => {
+  function zeroByCat() {
+    return Object.fromEntries(getAllCategories().map((c) => [c, 0])) as Record<
+      AccountCategory,
+      number
+    >;
+  }
+  function nonRetirementFor(cat: AccountCategory, amount: number) {
+    const total = zeroByCat();
+    total[cat] = amount;
+    return {
+      total,
+      trad: zeroByCat(),
+      roth: zeroByCat(),
+      grandTotal: amount,
+    };
+  }
+
+  it("excludes the Portfolio-parented amount from the category's routable balance", () => {
+    const balances = makeAccountBalances({ afterTax: 100000 });
+    const config = makeDecumulationConfig({
+      withdrawalRoutingMode: "waterfall",
+      withdrawalOrder: ["brokerage"],
+    });
+    const nonRetirement = nonRetirementFor("brokerage", 80000);
+    const result = routeForMode(
+      50000,
+      config,
+      balances,
+      { taxableSS: 0 },
+      undefined,
+      nonRetirement,
+    );
+    // Only $20,000 of the $100,000 brokerage balance is Retirement-parented
+    // -- the category can supply at most that much.
+    expect(slotFor(result.slots, "brokerage")?.withdrawal ?? 0).toBe(20000);
+    expect(result.unmetNeed).toBeCloseTo(30000, 2);
+    expect(result.nonRetirementShortfall).toBeCloseTo(30000, 2);
+  });
+
+  it("names the shortfall distinctly from penaltyAvoidedShortfall when both sources are active", () => {
+    const { balances, eligibility } = lockedBalances({
+      brokerage: { structure: "basis_tracking", balance: 100000, basis: 0 },
+    });
+    const config = makeDecumulationConfig({
+      withdrawalRoutingMode: "waterfall",
+      withdrawalOrder: ["401k", "brokerage"],
+    });
+    const nonRetirement = nonRetirementFor("brokerage", 90000);
+    const result = routeForMode(
+      50000,
+      config,
+      balances,
+      { taxableSS: 0 },
+      eligibility, // 401k fully penalty-exposed, still excluded
+      nonRetirement, // brokerage 90% Portfolio-parented
+    );
+    expect(result.unmetNeed).toBeGreaterThan(0);
+    expect(result.penaltyAvoidedShortfall).toBeGreaterThan(0);
+    expect(result.nonRetirementShortfall).toBeGreaterThan(0);
+    // Neither figure alone accounts for the full unmet need, and neither
+    // exceeds it -- they're independent, bounded partitions of the same
+    // shortfall, not a blended figure.
+    expect(result.penaltyAvoidedShortfall!).toBeLessThanOrEqual(
+      result.unmetNeed!,
+    );
+    expect(result.nonRetirementShortfall!).toBeLessThanOrEqual(
+      result.unmetNeed!,
+    );
+  });
+
+  it("byte-identical fallthrough when nonRetirement is undefined or all-zero", () => {
+    const balances = makeAccountBalances({ afterTax: 100000 });
+    const config = makeDecumulationConfig({
+      withdrawalRoutingMode: "waterfall",
+      withdrawalOrder: ["brokerage"],
+    });
+    const withUndefined = routeForMode(50000, config, balances, {
+      taxableSS: 0,
+    });
+    const withAllZero = routeForMode(
+      50000,
+      config,
+      balances,
+      { taxableSS: 0 },
+      undefined,
+      nonRetirementFor("brokerage", 0),
+    );
+    expect(withUndefined.slots).toEqual(withAllZero.slots);
+    expect(withAllZero.nonRetirementShortfall).toBeUndefined();
   });
 });

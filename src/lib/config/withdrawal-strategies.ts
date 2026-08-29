@@ -84,6 +84,18 @@ export type WithdrawalStrategyConfig = {
   usesWithdrawalRate: boolean;
   /** Whether the strategy uses the Post-Retirement Raise to grow expenses. */
   usesPostRetirementRaise: boolean;
+  /** Whether this strategy's own reactive mechanism (guardrail triggers,
+   *  loss-year detection) requires real year-to-year return VOLATILITY to
+   *  ever activate — as opposed to reacting to something that moves
+   *  smoothly on its own (current balance level, age-based IRS factor, a
+   *  fixed decline schedule). The deterministic single-path projection
+   *  uses one smooth average return with no volatility, so a strategy with
+   *  this true will show a flat, uneventful deterministic Yearly Income
+   *  Stability chart even though its Monte Carlo confidence band carries
+   *  real signal — found via live user confusion, 2026-08-28. Used to
+   *  suppress the deterministic bars on that chart specifically for these
+   *  strategies (see spending-stability-chart.tsx). */
+  reactsToVolatility: boolean;
   /** Which SpendingCrossYearState fields this strategy reads/writes. */
   crossYearStateKeys: readonly string[];
   /** Strategy guide content for the flyout panel. */
@@ -104,6 +116,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     incomeSource: "budget",
     usesWithdrawalRate: true,
     usesPostRetirementRaise: true,
+    reactsToVolatility: false,
     defaultParams: {},
     paramFields: [],
     crossYearStateKeys: [],
@@ -135,6 +148,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     incomeSource: "budget",
     usesWithdrawalRate: true,
     usesPostRetirementRaise: true,
+    reactsToVolatility: true,
     defaultParams: {},
     paramFields: [],
     crossYearStateKeys: ["priorYearReturn", "initialWithdrawalAmount"],
@@ -166,6 +180,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     incomeSource: "formula",
     usesWithdrawalRate: false,
     usesPostRetirementRaise: false,
+    reactsToVolatility: false,
     defaultParams: {
       rmdMultiplier: 1.0,
     },
@@ -216,6 +231,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     incomeSource: "rate",
     usesWithdrawalRate: true,
     usesPostRetirementRaise: true,
+    reactsToVolatility: true,
     defaultParams: {
       upperGuardrail: 0.8,
       lowerGuardrail: 1.2,
@@ -317,6 +333,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     incomeSource: "budget",
     usesWithdrawalRate: true,
     usesPostRetirementRaise: false,
+    reactsToVolatility: false,
     defaultParams: {
       annualDeclineRate: 0.02,
     },
@@ -363,6 +380,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     incomeSource: "rate",
     usesWithdrawalRate: false,
     usesPostRetirementRaise: false,
+    reactsToVolatility: false,
     defaultParams: {
       withdrawalPercent: 0.05,
       floorPercent: 0.9,
@@ -425,6 +443,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     incomeSource: "rate",
     usesWithdrawalRate: false,
     usesPostRetirementRaise: false,
+    reactsToVolatility: false,
     defaultParams: {
       withdrawalPercent: 0.05,
       rollingYears: DEFAULT_ENDOWMENT_ROLLING_YEARS,
@@ -500,6 +519,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     incomeSource: "rate",
     usesWithdrawalRate: false,
     usesPostRetirementRaise: false,
+    reactsToVolatility: false,
     defaultParams: {
       basePercent: 0.05,
       ceilingPercent: 0.05,

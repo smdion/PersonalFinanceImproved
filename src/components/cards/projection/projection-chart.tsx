@@ -7,8 +7,8 @@ import {
   TAX_PIE_COLORS,
   CHART_COLORS,
 } from "@/lib/utils/colors";
-import { ChartControls } from "./chart-controls";
 import { formatCurrency, compactCurrency } from "@/lib/utils/format";
+import { buildStrategyEventStyle } from "./utils";
 import type { EngineYearProjection } from "@/lib/calculators/types";
 import {
   ComposedChart,
@@ -32,6 +32,20 @@ import type { ProjectionState } from "./projection-table-types";
 // Skeleton lives in its own file so the parent (cards/projection/index.tsx)
 // can render it without pulling recharts in via this module's import graph.
 export { ProjectionChartSkeleton } from "./projection-chart-skeleton";
+
+// Recognized sporadic per-strategy spending-adjustment events (R45 Step 5 +
+// follow-up) — shared between the early chart-data pinning pass and the
+// later marker-style/tooltip build, so the two can't drift on which action
+// strings are "an event worth marking" vs. background noise. RMD-Based and
+// Spending-Decline fire an action every year (not an event) and are
+// deliberately excluded.
+const STRATEGY_EVENT_KEYS = [
+  "increase",
+  "decrease",
+  "skip_inflation",
+  "ceiling_applied",
+  "floor_applied",
+] as const;
 
 export function ProjectionChart({ state }: { state: ProjectionState }) {
   // Check via `state.result` before destructuring — result truthy always
@@ -71,12 +85,29 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
   const ssIdx = years.findIndex((y) => y.age === ssStartAge);
   const rmdIdx =
     rmdStartAge != null ? years.findIndex((y) => y.age === rmdStartAge) : -1;
+  // R45 Step 5: Guyton-Klinger guardrail events (data already computed and
+  // shown in the table-row tooltip — see projection-table-decum-row.tsx —
+  // just not previously marked on the chart). Pin every triggering year the
+  // same way SS/RMD start ages are pinned, or a guardrail event on an
+  // odd-indexed year would silently vanish from the downsampled chart data.
+  const guardrailIdxs = new Set(
+    years
+      .map((y, i) => ({ y, i }))
+      .filter(
+        ({ y }) =>
+          y.phase === "decumulation" &&
+          y.strategyAction != null &&
+          (STRATEGY_EVENT_KEYS as readonly string[]).includes(y.strategyAction),
+      )
+      .map(({ i }) => i),
+  );
   const filtered = years.filter(
     (_, i) =>
       i % 2 === 0 ||
       i === retIdx ||
       i === ssIdx ||
-      (rmdIdx !== -1 && i === rmdIdx),
+      (rmdIdx !== -1 && i === rmdIdx) ||
+      guardrailIdxs.has(i),
   );
 
   const TAX_KEYS = (["preTax", "taxFree", "hsa", "afterTax"] as const).filter(
@@ -152,9 +183,51 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
         rmdStartAge != null && yr.age === rmdStartAge && yr.rmdAmount > 0
           ? 1
           : 0;
-      datum._ssIncome = yr.ssIncome;
-      datum._rmdAmount = yr.rmdAmount;
-      datum._totalWithdrawal = yr.totalWithdrawal;
+      // All dollar figures below go through deflate() like every other
+      // dollar value this chart renders (balances, MC bands) — previously
+      // raw nominal dollars regardless of the Today's $/Future $ toggle
+      // (advisor review, 2026-08-29 — the table's own tooltip already
+      // deflates the same underlying fields via `dyr.rmdAmount` etc.,
+      // so the chart and table disagreed on every one of these numbers
+      // in "Today's $" mode).
+      datum._ssIncome = deflate(yr.ssIncome, yr.year);
+      datum._rmdAmount = deflate(yr.rmdAmount, yr.year);
+      // R46 Phase 1: RMD-forced excess reinvested into brokerage — unlike
+      // `_rmdStart` (which only flags the single year RMDs begin), this can
+      // be nonzero in ANY decumulation year, so it's shown on hover
+      // whenever it happens, not just at the milestone.
+      datum._rmdExcessAmount = deflate(yr.rmdExcessAmount ?? 0, yr.year);
+      // R46: QCD amount — money sent directly to charity, satisfying part
+      // of the RMD without counting as taxable income. Same "invisible
+      // unless surfaced explicitly" issue as the excess line above; QCD
+      // bypasses withdrawal routing entirely, so there's no slot/
+      // withdrawal line item that would show it otherwise.
+      datum._qcdAmount = deflate(yr.qcdAmount ?? 0, yr.year);
+      // R49: dollars of this year's RMD that could NOT be forced through as
+      // a real taxable distribution — 0 in the overwhelmingly common case.
+      // See rmd-enforcement.ts's rmdShortfallAmount docblock for why this
+      // is now possible (Retirement-only capacity can be genuinely
+      // insufficient once Portfolio-parented balances no longer count).
+      datum._rmdShortfallAmount = deflate(yr.rmdShortfallAmount ?? 0, yr.year);
+      // Real, material unmet-need shortfall (advisor review, 2026-08-28) —
+      // threaded through the same way SS/RMD milestones are so hovering
+      // this exact year shows WHY it's marked, not just that it is.
+      datum._unmetNeedMaterial = yr.unmetNeedMaterial ? 1 : 0;
+      datum._unmetNeed = deflate(yr.unmetNeed ?? 0, yr.year);
+      datum._unmetNeedNonRetirement = deflate(
+        yr.nonRetirementShortfall ?? 0,
+        yr.year,
+      );
+      datum._unmetNeedPenaltyAvoided = deflate(
+        yr.penaltyAvoidedShortfall ?? 0,
+        yr.year,
+      );
+      // Guardrail event (R45 Step 5 follow-up) — the ReferenceLine markers
+      // added a visual "▲ raise" flag on the chart but the hover tooltip
+      // never carried the underlying detail, so hovering that exact year
+      // showed nothing about why it was marked. Threaded through the same
+      // way SS/RMD milestones are.
+      datum._strategyAction = yr.strategyAction ?? "";
     }
 
     return datum;
@@ -179,10 +252,52 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
   // Keep hasMc for backward compat in data building (always build MC data points)
   const hasMc = hasMcData;
 
+  // R45 Step 5 + follow-up: per-strategy spending-adjustment event markers,
+  // one per triggering year. Covers every strategy with a real, SPORADIC
+  // action worth flagging — Guyton-Klinger's guardrails, and Vanguard
+  // Dynamic / Constant % / Endowment's clamp events. RMD-Based and
+  // Spending-Decline fire an action every single year (not an event), so
+  // they're deliberately excluded — marking every year would be noise, not
+  // a signal. Styling/wording factored out to utils.ts so the table
+  // tooltip's own guardrail note (UI/UX review, 2026-08-28) can't drift
+  // from this chart's markers.
+  const STRATEGY_EVENT_STYLE = buildStrategyEventStyle(engineSettings);
+  const strategyEventStyleKeys = Object.keys(STRATEGY_EVENT_STYLE);
+  const guardrailEvents = years
+    .filter(
+      (y): y is Extract<typeof y, { phase: "decumulation" }> =>
+        y.phase === "decumulation" &&
+        y.strategyAction != null &&
+        strategyEventStyleKeys.includes(y.strategyAction),
+    )
+    .map((y) => ({
+      age: y.age,
+      style: STRATEGY_EVENT_STYLE[y.strategyAction as string]!,
+    }));
+
+  // Real, material "the plan called for money it couldn't actually
+  // deliver" years (advisor review, 2026-08-28) — a SEPARATE overlay from
+  // guardrailEvents above, deliberately: a guardrail cut and a genuine
+  // unmet-need shortfall are orthogonal (a GK cut year can ALSO be a
+  // shortfall year), so this can't share guardrailEvents' one-marker-
+  // per-year slot without silently dropping whichever fires second.
+  // unmetNeedMaterial is the engine's own single canonical verdict — see
+  // decumulation-year.ts's docblock for why the raw unmetNeed field alone
+  // isn't reliably floor-filtered.
+  const shortfallEvents = years
+    .filter(
+      (y): y is Extract<typeof y, { phase: "decumulation" }> =>
+        y.phase === "decumulation" && y.unmetNeedMaterial === true,
+    )
+    .map((y) => ({ age: y.age, amount: y.unmetNeed ?? 0 }));
+
   return (
     <div className="bg-surface-sunken rounded-lg p-3 chart-fade-in">
       <div className="flex items-start justify-between mb-2 gap-2">
         <h5 className="text-xs font-medium text-muted uppercase">
+          <span className="text-micro font-semibold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded mr-1.5 normal-case">
+            $
+          </span>
           Balance Projection
           {isPersonFiltered && (
             <span className="text-caption text-faint font-normal normal-case ml-2">
@@ -200,8 +315,20 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
             </span>
           )}
         </h5>
-        <ChartControls state={state} />
       </div>
+      {/* Standalone deterministic shortfall alert (advisor review,
+          2026-08-28) — deliberately its own callout, not a badge grafted
+          onto the Lifetime Income Stability MC ring (that ring is a
+          1000-trial aggregate; this is the single deterministic path
+          actually shown in this chart, a different kind of number). */}
+      {shortfallEvents.length > 0 && (
+        <div className="text-micro text-red-600 bg-red-50 rounded px-2 py-1 mb-2">
+          ⚠ {shortfallEvents.length} year
+          {shortfallEvents.length === 1 ? "" : "s"} in this deterministic
+          projection couldn&apos;t fund the actual spending need — see the
+          marked ages below.
+        </div>
+      )}
       <div className="h-[320px]">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
@@ -231,6 +358,16 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                   (s, k) => s + (Number(d[k.key]) || 0),
                   0,
                 );
+                // R49 (UI/UX design pass): "was the RMD satisfied" status
+                // for the RMD line(s) below. A shortfall breaks the amber
+                // color family entirely since it's the only state with real
+                // IRS excise-tax consequences. Otherwise show a checkmark
+                // whenever the RMD was actually met — not just the
+                // "eventful" excess/QCD case — since silence alone wasn't a
+                // reliable enough signal of "satisfied" (user feedback,
+                // 2026-08-28).
+                const rmdShortfall = Number(d._rmdShortfallAmount) > 0;
+                const rmdSatisfiedNotably = !rmdShortfall;
                 return (
                   <div className="bg-surface-primary text-primary text-xs rounded-md px-3 py-2 shadow-lg max-w-xs">
                     <div className="font-medium mb-1">
@@ -261,18 +398,18 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                     {hasMc && d.mc_p50 != null && (
                       <div className="border-t mt-1 pt-1">
                         <div className="flex justify-between text-purple-300">
-                          <span>Sim. Median</span>
+                          <span>Typical outcome</span>
                           <span className="tabular-nums">
                             {formatCurrency(Number(d.mc_p50))}
                           </span>
                         </div>
-                        <div className="flex justify-between text-purple-400/70">
-                          <span>50%</span>
-                          <span className="tabular-nums">
+                        <div className="text-purple-400/70 mt-0.5">
+                          <div>Likely range:</div>
+                          <div className="tabular-nums">
                             {formatCurrency(Number(d.mc_dp25))}
-                            {" –"}
+                            {" – "}
                             {formatCurrency(Number(d.mc_dp75))}
-                          </span>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -280,8 +417,47 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                     {(Number(d._ssStart) === 1 ||
                       Number(d._rmdStart) === 1 ||
                       Number(d._ssIncome) > 0 ||
-                      Number(d._rmdAmount) > 0) && (
+                      Number(d._rmdAmount) > 0 ||
+                      Number(d._rmdExcessAmount) > 0 ||
+                      Number(d._qcdAmount) > 0 ||
+                      Number(d._unmetNeedMaterial) === 1 ||
+                      rmdShortfall) && (
                       <div className="border-t mt-1 pt-1 space-y-0.5">
+                        {Number(d._unmetNeedMaterial) === 1 && (
+                          <>
+                            <div className="flex justify-between gap-4 font-medium text-red-600">
+                              <span>⚠ Unmet need</span>
+                              <span className="tabular-nums">
+                                -{formatCurrency(Number(d._unmetNeed))}
+                              </span>
+                            </div>
+                            {Number(d._unmetNeedNonRetirement) > 0 && (
+                              <div className="flex justify-between gap-4 text-red-600/70 text-caption">
+                                <span>
+                                  · excluding non-retirement (Portfolio)
+                                  accounts
+                                </span>
+                                <span className="tabular-nums">
+                                  -
+                                  {formatCurrency(
+                                    Number(d._unmetNeedNonRetirement),
+                                  )}
+                                </span>
+                              </div>
+                            )}
+                            {Number(d._unmetNeedPenaltyAvoided) > 0 && (
+                              <div className="flex justify-between gap-4 text-red-600/70 text-caption">
+                                <span>· excluding penalty-exposed money</span>
+                                <span className="tabular-nums">
+                                  -
+                                  {formatCurrency(
+                                    Number(d._unmetNeedPenaltyAvoided),
+                                  )}
+                                </span>
+                              </div>
+                            )}
+                          </>
+                        )}
                         {Number(d._ssStart) === 1 && (
                           <div className="flex justify-between gap-4 text-teal-400 font-medium">
                             <span>Social Security begins</span>
@@ -291,11 +467,23 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                           </div>
                         )}
                         {Number(d._rmdStart) === 1 && (
-                          <div className="flex justify-between gap-4 text-amber-400 font-medium">
-                            <span>RMDs begin</span>
-                            <span className="tabular-nums">
-                              {formatCurrency(Number(d._rmdAmount))}
-                            </span>
+                          <div
+                            className={
+                              rmdShortfall ? "text-red-400" : "text-amber-400"
+                            }
+                          >
+                            <div className="flex justify-between gap-4 font-medium">
+                              <span>RMDs begin</span>
+                              <span className="tabular-nums">
+                                {formatCurrency(Number(d._rmdAmount))}
+                              </span>
+                            </div>
+                            {rmdSatisfiedNotably && (
+                              <div className="text-caption opacity-80">
+                                Your withdrawals covered this required amount in
+                                full.
+                              </div>
+                            )}
                           </div>
                         )}
                         {Number(d._ssStart) !== 1 &&
@@ -309,15 +497,99 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                           )}
                         {Number(d._rmdStart) !== 1 &&
                           Number(d._rmdAmount) > 0 && (
-                            <div className="flex justify-between gap-4 text-amber-400/70 text-caption">
-                              <span>RMD</span>
-                              <span className="tabular-nums">
-                                {formatCurrency(Number(d._rmdAmount))}
-                              </span>
+                            <div
+                              className={
+                                rmdShortfall
+                                  ? "text-red-400"
+                                  : "text-amber-400/70"
+                              }
+                            >
+                              <div className="flex justify-between gap-4 text-caption">
+                                <span>RMD (required withdrawal)</span>
+                                <span className="tabular-nums">
+                                  {formatCurrency(Number(d._rmdAmount))}
+                                </span>
+                              </div>
+                              {rmdSatisfiedNotably && (
+                                <div className="text-micro opacity-80">
+                                  Met in full by your withdrawals.
+                                </div>
+                              )}
                             </div>
                           )}
+                        {/* R49: real IRS exposure — the only RMD-related
+                            state that earns its own extra line, since it's
+                            the only one with actual tax-penalty
+                            consequences. Deliberately breaks the amber
+                            RMD/QCD color family above (red, not amber) to
+                            read as an alarm rather than routine detail. */}
+                        {rmdShortfall && (
+                          <div className="text-red-400/70 text-caption">
+                            Only{" "}
+                            {formatCurrency(
+                              Number(d._rmdAmount) -
+                                Number(d._rmdShortfallAmount),
+                            )}{" "}
+                            of {formatCurrency(Number(d._rmdAmount))} required
+                            met · 25% excise tax risk
+                          </div>
+                        )}
+                        {/* R46: RMD-forced excess — real money forced out
+                            by the RMD floor beyond what the strategy
+                            needed, with no prior UI trace anywhere. Can
+                            recur every year once RMDs start, unlike the
+                            one-time "RMDs begin" milestone above. Wording
+                            (not just the amount) depends on the
+                            household's rmdExcessHandling setting — nothing
+                            was actually reinvested under "spend". */}
+                        {Number(d._rmdExcessAmount) > 0 && (
+                          <div className="flex justify-between gap-4 text-amber-400/70 text-caption">
+                            <span>
+                              {engineSettings?.rmdExcessHandling === "spend"
+                                ? "RMD excess spent"
+                                : "RMD excess reinvested"}
+                            </span>
+                            <span className="tabular-nums">
+                              {engineSettings?.rmdExcessHandling === "spend"
+                                ? ""
+                                : "+"}
+                              {formatCurrency(Number(d._rmdExcessAmount))}
+                            </span>
+                          </div>
+                        )}
+                        {/* R46: QCD — money sent directly to charity,
+                            satisfying part of the RMD tax-free. Shown
+                            separately from "RMD" above since it's the
+                            portion that never became taxable income. */}
+                        {Number(d._qcdAmount) > 0 && (
+                          <div className="flex justify-between gap-4 text-violet-400/70 text-caption">
+                            <span>QCD to charity</span>
+                            <span className="tabular-nums">
+                              {formatCurrency(Number(d._qcdAmount))}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     )}
+                    {/* Strategy event detail — same data the chart's
+                        ReferenceLine markers flag, now actually explained
+                        on hover instead of just labeled. */}
+                    {(() => {
+                      const eventStyle =
+                        typeof d._strategyAction === "string"
+                          ? STRATEGY_EVENT_STYLE[d._strategyAction]
+                          : undefined;
+                      if (!eventStyle) return null;
+                      return (
+                        <div
+                          className="border-t mt-1 pt-1 flex justify-between gap-4 font-medium"
+                          style={{ color: eventStyle.color }}
+                        >
+                          <span>Strategy</span>
+                          <span>{eventStyle.tooltipText}</span>
+                        </div>
+                      );
+                    })()}
                   </div>
                 );
               }}
@@ -469,6 +741,53 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                   }}
                 />
               )}
+
+            {/* Guyton-Klinger guardrail event markers (R45 Step 5) — a
+                household running Guardrails could previously only see
+                which years triggered a raise/cut via the table-row
+                tooltip; now visible at a glance on the chart too. */}
+            {guardrailEvents.map(
+              (ev) =>
+                chartData.some((d) => Number(d.age) === ev.age) && (
+                  <ReferenceLine
+                    key={`guardrail-${ev.age}`}
+                    x={ev.age}
+                    stroke={ev.style.color}
+                    strokeDasharray="2 2"
+                    strokeWidth={1}
+                    label={{
+                      value: ev.style.label,
+                      position: "insideTopRight",
+                      fontSize: CHART_FONT.tiny,
+                      fill: ev.style.color,
+                    }}
+                  />
+                ),
+            )}
+
+            {/* Real, material unmet-need shortfall markers — a SEPARATE
+                overlay from the guardrail-event markers above (see
+                shortfallEvents' docblock); deliberately its own darker red
+                so it reads as a genuine "couldn't fund it" alarm, not
+                another guardrail-style informational marker. */}
+            {shortfallEvents.map(
+              (ev) =>
+                chartData.some((d) => Number(d.age) === ev.age) && (
+                  <ReferenceLine
+                    key={`shortfall-${ev.age}`}
+                    x={ev.age}
+                    stroke={CHART_COLORS.shortfallMarker}
+                    strokeDasharray="2 2"
+                    strokeWidth={1.5}
+                    label={{
+                      value: "⚠ unmet",
+                      position: "insideBottomRight",
+                      fontSize: CHART_FONT.tiny,
+                      fill: CHART_COLORS.shortfallMarker,
+                    }}
+                  />
+                ),
+            )}
           </ComposedChart>
         </ResponsiveContainer>
       </div>
@@ -541,6 +860,15 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
               RMD Start
             </span>
           )}
+        {shortfallEvents.length > 0 && (
+          <span className="flex items-center gap-1">
+            <span
+              className="w-3 h-0.5 rounded"
+              style={{ backgroundColor: CHART_COLORS.shortfallMarker }}
+            />
+            Unmet Need
+          </span>
+        )}
       </div>
     </div>
   );

@@ -15,7 +15,10 @@
 
 import { trpc } from "@/lib/trpc";
 import { toast } from "@/lib/hooks/use-toast";
-import { formatSyncResultToast } from "@/lib/utils/format";
+import {
+  formatSyncResultToast,
+  budgetApiServiceLabel,
+} from "@/lib/utils/format";
 import { useInvalidateBudget } from "./use-invalidate-budget";
 
 export function useSyncMutations() {
@@ -30,7 +33,14 @@ export function useSyncMutations() {
   const syncToApi = trpc.budget.syncBudgetToApi.useMutation({
     onSuccess: (data) => {
       invalidateSummary();
-      toast.success(formatSyncResultToast(data.pushed, "push", "YNAB"));
+      toast.success(
+        formatSyncResultToast(
+          data.pushed,
+          "push",
+          budgetApiServiceLabel(data.service),
+          data.skippedUnsupported,
+        ),
+      );
     },
   });
 

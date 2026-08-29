@@ -4,6 +4,7 @@
 //
 // Philosophy: Config declares, code executes. The engine imports these
 // tables and never hardcodes RMD-specific knowledge.
+import { roundToCents } from "../utils/math";
 
 /** IRS Uniform Lifetime Table — divisor by age (ages 72–120). */
 export const UNIFORM_LIFETIME_TABLE: Record<number, number> = {
@@ -66,6 +67,25 @@ export function getRmdFactor(age: number): number | null {
   if (age < 72) return null;
   if (age > 120) return UNIFORM_LIFETIME_TABLE[120] ?? null;
   return UNIFORM_LIFETIME_TABLE[age] ?? null;
+}
+
+/**
+ * The RMD formula itself — prior-year-end Traditional balance ÷ the
+ * Uniform Lifetime Table divisor for this year's age. Extracted so
+ * rmd-enforcement.ts's real per-year enforcement and
+ * decumulation-year.ts's per-person QCD-ordering hoist (which needs the
+ * amount before enforceRmd runs) can't independently drift on the same
+ * formula (advisor review, 2026-08-29 — Single Computation Path,
+ * docs/RULES.md). Returns null when there's no valid divisor for `age`
+ * (below the table) — callers decide what "no RMD" means for their case.
+ */
+export function computeRmdAmount(
+  priorYearEndTradBalance: number,
+  age: number,
+): number | null {
+  const factor = getRmdFactor(age);
+  if (factor == null || factor <= 0) return null;
+  return roundToCents(priorYearEndTradBalance / factor);
 }
 
 /**

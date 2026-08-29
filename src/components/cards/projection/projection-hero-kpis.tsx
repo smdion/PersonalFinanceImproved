@@ -7,6 +7,11 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency } from "@/lib/utils/format";
 import type { ProjectionState } from "./projection-table-types";
 import { CoastFireCard } from "@/components/cards/coast-fire-card";
+import {
+  WITHDRAWAL_STRATEGY_CONFIG,
+  type WithdrawalStrategyType,
+} from "@/lib/config/withdrawal-strategies";
+import { MC_STRATEGY_STABILITY_GAP_ALERT_THRESHOLD } from "@/lib/constants";
 
 // ---------------------------------------------------------------------------
 // Unified card chrome — matches projection-mc-results.tsx summary bar
@@ -124,7 +129,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
     debouncedBaseInput,
     scenarioView,
     coastFireMcQuery,
-    activeCoastFireMcResult,
+    activeAltMcResult,
   } = state;
 
   const currentAge = result.projectionByYear[0]?.age ?? 0;
@@ -148,19 +153,21 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
     peakPt ? peakPt.balance : peakYear.endBalance,
     peakYear.year,
   );
-  // When scenarioView is a Coast FIRE variant, swap the MC data source so
-  // all the hero KPIs — Portfolio Survival, Income Stability, Nest Egg, End
-  // Balance — reflect that scenario, not the baseline plan. Reads the
-  // SAME `activeCoastFireMcResult` use-projection-queries.ts and
-  // use-projection-derived.ts consume — previously hand-derived a third
-  // time here with its own copy of the scenarioView ternary, which risked
-  // silently disagreeing with the other two on a future scenarioView
-  // change (code review, 2026-08-27). Intentionally null while coast MC is
-  // loading — the existing `!mc && mcLoading` skeleton branch below
-  // handles the loading state.
+  // When scenarioView is a Coast FIRE variant OR Rate-Seeded, swap the MC
+  // data source so all the hero KPIs — Portfolio Survival, Lifetime Income
+  // Stability, Nest Egg, End Balance — reflect that scenario, not the
+  // baseline plan. Reads the SAME `activeAltMcResult` use-projection-
+  // queries.ts and use-projection-derived.ts consume — previously hand-
+  // derived a third time here with its own copy of the scenarioView
+  // ternary, which risked silently disagreeing with the other two on a
+  // future scenarioView change (code review, 2026-08-27). Intentionally
+  // null while the alt-scenario MC is loading — the existing
+  // `!mc && mcLoading` skeleton branch below handles the loading state.
   const mc =
-    scenarioView === "coastFire" || scenarioView === "coastFireToday"
-      ? (activeCoastFireMcResult ?? null)
+    scenarioView === "coastFire" ||
+    scenarioView === "coastFireToday" ||
+    scenarioView === "rateSeeded"
+      ? (activeAltMcResult ?? null)
       : mcQuery.data?.result && !mcLoading
         ? mcQuery.data.result
         : null;
@@ -205,6 +212,22 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
     const retSpan =
       (engineSettings?.endAge ?? 95) - (engineSettings?.retirementAge ?? 65);
 
+    // R45 Step 3, Finding 5: the long-horizon tip used to blanket-suggest
+    // "a lower withdrawal rate (3-3.5%)" — accurate advice for the budget-
+    // continuation strategies, but there's no user-set rate to lower for
+    // RMD-Based Spending (IRS-formula-driven), and the real knob for
+    // Constant %/Endowment/Vanguard Dynamic is their own Strategy Params
+    // field, not the Initial Withdrawal Rate this tooltip sits near.
+    const activeStrategy = (engineSettings?.withdrawalStrategy ??
+      "fixed") as WithdrawalStrategyType;
+    const strategyMeta = WITHDRAWAL_STRATEGY_CONFIG[activeStrategy];
+    const longHorizonTip =
+      strategyMeta.incomeSource === "formula"
+        ? `Your plan spans ${retSpan} years — longer than the classic 30-year 4% rule. ${strategyMeta.label} has no user-set rate to lower; consider a lower RMD Multiplier in Strategy Params if you want to slow spending.`
+        : strategyMeta.usesWithdrawalRate
+          ? `Your plan spans ${retSpan} years — longer than the classic 30-year 4% rule. Early retirees often need a lower withdrawal rate — for ${strategyMeta.label}, that means a smaller Retirement Budget, not this Initial Withdrawal Rate field.`
+          : `Your plan spans ${retSpan} years — longer than the classic 30-year 4% rule. For ${strategyMeta.label}, the knob to lower is ${strategyMeta.paramFields.find((f) => typeof f.default === "number")?.label ?? "your Strategy Params rate"}, not this Initial Withdrawal Rate field.`;
+
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
         {/* Card 1: Portfolio Survival */}
@@ -215,12 +238,13 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
             "90%+ — Strong. Most planners consider this the target.",
             "75–89% — Moderate. Workable but with meaningful risk.",
             "Below 75% — Elevated risk. Review your assumptions.",
-            ...(retSpan > 30
+            ...(retSpan > 30 ? [longHorizonTip] : []),
+            "For dynamic strategies that reduce spending, see Yearly Income Stability for the full picture.",
+            ...(isPersonFiltered
               ? [
-                  `Your plan spans ${retSpan} years — longer than the classic 30-year 4% rule. Early retirees often need a lower withdrawal rate (3-3.5%).`,
+                  `Always reflects the WHOLE household, not just ${personFilterName} — a simulated trial's survival depends on your shared withdrawal strategy and combined spending, not one person's accounts alone.`,
                 ]
               : []),
-            "For dynamic strategies that reduce spending, see Spending Stability for the full picture.",
           ]}
         >
           <div className="flex flex-col items-center justify-center flex-1 gap-1">
@@ -233,34 +257,58 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
           </div>
         </KpiCard>
 
-        {/* Card 2: Income Stability */}
-        <KpiCard
-          label="Income Stability"
-          tooltip={[
-            "Two views of spending stability — how often your income holds up across simulated futures.",
-            '"vs Strategy": compares against the strategy\'s own year-1 withdrawal. Measures self-consistency.',
-            '"vs Budget": compares against your stated retirement budget. Measures whether your actual needs are met.',
-            "For budget-based strategies (Fixed, Forgo, G-K), both donuts converge — spending IS the budget. For portfolio-linked strategies (Const %, Vanguard), the gap tells the story.",
-          ]}
-        >
-          <div className="flex items-center gap-4 justify-center flex-1">
-            <div className="flex flex-col items-center gap-1">
-              <CompactRing rate={mc.spendingStabilityRate} size={56} />
-              <div className="text-micro text-faint">vs strategy</div>
-            </div>
-            <div className="flex flex-col items-center gap-1">
-              <CompactRing
-                rate={
-                  hasBudgetStability
-                    ? mc.budgetStabilityRate!
-                    : mc.spendingStabilityRate
-                }
-                size={56}
-              />
-              <div className="text-micro text-faint">vs budget</div>
-            </div>
-          </div>
-        </KpiCard>
+        {/* Card 2: Lifetime Income Stability */}
+        {(() => {
+          // Advisor review, 2026-08-28: when "vs strategy" trails Portfolio
+          // Survival by a real margin, something is forcing deviations
+          // from the strategy's own plan even though the money survives —
+          // worth flagging urgently. This is an MC-vs-MC comparison (both
+          // numbers come from the same run), unlike a deterministic
+          // unmet-need alert, which gets its own separate affordance
+          // rather than being grafted onto this MC statistic.
+          const strategyGapUrgent =
+            mc.successRate - mc.spendingStabilityRate >
+            MC_STRATEGY_STABILITY_GAP_ALERT_THRESHOLD;
+          return (
+            <KpiCard
+              label="Lifetime Income Stability"
+              tooltip={[
+                '% of simulated futures where income NEVER dropped below the 75% floor, in ANY year, across your entire retirement — a much stricter bar than "how does a typical year look," since it only takes one bad year, in one simulated future, to fail. See the Yearly Income Stability chart for the year-by-year detail behind this number.',
+                '"vs Strategy": compares against the strategy\'s own target for each year. Measures self-consistency.',
+                '"vs Budget": compares against your stated retirement budget. Measures whether your actual needs are met.',
+                "For budget-based strategies (Fixed, Forgo, G-K), both donuts converge — spending IS the budget. For portfolio-linked strategies (Const %, Vanguard), the gap tells the story.",
+                ...(strategyGapUrgent
+                  ? [
+                      `⚠ Your money survives in ${(mc.successRate * 100).toFixed(0)} out of 100 simulated futures, but only ${(mc.spendingStabilityRate * 100).toFixed(0)} out of 100 stick to your strategy's own year-by-year plan the whole way through. In the other ${((mc.successRate - mc.spendingStabilityRate) * 100).toFixed(0)}, something forces at least one year's withdrawal off-plan — most likely a Required Minimum Distribution (RMD) later in retirement, pulling out more than the strategy itself wanted. Open the Yearly Income Stability chart to see which years.`,
+                    ]
+                  : []),
+              ]}
+            >
+              <div className="flex items-center gap-4 justify-center flex-1">
+                <div className="flex flex-col items-center gap-1">
+                  <CompactRing rate={mc.spendingStabilityRate} size={56} />
+                  <div
+                    className={`text-micro flex items-center gap-0.5 ${strategyGapUrgent ? "text-red-500 font-medium" : "text-faint"}`}
+                  >
+                    {strategyGapUrgent && <span>⚠</span>}
+                    vs strategy
+                  </div>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <CompactRing
+                    rate={
+                      hasBudgetStability
+                        ? mc.budgetStabilityRate!
+                        : mc.spendingStabilityRate
+                    }
+                    size={56}
+                  />
+                  <div className="text-micro text-faint">vs budget</div>
+                </div>
+              </div>
+            </KpiCard>
+          );
+        })()}
 
         {/* Card 3: Nest Egg at Retirement */}
         <KpiCard

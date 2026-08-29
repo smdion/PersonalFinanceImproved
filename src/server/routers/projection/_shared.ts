@@ -196,6 +196,10 @@ export function buildDecumulationDefaults(
   settings: Parameters<typeof buildStrategyParams>[0] & {
     withdrawalRate: string | null;
     withdrawalStrategy: string | null;
+    rmdExcessHandling?: string | null;
+    qcdMaximize?: boolean | null;
+    rmdSmoothingEnabled?: boolean | null;
+    rmdSmoothingMaxBracketTarget?: string | null;
   },
   clientDefaults: {
     withdrawalRoutingMode: string;
@@ -221,6 +225,13 @@ export function buildDecumulationDefaults(
     withdrawalStrategy:
       (settings.withdrawalStrategy as WithdrawalStrategyType) ?? "fixed",
     strategyParams: buildStrategyParams(settings),
+    rmdExcessHandling:
+      settings.rmdExcessHandling === "spend" ? "spend" : "reinvest",
+    qcdMaximize: settings.qcdMaximize ?? false,
+    rmdSmoothingEnabled: settings.rmdSmoothingEnabled ?? false,
+    rmdSmoothingMaxBracketTarget: settings.rmdSmoothingMaxBracketTarget
+      ? toNumber(settings.rmdSmoothingMaxBracketTarget)
+      : undefined,
   };
 }
 

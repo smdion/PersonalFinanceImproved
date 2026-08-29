@@ -11,6 +11,7 @@ export {
 export { PerformanceTable } from "./performance-table";
 export { FinalizeYearModal } from "./finalize-year-modal";
 export { UpdatePerformanceForm } from "./update-performance-form";
+export { UpdateBasisForm } from "./update-basis-form";
 export { AccountPicker } from "./account-picker";
 export { YearRangePicker } from "./year-range-picker";
 export type { YearRange } from "./year-range-picker";

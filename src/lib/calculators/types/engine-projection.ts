@@ -244,6 +244,19 @@ export type ProjectionInput = {
   perPersonBirthYears?: number[];
   /** Annual expenses for decumulation phase. When set, projectedExpenses resets to this value at retirement age. */
   decumulationAnnualExpenses?: number;
+  /** Rate-Seeded scenario (advisor review, 2026-08-28 —
+   *  PLAN-shortfall-alerting-and-strategy-scenario.md Feature B): when
+   *  true, the FIRST decumulation year's spending is seeded from
+   *  `decumulationDefaults.withdrawalRate × portfolio balance` instead of
+   *  from `decumulationAnnualExpenses`/any year-1 budget override —
+   *  ignoring the household's stated budget entirely for the starting
+   *  point. Every subsequent year still runs the SAME active strategy's
+   *  ordinary mechanism (guardrails, decline schedule, etc.) unchanged
+   *  from there — this only changes where year 1 starts, not how the
+   *  strategy evolves afterward. Default false/undefined is byte-
+   *  identical to today's behavior for every existing household — no
+   *  `PROJECTION_CACHE_ENGINE_VERSION` bump needed for this addition. */
+  rateSeededDecumulationYear1?: boolean;
   asOfDate: Date;
 };
 
@@ -325,8 +338,24 @@ export type EngineDecumulationYear = {
   year: number;
   age: number;
   phase: "decumulation";
-  /** Projected annual expenses (inflated or budget-overridden). */
+  /** Projected annual expenses (inflated or budget-overridden). For a
+   *  reactive strategy (Guyton-Klinger, Forgo Inflation After Loss,
+   *  Spending Decline) this is overwritten by that strategy's own
+   *  guardrail-adjusted target every year — use `budgetOnlyExpenses`
+   *  instead when you need the household's actual stated budget,
+   *  untouched by the strategy. */
   projectedExpenses: number;
+  /** The TRUE budget trajectory (inflation/raise growth + manual per-year
+   *  overrides only — never a reactive strategy's guardrail adjustment).
+   *  For Fixed (which never dispatches to a reactive strategy) this always
+   *  equals `projectedExpenses`; for Guyton-Klinger/Forgo/Spending-Decline
+   *  it diverges from `projectedExpenses` as soon as the strategy first
+   *  adjusts spending away from budget. This is what "vs Budget" chart/KPI
+   *  comparisons should read — comparing against `projectedExpenses` for
+   *  those strategies silently collapses "vs Budget" into being identical
+   *  to "vs Strategy" (live-user finding, 2026-08-28: both KPI rings
+   *  showing the same percentage). See ProjectionLoopState.budgetOnlyExpenses. */
+  budgetOnlyExpenses: number;
   hasBudgetOverride: boolean;
   /** Brokerage (Portfolio-category) contributions that continue post-retirement. */
   brokerageContribution: number;
@@ -369,6 +398,15 @@ export type EngineDecumulationYear = {
    *  rather than silently drawing penalized money. Populated by all three
    *  routing modes. */
   unmetNeed?: number;
+  /** Single canonical "is `unmetNeed` a REAL shortfall" verdict (advisor
+   *  review, 2026-08-28) — `unmetNeed` alone isn't reliably floor-filtered
+   *  (its `routedUnmetNeed` fallback branch never applies the materiality
+   *  floor, so a rounding-scale residual can read as `unmetNeed > 0`
+   *  without being material). UI alerting (chart marker, table line, KPI
+   *  urgency) must all key off THIS field rather than re-deriving their
+   *  own materiality threshold — see decumulation-year.ts's
+   *  `shortfallMaterialityFloor` for why $50-or-1%-of-need is the bar. */
+  unmetNeedMaterial?: boolean;
   /** Portion of `unmetNeed` attributable specifically to excluding
    *  penalty-exposed money, not to the household being broke (§ Q3/C2) —
    *  see `RouteResult`'s docblock in `withdrawal-routing.ts` for the exact
@@ -376,6 +414,13 @@ export type EngineDecumulationYear = {
    *  this field isolates the penalty-avoidance portion so the two are
    *  never conflated. */
   penaltyAvoidedShortfall?: number;
+  /** Portion of `unmetNeed` attributable specifically to excluding
+   *  Portfolio-parented ("non-retirement") money (R49) — see
+   *  `RouteResult`'s docblock in `withdrawal-routing.ts` for the exact
+   *  contract. Same isolation principle as `penaltyAvoidedShortfall`: a
+   *  household can be short for this reason, the penalty-avoidance reason,
+   *  both, or neither. */
+  nonRetirementShortfall?: number;
   /** Early-withdrawal penalty cost actually charged this year (§ Q5) —
    *  0 in the overwhelming default case, since `avoidPenalizedWithdrawals:
    *  true` already excludes penalty-exposed money from routing. Nonzero
@@ -404,6 +449,41 @@ export type EngineDecumulationYear = {
   rmdByPerson?: { personId: number; personName: string; amount: number }[];
   /** True if the RMD forced additional Traditional withdrawals beyond what routing chose. */
   rmdOverrodeRouting: boolean;
+  /** R49: dollars of `rmdAmount` that could NOT be forced through as a real
+   *  taxable distribution — 0 in the overwhelmingly common case. Real IRS
+   *  exposure (a 25% excise tax applies to the shortfall), not a display
+   *  nicety: possible now that Retirement-only Traditional capacity can be
+   *  genuinely insufficient to cover a real RMD requirement (Portfolio-
+   *  parented balances no longer count). See `rmd-enforcement.ts`'s
+   *  `RmdEnforcementResult.rmdShortfallAmount` docblock. */
+  rmdShortfallAmount: number;
+  /** R46: dollars of RMD-forced excess (beyond the strategy's stated need +
+   *  tax cost) this year — 0 in the overwhelmingly common case
+   *  (`rmdOverrodeRouting` false, or the RMD didn't exceed need). What
+   *  happened to it depends on the household's `rmdExcessHandling`
+   *  setting (see `ResolvedDecumulationConfig`) — reinvested into
+   *  brokerage (default) or spent; this field is the dollar amount either
+   *  way, not a statement of which. Previously computed and silently
+   *  discarded — this money is real, forced out of Traditional by the RMD
+   *  floor regardless of what the strategy needed, with no prior UI
+   *  trace. */
+  rmdExcessAmount: number;
+  /** R47: portion of this year's combined household RMD-smoothing target
+   *  (see `rmd-smoothing.ts`) that did NOT end up converted — undefined
+   *  when smoothing is off or had nothing to convert, 0 in the common
+   *  case when smoothing is on and fully achieved. A real, expected
+   *  shortfall (elevated ceiling, IRMAA-cliff cap, or available balance
+   *  still wasn't enough), not silently dropped. See
+   *  `RothConversionResult.rmdSmoothingShortfall` docblock. */
+  rmdSmoothingShortfall?: number;
+  /** R46 Phase 2: total Qualified Charitable Distribution amount applied
+   *  this year (0 unless `qcdMaximize` is on and this household has a
+   *  QCD-eligible RMD). Satisfies that much of `rmdAmount` directly,
+   *  excluded from taxable income — see `qcd.ts` for the approximation
+   *  this uses. */
+  qcdAmount: number;
+  /** Per-person QCD breakdown, when nonzero. */
+  qcdByPerson?: { personId: number; qcdAmount: number }[];
   // --- SS Tax fields (Phase 2) ---
   /** Taxable portion of Social Security income (IRS provisional income formula). */
   taxableSS: number;
@@ -450,8 +530,16 @@ export type ProjectionResult = {
   /** The year the portfolio is projected to run out (null if it never does). */
   portfolioDepletionYear: number | null;
   portfolioDepletionAge: number | null;
-  /** Sustainable annual withdrawal at retirement (portfolio × withdrawal rate). */
+  /** Sustainable annual withdrawal at retirement (portfolio × withdrawal rate).
+   *  Not what any strategy actually spends — a reference "4%-rule-style" figure. */
   sustainableWithdrawal: number;
+  /** The household's stated retirement need (decumulationAnnualExpenses),
+   *  inflated by CPI to the first decumulation year's nominal dollars —
+   *  same formula pre-year-setup.ts uses to seed year-1 spending, before any
+   *  strategy adjusts it. Null when no retirement budget is set. Used to
+   *  check a strategy's actual spending against the household's real need,
+   *  independent of `sustainableWithdrawal` (see coast-fire.ts). */
+  firstDecumulationYearStatedNeed: number | null;
   /** Per-account depletion tracking: first year each account category hits zero. */
   accountDepletions: {
     category: AccountCategory;

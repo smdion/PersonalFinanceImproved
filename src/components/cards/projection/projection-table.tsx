@@ -67,6 +67,7 @@ export function ProjectionTable({
     result,
     deflate,
     renderTooltip,
+    hasIndividualAccountData,
   } = state;
 
   // Shared MC cell rendering options — passed to row components
@@ -87,6 +88,14 @@ export function ProjectionTable({
           Showing {personFilterName}&apos;s accounts only.
         </div>
       )}
+      {result && !hasIndividualAccountData && (
+        <div className="text-caption text-faint mb-1">
+          This scenario uses Simple tax mode, which doesn&apos;t track
+          individual accounts — the Balance column below is your real total, but
+          a Traditional/Roth/HSA/After-Tax breakdown isn&apos;t available.
+          Switch to Advanced tax mode to see your real account split.
+        </div>
+      )}
       {result && (
         <>
           <div className="flex items-center gap-2 flex-wrap mb-2">
@@ -102,20 +111,20 @@ export function ProjectionTable({
                 label="Tax Type"
               />
             </LabeledPillGroup>
-            <div className="w-px h-4 bg-surface-strong" />
-            <LabeledPillGroup label="Balances">
-              <PillBtn
-                active={balanceView === "taxType"}
-                onClick={() => setBalanceView("taxType")}
-                label="Tax Type"
-              />
-              <PillBtn
-                active={balanceView === "account"}
-                onClick={() => setBalanceView("account")}
-                label="Account"
-              />
-            </LabeledPillGroup>
-            <div className="w-px h-4 bg-surface-strong" />
+            {hasIndividualAccountData && (
+              <LabeledPillGroup label="Balances">
+                <PillBtn
+                  active={balanceView === "taxType"}
+                  onClick={() => setBalanceView("taxType")}
+                  label="Tax Type"
+                />
+                <PillBtn
+                  active={balanceView === "account"}
+                  onClick={() => setBalanceView("account")}
+                  label="Account"
+                />
+              </LabeledPillGroup>
+            )}
             <Toggle
               label="All years"
               isChecked={showAllYears}
@@ -182,9 +191,11 @@ export function ProjectionTable({
                     className="text-center py-1 text-caption text-faint font-semibold uppercase tracking-wider border-l border-subtle"
                   >
                     Balances{" "}
-                    {balanceView === "account"
-                      ? "(by Account)"
-                      : "(by Tax Type)"}
+                    {hasIndividualAccountData
+                      ? balanceView === "account"
+                        ? "(by Account)"
+                        : "(by Tax Type)"
+                      : ""}
                   </th>
                   {mcBandsByYear && (
                     <th className="text-center py-1 text-caption text-faint font-semibold uppercase tracking-wider border-l border-subtle">
@@ -385,7 +396,12 @@ export function ProjectionTable({
         </>
       )}
 
-      <ContribMethodologySection state={state} />
+      {/* R42: methodology links/validation-evidence are engine-internal
+          detail, not report content — the print report's own "Behind the
+          Scenes" section covers assumptions instead. */}
+      <div className="print:hidden">
+        <ContribMethodologySection state={state} />
+      </div>
     </>
   );
 }

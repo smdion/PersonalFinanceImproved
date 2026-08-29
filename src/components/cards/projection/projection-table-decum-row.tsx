@@ -22,6 +22,7 @@ import {
   getAccountTypeConfig,
   ACCOUNT_TYPE_CONFIG,
   isTaxFreeBucket,
+  isIraCategory,
 } from "@/lib/config/account-types";
 import type { TipColor, TooltipLineItem } from "./types";
 import {
@@ -38,6 +39,7 @@ import {
   lumpSumsForBucket,
   lumpSumsForCategory,
   lumpSumTotal,
+  buildStrategyEventStyle,
 } from "./utils";
 import type { ProjectionState } from "./projection-table-types";
 import {
@@ -358,10 +360,61 @@ export function DecumulationRow({
                         color: "emerald",
                       });
                     }
+                    // R46: RMD-forced excess (beyond stated spending need)
+                    // — real money, forced out of Traditional by the RMD
+                    // floor regardless of what the strategy needed,
+                    // previously invisible anywhere in the UI. What
+                    // happened to it depends on the household's
+                    // rmdExcessHandling setting: "reinvest" (default)
+                    // actually credits this account (overflow target,
+                    // always brokerage), so shown as a real "+" line there;
+                    // "spend" never credits any account (the household
+                    // consumed it), so shown as an informational note
+                    // instead, not implied to have landed in this balance.
+                    const rmdExcess = yr.rmdExcessAmount ?? 0;
+                    const rmdMode = engineSettings?.rmdExcessHandling;
+                    if (
+                      rmdExcess > 0.01 &&
+                      ACCOUNT_TYPE_CONFIG[cat].isOverflowTarget
+                    ) {
+                      if (rmdMode === "spend") {
+                        items.push({
+                          label: "RMD excess spent (not reinvested)",
+                          amount: deflate(rmdExcess, yr.year),
+                          color: "gray",
+                        });
+                      } else {
+                        items.push({
+                          label: "RMD excess reinvested",
+                          amount: deflate(rmdExcess, yr.year),
+                          prefix: "+",
+                          color: "amber",
+                        });
+                      }
+                    }
+                    // R46: Qualified Charitable Distribution — money sent
+                    // directly from this account to charity, satisfying
+                    // part of the RMD without counting as taxable income.
+                    // Real money leaving the account (a "-" like any other
+                    // withdrawal), but was completely invisible previously
+                    // — QCD bypasses withdrawal routing entirely (it's
+                    // deducted before routing even runs), so there was no
+                    // slot/withdrawal line item anywhere that would have
+                    // shown it. Only ever deducted from "ira" (QCDs are
+                    // IRA-only under current law).
+                    const qcdAmount = yr.qcdAmount ?? 0;
+                    if (qcdAmount > 0.01 && isIraCategory(cat)) {
+                      items.push({
+                        label: "QCD to charity (excluded from taxable income)",
+                        amount: deflate(qcdAmount, yr.year),
+                        prefix: "-",
+                        color: "violet",
+                      });
+                    }
                     const catLumpTotal = lumpSumTotal(catLumps);
                     return renderTooltip({
                       kind: "money",
-                      header: `${catDisplayLabel[cat] ?? cat}${catLumpTotal > 0 ? " Activity" : " Withdrawals"}`,
+                      header: `${catDisplayLabel[cat] ?? cat}${catLumpTotal > 0 || rmdExcess > 0.01 || qcdAmount > 0.01 ? " Activity" : " Withdrawals"}`,
                       items: items.length > 0 ? items : undefined,
                       withdrawals:
                         wd > 0 && items.length === 0
@@ -665,16 +718,57 @@ export function DecumulationRow({
             : hasSs
               ? `Incl. SS income — ${formatCurrency(deflate(dyr.ssIncome, yr.year))}/yr${ssDetail ? ` (${ssDetail})` : ""}`
               : undefined;
-          const rmdMeta = isRmdStartRow
-            ? `RMDs begin — ${formatCurrency(deflate(dyr.rmdAmount, yr.year))} required`
-            : hasRmd
-              ? `RMD: ${formatCurrency(deflate(dyr.rmdAmount, yr.year))}`
-              : undefined;
+          // R47 follow-up: full satisfaction status (checkmark/shortfall/
+          // excess wording), not just the bare amount — parity with the
+          // chart tooltip's rmd block (see tooltip-renderer.tsx). Checkmark
+          // shows whenever the RMD was actually met, not just the notable
+          // excess/QCD case — silence isn't a reliable enough signal of
+          // "satisfied" on its own (user feedback, 2026-08-28).
+          const rmdShortfallAmount = dyr.rmdShortfallAmount ?? 0;
+          const rmdExcessAmount = dyr.rmdExcessAmount ?? 0;
+          const rmdSatisfied = rmdShortfallAmount <= 0;
           return renderTooltip({
             kind: "money",
             header: "Total Withdrawals",
             meta: ssMeta,
-            meta2: rmdMeta,
+            shortfall: dyr.unmetNeedMaterial
+              ? {
+                  amount: deflate(dyr.unmetNeed ?? 0, yr.year),
+                  nonRetirementAmount:
+                    (dyr.nonRetirementShortfall ?? 0) > 0
+                      ? deflate(dyr.nonRetirementShortfall!, yr.year)
+                      : undefined,
+                  penaltyAvoidedAmount:
+                    (dyr.penaltyAvoidedShortfall ?? 0) > 0
+                      ? deflate(dyr.penaltyAvoidedShortfall!, yr.year)
+                      : undefined,
+                }
+              : undefined,
+            rmd: hasRmd
+              ? {
+                  amount: deflate(dyr.rmdAmount, yr.year),
+                  isStartYear: isRmdStartRow,
+                  satisfiedNotably: rmdSatisfied,
+                  shortfallAmount: deflate(rmdShortfallAmount, yr.year),
+                  excessAmount: deflate(rmdExcessAmount, yr.year),
+                  excessMode:
+                    engineSettings?.rmdExcessHandling === "spend"
+                      ? "spend"
+                      : "reinvest",
+                  qcdAmount:
+                    (dyr.qcdAmount ?? 0) > 0
+                      ? deflate(dyr.qcdAmount!, yr.year)
+                      : undefined,
+                }
+              : undefined,
+            strategyEvent: (() => {
+              if (!dyr.strategyAction) return undefined;
+              const style =
+                buildStrategyEventStyle(engineSettings)[dyr.strategyAction];
+              return style
+                ? { color: style.color, text: style.tooltipText }
+                : undefined;
+            })(),
             items: items.length > 0 ? items : undefined,
             growth:
               Math.abs(totalGrowth) > 1
@@ -802,6 +896,40 @@ export function DecumulationRow({
                       color: "emerald",
                     });
                   }
+                  // R46: same RMD-excess / QCD visibility as the
+                  // contribution-view tooltips (per user follow-up — the
+                  // BALANCE tooltip needs to explain its own number too,
+                  // not just the contribution/withdrawal column). afterTax
+                  // is where reinvested excess actually lands (or would
+                  // have, under "spend"); preTax is where QCD money left
+                  // from.
+                  const bucketRmdExcess = yr.rmdExcessAmount ?? 0;
+                  const bucketRmdMode = engineSettings?.rmdExcessHandling;
+                  if (bucket === "afterTax" && bucketRmdExcess > 0.01) {
+                    if (bucketRmdMode === "spend") {
+                      wdLineItems.push({
+                        label: "RMD excess spent (not reinvested)",
+                        amount: deflate(bucketRmdExcess, yr.year),
+                        color: "gray",
+                      });
+                    } else {
+                      wdLineItems.push({
+                        label: "RMD excess reinvested",
+                        amount: deflate(bucketRmdExcess, yr.year),
+                        prefix: "+",
+                        color: "amber",
+                      });
+                    }
+                  }
+                  const bucketQcd = yr.qcdAmount ?? 0;
+                  if (bucket === "preTax" && bucketQcd > 0.01) {
+                    wdLineItems.push({
+                      label: "QCD to charity (excluded from taxable income)",
+                      amount: deflate(bucketQcd, yr.year),
+                      prefix: "-",
+                      color: "violet",
+                    });
+                  }
                   return renderTooltip({
                     kind: "money",
                     header: `${taxTypeLabel(bucket)}: ${pct}% of portfolio`,
@@ -912,6 +1040,41 @@ export function DecumulationRow({
                     sub: subItems.length > 0 ? subItems : undefined,
                   });
                 }
+              }
+              // R46: same RMD-excess / QCD visibility as the taxType-view
+              // balance tooltips and the contribution-view tooltips —
+              // gated on the account-view column's own category rather
+              // than a fixed bucket, so this fires no matter which
+              // overflow/IRA-category column the segment maps to.
+              const colRmdExcess = yr.rmdExcessAmount ?? 0;
+              const colRmdMode = engineSettings?.rmdExcessHandling;
+              if (
+                colRmdExcess > 0.01 &&
+                ACCOUNT_TYPE_CONFIG[catKey as AccountCategory].isOverflowTarget
+              ) {
+                if (colRmdMode === "spend") {
+                  decAcctItems.push({
+                    label: "RMD excess spent (not reinvested)",
+                    amount: deflate(colRmdExcess, yr.year),
+                    color: "gray",
+                  });
+                } else {
+                  decAcctItems.push({
+                    label: "RMD excess reinvested",
+                    amount: deflate(colRmdExcess, yr.year),
+                    prefix: "+",
+                    color: "amber",
+                  });
+                }
+              }
+              const colQcd = yr.qcdAmount ?? 0;
+              if (colQcd > 0.01 && isIraCategory(catKey)) {
+                decAcctItems.push({
+                  label: "QCD to charity (excluded from taxable income)",
+                  amount: deflate(colQcd, yr.year),
+                  prefix: "-",
+                  color: "violet",
+                });
               }
               // Calculate total withdrawal from slot data (data-driven via colWithdrawal)
               const decTotalWd = colWithdrawal(dyr.slots, col.key);
@@ -1042,7 +1205,7 @@ export function DecumulationRow({
       <td className="py-1.5 pl-2 text-caption text-faint whitespace-nowrap border-l border-subtle">
         {dyr.taxCost > 0 && (
           <Tooltip
-            content="Effective tax rate = total tax / total withdrawal. Traditional taxed at marginal rate, Brokerage at LTCG rate, Roth/HSA tax-free."
+            content="Eff. rate = total tax / total withdrawal. Traditional: marginal rate. Brokerage: LTCG rate. Roth growth beyond basis: ordinary rate. Once at the bracket cap, the engine picks whichever's cheaper that year."
             side="left"
             maxWidth={240}
           >

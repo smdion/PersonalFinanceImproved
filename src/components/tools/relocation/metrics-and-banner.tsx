@@ -22,11 +22,15 @@ export function RelocationMetricsAndBanner({
   engineResult,
   moveYear,
 }: Props) {
-  // Use engine's relocationFiTarget when loaded so the "Additional Nest Egg"
-  // value is consistent with the subtitle arrows (same target in both places).
+  // Use the engine's pair of FI targets together, or the calculator's pair
+  // together — never mix one engine-derived value with one calculator-derived
+  // value, since that was silently subtracting two different formulas
+  // (Single Computation Path violation).
   const relocFiTarget =
     engineResult?.relocationFiTarget ?? r.relocationFiTarget;
-  const additionalNestEggNeeded = relocFiTarget - r.currentFiTarget;
+  const currentFiTargetForDelta =
+    engineResult?.currentFiTarget ?? r.currentFiTarget;
+  const additionalNestEggNeeded = relocFiTarget - currentFiTargetForDelta;
 
   const hasBlended = moveYear !== null && engineResult?.blendedRows != null;
 
@@ -68,7 +72,7 @@ export function RelocationMetricsAndBanner({
             {formatCurrency(additionalNestEggNeeded)}
           </div>
           <div className="text-xs text-faint">
-            Target: {formatCurrency(r.currentFiTarget)} →{" "}
+            Target: {formatCurrency(currentFiTargetForDelta)} →{" "}
             {formatCurrency(relocFiTarget)}
           </div>
         </div>

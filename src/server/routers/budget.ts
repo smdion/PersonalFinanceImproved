@@ -54,6 +54,7 @@ import {
   getClientForService,
   cacheGet,
   refreshCategoryCache,
+  BudgetApiError,
 } from "@/lib/budget-api";
 import type { BudgetCategoryGroup, BudgetMonthDetail } from "@/lib/budget-api";
 import { YNAB_INTERNAL_GROUPS } from "@/lib/budget-api";
@@ -1826,6 +1827,16 @@ export const budgetRouter = createTRPCRouter({
         .where(eq(schema.budgetItems.profileId, profile.id));
 
       let pushed = 0;
+      // Counted separately from a hard failure below — the provider
+      // COULDN'T perform this specific write, either because it has no API
+      // for the operation at all ("unsupported") or because the target
+      // already has incompatible state that can't be safely merged into
+      // ("conflict" — see ActualClient.updateCategoryGoalTarget /
+      // actual-goal-notes.ts). Caught per-item (not left to abort the whole
+      // loop) so one such item can't hide whether OTHER items pushed, and
+      // so the caller can tell "nothing to push" apart from "this item
+      // couldn't be pushed".
+      let skippedUnsupported = 0;
       for (const item of items) {
         if (!item.apiCategoryId) continue;
         if (
@@ -1839,7 +1850,18 @@ export const budgetRouter = createTRPCRouter({
         const amount = amounts[colIdx] ?? 0;
 
         // Push as YNAB goal target (plan-level, not month-specific)
-        await client.updateCategoryGoalTarget(item.apiCategoryId, amount);
+        try {
+          await client.updateCategoryGoalTarget(item.apiCategoryId, amount);
+        } catch (err) {
+          if (
+            err instanceof BudgetApiError &&
+            (err.code === "unsupported" || err.code === "conflict")
+          ) {
+            skippedUnsupported++;
+            continue;
+          }
+          throw err;
+        }
         await ctx.db
           .update(schema.budgetItems)
           .set({ apiLastSyncedAt: new Date() })
@@ -1863,7 +1885,7 @@ export const budgetRouter = createTRPCRouter({
         }
       }
 
-      return { pushed };
+      return { pushed, skippedUnsupported, service: active };
     }),
 
   /** Get API actuals for linked budget items (activity + balance from cached month data). */

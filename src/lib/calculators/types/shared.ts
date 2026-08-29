@@ -149,6 +149,22 @@ export type IndividualAccountInput = {
    *  advisor review (Rule-of-55-ineligible isn't the same as locked; the
    *  59½ path must still apply). */
   ruleOf55ForceIneligible?: boolean;
+  /** Household is fine paying the 10%/20% early-withdrawal penalty on THIS
+   *  account when the projection needs to draw from it (R41). Makes this
+   *  account's penalty-exposed balance normally withdrawable — NOT a
+   *  strict last-resort guarantee; ordinary routing order still decides
+   *  when it's drawn (see `performanceAccounts.allowPenalizedWithdrawals`'s
+   *  docblock, `schema-pg.ts`, for the full contract and the tracked
+   *  follow-up for true last-resort ordering). Only ever set `true` —
+   *  omitted entirely for the default (no override) case, same cache-hash-
+   *  stability convention as `ruleOf55ForceIneligible` above. Consumed by
+   *  `computeWithdrawalEligibility` (`lib/pure/withdrawal-eligibility.ts`),
+   *  which uses it to compute a second, narrower "still-excluded" aggregate
+   *  that `subtractPenaltyExposed` (`lib/calculators/engine/balance-utils.ts`)
+   *  subtracts instead of the category's full penalty-exposed total — this
+   *  account's exposed dollars stay in the routable pool while every other
+   *  account's stay excluded. */
+  allowPenalizedWithdrawals?: boolean;
 };
 
 /** Per-account balance tracked through the engine projection. */

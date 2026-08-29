@@ -49,6 +49,20 @@ export type Settings = {
   vdCeilingPercent?: string | null;
   vdFloorPercent?: string | null;
   rmdMultiplier?: string | null;
+  /** R46: what to do with RMD-forced withdrawal beyond stated spending
+   *  need — "reinvest" (default) or "spend". */
+  rmdExcessHandling?: string | null;
+  /** R46: automatically maximize Qualified Charitable Distributions
+   *  against the RMD each year (IRA-only, capped, approximation — see
+   *  PLAN-rmd-excess-handling.md). */
+  qcdMaximize?: boolean;
+  /** R47: proactively size Roth conversions to shrink a future RMD toward
+   *  projected spending need. Requires individual-account tracking. */
+  rmdSmoothingEnabled?: boolean;
+  /** R47: how far smoothing may elevate the effective conversion target
+   *  rate above rothBracketTarget/rothConversionTarget — can only raise,
+   *  never lower. Null/unset = UI should seed from rothBracketTarget. */
+  rmdSmoothingMaxBracketTarget?: string | null;
   // Feature flags + filing
   enableIrmaaAwareness?: boolean;
   enableAcaAwareness?: boolean;

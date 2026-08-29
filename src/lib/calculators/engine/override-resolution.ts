@@ -20,6 +20,7 @@ import {
   getAccountTypeConfig,
   buildCategoryRecord,
 } from "../../config/account-types";
+import { RMD_SMOOTHING_MAX_BRACKET_TARGET_FALLBACK } from "../../constants";
 
 const ACCOUNT_CATEGORIES: AccountCategory[] = getAllCategories();
 
@@ -139,6 +140,12 @@ export function resolveDecumulationConfig(
     withdrawalTaxTypeCaps: { traditional: null, roth: null },
     lumpSums: [],
     avoidPenalizedWithdrawals: defaults.avoidPenalizedWithdrawals ?? true,
+    rmdExcessHandling: defaults.rmdExcessHandling ?? "reinvest",
+    qcdMaximize: defaults.qcdMaximize ?? false,
+    rmdSmoothingEnabled: defaults.rmdSmoothingEnabled ?? false,
+    rmdSmoothingMaxBracketTarget:
+      defaults.rmdSmoothingMaxBracketTarget ??
+      RMD_SMOOTHING_MAX_BRACKET_TARGET_FALLBACK,
   };
 
   for (const o of overrides) {
@@ -163,6 +170,12 @@ export function resolveDecumulationConfig(
         withdrawalTaxTypeCaps: { traditional: null, roth: null },
         lumpSums: [],
         avoidPenalizedWithdrawals: defaults.avoidPenalizedWithdrawals ?? true,
+        rmdExcessHandling: defaults.rmdExcessHandling ?? "reinvest",
+        qcdMaximize: defaults.qcdMaximize ?? false,
+        rmdSmoothingEnabled: defaults.rmdSmoothingEnabled ?? false,
+        rmdSmoothingMaxBracketTarget:
+          defaults.rmdSmoothingMaxBracketTarget ??
+          RMD_SMOOTHING_MAX_BRACKET_TARGET_FALLBACK,
       };
       continue;
     }

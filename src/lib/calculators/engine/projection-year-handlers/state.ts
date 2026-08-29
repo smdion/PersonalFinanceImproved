@@ -116,6 +116,7 @@ export function buildProjectionState(
     priorYearEndTradByPerson,
     projectedSalary: input.currentSalary,
     projectedExpenses: input.annualExpenses,
+    budgetOnlyExpenses: input.annualExpenses,
     projectedSalaryByPerson,
     indBal,
     indBasis,

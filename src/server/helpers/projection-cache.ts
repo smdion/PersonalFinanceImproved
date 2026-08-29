@@ -40,7 +40,7 @@ import { log } from "@/lib/logger";
 
 /** Bump when a change to the engine's computation logic could change
  *  output for the same inputs — invalidates all existing cache rows. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 1;
+export const PROJECTION_CACHE_ENGINE_VERSION = 9;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;
@@ -169,6 +169,23 @@ export async function writeProjectionCache(
  *  engine's PRNG and stable once stored. */
 export function generateSeed(): number {
   return Math.floor(Math.random() * 2 ** 31);
+}
+
+/** Unconditionally wipes every cached deterministic/MC/Coast-FIRE row —
+ *  the operational escape hatch for "I need every projection recomputed
+ *  right now" without bumping `PROJECTION_CACHE_ENGINE_VERSION` and
+ *  redeploying (user request, 2026-08-28: bumping the version has been
+ *  the only way to force this all session, which needs a code change +
+ *  deploy for what's really a one-off cache-bust). No `user_id`/household
+ *  scoping column exists on this table (single-tenant app), so this
+ *  clears the whole table by design — the next request per input simply
+ *  recomputes and re-populates it. Returns the row count deleted, for a
+ *  confirmation toast. */
+export async function clearProjectionCache(db: Db): Promise<number> {
+  const deleted = await db
+    .delete(schema.projectionCache)
+    .returning({ id: schema.projectionCache.id });
+  return deleted.length;
 }
 
 async function evictProjectionCache(db: Db): Promise<void> {

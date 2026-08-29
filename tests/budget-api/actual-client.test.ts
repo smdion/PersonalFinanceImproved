@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ActualClient } from "@/lib/budget-api/actual-client";
+import { BudgetApiError } from "@/lib/budget-api/errors";
 
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
@@ -68,7 +69,7 @@ describe("ActualClient", () => {
         }),
       );
       // Second call: /accounts/{id}/balance
-      mockFetch.mockReturnValueOnce(jsonResponse({ data: { balance: 15000 } }));
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: 15000 }));
 
       const accounts = await client.getAccounts();
       expect(accounts).toHaveLength(1);
@@ -123,7 +124,7 @@ describe("ActualClient", () => {
       );
       // Balance calls for each
       for (let i = 0; i < 4; i++) {
-        mockFetch.mockReturnValueOnce(jsonResponse({ data: { balance: 0 } }));
+        mockFetch.mockReturnValueOnce(jsonResponse({ data: 0 }));
       }
 
       const accounts = await client.getAccounts();
@@ -136,50 +137,116 @@ describe("ActualClient", () => {
 
   describe("getAccountBalance", () => {
     it("returns balance in dollars from cents", async () => {
-      mockFetch.mockReturnValueOnce(jsonResponse({ data: { balance: 5000 } }));
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: 5000 }));
       expect(await client.getAccountBalance("acct-1")).toBe(50);
     });
   });
 
   describe("getMonths", () => {
-    it("filters months by date range", async () => {
+    // GET /months returns a bare array of month-id strings, NOT rich
+    // month objects — re-verified live against a deployed actual-http-api
+    // instance (148-entry array of strings like "2027-07"). Real data only
+    // comes from GET /months/:id, so getMonths filters the id list to the
+    // requested range and fetches each one's detail.
+    it("filters month ids by date range, then fetches each one's real detail", async () => {
       mockFetch.mockReturnValueOnce(
-        jsonResponse({
-          data: [
-            {
-              month: "2025-12",
-              income: 500000,
-              budgeted: 400000,
-              spent: -350000,
-              to_budget: 100000,
-            },
-            {
-              month: "2026-01",
-              income: 600000,
-              budgeted: 500000,
-              spent: -450000,
-              to_budget: 50000,
-            },
-            {
-              month: "2026-02",
-              income: 600000,
-              budgeted: 500000,
-              spent: -450000,
-              to_budget: 50000,
-            },
-          ],
-        }),
+        jsonResponse({ data: ["2025-12", "2026-01", "2026-02"] }),
       );
+      const monthDetail = (month: string, totalIncome: number) =>
+        jsonResponse({
+          data: {
+            month,
+            totalIncome,
+            totalBudgeted: -500000,
+            totalSpent: -450000,
+            toBudget: 50000,
+            categoryGroups: [],
+          },
+        });
+      mockFetch.mockReturnValueOnce(monthDetail("2026-01", 600000));
+      mockFetch.mockReturnValueOnce(monthDetail("2026-02", 600000));
+
       const months = await client.getMonths("2026-01", "2026-02");
       expect(months).toHaveLength(2);
       expect(months[0].month).toBe("2026-01");
       expect(months[0].income).toBe(6000); // 600000 cents = $6000
+      // 2025-12 is out of range — only 3 fetch calls total (list + 2 details).
+      expect(mockFetch).toHaveBeenCalledTimes(3);
     });
   });
 
   describe("createTransaction", () => {
-    it("sends correctly formatted payload in cents", async () => {
-      mockFetch.mockReturnValueOnce(jsonResponse({ data: { id: "new-tx" } }));
+    // Real response is `{"message":"ok"}` — confirmed LIVE against a
+    // deployed actual-http-api instance, both with and without imported_id
+    // set. It never returns the created transaction's id, so the client
+    // looks it back up by its own deterministic imported_id immediately
+    // after POSTing — that's what these mocks exercise (POST, then a GET
+    // whose data includes the newly "created" row).
+    it("sends correctly formatted payload in cents, nested under `transaction`", async () => {
+      let sentImportedId = "";
+      mockFetch.mockImplementationOnce(
+        async (_url: string, init: RequestInit) => {
+          sentImportedId = JSON.parse(init.body as string).transaction
+            .imported_id;
+          return jsonResponse({ message: "ok" });
+        },
+      );
+      mockFetch.mockImplementationOnce(async () =>
+        jsonResponse({
+          data: [
+            {
+              id: "new-tx",
+              account: "acct-1",
+              date: "2026-01-20",
+              amount: -5000,
+              cleared: true,
+              reconciled: false,
+              imported_id: sentImportedId,
+            },
+          ],
+        }),
+      );
+
+      await client.createTransaction({
+        accountId: "acct-1",
+        date: "2026-01-20",
+        amount: -50,
+        payeeName: "Store",
+        categoryId: "cat-1",
+        memo: "Test",
+        cleared: true,
+      });
+      const postBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(postBody.transaction.account).toBe("acct-1");
+      expect(postBody.transaction.amount).toBe(-5000); // dollars → cents
+      expect(postBody.transaction.cleared).toBe(true);
+    });
+
+    it("looks the transaction up by imported_id and returns its real id, not the POST response", async () => {
+      const importedIdCapture: { value?: string } = {};
+      mockFetch.mockImplementationOnce(
+        async (_url: string, init: RequestInit) => {
+          importedIdCapture.value = JSON.parse(
+            init.body as string,
+          ).transaction.imported_id;
+          return jsonResponse({ message: "ok" });
+        },
+      );
+      mockFetch.mockImplementationOnce(async () =>
+        jsonResponse({
+          data: [
+            {
+              id: "real-tx-id",
+              account: "acct-1",
+              date: "2026-01-20",
+              amount: -5000,
+              cleared: true,
+              reconciled: false,
+              imported_id: importedIdCapture.value,
+            },
+          ],
+        }),
+      );
       const id = await client.createTransaction({
         accountId: "acct-1",
         date: "2026-01-20",
@@ -189,15 +256,60 @@ describe("ActualClient", () => {
         memo: "Test",
         cleared: true,
       });
-      expect(id).toBe("new-tx");
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-      expect(body.amount).toBe(-5000); // dollars → cents
-      expect(body.cleared).toBe(true);
+      expect(id).toBe("real-tx-id");
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(mockFetch.mock.calls[1][0]).toContain(
+        "/accounts/acct-1/transactions?since_date=2026-01-20",
+      );
+    });
+
+    it("throws when the created transaction can't be found back by imported_id", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ message: "ok" })); // POST
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: [] })); // GET — nothing found
+      await expect(
+        client.createTransaction({
+          accountId: "acct-1",
+          date: "2026-01-20",
+          amount: -50,
+          payeeName: "Store",
+          categoryId: "cat-1",
+          memo: "Test",
+          cleared: true,
+        }),
+      ).rejects.toBeInstanceOf(BudgetApiError);
     });
 
     it("includes a deterministic ledgr-prefixed imported_id (M20)", async () => {
-      mockFetch.mockReturnValueOnce(jsonResponse({ data: { id: "tx-a" } }));
-      mockFetch.mockReturnValueOnce(jsonResponse({ data: { id: "tx-b" } }));
+      const capture: string[] = [];
+      const fakeLookup = () =>
+        jsonResponse({
+          data: [
+            {
+              id: "tx-x",
+              account: "acct-1",
+              date: "2026-01-20",
+              amount: -5000,
+              cleared: true,
+              reconciled: false,
+              imported_id: capture[capture.length - 1],
+            },
+          ],
+        });
+      mockFetch.mockImplementationOnce(
+        async (_url: string, init: RequestInit) => {
+          capture.push(JSON.parse(init.body as string).transaction.imported_id);
+          return jsonResponse({ message: "ok" });
+        },
+      );
+      mockFetch.mockImplementationOnce(fakeLookup);
+      mockFetch.mockImplementationOnce(
+        async (_url: string, init: RequestInit) => {
+          capture.push(JSON.parse(init.body as string).transaction.imported_id);
+          return jsonResponse({ message: "ok" });
+        },
+      );
+      mockFetch.mockImplementationOnce(fakeLookup);
+
       const payload = {
         accountId: "acct-1",
         date: "2026-01-20",
@@ -209,31 +321,87 @@ describe("ActualClient", () => {
       } as const;
       await client.createTransaction(payload);
       await client.createTransaction(payload);
-      const body1 = JSON.parse(mockFetch.mock.calls[0][1].body);
-      const body2 = JSON.parse(mockFetch.mock.calls[1][1].body);
-      expect(body1.imported_id).toMatch(/^ledgr:/);
-      expect(body1.imported_id).toBe(body2.imported_id);
+      expect(capture[0]).toMatch(/^ledgr:/);
+      expect(capture[0]).toBe(capture[1]);
     });
   });
 
   describe("updateTransaction", () => {
-    it("sends partial update with cents conversion", async () => {
+    it("sends partial update with cents conversion, nested under `transaction`", async () => {
       mockFetch.mockReturnValueOnce(jsonResponse({}));
       await client.updateTransaction("tx-1", {
         amount: -75,
         memo: "Updated",
       });
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-      expect(body.amount).toBe(-7500);
-      expect(body.notes).toBe("Updated");
+      expect(body.transaction.amount).toBe(-7500);
+      expect(body.transaction.notes).toBe("Updated");
     });
   });
 
+  // updateCategoryGoalTarget / updateCategoryTargetBalance write via
+  // Actual's note-based #template mechanism — there's no structured goal
+  // field the API can write (verified against @actual-app/api's docs).
+  // See actual-goal-notes.ts for the pure merge logic; these tests cover
+  // the HTTP plumbing (GET note → merge → PUT note) around it.
   describe("updateCategoryGoalTarget", () => {
-    it("is a no-op (Actual does not support goals)", async () => {
-      // Should not throw, should not call fetch
-      await client.updateCategoryGoalTarget("cat-1", 500);
-      expect(mockFetch).not.toHaveBeenCalled();
+    it("appends a fresh #template line when the category has no note yet", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: null })); // GET
+      mockFetch.mockReturnValueOnce(jsonResponse({ message: "ok" })); // PUT
+      await client.updateCategoryGoalTarget("cat-1", 250);
+      const [getCall, putCall] = mockFetch.mock.calls;
+      expect(getCall[0]).toContain("/notes/category/cat-1");
+      expect(putCall[0]).toContain("/notes/category/cat-1");
+      expect(putCall[1].method).toBe("PUT");
+      expect(JSON.parse(putCall[1].body).data).toBe("#template 250");
+    });
+
+    it("replaces just the amount when a matching-shape #template already exists, preserving other note text", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({ data: "Rent category\n#template 100" }),
+      );
+      mockFetch.mockReturnValueOnce(jsonResponse({ message: "ok" }));
+      await client.updateCategoryGoalTarget("cat-1", 175);
+      const putCall = mockFetch.mock.calls[1];
+      expect(JSON.parse(putCall[1].body).data).toBe(
+        "Rent category\n#template 175",
+      );
+    });
+
+    it("throws a BudgetApiError with code 'conflict' and does NOT call PUT when an incompatible #template already exists", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({ data: "#template 10% of Paycheck" }),
+      );
+      await expect(
+        client.updateCategoryGoalTarget("cat-1", 250),
+      ).rejects.toMatchObject({ name: "BudgetApiError", code: "conflict" });
+      expect(mockFetch).toHaveBeenCalledTimes(1); // only the GET
+    });
+
+    it("rejects with a real BudgetApiError instance on conflict (not a generic Error)", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({ data: "#template 10% of Paycheck" }),
+      );
+      await expect(
+        client.updateCategoryGoalTarget("cat-1", 250),
+      ).rejects.toBeInstanceOf(BudgetApiError);
+    });
+  });
+
+  describe("updateCategoryTargetBalance", () => {
+    it("writes an 'up to' template, distinct from the fixed-amount shape", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: null }));
+      mockFetch.mockReturnValueOnce(jsonResponse({ message: "ok" }));
+      await client.updateCategoryTargetBalance("cat-1", 5000);
+      const putCall = mockFetch.mock.calls[1];
+      expect(JSON.parse(putCall[1].body).data).toBe("#template up to 5000");
+    });
+
+    it("a fixed-amount template does not satisfy a target-balance write — treated as conflict, not replaced", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: "#template 100" }));
+      await expect(
+        client.updateCategoryTargetBalance("cat-1", 5000),
+      ).rejects.toMatchObject({ code: "conflict" });
     });
   });
 
@@ -283,24 +451,55 @@ describe("ActualClient", () => {
   });
 
   describe("getMonthDetail", () => {
-    it("maps the month with its categories", async () => {
+    // Real shape re-verified live: totalIncome/totalBudgeted/totalSpent/
+    // toBudget at the top level, categories nested under categoryGroups —
+    // NOT a flat top-level `categories` array. The old flat-shaped mock
+    // (and matching client code) meant this ALWAYS returned an empty
+    // categories array against the real wrapper — see mapMonthDetail's
+    // docblock.
+    it("maps the month summary and flattens categoryGroups into one categories array", async () => {
       mockFetch.mockReturnValueOnce(
         jsonResponse({
           data: {
             month: "2026-01",
-            income: 500000,
-            budgeted: 400000,
-            spent: -350000,
-            to_budget: 100000,
-            categories: [
+            totalIncome: 500000,
+            totalBudgeted: -400000,
+            totalSpent: -350000,
+            toBudget: 100000,
+            categoryGroups: [
               {
-                id: "c1",
-                name: "Rent",
-                group_id: "g1",
+                id: "g1",
+                name: "Housing",
+                is_income: false,
                 hidden: false,
-                budgeted: 150000,
-                spent: -140000,
-                balance: 10000,
+                categories: [
+                  {
+                    id: "c1",
+                    name: "Rent",
+                    group_id: "g1",
+                    hidden: false,
+                    budgeted: 150000,
+                    spent: -140000,
+                    balance: 10000,
+                  },
+                ],
+              },
+              {
+                id: "g2",
+                name: "Food",
+                is_income: false,
+                hidden: false,
+                categories: [
+                  {
+                    id: "c2",
+                    name: "Groceries",
+                    group_id: "g2",
+                    hidden: false,
+                    budgeted: 60000,
+                    spent: -55000,
+                    balance: 5000,
+                  },
+                ],
               },
             ],
           },
@@ -309,17 +508,26 @@ describe("ActualClient", () => {
       const detail = await client.getMonthDetail("2026-01");
       expect(detail.month).toBe("2026-01");
       expect(detail.income).toBe(5000);
-      expect(detail.categories).toHaveLength(1);
+      // totalBudgeted comes back negative from Actual — mapped to a
+      // positive dollar amount matching the per-category convention.
+      expect(detail.budgeted).toBe(4000);
+      expect(detail.categories).toHaveLength(2);
+      expect(detail.categories.map((c) => c.name)).toEqual([
+        "Rent",
+        "Groceries",
+      ]);
+      expect(detail.categories[0].groupName).toBe("Housing");
+      expect(detail.categories[1].groupName).toBe("Food");
     });
   });
 
   describe("updateCategoryBudgeted", () => {
-    it("PATCHes with cents conversion", async () => {
+    it("PATCHes with cents conversion, nested under `category` (actual-http-api's real request shape)", async () => {
       mockFetch.mockReturnValueOnce(jsonResponse({}));
       await client.updateCategoryBudgeted("2026-01", "cat-1", 150);
       const [, init] = mockFetch.mock.calls[0]!;
       expect(init.method).toBe("PATCH");
-      expect(JSON.parse(init.body).budgeted).toBe(15000);
+      expect(JSON.parse(init.body).category.budgeted).toBe(15000);
     });
   });
 

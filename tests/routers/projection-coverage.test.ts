@@ -986,7 +986,7 @@ describe("projection router — computeStrategyComparison", () => {
         expect(strat).toHaveProperty("label");
         expect(strat).toHaveProperty("shortLabel");
         expect(strat).toHaveProperty("portfolioDepletionAge");
-        expect(strat).toHaveProperty("sustainableWithdrawal");
+        expect(strat).not.toHaveProperty("sustainableWithdrawal");
         expect(strat).toHaveProperty("year1Withdrawal");
         expect(strat).toHaveProperty("avgAnnualWithdrawal");
         expect(strat).toHaveProperty("minAnnualWithdrawal");

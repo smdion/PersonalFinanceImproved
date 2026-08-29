@@ -26,6 +26,7 @@ import {
   PerformanceTable,
   FinalizeYearModal,
   UpdatePerformanceForm,
+  UpdateBasisForm,
   AccountPicker,
   YearRangePicker,
   FilteredSummary,
@@ -49,11 +50,13 @@ export default function PerformancePage() {
   const user = useUser();
   const canEdit = hasPermission(user, "performance");
   const { data, isLoading, error } = trpc.performance.computeSummary.useQuery();
+  const { data: freshness } = trpc.settings.getDataFreshness.useQuery();
   const utils = trpc.useUtils();
   const [activeCategory, setActiveCategory] = useState(PERF_CATEGORY_PORTFOLIO);
   const [expandedYears, setExpandedYears] = useState<Set<number>>(new Set());
   const [showFinalizeModal, setShowFinalizeModal] = useState(false);
   const [showUpdatePerformance, setShowUpdatePerformance] = useState(false);
+  const [showUpdateBasis, setShowUpdateBasis] = useState(false);
   const [tableLocked, setTableLocked] = useState(true);
   // Basis columns are hidden by default — most views don't need them, and
   // they add width to every row.
@@ -443,6 +446,11 @@ export default function PerformancePage() {
             {lastSnapshotDate && (
               <span>Last snapshot: {formatDate(lastSnapshotDate)}</span>
             )}
+            {(performanceLastUpdated || lastSnapshotDate) &&
+              freshness?.basisDate && <span>·</span>}
+            {freshness?.basisDate && (
+              <span>Basis updated: {formatDate(freshness.basisDate)}</span>
+            )}
           </div>
         }
       >
@@ -453,6 +461,12 @@ export default function PerformancePage() {
               className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-colors"
             >
               Update Performance
+            </button>
+            <button
+              onClick={() => setShowUpdateBasis(true)}
+              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-colors"
+            >
+              Update Basis
             </button>
             <span className="inline-flex items-center gap-1">
               <button
@@ -543,6 +557,26 @@ export default function PerformancePage() {
             onSaved={() => {
               setShowUpdatePerformance(false);
               utils.performance.computeSummary.invalidate();
+            }}
+          />
+        </SlidePanel>
+      )}
+
+      {canEdit && currentYear && (
+        <SlidePanel
+          isOpen={showUpdateBasis}
+          onClose={() => setShowUpdateBasis(false)}
+          title={`Update Basis (${currentYear})`}
+        >
+          <UpdateBasisForm
+            currentYear={currentYear}
+            accountRows={accountRows}
+            onClose={() => setShowUpdateBasis(false)}
+            onSaved={() => {
+              setShowUpdateBasis(false);
+              utils.performance.computeSummary.invalidate();
+              utils.taxBuckets.computeBreakdown.invalidate();
+              utils.settings.getDataFreshness.invalidate();
             }}
           />
         </SlidePanel>

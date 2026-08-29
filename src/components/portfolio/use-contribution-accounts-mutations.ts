@@ -49,6 +49,7 @@ type PerfAccountRecord = {
   displayOrder: number;
   retirementBehavior: string | null;
   contributionScaling: string | null;
+  allowPenalizedWithdrawals?: boolean | null;
 };
 
 /** Contribution-account fields a Contribution Profile can own (see
@@ -160,6 +161,7 @@ export function useContributionAccountsMutations({
       ownershipType: "individual" | "joint";
       retirementBehavior: string;
       contributionScaling: string;
+      allowPenalizedWithdrawals: boolean;
       isActive: boolean;
     }>,
   ) => {
@@ -198,6 +200,10 @@ export function useContributionAccountsMutations({
         ? updates.contributionScaling
         : (pa.contributionScaling ?? "scales_with_salary")) as
         "scales_with_salary" | "fixed_amount",
+      allowPenalizedWithdrawals:
+        updates.allowPenalizedWithdrawals !== undefined
+          ? updates.allowPenalizedWithdrawals
+          : (pa.allowPenalizedWithdrawals ?? false),
     });
   };
 

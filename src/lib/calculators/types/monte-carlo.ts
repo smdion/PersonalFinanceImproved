@@ -14,6 +14,16 @@ export type MonteCarloPercentileBand = {
   p90: number;
   p95: number;
   mean: number;
+  /** % of trials whose ratio fell below MC_SPENDING_STABILITY_THRESHOLD in
+   *  THIS specific year — only populated on `spendingStabilityBands`
+   *  entries (undefined elsewhere). Percentile bands alone can hide a real,
+   *  concentrated deviation: if only e.g. 8% of trials breach the floor in
+   *  a given year, p25/p50/p75 all stay at 1.0 and the band looks flat even
+   *  though something (an RMD, a bad-luck return sequence) is genuinely
+   *  forcing spending off-plan in those trials. This answers "which years"
+   *  directly instead of requiring the reader to infer it from percentile
+   *  shape. */
+  breachRate?: number;
 };
 
 /** Summary statistics for a distribution of outcomes. */
