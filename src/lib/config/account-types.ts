@@ -471,6 +471,23 @@ export function categoriesWithTaxPreference(): AccountCategory[] {
   );
 }
 
+/** `getEngineCategories() ∩ categoriesWithTaxPreference()` — the
+ *  Traditional-preference categories that actually participate in engine
+ *  routing (advisor review, 2026-08-29, v0.7.10 R51 Gap A finding N3):
+ *  the two source filters are independently maintained and coincide
+ *  today by coincidence, not by construction (every category currently
+ *  has `participatesInEngine: true, engineParent: null`), so a future
+ *  account type with `engineParent` set could silently diverge them.
+ *  Single source of truth for "which Traditional categories does
+ *  bracket_filling's Phase 1 (and its matching UI order editor) actually
+ *  care about" — used by both `withdrawal-routing.ts`'s Phase 1/Roth-tier
+ *  loops and `decumulation-config.tsx`'s "Traditional Account Order"
+ *  sub-control, so the two can't drift on which categories are in scope. */
+export function tradPreferenceEngineCategories(): AccountCategory[] {
+  const engineCats = new Set(getEngineCategories());
+  return categoriesWithTaxPreference().filter((c) => engineCats.has(c));
+}
+
 /** Categories that do NOT support Traditional/Roth split. */
 export function categoriesWithoutTaxPreference(): AccountCategory[] {
   return getAllCategories().filter(

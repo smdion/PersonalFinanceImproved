@@ -160,12 +160,19 @@ const config = [
     },
   },
   {
+    // Tool/plugin-managed directories, not app source — none of these are
+    // committed to the repo (all gitignored or untracked scratch state),
+    // same category as .claude/worktrees/ above.
     ignores: [
       ".next/",
       "node_modules/",
       ".scratch/",
       "coverage/",
       ".claude/worktrees/",
+      ".claude/skills/",
+      ".github/skills/",
+      ".github/agents/",
+      ".github/hooks/",
     ],
   },
 ];

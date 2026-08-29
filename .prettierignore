@@ -1,3 +1,7 @@
 pnpm-lock.yaml
 .claude/worktrees/
+.claude/skills/
+.github/skills/
+.github/agents/
+.github/hooks/
 pre-upgrade-backup-*.json

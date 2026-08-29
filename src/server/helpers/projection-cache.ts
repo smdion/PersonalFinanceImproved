@@ -40,7 +40,7 @@ import { log } from "@/lib/logger";
 
 /** Bump when a change to the engine's computation logic could change
  *  output for the same inputs — invalidates all existing cache rows. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 9;
+export const PROJECTION_CACHE_ENGINE_VERSION = 10;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

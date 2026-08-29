@@ -4,6 +4,7 @@ import {
   getAllCategories,
   getEngineCategories,
   categoriesWithTaxPreference,
+  tradPreferenceEngineCategories,
   categoriesWithIrsLimit,
   getAccountTypeConfig,
   getRothFraction,
@@ -151,6 +152,28 @@ describe("categoriesWithTaxPreference", () => {
     for (const c of cats) {
       expect(getAccountTypeConfig(c).supportsRothSplit).toBe(true);
     }
+  });
+});
+
+describe("tradPreferenceEngineCategories", () => {
+  // Advisor review, 2026-08-29 (v0.7.10 R51 Gap A finding N3): asserts the
+  // intersection directly, not just "these two arrays happen to be equal
+  // today" — categoriesWithTaxPreference() filters by supportsRothSplit
+  // only, getEngineCategories() filters by participatesInEngine/
+  // engineParent, and they coincide today only because every category
+  // currently has participatesInEngine: true, engineParent: null. If a
+  // future account type breaks that coincidence, this test (not a
+  // downstream engine snapshot) should be what catches it.
+  it("equals the intersection of getEngineCategories() and categoriesWithTaxPreference()", () => {
+    const engineCats = new Set(getEngineCategories());
+    const expected = categoriesWithTaxPreference().filter((c) =>
+      engineCats.has(c),
+    );
+    expect(tradPreferenceEngineCategories()).toEqual(expected);
+  });
+
+  it("matches categoriesWithTaxPreference() today (401k, 403b, ira)", () => {
+    expect(tradPreferenceEngineCategories()).toEqual(["401k", "403b", "ira"]);
   });
 });
 

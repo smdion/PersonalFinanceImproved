@@ -22,6 +22,16 @@ coverage/
 tests/.tmp/
 .vitest-localstorage.json*
 
+# Claude Code plugin/skill/settings state -- local tooling, not project
+# files; untracked here trips scripts/release.sh + scripts/deploy.sh's
+# clean-tree check the same way an empty data/ dir does below.
+.claude/settings.local.json
+.claude/skills/
+.claude/worktrees/
+.github/skills/
+.github/agents/
+.github/hooks/
+
 # artifacts
 *.db
 # Local SQLite scratch (auto-created by db-migrate.ts when DATABASE_URL

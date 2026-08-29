@@ -192,4 +192,54 @@ describe("resolveDecumulationConfig", () => {
     const config2051 = resolveDecumulationConfig(2051, defaults, overrides);
     expect(config2051.lumpSums).toHaveLength(0);
   });
+
+  // ---------------------------------------------------------------------
+  // v0.7.10 R51 (Gap A): withdrawalOrder completeness backfill
+  // ---------------------------------------------------------------------
+
+  it("appends a category missing from an override's withdrawalOrder instead of stranding it", () => {
+    const overrides: DecumulationOverride[] = [
+      { year: 2050, withdrawalOrder: ["brokerage", "401k", "hsa"] }, // no ira, no 403b
+    ];
+    const config = resolveDecumulationConfig(2050, defaults, overrides);
+    expect(config.withdrawalOrder).toContain("ira");
+    expect(config.withdrawalOrder).toContain("403b");
+    // Explicitly-ordered categories keep their relative order; missing
+    // ones append after, in DEFAULT_DECUMULATION_ORDER's relative order.
+    expect(config.withdrawalOrder).toEqual([
+      "brokerage",
+      "401k",
+      "hsa",
+      "403b",
+      "ira",
+    ]);
+  });
+
+  it("does not alter an already-complete withdrawalOrder", () => {
+    const overrides: DecumulationOverride[] = [
+      {
+        year: 2050,
+        withdrawalOrder: ["ira", "401k", "403b", "hsa", "brokerage"],
+      },
+    ];
+    const config = resolveDecumulationConfig(2050, defaults, overrides);
+    expect(config.withdrawalOrder).toEqual([
+      "ira",
+      "401k",
+      "403b",
+      "hsa",
+      "brokerage",
+    ]);
+  });
+
+  it("the default (no override) order is already complete and unaffected by the backfill", () => {
+    const config = resolveDecumulationConfig(2050, defaults, []);
+    expect(config.withdrawalOrder).toEqual([
+      "401k",
+      "403b",
+      "ira",
+      "brokerage",
+      "hsa",
+    ]);
+  });
 });

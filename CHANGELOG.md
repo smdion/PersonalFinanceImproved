@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.7
 
+## [0.7.10] - 2026-08-29
+
+### Fixed
+
+- **In "Bracket Filling" mode (the default), which specific Traditional account (401k, 403b, or IRA) gets drawn from first no longer ignores your own configured account order.** Previously this always drained your 401k completely before ever touching your IRA, regardless of how you'd arranged accounts elsewhere — now it respects the same order you can already set. Households who never customized their account order see no change.
+- Added a "Traditional Account Order" control to Bracket Filling mode's settings, so this order is now visible and editable directly in that mode instead of only reachable by switching to Waterfall mode.
+
 ## [0.7.9] - 2026-08-29
 
 ### Added

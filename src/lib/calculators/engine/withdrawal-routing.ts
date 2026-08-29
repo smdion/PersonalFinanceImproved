@@ -21,6 +21,7 @@ import {
   getAccountTypeConfig,
   isOverflowTarget,
   categoriesWithTaxPreference,
+  tradPreferenceEngineCategories,
   getTraditionalBalance,
   getRothBalance,
   getTotalBalance,
@@ -330,11 +331,16 @@ export function routeWithdrawalsPercentage(
  * Instead of draining accounts sequentially (waterfall) or splitting by fixed %
  * (percentage), this mode optimizes tax efficiency each year:
  *
- * 1. Fill traditional withdrawals (401k/IRA traditional) up to a tax bracket cap.
- *    This uses the cheap bracket space without overfilling into expensive brackets.
- * 2. Fill remaining need from Roth (401k/IRA Roth) — tax-free, no bracket impact.
- * 3. Use brokerage as overflow (capital gains rate, usually lower than income).
- * 4. HSA is last resort — most tax-advantaged, let it compound longest.
+ * 1. Fill traditional withdrawals (401k/403b/IRA traditional) up to a tax
+ *    bracket cap, in the household's own configured account order (v0.7.10
+ *    R51 Gap A — previously a hardcoded 401k→403b→IRA order regardless of
+ *    what the user configured; see `phase1Order` below). This uses the
+ *    cheap bracket space without overfilling into expensive brackets.
+ * 2-4. Rank the remainder (Roth growth, brokerage LTCG, HSA) by real
+ *    marginal cost each year instead of a fixed order (v0.7.9 R40 —
+ *    `withdrawal-cost-ranking.ts`'s `rankWithdrawalTiers`; corrected this
+ *    docblock, which still described the pre-R40 fixed Roth→brokerage→HSA
+ *    order months after R40 shipped).
  *
  * The bracket cap is determined by `rothBracketTarget` (target marginal rate).
  * If no brackets or target are provided, falls back to waterfall behavior.
@@ -382,8 +388,28 @@ export function routeWithdrawalsBracketFilling(
   const tradTypeCap = config.withdrawalTaxTypeCaps.traditional;
   const rothTypeCap = config.withdrawalTaxTypeCaps.roth;
 
+  // Advisor review, 2026-08-29 (v0.7.10 R51 Gap A): computed ONCE, shared
+  // by both Phase 1 (below) and `drawRothTierCapped` further down — both
+  // loops need "which Traditional-preference account first," and a single
+  // local here means the two can't drift the way they would if each
+  // independently filtered `config.withdrawalOrder`. Previously both
+  // loops ignored `config.withdrawalOrder` entirely and iterated
+  // `categoriesWithTaxPreference()` directly (a config-declaration-order
+  // list, not the user's own editable order) — waterfall and percentage
+  // modes already honored the user's order; bracket_filling silently
+  // didn't. Filtering the user's FULL order down to just the
+  // Traditional-preference categories preserves their relative order
+  // among themselves; `tradPreferenceEngineCategories()` (not
+  // `categoriesWithTaxPreference()` alone) is the correct membership test
+  // — see that function's docblock for why the two aren't guaranteed
+  // identical by construction, even though they coincide today.
+  const tradPreferenceCategories = new Set(tradPreferenceEngineCategories());
+  const phase1Order = config.withdrawalOrder.filter((c) =>
+    tradPreferenceCategories.has(c),
+  );
+
   // --- Phase 1: Traditional from 401k/403b + IRA up to bracket cap ---
-  for (const category of categoriesWithTaxPreference()) {
+  for (const category of phase1Order) {
     if (remaining <= 0 || totalTradWithdrawn >= traditionalCap) break;
 
     const accountCap = config.withdrawalAccountCaps[category];
@@ -433,7 +459,11 @@ export function routeWithdrawalsBracketFilling(
 
   function drawRothTierCapped(cap: number): void {
     let tierRemaining = Math.min(remaining, cap);
-    for (const category of categoriesWithTaxPreference()) {
+    // Same `phase1Order` as Phase 1 above (v0.7.10 R51 Gap A) — Roth
+    // withdrawals draw from the same physical accounts, so using a
+    // different order here would let a household's configured order
+    // apply to Traditional draws but not Roth draws in the same year.
+    for (const category of phase1Order) {
       if (remaining <= 0 || tierRemaining <= 0) break;
 
       const accountCap = config.withdrawalAccountCaps[category];
@@ -823,6 +853,19 @@ export function applyRothBracketOverlay(
       ...config.withdrawalTaxPreference,
       ...tradOverrides,
     },
+    // Advisor review, 2026-08-29 (v0.7.10 R51 Gap A round 2) — confirmed
+    // load-bearing, NOT an oversight: this overlay adds a Traditional
+    // tax-type cap above so the "Roth bracket optimization" this overlay
+    // implements means anything in waterfall mode, `routeWithdrawals`'s
+    // category loop still runs in the user's OWN configured order. If
+    // that order puts a non-Traditional category (e.g. brokerage) ahead
+    // of every Traditional-preference one, `remaining` gets consumed
+    // before the cap ever binds, making the whole overlay a near-no-op —
+    // confirmed against 3 real engine-snapshot fixtures that exercise
+    // exactly this combination. Resetting to the default order guarantees
+    // Traditional actually gets drawn first, which is the entire point of
+    // this overlay. Do not remove without its own dedicated behavior-
+    // change PR and tests, separate from any other withdrawalOrder fix.
     withdrawalOrder: getDefaultDecumulationOrder(),
   };
 }
