@@ -99,6 +99,35 @@ export function marginalRateAboveTarget(
   return targetRate;
 }
 
+/**
+ * The marginal ordinary rate for the NEXT dollar earned at `income` — i.e.
+ * the rate on the bracket `income` currently sits in. Same bracket walk as
+ * `estimateEffectiveTaxRate` (highest threshold <= income), but returns
+ * `.rate` for that bracket directly instead of computing a total tax
+ * amount (advisor review, 2026-08-29 — `marginalRateAboveTarget` answers
+ * a DIFFERENT question, "what's the rate on the bracket above a given
+ * RATE," and was being misused to price a withdrawal stacking on top of
+ * `ordinaryIncomeFloor`'s real DOLLAR income level. That's only correct
+ * when Phase 1 actually filled Traditional up to the bracket-filling
+ * target — routing also reaches this ranking when Traditional simply ran
+ * out below the target, where `ordinaryIncomeFloor` sits in a LOWER
+ * bracket than `targetRate` implies, and pricing off `targetRate`
+ * systematically overprices the withdrawal). Returns 0 for `income <= 0`
+ * or an empty bracket list, matching `estimateEffectiveTaxRate`'s
+ * "nothing taxable" convention.
+ */
+export function marginalRateAtIncome(
+  income: number,
+  brackets: WithholdingBracket[],
+): number {
+  if (income <= 0 || brackets.length === 0) return 0;
+  for (let i = brackets.length - 1; i >= 0; i--) {
+    const b = brackets[i]!;
+    if (income >= b.threshold) return b.rate;
+  }
+  return 0;
+}
+
 // ---------------------------------------------------------------------------
 // Social Security taxation — IRS provisional income formula (Phase 2)
 // ---------------------------------------------------------------------------

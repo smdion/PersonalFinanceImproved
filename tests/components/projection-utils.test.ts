@@ -602,6 +602,24 @@ describe("filterYearByParentCategory", () => {
     expect(original.individualAccountBalances).toHaveLength(originalLen);
   });
 
+  it("is a no-op when there's no individual-account data to filter by (MC Simple tax mode, live-user finding 2026-08-28)", () => {
+    // The Retirement page hardcodes parentCategoryFilter="Retirement" on
+    // every load (retirement-content.tsx), so this function runs on every
+    // household's every view. When a Simple-tax-mode MC scenario (e.g.
+    // Rate-Seeded) supplies a year with individualAccountBalances=[] (no
+    // per-account structure left after the collapse), filtering "down to
+    // the accounts matching this parent category" must not zero out
+    // endBalance/balanceByTaxType for accounts it can't see at all --
+    // that's what caused every balance in the table to silently render
+    // $0.00 while Sim. Median (a different, unaffected field) stayed
+    // healthy.
+    const yr = { ...makeYear(), individualAccountBalances: [] };
+    const result = filterYearByParentCategory(yr, "Retirement");
+    expect(result).toBe(yr);
+    expect(result.endBalance).toBe(15000);
+    expect(result.balanceByTaxType.afterTax).toBe(5000);
+  });
+
   // Regression coverage for the "balance says $32k, withdrawal says $30k+"
   // report: a decumulation year where most of a category's withdrawal came
   // from a Portfolio-parented account must not leak into the Retirement-
@@ -667,6 +685,12 @@ describe("filterYearByParentCategory", () => {
       totalWithdrawal: 177209.74,
       totalTraditionalWithdrawal: 0,
       totalRothWithdrawal: 0,
+      // Household-wide figures the withdrawal total is compared against
+      // (advisor review, 2026-08-29 -- see the two new tests below).
+      targetWithdrawal: 200000,
+      taxCost: 20000,
+      projectedExpenses: 150000,
+      rmdAmount: 50000,
     } as unknown as EngineYearProjection;
   }
 
@@ -700,6 +724,39 @@ describe("filterYearByParentCategory", () => {
     const ratio = 14466.75 / 177209.74;
     expect(brokSlot.basisPortion).toBeCloseTo(12751.91 * ratio, 1);
     expect(brokSlot.gainsPortion).toBeCloseTo(164457.83 * ratio, 1);
+  });
+
+  // Advisor review, 2026-08-29: targetWithdrawal/taxCost were previously
+  // left at their household-wide values while totalWithdrawal was
+  // Retirement-scoped -- a fully-funded plan could compare as
+  // "underfunded" purely because the comparison basis (targetWithdrawal)
+  // never shrank to match. Both must scale by the SAME ratio as the
+  // withdrawal itself.
+  it("rescopes targetWithdrawal and taxCost by the same ratio as totalWithdrawal", () => {
+    const result = filterYearByParentCategory(makeDecumYear(), "Retirement");
+    if (result.phase !== "decumulation")
+      throw new Error("expected decumulation");
+    const ratio = 14466.75 / 177209.74;
+    expect(result.targetWithdrawal).toBeCloseTo(200000 * ratio, 1);
+    expect(result.taxCost).toBeCloseTo(20000 * ratio, 1);
+    // The whole point: filtered totalWithdrawal no longer reads as
+    // "underfunded" against its own (also filtered) target.
+    expect(result.totalWithdrawal).toBeGreaterThanOrEqual(
+      result.targetWithdrawal * 0.75,
+    );
+  });
+
+  it("leaves projectedExpenses and rmdAmount at their real household-wide values", () => {
+    const result = filterYearByParentCategory(makeDecumYear(), "Retirement");
+    if (result.phase !== "decumulation")
+      throw new Error("expected decumulation");
+    // RMD is a real IRS obligation on the FULL Traditional balance
+    // regardless of account grouping, and projectedExpenses is the
+    // household's real stated spending need -- neither should shrink just
+    // because this page's display happens to be scoped to a subset of
+    // accounts.
+    expect(result.projectedExpenses).toBe(150000);
+    expect(result.rmdAmount).toBe(50000);
   });
 });
 

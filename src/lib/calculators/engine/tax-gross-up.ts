@@ -193,6 +193,8 @@ function evaluateCost(
   const { rothBasisAvailable, brokerageBasisRatio } = deriveBasisRankingInputs({
     balances,
     indBasis: hasIndTracking ? indBasis : undefined,
+    indAccts: hasIndTracking ? indAccts : undefined,
+    indKey: hasIndTracking ? indKey : undefined,
   });
   const routeResult = routeForMode(
     trialWithdrawal,

@@ -457,7 +457,15 @@ describe("routeWithdrawalsBracketFilling", () => {
     expect(rothSlot?.rothWithdrawal ?? 0).toBe(0);
   });
 
-  it("draws Roth growth instead of brokerage once ordinary income has pushed past the 0%/15% LTCG zones and Roth's marginal rate is cheaper", () => {
+  it("draws brokerage instead of Roth once real ordinary income is high enough that Roth's REAL bracket rate exceeds LTCG (advisor review, 2026-08-29)", () => {
+    // Before the fix, Roth growth was priced off `rothBracketTarget`
+    // (here 0.1, "next bracket up is 12%") regardless of the household's
+    // REAL income level -- so a household with $700k of taxable SS still
+    // looked like it only owed 12% on Roth growth, wrongly cheaper than
+    // 20% LTCG. Roth growth is now priced off the household's actual
+    // ordinaryIncomeFloor, which at this income sits in TEST_BRACKETS'
+    // 35% bracket -- genuinely far more expensive than 20% LTCG, so
+    // brokerage must be drawn instead.
     const config = makeDecumulationConfig();
     const balances = makeAccountBalances({
       preTax: 10000,
@@ -467,8 +475,8 @@ describe("routeWithdrawalsBracketFilling", () => {
     });
     const result = routeWithdrawalsBracketFilling(60000, config, balances, {
       taxBrackets: TEST_BRACKETS,
-      rothBracketTarget: 0.1, // next bracket up is 12% -- cheaper than 20% LTCG
-      taxableSS: 700000, // pushes past MFJ's $613,700 15%/20% LTCG threshold
+      rothBracketTarget: 0.1, // no longer read for Roth-growth pricing
+      taxableSS: 700000, // real ordinary income lands in the 35% bracket
       filingStatus: "MFJ",
       rothBasisAvailable: 0,
       brokerageBasisRatio: 0,
@@ -477,8 +485,8 @@ describe("routeWithdrawalsBracketFilling", () => {
     const rothSlot =
       slotFor(result.slots, "401k") ?? slotFor(result.slots, "ira");
     const brokSlot = slotFor(result.slots, "brokerage")!;
-    expect(rothSlot?.rothWithdrawal ?? 0).toBeGreaterThan(0);
-    expect(brokSlot.withdrawal).toBe(0);
+    expect(brokSlot.withdrawal).toBeGreaterThan(0);
+    expect(rothSlot?.rothWithdrawal ?? 0).toBe(0);
   });
 
   it("without filingStatus, degenerates to the pre-v0.7.9 fixed Roth-then-brokerage order (no regression for callers that don't pass it)", () => {

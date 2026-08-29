@@ -283,17 +283,22 @@ describe("useProjectionDerived", () => {
             isLoading: false,
             isFetching: false,
           },
-          // The hook now reads the ALREADY-selected `activeCoastFireMcResult`
-          // off queries (computed once in use-projection-queries.ts, per the
-          // scenarioView-based ternary) instead of re-deriving it from
+          // The hook now reads the ALREADY-selected `activeAltMcResult` off
+          // queries (computed once in use-projection-queries.ts, generalized
+          // 2026-08-28 to also cover the Rate-Seeded scenario alongside
+          // Coast FIRE) instead of re-deriving it from
           // `coastFireMcResult`/`coastFireTodayMcResult` itself (code
           // review, 2026-08-27 — that re-derivation used to happen
-          // independently in 3 places). Set both so this mock matches what
-          // the real hook would have produced for scenarioView "coastFire".
+          // independently in 3 places). Set all three so this mock matches
+          // what the real hook would have produced for scenarioView
+          // "coastFire".
           coastFireMcResult: {
             deterministicProjection: { projectionByYear: coastYears },
           },
           activeCoastFireMcResult: {
+            deterministicProjection: { projectionByYear: coastYears },
+          },
+          activeAltMcResult: {
             deterministicProjection: { projectionByYear: coastYears },
           },
         }),

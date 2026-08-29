@@ -9,39 +9,44 @@
  * `reinvestRmdExcess` in `balance-deduction.ts` for the separate,
  * unrelated "what to do with leftover money" question).
  *
+ * Not capped by the RMD amount (advisor review, 2026-08-29): IRC
+ * §408(d)(8) caps a QCD at the annual per-person dollar limit, full stop —
+ * it is legal, and a real tax-planning move, to QCD MORE than the year's
+ * RMD (the excess just doesn't count toward satisfying it, but is still
+ * excluded from taxable income). `qcdMaximize` means what it says. The
+ * only real caps are the IRA balance actually available and the annual
+ * IRS limit.
+ *
  * Approximation (documented, not IRS-exact): the engine's RMD calculation
  * pools ALL pre-tax accounts (401k + IRA + 403b) into one per-person
  * Traditional balance — it does not model the IRS's real per-account-type
  * RMD math (all IRAs aggregated one way, each 401k calculated separately).
  * Since QCDs are IRA-only, this module caps the QCD-eligible amount at
- * `min(cap, personRmdAmount, personIraTraditionalBalance)` rather than
- * attempting a full per-account-type RMD split, which this engine doesn't
- * do anywhere today. See PLAN-rmd-excess-handling.md for the full
- * rationale.
+ * `min(cap, personIraTraditionalBalance)` rather than attempting a full
+ * per-account-type RMD split, which this engine doesn't do anywhere
+ * today. See PLAN-rmd-excess-handling.md for the full rationale.
  *
  * Only meaningful when individual accounts are tracked — same limitation
  * per-person RMD tracking itself already has (there's no person-level
- * granularity without it).
+ * granularity without it). Callers should include anyone at or above
+ * `QCD_MIN_ELIGIBILITY_AGE` (constants.ts), not just people who've
+ * already reached their RMD start age — QCD eligibility (70½) predates
+ * SECURE 2.0's RMD-age delay (72/73/75), and the years before RMDs are
+ * required are QCD's highest-value window for shrinking a future one.
  */
 import { roundToCents } from "../../utils/math";
 import { QCD_ANNUAL_CAP_PER_PERSON } from "../../constants";
 
 export interface QcdPersonInput {
   personId: number;
-  /** This person's RMD requirement for the year, already computed
-   *  (pooled across all their pre-tax accounts). */
-  rmdAmount: number;
   /** This person's Traditional balance held specifically in IRA-category
    *  accounts — the only portion eligible for QCD.
    *
-   *  Timing note (advisor review, R46): `rmdAmount` is derived from
-   *  `priorYearEndTradByPerson`, a snapshot taken before this year's
-   *  `applyIndividualGrowth` runs, while the caller reads this balance
-   *  live from `indBal` at QCD-computation time (also before this year's
-   *  growth, since QCD runs first) — the two are time-equivalent for a
-   *  fresh projection year. Pre-existing engine behavior, not introduced
-   *  by this cap; noted here since QCD is the first feature to actually
-   *  depend on the two being comparable. */
+   *  Timing note (advisor review, R46): the caller reads this balance
+   *  live from `indBal` at QCD-computation time, before this year's
+   *  growth runs (QCD runs first) — time-equivalent to the RMD
+   *  snapshot's own timing for a fresh projection year. Pre-existing
+   *  engine behavior, not introduced by this module. */
   iraTraditionalBalance: number;
 }
 
@@ -53,7 +58,9 @@ export interface QcdPersonResult {
 /**
  * Compute each person's QCD amount for the year. Returns only entries
  * with a positive amount. Empty array when `qcdMaximize` is off or no
- * person has both an RMD and IRA Traditional balance to draw it from.
+ * person has an IRA Traditional balance to draw it from. Callers decide
+ * who's eligible to pass in (age 70½+, per `QCD_MIN_ELIGIBILITY_AGE`) —
+ * this function doesn't gate on age or RMD status itself.
  */
 export function computeQcdAmounts(
   qcdMaximize: boolean,
@@ -66,11 +73,7 @@ export function computeQcdAmounts(
       qcdAmount: roundToCents(
         Math.max(
           0,
-          Math.min(
-            p.rmdAmount,
-            p.iraTraditionalBalance,
-            QCD_ANNUAL_CAP_PER_PERSON,
-          ),
+          Math.min(p.iraTraditionalBalance, QCD_ANNUAL_CAP_PER_PERSON),
         ),
       ),
     }))

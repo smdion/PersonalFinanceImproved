@@ -167,4 +167,87 @@ describe("computeRmdSmoothingTargets", () => {
     );
     expect(result.householdSmoothingTarget).toBe(0);
   });
+
+  // Hand-computed dollar assertion (advisor review, 2026-08-29) -- every
+  // other test in this file only checks direction (>0, not-equal), which
+  // is exactly why two real math bugs (targetBalanceAtRmdAge missing the
+  // traditionalFractionOfSpending/personShare scale factors, and the
+  // forward loop running one year past the prior-year-end balance the
+  // RMD formula actually uses) shipped past a fully green suite. This
+  // test hand-computes the exact expected value against the documented
+  // formula so a regression of either bug fails loudly.
+  it("matches a hand-computed dollar target for a single person, single-share household", () => {
+    // currentAge=70, rmdStartAge=73 -> loop runs ages 71,72 ONLY (stops
+    // one year short of rmdStartAge -- prior-year-end balance).
+    // personShare = 1 (household balance == person balance).
+    // traditionalFractionOfSpending = 40000/80000 = 0.5.
+    // personAvgAnnualTraditionalWithdrawal = 80000 * 0.5 * 1 = 40000.
+    //
+    // balance: 5,000,000
+    //   age 71: 5,000,000*1.05 - 40000 = 5,210,000
+    //   age 72: 5,210,000*1.05 - 40000 = 5,430,500  <- projectedBalanceAtRmdAge
+    // futureSpendingNeed: 80000
+    //   age 71: 80000*1.02 = 81,600
+    //   age 72: 81,600*1.02 = 83,232
+    // factor(73) = 26.5 (UNIFORM_LIFETIME_TABLE)
+    // targetBalanceAtRmdAge = 83,232 * 0.5 * 1 * 26.5 = 1,102,824
+    // excessToConvert = 5,430,500 - 1,102,824 = 4,327,676
+    // thisYearSmoothingTarget = 4,327,676 / 3 years = 1,442,558.666... -> 1,442,558.67
+    const result = computeRmdSmoothingTargets(
+      baseInput({
+        people: [
+          person({
+            currentAge: 70,
+            rmdStartAge: 73,
+            personTraditionalBalance: 5_000_000,
+          }),
+        ],
+        householdTraditionalBalance: 5_000_000,
+      }),
+    );
+    expect(result.byPerson).toHaveLength(1);
+    expect(result.byPerson[0]!.thisYearSmoothingTarget).toBeCloseTo(
+      1442558.67,
+      2,
+    );
+    expect(result.householdSmoothingTarget).toBeCloseTo(1442558.67, 2);
+  });
+
+  it("scales down correctly for a person who is only a fraction of the household's Traditional balance (personShare regression guard)", () => {
+    // Same household-level inputs as the hand-computed test above, but
+    // this person is only 40% of the household's Traditional balance
+    // (personTraditionalBalance=2,000,000 vs householdTraditionalBalance=
+    // 5,000,000) -- personShare=0.4. Both the withdrawal-estimate term AND
+    // targetBalanceAtRmdAge must scale by the SAME personShare, or the
+    // two sides of the excess-to-convert subtraction stop being
+    // comparable (the bug this guards against: targetBalanceAtRmdAge
+    // omitted personShare entirely, comparing this person's balance
+    // against the WHOLE household's tolerable RMD).
+    //
+    // personAvgAnnualTraditionalWithdrawal = 80000*0.5*0.4 = 16,000
+    // balance: 2,000,000
+    //   age 71: 2,000,000*1.05 - 16000 = 2,084,000
+    //   age 72: 2,084,000*1.05 - 16000 = 2,172,200 <- projectedBalanceAtRmdAge
+    // futureSpendingNeed same as above: 83,232
+    // targetBalanceAtRmdAge = 83,232 * 0.5 * 0.4 * 26.5 = 441,129.6
+    // excessToConvert = 2,172,200 - 441,129.6 = 1,731,070.4
+    // thisYearSmoothingTarget = 1,731,070.4 / 3 = 577,023.4666... -> 577,023.47
+    const result = computeRmdSmoothingTargets(
+      baseInput({
+        people: [
+          person({
+            currentAge: 70,
+            rmdStartAge: 73,
+            personTraditionalBalance: 2_000_000,
+          }),
+        ],
+        householdTraditionalBalance: 5_000_000,
+      }),
+    );
+    expect(result.byPerson).toHaveLength(1);
+    expect(result.byPerson[0]!.thisYearSmoothingTarget).toBeCloseTo(
+      577023.47,
+      2,
+    );
+  });
 });

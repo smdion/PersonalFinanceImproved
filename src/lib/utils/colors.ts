@@ -219,6 +219,11 @@ export const CHART_COLORS = {
   guardrailIncreaseMarker: "#22c55e", // green-500 — spending raised
   guardrailDecreaseMarker: "#ef4444", // red-500 — spending cut
   guardrailSkipInflationMarker: "#f59e0b", // amber-500 — inflation raise skipped
+  // Real, material unmet spending need (advisor review, 2026-08-28) —
+  // darker than guardrailDecreaseMarker so a genuine "couldn't fund the
+  // need" year reads as distinct from (and worse than) a voluntary
+  // guardrail cut, even when both happen the same year.
+  shortfallMarker: "#dc2626", // red-600 — unmet need
   // Spending-stability chart's deterministic ratio bars
   spendingRatioBar: "#3b82f6", // blue-500
   // Fund mini-chart (savings goal sparkline)

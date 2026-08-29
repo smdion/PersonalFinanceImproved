@@ -196,14 +196,28 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
   // under-inflates relative to what the loop actually produced. Reading the
   // loop's own first decumulation row keeps this a single source of truth
   // instead of a second, divergence-prone computation of "which year."
+  // Advisor review, 2026-08-29 (finding #10): a budget override active on
+  // the first decumulation year (pre-year-setup.ts:249-251) replaces
+  // state.projectedExpenses outright, but this computation used to ignore
+  // overrides entirely and always inflate `decumulationAnnualExpenses` --
+  // comparing a pre-override stated need against a post-override actual in
+  // coast-fire.ts's `passes()`. Read the same override the loop actually
+  // applied, with the same Rate-Seeded-year-1 carve-out
+  // pre-year-setup.ts:240-248 uses (that scenario deliberately ignores a
+  // same-year override so the rate seed isn't immediately clobbered).
+  const firstYearOverride =
+    firstDecumYear && input.rateSeededDecumulationYear1 !== true
+      ? ctx.budgetOverrideMap.get(firstDecumYear.year)
+      : undefined;
   const firstDecumulationYearStatedNeed =
     input.decumulationAnnualExpenses != null && firstDecumYear
       ? roundToCents(
-          input.decumulationAnnualExpenses *
-            Math.pow(
-              1 + ctx.inflationRate,
-              Math.max(0, firstDecumYear.year - input.asOfDate.getFullYear()),
-            ),
+          firstYearOverride ??
+            input.decumulationAnnualExpenses *
+              Math.pow(
+                1 + ctx.inflationRate,
+                Math.max(0, firstDecumYear.year - input.asOfDate.getFullYear()),
+              ),
         )
       : null;
 

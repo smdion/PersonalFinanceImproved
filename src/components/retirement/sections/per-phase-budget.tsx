@@ -48,8 +48,17 @@ export function PerPhaseBudgetSection({
     "fixed") as WithdrawalStrategyType;
   const strategyMeta = getStrategyMeta(activeStrategy);
   const { incomeSource } = strategyMeta;
-  const budgetNotUsed = incomeSource === "formula" || incomeSource === "rate";
   const { usesWithdrawalRate, usesPostRetirementRaise } = strategyMeta;
+  // Branch on usesWithdrawalRate, not incomeSource -- incomeSource labels
+  // Guyton-Klinger "rate" (a UI-framing distinction), but GK's actual
+  // year-1 spending IS budget-seeded (initialWithdrawalRate is DERIVED
+  // FROM the budget, not an independent setting) and every subsequent
+  // year is a guardrail adjustment of that, same as Fixed/Forgo/Spending
+  // Decline. usesWithdrawalRate already correctly separates the 4
+  // genuinely budget-seeded strategies from the 4 that aren't (RMD-based,
+  // Constant %, Endowment, Vanguard Dynamic) -- same fix already applied
+  // in mc-simulation-assumptions.tsx for this exact distinction.
+  const budgetNotUsed = !usesWithdrawalRate;
   const profiles = budgetProfileSummaries ?? [];
   if (profiles.length === 0) return null;
 
@@ -64,16 +73,14 @@ export function PerPhaseBudgetSection({
 
   return (
     <div>
-      {(budgetNotUsed || !usesWithdrawalRate || !usesPostRetirementRaise) && (
+      {(budgetNotUsed || !usesPostRetirementRaise) && (
         <div className="text-xs text-amber-600 bg-amber-50 rounded px-2 py-1.5 mb-2">
           {`${strategyMeta.label} computes spending from ${
             incomeSource === "formula"
               ? "your portfolio balance using IRS/endowment formulas"
-              : incomeSource === "rate"
-                ? usesWithdrawalRate
-                  ? "your initial withdrawal rate × portfolio"
-                  : "a strategy-specific portfolio percentage"
-                : "your retirement budget"
+              : usesWithdrawalRate
+                ? "your retirement budget"
+                : "a strategy-specific portfolio percentage"
           }.`}
           {(() => {
             const dimmed: string[] = [];

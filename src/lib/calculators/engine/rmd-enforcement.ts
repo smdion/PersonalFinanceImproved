@@ -13,7 +13,7 @@ import {
   categoriesWithTaxPreference,
   getTraditionalBalance,
 } from "../../config/account-types";
-import { getRmdFactor } from "../../config/rmd-tables";
+import { computeRmdAmount } from "../../config/rmd-tables";
 import { RMD_EXCISE_TAX_RATE } from "../../constants";
 import type { NonRetirementExclusion } from "@/lib/pure/withdrawal-eligibility";
 
@@ -82,11 +82,9 @@ export function enforceRmd(input: RmdEnforcementInput): RmdEnforcementResult {
     (input.overrideRmdRequired != null && input.overrideRmdRequired > 0) ||
     (rmdStartAge != null && age >= rmdStartAge && priorYearEndTradBalance > 0)
   ) {
-    const factor = getRmdFactor(age);
-    if (input.overrideRmdRequired != null || (factor != null && factor > 0)) {
-      const rmdRequired =
-        input.overrideRmdRequired ??
-        roundToCents(priorYearEndTradBalance / factor!);
+    const computedRmd = computeRmdAmount(priorYearEndTradBalance, age);
+    if (input.overrideRmdRequired != null || computedRmd != null) {
+      const rmdRequired = input.overrideRmdRequired ?? computedRmd!;
       rmdAmount = rmdRequired;
       if (totalTraditionalWithdrawal < rmdRequired) {
         const rmdShortfall = roundToCents(
@@ -205,8 +203,16 @@ export function enforceRmd(input: RmdEnforcementInput): RmdEnforcementResult {
           const penalty = roundToCents(
             rmdShortfallAmount * RMD_EXCISE_TAX_RATE,
           );
+          // `rmdRequired` here is whatever this call was asked to enforce —
+          // when a QCD already satisfied part of the real RMD (see
+          // decumulation-year.ts's `overrideRmdRequired`), this is the
+          // REMAINING taxable amount, not the household's full legal RMD.
+          // Worded to stay honest in both cases rather than implying
+          // "Required" means the gross RMD (advisor review, 2026-08-29 —
+          // the QCD-net figure was rendering under a gross-sounding
+          // label).
           warnings.push(
-            `RMD SHORTFALL: Required $${rmdRequired.toFixed(0)} but only $${totalTraditionalWithdrawal.toFixed(0)} Traditional available. ` +
+            `RMD SHORTFALL: $${rmdRequired.toFixed(0)} of Traditional distribution still required this year but only $${totalTraditionalWithdrawal.toFixed(0)} available. ` +
               `IRS penalty (25% excise tax) on the $${(rmdRequired - totalTraditionalWithdrawal).toFixed(0)} shortfall would be ~$${penalty.toFixed(0)}. ` +
               `Consider Roth conversions or other strategies to meet RMD obligations.`,
           );

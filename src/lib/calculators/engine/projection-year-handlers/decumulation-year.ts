@@ -21,7 +21,10 @@ import {
 } from "../../../config/account-types";
 import { computeQcdAmounts, totalQcdAmount } from "../qcd";
 import { computeRmdSmoothingTargets } from "../rmd-smoothing";
-import { MAX_BROKERAGE_RAMP_YEARS } from "../../../constants";
+import {
+  MAX_BROKERAGE_RAMP_YEARS,
+  QCD_MIN_ELIGIBILITY_AGE,
+} from "../../../constants";
 import { cloneAccountBalances } from "../balance-utils";
 import { getLtcgRate, computeLtcgTax } from "../../../config/tax-tables";
 import { computeNiit } from "../../../config/niit";
@@ -61,7 +64,7 @@ import {
   trackDepletions,
   cleanupDust,
 } from "../balance-deduction";
-import { getRmdFactor } from "../../../config/rmd-tables";
+import { computeRmdAmount } from "../../../config/rmd-tables";
 import type {
   PreYearSetup,
   ProjectionContext,
@@ -211,9 +214,8 @@ export function runDecumulationYear(
       const personAge = ageInYear(birthYear, year);
       const personTrad = priorYearEndTradByPerson.get(personId) ?? 0;
       if (personAge >= startAge && personTrad > 0) {
-        const factor = getRmdFactor(personAge);
-        if (factor != null && factor > 0) {
-          const rmdAmount = roundToCents(personTrad / factor);
+        const rmdAmount = computeRmdAmount(personTrad, personAge);
+        if (rmdAmount != null) {
           rmdByPerson.push({
             personId,
             personName:
@@ -238,9 +240,26 @@ export function runDecumulationYear(
   // qcd.ts's docblock for the IRA-only-pooling approximation this uses.
   // Only meaningful with individual accounts tracked (same limitation
   // per-person RMD itself already has).
+  //
+  // Eligibility is QCD_MIN_ELIGIBILITY_AGE (70), NOT rmdByPerson's
+  // RMD-start-age gate (advisor review, 2026-08-29) -- QCD eligibility
+  // predates SECURE 2.0's RMD-age delay, so someone with startAge 75 is
+  // still QCD-eligible for years before any RMD is even required. Built
+  // straight from rmdStartAgeByPerson (has every tracked person's
+  // birthYear) rather than reusing rmdByPerson, which only contains
+  // people who've already reached their RMD start age.
   let totalQcd = 0;
   let qcdByPerson: { personId: number; qcdAmount: number }[] = [];
-  if (hasIndividualAccounts && rmdByPerson && rmdByPerson.length > 0) {
+  const qcdEligiblePersonIds =
+    hasIndividualAccounts && rmdStartAgeByPerson.size > 0
+      ? Array.from(rmdStartAgeByPerson.entries())
+          .filter(
+            ([, { birthYear }]) =>
+              ageInYear(birthYear, year) >= QCD_MIN_ELIGIBILITY_AGE,
+          )
+          .map(([personId]) => personId)
+      : [];
+  if (qcdEligiblePersonIds.length > 0) {
     const iraTradByPerson = new Map<number, number>();
     for (const ia of indAccts) {
       if (
@@ -260,10 +279,9 @@ export function runDecumulationYear(
     }
     qcdByPerson = computeQcdAmounts(
       config.qcdMaximize,
-      rmdByPerson.map((r) => ({
-        personId: r.personId,
-        rmdAmount: r.amount,
-        iraTraditionalBalance: iraTradByPerson.get(r.personId) ?? 0,
+      qcdEligiblePersonIds.map((personId) => ({
+        personId,
+        iraTraditionalBalance: iraTradByPerson.get(personId) ?? 0,
       })),
     );
     totalQcd = totalQcdAmount(qcdByPerson);
@@ -367,15 +385,25 @@ export function runDecumulationYear(
   // v0.7.9 R40 follow-up: cost-aware post-bracket-cap ranking inputs
   // (bracket_filling mode only; ignored by waterfall/percentage). See
   // deriveBasisRankingInputs's docblock for why the basis-derived fields
-  // are shared with tax-gross-up.ts's estimate but magiBeforeThisDraw
-  // isn't -- the real execution has the precise magiHistory lookback the
-  // estimate doesn't.
+  // are shared with tax-gross-up.ts's estimate.
+  //
+  // magiBeforeThisDraw is intentionally OMITTED here (advisor review,
+  // 2026-08-29 -- was previously magiHistory's prior-YEAR MAGI, a real
+  // bug: NIIT's MAGI test has no lookback, unlike IRMAA's genuine 2-year
+  // lookback that magiHistory exists for; RouteBracketInfo's own docblock
+  // says "MAGI before THIS YEAR'S gains/growth," which prior-year data
+  // never was). Omitting it lets withdrawal-routing.ts's own `??
+  // baseOrdinaryFloor` fallback apply -- the correct current-year
+  // pre-this-draw figure (taxableSS + totalTradWithdrawn +
+  // conversionReservedRoom) -- which is also exactly what
+  // tax-gross-up.ts's estimate already falls back to, so the two paths
+  // can no longer disagree on this number.
   const { rothBasisAvailable, brokerageBasisRatio } = deriveBasisRankingInputs({
     balances,
     indBasis: hasIndividualAccounts ? indBasis : undefined,
+    indAccts: hasIndividualAccounts ? indAccts : undefined,
+    indKey: hasIndividualAccounts ? indKey : undefined,
   });
-  const priorYearMagi =
-    magiHistory.length > 0 ? magiHistory[magiHistory.length - 1] : undefined;
 
   const routeResult = routeForMode(
     targetWithdrawal,
@@ -389,7 +417,6 @@ export function runDecumulationYear(
       ltcgBrackets: taxRates.ltcgBrackets,
       rothBasisAvailable,
       brokerageBasisRatio,
-      magiBeforeThisDraw: priorYearMagi,
       conversionsEnabled: taxRates.enableRothConversions,
     },
     eligibility,
@@ -810,6 +837,40 @@ export function runDecumulationYear(
     fundingShortfall > shortfallMaterialityFloor
       ? Math.max(routedUnmetNeed ?? 0, fundingShortfall)
       : routedUnmetNeed;
+  // Single canonical "is this a REAL shortfall worth alerting on" verdict
+  // (advisor review, 2026-08-28) -- `finalUnmetNeed` above intentionally
+  // preserves its existing byte-identical value/undefined-ness for
+  // existing consumers (no cache-version bump needed for an additive
+  // field), but its own two branches apply the materiality floor
+  // inconsistently: the `routedUnmetNeed` fallback branch is NEVER
+  // floor-filtered, so a rounding-scale routed residual could read as
+  // `unmetNeed > 0` without being material. Chart/table/KPI alerting
+  // should all key off THIS field, not re-derive materiality themselves
+  // (three independent re-derivations is how a chart marker and a table
+  // line end up disagreeing about the same year).
+  //
+  // grossUpForTaxes:false households net out the tax+penalty portion of
+  // fundingShortfall before checking materiality (live-user finding,
+  // 2026-08-28): with that setting off, the household has deliberately
+  // chosen to withdraw the raw need and let tax/penalty come out of it
+  // uncompensated -- fundingShortfall then equals ~taxCost+penaltyCost
+  // EVERY single year, by design, forever. That's not a real/unexpected
+  // shortfall the way a router failure or RMD-forced gap is; alerting on
+  // it every year for the life of the plan would drown out the genuine
+  // signal. routedUnmetNeed is untouched by this netting -- it's a
+  // separate, always-real "the router couldn't reach the money" signal,
+  // unrelated to the gross-up policy choice.
+  const shouldGrossUp = taxRates.grossUpForTaxes !== false;
+  const grossUpExplainedGap = shouldGrossUp
+    ? 0
+    : roundToCents(Math.min(taxCost + penaltyCost, fundingShortfall));
+  const netFundingShortfall = Math.max(
+    0,
+    roundToCents(fundingShortfall - grossUpExplainedGap),
+  );
+  const unmetNeedMaterial =
+    Math.max(routedUnmetNeed ?? 0, netFundingShortfall) >
+    shortfallMaterialityFloor;
 
   // --- IRMAA Awareness (Phase 6) ---
   // Store MAGI for 2-year lookback (#18).
@@ -1008,6 +1069,7 @@ export function runDecumulationYear(
     age,
     phase: "decumulation",
     projectedExpenses: roundToCents(state.projectedExpenses),
+    budgetOnlyExpenses: roundToCents(state.budgetOnlyExpenses),
     hasBudgetOverride: budgetOverrideMap.has(year),
     brokerageContribution: decumBrokerageContrib,
     brokerageRampContribution: decumRampAmount,
@@ -1026,6 +1088,7 @@ export function runDecumulationYear(
     estTraditionalPortion,
     bracketTraditionalCap: routeResult.traditionalCap,
     unmetNeed: finalUnmetNeed,
+    unmetNeedMaterial,
     penaltyAvoidedShortfall,
     nonRetirementShortfall,
     penaltyCost,

@@ -44,6 +44,7 @@
  */
 import { calculateProjection } from "./engine";
 import type { ProjectionInput, ProjectionResult } from "./types";
+import { roundToCents } from "../utils/math";
 
 export type CoastFireStatus = "already_coast" | "found" | "unreachable";
 
@@ -118,6 +119,19 @@ function passes(projection: ProjectionResult): boolean {
         Math.max(50, (y.afterTaxNeed ?? 0) * 0.01),
   );
   if (hadPenaltyAvoidedShortfall) return false;
+  // Advisor review, 2026-08-29 (finding #8): `nonRetirementShortfall` is
+  // structurally identical to `penaltyAvoidedShortfall` above — a real
+  // household shortfall (R49: money in a Portfolio-parented account
+  // routing unconditionally excludes) that neither `portfolioDepletionAge`
+  // nor `sustainableWithdrawal` would ever notice, for the same reason the
+  // comment above `passes()` explains for the penalty-exclusion case.
+  const hadNonRetirementShortfall = projection.projectionByYear.some(
+    (y) =>
+      y.phase === "decumulation" &&
+      (y.nonRetirementShortfall ?? 0) >
+        Math.max(50, (y.afterTaxNeed ?? 0) * 0.01),
+  );
+  if (hadNonRetirementShortfall) return false;
   // Compare the strategy's actual first-year spending against the
   // household's stated need — NOT against `sustainableWithdrawal` (see the
   // R45 fix note above). When no retirement budget is set
@@ -125,7 +139,21 @@ function passes(projection: ProjectionResult): boolean {
   // check against — fall back to the old behavior so an unconfigured
   // household doesn't get a spurious failure.
   if (projection.firstDecumulationYearStatedNeed == null) {
-    return projection.sustainableWithdrawal >= retirementYear.projectedExpenses;
+    // Advisor review, 2026-08-29 (finding #9): R45 Step 2 changed
+    // `sustainableWithdrawal`'s meaning to the strategy's actual
+    // tax-grossed-up withdrawal (`targetWithdrawal` — gross of tax, net of
+    // Social Security), but this fallback still compared it directly
+    // against `projectedExpenses` (gross of Social Security, net of tax) —
+    // mixed units, systematically wrong by both the tax bill and whatever
+    // Social Security covers. Undo both adjustments before comparing so
+    // both sides are in the same "total household spending" terms
+    // `projectedExpenses` is in.
+    const netSustainableWithdrawal = roundToCents(
+      projection.sustainableWithdrawal -
+        retirementYear.taxCost +
+        retirementYear.ssIncome,
+    );
+    return netSustainableWithdrawal >= retirementYear.projectedExpenses;
   }
   return (
     retirementYear.projectedExpenses >=

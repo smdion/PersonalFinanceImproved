@@ -3,7 +3,15 @@
 /** Expandable account card that composes settings, sub-accounts, and contributions sections for a single performance account. */
 
 import React, { useState } from "react";
-import { formatCurrency, accountDisplayName } from "@/lib/utils/format";
+import {
+  formatCurrency,
+  formatPercent,
+  accountDisplayName,
+} from "@/lib/utils/format";
+import {
+  EARLY_WITHDRAWAL_PENALTY_RATE,
+  HSA_NON_MEDICAL_PENALTY_RATE,
+} from "@/lib/constants";
 import { confirm } from "@/components/ui/confirm-dialog";
 import {
   accountBorderColor,
@@ -368,9 +376,12 @@ export function AccountCard({
                           checked={pa.allowPenalizedWithdrawals ?? false}
                           onChange={async (e) => {
                             const checked = e.target.checked;
-                            const rate = isHsaCategory(pa.accountType)
-                              ? "20%"
-                              : "10%";
+                            const rate = formatPercent(
+                              isHsaCategory(pa.accountType)
+                                ? HSA_NON_MEDICAL_PENALTY_RATE
+                                : EARLY_WITHDRAWAL_PENALTY_RATE,
+                              0,
+                            );
                             if (
                               !checked ||
                               (await confirm(
@@ -392,7 +403,9 @@ export function AccountCard({
                         >
                           Allow early-withdrawal penalty on this account
                         </label>
-                        <HelpTip text="If checked, the retirement projection may draw penalty-exposed money from this specific account, paying the 10% (20% for HSA) penalty when it does. The household still avoids the penalty on every other account. This is not a last-resort-only setting — normal withdrawal order decides when it's drawn." />
+                        <HelpTip
+                          text={`If checked, the retirement projection may draw penalty-exposed money from this specific account, paying the ${formatPercent(EARLY_WITHDRAWAL_PENALTY_RATE, 0)} (${formatPercent(HSA_NON_MEDICAL_PENALTY_RATE, 0)} for HSA) penalty when it does. The household still avoids the penalty on every other account. This is not a last-resort-only setting — normal withdrawal order decides when it's drawn.`}
+                        />
                       </div>
                     )}{" "}
                   </div>{" "}

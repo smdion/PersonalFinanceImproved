@@ -325,18 +325,22 @@ export async function buildEnginePayload(
   // themselves. Undefined (not an empty object) when nothing's seeded, so
   // `computeLtcgTax`/`getLtcgRate` fall back to their hardcoded defaults
   // exactly as before this change.
-  const latestLtcgTaxYear =
-    allLtcgBrackets.length > 0
-      ? Math.max(...allLtcgBrackets.map((b) => b.taxYear))
-      : new Date().getFullYear();
-  const ltcgBracketData =
-    allLtcgBrackets.length > 0
-      ? Object.fromEntries(
-          allLtcgBrackets
-            .filter((b) => b.taxYear === latestLtcgTaxYear)
-            .map((b) => [b.filingStatus, b.brackets]),
-        )
-      : undefined;
+  // (advisor review, 2026-08-29): the `new Date().getFullYear()` fallback
+  // this used to have was dead code — latestLtcgTaxYear is only ever
+  // needed inside the `allLtcgBrackets.length > 0` branch below, so it's
+  // only computed there now, where Math.max has real data to work with.
+  let ltcgBracketData:
+    Record<string, { threshold: number | null; rate: number }[]> | undefined;
+  if (allLtcgBrackets.length > 0) {
+    const latestLtcgTaxYear = Math.max(
+      ...allLtcgBrackets.map((b) => b.taxYear),
+    );
+    ltcgBracketData = Object.fromEntries(
+      allLtcgBrackets
+        .filter((b) => b.taxYear === latestLtcgTaxYear)
+        .map((b) => [b.filingStatus, b.brackets]),
+    );
+  }
 
   // Per-person retirement settings (for per-person age display + editing)
   const perPersonSettings = people.map((p) => {

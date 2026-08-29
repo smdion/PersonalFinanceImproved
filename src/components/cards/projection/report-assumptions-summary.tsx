@@ -15,6 +15,18 @@ import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies"
  *  — accept both here rather than pinning down which is which per field. */
 type NumLike = number | string;
 
+/** Human-readable labels for the engine's short-code filing status
+ *  (`FilingStatusType`/`W4FilingStatus` — "MFJ"/"Single"/"HOH") — this
+ *  printed report is a client-facing document, so it must never render
+ *  the raw short code (advisor review, 2026-08-29 — "never render raw DB
+ *  keys" rule). Falls back to the raw value for anything unrecognized
+ *  rather than hiding it. */
+const FILING_STATUS_LABELS: Record<string, string> = {
+  MFJ: "Married Filing Jointly",
+  Single: "Single",
+  HOH: "Head of Household",
+};
+
 /** Structural subset of the `settings` object `projection.computeProjection`
  *  returns (see `src/server/routers/projection/scenarios.ts`) — named
  *  locally, same convention as `EligibilityAccountInput`, so this component
@@ -178,7 +190,13 @@ export function ReportAssumptionsSummary({
           <Row label="Household size" value={String(householdSize)} />
         )}
         {settings.filingStatus && (
-          <Row label="Tax filing status" value={settings.filingStatus} />
+          <Row
+            label="Tax filing status"
+            value={
+              FILING_STATUS_LABELS[settings.filingStatus] ??
+              settings.filingStatus
+            }
+          />
         )}
       </Section>
 

@@ -613,11 +613,14 @@ export function routeWithdrawalsBracketFilling(
     : 0;
   const baseOrdinaryFloor =
     (bracketInfo.taxableSS ?? 0) + totalTradWithdrawn + conversionReservedRoom;
-  let impliedRothGrowth = 0;
-  let tiers = rankWithdrawalTiers({
+  // Hoisted (advisor review, 2026-08-29): this 9-field object used to be
+  // written out twice (seed pass + every refine pass below), differing
+  // only in `ordinaryIncomeFloor` — a field added to one copy and not the
+  // other would silently change ranking behavior between the seed and
+  // refine passes with nothing to catch it. One shared base, one field
+  // that actually varies.
+  const rankingBaseInput = {
     filingStatus: bracketInfo.filingStatus,
-    ordinaryIncomeFloor: baseOrdinaryFloor,
-    targetRate: bracketInfo.rothBracketTarget ?? 0,
     taxBrackets: bracketInfo.taxBrackets ?? [],
     ltcgBrackets: bracketInfo.ltcgBrackets,
     rothBasisAvailable: bracketInfo.rothBasisAvailable ?? rothAvailableTotal,
@@ -626,6 +629,11 @@ export function routeWithdrawalsBracketFilling(
     brokerageBasisRatio: bracketInfo.brokerageBasisRatio ?? 0,
     hsaAvailable: hsaAvailableTotal,
     magiBeforeThisDraw: bracketInfo.magiBeforeThisDraw ?? baseOrdinaryFloor,
+  };
+  let impliedRothGrowth = 0;
+  let tiers = rankWithdrawalTiers({
+    ...rankingBaseInput,
+    ordinaryIncomeFloor: baseOrdinaryFloor,
   });
   for (let iter = 0; iter < 3; iter++) {
     let capacitySoFar = 0;
@@ -643,17 +651,8 @@ export function routeWithdrawalsBracketFilling(
     if (Math.abs(growthTierCapacity - impliedRothGrowth) < 1) break;
     impliedRothGrowth = growthTierCapacity;
     tiers = rankWithdrawalTiers({
-      filingStatus: bracketInfo.filingStatus,
+      ...rankingBaseInput,
       ordinaryIncomeFloor: baseOrdinaryFloor + impliedRothGrowth,
-      targetRate: bracketInfo.rothBracketTarget ?? 0,
-      taxBrackets: bracketInfo.taxBrackets ?? [],
-      ltcgBrackets: bracketInfo.ltcgBrackets,
-      rothBasisAvailable: bracketInfo.rothBasisAvailable ?? rothAvailableTotal,
-      rothAvailable: rothAvailableTotal,
-      brokerageAvailable: brokerageAvailableTotal,
-      brokerageBasisRatio: bracketInfo.brokerageBasisRatio ?? 0,
-      hsaAvailable: hsaAvailableTotal,
-      magiBeforeThisDraw: bracketInfo.magiBeforeThisDraw ?? baseOrdinaryFloor,
     });
   }
 
@@ -667,23 +666,11 @@ export function routeWithdrawalsBracketFilling(
     tierDrawers[tier.source](tier.capacity);
   }
 
-  // Ensure every category has a slot even if this ranking never drew from
-  // it (e.g. brokerage/HSA untouched because Roth alone covered the need).
-  for (const cat of singleBucketCats) {
-    if (!slots.find((s) => s.category === cat)) {
-      slots.push({
-        category: cat,
-        withdrawal: 0,
-        rothWithdrawal: 0,
-        traditionalWithdrawal: 0,
-        cappedByAccount: false,
-        cappedByTaxType: false,
-        remainingNeed: 0,
-      });
-    }
-  }
-
   // Ensure all 4 categories have slots (brokerage might be missing if not needed)
+  // (advisor review, 2026-08-29: this ACCOUNT_CATEGORIES loop already
+  // covers every singleBucketCats entry too, since singleBucketCats is a
+  // subset — a separate identical loop over just that subset ran first
+  // and was fully dead code, removed here.)
   for (const cat of ACCOUNT_CATEGORIES) {
     if (!slots.find((s) => s.category === cat)) {
       slots.push({

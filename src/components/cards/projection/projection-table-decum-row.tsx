@@ -39,6 +39,7 @@ import {
   lumpSumsForBucket,
   lumpSumsForCategory,
   lumpSumTotal,
+  buildStrategyEventStyle,
 } from "./utils";
 import type { ProjectionState } from "./projection-table-types";
 import {
@@ -719,29 +720,55 @@ export function DecumulationRow({
               : undefined;
           // R47 follow-up: full satisfaction status (checkmark/shortfall/
           // excess wording), not just the bare amount — parity with the
-          // chart tooltip's rmd block (see tooltip-renderer.tsx).
+          // chart tooltip's rmd block (see tooltip-renderer.tsx). Checkmark
+          // shows whenever the RMD was actually met, not just the notable
+          // excess/QCD case — silence isn't a reliable enough signal of
+          // "satisfied" on its own (user feedback, 2026-08-28).
           const rmdShortfallAmount = dyr.rmdShortfallAmount ?? 0;
           const rmdExcessAmount = dyr.rmdExcessAmount ?? 0;
-          const rmdSatisfiedNotably =
-            rmdShortfallAmount <= 0 &&
-            (rmdExcessAmount > 0 || (dyr.qcdAmount ?? 0) > 0);
+          const rmdSatisfied = rmdShortfallAmount <= 0;
           return renderTooltip({
             kind: "money",
             header: "Total Withdrawals",
             meta: ssMeta,
+            shortfall: dyr.unmetNeedMaterial
+              ? {
+                  amount: deflate(dyr.unmetNeed ?? 0, yr.year),
+                  nonRetirementAmount:
+                    (dyr.nonRetirementShortfall ?? 0) > 0
+                      ? deflate(dyr.nonRetirementShortfall!, yr.year)
+                      : undefined,
+                  penaltyAvoidedAmount:
+                    (dyr.penaltyAvoidedShortfall ?? 0) > 0
+                      ? deflate(dyr.penaltyAvoidedShortfall!, yr.year)
+                      : undefined,
+                }
+              : undefined,
             rmd: hasRmd
               ? {
                   amount: deflate(dyr.rmdAmount, yr.year),
                   isStartYear: isRmdStartRow,
-                  satisfiedNotably: rmdSatisfiedNotably,
+                  satisfiedNotably: rmdSatisfied,
                   shortfallAmount: deflate(rmdShortfallAmount, yr.year),
                   excessAmount: deflate(rmdExcessAmount, yr.year),
                   excessMode:
                     engineSettings?.rmdExcessHandling === "spend"
                       ? "spend"
                       : "reinvest",
+                  qcdAmount:
+                    (dyr.qcdAmount ?? 0) > 0
+                      ? deflate(dyr.qcdAmount!, yr.year)
+                      : undefined,
                 }
               : undefined,
+            strategyEvent: (() => {
+              if (!dyr.strategyAction) return undefined;
+              const style =
+                buildStrategyEventStyle(engineSettings)[dyr.strategyAction];
+              return style
+                ? { color: style.color, text: style.tooltipText }
+                : undefined;
+            })(),
             items: items.length > 0 ? items : undefined,
             growth:
               Math.abs(totalGrowth) > 1

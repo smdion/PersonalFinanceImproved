@@ -106,4 +106,43 @@ describe("mergeGoalIntoNote", () => {
       expect(result).toEqual({ ok: true, note: "#template 100" });
     });
   });
+
+  // Advisor review, 2026-08-29: a negative amount used to write
+  // `#template -50`, which FIXED_RE/TARGET_BALANCE_RE (digits-only, no
+  // sign) can never match again -- every later write for that category
+  // permanently fell into the ANY_TEMPLATE_RE "conflict" branch instead.
+  describe("negative amount rejection", () => {
+    it("rejects a negative fixed amount instead of writing malformed syntax", () => {
+      const result = mergeGoalIntoNote(null, "fixed", -50);
+      expect(result.ok).toBe(false);
+    });
+
+    it("rejects a negative target-balance amount instead of writing malformed syntax", () => {
+      const result = mergeGoalIntoNote(null, "target-balance", -50);
+      expect(result.ok).toBe(false);
+    });
+
+    it("does not clobber an existing note when rejecting a negative amount", () => {
+      const result = mergeGoalIntoNote("Rent — due on the 1st", "fixed", -50);
+      expect(result).toEqual({
+        ok: false,
+        reason: expect.stringContaining("zero or positive"),
+      });
+    });
+
+    it("accepts zero (not negative) as a valid amount", () => {
+      const result = mergeGoalIntoNote(null, "fixed", 0);
+      expect(result).toEqual({ ok: true, note: "#template 0" });
+    });
+
+    it("regression guard: a rejected negative amount can't poison a later valid write for the same category", () => {
+      const rejected = mergeGoalIntoNote(null, "fixed", -50);
+      expect(rejected.ok).toBe(false);
+      // Nothing was ever written to the note, so a subsequent real write
+      // for the same category starts clean, not fighting a malformed
+      // "#template -50" line stuck in ANY_TEMPLATE_RE limbo.
+      const accepted = mergeGoalIntoNote(null, "fixed", 50);
+      expect(accepted).toEqual({ ok: true, note: "#template 50" });
+    });
+  });
 });

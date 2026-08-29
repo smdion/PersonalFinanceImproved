@@ -257,6 +257,20 @@ export function useProjectionQueries(
     utils.projection.computeCoastFireMC.setData(debouncedBaseInput, result);
   };
 
+  // Operational escape hatch (user request, 2026-08-28): wipe every cached
+  // projection row server-side without bumping PROJECTION_CACHE_ENGINE_VERSION
+  // and redeploying, then invalidate every projection query on THIS page so
+  // it refetches against the now-empty cache immediately, rather than
+  // requiring a manual reload.
+  const clearProjectionCacheMutation = trpc.projection.clearCache.useMutation({
+    onSuccess: () => {
+      utils.projection.computeProjection.invalidate();
+      utils.projection.computeMonteCarloProjection.invalidate();
+      utils.projection.computeCoastFire.invalidate();
+      utils.projection.computeCoastFireMC.invalidate();
+    },
+  });
+
   // --- Monte Carlo queries ---
   // mcPrefetchQuery + mcQuery use debouncedBaseInput (never include the Coast
   // FIRE override). Coast FIRE scenario rendering is powered by
@@ -340,6 +354,36 @@ export function useProjectionQueries(
       : coastFireMcQuery.data?.result?.stopNowMcResult
   ) as MonteCarloResult | undefined;
 
+  // Rate-Seeded scenario (Feature B, advisor review 2026-08-28) — reuses
+  // computeMonteCarloProjection itself (no bespoke procedure needed, unlike
+  // Coast FIRE's binary search) with the new rateSeededDecumulationYear1
+  // flag, which calculateMonteCarlo already returns a full MonteCarloResult
+  // for (including deterministicProjection) exactly like the baseline mc
+  // result. On-demand (enabled only once the scenario is selected), not
+  // autoloaded in the background like Coast FIRE — a third always-on MC
+  // run per page load was judged not worth the extra background server
+  // cost for a scenario most households won't open every visit.
+  const rateSeededMcQuery =
+    trpc.projection.computeMonteCarloProjection.useQuery(
+      {
+        numTrials: MC_DEFAULT_TRIALS,
+        preset: "default" as const,
+        taxMode: mcTaxMode,
+        ...debouncedBaseInput,
+        rateSeededDecumulationYear1: true,
+      },
+      {
+        enabled:
+          scenarioView === "rateSeeded" &&
+          engineQuery.isSuccess &&
+          !engineQuery.isFetching,
+        placeholderData: (prev) => prev,
+        staleTime: 5 * PROJECTION_STALE_TIME_MS,
+      },
+    );
+  const rateSeededMcResult = rateSeededMcQuery.data?.result as
+    MonteCarloResult | undefined;
+
   // Initialize asset class overrides from saved DB values on first MC query success
   const mcOverridesInitialized = useRef(false);
   useEffect(() => {
@@ -375,13 +419,25 @@ export function useProjectionQueries(
     scenarioView === "coastFireToday"
       ? coastFireTodayMcResult
       : coastFireMcResult;
-  const useCoastFireMc = inCoastFireScenario && !!activeCoastFireMcResult;
+  // Generalized "which non-baseline scenario, if any, is active" — Coast
+  // FIRE (either variant) and Rate-Seeded both source their deterministic
+  // line + MC bands from their own MonteCarloResult rather than the
+  // baseline mcQuery/mcPrefetchQuery, exactly the same selection shape,
+  // just a different query behind it.
+  const inAltScenario = inCoastFireScenario || scenarioView === "rateSeeded";
+  const activeAltMcResult =
+    scenarioView === "rateSeeded"
+      ? rateSeededMcResult
+      : activeCoastFireMcResult;
+  const useCoastFireMc = inAltScenario && !!activeAltMcResult;
 
   const mcLoading =
     projectionMode === "monteCarlo" &&
-    (inCoastFireScenario
-      ? coastFireMcQuery.isLoading || coastFireMcQuery.isFetching
-      : mcQuery.isLoading || mcQuery.isFetching);
+    (scenarioView === "rateSeeded"
+      ? rateSeededMcQuery.isLoading || rateSeededMcQuery.isFetching
+      : inCoastFireScenario
+        ? coastFireMcQuery.isLoading || coastFireMcQuery.isFetching
+        : mcQuery.isLoading || mcQuery.isFetching);
 
   const mcBandsByYear = useMemo(() => {
     if (
@@ -391,7 +447,7 @@ export function useProjectionQueries(
     )
       return null;
     if (useCoastFireMc) {
-      const bands = activeCoastFireMcResult?.percentileBands ?? null;
+      const bands = activeAltMcResult?.percentileBands ?? null;
       if (!bands) return null;
       return new Map<number, MonteCarloPercentileBand>(
         bands.map((b) => [b.year, b]),
@@ -413,7 +469,7 @@ export function useProjectionQueries(
     mcQuery.data?.result?.percentileBands,
     mcPrefetchQuery.data?.result?.percentileBands,
     useCoastFireMc,
-    activeCoastFireMcResult?.percentileBands,
+    activeAltMcResult?.percentileBands,
   ]);
 
   const mcStabilityBands = useMemo(() => {
@@ -424,7 +480,7 @@ export function useProjectionQueries(
     )
       return null;
     const bands = useCoastFireMc
-      ? (activeCoastFireMcResult?.spendingStabilityBands ?? null)
+      ? (activeAltMcResult?.spendingStabilityBands ?? null)
       : ((projectionMode === "monteCarlo"
           ? mcQuery.data?.result?.spendingStabilityBands
           : null) ??
@@ -443,7 +499,7 @@ export function useProjectionQueries(
     mcQuery.data?.result?.spendingStabilityBands,
     mcPrefetchQuery.data?.result?.spendingStabilityBands,
     useCoastFireMc,
-    activeCoastFireMcResult?.spendingStabilityBands,
+    activeAltMcResult?.spendingStabilityBands,
   ]);
 
   const mcIsPrefetch =
@@ -460,7 +516,7 @@ export function useProjectionQueries(
     )
       return null;
     const det = useCoastFireMc
-      ? (activeCoastFireMcResult?.deterministicProjection ?? null)
+      ? (activeAltMcResult?.deterministicProjection ?? null)
       : ((projectionMode === "monteCarlo"
           ? mcQuery.data?.result?.deterministicProjection
           : null) ??
@@ -482,7 +538,7 @@ export function useProjectionQueries(
     mcPrefetchQuery.data?.result?.deterministicProjection,
     parentCategoryFilter,
     useCoastFireMc,
-    activeCoastFireMcResult?.deterministicProjection,
+    activeAltMcResult?.deterministicProjection,
   ]);
 
   // Contribution profiles query
@@ -500,12 +556,16 @@ export function useProjectionQueries(
     coastFireMcResult,
     coastFireTodayMcResult,
     activeCoastFireMcResult,
+    rateSeededMcQuery,
+    rateSeededMcResult,
+    activeAltMcResult,
     autoloadEnabled,
     runSimulation,
     mcAutoloadEnabled,
     runMonteCarlo,
     coastFireMcAutoloadEnabled,
     runCoastFireMc,
+    clearProjectionCacheMutation,
     engineQuery,
     mcPrefetchQuery,
     mcQuery,

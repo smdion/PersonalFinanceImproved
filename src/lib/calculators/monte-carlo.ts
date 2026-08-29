@@ -352,17 +352,19 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
       if (isStable) spendingStableCount++;
 
       // Budget stability: same check but against the user's ACTUAL per-year
-      // budget (y.projectedExpenses — the engine's own real budget figure
+      // budget (y.budgetOnlyExpenses — the engine's own real budget figure
       // for that specific year, already reflecting any raises/phase
-      // changes the household's Budget Profile defines) rather than a
-      // synthetic flat-inflation reprojection of the day-0 number. The old
-      // reprojection could silently diverge from the real budget schedule
-      // for any household with non-flat raises, making "budget stability"
-      // partly an artifact of this metric's own approximation rather than
-      // a real signal (found via live user confusion, 2026-08-28).
+      // changes the household's Budget Profile defines, and NEVER mutated
+      // by a reactive strategy's guardrail adjustment) rather than a
+      // synthetic flat-inflation reprojection of the day-0 number.
+      // y.projectedExpenses looked right but isn't: for Guyton-Klinger/
+      // Forgo/Spending-Decline it's overwritten by that strategy's own
+      // guardrail target every year, which silently collapsed "vs budget"
+      // into being identical to "vs strategy" (live-user finding,
+      // 2026-08-28 — both KPI rings showing the same percentage).
       if (retirementBudget !== null) {
         const isBudgetStable = decYears.every((y) => {
-          const baseline = y.projectedExpenses;
+          const baseline = y.budgetOnlyExpenses;
           return (
             baseline === 0 ||
             y.totalWithdrawal >= MC_SPENDING_STABILITY_THRESHOLD * baseline
@@ -381,7 +383,7 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
         );
         if (retirementBudget !== null) {
           budgetRatiosByDecYear[di]!.push(
-            safeDivide(yr.totalWithdrawal, yr.projectedExpenses, 0),
+            safeDivide(yr.totalWithdrawal, yr.budgetOnlyExpenses, 0),
           );
         }
       }
@@ -431,6 +433,11 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
     if (stratRatios.length === 0) continue;
     const sortedStrat = [...stratRatios].sort((a, b) => a - b);
     const stratMean = sumBy(stratRatios, (v) => v) / stratRatios.length;
+    const stratBreachRate = safeDivide(
+      stratRatios.filter((r) => r < MC_SPENDING_STABILITY_THRESHOLD).length,
+      stratRatios.length,
+      0,
+    );
     stratRatioBands.push({
       year: retirementStartYear + di,
       age: retirementStartAge + di,
@@ -442,12 +449,18 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
       p90: percentile(sortedStrat, 90),
       p95: percentile(sortedStrat, 95),
       mean: stratMean,
+      breachRate: stratBreachRate,
     });
 
     const budgetRatios = budgetRatiosByDecYear[di]!;
     if (budgetRatios.length > 0) {
       const sortedBudget = [...budgetRatios].sort((a, b) => a - b);
       const budgetMean = sumBy(budgetRatios, (v) => v) / budgetRatios.length;
+      const budgetBreachRate = safeDivide(
+        budgetRatios.filter((r) => r < MC_SPENDING_STABILITY_THRESHOLD).length,
+        budgetRatios.length,
+        0,
+      );
       budgetRatioBands.push({
         year: retirementStartYear + di,
         age: retirementStartAge + di,
@@ -459,6 +472,7 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
         p90: percentile(sortedBudget, 90),
         p95: percentile(sortedBudget, 95),
         mean: budgetMean,
+        breachRate: budgetBreachRate,
       });
     }
   }

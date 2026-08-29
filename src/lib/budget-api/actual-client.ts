@@ -312,9 +312,18 @@ export class ActualClient implements BudgetAPIClient {
   async getMonths(start: string, end: string): Promise<BudgetMonth[]> {
     const res = await this.request<{ data: string[] }>("/months");
     const inRange = res.data.filter((id) => id >= start && id <= end);
-    const details = await Promise.all(
-      inRange.map((id) => this.getMonthDetail(id)),
-    );
+    // Batched, not one unbounded Promise.all fan-out (advisor review,
+    // 2026-08-29) — a wide date range could otherwise fire dozens of
+    // concurrent requests at the actual-http-api wrapper at once. No
+    // live caller today, but this is the shape any future one inherits.
+    const MONTH_DETAIL_BATCH_SIZE = 10;
+    const details: BudgetMonthDetail[] = [];
+    for (let i = 0; i < inRange.length; i += MONTH_DETAIL_BATCH_SIZE) {
+      const batch = inRange.slice(i, i + MONTH_DETAIL_BATCH_SIZE);
+      details.push(
+        ...(await Promise.all(batch.map((id) => this.getMonthDetail(id)))),
+      );
+    }
     return details.map(({ categories: _categories, ...month }) => month);
   }
 

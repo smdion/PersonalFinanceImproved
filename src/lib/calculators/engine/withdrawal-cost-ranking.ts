@@ -26,11 +26,16 @@
  * enabled — see `rothBasisAvailable`'s docblock below.
  */
 import type { FilingStatusType, TaxBuckets } from "../types";
-import { marginalRateAboveTarget } from "./tax-estimation";
+import { marginalRateAtIncome } from "./tax-estimation";
 import type { WithholdingBracket } from "./tax-estimation";
 import { ltcgRoomForRate, getLtcgRate } from "../../config/tax-tables";
+import {
+  isRetirementParent,
+  isTaxFreeBucket,
+} from "../../config/account-types";
 import { NIIT_RATE, NIIT_THRESHOLDS } from "../../config/niit";
 import type { RothBasisState } from "@/lib/pure/roth-basis-tracking";
+import type { IndKeyFn } from "@/lib/pure/withdrawal-eligibility";
 
 export type WithdrawalSourceKind = "roth" | "brokerage" | "hsa";
 
@@ -48,14 +53,53 @@ export type WithdrawalSourceKind = "roth" | "brokerage" | "hsa";
 export function deriveBasisRankingInputs(params: {
   balances: Pick<TaxBuckets, "afterTax" | "afterTaxBasis">;
   indBasis?: Map<string, RothBasisState>;
+  /** Advisor review, 2026-08-29 (finding #7): `indBasis`'s basis totals are
+   *  tracked per Roth ACCOUNT, but a Portfolio-parented account is
+   *  unconditionally excluded from the routable pool (R49 --
+   *  `computeNonRetirementExclusion`, no config lever, no opt-out). Without
+   *  `indAccts`/`indKey` here, a household whose Roth basis happens to sit
+   *  in a Portfolio-parented account would still count it as "free"
+   *  capacity in a pool that structurally can never draw from that
+   *  account -- Tier-0's `Math.min(rothBasisAvailable, rothAvailable)`
+   *  clamp bounds the TOTAL dollar amount correctly, but not which
+   *  specific dollars are basis vs. growth, so pricing/ordering could
+   *  still be wrong even though the total never overshoots. Passing these
+   *  two (already in scope at both call sites, no new plumbing) lets this
+   *  function drop a Portfolio-parented account's basis from the total
+   *  instead of assuming every dollar of basis is reachable.
+   *
+   *  Deliberately NOT also filtering by penalty-exposure eligibility here:
+   *  that exclusion is conditional on `config.avoidPenalizedWithdrawals`,
+   *  which isn't available at either call site, and threading it through
+   *  for this ordering-only refinement isn't worth the added risk --
+   *  same category of scope boundary as the module docblock's "does not
+   *  model IRMAA." */
+  indAccts?: {
+    name: string;
+    category: string;
+    taxType: string;
+    ownerPersonId?: number;
+    parentCategory?: string;
+  }[];
+  indKey?: IndKeyFn;
 }): { rothBasisAvailable: number | undefined; brokerageBasisRatio: number } {
-  const { balances, indBasis } = params;
-  const rothBasisAvailable = indBasis
-    ? Array.from(indBasis.values()).reduce(
+  const { balances, indBasis, indAccts, indKey } = params;
+  let rothBasisAvailable: number | undefined;
+  if (indBasis) {
+    if (indAccts && indKey) {
+      rothBasisAvailable = indAccts.reduce((s, ia) => {
+        if (!isTaxFreeBucket(ia.taxType)) return s;
+        if (!isRetirementParent(ia.parentCategory ?? "Retirement")) return s;
+        const state = indBasis.get(indKey(ia));
+        return state ? s + state.contributionBasis + state.conversionBasis : s;
+      }, 0);
+    } else {
+      rothBasisAvailable = Array.from(indBasis.values()).reduce(
         (s, state) => s + state.contributionBasis + state.conversionBasis,
         0,
-      )
-    : undefined;
+      );
+    }
+  }
   const brokerageBasisRatio =
     balances.afterTax > 0
       ? Math.min(1, balances.afterTaxBasis / balances.afterTax)
@@ -84,9 +128,6 @@ export interface RankWithdrawalTiersInput {
    *  (design decision #5). Used as the LTCG-stacking floor and to locate
    *  the marginal rate for Roth growth. */
   ordinaryIncomeFloor: number;
-  /** The Phase-1 bracket target rate (`rothBracketTarget`) — Roth growth's
-   *  marginal rate is the bracket immediately above this. */
-  targetRate: number;
   taxBrackets: WithholdingBracket[];
   ltcgBrackets?: Record<string, { threshold: number | null; rate: number }[]>;
   /** Roth basis dollars available across the accounts routing will draw
@@ -122,7 +163,6 @@ export function rankWithdrawalTiers(
   const {
     filingStatus,
     ordinaryIncomeFloor,
-    targetRate,
     taxBrackets,
     ltcgBrackets,
     rothBasisAvailable,
@@ -150,14 +190,27 @@ export function rankWithdrawalTiers(
 
   if (!filingStatus) {
     // No filing status ⇒ no real LTCG bracket lookup, no NIIT MAGI
-    // threshold lookup (both are keyed by filing status) — degrade to
-    // today's fixed order: remaining Roth (now priced by the caller's flat
-    // fallback rate, same as always), then brokerage, then HSA.
+    // threshold lookup (both are keyed by filing status) — brokerage
+    // degrades to today's fixed flat-fallback pricing (ordered last).
+    // Roth growth and HSA (once it reaches this ranking it's ordinarily
+    // already the penalty-free/penalty-excluded portion — see the design
+    // decision #8 note below) both stack as plain ordinary income on the
+    // SAME floor, so they tie at the same rate — insertion order (roth
+    // first) breaks the tie, matching decision #4's Roth-favored
+    // convention elsewhere.
+    const ordinaryRate = marginalRateAtIncome(ordinaryIncomeFloor, taxBrackets);
     if (rothGrowthAvailable > 0) {
       tiers.push({
         source: "roth",
-        costRate: marginalRateAboveTarget(targetRate, taxBrackets),
+        costRate: ordinaryRate,
         capacity: rothGrowthAvailable,
+      });
+    }
+    if (hsaAvailable > 0) {
+      tiers.push({
+        source: "hsa",
+        costRate: ordinaryRate,
+        capacity: hsaAvailable,
       });
     }
     if (brokerageAvailable > 0) {
@@ -166,9 +219,6 @@ export function rankWithdrawalTiers(
         costRate: Infinity, // priced by caller's flat fallback, not this module
         capacity: brokerageAvailable,
       });
-    }
-    if (hsaAvailable > 0) {
-      tiers.push({ source: "hsa", costRate: Infinity, capacity: hsaAvailable });
     }
     return tiers;
   }
@@ -202,9 +252,36 @@ export function rankWithdrawalTiers(
     brokerageAvailable - brokerageZeroCapacity,
   );
 
-  // Tier 2: whichever of {Roth growth at ordinary rate} or {brokerage at
-  // its real LTCG rate, plus NIIT above the MAGI threshold} is cheaper.
-  const rothGrowthRate = marginalRateAboveTarget(targetRate, taxBrackets);
+  // Tier 2: rank {Roth growth at ordinary rate}, {brokerage at its real
+  // LTCG rate, split around the NIIT MAGI threshold if this tier's own
+  // gains would cross it}, and {HSA at ordinary rate} by actual cost —
+  // advisor review, 2026-08-29, replacing what was a Roth-vs-brokerage-
+  // only 2-way comparison with HSA hardcoded last regardless of cost.
+  //
+  // Roth/HSA rate: priced off `ordinaryIncomeFloor` itself (the bracket
+  // this household's income ACTUALLY sits in), not `marginalRateAboveTarget
+  // (targetRate, ...)` (the bracket immediately above the Phase-1 BRACKET-
+  // FILLING TARGET). Those coincide only when Phase 1 actually filled
+  // Traditional up to that target — routing also reaches this ranking
+  // when Traditional simply ran out below the target, where the target
+  // rate overstates the household's real marginal bracket and
+  // systematically overprices Roth/HSA withdrawals, biasing toward
+  // brokerage even when brokerage is the more expensive source.
+  const rothGrowthRate = marginalRateAtIncome(ordinaryIncomeFloor, taxBrackets);
+  // HSA, once its balance reaches this ranking, is ordinarily already the
+  // penalty-free/penalty-excluded portion (routeForMode's caller runs the
+  // penalty exclusion BEFORE this ranking ever sees `hsaAvailable` — see
+  // withdrawal-eligibility.ts's `computeHsaAccess`/`subtractExcluded`) —
+  // so it stacks as plain ordinary income on the SAME floor as Roth
+  // growth, not the "ordinary rate + 20% penalty, always worst" figure
+  // design decision #8 originally assumed for every household regardless
+  // of age. A household that explicitly opted OUT of penalty avoidance
+  // and still has genuinely penalty-exposed HSA money reaching this
+  // ranking gets a sub-optimal (not incorrect — the real penalty is still
+  // priced correctly downstream by computeEarlyWithdrawalPenalty
+  // regardless of draw order) tier position in that narrower, opted-in
+  // case.
+  const hsaRate = rothGrowthRate;
 
   const brokerageOrdinaryIncome = ordinaryIncomeFloor; // gains don't raise the ordinary floor itself
   const ltcgRate = getLtcgRate(
@@ -212,39 +289,64 @@ export function rankWithdrawalTiers(
     filingStatus,
     ltcgBrackets,
   );
+  // NIIT split (advisor review, 2026-08-29): NIIT is 3.8% on the LESSER of
+  // net investment income or MAGI-over-threshold — a marginal boundary,
+  // not an all-or-nothing cliff on the whole tier. Split brokerage's
+  // Tier-2 capacity at the point this tier's OWN gains would cross the
+  // threshold, so the pre-threshold slice prices at the real 0%-NIIT rate
+  // and only the post-threshold slice carries the +3.8% — a household
+  // just under the threshold no longer gets 0% NIIT priced on a draw that
+  // itself pushes them over, and one just over no longer gets 3.8% priced
+  // on the whole tier including the portion that was under.
   const niitThreshold = NIIT_THRESHOLDS[filingStatus];
-  const niitApplies = magiBeforeThisDraw > niitThreshold;
-  const brokerageEffectiveRate = niitApplies ? ltcgRate + NIIT_RATE : ltcgRate;
+  const magiHeadroomForNiit = Math.max(0, niitThreshold - magiBeforeThisDraw);
+  const preNiitWithdrawalRoom =
+    brokerageBasisRatio < 1
+      ? magiHeadroomForNiit / (1 - brokerageBasisRatio)
+      : Infinity;
+  const brokeragePreNiitCapacity = Math.max(
+    0,
+    Math.min(brokerageRemaining, preNiitWithdrawalRoom),
+  );
+  const brokeragePostNiitCapacity = Math.max(
+    0,
+    brokerageRemaining - brokeragePreNiitCapacity,
+  );
 
-  const cheaperIsRoth = rothGrowthRate <= brokerageEffectiveRate;
-  const secondTierOrder: WithdrawalSourceKind[] = cheaperIsRoth
-    ? ["roth", "brokerage"]
-    : ["brokerage", "roth"];
-
-  for (const source of secondTierOrder) {
-    if (source === "roth" && rothGrowthAvailable > 0) {
-      tiers.push({
-        source: "roth",
-        costRate: rothGrowthRate,
-        capacity: rothGrowthAvailable,
-      });
-    }
-    // `source` is a WithdrawalSourceKind, not an AccountCategory — coincides
-    // with the string "brokerage" only. lint-violation-ok
-    if (source === "brokerage" && brokerageRemaining > 0) {
-      tiers.push({
-        source: "brokerage",
-        costRate: brokerageEffectiveRate,
-        capacity: brokerageRemaining,
-      });
-    }
+  const secondTierCandidates: WithdrawalTier[] = [];
+  if (rothGrowthAvailable > 0) {
+    secondTierCandidates.push({
+      source: "roth",
+      costRate: rothGrowthRate,
+      capacity: rothGrowthAvailable,
+    });
   }
-
-  // Tier 3: HSA — last resort, unchanged (ordinary rate + 20% penalty is
-  // realistically always worst; see design decision #8).
+  if (brokeragePreNiitCapacity > 0) {
+    secondTierCandidates.push({
+      source: "brokerage",
+      costRate: ltcgRate,
+      capacity: brokeragePreNiitCapacity,
+    });
+  }
+  if (brokeragePostNiitCapacity > 0) {
+    secondTierCandidates.push({
+      source: "brokerage",
+      costRate: ltcgRate + NIIT_RATE,
+      capacity: brokeragePostNiitCapacity,
+    });
+  }
   if (hsaAvailable > 0) {
-    tiers.push({ source: "hsa", costRate: Infinity, capacity: hsaAvailable });
+    secondTierCandidates.push({
+      source: "hsa",
+      costRate: hsaRate,
+      capacity: hsaAvailable,
+    });
   }
+  // Stable sort (guaranteed by the spec since ES2019) — ties keep their
+  // push order above (roth, brokerage-pre-NIIT, brokerage-post-NIIT, hsa),
+  // preserving decision #4's Roth-favored tie-break.
+  secondTierCandidates.sort((a, b) => a.costRate - b.costRate);
+  tiers.push(...secondTierCandidates);
 
   return tiers;
 }

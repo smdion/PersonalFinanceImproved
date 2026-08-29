@@ -60,6 +60,20 @@ export function mergeGoalIntoNote(
   shape: ActualTemplateShape,
   amount: number,
 ): MergeGoalResult {
+  // A negative amount would write `#template -50` — FIXED_RE/
+  // TARGET_BALANCE_RE are digits-only (no sign), so that line can never
+  // be matched again on a later write, permanently falling into the
+  // ANY_TEMPLATE_RE "different shape" branch and locking this category's
+  // goal out of all future updates (advisor review, 2026-08-29). Reject
+  // up front instead of writing malformed, self-poisoning syntax — a
+  // negative goal amount isn't meaningful in Actual's template syntax
+  // anyway.
+  if (amount < 0) {
+    return {
+      ok: false,
+      reason: `Goal amount must be zero or positive (got ${amount}).`,
+    };
+  }
   const note = existingNote ?? "";
   const targetLine =
     shape === "fixed"

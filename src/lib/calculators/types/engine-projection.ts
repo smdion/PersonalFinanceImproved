@@ -244,6 +244,19 @@ export type ProjectionInput = {
   perPersonBirthYears?: number[];
   /** Annual expenses for decumulation phase. When set, projectedExpenses resets to this value at retirement age. */
   decumulationAnnualExpenses?: number;
+  /** Rate-Seeded scenario (advisor review, 2026-08-28 —
+   *  PLAN-shortfall-alerting-and-strategy-scenario.md Feature B): when
+   *  true, the FIRST decumulation year's spending is seeded from
+   *  `decumulationDefaults.withdrawalRate × portfolio balance` instead of
+   *  from `decumulationAnnualExpenses`/any year-1 budget override —
+   *  ignoring the household's stated budget entirely for the starting
+   *  point. Every subsequent year still runs the SAME active strategy's
+   *  ordinary mechanism (guardrails, decline schedule, etc.) unchanged
+   *  from there — this only changes where year 1 starts, not how the
+   *  strategy evolves afterward. Default false/undefined is byte-
+   *  identical to today's behavior for every existing household — no
+   *  `PROJECTION_CACHE_ENGINE_VERSION` bump needed for this addition. */
+  rateSeededDecumulationYear1?: boolean;
   asOfDate: Date;
 };
 
@@ -325,8 +338,24 @@ export type EngineDecumulationYear = {
   year: number;
   age: number;
   phase: "decumulation";
-  /** Projected annual expenses (inflated or budget-overridden). */
+  /** Projected annual expenses (inflated or budget-overridden). For a
+   *  reactive strategy (Guyton-Klinger, Forgo Inflation After Loss,
+   *  Spending Decline) this is overwritten by that strategy's own
+   *  guardrail-adjusted target every year — use `budgetOnlyExpenses`
+   *  instead when you need the household's actual stated budget,
+   *  untouched by the strategy. */
   projectedExpenses: number;
+  /** The TRUE budget trajectory (inflation/raise growth + manual per-year
+   *  overrides only — never a reactive strategy's guardrail adjustment).
+   *  For Fixed (which never dispatches to a reactive strategy) this always
+   *  equals `projectedExpenses`; for Guyton-Klinger/Forgo/Spending-Decline
+   *  it diverges from `projectedExpenses` as soon as the strategy first
+   *  adjusts spending away from budget. This is what "vs Budget" chart/KPI
+   *  comparisons should read — comparing against `projectedExpenses` for
+   *  those strategies silently collapses "vs Budget" into being identical
+   *  to "vs Strategy" (live-user finding, 2026-08-28: both KPI rings
+   *  showing the same percentage). See ProjectionLoopState.budgetOnlyExpenses. */
+  budgetOnlyExpenses: number;
   hasBudgetOverride: boolean;
   /** Brokerage (Portfolio-category) contributions that continue post-retirement. */
   brokerageContribution: number;
@@ -369,6 +398,15 @@ export type EngineDecumulationYear = {
    *  rather than silently drawing penalized money. Populated by all three
    *  routing modes. */
   unmetNeed?: number;
+  /** Single canonical "is `unmetNeed` a REAL shortfall" verdict (advisor
+   *  review, 2026-08-28) — `unmetNeed` alone isn't reliably floor-filtered
+   *  (its `routedUnmetNeed` fallback branch never applies the materiality
+   *  floor, so a rounding-scale residual can read as `unmetNeed > 0`
+   *  without being material). UI alerting (chart marker, table line, KPI
+   *  urgency) must all key off THIS field rather than re-deriving their
+   *  own materiality threshold — see decumulation-year.ts's
+   *  `shortfallMaterialityFloor` for why $50-or-1%-of-need is the bar. */
+  unmetNeedMaterial?: boolean;
   /** Portion of `unmetNeed` attributable specifically to excluding
    *  penalty-exposed money, not to the household being broke (§ Q3/C2) —
    *  see `RouteResult`'s docblock in `withdrawal-routing.ts` for the exact

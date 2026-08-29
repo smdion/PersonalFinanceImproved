@@ -3425,15 +3425,17 @@ describe("engine snapshot parity", () => {
       (y): y is Extract<typeof y, { phase: "decumulation" }> =>
         y.phase === "decumulation",
     );
-    // RMD ($81,300.81 at age 75) is well under the $105k/person QCD cap
-    // and the IRA Traditional balance ($800k) — the whole thing gets
-    // QCD'd, so no taxable Traditional distribution is forced and there's
-    // no leftover excess to reinvest.
+    // RMD ($81,300.81 at age 75) is well under the IRA Traditional
+    // balance ($800k), and QCD is no longer capped at the RMD amount
+    // (advisor review, 2026-08-29 — a QCD can legally exceed the RMD, up
+    // to the annual $115k/person cap) — so QCD maximizes to the $115k
+    // cap itself, still comfortably covering the RMD with room to spare,
+    // so no taxable Traditional distribution is forced and there's no
+    // leftover excess to reinvest.
     expect(decYears[0]?.rmdAmount).toBe(81300.81);
-    expect(decYears[0]?.qcdAmount).toBe(81300.81);
+    expect(decYears[0]?.qcdAmount).toBe(115000);
     expect(decYears[0]?.totalTraditionalWithdrawal).toBe(0);
     expect(decYears[0]?.rmdExcessAmount).toBe(0);
-    expect(result.sustainableWithdrawal).toBe(10638.3);
     const metrics = extractMetrics(result);
     // R49 (see SNAPSHOT-REVIEW-LOG.md): the QCD debit now applies directly
     // to the IRA's individual-account balance instead of being deferred to
@@ -3441,7 +3443,12 @@ describe("engine snapshot parity", () => {
     // sees the post-QCD capacity mid-year instead of a stale pre-QCD figure,
     // so it can no longer over-draw the account for spending need before
     // reconcile silently "fixes" the balance at year-end.
-    expect(metrics.finalYear?.endBalance).toBe(2499086.87);
+    // Lower than before the QCD-cap fix (was 2499086.87) — the extra
+    // ~$33.7k/yr now going out as QCD (maximized to the cap instead of
+    // stopping at the RMD) never gets to compound in the account across
+    // the remaining 10-year horizon, same direction the endBalance drop
+    // in fixture 66/67 shows.
+    expect(metrics.finalYear?.endBalance).toBe(2299622.5);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -3553,17 +3560,20 @@ describe("engine snapshot parity", () => {
       (y): y is Extract<typeof y, { phase: "decumulation" }> =>
         y.phase === "decumulation",
     );
-    // RMD ($243,902.44 at age 75) exceeds the $105k/person QCD cap — QCD
-    // caps at exactly $105,000, and enforceRmd still forces the remaining
-    // $138,902.44 through as a real taxable Traditional distribution.
+    // RMD ($243,902.44 at age 75) exceeds the $115k/person QCD annual cap
+    // (2026 figure — was $105k, stale by two years' indexing; advisor
+    // review 2026-08-29) — QCD caps at exactly $115,000, and enforceRmd
+    // still forces the remaining $128,902.44 through as a real taxable
+    // Traditional distribution.
     expect(decYears[0]?.rmdAmount).toBe(243902.44);
-    expect(decYears[0]?.qcdAmount).toBe(105000);
-    expect(decYears[0]?.totalTraditionalWithdrawal).toBe(138902.44);
-    expect(decYears[0]?.rmdExcessAmount).toBe(105565.85);
-    expect(result.sustainableWithdrawal).toBe(10638.3);
+    expect(decYears[0]?.qcdAmount).toBe(115000);
+    expect(decYears[0]?.totalTraditionalWithdrawal).toBe(128902.44);
     const metrics = extractMetrics(result);
-    // R49 (see SNAPSHOT-REVIEW-LOG.md) — same fix as fixture 65.
-    expect(metrics.finalYear?.endBalance).toBe(6893089.39);
+    // R49 (see SNAPSHOT-REVIEW-LOG.md) — same fix as fixture 65. Lower
+    // than before the QCD-cap fix (was 6893089.39) — the extra $10k/yr
+    // QCD (cap raised 105k->115k) leaves the account as charity instead
+    // of compounding.
+    expect(metrics.finalYear?.endBalance).toBe(6866927.14);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -3678,13 +3688,16 @@ describe("engine snapshot parity", () => {
     // Same RMD/QCD/excess amounts as fixture 66 — only the DESTINATION of
     // the excess differs (spent, not reinvested), so end balance is lower.
     expect(decYears[0]?.rmdAmount).toBe(243902.44);
-    expect(decYears[0]?.qcdAmount).toBe(105000);
-    expect(decYears[0]?.rmdExcessAmount).toBe(105565.85);
-    expect(result.sustainableWithdrawal).toBe(10638.3);
+    expect(decYears[0]?.qcdAmount).toBe(115000);
+    expect(decYears[0]?.rmdExcessAmount).toBe(97965.85);
     const metrics = extractMetrics(result);
-    // R49 (see SNAPSHOT-REVIEW-LOG.md) — same fix as fixture 65.
+    // R49 (see SNAPSHOT-REVIEW-LOG.md) — same fix as fixture 65. Unchanged
+    // from before the QCD-cap fix -- with rmdExcessHandling="spend", the
+    // extra $10k/yr QCD (cap raised 105k->115k) reduces what's left to
+    // spend as "excess" by the same amount, so the portfolio's own
+    // trajectory nets out the same either way.
     expect(metrics.finalYear?.endBalance).toBe(6517851.49);
-    expect(metrics.finalYear?.endBalance).toBeLessThan(6893089.39); // vs. fixture 66's "reinvest"
+    expect(metrics.finalYear?.endBalance).toBeLessThan(6866927.14); // vs. fixture 66's "reinvest"
     expect(metrics).toMatchSnapshot();
   });
 
@@ -3862,6 +3875,110 @@ describe("engine snapshot parity", () => {
     expect(unsmoothedRmdAt75).toBeGreaterThan(0);
     expect(smoothedRmdAt75!).toBeLessThan(unsmoothedRmdAt75!);
     const metrics = extractMetrics(unsmoothedResult);
+    expect(metrics).toMatchSnapshot();
+  });
+
+  // R47 Feature B (advisor review, 2026-08-28) — rateSeededDecumulationYear1.
+  // Guyton-Klinger household with a stated budget deliberately far from
+  // what withdrawalRate x balance would produce, so the two runs' year-1
+  // spending provably differs when the flag is set.
+  const rateSeededHouseholdInput = (rateSeeded: boolean) =>
+    makeInput({
+      currentAge: 60,
+      retirementAge: 65,
+      projectionEndAge: 75,
+      currentSalary: 0,
+      annualExpenses: 85000,
+      decumulationAnnualExpenses: 85000,
+      startingBalances: {
+        preTax: 1000000,
+        taxFree: 500000,
+        afterTax: 300000,
+        afterTaxBasis: 200000,
+        hsa: 200000,
+      },
+      startingAccountBalances: {
+        "401k": {
+          structure: "roth_traditional",
+          traditional: 1000000,
+          roth: 0,
+        },
+        "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+        hsa: { structure: "single_bucket", balance: 200000 },
+        ira: { structure: "roth_traditional", traditional: 0, roth: 500000 },
+        brokerage: {
+          structure: "basis_tracking",
+          balance: 300000,
+          basis: 200000,
+        },
+      },
+      decumulationDefaults: {
+        withdrawalRate: 0.05,
+        withdrawalRoutingMode: "waterfall",
+        withdrawalOrder: ["401k", "ira", "brokerage", "hsa"],
+        withdrawalSplits: {
+          "401k": 0.35,
+          "403b": 0,
+          ira: 0.25,
+          brokerage: 0.3,
+          hsa: 0.1,
+        },
+        withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
+        withdrawalStrategy: "guyton_klinger",
+        strategyParams: {
+          guyton_klinger: {
+            upperGuardrail: 0.8,
+            lowerGuardrail: 1.2,
+            increasePercent: 0.1,
+            decreasePercent: 0.1,
+            skipInflationAfterLoss: true,
+          },
+        },
+        distributionTaxRates: {
+          traditionalFallbackRate: 0.24,
+          roth: 0,
+          hsa: 0,
+          brokerage: 0.15,
+        },
+      },
+      ...(rateSeeded ? { rateSeededDecumulationYear1: true } : {}),
+    });
+
+  it("fixture 70: rateSeededDecumulationYear1 seeds year 1 from withdrawalRate x balance, ignoring the stated budget", () => {
+    const result = calculateProjection(rateSeededHouseholdInput(true));
+    const decYears = result.projectionByYear.filter(
+      (y): y is Extract<typeof y, { phase: "decumulation" }> =>
+        y.phase === "decumulation",
+    );
+    const year1 = decYears[0]!;
+    // Year 1's target/spending is driven by 5% of the actual (grown) year-1
+    // balance, NOT the stated $85k budget -- close to $100k (5% of the
+    // $2M starting balance, before 5 years of pre-retirement growth), well
+    // above the budget the run otherwise ignores entirely.
+    expect(year1.projectedExpenses).toBeGreaterThan(90000);
+    expect(year1.projectedExpenses).not.toBe(85000);
+    const metrics = extractMetrics(result);
+    expect(metrics).toMatchSnapshot();
+  });
+
+  it("fixture 71: rateSeededDecumulationYear1 omitted is byte-identical to today's budget-seeded behavior", () => {
+    const withFlagOmitted = calculateProjection(
+      rateSeededHouseholdInput(false),
+    );
+    const explicitlyFalse = calculateProjection({
+      ...rateSeededHouseholdInput(false),
+      rateSeededDecumulationYear1: false,
+    });
+    expect(explicitlyFalse).toEqual(withFlagOmitted);
+    const decYears = withFlagOmitted.projectionByYear.filter(
+      (y): y is Extract<typeof y, { phase: "decumulation" }> =>
+        y.phase === "decumulation",
+    );
+    // Budget-seeded year 1 (today's only behavior, still the default) DOES
+    // start from the stated $85k budget (inflated to the retirement year).
+    expect(decYears[0]!.projectedExpenses).toBeGreaterThan(85000);
+    expect(decYears[0]!.projectedExpenses).toBeLessThan(100000);
+    const metrics = extractMetrics(withFlagOmitted);
     expect(metrics).toMatchSnapshot();
   });
 });

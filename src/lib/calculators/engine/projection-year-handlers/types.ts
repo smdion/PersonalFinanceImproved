@@ -52,6 +52,17 @@ export type ProjectionLoopState = {
   // Salary/expense tracking
   projectedSalary: number;
   projectedExpenses: number;
+  /** The TRUE, unmutated budget trajectory (inflation/raise growth + manual
+   *  per-year overrides only) -- tracked in parallel with `projectedExpenses`
+   *  because a reactive strategy (Guyton-Klinger, Forgo Inflation After
+   *  Loss, Spending Decline) overwrites `projectedExpenses` in place every
+   *  year with its own guardrail-adjusted target, which for a budget-seeded
+   *  strategy makes `projectedExpenses` identical to that year's own
+   *  `targetWithdrawal` -- collapsing "vs budget" and "vs strategy" into
+   *  the same comparison (live-user finding, 2026-08-28: both KPI rings
+   *  showing the identical percentage). This field is the strategy-blind
+   *  budget line those two comparisons need to actually differ. */
+  budgetOnlyExpenses: number;
   projectedSalaryByPerson: Map<number, number>;
 
   // Individual account tracking
