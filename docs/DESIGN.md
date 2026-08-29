@@ -331,7 +331,7 @@ The relocation decision tool (`lib/calculators/relocation.ts`) compares two budg
 
 ### Contribution/Distribution Engine
 
-The unified engine (`lib/calculators/engine/`) is decomposed into 20 focused modules with a clean public API exported from `engine/index.ts`. The engine was originally a single ~3100-line file; the engine refactor extracted each concern into its own module while preserving identical behavior.
+The unified engine (`lib/calculators/engine/`) is decomposed into 24 focused modules (plus `projection-year-handlers/`, its own sub-decomposition of the per-year loop) with a clean public API exported from `engine/index.ts`. The engine was originally a single ~3100-line file; the engine refactor extracted each concern into its own module while preserving identical behavior.
 
 **Public API** (from `engine/index.ts`):
 
@@ -341,26 +341,29 @@ The unified engine (`lib/calculators/engine/`) is decomposed into 20 focused mod
 
 **Module responsibilities:**
 
-| Module                           | Responsibility                                                                                    |
-| -------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `projection.ts`                  | Orchestrator — accumulation loop, decumulation loop, phase transition                             |
-| `contribution-routing.ts`        | Per-account contribution allocation, IRS limit enforcement, overflow to brokerage, employer match |
-| `withdrawal-routing.ts`          | Bracket-filling, waterfall, and percentage withdrawal modes                                       |
-| `tax-estimation.ts`              | SS torpedo convergence (3-tier, 2-iteration), effective tax rate gross-up                         |
-| `override-resolution.ts`         | Sticky-forward per-year config resolution                                                         |
-| `balance-utils.ts`               | Balance cloning, type conversion helpers                                                          |
-| `balance-deduction.ts`           | Withdrawal deduction, clamping, depletion tracking                                                |
-| `individual-account-tracking.ts` | Per-account bookkeeping (contributions, growth, withdrawals)                                      |
-| `growth-application.ts`          | Return rate application on all balance structures                                                 |
-| `rmd-enforcement.ts`             | IRS Uniform Lifetime Table lookup, forced Traditional distributions                               |
-| `post-withdrawal-optimizer.ts`   | Roth conversions, IRMAA awareness, ACA subsidy awareness                                          |
-| `guyton-klinger.ts`              | Dynamic spending guardrails (upper/lower rails, prosperity rule)                                  |
+| Module                           | Responsibility                                                                                         |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `projection.ts`                  | Orchestrator — accumulation loop, decumulation loop, phase transition                                  |
+| `contribution-routing.ts`        | Per-account contribution allocation, IRS limit enforcement, overflow to brokerage, employer match      |
+| `withdrawal-routing.ts`          | Bracket-filling, waterfall, and percentage withdrawal modes                                            |
+| `withdrawal-cost-ranking.ts`     | Cost-aware ranking of post-bracket-cap sources (Roth/brokerage/HSA) by real marginal rate (v0.7.9 R40) |
+| `tax-estimation.ts`              | SS torpedo convergence (3-tier, 2-iteration), effective tax rate gross-up                              |
+| `override-resolution.ts`         | Sticky-forward per-year config resolution                                                              |
+| `balance-utils.ts`               | Balance cloning, type conversion helpers                                                               |
+| `balance-deduction.ts`           | Withdrawal deduction, clamping, depletion tracking                                                     |
+| `individual-account-tracking.ts` | Per-account bookkeeping (contributions, growth, withdrawals)                                           |
+| `growth-application.ts`          | Return rate application on all balance structures                                                      |
+| `rmd-enforcement.ts`             | IRS Uniform Lifetime Table lookup, forced Traditional distributions                                    |
+| `rmd-smoothing.ts`               | Proactive Roth-conversion sizing to shrink a future forced RMD toward stated need (v0.7.9 R47)         |
+| `qcd.ts`                         | Qualified Charitable Distribution amounts (IRC §408(d)(8), age 70+, not capped by RMD size)            |
+| `post-withdrawal-optimizer.ts`   | Roth conversions, IRMAA awareness, ACA subsidy awareness                                               |
+| `guyton-klinger.ts`              | Dynamic spending guardrails (upper/lower rails, prosperity rule)                                       |
 
 The engine handles both phases in a single pass:
 
 1. **Accumulation** (current age → retirement): per-account contribution routing (waterfall or percentage mode), IRS limit enforcement with overflow to brokerage, employer match, salary growth with cap, tax splits (Roth/Traditional)
 2. **Distribution** (retirement → end): tax-optimal bracket-filling withdrawals by default. Three routing modes:
-   - **Bracket filling** (default): fill traditional withdrawals up to a target marginal bracket cap, then Roth (tax-free), then brokerage (capital gains rate), HSA last (most tax-advantaged). Requires `rothBracketTarget` + tax brackets; falls back to waterfall if missing.
+   - **Bracket filling** (default): fill traditional withdrawals up to a target marginal bracket cap, then rank the remainder (Roth/brokerage/HSA) by real marginal cost for that year — free basis/0%-LTCG room first, then whichever of Roth growth or brokerage LTCG (NIIT-aware above its MAGI threshold) is genuinely cheaper, HSA competing on the same real rate rather than an assumed-worst fixed position (`withdrawal-cost-ranking.ts`, v0.7.9 R40 — replaces the old fixed Roth→brokerage→HSA order, which is still what waterfall/percentage modes use). Requires `rothBracketTarget` + tax brackets; falls back to waterfall if missing.
    - **Waterfall mode**: drain accounts in priority order with per-account and per-tax-type caps. Roth bracket optimization can overlay via `rothBracketTarget`.
    - **Percentage mode**: split withdrawals by fixed % across accounts with proportional redistribution
    - **Tax bracket estimation**: `estimateEffectiveTaxRate()` uses actual W-4 withholding brackets, with configurable tax multiplier for future rate scenarios
