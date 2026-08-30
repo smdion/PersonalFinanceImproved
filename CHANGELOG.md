@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **A multi-year Roth-bracket-target optimizer** for households in Bracket Filling mode — searches for the tax-bracket target that gives the best lifetime outcome across your whole retirement, instead of only reasoning about a single year at a time, and shows its recommendation right on the Taxes settings with a one-click Apply.
 - **A "Coast FIRE (Custom Age)" scenario** on the Retirement page's Projection card — pick any age between now and your planned retirement age and check whether coasting from that specific age still succeeds, instead of only seeing the single age the app finds automatically.
 - **The Projection chart now shows total portfolio withdrawal and Social Security income as their own lines** during retirement years, so it's clear how much of a year's spending comes from the portfolio versus Social Security — the chart previously only showed contribution-shaped bars, which stopped making sense once retirement started drawing down instead of contributing.
+- **Portfolio snapshot pushes to YNAB/Actual now post as reconciled**, not just cleared, so they no longer sit as an unverified item you have to clear yourself.
 
 ### Fixed
 
