@@ -219,6 +219,17 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                 },
               };
               const ps = presetBar[si.preset] ?? presetBar["default"]!;
+              // Asset mix behind the blended return/volatility tiles — same
+              // weights (current glide-path allocation) for both, so one
+              // description serves both tooltips.
+              const mixLines = (si.assetClasses ?? [])
+                .map((ac) => {
+                  const w = (si.currentAllocation ?? {})[ac.id] ?? 0;
+                  return w > 0
+                    ? `${formatPercent(w, 0)} ${ac.name} (${formatPercent(ac.meanReturn, 1)} return, ${formatPercent(ac.stdDev, 1)} volatility)`
+                    : null;
+                })
+                .filter((l): l is string => l !== null);
               return (
                 <ControlZone
                   tone="results"
@@ -232,28 +243,60 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                       >
                         {si.presetLabel}
                       </span>
+                      <HelpTip
+                        maxWidth={280}
+                        text={`${si.presetDescription} Every trial in this simulation draws from these same return/volatility/inflation assumptions — the withdrawal strategy below (${si.withdrawalStrategy.replace(/_/g, " ")}) only decides how much gets spent each year, not what the market does.`}
+                      />
                       {si.taxMode === "advanced" && (
-                        <span className="px-1.5 py-0.5 rounded text-caption bg-orange-100 text-orange-700 font-medium">
+                        <span className="px-1.5 py-0.5 rounded text-caption bg-orange-100 text-orange-700 font-medium inline-flex items-center">
                           Tax-aware
+                          <HelpTip
+                            maxWidth={260}
+                            text="Advanced tax mode: every simulated trial tracks each account's own tax treatment (Traditional/Roth/HSA/brokerage) separately when computing withdrawals. Simple mode collapses these into one approximate balance instead, trading some precision for speed."
+                          />
                         </span>
                       )}
                       {si.hasAssetClassOverrides && (
-                        <span className="px-1.5 py-0.5 rounded text-caption bg-amber-100 text-amber-700 font-medium">
+                        <span className="px-1.5 py-0.5 rounded text-caption bg-amber-100 text-amber-700 font-medium inline-flex items-center">
                           Overrides
+                          <HelpTip
+                            maxWidth={260}
+                            text="One or more asset classes are using custom return/volatility figures instead of this preset's own values — the return, volatility, and asset-mix figures below already reflect the overridden numbers."
+                          />
                         </span>
                       )}
                     </div>
                     <div className="flex items-center gap-3 text-xs text-muted">
                       <div className="text-center">
-                        <div className="font-semibold tabular-nums">
+                        <div className="font-semibold tabular-nums flex items-center justify-center gap-0.5">
                           {formatPercent(si.blendedReturn, 2)}
+                          <HelpTip
+                            maxWidth={280}
+                            lines={[
+                              "Blended expected annual return across your current glide-path allocation:",
+                              ...(mixLines.length > 0
+                                ? mixLines
+                                : ["(no asset-class weights available)"]),
+                              "Same for every trial and every withdrawal strategy — strategies decide how much gets spent, not how the portfolio itself performs. This shifts over time as your glide path shifts allocation with age.",
+                            ]}
+                          />
                         </div>
                         <div className="text-micro text-faint">return</div>
                         <div className="text-micro text-faint">5–10%</div>
                       </div>
                       <div className="text-center">
-                        <div className="font-semibold tabular-nums">
+                        <div className="font-semibold tabular-nums flex items-center justify-center gap-0.5">
                           {formatPercent(si.blendedVol, 2)}
+                          <HelpTip
+                            maxWidth={280}
+                            lines={[
+                              "Blended annual volatility (standard deviation of returns) across your current glide-path allocation:",
+                              ...(mixLines.length > 0
+                                ? mixLines
+                                : ["(no asset-class weights available)"]),
+                              "Higher volatility means a wider range of possible outcomes per trial — this is what actually creates the spread between a “bad luck” and “good luck” simulated future, same for every withdrawal strategy.",
+                            ]}
+                          />
                         </div>
                         <div className="text-micro text-faint">volatility</div>
                         <div className="text-micro text-faint">8–16%</div>
@@ -263,10 +306,15 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                           {gkImpliedRate != null
                             ? formatPercent(gkImpliedRate, 2)
                             : formatPercent(si.withdrawalRate, 2)}
-                          {gkImpliedRate != null && (
+                          {gkImpliedRate != null ? (
                             <HelpTip
                               maxWidth={260}
                               text={`Your Retirement Budget doesn't set a rate directly — Guyton-Klinger captures ${formatPercent(gkImpliedRate, 2)} on your first retirement year (that year's spending ÷ your projected portfolio balance) and defends THIS rate with guardrails for the rest of retirement. It's not the "Initial Withdrawal Rate" setting (${formatPercent(si.withdrawalRate, 2)}) — that field is never read by any strategy, including this one.`}
+                            />
+                          ) : (
+                            <HelpTip
+                              maxWidth={260}
+                              text={`Your household's "Initial Withdrawal Rate" setting (${formatPercent(si.withdrawalRate, 2)}), shown here only as a reference figure. Your active strategy (${si.withdrawalStrategy.replace(/_/g, " ")}) computes spending its own way and does NOT read this number — Guyton-Klinger is the one strategy that captures and defends its own rate instead, which is what you'd see here if it were active.`}
                             />
                           )}
                         </div>
@@ -318,15 +366,23 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                         </div>
                       )}
                       <div className="text-center">
-                        <div className="font-semibold tabular-nums">
+                        <div className="font-semibold tabular-nums flex items-center justify-center gap-0.5">
                           {formatPercent(si.inflationRisk.meanRate, 2)}
+                          <HelpTip
+                            maxWidth={280}
+                            text={`Average assumed inflation rate, randomized per year within each trial (±${formatPercent(si.inflationRisk.stdDev, 2)} standard deviation) rather than held flat — some years run hotter, some cooler, same as real inflation history. This is the same input for every strategy, but strategies react to it differently: a fixed-dollar strategy raises spending with inflation every year regardless, while a guardrail strategy like "Forgo Inflation After Loss" can skip that year's raise after a bad market year specifically to protect the portfolio.`}
+                          />
                         </div>
                         <div className="text-micro text-faint">inflation</div>
                         <div className="text-micro text-faint">2–3%</div>
                       </div>
                       <div className="text-center">
-                        <div className="font-semibold tabular-nums">
+                        <div className="font-semibold tabular-nums flex items-center justify-center gap-0.5">
                           {mcr.numTrials.toLocaleString()}
+                          <HelpTip
+                            maxWidth={280}
+                            text="Number of independent simulated lifetimes run, each with its own randomized sequence of yearly returns and inflation. Your strategy's success rate is simply the share of these trials that never run out of money — more trials means a more stable estimate of that share, at the cost of slower simulation."
+                          />
                         </div>
                         <div className="text-micro text-faint">trials</div>
                         <div className="text-micro text-faint">1K+</div>
