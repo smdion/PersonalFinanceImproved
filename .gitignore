@@ -34,6 +34,8 @@ tests/.tmp/
 
 # artifacts
 *.db
+# esbuild-bundled worker (pnpm build:mc-worker) — generated, same as db-migrate.js
+/monte-carlo-worker.js
 # Local SQLite scratch (auto-created by db-migrate.ts when DATABASE_URL
 # is unset; contains ledgr.db + pre-migration backups). The *.db pattern
 # catches the files but git still reports the empty dir as untracked,

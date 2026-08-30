@@ -24,7 +24,7 @@ import {
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { calculateProjection } from "@/lib/calculators/engine";
-import { calculateMonteCarlo } from "@/lib/calculators/monte-carlo";
+import { runMonteCarloOffThread } from "@/server/helpers/monte-carlo-worker-client";
 import {
   interpolateAllocations,
   geometricMean,
@@ -149,7 +149,7 @@ export const strategyRouter = createTRPCRouter({
       // its inputs, so no seed persistence is needed, unlike
       // computeMonteCarloProjection's per-run random seed.
       type StrategyComparisonResult = {
-        strategies: ReturnType<typeof buildStrategyResults>;
+        strategies: Awaited<ReturnType<typeof buildStrategyResults>>;
         activeStrategy: WithdrawalStrategyType;
         retirementAge: number;
       };
@@ -175,119 +175,122 @@ export const strategyRouter = createTRPCRouter({
       }
 
       function buildStrategyResults() {
-        return getAllStrategyKeys().map((strategyKey) => {
-          const meta = getStrategyMeta(strategyKey);
-          // Use user-configured params for the active strategy, defaults for others
-          const params =
-            strategyKey === activeStrategy
-              ? userStrategyParams
-              : { [strategyKey]: getStrategyDefaults(strategyKey) };
+        return Promise.all(
+          getAllStrategyKeys().map(async (strategyKey) => {
+            const meta = getStrategyMeta(strategyKey);
+            // Use user-configured params for the active strategy, defaults for others
+            const params =
+              strategyKey === activeStrategy
+                ? userStrategyParams
+                : { [strategyKey]: getStrategyDefaults(strategyKey) };
 
-          const decumulationDefaults = {
-            withdrawalRate: toNumber(settings.withdrawalRate),
-            withdrawalRoutingMode: "bracket_filling" as const,
-            withdrawalOrder: getDefaultDecumulationOrder() as AccountCategory[],
-            withdrawalSplits: { ...CONFIG_WITHDRAWAL_SPLITS } as Record<
-              AccountCategory,
-              number
-            >,
-            withdrawalTaxPreference: {},
-            distributionTaxRates,
-            withdrawalStrategy: strategyKey,
-            strategyParams: params,
-          };
+            const decumulationDefaults = {
+              withdrawalRate: toNumber(settings.withdrawalRate),
+              withdrawalRoutingMode: "bracket_filling" as const,
+              withdrawalOrder:
+                getDefaultDecumulationOrder() as AccountCategory[],
+              withdrawalSplits: { ...CONFIG_WITHDRAWAL_SPLITS } as Record<
+                AccountCategory,
+                number
+              >,
+              withdrawalTaxPreference: {},
+              distributionTaxRates,
+              withdrawalStrategy: strategyKey,
+              strategyParams: params,
+            };
 
-          const result = calculateProjection({
-            ...baseEngineInput,
-            decumulationDefaults,
-            accumulationOverrides: [],
-            decumulationOverrides: [],
-          });
-
-          // Extract decumulation years for year-by-year data
-          const decYears = result.projectionByYear.filter(
-            (y): y is Extract<typeof y, { phase: "decumulation" }> =>
-              y.phase === "decumulation",
-          );
-
-          const withdrawals = decYears.map((y) => y.totalWithdrawal);
-          const avgWithdrawal =
-            withdrawals.length > 0
-              ? withdrawals.reduce((s, w) => s + w, 0) / withdrawals.length
-              : 0;
-
-          // Run lightweight MC (200 trials) for success rate + spending stability
-          let successRate: number | null = null;
-          let spendingStabilityRate: number | null = null;
-          let budgetStabilityRate: number | null = null;
-          if (hasMcData) {
-            const mcResult = calculateMonteCarlo({
-              engineInput: {
-                ...mcBaseEngineInput,
-                decumulationDefaults,
-                accumulationOverrides: [],
-                decumulationOverrides: [],
-              },
-              numTrials: 200,
-              seed: 42,
-              assetClasses: mcAssetClasses,
-              correlations: mcCorrelations,
-              glidePath: mcGlidePath,
-              inflationRisk: effectiveInflationRisk,
+            const result = calculateProjection({
+              ...baseEngineInput,
+              decumulationDefaults,
+              accumulationOverrides: [],
+              decumulationOverrides: [],
             });
-            successRate = mcResult.successRate;
-            spendingStabilityRate = mcResult.spendingStabilityRate;
-            budgetStabilityRate = mcResult.budgetStabilityRate;
-          }
 
-          return {
-            strategy: strategyKey,
-            label: meta.label,
-            shortLabel: meta.shortLabel,
-            portfolioDepletionAge: result.portfolioDepletionAge,
-            // R45 Step 3, Finding 11: sustainableWithdrawal dropped from
-            // this comparison — it's never rendered by
-            // withdrawal-comparison.tsx (year1Withdrawal/avgAnnualWithdrawal/
-            // min/max already give the real per-strategy withdrawal picture,
-            // sourced from the same totalWithdrawal figures), and after
-            // Step 2 made it strategy-real it would either duplicate
-            // year1Withdrawal (common case) or read as a second, differently
-            // -computed one (RMD-active years, where it reflects the target
-            // before RMD-forced excess rather than what was actually
-            // withdrawn) — a Single Computation Path risk with no UI
-            // consumer to justify it.
-            year1Withdrawal: decYears[0]?.totalWithdrawal ?? 0,
-            avgAnnualWithdrawal: roundToCents(avgWithdrawal),
-            minAnnualWithdrawal:
+            // Extract decumulation years for year-by-year data
+            const decYears = result.projectionByYear.filter(
+              (y): y is Extract<typeof y, { phase: "decumulation" }> =>
+                y.phase === "decumulation",
+            );
+
+            const withdrawals = decYears.map((y) => y.totalWithdrawal);
+            const avgWithdrawal =
               withdrawals.length > 0
-                ? roundToCents(Math.min(...withdrawals))
-                : 0,
-            maxAnnualWithdrawal:
-              withdrawals.length > 0
-                ? roundToCents(Math.max(...withdrawals))
-                : 0,
-            endBalance:
-              decYears.length > 0
-                ? decYears[decYears.length - 1]!.endBalance
-                : 0,
-            legacyAmount:
-              decYears.length > 0
-                ? decYears[decYears.length - 1]!.endBalance
-                : 0,
-            successRate,
-            spendingStabilityRate,
-            budgetStabilityRate,
-            yearByYear: decYears.map((y) => ({
-              age: y.age,
-              withdrawal: roundToCents(y.totalWithdrawal),
-              endBalance: roundToCents(y.endBalance),
-            })),
-          };
-        });
+                ? withdrawals.reduce((s, w) => s + w, 0) / withdrawals.length
+                : 0;
+
+            // Run lightweight MC (200 trials) for success rate + spending stability
+            let successRate: number | null = null;
+            let spendingStabilityRate: number | null = null;
+            let budgetStabilityRate: number | null = null;
+            if (hasMcData) {
+              const mcResult = await runMonteCarloOffThread({
+                engineInput: {
+                  ...mcBaseEngineInput,
+                  decumulationDefaults,
+                  accumulationOverrides: [],
+                  decumulationOverrides: [],
+                },
+                numTrials: 200,
+                seed: 42,
+                assetClasses: mcAssetClasses,
+                correlations: mcCorrelations,
+                glidePath: mcGlidePath,
+                inflationRisk: effectiveInflationRisk,
+              });
+              successRate = mcResult.successRate;
+              spendingStabilityRate = mcResult.spendingStabilityRate;
+              budgetStabilityRate = mcResult.budgetStabilityRate;
+            }
+
+            return {
+              strategy: strategyKey,
+              label: meta.label,
+              shortLabel: meta.shortLabel,
+              portfolioDepletionAge: result.portfolioDepletionAge,
+              // R45 Step 3, Finding 11: sustainableWithdrawal dropped from
+              // this comparison — it's never rendered by
+              // withdrawal-comparison.tsx (year1Withdrawal/avgAnnualWithdrawal/
+              // min/max already give the real per-strategy withdrawal picture,
+              // sourced from the same totalWithdrawal figures), and after
+              // Step 2 made it strategy-real it would either duplicate
+              // year1Withdrawal (common case) or read as a second, differently
+              // -computed one (RMD-active years, where it reflects the target
+              // before RMD-forced excess rather than what was actually
+              // withdrawn) — a Single Computation Path risk with no UI
+              // consumer to justify it.
+              year1Withdrawal: decYears[0]?.totalWithdrawal ?? 0,
+              avgAnnualWithdrawal: roundToCents(avgWithdrawal),
+              minAnnualWithdrawal:
+                withdrawals.length > 0
+                  ? roundToCents(Math.min(...withdrawals))
+                  : 0,
+              maxAnnualWithdrawal:
+                withdrawals.length > 0
+                  ? roundToCents(Math.max(...withdrawals))
+                  : 0,
+              endBalance:
+                decYears.length > 0
+                  ? decYears[decYears.length - 1]!.endBalance
+                  : 0,
+              legacyAmount:
+                decYears.length > 0
+                  ? decYears[decYears.length - 1]!.endBalance
+                  : 0,
+              successRate,
+              spendingStabilityRate,
+              budgetStabilityRate,
+              yearByYear: decYears.map((y) => ({
+                age: y.age,
+                withdrawal: roundToCents(y.totalWithdrawal),
+                endBalance: roundToCents(y.endBalance),
+              })),
+            };
+          }),
+        );
       }
 
       const result: StrategyComparisonResult = {
-        strategies: buildStrategyResults(),
+        strategies: await buildStrategyResults(),
         activeStrategy,
         retirementAge: avgRetirementAge,
       };
@@ -403,7 +406,7 @@ export const strategyRouter = createTRPCRouter({
       };
 
       // --- Run baseline MC ---
-      const baselineMc = calculateMonteCarlo({
+      const baselineMc = await runMonteCarloOffThread({
         engineInput: mcBaseEngineInput,
         numTrials: 200,
         seed: 42,
@@ -574,7 +577,7 @@ export const strategyRouter = createTRPCRouter({
           }
         }
 
-        const variantMc = calculateMonteCarlo({
+        const variantMc = await runMonteCarloOffThread({
           engineInput: variantInput,
           numTrials: 200,
           seed: 42,

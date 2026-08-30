@@ -25,6 +25,7 @@ import {
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { calculateMonteCarlo } from "@/lib/calculators/monte-carlo";
+import { runMonteCarloOffThread } from "@/server/helpers/monte-carlo-worker-client";
 import { toNumber } from "@/server/helpers";
 import { MC_CONFIDENCE_THRESHOLD } from "@/lib/constants";
 import type {
@@ -240,7 +241,7 @@ export const coastFireProbeRouter = createTRPCRouter({
         };
       }
 
-      const mcResult = calculateMonteCarlo({
+      const mcResult = await runMonteCarloOffThread({
         engineInput: {
           ...engineInput,
           profileSwitches: buildCoastFireProfileSwitches(

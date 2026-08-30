@@ -20,6 +20,7 @@ import {
 import * as schema from "@/lib/db/schema";
 import { findCoastFireAge } from "@/lib/calculators/coast-fire";
 import { calculateMonteCarlo } from "@/lib/calculators/monte-carlo";
+import { runMonteCarloOffThread } from "@/server/helpers/monte-carlo-worker-client";
 import { toNumber } from "@/server/helpers";
 import { MC_CONFIDENCE_THRESHOLD } from "@/lib/constants";
 import type {
@@ -376,7 +377,7 @@ export const coastFireRouter = createTRPCRouter({
       let probesRun = 0;
       const probeMC = (coastAge: number) => {
         probesRun += 1;
-        return calculateMonteCarlo({
+        return runMonteCarloOffThread({
           engineInput: {
             ...engineInput,
             profileSwitches: buildCoastFireProfileSwitches(
@@ -392,14 +393,14 @@ export const coastFireRouter = createTRPCRouter({
           inflationRisk,
         });
       };
-      const probeAt = (coastAge: number): number =>
-        probeMC(coastAge).successRate;
+      const probeAt = async (coastAge: number): Promise<number> =>
+        (await probeMC(coastAge)).successRate;
 
       const passes = (rate: number): boolean => rate >= CONFIDENCE;
 
       // Edge case: already past retirement.
       if (engineInput.currentAge >= engineInput.retirementAge) {
-        const fullResult = probeMC(engineInput.currentAge);
+        const fullResult = await probeMC(engineInput.currentAge);
         const result: CoastFireMcResult = {
           coastFireAge: engineInput.currentAge,
           status: "already_coast" as const,
@@ -424,7 +425,7 @@ export const coastFireRouter = createTRPCRouter({
       // show "Stopping today: X% MC" alongside the found age. This is the
       // key signal: when deterministic says "already coast" but MC says
       // "need age N," the gap is quantified by stopNowResult.successRate.
-      const stopNowResult = probeMC(engineInput.currentAge);
+      const stopNowResult = await probeMC(engineInput.currentAge);
       const stopNowSuccessRate = stopNowResult.successRate;
       if (passes(stopNowSuccessRate)) {
         const result: CoastFireMcResult = {
@@ -449,7 +450,7 @@ export const coastFireRouter = createTRPCRouter({
 
       // Probe stopping the year before retirement — is the plan reachable at all?
       const maxCoastAge = engineInput.retirementAge - 1;
-      const stopLateResult = probeMC(maxCoastAge);
+      const stopLateResult = await probeMC(maxCoastAge);
       if (!passes(stopLateResult.successRate)) {
         const result: CoastFireMcResult = {
           coastFireAge: null,
@@ -476,7 +477,7 @@ export const coastFireRouter = createTRPCRouter({
       let hi = maxCoastAge;
       while (lo < hi) {
         const mid = Math.floor((lo + hi) / 2);
-        if (passes(probeAt(mid))) {
+        if (passes(await probeAt(mid))) {
           hi = mid;
         } else {
           lo = mid + 1;
@@ -488,7 +489,7 @@ export const coastFireRouter = createTRPCRouter({
       // warning so the user knows the answer may be conservative.
       let warning: string | null = null;
       if (lo - 1 >= engineInput.currentAge + 1) {
-        const rePrior = probeAt(lo - 1);
+        const rePrior = await probeAt(lo - 1);
         if (passes(rePrior)) {
           warning =
             "MC success rate is non-monotone near this age — the true earliest age may be lower. Likely caused by IRMAA/ACA/LTCG bracket interactions.";
@@ -497,7 +498,7 @@ export const coastFireRouter = createTRPCRouter({
 
       // One more probe at lo for the spending stability rate + full MC data
       // (chart and hero card consume the mcResult from this query).
-      const finalResult = probeMC(lo);
+      const finalResult = await probeMC(lo);
 
       const result: CoastFireMcResult = {
         coastFireAge: lo,
