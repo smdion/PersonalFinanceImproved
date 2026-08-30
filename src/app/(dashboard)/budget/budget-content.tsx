@@ -55,6 +55,7 @@ import { BudgetDetailPanel } from "./budget-detail-panel";
 import { WhatIfTab } from "./what-if-tab";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
 import { RetirementProfileTab } from "@/components/retirement/retirement-profile-tab";
+import { RetirementProfileManager } from "@/components/retirement/retirement-profile-manager";
 
 export function BudgetContent() {
   const user = useUser();
@@ -453,7 +454,7 @@ export function BudgetContent() {
               onClick={() => setActiveTab("retirement")}
               className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === "retirement" ? "border-blue-600 text-blue-600" : "border-transparent text-muted hover:text-secondary"}`}
             >
-              Retirement Profile
+              Retirement Profiles
             </button>
             {/* Last, after the five real levers: it previews combinations of
                 them rather than being a lever of its own. */}
@@ -689,7 +690,12 @@ export function BudgetContent() {
           </CardBoundary>
         )}
 
-        {activeTab === "retirement" && <RetirementProfileTab />}
+        {activeTab === "retirement" && (
+          <>
+            <RetirementProfileManager />
+            <RetirementProfileTab />
+          </>
+        )}
 
         {pushPreviewItems && (
           <BudgetPushYnabModal
