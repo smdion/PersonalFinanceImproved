@@ -31,6 +31,22 @@ vi.mock("@/components/cards/strategy-guide-panel", () => ({
   StrategyGuideButton: () => null,
 }));
 
+vi.mock("@/lib/context/user-context", () => ({
+  useUser: () => ({ role: "admin", name: "Test", permissions: [] }),
+  isAdmin: (u: { role: string }) => u.role === "admin",
+}));
+
+// Phase 4 assumptions band — stubbed like the other cards above, this
+// smoke test is about tab structure, not the band's own content (covered
+// separately if/when it gets its own smoke test).
+vi.mock("@/components/retirement/assumptions-band", () => ({
+  AssumptionsBand: () => <div data-testid="assumptions-band" />,
+}));
+
+vi.mock("@/lib/hooks/use-active-retirement-profile", () => ({
+  useActiveRetirementProfile: () => [null, vi.fn()],
+}));
+
 vi.mock("@/components/cards/dashboard/utils", () => ({
   CardBoundary: ({ children }: { children: React.ReactNode }) => (
     <>{children}</>
@@ -89,6 +105,7 @@ vi.mock("@/lib/context/scenario-context", () => ({
 
 const mockSettings = {
   personId: 1,
+  profileId: 1,
   retirementAge: 65,
   endAge: 95,
   returnAfterRetirement: "0.05",
@@ -165,6 +182,17 @@ vi.mock("@/lib/trpc", () => ({
     retirement: {
       retirementSettings: {
         upsert: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
+      },
+      retirementProfilePeople: {
+        upsertPerson: {
+          useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+        },
+        upsertHouseholdFields: {
+          useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+        },
+      },
+      retirementProfiles: {
+        list: { useQuery: () => ({ data: [] }) },
       },
     },
   },
