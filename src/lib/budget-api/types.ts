@@ -91,6 +91,15 @@ export type NewBudgetTransaction = {
   categoryId?: string;
   memo?: string;
   cleared?: boolean;
+  /** Verified-against-statement state — stronger than `cleared`, and the
+   *  state both YNAB's and Actual's own UIs lock against casual edits.
+   *  `reconciled: true` implies cleared regardless of what `cleared` says;
+   *  each client derives its own `cleared` value defensively rather than
+   *  trusting every caller to set both. Live-verified 2026-08-30: DELETE
+   *  succeeds on a reconciled transaction on both YNAB's real API and the
+   *  deployed actual-http-api wrapper — no lock blocks the resync
+   *  delete-then-repost cycle in budget-api-push.ts. */
+  reconciled?: boolean;
   approved?: boolean;
 };
 

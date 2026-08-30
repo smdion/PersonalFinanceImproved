@@ -434,7 +434,15 @@ export class YnabClient implements BudgetAPIClient {
           payee_name: tx.payeeName,
           category_id: tx.categoryId,
           memo: tx.memo,
-          cleared: tx.cleared ? "cleared" : "uncleared",
+          // "reconciled" implies cleared — YNAB has no separate reconciled
+          // field, just a 3-value enum. See NewBudgetTransaction.reconciled
+          // docblock for why this derives cleared rather than trusting the
+          // caller to set both.
+          cleared: tx.reconciled
+            ? "reconciled"
+            : tx.cleared
+              ? "cleared"
+              : "uncleared",
           approved: tx.approved ?? true,
           import_id: importId,
         },

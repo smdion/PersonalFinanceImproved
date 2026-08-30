@@ -324,6 +324,41 @@ describe("ActualClient", () => {
       expect(capture[0]).toMatch(/^ledgr:/);
       expect(capture[0]).toBe(capture[1]);
     });
+
+    it("sends reconciled: true and derives cleared: true, even if cleared wasn't set", async () => {
+      let sentImportedId = "";
+      mockFetch.mockImplementationOnce(
+        async (_url: string, init: RequestInit) => {
+          sentImportedId = JSON.parse(init.body as string).transaction
+            .imported_id;
+          return jsonResponse({ message: "ok" });
+        },
+      );
+      mockFetch.mockImplementationOnce(async () =>
+        jsonResponse({
+          data: [
+            {
+              id: "tx-recon",
+              account: "acct-1",
+              date: "2026-01-20",
+              amount: -5000,
+              cleared: true,
+              reconciled: true,
+              imported_id: sentImportedId,
+            },
+          ],
+        }),
+      );
+      await client.createTransaction({
+        accountId: "acct-1",
+        date: "2026-01-20",
+        amount: -50,
+        reconciled: true,
+      });
+      const postBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(postBody.transaction.reconciled).toBe(true);
+      expect(postBody.transaction.cleared).toBe(true);
+    });
   });
 
   describe("updateTransaction", () => {
@@ -336,6 +371,14 @@ describe("ActualClient", () => {
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(body.transaction.amount).toBe(-7500);
       expect(body.transaction.notes).toBe("Updated");
+    });
+
+    it("sets cleared: true when reconciled: true is sent, even without an explicit cleared field", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({}));
+      await client.updateTransaction("tx-1", { reconciled: true });
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.transaction.reconciled).toBe(true);
+      expect(body.transaction.cleared).toBe(true);
     });
   });
 

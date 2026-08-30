@@ -502,7 +502,11 @@ export class ActualClient implements BudgetAPIClient {
           payee_name: tx.payeeName,
           category: tx.categoryId,
           notes: tx.memo,
-          cleared: tx.cleared ?? false,
+          // reconciled implies cleared — never send reconciled: true with
+          // cleared: false, an inconsistent state Actual's own UI can't
+          // produce. See NewBudgetTransaction.reconciled docblock.
+          cleared: tx.cleared || tx.reconciled || false,
+          reconciled: tx.reconciled,
           imported_id: importedId,
         },
       }),
@@ -550,6 +554,12 @@ export class ActualClient implements BudgetAPIClient {
     if (tx.categoryId !== undefined) transaction.category = tx.categoryId;
     if (tx.memo !== undefined) transaction.notes = tx.memo;
     if (tx.cleared !== undefined) transaction.cleared = tx.cleared;
+    if (tx.reconciled !== undefined) {
+      transaction.reconciled = tx.reconciled;
+      // Same defensive coupling as createTransaction: reconciled implies
+      // cleared, and wins over an explicit cleared:false in the same call.
+      if (tx.reconciled) transaction.cleared = true;
+    }
 
     await this.request(`/transactions/${txId}`, {
       method: "PATCH",
