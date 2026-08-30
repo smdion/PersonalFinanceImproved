@@ -83,6 +83,11 @@ export const scenariosRouter = createTRPCRouter({
         contributionProfileId: z.number().int().optional(),
         /** Optional Salary Profile — the independent "what if I earned X" axis. */
         salaryProfileId: z.number().int().optional(),
+        /** View a non-active Retirement Profile (phase 4 assumptions band) —
+         *  same "view without activating" contract as the two profile ids
+         *  above. Falls back to the household's globally-active profile
+         *  when omitted or when it names a profile that no longer exists. */
+        retirementProfileId: z.number().int().optional(),
         // --- Phase-based budget selection (independent profile+column per phase) ---
         accumulationBudgetProfileId: z.number().int().optional(),
         accumulationBudgetColumn: z.number().int().min(0).optional(),
@@ -122,6 +127,7 @@ export const scenariosRouter = createTRPCRouter({
         decumulationBudgetProfileId: input.decumulationBudgetProfileId,
         decumulationBudgetColumn: input.decumulationBudgetColumn,
         decumulationExpenseOverride: input.decumulationExpenseOverride,
+        retirementProfileId: input.retirementProfileId,
       });
       if (!payload) return { result: null };
 
@@ -421,6 +427,11 @@ export const scenariosRouter = createTRPCRouter({
           postRetirementInflation: settings.postRetirementInflation,
           salaryAnnualIncrease: settings.salaryAnnualIncrease,
           personId: settings.personId,
+          // Retirement Profiles phase 4 (the assumptions band) — client
+          // writes must scope back to the profile these values came from,
+          // not the household's globally-active one. See
+          // buildSettingsPatch/retirementSettings.upsert's docblocks.
+          profileId: settings.profileId,
           returnAfterRetirement: settings.returnAfterRetirement,
           salaryCap: settings.salaryCap,
           withdrawalRate: settings.withdrawalRate,

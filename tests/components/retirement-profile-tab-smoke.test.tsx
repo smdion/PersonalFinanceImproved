@@ -49,6 +49,7 @@ vi.mock("@/lib/context/scenario-context", () => ({
 
 const mockSettings = {
   personId: 1,
+  profileId: 1,
   retirementAge: 65,
   endAge: 95,
   returnAfterRetirement: "0.05",
@@ -112,6 +113,14 @@ vi.mock("@/lib/trpc", () => ({
     retirement: {
       retirementSettings: {
         upsert: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
+      },
+      retirementProfilePeople: {
+        upsertPerson: {
+          useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+        },
+        upsertHouseholdFields: {
+          useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+        },
       },
     },
   },

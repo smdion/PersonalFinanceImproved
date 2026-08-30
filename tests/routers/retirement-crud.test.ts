@@ -578,6 +578,112 @@ describe("retirement.retirementProfiles", () => {
     );
   });
 
+  // Regression: retirementSettings.upsert / retirementProfilePeople.upsertPerson
+  // used to scope their writes by personId ALONE. Once a person can hold one
+  // row per profile (this describe block: personA/personB each have a row in
+  // BOTH firstProfileId and secondProfileId), an edit to one profile matched
+  // and silently overwrote every profile's row for that person (found
+  // 2026-08-30, phase 4 of the Retirement Profiles migration).
+  describe("profile-scoped writes", () => {
+    it("retirementSettings.upsert only touches the targeted profile's row", async () => {
+      const before = await caller.retirement.retirementSettings.list();
+      const firstRow = before.find(
+        (s) => s.personId === personA && s.profileId === firstProfileId,
+      )!;
+      const secondRow = before.find(
+        (s) => s.personId === personA && s.profileId === secondProfileId,
+      )!;
+      expect(firstRow.annualInflation).toBe(secondRow.annualInflation);
+
+      await caller.retirement.retirementSettings.upsert({
+        personId: personA,
+        profileId: firstProfileId,
+        retirementAge: firstRow.retirementAge,
+        endAge: firstRow.endAge,
+        returnAfterRetirement: firstRow.returnAfterRetirement,
+        annualInflation: "0.05",
+        salaryAnnualIncrease: firstRow.salaryAnnualIncrease,
+      });
+
+      const after = await caller.retirement.retirementSettings.list();
+      const firstAfter = after.find(
+        (s) => s.personId === personA && s.profileId === firstProfileId,
+      )!;
+      const secondAfter = after.find(
+        (s) => s.personId === personA && s.profileId === secondProfileId,
+      )!;
+      expect(firstAfter.annualInflation).toBe("0.05");
+      // The OTHER profile's row for the same person must be untouched.
+      expect(secondAfter.annualInflation).toBe(secondRow.annualInflation);
+    });
+
+    it("retirementSettings.upsert's endAge fan-out stays within one profile", async () => {
+      // Edit personA's endAge in firstProfileId; personB's row in
+      // secondProfileId must not move.
+      const before = await caller.retirement.retirementSettings.list();
+      const secondPersonBRow = before.find(
+        (s) => s.personId === personB && s.profileId === secondProfileId,
+      )!;
+
+      await caller.retirement.retirementSettings.upsert({
+        personId: personA,
+        profileId: firstProfileId,
+        retirementAge: 65,
+        endAge: 80,
+        returnAfterRetirement: "0.06",
+        annualInflation: "0.05",
+        salaryAnnualIncrease: "0.03",
+      });
+
+      const after = await caller.retirement.retirementSettings.list();
+      const firstPersonBRow = after.find(
+        (s) => s.personId === personB && s.profileId === firstProfileId,
+      )!;
+      const secondPersonBAfter = after.find(
+        (s) => s.personId === personB && s.profileId === secondProfileId,
+      )!;
+      // Fanned out WITHIN firstProfileId...
+      expect(firstPersonBRow.endAge).toBe(80);
+      // ...but secondProfileId's row for the same person is untouched.
+      expect(secondPersonBAfter.endAge).toBe(secondPersonBRow.endAge);
+    });
+
+    it("retirementProfilePeople.upsertPerson only touches the targeted profile's row", async () => {
+      await caller.retirement.retirementProfilePeople.upsertPerson({
+        profileId: firstProfileId,
+        personId: personA,
+        retirementAge: 68,
+      });
+      const rows = await caller.retirement.retirementProfilePeople.list();
+      const firstRow = rows.find(
+        (r) => r.personId === personA && r.profileId === firstProfileId,
+      )!;
+      const secondRow = rows.find(
+        (r) => r.personId === personA && r.profileId === secondProfileId,
+      )!;
+      expect(firstRow.retirementAge).toBe(68);
+      // The clone in the other profile must not have moved.
+      expect(secondRow.retirementAge).toBe(65);
+    });
+
+    it("retirementProfilePeople.upsertHouseholdFields fans endAge to every person WITHIN one profile only", async () => {
+      await caller.retirement.retirementProfilePeople.upsertHouseholdFields({
+        profileId: firstProfileId,
+        endAge: 92,
+      });
+      const rows = await caller.retirement.retirementProfilePeople.list();
+      const firstProfileRows = rows.filter(
+        (r) => r.profileId === firstProfileId,
+      );
+      const secondProfileRows = rows.filter(
+        (r) => r.profileId === secondProfileId,
+      );
+      expect(firstProfileRows.every((r) => r.endAge === 92)).toBe(true);
+      // secondProfileId's rows are untouched by the fan-out.
+      expect(secondProfileRows.some((r) => r.endAge === 92)).toBe(false);
+    });
+  });
+
   it("update renames a profile", async () => {
     const updated = await caller.retirement.retirementProfiles.update({
       id: secondProfileId,

@@ -43,6 +43,7 @@ import { zDecimal } from "./settings/_shared";
 import {
   resolveRetirementProfileIdFrom,
   pickProfileSettingsRow,
+  resolveRetirementProfileId,
 } from "@/server/helpers/retirement-profile";
 
 /**
@@ -77,6 +78,12 @@ async function resolveDefaultFilingStatus(
 
 const retirementSettingsInput = z.object({
   personId: z.number().int(),
+  /** Which retirement profile this write targets. Explicit key presence
+   *  matters, not just the value — see the upsert mutation's docblock. Omit
+   *  the field entirely only from legacy/API callers that predate profiles;
+   *  every UI call site should send it (sourced from the `settings.profileId`
+   *  already on the wire from computeProjection, via buildSettingsPatch). */
+  profileId: z.number().int().nullable().optional(),
   retirementAge: z.number().int().min(18).max(100),
   endAge: z.number().int().min(30).max(120),
   returnAfterRetirement: zDecimal,
@@ -609,10 +616,6 @@ export const retirementRouter = createTRPCRouter({
 
   // getProjection and getMonteCarloProjection moved to projection.ts
 
-  /** Read-only — per-person rows within a profile. Written by
-   *  retirementProfiles.duplicate and the person-create fan-out
-   *  (settings/paycheck.ts), never edited directly by name here yet
-   *  (that's phase E, the assumptions band on the projection page). */
   retirementProfilePeople: createTRPCRouter({
     list: protectedProcedure.query(({ ctx }) =>
       ctx.db
@@ -623,6 +626,110 @@ export const retirementRouter = createTRPCRouter({
           asc(schema.retirementProfilePeople.personId),
         ),
     ),
+
+    // Retirement Profiles phase 4 (the assumptions band). Until this
+    // mutation existed, every per-person editor on the Projection
+    // Assumptions card (Timeline's per-person Retirement Age + Rule of 55,
+    // Social Security's per-person benefit) actually called
+    // `retirementSettings.upsert`, writing `retirement_settings` — the
+    // table `build-engine-payload.ts` stopped reading per-person values
+    // from once step B (2026-08-30) switched those reads to
+    // `retirement_profile_people`. The edits saved, the UI showed the new
+    // number optimistically, and the projection never moved — same failure
+    // shape as the pre-0b5d5fe `end_age` bug, just at this table instead.
+    // This is the real write path now; the affected client call sites are
+    // updated in the same commit as this mutation.
+    upsertPerson: adminProcedure
+      .input(
+        z.object({
+          profileId: z.number().int(),
+          personId: z.number().int(),
+          retirementAge: z.number().int().min(18).max(100).optional(),
+          endAge: z.number().int().min(30).max(120).optional(),
+          socialSecurityMonthly: zDecimal.nullable().optional(),
+          ssStartAge: z.number().int().min(62).max(70).nullable().optional(),
+          ruleOf55Override: z.boolean().nullable().optional(),
+        }),
+      )
+      .mutation(async ({ ctx, input }) => {
+        const [existing] = await ctx.db
+          .select()
+          .from(schema.retirementProfilePeople)
+          .where(
+            and(
+              eq(schema.retirementProfilePeople.profileId, input.profileId),
+              eq(schema.retirementProfilePeople.personId, input.personId),
+            ),
+          );
+        // retirementAge/endAge are NOT NULL — the completeness invariant
+        // (profile duplicate / person create, see retirementProfiles below)
+        // guarantees `existing` here in every real flow, but an insert path
+        // still needs concrete values if it's ever reached cold.
+        if (
+          !existing &&
+          (input.retirementAge == null || input.endAge == null)
+        ) {
+          throw new Error(
+            "retirementAge and endAge are required to create a new retirement_profile_people row",
+          );
+        }
+        const { profileId, personId, ...patch } = input;
+        const values = {
+          profileId,
+          personId,
+          retirementAge: patch.retirementAge ?? existing!.retirementAge,
+          endAge: patch.endAge ?? existing!.endAge,
+          ...("socialSecurityMonthly" in patch
+            ? { socialSecurityMonthly: patch.socialSecurityMonthly }
+            : {}),
+          ...("ssStartAge" in patch ? { ssStartAge: patch.ssStartAge } : {}),
+          ...("ruleOf55Override" in patch
+            ? { ruleOf55Override: patch.ruleOf55Override }
+            : {}),
+        };
+        return existing
+          ? ctx.db
+              .update(schema.retirementProfilePeople)
+              .set(values)
+              .where(eq(schema.retirementProfilePeople.id, existing.id))
+              .returning()
+              .then((r) => r[0])
+          : ctx.db
+              .insert(schema.retirementProfilePeople)
+              .values(values)
+              .returning()
+              .then((r) => r[0]);
+      }),
+
+    // "Plan Through" (end age) and Social Security "Start Age" both render
+    // as ONE household-wide control regardless of person count
+    // (sections/timeline.tsx, sections/social-security.tsx), but the
+    // engine's real per-person read source for both
+    // (`retirement_profile_people`) is per-person storage. Fan whichever
+    // field the caller sends to every person's row in the profile — same
+    // shape as `retirementSettings.upsert`'s endAge fan-out used to be the
+    // fix for, before the read moved to this table out from under it (see
+    // upsertPerson's docblock above).
+    upsertHouseholdFields: adminProcedure
+      .input(
+        z.object({
+          profileId: z.number().int(),
+          endAge: z.number().int().min(30).max(120).optional(),
+          ssStartAge: z.number().int().min(62).max(70).nullable().optional(),
+        }),
+      )
+      .mutation(async ({ ctx, input }) => {
+        const { profileId, ...fields } = input;
+        const patch = Object.fromEntries(
+          Object.entries(fields).filter(([, v]) => v !== undefined),
+        );
+        if (Object.keys(patch).length === 0) return [];
+        return ctx.db
+          .update(schema.retirementProfilePeople)
+          .set(patch)
+          .where(eq(schema.retirementProfilePeople.profileId, profileId))
+          .returning();
+      }),
   }),
 
   retirementSettings: createTRPCRouter({
@@ -632,20 +739,57 @@ export const retirementRouter = createTRPCRouter({
         .from(schema.retirementSettings)
         .orderBy(asc(schema.retirementSettings.personId)),
     ),
+    // Retirement Profiles phase 4: `retirement_settings` was re-keyed in
+    // step C to a composite (profile_id, person_id) index — a person can
+    // now hold ONE ROW PER PROFILE. This mutation must scope every read and
+    // write by profile, or a household with 2+ profiles gets every profile's
+    // row for that person matched (and overwritten) by a single edit.
+    //
+    // Key PRESENCE, not just value, matters: `profileId: undefined` (key
+    // omitted — a legacy/API caller that predates profiles) resolves
+    // server-side to the household's globally-active profile, so every
+    // existing UI call site keeps editing exactly what it edits today.
+    // `profileId: null` (key present, value null) means "the caller
+    // resolved a real profileId and it was null" (e.g. a fresh/pre-backfill
+    // household with zero profiles yet) — that is NOT the same as "use the
+    // active profile," and must NOT silently retarget the write there; it
+    // scopes to the (rare, legitimate) null-profile rows via `isNull`
+    // instead of `eq`. Collapsing these two cases with `??` was the bug:
+    // once the assumptions band lets you VIEW a non-active profile, an
+    // omitted-vs-null mixup would render profile B while writing profile A.
     upsert: adminProcedure
       .input(retirementSettingsInput)
       .mutation(async ({ ctx, input }) => {
+        const profileIdGiven = Object.prototype.hasOwnProperty.call(
+          input,
+          "profileId",
+        );
+        const resolvedProfileId = profileIdGiven
+          ? input.profileId!
+          : await resolveRetirementProfileId(ctx.db);
+        const profileScope =
+          resolvedProfileId != null
+            ? eq(schema.retirementSettings.profileId, resolvedProfileId)
+            : isNull(schema.retirementSettings.profileId);
+
         const existing = await ctx.db
           .select()
           .from(schema.retirementSettings)
-          .where(eq(schema.retirementSettings.personId, input.personId));
+          .where(
+            and(
+              eq(schema.retirementSettings.personId, input.personId),
+              profileScope,
+            ),
+          );
         // filing_status is NOT NULL on the DB row (see drizzle/0021's
         // backfill) even though a caller may still send null/undefined to
         // mean "auto" — resolve that request to a concrete value here, the
         // same way build-engine-payload.ts's job-facts tier does at read
         // time, so the column never gets a null written to it.
+        const { profileId: _profileIdKey, ...inputFields } = input;
         const resolvedInput = {
-          ...input,
+          ...inputFields,
+          profileId: resolvedProfileId,
           filingStatus:
             input.filingStatus ??
             (await resolveDefaultFilingStatus(ctx.db, input.personId)),
@@ -656,7 +800,12 @@ export const retirementRouter = createTRPCRouter({
               ? await tx
                   .update(schema.retirementSettings)
                   .set(resolvedInput)
-                  .where(eq(schema.retirementSettings.personId, input.personId))
+                  .where(
+                    and(
+                      eq(schema.retirementSettings.personId, input.personId),
+                      profileScope,
+                    ),
+                  )
                   .returning()
                   .then((r) => r[0])
               : await tx
@@ -665,30 +814,32 @@ export const retirementRouter = createTRPCRouter({
                   .returning()
                   .then((r) => r[0]);
 
-          // Propagate household-grain fields to every other person's row.
+          // Propagate household-grain fields to every other person's row —
+          // WITHIN THE SAME PROFILE ONLY (the `profileScope` filter below).
           //
-          // `retirement_settings` is one row per person, but a few of its
-          // columns are presented in the UI as a SINGLE household control
-          // while being read across all people. `end_age` is the live case:
-          // "Plan Through" is one field for the whole household
-          // (sections/timeline.tsx:115-129, rendered regardless of person
-          // count), but the engine takes
-          // `Math.max(...perPersonSettings.map(p => p.endAge))`
-          // (build-engine-payload.ts:380) and feeds that to
-          // `projectionEndAge`. Writing only the caller's row meant a
-          // two-person household with both rows at 95 could set "Plan
-          // Through" to 90, have it save successfully, and see the
-          // projection ignore it entirely because max(90, 95) is still 95 —
-          // no error, the number simply didn't move (found 2026-08-30).
+          // `retirement_settings` is one row per (profile, person), but a
+          // few of its columns are presented in the UI as a SINGLE
+          // household control while being read across all people within
+          // that profile. Historically `end_age` was the live case here
+          // ("Plan Through" — see sections/timeline.tsx). As of the
+          // Retirement Profiles migration (step B), the engine's actual
+          // per-person read for end_age moved to `retirement_profile_people`
+          // — see the `retirementProfilePeople.upsertPerson` /
+          // `upsertHouseholdEndAge` mutations below, which are now the
+          // real write path for that field. This fan-out stays for
+          // whatever legacy readers still fall back to
+          // `retirement_settings.end_age` (build-engine-payload.ts's
+          // `pp ?? retSettings.find(...)` fallback, reached only when a
+          // profile-person row is missing).
           //
           // DELIBERATELY NARROW. Do not extend this to every column:
           // `salary_annual_increase` is genuinely per-person and read
-          // per-person (build-engine-payload.ts:1020-1025, whose docblock
-          // records that applying the primary's raise rate to everyone
-          // "silently produced the wrong number" — a bug already fixed
-          // once). Fanning that out would re-introduce it. Only add a field
-          // here if its UI control is household-wide AND its read path
-          // aggregates across people.
+          // per-person (build-engine-payload.ts, whose docblock records
+          // that applying the primary's raise rate to everyone "silently
+          // produced the wrong number" — a bug already fixed once). Fanning
+          // that out would re-introduce it. Only add a field here if its UI
+          // control is household-wide AND its read path aggregates across
+          // people within one profile.
           const HOUSEHOLD_FANOUT_FIELDS = ["endAge"] as const;
           const fanout = Object.fromEntries(
             HOUSEHOLD_FANOUT_FIELDS.filter(
@@ -698,12 +849,17 @@ export const retirementRouter = createTRPCRouter({
           if (Object.keys(fanout).length > 0) {
             // Existing rows only — a person with no row already inherits the
             // primary's value via the `?? settings.endAge` fallback in
-            // build-engine-payload.ts:352, so creating rows here would add
+            // build-engine-payload.ts, so creating rows here would add
             // state without changing the result.
             await tx
               .update(schema.retirementSettings)
               .set(fanout)
-              .where(ne(schema.retirementSettings.personId, input.personId));
+              .where(
+                and(
+                  ne(schema.retirementSettings.personId, input.personId),
+                  profileScope,
+                ),
+              );
           }
 
           return saved;

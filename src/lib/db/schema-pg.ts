@@ -1571,9 +1571,12 @@ export const retirementSettings = pgTable(
      *  row per person PER PROFILE, which is what lets two profiles hold
      *  genuinely different household settings.
      *
-     *  Still nullable, not NOT NULL — every write path sets it, and a null
-     *  value can't weaken the unique index (Postgres/SQLite both treat NULL
-     *  as non-equal there), so there is no correctness gap. Made NOT NULL
+     *  Still nullable, not NOT NULL — `retirementSettings.upsert`
+     *  (server/routers/retirement.ts) explicitly resolves and sets it on
+     *  every write (falling back to `isNull` scoping, never a bare
+     *  personId match, when no profile resolves), and a null value can't
+     *  weaken the unique index (Postgres/SQLite both treat NULL as
+     *  non-equal there), so there is no correctness gap. Made NOT NULL
      *  ONLY as part of the v0.8.0 squash: SQLite has no ALTER COLUMN SET NOT
      *  NULL, so tightening this now would force the exact table-recreate
      *  path this schema has otherwise avoided since step A. */

@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**344 procedures across 40 routers.**
+**346 procedures across 40 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -286,7 +286,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `delete`                    | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
 | `duplicate`                 | mutation | `adminProcedure`     | a real household whose withdrawal_rate/rmd_excess_handling disagreed across person rows. Cloning from the PRIMARY person's source row into every person's new row (not each person's own current row) av |
 | `get`                       | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
-| `list`                      | query    | `protectedProcedure` | retirementProfiles.duplicate and the person-create fan-out (settings/paycheck.ts), never edited directly by name here yet (that's phase E, the assumptions band on the projection page).                 |
+| `list`                      | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
 | `list`                      | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
 | `list`                      | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
 | `list`                      | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
@@ -296,8 +296,10 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `update`                    | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
 | `update`                    | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
 | `update`                    | mutation | `adminProcedure`     | through retirementSettings.upsert, scoped to whichever profile is active — not here.                                                                                                                     |
+| `upsert`                    | mutation | `adminProcedure`     | household with zero profiles yet) — that is NOT the same as "use the active profile," and must NOT silently retarget the write there; it scopes to the (rare, legitimate) null-profile rows via `isNull` |
 | `upsert`                    | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
-| `upsert`                    | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
+| `upsertHouseholdFields`     | mutation | `adminProcedure`     | engine's real per-person read source for both (`retirement_profile_people`) is per-person storage. Fan whichever field the caller sends to every person's row in the profile — same shape as `retirement |
+| `upsertPerson`              | mutation | `adminProcedure`     | from once step B (2026-08-30) switched those reads to `retirement_profile_people`. The edits saved, the UI showed the new number optimistically, and the projection never moved — same failure shape as  |
 
 ## `salary-profiles`
 

@@ -19,10 +19,24 @@ export function EditLockToggle({
 }: {
   locked: boolean;
   onToggle: () => void;
-  /** Pass `!canEdit` — the toggle is hidden entirely without edit permission. */
+  /** Pass `!canEdit` — the toggle becomes a static, non-interactive lock
+   *  with a tooltip explaining why, rather than the clickable toggle. Was
+   *  silently hidden entirely before the design plan's §05 review flagged
+   *  it as a consistency gap ("Says why it's locked out") next to the
+   *  Retirement tab and Budget managers, which already explain themselves. */
   disabled?: boolean;
 }) {
-  if (disabled) return null;
+  if (disabled) {
+    return (
+      <span
+        title="Only admins can edit — you can still view everything"
+        aria-label="Only admins can edit"
+        className="text-faint"
+      >
+        <Lock className="w-3.5 h-3.5" />
+      </span>
+    );
+  }
   return (
     <button
       type="button"

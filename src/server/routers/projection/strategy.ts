@@ -72,6 +72,8 @@ export const strategyRouter = createTRPCRouter({
           contributionProfileId: z.number().int().optional(),
           /** Optional Salary Profile — the independent "what if I earned X" axis. */
           salaryProfileId: z.number().int().optional(),
+          /** View a non-active Retirement Profile (phase 4 assumptions band). */
+          retirementProfileId: z.number().int().optional(),
           decumulationBudgetProfileId: z.number().int().optional(),
           decumulationBudgetColumn: z.number().int().min(0).optional(),
           decumulationExpenseOverride: z.number().min(0).optional(),
@@ -107,6 +109,7 @@ export const strategyRouter = createTRPCRouter({
         decumulationBudgetProfileId: input?.decumulationBudgetProfileId,
         decumulationBudgetColumn: input?.decumulationBudgetColumn,
         decumulationExpenseOverride: input?.decumulationExpenseOverride,
+        retirementProfileId: input?.retirementProfileId,
       });
       if (!payload) return { strategies: [], activeStrategy: null };
 

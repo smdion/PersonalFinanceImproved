@@ -245,6 +245,14 @@ export async function buildEnginePayload(
     decumulationBudgetProfileId?: number;
     decumulationBudgetColumn?: number;
     decumulationExpenseOverride?: number;
+    /** View a non-active retirement profile without making it the
+     *  household's globally-active one — same "view without activating"
+     *  contract contributionProfileId/salaryProfileId already have here.
+     *  Retirement Profiles phase 4 (the assumptions band). Ignored (falls
+     *  back to the active-profile resolution) if it doesn't name a real
+     *  profile — a stale id from a deleted profile must never silently
+     *  compute against nothing. */
+    retirementProfileId?: number;
   },
 ) {
   const {
@@ -313,10 +321,11 @@ export async function buildEnginePayload(
   // makes profiles swappable — and it removes the trap where a household
   // field edited against a non-primary person wrote successfully and was
   // then never read.
-  const activeProfileId = resolveRetirementProfileIdFrom(
-    allAppSettings,
-    retProfiles,
-  );
+  const activeProfileId =
+    opts.retirementProfileId != null &&
+    retProfiles.some((p) => p.id === opts.retirementProfileId)
+      ? opts.retirementProfileId
+      : resolveRetirementProfileIdFrom(allAppSettings, retProfiles);
   // pickProfileSettingsRow prefers the PRIMARY person's row within the
   // profile — see its docblock. During the expand phase every person's row
   // shares the profile id, and those rows can legitimately disagree on
@@ -1072,10 +1081,21 @@ export async function buildEnginePayload(
   /** Each person's own annual raise rate, falling back to the primary
    *  person's when they have no retirement_settings row. retirementSettings
    *  is per-person, so growing person B's future salary by person A's raise
-   *  rate (what this used to do) silently produced the wrong number. */
+   *  rate (what this used to do) silently produced the wrong number.
+   *
+   *  Scoped to `activeProfileId` (Retirement Profiles phase 4) — a person
+   *  can now hold one row PER PROFILE, and `retSettings` here is every row
+   *  across every profile. Without this filter, `new Map(...)` keys on
+   *  personId and the last matching row wins, an arbitrary pick once a
+   *  household has 2+ profiles — the same class of bug
+   *  `pickProfileSettingsRow` exists to prevent for the household-grain
+   *  `settings` row above; this is its per-person-map equivalent. */
+  const retSettingsForActiveProfile = retSettings.filter(
+    (rs) => rs.profileId === activeProfileId,
+  );
   const primaryRaiseRate = toNumber(settings.salaryAnnualIncrease);
   const raiseRateByPerson = new Map(
-    retSettings.map((rs) => [
+    retSettingsForActiveProfile.map((rs) => [
       rs.personId,
       toNumber(rs.salaryAnnualIncrease) || primaryRaiseRate,
     ]),

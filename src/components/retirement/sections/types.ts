@@ -16,6 +16,14 @@
  *  through JSON as string. */
 export type Settings = {
   personId: number;
+  /** Which retirement profile this row belongs to — on the wire from
+   *  computeProjection since `settings` is the raw DB row (Retirement
+   *  Profiles phase 4). Null only for a pre-migration/never-backfilled
+   *  household. Always forward this unchanged through `buildSettingsPatch`
+   *  so household-grain edits stay scoped to the profile they're shown
+   *  for, not whatever the household's globally-active profile happens to
+   *  be — see retirementSettings.upsert's docblock. */
+  profileId: number | null;
   retirementAge: number;
   endAge: number;
   returnAfterRetirement: string;
@@ -105,6 +113,33 @@ export type UpsertSettingsInput = {
  *  the parent owns the optimistic update pipeline. */
 export type UpsertSettingsMutation = {
   mutate: (input: UpsertSettingsInput) => void;
+};
+
+/** `retirementProfilePeople.upsertPerson` pass-through — per-person fields
+ *  (Retirement Age, Rule of 55, SS Benefit, SS Start Age) that live on
+ *  `retirement_profile_people`, not `retirement_settings`. */
+export type UpsertProfilePersonMutation = {
+  mutate: (input: {
+    profileId: number;
+    personId: number;
+    retirementAge?: number;
+    endAge?: number;
+    socialSecurityMonthly?: string | null;
+    ssStartAge?: number | null;
+    ruleOf55Override?: boolean | null;
+  }) => void;
+};
+
+/** `retirementProfilePeople.upsertHouseholdFields` pass-through — fields
+ *  the UI presents as ONE household-wide control (Plan Through, SS Start
+ *  Age) but that are stored per-person; fans the edit to every person in
+ *  the profile server-side. */
+export type UpsertProfileHouseholdFieldsMutation = {
+  mutate: (input: {
+    profileId: number;
+    endAge?: number;
+    ssStartAge?: number | null;
+  }) => void;
 };
 
 /** Selected retirement scenario — used by Taxes section for per-account-type
