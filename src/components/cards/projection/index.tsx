@@ -490,7 +490,7 @@ export function ProjectionCard(props: {
                                   : "Coast FIRE (Age N): contributions zeroed from your Coast FIRE age onward — the earliest age that still passes. Not yet available.",
                                 "Coast FIRE (Today): the SAME idea, but stopping right now instead of at the earliest passing age. Use this to see exactly what breaks (and when) if you stopped contributing today — often a shortfall in the years before 59½, which the passing-age view won't show since it's built to avoid it.",
                                 'Coast FIRE (Custom): check any age you pick, not just the earliest passing one or today — pick an age and press "Check this age" to see whether it passes.',
-                                "Rate-Seeded: an alternate simulation where year 1 of retirement spending is set from your Initial Withdrawal Rate × starting balance instead of your stated budget/override — your budget is ignored entirely for the starting point. Every year after that still runs your ACTIVE strategy's own ongoing rules (guardrails, decline schedule, etc.) unchanged — this only changes where the number starts, not how it evolves. Computed on demand (not preloaded in the background like Coast FIRE), so the first switch takes a few seconds.",
+                                "Initial Rate: an alternate simulation where year 1 of retirement spending is set from your Initial Withdrawal Rate setting × starting balance instead of your stated budget/override — your budget is ignored entirely for the starting point. Every year after that still runs your ACTIVE strategy's own ongoing rules (guardrails, decline schedule, etc.) unchanged — this only changes where the number starts, not how it evolves. Computed on demand (not preloaded in the background like Coast FIRE), so the first switch takes a few seconds.",
                               ]}
                             />
                           }
@@ -540,7 +540,7 @@ export function ProjectionCard(props: {
                             tone="compute"
                             active={scenarioView === "rateSeeded"}
                             onClick={() => setScenarioView("rateSeeded")}
-                            label="Rate-Seeded"
+                            label="Initial Rate"
                           />
                         </LabeledPillGroup>
                         {scenarioView === "coastFireCustom" &&
