@@ -202,7 +202,13 @@ function evaluateCost(
     clonedAcctBal,
     {
       taxBrackets: taxRates.taxBrackets,
-      rothBracketTarget: taxRates.rothBracketTarget,
+      // Added 2026-08-29: read the resolved (possibly per-year-overridden)
+      // value, same fix as the real router's own call site
+      // (decumulation-year.ts) -- this file's own header docblock (Part
+      // "2." above) says this estimate and the real router must never
+      // diverge on what routing rule applies; leaving this unresolved
+      // would violate that for any household using the new override.
+      rothBracketTarget: config.rothBracketTarget ?? taxRates.rothBracketTarget,
       taxableSS,
       filingStatus,
       ltcgBrackets: taxRates.ltcgBrackets,

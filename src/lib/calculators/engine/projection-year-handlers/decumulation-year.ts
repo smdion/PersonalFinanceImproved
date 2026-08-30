@@ -411,7 +411,10 @@ export function runDecumulationYear(
     acctBalances,
     {
       taxBrackets: taxRates.taxBrackets,
-      rothBracketTarget: taxRates.rothBracketTarget,
+      // Added 2026-08-29: read the resolved (possibly per-year-overridden)
+      // value first, falling back to the plan's fixed default — was
+      // previously always the fixed default, with no override path at all.
+      rothBracketTarget: config.rothBracketTarget ?? taxRates.rothBracketTarget,
       taxableSS,
       filingStatus,
       ltcgBrackets: taxRates.ltcgBrackets,
@@ -702,8 +705,27 @@ export function runDecumulationYear(
     taxBrackets: taxRates.taxBrackets,
     taxMultiplier: taxRates.taxMultiplier,
     rothConversionTarget: config.rothConversionTarget,
+    // Fixed 2026-08-29, corrected after real test failures caught an
+    // over-eager first attempt: the ORIGINAL expression was
+    // `taxRates.rothConversionTarget ?? taxRates.rothBracketTarget` --
+    // this reads two *unresolved* plan-level defaults, which is exactly
+    // right when nothing has overridden either one (this parameter is
+    // itself only ever consulted as performRothConversion's fallback,
+    // reached precisely when config.rothConversionTarget is already
+    // undefined -- so re-deriving from the same resolved field here would
+    // be redundant, not "more correct"). The real gap was that a NEW
+    // per-year rothBracketTarget override (this session's addition) had
+    // no way to take priority over those two static defaults. Fixed by
+    // adding config.rothBracketTarget as a higher-priority first term,
+    // WITHOUT removing the original two-default fallback chain --
+    // dropping taxRates.rothConversionTarget (an earlier attempt at this
+    // fix did) broke every household relying on a plan-level
+    // rothConversionTarget default with no per-year override active,
+    // exactly what fixtures 31/41/54/55/61 and the Bug-B MAGI test cover.
     rothBracketTarget:
-      taxRates.rothConversionTarget ?? taxRates.rothBracketTarget,
+      config.rothBracketTarget ??
+      taxRates.rothConversionTarget ??
+      taxRates.rothBracketTarget,
     totalTraditionalWithdrawal,
     taxableSS,
     brokerageGainsPortion,

@@ -242,4 +242,88 @@ describe("resolveDecumulationConfig", () => {
       "hsa",
     ]);
   });
+
+  // ---------------------------------------------------------------------
+  // Multi-year withdrawal-policy optimizer, Phase 1: rothBracketTarget /
+  // rmdSmoothingMaxBracketTarget as real per-year overrides
+  // ---------------------------------------------------------------------
+
+  it("rothBracketTarget is undefined with no override (falls through to the plan default at the read site, not resolved here)", () => {
+    const config = resolveDecumulationConfig(2050, defaults, []);
+    expect(config.rothBracketTarget).toBeUndefined();
+  });
+
+  it("applies sticky-forward rothBracketTarget", () => {
+    const overrides: DecumulationOverride[] = [
+      { year: 2050, rothBracketTarget: 0.12 },
+    ];
+    const config2050 = resolveDecumulationConfig(2050, defaults, overrides);
+    expect(config2050.rothBracketTarget).toBe(0.12);
+    // Sticky-forward: still applies in a later year.
+    const config2055 = resolveDecumulationConfig(2055, defaults, overrides);
+    expect(config2055.rothBracketTarget).toBe(0.12);
+  });
+
+  it("a later rothBracketTarget override replaces an earlier one", () => {
+    const overrides: DecumulationOverride[] = [
+      { year: 2050, rothBracketTarget: 0.12 },
+      { year: 2055, rothBracketTarget: 0.22 },
+    ];
+    const config2052 = resolveDecumulationConfig(2052, defaults, overrides);
+    expect(config2052.rothBracketTarget).toBe(0.12);
+    const config2060 = resolveDecumulationConfig(2060, defaults, overrides);
+    expect(config2060.rothBracketTarget).toBe(0.22);
+  });
+
+  it("reset reverts rothBracketTarget to undefined (no entry needed in the reset branch -- an omitted optional field is already the correct reset value)", () => {
+    const overrides: DecumulationOverride[] = [
+      { year: 2050, rothBracketTarget: 0.12 },
+      { year: 2055, reset: true },
+    ];
+    const config2056 = resolveDecumulationConfig(2056, defaults, overrides);
+    expect(config2056.rothBracketTarget).toBeUndefined();
+  });
+
+  it("rmdSmoothingMaxBracketTarget resolves to the fallback constant with no override, same as before this field was overridable", () => {
+    const config = resolveDecumulationConfig(2050, defaults, []);
+    // RMD_SMOOTHING_MAX_BRACKET_TARGET_FALLBACK -- asserting the field is
+    // always resolved (never undefined), matching its existing contract.
+    expect(config.rmdSmoothingMaxBracketTarget).toBeDefined();
+    expect(typeof config.rmdSmoothingMaxBracketTarget).toBe("number");
+  });
+
+  it("applies sticky-forward rmdSmoothingMaxBracketTarget", () => {
+    const overrides: DecumulationOverride[] = [
+      { year: 2050, rmdSmoothingMaxBracketTarget: 0.24 },
+    ];
+    const config = resolveDecumulationConfig(2055, defaults, overrides);
+    expect(config.rmdSmoothingMaxBracketTarget).toBe(0.24);
+  });
+
+  it("reset reverts rmdSmoothingMaxBracketTarget to the plan default (already covered by the pre-existing reset branch, verified still true with the new override path added)", () => {
+    const overrides: DecumulationOverride[] = [
+      { year: 2050, rmdSmoothingMaxBracketTarget: 0.32 },
+      { year: 2055, reset: true },
+    ];
+    const beforeReset = resolveDecumulationConfig(2050, defaults, overrides);
+    const afterReset = resolveDecumulationConfig(2056, defaults, overrides);
+    expect(beforeReset.rmdSmoothingMaxBracketTarget).toBe(0.32);
+    expect(afterReset.rmdSmoothingMaxBracketTarget).not.toBe(0.32);
+    expect(afterReset.rmdSmoothingMaxBracketTarget).toBe(
+      resolveDecumulationConfig(2050, defaults, [])
+        .rmdSmoothingMaxBracketTarget,
+    );
+  });
+
+  it("rothBracketTarget and rmdSmoothingMaxBracketTarget are independent -- overriding one doesn't touch the other", () => {
+    const overrides: DecumulationOverride[] = [
+      { year: 2050, rothBracketTarget: 0.12 },
+    ];
+    const config = resolveDecumulationConfig(2050, defaults, overrides);
+    expect(config.rothBracketTarget).toBe(0.12);
+    expect(config.rmdSmoothingMaxBracketTarget).toBe(
+      resolveDecumulationConfig(2050, defaults, [])
+        .rmdSmoothingMaxBracketTarget,
+    );
+  });
 });

@@ -533,6 +533,28 @@ export type DecumulationOverride = {
   rothConversionTarget?: number;
 
   /**
+   * Override the bracket_filling target marginal rate (see
+   * `DistributionTaxRates.rothBracketTarget`) for this year onward.
+   * Omit to keep the plan's configured target. Added 2026-08-29 so a
+   * multi-year withdrawal-policy search can express "try this bracket
+   * target for this candidate" the same way `accumulationOverrides`
+   * already lets Coast FIRE express a candidate contribution rate — see
+   * `.scratch/docs/plans/PLAN-v0.7.10-multi-year-withdrawal-optimizer.md`.
+   */
+  rothBracketTarget?: number;
+
+  /**
+   * Override R47's RMD-smoothing ceiling (see
+   * `DecumulationDefaults.rmdSmoothingMaxBracketTarget`) for this year
+   * onward. Omit to keep the plan's configured ceiling. Added 2026-08-29
+   * alongside `rothBracketTarget` so a search that varies the bracket
+   * target can keep this ceiling consistent with whatever target it's
+   * evaluating, instead of scoring a candidate against a stale ceiling
+   * seeded from a different value.
+   */
+  rmdSmoothingMaxBracketTarget?: number;
+
+  /**
    * One-time dollar withdrawals for this year. NOT sticky-forward.
    * Models windfall spending, one-time distributions, etc.
    */
@@ -566,6 +588,10 @@ export type ResolvedDecumulationConfig = {
   withdrawalTaxTypeCaps: Record<RoutingTaxType, number | null>;
   /** Resolved Roth conversion target marginal rate (sticky-forward from overrides). undefined = use defaults. */
   rothConversionTarget?: number;
+  /** Resolved bracket_filling target marginal rate (sticky-forward from
+   *  overrides). undefined = use `decumulationDefaults.distributionTaxRates.rothBracketTarget`.
+   *  Added 2026-08-29 — see `rothBracketTarget` on `DecumulationOverride`. */
+  rothBracketTarget?: number;
   /** Lump sums for this year only (NOT sticky-forward). Empty if none. */
   lumpSums: LumpSum[];
   /** See DecumulationDefaults.avoidPenalizedWithdrawals. Always resolved

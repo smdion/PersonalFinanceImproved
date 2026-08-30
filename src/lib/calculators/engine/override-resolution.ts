@@ -261,6 +261,20 @@ export function resolveDecumulationConfig(
     }
     if (o.rothConversionTarget !== undefined)
       config.rothConversionTarget = o.rothConversionTarget;
+    // Added 2026-08-29 — see DecumulationOverride's docblock. Same
+    // optional/sticky-forward pattern as rothConversionTarget just above:
+    // no entry needed in the initial literal or the reset branch (an
+    // omitted optional field is already undefined, which is the correct
+    // "use the plan default" value for rothBracketTarget).
+    if (o.rothBracketTarget !== undefined)
+      config.rothBracketTarget = o.rothBracketTarget;
+    // rmdSmoothingMaxBracketTarget itself is NOT new (already seeded in
+    // both the initial literal above and the reset branch, always
+    // resolved) — only this sticky-forward apply line is new, letting a
+    // household/search vary it per year instead of it being fixed for
+    // the whole plan.
+    if (o.rmdSmoothingMaxBracketTarget !== undefined)
+      config.rmdSmoothingMaxBracketTarget = o.rmdSmoothingMaxBracketTarget;
     if (o.avoidPenalizedWithdrawals !== undefined)
       config.avoidPenalizedWithdrawals = o.avoidPenalizedWithdrawals;
   }
