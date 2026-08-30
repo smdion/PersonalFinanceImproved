@@ -119,6 +119,62 @@ describe("retirement.retirementSettings", () => {
     });
   });
 
+  // Regression: "Plan Through" is ONE household control (sections/timeline.tsx)
+  // but retirement_settings is per-person and the engine reads
+  // Math.max(...perPersonSettings.map(p => p.endAge)) (build-engine-payload.ts:380).
+  // Writing only the caller's row let a two-person household save endAge 90
+  // against a sibling row still holding 95, so max() stayed 95 and the
+  // projection silently ignored the edit (found 2026-08-30).
+  describe("household field fan-out", () => {
+    let secondPersonId: number;
+
+    it("propagates endAge to every person's row, not just the caller's", async () => {
+      secondPersonId = await seedPerson(db);
+      await caller.retirement.retirementSettings.upsert({
+        ...baseSettings(),
+        personId: secondPersonId,
+        endAge: 95,
+      });
+
+      // Edit "Plan Through" as the FIRST person — the household control.
+      await caller.retirement.retirementSettings.upsert({
+        ...baseSettings(),
+        endAge: 90,
+      });
+
+      const rows = await caller.retirement.retirementSettings.list();
+      expect(rows.length).toBeGreaterThanOrEqual(2);
+      // Every row agrees, so the engine's max() reflects the edit.
+      expect(rows.map((r) => r.endAge)).toEqual(rows.map(() => 90));
+      expect(Math.max(...rows.map((r) => r.endAge))).toBe(90);
+    });
+
+    it("does NOT fan out salaryAnnualIncrease — it is genuinely per-person", async () => {
+      // build-engine-payload.ts:1020-1025 reads this per person, and its
+      // docblock records that applying the primary's rate to everyone
+      // "silently produced the wrong number". Fanning it out would
+      // re-introduce an already-fixed bug.
+      await caller.retirement.retirementSettings.upsert({
+        ...baseSettings(),
+        personId: secondPersonId,
+        endAge: 90,
+        salaryAnnualIncrease: "0.07",
+      });
+      await caller.retirement.retirementSettings.upsert({
+        ...baseSettings(),
+        endAge: 90,
+        salaryAnnualIncrease: "0.02",
+      });
+
+      const rows = await caller.retirement.retirementSettings.list();
+      const byPerson = new Map(
+        rows.map((r) => [r.personId, r.salaryAnnualIncrease]),
+      );
+      expect(byPerson.get(personId)).toBe("0.02");
+      expect(byPerson.get(secondPersonId)).toBe("0.07");
+    });
+  });
+
   describe("auth", () => {
     it("viewer can list retirement settings", async () => {
       const { caller: viewerCaller, cleanup: vc } =

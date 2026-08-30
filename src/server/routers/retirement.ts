@@ -1,5 +1,5 @@
 /** Retirement router for readiness analysis including savings rates, employer matches, tax bucket projections, relocation comparisons, profile-switching scenarios, and retirement-settings/scenario/override/return-rate CRUD. */
-import { eq, asc, and, isNull } from "drizzle-orm";
+import { eq, ne, asc, and, isNull } from "drizzle-orm";
 import { z } from "zod/v4";
 import {
   DEFAULT_RETURN_RATE,
@@ -632,19 +632,64 @@ export const retirementRouter = createTRPCRouter({
             input.filingStatus ??
             (await resolveDefaultFilingStatus(ctx.db, input.personId)),
         };
-        if (existing.length > 0) {
-          return ctx.db
-            .update(schema.retirementSettings)
-            .set(resolvedInput)
-            .where(eq(schema.retirementSettings.personId, input.personId))
-            .returning()
-            .then((r) => r[0]);
-        }
-        return ctx.db
-          .insert(schema.retirementSettings)
-          .values(resolvedInput)
-          .returning()
-          .then((r) => r[0]);
+        return ctx.db.transaction(async (tx) => {
+          const saved =
+            existing.length > 0
+              ? await tx
+                  .update(schema.retirementSettings)
+                  .set(resolvedInput)
+                  .where(eq(schema.retirementSettings.personId, input.personId))
+                  .returning()
+                  .then((r) => r[0])
+              : await tx
+                  .insert(schema.retirementSettings)
+                  .values(resolvedInput)
+                  .returning()
+                  .then((r) => r[0]);
+
+          // Propagate household-grain fields to every other person's row.
+          //
+          // `retirement_settings` is one row per person, but a few of its
+          // columns are presented in the UI as a SINGLE household control
+          // while being read across all people. `end_age` is the live case:
+          // "Plan Through" is one field for the whole household
+          // (sections/timeline.tsx:115-129, rendered regardless of person
+          // count), but the engine takes
+          // `Math.max(...perPersonSettings.map(p => p.endAge))`
+          // (build-engine-payload.ts:380) and feeds that to
+          // `projectionEndAge`. Writing only the caller's row meant a
+          // two-person household with both rows at 95 could set "Plan
+          // Through" to 90, have it save successfully, and see the
+          // projection ignore it entirely because max(90, 95) is still 95 —
+          // no error, the number simply didn't move (found 2026-08-30).
+          //
+          // DELIBERATELY NARROW. Do not extend this to every column:
+          // `salary_annual_increase` is genuinely per-person and read
+          // per-person (build-engine-payload.ts:1020-1025, whose docblock
+          // records that applying the primary's raise rate to everyone
+          // "silently produced the wrong number" — a bug already fixed
+          // once). Fanning that out would re-introduce it. Only add a field
+          // here if its UI control is household-wide AND its read path
+          // aggregates across people.
+          const HOUSEHOLD_FANOUT_FIELDS = ["endAge"] as const;
+          const fanout = Object.fromEntries(
+            HOUSEHOLD_FANOUT_FIELDS.filter(
+              (f) => resolvedInput[f] !== undefined,
+            ).map((f) => [f, resolvedInput[f]]),
+          );
+          if (Object.keys(fanout).length > 0) {
+            // Existing rows only — a person with no row already inherits the
+            // primary's value via the `?? settings.endAge` fallback in
+            // build-engine-payload.ts:352, so creating rows here would add
+            // state without changing the result.
+            await tx
+              .update(schema.retirementSettings)
+              .set(fanout)
+              .where(ne(schema.retirementSettings.personId, input.personId));
+          }
+
+          return saved;
+        });
       }),
   }),
 
