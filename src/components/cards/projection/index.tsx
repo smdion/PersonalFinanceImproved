@@ -118,6 +118,8 @@ export function ProjectionCard(props: {
     setShowBars,
     showStabilityBars,
     setShowStabilityBars,
+    showIncome,
+    setShowIncome,
     fanBandRange,
     setFanBandRange,
     mcBandsByYear,
@@ -876,6 +878,28 @@ export function ProjectionCard(props: {
                               title={baselineDisabledTitle}
                             />
                           </LabeledPillGroup>
+                          {chartView === "balance" && (
+                            <LabeledPillGroup
+                              label="Income"
+                              helpTip={
+                                <HelpTip
+                                  maxWidth={320}
+                                  text="Shows total portfolio withdrawal and Social Security income for each retirement year, on their own axis to the right — separate from the account balances the bars show. Both are your strategy's real computed numbers, not estimates."
+                                />
+                              }
+                            >
+                              <PillBtn
+                                active={showIncome}
+                                onClick={() => setShowIncome(true)}
+                                label="On"
+                              />
+                              <PillBtn
+                                active={!showIncome}
+                                onClick={() => setShowIncome(false)}
+                                label="Off"
+                              />
+                            </LabeledPillGroup>
+                          )}
                           {hasMc && (
                             <LabeledPillGroup
                               label="Confidence Band"

@@ -49,14 +49,50 @@ export const ROTH_CONVERSION_BRACKET_PRESETS = [
   "0.35",
 ];
 
+// Centralized tooltip accent-color lookup (2026-08-30 UI/UX pass) — every
+// projection tooltip color, chart or table, single-select or hand-rolled
+// JSX, resolves through here.
+//
+// Corrected twice in the same pass. First pass (wrong): treated "hard to
+// read depending on theme" as a missing-theme-override problem and swapped
+// every broken shade for one of globals.css's `--c-<color>-<shade>`
+// PAGE-theme-remapped overrides. Second pass (this one): these tooltips
+// (both this chart's own hand-rolled Recharts tooltip AND the table's
+// shared `Tooltip` UI primitive, see ui/tooltip.tsx's TOOLTIP_SURFACE_
+// CLASSES) render on a surface that's deliberately dark REGARDLESS of the
+// page's own light/dark setting (bg-slate-900 / dark:bg-slate-700 — both
+// dark, neither theme-adaptive). Routing tooltip TEXT through the
+// PAGE-theme system was solving the wrong layer: the container doesn't
+// track page theme, so text that does track it can end up chosen for the
+// wrong (light-page-assuming) background regardless of which shade number
+// gets picked. Every value below is therefore a STATIC shade -- one with
+// NO `--c-*` override in globals.css, so it resolves to Tailwind's plain
+// default and stays the same fixed, dark-surface-legible color no matter
+// what the page's own theme is set to (the exact "readable on a dark
+// background" role Tailwind's own 300-400 tier exists for). `red` is the
+// one exception: every red-* shade IS remapped (no static option exists in
+// this app), so red-400 is used deliberately -- its own light-page-mode
+// value is still light/saturated enough to read on a dark surface, unlike
+// the darker 600-800 tier (chosen for text-on-white, not text-on-dark).
+//
+// This is the OPPOSITE selection rule from ordinary page content (badges,
+// status text, borders), which correctly SHOULD use the `--c-*` system so
+// it tracks the page's own theme. Don't "fix" these shades again by
+// routing them through `--c-*` overrides — that regresses back to the
+// first, wrong pass. If a NEW tooltip surface is added that IS
+// theme-adaptive (like a page-background card, not a hover tooltip), it
+// needs its OWN color choices via the normal `--c-*`-remapped classes,
+// not this map.
 export const tipColorClass: Record<TipColor, string> = {
   green: "text-green-400",
-  blue: "text-blue-300",
-  red: "text-red-300",
-  amber: "text-amber-300",
+  blue: "text-blue-400",
+  red: "text-red-400",
+  amber: "text-amber-400",
   emerald: "text-emerald-300",
-  violet: "text-violet-300",
-  gray: "text-gray-400",
+  violet: "text-violet-400",
+  gray: "text-slate-400", // matches this feature's own pre-existing muted/neutral convention (tooltip-renderer.tsx's meta/meta2/tax-split lines)
+  teal: "text-teal-400", // SS accent
+  purple: "text-purple-300", // MC accent
 };
 
 /** Display label for an account category. */

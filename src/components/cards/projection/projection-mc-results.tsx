@@ -73,6 +73,8 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
     runMonteCarlo,
     runCoastFireMc,
     clearProjectionCacheMutation,
+    deflate,
+    dollarMode,
   } = state;
   const [isRerunning, setIsRerunning] = useState(false);
   const utils = trpc.useUtils();
@@ -146,27 +148,45 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
               const si = mcQuery.data.simulationInputs;
               const mcr = mcQuery.data.result!;
 
-              // Guyton-Klinger's actual starting rate (not the flat
-              // "Initial Withdrawal Rate" setting) — captured once, on the
-              // first decumulation year, as that year's spending ÷ the
-              // portfolio balance carried in from the last accumulation
-              // year. GK uses this number (not si.withdrawalRate) to decide
-              // every future raise/cut. Computed here from the same
-              // deterministic result already loaded for the chart/table —
-              // no new query.
-              let gkImpliedRate: number | null = null;
-              if (si.withdrawalStrategy === "guyton_klinger" && result) {
+              // First decumulation year — the same year Guyton-Klinger's
+              // anchor rate below is captured from, and also the source
+              // for the "starting income" tile: `projectedExpenses` is the
+              // ACTIVE strategy's own computed first-year spending (per
+              // coast-fire.ts's docblock — for every strategy but the 4
+              // budget-continuation ones this is real, strategy-computed
+              // math, not an echo of a flat rate setting), so this reflects
+              // whatever withdrawal strategy/override is actually driving
+              // the household's plan, not si.withdrawalRate.
+              let firstDecumYear:
+                NonNullable<typeof result>["projectionByYear"][number] | null =
+                null;
+              let priorAccumEnd: number | null = null;
+              if (result) {
                 const years = result.projectionByYear;
                 for (let i = 0; i < years.length; i++) {
                   const y = years[i]!;
                   if (y.phase === "decumulation") {
-                    const priorEnd = i > 0 ? years[i - 1]!.endBalance : null;
-                    if (priorEnd != null && priorEnd > 0) {
-                      gkImpliedRate = y.projectedExpenses / priorEnd;
-                    }
+                    firstDecumYear = y;
+                    priorAccumEnd = i > 0 ? years[i - 1]!.endBalance : null;
                     break;
                   }
                 }
+              }
+
+              // Guyton-Klinger's actual starting rate (not the flat
+              // "Initial Withdrawal Rate" setting) — that year's spending ÷
+              // the portfolio balance carried in from the last accumulation
+              // year. GK uses this number (not si.withdrawalRate) to decide
+              // every future raise/cut.
+              let gkImpliedRate: number | null = null;
+              if (
+                si.withdrawalStrategy === "guyton_klinger" &&
+                firstDecumYear &&
+                priorAccumEnd != null &&
+                priorAccumEnd > 0
+              ) {
+                gkImpliedRate =
+                  firstDecumYear.projectedExpenses / priorAccumEnd;
               }
 
               const presetBar: Record<
@@ -273,6 +293,30 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                             : "3–5%"}
                         </div>
                       </div>
+                      {firstDecumYear && (
+                        <div className="text-center">
+                          <div className="font-semibold tabular-nums flex items-center justify-center gap-0.5">
+                            {formatCurrency(
+                              deflate(
+                                firstDecumYear.projectedExpenses,
+                                firstDecumYear.year,
+                              ),
+                            )}
+                            <HelpTip
+                              maxWidth={260}
+                              text={`Your ${firstDecumYear.year} retirement year's actual spending, as computed by your ACTIVE withdrawal strategy (${si.withdrawalStrategy.replace(/_/g, " ")}) and any overrides in effect that year -- not a flat rate applied to today's balance. Shown in ${dollarMode === "nominal" ? "future" : "today's"} dollars, matching the Dollars toggle above the chart.`}
+                            />
+                          </div>
+                          <div className="text-micro text-faint">
+                            starting income
+                          </div>
+                          <div className="text-micro text-faint">
+                            {dollarMode === "nominal"
+                              ? "future $"
+                              : "today's $"}
+                          </div>
+                        </div>
+                      )}
                       <div className="text-center">
                         <div className="font-semibold tabular-nums">
                           {formatPercent(si.inflationRisk.meanRate, 2)}

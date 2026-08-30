@@ -1300,7 +1300,13 @@ export function DecumulationRow({
             side="left"
             maxWidth={320}
           >
-            <span className="text-blue-400 ml-1 cursor-help">diag</span>
+            {/* This "diag" label is the Tooltip's TRIGGER, rendered on the
+                page's own (theme-adaptive) background — NOT inside the
+                tooltip's always-dark popup content. blue-300 has a real
+                --c-blue-300 override (globals.css) and correctly tracks
+                page theme here, unlike tipColorClass's shades (used for
+                text INSIDE the dark popup, see cards/projection/utils.ts). */}
+            <span className="text-blue-300 ml-1 cursor-help">diag</span>
           </Tooltip>
         )}
         {dyr.warnings.length > 0 && (

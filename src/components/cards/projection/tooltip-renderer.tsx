@@ -51,13 +51,15 @@ export function renderLineItem(
           {formatCurrency(item.amount)}
           {item.percent != null && (
             // item.percent is already on a 0-100 scale (not 0-1) — render directly, no *100.
-            <span className="text-slate-400 ml-1">({item.percent}%)</span>
+            <span className={`${tipColorClass.gray} ml-1`}>
+              ({item.percent}%)
+            </span>
           )}
         </span>
       </div>
       {item.note && (
         <div
-          className={`text-caption ${item.noteLocked ? "text-amber-300" : "text-slate-400"}`}
+          className={`text-caption ${item.noteLocked ? tipColorClass.amber : tipColorClass.gray}`}
         >
           {item.noteLocked ? "⚠ " : "✓ "}
           {item.note}
@@ -95,12 +97,12 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
               <div
                 // eslint-disable-next-line react/no-array-index-key -- tooltip lines have no stable ID
                 key={`${i}-${l.text}`}
-                className="text-slate-400 text-caption"
+                className={`${tipColorClass.gray} text-caption`}
               >
                 {l.text}
               </div>
             );
-          const noteCls = l.color ? tipColorClass[l.color] : "text-slate-400";
+          const noteCls = l.color ? tipColorClass[l.color] : tipColorClass.gray;
           return (
             // eslint-disable-next-line react/no-array-index-key -- tooltip lines have no stable ID
             <div key={`${i}-${l.text}`} className={`text-caption ${noteCls}`}>
@@ -114,7 +116,7 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
 
   const d = data;
   const growthColor =
-    d.growth && d.growth.amount >= 0 ? "text-blue-300" : "text-red-300";
+    d.growth && d.growth.amount >= 0 ? tipColorClass.blue : tipColorClass.red;
   const growthPrefix = d.growth && d.growth.amount >= 0 ? "+" : "";
 
   return (
@@ -122,20 +124,28 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       {/* 1. HEADER */}
       <div className="font-medium">{d.header}</div>
       {/* 2. META */}
-      {d.meta && <div className="text-slate-400 text-caption">{d.meta}</div>}
+      {d.meta && (
+        <div className={`${tipColorClass.gray} text-caption`}>{d.meta}</div>
+      )}
       {/* 3. META2 */}
-      {d.meta2 && <div className="text-slate-400 text-caption">{d.meta2}</div>}
+      {d.meta2 && (
+        <div className={`${tipColorClass.gray} text-caption`}>{d.meta2}</div>
+      )}
       {/* 3a. SHORTFALL (real, material unmet need — see types.ts docblock) */}
       {d.shortfall && (
         <div className="space-y-0.5">
-          <div className="flex justify-between gap-4 font-medium text-red-400">
+          <div
+            className={`flex justify-between gap-4 font-medium ${tipColorClass.red}`}
+          >
             <span>⚠ Unmet need</span>
             <span className="tabular-nums">
               -{formatCurrency(d.shortfall.amount)}
             </span>
           </div>
           {(d.shortfall.nonRetirementAmount ?? 0) > 0 && (
-            <div className="flex justify-between gap-4 text-red-400/70 text-caption">
+            <div
+              className={`flex justify-between gap-4 ${tipColorClass.red}/70 text-caption`}
+            >
               <span>· excluding non-retirement (Portfolio) accounts</span>
               <span className="tabular-nums">
                 -{formatCurrency(d.shortfall.nonRetirementAmount!)}
@@ -143,7 +153,9 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
             </div>
           )}
           {(d.shortfall.penaltyAvoidedAmount ?? 0) > 0 && (
-            <div className="flex justify-between gap-4 text-red-400/70 text-caption">
+            <div
+              className={`flex justify-between gap-4 ${tipColorClass.red}/70 text-caption`}
+            >
               <span>· excluding penalty-exposed money</span>
               <span className="tabular-nums">
                 -{formatCurrency(d.shortfall.penaltyAvoidedAmount!)}
@@ -156,13 +168,13 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       {d.rmd && (
         <div className="space-y-0.5">
           <div
-            className={`flex justify-between gap-4 font-medium ${d.rmd.shortfallAmount > 0 ? "text-red-400" : "text-amber-400"}`}
+            className={`flex justify-between gap-4 font-medium ${d.rmd.shortfallAmount > 0 ? tipColorClass.red : tipColorClass.amber}`}
           >
             <span>{d.rmd.isStartYear ? "RMDs begin" : "RMD"}</span>
             <span className="tabular-nums">{formatCurrency(d.rmd.amount)}</span>
           </div>
           {d.rmd.shortfallAmount > 0 && (
-            <div className="text-red-400/70 text-caption">
+            <div className={`${tipColorClass.red}/70 text-caption`}>
               Only {formatCurrency(d.rmd.amount - d.rmd.shortfallAmount)} of{" "}
               {formatCurrency(d.rmd.amount)} required met · 25% excise tax risk
             </div>
@@ -170,12 +182,14 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
           {d.rmd.satisfiedNotably &&
             d.rmd.shortfallAmount <= 0 &&
             d.rmd.excessAmount <= 0 && (
-              <div className="text-amber-400/70 text-caption">
+              <div className={`${tipColorClass.amber}/70 text-caption`}>
                 Met in full by your withdrawals.
               </div>
             )}
           {d.rmd.excessAmount > 0 && (
-            <div className="flex justify-between gap-4 text-amber-400/70 text-caption">
+            <div
+              className={`flex justify-between gap-4 ${tipColorClass.amber}/70 text-caption`}
+            >
               <span>
                 {d.rmd.excessMode === "spend"
                   ? "RMD excess spent"
@@ -188,7 +202,9 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
             </div>
           )}
           {(d.rmd.qcdAmount ?? 0) > 0 && (
-            <div className="flex justify-between gap-4 text-violet-400/70 text-caption">
+            <div
+              className={`flex justify-between gap-4 ${tipColorClass.violet}/70 text-caption`}
+            >
               <span>QCD to charity</span>
               <span className="tabular-nums">
                 {formatCurrency(d.rmd.qcdAmount!)}
@@ -208,7 +224,9 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       )}
       {/* 4. OVERRIDE NOTE */}
       {d.overrideNote && (
-        <div className="text-caption text-emerald-300">{d.overrideNote}</div>
+        <div className={`text-caption ${tipColorClass.emerald}`}>
+          {d.overrideNote}
+        </div>
       )}
       {/* 5. ITEMS */}
       {d.items && d.items.length > 0 && (
@@ -222,7 +240,9 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
                 // eslint-disable-next-line react/no-array-index-key -- tooltip items have no stable ID
                 <div key={`${ii}-${item.label}`}>
                   {showGroup && (
-                    <div className="text-caption uppercase tracking-wide text-slate-400 mt-1.5 first:mt-0">
+                    <div
+                      className={`text-caption uppercase tracking-wide ${tipColorClass.gray} mt-1.5 first:mt-0`}
+                    >
                       {item.group}
                     </div>
                   )}
@@ -235,19 +255,19 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       )}
       {/* 6. TOTAL */}
       {d.total && (
-        <div className="border-t pt-1">
+        <div className="border-t border-white/10 pt-1">
           <div className="font-medium">
             {d.total.label}:{" "}
             {d.total.prefix === "+" ? "+" : d.total.prefix === "-" ? "-" : ""}
             {formatCurrency(d.total.amount)}
           </div>
           {d.total.match != null && d.total.match > 0 && (
-            <div className="pl-2 text-green-400">
+            <div className={`pl-2 ${tipColorClass.green}`}>
               + {formatCurrency(d.total.match)} {d.total.matchLabel ?? "match"}
             </div>
           )}
           {d.total.associatedMatch != null && d.total.associatedMatch > 0 && (
-            <div className="pl-2 text-green-400">
+            <div className={`pl-2 ${tipColorClass.green}`}>
               + {formatCurrency(d.total.associatedMatch)}{" "}
               {d.total.matchLabel ?? "match"} (→ {taxTypeLabel("preTax")})
             </div>
@@ -256,7 +276,9 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       )}
       {/* 7. TAX SPLIT */}
       {d.taxSplit && (d.taxSplit.traditional > 0 || d.taxSplit.roth > 0) && (
-        <div className="text-slate-400 text-caption border-t pt-1">
+        <div
+          className={`${tipColorClass.gray} text-caption border-t border-white/10 pt-1`}
+        >
           {d.taxSplit.traditional > 0 && (
             <span>Trad: {formatCurrency(d.taxSplit.traditional)}</span>
           )}
@@ -279,13 +301,13 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       )}
       {/* 9. CONTRIBUTIONS */}
       {d.contributions && d.contributions.amount > 0 && (
-        <div className="text-caption text-green-400">
+        <div className={`text-caption ${tipColorClass.green}`}>
           Contributions: +{formatCurrency(d.contributions.amount)}
         </div>
       )}
       {/* 10. WITHDRAWALS */}
       {d.withdrawals && d.withdrawals.amount > 0 && (
-        <div className="text-caption text-red-300">
+        <div className={`text-caption ${tipColorClass.red}`}>
           Withdrawn: -{formatCurrency(d.withdrawals.amount)}
           {d.withdrawals.taxCost != null && d.withdrawals.taxCost > 0 && (
             <span> (~{formatCurrency(d.withdrawals.taxCost)} tax)</span>
@@ -294,18 +316,18 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       )}
       {/* 11. YEAR CHANGE */}
       {d.yearChange && (
-        <div className="border-t pt-1 text-label font-medium">
+        <div className="border-t border-white/10 pt-1 text-label font-medium">
           Total: {formatCurrency(d.yearChange.total)} · Change:{" "}
           <span
             className={
-              d.yearChange.change >= 0 ? "text-green-300" : "text-red-300"
+              d.yearChange.change >= 0 ? tipColorClass.green : tipColorClass.red
             }
           >
             {d.yearChange.change >= 0 ? "+" : ""}
             {formatCurrency(d.yearChange.change)}
           </span>
           {d.yearChange.parts && d.yearChange.parts.length > 0 && (
-            <span className="text-muted text-caption ml-1">
+            <span className={`${tipColorClass.gray} text-caption ml-1`}>
               (
               {d.yearChange.parts.map((p, i) => (
                 <span key={p.label}>
@@ -323,7 +345,7 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       )}
       {/* 12. RATE CEILING */}
       {d.rateCeiling && (
-        <div className="text-caption text-amber-300">
+        <div className={`text-caption ${tipColorClass.amber}`}>
           Rate ceiling: {formatCurrency(d.rateCeiling.uncapped)} →{" "}
           {formatCurrency(d.rateCeiling.capped)} (
           {formatPercent(d.rateCeiling.pct, 1)} reduction)
@@ -331,27 +353,31 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       )}
       {/* 13. ROUTING NOTE */}
       {d.routingNote && (
-        <div className="text-slate-400 text-caption">{d.routingNote}</div>
+        <div className={`${tipColorClass.gray} text-caption`}>
+          {d.routingNote}
+        </div>
       )}
       {/* 14. BUDGET */}
       {d.budget && (
-        <div className="border-t pt-1 text-slate-400 text-caption">
+        <div
+          className={`border-t border-white/10 pt-1 ${tipColorClass.gray} text-caption`}
+        >
           Budget: {d.budget.profile} — {formatCurrency(d.budget.amount)}/yr
         </div>
       )}
       {/* 15. IRS LIMIT */}
       {d.irsLimit && (
-        <div className="text-slate-400 text-caption">
+        <div className={`${tipColorClass.gray} text-caption`}>
           {d.irsLimit.category} limit: {formatCurrency(d.irsLimit.used)} of{" "}
           {formatCurrency(d.irsLimit.limit)}
           {d.irsLimit.used >= d.irsLimit.limit && (
-            <span className="text-amber-300 ml-1">(maxed)</span>
+            <span className={`${tipColorClass.amber} ml-1`}>(maxed)</span>
           )}
         </div>
       )}
       {/* 16. PRO-RATE */}
       {d.proRate && (
-        <div className="text-slate-400 text-caption">
+        <div className={`${tipColorClass.gray} text-caption`}>
           Pro-rated: {d.proRate.months}/12 mo ·{" "}
           {formatCurrency(d.proRate.annualAmount)}/yr →{" "}
           {formatCurrency(d.proRate.proRatedAmount)}
@@ -359,13 +385,13 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       )}
       {/* 16. BALANCE */}
       {d.balance != null && (
-        <div className="text-slate-400 text-caption">
+        <div className={`${tipColorClass.gray} text-caption`}>
           Balance: {formatCurrency(d.balance)}
         </div>
       )}
       {/* 17. LEGEND */}
       {d.legend && d.legend.length > 0 && (
-        <div className="text-muted text-caption">
+        <div className={`${tipColorClass.gray} text-caption`}>
           {d.legend.map((e, ei) => (
             <span key={e.label}>
               {ei > 0 && " ·"}

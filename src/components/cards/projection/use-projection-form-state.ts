@@ -127,6 +127,12 @@ export function useProjectionFormState() {
   // a separate "Show anyway" link was confusing because the real BASELINE
   // toggle appeared to do nothing on this chart).
   const [showStabilityBars, setShowStabilityBars] = useState(true);
+  // Balance chart's decumulation-year income overlay (total portfolio
+  // withdrawal + Social Security, secondary axis) — see projection-chart.tsx.
+  // Default on: this answers a real question ("what am I actually living
+  // on, and how much of it is SS") every retiree-facing view of this chart
+  // should surface, not an opt-in power-user feature.
+  const [showIncome, setShowIncome] = useState(true);
   const [fanBandRange, setFanBandRange] = useState<
     "off" | "p25-p75" | "p10-p90" | "p5-p95"
   >("p25-p75");
@@ -216,6 +222,8 @@ export function useProjectionFormState() {
     setShowBars,
     showStabilityBars,
     setShowStabilityBars,
+    showIncome,
+    setShowIncome,
     fanBandRange,
     setFanBandRange,
     diagMode,
