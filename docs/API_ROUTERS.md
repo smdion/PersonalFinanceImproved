@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**339 procedures across 38 routers.**
+**340 procedures across 39 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -258,6 +258,12 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | Procedure           | Kind  | Auth                 | Description                                                                                                                                                                                              |
 | ------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `computeStressTest` | query | `protectedProcedure` | returnRates / inflationRate / salaryGrowthRate / withdrawalRate before calling calculateProjection. Returns summary metrics (nest egg at retirement, sustainable withdrawal, depletion age) so the PlanH |
+
+## `projection/withdrawal-bracket-optimizer`
+
+| Procedure                           | Kind  | Auth                 | Description                                                                                                                                                                                              |
+| ----------------------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `computeWithdrawalBracketOptimizer` | query | `protectedProcedure` | Searches the household's own real marginal bracket rates for the `rothBracketTarget` that minimizes lifetime tax cost (plus a terminal-value penalty for Traditional money left unconverted), subject to |
 
 ## `retirement`
 

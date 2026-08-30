@@ -98,6 +98,16 @@ vi.mock("@/lib/trpc", () => ({
           error: null,
         }),
       },
+      // Multi-year withdrawal-policy optimizer, Phase 4 — retirement-
+      // profile-tab.tsx queries this directly (TaxesSection is a pure
+      // presentational leaf, see retirement-sections-smoke.test.tsx) and
+      // passes the result down as a prop. `data: undefined` here matches
+      // "query hasn't resolved yet" -- TaxesSection renders no
+      // recommendation either way, so this smoke test's assertions are
+      // unaffected.
+      computeWithdrawalBracketOptimizer: {
+        useQuery: () => ({ data: undefined }),
+      },
     },
     retirement: {
       retirementSettings: {

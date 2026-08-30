@@ -141,6 +141,23 @@ export function RetirementProfileTab() {
     debouncedEngineInput,
     { placeholderData: (prev) => prev },
   );
+  // Multi-year withdrawal-policy optimizer, Phase 4 (2026-08-29) — queried
+  // here (not inside TaxesSection, a documented pure-presentational leaf)
+  // so it can be passed down as a plain prop, same pattern as CoastFireCard
+  // receiving coastFireMcResult. Queried with `{}` — this tab reflects the
+  // household's persisted baseline settings, not a scenario-override
+  // projection, so there are no accumulation/decumulation overrides to
+  // thread through. staleTime of a few minutes (not `staleTime: 0` +
+  // refetchOnMount: "always"): a household's balances don't meaningfully
+  // change mid-session, matching plan-health.tsx's stress-test query
+  // precedent — explicit, not left to the query library's default (which
+  // would otherwise silently serve a possibly-very-stale cached response
+  // on remount). See PLAN-v0.7.10-multi-year-withdrawal-optimizer.md.
+  const bracketOptimizerQuery =
+    trpc.projection.computeWithdrawalBracketOptimizer.useQuery(
+      {},
+      { staleTime: 5 * 60 * 1000 },
+    );
   const upsertSettings = trpc.retirement.retirementSettings.upsert.useMutation({
     onMutate: async (newSettings) => {
       await utils.projection.computeProjection.cancel();
@@ -477,6 +494,7 @@ export function RetirementProfileTab() {
               selectedScenario={selectedScenario}
               upsertSettings={upsertSettingsMutation}
               isEditable={admin}
+              bracketOptimizerResult={bracketOptimizerQuery.data?.result}
             />
 
             <HealthcareSection

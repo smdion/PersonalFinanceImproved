@@ -6,6 +6,14 @@
  * `settings.filingStatus` (identical to the old `const filingStatus =
  * settings.filingStatus` in the parent). `selectedScenario` is plumbed through
  * so the brokerage LTCG rate still reads off the active scenario.
+ *
+ * `bracketOptimizerResult` (multi-year withdrawal-policy optimizer, Phase 4,
+ * 2026-08-29): deliberately a plain prop, not a tRPC query owned by this
+ * component. This file is documented (retirement-sections-smoke.test.tsx) as
+ * a pure presentational leaf — "Settings + callback props in, JSX out" — and
+ * the parent (retirement-profile-tab.tsx) already owns every other query
+ * this tab depends on, same pattern as `CoastFireCard` receiving
+ * `coastFireMcResult` as a prop rather than querying it itself.
  */
 "use client";
 
@@ -21,11 +29,23 @@ import type {
 } from "./types";
 import { buildSettingsPatch } from "./settings-patch";
 
+/** Shape of `computeWithdrawalBracketOptimizer`'s result — mirrored here
+ *  (not imported from @/server/*, same reasoning as types.ts's docblock)
+ *  since sections may not import server code. */
+export type BracketOptimizerResult = {
+  recommendedTarget: number | null;
+  currentTarget: number | null;
+} | null;
+
 type Props = {
   settings: Settings;
   selectedScenario: SelectedScenario;
   upsertSettings: UpsertSettingsMutation;
   isEditable: IsEditable;
+  /** Multi-year withdrawal-policy optimizer result, or undefined while the
+   *  parent's query hasn't resolved yet — either way, no recommendation is
+   *  shown until a real, non-null `recommendedTarget` arrives. */
+  bracketOptimizerResult?: BracketOptimizerResult;
 };
 
 export function TaxesSection({
@@ -33,8 +53,43 @@ export function TaxesSection({
   selectedScenario,
   upsertSettings,
   isEditable,
+  bracketOptimizerResult,
 }: Props) {
   const filingStatus = settings.filingStatus;
+
+  // Multi-year withdrawal-policy optimizer, Phase 4 — live recommendation
+  // next to the Bracket Ceiling control below. Not gated on
+  // withdrawalRoutingMode (this Settings type doesn't carry that field —
+  // it's a Projection-card-local override, see decumulation-config.tsx)
+  // and not gated on enableRothConversions either: rothBracketTarget also
+  // governs RMD smoothing's ceiling and (when routing IS bracket_filling,
+  // the site-wide default) distribution routing itself, so the
+  // recommendation is relevant regardless of which toggles happen to be on.
+  const recommendedTarget = bracketOptimizerResult?.recommendedTarget ?? null;
+  const willChangeSmoothingCeiling =
+    recommendedTarget != null && (settings.rmdSmoothingEnabled ?? false);
+
+  const applyRecommendedTarget = () => {
+    if (!settings || recommendedTarget == null) return;
+    const target = String(recommendedTarget);
+    upsertSettings.mutate(
+      buildSettingsPatch(settings, {
+        rothBracketTarget: target,
+        // Joint movement, mirroring how the optimizer itself scores a
+        // candidate (withdrawal-bracket-optimizer.ts's buildCandidateInput)
+        // -- each gated on its OWN toggle, independently, per the design
+        // doc's correction (rmdSmoothingMaxBracketTarget must key off
+        // rmdSmoothingEnabled specifically, NOT enableRothConversions).
+        ...(settings.enableRothConversions
+          ? { rothConversionTarget: target }
+          : {}),
+        ...(settings.rmdSmoothingEnabled
+          ? { rmdSmoothingMaxBracketTarget: target }
+          : {}),
+      }),
+    );
+  };
+
   return (
     <div className="bg-surface-sunken rounded-lg p-3">
       <div className="flex items-center gap-2 mb-2">
@@ -181,6 +236,31 @@ export function TaxesSection({
               <option value="0.24">24% (~$414k MFJ)</option>
               <option value="0.32">32% (~$526k MFJ)</option>
             </select>
+            {recommendedTarget != null && (
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-caption">
+                <span className="text-faint">
+                  Currently recommended:{" "}
+                  <span className="font-medium text-foreground">
+                    {formatPercent(recommendedTarget)}
+                  </span>
+                </span>
+                <HelpTip text="Searches your own real tax brackets for the target that minimizes lifetime tax cost (including Roth conversions and RMDs, plus a penalty for Traditional money left unconverted at end of plan) while still funding your stated spending need. Recomputed from your current settings — not a one-time suggestion." />
+                {isEditable && (
+                  <button
+                    onClick={applyRecommendedTarget}
+                    className="text-caption px-1.5 py-0.5 rounded bg-accent/10 text-accent hover:bg-accent/20"
+                  >
+                    Apply
+                  </button>
+                )}
+                {willChangeSmoothingCeiling && (
+                  <span className="w-full text-micro text-faint">
+                    Will also update your RMD Smoothing ceiling (below) to{" "}
+                    {formatPercent(recommendedTarget)}.
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
         <div>
