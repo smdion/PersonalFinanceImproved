@@ -37,6 +37,10 @@ import {
   pickActiveBudgetProfile,
   resolveLinkedBudgetItemAmounts,
 } from "@/server/helpers";
+import {
+  resolveRetirementProfileIdFrom,
+  pickProfileSettingsRow,
+} from "@/server/helpers/retirement-profile";
 import type { SalaryEntryMap, SalaryProfileEntry } from "@/server/helpers";
 import type { AccountCategory, ProfileSwitch } from "@/lib/calculators/types";
 import {
@@ -89,6 +93,8 @@ export async function fetchRetirementData(
     people,
     allJobs,
     retSettings,
+    retProfiles,
+    retProfilePeople,
     retScenarios,
     returnRates,
     allContribsRaw,
@@ -111,6 +117,11 @@ export async function fetchRetirementData(
     db.select().from(schema.people).orderBy(asc(schema.people.id)),
     db.select().from(schema.jobs),
     db.select().from(schema.retirementSettings),
+    db
+      .select()
+      .from(schema.retirementProfiles)
+      .orderBy(asc(schema.retirementProfiles.id)),
+    db.select().from(schema.retirementProfilePeople),
     db.select().from(schema.retirementScenarios),
     db
       .select()
@@ -191,6 +202,8 @@ export async function fetchRetirementData(
     people,
     allJobs,
     retSettings,
+    retProfiles,
+    retProfilePeople,
     retScenarios,
     returnRates,
     allContribsRaw,
@@ -238,6 +251,8 @@ export async function buildEnginePayload(
     people,
     allJobs,
     retSettings,
+    retProfiles,
+    retProfilePeople,
     retScenarios,
     returnRates,
     allContribsRaw,
@@ -292,7 +307,25 @@ export async function buildEnginePayload(
   const primaryPerson = getPrimaryPerson(people);
   if (!primaryPerson) return null;
 
-  const settings = retSettings.find((s) => s.personId === primaryPerson.id);
+  // Household assumptions now come from the ACTIVE PROFILE's row, not from
+  // whichever person happens to be primary. Same values today (step A's
+  // backfill pointed every existing row at "Current Plan"), but it's what
+  // makes profiles swappable — and it removes the trap where a household
+  // field edited against a non-primary person wrote successfully and was
+  // then never read.
+  const activeProfileId = resolveRetirementProfileIdFrom(
+    allAppSettings,
+    retProfiles,
+  );
+  // pickProfileSettingsRow prefers the PRIMARY person's row within the
+  // profile — see its docblock. During the expand phase every person's row
+  // shares the profile id, and those rows can legitimately disagree on
+  // household columns, so an arbitrary match moves real numbers.
+  const settings = pickProfileSettingsRow(
+    retSettings,
+    activeProfileId,
+    primaryPerson.id,
+  );
   if (!settings) return null;
 
   // retirement_settings.filing_status is NOT NULL (Stage A backfill,
@@ -343,15 +376,38 @@ export async function buildEnginePayload(
   }
 
   // Per-person retirement settings (for per-person age display + editing)
+  // Per-person assumptions come from the active profile's own child rows.
+  //
+  // The `?? settings.X` fallbacks that used to be here are GONE, deliberately.
+  // They existed because retirement_settings was per-person and a person might
+  // have no row; step A's backfill materialised a row for every person in
+  // every profile (the completeness invariant), populated from exactly what
+  // those fallbacks resolved to — so removing them changes nothing today and
+  // stops "person has no row" from silently inheriting stale household values.
+  // If a row really is missing, fall back to the profile's own household
+  // values rather than returning null, so a page renders instead of blanking.
+  const profilePeople = retProfilePeople.filter(
+    (r) => r.profileId === activeProfileId,
+  );
   const perPersonSettings = people.map((p) => {
-    const ps = retSettings.find((s) => s.personId === p.id);
+    const pp = profilePeople.find((r) => r.personId === p.id);
+    // Legacy path: no profile resolved at all (see `settings` above).
+    const ps = pp ?? retSettings.find((s) => s.personId === p.id);
     return {
       personId: p.id,
       name: p.name,
       birthYear: new Date(p.dateOfBirth).getFullYear(),
       retirementAge: ps?.retirementAge ?? settings.retirementAge,
       endAge: ps?.endAge ?? settings.endAge,
-      withdrawalRate: ps?.withdrawalRate ?? settings.withdrawalRate,
+      // Still read from THIS person's own retirement_settings row, not from
+      // the profile's. The field is dead (the client's PerPersonSettings type
+      // doesn't carry it and nothing writes it back), but rows can disagree
+      // on it, so sourcing it differently would move a value in the response
+      // for no benefit. Removing it is its own change, not a ride-along in a
+      // behaviour-neutral migration.
+      withdrawalRate:
+        retSettings.find((s) => s.personId === p.id)?.withdrawalRate ??
+        settings.withdrawalRate,
       socialSecurityMonthly:
         ps?.socialSecurityMonthly ?? settings.socialSecurityMonthly,
       ssStartAge: ps?.ssStartAge ?? settings.ssStartAge,
@@ -1294,12 +1350,24 @@ export async function buildEnginePayload(
   // Distribution tax rates (shared between engine and MC)
   // When bracket data is available, estimate effective rates from brackets instead of using
   // flat DB values (which may be stale or overly conservative, e.g. flat 22% vs actual ~12-15%)
-  const dbTraditionalRate = selectedScenario
-    ? toNumber(selectedScenario.distributionTaxRateTraditional)
-    : 0;
-  const dbBrokerageRate = selectedScenario
-    ? toNumber(selectedScenario.distributionTaxRateBrokerage)
-    : 0;
+  // Distribution tax rates now live on the active profile's settings row,
+  // relocated in step A from `retirement_scenarios` — a table the engine read
+  // on every build but which had NO UI at all, so these rates shaped every
+  // projection while being invisible and uneditable.
+  //
+  // The `!= null ? x : 0` shape is a deliberate transcription of the old
+  // `selectedScenario ? x : 0`: null means "no selected scenario existed",
+  // which is NOT the same as a household choosing 0%. Identical output,
+  // and the distinction survives for the later "should these actually
+  // default to DEFAULT_TAX_RATE_*?" decision.
+  const dbTraditionalRate =
+    settings.distributionTaxRateTraditional != null
+      ? toNumber(settings.distributionTaxRateTraditional)
+      : 0;
+  const dbBrokerageRate =
+    settings.distributionTaxRateBrokerage != null
+      ? toNumber(settings.distributionTaxRateBrokerage)
+      : 0;
   const taxMult = toNumber(settings.taxMultiplier);
 
   let effectiveTraditionalRate = dbTraditionalRate;
@@ -1339,12 +1407,14 @@ export async function buildEnginePayload(
 
   const distributionTaxRates = {
     traditionalFallbackRate: effectiveTraditionalRate,
-    roth: selectedScenario
-      ? toNumber(selectedScenario.distributionTaxRateRoth)
-      : 0,
-    hsa: selectedScenario
-      ? toNumber(selectedScenario.distributionTaxRateHsa)
-      : 0,
+    roth:
+      settings.distributionTaxRateRoth != null
+        ? toNumber(settings.distributionTaxRateRoth)
+        : 0,
+    hsa:
+      settings.distributionTaxRateHsa != null
+        ? toNumber(settings.distributionTaxRateHsa)
+        : 0,
     brokerage: effectiveBrokerageRate,
     taxBrackets: bracketData.length > 0 ? bracketData : undefined,
     ltcgBrackets: ltcgBracketData,

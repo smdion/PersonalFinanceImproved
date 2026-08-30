@@ -1,12 +1,7 @@
 /** Retirement router for readiness analysis including savings rates, employer matches, tax bucket projections, relocation comparisons, profile-switching scenarios, and retirement-settings/scenario/override/return-rate CRUD. */
 import { eq, ne, asc, and, isNull } from "drizzle-orm";
 import { z } from "zod/v4";
-import {
-  DEFAULT_RETURN_RATE,
-  DEFAULT_TAX_RATE_TRADITIONAL,
-  DEFAULT_TAX_RATE_ROTH,
-  DEFAULT_TAX_RATE_BROKERAGE,
-} from "@/lib/constants";
+import { DEFAULT_RETURN_RATE } from "@/lib/constants";
 import {
   createTRPCRouter,
   protectedProcedure,
@@ -41,6 +36,10 @@ import { roundToCents } from "@/lib/utils/math";
 import { filterActiveJobs } from "@/lib/pure/profiles";
 import { withdrawalStrategyEnum } from "@/lib/config/withdrawal-strategies";
 import { zDecimal } from "./settings/_shared";
+import {
+  resolveRetirementProfileIdFrom,
+  pickProfileSettingsRow,
+} from "@/server/helpers/retirement-profile";
 
 /**
  * Resolve the filing status to store when a caller sends null/undefined
@@ -117,24 +116,8 @@ const retirementSettingsInput = z.object({
   filingStatus: z.enum(["MFJ", "Single", "HOH"]).nullable().optional(),
 });
 
-const retirementScenarioInput = z.object({
-  name: z.string().min(1),
-  withdrawalRate: zDecimal,
-  targetAnnualIncome: zDecimal,
-  annualInflation: zDecimal,
-  distributionTaxRateTraditional: zDecimal.default(
-    String(DEFAULT_TAX_RATE_TRADITIONAL),
-  ),
-  distributionTaxRateRoth: zDecimal.default(String(DEFAULT_TAX_RATE_ROTH)),
-  distributionTaxRateHsa: zDecimal.default("0"),
-  distributionTaxRateBrokerage: zDecimal.default(
-    String(DEFAULT_TAX_RATE_BROKERAGE),
-  ),
-  isLtBrokerageEnabled: z.boolean().default(true),
-  ltBrokerageAnnualContribution: zDecimal.default("0"),
-  isSelected: z.boolean().default(false),
-  notes: z.string().nullable().optional(),
-});
+// retirementScenarioInput removed with the retirementScenarios router
+// (Retirement Profiles step B) — nothing writes that table any more.
 
 const returnRateInput = z.object({
   age: z.number().int(),
@@ -212,6 +195,7 @@ export const retirementRouter = createTRPCRouter({
         people,
         allJobs,
         retSettings,
+        retProfiles,
         retScenarios,
         returnRates,
         allContribsRaw,
@@ -223,6 +207,10 @@ export const retirementRouter = createTRPCRouter({
         ctx.db.select().from(schema.people).orderBy(asc(schema.people.id)),
         ctx.db.select().from(schema.jobs),
         ctx.db.select().from(schema.retirementSettings),
+        ctx.db
+          .select()
+          .from(schema.retirementProfiles)
+          .orderBy(asc(schema.retirementProfiles.id)),
         ctx.db.select().from(schema.retirementScenarios),
         ctx.db
           .select()
@@ -253,7 +241,17 @@ export const retirementRouter = createTRPCRouter({
       const primaryPerson = getPrimaryPerson(people);
       if (!primaryPerson) return { result: null, budgetInfo: null };
 
-      const settings = retSettings.find((s) => s.personId === primaryPerson.id);
+      // Active profile's row, matching build-engine-payload — the readiness
+      // analysis must read the same assumptions the projection does.
+      const activeRetProfileId = resolveRetirementProfileIdFrom(
+        await ctx.db.select().from(schema.appSettings),
+        retProfiles,
+      );
+      const settings = pickProfileSettingsRow(
+        retSettings,
+        activeRetProfileId,
+        primaryPerson.id,
+      );
       if (!settings) return { result: null, budgetInfo: null };
 
       if (allBudgetProfiles.length === 0)
@@ -853,44 +851,18 @@ export const retirementRouter = createTRPCRouter({
       ),
   }),
 
-  retirementScenarios: createTRPCRouter({
-    list: protectedProcedure.query(({ ctx }) =>
-      ctx.db
-        .select()
-        .from(schema.retirementScenarios)
-        .orderBy(asc(schema.retirementScenarios.id)),
-    ),
-    create: adminProcedure
-      .input(retirementScenarioInput)
-      .mutation(({ ctx, input }) =>
-        ctx.db
-          .insert(schema.retirementScenarios)
-          .values(input)
-          .returning()
-          .then((r) => r[0]),
-      ),
-    update: adminProcedure
-      .input(
-        z
-          .object({ id: z.number().int() })
-          .extend(retirementScenarioInput.shape),
-      )
-      .mutation(({ ctx, input: { id, ...data } }) =>
-        ctx.db
-          .update(schema.retirementScenarios)
-          .set(data)
-          .where(eq(schema.retirementScenarios.id, id))
-          .returning()
-          .then((r) => r[0]),
-      ),
-    delete: adminProcedure
-      .input(z.object({ id: z.number().int() }))
-      .mutation(({ ctx, input }) =>
-        ctx.db
-          .delete(schema.retirementScenarios)
-          .where(eq(schema.retirementScenarios.id, input.id)),
-      ),
-  }),
+  // retirementScenarios CRUD removed 2026-08-30 (Retirement Profiles step B).
+  // It had ZERO UI callers while the table it wrote was read on every engine
+  // build, so it could silently change every projection with no way to see
+  // or undo it. The four distribution tax rates it carried now live on
+  // retirement_settings and are read from there; leaving a writable router
+  // pointed at the now-ignored columns would be a second, invisible answer
+  // to "what drives my projection" — the exact thing this work removes.
+  //
+  // The TABLE survives for now: retirement.ts's relocation comparison still
+  // reads its withdrawal_rate, which is deliberately NOT relocated (see the
+  // schema docblock — retirement_settings.withdrawal_rate already exists and
+  // collapsing the two is a user-visible change needing its own commit).
 
   returnRates: createTRPCRouter({
     list: protectedProcedure.query(({ ctx }) =>

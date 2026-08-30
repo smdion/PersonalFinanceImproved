@@ -39,8 +39,15 @@ import type { Db } from "./transforms";
 import { log } from "@/lib/logger";
 
 /** Bump when a change to the engine's computation logic could change
- *  output for the same inputs — invalidates all existing cache rows. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 10;
+ *  output for the same inputs — invalidates all existing cache rows.
+ *
+ *  11: Retirement Profiles step B — the engine's assumptions now come from
+ *  the active profile's rows instead of the primary person's. The VALUES are
+ *  unchanged (step A's backfill guarantees it, and the golden-baseline diff
+ *  is byte-identical), but the source changed, so rows cached before the
+ *  cutover must not be served afterwards — otherwise a household that later
+ *  switches profiles keeps seeing the old profile's cached numbers. */
+export const PROJECTION_CACHE_ENGINE_VERSION = 11;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

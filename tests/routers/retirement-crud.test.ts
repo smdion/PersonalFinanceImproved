@@ -5,7 +5,6 @@
  *   - retirement.retirementSettings (list / upsert)
  *   - retirement.retirementSalaryOverrides (list / create / update / delete)
  *   - retirement.retirementBudgetOverrides (list / create / update / delete)
- *   - retirement.retirementScenarios (list / create / update / delete)
  *   - retirement.returnRates (list / upsert / delete)
  *
  * Moved from routers/settings/retirement.ts to routers/retirement.ts (audit
@@ -354,86 +353,11 @@ describe("retirement.retirementBudgetOverrides", () => {
 // RETIREMENT SCENARIOS
 // ---------------------------------------------------------------------------
 
-describe("retirement.retirementScenarios", () => {
-  let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
-  let cleanup: () => void;
-
-  beforeAll(async () => {
-    const ctx = await createTestCaller(adminSession);
-    caller = ctx.caller;
-    cleanup = ctx.cleanup;
-  });
-
-  afterAll(() => cleanup());
-
-  describe("CRUD", () => {
-    let scenarioId: number;
-
-    it("list is empty initially", async () => {
-      const rows = await caller.retirement.retirementScenarios.list();
-      expect(rows).toHaveLength(0);
-    });
-
-    it("creates a scenario", async () => {
-      const created = await caller.retirement.retirementScenarios.create({
-        name: "Conservative",
-        withdrawalRate: "0.035",
-        targetAnnualIncome: "70000",
-        annualInflation: "0.03",
-        isSelected: true,
-      });
-      expect(created).toBeDefined();
-      expect(created!.name).toBe("Conservative");
-      expect(created!.withdrawalRate).toBe("0.035");
-      expect(created!.isSelected).toBe(true);
-      scenarioId = created!.id;
-    });
-
-    it("creates a second scenario with custom tax rates", async () => {
-      const created = await caller.retirement.retirementScenarios.create({
-        name: "Aggressive",
-        withdrawalRate: "0.05",
-        targetAnnualIncome: "100000",
-        annualInflation: "0.025",
-        distributionTaxRateTraditional: "0.25",
-        distributionTaxRateRoth: "0",
-        distributionTaxRateHsa: "0",
-        distributionTaxRateBrokerage: "0.15",
-        isLtBrokerageEnabled: true,
-        ltBrokerageAnnualContribution: "12000",
-        notes: "Optimistic scenario",
-      });
-      expect(created!.distributionTaxRateTraditional).toBe("0.25");
-      expect(created!.ltBrokerageAnnualContribution).toBe("12000");
-    });
-
-    it("list returns both scenarios ordered by id", async () => {
-      const rows = await caller.retirement.retirementScenarios.list();
-      expect(rows.length).toBe(2);
-      expect(rows[0]!.id).toBeLessThan(rows[1]!.id);
-    });
-
-    it("updates a scenario", async () => {
-      const updated = await caller.retirement.retirementScenarios.update({
-        id: scenarioId,
-        name: "Moderate Conservative",
-        withdrawalRate: "0.038",
-        targetAnnualIncome: "75000",
-        annualInflation: "0.03",
-        isSelected: false,
-      });
-      expect(updated!.name).toBe("Moderate Conservative");
-      expect(updated!.withdrawalRate).toBe("0.038");
-      expect(updated!.isSelected).toBe(false);
-    });
-
-    it("deletes a scenario", async () => {
-      await caller.retirement.retirementScenarios.delete({ id: scenarioId });
-      const rows = await caller.retirement.retirementScenarios.list();
-      expect(rows.every((r) => r.id !== scenarioId)).toBe(true);
-    });
-  });
-});
+// retirement.retirementScenarios CRUD tests removed alongside the router
+// (Retirement Profiles step B, 2026-08-30). The router had no UI callers and
+// wrote columns the engine no longer reads; the four distribution tax rates
+// it carried are now on retirement_settings. The table itself survives only
+// for the relocation comparison's withdrawal_rate read.
 
 // ---------------------------------------------------------------------------
 // RETURN RATES

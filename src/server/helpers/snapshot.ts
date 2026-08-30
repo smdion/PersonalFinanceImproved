@@ -5,6 +5,10 @@ import { eq, desc, asc } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { AccountCategory } from "@/lib/calculators/types";
 import { toNumber, getPrimaryPerson } from "./transforms";
+import {
+  resolveRetirementProfileIdFrom,
+  pickProfileSettingsRow,
+} from "./retirement-profile";
 import { safeDivide } from "@/lib/utils/math";
 import { DEFAULT_WITHDRAWAL_RATE } from "@/lib/constants";
 import type { Db } from "./transforms";
@@ -331,6 +335,7 @@ export async function buildYearEndHistory(
     propTaxRows,
     people,
     retirementSettingsRows,
+    retirementProfileRows,
     annualExpensesBudget,
     homeImprovementItems,
   ] = await Promise.all([
@@ -352,6 +357,10 @@ export async function buildYearEndHistory(
     db.select().from(schema.propertyTaxes),
     db.select().from(schema.people).orderBy(asc(schema.people.id)),
     db.select().from(schema.retirementSettings),
+    db
+      .select()
+      .from(schema.retirementProfiles)
+      .orderBy(asc(schema.retirementProfiles.id)),
     getAnnualExpensesFromBudget(db, targeting),
     db
       .select()
@@ -1036,11 +1045,20 @@ export async function buildYearEndHistory(
   // Birth years for average age
   const birthYears = people.map((p) => new Date(p.dateOfBirth).getFullYear());
 
-  // Withdrawal rate from primary person's retirement settings
+  // Withdrawal rate from the ACTIVE RETIREMENT PROFILE's settings row.
+  // Was "the primary person's row", which read an arbitrary row when no
+  // person is flagged primary; resolving through the profile makes this
+  // agree with what the projection itself uses.
   const primaryPerson = getPrimaryPerson(people);
-  const primaryRetSettings = primaryPerson
-    ? retirementSettingsRows.find((rs) => rs.personId === primaryPerson.id)
-    : retirementSettingsRows[0];
+  const activeRetProfileId = resolveRetirementProfileIdFrom(
+    settings,
+    retirementProfileRows,
+  );
+  const primaryRetSettings = pickProfileSettingsRow(
+    retirementSettingsRows,
+    activeRetProfileId,
+    primaryPerson?.id ?? null,
+  );
   const withdrawalRate = primaryRetSettings
     ? toNumber(primaryRetSettings.withdrawalRate)
     : DEFAULT_WITHDRAWAL_RATE;

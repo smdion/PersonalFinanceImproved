@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**342 procedures across 40 routers.**
+**338 procedures across 40 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -280,8 +280,6 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `computeRelocationAnalysis` | query    | `protectedProcedure` | (no description) |
 | `create`                    | mutation | `adminProcedure`     | (no description) |
 | `create`                    | mutation | `adminProcedure`     | (no description) |
-| `create`                    | mutation | `adminProcedure`     | (no description) |
-| `delete`                    | mutation | `adminProcedure`     | (no description) |
 | `delete`                    | mutation | `adminProcedure`     | (no description) |
 | `delete`                    | mutation | `adminProcedure`     | (no description) |
 | `delete`                    | mutation | `adminProcedure`     | (no description) |
@@ -290,9 +288,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `list`                      | query    | `protectedProcedure` | (no description) |
 | `list`                      | query    | `protectedProcedure` | (no description) |
 | `list`                      | query    | `protectedProcedure` | (no description) |
-| `list`                      | query    | `protectedProcedure` | (no description) |
 | `save`                      | mutation | `brokerageProcedure` | (no description) |
-| `update`                    | mutation | `adminProcedure`     | (no description) |
 | `update`                    | mutation | `adminProcedure`     | (no description) |
 | `update`                    | mutation | `adminProcedure`     | (no description) |
 | `upsert`                    | mutation | `adminProcedure`     | (no description) |
