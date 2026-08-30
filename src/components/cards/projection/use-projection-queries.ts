@@ -385,16 +385,39 @@ export function useProjectionQueries(
   // Query supersedes/cancels the prior one), so the server-side progress
   // map entry naturally gets recreated fresh under the same key each run
   // and cleared on completion. See monte-carlo-worker-client.ts.
-  const [mcRunId] = useState(() => crypto.randomUUID());
+  //
+  // Derived from the query's own input (not a random id generated once per
+  // mount) — a `useState(() => crypto.randomUUID())` regenerates on every
+  // fresh mount of this hook, including navigating away from the page and
+  // back while the SAME run is still in flight server-side. TanStack
+  // Query's query cache is a single app-wide instance (providers.tsx) that
+  // survives client-side navigation, so the newly-mounted mcQuery hook
+  // correctly re-subscribes to the same in-flight request when the input
+  // is unchanged — but a fresh random runId wouldn't match the worker's
+  // actual in-progress job id, so progress would silently reset to the
+  // plain indeterminate state on return instead of resuming the real
+  // trial count (live-user finding, 2026-08-30). Deriving the id from the
+  // input itself means "same inputs → same runId" across remounts, so the
+  // progress poll reconnects to the correct in-flight job. Genuinely new
+  // inputs naturally get a new id, matching the new (different) job the
+  // server will actually run.
+  const mcQueryInput = {
+    numTrials: mcTrials,
+    preset: mcPreset,
+    taxMode: mcTaxMode,
+    assetClassOverrides:
+      mcAssetClassOverrides.length > 0 ? mcAssetClassOverrides : undefined,
+    ...debouncedBaseInput,
+  };
+  // Plain derivation, not useMemo — JSON.stringify of this small object is
+  // cheap, and the "memoize the input to memoize the output" pattern would
+  // just add a second JSON.stringify (for the dependency array) with no
+  // benefit, since equal input still produces an equal string either way.
+  const mcRunId = JSON.stringify(mcQueryInput);
   const mcQuery = trpc.projection.computeMonteCarloProjection.useQuery(
     {
-      numTrials: mcTrials,
-      preset: mcPreset,
-      taxMode: mcTaxMode,
-      assetClassOverrides:
-        mcAssetClassOverrides.length > 0 ? mcAssetClassOverrides : undefined,
+      ...mcQueryInput,
       runId: mcRunId,
-      ...debouncedBaseInput,
     },
     {
       enabled:
