@@ -16,6 +16,8 @@ import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
 import {
   createTestCaller,
   seedPerson,
+  seedRetirementProfile,
+  seedRetirementProfilePerson,
   viewerSession,
   adminSession,
 } from "./setup";
@@ -447,6 +449,212 @@ describe("retirement.returnRates", () => {
           viewerCaller.retirement.returnRates.upsert({
             age: 40,
             rateOfReturn: "0.06",
+          }),
+        ).rejects.toThrow();
+      } finally {
+        vc();
+      }
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// RETIREMENT PROFILES (multiple profiles + the Plan field).
+//
+// Every real household starts with exactly one profile ("Current Plan"),
+// created by step A's migration backfill against pre-existing data. There is
+// no bare `create` on this router -- retirement_settings has too many
+// NOT NULL columns with no sensible blank default, so `duplicate` is the
+// only creation path (matching the design plan's own recommendation that
+// "duplicate to compare" be the primary action). Tests here bootstrap their
+// first profile the same way the real migration did: seedRetirementProfile
+// inserts the retirement_profiles row directly and points existing
+// retirement_settings rows at it.
+// ---------------------------------------------------------------------------
+
+describe("retirement.retirementProfiles", () => {
+  let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
+  let cleanup: () => void;
+  let personA: number;
+  let personB: number;
+  let firstProfileId: number;
+
+  beforeAll(async () => {
+    const ctx = await createTestCaller(adminSession);
+    caller = ctx.caller;
+    cleanup = ctx.cleanup;
+    personA = await seedPerson(ctx.db, "Person A");
+    personB = await seedPerson(ctx.db, "Person B");
+
+    await caller.retirement.retirementSettings.upsert({
+      personId: personA,
+      retirementAge: 65,
+      endAge: 95,
+      returnAfterRetirement: "0.06",
+      annualInflation: "0.03",
+      salaryAnnualIncrease: "0.03",
+    });
+    await caller.retirement.retirementSettings.upsert({
+      personId: personB,
+      retirementAge: 62,
+      endAge: 90,
+      returnAfterRetirement: "0.06",
+      annualInflation: "0.03",
+      salaryAnnualIncrease: "0.02",
+    });
+
+    firstProfileId = await seedRetirementProfile(ctx.db, "Current Plan");
+    await seedRetirementProfilePerson(ctx.db, firstProfileId, personA, {
+      retirementAge: 65,
+      endAge: 95,
+      ssStartAge: 67,
+    });
+    await seedRetirementProfilePerson(ctx.db, firstProfileId, personB, {
+      retirementAge: 62,
+      endAge: 90,
+      ssStartAge: 65,
+    });
+  });
+
+  afterAll(() => cleanup());
+
+  it("list returns the seeded profile", async () => {
+    const rows = await caller.retirement.retirementProfiles.list();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.name).toBe("Current Plan");
+    expect(rows[0]!.id).toBe(firstProfileId);
+  });
+
+  it("duplicate refuses a source profile that doesn't exist", async () => {
+    await expect(
+      caller.retirement.retirementProfiles.duplicate({
+        sourceProfileId: 999,
+        name: "Won't work",
+      }),
+    ).rejects.toThrow();
+  });
+
+  let secondProfileId: number;
+
+  it("duplicate creates a second profile", async () => {
+    const created = await caller.retirement.retirementProfiles.duplicate({
+      sourceProfileId: firstProfileId,
+      name: "Retire Early",
+      description: "What if we both stop at 60?",
+    });
+    expect(created).toBeDefined();
+    expect(created!.name).toBe("Retire Early");
+    secondProfileId = created!.id;
+
+    const rows = await caller.retirement.retirementProfiles.list();
+    expect(rows).toHaveLength(2);
+  });
+
+  it("duplicate clones household settings from the PRIMARY person's row, not each person's own", async () => {
+    // personA has retirementAge 65, personB has 62 -- they DISAGREE on this
+    // household-grain field (matching the real-world drift
+    // pickProfileSettingsRow's docblock documents). Neither person is
+    // flagged isPrimaryUser here, so getPrimaryPerson falls back to the
+    // first person in id order -- personA. Both new rows must carry
+    // personA's retirementAge (65), not a per-person mix.
+    const settings = await caller.retirement.retirementSettings.list();
+    const newRows = settings.filter((s) => s.profileId === secondProfileId);
+    expect(newRows).toHaveLength(2);
+    expect(newRows.every((r) => r.retirementAge === 65)).toBe(true);
+  });
+
+  it("duplicate creates a retirement_profile_people row for every person (completeness invariant), sourced from the primary person", async () => {
+    const rows = await caller.retirement.retirementProfilePeople.list();
+    const newRows = rows.filter((r) => r.profileId === secondProfileId);
+    expect(newRows).toHaveLength(2);
+    // personA (first by id, no isPrimaryUser set on either) is the source
+    // for BOTH new rows -- personB's own distinct retirementAge (62) must
+    // NOT appear on personB's new row, same rule as the household-settings
+    // assertion above.
+    expect(newRows.every((r) => r.retirementAge === 65)).toBe(true);
+    expect(newRows.every((r) => r.ssStartAge === 67)).toBe(true);
+    expect(new Set(newRows.map((r) => r.personId))).toEqual(
+      new Set([personA, personB]),
+    );
+  });
+
+  it("update renames a profile", async () => {
+    const updated = await caller.retirement.retirementProfiles.update({
+      id: secondProfileId,
+      name: "Retire Early (renamed)",
+    });
+    expect(updated!.name).toBe("Retire Early (renamed)");
+  });
+
+  it("delete refuses to remove the only remaining profile", async () => {
+    // secondProfileId still exists alongside firstProfileId at this point,
+    // so deleting ONE of two is fine -- but deleting the last one left must
+    // fail. Delete secondProfileId first, then assert the guard on the last.
+    await caller.retirement.retirementProfiles.delete({ id: secondProfileId });
+    const rows = await caller.retirement.retirementProfiles.list();
+    expect(rows).toHaveLength(1);
+
+    await expect(
+      caller.retirement.retirementProfiles.delete({ id: firstProfileId }),
+    ).rejects.toThrow(/only remaining/);
+  });
+
+  it("delete refuses to remove the active profile", async () => {
+    const recreated = await caller.retirement.retirementProfiles.duplicate({
+      sourceProfileId: firstProfileId,
+      name: "Second profile again",
+    });
+    await caller.settings.appSettings.upsert({
+      key: "active_retirement_profile_id",
+      value: firstProfileId,
+    });
+    await expect(
+      caller.retirement.retirementProfiles.delete({ id: firstProfileId }),
+    ).rejects.toThrow(/active profile/);
+    // Cleanup for the next test -- the non-active one deletes fine.
+    await caller.retirement.retirementProfiles.delete({ id: recreated!.id });
+  });
+
+  it("delete refuses to remove a profile a Plan is set to", async () => {
+    const recreated = await caller.retirement.retirementProfiles.duplicate({
+      sourceProfileId: firstProfileId,
+      name: "Pinned by a Plan",
+    });
+    const plan = await caller.settings.scenarios.create({
+      name: "Test Plan",
+      retirementProfileId: recreated!.id,
+    });
+    await expect(
+      caller.retirement.retirementProfiles.delete({ id: recreated!.id }),
+    ).rejects.toThrow(/active in/);
+    // Clear the Plan's pin so cleanup doesn't leave a dangling reference.
+    await caller.settings.scenarios.setRetirementProfilePin({
+      id: plan!.id,
+      retirementProfileId: null,
+    });
+    await caller.retirement.retirementProfiles.delete({ id: recreated!.id });
+  });
+
+  describe("auth", () => {
+    it("viewer can list retirement profiles", async () => {
+      const { caller: viewerCaller, cleanup: vc } =
+        await createTestCaller(viewerSession);
+      try {
+        const rows = await viewerCaller.retirement.retirementProfiles.list();
+        expect(Array.isArray(rows)).toBe(true);
+      } finally {
+        vc();
+      }
+    });
+
+    it("viewer cannot duplicate a retirement profile", async () => {
+      const { caller: viewerCaller, cleanup: vc } =
+        await createTestCaller(viewerSession);
+      try {
+        await expect(
+          viewerCaller.retirement.retirementProfiles.duplicate({
+            sourceProfileId: firstProfileId,
+            name: "Nope",
           }),
         ).rejects.toThrow();
       } finally {

@@ -1361,10 +1361,15 @@ export const retirementSettings = pgTable(
   "retirement_settings",
   {
     id: serial("id").primaryKey(),
+    // NOT bare .unique() any more (Retirement Profiles step C — advisor
+    // reviewed 2026-08-30). One row per person, PER PROFILE, not one row
+    // per person system-wide — see the composite unique index below. This
+    // is what makes a second retirement profile able to hold genuinely
+    // different household settings; without it there was nowhere to put a
+    // duplicated profile's row (unique(person_id) forbade the INSERT).
     personId: integer("person_id")
       .notNull()
-      .references(() => people.id, { onDelete: "restrict" })
-      .unique(),
+      .references(() => people.id, { onDelete: "restrict" }),
     retirementAge: integer("retirement_age").notNull(),
     endAge: integer("end_age").notNull(),
     returnAfterRetirement: decimal("return_after_retirement", {
@@ -1560,13 +1565,18 @@ export const retirementSettings = pgTable(
     // Added additively; nothing reads them yet (step B switches the reads).
     // See .scratch/docs/plans — "Making Retirement a First-Class Profile".
 
-    /** The profile this row belongs to. Nullable ONLY during the expand
-     *  phase, while `person_id` is still the real key — step B switches the
-     *  reads over and the v0.8.0 squash makes it the sole key. Deliberately
-     *  not NOT NULL yet: adding a NOT NULL column while dropping another on
-     *  the same table is the exact case drizzle's SQLite generator can't
-     *  emit (see scripts/gen-sqlite-schema.ts's header), so the drop is
-     *  deferred to the squash rather than staged through four migrations. */
+    /** The profile this row belongs to. Together with `person_id` this is
+     *  now the row's real key (see the composite unique index below,
+     *  replacing the old bare unique(person_id) — step C, 2026-08-30): one
+     *  row per person PER PROFILE, which is what lets two profiles hold
+     *  genuinely different household settings.
+     *
+     *  Still nullable, not NOT NULL — every write path sets it, and a null
+     *  value can't weaken the unique index (Postgres/SQLite both treat NULL
+     *  as non-equal there), so there is no correctness gap. Made NOT NULL
+     *  ONLY as part of the v0.8.0 squash: SQLite has no ALTER COLUMN SET NOT
+     *  NULL, so tightening this now would force the exact table-recreate
+     *  path this schema has otherwise avoided since step A. */
     profileId: integer("profile_id").references(() => retirementProfiles.id, {
       onDelete: "cascade",
     }),
@@ -1619,6 +1629,16 @@ export const retirementSettings = pgTable(
   (table) => [
     index("retirement_settings_person_id_idx").on(table.personId),
     index("retirement_settings_profile_id_idx").on(table.profileId),
+    // Replaces the old bare unique(person_id). profile_id stays nullable
+    // (Postgres/SQLite both treat NULL as non-equal in a unique index, so
+    // this can't be weakened by a null profile_id — every write path sets
+    // one) rather than made NOT NULL now, which would force SQLite's
+    // recreate-table path for no benefit; that tightening folds into the
+    // v0.8.0 squash alongside the rest of the deferred contract step.
+    uniqueIndex("retirement_settings_profile_person_unq").on(
+      table.profileId,
+      table.personId,
+    ),
   ],
 );
 

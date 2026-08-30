@@ -33,7 +33,11 @@ import type { ContribRowWithActiveFields } from "@/server/helpers/contribution";
 import { isRetirementParent } from "@/lib/config/account-types";
 import { getAge } from "@/lib/utils/date";
 import { roundToCents } from "@/lib/utils/math";
-import { filterActiveJobs } from "@/lib/pure/profiles";
+import {
+  filterActiveJobs,
+  canDeleteRetirementProfile,
+} from "@/lib/pure/profiles";
+import { SK_ACTIVE_RETIREMENT_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { withdrawalStrategyEnum } from "@/lib/config/withdrawal-strategies";
 import { zDecimal } from "./settings/_shared";
 import {
@@ -605,6 +609,22 @@ export const retirementRouter = createTRPCRouter({
 
   // getProjection and getMonteCarloProjection moved to projection.ts
 
+  /** Read-only — per-person rows within a profile. Written by
+   *  retirementProfiles.duplicate and the person-create fan-out
+   *  (settings/paycheck.ts), never edited directly by name here yet
+   *  (that's phase E, the assumptions band on the projection page). */
+  retirementProfilePeople: createTRPCRouter({
+    list: protectedProcedure.query(({ ctx }) =>
+      ctx.db
+        .select()
+        .from(schema.retirementProfilePeople)
+        .orderBy(
+          asc(schema.retirementProfilePeople.profileId),
+          asc(schema.retirementProfilePeople.personId),
+        ),
+    ),
+  }),
+
   retirementSettings: createTRPCRouter({
     list: protectedProcedure.query(({ ctx }) =>
       ctx.db
@@ -863,6 +883,213 @@ export const retirementRouter = createTRPCRouter({
   // reads its withdrawal_rate, which is deliberately NOT relocated (see the
   // schema docblock — retirement_settings.withdrawal_rate already exists and
   // collapsing the two is a user-visible change needing its own commit).
+
+  /**
+   * Retirement Profiles CRUD (Retirement Profiles step D — "multiple
+   * profiles + the Plan field"). Each profile is a COMPLETE WORLD: no
+   * baseline, no default, no inheritance, no merge at read time — same
+   * contract Salary Profiles already state. `duplicate` is the one creation
+   * path (no bare `create`): retirement_settings has ~40 columns, many
+   * NOT NULL with no sensible blank default, so every new profile starts as
+   * a clone of an existing one, matching the plan's own recommendation that
+   * "duplicate to compare" be the primary action.
+   *
+   * adminProcedure throughout, matching retirementSettings.upsert's existing
+   * gate — RULES.md Composed Router: an inconsistent procedure type within
+   * one group is a bug, not a design choice.
+   */
+  retirementProfiles: createTRPCRouter({
+    list: protectedProcedure.query(({ ctx }) =>
+      ctx.db
+        .select()
+        .from(schema.retirementProfiles)
+        .orderBy(asc(schema.retirementProfiles.id)),
+    ),
+
+    /**
+     * Clone an existing profile's retirement_settings row (per person) and
+     * retirement_profile_people row (per person) into a new profile.
+     *
+     * Household-grain columns on retirement_settings are still duplicated
+     * onto every person's row (the contract step that collapses this to one
+     * row per profile is deferred to v0.8.0) and can legitimately have
+     * drifted between people — pickProfileSettingsRow's own docblock records
+     * a real household whose withdrawal_rate/rmd_excess_handling disagreed
+     * across person rows. Cloning from the PRIMARY person's source row into
+     * every person's new row (not each person's own current row) avoids
+     * baking that drift in as if it were intentional per-person
+     * configuration in the new profile.
+     */
+    duplicate: adminProcedure
+      .input(
+        z.object({
+          sourceProfileId: z.number().int(),
+          name: z.string().min(1).max(100),
+          description: z.string().max(500).optional(),
+        }),
+      )
+      .mutation(async ({ ctx, input }) => {
+        return ctx.db.transaction(async (tx) => {
+          const people = await tx
+            .select()
+            .from(schema.people)
+            .orderBy(asc(schema.people.id));
+          if (people.length === 0) {
+            throw new Error("No people exist to seed the new profile with.");
+          }
+          const primaryPerson = getPrimaryPerson(people);
+
+          const sourceSettings = await tx
+            .select()
+            .from(schema.retirementSettings)
+            .where(
+              eq(schema.retirementSettings.profileId, input.sourceProfileId),
+            );
+          const sourceHousehold =
+            (primaryPerson
+              ? sourceSettings.find((s) => s.personId === primaryPerson.id)
+              : undefined) ?? sourceSettings[0];
+          if (!sourceHousehold) {
+            throw new Error("Source profile has no settings to clone.");
+          }
+
+          const sourcePeopleRows = await tx
+            .select()
+            .from(schema.retirementProfilePeople)
+            .where(
+              eq(
+                schema.retirementProfilePeople.profileId,
+                input.sourceProfileId,
+              ),
+            );
+          const sourcePrimaryPeopleRow =
+            (primaryPerson
+              ? sourcePeopleRows.find((r) => r.personId === primaryPerson.id)
+              : undefined) ?? sourcePeopleRows[0];
+
+          const [newProfile] = await tx
+            .insert(schema.retirementProfiles)
+            .values({
+              name: input.name,
+              description: input.description ?? null,
+            })
+            .returning();
+          if (!newProfile) throw new Error("Failed to create profile.");
+
+          const {
+            id: _hhId,
+            personId: _hhPersonId,
+            profileId: _hhProfileId,
+            ...householdFields
+          } = sourceHousehold;
+          await tx.insert(schema.retirementSettings).values(
+            people.map((p) => ({
+              ...householdFields,
+              personId: p.id,
+              profileId: newProfile.id,
+            })),
+          );
+
+          if (sourcePrimaryPeopleRow) {
+            const {
+              id: _ppId,
+              personId: _ppPersonId,
+              profileId: _ppProfileId,
+              ...perPersonFields
+            } = sourcePrimaryPeopleRow;
+            await tx.insert(schema.retirementProfilePeople).values(
+              people.map((p) => ({
+                ...perPersonFields,
+                personId: p.id,
+                profileId: newProfile.id,
+              })),
+            );
+          }
+
+          return newProfile;
+        });
+      }),
+
+    /** Rename / re-describe a profile. Assumptions themselves are edited
+     *  through retirementSettings.upsert, scoped to whichever profile is
+     *  active — not here. */
+    update: adminProcedure
+      .input(
+        z.object({
+          id: z.number().int(),
+          name: z.string().min(1).max(100).optional(),
+          description: z.string().max(500).nullish(),
+        }),
+      )
+      .mutation(({ ctx, input: { id, ...data } }) =>
+        ctx.db
+          .update(schema.retirementProfiles)
+          .set(data)
+          .where(eq(schema.retirementProfiles.id, id))
+          .returning()
+          .then((r) => r[0]),
+      ),
+
+    delete: adminProcedure
+      .input(z.object({ id: z.number().int() }))
+      .mutation(async ({ ctx, input }) => {
+        const activeSettingRows = await ctx.db
+          .select()
+          .from(schema.appSettings)
+          .where(eq(schema.appSettings.key, SK_ACTIVE_RETIREMENT_PROFILE_ID));
+        const activeId = (activeSettingRows[0]?.value ?? null) as number | null;
+
+        const allProfiles = await ctx.db
+          .select({ id: schema.retirementProfiles.id })
+          .from(schema.retirementProfiles);
+
+        const deleteCheck = canDeleteRetirementProfile(
+          activeId,
+          input.id,
+          allProfiles.length,
+        );
+        if (!deleteCheck.allowed) throw new Error(deleteCheck.reason);
+
+        if (!allProfiles.some((p) => p.id === input.id))
+          throw new Error("Profile not found");
+
+        const pinningPlans = await ctx.db
+          .select({ name: schema.scenarios.name })
+          .from(schema.scenarios)
+          .where(eq(schema.scenarios.retirementProfileId, input.id));
+        if (pinningPlans.length > 0) {
+          throw new Error(
+            `Cannot delete: active in ${pinningPlans.length} Plan(s) (${pinningPlans
+              .map((p) => p.name)
+              .join(", ")}). Change that Plan's retirement profile first.`,
+          );
+        }
+
+        // Explicit child-row cleanup, NOT relying on ON DELETE cascade.
+        // Both FKs declare cascade in schema-pg.ts, and Postgres (the
+        // production dialect) honours it — but the migration that added
+        // retirement_settings.profile_id used ALTER TABLE ADD COLUMN, and
+        // drizzle-kit's SQLite generator emits that form WITHOUT the ON
+        // DELETE clause (confirmed live 2026-08-30: SQLite CREATE TABLE
+        // preserves it, ALTER TABLE ADD COLUMN silently drops it). Any
+        // SQLite-dialect install — which schema-sqlite.ts exists to
+        // support, not just tests — would fail this delete with a foreign
+        // key error instead of cascading. Deleting explicitly here is
+        // correct and harmless on both dialects.
+        await ctx.db.transaction(async (tx) => {
+          await tx
+            .delete(schema.retirementProfilePeople)
+            .where(eq(schema.retirementProfilePeople.profileId, input.id));
+          await tx
+            .delete(schema.retirementSettings)
+            .where(eq(schema.retirementSettings.profileId, input.id));
+          await tx
+            .delete(schema.retirementProfiles)
+            .where(eq(schema.retirementProfiles.id, input.id));
+        });
+        return { success: true };
+      }),
+  }),
 
   returnRates: createTRPCRouter({
     list: protectedProcedure.query(({ ctx }) =>

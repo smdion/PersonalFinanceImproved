@@ -28,6 +28,7 @@ const PIN_FIELD_BY_KIND = {
   budget: "budgetProfileId",
   contribution: "contributionProfileId",
   salary: "salaryProfileId",
+  retirement: "retirementProfileId",
 } as const;
 
 export type EffectiveProfileKind = keyof typeof PIN_FIELD_BY_KIND;

@@ -232,6 +232,13 @@
       "when": 1788123422827,
       "tag": "0032_curved_silhouette",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1788127221590,
+      "tag": "0033_stormy_shiver_man",
+      "breakpoints": true
     }
   ]
 }

@@ -8,6 +8,7 @@ import {
   canDeleteBudgetProfile,
   canDeleteContribProfile,
   canDeleteSalaryProfile,
+  canDeleteRetirementProfile,
   canRemoveColumn,
   findActiveJob,
   filterActiveJobs,
@@ -74,6 +75,24 @@ describe("canDeleteSalaryProfile", () => {
 
   it("has no id-0 sentinel — id 0 is just an id", () => {
     expect(canDeleteSalaryProfile(null, 0, 3).allowed).toBe(true);
+  });
+});
+
+describe("canDeleteRetirementProfile", () => {
+  it("allows deleting a non-active profile when others remain", () => {
+    expect(canDeleteRetirementProfile(null, 5, 3)).toEqual({ allowed: true });
+  });
+
+  it("prevents deleting the only remaining profile", () => {
+    const result = canDeleteRetirementProfile(null, 1, 1);
+    expect(result.allowed).toBe(false);
+    expect(result.reason).toContain("only remaining");
+  });
+
+  it("prevents deleting currently active profile", () => {
+    const result = canDeleteRetirementProfile(5, 5, 3);
+    expect(result.allowed).toBe(false);
+    expect(result.reason).toContain("active");
   });
 });
 
