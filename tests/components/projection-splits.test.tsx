@@ -36,6 +36,19 @@ vi.mock("@/components/ui/help-tip", () => ({
   ),
 }));
 
+// McResultsSection's "Clear Cache" button invalidates the client-side
+// query cache directly (2026-08-29 fix — see
+// tests/components/projection-mc-results-clear-cache.test.tsx), which
+// means it now calls trpc.useUtils() unconditionally on every render, not
+// just when the button is reachable.
+vi.mock("@/lib/trpc", () => ({
+  trpc: {
+    useUtils: () => ({
+      projection: { invalidate: vi.fn() },
+    }),
+  },
+}));
+
 vi.mock("@/lib/utils/format", () => ({
   formatCurrency: (v: number) => `$${Math.round(v).toLocaleString()}`,
   formatPercent: (v: number, _d?: number) => `${(v * 100).toFixed(1)}%`,

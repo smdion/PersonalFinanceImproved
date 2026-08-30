@@ -2,6 +2,7 @@
 
 /** Monte Carlo results — loading spinner, errors, warnings, depletion callout, and compact summary bar. */
 import { useState } from "react";
+import { trpc } from "@/lib/trpc";
 import { HelpTip } from "@/components/ui/help-tip";
 import { toast } from "@/lib/hooks/use-toast";
 import { ControlZone } from "./pill-btn";
@@ -74,6 +75,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
     clearProjectionCacheMutation,
   } = state;
   const [isRerunning, setIsRerunning] = useState(false);
+  const utils = trpc.useUtils();
 
   if (projectionMode !== "monteCarlo") return null;
 
@@ -103,6 +105,16 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
     clearProjectionCacheMutation.mutate(undefined, {
       onSuccess: (data) => {
         toast(`Cleared ${data.cleared} cached row(s).`, "success");
+        // Wiping the SERVER-side projection_cache table alone doesn't touch
+        // this browser tab's own client-side query cache -- without this,
+        // "Clear Cache" clears the wrong side: the server would compute
+        // fresh on its NEXT request, but nothing tells this tab to actually
+        // make that next request, so the table keeps showing whatever
+        // computeProjection response it already has in memory. Found
+        // 2026-08-29 debugging a live household where a Bracket Ceiling
+        // change genuinely persisted and genuinely changed the engine's
+        // output, but "Clear Cache" alone never made the page reflect it.
+        void utils.projection.invalidate();
       },
       onError: (err) => {
         toast(`Failed to clear cache: ${err.message}`, "error");
