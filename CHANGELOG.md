@@ -8,12 +8,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.7
 
-## [0.7.10] - 2026-08-29
+## [0.7.10] - 2026-08-30
+
+### Added
+
+- **A multi-year Roth-bracket-target optimizer** for households in Bracket Filling mode — searches for the tax-bracket target that gives the best lifetime outcome across your whole retirement, instead of only reasoning about a single year at a time, and shows its recommendation right on the Taxes settings with a one-click Apply.
+- **A "Coast FIRE (Custom Age)" scenario** on the Retirement page's Projection card — pick any age between now and your planned retirement age and check whether coasting from that specific age still succeeds, instead of only seeing the single age the app finds automatically.
+- **The Projection chart now shows total portfolio withdrawal and Social Security income as their own lines** during retirement years, so it's clear how much of a year's spending comes from the portfolio versus Social Security — the chart previously only showed contribution-shaped bars, which stopped making sense once retirement started drawing down instead of contributing.
 
 ### Fixed
 
 - **In "Bracket Filling" mode (the default), which specific Traditional account (401k, 403b, or IRA) gets drawn from first no longer ignores your own configured account order.** Previously this always drained your 401k completely before ever touching your IRA, regardless of how you'd arranged accounts elsewhere — now it respects the same order you can already set. Households who never customized their account order see no change.
 - Added a "Traditional Account Order" control to Bracket Filling mode's settings, so this order is now visible and editable directly in that mode instead of only reachable by switching to Waterfall mode.
+- **"Clear Cache" on the Monte Carlo results bar didn't actually refresh what was on screen** — it cleared the server-side cache but never told the browser to refetch, so the page kept showing stale results until a manual reload.
+- **Tooltips across the Retirement Projection chart and table could be unreadable depending on light/dark mode** — tooltip text color is now centrally defined and enforced by a test, instead of being set ad hoc per tooltip line.
+- **Connecting Actual Budget and syncing for the first time could fail with "Invalid month format"** — Actual's API needs a different date shape than YNAB's for monthly data, which is now handled automatically.
+- **A connected-but-never-synced budget integration silently hid its own "Activate" button and account-mapping screen with no explanation** — a hint now tells you to sync first.
 
 ## [0.7.9] - 2026-08-29
 
