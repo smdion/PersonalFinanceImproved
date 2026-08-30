@@ -24,7 +24,8 @@
  * from the Retirement-page fix (Group B).
  */
 
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useRef } from "react";
+import { toast } from "@/lib/hooks/use-toast";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
@@ -158,6 +159,28 @@ export function RetirementProfileTab() {
       {},
       { staleTime: 5 * 60 * 1000 },
     );
+  // This tab holds many separate InlineEdit fields (Timeline, Rule of 55,
+  // Raise-and-Rate, Strategy Params, SS, Taxes, Healthcare), but they all
+  // funnel through this ONE upsertSettings mutation, called once per field
+  // as the household edits. Nothing on THIS page ever shows a recompute is
+  // happening — the Retirement page's ProjectionCard (where the actual
+  // recalculation UI lives) isn't mounted here, so utils.projection.
+  // invalidate() above just marks the data stale for next time, silently
+  // (live-user finding, 2026-08-30: "does it wait till the portfolio page
+  // is reloaded?" — yes, and there was no confirmation it even queued).
+  // Debounced so a quick burst of edits (several fields in a row) collapses
+  // into ONE toast after saves settle, not one per field.
+  const recalcToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const notifyRecalcQueued = useCallback(() => {
+    if (recalcToastTimer.current) clearTimeout(recalcToastTimer.current);
+    recalcToastTimer.current = setTimeout(() => {
+      recalcToastTimer.current = null;
+      toast.info(
+        "Retirement settings updated — your projection will recalculate next time you view it.",
+      );
+    }, 1000);
+  }, []);
+
   const upsertSettings = trpc.retirement.retirementSettings.upsert.useMutation({
     onMutate: async (newSettings) => {
       await utils.projection.computeProjection.cancel();
@@ -178,6 +201,7 @@ export function RetirementProfileTab() {
     onSuccess: () => {
       utils.retirement.invalidate();
       utils.projection.invalidate();
+      notifyRecalcQueued();
     },
   });
   // Same TypeScript inference gap as the Retirement page had — tRPC's
