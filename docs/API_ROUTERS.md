@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**341 procedures across 40 routers.**
+**342 procedures across 40 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -221,6 +221,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | ----------------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `clearCache`                  | mutation | `adminProcedure`     | forces a full recompute without bumping PROJECTION_CACHE_ENGINE_VERSION and redeploying. Admin-only: destructive against shared cache state.                                                             |
 | `computeMonteCarloProjection` | query    | `protectedProcedure` | Runs N trials of the contribution engine with randomized return rates sampled from correlated log-normal distributions based on asset class parameters and glide path allocations from the DB. Returns p |
+| `getMonteCarloProgress`       | query    | `protectedProcedure` | running — see monte-carlo-worker-client.ts's module docblock for why this is an in-memory Map rather than a DB table or a subscription. Returns null once the job is done or if the runId is unknown (e. |
 | `updateClampBounds`           | mutation | `scenarioProcedure`  | (no description)                                                                                                                                                                                         |
 | `updateGlidePathAllocations`  | mutation | `scenarioProcedure`  | (no description)                                                                                                                                                                                         |
 | `updateReturnRateTable`       | mutation | `scenarioProcedure`  | (no description)                                                                                                                                                                                         |

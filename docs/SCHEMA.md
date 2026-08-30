@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**65 tables.**
+**67 tables.**
 
 ## Mermaid diagram
 
@@ -114,6 +114,12 @@ erDiagram
     int id PK
   }
   retirement_settings {
+    int id PK
+  }
+  retirement_profiles {
+    int id PK
+  }
+  retirement_profile_people {
     int id PK
   }
   retirement_salary_overrides {
@@ -234,6 +240,9 @@ erDiagram
   property_taxes }o--|| mortgage_loans : references
   utility_reading }o--|| utility_service : references
   retirement_settings }o--|| people : references
+  retirement_settings }o--|| retirement_profiles : references
+  retirement_profile_people }o--|| retirement_profiles : references
+  retirement_profile_people }o--|| people : references
   retirement_salary_overrides }o--|| people : references
   retirement_budget_overrides }o--|| people : references
   simplefin_accounts }o--|| performance_accounts : references
@@ -294,9 +303,11 @@ erDiagram
 - **property_taxes** → mortgage_loans
 - **relocation_scenarios**
 - **retirement_budget_overrides** → people
+- **retirement_profile_people** → retirement_profiles, people
+- **retirement_profiles**
 - **retirement_salary_overrides** → people
 - **retirement_scenarios**
-- **retirement_settings** → people
+- **retirement_settings** → people, retirement_profiles
 - **return_rate_table**
 - **salary_profiles**
 - **savings_allocation_overrides** → savings_goals

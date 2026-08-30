@@ -1373,8 +1373,125 @@ export const retirementSettings = sqliteTable(
      *  stays in place until this column is reliably non-null for every
      *  household, but no new row can be inserted without one. */
     filingStatus: text("filing_status").$type<W4FilingStatus>().notNull(),
+
+    // --- Retirement Profiles migration, step A (expand) ---------------------
+    // Added additively; nothing reads them yet (step B switches the reads).
+    // See .scratch/docs/plans — "Making Retirement a First-Class Profile".
+
+    /** The profile this row belongs to. Nullable ONLY during the expand
+     *  phase, while `person_id` is still the real key — step B switches the
+     *  reads over and the v0.8.0 squash makes it the sole key. Deliberately
+     *  not NOT NULL yet: adding a NOT NULL column while dropping another on
+     *  the same table is the exact case drizzle's SQLite generator can't
+     *  emit (see scripts/gen-sqlite-schema.ts's header), so the drop is
+     *  deferred to the squash rather than staged through four migrations. */
+    profileId: integer("profile_id").references(() => retirementProfiles.id, {
+      onDelete: "cascade",
+    }),
+
+    /** Distribution tax rates, relocated from `retirement_scenarios` — a
+     *  table with live engine reads but ZERO UI (its CRUD router has no
+     *  callers), so these values changed every projection while being
+     *  invisible and uneditable. Backfilled from the `is_selected` row.
+     *
+     *  Household-grain, so every person's row carries the same value, matching
+     *  how the other household columns here already behave.
+     *
+     *  DELIBERATELY NULLABLE, against the usual "NOT NULL on financial amount
+     *  columns" convention. Today's read is `selectedScenario ? rate : 0` —
+     *  i.e. no selected row means 0, NOT the DEFAULT_TAX_RATE_* constants.
+     *  Backfilling a literal 0 would preserve behaviour but permanently
+     *  destroy the difference between "the household chose 0%" and "there was
+     *  no row", and the open question of whether these should actually be the
+     *  defaults needs that distinction to remain answerable. So: null means
+     *  absent, and the read stays `!= null ? rate : 0` — byte-identical
+     *  output, no information laundered away.
+     *
+     *  NOTE: `retirement_scenarios.withdrawal_rate` is deliberately NOT
+     *  relocated here. `retirement_settings.withdrawal_rate` (line ~1400)
+     *  already exists, is NOT NULL, and is read in eight+ places; the
+     *  scenarios one is a different value overriding it in exactly one
+     *  consumer (the relocation tool). Collapsing them is correct eventually
+     *  but is a user-visible behaviour change, not a behaviour-neutral
+     *  relocation, so it gets its own change and its own justification. */
+    distributionTaxRateTraditional: text("distribution_tax_rate_traditional"),
+    distributionTaxRateRoth: text("distribution_tax_rate_roth"),
+    distributionTaxRateHsa: text("distribution_tax_rate_hsa"),
+    distributionTaxRateBrokerage: text("distribution_tax_rate_brokerage"),
   },
-  (table) => [index("retirement_settings_person_id_idx").on(table.personId)],
+  (table) => [
+    index("retirement_settings_person_id_idx").on(table.personId),
+    index("retirement_settings_profile_id_idx").on(table.profileId),
+  ],
+);
+
+/**
+ * Retirement Profiles — the named, swappable entity.
+ *
+ * Thin parent matching `contribution_profiles` / `salary_profiles`: id, name,
+ * description, created_at. The assumptions themselves stay on
+ * `retirement_settings` (re-keyed to `profile_id`) rather than moving into a
+ * JSON payload like its siblings, because 24 of those columns are typed
+ * decimals with explicit precision — moving them to JSON would turn financial
+ * rates into floats and discard every validator and default binding.
+ *
+ * Each profile is a COMPLETE world: no baseline, no default profile, no
+ * inheritance, no merge at read time. Same contract Salary Profiles already
+ * state ("no fallback to a job record: if you want a different number, use a
+ * different profile").
+ */
+export const retirementProfiles = sqliteTable("retirement_profiles", {
+  id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+  name: text("name").notNull().unique(),
+  description: text("description"),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+/**
+ * Per-person retirement assumptions within a profile.
+ *
+ * Only the fields the engine genuinely reads per person live here. Everything
+ * else is household-grain and stays on `retirement_settings` — see the design
+ * plan's §01 for why the household/per-person line falls where it does.
+ *
+ * `end_age` is here because the engine reads it per person
+ * (`Math.max(...perPersonSettings.map(p => p.endAge))` →
+ * `projectionEndAge`), which is also what made the household "Plan Through"
+ * control silently discard edits before commit 0b5d5fe.
+ *
+ * COMPLETENESS INVARIANT: every profile must hold a row for every person.
+ * With no baseline to fall back to, a missing row is a missing retirement
+ * age — not a number the engine can invent. Enforced on profile create,
+ * duplicate, person create (fan a row into every existing profile — the one
+ * that gets forgotten), and person delete.
+ */
+export const retirementProfilePeople = sqliteTable(
+  "retirement_profile_people",
+  {
+    id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    profileId: integer("profile_id")
+      .notNull()
+      .references(() => retirementProfiles.id, { onDelete: "cascade" }),
+    personId: integer("person_id")
+      .notNull()
+      .references(() => people.id, { onDelete: "cascade" }),
+    retirementAge: integer("retirement_age").notNull(),
+    endAge: integer("end_age").notNull(),
+    socialSecurityMonthly: text("social_security_monthly"),
+    ssStartAge: integer("ss_start_age"),
+    ruleOf55Override: integer("rule_of_55_override", { mode: "boolean" }),
+    salaryAnnualIncrease: text("salary_annual_increase"),
+  },
+  (table) => [
+    uniqueIndex("retirement_profile_people_profile_person_unq").on(
+      table.profileId,
+      table.personId,
+    ),
+    index("retirement_profile_people_profile_id_idx").on(table.profileId),
+    index("retirement_profile_people_person_id_idx").on(table.personId),
+  ],
 );
 
 export const retirementSalaryOverrides = sqliteTable(
@@ -1849,6 +1966,15 @@ export const scenarios = sqliteTable(
       () => salaryProfiles.id,
       { onDelete: "set null" },
     ),
+    /** Sets which Retirement Profile is active for this Plan — the fourth
+     *  profile axis, alongside budget/contribution/salary above. `null` means
+     *  this Plan sets nothing for retirement and resolution falls through to
+     *  the global active profile; never backfill it to a real id, which would
+     *  convert "sets nothing" into "sets profile 1" for every existing Plan. */
+    retirementProfileId: integer("retirement_profile_id").references(
+      () => retirementProfiles.id,
+      { onDelete: "set null" },
+    ),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
       .default(sql`(unixepoch())`),
@@ -1862,6 +1988,7 @@ export const scenarios = sqliteTable(
       table.contributionProfileId,
     ),
     index("scenarios_salary_profile_id_idx").on(table.salaryProfileId),
+    index("scenarios_retirement_profile_id_idx").on(table.retirementProfileId),
   ],
 );
 

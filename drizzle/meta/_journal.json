@@ -225,6 +225,13 @@
       "when": 1787924907232,
       "tag": "0031_wide_winter_soldier",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1788123422827,
+      "tag": "0032_curved_silhouette",
+      "breakpoints": true
     }
   ]
 }

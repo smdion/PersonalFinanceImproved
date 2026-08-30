@@ -225,6 +225,13 @@
       "when": 1787924913271,
       "tag": "0031_mighty_energizer",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "6",
+      "when": 1788123436615,
+      "tag": "0032_demonic_firelord",
+      "breakpoints": true
     }
   ]
 }

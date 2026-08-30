@@ -29,14 +29,15 @@ export const VERSION_TABLES: VersionTableEntry[] = [
   { name: "api_connections", tier: 0 },
   { name: "app_settings", tier: 0 },
   { name: "local_admins", tier: 0 },
-  // These two must stay ahead of "scenarios" — scenarios.salary_profile_id and
-  // scenarios.contribution_profile_id FK into them, and the tier sort is
-  // stable, so array order decides insert order within tier 0. The restore
-  // path in version-logic.ts does NOT disable FK checks (unlike the
-  // session_replication_role import path), so getting this wrong fails the
-  // restore outright.
+  // These three must stay ahead of "scenarios" — scenarios.salary_profile_id,
+  // .contribution_profile_id and .retirement_profile_id FK into them, and the
+  // tier sort is stable, so array order decides insert order within tier 0.
+  // The restore path in version-logic.ts does NOT disable FK checks (unlike
+  // the session_replication_role import path), so getting this wrong fails
+  // the restore outright.
   { name: "salary_profiles", tier: 0 },
   { name: "contribution_profiles", tier: 0 },
+  { name: "retirement_profiles", tier: 0 },
   { name: "scenarios", tier: 0 },
   { name: "asset_class_params", tier: 0 },
   { name: "mc_presets", tier: 0 },
@@ -65,6 +66,8 @@ export const VERSION_TABLES: VersionTableEntry[] = [
   { name: "mortgage_what_if_scenarios", tier: 1 },
   { name: "mortgage_extra_payments", tier: 1 },
   { name: "retirement_settings", tier: 1 },
+  // FKs both people (tier 0) and retirement_profiles (tier 0, ordered above).
+  { name: "retirement_profile_people", tier: 1 },
   { name: "retirement_salary_overrides", tier: 1 },
   { name: "retirement_budget_overrides", tier: 1 },
   { name: "projection_overrides", tier: 1 },

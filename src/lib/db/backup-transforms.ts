@@ -80,6 +80,8 @@ const V07_SCHEMA_TAGS = [
   "0030_hesitant_micromacro", // SQLite
   "0031_wide_winter_soldier", // PG
   "0031_mighty_energizer", // SQLite
+  "0032_curved_silhouette", // PG: retirement profiles, step A (expand)
+  "0032_demonic_firelord", // SQLite counterpart of 0032
 ] as const;
 
 /** All schema version tags that we know how to import from. */
@@ -567,6 +569,29 @@ function transformV07xToCurrent(tables: TableData): TableData {
   if (!tables["savings_planned_tx_settlements"]) {
     tables["savings_planned_tx_settlements"] = [];
   }
+
+  // 0032: Retirement Profiles, step A (expand). Purely additive — the tables
+  // are empty and the new columns are null until the backfill runs, which
+  // matches a pre-0032 backup exactly: no profiles existed, and the
+  // distribution rates still lived on retirement_scenarios (which the backup
+  // still carries, and which step A does not remove).
+  if (!tables["retirement_profiles"]) tables["retirement_profiles"] = [];
+  if (!tables["retirement_profile_people"]) {
+    tables["retirement_profile_people"] = [];
+  }
+  addColumnDefault(tables, "retirement_settings", "profile_id", null);
+  for (const col of [
+    "distribution_tax_rate_traditional",
+    "distribution_tax_rate_roth",
+    "distribution_tax_rate_hsa",
+    "distribution_tax_rate_brokerage",
+  ]) {
+    addColumnDefault(tables, "retirement_settings", col, null);
+  }
+  // null, never a real id — see the scenarios.retirement_profile_id docblock.
+  // Backfilling this would turn "this Plan sets nothing for retirement" into
+  // "this Plan sets profile 1" for every Plan that ever existed.
+  addColumnDefault(tables, "scenarios", "retirement_profile_id", null);
 
   // 0008: contribution_profiles.is_default no longer exists — the row it
   // flagged survives as an ordinary profile, so the flag is simply dropped.
