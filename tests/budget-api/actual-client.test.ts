@@ -507,6 +507,8 @@ describe("ActualClient", () => {
       );
       const detail = await client.getMonthDetail("2026-01");
       expect(detail.month).toBe("2026-01");
+      const url = mockFetch.mock.calls[0]![0] as string;
+      expect(url).toContain("/months/2026-01");
       expect(detail.income).toBe(5000);
       // totalBudgeted comes back negative from Actual — mapped to a
       // positive dollar amount matching the per-category convention.
@@ -519,15 +521,52 @@ describe("ActualClient", () => {
       expect(detail.categories[0].groupName).toBe("Housing");
       expect(detail.categories[1].groupName).toBe("Food");
     });
+
+    // Live-user bug, 2026-08-30: every caller in this codebase
+    // (sync/core.ts, budget-api/cache.ts) computes `month` as YNAB's own
+    // native format, `YYYY-MM-01` (a full ISO date) -- correct for YNAB's
+    // real API, but Actual's actual-http-api wrapper's `/months/:id` route
+    // rejects anything but the shorter `YYYY-MM` with a real 400 error
+    // ("Invalid month format, use YYYY-MM: 2026-08-01"). This was a
+    // genuine, previously-unexercised bug: the pre-existing test above
+    // only ever passed the already-short "2026-01" form, so the mismatch
+    // never surfaced until a real sync attempt hit it live.
+    it("strips the day component from a YYYY-MM-01 month before building the URL (Actual's API rejects the day)", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({
+          data: {
+            month: "2026-08",
+            totalIncome: 0,
+            totalBudgeted: 0,
+            totalSpent: 0,
+            toBudget: 0,
+            categoryGroups: [],
+          },
+        }),
+      );
+      await client.getMonthDetail("2026-08-01");
+      const url = mockFetch.mock.calls[0]![0] as string;
+      expect(url).toContain("/months/2026-08");
+      expect(url).not.toContain("2026-08-01");
+    });
   });
 
   describe("updateCategoryBudgeted", () => {
     it("PATCHes with cents conversion, nested under `category` (actual-http-api's real request shape)", async () => {
       mockFetch.mockReturnValueOnce(jsonResponse({}));
       await client.updateCategoryBudgeted("2026-01", "cat-1", 150);
-      const [, init] = mockFetch.mock.calls[0]!;
+      const [url, init] = mockFetch.mock.calls[0]!;
+      expect(url).toContain("/months/2026-01");
       expect(init.method).toBe("PATCH");
       expect(JSON.parse(init.body).category.budgeted).toBe(15000);
+    });
+
+    it("also strips the day component from a YYYY-MM-01 month", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({}));
+      await client.updateCategoryBudgeted("2026-08-01", "cat-1", 150);
+      const url = mockFetch.mock.calls[0]![0] as string;
+      expect(url).toContain("/months/2026-08/categories/cat-1");
+      expect(url).not.toContain("2026-08-01");
     });
   });
 

@@ -180,6 +180,28 @@ function mapTransaction(t: ActualTransaction): BudgetTransaction {
 
 // -- Client --
 
+/**
+ * `BudgetAPIClient.getMonthDetail`'s `month` param has no format documented
+ * on the shared interface (interface.ts) -- every caller (sync/core.ts,
+ * budget-api/cache.ts) has always passed YNAB's own native month format,
+ * `YYYY-MM-01` (a full ISO date, first of the month -- YNAB's real API
+ * requires exactly this). Actual's `actual-http-api` wrapper's `/months/:id`
+ * route wants the SHORTER `YYYY-MM` (no day) -- confirmed live, 2026-08-30,
+ * via a real "Invalid month format, use YYYY-MM: 2026-08-01" error from a
+ * live sync attempt. Never worked for Actual before this fix; nothing
+ * in this codebase had ever exercised the mismatch until this specific
+ * error surfaced.
+ *
+ * `slice(0, 7)` is idempotent regardless of which format arrives --
+ * `"2026-08-01".slice(0, 7)` and `"2026-08".slice(0, 7)` both produce
+ * `"2026-08"` -- so this is safe against getMonths()'s own internal
+ * getMonthDetail(id) calls, which already pass bare YYYY-MM ids straight
+ * from Actual's own `/months` list.
+ */
+function toActualMonthId(month: string): string {
+  return month.slice(0, 7);
+}
+
 export class ActualClient implements BudgetAPIClient {
   readonly supportsDeltaSync = false;
 
@@ -328,7 +350,9 @@ export class ActualClient implements BudgetAPIClient {
   }
 
   async getMonthDetail(month: string): Promise<BudgetMonthDetail> {
-    const res = await this.request<{ data: ActualMonth }>(`/months/${month}`);
+    const res = await this.request<{ data: ActualMonth }>(
+      `/months/${toActualMonthId(month)}`,
+    );
     return mapMonthDetail(res.data);
   }
 
@@ -342,10 +366,13 @@ export class ActualClient implements BudgetAPIClient {
     categoryId: string,
     amount: number,
   ): Promise<void> {
-    await this.request(`/months/${month}/categories/${categoryId}`, {
-      method: "PATCH",
-      body: JSON.stringify({ category: { budgeted: toCents(amount) } }),
-    });
+    await this.request(
+      `/months/${toActualMonthId(month)}/categories/${categoryId}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ category: { budgeted: toCents(amount) } }),
+      },
+    );
   }
 
   /**
