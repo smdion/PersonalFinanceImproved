@@ -1801,6 +1801,114 @@ describe("projection router — computeCoastFireMC", () => {
 });
 
 // ---------------------------------------------------------------------------
+// computeCoastFireProbe (Coast FIRE "Custom Age" picker,
+// PLAN-coast-fire-custom-age.md, advisor-reviewed 2026-08-30)
+// ---------------------------------------------------------------------------
+
+describe("projection router — computeCoastFireProbe", () => {
+  it("returns a null result when no data is seeded", async () => {
+    const { caller, cleanup } = await createTestCaller(adminSession);
+    try {
+      const response = await caller.projection.computeCoastFireProbe({
+        probeAge: 40,
+      });
+      expect(response).toEqual({ result: null, computedAt: null });
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("returns a CoastFireProbeResult (not a CoastFireMcResult) for an in-range age", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      db.insert(schema.mcPresets)
+        .values({
+          key: "default",
+          label: "Default",
+          description: "Default preset for testing",
+          returnMultiplier: "1.0",
+          volMultiplier: "1.0",
+          inflationMean: "0.025",
+          inflationStdDev: "0.012",
+          defaultTrials: 1000,
+          returnClampMin: "-0.5",
+          returnClampMax: "1.0",
+          sortOrder: 0,
+          isActive: true,
+        })
+        .run();
+
+      const response = await caller.projection.computeCoastFireProbe({
+        probeAge: 40,
+      });
+      expect(response.result).not.toBeNull();
+      expect(response.result?.probeAge).toBe(40);
+      expect(typeof response.result?.successRate).toBe("number");
+      expect(typeof response.result?.passes).toBe("boolean");
+      // Deliberately NOT a CoastFireMcResult shape -- see coast-fire-probe.ts's
+      // docblock (status: "found" can't represent a failing probe).
+      expect(response.result).not.toHaveProperty("status");
+      expect(response.result).not.toHaveProperty("coastFireAge");
+      expect(response.result).not.toHaveProperty("warning");
+      expect(response.result).not.toHaveProperty("stopNowSuccessRate");
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("rejects an out-of-range probeAge (>= retirementAge) with BAD_REQUEST", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db); // retirementAge: 65
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      db.insert(schema.mcPresets)
+        .values({
+          key: "default",
+          label: "Default",
+          description: "Default preset for testing",
+          returnMultiplier: "1.0",
+          volMultiplier: "1.0",
+          inflationMean: "0.025",
+          inflationStdDev: "0.012",
+          defaultTrials: 1000,
+          returnClampMin: "-0.5",
+          returnClampMax: "1.0",
+          sortOrder: 0,
+          isActive: true,
+        })
+        .run();
+
+      await expect(
+        caller.projection.computeCoastFireProbe({ probeAge: 65 }),
+      ).rejects.toThrow();
+      await expect(
+        caller.projection.computeCoastFireProbe({ probeAge: 200 }),
+      ).rejects.toThrow();
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("rejects an unauthenticated caller", async () => {
+    const { caller, cleanup } = await createTestCaller({
+      user: null as never,
+      expires: "",
+    } as never);
+    try {
+      await expect(
+        caller.projection.computeCoastFireProbe({ probeAge: 40 }),
+      ).rejects.toThrow();
+    } finally {
+      cleanup();
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
 // computeCoastFireMC — persistent projection cache
 // ---------------------------------------------------------------------------
 

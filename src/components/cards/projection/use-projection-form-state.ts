@@ -112,8 +112,22 @@ export function useProjectionFormState() {
     "balance",
   );
   const [scenarioView, setScenarioView] = useState<
-    "baseline" | "coastFire" | "coastFireToday" | "rateSeeded"
+    | "baseline"
+    | "coastFire"
+    | "coastFireToday"
+    | "coastFireCustom"
+    | "rateSeeded"
   >("baseline");
+  // Coast FIRE "Custom Age" picker (advisor-reviewed 2026-08-30, see
+  // .scratch/docs/plans/PLAN-coast-fire-custom-age.md). `null` until the
+  // household has typed/stepped a value OR `currentAge` becomes known
+  // (derived layer defaults the DISPLAYED value to currentAge when this
+  // is null — kept null here, not seeded to currentAge directly, since
+  // this hook has no access to currentAge at initialization time; it
+  // only arrives later from engineQuery's server response).
+  const [coastFireCustomAge, setCoastFireCustomAge] = useState<number | null>(
+    null,
+  );
   const [showAllYears, setShowAllYears] = useState(false);
   const [showBars, setShowBars] = useState(true);
   // Separate from `showBars` (the Balance chart's own baseline toggle) so
@@ -216,6 +230,8 @@ export function useProjectionFormState() {
     setChartView,
     scenarioView,
     setScenarioView,
+    coastFireCustomAge,
+    setCoastFireCustomAge,
     showAllYears,
     setShowAllYears,
     showBars,

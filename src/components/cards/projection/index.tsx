@@ -18,6 +18,7 @@ import { AccumulationMethodologyContent } from "@/components/accumulation-method
 import { DecumulationMethodologyContent } from "@/components/decumulation-methodology-content";
 import { ValidationContent } from "@/components/validation-content";
 // formatCurrency import removed — no longer used inline
+import { formatPercent } from "@/lib/utils/format";
 import { SimulationAssumptions } from "@/components/cards/mc-simulation-assumptions";
 import { DecumulationConfig } from "./decumulation-config";
 import { OverridesPanelV2 as OverridesPanel } from "./overrides-panel-v2";
@@ -126,6 +127,12 @@ export function ProjectionCard(props: {
     scenarioView,
     setScenarioView,
     coastFireAge,
+    coastFireCustomAge,
+    setCoastFireCustomAge,
+    coastFireProbeResult,
+    coastFireProbeLoading,
+    coastFireProbeError,
+    checkCoastFireCustomAge,
     showMethodology,
     setShowMethodology,
     showAccumMethodology,
@@ -426,6 +433,7 @@ export function ProjectionCard(props: {
                                   ? `Coast FIRE (Age ${coastFireAge}): contributions zeroed from age ${coastFireAge} onward — the earliest age that still passes.`
                                   : "Coast FIRE (Age N): contributions zeroed from your Coast FIRE age onward — the earliest age that still passes. Not yet available.",
                                 "Coast FIRE (Today): the SAME idea, but stopping right now instead of at the earliest passing age. Use this to see exactly what breaks (and when) if you stopped contributing today — often a shortfall in the years before 59½, which the passing-age view won't show since it's built to avoid it.",
+                                'Coast FIRE (Custom): check any age you pick, not just the earliest passing one or today — pick an age and press "Check this age" to see whether it passes.',
                                 "Rate-Seeded: an alternate simulation where year 1 of retirement spending is set from your Initial Withdrawal Rate × starting balance instead of your stated budget/override — your budget is ignored entirely for the starting point. Every year after that still runs your ACTIVE strategy's own ongoing rules (guardrails, decline schedule, etc.) unchanged — this only changes where the number starts, not how it evolves. Computed on demand (not preloaded in the background like Coast FIRE), so the first switch takes a few seconds.",
                               ]}
                             />
@@ -467,11 +475,93 @@ export function ProjectionCard(props: {
                           <PillBtn
                             size="lg"
                             tone="compute"
+                            active={scenarioView === "coastFireCustom"}
+                            onClick={() => setScenarioView("coastFireCustom")}
+                            label="Coast FIRE (Custom)"
+                          />
+                          <PillBtn
+                            size="lg"
+                            tone="compute"
                             active={scenarioView === "rateSeeded"}
                             onClick={() => setScenarioView("rateSeeded")}
                             label="Rate-Seeded"
                           />
                         </LabeledPillGroup>
+                        {scenarioView === "coastFireCustom" &&
+                          (() => {
+                            const currentAge =
+                              result?.projectionByYear[0]?.age ?? 0;
+                            const maxAge = engineSettings.retirementAge - 1;
+                            const displayAge = coastFireCustomAge ?? currentAge;
+                            return (
+                              <div className="flex items-center gap-2 text-sm bg-surface-sunken rounded-md px-2.5 py-1.5 -mt-1">
+                                <label
+                                  htmlFor="coast-fire-custom-age"
+                                  className="text-caption text-muted"
+                                >
+                                  Check age
+                                </label>
+                                <input
+                                  id="coast-fire-custom-age"
+                                  type="number"
+                                  min={currentAge}
+                                  max={maxAge}
+                                  step={1}
+                                  value={displayAge}
+                                  onChange={(e) => {
+                                    const v = parseInt(e.target.value, 10);
+                                    if (!isNaN(v))
+                                      setCoastFireCustomAge(
+                                        Math.min(
+                                          maxAge,
+                                          Math.max(currentAge, v),
+                                        ),
+                                      );
+                                  }}
+                                  className="w-16 text-sm border rounded px-1.5 py-0.5 tabular-nums"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    checkCoastFireCustomAge(displayAge)
+                                  }
+                                  disabled={coastFireProbeLoading}
+                                  className="px-2.5 py-1 rounded-md text-label font-semibold border border-subtle text-muted shadow-sm transition-colors hover:bg-surface-primary/80 disabled:opacity-50"
+                                >
+                                  {coastFireProbeLoading
+                                    ? "Checking…"
+                                    : "Check this age"}
+                                </button>
+                                {coastFireProbeError && (
+                                  <span className="text-caption text-red-600">
+                                    {coastFireProbeError}
+                                  </span>
+                                )}
+                                {!coastFireProbeError &&
+                                  coastFireProbeResult &&
+                                  coastFireProbeResult.probeAge ===
+                                    displayAge && (
+                                    <span
+                                      className={`text-caption font-medium ${
+                                        coastFireProbeResult.passes
+                                          ? "text-green-600"
+                                          : "text-red-600"
+                                      }`}
+                                    >
+                                      {coastFireProbeResult.passes
+                                        ? "✓ Passes"
+                                        : "✗ Doesn't pass"}{" "}
+                                      (
+                                      {formatPercent(
+                                        coastFireProbeResult.successRate,
+                                        0,
+                                      )}
+                                      )
+                                    </span>
+                                  )}
+                              </div>
+                            );
+                          })()}
                         <ZoneSecondaryRow>
                           {pp && pp.length > 1 && (
                             <LabeledPillGroup label="View">

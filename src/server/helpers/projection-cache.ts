@@ -69,7 +69,12 @@ function canonicalize(value: unknown): unknown {
  * collides across them — their results are shaped completely differently.
  */
 export function hashEngineInput(
-  kind: "deterministic" | "monteCarlo" | "coastFireMc" | "strategyComparison",
+  kind:
+    | "deterministic"
+    | "monteCarlo"
+    | "coastFireMc"
+    | "coastFireProbe"
+    | "strategyComparison",
   input: unknown,
 ): string {
   const canonical = canonicalize({ kind, input });

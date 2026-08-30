@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**340 procedures across 39 routers.**
+**341 procedures across 40 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -208,6 +208,12 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | -------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `computeCoastFire`   | query | `protectedProcedure` | ~log₂(retirementAge - currentAge) engine runs. Success criterion: `portfolioDepletionAge === null` AND `sustainableWithdrawal >= projectedExpenses` at the first decumulation year. See `findCoastFireAg |
 | `computeCoastFireMC` | query | `protectedProcedure` | If the re-probe also passes, the true earliest age may be lower but we return the search result honestly with a warning. Cost: ~5-6 probes × 1 MC run × 1000 trials ≈ 4-6s wall clock (profiled 2026-04- |
+
+## `projection/coast-fire-probe`
+
+| Procedure               | Kind  | Auth                 | Description                                                                                                                                                                                              |
+| ----------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `computeCoastFireProbe` | query | `protectedProcedure` | the binary search's earliest-passing-age or "today." Reuses the same `buildCoastFireProfileSwitches` probe mechanism `computeCoastFireMC`'s binary search already uses; no new simulation logic. Returns |
 
 ## `projection/monte-carlo`
 

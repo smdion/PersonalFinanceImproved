@@ -1,5 +1,5 @@
 /** Data fetching and mutations for the projection card — deterministic engine query, Monte Carlo queries with prefetch, salary/budget override CRUD, and glide-path mutations. */
-import { useMemo, useEffect, useRef } from "react";
+import { useMemo, useEffect, useRef, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
@@ -21,6 +21,22 @@ import type {
 import type { ProjectionFormState } from "./use-projection-form-state";
 import type { UseProjectionStateProps } from "./use-projection-state";
 import { filterYearByParentCategory } from "./utils";
+
+/** Mirrors the server's `CoastFireProbeResult`
+ *  (server/routers/projection/coast-fire-probe.ts) — hand-rolled, not
+ *  imported, since src/components/** is lint-forbidden from importing
+ *  @/server/* (no-restricted-imports rule, eslint.config.mjs; same
+ *  reasoning as projection/sections/types.ts's own docblock). */
+type CoastFireProbeResult = {
+  probeAge: number;
+  successRate: number;
+  passes: boolean;
+  spendingStabilityRate: number;
+  penaltyAvoidedShortfallRate: number;
+  medianPenaltyAvoidedShortfallPV: number;
+  confidenceThreshold: number;
+  mcResult: MonteCarloResult;
+};
 
 export function useProjectionQueries(
   form: ProjectionFormState,
@@ -257,6 +273,43 @@ export function useProjectionQueries(
     utils.projection.computeCoastFireMC.setData(debouncedBaseInput, result);
   };
 
+  // Coast FIRE "Custom Age" probe (advisor-reviewed 2026-08-30, see
+  // .scratch/docs/plans/PLAN-coast-fire-custom-age.md) — deliberately
+  // EXPLICIT-run, not a `useQuery` with a debounced `enabled`. Every
+  // check is a real, rate-limited MC run; auto-firing on every
+  // stepper/debounce tick would let deliberate exploration (checking 6+
+  // ages in a session, which debounce does nothing to prevent) exhaust
+  // the shared expensive-rate-limit bucket and produce a silently
+  // half-populated pill instead of the clean, expected "you hit the
+  // limit" error this button-driven version produces instead. Plain
+  // local state, not a query cache entry -- there's no reactive query
+  // whose cache this needs to stay in sync with. `baseSharedInput` (not
+  // the debounced variant) since a button press is already the
+  // deliberate, one-shot moment debouncing exists to approximate.
+  const [coastFireProbeResult, setCoastFireProbeResult] =
+    useState<CoastFireProbeResult | null>(null);
+  const [coastFireProbeLoading, setCoastFireProbeLoading] = useState(false);
+  const [coastFireProbeError, setCoastFireProbeError] = useState<string | null>(
+    null,
+  );
+  const checkCoastFireCustomAge = async (probeAge: number) => {
+    setCoastFireProbeLoading(true);
+    setCoastFireProbeError(null);
+    try {
+      const response = await utils.projection.computeCoastFireProbe.fetch({
+        ...baseSharedInput,
+        probeAge,
+      });
+      setCoastFireProbeResult(response.result as CoastFireProbeResult | null);
+    } catch (err) {
+      setCoastFireProbeError(
+        err instanceof Error ? err.message : "Failed to check this age.",
+      );
+    } finally {
+      setCoastFireProbeLoading(false);
+    }
+  };
+
   // Operational escape hatch (user request, 2026-08-28): wipe every cached
   // projection row server-side without bumping PROJECTION_CACHE_ENGINE_VERSION
   // and redeploying, then invalidate every projection query on THIS page so
@@ -420,24 +473,32 @@ export function useProjectionQueries(
       ? coastFireTodayMcResult
       : coastFireMcResult;
   // Generalized "which non-baseline scenario, if any, is active" — Coast
-  // FIRE (either variant) and Rate-Seeded both source their deterministic
-  // line + MC bands from their own MonteCarloResult rather than the
-  // baseline mcQuery/mcPrefetchQuery, exactly the same selection shape,
-  // just a different query behind it.
-  const inAltScenario = inCoastFireScenario || scenarioView === "rateSeeded";
+  // FIRE (either variant), Coast FIRE Custom, and Rate-Seeded all source
+  // their deterministic line + MC bands from their own MonteCarloResult
+  // rather than the baseline mcQuery/mcPrefetchQuery, exactly the same
+  // selection shape, just a different source behind it (Custom's is
+  // plain state, not a query — see checkCoastFireCustomAge above).
+  const inAltScenario =
+    inCoastFireScenario ||
+    scenarioView === "rateSeeded" ||
+    scenarioView === "coastFireCustom";
   const activeAltMcResult =
     scenarioView === "rateSeeded"
       ? rateSeededMcResult
-      : activeCoastFireMcResult;
+      : scenarioView === "coastFireCustom"
+        ? coastFireProbeResult?.mcResult
+        : activeCoastFireMcResult;
   const useCoastFireMc = inAltScenario && !!activeAltMcResult;
 
   const mcLoading =
     projectionMode === "monteCarlo" &&
     (scenarioView === "rateSeeded"
       ? rateSeededMcQuery.isLoading || rateSeededMcQuery.isFetching
-      : inCoastFireScenario
-        ? coastFireMcQuery.isLoading || coastFireMcQuery.isFetching
-        : mcQuery.isLoading || mcQuery.isFetching);
+      : scenarioView === "coastFireCustom"
+        ? coastFireProbeLoading
+        : inCoastFireScenario
+          ? coastFireMcQuery.isLoading || coastFireMcQuery.isFetching
+          : mcQuery.isLoading || mcQuery.isFetching);
 
   const mcBandsByYear = useMemo(() => {
     if (
@@ -558,6 +619,10 @@ export function useProjectionQueries(
     activeCoastFireMcResult,
     rateSeededMcQuery,
     rateSeededMcResult,
+    coastFireProbeResult,
+    coastFireProbeLoading,
+    coastFireProbeError,
+    checkCoastFireCustomAge,
     activeAltMcResult,
     autoloadEnabled,
     runSimulation,

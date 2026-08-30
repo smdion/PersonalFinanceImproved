@@ -15,6 +15,7 @@
  *                       `deletePreset`, `updateInflationOverrides`
  * - `relocation.ts`   — `computeRelocationFiProjection`
  * - `withdrawal-bracket-optimizer.ts` — `computeWithdrawalBracketOptimizer`
+ * - `coast-fire-probe.ts` — `computeCoastFireProbe`
  *
  * Shared Zod schemas + helper builders live in `_shared.ts`.
  *
@@ -24,9 +25,13 @@
  * `withdrawal-bracket-optimizer.ts` added 2026-08-29 (multi-year
  * withdrawal-policy optimizer, Phase 3) as its own file for the same
  * reason, not appended to the already-521-line `coast-fire.ts`.
+ * `coast-fire-probe.ts` added 2026-08-30 (Coast FIRE custom-age picker)
+ * for the same reason again, AND because its result shape genuinely
+ * differs from `computeCoastFireMC`'s (see that file's own docblock).
  */
 import { mergeRouters } from "../../trpc";
 import { coastFireRouter } from "./coast-fire";
+import { coastFireProbeRouter } from "./coast-fire-probe";
 import { monteCarloRouter } from "./monte-carlo";
 import { presetsRouter } from "./presets";
 import { relocationProjectionRouter } from "./relocation";
@@ -38,6 +43,7 @@ import { withdrawalBracketOptimizerRouter } from "./withdrawal-bracket-optimizer
 export const projectionRouter = mergeRouters(
   scenariosRouter,
   coastFireRouter,
+  coastFireProbeRouter,
   monteCarloRouter,
   strategyRouter,
   stressTestRouter,
