@@ -15,6 +15,73 @@ import { log } from "@/lib/logger";
 // Known schema versions
 // ---------------------------------------------------------------------------
 
+/**
+ * Every v0.7-line journal tag, in both dialects.
+ *
+ * Declared ONCE and consumed by both `KNOWN_SCHEMA_VERSIONS` (which decides
+ * whether a backup is importable at all) and `schemaEra()` (which decides
+ * which transform runs). Those two lists were previously maintained by hand
+ * and drifted: tags `0002`–`0031` shipped without being added to either, so
+ * `transformBackupToCurrentSchema` threw `Unknown schema version` for any
+ * backup taken between v0.7.0 and v0.7.10 — restore was simply broken across
+ * most of the v0.7 line (found 2026-08-30). Sharing one list means adding a
+ * migration can't silently break restore again.
+ *
+ * Tags 0007–0024 are hand-named and identical in both journals, so they
+ * appear once. 0002–0006 and 0025–0031 are drizzle-generated and differ per
+ * dialect, so both spellings are listed.
+ */
+const V07_SCHEMA_TAGS = [
+  "0000_v7_initial_schema", // PG + SQLite (identical tag in both journals)
+  // --- PG + SQLite diverge (drizzle-generated names) ---
+  "0001_parched_karma", // PG
+  "0001_fresh_masque", // SQLite
+  "0002_oval_thunderbolt", // PG
+  "0002_public_marvel_apes", // SQLite
+  "0003_graceful_satana", // PG
+  "0003_loose_wonder_man", // SQLite
+  "0004_clumsy_cargill", // PG
+  "0004_wooden_starfox", // SQLite
+  "0005_slim_daimon_hellstrom", // PG
+  "0005_free_patch", // SQLite
+  "0006_thin_molecule_man", // PG
+  "0006_silent_gorgon", // SQLite
+  // --- hand-named, identical in both journals ---
+  "0007_salary_profiles",
+  "0008_kill_live_sentinel",
+  "0009_salary_profile_bonus_terms",
+  "0010_contribution_active_fields",
+  "0011_contribution_accounts_no_base_value",
+  "0012_salary_profile_job_keyed",
+  "0013_speculative_jobs",
+  "0014_salary_no_base_value",
+  "0015_historical_salaries",
+  "0016_drop_salary_ledger_tables",
+  "0017_salary_entry_bonus_override",
+  "0018_fk_index_cleanup",
+  "0019_mortgage_refinanced_from_fk",
+  "0020_employer_match_grouping_unq",
+  "0021_retirement_filing_status_backfill",
+  "0022_salary_profile_full_shape",
+  "0023_extra_paycheck_routing_to_salary_profile",
+  "0024_projection_cache",
+  // --- diverge again ---
+  "0025_nosy_korg", // PG
+  "0025_empty_xorn", // SQLite
+  "0026_illegal_raider", // PG
+  "0026_wet_sumo", // SQLite
+  "0027_tough_fenris", // PG
+  "0027_previous_mojo", // SQLite
+  "0028_classy_speedball", // PG
+  "0028_daily_maximus", // SQLite
+  "0029_magical_the_spike", // PG
+  "0029_stale_richard_fisk", // SQLite
+  "0030_acoustic_blue_shield", // PG
+  "0030_hesitant_micromacro", // SQLite
+  "0031_wide_winter_soldier", // PG
+  "0031_mighty_energizer", // SQLite
+] as const;
+
 /** All schema version tags that we know how to import from. */
 export const KNOWN_SCHEMA_VERSIONS = [
   // v0.1.x series — PostgreSQL journal tags
@@ -65,11 +132,9 @@ export const KNOWN_SCHEMA_VERSIONS = [
   "0004_calm_dazzler", // SQLite counterpart of 0004
   "0005_zippy_warlock", // SQLite counterpart of 0005
   "0006_concerned_psylocke", // SQLite counterpart of 0006
-  // v0.7.x series — squashed v7 baseline (same tag string in both PG and
-  // SQLite journals) + incremental migrations
-  "0000_v7_initial_schema", // PG + SQLite (identical tag in both journals)
-  "0001_parched_karma", // PG: savings_planned_tx_settlements table
-  "0001_fresh_masque", // SQLite counterpart of 0001_parched_karma
+  // v0.7.x series — squashed v7 baseline + every incremental migration,
+  // from the single V07_SCHEMA_TAGS list above (shared with schemaEra()).
+  ...V07_SCHEMA_TAGS,
 ] as const;
 
 export type KnownSchemaVersion = (typeof KNOWN_SCHEMA_VERSIONS)[number];
@@ -173,13 +238,9 @@ function schemaEra(
   if (tag === "v0.3_final") return "v0.3";
   if (tag === "v0.2_final") return "v0.2";
 
-  // v0.7.x tags (squashed v7 baseline + incremental).
-  const v07Tags = new Set([
-    "0000_v7_initial_schema", // PG + SQLite
-    "0001_parched_karma", // PG
-    "0001_fresh_masque", // SQLite
-  ]);
-  if (v07Tags.has(tag)) return "v0.7";
+  // v0.7.x tags (squashed v7 baseline + every incremental migration).
+  // Same single source as KNOWN_SCHEMA_VERSIONS — see V07_SCHEMA_TAGS.
+  if ((V07_SCHEMA_TAGS as readonly string[]).includes(tag)) return "v0.7";
 
   // v0.6.x tags (squashed v6 baseline + incremental). Routed to a minimal
   // transform that only backfills tables added within the v0.6 line.

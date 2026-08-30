@@ -1,4 +1,6 @@
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import {
   transformBackupToCurrentSchema,
   KNOWN_SCHEMA_VERSIONS,
@@ -387,7 +389,15 @@ describe("KNOWN_SCHEMA_VERSIONS completeness", () => {
     expect(KNOWN_SCHEMA_VERSIONS).toContain("0000_v7_initial_schema");
     expect(KNOWN_SCHEMA_VERSIONS).toContain("0001_parched_karma");
     expect(KNOWN_SCHEMA_VERSIONS).toContain("0001_fresh_masque");
-    expect(KNOWN_SCHEMA_VERSIONS.length).toBe(45);
+    // Deliberately NOT a hardcoded length. That assertion had to be bumped
+    // by hand on every migration, which is friction pushing in exactly the
+    // wrong direction — the failure mode here is a tag being *missing*, and
+    // a count that must be edited to go green encourages editing the count.
+    // The journal-drift guard below checks real coverage instead; this only
+    // asserts the list is internally sane.
+    expect(new Set(KNOWN_SCHEMA_VERSIONS).size).toBe(
+      KNOWN_SCHEMA_VERSIONS.length,
+    );
   });
 
   it("SQLite tags transform correctly (same as PG equivalents)", () => {
@@ -584,5 +594,53 @@ describe("edge cases", () => {
       (result.tables.savings_goals![0] as Record<string, unknown>)
         .is_api_sync_enabled,
     ).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Journal-drift guard
+// ---------------------------------------------------------------------------
+
+/**
+ * Regression: KNOWN_SCHEMA_VERSIONS and schemaEra()'s v0.7 set were both
+ * maintained by hand and both stopped at 0001. Tags 0002-0031 shipped without
+ * being registered, so transformBackupToCurrentSchema threw "Unknown schema
+ * version" for any backup taken between v0.7.0 and v0.7.10 — restore was
+ * broken across nearly the whole v0.7 line, silently, until someone tried it
+ * (found 2026-08-30).
+ *
+ * This reads the real drizzle journals, so adding a migration without
+ * registering its tag fails here instead of at someone's restore.
+ */
+describe("schema-version registry tracks the drizzle journals", () => {
+  const journalTags = (dir: string): string[] => {
+    const journal = JSON.parse(
+      readFileSync(path.join(process.cwd(), dir, "meta/_journal.json"), "utf8"),
+    ) as { entries: { tag: string }[] };
+    return journal.entries.map((e) => e.tag);
+  };
+
+  // Both journals were squashed at v0.7.0, so every tag they still contain
+  // is a v0.7-line tag and must be registered — no era filtering needed.
+  it.each([
+    ["drizzle", "PostgreSQL"],
+    ["drizzle-sqlite", "SQLite"],
+  ])("every %s (%s) journal tag is importable", (dir) => {
+    const known = KNOWN_SCHEMA_VERSIONS as readonly string[];
+    const missing = journalTags(dir).filter((tag) => !known.includes(tag));
+    expect(missing).toEqual([]);
+  });
+
+  it("routes every registered v0.7 tag to the v0.7 transform, not a throw", () => {
+    const v07 = journalTags("drizzle").concat(journalTags("drizzle-sqlite"));
+    for (const tag of v07) {
+      expect(() =>
+        transformBackupToCurrentSchema(
+          makeBackup(),
+          tag,
+          "0031_wide_winter_soldier",
+        ),
+      ).not.toThrow();
+    }
   });
 });
