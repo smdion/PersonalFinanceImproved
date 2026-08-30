@@ -1,7 +1,6 @@
 "use client";
 
 /** Monte Carlo results — loading spinner, errors, warnings, depletion callout, and compact summary bar. */
-import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { HelpTip } from "@/components/ui/help-tip";
 import { toast } from "@/lib/hooks/use-toast";
@@ -70,29 +69,26 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
     mcLoading,
     mcQuery,
     setShowAssumptions,
-    runMonteCarlo,
-    runCoastFireMc,
+    rerunAllMc,
+    isRerunning,
     clearProjectionCacheMutation,
     deflate,
     dollarMode,
   } = state;
-  const [isRerunning, setIsRerunning] = useState(false);
   const utils = trpc.useUtils();
 
   if (projectionMode !== "monteCarlo") return null;
 
-  const handleRerun = async () => {
-    setIsRerunning(true);
-    try {
-      // Refresh both cache-backed simulations shown on this page together —
-      // the baseline MC bar here and the Coast FIRE hero card both read from
-      // the persistent projection cache, so a "re-run" should mean "give me
-      // fresh randomness for both," not just one of the two.
-      await Promise.all([runMonteCarlo(), runCoastFireMc()]);
-    } finally {
-      setIsRerunning(false);
-    }
-  };
+  // Refreshes both cache-backed simulations shown on this page together —
+  // the baseline MC bar here and the Coast FIRE hero card both read from
+  // the persistent projection cache, so a "re-run" should mean "give me
+  // fresh randomness for both," not just one of the two. `isRerunning`
+  // lives in the shared state hook (not local to this component) so the
+  // top-of-page "recalculating" banner and the chart/table skeleton in
+  // index.tsx can also react to it — a manual re-run previously showed
+  // neither, since it bypasses the query hooks' own isFetching entirely
+  // (see rerunAllMc's docblock in use-projection-queries.ts).
+  const handleRerun = rerunAllMc;
 
   const handleClearCache = () => {
     // Whole-table wipe (no per-household scoping column exists) — confirm

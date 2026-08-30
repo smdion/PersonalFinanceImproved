@@ -2,7 +2,6 @@
 
 /** Top-level ProjectionCard component — orchestrates the projection state hook and delegates to sub-components. */
 import { useEffect, useRef, useState } from "react";
-import { toast, useToasts } from "@/lib/hooks/use-toast";
 import dynamic from "next/dynamic";
 import { HelpTip } from "@/components/ui/help-tip";
 import { SlidePanel } from "@/components/ui/slide-panel";
@@ -19,6 +18,7 @@ import { DecumulationMethodologyContent } from "@/components/decumulation-method
 import { ValidationContent } from "@/components/validation-content";
 // formatCurrency import removed — no longer used inline
 import { formatPercent } from "@/lib/utils/format";
+import { safeDivide } from "@/lib/utils/math";
 import { SimulationAssumptions } from "@/components/cards/mc-simulation-assumptions";
 import { DecumulationConfig } from "./decumulation-config";
 import { OverridesPanelV2 as OverridesPanel } from "./overrides-panel-v2";
@@ -126,9 +126,10 @@ export function ProjectionCard(props: {
     mcBandsByYear,
     scenarioView,
     setScenarioView,
-    coastFireAge,
     coastFireCustomAge,
     setCoastFireCustomAge,
+    coastFireCustomAgeDraft,
+    setCoastFireCustomAgeDraft,
     coastFireProbeResult,
     coastFireProbeLoading,
     coastFireProbeError,
@@ -171,6 +172,9 @@ export function ProjectionCard(props: {
     coastFireMcAutoloadEnabled,
     runCoastFireMc,
     coastFireMcQuery,
+    mcProgressQuery,
+    rateSeededMcQuery,
+    isRerunning,
   } = state;
 
   // If the active scenario's result has no per-person data (Simple-tax-mode
@@ -184,35 +188,31 @@ export function ProjectionCard(props: {
     if (!hasIndividualAccountData) setPersonFilter("all");
   }, [result, isPersonFiltered, hasIndividualAccountData, setPersonFilter]);
 
-  // "Recalculating…" toast — visible regardless of scroll position, unlike
-  // ProjectionLoader's in-place strip (deliberately positioned between the
-  // chart and table, per its own header comment, "so layout never shifts")
-  // which is invisible if the user is scrolled away from that spot, and
-  // doesn't cover the engine-fetch phase at all. Reuses the existing
-  // fixed-position toast system instead of adding a second one.
-  const { dismiss: dismissToast } = useToasts();
+  // "Recalculating…" indicator. Previously a corner toast (bottom-right,
+  // easy to miss and easy to scroll past) that also only covered 4 of the
+  // queries that can actually trigger a real recalculation — Rate-Seeded
+  // and the Coast FIRE Custom Age probe could run with NO visible
+  // indicator at all. Replaced with a fixed banner pinned to the top of
+  // the viewport (impossible to miss regardless of scroll position, same
+  // z-index precedent as ToastContainer) that now covers every query that
+  // can trigger a real wait, consistently (live-user finding, 2026-08-30).
+  //
+  // Shows real "N / total trials" progress once available — see
+  // mcProgressQuery in use-projection-queries.ts, backed by the Monte
+  // Carlo worker's own progress messages (monte-carlo-worker-client.ts).
+  // Only the main mcQuery carries a trackable runId today; every other
+  // query here still shows the plain indeterminate state, which is
+  // honest — they're either fast (engine-only) or don't yet report
+  // sub-progress (Coast FIRE's multi-probe binary search).
   const isRecalculating =
     engineQuery.isFetching ||
     mcPrefetchQuery.isFetching ||
     mcQuery.isFetching ||
-    coastFireMcQuery.isFetching;
-  const recalcToastId = useRef<string | null>(null);
-  useEffect(() => {
-    if (isRecalculating && recalcToastId.current === null) {
-      recalcToastId.current = toast.loading("Recalculating…");
-    } else if (!isRecalculating && recalcToastId.current !== null) {
-      dismissToast(recalcToastId.current);
-      recalcToastId.current = null;
-    }
-  }, [isRecalculating, dismissToast]);
-  // Dismiss on unmount so navigating away mid-fetch doesn't leave an
-  // orphaned toast with nothing left to clear it.
-  useEffect(() => {
-    return () => {
-      if (recalcToastId.current !== null) dismissToast(recalcToastId.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- unmount-only cleanup
-  }, []);
+    coastFireMcQuery.isFetching ||
+    rateSeededMcQuery.isFetching ||
+    coastFireProbeLoading ||
+    isRerunning;
+  const mcProgress = mcQuery.isFetching ? (mcProgressQuery.data ?? null) : null;
 
   // Allow page-level dollarMode override (for shared toggle across tabs).
   // Sync the prop into internal state so derived data (deflate) reads the correct value.
@@ -268,6 +268,42 @@ export function ProjectionCard(props: {
 
   return (
     <>
+      {isRecalculating && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed top-0 inset-x-0 z-[100] print:hidden flex items-center justify-center gap-3 bg-blue-600 text-white text-sm font-medium px-4 py-2 shadow-md"
+        >
+          <span
+            className="h-3.5 w-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin shrink-0"
+            aria-hidden="true"
+          />
+          {mcProgress && mcProgress.total > 0 ? (
+            <>
+              <span>
+                Running simulation… {mcProgress.done.toLocaleString()}
+                {" / "}
+                {mcProgress.total.toLocaleString()} trials (
+                {formatPercent(
+                  safeDivide(mcProgress.done, mcProgress.total, 0),
+                  0,
+                )}
+                )
+              </span>
+              <span className="w-32 h-1.5 rounded-full bg-white/25 overflow-hidden shrink-0">
+                <span
+                  className="block h-full bg-white rounded-full transition-[width]"
+                  style={{
+                    width: `${Math.min(100, safeDivide(mcProgress.done, mcProgress.total, 0) * 100)}%`,
+                  }}
+                />
+              </span>
+            </>
+          ) : (
+            <span>Recalculating…</span>
+          )}
+        </div>
+      )}
       <div className="space-y-6 mb-6">
         <div className="space-y-6">
           {/* ================================================================= */}
@@ -387,6 +423,26 @@ export function ProjectionCard(props: {
                 (() => {
                   const pp = people ?? enginePeople;
                   const isMc = projectionMode === "monteCarlo";
+                  // Sourced from the MC-verified result (computeCoastFireMC),
+                  // NOT the deterministic computeCoastFire — the two can
+                  // legitimately disagree (deterministic ignores sequence-
+                  // of-returns risk), and this pill's own scenario already
+                  // runs off coastFireMcResult (see
+                  // use-projection-queries.ts's activeCoastFireMcResult), so
+                  // its label/availability must agree with what it actually
+                  // computes, not a different endpoint's number. Only
+                  // status === "found" has a real distinct "earliest passing
+                  // age" — "already_coast" has no future age to show (that
+                  // case is covered by the separate "Coast FIRE (Today)"
+                  // pill) and previously fell through to a deterministic
+                  // fallback that showed today's age mislabeled as a found
+                  // age (live-user finding, 2026-08-30: pill said "Age 37",
+                  // hero card said "Age 47" for the same household).
+                  const coastFireMcData = coastFireMcQuery.data?.result;
+                  const coastFireAge =
+                    coastFireMcData?.status === "found"
+                      ? coastFireMcData.coastFireAge
+                      : null;
                   const coastFireAvailable = coastFireAge != null;
                   const hasMc = mcBandsByYear != null;
                   // hasIndividualAccountData computed once in
@@ -492,7 +548,32 @@ export function ProjectionCard(props: {
                             const currentAge =
                               result?.projectionByYear[0]?.age ?? 0;
                             const maxAge = engineSettings.retirementAge - 1;
-                            const displayAge = coastFireCustomAge ?? currentAge;
+                            const committedAge =
+                              coastFireCustomAge ?? currentAge;
+                            // What the box actually shows while typing —
+                            // the raw, unclamped draft if the user has one,
+                            // else the last committed age. Clamping used to
+                            // happen on every keystroke (via
+                            // setCoastFireCustomAge directly in onChange),
+                            // which corrupted multi-digit entry: typing "4"
+                            // of "42" got clamped up to the min bound
+                            // immediately, forcing the DOM value to change
+                            // mid-keystroke so the "2" landed in the wrong
+                            // position — e.g. produced "54" instead of "42"
+                            // (live-user finding, 2026-08-30). Clamping now
+                            // happens only in commitDraft, on blur or
+                            // "Check this age".
+                            const draftText =
+                              coastFireCustomAgeDraft ?? String(committedAge);
+                            const commitDraft = (): number => {
+                              const v = parseInt(draftText, 10);
+                              const clamped = isNaN(v)
+                                ? committedAge
+                                : Math.min(maxAge, Math.max(currentAge, v));
+                              setCoastFireCustomAge(clamped);
+                              setCoastFireCustomAgeDraft(null);
+                              return clamped;
+                            };
                             return (
                               <div className="flex items-center gap-2 text-sm bg-surface-sunken rounded-md px-2.5 py-1.5 -mt-1">
                                 <label
@@ -507,23 +588,17 @@ export function ProjectionCard(props: {
                                   min={currentAge}
                                   max={maxAge}
                                   step={1}
-                                  value={displayAge}
-                                  onChange={(e) => {
-                                    const v = parseInt(e.target.value, 10);
-                                    if (!isNaN(v))
-                                      setCoastFireCustomAge(
-                                        Math.min(
-                                          maxAge,
-                                          Math.max(currentAge, v),
-                                        ),
-                                      );
-                                  }}
+                                  value={draftText}
+                                  onChange={(e) =>
+                                    setCoastFireCustomAgeDraft(e.target.value)
+                                  }
+                                  onBlur={commitDraft}
                                   className="w-16 text-sm border rounded px-1.5 py-0.5 tabular-nums"
                                 />
                                 <button
                                   type="button"
                                   onClick={() =>
-                                    checkCoastFireCustomAge(displayAge)
+                                    checkCoastFireCustomAge(commitDraft())
                                   }
                                   disabled={coastFireProbeLoading}
                                   className="px-2.5 py-1 rounded-md text-label font-semibold border border-subtle text-muted shadow-sm transition-colors hover:bg-surface-primary/80 disabled:opacity-50"
@@ -540,7 +615,7 @@ export function ProjectionCard(props: {
                                 {!coastFireProbeError &&
                                   coastFireProbeResult &&
                                   coastFireProbeResult.probeAge ===
-                                    displayAge && (
+                                    committedAge && (
                                     <span
                                       className={`text-caption font-medium ${
                                         coastFireProbeResult.passes

@@ -255,22 +255,58 @@ export function useProjectionQueries(
       mcAssetClassOverrides.length > 0 ? mcAssetClassOverrides : undefined,
     ...debouncedBaseInput,
   };
+  // `runMonteCarlo`/`runCoastFireMc` use an imperative `.fetch()` (not
+  // `mcQuery.refetch()`/`.invalidate()`) specifically to pass
+  // `forceRefresh: true` — a field that only exists on this one-off call,
+  // not on the hook's own steady-state input — so the fetch bypasses the
+  // cache and gets a genuinely new random seed, then writes the result
+  // back under the hook's real key via `.setData()`. Trade-off: because
+  // this bypasses the `useQuery` hook entirely, `mcQuery.isFetching` /
+  // `coastFireMcQuery.isFetching` never flip true during this call, so
+  // nothing driven by them (the top-of-page "recalculating" banner, the
+  // chart/table loading skeleton) showed anything during a manual Re-run —
+  // found live 2026-08-30. `isRerunning` is the explicit stand-in signal
+  // for exactly that gap; every consumer that reads *Query.isFetching for
+  // "is MC busy" must OR this in too (see mcLoading below and
+  // index.tsx's isRecalculating).
+  // Counted, not a plain boolean — runMonteCarlo/runCoastFireMc can run
+  // concurrently (the "Re-run" button fires both via Promise.all), and a
+  // shared boolean would get clipped false by whichever one finishes
+  // first while the other is still running. A count only reaches 0 once
+  // every in-flight run has actually finished.
+  const [activeMcReruns, setActiveMcReruns] = useState(0);
+  const isRerunning = activeMcReruns > 0;
   const runMonteCarlo = async () => {
-    const result = await utils.projection.computeMonteCarloProjection.fetch({
-      ...runMonteCarloInput,
-      forceRefresh: true,
-    });
-    utils.projection.computeMonteCarloProjection.setData(
-      runMonteCarloInput,
-      result,
-    );
+    setActiveMcReruns((n) => n + 1);
+    try {
+      const result = await utils.projection.computeMonteCarloProjection.fetch({
+        ...runMonteCarloInput,
+        forceRefresh: true,
+      });
+      utils.projection.computeMonteCarloProjection.setData(
+        runMonteCarloInput,
+        result,
+      );
+    } finally {
+      setActiveMcReruns((n) => n - 1);
+    }
   };
   const runCoastFireMc = async () => {
-    const result = await utils.projection.computeCoastFireMC.fetch({
-      ...debouncedBaseInput,
-      forceRefresh: true,
-    });
-    utils.projection.computeCoastFireMC.setData(debouncedBaseInput, result);
+    setActiveMcReruns((n) => n + 1);
+    try {
+      const result = await utils.projection.computeCoastFireMC.fetch({
+        ...debouncedBaseInput,
+        forceRefresh: true,
+      });
+      utils.projection.computeCoastFireMC.setData(debouncedBaseInput, result);
+    } finally {
+      setActiveMcReruns((n) => n - 1);
+    }
+  };
+  /** Both baseline MC + Coast FIRE MC together — what the "Re-run" button
+   *  actually triggers. */
+  const rerunAllMc = async () => {
+    await Promise.all([runMonteCarlo(), runCoastFireMc()]);
   };
 
   // Coast FIRE "Custom Age" probe (advisor-reviewed 2026-08-30, see
@@ -344,6 +380,12 @@ export function useProjectionQueries(
     },
   );
 
+  // Stable for this hook instance's whole lifetime, reused across every
+  // mcQuery fetch (fetches never overlap for one hook instance — TanStack
+  // Query supersedes/cancels the prior one), so the server-side progress
+  // map entry naturally gets recreated fresh under the same key each run
+  // and cleared on completion. See monte-carlo-worker-client.ts.
+  const [mcRunId] = useState(() => crypto.randomUUID());
   const mcQuery = trpc.projection.computeMonteCarloProjection.useQuery(
     {
       numTrials: mcTrials,
@@ -351,6 +393,7 @@ export function useProjectionQueries(
       taxMode: mcTaxMode,
       assetClassOverrides:
         mcAssetClassOverrides.length > 0 ? mcAssetClassOverrides : undefined,
+      runId: mcRunId,
       ...debouncedBaseInput,
     },
     {
@@ -361,6 +404,14 @@ export function useProjectionQueries(
         !engineQuery.isFetching,
       placeholderData: undefined,
     },
+  );
+  // Live "N / total trials" for the "recalculating" indicator (index.tsx) —
+  // only polls while mcQuery is actually in flight. See
+  // monte-carlo-worker-client.ts's module docblock for why this is a
+  // lightweight poll against an in-memory map rather than a subscription.
+  const mcProgressQuery = trpc.projection.getMonteCarloProgress.useQuery(
+    { runId: mcRunId },
+    { enabled: mcQuery.isFetching, refetchInterval: 400, staleTime: 0 },
   );
 
   // Coast FIRE Monte Carlo — prefetched on engineQuery success, same
@@ -492,13 +543,14 @@ export function useProjectionQueries(
 
   const mcLoading =
     projectionMode === "monteCarlo" &&
-    (scenarioView === "rateSeeded"
-      ? rateSeededMcQuery.isLoading || rateSeededMcQuery.isFetching
-      : scenarioView === "coastFireCustom"
-        ? coastFireProbeLoading
-        : inCoastFireScenario
-          ? coastFireMcQuery.isLoading || coastFireMcQuery.isFetching
-          : mcQuery.isLoading || mcQuery.isFetching);
+    (isRerunning ||
+      (scenarioView === "rateSeeded"
+        ? rateSeededMcQuery.isLoading || rateSeededMcQuery.isFetching
+        : scenarioView === "coastFireCustom"
+          ? coastFireProbeLoading
+          : inCoastFireScenario
+            ? coastFireMcQuery.isLoading || coastFireMcQuery.isFetching
+            : mcQuery.isLoading || mcQuery.isFetching));
 
   const mcBandsByYear = useMemo(() => {
     if (
@@ -614,6 +666,7 @@ export function useProjectionQueries(
     coastFireQuery,
     coastFireAge,
     coastFireMcQuery,
+    mcProgressQuery,
     coastFireMcResult,
     coastFireTodayMcResult,
     activeCoastFireMcResult,
@@ -630,6 +683,8 @@ export function useProjectionQueries(
     runMonteCarlo,
     coastFireMcAutoloadEnabled,
     runCoastFireMc,
+    rerunAllMc,
+    isRerunning,
     clearProjectionCacheMutation,
     engineQuery,
     mcPrefetchQuery,

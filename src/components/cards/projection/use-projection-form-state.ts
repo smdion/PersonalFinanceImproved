@@ -12,6 +12,7 @@ import type {
 } from "./types";
 import { emptyAccumForm, emptyDecumForm } from "./types";
 import { usePersistedToggle } from "@/lib/hooks/use-persisted-setting";
+import { MC_DEFAULT_TRIALS } from "@/lib/constants";
 
 export function useProjectionFormState() {
   // --- Withdrawal config ---
@@ -86,7 +87,7 @@ export function useProjectionFormState() {
   const [projectionMode, setProjectionMode] = useState<
     "deterministic" | "monteCarlo"
   >("monteCarlo");
-  const [mcTrials, setMcTrials] = useState(1000);
+  const [mcTrials, setMcTrials] = useState(MC_DEFAULT_TRIALS);
   const [mcPreset, setMcPreset] = useState<
     "aggressive" | "default" | "conservative" | "custom"
   >("default");
@@ -128,6 +129,19 @@ export function useProjectionFormState() {
   const [coastFireCustomAge, setCoastFireCustomAge] = useState<number | null>(
     null,
   );
+  // Raw text the "Check age" input displays WHILE typing — separate from
+  // coastFireCustomAge (the committed, clamped number). Clamping on every
+  // keystroke (the original implementation) corrupted multi-digit entry:
+  // typing "42" with a min bound above 4 clamped the first "4" up to the
+  // min immediately, forcing the DOM value to e.g. "38" mid-keystroke, so
+  // the next digit landed in the wrong place and produced a mangled number
+  // like "54" instead of "42" (live-user finding, 2026-08-30). Clamping
+  // now happens only on blur / "Check this age", via commitCoastFireAgeDraft
+  // in index.tsx — this field just tracks whatever the user has typed so
+  // far, unclamped.
+  const [coastFireCustomAgeDraft, setCoastFireCustomAgeDraft] = useState<
+    string | null
+  >(null);
   const [showAllYears, setShowAllYears] = useState(false);
   const [showBars, setShowBars] = useState(true);
   // Separate from `showBars` (the Balance chart's own baseline toggle) so
@@ -232,6 +246,8 @@ export function useProjectionFormState() {
     setScenarioView,
     coastFireCustomAge,
     setCoastFireCustomAge,
+    coastFireCustomAgeDraft,
+    setCoastFireCustomAgeDraft,
     showAllYears,
     setShowAllYears,
     showBars,

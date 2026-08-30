@@ -206,8 +206,15 @@ export const MC_STRATEGY_STABILITY_GAP_ALERT_THRESHOLD = 0.1;
  *  preset-specific value is configured. */
 export const DEFAULT_MC_INFLATION_RISK = { meanRate: 0.025, stdDev: 0.012 };
 
-/** Default number of trials for a Monte Carlo simulation run. */
-export const MC_DEFAULT_TRIALS = 1000;
+/** Default number of trials for a Monte Carlo simulation run. Dropped from
+ *  1000 → 500 2026-08-30 (user decision, after the worker-thread offload
+ *  fixed the real motivation for a cut — it no longer needs to trade
+ *  precision for a shorter server-wide freeze, since MC no longer blocks
+ *  the event loop at all). Standard error scales as 1/sqrt(n): a true 90%
+ *  success rate has ~±1.3 percentage points of noise at 500 trials vs
+ *  ~±1% at 1000 — accepted as fine since results display rounded to whole
+ *  percentage points anyway. */
+export const MC_DEFAULT_TRIALS = 500;
 
 /** React Query staleTime for projection queries (1 minute). */
 export const PROJECTION_STALE_TIME_MS = 60_000;
