@@ -24,6 +24,7 @@ import type { SalaryActiveMap, SalaryProfileActiveMap } from "./salary";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 import {
   getEffectiveCash,
+  getEffectiveCreditCardDebt,
   getEffectiveOtherAssets,
   getAnnualExpensesFromBudget,
   type BudgetTargeting,
@@ -777,7 +778,14 @@ export async function buildYearEndHistory(
     const setting = parseAppSettings(settings);
     const { cash } = await getEffectiveCash(db, settings);
     const otherAssets = await getEffectiveOtherAssets(db, settings, asOfDate);
-    const otherLiabilities = setting("current_other_liabilities", 0);
+    // Additive on top of the manual figure — see getEffectiveCreditCardDebt's
+    // docblock. Only computed for the CURRENT (isCurrent: true) row; a
+    // finalized past year always reads otherLiabilities from the stored
+    // net_worth_annual row instead (below), which finalizeYear (performance.ts)
+    // writes with this same addition baked in at finalize time.
+    const otherLiabilities =
+      setting("current_other_liabilities", 0) +
+      (await getEffectiveCreditCardDebt(db));
 
     const mortgageBalance = computeMortgageBalance(
       mortgageLoans,

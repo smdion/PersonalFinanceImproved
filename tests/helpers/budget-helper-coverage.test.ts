@@ -16,6 +16,7 @@ import {
 } from "vitest";
 import {
   getEffectiveCash,
+  getEffectiveCreditCardDebt,
   getEffectiveOtherAssets,
   getEffectiveOtherAssetsDetailed,
 } from "@/server/helpers/budget";
@@ -142,6 +143,149 @@ describe("getEffectiveCash — active budget API", () => {
 
     expect(result.source).toBe("manual");
     expect(result.cash).toBe(0);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// getEffectiveCash / getEffectiveCreditCardDebt — manual "cash"/"creditCard"
+// account mappings (found live, 2026-08-31: Actual's API has no account
+// "type" field at all, so the type-based auto-detection above never matches
+// anything for an Actual household — a household maps specific accounts to
+// these two fixed pseudo-buckets instead).
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("getEffectiveCash / getEffectiveCreditCardDebt — manual account mappings", () => {
+  let ctx: TestDbContext;
+
+  beforeAll(async () => {
+    ctx = await createTestDb();
+  });
+
+  afterAll(() => ctx.cleanup());
+
+  beforeEach(() => {
+    mockGetActiveBudgetApi.mockResolvedValue("none");
+    mockCacheGet.mockResolvedValue(null);
+  });
+
+  function seedActualConnection(
+    accountMappings: {
+      localId: string;
+      localName: string;
+      remoteAccountId: string;
+      syncDirection: "pull" | "push" | "both";
+    }[],
+  ) {
+    ctx.db
+      .insert(ctx.schema.apiConnections)
+      .values({
+        service: "actual",
+        config: { serverUrl: "http://actual.local" },
+        accountMappings,
+      })
+      .onConflictDoUpdate({
+        target: ctx.schema.apiConnections.service,
+        set: { accountMappings },
+      })
+      .run();
+  }
+
+  it("sums cash across multiple accounts mapped to the fixed 'cash' bucket, ignoring type", async () => {
+    mockGetActiveBudgetApi.mockResolvedValue("actual");
+    mockCacheGet.mockResolvedValue({
+      data: [
+        // No `type`/`onBudget` fields at all — matches Actual's real cache
+        // shape (getCategories()/getAccounts() have nothing to fill them
+        // with), which is exactly why the auto-detection path can't work.
+        { id: "acct-checking", balance: 3000 },
+        { id: "acct-savings", balance: 15000 },
+        { id: "acct-other", balance: 999999 }, // unmapped — must be excluded
+      ],
+      fetchedAt: new Date(),
+    });
+    seedActualConnection([
+      {
+        localId: "cash",
+        localName: "Cash",
+        remoteAccountId: "acct-checking",
+        syncDirection: "pull",
+      },
+      {
+        localId: "cash",
+        localName: "Cash",
+        remoteAccountId: "acct-savings",
+        syncDirection: "pull",
+      },
+    ]);
+
+    const result = await getEffectiveCash(ctx.rawDb, []);
+    expect(result.source).toBe("actual");
+    expect(result.cash).toBe(3000 + 15000);
+  });
+
+  it("falls back to type-based auto-detection when no 'cash' mapping exists", async () => {
+    mockGetActiveBudgetApi.mockResolvedValue("ynab");
+    mockCacheGet.mockResolvedValue({
+      data: [{ onBudget: true, closed: false, type: "checking", balance: 500 }],
+      fetchedAt: new Date(),
+    });
+    seedActualConnection([]); // no mappings at all
+
+    const result = await getEffectiveCash(ctx.rawDb, []);
+    expect(result.cash).toBe(500);
+  });
+
+  it("sums credit card debt as positive magnitude from mapped accounts", async () => {
+    mockGetActiveBudgetApi.mockResolvedValue("actual");
+    mockCacheGet.mockResolvedValue({
+      data: [
+        { id: "acct-visa", balance: -1200 },
+        { id: "acct-amex", balance: -350 },
+      ],
+      fetchedAt: new Date(),
+    });
+    seedActualConnection([
+      {
+        localId: "creditCard",
+        localName: "Credit Card",
+        remoteAccountId: "acct-visa",
+        syncDirection: "pull",
+      },
+      {
+        localId: "creditCard",
+        localName: "Credit Card",
+        remoteAccountId: "acct-amex",
+        syncDirection: "pull",
+      },
+    ]);
+
+    const debt = await getEffectiveCreditCardDebt(ctx.rawDb);
+    expect(debt).toBe(1200 + 350);
+  });
+
+  it("returns 0 credit card debt when nothing is mapped (no auto-detection fallback)", async () => {
+    mockGetActiveBudgetApi.mockResolvedValue("actual");
+    seedActualConnection([]);
+    const debt = await getEffectiveCreditCardDebt(ctx.rawDb);
+    expect(debt).toBe(0);
+  });
+
+  it("ignores a 'both'-direction credit card mapping's push side but still sums it (pull applies)", async () => {
+    mockGetActiveBudgetApi.mockResolvedValue("actual");
+    mockCacheGet.mockResolvedValue({
+      data: [{ id: "acct-visa", balance: -800 }],
+      fetchedAt: new Date(),
+    });
+    seedActualConnection([
+      {
+        localId: "creditCard",
+        localName: "Credit Card",
+        remoteAccountId: "acct-visa",
+        syncDirection: "both",
+      },
+    ]);
+    const debt = await getEffectiveCreditCardDebt(ctx.rawDb);
+    expect(debt).toBe(800);
   });
 });
 

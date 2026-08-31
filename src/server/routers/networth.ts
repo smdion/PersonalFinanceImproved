@@ -19,6 +19,7 @@ import {
   getLatestSnapshot,
   parseAppSettings,
   getEffectiveCash,
+  getEffectiveCreditCardDebt,
   getEffectiveOtherAssets,
   getEffectiveOtherAssetsDetailed,
   getPrimaryPerson,
@@ -178,7 +179,12 @@ export const networthRouter = createTRPCRouter({
       const otherAssetsSyncSource =
         activeBudgetApi !== "none" ? activeBudgetApi : null;
 
-      const otherLiabilities = setting("current_other_liabilities", 0);
+      // Additive on top of the manual figure — see getEffectiveCreditCardDebt's
+      // docblock (server/helpers/budget.ts). Only ever nonzero once the
+      // household maps a "Credit Card" account for the active service.
+      const otherLiabilities =
+        setting("current_other_liabilities", 0) +
+        (await getEffectiveCreditCardDebt(ctx.db));
       const homeImprovements = setting("current_home_improvements", 0);
 
       // Home values: market (estimated) and cost basis (purchase + improvements)
@@ -721,7 +727,9 @@ export const networthRouter = createTRPCRouter({
       })();
       const { cash } = await getEffectiveCash(ctx.db, settings);
       const otherAssets = await getEffectiveOtherAssets(ctx.db, settings);
-      const otherLiabilities = setting("current_other_liabilities", 0);
+      const otherLiabilities =
+        setting("current_other_liabilities", 0) +
+        (await getEffectiveCreditCardDebt(ctx.db));
 
       // Find nearest snapshot to a target date
       async function getSnapshotAtDate(targetDate: string) {

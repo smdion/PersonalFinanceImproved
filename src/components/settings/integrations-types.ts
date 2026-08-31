@@ -119,6 +119,16 @@ export type PreviewData = {
       balance: number;
       type: string;
     }[];
+    /** Every non-closed account, on-budget included — the remote-account
+     *  picker for the "Cash" and "Credit Card" pseudo-mappings needs
+     *  on-budget accounts, which trackingAccounts (off-budget only)
+     *  excludes by design. */
+    allAccounts: {
+      id: string;
+      name: string;
+      balance: number;
+      type: string;
+    }[];
     existingMappings: {
       localId?: string;
       localName: string;

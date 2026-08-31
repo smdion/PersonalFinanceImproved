@@ -423,6 +423,19 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                         ))}
                       </optgroup>
                     )}
+                    {/* Fixed pseudo-accounts, not tied to a single Ledgr
+                     * row — many on-budget accounts (Actual has no
+                     * account-type field to auto-detect these) can share
+                     * either bucket, summed by getEffectiveCash /
+                     * getEffectiveCreditCardDebt. Always offered, never
+                     * hidden by mappedKeys, since a second/third mapping
+                     * to the same bucket is the normal case here. */}
+                    <optgroup label="Cash / Credit Card">
+                      <option value="cash|Cash">Cash (combine accounts)</option>
+                      <option value="creditCard|Credit Card">
+                        Credit Card (combine accounts)
+                      </option>
+                    </optgroup>
                   </>
                 );
               })()}
@@ -430,7 +443,10 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
           </div>
           <div className="flex-1 min-w-[100px]">
             <label className="block text-caption font-medium text-muted mb-0.5">
-              Tracking Account
+              {newPortfolioLocal.startsWith("cash|") ||
+              newPortfolioLocal.startsWith("creditCard|")
+                ? "Account"
+                : "Tracking Account"}
             </label>
             <select
               value={newPortfolioRemote}
@@ -438,11 +454,35 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
               className="w-full px-1 py-1 text-label border border-strong rounded bg-surface-primary"
             >
               <option value="">Select...</option>
-              {portfolio.trackingAccounts.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name} ({formatCurrency(a.balance)})
-                </option>
-              ))}
+              {(() => {
+                const isCashOrCredit =
+                  newPortfolioLocal.startsWith("cash|") ||
+                  newPortfolioLocal.startsWith("creditCard|");
+                if (!isCashOrCredit) {
+                  return portfolio.trackingAccounts.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name} ({formatCurrency(a.balance)})
+                    </option>
+                  ));
+                }
+                // Cash/Credit Card map to on-budget accounts, which
+                // trackingAccounts (off-budget only) excludes — offer the
+                // full account list instead, minus whatever's already
+                // mapped to THIS same bucket.
+                const bucketLocalId = newPortfolioLocal.split("|")[0];
+                const alreadyInBucket = new Set(
+                  portfolio.existingMappings
+                    .filter((m) => m.localId === bucketLocalId)
+                    .map((m) => m.remoteAccountId),
+                );
+                return (portfolio.allAccounts ?? portfolio.trackingAccounts)
+                  .filter((a) => !alreadyInBucket.has(a.id))
+                  .map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name} ({formatCurrency(a.balance)})
+                    </option>
+                  ));
+              })()}
             </select>
           </div>
           <div className="w-16">

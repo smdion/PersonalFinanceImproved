@@ -1726,7 +1726,12 @@ export const irmaaBrackets = sqliteTable(
 export type ApiConfig = Record<string, string | undefined>;
 
 export type AccountMapping = {
-  localId?: string; // "performance:{id}" | "asset:{id}" | "mortgage:{loanId}:{type}" (legacy prefix format)
+  // "performance:{id}" | "asset:{id}" | "mortgage:{loanId}:{type}" (legacy
+  // prefix format) | "cash" | "creditCard" (fixed pseudo-accounts — many
+  // mappings can share these two values, summed by getEffectiveCash /
+  // getEffectiveCreditCardDebt; never resolve to a single Ledgr row the
+  // way the others do, and applyPullMapping skips them on purpose).
+  localId?: string;
   localName: string; // Cached display name (UI only, not for resolution)
   remoteAccountId: string;
   syncDirection: "pull" | "push" | "both";

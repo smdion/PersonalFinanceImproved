@@ -42,6 +42,18 @@ export async function applyPullMapping(
 ): Promise<ApplyPullMappingResult> {
   const localId = mapping.localId ?? mapping.localName; // backward compat
 
+  // "cash" / "creditCard" are fixed pseudo-accounts (see AccountMapping's
+  // docblock, schema-pg.ts) — many mappings can share one, summed live by
+  // getEffectiveCash / getEffectiveCreditCardDebt straight from the
+  // accounts cache. They never resolve to a single local row the way
+  // mortgage/asset mappings do, so there's nothing for this per-mapping
+  // pipeline to write; falling through to the asset branch below would
+  // have written into an otherAssetItems row literally named "Cash",
+  // repeatedly overwritten by whichever mapping happened to sync last.
+  if (localId === "cash" || localId === "creditCard") {
+    return { applied: false };
+  }
+
   // Prefer typed fields; fall back to prefix parsing for legacy mappings.
   if (mapping.loanId || localId.startsWith("mortgage:")) {
     const loanId = mapping.loanId ?? Number(localId.split(":")[1]);

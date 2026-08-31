@@ -662,6 +662,23 @@ export const syncCoreRouter = createTRPCRouter({
           type: a.type,
         }));
 
+      // Every non-closed account, on-budget included — the remote-account
+      // picker for the "Cash" and "Credit Card" pseudo-mappings needs
+      // on-budget checking/savings/credit-card accounts, which
+      // trackingAccounts (off-budget only) excludes by design. Actual's API
+      // has no account "type" field at all (verified live, 2026-08-31 — the
+      // wrapper's own schema only has id/name/offbudget/closed), so there's
+      // no way to auto-restrict this list to "checking/savings-like"
+      // accounts; the household picks manually instead.
+      const allAccounts = accounts
+        .filter((a) => !a.closed)
+        .map((a) => ({
+          id: a.id,
+          name: a.name,
+          balance: a.balance,
+          type: a.type,
+        }));
+
       // Get portfolio account labels (aggregated by performanceAccountId) from latest snapshot
       let portfolioLocalAccounts: Array<{
         label: string;
@@ -849,6 +866,7 @@ export const syncCoreRouter = createTRPCRouter({
           assetAccounts: assetLocalAccounts,
           mortgageAccounts,
           trackingAccounts,
+          allAccounts,
           existingMappings,
         },
         budget: {
