@@ -85,6 +85,13 @@ export interface TaxEstimationInput {
     taxMultiplier?: number;
     ltcgBrackets?: Record<string, { threshold: number | null; rate: number }[]>;
     enableRothConversions?: boolean;
+    /** Household's annual standard deduction — see `RouteBracketInfo.standardDeduction`
+     *  (withdrawal-routing.ts). Declared here (not just structurally passed
+     *  through) so it's a documented contract, not a field the next reader
+     *  could "clean up" by destructuring and dropping — this module's own
+     *  header docblock is a record of exactly that failure mode happening
+     *  before (2026-08-19 routing-divergence fixes). */
+    standardDeduction?: number;
   };
   /** Current balances by tax bucket */
   balances: TaxBuckets;
@@ -215,6 +222,14 @@ function evaluateCost(
       rothBasisAvailable,
       brokerageBasisRatio,
       conversionsEnabled: taxRates.enableRothConversions,
+      // Fixed alongside R59 (2026-08-30) — this was missing entirely, a
+      // live divergence from the real router's own call site
+      // (decumulation-year.ts), which has passed this since the LTCG fix
+      // earlier in this same session. Same rule as the rothBracketTarget
+      // comment above: this estimate and the real router must never
+      // diverge on what routing rule applies.
+      standardDeduction: taxRates.standardDeduction,
+      discretionaryWithdrawalOrder: config.discretionaryWithdrawalOrder,
     },
     eligibility,
     nonRetirement,

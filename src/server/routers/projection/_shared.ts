@@ -206,6 +206,7 @@ export function buildDecumulationDefaults(
     qcdMaximize?: boolean | null;
     rmdSmoothingEnabled?: boolean | null;
     rmdSmoothingMaxBracketTarget?: string | null;
+    discretionaryWithdrawalOrder?: string | null;
   },
   clientDefaults: {
     withdrawalRoutingMode: string;
@@ -238,6 +239,10 @@ export function buildDecumulationDefaults(
     rmdSmoothingMaxBracketTarget: settings.rmdSmoothingMaxBracketTarget
       ? toNumber(settings.rmdSmoothingMaxBracketTarget)
       : undefined,
+    discretionaryWithdrawalOrder:
+      settings.discretionaryWithdrawalOrder === "brokerage_first"
+        ? "brokerage_first"
+        : "roth_first",
   };
 }
 

@@ -239,6 +239,13 @@
       "when": 1788127221590,
       "tag": "0033_stormy_shiver_man",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1788144624196,
+      "tag": "0034_nice_omega_red",
+      "breakpoints": true
     }
   ]
 }

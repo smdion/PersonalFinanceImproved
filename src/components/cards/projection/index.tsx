@@ -1291,6 +1291,11 @@ export function ProjectionCard(props: {
               withdrawalTaxPref={withdrawalTaxPref}
               setWithdrawalTaxPref={setWithdrawalTaxPref}
               activeSpendingStrategy={engineSettings?.withdrawalStrategy}
+              discretionaryWithdrawalOrder={
+                engineSettings?.discretionaryWithdrawalOrder
+              }
+              enableAcaAwareness={engineSettings?.enableAcaAwareness}
+              enableIrmaaAwareness={engineSettings?.enableIrmaaAwareness}
             />
           </div>
 

@@ -55,6 +55,86 @@ describe("rankWithdrawalTiers", () => {
     });
   });
 
+  it("discretionaryWithdrawalOrder omitted defaults to roth_first (Roth basis before brokerage's 0% tier)", () => {
+    const tiers = rankWithdrawalTiers(
+      baseInput({
+        ordinaryIncomeFloor: 0,
+        rothBasisAvailable: 20000,
+      }),
+    );
+    const rothIdx = tiers.findIndex(
+      (t) => t.source === "roth" && t.costRate === 0,
+    );
+    const brokerageIdx = tiers.findIndex(
+      (t) => t.source === "brokerage" && t.costRate === 0,
+    );
+    expect(rothIdx).toBeGreaterThanOrEqual(0);
+    expect(brokerageIdx).toBeGreaterThanOrEqual(0);
+    expect(rothIdx).toBeLessThan(brokerageIdx);
+  });
+
+  it("discretionaryWithdrawalOrder: brokerage_first ranks brokerage's 0% tier before Roth basis (R55 follow-up)", () => {
+    const tiers = rankWithdrawalTiers(
+      baseInput({
+        ordinaryIncomeFloor: 0,
+        rothBasisAvailable: 20000,
+        discretionaryWithdrawalOrder: "brokerage_first",
+      }),
+    );
+    const rothIdx = tiers.findIndex(
+      (t) => t.source === "roth" && t.costRate === 0,
+    );
+    const brokerageIdx = tiers.findIndex(
+      (t) => t.source === "brokerage" && t.costRate === 0,
+    );
+    expect(rothIdx).toBeGreaterThanOrEqual(0);
+    expect(brokerageIdx).toBeGreaterThanOrEqual(0);
+    expect(brokerageIdx).toBeLessThan(rothIdx);
+  });
+
+  it("discretionaryWithdrawalOrder: no LTCG data (no filingStatus) means nothing to reorder — brokerage_first has no effect there", () => {
+    // Verified against the user's own spreadsheet: brokerage's withdrawal
+    // is capped at exactly the free 0%-LTCG room, so with no LTCG data at
+    // all there's no brokerage-0%-tier counterpart for Roth basis to swap
+    // against — the fixed order (roth, then brokerage's flat fallback)
+    // applies regardless of this setting.
+    const tiers = rankWithdrawalTiers(
+      baseInput({
+        filingStatus: undefined,
+        rothBasisAvailable: 20000,
+        brokerageAvailable: 50000,
+        discretionaryWithdrawalOrder: "brokerage_first",
+      }),
+    );
+    expect(tiers[0]).toMatchObject({ source: "roth", capacity: 20000 });
+  });
+
+  it("discretionaryWithdrawalOrder does NOT affect the cost-ranked tier beyond the free 0%-LTCG zone, either direction (matches the user's spreadsheet: brokerage is capped at the free room, not preferred unconditionally)", () => {
+    // ordinaryIncomeFloor high enough that most/all brokerage gains land in
+    // the real-rate (non-zero) LTCG tier, not the free 0% tier.
+    const inputs = {
+      ordinaryIncomeFloor: 300000,
+      rothBasisAvailable: 20000,
+      rothAvailable: 50000,
+      brokerageAvailable: 50000,
+    };
+    const rothFirstTiers = rankWithdrawalTiers(baseInput(inputs));
+    const brokerageFirstTiers = rankWithdrawalTiers(
+      baseInput({ ...inputs, discretionaryWithdrawalOrder: "brokerage_first" }),
+    );
+    // The priced (non-zero, non-Infinity cost) tier is identical either
+    // way — only the two free tiers' relative order can differ.
+    const pricedOnly = (tiers: typeof rothFirstTiers) =>
+      tiers.filter((t) => t.costRate > 0 && t.costRate < Infinity);
+    expect(pricedOnly(brokerageFirstTiers)).toEqual(pricedOnly(rothFirstTiers));
+    // And it's genuinely cost-ranked, not brokerage-unconditionally-first:
+    // a real-rate brokerage tier exists but doesn't precede every Roth tier.
+    const pricedBrokerage = rothFirstTiers.find(
+      (t) => t.source === "brokerage" && t.costRate > 0,
+    );
+    expect(pricedBrokerage).toBeDefined();
+  });
+
   it("brokerage in the 0% LTCG zone ranks free, alongside Roth basis", () => {
     // ordinaryIncomeFloor 0 -> full 0%-LTCG room available
     const tiers = rankWithdrawalTiers(

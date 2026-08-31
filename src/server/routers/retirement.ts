@@ -100,6 +100,9 @@ const retirementSettingsInput = z.object({
   enableRothConversions: z.boolean().optional(),
   rothConversionTarget: zDecimal.nullable().optional(),
   withdrawalStrategy: z.enum(withdrawalStrategyEnum()).optional(),
+  discretionaryWithdrawalOrder: z
+    .enum(["roth_first", "brokerage_first"])
+    .optional(),
   gkUpperGuardrail: zDecimal.optional(),
   gkLowerGuardrail: zDecimal.optional(),
   gkIncreasePct: zDecimal.optional(),

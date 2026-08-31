@@ -426,6 +426,7 @@ export function runDecumulationYear(
       brokerageBasisRatio,
       conversionsEnabled: taxRates.enableRothConversions,
       standardDeduction: taxRates.standardDeduction,
+      discretionaryWithdrawalOrder: config.discretionaryWithdrawalOrder,
     },
     eligibility,
     nonRetirement,

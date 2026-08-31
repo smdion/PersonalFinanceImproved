@@ -122,6 +122,13 @@ type DecumulationConfigProps = {
   >;
   /** Active spending strategy key (from retirement settings). */
   activeSpendingStrategy?: string;
+  /** R55 follow-up — household default from retirement settings, displayed
+   *  read-only here (edited on the settings page, not this per-session
+   *  routing-override panel) so it's visible right next to bracket_filling's
+   *  other routing controls. */
+  discretionaryWithdrawalOrder?: string | null;
+  enableAcaAwareness?: boolean;
+  enableIrmaaAwareness?: boolean;
 };
 
 /**
@@ -142,6 +149,9 @@ export function DecumulationConfig({
   withdrawalTaxPref,
   setWithdrawalTaxPref,
   activeSpendingStrategy,
+  discretionaryWithdrawalOrder,
+  enableAcaAwareness,
+  enableIrmaaAwareness,
 }: DecumulationConfigProps) {
   const strategyKey = (activeSpendingStrategy ??
     "fixed") as WithdrawalStrategyType;
@@ -283,6 +293,31 @@ export function DecumulationConfig({
                 onChange={setWithdrawalOrder}
                 filter={tradPreferenceEngineCategories()}
               />
+              <div className="mt-3 pt-3 border-t">
+                <SectionHeader
+                  title="Discretionary Withdrawal Order"
+                  help="Beyond the Traditional bracket target, which free source drains first: Roth basis, or brokerage's 0%-capital-gains room. Brokerage-first uses that room up sooner, but a brokerage gain still counts toward MAGI for ACA/IRMAA even at 0% federal tax — Roth withdrawals never touch MAGI."
+                />
+                <div className="text-caption">
+                  <span className="font-medium text-foreground">
+                    {discretionaryWithdrawalOrder === "brokerage_first"
+                      ? "Brokerage 0% room first"
+                      : "Roth basis first (default)"}
+                  </span>
+                  <span className="text-faint">
+                    {" "}
+                    — edit in Retirement Settings &rarr; Taxes in Retirement.
+                  </span>
+                </div>
+                {discretionaryWithdrawalOrder === "brokerage_first" &&
+                  (enableAcaAwareness || enableIrmaaAwareness) && (
+                    <p className="mt-1 text-caption text-amber-700">
+                      ACA/IRMAA awareness is on — this will realize MAGI-counted
+                      gains sooner each year, which can reduce ACA subsidy or
+                      bring you closer to an IRMAA surcharge tier.
+                    </p>
+                  )}
+              </div>
             </div>
           )}
 

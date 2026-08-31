@@ -1292,6 +1292,18 @@ export const retirementSettings = sqliteTable(
     rothConversionTarget: text("roth_conversion_target"),
     /** Withdrawal/spending strategy (see withdrawal-strategies.ts registry). */
     withdrawalStrategy: text("withdrawal_strategy").notNull().default("fixed"),
+    /** R55 follow-up: within the cost-ranked tier (beyond the Traditional
+     *  bracket-fill target), which of Roth basis / brokerage's 0%-LTCG room
+     *  drains first. "roth_first" (default) matches all pre-existing
+     *  behavior. "brokerage_first" is an explicit household opt-in — a
+     *  brokerage LTCG gain still counts toward MAGI for ACA/IRMAA purposes
+     *  even when taxed at 0% federally, so this trades a real ACA/IRMAA
+     *  cost (when either awareness setting is on) for using the "use it or
+     *  lose it" annual 0%-LTCG allowance sooner — an explicit, user-chosen
+     *  tradeoff (with UI warning text), not an automatic optimization. */
+    discretionaryWithdrawalOrder: text("discretionary_withdrawal_order")
+      .notNull()
+      .default("roth_first"),
     /** G-K: upper guardrail — if currentRate < initialRate × this, increase spending (e.g. 0.80). */
     gkUpperGuardrail: text("gk_upper_guardrail").default("0.80"),
     /** G-K: lower guardrail — if currentRate > initialRate × this, decrease spending (e.g. 1.20). */
@@ -1389,9 +1401,12 @@ export const retirementSettings = sqliteTable(
      *  row per person PER PROFILE, which is what lets two profiles hold
      *  genuinely different household settings.
      *
-     *  Still nullable, not NOT NULL — every write path sets it, and a null
-     *  value can't weaken the unique index (Postgres/SQLite both treat NULL
-     *  as non-equal there), so there is no correctness gap. Made NOT NULL
+     *  Still nullable, not NOT NULL — `retirementSettings.upsert`
+     *  (server/routers/retirement.ts) explicitly resolves and sets it on
+     *  every write (falling back to `isNull` scoping, never a bare
+     *  personId match, when no profile resolves), and a null value can't
+     *  weaken the unique index (Postgres/SQLite both treat NULL as
+     *  non-equal there), so there is no correctness gap. Made NOT NULL
      *  ONLY as part of the v0.8.0 squash: SQLite has no ALTER COLUMN SET NOT
      *  NULL, so tightening this now would force the exact table-recreate
      *  path this schema has otherwise avoided since step A. */

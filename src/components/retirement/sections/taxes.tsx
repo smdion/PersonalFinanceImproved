@@ -317,6 +317,40 @@ export function TaxesSection({
             )}
           </div>
         </div>
+        <div>
+          <span className="text-muted">
+            Discretionary Withdrawal Order
+            <HelpTip text="Beyond your Traditional bracket target, which free source drains first: Roth basis (default) or brokerage's 0%-capital-gains room. Brokerage-first uses up the 0% room sooner, but a brokerage gain still counts toward MAGI for ACA/IRMAA even when it's taxed at 0% federally — Roth withdrawals never touch MAGI. If you have ACA or IRMAA awareness on, brokerage-first trades subsidy/surcharge risk for using that room sooner." />
+          </span>
+          <div className="font-medium">
+            <select
+              value={settings?.discretionaryWithdrawalOrder ?? "roth_first"}
+              onChange={(e) => {
+                if (!settings) return;
+                upsertSettings.mutate(
+                  buildSettingsPatch(settings, {
+                    discretionaryWithdrawalOrder: e.target.value,
+                  }),
+                );
+              }}
+              disabled={!isEditable}
+              className="text-sm border rounded px-1.5 py-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <option value="roth_first">Roth basis first (default)</option>
+              <option value="brokerage_first">Brokerage 0% room first</option>
+            </select>
+            {settings?.discretionaryWithdrawalOrder === "brokerage_first" &&
+              ((settings?.enableAcaAwareness ?? false) ||
+                (settings?.enableIrmaaAwareness ?? false)) && (
+                <div className="mt-1.5 text-caption text-amber-700">
+                  ACA/IRMAA awareness is on — brokerage-first will realize
+                  MAGI-counted gains sooner each year, which can reduce ACA
+                  subsidy or bring you closer to an IRMAA surcharge tier even
+                  though those gains are taxed at 0% federally.
+                </div>
+              )}
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -185,6 +185,8 @@ export function resolveDecumulationConfig(
     rmdSmoothingMaxBracketTarget:
       defaults.rmdSmoothingMaxBracketTarget ??
       RMD_SMOOTHING_MAX_BRACKET_TARGET_FALLBACK,
+    discretionaryWithdrawalOrder:
+      defaults.discretionaryWithdrawalOrder ?? "roth_first",
   };
 
   for (const o of overrides) {
@@ -215,6 +217,8 @@ export function resolveDecumulationConfig(
         rmdSmoothingMaxBracketTarget:
           defaults.rmdSmoothingMaxBracketTarget ??
           RMD_SMOOTHING_MAX_BRACKET_TARGET_FALLBACK,
+        discretionaryWithdrawalOrder:
+          defaults.discretionaryWithdrawalOrder ?? "roth_first",
       };
       continue;
     }

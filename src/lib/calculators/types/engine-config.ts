@@ -400,6 +400,17 @@ export type DecumulationDefaults = {
   /** Withdrawal/spending strategy. Defaults to 'fixed'. */
   withdrawalStrategy?: WithdrawalStrategyType;
 
+  /** R55 follow-up (2026-08-30): within `bracket_filling` mode's cost-
+   *  ranked tier beyond the Traditional bracket-fill target, which of Roth
+   *  basis / brokerage's 0%-LTCG room drains first — see
+   *  `RankWithdrawalTiersInput.discretionaryWithdrawalOrder`
+   *  (withdrawal-cost-ranking.ts) for the full tradeoff explanation.
+   *  Defaults to `"roth_first"`, matching all pre-existing behavior. An
+   *  explicit household opt-in, not an automatic optimization — a
+   *  brokerage gain still counts toward MAGI for ACA/IRMAA even when taxed
+   *  at 0% federally. */
+  discretionaryWithdrawalOrder?: "roth_first" | "brokerage_first";
+
   /**
    * Strategy-specific parameters. Keyed by strategy type.
    * Only the active strategy's params are read at runtime.
@@ -628,6 +639,9 @@ export type ResolvedDecumulationConfig = {
    *  resolved (never undefined) — defaults to
    *  `RMD_SMOOTHING_MAX_BRACKET_TARGET_FALLBACK`. */
   rmdSmoothingMaxBracketTarget: number;
+  /** See DecumulationDefaults.discretionaryWithdrawalOrder. Always
+   *  resolved (never undefined) — defaults to `"roth_first"`. */
+  discretionaryWithdrawalOrder: "roth_first" | "brokerage_first";
 };
 
 /**

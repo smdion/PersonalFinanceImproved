@@ -1436,6 +1436,20 @@ export const retirementSettings = pgTable(
     withdrawalStrategy: varchar("withdrawal_strategy", { length: 30 })
       .notNull()
       .default("fixed"),
+    /** R55 follow-up: within the cost-ranked tier (beyond the Traditional
+     *  bracket-fill target), which of Roth basis / brokerage's 0%-LTCG room
+     *  drains first. "roth_first" (default) matches all pre-existing
+     *  behavior. "brokerage_first" is an explicit household opt-in — a
+     *  brokerage LTCG gain still counts toward MAGI for ACA/IRMAA purposes
+     *  even when taxed at 0% federally, so this trades a real ACA/IRMAA
+     *  cost (when either awareness setting is on) for using the "use it or
+     *  lose it" annual 0%-LTCG allowance sooner — an explicit, user-chosen
+     *  tradeoff (with UI warning text), not an automatic optimization. */
+    discretionaryWithdrawalOrder: varchar("discretionary_withdrawal_order", {
+      length: 20,
+    })
+      .notNull()
+      .default("roth_first"),
     /** G-K: upper guardrail — if currentRate < initialRate × this, increase spending (e.g. 0.80). */
     gkUpperGuardrail: decimal("gk_upper_guardrail", {
       precision: 8,

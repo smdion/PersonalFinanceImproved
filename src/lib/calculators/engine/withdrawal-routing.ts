@@ -661,6 +661,7 @@ export function routeWithdrawalsBracketFilling(
     hsaAvailable: hsaAvailableTotal,
     magiBeforeThisDraw: bracketInfo.magiBeforeThisDraw ?? baseOrdinaryFloor,
     standardDeduction: bracketInfo.standardDeduction,
+    discretionaryWithdrawalOrder: bracketInfo.discretionaryWithdrawalOrder,
   };
   let impliedRothGrowth = 0;
   let tiers = rankWithdrawalTiers({
@@ -781,6 +782,10 @@ export interface RouteBracketInfo {
    *  Omitted ⇒ 0 (pre-2026-08-30 behavior: LTCG room systematically
    *  understated, real LTCG tax overcharged). See `toLtcgTaxableIncome`. */
   standardDeduction?: number;
+  /** R55 follow-up — see `RankWithdrawalTiersInput`'s field of the same
+   *  name (`withdrawal-cost-ranking.ts`) for the full explanation.
+   *  Undefined ⇒ "roth_first", matching all pre-existing behavior. */
+  discretionaryWithdrawalOrder?: "roth_first" | "brokerage_first";
 }
 
 export type RouteResult = {

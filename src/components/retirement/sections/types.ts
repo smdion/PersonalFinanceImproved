@@ -41,6 +41,12 @@ export type Settings = {
   enableRothConversions?: boolean;
   rothConversionTarget?: string | null;
   withdrawalStrategy: string;
+  /** R55 follow-up: within bracket_filling mode's cost-ranked tier, which
+   *  of Roth basis / brokerage's 0%-LTCG room drains first. "roth_first"
+   *  (default) or "brokerage_first" (explicit household opt-in — trades a
+   *  real ACA/IRMAA MAGI cost for using the annual 0%-LTCG allowance
+   *  sooner). */
+  discretionaryWithdrawalOrder?: string | null;
   // Strategy-specific params
   gkUpperGuardrail?: string | null;
   gkLowerGuardrail?: string | null;

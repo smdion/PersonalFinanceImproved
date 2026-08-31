@@ -84,6 +84,8 @@ const V07_SCHEMA_TAGS = [
   "0032_demonic_firelord", // SQLite counterpart of 0032
   "0033_stormy_shiver_man", // PG: retirement_settings unique(person_id) -> unique(profile_id, person_id)
   "0033_far_hellfire_club", // SQLite counterpart of 0033
+  "0034_nice_omega_red", // PG: retirement_settings.discretionary_withdrawal_order (R55 follow-up)
+  "0034_even_cassandra_nova", // SQLite counterpart of 0034
 ] as const;
 
 /** All schema version tags that we know how to import from. */
