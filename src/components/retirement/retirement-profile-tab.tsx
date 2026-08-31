@@ -468,6 +468,7 @@ export function RetirementProfileTab({
                 setDecExpenseOverride={setDecExpenseOverride}
                 setDecBudgetProfileId={setDecBudgetProfileId}
                 setDecBudgetCol={setDecBudgetCol}
+                isEditable={admin}
               />
 
               <RaiseAndRateSection
