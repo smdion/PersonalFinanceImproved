@@ -39,6 +39,11 @@ export function useSyncMutations() {
           "push",
           budgetApiServiceLabel(data.service),
           data.skippedUnsupported,
+          0,
+          undefined,
+          // Same note-based-template caveat as savings' push — see
+          // formatSyncResultToast's requiresManualApply docblock.
+          data.service === "actual",
         ),
       );
     },

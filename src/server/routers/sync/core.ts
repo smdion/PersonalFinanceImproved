@@ -441,7 +441,7 @@ export const syncCoreRouter = createTRPCRouter({
         ledgrName: string;
         ledgrCategory: string;
         ledgrAmount: number;
-        status: "linked" | "suggested" | "unmatched";
+        status: "linked" | "suggested" | "unmatched" | "orphaned";
         apiCategoryId: string | null;
         apiCategoryName: string | null;
         apiGroupName: string | null;
@@ -462,6 +462,33 @@ export const syncCoreRouter = createTRPCRouter({
           const apiCat = apiCats.find((c) => c.id === item.apiCategoryId);
           usedApiIds.add(item.apiCategoryId);
           const currentApiName = apiCat?.name ?? item.apiCategoryName;
+          if (!apiCat) {
+            // The stored id doesn't resolve to any current API category —
+            // e.g. the household's budget was rebuilt/re-imported upstream,
+            // which regenerates every category's id while keeping its name
+            // and balance. Previously this still reported "linked" purely
+            // because SOME id was stored, with no check that it still
+            // resolves — a push would then silently write to a category
+            // that no longer exists, reporting success with nothing to show
+            // for it (found live, 2026-08-31). Reported as "orphaned" so the
+            // UI can surface it distinctly and offer a re-link, instead of
+            // silently masquerading as a working link.
+            budgetMatches.push({
+              budgetItemId: item.id,
+              ledgrName: item.subcategory,
+              ledgrCategory: item.category,
+              ledgrAmount: item.amounts[colIndex] ?? 0,
+              status: "orphaned",
+              apiCategoryId: item.apiCategoryId,
+              apiCategoryName: currentApiName,
+              apiGroupName: null,
+              apiBudgeted: null,
+              apiActivity: null,
+              syncDirection: item.apiSyncDirection,
+              contributionAccountId: item.contributionAccountId,
+            });
+            continue;
+          }
           budgetMatches.push({
             budgetItemId: item.id,
             ledgrName: item.subcategory,
@@ -528,7 +555,7 @@ export const syncCoreRouter = createTRPCRouter({
       type SavingsMatch = {
         goalId: number;
         goalName: string;
-        status: "linked" | "suggested" | "unmatched";
+        status: "linked" | "suggested" | "unmatched" | "orphaned";
         apiCategoryId: string | null;
         apiCategoryName: string | null;
         apiBalance: number | null;
@@ -545,6 +572,23 @@ export const syncCoreRouter = createTRPCRouter({
           const apiCat = apiCats.find((c) => c.id === goal.apiCategoryId);
           usedSavingsApiIds.add(goal.apiCategoryId);
           const currentApiName = apiCat?.name ?? goal.apiCategoryName;
+          if (!apiCat) {
+            // See the matching budget-item comment above — a stored id that
+            // no longer resolves to any current API category must not be
+            // reported as "linked" (found live, 2026-08-31).
+            savingsMatches.push({
+              goalId: goal.id,
+              goalName: goal.name,
+              status: "orphaned",
+              apiCategoryId: goal.apiCategoryId,
+              apiCategoryName: currentApiName,
+              apiBalance: null,
+              isEmergencyFund: goal.isEmergencyFund,
+              reimbursementApiCategoryId:
+                goal.reimbursementApiCategoryId ?? null,
+            });
+            continue;
+          }
           savingsMatches.push({
             goalId: goal.id,
             goalName: goal.name,
@@ -817,6 +861,8 @@ export const syncCoreRouter = createTRPCRouter({
               .length,
             unmatched: budgetMatches.filter((m) => m.status === "unmatched")
               .length,
+            orphaned: budgetMatches.filter((m) => m.status === "orphaned")
+              .length,
             apiOnly: unmatchedApi.length,
           },
         },
@@ -827,6 +873,8 @@ export const syncCoreRouter = createTRPCRouter({
             suggested: savingsMatches.filter((m) => m.status === "suggested")
               .length,
             unmatched: savingsMatches.filter((m) => m.status === "unmatched")
+              .length,
+            orphaned: savingsMatches.filter((m) => m.status === "orphaned")
               .length,
           },
         },

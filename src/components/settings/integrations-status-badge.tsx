@@ -1,11 +1,11 @@
-/** Renders a colored status badge (linked, suggested, or unmatched) for budget/savings integration match rows. */
+/** Renders a colored status badge (linked, suggested, unmatched, or orphaned) for budget/savings integration match rows. */
 import React from "react";
 import { STATUS_STYLES } from "./integrations-types";
 
 export function StatusBadge({
   status,
 }: {
-  status: "linked" | "suggested" | "unmatched";
+  status: "linked" | "suggested" | "unmatched" | "orphaned";
 }) {
   const s = STATUS_STYLES[status];
   return (

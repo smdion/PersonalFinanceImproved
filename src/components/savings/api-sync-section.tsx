@@ -331,6 +331,10 @@ export function useApiSync() {
         data.skippedUnsupported,
         data.failed,
         data.failureMessage,
+        // Actual's goal push only writes a #template note, not a live
+        // budgeted amount — see formatSyncResultToast's requiresManualApply
+        // docblock. YNAB writes the real goal field directly.
+        data.service === "actual",
       );
       // A genuine failure with nothing pushed is a real error, not a
       // quiet "already up to date" — surface it as one (found live,

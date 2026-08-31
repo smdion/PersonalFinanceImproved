@@ -284,6 +284,18 @@ export function formatSyncResultToast(
    *  live, 2026-08-31). */
   failed = 0,
   failureMessage?: string,
+  /** Actual Budget has no writable field for a category's goal — pushing a
+   *  goal there only writes a `#template` line into the category's note
+   *  (see ActualClient.updateCategoryGoalTarget's docblock). It does NOT
+   *  become a real budgeted amount until the household manually runs
+   *  Actual's own "Apply Budget Template" action, so a plain "Pushed N
+   *  items" success message reads as "this is already live in Actual,"
+   *  which it isn't (found live, 2026-08-31 — a household saw the success
+   *  toast, checked Actual, and saw no change, reasonably assuming the
+   *  push had silently failed). Set only for `destination === "Actual
+   *  Budget"` pushes of goal amounts; YNAB writes a real structured goal
+   *  field directly, no such caveat applies there. */
+  requiresManualApply = false,
 ): string {
   if (failed > 0 && count === 0) {
     const detail = failureMessage ? ` (${failureMessage})` : "";
@@ -302,7 +314,11 @@ export function formatSyncResultToast(
     skippedUnsupported > 0 ? `${skippedUnsupported} skipped` : null,
     failed > 0 ? `${failed} failed` : null,
   ].filter((n): n is string => n != null);
-  return notes.length > 0
-    ? `${base} (${notes.join(", ")} — check ${destination})`
-    : base;
+  const withNotes =
+    notes.length > 0
+      ? `${base} (${notes.join(", ")} — check ${destination})`
+      : base;
+  return requiresManualApply
+    ? `${withNotes} as a goal template — open ${destination} and run "Apply Budget Template" to assign it to a month's budget.`
+    : withNotes;
 }

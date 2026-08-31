@@ -368,4 +368,52 @@ describe("formatSyncResultToast", () => {
       expect(msg).toContain("failed");
     });
   });
+
+  // Actual's goal push only writes a #template note, not a live budgeted
+  // amount — a plain "Pushed N items" success message reads as "already
+  // live in Actual," which it isn't until the household manually runs
+  // Actual's own "Apply Budget Template" action (found live, 2026-08-31).
+  describe("requiresManualApply (Actual's note-based goal push)", () => {
+    it("appends the manual-apply instruction when set and items were pushed", () => {
+      const msg = formatSyncResultToast(
+        3,
+        "push",
+        "Actual Budget",
+        0,
+        0,
+        undefined,
+        true,
+      );
+      expect(msg).toContain("Pushed 3 items to Actual Budget");
+      expect(msg).toContain("Apply Budget Template");
+      expect(msg).toContain("goal template");
+    });
+
+    it("does not append the instruction when unset (YNAB, or a pull)", () => {
+      const msg = formatSyncResultToast(
+        3,
+        "push",
+        "YNAB",
+        0,
+        0,
+        undefined,
+        false,
+      );
+      expect(msg).not.toContain("Apply Budget Template");
+    });
+
+    it("does not append the instruction when nothing was pushed", () => {
+      const msg = formatSyncResultToast(
+        0,
+        "push",
+        "Actual Budget",
+        0,
+        0,
+        undefined,
+        true,
+      );
+      expect(msg).not.toContain("Apply Budget Template");
+      expect(msg).toBe("No changes to push — already up to date");
+    });
+  });
 });
