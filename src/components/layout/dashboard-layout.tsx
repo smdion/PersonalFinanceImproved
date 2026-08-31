@@ -25,7 +25,11 @@ export function DashboardLayout({
       <button
         type="button"
         onClick={() => setMobileOpen(true)}
-        className="fixed top-2 left-2 z-30 p-2.5 rounded-lg bg-surface-primary text-primary shadow-lg md:hidden min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+        // print:hidden — this button is a sibling of <aside>, not inside
+        // it, so globals.css's `aside { display: none }` print rule never
+        // catches it (found live, 2026-08-31: it printed on top of the
+        // advisor report's title).
+        className="fixed top-2 left-2 z-30 p-2.5 rounded-lg bg-surface-primary text-primary shadow-lg md:hidden print:hidden min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
         aria-label="Open navigation menu"
       >
         <svg
