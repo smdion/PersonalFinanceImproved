@@ -168,6 +168,8 @@ function buildRoutingReasonClause(
   deflate: (v: number, yr: number) => number,
   bracketOptimizerResult?: BracketOptimizerResult | null,
   standardDeduction?: number | null,
+  includeCapacityNote?: boolean,
+  onCapacityNoteUsed?: () => void,
 ): string | undefined {
   const catCfg = ACCOUNT_TYPE_CONFIG[ia.category];
   // Traditional portion of a split-capable account (401k/IRA/403b): this
@@ -240,12 +242,13 @@ function buildRoutingReasonClause(
   // account's sourceKind, unlike breakdownClause above), so this uses the
   // FULL yr.discretionaryTierBreakdown, deflated the same way. Gated to
   // roth/brokerage rows only (advisor review, 2026-08-31) — this paragraph
-  // discusses neither of an HSA row's dollars, and would otherwise repeat
-  // verbatim on every discretionary-tier row in a year that drew from all
-  // three sources.
+  // discusses neither of an HSA row's dollars — AND to `includeCapacityNote`
+  // (found live, 2026-08-31: with 1 Roth + 2 brokerage accounts drawing the
+  // same year, the identical household-wide paragraph showed up 3 times;
+  // the caller sets this true for only the first qualifying account row).
   // lint-violation-ok: sourceKind is WithdrawalSourceKind, not an AccountCategory.
   const capacityClause =
-    sourceKind === "roth" || sourceKind === "brokerage"
+    includeCapacityNote && (sourceKind === "roth" || sourceKind === "brokerage")
       ? describeDiscretionaryCapacityMath(
           yr.rothBasisCapacity != null && yr.brokerageZeroLtcgCapacity != null
             ? {
@@ -264,6 +267,7 @@ function buildRoutingReasonClause(
           yr.rmdOverrodeRouting,
         )
       : undefined;
+  if (capacityClause) onCapacityNoteUsed?.();
   return capacityClause
     ? `${breakdownClause} ${capacityClause}`
     : breakdownClause;
@@ -279,6 +283,8 @@ function buildFullAccountNote(
   deflate: (v: number, yr: number) => number,
   bracketOptimizerResult?: BracketOptimizerResult | null,
   standardDeduction?: number | null,
+  includeCapacityNote?: boolean,
+  onCapacityNoteUsed?: () => void,
 ): { note?: string; noteLocked?: boolean } {
   const eligibility = buildEligibilityNote(ia, yr, deflate);
   const reason = buildRoutingReasonClause(
@@ -287,6 +293,8 @@ function buildFullAccountNote(
     deflate,
     bracketOptimizerResult,
     standardDeduction,
+    includeCapacityNote,
+    onCapacityNoteUsed,
   );
   if (!reason) return eligibility;
   const note = eligibility.note ? `${eligibility.note} · ${reason}` : reason;
@@ -360,6 +368,15 @@ export function DecumulationRow({
 
   // Alias for code extracted from inline — uses `yr` throughout
   const yr = dyr;
+
+  // The household-wide discretionary-capacity paragraph
+  // (describeDiscretionaryCapacityMath) is the same text regardless of
+  // WHICH roth/brokerage account row triggers it — found live, 2026-08-31,
+  // a household with 1 Roth + 2 brokerage accounts saw it verbatim 3 times
+  // in one year. Show it on the first qualifying row only per year (this
+  // component renders once per year, so a plain local flag closed over by
+  // the per-account calls below is safe — synchronous, no cross-row state).
+  let capacityNoteShownThisYear = false;
 
   const dSlotMap = new Map<AccountCategory, DecumulationSlot>(
     dyr.slots.map((s) => [s.category, s]),
@@ -459,6 +476,10 @@ export function DecumulationRow({
                         deflate,
                         bracketOptimizerResult,
                         engineSettings?.standardDeduction,
+                        !capacityNoteShownThisYear,
+                        () => {
+                          capacityNoteShownThisYear = true;
+                        },
                       );
                     if (wd > 0) {
                       // Per-account breakdown ("no magic money"): when a
@@ -842,6 +863,10 @@ export function DecumulationRow({
                     deflate,
                     bracketOptimizerResult,
                     engineSettings?.standardDeduction,
+                    !capacityNoteShownThisYear,
+                    () => {
+                      capacityNoteShownThisYear = true;
+                    },
                   ),
                 });
               }
