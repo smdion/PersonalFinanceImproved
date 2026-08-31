@@ -172,6 +172,7 @@ export function ProjectionCard(props: {
     coastFireMcAutoloadEnabled,
     runCoastFireMc,
     coastFireMcQuery,
+    coastFireAge: deterministicCoastFireAge,
     mcProgressQuery,
     rateSeededMcQuery,
     isRerunning,
@@ -423,27 +424,38 @@ export function ProjectionCard(props: {
                 (() => {
                   const pp = people ?? enginePeople;
                   const isMc = projectionMode === "monteCarlo";
-                  // Sourced from the MC-verified result (computeCoastFireMC),
-                  // NOT the deterministic computeCoastFire — the two can
-                  // legitimately disagree (deterministic ignores sequence-
-                  // of-returns risk), and this pill's own scenario already
-                  // runs off coastFireMcResult (see
-                  // use-projection-queries.ts's activeCoastFireMcResult), so
-                  // its label/availability must agree with what it actually
-                  // computes, not a different endpoint's number. Only
-                  // status === "found" has a real distinct "earliest passing
-                  // age" — "already_coast" has no future age to show (that
-                  // case is covered by the separate "Coast FIRE (Today)"
-                  // pill) and previously fell through to a deterministic
-                  // fallback that showed today's age mislabeled as a found
-                  // age (live-user finding, 2026-08-30: pill said "Age 37",
-                  // hero card said "Age 47" for the same household).
+                  // AVAILABILITY (can the pill be clicked at all) is sourced
+                  // from the cheap deterministic `coastFireQuery`, which
+                  // always runs — the MC probe is now on-demand (fires once
+                  // this scenario is actually selected, see
+                  // use-projection-queries.ts's coastFireMcQuery docblock),
+                  // so gating availability on MC data would make the pill
+                  // permanently unclickable (it needs a click to start
+                  // loading, but couldn't be clicked until it had loaded).
+                  //
+                  // The LABEL/NUMBER still prefers the MC-verified result
+                  // once it's loaded — deterministic ignores sequence-of-
+                  // returns risk, so the two can legitimately disagree, and
+                  // this pill's own scenario runs off coastFireMcResult (see
+                  // use-projection-queries.ts's activeCoastFireMcResult).
+                  // Before MC data exists, showing the deterministic guess
+                  // is the "basic KPI info" — it self-corrects to the
+                  // verified number the moment MC loads. status ===
+                  // "already_coast" is the one case where MC HAS resolved
+                  // and definitively says there's no distinct future age to
+                  // show (that's the separate "Coast FIRE (Today)" pill) —
+                  // showing a fallback age there would be the exact bug
+                  // fixed 2026-08-30 (pill said "Age 37", hero card said
+                  // "Age 47" for the same household), so that case still
+                  // nulls out rather than falling back.
                   const coastFireMcData = coastFireMcQuery.data?.result;
                   const coastFireAge =
                     coastFireMcData?.status === "found"
                       ? coastFireMcData.coastFireAge
-                      : null;
-                  const coastFireAvailable = coastFireAge != null;
+                      : coastFireMcData?.status === "already_coast"
+                        ? null
+                        : deterministicCoastFireAge;
+                  const coastFireAvailable = deterministicCoastFireAge != null;
                   const hasMc = mcBandsByYear != null;
                   // hasIndividualAccountData computed once in
                   // use-projection-derived.ts — MC "Simple" tax mode (the
@@ -1158,7 +1170,16 @@ export function ProjectionCard(props: {
                   ? ("done" as const)
                   : ("pending" as const);
 
-            const coastFireMcPhase = !coastFireMcAutoloadEnabled
+            // "disabled" here means the strip hides entirely (see the
+            // !== "disabled" guards below) — must mirror coastFireMcQuery's
+            // own `enabled` condition in use-projection-queries.ts exactly,
+            // or this shows "disabled" while the query is actually running
+            // (selected but not yet autoloaded), or vice versa.
+            const coastFireMcQueryEnabled =
+              coastFireMcAutoloadEnabled ||
+              scenarioView === "coastFire" ||
+              scenarioView === "coastFireToday";
+            const coastFireMcPhase = !coastFireMcQueryEnabled
               ? ("disabled" as const)
               : coastFireMcQuery.isLoading || coastFireMcQuery.isFetching
                 ? ("active" as const)

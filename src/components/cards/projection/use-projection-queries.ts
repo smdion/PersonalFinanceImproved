@@ -165,9 +165,16 @@ export function useProjectionQueries(
     SK_RETIREMENT_MC_AUTOLOAD,
     true,
   );
+  // Default flipped false 2026-08-30 (live-user finding: the eager
+  // background Coast FIRE MC probe was adding ~4-6s of server work to
+  // EVERY projection page load, whether or not the household ever looks
+  // at Coast FIRE) — see coastFireMcQuery's docblock below for the new
+  // default behavior. Flipping this setting back on restores the old
+  // "always prefetched in the background" experience for anyone who
+  // prefers instant scenario switching over a faster initial load.
   const [coastFireMcAutoloadEnabled] = usePersistedToggle(
     SK_RETIREMENT_COASTFIRE_MC_AUTOLOAD,
-    true,
+    false,
   );
 
   // --- tRPC query ---
@@ -437,25 +444,35 @@ export function useProjectionQueries(
     { enabled: mcQuery.isFetching, refetchInterval: 400, staleTime: 0 },
   );
 
-  // Coast FIRE Monte Carlo — prefetched on engineQuery success, same
-  // trigger as the baseline mcPrefetchQuery. Runs in the background (~4-6s
-  // for the binary search) while the user looks at the baseline view; by
-  // the time they toggle to Coast FIRE, the data is already cached and the
-  // toggle is instant. Returns binary-search result PLUS the full
-  // MonteCarloResult from its final probe (mcResult) so the chart and the
-  // hero card can both read from this single query. React Query dedupes on
-  // the query key, so any other consumer firing the same procedure with
-  // the same input hits the cache.
+  // Coast FIRE Monte Carlo — on demand by default (2026-08-30), same
+  // pattern as rateSeededMcQuery below: fires once the household actually
+  // selects a Coast FIRE scenario, not on every page load. The KPI hero
+  // card's "basic" Coast FIRE info (the earliest passing age) comes from
+  // the cheap deterministic `coastFireQuery` above regardless — this MC
+  // probe only adds the sequence-of-returns-verified confidence numbers,
+  // which nothing needs until the household is actually looking at this
+  // scenario. Returns binary-search result PLUS the full MonteCarloResult
+  // from its final probe (mcResult) so the chart and the hero card can
+  // both read from this single query. React Query dedupes on the query
+  // key, so any other consumer firing the same procedure with the same
+  // input hits the cache.
   //
-  // Cost: one additional expensive-rate-limit slot per page load plus
-  // ~4-6s of background server CPU. For a self-hosted deployment this is
-  // negligible compared to the UX improvement of an instant Coast FIRE
-  // toggle.
+  // `coastFireMcAutoloadEnabled` (default false) is the opt-in escape
+  // hatch back to the old always-prefetched behavior (~4-6s of background
+  // server CPU on every load, in exchange for an instant scenario toggle)
+  // for anyone who wants it — see the setting's own docblock above.
+  //
+  // IMPORTANT: `inCoastFireScenario` isn't defined yet at this point in
+  // the file (it's derived below, after this query, from the same
+  // `scenarioView` this reads directly) — keep this condition and that
+  // one in sync if either changes.
   const coastFireMcQuery = trpc.projection.computeCoastFireMC.useQuery(
     debouncedBaseInput,
     {
       enabled:
-        coastFireMcAutoloadEnabled &&
+        (coastFireMcAutoloadEnabled ||
+          scenarioView === "coastFire" ||
+          scenarioView === "coastFireToday") &&
         engineQuery.isSuccess &&
         !engineQuery.isFetching,
       placeholderData: (prev) => prev,

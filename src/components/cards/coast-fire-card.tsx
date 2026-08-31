@@ -72,10 +72,10 @@ type DeterministicResult = {
 interface CoastFireCardProps {
   input: CoastFireInput;
   /** Pass-down of the Coast FIRE MC binary-search result from
-   *  use-projection-queries.ts. Prefetched on page load so it's usually
-   *  available by the time the user looks at this card — the headline
-   *  automatically upgrades from deterministic-only to combined once the
-   *  MC result arrives. */
+   *  use-projection-queries.ts. On demand by default (2026-08-30) — fires
+   *  once the household selects a Coast FIRE scenario, not on page load —
+   *  so this card usually shows deterministic-only at first; the headline
+   *  automatically upgrades to combined once the MC result arrives. */
   coastFireMcResult?: CoastFireMcResult;
   /** True while the shared coast MC query is fetching. */
   coastFireMcLoading?: boolean;
