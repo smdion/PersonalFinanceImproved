@@ -1393,6 +1393,13 @@ export async function buildEnginePayload(
   let effectiveTraditionalRate = dbTraditionalRate;
   let effectiveBrokerageRate = dbBrokerageRate;
 
+  // Hoisted above its other use (distributionTaxRates.standardDeduction
+  // below) so the R56 fallback-rate estimate uses the same value —
+  // computing it twice would risk the two silently drifting.
+  const standardDeductionForFilingStatus = filingStatus
+    ? limitsMap[`standard_deduction_${filingStatus.toLowerCase()}`]
+    : undefined;
+
   if (bracketData.length > 0) {
     // Estimate effective income tax rate at retirement income level.
     // Use decumulation budget when set (it's the actual retirement spending level);
@@ -1405,6 +1412,7 @@ export async function buildEnginePayload(
       retirementIncome,
       bracketData,
       taxMult,
+      standardDeductionForFilingStatus,
     );
     // Only override if we get a meaningful estimate (bracket data is valid)
     if (estimatedRate > 0) {
@@ -1454,9 +1462,7 @@ export async function buildEnginePayload(
     // standard-deduction lookup uses. Undefined when not seeded for this
     // filing status ⇒ the LTCG helper subtracts 0, reproducing pre-fix
     // behavior rather than throwing.
-    standardDeduction: filingStatus
-      ? limitsMap[`standard_deduction_${filingStatus.toLowerCase()}`]
-      : undefined,
+    standardDeduction: standardDeductionForFilingStatus,
   };
 
   // Base engine input (without accumulationOverrides, decumulationOverrides, decumulationDefaults)

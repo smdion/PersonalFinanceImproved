@@ -3,7 +3,7 @@ import fc from "fast-check";
 import { calculateTax } from "@/lib/calculators/tax";
 import { roundToCents } from "@/lib/utils/math";
 import {
-  MFJ_NO_CHECKBOX_BRACKETS,
+  MFJ_TAXABLE_INCOME_BRACKETS,
   MFJ_2C_BRACKETS,
   AS_OF_DATE,
 } from "./fixtures";
@@ -18,11 +18,14 @@ describe("calculateTax", () => {
     //   Person B: Trad 401k = $676.92 × 26 = $17,600
     //   Person B: HSA = $321 × 26 = $8,346
     //   Total pre-tax annual ≈ $31,276
+    // R57: calculateTax needs real Form 1040 taxable-income-space brackets,
+    // not the raw Pub 15-T withholding brackets (production derives this via
+    // buildLiabilityBracketInput -> toTaxableIncomeBrackets).
     const input: TaxInput = {
       annualGross: 230000,
       preTaxDeductionsAnnual: 31276,
       filingStatus: "MFJ",
-      taxBrackets: MFJ_NO_CHECKBOX_BRACKETS,
+      taxBrackets: MFJ_TAXABLE_INCOME_BRACKETS,
       w4CheckboxOverride: null,
       asOfDate: AS_OF_DATE,
     };
@@ -35,20 +38,20 @@ describe("calculateTax", () => {
 
     it("computes taxable income after standard deduction", () => {
       // AGI = 230000 - 31276 = 198724
-      // Taxable = 198724 - 30000 = 168724
-      expect(result.taxableIncome).toBeCloseTo(168724, 0);
+      // Taxable = 198724 - 32200 (2026 MFJ std deduction) = 166524
+      expect(result.taxableIncome).toBeCloseTo(166524, 0);
     });
 
     it("computes marginal rate of 22%", () => {
-      // $168,724 falls in the 22% bracket (120100-230700 for MFJ no checkbox)
+      // $166,524 falls in the 22% bracket (100800-211400 for MFJ real 1040 brackets)
       expect(result.marginalRate).toBe(0.22);
     });
 
     it("computes federal tax", () => {
-      // Walk brackets: 0-19300=0, 19300-44100 @10%=2480, 44100-120100 @12%=9120,
-      // 120100-168724 @22%=10697.28
-      // Total ≈ 22297
-      expect(result.federalTax).toBeCloseTo(22297, 0);
+      // Walk brackets: 0-24800 @10%=2480, 24800-100800 @12%=9120,
+      // 100800-166524 @22%=14459.28
+      // Total = 26059.28
+      expect(result.federalTax).toBeCloseTo(26059.28, 0);
     });
 
     it("computes effective rate", () => {
@@ -109,7 +112,7 @@ describe("calculateTax", () => {
         annualGross: 0,
         preTaxDeductionsAnnual: 0,
         filingStatus: "MFJ",
-        taxBrackets: MFJ_NO_CHECKBOX_BRACKETS,
+        taxBrackets: MFJ_TAXABLE_INCOME_BRACKETS,
         w4CheckboxOverride: null,
         asOfDate: AS_OF_DATE,
       });
@@ -129,6 +132,7 @@ const BOUNDARY_BRACKETS: TaxBracketInput = {
   filingStatus: "Single",
   w4Checkbox: false,
   standardDeduction: 0,
+  w4Adjustment: 0,
   brackets: [
     { min: 0, max: 10000, rate: 0.1 },
     { min: 10000, max: 40000, rate: 0.12 },

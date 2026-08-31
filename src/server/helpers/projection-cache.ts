@@ -57,8 +57,27 @@ import { log } from "@/lib/logger";
  *  `tax-estimation.ts`, and `decumulation-year.ts`'s Roth-conversion-revised
  *  recompute. A REAL value change (not just a source change like #11) —
  *  cached rows from before this fix would show less LTCG-0% room and a
- *  higher LTCG tax bill than the corrected engine actually computes. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 12;
+ *  higher LTCG tax bill than the corrected engine actually computes.
+ *
+ *  13: R56/R57 — the ordinary W-4/Pub 15-T bracket lookups (bracket-filling
+ *  room, ordinary-income effective/marginal rate) were fed GROSS ordinary
+ *  income against a table whose own first threshold embeds only the
+ *  smaller Worksheet 1A adjustment, not the full standard deduction —
+ *  systematically OVERSTATING ordinary-income tax and UNDERSTATING
+ *  bracket-filling/Roth-conversion room every decumulation year. Fixed via
+ *  `toOrdinaryBracketIncome` (tax-estimation.ts), threaded through
+ *  `estimateEffectiveTaxRate`/`incomeCapForMarginalRate`/
+ *  `marginalRateAtIncome` and every caller (`withdrawal-routing.ts`,
+ *  `withdrawal-cost-ranking.ts`, `post-withdrawal-optimizer.ts`,
+ *  `decumulation-year.ts`, `build-engine-payload.ts`'s fallback-rate
+ *  estimate). Also fixed the equivalent bug in `calculateTax`'s annual
+ *  liability path (`tax.ts`, via `buildLiabilityBracketInput`/
+ *  `toTaxableIncomeBrackets`) and `calculatePaycheck`'s per-period
+ *  withholding (`paycheck.ts`'s `adjustedAnnualWage`, previously missing
+ *  the same adjustment entirely). A REAL value change — cached
+ *  decumulation-year rows from before this fix understate bracket-filling
+ *  room and overstate ordinary tax cost. */
+export const PROJECTION_CACHE_ENGINE_VERSION = 13;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

@@ -208,7 +208,11 @@ export function rankWithdrawalTiers(
     // SAME floor, so they tie at the same rate — insertion order (roth
     // first) breaks the tie, matching decision #4's Roth-favored
     // convention elsewhere.
-    const ordinaryRate = marginalRateAtIncome(ordinaryIncomeFloor, taxBrackets);
+    const ordinaryRate = marginalRateAtIncome(
+      ordinaryIncomeFloor,
+      taxBrackets,
+      standardDeduction,
+    );
     if (rothGrowthAvailable > 0) {
       tiers.push({
         source: "roth",
@@ -282,7 +286,11 @@ export function rankWithdrawalTiers(
   // rate overstates the household's real marginal bracket and
   // systematically overprices Roth/HSA withdrawals, biasing toward
   // brokerage even when brokerage is the more expensive source.
-  const rothGrowthRate = marginalRateAtIncome(ordinaryIncomeFloor, taxBrackets);
+  const rothGrowthRate = marginalRateAtIncome(
+    ordinaryIncomeFloor,
+    taxBrackets,
+    standardDeduction,
+  );
   // HSA, once its balance reaches this ranking, is ordinarily already the
   // penalty-free/penalty-excluded portion (routeForMode's caller runs the
   // penalty exclusion BEFORE this ranking ever sees `hsaAvailable` — see

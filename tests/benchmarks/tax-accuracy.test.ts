@@ -5,7 +5,10 @@
  * Tests bracket math, FICA, standard deduction, and effective rates.
  */
 import { describe, it, expect } from "vitest";
+import fs from "node:fs";
+import path from "node:path";
 import { calculateTax } from "@/lib/calculators/tax";
+import { toTaxableIncomeBrackets } from "@/lib/calculators/tax-brackets";
 import type { TaxBracketInput } from "@/lib/calculators/types";
 
 // 2025 MFJ brackets (standard, no W-4 2(c) checkbox)
@@ -23,12 +26,47 @@ const MFJ_2025_BRACKETS: TaxBracketInput = {
     { min: 751600, max: null, rate: 0.37 },
   ],
   standardDeduction: 30000,
+  w4Adjustment: 0, // unused by calculateTax; brackets here are already real-1040-shaped
   socialSecurityWageBase: 176100,
   socialSecurityRate: 0.062,
   medicareRate: 0.0145,
   medicareAdditionalRate: 0.009,
   medicareAdditionalThreshold: 200000,
 };
+
+describe("toTaxableIncomeBrackets — Pub 15-T -> real 1040 derivation (R57)", () => {
+  // Parses the live seed file directly so this test breaks if the seed data
+  // and the hand-written IRS-sourced MFJ_2025_BRACKETS fixture above ever
+  // disagree — the whole point of this derivation is that calculateTax's
+  // production input (via buildLiabilityBracketInput) matches this spec.
+  it("derives the real 2026 MFJ taxable-income brackets from the seed's Pub 15-T row", () => {
+    const sql = fs.readFileSync(
+      path.resolve(__dirname, "../../seed-reference-data.sql"),
+      "utf8",
+    );
+    const m = sql.match(/\(2026, 'MFJ', false, '(\[.*?\])'\)/);
+    expect(m).not.toBeNull();
+    const raw: { rate: number; threshold: number }[] = JSON.parse(m![1]!);
+    const withholdingBrackets = raw.map((b, i, arr) => ({
+      min: b.threshold,
+      max: i < arr.length - 1 ? arr[i + 1]!.threshold : null,
+      rate: b.rate,
+    }));
+
+    const derived = toTaxableIncomeBrackets(withholdingBrackets);
+
+    // Real IRS Rev. Proc. 2025-32 MFJ 2026 taxable-income boundaries.
+    expect(derived).toEqual([
+      { min: 0, max: 24800, rate: 0.1 },
+      { min: 24800, max: 100800, rate: 0.12 },
+      { min: 100800, max: 211400, rate: 0.22 },
+      { min: 211400, max: 403550, rate: 0.24 },
+      { min: 403550, max: 512450, rate: 0.32 },
+      { min: 512450, max: 768700, rate: 0.35 },
+      { min: 768700, max: null, rate: 0.37 },
+    ]);
+  });
+});
 
 describe("Tax accuracy — IRS published tables", () => {
   describe("Standard deduction", () => {

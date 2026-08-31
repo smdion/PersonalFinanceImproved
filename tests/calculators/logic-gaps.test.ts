@@ -20,7 +20,7 @@ import { calculateNetWorth } from "@/lib/calculators/net-worth";
 // calculateSavings reserved for future savings logic-gap tests
 import { calculateEFund } from "@/lib/calculators/efund";
 import {
-  MFJ_NO_CHECKBOX_BRACKETS,
+  MFJ_TAXABLE_INCOME_BRACKETS,
   PERSON_A_PAYCHECK_INPUT,
   PERSON_B_PAYCHECK_INPUT,
   PERSON_A_CONTRIBUTIONS,
@@ -315,7 +315,7 @@ describe("tax MFJ Additional Medicare threshold", () => {
       annualGross: 210000,
       preTaxDeductionsAnnual: 0,
       filingStatus: "MFJ",
-      taxBrackets: MFJ_NO_CHECKBOX_BRACKETS,
+      taxBrackets: MFJ_TAXABLE_INCOME_BRACKETS,
       w4CheckboxOverride: null,
       asOfDate: AS_OF_DATE,
     };
@@ -332,7 +332,7 @@ describe("tax MFJ Additional Medicare threshold", () => {
       annualGross: 180000,
       preTaxDeductionsAnnual: 0,
       filingStatus: "MFJ",
-      taxBrackets: MFJ_NO_CHECKBOX_BRACKETS,
+      taxBrackets: MFJ_TAXABLE_INCOME_BRACKETS,
       w4CheckboxOverride: null,
       asOfDate: AS_OF_DATE,
     };
@@ -347,7 +347,7 @@ describe("tax MFJ Additional Medicare threshold", () => {
       annualGross: 200000,
       preTaxDeductionsAnnual: 0,
       filingStatus: "MFJ",
-      taxBrackets: MFJ_NO_CHECKBOX_BRACKETS,
+      taxBrackets: MFJ_TAXABLE_INCOME_BRACKETS,
       w4CheckboxOverride: null,
       asOfDate: AS_OF_DATE,
     };

@@ -29,10 +29,15 @@ type LtcgBracket = { threshold: number; rate: number };
  * much 0% room existed.
  *
  * Deliberately NOT used for the ordinary W-4 withholding brackets
- * (`incomeCapForMarginalRate`/`estimateEffectiveTaxRate`) — those already
- * embed a (different, smaller) Pub 15-T deduction-equivalent offset in
- * their own threshold scale; subtracting this figure there would
- * double-count (advisor review, 2026-08-30).
+ * (`incomeCapForMarginalRate`/`estimateEffectiveTaxRate`/`marginalRateAtIncome`
+ * in `tax-estimation.ts`) — those already embed a (different, smaller) Pub
+ * 15-T Worksheet 1A offset in their own threshold scale, so subtracting the
+ * FULL standard deduction there would double-count. They have their own,
+ * separate correction (`toOrdinaryBracketIncome`, R56) that subtracts only
+ * the residual between the two — do not "consolidate" the two helpers, the
+ * bracket shapes they operate on (`TaxBracket{min,max,rate}` here vs.
+ * `WithholdingBracket{threshold,baseWithholding,rate}` there) aren't
+ * interchangeable (advisor review, 2026-08-30).
  *
  * `standardDeduction` omitted/undefined ⇒ subtracts 0, reproducing the
  * pre-fix (bugged) behavior exactly — every caller must pass a real

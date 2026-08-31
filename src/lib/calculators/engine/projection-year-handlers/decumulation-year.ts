@@ -709,6 +709,7 @@ export function runDecumulationYear(
     enableRothConversions: taxRates.enableRothConversions,
     taxBrackets: taxRates.taxBrackets,
     taxMultiplier: taxRates.taxMultiplier,
+    standardDeduction: taxRates.standardDeduction,
     rothConversionTarget: config.rothConversionTarget,
     // Fixed 2026-08-29, corrected after real test failures caught an
     // over-eager first attempt: the ORIGINAL expression was

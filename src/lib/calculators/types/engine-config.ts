@@ -385,12 +385,15 @@ export type DecumulationDefaults = {
      *  them a gross figure with nothing subtracted, systematically
      *  overstating how much of the 0%/15% room ordinary income had
      *  already consumed and overcharging real LTCG tax as a result).
-     *  Deliberately NOT used for `taxBrackets`/`incomeCapForMarginalRate`
-     *  above — those are Pub 15-T withholding brackets that already embed
-     *  a (different, smaller) deduction-equivalent offset; subtracting
-     *  this figure there would double-count. Undefined ⇒ 0, reproducing
-     *  today's (bugged) behavior exactly — this is what makes the fix
-     *  additive rather than a forced behavior change for every caller. */
+     *  This same value ALSO feeds `taxBrackets`/`incomeCapForMarginalRate`
+     *  above (R56) — but via `toOrdinaryBracketIncome` in
+     *  `tax-estimation.ts`, which subtracts only the smaller residual
+     *  between this figure and the Pub 15-T table's own embedded offset,
+     *  not this full figure directly (that WOULD double-count). Undefined
+     *  ⇒ 0 for the LTCG path / gross-unchanged for the ordinary path,
+     *  reproducing pre-fix behavior exactly — this is what makes both
+     *  fixes additive rather than a forced behavior change for every
+     *  caller. */
     standardDeduction?: number;
   };
 

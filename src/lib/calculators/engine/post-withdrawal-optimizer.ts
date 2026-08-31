@@ -45,6 +45,11 @@ export interface RothConversionInput {
   enableRothConversions: boolean | undefined;
   taxBrackets: WithholdingBracket[] | null | undefined;
   taxMultiplier?: number;
+  /** Filing status's standard deduction — Pub 15-T Worksheet 1A residual
+   *  (R56), threaded into `incomeCapForMarginalRate`/`estimateEffectiveTaxRate`
+   *  so bracket-filling room and conversion tax cost are computed against
+   *  the correct base. Undefined keeps pre-R56 (overstating) behavior. */
+  standardDeduction?: number;
   rothConversionTarget: number | undefined;
   rothBracketTarget: number | undefined;
   /** Total Traditional withdrawals this year (including RMD). */
@@ -171,6 +176,7 @@ export function performRothConversion(
     enableRothConversions,
     taxBrackets,
     taxMultiplier,
+    standardDeduction,
     totalTraditionalWithdrawal,
     taxableSS,
     balances,
@@ -242,7 +248,10 @@ export function performRothConversion(
     const neededIncome = yearTaxableIncome + rmdSmoothingTarget!;
     let minimumRateNeeded: number | undefined;
     for (const b of taxBrackets) {
-      if (incomeCapForMarginalRate(b.rate, taxBrackets) >= neededIncome) {
+      if (
+        incomeCapForMarginalRate(b.rate, taxBrackets, standardDeduction) >=
+        neededIncome
+      ) {
         minimumRateNeeded = b.rate;
         break;
       }
@@ -265,7 +274,11 @@ export function performRothConversion(
     return zero();
   }
 
-  const bracketCap = incomeCapForMarginalRate(conversionTarget, taxBrackets);
+  const bracketCap = incomeCapForMarginalRate(
+    conversionTarget,
+    taxBrackets,
+    standardDeduction,
+  );
   const conversionRoom = roundToCents(
     Math.max(0, bracketCap - yearTaxableIncome),
   );
@@ -320,6 +333,7 @@ export function performRothConversion(
         yearTaxableIncome + conversion,
         taxBrackets,
         taxMultiplier,
+        standardDeduction,
       ),
   );
   const taxWithout = roundToCents(
@@ -329,6 +343,7 @@ export function performRothConversion(
             yearTaxableIncome,
             taxBrackets,
             taxMultiplier,
+            standardDeduction,
           )
       : 0,
   );

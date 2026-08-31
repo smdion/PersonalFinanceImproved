@@ -1665,9 +1665,12 @@ describe("savings.extraPaycheckRouting", () => {
     expect(baseNetPayPerCheck).not.toBe(999999);
     // $120,000 / 26 biweekly periods = $4,615.38 gross, minus federal
     // withholding and FICA (no deductions/contributions seeded).
+    // R56: calculatePaycheck now applies the Pub 15-T Worksheet 1A adjustment
+    // before the withholding bracket lookup (previously missing, which
+    // over-withheld and understated net pay) — net pay rose accordingly.
     expect(baseNetPayPerCheck).toBeGreaterThan(3700);
-    expect(baseNetPayPerCheck).toBeLessThan(3900);
-    expect(baseNetPayPerCheck).toBe(3816.61);
+    expect(baseNetPayPerCheck).toBeLessThan(4000);
+    expect(baseNetPayPerCheck).toBe(3905.69);
   });
 
   it("list resolves live from the job's own column when no routing rule has ever been saved for it", async () => {

@@ -239,8 +239,14 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
   // Federal taxable gross = gross minus ALL pre-tax deductions (401k, HSA, health insurance, etc.)
   const federalTaxableGross = gross - totalPreTax;
 
-  // Annualize for bracket lookup, then divide result back to per-period
-  const adjustedAnnualWage = federalTaxableGross * periodsPerYear;
+  // Annualize for bracket lookup, then divide result back to per-period.
+  // Pub 15-T Worksheet 1A line 1h: subtract the line 1g adjustment (R56) —
+  // previously missing, meaning a w4Checkbox=false employee was over-
+  // withheld by w4Adjustment * marginalRate every year.
+  const adjustedAnnualWage = Math.max(
+    0,
+    federalTaxableGross * periodsPerYear - input.taxBrackets.w4Adjustment,
+  );
   const { annualTax, marginalRate } = lookupFederalWithholding(
     adjustedAnnualWage,
     input.taxBrackets.brackets,

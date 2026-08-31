@@ -9,6 +9,7 @@ import {
 } from "@/lib/calculators/paycheck";
 import type { SalarySegment } from "@/lib/calculators/paycheck";
 import { calculateTax } from "@/lib/calculators/tax";
+import { toTaxableIncomeBrackets } from "@/lib/calculators/tax-brackets";
 import {
   toNumber,
   getPeriodsPerYear,
@@ -60,6 +61,15 @@ export function buildBracketInput(
     filingStatus: bracketRow.filingStatus,
     w4Checkbox: bracketRow.w4Checkbox,
     brackets,
+    // Pub 15-T Worksheet 1A line 1g: the standard-table's own first
+    // non-zero threshold IS the adjustment amount (R56/R58 — see
+    // seed-reference-data.sql's tax_brackets comment), so it's read
+    // directly off this row rather than duplicated as a separate
+    // hardcoded constant. 0 for w4Checkbox=true rows (2(c) tables assume
+    // no worksheet adjustment).
+    w4Adjustment: bracketRow.w4Checkbox
+      ? 0
+      : (bracketRow.brackets[1]?.threshold ?? 0),
     standardDeduction: requireLimit(
       limits,
       `standard_deduction_${bracketRow.filingStatus.toLowerCase()}`,
@@ -73,6 +83,27 @@ export function buildBracketInput(
       "fica_medicare_surtax_threshold",
     ),
   };
+}
+
+/**
+ * Annual-liability variant of buildBracketInput: same limits, but brackets
+ * reshaped into real Form 1040 taxable-income space via
+ * toTaxableIncomeBrackets (R57 — calculateTax's own standardDeduction
+ * subtraction was double-counting against the un-reshaped Pub 15-T
+ * withholding brackets). Requires the standard (non-2c) row — the 2(c)
+ * half-tables have no 1040 analogue.
+ */
+export function buildLiabilityBracketInput(
+  bracketRow: typeof schema.taxBrackets.$inferSelect,
+  limits: Map<string, number>,
+): TaxBracketInput {
+  if (bracketRow.w4Checkbox) {
+    throw new Error(
+      "Annual tax liability requires standard (non-2(c)) brackets",
+    );
+  }
+  const base = buildBracketInput(bracketRow, limits);
+  return { ...base, brackets: toTaxableIncomeBrackets(base.brackets) };
 }
 
 export const paycheckRouter = createTRPCRouter({
@@ -427,7 +458,7 @@ export const paycheckRouter = createTRPCRouter({
 
           let tax = null;
           if (annualBracketRow) {
-            const annualBracketInput = buildBracketInput(
+            const annualBracketInput = buildLiabilityBracketInput(
               annualBracketRow,
               limitsMap,
             );
@@ -505,7 +536,10 @@ export const paycheckRouter = createTRPCRouter({
           (b) => b.filingStatus === filingStatus && b.w4Checkbox === false,
         );
         if (bracketRow) {
-          const bracketInput = buildBracketInput(bracketRow, limitsMap);
+          const bracketInput = buildLiabilityBracketInput(
+            bracketRow,
+            limitsMap,
+          );
           const combinedGross = activePeople.reduce((s, r) => s + r.salary, 0);
           const combinedPreTax = activePeople.reduce((s, r) => {
             const ppy = getPeriodsPerYear(r.job!.payPeriod!);

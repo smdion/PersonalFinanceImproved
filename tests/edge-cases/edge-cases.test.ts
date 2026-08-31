@@ -15,7 +15,7 @@ import { calculateNetWorth } from "@/lib/calculators/net-worth";
 import { calculateSavings } from "@/lib/calculators/savings";
 import {
   MFJ_2C_BRACKETS,
-  MFJ_NO_CHECKBOX_BRACKETS,
+  MFJ_TAXABLE_INCOME_BRACKETS,
 } from "../calculators/fixtures";
 import type {
   PaycheckInput,
@@ -190,7 +190,7 @@ describe("tax edge cases", () => {
     annualGross: 0,
     preTaxDeductionsAnnual: 0,
     filingStatus: "MFJ",
-    taxBrackets: MFJ_NO_CHECKBOX_BRACKETS,
+    taxBrackets: MFJ_TAXABLE_INCOME_BRACKETS,
     w4CheckboxOverride: null,
     asOfDate: JAN_1,
   };
@@ -206,7 +206,7 @@ describe("tax edge cases", () => {
 
   it("handles income below standard deduction", () => {
     const result = calculateTax({ ...baseTax, annualGross: 20000 });
-    // AGI $20k - standard deduction $30k = $0 taxable
+    // AGI $20k - standard deduction $32.2k = $0 taxable
     expect(result.taxableIncome).toBe(0);
     expect(result.federalTax).toBe(0);
     // But FICA still applies
@@ -216,8 +216,8 @@ describe("tax edge cases", () => {
 
   it("handles single income (one earner)", () => {
     const result = calculateTax({ ...baseTax, annualGross: 118885.79 });
-    // Taxable = $118,885.79 - $30,000 = $88,885.79 → falls in 12% bracket (44100-120100)
-    expect(result.taxableIncome).toBeCloseTo(88885.79, 0);
+    // Taxable = $118,885.79 - $32,200 = $86,685.79 → falls in 12% bracket (24800-100800)
+    expect(result.taxableIncome).toBeCloseTo(86685.79, 0);
     expect(result.marginalRate).toBe(0.12);
   });
 

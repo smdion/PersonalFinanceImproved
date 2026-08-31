@@ -373,6 +373,7 @@ export function routeWithdrawalsBracketFilling(
   const incomeCap = incomeCapForMarginalRate(
     bracketInfo.rothBracketTarget,
     bracketInfo.taxBrackets,
+    bracketInfo.standardDeduction,
   );
   const traditionalCap = roundToCents(
     Math.max(0, incomeCap - bracketInfo.taxableSS),
@@ -829,6 +830,7 @@ export function applyRothBracketOverlay(
   const incomeCap = incomeCapForMarginalRate(
     bracketInfo.rothBracketTarget,
     bracketInfo.taxBrackets,
+    bracketInfo.standardDeduction,
   );
   const rothOptTraditionalCap = roundToCents(
     Math.max(0, incomeCap - bracketInfo.taxableSS),
