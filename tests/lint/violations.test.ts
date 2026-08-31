@@ -548,7 +548,14 @@ function findLocalReturnTypeAliasViolations(): Violation[] {
 // `calculateMonteCarlo()` or `mcTrials` are unaffected — those live in .ts
 // files or are identifiers, not this literal two-word phrase).
 //
-// Restricted to .tsx (where JSX text and display strings actually live).
+// Restricted to .tsx (where JSX text and display strings actually live) —
+// PLUS src/lib/pure/report/**/*.ts (the retirement advisor report's
+// narrative-generation module): that directory's whole purpose is
+// generating user-facing prose as plain strings, not JSX, so it's exactly
+// the kind of file this rule exists for even though it isn't a .tsx —
+// found live, 2026-08-31, while scoping that feature: an enforcement hole
+// this rule's original .tsx-only scoping would have otherwise left open
+// in the one new place most of that feature's prose lives.
 // Does NOT use findPatternViolations directly: the shared walker's comment
 // filter only recognizes `//`- and `*`-prefixed lines (block-comment
 // continuation style), but this codebase also has single-line JSDoc like
@@ -557,11 +564,14 @@ function findLocalReturnTypeAliasViolations(): Violation[] {
 // and would slip through. This walks the same way but additionally skips
 // lines whose trimmed content starts with "/*" or "/**".
 const MONTE_CARLO_PATTERN = /\bMonte Carlo\b/;
+function isMonteCarloTerminologyScanned(rel: string): boolean {
+  return rel.endsWith(".tsx") || rel.startsWith("src/lib/pure/report/");
+}
 function findMonteCarloUserFacingTextViolations(): Violation[] {
   const violations: Violation[] = [];
   for (const file of walkTsFiles(SRC_DIR)) {
-    if (!file.endsWith(".tsx")) continue;
     const rel = relPath(file);
+    if (!isMonteCarloTerminologyScanned(rel)) continue;
     if (isExempt(rel)) continue;
     const lines = readFileLines(file);
     for (let i = 0; i < lines.length; i++) {

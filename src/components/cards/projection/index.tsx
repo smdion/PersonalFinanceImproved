@@ -26,8 +26,10 @@ import { ProjectionTable } from "./projection-table";
 import { ProjectionHeroKpis } from "./projection-hero-kpis";
 import { ProjectionChartSkeleton } from "./projection-chart-skeleton";
 import { ProjectionTableSkeleton } from "./projection-table-skeleton";
-import { ReportHeader, ReportFooter } from "./report-header";
-import { ReportAssumptionsSummary } from "./report-assumptions-summary";
+import { ReportRoot } from "./report/report-root";
+import { checkReportGate } from "@/lib/pure/report/mc-freshness";
+import type { ReportGateFailure } from "@/lib/pure/report/mc-freshness";
+import { ReportGateModal } from "./report/report-gate-modal";
 
 // Code-split Recharts-heavy children (v0.5 expert-review M8). Each chart is
 // ~250KB of recharts payload that loads only when the projection card mounts.
@@ -157,6 +159,8 @@ export function ProjectionCard(props: {
     engineQuery,
     mcPrefetchQuery,
     mcQuery,
+    sharedInput,
+    debouncedInput,
     personFilterName,
     mcChartPending,
     result,
@@ -267,14 +271,20 @@ export function ProjectionCard(props: {
 
   // R42 — print/export report. "none" = normal screen view (default print
   // behavior, unchanged). "basic" prints just the chart+table with page
-  // chrome hidden. "fancy" additionally mounts the report header, hero KPI
-  // summary, and assumptions section (all print-only — hidden on screen via
-  // `hidden print:block`, so this is a no-op on layout until printed).
-  const [reportMode, setReportMode] = useState<"none" | "basic" | "fancy">(
+  // chrome hidden. "advisor" (was "fancy") mounts the purpose-built
+  // advisor-report document instead — ReportRoot, not the interactive
+  // chart/table — hidden on screen via `hidden print:block`, so this is a
+  // no-op on layout until printed. Only reachable after checkReportGate
+  // passes (see handlePrintAdvisor below) — never printed with stale/
+  // missing Monte Carlo data.
+  const [reportMode, setReportMode] = useState<"none" | "basic" | "advisor">(
     "none",
   );
+  const [gateFailure, setGateFailure] = useState<ReportGateFailure | null>(
+    null,
+  );
   const originalTitleRef = useRef<string>("");
-  const handlePrint = (mode: "basic" | "fancy") => {
+  const handlePrint = (mode: "basic" | "advisor") => {
     originalTitleRef.current = document.title;
     setReportMode(mode);
     document.title = `Retirement Projection - ${new Date().toLocaleDateString()}`;
@@ -283,6 +293,28 @@ export function ProjectionCard(props: {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => window.print());
     });
+  };
+  const handlePrintAdvisor = () => {
+    const gate = checkReportGate({
+      scenarioView,
+      mcTaxMode,
+      sharedInput,
+      debouncedInput,
+      engineQuery: {
+        isFetching: engineQuery.isFetching,
+        isPlaceholderData: engineQuery.isPlaceholderData,
+        data: engineQuery.data,
+      },
+      mcQuery: {
+        isFetching: mcQuery.isFetching,
+        data: mcQuery.data?.result ?? null,
+      },
+    });
+    if (!gate.ok) {
+      setGateFailure(gate.failure ?? null);
+      return;
+    }
+    handlePrint("advisor");
   };
   useEffect(() => {
     const reset = () => {
@@ -356,24 +388,62 @@ export function ProjectionCard(props: {
               </button>
               <button
                 type="button"
-                onClick={() => handlePrint("fancy")}
+                onClick={handlePrintAdvisor}
                 className="text-muted hover:text-secondary underline"
               >
-                Print Full Report
+                Print Advisor Report
               </button>
             </div>
           )}
 
-          {/* Fancy-report-only header — mounted only in "fancy" mode, hidden
-              on screen, print-visible. */}
-          {reportMode === "fancy" && (
-            <div className="hidden print:block">
-              <ReportHeader
-                peopleNames={(people ?? enginePeople ?? []).map((p) => p.name)}
-                generatedAt={new Date()}
-              />
-            </div>
+          {gateFailure && (
+            <ReportGateModal
+              failure={gateFailure}
+              isRunning={isRerunning}
+              onRunSimulation={() => {
+                runMonteCarlo();
+                setGateFailure(null);
+              }}
+              onCancel={() => setGateFailure(null)}
+            />
           )}
+
+          {/* Advisor-report-only root — mounted only in "advisor" mode,
+              hidden on screen, print-visible. Only reached when the gate
+              already passed, so `result`/`mcQuery.data`/`engineSettings`
+              are all guaranteed present here. */}
+          {reportMode === "advisor" &&
+            result &&
+            mcQuery.data?.result &&
+            engineSettings && (
+              <div className="hidden print:block">
+                <ReportRoot
+                  projectionResult={result}
+                  mcResult={mcQuery.data.result}
+                  deflate={deflate}
+                  baseYear={baseYear}
+                  coastFireAge={deterministicCoastFireAge}
+                  peopleNames={(people ?? enginePeople ?? []).map(
+                    (p) => p.name,
+                  )}
+                  generatedAt={new Date()}
+                  engineSettings={engineSettings}
+                  rmdExcessYears={
+                    result.projectionByYear.filter(
+                      (y) =>
+                        y.phase === "decumulation" &&
+                        (y.rmdExcessAmount ?? 0) > 0.01,
+                    ).length
+                  }
+                  qcdYears={
+                    result.projectionByYear.filter(
+                      (y) =>
+                        y.phase === "decumulation" && (y.qcdAmount ?? 0) > 0.01,
+                    ).length
+                  }
+                />
+              </div>
+            )}
 
           {/* ── CONTENT BLOCK ────────────────────────────────────────────────
                Every section renders a skeleton or real content at the SAME
@@ -381,10 +451,12 @@ export function ProjectionCard(props: {
           {(engineQuery.isLoading || !!result) && (
             <div className="space-y-4">
               {/* Hero KPIs (headline numbers) — always shown on screen;
-                  print-visible only in the "fancy" report tier (basic tier
-                  prints just the chart+table, per R42 scope). */}
+                  print-visible only in the "advisor" report tier (basic
+                  tier prints just the chart+table, per R42 scope). */}
               <div
-                className={reportMode === "fancy" ? undefined : "print:hidden"}
+                className={
+                  reportMode === "advisor" ? undefined : "print:hidden"
+                }
               >
                 {engineQuery.isLoading ? (
                   <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
@@ -1164,16 +1236,25 @@ export function ProjectionCard(props: {
                 })()}
 
               {/* Chart area — engine skeleton, then real chart (with MC skeleton
-                  if MC is still pending after engine completes) */}
-              {engineQuery.isLoading ? (
-                <ProjectionChartSkeleton phase="engine" />
-              ) : chartView === "strategy" || chartView === "budget" ? (
-                <SpendingStabilityChart state={state} view={chartView} />
-              ) : mcChartPending && chartView === "balance" ? (
-                <ProjectionChartSkeleton phase="simulation" />
-              ) : (
-                <ProjectionChart state={state} />
-              )}
+                  if MC is still pending after engine completes). The advisor
+                  report is a purpose-built document, not a printout of the
+                  interactive chart (correction #8, advisor report plan) —
+                  print:hidden whenever "advisor" mode is active. */}
+              <div
+                className={
+                  reportMode === "advisor" ? "print:hidden" : undefined
+                }
+              >
+                {engineQuery.isLoading ? (
+                  <ProjectionChartSkeleton phase="engine" />
+                ) : chartView === "strategy" || chartView === "budget" ? (
+                  <SpendingStabilityChart state={state} view={chartView} />
+                ) : mcChartPending && chartView === "balance" ? (
+                  <ProjectionChartSkeleton phase="simulation" />
+                ) : (
+                  <ProjectionChart state={state} />
+                )}
+              </div>
             </div>
           )}
 
@@ -1232,48 +1313,30 @@ export function ProjectionCard(props: {
           })()}
 
           {/* TABLE — skeleton while engine is loading or in action state,
-              real table otherwise. Same DOM position always. */}
-          {engineQuery.isLoading || (!autoloadEnabled && !engineQuery.data) ? (
-            <ProjectionTableSkeleton />
-          ) : (
-            <ProjectionTable
-              state={state}
-              people={people}
-              parentCategoryFilter={parentCategoryFilter}
-              accumulationBudgetProfileId={accumulationBudgetProfileId}
-              accumulationBudgetColumn={accumulationBudgetColumn}
-              accumulationExpenseOverride={accumulationExpenseOverride}
-              decumulationBudgetProfileId={decumulationBudgetProfileId}
-              decumulationBudgetColumn={decumulationBudgetColumn}
-              decumulationExpenseOverride={decumulationExpenseOverride}
-            />
-          )}
-
-          {/* Fancy-report-only "behind the scenes" assumptions + footer —
-              mounted only in "fancy" mode, hidden on screen, print-visible.
-              Placed right after the table so it reads as the report's
-              closing section rather than interrupting the chart/table. */}
-          {reportMode === "fancy" && (
-            <div className="hidden print:block">
-              <ReportAssumptionsSummary
-                settings={engineSettings}
-                rmdExcessYears={
-                  result?.projectionByYear.filter(
-                    (y) =>
-                      y.phase === "decumulation" &&
-                      (y.rmdExcessAmount ?? 0) > 0.01,
-                  ).length ?? 0
-                }
-                qcdYears={
-                  result?.projectionByYear.filter(
-                    (y) =>
-                      y.phase === "decumulation" && (y.qcdAmount ?? 0) > 0.01,
-                  ).length ?? 0
-                }
+              real table otherwise. Same DOM position always. The advisor
+              report is a purpose-built document, not a printout of the
+              interactive table — print:hidden whenever "advisor" mode is
+              active (its own simplified table is Phase 4). */}
+          <div
+            className={reportMode === "advisor" ? "print:hidden" : undefined}
+          >
+            {engineQuery.isLoading ||
+            (!autoloadEnabled && !engineQuery.data) ? (
+              <ProjectionTableSkeleton />
+            ) : (
+              <ProjectionTable
+                state={state}
+                people={people}
+                parentCategoryFilter={parentCategoryFilter}
+                accumulationBudgetProfileId={accumulationBudgetProfileId}
+                accumulationBudgetColumn={accumulationBudgetColumn}
+                accumulationExpenseOverride={accumulationExpenseOverride}
+                decumulationBudgetProfileId={decumulationBudgetProfileId}
+                decumulationBudgetColumn={decumulationBudgetColumn}
+                decumulationExpenseOverride={decumulationExpenseOverride}
               />
-              <ReportFooter generatedAt={new Date()} />
-            </div>
-          )}
+            )}
+          </div>
 
           {/* DECUMULATION DEFAULTS */}
           <div className="print:hidden">
