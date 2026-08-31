@@ -10,6 +10,10 @@ import { useScenario } from "@/lib/context/scenario-context";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { ProfileViewingBadge } from "./profile-viewing-badge";
+import {
+  ProfileListRow,
+  ProfileSidebarHeader,
+} from "@/components/ui/profile-sidebar";
 import { confirm } from "@/components/ui/confirm-dialog";
 import { useCloneProfile } from "@/lib/hooks/use-clone-profile";
 import { useDraftCommit } from "@/lib/hooks/use-draft-commit";
@@ -182,30 +186,21 @@ export function SalaryProfileManager({
       <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-4">
         {/* Left: profile list */}
         <div className="space-y-1.5">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-label font-semibold text-muted uppercase tracking-wide">
-              Profiles
-            </h3>
-            {canEdit && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedProfileId(null);
-                  setCreatingNew(true);
-                }}
-                className="text-caption font-medium text-blue-600 hover:text-blue-700"
-              >
-                + New
-              </button>
-            )}
-          </div>
+          <ProfileSidebarHeader
+            onCreate={
+              canEdit
+                ? () => {
+                    setSelectedProfileId(null);
+                    setCreatingNew(true);
+                  }
+                : undefined
+            }
+          />
 
           {profiles.map((p) => (
-            <ProfileListItem
+            <ProfileListRow
               key={p.id}
               name={p.name}
-              description={p.description}
-              pinnedCount={p.pinnedCount}
               isSelected={!creatingNew && effectiveSelectedId === p.id}
               isActive={globalActiveSalaryId === p.id}
               onSelect={() => {
@@ -218,6 +213,12 @@ export function SalaryProfileManager({
                   : undefined
               }
               onClone={canEdit ? () => cloneProfile(p.id, p.name) : undefined}
+              meta={
+                p.description ??
+                (p.pinnedCount === 0
+                  ? "Empty"
+                  : `${p.pinnedCount} ${p.pinnedCount === 1 ? "job" : "jobs"} set`)
+              }
             />
           ))}
         </div>
@@ -250,86 +251,6 @@ export function SalaryProfileManager({
             <div className="text-xs text-faint">Select a profile.</div>
           )}
         </div>
-      </div>
-    </div>
-  );
-}
-
-function ProfileListItem({
-  name,
-  description,
-  pinnedCount,
-  isSelected,
-  isActive,
-  onSelect,
-  onDelete,
-  onClone,
-}: {
-  name: string;
-  description: string | null;
-  pinnedCount: number;
-  isSelected: boolean;
-  isActive: boolean;
-  onSelect: () => void;
-  onDelete?: () => void;
-  onClone?: () => void;
-}) {
-  return (
-    <div
-      className={`group rounded-lg px-3 py-2 cursor-pointer border transition-colors ${
-        isSelected
-          ? "border-blue-500 bg-blue-50/50"
-          : "border-transparent bg-surface-sunken hover:bg-surface-elevated"
-      }`}
-      onClick={onSelect}
-    >
-      <div className="flex items-center justify-between gap-2">
-        <div className="min-w-0">
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-medium text-secondary truncate">
-              {name}
-            </span>
-            {isActive && (
-              <span className="text-micro px-1 py-0.5 rounded bg-green-100 text-green-700 font-semibold uppercase">
-                Active
-              </span>
-            )}
-          </div>
-          <div className="text-caption text-faint truncate">
-            {description ??
-              (pinnedCount === 0
-                ? "Empty"
-                : `${pinnedCount} ${pinnedCount === 1 ? "job" : "jobs"} set`)}
-          </div>
-        </div>
-        {(onDelete || onClone) && (
-          <div className="flex items-center gap-1 shrink-0 md:max-w-0 md:overflow-hidden md:opacity-0 md:group-hover:max-w-[11rem] md:group-hover:opacity-100 transition-all">
-            {onClone && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onClone();
-                }}
-                className="text-caption text-faint hover:text-blue-600"
-              >
-                clone
-              </button>
-            )}
-            {onDelete && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete();
-                }}
-                className="text-caption text-faint hover:text-red-500"
-              >
-                ×
-              </button>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );

@@ -66,7 +66,18 @@ import { useScenario } from "@/lib/context/scenario-context";
 import { StrategyGuideButton } from "@/components/cards/strategy-guide-panel";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 
-export function RetirementProfileTab() {
+export function RetirementProfileTab({
+  profileId,
+}: {
+  /** View a specific retirement profile without it needing to be the
+   *  household's globally-active one — same "view without activating"
+   *  contract contributionProfileId/salaryProfileId already have on
+   *  computeProjection (phase 4 of the Retirement Profiles migration).
+   *  Omit to fall back to the active profile (server-side resolution),
+   *  matching this component's original behavior before it had a sibling
+   *  list to view non-active profiles from. */
+  profileId?: number | null;
+} = {}) {
   const currentYear = new Date().getFullYear();
   const user = useUser();
   const admin = isAdmin(user);
@@ -124,6 +135,7 @@ export function RetirementProfileTab() {
       ...(decExpenseOverride
         ? { decumulationExpenseOverride: parseFloat(decExpenseOverride) }
         : {}),
+      ...(profileId != null ? { retirementProfileId: profileId } : {}),
     }),
     [
       salaryActiveFields,
@@ -132,6 +144,7 @@ export function RetirementProfileTab() {
       decBudgetProfileId,
       decBudgetCol,
       decExpenseOverride,
+      profileId,
     ],
   );
   const engineInput = useMemo(

@@ -56,6 +56,7 @@ import { WhatIfTab } from "./what-if-tab";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
 import { RetirementProfileTab } from "@/components/retirement/retirement-profile-tab";
 import { RetirementProfileManager } from "@/components/retirement/retirement-profile-manager";
+import { useActiveRetirementProfile } from "@/lib/hooks/use-active-retirement-profile";
 
 export function BudgetContent() {
   const user = useUser();
@@ -223,6 +224,32 @@ export function BudgetContent() {
   const [renamingProfileId, setRenamingProfileId] = useState<number | null>(
     null,
   );
+  // Retirement tab's own "view without activating" selection — lifted here
+  // (not owned by RetirementProfileManager or RetirementProfileTab
+  // individually) so both halves of the master-detail layout agree on
+  // which profile is being shown, same lifting pattern the other three
+  // profile types' managers already use for their own list/detail split.
+  const [viewingRetirementProfileId, setViewingRetirementProfileId] = useState<
+    number | null
+  >(null);
+  // Resolved (not raw) — same computation RetirementProfileManager runs
+  // internally for its own row highlighting (same inputs, shared query
+  // cache, so the two can't disagree). RetirementProfileTab needs the
+  // RESOLVED id, not the raw click state: when nothing's been clicked yet
+  // AND a session Plan pins a different profile than the household's
+  // globally-active one, the raw id is null and the tab's own server-side
+  // fallback only knows about the global active setting, not the Plan
+  // pin — passing the resolved id here keeps the two columns showing the
+  // same profile in that case instead of silently disagreeing.
+  const { data: retirementProfilesForResolve } =
+    trpc.retirement.retirementProfiles.list.useQuery();
+  const [activeRetirementProfileId] = useActiveRetirementProfile();
+  const { profileId: resolvedViewingRetirementProfileId } =
+    useEffectiveProfileId("retirement", {
+      validIds: (retirementProfilesForResolve ?? []).map((p) => p.id),
+      localSelection: viewingRetirementProfileId,
+      globalDefaultId: activeRetirementProfileId,
+    });
   const [renameValue, setRenameValue] = useState("");
   const [showModeManager, setShowModeManager] = useState(false);
   const [addingItemToCategory, setAddingItemToCategory] = useState<
@@ -691,10 +718,15 @@ export function BudgetContent() {
         )}
 
         {activeTab === "retirement" && (
-          <>
-            <RetirementProfileManager />
-            <RetirementProfileTab />
-          </>
+          <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-4">
+            <RetirementProfileManager
+              viewingProfileId={viewingRetirementProfileId}
+              onViewingProfileChange={setViewingRetirementProfileId}
+            />
+            <RetirementProfileTab
+              profileId={resolvedViewingRetirementProfileId}
+            />
+          </div>
         )}
 
         {pushPreviewItems && (
