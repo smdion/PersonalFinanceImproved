@@ -74,12 +74,21 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
         {portfolio.existingMappings.length > 0 && (
           <div className="space-y-0.5">
             {portfolio.existingMappings.map((m, i) => {
-              const tracking = portfolio.trackingAccounts.find(
-                (a) => a.id === m.remoteAccountId,
-              );
+              // Cash/Credit Card map to on-budget accounts, which live in
+              // allAccounts, not trackingAccounts (off-budget only) — fall
+              // back to allAccounts so these rows show a real name instead
+              // of a truncated remote id.
+              const tracking =
+                portfolio.trackingAccounts.find(
+                  (a) => a.id === m.remoteAccountId,
+                ) ??
+                portfolio.allAccounts?.find((a) => a.id === m.remoteAccountId);
               return (
                 <div
-                  key={`${m.localId ?? ""}|${m.localName}`}
+                  // remoteAccountId included: many Cash/Credit Card rows
+                  // legitimately share the same localId+localName, so that
+                  // pair alone isn't a unique key here.
+                  key={`${m.localId ?? ""}|${m.localName}|${m.remoteAccountId}`}
                   className="flex items-center gap-1.5 text-xs bg-green-50 rounded px-2 py-1"
                 >
                   <span className="text-caption px-1.5 py-0.5 rounded bg-green-100 text-green-700 whitespace-nowrap">
@@ -104,43 +113,55 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                   <span className="text-muted truncate flex-1">
                     {tracking?.name ?? m.remoteAccountId.slice(0, 12) + "..."}
                   </span>
-                  <button
-                    onClick={() => {
-                      const next =
-                        m.syncDirection === "pull"
-                          ? "push"
-                          : m.syncDirection === "push"
-                            ? "both"
-                            : "pull";
-                      const updated = portfolio.existingMappings.map((em, j) =>
-                        j === i
-                          ? {
-                              ...em,
-                              syncDirection: next as "pull" | "push" | "both",
-                            }
-                          : em,
-                      );
-                      updateMappingsMut.mutate({
-                        service,
-                        mappings: mappingsWithTypedIds(updated),
-                      });
-                    }}
-                    disabled={updateMappingsMut.isPending}
-                    className={`text-caption px-1 py-0.5 rounded disabled:opacity-50 ${
-                      m.syncDirection === "push"
-                        ? "bg-green-100 text-green-600 hover:bg-green-200"
-                        : m.syncDirection === "pull"
-                          ? "bg-blue-100 text-blue-600 hover:bg-blue-200"
-                          : "bg-purple-100 text-purple-600 hover:bg-purple-200"
-                    }`}
-                    title={`Sync: ${m.syncDirection} (click to change)`}
-                  >
-                    {m.syncDirection === "push"
-                      ? "← push"
-                      : m.syncDirection === "both"
-                        ? "⇄ both"
-                        : "→ pull"}
-                  </button>
+                  {/* Cash/Credit Card are pull-only — Ledgr has no single
+                   * "Cash total" value to push TO one specific remote
+                   * account, so the direction toggle is fixed rather than
+                   * cyclable into a meaningless push/both state. */}
+                  {m.localId === "cash" || m.localId === "creditCard" ? (
+                    <span className="text-caption px-1 py-0.5 rounded bg-blue-100 text-blue-600 whitespace-nowrap">
+                      &rarr; pull
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        const next =
+                          m.syncDirection === "pull"
+                            ? "push"
+                            : m.syncDirection === "push"
+                              ? "both"
+                              : "pull";
+                        const updated = portfolio.existingMappings.map(
+                          (em, j) =>
+                            j === i
+                              ? {
+                                  ...em,
+                                  syncDirection: next as
+                                    "pull" | "push" | "both",
+                                }
+                              : em,
+                        );
+                        updateMappingsMut.mutate({
+                          service,
+                          mappings: mappingsWithTypedIds(updated),
+                        });
+                      }}
+                      disabled={updateMappingsMut.isPending}
+                      className={`text-caption px-1 py-0.5 rounded disabled:opacity-50 ${
+                        m.syncDirection === "push"
+                          ? "bg-green-100 text-green-600 hover:bg-green-200"
+                          : m.syncDirection === "pull"
+                            ? "bg-blue-100 text-blue-600 hover:bg-blue-200"
+                            : "bg-purple-100 text-purple-600 hover:bg-purple-200"
+                      }`}
+                      title={`Sync: ${m.syncDirection} (click to change)`}
+                    >
+                      {m.syncDirection === "push"
+                        ? "← push"
+                        : m.syncDirection === "both"
+                          ? "⇄ both"
+                          : "→ pull"}
+                    </button>
+                  )}
                   {tracking && (
                     <span className="text-faint tabular-nums text-caption whitespace-nowrap">
                       {formatCurrency(tracking.balance)}
@@ -489,19 +510,28 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
             <label className="block text-caption font-medium text-muted mb-0.5">
               Dir
             </label>
-            <select
-              value={newPortfolioDirection}
-              onChange={(e) =>
-                setNewPortfolioDirection(
-                  e.target.value as "push" | "pull" | "both",
-                )
-              }
-              className="w-full px-1 py-1 text-label border border-strong rounded bg-surface-primary"
-            >
-              <option value="push">Push</option>
-              <option value="pull">Pull</option>
-              <option value="both">Both</option>
-            </select>
+            {newPortfolioLocal.startsWith("cash|") ||
+            newPortfolioLocal.startsWith("creditCard|") ? (
+              // Pull-only — see the fixed-direction note on existing
+              // Cash/Credit Card rows above.
+              <div className="w-full px-1 py-1 text-label border border-strong rounded bg-surface-sunken text-faint">
+                Pull
+              </div>
+            ) : (
+              <select
+                value={newPortfolioDirection}
+                onChange={(e) =>
+                  setNewPortfolioDirection(
+                    e.target.value as "push" | "pull" | "both",
+                  )
+                }
+                className="w-full px-1 py-1 text-label border border-strong rounded bg-surface-primary"
+              >
+                <option value="push">Push</option>
+                <option value="pull">Pull</option>
+                <option value="both">Both</option>
+              </select>
+            )}
           </div>
           <button
             onClick={() => {
@@ -522,7 +552,10 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                   localId,
                   localName,
                   remoteAccountId: newPortfolioRemote,
-                  syncDirection: newPortfolioDirection,
+                  syncDirection:
+                    localId === "cash" || localId === "creditCard"
+                      ? ("pull" as const)
+                      : newPortfolioDirection,
                 },
               ];
               updateMappingsMut.mutate({
