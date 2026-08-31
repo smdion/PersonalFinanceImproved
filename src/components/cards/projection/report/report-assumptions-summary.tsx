@@ -48,6 +48,11 @@ export type ReportEngineSettings = {
   enableAcaAwareness?: boolean | null;
   householdSize?: NumLike | null;
   filingStatus?: string | null;
+  /** Filing-status standard deduction — used to explain the bracket-fill
+   *  ceiling's gross-income math in the withdrawal-strategy narrative
+   *  (`bracket-target-narrative.ts`'s `describeBracketCeilingMath`), not
+   *  currently shown as its own row here. */
+  standardDeduction?: NumLike | null;
   /** R46: what happens to RMD-forced excess beyond stated spending need. */
   rmdExcessHandling?: string | null;
   // Per-strategy params (R45 Step 3, Finding 3) — one strategy's fields are

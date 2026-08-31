@@ -27,6 +27,45 @@ function findCandidate(
   return candidates.find((c) => Math.abs(c.target - target) < RATE_EPSILON);
 }
 
+/** Inputs for `describeBracketCeilingMath` — the pieces
+ *  `incomeCapForMarginalRate`/`routeWithdrawalsBracketFilling`
+ *  (withdrawal-routing.ts, tax-estimation.ts) already computed for this
+ *  year: `bracketTraditionalCap` (the resolved dollar room left for
+ *  Traditional withdrawals — engine field of the same name) and
+ *  `taxableSS` (the IRS-provisional-income taxable portion of Social
+ *  Security already occupying part of that bracket). `standardDeduction`
+ *  is the household's filing-status deduction (not stored per-year on the
+ *  engine output — callers read it off the resolved settings/config). */
+export type BracketCeilingMathInput = {
+  bracketTraditionalCap: number;
+  taxableSS: number;
+  standardDeduction?: number | null;
+};
+
+/**
+ * "What dollar ceiling, and how was it computed" — the actual math behind
+ * `bracketTraditionalCap`: the bracket's ceiling in gross-income terms
+ * (adjusted for the household's standard deduction, since the underlying
+ * withholding-table threshold only embeds a smaller IRS worksheet offset —
+ * see `incomeCapForMarginalRate`'s docblock, tax-estimation.ts), minus
+ * whatever taxable Social Security already occupies. Requires
+ * `standardDeduction` to say anything meaningful about the gross-income
+ * figure — returns undefined without it rather than showing an
+ * unexplained number.
+ */
+export function describeBracketCeilingMath(
+  currentTargetPct: number,
+  input?: BracketCeilingMathInput | null,
+): string | undefined {
+  if (!input || input.standardDeduction == null) return undefined;
+  const incomeCap = input.bracketTraditionalCap + input.taxableSS;
+  const ssClause =
+    input.taxableSS > 0
+      ? ` ${formatCurrency(input.taxableSS)} of that room is already used by taxable Social Security this year, leaving ${formatCurrency(input.bracketTraditionalCap)} available for Traditional withdrawals.`
+      : ` With no taxable Social Security this year, the full ${formatCurrency(input.bracketTraditionalCap)} is available for Traditional withdrawals.`;
+  return `The ${formatPercent(currentTargetPct, 0)} bracket's ceiling sits at about ${formatCurrency(incomeCap)} in gross income once your ${formatCurrency(input.standardDeduction)} standard deduction is factored in.${ssClause}`;
+}
+
 /** Qualitative-only fallback — the strategy's general rationale, no
  *  numbers, for when the optimizer result isn't available. */
 export function describeBracketTargetQualitative(targetPct: number): string {
@@ -49,17 +88,25 @@ export function describeBracketTargetQualitative(targetPct: number): string {
 export function describeBracketTargetChoice(
   optimizer: BracketOptimizerResult | null | undefined,
   currentTargetPct: number,
+  ceilingMath?: BracketCeilingMathInput | null,
 ): string {
+  const mathSentence = describeBracketCeilingMath(
+    currentTargetPct,
+    ceilingMath,
+  );
   const fallback = describeBracketTargetQualitative(currentTargetPct);
-  if (!optimizer || optimizer.candidates.length < 2) return fallback;
+  const fallbackWithMath = mathSentence
+    ? `${fallback} ${mathSentence}`
+    : fallback;
+  if (!optimizer || optimizer.candidates.length < 2) return fallbackWithMath;
 
   const sorted = [...optimizer.candidates]
     .filter((c) => !c.depleted)
     .sort((a, b) => a.target - b.target);
-  if (sorted.length < 2) return fallback;
+  if (sorted.length < 2) return fallbackWithMath;
 
   const current = findCandidate(sorted, currentTargetPct);
-  if (!current) return fallback;
+  if (!current) return fallbackWithMath;
 
   const cheapest = sorted.reduce((best, c) =>
     c.netCost < best.netCost ? c : best,
@@ -73,6 +120,7 @@ export function describeBracketTargetChoice(
   const parts: string[] = [
     `This plan fills your Traditional withdrawals up to the ${formatPercent(currentTargetPct, 0)} tax bracket before drawing from any other account — your Traditional balance is taxed either at a rate you choose now, or later as a Required Minimum Distribution taxed at whatever bracket you're in then.`,
   ];
+  if (mathSentence) parts.push(mathSentence);
 
   if (isCheapest) {
     parts.push(

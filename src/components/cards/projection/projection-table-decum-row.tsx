@@ -164,6 +164,7 @@ function buildRoutingReasonClause(
   yr: EngineDecumulationYear,
   deflate: (v: number, yr: number) => number,
   bracketOptimizerResult?: BracketOptimizerResult | null,
+  standardDeduction?: number | null,
 ): string | undefined {
   const catCfg = ACCOUNT_TYPE_CONFIG[ia.category];
   // Traditional portion of a split-capable account (401k/IRA/403b): this
@@ -188,7 +189,18 @@ function buildRoutingReasonClause(
     // version otherwise.
     const targetClause =
       targetPct != null
-        ? `Filled up to ${formatCurrency(deflate(yr.bracketTraditionalCap, yr.year))} of ordinary income this year (RMDs still apply on top when required). ${describeBracketTargetChoice(bracketOptimizerResult, targetPct)}`
+        ? `Filled up to ${formatCurrency(deflate(yr.bracketTraditionalCap, yr.year))} of ordinary income this year (RMDs still apply on top when required). ${describeBracketTargetChoice(
+            bracketOptimizerResult,
+            targetPct,
+            {
+              bracketTraditionalCap: deflate(yr.bracketTraditionalCap, yr.year),
+              taxableSS: deflate(yr.taxableSS, yr.year),
+              standardDeduction:
+                standardDeduction != null
+                  ? deflate(standardDeduction, yr.year)
+                  : standardDeduction,
+            },
+          )}`
         : `Filled to your configured bracket target — up to ${formatCurrency(deflate(yr.bracketTraditionalCap, yr.year))} of ordinary income`;
     // "Why this account over another" (cross-category order, e.g. 401k
     // before IRA) — your configured Traditional Account Order, restricted
@@ -230,6 +242,7 @@ function buildFullAccountNote(
   yr: EngineDecumulationYear,
   deflate: (v: number, yr: number) => number,
   bracketOptimizerResult?: BracketOptimizerResult | null,
+  standardDeduction?: number | null,
 ): { note?: string; noteLocked?: boolean } {
   const eligibility = buildEligibilityNote(ia, yr, deflate);
   const reason = buildRoutingReasonClause(
@@ -237,6 +250,7 @@ function buildFullAccountNote(
     yr,
     deflate,
     bracketOptimizerResult,
+    standardDeduction,
   );
   if (!reason) return eligibility;
   const note = eligibility.note ? `${eligibility.note} · ${reason}` : reason;
@@ -408,6 +422,7 @@ export function DecumulationRow({
                         yr,
                         deflate,
                         bracketOptimizerResult,
+                        engineSettings?.standardDeduction,
                       );
                     if (wd > 0) {
                       // Per-account breakdown ("no magic money"): when a
@@ -790,6 +805,7 @@ export function DecumulationRow({
                     yr,
                     deflate,
                     bracketOptimizerResult,
+                    engineSettings?.standardDeduction,
                   ),
                 });
               }

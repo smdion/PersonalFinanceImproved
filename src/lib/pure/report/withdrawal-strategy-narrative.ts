@@ -163,6 +163,7 @@ export function buildWithdrawalStrategyNarrative(
   decumulationYears: EngineDecumulationYear[],
   deflate: (v: number, year: number) => number,
   bracketOptimizerResult?: BracketOptimizerResult | null,
+  standardDeduction?: number | null,
 ): ReportWithdrawalStrategySection {
   const highlights: { year: number; detail: string }[] = [];
 
@@ -215,7 +216,17 @@ export function buildWithdrawalStrategyNarrative(
   const bracketTarget = bracketTargetYear?.config.rothBracketTarget;
   const bracketTargetSentence =
     bracketTarget != null
-      ? describeBracketTargetChoice(bracketOptimizerResult, bracketTarget)
+      ? describeBracketTargetChoice(
+          bracketOptimizerResult,
+          bracketTarget,
+          bracketTargetYear?.bracketTraditionalCap != null
+            ? {
+                bracketTraditionalCap: bracketTargetYear.bracketTraditionalCap,
+                taxableSS: bracketTargetYear.taxableSS,
+                standardDeduction,
+              }
+            : undefined,
+        )
       : undefined;
 
   let narrative: string;

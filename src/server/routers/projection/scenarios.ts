@@ -468,6 +468,7 @@ export const scenariosRouter = createTRPCRouter({
           householdSize: settings.householdSize,
           filingStatus,
           filingStatusExplicit: settings.filingStatus ?? null,
+          standardDeduction: distributionTaxRates.standardDeduction ?? null,
         },
         perPersonSettings,
         annualExpenses: annualExpensesVal,

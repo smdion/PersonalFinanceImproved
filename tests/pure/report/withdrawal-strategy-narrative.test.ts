@@ -194,4 +194,38 @@ describe("buildWithdrawalStrategyNarrative", () => {
     expect(section.narrative).toMatch(/\$2,000\.00 less/);
     expect(section.narrative).not.toMatch(/avoids paying a higher rate today/i);
   });
+
+  it("folds the bracket-ceiling math into the narrative when standardDeduction is passed, using the bracket-target year's own bracketTraditionalCap/taxableSS", () => {
+    const years = [
+      decumYear({
+        year: 2040,
+        config: { rothBracketTarget: 0.22 },
+        bracketTraditionalCap: 60000,
+        taxableSS: 15000,
+      }),
+    ];
+    const section = buildWithdrawalStrategyNarrative(
+      years,
+      noopDeflate,
+      undefined,
+      32200,
+    );
+    expect(section.narrative).toMatch(
+      /bracket's ceiling sits at about \$75,000\.00 in gross income/,
+    );
+    expect(section.narrative).toMatch(/\$32,200\.00 standard deduction/);
+  });
+
+  it("omits the bracket-ceiling math when standardDeduction is not passed", () => {
+    const years = [
+      decumYear({
+        year: 2040,
+        config: { rothBracketTarget: 0.22 },
+        bracketTraditionalCap: 60000,
+        taxableSS: 15000,
+      }),
+    ];
+    const section = buildWithdrawalStrategyNarrative(years, noopDeflate);
+    expect(section.narrative).not.toMatch(/bracket's ceiling sits at/);
+  });
 });

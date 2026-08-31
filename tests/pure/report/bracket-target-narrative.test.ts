@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   describeBracketTargetChoice,
   describeBracketTargetQualitative,
+  describeBracketCeilingMath,
 } from "@/lib/pure/report/bracket-target-narrative";
 import type { BracketOptimizerResult } from "@/lib/calculators/withdrawal-bracket-optimizer";
 
@@ -124,5 +125,86 @@ describe("describeBracketTargetChoice", () => {
     ]);
     const text = describeBracketTargetChoice(opt, 0.22);
     expect(text).not.toMatch(/Filling further/);
+  });
+
+  it("folds the ceiling-math sentence into the rich comparison right after the intro, when ceilingMath is passed", () => {
+    const opt = optimizer([
+      { target: 0.12, netCost: 5000, shortfallScore: 0, depleted: false },
+      { target: 0.22, netCost: 3000, shortfallScore: 0, depleted: false },
+    ]);
+    const text = describeBracketTargetChoice(opt, 0.22, {
+      bracketTraditionalCap: 60000,
+      taxableSS: 15000,
+      standardDeduction: 32200,
+    });
+    expect(text).toMatch(/bracket's ceiling sits at about \$75,000\.00/);
+    expect(text).toMatch(/22% is the lowest lifetime-cost choice/);
+  });
+
+  it("omits the ceiling-math sentence when ceilingMath is not passed, identical to before", () => {
+    const opt = optimizer([
+      { target: 0.12, netCost: 5000, shortfallScore: 0, depleted: false },
+      { target: 0.22, netCost: 3000, shortfallScore: 0, depleted: false },
+    ]);
+    const withMath = describeBracketTargetChoice(opt, 0.22, {
+      bracketTraditionalCap: 60000,
+      taxableSS: 15000,
+      standardDeduction: 32200,
+    });
+    const withoutMath = describeBracketTargetChoice(opt, 0.22);
+    expect(withoutMath).not.toMatch(/bracket's ceiling sits at/);
+    expect(withMath.length).toBeGreaterThan(withoutMath.length);
+  });
+
+  it("folds the ceiling-math sentence into the qualitative fallback path too", () => {
+    const text = describeBracketTargetChoice(null, 0.22, {
+      bracketTraditionalCap: 60000,
+      taxableSS: 15000,
+      standardDeduction: 32200,
+    });
+    expect(text).toMatch(/bracket's ceiling sits at about \$75,000\.00/);
+    expect(text).toMatch(/Required Minimum Distribution/i);
+  });
+});
+
+describe("describeBracketCeilingMath", () => {
+  it("returns undefined when no input is given", () => {
+    expect(describeBracketCeilingMath(0.22, undefined)).toBeUndefined();
+    expect(describeBracketCeilingMath(0.22, null)).toBeUndefined();
+  });
+
+  it("returns undefined when standardDeduction is missing — a bare number would be unexplained", () => {
+    const text = describeBracketCeilingMath(0.22, {
+      bracketTraditionalCap: 60000,
+      taxableSS: 15000,
+    });
+    expect(text).toBeUndefined();
+  });
+
+  it("states the gross-income ceiling as bracketTraditionalCap + taxableSS, adjusted for the standard deduction", () => {
+    const text = describeBracketCeilingMath(0.22, {
+      bracketTraditionalCap: 60000,
+      taxableSS: 15000,
+      standardDeduction: 32200,
+    })!;
+    expect(text).toMatch(
+      /22% bracket's ceiling sits at about \$75,000\.00 in gross income/,
+    );
+    expect(text).toMatch(/\$32,200\.00 standard deduction/);
+    expect(text).toMatch(
+      /\$15,000\.00 of that room is already used by taxable Social Security this year, leaving \$60,000\.00 available/,
+    );
+  });
+
+  it("uses the no-Social-Security phrasing when taxableSS is zero, instead of an odd '$0.00 is already used' claim", () => {
+    const text = describeBracketCeilingMath(0.22, {
+      bracketTraditionalCap: 60000,
+      taxableSS: 0,
+      standardDeduction: 32200,
+    })!;
+    expect(text).toMatch(
+      /With no taxable Social Security this year, the full \$60,000\.00 is available/,
+    );
+    expect(text).not.toMatch(/\$0\.00 of that room/);
   });
 });
