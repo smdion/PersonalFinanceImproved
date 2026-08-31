@@ -26,7 +26,7 @@ import {
 } from "../../config/account-types";
 import type { AccountBalances, IndividualAccountInput } from "../types";
 import { getIrmaaCost, getNextIrmaaCliff } from "../../config/irmaa-tables";
-import { getAcaSubsidyCliff } from "../../config/aca-tables";
+import { getAcaSubsidyCliff, acaMagi } from "../../config/aca-tables";
 import {
   estimateEffectiveTaxRate,
   incomeCapForMarginalRate,
@@ -614,19 +614,32 @@ export function checkAca(input: AcaInput): AcaResult {
   }
 
   const acaCliff = getAcaSubsidyCliff(householdSize);
-  // ACA MAGI (§36B(d)(2)(B)) adds back the FULL gross SS benefit — unlike
-  // IRMAA MAGI, which correctly uses the 0-85% taxable slice (taxableSS).
-  const projectedMagi =
-    totalTraditionalWithdrawal +
-    rothConversionAmount +
-    brokerageGainsPortion +
-    ssIncome;
+  const projectedMagi = acaMagi({
+    totalTraditionalWithdrawal,
+    rothConversionAmount,
+    brokerageGainsPortion,
+    ssIncome,
+  });
   const acaMagiHeadroom = roundToCents(Math.max(0, acaCliff - projectedMagi));
   const acaSubsidyPreserved = projectedMagi < acaCliff;
 
   if (!acaSubsidyPreserved) {
+    const overage = roundToCents(projectedMagi - acaCliff);
+    // R55 (advisor review, 2026-08-30): a ranking change to avoid this was
+    // considered and rejected — brokerage gains aren't actually "free" MAGI
+    // below the cliff either (the subsidy phases out continuously, see
+    // estimateAcaSubsidyValue's sliding scale), so preferring brokerage
+    // over Roth basis would cost more than it saves. This warning instead
+    // reports whether re-sourcing the overage from Roth (which doesn't
+    // touch MAGI at all) would have kept the household under the cliff —
+    // actionable information without the engine silently re-ordering
+    // withdrawals against a value it can't fully price.
+    const brokerageCouldCoverOverage = brokerageGainsPortion >= overage;
+    const attribution = brokerageCouldCoverOverage
+      ? ` — sourcing $${overage.toFixed(0)} less from brokerage (and more from Roth) would keep MAGI under the cliff`
+      : "";
     warnings.push(
-      `ACA: MAGI $${projectedMagi.toFixed(0)} exceeds $${acaCliff.toLocaleString()} cliff — subsidy lost`,
+      `ACA: MAGI $${projectedMagi.toFixed(0)} exceeds $${acaCliff.toLocaleString()} cliff by $${overage.toFixed(0)} — subsidy lost${attribution}`,
     );
   }
 

@@ -35,6 +35,28 @@ export function getAcaSubsidyCliff(householdSize: number): number {
 }
 
 /**
+ * ACA MAGI (§36B(d)(2)(B)) for a decumulation year — single computation
+ * path shared by `checkAca` and any future consumer (R55 advisor review,
+ * 2026-08-30). Adds back the FULL gross SS benefit, unlike IRMAA MAGI
+ * (which uses the 0-85% taxable slice) — this is the one real difference
+ * between the two MAGI definitions, so it lives here rather than being
+ * re-derived at each call site.
+ */
+export function acaMagi(input: {
+  totalTraditionalWithdrawal: number;
+  rothConversionAmount: number;
+  brokerageGainsPortion: number;
+  ssIncome: number;
+}): number {
+  return (
+    input.totalTraditionalWithdrawal +
+    input.rothConversionAmount +
+    input.brokerageGainsPortion +
+    input.ssIncome
+  );
+}
+
+/**
  * Estimate annual ACA subsidy value for a household.
  * Rough approximation: subsidy depends on age, location, and income.
  * Uses national average benchmark plan costs for ballpark estimates.

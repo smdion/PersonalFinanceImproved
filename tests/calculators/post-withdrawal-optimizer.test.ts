@@ -343,6 +343,27 @@ describe("checkAca", () => {
     expect(result.warnings[0]).toContain("cliff");
   });
 
+  it("warning attributes the overage to brokerage when brokerage gains could cover it (R55)", () => {
+    // MAGI = 80000 + 0 + 5000 + 0 = 85000, overage = 400, brokerageGainsPortion 5000 >= 400
+    const result = checkAca(
+      makeAcaInput({ totalTraditionalWithdrawal: 80000 }),
+    );
+    expect(result.warnings[0]).toContain("sourcing");
+    expect(result.warnings[0]).toContain("less from brokerage");
+  });
+
+  it("warning omits the brokerage attribution when brokerage gains can't cover the overage (R55)", () => {
+    // MAGI = 84700 + 0 + 0 + 0 = 84700, overage = 100, brokerageGainsPortion 0 < 100
+    const result = checkAca(
+      makeAcaInput({
+        totalTraditionalWithdrawal: 84700,
+        brokerageGainsPortion: 0,
+      }),
+    );
+    expect(result.acaSubsidyPreserved).toBe(false);
+    expect(result.warnings[0]).not.toContain("sourcing");
+  });
+
   it("includes Roth conversion in MAGI calculation", () => {
     // Base MAGI = 30000 + 5000 = 35000 (under cliff)
     // With 60000 conversion: 35000 + 60000 = 95000 (over 84600 cliff)
