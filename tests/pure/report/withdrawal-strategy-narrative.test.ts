@@ -228,4 +228,62 @@ describe("buildWithdrawalStrategyNarrative", () => {
     const section = buildWithdrawalStrategyNarrative(years, noopDeflate);
     expect(section.narrative).not.toMatch(/bracket's ceiling sits at/);
   });
+
+  it("folds the discretionary-capacity math into the first discretionary-year highlight, reproducing the live crowd-out scenario", () => {
+    const years = [
+      decumYear({
+        year: 2041,
+        config: { discretionaryWithdrawalOrder: "brokerage_first" },
+        rothBasisCapacity: 30000,
+        brokerageZeroLtcgCapacity: 0,
+        rmdOverrodeRouting: false,
+        discretionaryTierBreakdown: [
+          { source: "roth", costRate: 0, amount: 10854.07 },
+          { source: "roth", costRate: 0.12, amount: 17678.07 },
+        ],
+      }),
+    ];
+    const section = buildWithdrawalStrategyNarrative(years, noopDeflate);
+    const highlight = section.highlights.find((h) => h.year === 2041)!;
+    expect(highlight.detail).toMatch(
+      /\$0\.00 you could have drawn from brokerage at 0% federal tax/,
+    );
+    expect(highlight.detail).toMatch(
+      /\$10,854\.07 came from Roth basis and \$0\.00 from brokerage/,
+    );
+  });
+
+  it("omits the discretionary-capacity math when rothBasisCapacity/brokerageZeroLtcgCapacity aren't on the year (e.g. waterfall/percentage mode)", () => {
+    const years = [
+      decumYear({
+        year: 2041,
+        config: { discretionaryWithdrawalOrder: "roth_first" },
+        discretionaryTierBreakdown: [
+          { source: "brokerage", costRate: 0.15, amount: 5000 },
+        ],
+      }),
+    ];
+    const section = buildWithdrawalStrategyNarrative(years, noopDeflate);
+    const highlight = section.highlights.find((h) => h.year === 2041)!;
+    expect(highlight.detail).not.toMatch(/Discretionary Withdrawal Order/);
+    expect(highlight.detail).not.toMatch(/room in the 0% capital-gains/);
+  });
+
+  it("omits the discretionary-capacity math in an RMD-override year, since the capacity would overstate the real room", () => {
+    const years = [
+      decumYear({
+        year: 2041,
+        config: { discretionaryWithdrawalOrder: "roth_first" },
+        rothBasisCapacity: 30000,
+        brokerageZeroLtcgCapacity: 31000,
+        rmdOverrodeRouting: true,
+        discretionaryTierBreakdown: [
+          { source: "roth", costRate: 0, amount: 20000 },
+        ],
+      }),
+    ];
+    const section = buildWithdrawalStrategyNarrative(years, noopDeflate);
+    const highlight = section.highlights.find((h) => h.year === 2041)!;
+    expect(highlight.detail).not.toMatch(/Discretionary Withdrawal Order/);
+  });
 });

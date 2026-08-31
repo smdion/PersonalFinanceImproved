@@ -47,7 +47,9 @@ function baseInput(
 
 describe("rankWithdrawalTiers", () => {
   it("Roth basis always ranks first, free", () => {
-    const tiers = rankWithdrawalTiers(baseInput({ rothBasisAvailable: 20000 }));
+    const { tiers } = rankWithdrawalTiers(
+      baseInput({ rothBasisAvailable: 20000 }),
+    );
     expect(tiers[0]).toMatchObject({
       source: "roth",
       costRate: 0,
@@ -56,7 +58,7 @@ describe("rankWithdrawalTiers", () => {
   });
 
   it("discretionaryWithdrawalOrder omitted defaults to roth_first (Roth basis before brokerage's 0% tier)", () => {
-    const tiers = rankWithdrawalTiers(
+    const { tiers } = rankWithdrawalTiers(
       baseInput({
         ordinaryIncomeFloor: 0,
         rothBasisAvailable: 20000,
@@ -74,7 +76,7 @@ describe("rankWithdrawalTiers", () => {
   });
 
   it("discretionaryWithdrawalOrder: brokerage_first ranks brokerage's 0% tier before Roth basis (R55 follow-up)", () => {
-    const tiers = rankWithdrawalTiers(
+    const { tiers } = rankWithdrawalTiers(
       baseInput({
         ordinaryIncomeFloor: 0,
         rothBasisAvailable: 20000,
@@ -98,7 +100,7 @@ describe("rankWithdrawalTiers", () => {
     // all there's no brokerage-0%-tier counterpart for Roth basis to swap
     // against — the fixed order (roth, then brokerage's flat fallback)
     // applies regardless of this setting.
-    const tiers = rankWithdrawalTiers(
+    const { tiers } = rankWithdrawalTiers(
       baseInput({
         filingStatus: undefined,
         rothBasisAvailable: 20000,
@@ -118,8 +120,8 @@ describe("rankWithdrawalTiers", () => {
       rothAvailable: 50000,
       brokerageAvailable: 50000,
     };
-    const rothFirstTiers = rankWithdrawalTiers(baseInput(inputs));
-    const brokerageFirstTiers = rankWithdrawalTiers(
+    const { tiers: rothFirstTiers } = rankWithdrawalTiers(baseInput(inputs));
+    const { tiers: brokerageFirstTiers } = rankWithdrawalTiers(
       baseInput({ ...inputs, discretionaryWithdrawalOrder: "brokerage_first" }),
     );
     // The priced (non-zero, non-Infinity cost) tier is identical either
@@ -137,7 +139,7 @@ describe("rankWithdrawalTiers", () => {
 
   it("brokerage in the 0% LTCG zone ranks free, alongside Roth basis", () => {
     // ordinaryIncomeFloor 0 -> full 0%-LTCG room available
-    const tiers = rankWithdrawalTiers(
+    const { tiers } = rankWithdrawalTiers(
       baseInput({ ordinaryIncomeFloor: 0, rothBasisAvailable: 0 }),
     );
     const brokerageTier = tiers.find((t) => t.source === "brokerage");
@@ -155,7 +157,7 @@ describe("rankWithdrawalTiers", () => {
     // 150,000 sits in the 12% bracket (96,950 <= 150,000 < 206,700) --
     // marginalRateAtIncome must return 0.12 regardless of any
     // bracket-filling target elsewhere in the system.
-    const tiers = rankWithdrawalTiers(
+    const { tiers } = rankWithdrawalTiers(
       baseInput({
         ordinaryIncomeFloor: 150000,
         rothBasisAvailable: 0,
@@ -168,7 +170,7 @@ describe("rankWithdrawalTiers", () => {
   });
 
   it("no free tiers ⇒ Roth growth (12%) ranks BEFORE 15% LTCG brokerage when it's genuinely cheaper", () => {
-    const tiers = rankWithdrawalTiers(
+    const { tiers } = rankWithdrawalTiers(
       baseInput({ rothBasisAvailable: 0, magiBeforeThisDraw: 0 }),
     );
     const rothIdx = tiers.findIndex(
@@ -192,7 +194,7 @@ describe("rankWithdrawalTiers", () => {
     // ordinary income is exactly AT a bracket's own ceiling lands in the
     // NEXT bracket, per computeLtcgTax's `floor >= threshold` stacking
     // logic; see ltcgRateForNextDollar's docblock, tax-tables.ts.)
-    const tiers = rankWithdrawalTiers(
+    const { tiers } = rankWithdrawalTiers(
       baseInput({
         ordinaryIncomeFloor: 600000,
         rothBasisAvailable: 0,
@@ -219,7 +221,7 @@ describe("rankWithdrawalTiers", () => {
     // construction -- getLtcgRate's inclusive <= would wrongly return 0%
     // for the tier that actually starts at 98901. Large brokerageAvailable
     // ensures a real "beyond the free room" slice exists to price.
-    const tiers = rankWithdrawalTiers(
+    const { tiers } = rankWithdrawalTiers(
       baseInput({
         ordinaryIncomeFloor: 57000,
         standardDeduction: 32200,
@@ -237,7 +239,7 @@ describe("rankWithdrawalTiers", () => {
   });
 
   it("still prices the top LTCG bracket (20%) correctly for high-income households, not a flat 15% (guards against a wrong 'first bracket above 0%' fix)", () => {
-    const tiers = rankWithdrawalTiers(
+    const { tiers } = rankWithdrawalTiers(
       baseInput({
         ordinaryIncomeFloor: 700000, // past the 613,700 MFJ 15%/20% boundary
         rothBasisAvailable: 0,
@@ -251,10 +253,10 @@ describe("rankWithdrawalTiers", () => {
   });
 
   it("NIIT adds exactly 3.8% to brokerage's rate once MAGI is above the filing-status threshold", () => {
-    const withoutNiit = rankWithdrawalTiers(
+    const { tiers: withoutNiit } = rankWithdrawalTiers(
       baseInput({ ordinaryIncomeFloor: 250000, magiBeforeThisDraw: 0 }),
     );
-    const withNiit = rankWithdrawalTiers(
+    const { tiers: withNiit } = rankWithdrawalTiers(
       baseInput({
         ordinaryIncomeFloor: 250000,
         magiBeforeThisDraw: 300000, // above MFJ's $250k NIIT threshold
@@ -281,7 +283,7 @@ describe("rankWithdrawalTiers", () => {
     // only $5,000 of headroom before NIIT kicks in -- with a much larger
     // brokerage balance available, most of the tier should land in a
     // post-NIIT sub-tier while a small pre-NIIT sub-tier stays NIIT-free.
-    const tiers = rankWithdrawalTiers(
+    const { tiers } = rankWithdrawalTiers(
       baseInput({
         ordinaryIncomeFloor: 600000, // 15% LTCG zone here (not the exact 613,700 boundary -- see the previous test's comment)
         rothAvailable: 0,
@@ -311,7 +313,7 @@ describe("rankWithdrawalTiers", () => {
   // competes on real cost like Roth growth instead of an assumed-worst
   // rate that made it lose to genuinely-more-expensive sources too.
   it("HSA competes on ordinary rate alongside Roth growth, ranking BEFORE a more expensive brokerage tier", () => {
-    const tiers = rankWithdrawalTiers(
+    const { tiers } = rankWithdrawalTiers(
       baseInput({ rothBasisAvailable: 0, magiBeforeThisDraw: 0 }),
     );
     const hsaTier = tiers.find((t) => t.source === "hsa")!;
@@ -329,7 +331,7 @@ describe("rankWithdrawalTiers", () => {
   });
 
   it("no filingStatus ⇒ Roth and HSA tie at the ordinary rate, both ranked before brokerage's flat fallback", () => {
-    const tiers = rankWithdrawalTiers(
+    const { tiers } = rankWithdrawalTiers(
       baseInput({ filingStatus: undefined, rothBasisAvailable: 0 }),
     );
     const sources = tiers.map((t) => t.source);
@@ -345,7 +347,7 @@ describe("rankWithdrawalTiers", () => {
     // rothBasisAvailable equal to the full rothAvailable balance (per
     // RouteBracketInfo's docblock) -- not exercised via this pure
     // function's own default, but documents the expected caller contract.
-    const tiers = rankWithdrawalTiers(
+    const { tiers } = rankWithdrawalTiers(
       baseInput({ rothBasisAvailable: 50000, rothAvailable: 50000 }),
     );
     expect(tiers[0]).toMatchObject({ source: "roth", costRate: 0 });
@@ -358,7 +360,7 @@ describe("rankWithdrawalTiers", () => {
   // 0%-LTCG ceiling. Pre-fix: zero 0%-LTCG room (120,100 already exceeds
   // 98,900 on its own). Post-fix: ~$11,000 of real room.
   it("standardDeduction converts gross ordinaryIncomeFloor to taxable income before the LTCG lookup", () => {
-    const withoutDeduction = rankWithdrawalTiers(
+    const { tiers: withoutDeduction } = rankWithdrawalTiers(
       baseInput({
         ordinaryIncomeFloor: 120100,
         rothBasisAvailable: 0,
@@ -371,7 +373,7 @@ describe("rankWithdrawalTiers", () => {
     );
     expect(zeroTierWithout).toBeUndefined();
 
-    const withDeduction = rankWithdrawalTiers(
+    const { tiers: withDeduction } = rankWithdrawalTiers(
       baseInput({
         ordinaryIncomeFloor: 120100,
         standardDeduction: 32200,
@@ -387,7 +389,7 @@ describe("rankWithdrawalTiers", () => {
   });
 
   it("zero remaining balances in every source ⇒ returns tiers with zero total capacity, never throws", () => {
-    const tiers = rankWithdrawalTiers(
+    const { tiers } = rankWithdrawalTiers(
       baseInput({
         rothBasisAvailable: 0,
         rothAvailable: 0,
@@ -396,6 +398,81 @@ describe("rankWithdrawalTiers", () => {
       }),
     );
     expect(tiers.reduce((s, t) => s + t.capacity, 0)).toBe(0);
+  });
+
+  // Found live, 2026-08-31: a household couldn't tell why brokerage's
+  // 0%-LTCG room wasn't draining before Roth. rothBasisCapacity/
+  // brokerageZeroLtcgCapacity exist specifically to make that room visible
+  // even when the draw loop never reaches it (e.g. Roth basis alone covers
+  // the year's need under roth_first) -- these tests guard the two
+  // properties that matter for that: (1) the numbers reflect real capacity
+  // regardless of order, (2) discretionaryWithdrawalOrder changes ONLY
+  // which drains first, never the capacity figures themselves.
+  describe("rothBasisCapacity / brokerageZeroLtcgCapacity", () => {
+    it("both reflect real capacity even though the draw loop never touches capacity", () => {
+      const { rothBasisCapacity, brokerageZeroLtcgCapacity } =
+        rankWithdrawalTiers(
+          baseInput({
+            ordinaryIncomeFloor: 0, // full 0%-LTCG room available
+            rothBasisAvailable: 20000,
+            rothAvailable: 20000,
+            brokerageAvailable: 50000,
+            brokerageBasisRatio: 0,
+          }),
+        );
+      expect(rothBasisCapacity).toBe(20000);
+      expect(brokerageZeroLtcgCapacity).toBeGreaterThan(0);
+    });
+
+    it("are IDENTICAL under roth_first vs brokerage_first -- the order setting changes draw sequence, never the capacity numbers", () => {
+      const inputs = {
+        ordinaryIncomeFloor: 0,
+        rothBasisAvailable: 20000,
+        rothAvailable: 20000,
+        brokerageAvailable: 50000,
+        brokerageBasisRatio: 0,
+      };
+      const rothFirst = rankWithdrawalTiers(baseInput(inputs));
+      const brokerageFirst = rankWithdrawalTiers(
+        baseInput({
+          ...inputs,
+          discretionaryWithdrawalOrder: "brokerage_first",
+        }),
+      );
+      expect(brokerageFirst.rothBasisCapacity).toBe(
+        rothFirst.rothBasisCapacity,
+      );
+      expect(brokerageFirst.brokerageZeroLtcgCapacity).toBe(
+        rothFirst.brokerageZeroLtcgCapacity,
+      );
+    });
+
+    it("brokerageZeroLtcgCapacity is near-zero when a high ordinaryIncomeFloor crowds out the 0%-LTCG room -- the exact mechanism behind the live bug report", () => {
+      // Reproduces the confirmed root cause: a Traditional bracket-fill
+      // target high enough that ordinaryIncomeFloor alone meets or exceeds
+      // the 0%-LTCG ceiling leaves brokerage's free tier with ~$0 capacity,
+      // regardless of discretionaryWithdrawalOrder.
+      const { brokerageZeroLtcgCapacity } = rankWithdrawalTiers(
+        baseInput({
+          ordinaryIncomeFloor: 135000, // taxable (135000-32200=102800) already past the ~$98,900 0%-LTCG ceiling
+          standardDeduction: 32200,
+          rothBasisAvailable: 20000,
+          brokerageAvailable: 50000,
+          brokerageBasisRatio: 0,
+          discretionaryWithdrawalOrder: "brokerage_first",
+        }),
+      );
+      expect(brokerageZeroLtcgCapacity).toBe(0);
+    });
+
+    it("brokerageZeroLtcgCapacity is 0, not omitted, when there's no filingStatus to look up a real LTCG bracket", () => {
+      const { brokerageZeroLtcgCapacity, rothBasisCapacity } =
+        rankWithdrawalTiers(
+          baseInput({ filingStatus: undefined, rothBasisAvailable: 20000 }),
+        );
+      expect(brokerageZeroLtcgCapacity).toBe(0);
+      expect(rothBasisCapacity).toBe(20000);
+    });
   });
 });
 

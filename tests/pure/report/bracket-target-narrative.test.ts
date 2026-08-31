@@ -3,6 +3,7 @@ import {
   describeBracketTargetChoice,
   describeBracketTargetQualitative,
   describeBracketCeilingMath,
+  describeDiscretionaryCapacityMath,
 } from "@/lib/pure/report/bracket-target-narrative";
 import type { BracketOptimizerResult } from "@/lib/calculators/withdrawal-bracket-optimizer";
 
@@ -206,5 +207,193 @@ describe("describeBracketCeilingMath", () => {
       /With no taxable Social Security this year, the full \$60,000\.00 is available/,
     );
     expect(text).not.toMatch(/\$0\.00 of that room/);
+  });
+});
+
+describe("describeDiscretionaryCapacityMath", () => {
+  const tierBreakdown = (
+    entries: {
+      source: "roth" | "brokerage" | "hsa";
+      costRate: number;
+      amount: number;
+    }[],
+  ) => entries;
+
+  it("returns undefined when capacities is missing", () => {
+    expect(
+      describeDiscretionaryCapacityMath(undefined, [], "roth_first", false),
+    ).toBeUndefined();
+    expect(
+      describeDiscretionaryCapacityMath(null, [], "roth_first", false),
+    ).toBeUndefined();
+  });
+
+  it("returns undefined when rmdOverrodeRouting is true — capacities would overstate the real room", () => {
+    const text = describeDiscretionaryCapacityMath(
+      { rothBasisCapacity: 10000, brokerageZeroLtcgCapacity: 10000 },
+      tierBreakdown([{ source: "roth", costRate: 0, amount: 5000 }]),
+      "roth_first",
+      true,
+    );
+    expect(text).toBeUndefined();
+  });
+
+  it("returns undefined when there was no discretionary draw this year", () => {
+    expect(
+      describeDiscretionaryCapacityMath(
+        { rothBasisCapacity: 10000, brokerageZeroLtcgCapacity: 10000 },
+        [],
+        "roth_first",
+        false,
+      ),
+    ).toBeUndefined();
+    expect(
+      describeDiscretionaryCapacityMath(
+        { rothBasisCapacity: 10000, brokerageZeroLtcgCapacity: 10000 },
+        undefined,
+        "roth_first",
+        false,
+      ),
+    ).toBeUndefined();
+  });
+
+  it("returns undefined when neither tier had any capacity", () => {
+    const text = describeDiscretionaryCapacityMath(
+      { rothBasisCapacity: 0, brokerageZeroLtcgCapacity: 0 },
+      tierBreakdown([{ source: "roth", costRate: 0.12, amount: 5000 }]),
+      "roth_first",
+      false,
+    );
+    expect(text).toBeUndefined();
+  });
+
+  it("reproduces the live crowd-out scenario: brokerage capacity is $0 (Traditional/SS filled the LTCG ceiling), Roth basis absorbed the need — states the numbers, no claim about why", () => {
+    const text = describeDiscretionaryCapacityMath(
+      { rothBasisCapacity: 30000, brokerageZeroLtcgCapacity: 0 },
+      tierBreakdown([
+        { source: "roth", costRate: 0, amount: 10854.07 },
+        { source: "roth", costRate: 0.12, amount: 17678.07 },
+      ]),
+      "brokerage_first",
+      false,
+    )!;
+    expect(text).toMatch(/\$0\.00 you could have drawn from brokerage/);
+    expect(text).toMatch(
+      /\$10,854\.07 came from Roth basis and \$0\.00 from brokerage/,
+    );
+    expect(text).toMatch(/\$19,145\.93 of Roth basis went unused this year/);
+    expect(text).toMatch(
+      /Discretionary Withdrawal Order setting \(currently "Brokerage 0% room first"\)/,
+    );
+  });
+
+  it("symmetric case: no Roth basis available, brokerage's free room absorbed the need", () => {
+    const text = describeDiscretionaryCapacityMath(
+      { rothBasisCapacity: 0, brokerageZeroLtcgCapacity: 15000 },
+      tierBreakdown([{ source: "brokerage", costRate: 0, amount: 12000 }]),
+      "roth_first",
+      false,
+    )!;
+    expect(text).toMatch(/\$0\.00 of tax-free Roth basis/);
+    expect(text).toMatch(
+      /\$0\.00 came from Roth basis and \$12,000\.00 from brokerage/,
+    );
+    expect(text).toMatch(
+      /\$3,000\.00 of brokerage's 0% room went unused this year/,
+    );
+  });
+
+  it("states the current order setting neutrally regardless of which tier was used, with no causal claim and no one-directional nudge", () => {
+    const rothFirst = describeDiscretionaryCapacityMath(
+      { rothBasisCapacity: 30000, brokerageZeroLtcgCapacity: 31000 },
+      tierBreakdown([{ source: "roth", costRate: 0, amount: 20000 }]),
+      "roth_first",
+      false,
+    )!;
+    expect(rothFirst).toMatch(
+      /\$20,000\.00 came from Roth basis and \$0\.00 from brokerage/,
+    );
+    expect(rothFirst).toMatch(
+      /\$10,000\.00 of Roth basis and \$31,000\.00 of brokerage's 0% room went unused this year/,
+    );
+    expect(rothFirst).toMatch(
+      /Discretionary Withdrawal Order setting \(currently "Roth basis first"\) on the Taxes settings page/,
+    );
+    expect(rothFirst).not.toMatch(/ran out/);
+    expect(rothFirst).not.toMatch(
+      /covered the full discretionary need on its own/,
+    );
+    expect(rothFirst).not.toMatch(/Change this/);
+
+    const brokerageFirst = describeDiscretionaryCapacityMath(
+      { rothBasisCapacity: 30000, brokerageZeroLtcgCapacity: 31000 },
+      tierBreakdown([{ source: "brokerage", costRate: 0, amount: 20000 }]),
+      "brokerage_first",
+      false,
+    )!;
+    expect(brokerageFirst).toMatch(
+      /\$0\.00 came from Roth basis and \$20,000\.00 from brokerage/,
+    );
+    expect(brokerageFirst).toMatch(
+      /Discretionary Withdrawal Order setting \(currently "Brokerage 0% room first"\)/,
+    );
+  });
+
+  it("states both used and leftover correctly when a per-category withdrawal cap (not tier exhaustion) split the draw across both tiers", () => {
+    // Neither tier's own household-wide capacity was actually reached --
+    // this reproduces the advisor-flagged case where an account cap, not
+    // order/capacity, explains the split. The function must not claim a
+    // mechanism ("ran out") it can't verify -- only the real numbers.
+    const text = describeDiscretionaryCapacityMath(
+      { rothBasisCapacity: 30000, brokerageZeroLtcgCapacity: 25000 },
+      tierBreakdown([
+        { source: "roth", costRate: 0, amount: 10000 }, // capped well below its own 30000 capacity
+        { source: "brokerage", costRate: 0, amount: 8000 },
+      ]),
+      "roth_first",
+      false,
+    )!;
+    expect(text).toMatch(
+      /\$10,000\.00 came from Roth basis and \$8,000\.00 from brokerage/,
+    );
+    expect(text).toMatch(
+      /\$20,000\.00 of Roth basis and \$17,000\.00 of brokerage's 0% room went unused this year/,
+    );
+    expect(text).not.toMatch(/ran out/);
+    expect(text).not.toMatch(/covered the full discretionary need on its own/);
+  });
+
+  it("no leftover-unused clause when both tiers were used exactly to their full capacity", () => {
+    const text = describeDiscretionaryCapacityMath(
+      { rothBasisCapacity: 10000, brokerageZeroLtcgCapacity: 8000 },
+      tierBreakdown([
+        { source: "roth", costRate: 0, amount: 10000 },
+        { source: "brokerage", costRate: 0, amount: 8000 },
+      ]),
+      "roth_first",
+      false,
+    )!;
+    expect(text).toMatch(
+      /\$10,000\.00 came from Roth basis and \$8,000\.00 from brokerage/,
+    );
+    expect(text).not.toMatch(/went unused/);
+  });
+
+  it("clamps 'used' to rothBasisCapacity when a $0-cost Roth GROWTH entry (household in the 0% ordinary bracket) would otherwise push 'used' above the household's real basis", () => {
+    // Both a $0-cost Roth basis draw AND a $0-cost Roth GROWTH draw exist
+    // in tierBreakdown -- summing them uncapped would claim more came from
+    // basis ($8,000) than the household's actual basis capacity ($5,000),
+    // a self-contradicting number (found in advisor review, 2026-08-31).
+    const text = describeDiscretionaryCapacityMath(
+      { rothBasisCapacity: 5000, brokerageZeroLtcgCapacity: 20000 },
+      tierBreakdown([
+        { source: "roth", costRate: 0, amount: 5000 }, // basis
+        { source: "roth", costRate: 0, amount: 3000 }, // growth, also 0% this year
+      ]),
+      "roth_first",
+      false,
+    )!;
+    expect(text).toMatch(/\$5,000\.00 came from Roth basis/);
+    expect(text).not.toMatch(/\$8,000\.00 came from Roth basis/);
   });
 });

@@ -15,7 +15,10 @@ import type {
   IndividualAccountYearBalance,
 } from "@/lib/calculators/types";
 import type { BracketOptimizerResult } from "@/lib/calculators/withdrawal-bracket-optimizer";
-import { describeBracketTargetChoice } from "@/lib/pure/report/bracket-target-narrative";
+import {
+  describeBracketTargetChoice,
+  describeDiscretionaryCapacityMath,
+} from "@/lib/pure/report/bracket-target-narrative";
 import {
   getAccountSegments,
   getSegmentBalance,
@@ -228,9 +231,42 @@ function buildRoutingReasonClause(
     (t) => t.source === sourceKind,
   );
   if (relevant.length === 0) return undefined;
-  return formatDiscretionaryTierBreakdown(
+  const breakdownClause = formatDiscretionaryTierBreakdown(
     relevant.map((t) => ({ ...t, amount: deflate(t.amount, yr.year) })),
   );
+  // "Why isn't brokerage draining before Roth" (found live, 2026-08-31) —
+  // shares describeDiscretionaryCapacityMath with the advisor report so
+  // the two can never disagree. Household-wide (not scoped to this
+  // account's sourceKind, unlike breakdownClause above), so this uses the
+  // FULL yr.discretionaryTierBreakdown, deflated the same way. Gated to
+  // roth/brokerage rows only (advisor review, 2026-08-31) — this paragraph
+  // discusses neither of an HSA row's dollars, and would otherwise repeat
+  // verbatim on every discretionary-tier row in a year that drew from all
+  // three sources.
+  // lint-violation-ok: sourceKind is WithdrawalSourceKind, not an AccountCategory.
+  const capacityClause =
+    sourceKind === "roth" || sourceKind === "brokerage"
+      ? describeDiscretionaryCapacityMath(
+          yr.rothBasisCapacity != null && yr.brokerageZeroLtcgCapacity != null
+            ? {
+                rothBasisCapacity: deflate(yr.rothBasisCapacity, yr.year),
+                brokerageZeroLtcgCapacity: deflate(
+                  yr.brokerageZeroLtcgCapacity,
+                  yr.year,
+                ),
+              }
+            : undefined,
+          yr.discretionaryTierBreakdown.map((t) => ({
+            ...t,
+            amount: deflate(t.amount, yr.year),
+          })),
+          yr.config.discretionaryWithdrawalOrder,
+          yr.rmdOverrodeRouting,
+        )
+      : undefined;
+  return capacityClause
+    ? `${breakdownClause} ${capacityClause}`
+    : breakdownClause;
 }
 
 /** Merges `buildEligibilityNote` (eligibility/basis) with

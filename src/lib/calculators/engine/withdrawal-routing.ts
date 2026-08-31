@@ -352,7 +352,13 @@ export function routeWithdrawalsBracketFilling(
   bracketInfo: RouteBracketInfo,
 ): Pick<
   RouteResult,
-  "slots" | "warnings" | "traditionalCap" | "unmetNeed" | "tierBreakdown"
+  | "slots"
+  | "warnings"
+  | "traditionalCap"
+  | "unmetNeed"
+  | "tierBreakdown"
+  | "rothBasisCapacity"
+  | "brokerageZeroLtcgCapacity"
 > {
   const warnings: string[] = [];
 
@@ -662,14 +668,14 @@ export function routeWithdrawalsBracketFilling(
     discretionaryWithdrawalOrder: bracketInfo.discretionaryWithdrawalOrder,
   };
   let impliedRothGrowth = 0;
-  let tiers = rankWithdrawalTiers({
+  let ranked = rankWithdrawalTiers({
     ...rankingBaseInput,
     ordinaryIncomeFloor: baseOrdinaryFloor,
   });
   for (let iter = 0; iter < 3; iter++) {
     let capacitySoFar = 0;
     let growthTierCapacity = 0;
-    for (const tier of tiers) {
+    for (const tier of ranked.tiers) {
       if (tier.source === "roth" && tier.costRate > 0) {
         growthTierCapacity = Math.max(
           0,
@@ -681,11 +687,12 @@ export function routeWithdrawalsBracketFilling(
     }
     if (Math.abs(growthTierCapacity - impliedRothGrowth) < 1) break;
     impliedRothGrowth = growthTierCapacity;
-    tiers = rankWithdrawalTiers({
+    ranked = rankWithdrawalTiers({
       ...rankingBaseInput,
       ordinaryIncomeFloor: baseOrdinaryFloor + impliedRothGrowth,
     });
   }
+  const tiers = ranked.tiers;
 
   const tierDrawers: Record<WithdrawalSourceKind, (cap: number) => void> = {
     roth: drawRothTierCapped,
@@ -738,6 +745,8 @@ export function routeWithdrawalsBracketFilling(
     traditionalCap,
     unmetNeed: remaining > 0 ? remaining : undefined,
     tierBreakdown,
+    rothBasisCapacity: ranked.rothBasisCapacity,
+    brokerageZeroLtcgCapacity: ranked.brokerageZeroLtcgCapacity,
   };
 }
 
@@ -835,6 +844,18 @@ export type RouteResult = {
     costRate: number;
     amount: number;
   }[];
+  /** The two zero-cost discretionary tiers' real capacity this year,
+   *  computed BEFORE `discretionaryWithdrawalOrder` decides which drains
+   *  first and before either is actually drawn from — so a tier that had
+   *  real room but was never reached by the draw loop (e.g. Roth basis
+   *  alone covered the year's need) still has its capacity visible, not
+   *  silently discarded like `tierBreakdown` would. Passthrough of
+   *  `rankWithdrawalTiers`' own return value (`withdrawal-cost-ranking.ts`)
+   *  — see `RankedWithdrawalTiers`'s docblock for why this exists. Both are
+   *  0 (bracket_filling mode with a resolvable bracket cap), not present,
+   *  in waterfall/percentage modes — same scoping as `tierBreakdown`. */
+  rothBasisCapacity?: number;
+  brokerageZeroLtcgCapacity?: number;
 };
 
 /**

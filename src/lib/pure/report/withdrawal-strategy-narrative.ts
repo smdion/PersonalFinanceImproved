@@ -9,7 +9,10 @@ import type { EngineDecumulationYear } from "@/lib/calculators/types/engine-proj
 import type { BracketOptimizerResult } from "@/lib/calculators/withdrawal-bracket-optimizer";
 import { formatPercent, formatCurrency } from "@/lib/utils/format";
 import type { ReportWithdrawalStrategySection } from "./types";
-import { describeBracketTargetChoice } from "./bracket-target-narrative";
+import {
+  describeBracketTargetChoice,
+  describeDiscretionaryCapacityMath,
+} from "./bracket-target-narrative";
 
 const TIER_SOURCE_LABEL: Record<"roth" | "brokerage" | "hsa", string> = {
   roth: "Roth",
@@ -184,11 +187,39 @@ export function buildWithdrawalStrategyNarrative(
       formatDiscretionaryTierBreakdown(y.discretionaryTierBreakdown) != null,
   );
   if (firstDiscretionaryYear) {
+    const fdy = firstDiscretionaryYear;
+    // Deflated (advisor review, 2026-08-31) — describeDiscretionaryCapacityMath's
+    // new capacity figures sit right next to this breakdown in one
+    // sentence, so both need the same dollar mode or "you had $X of room"
+    // and "$Y came from Roth" silently mix real/nominal dollars.
+    const deflatedBreakdown = fdy.discretionaryTierBreakdown?.map((t) => ({
+      ...t,
+      amount: deflate(t.amount, fdy.year),
+    }));
+    const breakdownDetail =
+      formatDiscretionaryTierBreakdown(deflatedBreakdown)!;
+    // "Why isn't brokerage draining before Roth" (found live, 2026-08-31)
+    // — shares describeDiscretionaryCapacityMath with the table tooltip so
+    // the two can never disagree.
+    const capacityDetail = describeDiscretionaryCapacityMath(
+      fdy.rothBasisCapacity != null && fdy.brokerageZeroLtcgCapacity != null
+        ? {
+            rothBasisCapacity: deflate(fdy.rothBasisCapacity, fdy.year),
+            brokerageZeroLtcgCapacity: deflate(
+              fdy.brokerageZeroLtcgCapacity,
+              fdy.year,
+            ),
+          }
+        : undefined,
+      deflatedBreakdown,
+      fdy.config.discretionaryWithdrawalOrder,
+      fdy.rmdOverrodeRouting,
+    );
     highlights.push({
       year: firstDiscretionaryYear.year,
-      detail: formatDiscretionaryTierBreakdown(
-        firstDiscretionaryYear.discretionaryTierBreakdown,
-      )!,
+      detail: capacityDetail
+        ? `${breakdownDetail} ${capacityDetail}`
+        : breakdownDetail,
     });
   }
 

@@ -402,6 +402,17 @@ export type EngineDecumulationYear = {
     costRate: number;
     amount: number;
   }[];
+  /** The two zero-cost discretionary tiers' real capacity this year, BEFORE
+   *  `discretionaryWithdrawalOrder` decides which drains first and before
+   *  either is actually drawn from — unlike `discretionaryTierBreakdown`
+   *  (drawn amounts only), a tier's capacity here is visible even in years
+   *  the draw loop never reached it (e.g. Roth basis alone covered the
+   *  year's need). See `RankedWithdrawalTiers` (withdrawal-cost-ranking.ts)
+   *  for the full explanation — found live, 2026-08-31, when a household
+   *  couldn't tell why brokerage's 0%-LTCG room wasn't draining before
+   *  Roth. bracket_filling mode only; undefined for waterfall/percentage. */
+  rothBasisCapacity?: number;
+  brokerageZeroLtcgCapacity?: number;
   /** Unmet withdrawal need after routing (target - actual) — a REAL output
    *  now, not debug-only (v0.7.8 penalty-hard-exclusion follow-up,
    *  DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md § Q3/C1): under the

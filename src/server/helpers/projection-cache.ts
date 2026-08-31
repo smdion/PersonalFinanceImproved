@@ -87,8 +87,18 @@ import { log } from "@/lib/logger";
  *  unaffected), causing the engine to over-select brokerage over cheaper
  *  Roth growth. Fixed via `ltcgRateForNextDollar` (tax-tables.ts), an
  *  exclusive-boundary lookup. A REAL value change — cached rows from
- *  before this fix understate brokerage's real cost and over-draw it. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 14;
+ *  before this fix understate brokerage's real cost and over-draw it.
+ *
+ *  15: added `rothBasisCapacity`/`brokerageZeroLtcgCapacity` to
+ *  `EngineDecumulationYear` (`withdrawal-cost-ranking.ts`'s
+ *  `RankedWithdrawalTiers`, threaded through `decumulation-year.ts`) — an
+ *  output-shape ADDITION, not a value change to any existing field (same
+ *  precedent as `rateSeededDecumulationYear1`, line ~258 below). Bumped
+ *  anyway so the new "why isn't brokerage draining" visibility isn't
+ *  hidden behind a stale cached row for up to the 36h TTL — a diagnostic
+ *  feature that's invisible to the household that asked for it on ship day
+ *  defeats its own purpose. */
+export const PROJECTION_CACHE_ENGINE_VERSION = 15;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

@@ -178,15 +178,43 @@ export interface RankWithdrawalTiersInput {
 }
 
 /**
- * Rank the post-Traditional-cap sources cheapest-first. Returns tiers in
- * draw order; each tier's `capacity` is already clamped to that source's
+ * `rankWithdrawalTiers`'s full return value — the draw-ordered `tiers` plus
+ * the two zero-cost tiers' capacities computed BEFORE
+ * `discretionaryWithdrawalOrder` decides which goes first (and before
+ * either is actually drawn from). Exists so callers can show "how much free
+ * room existed" even in years where one tier's capacity was never reached
+ * by the draw loop — e.g. Roth basis alone covered the year's need, so
+ * brokerage's very real 0%-LTCG capacity was never touched, but is still a
+ * real number worth surfacing (found live, 2026-08-31 — a household
+ * couldn't tell why brokerage wasn't draining when their Traditional
+ * bracket target was crowding out the 0%-LTCG room; this is what let them
+ * see it). Both capacities are 0, not omitted, when there is none — so
+ * callers can state "$0 room" rather than "no data."
+ */
+export type RankedWithdrawalTiers = {
+  tiers: WithdrawalTier[];
+  /** Roth basis capacity — always tax-free, independent of bracket. */
+  rothBasisCapacity: number;
+  /** Brokerage's 0%-LTCG-bracket capacity, in WITHDRAWAL dollars (already
+   *  adjusted for `brokerageBasisRatio` — a $1 gain requires drawing more
+   *  than $1 when part of the withdrawal is basis). NOT the same number as
+   *  the underlying gains-room itself — see the module's callers for why
+   *  this distinction matters when describing it in words. 0 when there is
+   *  no filing status to look up a real LTCG bracket against (see the
+   *  early-return branch below). */
+  brokerageZeroLtcgCapacity: number;
+};
+
+/**
+ * Rank the post-Traditional-cap sources cheapest-first. `tiers` is in draw
+ * order; each tier's `capacity` is already clamped to that source's
  * available balance for the SLICE priced at that tier's rate (e.g. a
  * brokerage tier's capacity is expressed in withdrawal dollars, already
  * adjusted for `brokerageBasisRatio` — see inline comments).
  */
 export function rankWithdrawalTiers(
   input: RankWithdrawalTiersInput,
-): WithdrawalTier[] {
+): RankedWithdrawalTiers {
   const {
     filingStatus,
     ordinaryIncomeFloor,
@@ -260,7 +288,11 @@ export function rankWithdrawalTiers(
     // has nothing to act on and this always matches the pre-existing
     // fixed order (roth, then hsa, then brokerage's unpriced flat-fallback
     // tier last).
-    return [...rothTiers, ...(hsaTier ? [hsaTier] : []), ...brokerageTiers];
+    return {
+      tiers: [...rothTiers, ...(hsaTier ? [hsaTier] : []), ...brokerageTiers],
+      rothBasisCapacity,
+      brokerageZeroLtcgCapacity: 0,
+    };
   }
 
   // Brokerage 0%-LTCG-zone capacity — free, like Roth basis. Convert
@@ -421,7 +453,7 @@ export function rankWithdrawalTiers(
   // Tiers 0/1: both free — Roth basis and brokerage's 0%-LTCG room.
   // `discretionaryWithdrawalOrder` only controls which of these two goes
   // first; the priced tier above is unaffected.
-  return brokerageFirst
+  const tiers = brokerageFirst
     ? [
         ...(brokerageZeroTier ? [brokerageZeroTier] : []),
         ...(rothBasisTier ? [rothBasisTier] : []),
@@ -432,4 +464,10 @@ export function rankWithdrawalTiers(
         ...(brokerageZeroTier ? [brokerageZeroTier] : []),
         ...priced,
       ];
+
+  return {
+    tiers,
+    rothBasisCapacity,
+    brokerageZeroLtcgCapacity: brokerageZeroCapacity,
+  };
 }

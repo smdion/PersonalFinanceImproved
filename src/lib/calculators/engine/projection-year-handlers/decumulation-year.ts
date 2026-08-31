@@ -1154,6 +1154,8 @@ export function runDecumulationYear(
     estTraditionalPortion,
     bracketTraditionalCap: routeResult.traditionalCap,
     discretionaryTierBreakdown: routeResult.tierBreakdown,
+    rothBasisCapacity: routeResult.rothBasisCapacity,
+    brokerageZeroLtcgCapacity: routeResult.brokerageZeroLtcgCapacity,
     unmetNeed: finalUnmetNeed,
     unmetNeedMaterial,
     penaltyAvoidedShortfall,
