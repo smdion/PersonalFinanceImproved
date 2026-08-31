@@ -331,11 +331,30 @@ export const syncCoreRouter = createTRPCRouter({
       const accounts = accountsCache.data;
       const categoryGroups = categoriesCache?.data ?? [];
 
-      // Compute what cash would be under API control
-      const cashTypes = new Set(["checking", "savings", "cash"]);
-      const onBudgetCashAccounts = accounts.filter(
-        (a) => a.onBudget && !a.closed && cashTypes.has(a.type),
+      // Compute what cash would be under API control — same precedence as
+      // getEffectiveCash (server/helpers/budget.ts): explicit "cash"
+      // account mappings win when present (the only path that works for
+      // Actual at all, which has no account-type field to auto-detect
+      // from — found live, 2026-08-31), else fall back to type-based
+      // auto-detection (YNAB). This preview used to duplicate the
+      // type-based logic independently, so it kept showing $0 even after
+      // a household mapped Cash accounts — a household with mappings must
+      // see the SAME total here as Net Worth/Assets, not a second,
+      // differently-computed number.
+      const cashMappings = (conn?.accountMappings ?? []).filter(
+        (m) =>
+          m.localId === "cash" &&
+          (m.syncDirection === "pull" || m.syncDirection === "both"),
       );
+      const cashTypes = new Set(["checking", "savings", "cash"]);
+      const onBudgetCashAccounts =
+        cashMappings.length > 0
+          ? accounts.filter((a) =>
+              cashMappings.some((m) => m.remoteAccountId === a.id),
+            )
+          : accounts.filter(
+              (a) => a.onBudget && !a.closed && cashTypes.has(a.type),
+            );
       const apiCash = onBudgetCashAccounts.reduce(
         (sum, a) => sum + a.balance,
         0,

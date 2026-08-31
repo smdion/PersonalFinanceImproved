@@ -674,6 +674,71 @@ describe("sync core — getPreview", () => {
     expect(result.savings.summary.orphaned).toBeGreaterThanOrEqual(1);
   });
 
+  // Found live, 2026-08-31: this preview's cash figure was an independent
+  // duplicate of getEffectiveCash's type-based auto-detection, so mapping
+  // "Cash" accounts on the Integrations page (server/helpers/budget.ts's
+  // sumMappedAccountBalances) fixed Net Worth/Assets but this preview kept
+  // showing $0 — a second, differently-computed number for the same thing.
+  it("uses mapped Cash accounts for the preview total when mappings exist, ignoring type", async () => {
+    const mockAccounts = [
+      // No recognizable "type" at all — matches Actual's real account
+      // shape (no account-type field exists there), which is exactly why
+      // type-based detection alone can't work for this household.
+      { id: "acct-checking", name: "BCU Checking", balance: 21112.06 },
+      { id: "acct-hysa", name: "Vanguard HYSA", balance: 33623.99 },
+      // Present but NOT mapped to cash — must be excluded from the total.
+      { id: "acct-other", name: "Unrelated", balance: 999999 },
+    ];
+    const mockCategories: {
+      id: string;
+      name: string;
+      hidden: boolean;
+      categories: unknown[];
+    }[] = [];
+
+    mockCacheGet.mockImplementation(
+      async (_db: unknown, _service: unknown, key: string) => {
+        if (key === "accounts")
+          return { data: mockAccounts, fetchedAt: new Date() };
+        if (key === "categories")
+          return { data: mockCategories, fetchedAt: new Date() };
+        return null;
+      },
+    );
+
+    mockGetApiConnection.mockResolvedValue({
+      accountMappings: [
+        {
+          localId: "cash",
+          localName: "Cash",
+          remoteAccountId: "acct-checking",
+          syncDirection: "pull",
+        },
+        {
+          localId: "cash",
+          localName: "Cash",
+          remoteAccountId: "acct-hysa",
+          syncDirection: "pull",
+        },
+      ],
+      skippedCategoryIds: [],
+      linkedProfileId: null,
+      linkedColumnIndex: 0,
+      lastSyncedAt: null,
+    });
+
+    const result = await caller.sync.getPreview({ service: "actual" });
+    expect(result.synced).toBe(true);
+    if (!result.synced) throw new Error("Expected synced:true");
+
+    expect(result.cash.api).toBeCloseTo(21112.06 + 33623.99, 2);
+    expect(result.cash.apiAccounts).toHaveLength(2);
+    expect(result.cash.apiAccounts.map((a) => a.name).sort()).toEqual([
+      "BCU Checking",
+      "Vanguard HYSA",
+    ]);
+  });
+
   it("skipped categories appear in skippedApiCategories", async () => {
     const mockAccounts = [
       {
