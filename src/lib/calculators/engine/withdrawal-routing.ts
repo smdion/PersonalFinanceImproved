@@ -659,6 +659,7 @@ export function routeWithdrawalsBracketFilling(
     brokerageBasisRatio: bracketInfo.brokerageBasisRatio ?? 0,
     hsaAvailable: hsaAvailableTotal,
     magiBeforeThisDraw: bracketInfo.magiBeforeThisDraw ?? baseOrdinaryFloor,
+    standardDeduction: bracketInfo.standardDeduction,
   };
   let impliedRothGrowth = 0;
   let tiers = rankWithdrawalTiers({
@@ -774,6 +775,11 @@ export interface RouteBracketInfo {
    *  identical balance data, so `traditionalCap - totalTradWithdrawn` IS
    *  that same "unused room" quantity, not an approximation of it. */
   conversionsEnabled?: boolean;
+  /** Household's annual standard deduction — converts the gross ordinary-
+   *  income floor into real taxable income before LTCG bracket lookups.
+   *  Omitted ⇒ 0 (pre-2026-08-30 behavior: LTCG room systematically
+   *  understated, real LTCG tax overcharged). See `toLtcgTaxableIncome`. */
+  standardDeduction?: number;
 }
 
 export type RouteResult = {

@@ -26,7 +26,11 @@ import {
   QCD_MIN_ELIGIBILITY_AGE,
 } from "../../../constants";
 import { cloneAccountBalances } from "../balance-utils";
-import { getLtcgRate, computeLtcgTax } from "../../../config/tax-tables";
+import {
+  getLtcgRate,
+  computeLtcgTax,
+  toLtcgTaxableIncome,
+} from "../../../config/tax-tables";
 import { computeNiit } from "../../../config/niit";
 import { resolveDecumulationConfig } from "../override-resolution";
 import { applyGrowth } from "../growth-application";
@@ -421,6 +425,7 @@ export function runDecumulationYear(
       rothBasisAvailable,
       brokerageBasisRatio,
       conversionsEnabled: taxRates.enableRothConversions,
+      standardDeduction: taxRates.standardDeduction,
     },
     eligibility,
     nonRetirement,
@@ -752,8 +757,16 @@ export function runDecumulationYear(
   // Recompute LTCG tax including Roth conversion income (#37).
   // Roth conversions are taxed as ordinary income and push total taxable income
   // into potentially higher LTCG brackets (0%/15%/20%).
+  // `revisedOrdinary` is used ONLY for the LTCG calls below (never for an
+  // ordinary-bracket lookup), so it's converted to real taxable income
+  // once, here, rather than at each call site — `actualTaxableIncome` and
+  // `rothConversionAmount` are both gross; LTCG brackets are real
+  // taxable-income thresholds. See `toLtcgTaxableIncome`'s docblock.
   let postConversionLtcgRate: number;
-  const revisedOrdinary = actualTaxableIncome + rothConversionAmount;
+  const revisedOrdinary = toLtcgTaxableIncome(
+    actualTaxableIncome + rothConversionAmount,
+    taxRates.standardDeduction,
+  );
   if (rothConversionAmount > 0 && filingStatus && brokerageGainsPortion > 0) {
     brokerageTaxCost = roundToCents(
       computeLtcgTax(

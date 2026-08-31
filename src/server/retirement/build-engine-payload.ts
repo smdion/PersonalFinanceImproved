@@ -1446,6 +1446,17 @@ export async function buildEnginePayload(
       settings.rothConversionTarget != null
         ? toNumber(settings.rothConversionTarget)
         : undefined,
+    // Added 2026-08-30 alongside `toLtcgTaxableIncome` (tax-tables.ts):
+    // LTCG bracket lookups need real taxable income, not gross ordinary
+    // income — this sources the deduction from real config
+    // (`contribution_limits`, already loaded into limitsMap above) rather
+    // than a hardcoded constant. Same key format `paycheck.ts`'s own
+    // standard-deduction lookup uses. Undefined when not seeded for this
+    // filing status ⇒ the LTCG helper subtracts 0, reproducing pre-fix
+    // behavior rather than throwing.
+    standardDeduction: filingStatus
+      ? limitsMap[`standard_deduction_${filingStatus.toLowerCase()}`]
+      : undefined,
   };
 
   // Base engine input (without accumulationOverrides, decumulationOverrides, decumulationDefaults)

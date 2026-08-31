@@ -28,7 +28,11 @@
 import type { FilingStatusType, TaxBuckets } from "../types";
 import { marginalRateAtIncome } from "./tax-estimation";
 import type { WithholdingBracket } from "./tax-estimation";
-import { ltcgRoomForRate, getLtcgRate } from "../../config/tax-tables";
+import {
+  ltcgRoomForRate,
+  getLtcgRate,
+  toLtcgTaxableIncome,
+} from "../../config/tax-tables";
 import {
   isRetirementParent,
   isTaxFreeBucket,
@@ -148,6 +152,11 @@ export interface RankWithdrawalTiersInput {
    *  headroom check on the brokerage/Roth-growth tier. IRMAA is NOT
    *  modeled here (explicitly out of scope — see module docblock). */
   magiBeforeThisDraw: number;
+  /** Household's annual standard deduction — converts `ordinaryIncomeFloor`
+   *  (gross) into real taxable income before it's compared against LTCG
+   *  bracket thresholds. See `toLtcgTaxableIncome`'s docblock. Undefined ⇒
+   *  0, i.e. the pre-fix behavior. */
+  standardDeduction?: number;
 }
 
 /**
@@ -171,6 +180,7 @@ export function rankWithdrawalTiers(
     brokerageBasisRatio,
     hsaAvailable,
     magiBeforeThisDraw,
+    standardDeduction,
   } = input;
 
   const tiers: WithdrawalTier[] = [];
@@ -226,9 +236,14 @@ export function rankWithdrawalTiers(
   // Tier 1: brokerage gains in the 0% LTCG zone — free, like Roth basis.
   // Convert gains-room to withdrawal-room via the basis ratio (a $1 gain
   // requires drawing more than $1 when part of the withdrawal is basis).
+  // `ordinaryIncomeFloor` is GROSS (correct for `rothGrowthRate` above,
+  // against the ordinary W-4 brackets) — LTCG brackets are real
+  // taxable-income thresholds, so this specific lookup needs the
+  // household's standard deduction subtracted first. See
+  // `toLtcgTaxableIncome`'s docblock.
   const zeroGainsRoom = ltcgRoomForRate(
     0,
-    ordinaryIncomeFloor,
+    toLtcgTaxableIncome(ordinaryIncomeFloor, standardDeduction),
     filingStatus,
     ltcgBrackets,
   );
@@ -283,7 +298,13 @@ export function rankWithdrawalTiers(
   // case.
   const hsaRate = rothGrowthRate;
 
-  const brokerageOrdinaryIncome = ordinaryIncomeFloor; // gains don't raise the ordinary floor itself
+  // gains don't raise the ordinary floor itself — same taxable-income
+  // conversion as zeroGainsRoom above, or this mixes a taxable-denominated
+  // room with a gross-denominated floor.
+  const brokerageOrdinaryIncome = toLtcgTaxableIncome(
+    ordinaryIncomeFloor,
+    standardDeduction,
+  );
   const ltcgRate = getLtcgRate(
     brokerageOrdinaryIncome + zeroGainsRoom,
     filingStatus,

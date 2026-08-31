@@ -46,8 +46,19 @@ import { log } from "@/lib/logger";
  *  unchanged (step A's backfill guarantees it, and the golden-baseline diff
  *  is byte-identical), but the source changed, so rows cached before the
  *  cutover must not be served afterwards — otherwise a household that later
- *  switches profiles keeps seeing the old profile's cached numbers. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 11;
+ *  switches profiles keeps seeing the old profile's cached numbers.
+ *
+ *  12: LTCG bracket lookups (0%/15%/20% room, and the tax actually charged
+ *  on brokerage gains) were being fed GROSS ordinary income where the
+ *  brackets are denominated in real taxable income — systematically
+ *  understating 0%-LTCG room and overcharging real LTCG tax every
+ *  decumulation year with a brokerage draw. Fixed via `toLtcgTaxableIncome`
+ *  (tax-tables.ts), threaded through `withdrawal-cost-ranking.ts`,
+ *  `tax-estimation.ts`, and `decumulation-year.ts`'s Roth-conversion-revised
+ *  recompute. A REAL value change (not just a source change like #11) —
+ *  cached rows from before this fix would show less LTCG-0% room and a
+ *  higher LTCG tax bill than the corrected engine actually computes. */
+export const PROJECTION_CACHE_ENGINE_VERSION = 12;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

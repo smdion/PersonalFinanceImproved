@@ -228,6 +228,41 @@ describe("rankWithdrawalTiers", () => {
     expect(tiers[0]).toMatchObject({ source: "roth", costRate: 0 });
   });
 
+  // Regression, 2026-08-30: ordinaryIncomeFloor was fed straight into the
+  // LTCG lookup with no standard-deduction subtraction — real household
+  // numbers (see live projection debugging session), $120,100 gross
+  // Traditional withdrawal, MFJ $32,200 standard deduction, $98,900
+  // 0%-LTCG ceiling. Pre-fix: zero 0%-LTCG room (120,100 already exceeds
+  // 98,900 on its own). Post-fix: ~$11,000 of real room.
+  it("standardDeduction converts gross ordinaryIncomeFloor to taxable income before the LTCG lookup", () => {
+    const withoutDeduction = rankWithdrawalTiers(
+      baseInput({
+        ordinaryIncomeFloor: 120100,
+        rothBasisAvailable: 0,
+        brokerageAvailable: 50000,
+        brokerageBasisRatio: 0,
+      }),
+    );
+    const zeroTierWithout = withoutDeduction.find(
+      (t) => t.source === "brokerage" && t.costRate === 0,
+    );
+    expect(zeroTierWithout).toBeUndefined();
+
+    const withDeduction = rankWithdrawalTiers(
+      baseInput({
+        ordinaryIncomeFloor: 120100,
+        standardDeduction: 32200,
+        rothBasisAvailable: 0,
+        brokerageAvailable: 50000,
+        brokerageBasisRatio: 0,
+      }),
+    );
+    const zeroTierWith = withDeduction.find(
+      (t) => t.source === "brokerage" && t.costRate === 0,
+    );
+    expect(zeroTierWith?.capacity).toBe(11000);
+  });
+
   it("zero remaining balances in every source ⇒ returns tiers with zero total capacity, never throws", () => {
     const tiers = rankWithdrawalTiers(
       baseInput({

@@ -377,6 +377,21 @@ export type DecumulationDefaults = {
      *  above overrides the ordinary W-4 defaults. Threshold `null` = the top
      *  (Infinity) bracket. Undefined = fall back to the hardcoded table. */
     ltcgBrackets?: Record<string, { threshold: number | null; rate: number }[]>;
+    /** Household's annual standard deduction (from `contribution_limits`,
+     *  filing-status-keyed), for converting GROSS ordinary income into the
+     *  TAXABLE income LTCG brackets are actually denominated in (found
+     *  2026-08-30 — `LTCG_BRACKETS`/`ltcgBrackets` use real IRS
+     *  taxable-income thresholds, but every LTCG-stacking call site fed
+     *  them a gross figure with nothing subtracted, systematically
+     *  overstating how much of the 0%/15% room ordinary income had
+     *  already consumed and overcharging real LTCG tax as a result).
+     *  Deliberately NOT used for `taxBrackets`/`incomeCapForMarginalRate`
+     *  above — those are Pub 15-T withholding brackets that already embed
+     *  a (different, smaller) deduction-equivalent offset; subtracting
+     *  this figure there would double-count. Undefined ⇒ 0, reproducing
+     *  today's (bugged) behavior exactly — this is what makes the fix
+     *  additive rather than a forced behavior change for every caller. */
+    standardDeduction?: number;
   };
 
   /** Withdrawal/spending strategy. Defaults to 'fixed'. */
