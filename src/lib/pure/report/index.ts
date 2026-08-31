@@ -5,6 +5,10 @@ import type { ProjectionResult } from "@/lib/calculators/types/engine-projection
 import type { MonteCarloResult } from "@/lib/calculators/types/monte-carlo";
 import { buildExecutiveSummary } from "./executive-summary";
 import { buildWithdrawalStrategyNarrative } from "./withdrawal-strategy-narrative";
+import { buildRiskNarrative, buildRiskBandPoints } from "./risk-narrative";
+import { buildWatchlist } from "./aca-irmaa-narrative";
+import { buildActionItems } from "./action-items";
+import { buildYearTableRows } from "./year-table";
 import type { ReportNarrative } from "./types";
 
 export type { ReportNarrative } from "./types";
@@ -43,5 +47,27 @@ export function buildReportNarrative(
     opts.deflate,
   );
 
-  return { executiveSummary, withdrawalStrategy };
+  const risk = buildRiskNarrative(mcResult, {
+    deflate: opts.deflate,
+    baseYear: opts.baseYear,
+  });
+  const riskBandPoints = buildRiskBandPoints(mcResult);
+
+  const watchlist = buildWatchlist(decumulationYears, opts.deflate);
+  const actionItems = buildActionItems(
+    projectionResult,
+    mcResult,
+    decumulationYears,
+  );
+  const yearTableRows = buildYearTableRows(decumulationYears, opts.deflate);
+
+  return {
+    executiveSummary,
+    withdrawalStrategy,
+    risk,
+    riskBandPoints,
+    watchlist,
+    actionItems,
+    yearTableRows,
+  };
 }

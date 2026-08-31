@@ -177,9 +177,17 @@ function buildRoutingReasonClause(
     yr.bracketTraditionalCap != null
   ) {
     const targetPct = yr.config.rothBracketTarget;
+    // "Why THIS bracket" (found live, 2026-08-31): this used to say
+    // "your bracket target" without ever explaining why filling to that
+    // specific rate, rather than a lower or higher one, is the point —
+    // Traditional money gets taxed one way or another, either at a rate
+    // you choose now or later as an RMD taxed at whatever bracket you're
+    // in then; filling to (not past) this bracket uses that room while
+    // it's yours to choose without paying a higher rate today than
+    // necessary.
     const targetClause =
       targetPct != null
-        ? `Filled to your ${formatPercent(targetPct, 0)} bracket target — up to ${formatCurrency(deflate(yr.bracketTraditionalCap, yr.year))} of ordinary income (RMDs still apply on top when required)`
+        ? `Filled to your ${formatPercent(targetPct, 0)} bracket target — up to ${formatCurrency(deflate(yr.bracketTraditionalCap, yr.year))} of ordinary income (RMDs still apply on top when required). Filling to ${formatPercent(targetPct, 0)} now, instead of leaving it for a future forced RMD, uses this tax rate while you control the amount — going further into the next bracket isn't done because that cost isn't chosen to be worth it today.`
         : `Filled to your configured bracket target — up to ${formatCurrency(deflate(yr.bracketTraditionalCap, yr.year))} of ordinary income`;
     // "Why this account over another" (cross-category order, e.g. 401k
     // before IRA) — your configured Traditional Account Order, restricted

@@ -36,4 +36,9 @@ export interface ReportWithdrawalStrategySection {
 export interface ReportNarrative {
   executiveSummary: ReportExecutiveSummary;
   withdrawalStrategy: ReportWithdrawalStrategySection;
+  risk: import("./risk-narrative").RiskNarrative;
+  riskBandPoints: import("./risk-narrative").RiskBandPoint[];
+  watchlist: import("./aca-irmaa-narrative").WatchlistSection;
+  actionItems: import("./action-items").ActionItemsSection;
+  yearTableRows: import("./year-table").YearTableRow[];
 }

@@ -15,6 +15,72 @@ const TIER_SOURCE_LABEL: Record<"roth" | "brokerage" | "hsa", string> = {
   hsa: "HSA",
 };
 
+/** Real LTCG brackets (0%, 15%, 20%) and the NIIT surtax rate — used only
+ *  to LABEL a brokerage tier's rate as "capital-gains" vs "capital-gains +
+ *  Medicare surtax" for the explanation text below. Not a second pricing
+ *  computation: withdrawal-cost-ranking.ts already computed `costRate`
+ *  itself (`ltcgRate` or `ltcgRate + NIIT_RATE`); this only pattern-matches
+ *  the result against the small, fixed set of values it could legitimately
+ *  be, to describe it in words. See that module for the real rate logic. */
+const LTCG_BRACKETS = [0, 0.15, 0.2];
+const NIIT_RATE = 0.038;
+const RATE_EPSILON = 0.0005;
+
+function approxEquals(a: number, b: number): boolean {
+  return Math.abs(a - b) < RATE_EPSILON;
+}
+
+/** Explains WHAT KIND of rate a tier's `costRate` is and WHY, not just the
+ *  number — found live, 2026-08-31: a household asked "why is Roth cheaper
+ *  than Brokerage" and the honest answer is tier-dependent (Roth BASIS is
+ *  always free — already-taxed principal; Roth GROWTH is taxed at your
+ *  ordinary rate; Brokerage's own 0%-capital-gains room is free, but real
+ *  gains beyond it are taxed at your capital-gains rate, +3.8% once you
+ *  cross the Medicare surtax threshold) — a plain "0%"/"X% marginal tax"
+ *  figure doesn't say which case applies. `source` alone can't distinguish
+ *  Roth basis from Roth growth (see this account's own eligibility note
+ *  for that, e.g. "Rule of 55 met" for growth access) — for a $0-cost Roth
+ *  entry this stays deliberately non-committal between the two truthful
+ *  possibilities rather than guessing.
+ */
+function describeTierRate(
+  source: "roth" | "brokerage" | "hsa",
+  costRate: number,
+): string {
+  if (costRate <= 0) {
+    if (source === "roth") {
+      return "cheapest available — already-taxed Roth contributions are always tax-free, or this is Roth growth taxed at your current 0% bracket";
+    }
+    // `source` is WithdrawalTier's cost-ranking source kind, not an
+    // AccountCategory — coincidentally overlapping strings, different
+    // domain, no account-types.ts predicate applies. lint-violation-ok
+    if (source === "brokerage") {
+      return "cheapest available — inside your 0% capital-gains bracket, so these gains aren't taxed";
+    }
+    return "cheapest available";
+  }
+  if (source === "roth") {
+    return `Roth growth taxed at your ${formatPercent(costRate, 1)} ordinary income rate (not your tax-free contributions)`;
+  }
+  // lint-violation-ok: see the "roth"/"brokerage" note above — same
+  // WithdrawalTier source kind, not an AccountCategory.
+  if (source === "hsa") {
+    return `taxed at your ${formatPercent(costRate, 1)} ordinary income rate (a non-medical HSA withdrawal)`;
+  }
+  // brokerage
+  const withNiit = LTCG_BRACKETS.some((b) =>
+    approxEquals(costRate, b + NIIT_RATE),
+  );
+  const ltcgOnly = LTCG_BRACKETS.some((b) => approxEquals(costRate, b));
+  if (withNiit) {
+    return `${formatPercent(costRate, 1)} — your long-term capital-gains rate plus the 3.8% Medicare surtax, since this draw crosses that income threshold`;
+  }
+  if (ltcgOnly) {
+    return `${formatPercent(costRate, 1)} long-term capital-gains rate`;
+  }
+  return `${formatPercent(costRate, 1)} marginal tax`;
+}
+
 /**
  * Human-readable "why was this account used" explanation for a year's
  * discretionary (beyond-Traditional-bracket-cap) withdrawal routing. Reads
@@ -32,18 +98,8 @@ export function formatDiscretionaryTierBreakdown(
     | undefined,
 ): string | undefined {
   if (!breakdown || breakdown.length === 0) return undefined;
-  // Deliberately NOT "free"/"0%" for a costRate of 0 — this sits right next
-  // to per-account eligibility notes that already say "taxable" for the
-  // same dollars (Roth basis genuinely is tax-free, but Roth GROWTH tier
-  // entries can also legitimately show 0% here — the household-level "no
-  // extra cost vs. the alternative" framing, not a claim about this
-  // specific account's own tax treatment — see this account's own note for
-  // that). "cheapest available" reads correctly in both cases.
   const parts = breakdown.map((t) => {
-    const rate =
-      t.costRate <= 0
-        ? "cheapest available"
-        : `${formatPercent(t.costRate, 1)} marginal tax`;
+    const rate = describeTierRate(t.source, t.costRate);
     return `${formatCurrency(t.amount)} ${TIER_SOURCE_LABEL[t.source]} (${rate})`;
   });
   return `Household-wide, beyond the bracket target, cheapest source first: ${parts.join(" → ")}`;
@@ -139,6 +195,27 @@ export function buildWithdrawalStrategyNarrative(
     (y) => (y.discretionaryTierBreakdown?.length ?? 0) > 0,
   );
 
+  // "Why THIS bracket, not a lower or higher one" — found live, 2026-08-31:
+  // the prior version of this narrative (and the matching table tooltip)
+  // said "fills your target tax bracket" without ever naming the actual
+  // rate or explaining why it's the right one to fill to. Reads directly
+  // off the resolved config's `rothBracketTarget` (the same field the
+  // table tooltip already cites) rather than re-deriving it — the FULL,
+  // numeric "why this rate beats every other candidate" answer comes from
+  // a separate, expensive multi-year search (withdrawal-bracket-
+  // optimizer.ts, surfaced today only on the Taxes settings page) that
+  // this report doesn't currently have access to; this states the
+  // qualitative reasoning behind bracket-filling as a strategy instead of
+  // re-running that search.
+  const bracketTargetYear = decumulationYears.find(
+    (y) => y.config.rothBracketTarget != null,
+  );
+  const bracketTarget = bracketTargetYear?.config.rothBracketTarget;
+  const bracketTargetSentence =
+    bracketTarget != null
+      ? `This plan fills your Traditional withdrawals up to the ${formatPercent(bracketTarget, 0)} tax bracket before drawing from any other account. The idea: your Traditional balance will eventually be taxed one way or another — either you withdraw it (or convert it to Roth) at a rate you choose now, or the IRS forces it out later as a Required Minimum Distribution, taxed at whatever your bracket happens to be at that point (often higher, once RMDs stack on top of other income). Filling to ${formatPercent(bracketTarget, 0)} now uses up that tax bracket while you control the amount; stopping there instead of going further into the next bracket avoids paying a higher rate today for savings that may not materialize.`
+      : undefined;
+
   let narrative: string;
   if (hasRmdYears && hasDiscretionaryYears) {
     narrative =
@@ -157,5 +234,10 @@ export function buildWithdrawalStrategyNarrative(
       "spending need for the year.";
   }
 
-  return { narrative, highlights };
+  return {
+    narrative: bracketTargetSentence
+      ? `${bracketTargetSentence} ${narrative}`
+      : narrative,
+    highlights,
+  };
 }

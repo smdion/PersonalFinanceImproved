@@ -871,9 +871,11 @@ describe("formatDiscretionaryTierBreakdown", () => {
       { source: "roth", costRate: 0, amount: 20000 },
       { source: "brokerage", costRate: 0.15, amount: 15000 },
     ])!;
-    const brokerageFreeIdx = result.indexOf("Brokerage (cheapest available)");
-    const rothFreeIdx = result.indexOf("Roth (cheapest available)");
-    const brokeragePricedIdx = result.indexOf("Brokerage (15.0% marginal tax)");
+    const brokerageFreeIdx = result.indexOf("Brokerage (cheapest available");
+    const rothFreeIdx = result.indexOf("Roth (cheapest available");
+    const brokeragePricedIdx = result.indexOf(
+      "Brokerage (15.0% long-term capital-gains rate)",
+    );
     expect(brokerageFreeIdx).toBeGreaterThanOrEqual(0);
     expect(rothFreeIdx).toBeGreaterThan(brokerageFreeIdx);
     expect(brokeragePricedIdx).toBeGreaterThan(rothFreeIdx);

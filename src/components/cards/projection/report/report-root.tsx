@@ -11,6 +11,10 @@ import { buildReportNarrative } from "@/lib/pure/report";
 import { ReportCover } from "./report-cover";
 import { ReportExecutiveSummarySection } from "./report-executive-summary";
 import { ReportStrategyNarrativeSection } from "./report-strategy-narrative";
+import { ReportRiskAnalysisSection } from "./report-risk-analysis";
+import { ReportRiskWatchlistSection } from "./report-risk-watchlist";
+import { ReportActionItemsSection } from "./report-action-items";
+import { ReportYearTable } from "./report-year-table";
 import {
   ReportAssumptionsSummary,
   type ReportEngineSettings,
@@ -54,7 +58,17 @@ export function ReportRoot({
         verdict={narrative.executiveSummary.verdict}
       />
       <ReportExecutiveSummarySection summary={narrative.executiveSummary} />
+      <ReportRiskAnalysisSection
+        narrative={narrative.risk}
+        bandPoints={narrative.riskBandPoints}
+        deflate={deflate}
+      />
       <ReportStrategyNarrativeSection strategy={narrative.withdrawalStrategy} />
+      <ReportRiskWatchlistSection watchlist={narrative.watchlist} />
+      <ReportActionItemsSection actionItems={narrative.actionItems} />
+      <div style={{ pageBreakBefore: "always" }}>
+        <ReportYearTable rows={narrative.yearTableRows} />
+      </div>
       <ReportAssumptionsSummary
         settings={engineSettings}
         rmdExcessYears={rmdExcessYears}

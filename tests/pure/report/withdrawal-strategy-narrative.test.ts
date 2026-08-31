@@ -16,6 +16,7 @@ function decumYear(
     year: 2040,
     age: 65,
     phase: "decumulation",
+    config: {},
     ...overrides,
   } as unknown as EngineDecumulationYear;
 }
@@ -36,6 +37,56 @@ describe("formatDiscretionaryTierBreakdown / formatRmdDivisorDetail (moved, unch
       2040,
     );
     expect(result).toContain("÷ 25.5");
+  });
+});
+
+describe("formatDiscretionaryTierBreakdown — 'why this rate' explanations (found live, 2026-08-31: a household asked why Roth showed as cheaper than Brokerage)", () => {
+  it("explains a $0-cost Roth entry as either tax-free basis OR 0%-bracket growth, not a flat claim of either", () => {
+    const result = formatDiscretionaryTierBreakdown([
+      { source: "roth", costRate: 0, amount: 1000 },
+    ])!;
+    expect(result).toMatch(/already-taxed Roth contributions/i);
+    expect(result).toMatch(/Roth growth taxed at your current 0% bracket/i);
+  });
+
+  it("explains a $0-cost Brokerage entry as the 0% capital-gains room, not ambiguous like Roth", () => {
+    const result = formatDiscretionaryTierBreakdown([
+      { source: "brokerage", costRate: 0, amount: 1000 },
+    ])!;
+    expect(result).toMatch(/0% capital-gains bracket/i);
+  });
+
+  it("explains a nonzero Roth entry as growth taxed at the ordinary rate, distinct from tax-free contributions", () => {
+    const result = formatDiscretionaryTierBreakdown([
+      { source: "roth", costRate: 0.12, amount: 1000 },
+    ])!;
+    expect(result).toMatch(
+      /Roth growth taxed at your 12\.0% ordinary income rate/i,
+    );
+    expect(result).toMatch(/not your tax-free contributions/i);
+  });
+
+  it("explains a nonzero HSA entry as a non-medical withdrawal taxed at the ordinary rate", () => {
+    const result = formatDiscretionaryTierBreakdown([
+      { source: "hsa", costRate: 0.22, amount: 1000 },
+    ])!;
+    expect(result).toMatch(/22\.0% ordinary income rate/i);
+    expect(result).toMatch(/non-medical HSA withdrawal/i);
+  });
+
+  it("labels a real LTCG-bracket rate as the capital-gains rate, not generic 'marginal tax'", () => {
+    const result = formatDiscretionaryTierBreakdown([
+      { source: "brokerage", costRate: 0.2, amount: 1000 },
+    ])!;
+    expect(result).toMatch(/20\.0% long-term capital-gains rate/i);
+  });
+
+  it("labels an LTCG-plus-NIIT rate as including the Medicare surtax", () => {
+    const result = formatDiscretionaryTierBreakdown([
+      { source: "brokerage", costRate: 0.15 + 0.038, amount: 1000 },
+    ])!;
+    expect(result).toMatch(/Medicare surtax/i);
+    expect(result).toMatch(/18\.8%/);
   });
 });
 
@@ -95,5 +146,30 @@ describe("buildWithdrawalStrategyNarrative", () => {
     const section = buildWithdrawalStrategyNarrative(years, noopDeflate);
     expect(section.highlights).toHaveLength(0);
     expect(section.narrative.length).toBeGreaterThan(0);
+  });
+
+  it("names the actual configured bracket-fill rate and explains why that rate, not just 'your target bracket'", () => {
+    const years = [
+      decumYear({ year: 2040, config: { rothBracketTarget: 0.22 } }),
+    ];
+    const section = buildWithdrawalStrategyNarrative(years, noopDeflate);
+    expect(section.narrative).toMatch(/22% tax bracket/);
+    expect(section.narrative).toMatch(/Required Minimum Distribution/i);
+    expect(section.narrative).toMatch(/avoids paying a higher rate today/i);
+  });
+
+  it("omits the bracket-rate explanation when no bracket target is configured for any year", () => {
+    const years = [decumYear({ year: 2040, config: {} })];
+    const section = buildWithdrawalStrategyNarrative(years, noopDeflate);
+    expect(section.narrative).not.toMatch(/tax bracket before drawing/i);
+  });
+
+  it("uses the first year that has a configured bracket target, even if earlier years don't", () => {
+    const years = [
+      decumYear({ year: 2040, config: {} }),
+      decumYear({ year: 2041, config: { rothBracketTarget: 0.12 } }),
+    ];
+    const section = buildWithdrawalStrategyNarrative(years, noopDeflate);
+    expect(section.narrative).toMatch(/12% tax bracket/);
   });
 });
