@@ -449,12 +449,17 @@ describe("ActualClient", () => {
   });
 
   describe("getCategories", () => {
-    it("merges categories into groups and maps cents to dollars", async () => {
-      // /categorygroups + /categories are fetched in parallel and merged
-      // by group_id. We provide both responses in the order the client
-      // fires them (Promise.all → request 1 then request 2 on Actual's
-      // HTTP impl; the test tolerates both orders by returning the same
-      // shape twice).
+    it("merges categories into groups, enriched with the current month's real numbers", async () => {
+      // Verified live, 2026-08-31: the bare /categorygroups + /categories
+      // endpoints carry only id/name/hidden/group_id — NO budgeted/spent/
+      // balance/goal keys at all (unlike YNAB, whose categories endpoint
+      // does carry a real running balance). Those numbers are inherently
+      // month-scoped in Actual and only come back from /months/:id, which
+      // getCategories() now fetches and merges in by category id. This
+      // test previously mocked budgeted/spent/balance directly on the bare
+      // /categories response — a shape that doesn't exist on Actual's real
+      // API and silently encoded the bug (every Actual household's
+      // category/goal balance read as $0).
       mockFetch.mockReturnValueOnce(
         jsonResponse({
           data: [
@@ -476,11 +481,38 @@ describe("ActualClient", () => {
               name: "Rent",
               group_id: "g1",
               hidden: false,
-              budgeted: 150000, // cents = $1500
-              spent: -140000,
-              balance: 10000,
             },
           ],
+        }),
+      );
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({
+          data: {
+            month: "2026-08",
+            totalIncome: 0,
+            totalBudgeted: 0,
+            totalSpent: 0,
+            toBudget: 0,
+            categoryGroups: [
+              {
+                id: "g1",
+                name: "Bills",
+                is_income: false,
+                hidden: false,
+                categories: [
+                  {
+                    id: "c1",
+                    name: "Rent",
+                    group_id: "g1",
+                    hidden: false,
+                    budgeted: 150000, // cents = $1500
+                    spent: -140000,
+                    balance: 10000,
+                  },
+                ],
+              },
+            ],
+          },
         }),
       );
       const groups = await client.getCategories();
@@ -489,6 +521,46 @@ describe("ActualClient", () => {
       expect(groups[0]!.categories[0]).toMatchObject({
         name: "Rent",
         budgeted: 1500,
+        balance: 100,
+      });
+    });
+
+    it("falls back to $0 for a category the current month doesn't report (no crash)", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({
+          data: [
+            {
+              id: "g1",
+              name: "Bills",
+              is_income: false,
+              hidden: false,
+              categories: [],
+            },
+          ],
+        }),
+      );
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({
+          data: [{ id: "c1", name: "Rent", group_id: "g1", hidden: false }],
+        }),
+      );
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({
+          data: {
+            month: "2026-08",
+            totalIncome: 0,
+            totalBudgeted: 0,
+            totalSpent: 0,
+            toBudget: 0,
+            categoryGroups: [],
+          },
+        }),
+      );
+      const groups = await client.getCategories();
+      expect(groups[0]!.categories[0]).toMatchObject({
+        name: "Rent",
+        budgeted: 0,
+        balance: 0,
       });
     });
   });

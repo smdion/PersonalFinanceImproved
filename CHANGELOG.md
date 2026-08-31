@@ -34,6 +34,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **"Pull in new pay" / "Update %" on the Savings page could report success while persisting nothing**, for any household using a Contribution or Salary Profile other than the default — the save was silently computing against the wrong income/budget numbers instead of the ones actually shown in the preview.
 - **Pushing a savings goal's target to Actual Budget reported success with no visible change in Actual** — Actual has no API field to set a goal directly, so the push writes a template note that only takes effect once you run Actual's own "Apply Budget Template" action; the confirmation now says so instead of implying the change is already live.
 - **The Integrations sync page could keep showing a goal or budget item as "Linked" after its underlying category no longer existed** (e.g. after rebuilding or re-importing your Actual budget, which assigns every category a new id) — silently orphaned links are now shown as "Orphaned" with the same one-click re-link flow as an unmatched item.
+- **Every API-linked savings goal's current balance showed $0.00 for households on Actual Budget** — unlike YNAB's category list, Actual's plain category list carries no running balance at all (it's inherently scoped to a specific budget month); the balance/budgeted numbers are now pulled from the current month instead.
 
 ## [0.7.9] - 2026-08-29
 

@@ -301,17 +301,48 @@ export class ActualClient implements BudgetAPIClient {
 
   // -- Categories & Months --
 
+  /** The plain `/categorygroups` + `/categories` endpoints only carry
+   *  id/name/hidden/group_id — verified live: a raw `/categories` category
+   *  object has NO `budgeted`/`spent`/`balance`/`goal` keys at all, unlike
+   *  YNAB's categories endpoint, which does carry a real running balance
+   *  per category. Actual's balance/budgeted/activity are inherently
+   *  month-scoped (carryover + this month's budgeted − spent), only
+   *  returned by `/months/:id`. Reading `.balance`/`.budgeted` off the
+   *  plain-categories response (the original code here) silently produced
+   *  $0 for every category on every Actual household — the savings goal
+   *  balance override in savings.ts's computeSummary reads exactly this
+   *  cache, so every API-linked sinking fund showed a $0 current balance
+   *  even though its real Actual balance (and Ledgr's own separately-
+   *  tracked `savings_monthly` history) was correct (found live,
+   *  2026-08-31 — this had silently never worked for any Actual household,
+   *  masked until now because the same balance also renders correctly
+   *  from savings_monthly whenever the override doesn't fire). Fetch the
+   *  current month's detail too and merge its real per-category numbers
+   *  in by id — the ActualCategory type already carries these fields
+   *  (mapCategory needs no change), they just aren't populated by the
+   *  bare category list. */
   async getCategories(): Promise<BudgetCategoryGroup[]> {
-    const [groupsRes, catsRes] = await Promise.all([
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const [groupsRes, catsRes, monthRes] = await Promise.all([
       this.request<{ data: ActualCategoryGroup[] }>("/categorygroups"),
       this.request<{ data: ActualCategory[] }>("/categories"),
+      this.request<{ data: ActualMonth }>(`/months/${currentMonth}`),
     ]);
 
-    // Merge categories into groups
+    const currentByCatId = new Map<string, ActualCategory>();
+    for (const g of monthRes.data.categoryGroups ?? []) {
+      for (const c of g.categories) {
+        currentByCatId.set(c.id, c);
+      }
+    }
+
+    // Merge categories into groups, enriched with this month's real numbers.
     const catsByGroup = new Map<string, ActualCategory[]>();
     for (const cat of catsRes.data) {
+      const enriched = { ...cat, ...currentByCatId.get(cat.id) };
       const list = catsByGroup.get(cat.group_id) ?? [];
-      list.push(cat);
+      list.push(enriched);
       catsByGroup.set(cat.group_id, list);
     }
 
