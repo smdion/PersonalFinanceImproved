@@ -286,14 +286,23 @@ export function useApiSync() {
   const pushToApi = trpc.savings.pushContributionsToApi.useMutation({
     onSuccess: (data) => {
       utils.savings.invalidate();
-      toast.success(
-        formatSyncResultToast(
-          data.pushed,
-          "push",
-          budgetApiServiceLabel(data.service),
-          data.skippedUnsupported,
-        ),
+      const message = formatSyncResultToast(
+        data.pushed,
+        "push",
+        budgetApiServiceLabel(data.service),
+        data.skippedUnsupported,
+        data.failed,
+        data.failureMessage,
       );
+      // A genuine failure with nothing pushed is a real error, not a
+      // quiet "already up to date" — surface it as one (found live,
+      // 2026-08-31: this previously always showed a success toast, even
+      // when every single push attempt failed server-side).
+      if (data.failed > 0 && data.pushed === 0) {
+        toast.error(message);
+      } else {
+        toast.success(message);
+      }
     },
   });
   const deleteOverride = trpc.savings.allocationOverrides.delete.useMutation({

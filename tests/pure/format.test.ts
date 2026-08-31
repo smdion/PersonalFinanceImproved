@@ -329,4 +329,43 @@ describe("formatSyncResultToast", () => {
       "Pulled 3 items from YNAB",
     );
   });
+
+  // A genuine request failure previously produced the IDENTICAL message as
+  // "nothing needed pushing" (both were count===0, skippedUnsupported===0)
+  // — actively misleading, since one is a real error and the other is a
+  // quiet success (found live, 2026-08-31).
+  describe("failed (genuine request failure, distinct from skippedUnsupported)", () => {
+    it("reports a failure distinctly from 'already up to date' when nothing pushed", () => {
+      const msg = formatSyncResultToast(
+        0,
+        "push",
+        "YNAB",
+        0,
+        2,
+        "401 Unauthorized",
+      );
+      expect(msg).not.toBe("No changes to push — already up to date");
+      expect(msg).toContain("failed");
+      expect(msg).toContain("2");
+      expect(msg).toContain("401 Unauthorized");
+    });
+
+    it("omits the parenthetical detail when no failureMessage is given", () => {
+      const msg = formatSyncResultToast(0, "push", "YNAB", 0, 1);
+      expect(msg).toContain("1 item");
+      expect(msg).toContain("failed");
+    });
+
+    it("notes partial failures alongside a nonzero pushed count", () => {
+      const msg = formatSyncResultToast(3, "push", "YNAB", 0, 1);
+      expect(msg).toContain("Pushed 3 items to YNAB");
+      expect(msg).toContain("1 failed");
+    });
+
+    it("distinguishes failed from skippedUnsupported when both are present", () => {
+      const msg = formatSyncResultToast(0, "push", "YNAB", 2, 1, "timeout");
+      // failed takes precedence for the count===0 case's headline message
+      expect(msg).toContain("failed");
+    });
+  });
 });

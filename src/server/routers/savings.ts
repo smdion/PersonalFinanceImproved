@@ -1573,7 +1573,13 @@ export const savingsRouter = createTRPCRouter({
         : linked;
 
       if (toPush.length === 0)
-        return { pushed: 0, skippedUnsupported: 0, service: active };
+        return {
+          pushed: 0,
+          skippedUnsupported: 0,
+          failed: 0,
+          failureMessage: undefined,
+          service: active,
+        };
 
       // Same tier resolution as computeSummary — see resolveEfundTierIndex.
       const efundTierIndex = resolveEfundTierIndex(
@@ -1615,6 +1621,20 @@ export const savingsRouter = createTRPCRouter({
       // distinctly to the caller so the UI doesn't tell the user "already
       // up to date" when nothing was ever pushed.
       let skippedUnsupported = 0;
+      // A genuine failure (network/auth/rate-limit/unexpected API shape) was
+      // previously only `log("warn", ...)`'d server-side and otherwise
+      // treated identically to "nothing needed pushing" — the caller got
+      // back `pushed: 0, skippedUnsupported: 0` either way, and
+      // formatSyncResultToast reads that combination as "No changes to
+      // push — already up to date," an actively misleading success message
+      // for what was really a silent failure (found live, 2026-08-31 — a
+      // household whose goals DO have nonzero resolved amounts still saw
+      // "0 pushed" with no error on every attempt). Counted and reported
+      // distinctly, same reasoning as skippedUnsupported above but for the
+      // "provider request itself failed" case rather than "provider
+      // rejected this specific write."
+      let failed = 0;
+      let firstFailureMessage: string | undefined;
       for (const goal of toPush) {
         try {
           if (goal.isEmergencyFund) {
@@ -1657,10 +1677,13 @@ export const savingsRouter = createTRPCRouter({
           ) {
             skippedUnsupported++;
           } else {
+            const message = err instanceof Error ? err.message : String(err);
             log("warn", "push_goal_target_failed", {
               goalId: goal.id,
-              error: err instanceof Error ? err.message : String(err),
+              error: message,
             });
+            failed++;
+            firstFailureMessage ??= message;
           }
         }
       }
@@ -1672,7 +1695,13 @@ export const savingsRouter = createTRPCRouter({
         await refreshCategoryCache(ctx.db, active, client);
       }
 
-      return { pushed, skippedUnsupported, service: active };
+      return {
+        pushed,
+        skippedUnsupported,
+        failed,
+        failureMessage: firstFailureMessage,
+        service: active,
+      };
     }),
 
   /**

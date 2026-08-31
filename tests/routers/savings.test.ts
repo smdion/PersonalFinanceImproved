@@ -1312,6 +1312,8 @@ describe("savings.pushContributionsToApi", () => {
       expect(result).toEqual({
         pushed: 0,
         skippedUnsupported: 1,
+        failed: 0,
+        failureMessage: undefined,
         service: "actual",
       });
     } finally {
@@ -1319,7 +1321,7 @@ describe("savings.pushContributionsToApi", () => {
     }
   });
 
-  it("a generic (non-unsupported) error is still logged and skipped, not counted as skippedUnsupported", async () => {
+  it("a generic (non-unsupported) error is counted as `failed` and reported, not silently indistinguishable from 'nothing to push' (fixed 2026-08-31 — previously identical to skippedUnsupported:0/pushed:0, a real failure the user couldn't tell apart from success)", async () => {
     const ctx = await createTestCaller();
     try {
       const { profileId } = seedStandardDataset(ctx.db);
@@ -1347,6 +1349,8 @@ describe("savings.pushContributionsToApi", () => {
       expect(result).toEqual({
         pushed: 0,
         skippedUnsupported: 0,
+        failed: 1,
+        failureMessage: "network blip",
         service: "ynab",
       });
     } finally {

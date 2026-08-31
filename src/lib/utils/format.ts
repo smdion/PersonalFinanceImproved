@@ -275,7 +275,20 @@ export function formatSyncResultToast(
    * real reason nothing moved is that the push couldn't land, not that
    * there was nothing to send. */
   skippedUnsupported = 0,
+  /** A request that genuinely failed (network/auth/rate-limit/unexpected
+   *  API shape) — distinct from `skippedUnsupported` (provider explicitly
+   *  rejected the specific write) and from `count === 0` (nothing needed
+   *  sending). Without this, a real failure and "already up to date" were
+   *  indistinguishable to the user — both produced the identical
+   *  misleadingly-calm "No changes — already up to date" message (found
+   *  live, 2026-08-31). */
+  failed = 0,
+  failureMessage?: string,
 ): string {
+  if (failed > 0 && count === 0) {
+    const detail = failureMessage ? ` (${failureMessage})` : "";
+    return `${action === "push" ? "Push" : "Pull"} failed for ${failed} item${failed !== 1 ? "s" : ""}${detail} — nothing was sent to ${destination}.`;
+  }
   if (skippedUnsupported > 0 && count === 0) {
     return `Couldn't ${action === "push" ? "set" : "read"} goal amounts in ${destination} for ${skippedUnsupported} item${skippedUnsupported !== 1 ? "s" : ""} — check ${skippedUnsupported !== 1 ? "these goals" : "this goal"} in ${destination}.`;
   }
@@ -285,7 +298,11 @@ export function formatSyncResultToast(
   const verb = action === "push" ? "Pushed" : "Pulled";
   const preposition = action === "push" ? "to" : "from";
   const base = `${verb} ${count} item${count !== 1 ? "s" : ""} ${preposition} ${destination}`;
-  return skippedUnsupported > 0
-    ? `${base} (${skippedUnsupported} skipped — check ${destination})`
+  const notes = [
+    skippedUnsupported > 0 ? `${skippedUnsupported} skipped` : null,
+    failed > 0 ? `${failed} failed` : null,
+  ].filter((n): n is string => n != null);
+  return notes.length > 0
+    ? `${base} (${notes.join(", ")} — check ${destination})`
     : base;
 }

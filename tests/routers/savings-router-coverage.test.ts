@@ -308,6 +308,41 @@ describe("savings.pushContributionsToApi", () => {
     }
   });
 
+  it("reports a genuine API failure as `failed`, not silently as pushed:0/skippedUnsupported:0 (found live, 2026-08-31 — this previously looked identical to 'nothing needed pushing')", async () => {
+    const ctx = await createTestCaller();
+    try {
+      const profileId = await seedBudgetProfile(ctx.db);
+      const goalId = seedSavingsGoal(ctx.db, {
+        name: "Failing Push Goal",
+        targetAmount: "5000",
+        isApiSyncEnabled: true,
+        apiCategoryId: "cat-fail-001",
+      });
+      seedSavingsGoalAllocation(ctx.db, goalId, profileId, {
+        monthlyContribution: "200",
+      });
+
+      const mockUpdateGoal = vi
+        .fn()
+        .mockRejectedValue(new Error("401 Unauthorized"));
+      mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
+      mockGetClientForService.mockResolvedValueOnce({
+        updateCategoryGoalTarget: mockUpdateGoal,
+      });
+
+      const result = await ctx.caller.savings.pushContributionsToApi();
+      expect(result.pushed).toBe(0);
+      expect(result.failed).toBe(1);
+      expect(result.failureMessage).toBe("401 Unauthorized");
+      // The mutation itself must not throw — the household still gets a
+      // response back with the failure reported IN it, not a hard error.
+    } finally {
+      ctx.cleanup();
+      mockGetActiveBudgetApi.mockResolvedValue("none");
+      mockGetClientForService.mockResolvedValue(null);
+    }
+  });
+
   it("returns pushed:0 when no linked goals exist", async () => {
     const ctx = await createTestCaller();
     try {
