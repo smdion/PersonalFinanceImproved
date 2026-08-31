@@ -390,6 +390,18 @@ export type EngineDecumulationYear = {
   estTraditionalPortion: number;
   /** Debug: bracket-filling traditional cap (income cap - taxable SS). */
   bracketTraditionalCap?: number;
+  /** How the discretionary need beyond Traditional's bracket-fill target
+   *  was actually sourced this year, in draw order, at each tier's real
+   *  cost — see `RouteResult.tierBreakdown` (withdrawal-routing.ts) for
+   *  the full explanation. bracket_filling mode only; undefined/empty for
+   *  waterfall/percentage (they don't rank by cost) or a year with no
+   *  discretionary need. Powers the "why was this account used" UI
+   *  explanation. */
+  discretionaryTierBreakdown?: {
+    source: "roth" | "brokerage" | "hsa";
+    costRate: number;
+    amount: number;
+  }[];
   /** Unmet withdrawal need after routing (target - actual) — a REAL output
    *  now, not debug-only (v0.7.8 penalty-hard-exclusion follow-up,
    *  DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md § Q3/C1): under the
@@ -445,8 +457,29 @@ export type EngineDecumulationYear = {
   // --- RMD fields (Phase 1) ---
   /** Required Minimum Distribution amount for this year (0 if not applicable). */
   rmdAmount: number;
-  /** Per-person RMD breakdown (populated when per-person RMD tracking is active). */
-  rmdByPerson?: { personId: number; personName: string; amount: number }[];
+  /** Per-person RMD breakdown (populated when per-person RMD tracking is
+   *  active). `divisor`/`priorYearEndTradBalance`/`age` power the "why is
+   *  my RMD this amount" UI explanation (`amount = priorYearEndTradBalance
+   *  / divisor`, the IRS Uniform Lifetime Table divisor for `age`) —
+   *  undefined only in the rare case `getRmdFactor` has no entry for this
+   *  person's age. */
+  rmdByPerson?: {
+    personId: number;
+    personName: string;
+    amount: number;
+    divisor?: number;
+    priorYearEndTradBalance?: number;
+    age?: number;
+  }[];
+  /** Household-level "why is my RMD this amount" fallback — the IRS
+   *  Uniform Lifetime Table divisor for `age`, when `rmdByPerson` isn't
+   *  populated (single-person households / no per-person RMD tracking).
+   *  `rmdAmount = priorYearEndTradBalance / rmdDivisor`. Prefer
+   *  `rmdByPerson`'s own per-person fields when present. */
+  rmdDivisor?: number;
+  /** Prior-year-end Traditional balance the household-level RMD divided.
+   *  Pairs with `rmdDivisor`. */
+  priorYearEndTradBalance?: number;
   /** True if the RMD forced additional Traditional withdrawals beyond what routing chose. */
   rmdOverrodeRouting: boolean;
   /** R49: dollars of `rmdAmount` that could NOT be forced through as a real

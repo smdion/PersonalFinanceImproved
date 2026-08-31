@@ -211,6 +211,11 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
               </span>
             </div>
           )}
+          {d.rmd.divisorDetail && (
+            <div className={`${tipColorClass.gray} text-caption`}>
+              {d.rmd.divisorDetail}
+            </div>
+          )}
         </div>
       )}
       {/* 3c. STRATEGY EVENT (UI/UX review, 2026-08-28 — see types.ts docblock) */}

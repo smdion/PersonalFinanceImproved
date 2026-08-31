@@ -22,7 +22,7 @@ import {
   roundToCents,
   safeDivide as canonicalSafeDivide,
 } from "@/lib/utils/math";
-import { formatPercent } from "@/lib/utils/format";
+import { formatPercent, formatCurrency } from "@/lib/utils/format";
 import { CHART_COLORS } from "@/lib/utils/colors";
 import type {
   TipColor,
@@ -581,6 +581,94 @@ export function iaBelongsToBucket(
 }
 
 // --- Shared calculation helpers ---
+
+const TIER_SOURCE_LABEL: Record<"roth" | "brokerage" | "hsa", string> = {
+  roth: "Roth",
+  brokerage: "Brokerage",
+  hsa: "HSA",
+};
+
+/**
+ * Human-readable "why was this account used" explanation for a year's
+ * discretionary (beyond-Traditional-bracket-cap) withdrawal routing — the
+ * "why" chart/table tooltips ask for. Reads directly off
+ * `EngineDecumulationYear.discretionaryTierBreakdown`
+ * (`RouteResult.tierBreakdown`, withdrawal-routing.ts) rather than
+ * re-deriving the reasoning from dollar amounts, so this can never drift
+ * from what routing actually decided (RULES.md single-computation-path).
+ *
+ * Pure formatter — callers pass already-deflated (real/nominal per the
+ * page's dollar-mode toggle) amounts, matching every other tooltip-string
+ * builder in this file.
+ */
+export function formatDiscretionaryTierBreakdown(
+  breakdown:
+    | {
+        source: "roth" | "brokerage" | "hsa";
+        costRate: number;
+        amount: number;
+      }[]
+    | undefined,
+): string | undefined {
+  if (!breakdown || breakdown.length === 0) return undefined;
+  // Deliberately NOT "free"/"0%" for a costRate of 0 — this sits right next
+  // to per-account eligibility notes that already say "taxable" for the
+  // same dollars (Roth basis genuinely is tax-free, but Roth GROWTH tier
+  // entries can also legitimately show 0% here — the household-level "no
+  // extra cost vs. the alternative" framing, not a claim about this
+  // specific account's own tax treatment — see this account's own note for
+  // that). "cheapest available" reads correctly in both cases.
+  const parts = breakdown.map((t) => {
+    const rate =
+      t.costRate <= 0
+        ? "cheapest available"
+        : `${formatPercent(t.costRate, 1)} marginal tax`;
+    return `${formatCurrency(t.amount)} ${TIER_SOURCE_LABEL[t.source]} (${rate})`;
+  });
+  return `Household-wide, beyond the bracket target, cheapest source first: ${parts.join(" → ")}`;
+}
+
+/**
+ * "Why is my RMD this amount" — formats the IRS Uniform Lifetime Table
+ * divisor × prior-year-end balance breakdown, per person when available
+ * (`EngineDecumulationYear.rmdByPerson`), falling back to the household-
+ * level `rmdDivisor`/`priorYearEndTradBalance` pair (single-person
+ * households / no per-person RMD tracking). Reads the divisor/balance
+ * fields the engine already computed rather than re-deriving them — see
+ * `rmdByPerson`'s docblock (engine-projection.ts).
+ *
+ * Pure formatter — amounts are passed in already-deflated by the caller,
+ * matching every other tooltip-string builder in this file.
+ */
+export function formatRmdDivisorDetail(
+  yr: {
+    rmdByPerson?: {
+      personName: string;
+      divisor?: number;
+      priorYearEndTradBalance?: number;
+    }[];
+    rmdDivisor?: number;
+    priorYearEndTradBalance?: number;
+  },
+  deflate: (v: number, year: number) => number,
+  year: number,
+): string | undefined {
+  const perPerson = yr.rmdByPerson?.filter(
+    (p) => p.divisor != null && p.priorYearEndTradBalance != null,
+  );
+  if (perPerson && perPerson.length > 0) {
+    return perPerson
+      .map(
+        (p) =>
+          `${p.personName}: balance ${formatCurrency(deflate(p.priorYearEndTradBalance!, year))} ÷ ${p.divisor!.toFixed(1)}`,
+      )
+      .join(" · ");
+  }
+  if (yr.rmdDivisor != null && yr.priorYearEndTradBalance != null) {
+    return `Balance ${formatCurrency(deflate(yr.priorYearEndTradBalance, year))} ÷ ${yr.rmdDivisor.toFixed(1)} (IRS Uniform Lifetime Table)`;
+  }
+  return undefined;
+}
 
 export function percentOf(value: number, total: number): number {
   return Math.round(safeDivide(value, total) * 100);

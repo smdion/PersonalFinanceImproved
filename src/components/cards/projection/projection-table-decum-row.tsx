@@ -23,6 +23,8 @@ import {
   ACCOUNT_TYPE_CONFIG,
   isTaxFreeBucket,
   isIraCategory,
+  isHsaCategory,
+  tradPreferenceEngineCategories,
 } from "@/lib/config/account-types";
 import type { TipColor, TooltipLineItem } from "./types";
 import {
@@ -40,6 +42,8 @@ import {
   lumpSumsForCategory,
   lumpSumTotal,
   buildStrategyEventStyle,
+  formatDiscretionaryTierBreakdown,
+  formatRmdDivisorDetail,
 } from "./utils";
 import type { ProjectionState } from "./projection-table-types";
 import {
@@ -128,6 +132,100 @@ function buildEligibilityNote(
   }
   if (parts.length === 0) return {};
   return { note: parts.join(" · "), noteLocked: !!ia.eligibilityLocked };
+}
+
+/**
+ * "Why was this account used" tax-reasoning clause — the household asked
+ * directly for this (2026-08-31): eligibility/basis info alone doesn't say
+ * WHY a discretionary (beyond-Traditional-bracket-target) dollar came from
+ * this account instead of another. Reads `discretionaryTierBreakdown`
+ * (`RouteResult.tierBreakdown`, withdrawal-routing.ts) filtered to this
+ * account's source kind — see `formatDiscretionaryTierBreakdown`'s
+ * docblock (utils.ts) for why this is read directly off routing's own
+ * decision rather than re-derived.
+ *
+ * The breakdown is aggregated at the SOURCE-KIND level (roth/brokerage/
+ * hsa), not per-account — a household with more than one account of the
+ * same kind (e.g. both spouses' Roth 401k) would see the same combined
+ * figures on each. `formatDiscretionaryTierBreakdown`'s own text is
+ * explicitly "household-wide" framing for exactly this reason — never
+ * implies this is a per-account cost breakdown this data can't actually
+ * support, and deliberately avoids "free"/"0%" wording that would clash
+ * with `buildEligibilityNote`'s own "taxable" note shown right above it on
+ * the same line (found live, 2026-08-31 — Roth basis is genuinely
+ * tax-free, but a Roth GROWTH tier entry can also legitimately show a
+ * costRate of 0 at the household level, which is an ORDERING statement,
+ * not a claim about this specific account's tax treatment).
+ */
+function buildRoutingReasonClause(
+  ia: Pick<IndividualAccountYearBalance, "category" | "taxType" | "withdrawal">,
+  yr: EngineDecumulationYear,
+  deflate: (v: number, yr: number) => number,
+): string | undefined {
+  const catCfg = ACCOUNT_TYPE_CONFIG[ia.category];
+  // Traditional portion of a split-capable account (401k/IRA/403b): this
+  // is Phase 1 of bracket_filling, not the cost-ranked discretionary tier
+  // below — a completely different "why" (a configured bracket TARGET,
+  // not a cost comparison between sources). bracketTraditionalCap is the
+  // resolved income cap (rothBracketTarget's marginal-rate threshold minus
+  // taxable SS) the engine actually filled Traditional up to — see
+  // withdrawal-routing.ts's routeWithdrawalsBracketFilling.
+  if (
+    catCfg?.supportsRothSplit &&
+    !isTaxFreeBucket(ia.taxType) &&
+    yr.config.withdrawalRoutingMode === "bracket_filling" &&
+    yr.bracketTraditionalCap != null
+  ) {
+    const targetPct = yr.config.rothBracketTarget;
+    const targetClause =
+      targetPct != null
+        ? `Filled to your ${formatPercent(targetPct, 0)} bracket target — up to ${formatCurrency(deflate(yr.bracketTraditionalCap, yr.year))} of ordinary income (RMDs still apply on top when required)`
+        : `Filled to your configured bracket target — up to ${formatCurrency(deflate(yr.bracketTraditionalCap, yr.year))} of ordinary income`;
+    // "Why this account over another" (cross-category order, e.g. 401k
+    // before IRA) — your configured Traditional Account Order, restricted
+    // to the Traditional-preference categories Phase 1 actually consults
+    // (same restriction the order editor itself uses — decumulation-
+    // config.tsx's R51 Gap A note).
+    const tradOrder = yr.config.withdrawalOrder.filter((c) =>
+      tradPreferenceEngineCategories().includes(c),
+    );
+    const orderIdx = tradOrder.indexOf(ia.category);
+    const orderClause =
+      tradOrder.length > 1 && orderIdx >= 0
+        ? ` · Order: ${tradOrder.map((c) => getAccountTypeConfig(c).displayLabel).join(" → ")} (this account: #${orderIdx + 1})`
+        : "";
+    return `${targetClause}${orderClause}`;
+  }
+  if (!yr.discretionaryTierBreakdown?.length) return undefined;
+  let sourceKind: "roth" | "brokerage" | "hsa" | undefined;
+  if (catCfg?.isOverflowTarget) sourceKind = "brokerage";
+  else if (isHsaCategory(ia.category)) sourceKind = "hsa";
+  else if (catCfg?.supportsRothSplit && isTaxFreeBucket(ia.taxType))
+    sourceKind = "roth";
+  if (!sourceKind) return undefined;
+  const relevant = yr.discretionaryTierBreakdown.filter(
+    (t) => t.source === sourceKind,
+  );
+  if (relevant.length === 0) return undefined;
+  return formatDiscretionaryTierBreakdown(
+    relevant.map((t) => ({ ...t, amount: deflate(t.amount, yr.year) })),
+  );
+}
+
+/** Merges `buildEligibilityNote` (eligibility/basis) with
+ *  `buildRoutingReasonClause` (tax reasoning) into the one note line an
+ *  account's tooltip row shows — both answer "why," just different
+ *  questions (can this money be touched vs. why did routing pick it). */
+function buildFullAccountNote(
+  ia: IndividualAccountYearBalance,
+  yr: EngineDecumulationYear,
+  deflate: (v: number, yr: number) => number,
+): { note?: string; noteLocked?: boolean } {
+  const eligibility = buildEligibilityNote(ia, yr, deflate);
+  const reason = buildRoutingReasonClause(ia, yr, deflate);
+  if (!reason) return eligibility;
+  const note = eligibility.note ? `${eligibility.note} · ${reason}` : reason;
+  return { note, noteLocked: eligibility.noteLocked };
 }
 
 /** Owner-prefixed account label for tooltip lines — omits the "Owner — "
@@ -289,7 +387,7 @@ export function DecumulationRow({
                     // basis-remaining figure is reconstructed rather than
                     // reusing eligibilityReason's embedded dollar amount.
                     const buildNote = (ia: (typeof catAccts)[number]) =>
-                      buildEligibilityNote(ia, yr, deflate);
+                      buildFullAccountNote(ia, yr, deflate);
                     if (wd > 0) {
                       // Per-account breakdown ("no magic money"): when a
                       // category holds more than one tracked account (e.g.
@@ -412,6 +510,31 @@ export function DecumulationRow({
                       });
                     }
                     const catLumpTotal = lumpSumTotal(catLumps);
+                    // "Why was this account used" — which source kind(s)
+                    // this category's withdrawal drew through in the
+                    // cost-ranked discretionary tier (beyond Traditional's
+                    // bracket-fill target). A category can match more than
+                    // one kind (e.g. a 401k/IRA with both a Roth sub-
+                    // balance AND acting as the overflow/brokerage target
+                    // is not possible today, but HSA and brokerage never
+                    // overlap with "roth") — filtering by source keeps this
+                    // scoped to what's actually relevant to THIS account,
+                    // not the whole household's breakdown.
+                    const catSourceKinds = new Set<
+                      "roth" | "brokerage" | "hsa"
+                    >();
+                    if (catCfg.isOverflowTarget)
+                      catSourceKinds.add("brokerage");
+                    if (isHsaCategory(cat)) catSourceKinds.add("hsa");
+                    if (
+                      catCfg.supportsRothSplit &&
+                      (dSlot?.rothWithdrawal ?? 0) > 0.01
+                    )
+                      catSourceKinds.add("roth");
+                    const catTierBreakdown =
+                      yr.discretionaryTierBreakdown?.filter((t) =>
+                        catSourceKinds.has(t.source),
+                      );
                     return renderTooltip({
                       kind: "money",
                       header: `${catDisplayLabel[cat] ?? cat}${catLumpTotal > 0 || rmdExcess > 0.01 || qcdAmount > 0.01 ? " Activity" : " Withdrawals"}`,
@@ -428,6 +551,12 @@ export function DecumulationRow({
                               amount: deflate(catGrowth, yr.year),
                             }
                           : undefined,
+                      routingNote: formatDiscretionaryTierBreakdown(
+                        catTierBreakdown?.map((t) => ({
+                          ...t,
+                          amount: deflate(t.amount, yr.year),
+                        })),
+                      ),
                       balance: deflate(catBal, yr.year),
                     });
                   })()}
@@ -635,7 +764,7 @@ export function DecumulationRow({
                   taxType: itemTaxType(ia.category, ia.taxType),
                   color: "red",
                   group: catDisplayLabel[ia.category] ?? ia.category,
-                  ...buildEligibilityNote(ia, yr, deflate),
+                  ...buildFullAccountNote(ia, yr, deflate),
                 });
               }
             } else {
@@ -759,6 +888,7 @@ export function DecumulationRow({
                     (dyr.qcdAmount ?? 0) > 0
                       ? deflate(dyr.qcdAmount!, yr.year)
                       : undefined,
+                  divisorDetail: formatRmdDivisorDetail(dyr, deflate, yr.year),
                 }
               : undefined,
             strategyEvent: (() => {

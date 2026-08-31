@@ -68,7 +68,7 @@ import {
   trackDepletions,
   cleanupDust,
 } from "../balance-deduction";
-import { computeRmdAmount } from "../../../config/rmd-tables";
+import { computeRmdAmount, getRmdFactor } from "../../../config/rmd-tables";
 import type {
   PreYearSetup,
   ProjectionContext,
@@ -210,7 +210,15 @@ export function runDecumulationYear(
   // after. Pure computation, no dependency on routing -- safe to hoist.
   let perPersonRmdTotal: number | undefined;
   let rmdByPerson:
-    { personId: number; personName: string; amount: number }[] | undefined;
+    | {
+        personId: number;
+        personName: string;
+        amount: number;
+        divisor?: number;
+        priorYearEndTradBalance?: number;
+        age?: number;
+      }[]
+    | undefined;
   if (rmdStartAgeByPerson.size > 0 && priorYearEndTradByPerson.size > 0) {
     rmdByPerson = [];
     let total = 0;
@@ -226,6 +234,15 @@ export function runDecumulationYear(
               input.socialSecurityEntries?.find((e) => e.personId === personId)
                 ?.personName ?? `Person ${personId}`,
             amount: rmdAmount,
+            // "Why is my RMD this amount" — the IRS Uniform Lifetime Table
+            // divisor and the prior-year-end Traditional balance it's
+            // divided by, both already computed just above (computeRmdAmount
+            // itself calls getRmdFactor internally) — surfaced here rather
+            // than re-derived by the UI, so the displayed math can't drift
+            // from what actually produced `amount`.
+            divisor: getRmdFactor(personAge) ?? undefined,
+            priorYearEndTradBalance: personTrad,
+            age: personAge,
           });
           total += rmdAmount;
         }
@@ -459,6 +476,18 @@ export function runDecumulationYear(
   const rmdRequiredAfterQcd =
     perPersonRmdTotal != null
       ? roundToCents(Math.max(0, perPersonRmdTotal - totalQcd))
+      : undefined;
+
+  // Household-level "why is my RMD this amount" fallback — same
+  // getRmdFactor/priorYearEndTradBalance enforceRmd's own internal
+  // computeRmdAmount call uses when no per-person override is supplied
+  // (rmdRequiredAfterQcd undefined below), surfaced here rather than
+  // re-derived by the UI. Only meaningful when rmdByPerson isn't
+  // populated (single-person households / no per-person RMD tracking) —
+  // the per-person breakdown above always wins when both exist.
+  const rmdDivisor =
+    rmdStartAge != null && age >= rmdStartAge && priorYearEndTradBalance > 0
+      ? (getRmdFactor(age) ?? undefined)
       : undefined;
 
   // Extracted to rmd-enforcement.ts -- enforces minimum Traditional withdrawals per IRS rules.
@@ -1124,6 +1153,7 @@ export function runDecumulationYear(
     grossUpFactor,
     estTraditionalPortion,
     bracketTraditionalCap: routeResult.traditionalCap,
+    discretionaryTierBreakdown: routeResult.tierBreakdown,
     unmetNeed: finalUnmetNeed,
     unmetNeedMaterial,
     penaltyAvoidedShortfall,
@@ -1138,6 +1168,8 @@ export function runDecumulationYear(
     annualizedReturnRate: returnRate,
     rmdAmount,
     rmdByPerson,
+    rmdDivisor,
+    priorYearEndTradBalance,
     rmdOverrodeRouting,
     rmdShortfallAmount,
     rmdExcessAmount,

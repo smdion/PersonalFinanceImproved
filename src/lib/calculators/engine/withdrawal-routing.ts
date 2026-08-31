@@ -350,12 +350,10 @@ export function routeWithdrawalsBracketFilling(
   config: ResolvedDecumulationConfig,
   balances: AccountBalances,
   bracketInfo: RouteBracketInfo,
-): {
-  slots: DecumulationSlot[];
-  warnings: string[];
-  traditionalCap?: number;
-  unmetNeed?: number;
-} {
+): Pick<
+  RouteResult,
+  "slots" | "warnings" | "traditionalCap" | "unmetNeed" | "tierBreakdown"
+> {
   const warnings: string[] = [];
 
   // If we don't have brackets or a target, fall back to waterfall
@@ -694,9 +692,19 @@ export function routeWithdrawalsBracketFilling(
     brokerage: drawBrokerageTierCapped,
     hsa: drawHsaTierCapped,
   };
+  const tierBreakdown: NonNullable<RouteResult["tierBreakdown"]> = [];
   for (const tier of tiers) {
     if (remaining <= 0) break;
+    const before = remaining;
     tierDrawers[tier.source](tier.capacity);
+    const drawn = roundToCents(before - remaining);
+    if (drawn > 0) {
+      tierBreakdown.push({
+        source: tier.source,
+        costRate: tier.costRate,
+        amount: drawn,
+      });
+    }
   }
 
   // Ensure all 4 categories have slots (brokerage might be missing if not needed)
@@ -729,6 +737,7 @@ export function routeWithdrawalsBracketFilling(
     warnings,
     traditionalCap,
     unmetNeed: remaining > 0 ? remaining : undefined,
+    tierBreakdown,
   };
 }
 
@@ -811,6 +820,21 @@ export type RouteResult = {
    *  destroy the distinction this field exists to preserve.
    *  `min(unmetNeed, nonRetirement.grandTotal)`. */
   nonRetirementShortfall?: number;
+  /** How the discretionary need beyond Traditional's bracket-fill target
+   *  was actually sourced, in draw order, at each tier's real cost —
+   *  bracket_filling mode only (waterfall/percentage never rank by cost,
+   *  so this is always empty there). Powers the "why was this account
+   *  used" UI explanation: reads directly off `rankWithdrawalTiers`'
+   *  own tiers (`withdrawal-cost-ranking.ts`) rather than re-deriving the
+   *  reasoning from the resulting dollar amounts, so the explanation can
+   *  never drift from what routing actually decided (RULES.md
+   *  single-computation-path). Only tiers that were actually drawn from
+   *  (amount > 0) are included. */
+  tierBreakdown?: {
+    source: WithdrawalSourceKind;
+    costRate: number;
+    amount: number;
+  }[];
 };
 
 /**

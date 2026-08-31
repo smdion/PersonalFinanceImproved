@@ -8,7 +8,11 @@ import {
   CHART_COLORS,
 } from "@/lib/utils/colors";
 import { formatCurrency, compactCurrency } from "@/lib/utils/format";
-import { buildStrategyEventStyle, tipColorClass } from "./utils";
+import {
+  buildStrategyEventStyle,
+  tipColorClass,
+  formatDiscretionaryTierBreakdown,
+} from "./utils";
 import type { EngineYearProjection } from "@/lib/calculators/types";
 import {
   ComposedChart,
@@ -234,6 +238,18 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
       // showed nothing about why it was marked. Threaded through the same
       // way SS/RMD milestones are.
       datum._strategyAction = yr.strategyAction ?? "";
+      // "Why was this account used" hover explanation — see
+      // formatDiscretionaryTierBreakdown's docblock (utils.ts). Stored as
+      // the pre-formatted string (not the raw array) since this datum
+      // object otherwise only carries numbers/flags for Recharts' own
+      // dataKey lookups.
+      datum._discretionaryRoutingNote =
+        formatDiscretionaryTierBreakdown(
+          yr.discretionaryTierBreakdown?.map((t) => ({
+            ...t,
+            amount: deflate(t.amount, yr.year),
+          })),
+        ) ?? "";
     }
 
     return datum;
@@ -468,6 +484,14 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                             </span>
                           </div>
                         )}
+                        {typeof d._discretionaryRoutingNote === "string" &&
+                          d._discretionaryRoutingNote && (
+                            <div
+                              className={`${tipColorClass.gray} text-[11px]`}
+                            >
+                              {d._discretionaryRoutingNote}
+                            </div>
+                          )}
                         {Number(d._unmetNeedMaterial) === 1 && (
                           <>
                             <div className="flex justify-between gap-4 font-medium text-red-400">
