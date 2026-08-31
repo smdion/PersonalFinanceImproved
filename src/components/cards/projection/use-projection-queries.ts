@@ -262,6 +262,16 @@ export function useProjectionQueries(
       mcAssetClassOverrides.length > 0 ? mcAssetClassOverrides : undefined,
     ...debouncedBaseInput,
   };
+  // Shared by coastFireMcQuery/mcQuery further down (same inputs, same
+  // ids) so the manual "Re-run" buttons and the queries they refresh
+  // always agree on which progress-map entry to poll. Derived from the
+  // input itself, not a fresh random id per mount — a fresh id wouldn't
+  // match the worker's actual in-progress job id, so progress would
+  // silently reset to indeterminate on remount instead of resuming the
+  // real trial count (this is the same fix already applied to mcQuery
+  // 2026-08-30 — see monte-carlo-worker-client.ts's runId docblock).
+  const coastFireMcRunId = JSON.stringify(debouncedBaseInput);
+  const mcRunId = JSON.stringify(runMonteCarloInput);
   // `runMonteCarlo`/`runCoastFireMc` use an imperative `.fetch()` (not
   // `mcQuery.refetch()`/`.invalidate()`) specifically to pass
   // `forceRefresh: true` — a field that only exists on this one-off call,
@@ -286,12 +296,20 @@ export function useProjectionQueries(
   const runMonteCarlo = async () => {
     setActiveMcReruns((n) => n + 1);
     try {
+      // `mcRunId`/`coastFireMcRunId` (below runMonteCarloInput/
+      // coastFireMcQuery further down in this file — referenced here via
+      // closure, safe: this body only runs on a later button click, well
+      // after those consts have initialized) are the SAME ids mcQuery /
+      // coastFireMcQuery poll progress under — passing them here means a
+      // manual "Re-run" reports live trial progress too, not just the
+      // steady-state query path. See mcProgressQuery's docblock.
       const result = await utils.projection.computeMonteCarloProjection.fetch({
         ...runMonteCarloInput,
+        runId: mcRunId,
         forceRefresh: true,
       });
       utils.projection.computeMonteCarloProjection.setData(
-        runMonteCarloInput,
+        { ...runMonteCarloInput, runId: mcRunId },
         result,
       );
     } finally {
@@ -303,9 +321,13 @@ export function useProjectionQueries(
     try {
       const result = await utils.projection.computeCoastFireMC.fetch({
         ...debouncedBaseInput,
+        runId: coastFireMcRunId,
         forceRefresh: true,
       });
-      utils.projection.computeCoastFireMC.setData(debouncedBaseInput, result);
+      utils.projection.computeCoastFireMC.setData(
+        { ...debouncedBaseInput, runId: coastFireMcRunId },
+        result,
+      );
     } finally {
       setActiveMcReruns((n) => n - 1);
     }
@@ -335,13 +357,26 @@ export function useProjectionQueries(
   const [coastFireProbeError, setCoastFireProbeError] = useState<string | null>(
     null,
   );
+  // Set right before the fetch starts, read by coastFireProbeProgressQuery
+  // below while it's in flight — this is an imperative one-off call (see
+  // this function's own docblock above), not a `useQuery`, so there's no
+  // stable input object to derive an id from ahead of time the way the
+  // other MC-launching queries in this file do; a fresh id per click is
+  // fine here since there's no remount-reconnect case to worry about (the
+  // whole call completes or errors within one button press).
+  const [coastFireProbeRunId, setCoastFireProbeRunId] = useState<string | null>(
+    null,
+  );
   const checkCoastFireCustomAge = async (probeAge: number) => {
+    const runId = crypto.randomUUID();
+    setCoastFireProbeRunId(runId);
     setCoastFireProbeLoading(true);
     setCoastFireProbeError(null);
     try {
       const response = await utils.projection.computeCoastFireProbe.fetch({
         ...baseSharedInput,
         probeAge,
+        runId,
       });
       setCoastFireProbeResult(response.result as CoastFireProbeResult | null);
     } catch (err) {
@@ -350,8 +385,18 @@ export function useProjectionQueries(
       );
     } finally {
       setCoastFireProbeLoading(false);
+      setCoastFireProbeRunId(null);
     }
   };
+  const coastFireProbeProgressQuery =
+    trpc.projection.getMonteCarloProgress.useQuery(
+      { runId: coastFireProbeRunId ?? "" },
+      {
+        enabled: coastFireProbeLoading && coastFireProbeRunId != null,
+        refetchInterval: 400,
+        staleTime: 0,
+      },
+    );
 
   // Operational escape hatch (user request, 2026-08-28): wipe every cached
   // projection row server-side without bumping PROJECTION_CACHE_ENGINE_VERSION
@@ -373,19 +418,39 @@ export function useProjectionQueries(
   // coastFireMcQuery below — the chart data selectors pick between the two
   // based on scenarioView so switching scenarios doesn't invalidate the
   // baseline MC cache.
+  // Derived the same way mcRunId is below — see that comment for why a
+  // stable, input-derived id (not a fresh UUID per mount) is what makes
+  // the progress poll survive remounts and reconnect to an in-flight
+  // server-side run instead of resetting to indeterminate.
+  const mcPrefetchQueryInput = {
+    numTrials: MC_DEFAULT_TRIALS,
+    preset: "default" as const,
+    taxMode: mcTaxMode,
+    ...debouncedBaseInput,
+  };
+  const mcPrefetchRunId = JSON.stringify(mcPrefetchQueryInput);
   const mcPrefetchQuery = trpc.projection.computeMonteCarloProjection.useQuery(
-    {
-      numTrials: MC_DEFAULT_TRIALS,
-      preset: "default" as const,
-      taxMode: mcTaxMode,
-      ...debouncedBaseInput,
-    },
+    { ...mcPrefetchQueryInput, runId: mcPrefetchRunId },
     {
       enabled:
         mcAutoloadEnabled && engineQuery.isSuccess && !engineQuery.isFetching,
       placeholderData: (prev) => prev,
     },
   );
+  // Live "N / total trials" for this background prefetch specifically —
+  // separate from mcProgressQuery below (that one tracks the FOREGROUND
+  // mcQuery/"Simulation" run; this tracks the passive one that starts
+  // right after the engine finishes, in every projection mode). See
+  // index.tsx's mcProgress for how these are merged into one banner.
+  const mcPrefetchProgressQuery =
+    trpc.projection.getMonteCarloProgress.useQuery(
+      { runId: mcPrefetchRunId },
+      {
+        enabled: mcPrefetchQuery.isFetching,
+        refetchInterval: 400,
+        staleTime: 0,
+      },
+    );
 
   // Stable for this hook instance's whole lifetime, reused across every
   // mcQuery fetch (fetches never overlap for one hook instance — TanStack
@@ -408,6 +473,11 @@ export function useProjectionQueries(
   // progress poll reconnects to the correct in-flight job. Genuinely new
   // inputs naturally get a new id, matching the new (different) job the
   // server will actually run.
+  // mcQueryInput is the exact same shape as runMonteCarloInput above (that
+  // one's docblock explains why they must match) — mcRunId itself was
+  // already computed from it there; not re-derived here to avoid the two
+  // silently drifting apart if one of the two literals is ever edited
+  // without the other.
   const mcQueryInput = {
     numTrials: mcTrials,
     preset: mcPreset,
@@ -416,11 +486,6 @@ export function useProjectionQueries(
       mcAssetClassOverrides.length > 0 ? mcAssetClassOverrides : undefined,
     ...debouncedBaseInput,
   };
-  // Plain derivation, not useMemo — JSON.stringify of this small object is
-  // cheap, and the "memoize the input to memoize the output" pattern would
-  // just add a second JSON.stringify (for the dependency array) with no
-  // benefit, since equal input still produces an equal string either way.
-  const mcRunId = JSON.stringify(mcQueryInput);
   const mcQuery = trpc.projection.computeMonteCarloProjection.useQuery(
     {
       ...mcQueryInput,
@@ -436,12 +501,19 @@ export function useProjectionQueries(
     },
   );
   // Live "N / total trials" for the "recalculating" indicator (index.tsx) —
-  // only polls while mcQuery is actually in flight. See
-  // monte-carlo-worker-client.ts's module docblock for why this is a
-  // lightweight poll against an in-memory map rather than a subscription.
+  // polls while mcQuery is fetching OR a manual "Re-run" is in flight
+  // (runMonteCarlo reuses this same mcRunId — see its own comment) so a
+  // forced re-run reports real progress too, not just the steady-state
+  // query path. See monte-carlo-worker-client.ts's module docblock for
+  // why this is a lightweight poll against an in-memory map rather than a
+  // subscription.
   const mcProgressQuery = trpc.projection.getMonteCarloProgress.useQuery(
     { runId: mcRunId },
-    { enabled: mcQuery.isFetching, refetchInterval: 400, staleTime: 0 },
+    {
+      enabled: mcQuery.isFetching || isRerunning,
+      refetchInterval: 400,
+      staleTime: 0,
+    },
   );
 
   // Coast FIRE Monte Carlo — on demand by default (2026-08-30), same
@@ -467,7 +539,7 @@ export function useProjectionQueries(
   // `scenarioView` this reads directly) — keep this condition and that
   // one in sync if either changes.
   const coastFireMcQuery = trpc.projection.computeCoastFireMC.useQuery(
-    debouncedBaseInput,
+    { ...debouncedBaseInput, runId: coastFireMcRunId },
     {
       enabled:
         (coastFireMcAutoloadEnabled ||
@@ -479,6 +551,21 @@ export function useProjectionQueries(
       staleTime: 5 * PROJECTION_STALE_TIME_MS,
     },
   );
+  // Same live-progress treatment as mcProgressQuery — the binary search
+  // runs several sequential probes server-side (see computeCoastFireMC's
+  // docblock), each up to numTrials=1000; this shows whichever probe is
+  // currently running, resetting to 0 as each new one starts. Also polls
+  // during a manual "Re-run Coast FIRE" (runCoastFireMc reuses this same
+  // coastFireMcRunId).
+  const coastFireMcProgressQuery =
+    trpc.projection.getMonteCarloProgress.useQuery(
+      { runId: coastFireMcRunId },
+      {
+        enabled: coastFireMcQuery.isFetching || isRerunning,
+        refetchInterval: 400,
+        staleTime: 0,
+      },
+    );
   // Cast to MonteCarloResult — tRPC's return-type inference widens the
   // nested mcResult because of the union across the binary-search branches
   // (already_coast / found / unreachable). The calculator authors this field
@@ -507,15 +594,17 @@ export function useProjectionQueries(
   // autoloaded in the background like Coast FIRE — a third always-on MC
   // run per page load was judged not worth the extra background server
   // cost for a scenario most households won't open every visit.
+  const rateSeededMcQueryInput = {
+    numTrials: MC_DEFAULT_TRIALS,
+    preset: "default" as const,
+    taxMode: mcTaxMode,
+    ...debouncedBaseInput,
+    rateSeededDecumulationYear1: true,
+  };
+  const rateSeededMcRunId = JSON.stringify(rateSeededMcQueryInput);
   const rateSeededMcQuery =
     trpc.projection.computeMonteCarloProjection.useQuery(
-      {
-        numTrials: MC_DEFAULT_TRIALS,
-        preset: "default" as const,
-        taxMode: mcTaxMode,
-        ...debouncedBaseInput,
-        rateSeededDecumulationYear1: true,
-      },
+      { ...rateSeededMcQueryInput, runId: rateSeededMcRunId },
       {
         enabled:
           scenarioView === "rateSeeded" &&
@@ -527,6 +616,18 @@ export function useProjectionQueries(
     );
   const rateSeededMcResult = rateSeededMcQuery.data?.result as
     MonteCarloResult | undefined;
+  // No manual "Re-run" action exists for this scenario (unlike mc/coast
+  // fire above) — only the steady-state query itself, so this doesn't
+  // need an `isRerunning` OR'd into its enabled condition.
+  const rateSeededMcProgressQuery =
+    trpc.projection.getMonteCarloProgress.useQuery(
+      { runId: rateSeededMcRunId },
+      {
+        enabled: rateSeededMcQuery.isFetching,
+        refetchInterval: 400,
+        staleTime: 0,
+      },
+    );
 
   // Initialize asset class overrides from saved DB values on first MC query success
   const mcOverridesInitialized = useRef(false);
@@ -707,6 +808,10 @@ export function useProjectionQueries(
     coastFireAge,
     coastFireMcQuery,
     mcProgressQuery,
+    mcPrefetchProgressQuery,
+    coastFireMcProgressQuery,
+    rateSeededMcProgressQuery,
+    coastFireProbeProgressQuery,
     coastFireMcResult,
     coastFireTodayMcResult,
     activeCoastFireMcResult,

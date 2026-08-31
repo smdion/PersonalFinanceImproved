@@ -220,6 +220,14 @@ export const coastFireRouter = createTRPCRouter({
         forceRefresh: z.boolean().optional(),
         /** Read-only cache peek — never runs the (expensive) binary search, just returns a cache hit or a null result. For cheap dashboard-tile display of "whatever the last real run found." */
         peekOnly: z.boolean().optional(),
+        /** Progress-polling key — see `getMonteCarloProgress` /
+         *  `runMonteCarloOffThread`'s docblocks. This search runs SEVERAL
+         *  probes sequentially (stop-now, stop-late, binary search steps, a
+         *  boundary re-probe, a final probe), not one job — passing the
+         *  same id to every `probeMC()` call means progress naturally
+         *  resets to 0 as each new probe starts and climbs to `numTrials`
+         *  as it runs, since only one worker job is ever active at a time. */
+        runId: z.string().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -377,21 +385,24 @@ export const coastFireRouter = createTRPCRouter({
       let probesRun = 0;
       const probeMC = (coastAge: number) => {
         probesRun += 1;
-        return runMonteCarloOffThread({
-          engineInput: {
-            ...engineInput,
-            profileSwitches: buildCoastFireProfileSwitches(
-              engineInput,
-              coastAge,
-            ),
+        return runMonteCarloOffThread(
+          {
+            engineInput: {
+              ...engineInput,
+              profileSwitches: buildCoastFireProfileSwitches(
+                engineInput,
+                coastAge,
+              ),
+            },
+            numTrials: NUM_TRIALS,
+            seed: SEED,
+            assetClasses: mcAssetClasses,
+            correlations: mcCorrelations,
+            glidePath: mcGlidePath,
+            inflationRisk,
           },
-          numTrials: NUM_TRIALS,
-          seed: SEED,
-          assetClasses: mcAssetClasses,
-          correlations: mcCorrelations,
-          glidePath: mcGlidePath,
-          inflationRisk,
-        });
+          input.runId,
+        );
       };
       const probeAt = async (coastAge: number): Promise<number> =>
         (await probeMC(coastAge)).successRate;

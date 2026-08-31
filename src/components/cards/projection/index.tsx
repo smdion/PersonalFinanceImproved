@@ -174,6 +174,10 @@ export function ProjectionCard(props: {
     coastFireMcQuery,
     coastFireAge: deterministicCoastFireAge,
     mcProgressQuery,
+    mcPrefetchProgressQuery,
+    coastFireMcProgressQuery,
+    rateSeededMcProgressQuery,
+    coastFireProbeProgressQuery,
     rateSeededMcQuery,
     isRerunning,
   } = state;
@@ -213,7 +217,29 @@ export function ProjectionCard(props: {
     rateSeededMcQuery.isFetching ||
     coastFireProbeLoading ||
     isRerunning;
-  const mcProgress = mcQuery.isFetching ? (mcProgressQuery.data ?? null) : null;
+  // Whichever MC-ish job is actually running right now, in priority order
+  // — the ones tied to what the user is actively viewing/doing outrank
+  // the passive background prefetch, so switching to (say) Coast FIRE
+  // while the baseline prefetch happens to also be mid-run shows YOUR
+  // progress, not a random one. Each *ProgressQuery only polls (and thus
+  // only has data) while its OWN query/action is in flight — see each
+  // one's `enabled` clause in use-projection-queries.ts — so at most one
+  // of these should ever be non-null in practice; the fallback chain
+  // exists for the rare moment two overlap (e.g. "Re-run" fires both
+  // baseline and Coast FIRE MC together via Promise.all).
+  const mcProgress = mcQuery.isFetching
+    ? (mcProgressQuery.data ?? null)
+    : coastFireMcQuery.isFetching
+      ? (coastFireMcProgressQuery.data ?? null)
+      : rateSeededMcQuery.isFetching
+        ? (rateSeededMcProgressQuery.data ?? null)
+        : coastFireProbeLoading
+          ? (coastFireProbeProgressQuery.data ?? null)
+          : mcPrefetchQuery.isFetching
+            ? (mcPrefetchProgressQuery.data ?? null)
+            : isRerunning
+              ? (mcProgressQuery.data ?? coastFireMcProgressQuery.data ?? null)
+              : null;
 
   // Allow page-level dollarMode override (for shared toggle across tabs).
   // Sync the prop into internal state so derived data (deflate) reads the correct value.

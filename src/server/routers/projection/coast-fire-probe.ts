@@ -105,6 +105,8 @@ export const coastFireProbeRouter = createTRPCRouter({
          *  bounds aren't trustworthy, and buildCoastFireProfileSwitches
          *  has no guard of its own against an out-of-range age. */
         probeAge: z.number().int(),
+        /** Progress-polling key — see `getMonteCarloProgress`'s docblock. */
+        runId: z.string().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -241,21 +243,24 @@ export const coastFireProbeRouter = createTRPCRouter({
         };
       }
 
-      const mcResult = await runMonteCarloOffThread({
-        engineInput: {
-          ...engineInput,
-          profileSwitches: buildCoastFireProfileSwitches(
-            engineInput,
-            input.probeAge,
-          ),
+      const mcResult = await runMonteCarloOffThread(
+        {
+          engineInput: {
+            ...engineInput,
+            profileSwitches: buildCoastFireProfileSwitches(
+              engineInput,
+              input.probeAge,
+            ),
+          },
+          numTrials: NUM_TRIALS,
+          seed: SEED,
+          assetClasses: mcAssetClasses,
+          correlations: mcCorrelations,
+          glidePath: mcGlidePath,
+          inflationRisk,
         },
-        numTrials: NUM_TRIALS,
-        seed: SEED,
-        assetClasses: mcAssetClasses,
-        correlations: mcCorrelations,
-        glidePath: mcGlidePath,
-        inflationRisk,
-      });
+        input.runId,
+      );
 
       const result: CoastFireProbeResult = {
         probeAge: input.probeAge,
