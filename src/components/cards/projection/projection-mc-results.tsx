@@ -310,7 +310,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                           ) : (
                             <HelpTip
                               maxWidth={260}
-                              text={`Your household's "Initial Withdrawal Rate" setting (${formatPercent(si.withdrawalRate, 2)}), shown here only as a reference figure. Your active strategy (${si.withdrawalStrategy.replace(/_/g, " ")}) computes spending its own way and does NOT read this number — Guyton-Klinger is the one strategy that captures and defends its own rate instead, which is what you'd see here if it were active.`}
+                              text={`Your household's "Initial Withdrawal Rate" setting (${formatPercent(si.withdrawalRate, 2)}), shown here only as a reference figure — your active strategy (${si.withdrawalStrategy.replace(/_/g, " ")}) computes spending its own way and does NOT read this number.`}
                             />
                           )}
                         </div>
@@ -325,7 +325,16 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                           number, not a reference figure — since a user
                           could otherwise read "ref. rate" here and
                           reasonably ask why GK's spending seems to track it
-                          anyway. */}
+                          anyway. The non-GK tooltip used to also name-drop
+                          GK ("...which is what you'd see here if it were
+                          active") as a preemptive explanation for THAT
+                          comparison — but it showed unconditionally for
+                          every other strategy too, so someone who's never
+                          touched GK got a confusing, unprompted mention of
+                          a strategy they're not using (live-user finding,
+                          2026-08-30). Dropped; the "shown here only as a
+                          reference figure" framing already covers why the
+                          number exists without needing the GK aside. */}
                         <div className="text-micro text-faint">
                           {gkImpliedRate != null
                             ? "GK anchor rate"
