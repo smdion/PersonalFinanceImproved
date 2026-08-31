@@ -177,6 +177,7 @@ export function ProjectionCard(props: {
     runCoastFireMc,
     coastFireMcQuery,
     coastFireAge: deterministicCoastFireAge,
+    bracketOptimizerResult,
     mcProgressQuery,
     mcPrefetchProgressQuery,
     coastFireMcProgressQuery,
@@ -441,6 +442,7 @@ export function ProjectionCard(props: {
                         y.phase === "decumulation" && (y.qcdAmount ?? 0) > 0.01,
                     ).length
                   }
+                  bracketOptimizerResult={bracketOptimizerResult}
                 />
               </div>
             )}

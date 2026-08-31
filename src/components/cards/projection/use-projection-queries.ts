@@ -144,6 +144,29 @@ export function useProjectionQueries(
   );
   const coastFireAge = coastFireQuery.data?.result?.coastFireAge ?? null;
 
+  // Multi-year withdrawal-bracket-target optimizer — same procedure and
+  // input shape retirement-profile-tab.tsx's Taxes settings section
+  // already queries (see that file's docblock for the staleTime
+  // rationale: a household's balances don't meaningfully change
+  // mid-session). Feeds the "why THIS bracket, not another" explanation
+  // in both the table/chart tooltips (projection-table-decum-row.tsx) and
+  // the advisor report (lib/pure/report) — one shared query, one shared
+  // narrative function, not two independently-worded explanations.
+  // `debouncedBaseInput` (not `debouncedInput`) matches coastFireQuery's
+  // own precedent above: always the baseline plan, not a scenario
+  // override. Only relevant under bracket_filling — Waterfall mode has no
+  // bracket target to explain — so gated off otherwise to avoid an
+  // unnecessary multi-projection-run query for households not using it.
+  const bracketOptimizerQuery =
+    trpc.projection.computeWithdrawalBracketOptimizer.useQuery(
+      debouncedBaseInput,
+      {
+        enabled: withdrawalRoutingMode === "bracket_filling",
+        staleTime: 5 * 60 * 1000,
+      },
+    );
+  const bracketOptimizerResult = bracketOptimizerQuery.data?.result ?? null;
+
   // sharedInput is baseSharedInput + the Coast FIRE override when the user
   // has toggled to the Coast FIRE scenario view. Only set when the age is
   // sharedInput is baseSharedInput as-is. We intentionally do NOT thread
@@ -806,6 +829,8 @@ export function useProjectionQueries(
     debouncedBaseInput,
     coastFireQuery,
     coastFireAge,
+    bracketOptimizerQuery,
+    bracketOptimizerResult,
     coastFireMcQuery,
     mcProgressQuery,
     mcPrefetchProgressQuery,

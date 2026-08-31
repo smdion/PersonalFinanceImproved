@@ -172,4 +172,26 @@ describe("buildWithdrawalStrategyNarrative", () => {
     const section = buildWithdrawalStrategyNarrative(years, noopDeflate);
     expect(section.narrative).toMatch(/12% tax bracket/);
   });
+
+  it("folds in the full numeric bracket-optimizer comparison when a real optimizer result is passed, not just the qualitative fallback", () => {
+    const years = [
+      decumYear({ year: 2040, config: { rothBracketTarget: 0.22 } }),
+    ];
+    const bracketOptimizerResult = {
+      recommendedTarget: 0.12,
+      currentTarget: 0.22,
+      candidates: [
+        { target: 0.12, netCost: 3000, shortfallScore: 0, depleted: false },
+        { target: 0.22, netCost: 5000, shortfallScore: 0, depleted: false },
+      ],
+    };
+    const section = buildWithdrawalStrategyNarrative(
+      years,
+      noopDeflate,
+      bracketOptimizerResult,
+    );
+    expect(section.narrative).toMatch(/12% scores as the lower-cost choice/);
+    expect(section.narrative).toMatch(/\$2,000\.00 less/);
+    expect(section.narrative).not.toMatch(/avoids paying a higher rate today/i);
+  });
 });

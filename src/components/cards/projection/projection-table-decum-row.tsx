@@ -14,6 +14,8 @@ import type {
   DecumulationSlot,
   IndividualAccountYearBalance,
 } from "@/lib/calculators/types";
+import type { BracketOptimizerResult } from "@/lib/calculators/withdrawal-bracket-optimizer";
+import { describeBracketTargetChoice } from "@/lib/pure/report/bracket-target-narrative";
 import {
   getAccountSegments,
   getSegmentBalance,
@@ -161,6 +163,7 @@ function buildRoutingReasonClause(
   ia: Pick<IndividualAccountYearBalance, "category" | "taxType" | "withdrawal">,
   yr: EngineDecumulationYear,
   deflate: (v: number, yr: number) => number,
+  bracketOptimizerResult?: BracketOptimizerResult | null,
 ): string | undefined {
   const catCfg = ACCOUNT_TYPE_CONFIG[ia.category];
   // Traditional portion of a split-capable account (401k/IRA/403b): this
@@ -177,17 +180,15 @@ function buildRoutingReasonClause(
     yr.bracketTraditionalCap != null
   ) {
     const targetPct = yr.config.rothBracketTarget;
-    // "Why THIS bracket" (found live, 2026-08-31): this used to say
-    // "your bracket target" without ever explaining why filling to that
-    // specific rate, rather than a lower or higher one, is the point —
-    // Traditional money gets taxed one way or another, either at a rate
-    // you choose now or later as an RMD taxed at whatever bracket you're
-    // in then; filling to (not past) this bracket uses that room while
-    // it's yours to choose without paying a higher rate today than
-    // necessary.
+    // "Why THIS bracket" (found live, 2026-08-31) — shares
+    // describeBracketTargetChoice with the advisor report
+    // (lib/pure/report/bracket-target-narrative.ts) so the two can never
+    // disagree; folds in the real numeric comparison from the bracket
+    // optimizer when available, falls back to the qualitative-only
+    // version otherwise.
     const targetClause =
       targetPct != null
-        ? `Filled to your ${formatPercent(targetPct, 0)} bracket target — up to ${formatCurrency(deflate(yr.bracketTraditionalCap, yr.year))} of ordinary income (RMDs still apply on top when required). Filling to ${formatPercent(targetPct, 0)} now, instead of leaving it for a future forced RMD, uses this tax rate while you control the amount — going further into the next bracket isn't done because that cost isn't chosen to be worth it today.`
+        ? `Filled up to ${formatCurrency(deflate(yr.bracketTraditionalCap, yr.year))} of ordinary income this year (RMDs still apply on top when required). ${describeBracketTargetChoice(bracketOptimizerResult, targetPct)}`
         : `Filled to your configured bracket target — up to ${formatCurrency(deflate(yr.bracketTraditionalCap, yr.year))} of ordinary income`;
     // "Why this account over another" (cross-category order, e.g. 401k
     // before IRA) — your configured Traditional Account Order, restricted
@@ -228,9 +229,15 @@ function buildFullAccountNote(
   ia: IndividualAccountYearBalance,
   yr: EngineDecumulationYear,
   deflate: (v: number, yr: number) => number,
+  bracketOptimizerResult?: BracketOptimizerResult | null,
 ): { note?: string; noteLocked?: boolean } {
   const eligibility = buildEligibilityNote(ia, yr, deflate);
-  const reason = buildRoutingReasonClause(ia, yr, deflate);
+  const reason = buildRoutingReasonClause(
+    ia,
+    yr,
+    deflate,
+    bracketOptimizerResult,
+  );
   if (!reason) return eligibility;
   const note = eligibility.note ? `${eligibility.note} · ${reason}` : reason;
   return { note, noteLocked: eligibility.noteLocked };
@@ -297,6 +304,7 @@ export function DecumulationRow({
     withdrawalRoutingMode: _withdrawalRoutingMode,
     budgetProfileSummaries,
     result,
+    bracketOptimizerResult,
   } = state;
   if (!result) return null;
 
@@ -395,7 +403,12 @@ export function DecumulationRow({
                     // basis-remaining figure is reconstructed rather than
                     // reusing eligibilityReason's embedded dollar amount.
                     const buildNote = (ia: (typeof catAccts)[number]) =>
-                      buildFullAccountNote(ia, yr, deflate);
+                      buildFullAccountNote(
+                        ia,
+                        yr,
+                        deflate,
+                        bracketOptimizerResult,
+                      );
                     if (wd > 0) {
                       // Per-account breakdown ("no magic money"): when a
                       // category holds more than one tracked account (e.g.
@@ -772,7 +785,12 @@ export function DecumulationRow({
                   taxType: itemTaxType(ia.category, ia.taxType),
                   color: "red",
                   group: catDisplayLabel[ia.category] ?? ia.category,
-                  ...buildFullAccountNote(ia, yr, deflate),
+                  ...buildFullAccountNote(
+                    ia,
+                    yr,
+                    deflate,
+                    bracketOptimizerResult,
+                  ),
                 });
               }
             } else {

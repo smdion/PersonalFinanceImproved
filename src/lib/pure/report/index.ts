@@ -3,6 +3,7 @@
  *  Pure function: same inputs, same output, no React, no side effects. */
 import type { ProjectionResult } from "@/lib/calculators/types/engine-projection";
 import type { MonteCarloResult } from "@/lib/calculators/types/monte-carlo";
+import type { BracketOptimizerResult } from "@/lib/calculators/withdrawal-bracket-optimizer";
 import { buildExecutiveSummary } from "./executive-summary";
 import { buildWithdrawalStrategyNarrative } from "./withdrawal-strategy-narrative";
 import { buildRiskNarrative, buildRiskBandPoints } from "./risk-narrative";
@@ -33,6 +34,7 @@ export function buildReportNarrative(
     deflate: (value: number, year: number) => number;
     baseYear: number;
     coastFireAge?: number | null;
+    bracketOptimizerResult?: BracketOptimizerResult | null;
   },
 ): ReportNarrative {
   const executiveSummary = buildExecutiveSummary(projectionResult, mcResult, {
@@ -45,6 +47,7 @@ export function buildReportNarrative(
   const withdrawalStrategy = buildWithdrawalStrategyNarrative(
     decumulationYears,
     opts.deflate,
+    opts.bracketOptimizerResult,
   );
 
   const risk = buildRiskNarrative(mcResult, {

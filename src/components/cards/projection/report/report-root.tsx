@@ -7,6 +7,7 @@
  *  always real, never degraded. */
 import type { ProjectionResult } from "@/lib/calculators/types/engine-projection";
 import type { MonteCarloResult } from "@/lib/calculators/types/monte-carlo";
+import type { BracketOptimizerResult } from "@/lib/calculators/withdrawal-bracket-optimizer";
 import { buildReportNarrative } from "@/lib/pure/report";
 import { ReportCover } from "./report-cover";
 import { ReportExecutiveSummarySection } from "./report-executive-summary";
@@ -32,6 +33,7 @@ export function ReportRoot({
   engineSettings,
   rmdExcessYears,
   qcdYears,
+  bracketOptimizerResult,
 }: {
   projectionResult: ProjectionResult;
   mcResult: MonteCarloResult;
@@ -43,11 +45,13 @@ export function ReportRoot({
   engineSettings: ReportEngineSettings;
   rmdExcessYears: number;
   qcdYears: number;
+  bracketOptimizerResult?: BracketOptimizerResult | null;
 }) {
   const narrative = buildReportNarrative(projectionResult, mcResult, {
     deflate,
     baseYear,
     coastFireAge,
+    bracketOptimizerResult,
   });
 
   return (

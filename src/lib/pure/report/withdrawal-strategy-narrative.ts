@@ -6,8 +6,10 @@
  *  dollar-mode toggle) amounts, same convention as every other
  *  tooltip-string builder these were extracted from. */
 import type { EngineDecumulationYear } from "@/lib/calculators/types/engine-projection";
+import type { BracketOptimizerResult } from "@/lib/calculators/withdrawal-bracket-optimizer";
 import { formatPercent, formatCurrency } from "@/lib/utils/format";
 import type { ReportWithdrawalStrategySection } from "./types";
+import { describeBracketTargetChoice } from "./bracket-target-narrative";
 
 const TIER_SOURCE_LABEL: Record<"roth" | "brokerage" | "hsa", string> = {
   roth: "Roth",
@@ -160,6 +162,7 @@ export function formatRmdDivisorDetail(
 export function buildWithdrawalStrategyNarrative(
   decumulationYears: EngineDecumulationYear[],
   deflate: (v: number, year: number) => number,
+  bracketOptimizerResult?: BracketOptimizerResult | null,
 ): ReportWithdrawalStrategySection {
   const highlights: { year: number; detail: string }[] = [];
 
@@ -198,22 +201,21 @@ export function buildWithdrawalStrategyNarrative(
   // "Why THIS bracket, not a lower or higher one" — found live, 2026-08-31:
   // the prior version of this narrative (and the matching table tooltip)
   // said "fills your target tax bracket" without ever naming the actual
-  // rate or explaining why it's the right one to fill to. Reads directly
-  // off the resolved config's `rothBracketTarget` (the same field the
-  // table tooltip already cites) rather than re-deriving it — the FULL,
-  // numeric "why this rate beats every other candidate" answer comes from
-  // a separate, expensive multi-year search (withdrawal-bracket-
-  // optimizer.ts, surfaced today only on the Taxes settings page) that
-  // this report doesn't currently have access to; this states the
-  // qualitative reasoning behind bracket-filling as a strategy instead of
-  // re-running that search.
+  // rate. Reads the target off the resolved config's `rothBracketTarget`
+  // (the same field the table tooltip already cites), then hands it to
+  // the SHARED describeBracketTargetChoice (bracket-target-narrative.ts)
+  // — the same function the table tooltip calls — so the report and the
+  // tooltip can never disagree about why this rate was chosen. Folds in
+  // the optimizer's real numeric comparison when available, falling back
+  // to the qualitative-only version otherwise (query still loading,
+  // Waterfall mode, or fewer than 2 comparable candidates).
   const bracketTargetYear = decumulationYears.find(
     (y) => y.config.rothBracketTarget != null,
   );
   const bracketTarget = bracketTargetYear?.config.rothBracketTarget;
   const bracketTargetSentence =
     bracketTarget != null
-      ? `This plan fills your Traditional withdrawals up to the ${formatPercent(bracketTarget, 0)} tax bracket before drawing from any other account. The idea: your Traditional balance will eventually be taxed one way or another — either you withdraw it (or convert it to Roth) at a rate you choose now, or the IRS forces it out later as a Required Minimum Distribution, taxed at whatever your bracket happens to be at that point (often higher, once RMDs stack on top of other income). Filling to ${formatPercent(bracketTarget, 0)} now uses up that tax bracket while you control the amount; stopping there instead of going further into the next bracket avoids paying a higher rate today for savings that may not materialize.`
+      ? describeBracketTargetChoice(bracketOptimizerResult, bracketTarget)
       : undefined;
 
   let narrative: string;
