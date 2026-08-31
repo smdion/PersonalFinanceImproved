@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.7
 
-## [0.7.10] - 2026-08-30
+## [0.7.10] - 2026-08-31
 
 ### Added
 
@@ -16,6 +16,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **A "Coast FIRE (Custom Age)" scenario** on the Retirement page's Projection card — pick any age between now and your planned retirement age and check whether coasting from that specific age still succeeds, instead of only seeing the single age the app finds automatically.
 - **The Projection chart now shows total portfolio withdrawal and Social Security income as their own lines** during retirement years, so it's clear how much of a year's spending comes from the portfolio versus Social Security — the chart previously only showed contribution-shaped bars, which stopped making sense once retirement started drawing down instead of contributing.
 - **Portfolio snapshot pushes to YNAB/Actual now post as reconciled**, not just cleared, so they no longer sit as an unverified item you have to clear yourself.
+- **A "Discretionary withdrawal order" setting** (Roth first vs. Brokerage first) so you can compare both orderings for the discretionary portion of withdrawals side by side, with a warning when your ACA/IRMAA settings make the choice matter — available on both the retirement profile and directly on the Projection card.
+- **"Why was this account used?" explanations on the Retirement Projection table and chart** — hover a withdrawal amount to see why a Traditional vs. Roth account was chosen for bracket filling, why one account was picked over another in the same category, and a breakdown of exactly how an RMD amount was calculated (age, balance, divisor).
 
 ### Fixed
 
@@ -25,6 +27,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Tooltips across the Retirement Projection chart and table could be unreadable depending on light/dark mode** — tooltip text color is now centrally defined and enforced by a test, instead of being set ad hoc per tooltip line.
 - **Connecting Actual Budget and syncing for the first time could fail with "Invalid month format"** — Actual's API needs a different date shape than YNAB's for monthly data, which is now handled automatically.
 - **A connected-but-never-synced budget integration silently hid its own "Activate" button and account-mapping screen with no explanation** — a hint now tells you to sync first.
+- **Retirement tax projections were overstating tax owed for households without a paycheck's W-4 checkbox adjustment** — a standard-deduction offset baked into the paycheck-withholding tables was being applied a second time (or not correctly removed) when those same tables were reused to estimate full-year tax liability and bracket thresholds in retirement.
+- **Two 2025/2026 tax-bracket seed values had transcription typos** (a missing digit in one withholding amount, a missing digit in one threshold) affecting Single and Head-of-Household filers with the extra-withholding checkbox — corrected, with a new test that checks the full seed table for internally-consistent, strictly-increasing thresholds.
+- **Long-term capital gains could be priced at the wrong rate right at a tax-bracket boundary** — a brokerage withdrawal sized to exactly fill the "0% capital gains" room was being checked against the wrong side of that boundary, occasionally pricing it as still-free when it should have been taxed at the next bracket's rate.
+- **Pushing savings-goal updates to YNAB/Actual could report success (or a quiet "already up to date") even when every single push genuinely failed** — a real request failure (network, auth, an unexpected API shape) is now reported distinctly and shown as an error toast instead of blending into "nothing needed pushing."
+- **"Pull in new pay" / "Update %" on the Savings page could report success while persisting nothing**, for any household using a Contribution or Salary Profile other than the default — the save was silently computing against the wrong income/budget numbers instead of the ones actually shown in the preview.
+- **Pushing a savings goal's target to Actual Budget reported success with no visible change in Actual** — Actual has no API field to set a goal directly, so the push writes a template note that only takes effect once you run Actual's own "Apply Budget Template" action; the confirmation now says so instead of implying the change is already live.
+- **The Integrations sync page could keep showing a goal or budget item as "Linked" after its underlying category no longer existed** (e.g. after rebuilding or re-importing your Actual budget, which assigns every category a new id) — silently orphaned links are now shown as "Orphaned" with the same one-click re-link flow as an unmatched item.
 
 ## [0.7.9] - 2026-08-29
 
