@@ -76,8 +76,19 @@ import { log } from "@/lib/logger";
  *  withholding (`paycheck.ts`'s `adjustedAnnualWage`, previously missing
  *  the same adjustment entirely). A REAL value change — cached
  *  decumulation-year rows from before this fix understate bracket-filling
- *  room and overstate ordinary tax cost. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 13;
+ *  room and overstate ordinary tax cost.
+ *
+ *  14: `rankWithdrawalTiers`'s brokerage-beyond-the-free-zone pricing
+ *  (`withdrawal-cost-ranking.ts`) evaluated the LTCG rate exactly AT the
+ *  0%-bracket ceiling, which `getLtcgRate`'s inclusive `<=` semantics
+ *  resolve to the LOWER (0%) rate — mispricing that tier as free/NIIT-only
+ *  well past its real 15%/20% rate for any household with 0%-LTCG room
+ *  left. Ranking disagreed with the real tax charge (`computeLtcgTax`,
+ *  unaffected), causing the engine to over-select brokerage over cheaper
+ *  Roth growth. Fixed via `ltcgRateForNextDollar` (tax-tables.ts), an
+ *  exclusive-boundary lookup. A REAL value change — cached rows from
+ *  before this fix understate brokerage's real cost and over-draw it. */
+export const PROJECTION_CACHE_ENGINE_VERSION = 14;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

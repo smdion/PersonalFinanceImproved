@@ -183,13 +183,18 @@ describe("rankWithdrawalTiers", () => {
   });
 
   it("brokerage ranks before Roth once income is high enough that Roth's real bracket rate exceeds LTCG", () => {
-    // 613,700 is past the top ordinary bracket (24%) while LTCG here is
+    // 600,000 is past the top ordinary bracket (24%) while LTCG here is
     // still 15% -- brokerage is genuinely cheaper at this income level,
     // unlike the old targetRate-driven pricing which could make Roth look
     // artificially cheap regardless of the household's real income.
+    // (Deliberately NOT 613,700, the exact 15%/20% LTCG boundary -- gains
+    // stack ON TOP of ordinary income, so the first dollar of gains when
+    // ordinary income is exactly AT a bracket's own ceiling lands in the
+    // NEXT bracket, per computeLtcgTax's `floor >= threshold` stacking
+    // logic; see ltcgRateForNextDollar's docblock, tax-tables.ts.)
     const tiers = rankWithdrawalTiers(
       baseInput({
-        ordinaryIncomeFloor: 613700,
+        ordinaryIncomeFloor: 600000,
         rothBasisAvailable: 0,
         magiBeforeThisDraw: 0,
       }),
@@ -205,6 +210,44 @@ describe("rankWithdrawalTiers", () => {
       5,
     );
     expect(brokerageIdx).toBeLessThan(rothIdx);
+  });
+
+  it("prices the brokerage tier beyond the free 0%-LTCG room at the real next bracket's rate, not 0% (boundary bug, found 2026-08-31)", () => {
+    // ordinary=57000 gross, standardDeduction=32200 -> taxable=24800.
+    // zeroGainsRoom = 98900 - 24800 = 74100 exactly reaches the 0% ceiling,
+    // so brokerageOrdinaryIncome + zeroGainsRoom lands EXACTLY on 98900 by
+    // construction -- getLtcgRate's inclusive <= would wrongly return 0%
+    // for the tier that actually starts at 98901. Large brokerageAvailable
+    // ensures a real "beyond the free room" slice exists to price.
+    const tiers = rankWithdrawalTiers(
+      baseInput({
+        ordinaryIncomeFloor: 57000,
+        standardDeduction: 32200,
+        rothBasisAvailable: 0,
+        brokerageAvailable: 1_000_000,
+        magiBeforeThisDraw: 0,
+      }),
+    );
+    const pricedBrokerage = tiers.filter(
+      (t) => t.source === "brokerage" && t.costRate > 0,
+    );
+    expect(pricedBrokerage.length).toBeGreaterThan(0);
+    // Pre-NIIT slice should be the real 15% rate, not 0%.
+    expect(pricedBrokerage[0]!.costRate).toBeCloseTo(0.15, 5);
+  });
+
+  it("still prices the top LTCG bracket (20%) correctly for high-income households, not a flat 15% (guards against a wrong 'first bracket above 0%' fix)", () => {
+    const tiers = rankWithdrawalTiers(
+      baseInput({
+        ordinaryIncomeFloor: 700000, // past the 613,700 MFJ 15%/20% boundary
+        rothBasisAvailable: 0,
+        magiBeforeThisDraw: 0,
+      }),
+    );
+    const brokerageTier = tiers.find(
+      (t) => t.source === "brokerage" && t.costRate > 0 && t.costRate < 0.3,
+    );
+    expect(brokerageTier?.costRate).toBeCloseTo(0.2, 5);
   });
 
   it("NIIT adds exactly 3.8% to brokerage's rate once MAGI is above the filing-status threshold", () => {
@@ -240,7 +283,7 @@ describe("rankWithdrawalTiers", () => {
     // post-NIIT sub-tier while a small pre-NIIT sub-tier stays NIIT-free.
     const tiers = rankWithdrawalTiers(
       baseInput({
-        ordinaryIncomeFloor: 613700, // 15% LTCG zone here
+        ordinaryIncomeFloor: 600000, // 15% LTCG zone here (not the exact 613,700 boundary -- see the previous test's comment)
         rothAvailable: 0,
         rothBasisAvailable: 0,
         brokerageAvailable: 100000,

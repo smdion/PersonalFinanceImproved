@@ -114,6 +114,47 @@ export function getLtcgRate(
 }
 
 /**
+ * The LTCG rate that applies to the NEXT dollar above `taxableIncome` — the
+ * exclusive counterpart to `getLtcgRate`. Use when pricing a slice of gains
+ * that STARTS at a given income level, notably one landing exactly on
+ * another bracket's own ceiling (as `ltcgRoomForRate` computes by
+ * construction — `zeroGainsRoom`'s callers add it back onto ordinary
+ * income to price the tier beyond it). `getLtcgRate`'s inclusive `<=`
+ * answers a different, also-correct question — "what bracket is a real
+ * dollar SITTING AT" (income exactly at the 0% ceiling genuinely IS taxed
+ * at 0%) — and returning the bracket BELOW for a "what's next" query
+ * silently under-prices that entire next tier (found 2026-08-31: this
+ * exact substitution mispriced brokerage as 0%/NIIT-only well past its
+ * real 15% rate for any household whose ordinary income left room in the
+ * 0% zone, causing `rankWithdrawalTiers` to disagree with the real tax
+ * charge `computeLtcgTax` correctly applies — RULES.md single-computation-
+ * path). Both functions are correct for their own question; do not
+ * consolidate them.
+ *
+ * Deliberately NOT a rate-keyed "next bracket above targetRate" walk (that
+ * approach was tried and rejected — it returns a flat 0.15 for every
+ * income level, silently under-pricing a household already past the 15%
+ * ceiling too, who should get 0.20). Same single-rate-per-tier
+ * approximation as `getLtcgRate` otherwise (a tier spanning 15% into 20%
+ * still prices entirely at whichever bracket the START of that tier
+ * lands in) — acceptable for ordering, not exact-cent pricing.
+ */
+export function ltcgRateForNextDollar(
+  taxableIncome: number,
+  filingStatus: FilingStatusType,
+  dbBrackets?: Record<string, { threshold: number | null; rate: number }[]>,
+): number {
+  const raw = dbBrackets
+    ? dbBrackets[filingStatus]
+    : LTCG_BRACKETS[filingStatus];
+  if (!raw) return 0.15; // fallback
+  for (const b of raw) {
+    if (taxableIncome < (b.threshold ?? Infinity)) return b.rate;
+  }
+  return 0.2; // above all thresholds
+}
+
+/**
  * Compute progressive LTCG tax by stacking capital gains on top of ordinary income.
  *
  * LTCG brackets are based on total taxable income (ordinary + gains). Gains sit on

@@ -30,7 +30,7 @@ import { marginalRateAtIncome } from "./tax-estimation";
 import type { WithholdingBracket } from "./tax-estimation";
 import {
   ltcgRoomForRate,
-  getLtcgRate,
+  ltcgRateForNextDollar,
   toLtcgTaxableIncome,
 } from "../../config/tax-tables";
 import {
@@ -332,7 +332,16 @@ export function rankWithdrawalTiers(
     ordinaryIncomeFloor,
     standardDeduction,
   );
-  const ltcgRate = getLtcgRate(
+  // `brokerageOrdinaryIncome + zeroGainsRoom` always lands exactly on the
+  // 0% bracket's own ceiling by construction (zeroGainsRoom IS that
+  // ceiling minus brokerageOrdinaryIncome) — `getLtcgRate`'s inclusive
+  // `<=` would answer "what's the rate for a real dollar sitting AT the
+  // ceiling" (0%), not "what's the rate for the tier starting past it"
+  // (found 2026-08-31, mispriced brokerage as free/NIIT-only well beyond
+  // its real rate). Use the exclusive next-dollar lookup instead — see
+  // its docblock for why this isn't just `getLtcgRate` with the numbers
+  // shuffled.
+  const ltcgRate = ltcgRateForNextDollar(
     brokerageOrdinaryIncome + zeroGainsRoom,
     filingStatus,
     ltcgBrackets,
