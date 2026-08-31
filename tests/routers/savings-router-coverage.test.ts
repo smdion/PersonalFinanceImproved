@@ -525,6 +525,47 @@ describe("savings.recalculateAllocation", () => {
     }
   });
 
+  it("threads salaryActiveFields through to the live pool recompute, so the persisted amount matches what the caller's own preview showed (found live, 2026-08-31 — previously silently dropped, always computing against the stored salary instead of the active override)", async () => {
+    const ctx = await createTestCaller();
+    try {
+      const { profileId, personId } = seedStandardDataset(ctx.db);
+      const goalId = seedSavingsGoal(ctx.db, {
+        name: "Percent Goal",
+        isActive: true,
+      });
+      seedSavingsGoalAllocation(ctx.db, goalId, profileId, {
+        monthlyContribution: "150",
+        allocationPercent: "10",
+      });
+
+      // Baseline: no override, computed against the stored ($120k) salary.
+      const baseline = await ctx.caller.savings.recalculateAllocation({
+        goalId,
+      });
+      expect(baseline.updated).toBe(1);
+      const baselineAmount = Number(
+        getOverrideRow(ctx.db, goalId, profileId)!.monthlyContribution,
+      );
+
+      // Same call, but with a salaryActiveFields override doubling the
+      // salary — must produce a materially different persisted amount if
+      // the override is genuinely threaded through to the live-pool
+      // recompute, not silently dropped.
+      const withOverride = await ctx.caller.savings.recalculateAllocation({
+        goalId,
+        salaryActiveFields: [{ personId, salary: 240000 }],
+      });
+      expect(withOverride.updated).toBe(1);
+      const overriddenAmount = Number(
+        getOverrideRow(ctx.db, goalId, profileId)!.monthlyContribution,
+      );
+
+      expect(overriddenAmount).not.toBeCloseTo(baselineAmount, 0);
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
   it("leaves non-percentage goals untouched and reports updated:0 when no percentage-based goals exist", async () => {
     const ctx = await createTestCaller();
     try {

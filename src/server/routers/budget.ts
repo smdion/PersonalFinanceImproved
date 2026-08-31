@@ -111,7 +111,7 @@ async function renumberItems(
  * and is never sent over the wire. All three fields are required (nullable)
  * so a caller can't silently omit one and get the old, wrong fallback.
  */
-const profileResolutionTiersSchema = z.object({
+export const profileResolutionTiersSchema = z.object({
   /** The active Plan's pin for this axis, already validated client-side. */
   planPinId: z.number().int().nullable(),
   /** The calling page's own local selection / preview pick, if it has one. */
@@ -120,7 +120,9 @@ const profileResolutionTiersSchema = z.object({
   globalDefaultId: z.number().int().nullable(),
 });
 
-type ProfileResolutionTiers = z.infer<typeof profileResolutionTiersSchema>;
+export type ProfileResolutionTiers = z.infer<
+  typeof profileResolutionTiersSchema
+>;
 
 /**
  * Resolve which Contribution Profile a budget-linked item edit should write
