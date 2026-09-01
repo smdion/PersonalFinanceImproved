@@ -24,9 +24,19 @@ export function useActiveSalaryProfile(): [
   number | null,
   (id: number | null) => void,
 ] {
+  const utils = trpc.useUtils();
+  const setActive = trpc.salaryProfile.setActive.useMutation({
+    onSuccess: () => utils.settings.appSettings.list.invalidate(),
+  });
   const [activeId, setActiveId] = usePersistedSetting<number | null>(
     SK_ACTIVE_SALARY_PROFILE_ID,
     null,
+    {
+      writeVia: (id) => {
+        if (id == null) return Promise.resolve();
+        return setActive.mutateAsync({ id });
+      },
+    },
   );
   const { data: profiles } = trpc.salaryProfile.list.useQuery();
 

@@ -40,6 +40,9 @@ let queryError: unknown = null;
 
 vi.mock("@/lib/trpc", () => ({
   trpc: {
+    useUtils: () => ({
+      settings: { appSettings: { list: { invalidate: vi.fn() } } },
+    }),
     contribution: {
       computeSummary: {
         useQuery: () => ({
@@ -52,7 +55,10 @@ vi.mock("@/lib/trpc", () => ({
     // Reached via useEffectiveSalaryProfileId → useActiveSalaryProfile.
     // An empty list is the "nothing to resolve" case: the hook leaves the
     // active id alone rather than re-pointing it.
-    salaryProfile: { list: { useQuery: () => ({ data: [] }) } },
+    salaryProfile: {
+      list: { useQuery: () => ({ data: [] }) },
+      setActive: { useMutation: () => ({ mutateAsync: vi.fn() }) },
+    },
   },
 }));
 

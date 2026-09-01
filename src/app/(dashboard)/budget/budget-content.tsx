@@ -17,7 +17,10 @@ import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission, isAdmin } from "@/lib/context/user-context";
 import { PageHeader } from "@/components/ui/page-header";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
+import {
+  SK_ACTIVE_SALARY_PROFILE_ID,
+  SK_ACTIVE_CONTRIB_PROFILE_ID,
+} from "@/lib/constants/settings-keys";
 import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { useScenario } from "@/lib/context/scenario-context";
 import { useCloneProfile } from "@/lib/hooks/use-clone-profile";
@@ -86,7 +89,7 @@ export function BudgetContent() {
   const isPinnedProfile = displayProfileSource === "plan-pin";
 
   const [activeContribProfileId] = usePersistedSetting<number | null>(
-    "active_contrib_profile_id",
+    SK_ACTIVE_CONTRIB_PROFILE_ID,
     null,
   );
   const { data: contribProfiles } = trpc.contributionProfile.list.useQuery();

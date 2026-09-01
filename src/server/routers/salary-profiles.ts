@@ -618,4 +618,29 @@ export const salaryProfileRouter = createTRPCRouter({
         .where(eq(schema.salaryProfiles.id, input.id));
       return { success: true };
     }),
+
+  /**
+   * Mark a profile as the globally-active one. See
+   * contributionProfile.setActive's docblock for why this is split out
+   * from settings.appSettings.upsert instead of writing through it — same
+   * admin-only-write-vs-contributionProfile-permission gap, same fix.
+   */
+  setActive: contributionProfileProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const [profile] = await ctx.db
+        .select({ id: schema.salaryProfiles.id })
+        .from(schema.salaryProfiles)
+        .where(eq(schema.salaryProfiles.id, input.id));
+      if (!profile) throw new Error("Profile not found");
+
+      await ctx.db
+        .insert(schema.appSettings)
+        .values({ key: SK_ACTIVE_SALARY_PROFILE_ID, value: input.id })
+        .onConflictDoUpdate({
+          target: schema.appSettings.key,
+          set: { value: input.id },
+        });
+      return { success: true };
+    }),
 });

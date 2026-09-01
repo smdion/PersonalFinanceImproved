@@ -8,6 +8,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
+import { toast } from "@/lib/hooks/use-toast";
 
 const listQuery = vi.fn();
 const upsertMutate = vi.fn();
@@ -31,6 +32,10 @@ vi.mock("@/lib/trpc", () => ({
       },
     },
   },
+}));
+
+vi.mock("@/lib/hooks/use-toast", () => ({
+  toast: { error: vi.fn() },
 }));
 
 beforeEach(() => {
@@ -178,5 +183,74 @@ describe("usePersistedSetting", () => {
     });
 
     expect(invalidate).toHaveBeenCalled();
+  });
+
+  /**
+   * Regression coverage for the Contribution/Salary Profile "Activate"
+   * bug: the generic settings.appSettings.upsert is adminProcedure-gated
+   * (it also carries RBAC config), so routing an "active profile" write
+   * through it silently 403'd for a household member who only held the
+   * narrower profile permission — the UI had already optimistically
+   * flipped, so nothing looked wrong until the component remounted and
+   * snapped back. writeVia lets a caller swap in a correctly-permissioned
+   * mutation instead; on failure the optimistic value must revert and the
+   * user must be told, not left with a silently false "activated" state.
+   */
+  it("reverts the optimistic value and shows an error toast when writeVia rejects", async () => {
+    const writeVia = vi.fn().mockRejectedValue(new Error("FORBIDDEN"));
+    const { result } = renderHook(() =>
+      usePersistedSetting("my_key", "default-value", { writeVia }),
+    );
+
+    await act(async () => {
+      result.current[1]("new-value");
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(writeVia).toHaveBeenCalledWith("new-value");
+    expect(upsertMutate).not.toHaveBeenCalled();
+    expect(result.current[0]).toBe("default-value");
+    expect(localStorage.getItem("setting:my_key")).toBe(
+      JSON.stringify("default-value"),
+    );
+    expect(toast.error).toHaveBeenCalled();
+  });
+
+  it("keeps the optimistic value when writeVia succeeds", async () => {
+    const writeVia = vi.fn().mockResolvedValue({ success: true });
+    const { result } = renderHook(() =>
+      usePersistedSetting("my_key", "default-value", { writeVia }),
+    );
+
+    await act(async () => {
+      result.current[1]("new-value");
+      await Promise.resolve();
+    });
+
+    expect(result.current[0]).toBe("new-value");
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  it("reverts the optimistic value and shows an error toast when the default upsert path rejects", () => {
+    const { result } = renderHook(() =>
+      usePersistedSetting("my_key", "default-value"),
+    );
+
+    act(() => {
+      result.current[1]("new-value");
+    });
+    expect(result.current[0]).toBe("new-value");
+
+    const [, opts] = upsertMutate.mock.calls[0] as [
+      unknown,
+      { onError: (err: unknown) => void },
+    ];
+    act(() => {
+      opts.onError(new Error("FORBIDDEN"));
+    });
+
+    expect(result.current[0]).toBe("default-value");
+    expect(toast.error).toHaveBeenCalled();
   });
 });

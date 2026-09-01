@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**346 procedures across 40 routers.**
+**348 procedures across 40 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -110,6 +110,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `list`                     | query    | `protectedProcedure`           | List all contribution profiles with resolved summary totals.                                                                                                                                             |
 | `resolve`                  | query    | `protectedProcedure`           | Resolve a profile to aggregate totals — used by the relocation tool and any other consumer that needs salary/contribution/match numbers for a given profile.                                             |
 | `setAccountActiveFields`   | mutation | `contributionProfileProcedure` | field optional, no cross-field constraint); the paired-or-neither contributionValue/contributionMethod invariant is checked on the MERGED result below, not on the patch itself, since a legitimate sing |
+| `setActive`                | mutation | `contributionProfileProcedure` | member holding only the contributionProfile permission (not full admin) could see and click Activate, but the write silently 403'd with no error surfaced, leaving the UI showing a false "activated" st |
 | `setDeductionActiveFields` | mutation | `contributionProfileProcedure` | Patch (merge) one deduction's active amount within a profile — same field-level-patch, same-transaction pattern as setAccountActiveFields. A deduction has no live amountPerPeriod any more (Stage B dro |
 | `update`                   | mutation | `contributionProfileProcedure` | Update an existing contribution profile.                                                                                                                                                                 |
 
@@ -312,6 +313,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `list`        | query    | `protectedProcedure`           | All salary profiles, oldest first. Real rows only.                                                                                                                                                       |
 | `patchEntry`  | mutation | `contributionProfileProcedure` | The read-merge-write happens inside a transaction so two overlapping patches to the same profile (two fields committed in quick succession, a second tab/device) can't silently clobber each other the w |
 | `removeEntry` | mutation | `contributionProfileProcedure` | Remove one job's entry from a profile entirely — it goes back to contributing $0, the same as a job that was never added. Same transactional read-merge-write pattern as patchEntry.                     |
+| `setActive`   | mutation | `contributionProfileProcedure` | Mark a profile as the globally-active one. See contributionProfile.setActive's docblock for why this is split out from settings.appSettings.upsert instead of writing through it — same admin-only-write |
 | `update`      | mutation | `contributionProfileProcedure` | (no description)                                                                                                                                                                                         |
 
 ## `savings`

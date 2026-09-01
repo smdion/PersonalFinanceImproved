@@ -18,9 +18,19 @@ export function useActiveContribProfile(): [
   number | null,
   (id: number | null) => void,
 ] {
+  const utils = trpc.useUtils();
+  const setActive = trpc.contributionProfile.setActive.useMutation({
+    onSuccess: () => utils.settings.appSettings.list.invalidate(),
+  });
   const [activeId, setActiveId] = usePersistedSetting<number | null>(
     SK_ACTIVE_CONTRIB_PROFILE_ID,
     null,
+    {
+      writeVia: (id) => {
+        if (id == null) return Promise.resolve();
+        return setActive.mutateAsync({ id });
+      },
+    },
   );
   const { data: profiles } = trpc.contributionProfile.list.useQuery();
 

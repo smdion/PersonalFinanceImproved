@@ -779,6 +779,36 @@ export const contributionProfileRouter = createTRPCRouter({
     }),
 
   /**
+   * Mark a profile as the globally-active one. Split out from
+   * settings.appSettings.upsert (which the client-side hooks used to write
+   * this through) because that endpoint is adminProcedure-gated to protect
+   * RBAC config that lives in the same app_settings table — a household
+   * member holding only the contributionProfile permission (not full admin)
+   * could see and click Activate, but the write silently 403'd with no
+   * error surfaced, leaving the UI showing a false "activated" state until
+   * the next remount snapped it back. Mirrors budget.setActiveProfile's
+   * pattern of a narrowly-scoped, correctly-permissioned write.
+   */
+  setActive: contributionProfileProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const [profile] = await ctx.db
+        .select({ id: schema.contributionProfiles.id })
+        .from(schema.contributionProfiles)
+        .where(eq(schema.contributionProfiles.id, input.id));
+      if (!profile) throw new Error("Profile not found");
+
+      await ctx.db
+        .insert(schema.appSettings)
+        .values({ key: SK_ACTIVE_CONTRIB_PROFILE_ID, value: input.id })
+        .onConflictDoUpdate({
+          target: schema.appSettings.key,
+          set: { value: input.id },
+        });
+      return { success: true };
+    }),
+
+  /**
    * Resolve a profile to aggregate totals — used by the relocation tool
    * and any other consumer that needs salary/contribution/match numbers
    * for a given profile.

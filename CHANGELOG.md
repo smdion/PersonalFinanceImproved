@@ -43,6 +43,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **The "Push budget amounts to Actual" preview always showed $0 as the current amount and referred to "YNAB" regardless of which integration was active** — the preview now reads Actual's own note-based goal storage to compute the real diff, and its wording matches whichever budget provider is actually connected.
 - **Savings goals could double-count a month's funding** when a household manually assigned money to a goal directly in YNAB/Actual instead of through Ledgr — the projection now reads that month's real budgeted amount from the connected budget and nets it out of the first month's projected allocation, instead of guessing from the current date.
 - The Methodology and Decumulation Methodology pages incorrectly described IRMAA/ACA as reporting-only and were missing the newly-added tax-bracket-growth explanation and a formatting fix.
+- **Activating a Contribution Profile or Salary Profile could silently do nothing** for a household member who wasn't a full admin — the write went through an admin-only endpoint (shared with sensitive permission config) instead of the same permission that controls that tab, so the click appeared to work until the page was revisited and it had quietly reverted. Now writes through a correctly-permissioned endpoint like Budget Profile already did, and a failed activation shows an error instead of silently reverting.
 
 ## [0.7.9] - 2026-08-29
 

@@ -151,9 +151,11 @@ vi.mock("@/lib/trpc", () => ({
     },
     contributionProfile: {
       list: { useQuery: () => ({ data: [] }) },
+      setActive: { useMutation: () => ({ mutateAsync: vi.fn() }) },
     },
     salaryProfile: {
       list: { useQuery: () => ({ data: [] }) },
+      setActive: { useMutation: () => ({ mutateAsync: vi.fn() }) },
     },
     projection: {
       computeProjection: {
