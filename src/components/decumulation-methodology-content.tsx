@@ -785,8 +785,10 @@ export function DecumulationMethodologyContent() {
           the engine computes remaining room up to the target bracket threshold
           and converts that amount from Traditional to Roth. The income tax on
           the conversion is paid from brokerage (not from the converted amount).
-          Conversions are skipped if they would push income above IRMAA or ACA
-          cliff thresholds (when those awareness flags are enabled).
+          When IRMAA awareness is enabled, the conversion amount is capped to
+          stay below the next IRMAA cliff (see below) — this defaults on
+          automatically whenever IRMAA awareness is on. ACA awareness does not
+          cap conversions; it only reports how close you are to the cliff.
         </p>
 
         <h4 className="font-semibold text-secondary mt-4">
@@ -808,19 +810,40 @@ export function DecumulationMethodologyContent() {
         <p>
           <strong>IRMAA</strong> (Income-Related Monthly Adjustment Amount) adds
           Medicare Part B and Part D surcharges at age 65+ based on modified AGI
-          from two years prior. The engine reports warnings when your income
-          (withdrawals + conversions) crosses IRMAA bracket thresholds.
+          from two years prior. The engine reports the surcharge and, when
+          it&apos;s about to push you over the next tier, caps that year&apos;s
+          Roth conversion to stay under the cliff — this cap is the one place
+          IRMAA awareness actually changes a withdrawal number, not just a
+          warning.
         </p>
         <p>
           <strong>ACA</strong> (Affordable Care Act) subsidy cliffs apply before
           age 65 if you purchase marketplace insurance. Income above 400% of the
           Federal Poverty Level eliminates premium tax credits entirely. The
-          engine warns when early-retiree income approaches this cliff.
+          engine warns when early-retiree income approaches this cliff, but —
+          unlike IRMAA — never caps a conversion or withdrawal to avoid it;
+          it&apos;s reporting-only. Use the warning to manually adjust via
+          overrides.
         </p>
         <p className="text-xs text-faint mt-1">
-          Both IRMAA and ACA awareness are reporting-only — they emit warnings
-          but do not automatically reduce conversions or cap withdrawals. Use
-          the warnings to manually adjust via overrides.
+          IRMAA&apos;s cliff is looked up two years ahead of the income that
+          triggers it (its real 2-year MAGI lookback), so the conversion cap
+          compares this year&apos;s income against the threshold that will apply
+          two years from now, not this year&apos;s.
+        </p>
+
+        <h4 className="font-semibold text-secondary mt-4">Threshold growth</h4>
+        <p>
+          Your W-4 tax brackets, standard deduction, LTCG brackets, IRMAA
+          brackets, and the ACA subsidy cliff are all legally inflation-indexed
+          — the IRS/CMS/HHS raise them most years. The engine grows each one
+          forward from its own data vintage using your configured inflation
+          rate, the same way it grows your spending need, instead of comparing a
+          40-year projection against a single frozen year&apos;s numbers. (Two
+          thresholds are deliberately NOT grown: the 3.8% NIIT surtax threshold
+          and the Social Security taxation thresholds are genuinely fixed in
+          nominal dollars by law and have not been inflation-indexed since 1984
+          and 2013 respectively.)
         </p>
 
         <h4 className="font-semibold text-secondary mt-4">Account depletion</h4>
