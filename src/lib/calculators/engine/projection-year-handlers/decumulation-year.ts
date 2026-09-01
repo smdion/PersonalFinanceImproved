@@ -853,26 +853,36 @@ export function runDecumulationYear(
     taxMultiplier: taxRates.taxMultiplier,
     standardDeduction: grownStandardDeduction,
     rothConversionTarget: config.rothConversionTarget,
-    // Fixed 2026-08-29, corrected after real test failures caught an
-    // over-eager first attempt: the ORIGINAL expression was
-    // `taxRates.rothConversionTarget ?? taxRates.rothBracketTarget` --
-    // this reads two *unresolved* plan-level defaults, which is exactly
-    // right when nothing has overridden either one (this parameter is
-    // itself only ever consulted as performRothConversion's fallback,
-    // reached precisely when config.rothConversionTarget is already
-    // undefined -- so re-deriving from the same resolved field here would
-    // be redundant, not "more correct"). The real gap was that a NEW
-    // per-year rothBracketTarget override (this session's addition) had
-    // no way to take priority over those two static defaults. Fixed by
-    // adding config.rothBracketTarget as a higher-priority first term,
-    // WITHOUT removing the original two-default fallback chain --
-    // dropping taxRates.rothConversionTarget (an earlier attempt at this
-    // fix did) broke every household relying on a plan-level
-    // rothConversionTarget default with no per-year override active,
-    // exactly what fixtures 31/41/54/55/61 and the Bug-B MAGI test cover.
+    // This param is performRothConversion's fallback, consulted ONLY when
+    // config.rothConversionTarget (above) is undefined. Priority (most to
+    // least specific):
+    //   1. taxRates.rothConversionTarget -- an explicit plan-level
+    //      conversion target the household set deliberately, separate
+    //      from (and possibly more conservative than) their withdrawal
+    //      bracket target.
+    //   2. config.rothBracketTarget -- a per-year WITHDRAWAL-routing
+    //      override. Advisor-caught 2026-09-01: an earlier version put
+    //      this FIRST, ahead of taxRates.rothConversionTarget -- a
+    //      household with an explicit plan-level rothConversionTarget
+    //      (say 12%, deliberately below their rothBracketTarget) whose
+    //      per-year override bumps rothBracketTarget to 32% for one year
+    //      would have had that override silently retarget CONVERSIONS to
+    //      32% too, even though nothing about a withdrawal-routing
+    //      override should touch the conversion target. Never shipped
+    //      wrong numbers (buildCandidateInput always pairs an explicit
+    //      rothConversionTarget when conversions are on, bypassing this
+    //      fallback), but was a real, reachable bug for any household
+    //      that later creates that override combination by hand.
+    //   3. taxRates.rothBracketTarget -- final fallback when nothing else
+    //      is set, same as before.
+    // See fixtures 31/41/54/55/61 (engine-snapshot.test.ts) and the Bug-B
+    // MAGI test (roth-growth-magi-tax-fix.test.ts) for why
+    // taxRates.rothConversionTarget can't simply be dropped from this
+    // chain -- and the priority-ordering regression test alongside them
+    // for why it can't come second either.
     rothBracketTarget:
-      config.rothBracketTarget ??
       taxRates.rothConversionTarget ??
+      config.rothBracketTarget ??
       taxRates.rothBracketTarget,
     totalTraditionalWithdrawal,
     taxableSS,

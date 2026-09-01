@@ -339,7 +339,13 @@ export function AssumptionsBand({
         <span className={chipCls}>
           <span className={labelCls}>
             Bracket Ceiling
-            <HelpTip text="Fill traditional (pre-tax) withdrawals up to this bracket, then use Roth for the rest. Keeps taxable income in cheaper brackets. Same setting as the Taxes tab's Bracket Ceiling." />
+            <HelpTip
+              text={
+                settings.rothConversionTarget == null
+                  ? "Fill traditional (pre-tax) withdrawals up to this bracket, then use Roth for the rest. Keeps taxable income in cheaper brackets. Also governs Roth conversions, since you haven't set a separate Conversion Target on the Taxes tab. Same setting as the Taxes tab's Bracket Ceiling."
+                  : "Fill traditional (pre-tax) withdrawals up to this bracket, then use Roth for the rest. Keeps taxable income in cheaper brackets. Roth conversions use their own separate Conversion Target (set on the Taxes tab), not this. Same setting as the Taxes tab's Bracket Ceiling."
+              }
+            />
           </span>
           {editable ? (
             <select

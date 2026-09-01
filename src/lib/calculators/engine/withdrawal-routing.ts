@@ -371,17 +371,11 @@ export function routeWithdrawalsBracketFilling(
     return routeWithdrawals(targetWithdrawal, config, balances);
   }
 
-  // Compute the traditional income cap: max traditional withdrawals before
-  // exceeding the target marginal bracket, minus SS income already occupying
-  // that bracket space.
-  const incomeCap = incomeCapForMarginalRate(
-    bracketInfo.rothBracketTarget,
-    bracketInfo.taxBrackets,
-    bracketInfo.standardDeduction,
-  );
-  const traditionalCap = roundToCents(
-    Math.max(0, incomeCap - bracketInfo.taxableSS),
-  );
+  // Traditional income cap: max traditional withdrawals before exceeding
+  // the target marginal bracket, minus SS income already occupying that
+  // bracket space. Shared with applyRothBracketOverlay below — see
+  // computeBracketTraditionalCap's docblock.
+  const traditionalCap = computeBracketTraditionalCap(bracketInfo);
 
   let remaining = targetWithdrawal;
   const slots: DecumulationSlot[] = [];
@@ -806,6 +800,38 @@ export interface RouteBracketInfo {
   discretionaryWithdrawalOrder?: "roth_first" | "brokerage_first";
 }
 
+/**
+ * The dollar cap on Traditional withdrawals/conversions that keeps ordinary
+ * income within `bracketInfo.rothBracketTarget`'s bracket — the gross-income
+ * ceiling for that bracket (after standard deduction) minus SS income
+ * already occupying part of that room. Shared by
+ * `routeWithdrawalsBracketFilling` and `applyRothBracketOverlay`
+ * (advisor-caught 2026-09-01: these computed the byte-identical formula
+ * independently under different variable names — same risk class as any
+ * other duplicated computation, RULES.md single-computation-path).
+ * Returns Infinity when there's no bracket data or target to compute from —
+ * callers already branch on that case, this just makes "no cap" explicit
+ * rather than requiring each caller to re-check `taxBrackets`/
+ * `rothBracketTarget` before calling.
+ */
+export function computeBracketTraditionalCap(
+  bracketInfo: RouteBracketInfo,
+): number {
+  if (
+    !bracketInfo.taxBrackets ||
+    bracketInfo.taxBrackets.length === 0 ||
+    bracketInfo.rothBracketTarget == null
+  ) {
+    return Infinity;
+  }
+  const incomeCap = incomeCapForMarginalRate(
+    bracketInfo.rothBracketTarget,
+    bracketInfo.taxBrackets,
+    bracketInfo.standardDeduction,
+  );
+  return roundToCents(Math.max(0, incomeCap - bracketInfo.taxableSS));
+}
+
 export type RouteResult = {
   slots: DecumulationSlot[];
   warnings: string[];
@@ -877,14 +903,7 @@ export function applyRothBracketOverlay(
   ) {
     return config;
   }
-  const incomeCap = incomeCapForMarginalRate(
-    bracketInfo.rothBracketTarget,
-    bracketInfo.taxBrackets,
-    bracketInfo.standardDeduction,
-  );
-  const rothOptTraditionalCap = roundToCents(
-    Math.max(0, incomeCap - bracketInfo.taxableSS),
-  );
+  const rothOptTraditionalCap = computeBracketTraditionalCap(bracketInfo);
   // Written as a negation of "< Infinity" (not ">= Infinity") so a NaN cap
   // (shouldn't happen, but taxableSS/incomeCap are computed values) takes
   // the same no-overlay path as the original inline logic did — NaN
