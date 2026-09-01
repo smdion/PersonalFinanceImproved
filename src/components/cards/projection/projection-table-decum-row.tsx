@@ -704,6 +704,30 @@ export function DecumulationRow({
                   bucketWd += wd;
                 }
               }
+              // Per-account breakdown (same "why was this account used"
+              // reasoning the Account view already shows — see buildNote
+              // above) — grouping by tax type shouldn't mean losing it.
+              // Falls back to the coarser `parts` aggregate below when no
+              // individual-account data exists, same as the Account view.
+              const bucketIabsAll = yr.individualAccountBalances ?? [];
+              const bucketIabs = (
+                dpt
+                  ? bucketIabsAll.filter(
+                      (ia) => ia.ownerPersonId === personFilter,
+                    )
+                  : bucketIabsAll
+              ).filter((ia) => iaBelongsToBucket(ia, bucket));
+              const withdrawingAccts = bucketIabs
+                .filter((ia) => (ia.withdrawal ?? 0) > 0.01)
+                .sort((a, b) => {
+                  const catDiff =
+                    getAllCategories().indexOf(a.category as AccountCategory) -
+                    getAllCategories().indexOf(b.category as AccountCategory);
+                  if (catDiff !== 0) return catDiff;
+                  return (a.ownerName ?? a.name).localeCompare(
+                    b.ownerName ?? b.name,
+                  );
+                });
               return (
                 <Tooltip
                   key={bucket}
@@ -721,14 +745,36 @@ export function DecumulationRow({
                             yearLumpSums,
                             bucket,
                           );
+                          const multiAcct = withdrawingAccts.length > 1;
                           const allItems = [
-                            ...parts.map((p) => ({
-                              label: catDisplayLabel[p.cat] ?? p.cat,
-                              amount: deflate(p.wd, yr.year),
-                              prefix: "-" as const,
-                              taxType: itemTaxType(p.cat, wdTaxType),
-                              color: "red" as TipColor,
-                            })),
+                            ...(withdrawingAccts.length > 0
+                              ? withdrawingAccts.map((ia) => ({
+                                  label: multiAcct
+                                    ? ownerAccountLabel(ia)
+                                    : (catDisplayLabel[ia.category] ??
+                                      ia.category),
+                                  amount: deflate(ia.withdrawal!, yr.year),
+                                  prefix: "-" as const,
+                                  taxType: itemTaxType(ia.category, wdTaxType),
+                                  color: "red" as TipColor,
+                                  ...buildFullAccountNote(
+                                    ia,
+                                    yr,
+                                    deflate,
+                                    bracketOptimizerResult,
+                                    !capacityNoteShownThisYear,
+                                    () => {
+                                      capacityNoteShownThisYear = true;
+                                    },
+                                  ),
+                                }))
+                              : parts.map((p) => ({
+                                  label: catDisplayLabel[p.cat] ?? p.cat,
+                                  amount: deflate(p.wd, yr.year),
+                                  prefix: "-" as const,
+                                  taxType: itemTaxType(p.cat, wdTaxType),
+                                  color: "red" as TipColor,
+                                }))),
                             ...bucketLumps.map((ls) => ({
                               label: ls.label ?? "Lump sum",
                               amount: deflate(ls.amount, yr.year),
@@ -1088,7 +1134,32 @@ export function DecumulationRow({
                 key={bucket}
                 content={(() => {
                   const wdLineItems: TooltipLineItem[] = [];
-                  if (!dpt) {
+                  // Per-account items in BOTH household and person-filtered
+                  // views — previously the household view fell back to a
+                  // per-CATEGORY slot aggregate here, collapsing e.g. two
+                  // people's separate 401ks into one line, while the
+                  // Balance-by-Account view always broke it out per account.
+                  const multiAcctBucket = bucketAccts.length > 1;
+                  if (bucketAccts.length > 0) {
+                    const bucketTaxField = bucketSlotMap[bucket]?.taxField;
+                    for (const ia of bucketAccts) {
+                      const wd = ia.withdrawal ?? 0;
+                      if (wd > 0) {
+                        wdLineItems.push({
+                          label: multiAcctBucket
+                            ? ownerAccountLabel(ia)
+                            : (catDisplayLabel[ia.category] ?? ia.category),
+                          amount: deflate(wd, yr.year),
+                          prefix: "-",
+                          taxType: bucketTaxField
+                            ? itemTaxType(ia.category, bucketTaxField)
+                            : undefined,
+                          color: "red",
+                        });
+                      }
+                    }
+                  } else if (!dpt) {
+                    // Fallback when no individual-account data exists.
                     const bucketTaxField = bucketSlotMap[bucket]?.taxField;
                     for (const slot of dyr.slots) {
                       const wd = slotBucketWithdrawal(slot, bucket);
@@ -1101,19 +1172,6 @@ export function DecumulationRow({
                           taxType: bucketTaxField
                             ? itemTaxType(slot.category, bucketTaxField)
                             : undefined,
-                          color: "red",
-                        });
-                      }
-                    }
-                  } else {
-                    // Person-filtered: show per-account withdrawals from individual account data
-                    for (const ia of bucketAccts) {
-                      const wd = ia.withdrawal ?? 0;
-                      if (wd > 0) {
-                        wdLineItems.push({
-                          label: ia.name,
-                          amount: deflate(wd, yr.year),
-                          prefix: "-",
                           color: "red",
                         });
                       }
