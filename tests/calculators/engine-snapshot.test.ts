@@ -1591,7 +1591,12 @@ describe("engine snapshot parity", () => {
     // R49 (see SNAPSHOT-REVIEW-LOG.md): rmd-enforcement.ts's rounding-
     // residual fallback no longer force-feeds a genuine capacity shortfall
     // past an account's real remaining room.
-    expect(metrics.finalYear?.endBalance).toBe(4133719.39);
+    // Phase 3 (see SNAPSHOT-REVIEW-LOG.md): IRMAA brackets now grow
+    // forward instead of holding flat nominal -- this fixture's Roth
+    // conversions are IRMAA-cliff-aware, so a correctly-grown (tighter or
+    // looser, depending on vintage) cliff shifts conversion amounts and
+    // final balance.
+    expect(metrics.finalYear?.endBalance).toBe(4116677.5);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -2732,7 +2737,10 @@ describe("engine snapshot parity", () => {
     expect(result.sustainableWithdrawal).toBe(46000);
     // R49 (see SNAPSHOT-REVIEW-LOG.md): same rmd-enforcement.ts residual fix
     // as fixture 31.
-    expect(metrics.finalYear?.endBalance).toBe(2419205.76);
+    // Phase 3 (see SNAPSHOT-REVIEW-LOG.md): IRMAA brackets now grow
+    // forward -- this fixture is explicitly "IRMAA awareness enabled,
+    // income near cliff," so it's expected to move.
+    expect(metrics.finalYear?.endBalance).toBe(2393952.25);
     expect(metrics).toMatchSnapshot();
   });
 

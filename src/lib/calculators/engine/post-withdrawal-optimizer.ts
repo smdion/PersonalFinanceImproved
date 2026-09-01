@@ -25,7 +25,11 @@ import {
   isPortfolioParent,
 } from "../../config/account-types";
 import type { AccountBalances, IndividualAccountInput } from "../types";
-import { getIrmaaCost, getNextIrmaaCliff } from "../../config/irmaa-tables";
+import {
+  getIrmaaCost,
+  getNextIrmaaCliff,
+  type IrmaaBracket,
+} from "../../config/irmaa-tables";
 import { getAcaSubsidyCliff, acaMagi } from "../../config/aca-tables";
 import {
   estimateEffectiveTaxRate,
@@ -60,6 +64,16 @@ export interface RothConversionInput {
   brokerageGainsPortion: number;
   /** Cap conversions to stay below next IRMAA cliff (#38). */
   irmaaAwareRothConversions?: boolean;
+  /**
+   * IRMAA brackets grown to the vintage that actually applies here —
+   * NOT the same growth as `checkIrmaa`'s `irmaaBrackets` (below). This
+   * cap compares a year-N MAGI against the threshold that will apply
+   * TWO YEARS LATER (IRMAA's own 2-year lookback: year-N income sets
+   * year-(N+2)'s premium), so the caller must grow this table to year
+   * N+2's vintage, not year N's — see `decumulation-year.ts`'s
+   * `grownIrmaaBracketsForCap`. Undefined falls back to the hardcoded
+   * (ungrown) `IRMAA_BRACKETS` default, same as pre-Phase-3 behavior. */
+  irmaaBrackets?: Record<string, IrmaaBracket[]>;
   filingStatus?: FilingStatusType | null;
   /** Current balances (mutated in place). */
   balances: TaxBuckets;
@@ -132,6 +146,15 @@ export interface IrmaaInput {
   projectedMagi: number;
   /** Current-year Roth conversion amount (for cliff warning logic). */
   rothConversionAmount: number;
+  /**
+   * IRMAA brackets grown to year N's vintage (the surcharge SCHEDULE
+   * that applies this year, regardless of which year's MAGI it's
+   * evaluated against — see `decumulation-year.ts`'s
+   * `grownIrmaaBracketsForCheck`). Undefined falls back to the
+   * hardcoded (ungrown) `IRMAA_BRACKETS` default, same as pre-Phase-3
+   * behavior. NOT the same growth vintage as `RothConversionInput.irmaaBrackets` —
+   * see that field's docblock for why the two differ. */
+  irmaaBrackets?: Record<string, IrmaaBracket[]>;
 }
 
 export interface IrmaaResult {
@@ -310,6 +333,7 @@ export function performRothConversion(
     const nextCliff = getNextIrmaaCliff(
       magiWithoutConversion,
       input.filingStatus,
+      input.irmaaBrackets,
     );
     if (nextCliff != null) {
       const maxConversionForCliff = roundToCents(
@@ -551,6 +575,7 @@ export function checkIrmaa(input: IrmaaInput): IrmaaResult {
     anyPersonAge65,
     projectedMagi,
     rothConversionAmount,
+    irmaaBrackets,
   } = input;
 
   const warnings: string[] = [];
@@ -560,7 +585,7 @@ export function checkIrmaa(input: IrmaaInput): IrmaaResult {
   }
 
   // projectedMagi is the 2-year-lookback MAGI per IRS rules (or current-year fallback).
-  const irmaaCost = getIrmaaCost(projectedMagi, filingStatus);
+  const irmaaCost = getIrmaaCost(projectedMagi, filingStatus, irmaaBrackets);
 
   // If Roth conversion pushed us over a cliff, check if reducing it helps.
   // Note: this warning uses the lookback MAGI which already includes the conversion
@@ -568,9 +593,17 @@ export function checkIrmaa(input: IrmaaInput): IrmaaResult {
   // so the warning is still meaningful.
   if (rothConversionAmount > 0 && irmaaCost > 0) {
     const magiWithoutConversion = projectedMagi - rothConversionAmount;
-    const irmaaCostWithout = getIrmaaCost(magiWithoutConversion, filingStatus);
+    const irmaaCostWithout = getIrmaaCost(
+      magiWithoutConversion,
+      filingStatus,
+      irmaaBrackets,
+    );
     if (irmaaCostWithout < irmaaCost) {
-      const nextCliff = getNextIrmaaCliff(magiWithoutConversion, filingStatus);
+      const nextCliff = getNextIrmaaCliff(
+        magiWithoutConversion,
+        filingStatus,
+        irmaaBrackets,
+      );
       if (nextCliff != null) {
         const maxConversionForCliff = Math.max(
           0,

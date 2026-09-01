@@ -115,8 +115,20 @@ import { log } from "@/lib/logger";
  *  `taxGrowthFactor`, same flat-nominal bug, same fix. A REAL value
  *  change: per-year `taxCost`, `discretionaryTierBreakdown`, and
  *  `postConversionLtcgRate` all shift for any household with a
- *  `taxDataYear` and decumulation years beyond it. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 17;
+ *  `taxDataYear` and decumulation years beyond it.
+ *
+ *  18: IRMAA brackets (`growIrmaaBrackets`, `bracket-growth.ts`) now grow
+ *  forward off `IRMAA_DATA_YEAR` (irmaa-tables.ts) — a distinct anchor
+ *  from `taxDataYear`, not shared with ordinary/LTCG brackets. A REAL
+ *  value change for any household with `enableIrmaaAwareness` on:
+ *  `irmaaCost` (display + the lifetime-tax objective
+ *  `withdrawal-bracket-optimizer.ts` selects a conversion target from)
+ *  shifts, and — because `irmaaAwareRothConversions` caps the actual
+ *  `rothConversionAmount` against the (previously ungrown) next IRMAA
+ *  cliff — this changes real withdrawal amounts, not just a displayed
+ *  number, for any household with that toggle on (defaults on whenever
+ *  `enableIrmaaAwareness` is). */
+export const PROJECTION_CACHE_ENGINE_VERSION = 18;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

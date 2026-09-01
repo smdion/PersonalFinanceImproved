@@ -37,7 +37,9 @@ import {
   growAmount,
   growWithholdingBrackets,
   growLtcgBrackets,
+  growIrmaaBrackets,
 } from "../bracket-growth";
+import { IRMAA_DATA_YEAR } from "../../../config/irmaa-tables";
 import { resolveDecumulationConfig } from "../override-resolution";
 import { applyGrowth } from "../growth-application";
 import { computeTaxableSS, computeTaxFromSlots } from "../tax-estimation";
@@ -406,6 +408,42 @@ export function runDecumulationYear(
   // own internal fallback would silently skip growth for most
   // households).
   const grownLtcgBrackets = growLtcgBrackets(taxRates.ltcgBrackets, taxGrowth);
+
+  // Phase 3 (2026-08-31): IRMAA brackets. Anchored on IRMAA_BRACKETS' OWN
+  // vintage (IRMAA_DATA_YEAR, irmaa-tables.ts) rather than taxGrowth's
+  // taxDataYear above -- the ordinary-bracket/LTCG tables share one
+  // vintage because they come from the same DB query and (for ordinary
+  // brackets + standard deduction) are mathematically coupled; IRMAA has
+  // neither property, so reusing taxDataYear would silently mis-grow it
+  // the day the two tables' real vintages drift apart.
+  //
+  // TWO different growth factors, not one -- this is not a copy-paste
+  // duplication, it answers two different questions:
+  //  - grownIrmaaBracketsForCheck (checkIrmaa, below): "what surcharge
+  //    schedule applies THIS calendar year" -- anchored on `year`.
+  //  - grownIrmaaBracketsForCap (performRothConversion, above -- passed
+  //    in via rothResult's call below): "what surcharge schedule will
+  //    apply when THIS year's MAGI is looked back at" -- IRMAA has a
+  //    2-year lookback (year N's MAGI sets year N+2's premium), so the
+  //    cap must compare this year's MAGI against the N+2 vintage of the
+  //    threshold, not N's -- anchored on `year + 2`. Using the same
+  //    factor for both would silently UNDER-cap every conversion by two
+  //    years of real threshold growth (advisor-caught, 2026-08-31).
+  const irmaaGrowthCheck = taxGrowthFactor(
+    year,
+    IRMAA_DATA_YEAR,
+    ctx.inflationRate,
+  );
+  const irmaaGrowthCap = taxGrowthFactor(
+    year + 2,
+    IRMAA_DATA_YEAR,
+    ctx.inflationRate,
+  );
+  const grownIrmaaBracketsForCheck = growIrmaaBrackets(
+    undefined, // no engine payload source yet -- see growIrmaaBrackets' docblock
+    irmaaGrowthCheck,
+  );
+  const grownIrmaaBracketsForCap = growIrmaaBrackets(undefined, irmaaGrowthCap);
 
   // SS convergence + gross-up estimation (extracted to tax-gross-up module)
   const taxEst = estimateWithdrawalTaxCost({
@@ -827,6 +865,7 @@ export function runDecumulationYear(
     irmaaAwareRothConversions:
       input.irmaaAwareRothConversions ??
       (enableIrmaaAwareness ? true : undefined),
+    irmaaBrackets: grownIrmaaBracketsForCap,
     filingStatus,
     balances,
     acctBal,
@@ -1019,6 +1058,7 @@ export function runDecumulationYear(
     anyPersonAge65,
     projectedMagi: irmaaLookbackMagi,
     rothConversionAmount,
+    irmaaBrackets: grownIrmaaBracketsForCheck,
   });
   // IRMAA surcharge is per-person — each Medicare-eligible person pays separately
   const irmaaCost = irmaaResult.irmaaCost * personsAge65Plus;

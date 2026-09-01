@@ -5,12 +5,14 @@ import {
   growAmount,
   growWithholdingBrackets,
   growLtcgBrackets,
+  growIrmaaBrackets,
 } from "@/lib/calculators/engine/bracket-growth";
 import {
   estimateEffectiveTaxRate,
   computeTaxableSS,
 } from "@/lib/calculators/engine/tax-estimation";
 import { computeLtcgTax, LTCG_BRACKETS } from "@/lib/config/tax-tables";
+import { IRMAA_BRACKETS } from "@/lib/config/irmaa-tables";
 import { NIIT_THRESHOLDS, computeNiit } from "@/lib/config/niit";
 import { TEST_BRACKETS } from "./fixtures/engine-fixtures";
 import { calculateProjection } from "@/lib/calculators/engine";
@@ -629,5 +631,215 @@ describe("end-to-end: LTCG brackets grow through the Roth-conversion recompute p
     // decumulation-year.ts back to the raw taxRates.ltcgBrackets drops
     // this gap below the threshold below.
     expect(largeGainsDelta - nearZeroGainsDelta).toBeGreaterThan(5500);
+  });
+});
+
+describe("growIrmaaBrackets", () => {
+  const DB_BRACKETS = {
+    MFJ: [
+      { magiThreshold: 206000, annualSurcharge: 1056 },
+      { magiThreshold: 258000, annualSurcharge: 2640 },
+    ],
+  };
+
+  it("is a no-op at growthFactor 1", () => {
+    expect(growIrmaaBrackets(DB_BRACKETS, 1)).toEqual(DB_BRACKETS);
+  });
+
+  // Unlike growLtcgBrackets (threshold only), BOTH fields scale here --
+  // annualSurcharge growth isn't optional decoration, it keeps IRMAA's
+  // weight in withdrawal-bracket-optimizer.ts's lifetimeTax objective
+  // consistent with the now-grown taxCost/rothConversionTaxCost terms it's
+  // summed against (see growIrmaaBrackets' own docblock).
+  it("scales both magiThreshold and annualSurcharge by the growth factor", () => {
+    const grown = growIrmaaBrackets(DB_BRACKETS, 1.5);
+    expect(grown.MFJ![0]!.magiThreshold).toBeCloseTo(206000 * 1.5, 5);
+    expect(grown.MFJ![0]!.annualSurcharge).toBeCloseTo(1056 * 1.5, 5);
+    expect(grown.MFJ![1]!.magiThreshold).toBeCloseTo(258000 * 1.5, 5);
+    expect(grown.MFJ![1]!.annualSurcharge).toBeCloseTo(2640 * 1.5, 5);
+  });
+
+  it("falls back to the hardcoded IRMAA_BRACKETS default (grown) when no DB override is passed -- irmaa_brackets DB rows exist but nothing in the engine payload reads them yet", () => {
+    const grown = growIrmaaBrackets(undefined, 1.5);
+    expect(grown.MFJ![0]!.magiThreshold).toBeCloseTo(
+      IRMAA_BRACKETS.MFJ[0]!.magiThreshold * 1.5,
+      5,
+    );
+  });
+
+  it("maps over every filing-status key, not just one", () => {
+    const grown = growIrmaaBrackets(undefined, 1.5);
+    expect(Object.keys(grown).sort()).toEqual(["HOH", "MFJ", "Single"]);
+  });
+});
+
+// Phase 3 end-to-end wiring guard (2026-08-31) -- IRMAA has TWO
+// independent call sites that both needed the grown table threaded in,
+// on TWO DIFFERENT growth vintages (see decumulation-year.ts's
+// grownIrmaaBracketsForCheck/grownIrmaaBracketsForCap docblocks):
+//
+//  1. checkIrmaa (post-withdrawal-optimizer.ts) -- reports irmaaCost/
+//     warnings, grown to the CURRENT year's vintage.
+//  2. performRothConversion's IRMAA-aware cap -- actually LIMITS
+//     rothConversionAmount (a real withdrawal number, not just display),
+//     grown to year+2's vintage (IRMAA's own 2-year MAGI lookback).
+//
+// Both tests below are verified BY ACTUAL MUTATION, not assumed: omitting
+// `irmaaBrackets: grownIrmaaBracketsForCheck` from the checkIrmaa call
+// site collapses year 2028's irmaaCost from $0 back to $1,056 (the
+// household's MAGI no longer clears the still-frozen cliff) while leaving
+// every rothConversionAmount byte-identical to the fixed run (this
+// mutation is fully isolated to the check side). Omitting
+// `irmaaBrackets: grownIrmaaBracketsForCap` from the performRothConversion
+// call site instead leaves year 2026's rothConversionAmount at $42,767.46
+// (vs. $3,312.86 fixed) -- and this one is NOT isolated: the much larger
+// conversion raises MAGI, which (via the module's own documented
+// Roth-conversions-affect-MAGI-affects-IRMAA feedback chain) ALSO flips
+// year 2028's irmaaCost away from its correctly-grown trajectory, so a
+// cap-side revert fails BOTH tests below, not just the cap one. Advisor
+// diff review (2026-08-31) verified this cross-contamination directly and
+// flagged an earlier draft of this comment that incorrectly claimed the
+// two paths were independent -- they're independent in wiring (neither
+// call site's grown-table SOURCE depends on the other), but not in the
+// values they produce, because of the feedback loop.
+function makeIrmaaHouseholdInput(): ProjectionInput {
+  const MFJ_BRACKETS = [
+    { threshold: 0, baseWithholding: 0, rate: 0 },
+    { threshold: 23850, baseWithholding: 0, rate: 0.1 },
+    { threshold: 96950, baseWithholding: 2385, rate: 0.12 },
+    { threshold: 206700, baseWithholding: 11157, rate: 0.22 },
+    { threshold: 394600, baseWithholding: 35302, rate: 0.24 },
+  ];
+  return {
+    accumulationDefaults: {
+      contributionRate: 0.2,
+      routingMode: "waterfall",
+      accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
+      accountSplits: {
+        "401k": 0.2,
+        "403b": 0,
+        hsa: 0.05,
+        ira: 0.05,
+        brokerage: 0.7,
+      },
+      taxSplits: { "401k": 0.9, ira: 1.0 },
+    },
+    decumulationDefaults: {
+      withdrawalRate: 0.04,
+      withdrawalRoutingMode: "bracket_filling",
+      withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
+      withdrawalSplits: {
+        "401k": 0.35,
+        "403b": 0,
+        ira: 0.25,
+        brokerage: 0.3,
+        hsa: 0.1,
+      },
+      withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
+      distributionTaxRates: {
+        traditionalFallbackRate: 0.15,
+        roth: 0,
+        hsa: 0,
+        brokerage: 0.15,
+        rothBracketTarget: 0.22,
+        taxBrackets: MFJ_BRACKETS,
+        standardDeduction: 32200,
+        enableRothConversions: true,
+        rothConversionTarget: 0.24,
+      },
+    },
+    accumulationOverrides: [],
+    decumulationOverrides: [],
+    currentAge: 65,
+    retirementAge: 65,
+    projectionEndAge: 95,
+    currentSalary: 0,
+    salaryGrowthRate: 0.03,
+    salaryCap: null,
+    salaryOverrides: [],
+    budgetOverrides: [],
+    baseLimits: {
+      "401k": 23500,
+      "403b": 23500,
+      hsa: 4300,
+      ira: 7000,
+      brokerage: 0,
+    },
+    limitGrowthRate: 0.02,
+    catchupLimits: { "401k": 7500, ira: 1000, hsa: 1000, "401k_super": 11250 },
+    employerMatchRateByCategory: {
+      "401k": 0.03,
+      "403b": 0,
+      hsa: 0,
+      ira: 0,
+      brokerage: 0,
+    },
+    startingBalances: {
+      preTax: 1000000,
+      taxFree: 100000,
+      afterTax: 500000,
+      afterTaxBasis: 300000,
+      hsa: 0,
+    },
+    startingAccountBalances: {
+      "401k": { structure: "roth_traditional", traditional: 1000000, roth: 0 },
+      "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+      hsa: { structure: "single_bucket", balance: 0 },
+      ira: { structure: "roth_traditional", traditional: 0, roth: 0 },
+      brokerage: {
+        structure: "basis_tracking",
+        balance: 500000,
+        basis: 300000,
+      },
+    },
+    annualExpenses: 195000,
+    decumulationAnnualExpenses: 195000,
+    inflationRate: 0.03,
+    returnRates: [{ label: "6%", rate: 0.06 }],
+    birthYear: 1960,
+    socialSecurityAnnual: 0,
+    ssStartAge: 67,
+    asOfDate: new Date("2025-03-07"),
+    filingStatus: "MFJ",
+    enableIrmaaAwareness: true,
+  } as ProjectionInput;
+}
+
+describe("end-to-end: IRMAA brackets grow through both the check and Roth-conversion-cap paths", () => {
+  it("checkIrmaa's irmaaCost reflects the grown (current-year) threshold, not the frozen one", () => {
+    const r = calculateProjection(makeIrmaaHouseholdInput());
+    const y2028 = r.projectionByYear.find(
+      (y) => y.phase === "decumulation" && y.year === 2028,
+    )!;
+    // Verified by mutation: with grownIrmaaBracketsForCheck correctly
+    // wired, this household's MAGI clears the (grown) first IRMAA tier by
+    // 2028 -- irmaaCost drops to 0. Omitting the wiring (falling back to
+    // the frozen 2026 threshold) keeps it pinned at $1,056 indefinitely.
+    expect(y2028.irmaaCost).toBe(0);
+  });
+
+  it("performRothConversion's IRMAA-aware cap uses the grown (year+2) threshold, materially changing rothConversionAmount", () => {
+    const r = calculateProjection(makeIrmaaHouseholdInput());
+    const y2026 = r.projectionByYear.find(
+      (y) => y.phase === "decumulation" && y.year === 2026,
+    )!;
+    // Verified by mutation: with grownIrmaaBracketsForCap correctly wired,
+    // the cap allows $3,312.86 of conversion this year. Omitting the
+    // wiring (capping against the ungrown, year-2026-vintage cliff instead
+    // of the year-2028 one that actually governs this year's MAGI) instead
+    // allows $42,767.46 -- more than 10x as much. The mechanism is a TIER
+    // CHANGE, not a proportional gap: this household's pre-conversion MAGI
+    // sits between the raw $206,000 first-tier threshold and its grown
+    // ~$218,545 (year+2) value, so the ungrown cap sees MAGI already past
+    // tier 1 (getNextIrmaaCliff returns tier 2's $258,000, leaving far more
+    // room before the NEXT cliff) while the correctly-grown cap sees MAGI
+    // still below tier 1 (returns $218,545, leaving much less room).
+    // Growing the threshold can tighten a cap as easily as loosen one,
+    // depending on which side of a tier boundary a household's MAGI lands
+    // on -- advisor-caught (2026-08-31) after an earlier draft of this
+    // comment wrongly described it as a proportional "two extra years of
+    // growth" gap.
+    expect(y2026.rothConversionAmount).toBeGreaterThan(0);
+    expect(y2026.rothConversionAmount).toBeLessThan(20000);
   });
 });

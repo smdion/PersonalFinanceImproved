@@ -32,6 +32,7 @@ import {
 import { NIIT_RATE, NIIT_THRESHOLDS, computeNiit } from "@/lib/config/niit";
 import {
   IRMAA_BRACKETS,
+  IRMAA_DATA_YEAR,
   getIrmaaCost,
   getNextIrmaaCliff,
 } from "@/lib/config/irmaa-tables";
@@ -397,6 +398,25 @@ describe("IRMAA bracket values", () => {
 
   it("getNextIrmaaCliff returns null when above all tiers", () => {
     expect(getNextIrmaaCliff(800000, "MFJ")).toBeNull();
+  });
+
+  // Phase 3 drift guard (2026-08-31, advisor-caught): IRMAA_DATA_YEAR
+  // (bracket-growth.ts's growIrmaaBrackets anchor) is a hand-maintained
+  // constant in a DIFFERENT file from this registry's "IRMAA bracket
+  // fallback (code)" entry -- unlike taxDataYear (Phases 1-2), which
+  // arrives from the DB alongside its table and physically can't drift.
+  // Without this assertion, refreshing IRMAA_BRACKETS to a new tax year
+  // and bumping this registry's validThrough (the normal update
+  // procedure) would silently leave IRMAA_DATA_YEAR stale -- over-growing
+  // every IRMAA threshold by a year, every projected year, for every
+  // household with enableIrmaaAwareness on, with no test failure anywhere
+  // else to catch it.
+  it("IRMAA_DATA_YEAR matches the registry's own validThrough for this table -- bump both together", () => {
+    const entry = TAX_PARAMETER_REGISTRY.find(
+      (e) => e.name === "IRMAA bracket fallback (code)",
+    );
+    expect(entry).toBeDefined();
+    expect(IRMAA_DATA_YEAR).toBe(entry!.validThrough);
   });
 });
 

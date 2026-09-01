@@ -30,6 +30,7 @@
  */
 import type { WithholdingBracket } from "./tax-estimation";
 import { LTCG_BRACKETS } from "../../config/tax-tables";
+import { IRMAA_BRACKETS, type IrmaaBracket } from "../../config/irmaa-tables";
 
 /**
  * The exponent every grow* helper below expects: years between the
@@ -135,6 +136,60 @@ export function growLtcgBrackets(
     grown[filingStatus] = entries.map((b) => ({
       threshold: b.threshold == null ? null : b.threshold * growthFactor,
       rate: b.rate,
+    }));
+  }
+  return grown;
+}
+
+/**
+ * Grows IRMAA brackets forward. Unlike LTCG, BOTH fields scale — not just
+ * `magiThreshold`:
+ *
+ * - `magiThreshold` grows for the same reason every other threshold in
+ *   this module does: it's a nominal dollar figure (this year's Medicare
+ *   premium schedule) compared against a correctly-inflating MAGI, so
+ *   holding it flat silently shrinks real headroom before the surcharge
+ *   hits, same as every other threshold here.
+ * - `annualSurcharge` growing is NOT the free/optional modeling choice
+ *   it might look like (IRMAA is a cliff/step function — `getIrmaaCost`
+ *   has no `baseWithholding`-style cumulative schedule, so there's no
+ *   correctness constraint FORCING it to scale the way `baseWithholding`
+ *   is forced to in `growWithholdingBrackets`). It scales here because
+ *   `withdrawal-bracket-optimizer.ts`'s `netCost` sums `irmaaCost` into
+ *   the SAME `lifetimeTax` total as `taxCost`/`rothConversionTaxCost` —
+ *   values that, after Phases 1-2, are computed off correctly-grown
+ *   brackets. Leaving `annualSurcharge` flat would silently shrink
+ *   IRMAA's real weight in that objective relative to the now-grown tax
+ *   terms, biasing the optimizer's target-bracket selection away from
+ *   what it should be — a Phase-1/2-INDUCED distortion, not a pre-existing
+ *   one. (Real Medicare Part B/D premiums have historically risen faster
+ *   than general CPI; growing at `inflationRate` instead of a
+ *   Medicare-specific rate — which doesn't exist anywhere in `src/lib/`
+ *   today — is a known, deliberate conservatism, not an attempt at
+ *   precision.)
+ *
+ * No `null`/`Infinity` top-bracket special-casing needed (unlike LTCG) —
+ * `IrmaaBracket.magiThreshold` is always a real finite number by
+ * construction (irmaa-tables.ts has no open-ended top tier the way
+ * `LTCG_BRACKETS`/DB `ltcg_brackets` do).
+ *
+ * Falls back to the hardcoded `IRMAA_BRACKETS` default (grown) when
+ * `brackets` is undefined — same reasoning as `growLtcgBrackets`: the
+ * `irmaa_brackets` DB table exists (schema-pg.ts) but nothing in the
+ * engine payload reads it yet, so every household hits this fallback
+ * today. Growing the fallback here means growth isn't silently
+ * bypassed for everyone until that DB wiring is added later.
+ */
+export function growIrmaaBrackets(
+  brackets: Record<string, IrmaaBracket[]> | undefined,
+  growthFactor: number,
+): Record<string, IrmaaBracket[]> {
+  const source = brackets ?? IRMAA_BRACKETS;
+  const grown: Record<string, IrmaaBracket[]> = {};
+  for (const [filingStatus, entries] of Object.entries(source)) {
+    grown[filingStatus] = entries.map((b) => ({
+      magiThreshold: b.magiThreshold * growthFactor,
+      annualSurcharge: b.annualSurcharge * growthFactor,
     }));
   }
   return grown;
