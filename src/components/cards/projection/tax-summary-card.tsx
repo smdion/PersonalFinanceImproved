@@ -19,13 +19,10 @@ import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { KpiCard } from "./projection-hero-kpis";
 import type { ProjectionState } from "./projection-table-types";
 import type { EngineDecumulationYear } from "@/lib/calculators/types/engine-projection";
-
-type DecadeBucket = {
-  label: string;
-  taxToday: number;
-  withdrawalToday: number;
-  years: number;
-};
+import {
+  computeLifetimeTaxSummary,
+  type LifetimeTaxSummary,
+} from "@/lib/pure/report/lifetime-tax-summary";
 
 export function TaxSummaryCard({ state }: { state: ProjectionState }) {
   const { result, deflate } = state;
@@ -34,66 +31,20 @@ export function TaxSummaryCard({ state }: { state: ProjectionState }) {
   const decumYears = result.projectionByYear.filter(
     (y): y is EngineDecumulationYear => y.phase === "decumulation",
   );
-  if (decumYears.length === 0) return null;
+  const summary = computeLifetimeTaxSummary(decumYears, deflate);
+  if (!summary) return null;
 
-  let totalTaxToday = 0;
-  let totalWithdrawalToday = 0;
-  const buckets = new Map<number, DecadeBucket>();
-
-  for (const yr of decumYears) {
-    const taxToday = deflate(yr.taxCost, yr.year);
-    const wdToday = deflate(yr.totalWithdrawal, yr.year);
-    totalTaxToday += taxToday;
-    totalWithdrawalToday += wdToday;
-
-    const decadeStart = Math.floor(yr.age / 10) * 10;
-    const existing = buckets.get(decadeStart);
-    if (existing) {
-      existing.taxToday += taxToday;
-      existing.withdrawalToday += wdToday;
-      existing.years += 1;
-    } else {
-      buckets.set(decadeStart, {
-        label: `${decadeStart}s`,
-        taxToday,
-        withdrawalToday: wdToday,
-        years: 1,
-      });
-    }
-  }
-
-  const weightedRate =
-    totalWithdrawalToday > 0 ? totalTaxToday / totalWithdrawalToday : 0;
-  const decades = Array.from(buckets.values()).sort((a, b) =>
-    a.label.localeCompare(b.label),
-  );
-
-  return (
-    <TaxSummaryCardBody
-      {...{
-        totalTaxToday,
-        weightedRate,
-        totalWithdrawalToday,
-        decumYears,
-        decades,
-      }}
-    />
-  );
+  return <TaxSummaryCardBody summary={summary} />;
 }
 
-function TaxSummaryCardBody({
-  totalTaxToday,
-  weightedRate,
-  totalWithdrawalToday,
-  decumYears,
-  decades,
-}: {
-  totalTaxToday: number;
-  weightedRate: number;
-  totalWithdrawalToday: number;
-  decumYears: EngineDecumulationYear[];
-  decades: DecadeBucket[];
-}) {
+function TaxSummaryCardBody({ summary }: { summary: LifetimeTaxSummary }) {
+  const {
+    totalTaxToday,
+    weightedRate,
+    totalWithdrawalToday,
+    yearsCovered,
+    decades,
+  } = summary;
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -142,8 +93,8 @@ function TaxSummaryCardBody({
                 {formatCurrency(totalTaxToday)}
               </div>
               <div className="text-caption text-faint mt-1 leading-tight">
-                Over {decumYears.length} retirement year
-                {decumYears.length === 1 ? "" : "s"}
+                Over {yearsCovered} retirement year
+                {yearsCovered === 1 ? "" : "s"}
               </div>
             </KpiCard>
 
@@ -168,7 +119,7 @@ function TaxSummaryCardBody({
               ]}
             >
               <div className="text-xl font-bold tabular-nums text-primary">
-                {formatCurrency(totalTaxToday / decumYears.length)}
+                {formatCurrency(totalTaxToday / yearsCovered)}
               </div>
               <div className="text-caption text-faint mt-1 leading-tight">
                 in today&apos;s dollars

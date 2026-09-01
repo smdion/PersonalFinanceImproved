@@ -285,10 +285,20 @@ export function ProjectionCard(props: {
     null,
   );
   const originalTitleRef = useRef<string>("");
+  // "Print Chart & Table" is a deliberate export action, not a screenshot
+  // of whatever's on screen — it should always include every year
+  // regardless of the interactive table's own milestone-only toggle
+  // state, restored after printing so it doesn't silently change what the
+  // user was looking at on screen.
+  const priorShowAllYearsRef = useRef<boolean | null>(null);
   const handlePrint = (mode: "basic" | "advisor") => {
     originalTitleRef.current = document.title;
     setReportMode(mode);
     document.title = `Retirement Projection - ${new Date().toLocaleDateString()}`;
+    if (mode === "basic" && !state.showAllYears) {
+      priorShowAllYearsRef.current = state.showAllYears;
+      state.setShowAllYears(true);
+    }
     // Two rAFs: one for React to commit the report-only DOM, one for the
     // browser to paint it, before the print dialog captures the page.
     requestAnimationFrame(() => {
@@ -321,9 +331,14 @@ export function ProjectionCard(props: {
     const reset = () => {
       setReportMode("none");
       if (originalTitleRef.current) document.title = originalTitleRef.current;
+      if (priorShowAllYearsRef.current != null) {
+        state.setShowAllYears(priorShowAllYearsRef.current);
+        priorShowAllYearsRef.current = null;
+      }
     };
     window.addEventListener("afterprint", reset);
     return () => window.removeEventListener("afterprint", reset);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- state.setShowAllYears is a stable useState setter, safe to close over once
   }, []);
 
   return (

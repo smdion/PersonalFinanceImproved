@@ -99,7 +99,7 @@ export function ProjectionTable({
       )}
       {result && (
         <>
-          <div className="flex items-center gap-2 flex-wrap mb-2">
+          <div className="print:hidden flex items-center gap-2 flex-wrap mb-2">
             <LabeledPillGroup label="Contributions">
               <PillBtn
                 active={contribView === "account"}
@@ -133,9 +133,9 @@ export function ProjectionTable({
               size="xs"
             />
           </div>
-          <div className="overflow-x-auto max-h-[28rem] overflow-y-auto">
+          <div className="projection-table-scroll overflow-x-auto max-h-[28rem] overflow-y-auto print:max-h-none print:overflow-visible">
             <table
-              className="text-xs"
+              className="projection-table text-xs print:text-[7px]"
               aria-label="Year-by-year retirement projection table with contributions, balances by tax bucket, and withdrawals"
               style={{
                 minWidth:
