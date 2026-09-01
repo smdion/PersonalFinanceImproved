@@ -202,6 +202,7 @@ export function ApiSyncSection({
         <PushPreviewModal
           title={`Push contributions to ${apiBalancesData?.service?.toUpperCase() ?? "API"}`}
           items={pushPreviewItems}
+          destinationLabel={apiBalancesData?.service?.toUpperCase() ?? "YNAB"}
           onConfirm={() => {
             pushMutation.mutate(
               pendingPushGoalId ? { goalId: pendingPushGoalId } : {},

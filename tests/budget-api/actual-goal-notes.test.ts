@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { mergeGoalIntoNote } from "@/lib/budget-api/actual-goal-notes";
+import {
+  mergeGoalIntoNote,
+  parseGoalFromNote,
+} from "@/lib/budget-api/actual-goal-notes";
 
 describe("mergeGoalIntoNote", () => {
   describe("fixed shape (#template <amount>)", () => {
@@ -143,6 +146,107 @@ describe("mergeGoalIntoNote", () => {
       // "#template -50" line stuck in ANY_TEMPLATE_RE limbo.
       const accepted = mergeGoalIntoNote(null, "fixed", 50);
       expect(accepted).toEqual({ ok: true, note: "#template 50" });
+    });
+  });
+});
+
+// Found live, 2026-09-01: a push-preview screen showed every linked
+// category's "current" value as $0 and its full new amount as the delta,
+// even for categories that had already been pushed successfully. Root
+// cause: actual-client.ts read `goalTarget` from Actual's structured
+// (write-inaccessible) `goal` field, which `mergeGoalIntoNote`'s write
+// path never touches -- the two never agreed. `parseGoalFromNote` is the
+// read counterpart that actually matches what gets written.
+describe("parseGoalFromNote", () => {
+  describe("fixed shape", () => {
+    it("extracts the amount from a bare fixed template", () => {
+      expect(parseGoalFromNote("#template 250", "fixed")).toBe(250);
+    });
+
+    it("extracts a fractional amount", () => {
+      expect(parseGoalFromNote("#template 150.50", "fixed")).toBe(150.5);
+    });
+
+    it("extracts the amount alongside other free-text note content", () => {
+      expect(
+        parseGoalFromNote("Rent — due on the 1st\n#template 250", "fixed"),
+      ).toBe(250);
+    });
+
+    it("is case-insensitive, matching mergeGoalIntoNote's own write behavior", () => {
+      expect(parseGoalFromNote("#Template 100", "fixed")).toBe(100);
+    });
+
+    it("returns undefined when there's no template at all", () => {
+      expect(
+        parseGoalFromNote("Just a note, no goal here", "fixed"),
+      ).toBeUndefined();
+      expect(parseGoalFromNote(null, "fixed")).toBeUndefined();
+      expect(parseGoalFromNote(undefined, "fixed")).toBeUndefined();
+    });
+
+    it("returns undefined for a target-balance template when asked for fixed shape -- doesn't guess across shapes", () => {
+      expect(
+        parseGoalFromNote("#template up to 5000", "fixed"),
+      ).toBeUndefined();
+    });
+
+    it("returns undefined for any other template shape (percentage, priority, by-date) -- same 'don't guess' contract as mergeGoalIntoNote", () => {
+      expect(
+        parseGoalFromNote("#template 10% of Paycheck", "fixed"),
+      ).toBeUndefined();
+      expect(parseGoalFromNote("#template-1 100", "fixed")).toBeUndefined();
+      expect(
+        parseGoalFromNote("#template 10000 by 2025-12", "fixed"),
+      ).toBeUndefined();
+    });
+  });
+
+  describe("target-balance shape", () => {
+    it("extracts the amount from an 'up to' template", () => {
+      expect(parseGoalFromNote("#template up to 5000", "target-balance")).toBe(
+        5000,
+      );
+    });
+
+    it("returns undefined for a bare fixed template when asked for target-balance shape", () => {
+      expect(
+        parseGoalFromNote("#template 100", "target-balance"),
+      ).toBeUndefined();
+    });
+  });
+
+  // The property this whole fix depends on: whatever mergeGoalIntoNote
+  // just wrote, parseGoalFromNote must read back exactly, for both
+  // shapes and across repeated writes (matching-shape amount replacement).
+  describe("round-trips with mergeGoalIntoNote (the write path this reads back)", () => {
+    it("reads back a fresh fixed write", () => {
+      const written = mergeGoalIntoNote(null, "fixed", 450);
+      expect(written.ok).toBe(true);
+      const note = written.ok ? written.note : "";
+      expect(parseGoalFromNote(note, "fixed")).toBe(450);
+    });
+
+    it("reads back a fresh target-balance write", () => {
+      const written = mergeGoalIntoNote(null, "target-balance", 12000);
+      expect(written.ok).toBe(true);
+      const note = written.ok ? written.note : "";
+      expect(parseGoalFromNote(note, "target-balance")).toBe(12000);
+    });
+
+    it("reads back the updated amount after a second write replaces the first", () => {
+      const first = mergeGoalIntoNote(null, "fixed", 100);
+      const firstNote = first.ok ? first.note : "";
+      const second = mergeGoalIntoNote(firstNote, "fixed", 175.25);
+      expect(second.ok).toBe(true);
+      const secondNote = second.ok ? second.note : "";
+      expect(parseGoalFromNote(secondNote, "fixed")).toBe(175.25);
+    });
+
+    it("reads back correctly when the write preserved existing free-text content", () => {
+      const written = mergeGoalIntoNote("Rent — due on the 1st", "fixed", 250);
+      const note = written.ok ? written.note : "";
+      expect(parseGoalFromNote(note, "fixed")).toBe(250);
     });
   });
 });

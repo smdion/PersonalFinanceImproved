@@ -18,6 +18,7 @@ import { fromCents, toCents } from "./conversions";
 import { budgetApiRequest, BudgetApiError } from "./errors";
 import {
   mergeGoalIntoNote,
+  parseGoalFromNote,
   type ActualTemplateShape,
 } from "./actual-goal-notes";
 import { transactionIdempotencyKey } from "./idempotency";
@@ -346,12 +347,19 @@ export class ActualClient implements BudgetAPIClient {
       catsByGroup.set(cat.group_id, list);
     }
 
-    return groupsRes.data.map((g) => ({
+    const groups = groupsRes.data.map((g) => ({
       ...mapCategoryGroup({
         ...g,
         categories: catsByGroup.get(g.id) ?? [],
       }),
     }));
+    // Same note-goal overlay as getMonthDetail (see overlayNoteGoals'
+    // docblock) — this method has its OWN inline month-merge above
+    // rather than delegating to getMonthDetail, so it needs the same fix
+    // applied separately. Mutates the category objects already inside
+    // `groups` in place (flatMap collects references, doesn't clone).
+    await this.overlayNoteGoals(groups.flatMap((g) => g.categories));
+    return groups;
   }
 
   /** `GET /months` (no month id) does NOT return `ActualMonth` objects —
@@ -384,7 +392,57 @@ export class ActualClient implements BudgetAPIClient {
     const res = await this.request<{ data: ActualMonth }>(
       `/months/${toActualMonthId(month)}`,
     );
-    return mapMonthDetail(res.data);
+    const detail = mapMonthDetail(res.data);
+    await this.overlayNoteGoals(detail.categories);
+    return detail;
+  }
+
+  /**
+   * Overlays note-parsed goal amounts onto categories, in place. Actual's
+   * structured `goal` field (what `mapCategory`'s `goalTarget` reads,
+   * i.e. `cat.goal`) is never updated by `writeGoalNote`'s note-based
+   * write mechanism — there's no API to write it (see `writeGoalNote`'s
+   * own docblock). Comparing a push/pull preview's "current" value
+   * against a `goalTarget` derived purely from `cat.goal` shows every
+   * Ledgr-managed goal as permanently changed, even immediately after a
+   * successful push, because the two never touch the same field (found
+   * live, 2026-09-01: every item in a budget push preview showed $0
+   * "current" and its full new amount as the delta, regardless of
+   * whether it had already been pushed). Read the note back instead —
+   * the ONLY field Ledgr's own write path actually affects — and prefer
+   * it over `cat.goal` when a `#template` of either shape is present, so
+   * the diff stays internally consistent with what a push/pull actually
+   * did. Falls back to whatever `goalTarget` already was (possibly
+   * undefined) when no template is found, or on a per-category fetch
+   * failure — non-fatal, same "degrade, don't abort" pattern
+   * `getAccounts()`'s per-account balance fetch already uses.
+   *
+   * Parallelized across categories (same pattern as `getAccounts()`).
+   * Only called from `getMonthDetail`, which itself runs once per sync
+   * or post-push cache refresh (see `refreshCategoryCache`,
+   * `sync/core.ts`) — not once per page load — so the extra
+   * per-category request is amortized the same way every other
+   * per-item fetch in this client already is.
+   */
+  private async overlayNoteGoals(categories: BudgetCategory[]): Promise<void> {
+    await Promise.all(
+      categories.map(async (cat) => {
+        try {
+          const noteRes = await this.request<{ data: string | null }>(
+            `/notes/category/${cat.id}`,
+          );
+          const noteGoal =
+            parseGoalFromNote(noteRes.data, "fixed") ??
+            parseGoalFromNote(noteRes.data, "target-balance");
+          if (noteGoal !== undefined) cat.goalTarget = noteGoal;
+        } catch (err) {
+          log("warn", "actual_client.goal_note_fetch_failed", {
+            categoryId: cat.id,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }),
+    );
   }
 
   /** The wrapper's `PATCH /months/:month/categories/:id` requires
