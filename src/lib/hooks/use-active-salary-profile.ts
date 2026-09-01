@@ -26,7 +26,21 @@ export function useActiveSalaryProfile(): [
 ] {
   const utils = trpc.useUtils();
   const setActive = trpc.salaryProfile.setActive.useMutation({
-    onSuccess: () => utils.settings.appSettings.list.invalidate(),
+    // See useActiveContribProfile's matching docblock — switching the
+    // active Salary Profile changes real input data for all of these, not
+    // just the "which profile is active" pointer.
+    onSuccess: () => {
+      utils.settings.appSettings.list.invalidate();
+      utils.salaryProfile.invalidate();
+      utils.contribution.invalidate();
+      utils.paycheck.invalidate();
+      utils.projection.invalidate();
+      utils.retirement.invalidate();
+      utils.brokerage.invalidate();
+      utils.budget.invalidate();
+      utils.savings.invalidate();
+      utils.settings.contributionAccounts.invalidate();
+    },
   });
   const [activeId, setActiveId] = usePersistedSetting<number | null>(
     SK_ACTIVE_SALARY_PROFILE_ID,

@@ -20,7 +20,28 @@ export function useActiveContribProfile(): [
 ] {
   const utils = trpc.useUtils();
   const setActive = trpc.contributionProfile.setActive.useMutation({
-    onSuccess: () => utils.settings.appSettings.list.invalidate(),
+    // Switching the active Contribution Profile changes real input data for
+    // every one of these — not just "which profile is active" (that part is
+    // settings.appSettings.list, invalidated below). Without busting them
+    // too, an activation looks like it silently didn't take: the pointer
+    // flips but paycheck/contribution/retirement/projection/brokerage/
+    // budget/savings numbers already in the query cache keep showing
+    // whatever they computed under the PREVIOUS active profile until some
+    // unrelated navigation happens to refetch them. Mirrors
+    // ContributionProfileManager's own invalidateProfileDeps (create/
+    // rename/duplicate/delete) plus budget's invalidateSummaryAndContributions.
+    onSuccess: () => {
+      utils.settings.appSettings.list.invalidate();
+      utils.contributionProfile.invalidate();
+      utils.contribution.invalidate();
+      utils.paycheck.invalidate();
+      utils.projection.invalidate();
+      utils.retirement.invalidate();
+      utils.brokerage.invalidate();
+      utils.budget.invalidate();
+      utils.savings.invalidate();
+      utils.settings.contributionAccounts.invalidate();
+    },
   });
   const [activeId, setActiveId] = usePersistedSetting<number | null>(
     SK_ACTIVE_CONTRIB_PROFILE_ID,
