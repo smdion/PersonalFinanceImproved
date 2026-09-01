@@ -97,8 +97,19 @@ import { log } from "@/lib/logger";
  *  anyway so the new "why isn't brokerage draining" visibility isn't
  *  hidden behind a stale cached row for up to the 36h TTL — a diagnostic
  *  feature that's invisible to the household that asked for it on ship day
- *  defeats its own purpose. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 15;
+ *  defeats its own purpose.
+ *
+ *  16: ordinary tax brackets + standard deduction (`bracket-growth.ts`,
+ *  `decumulation-year.ts`) now grow forward off `inflationRate` from
+ *  their own DB vintage (`distributionTaxRates.taxDataYear`) instead of
+ *  being held flat in nominal dollars for the whole projection. A REAL
+ *  value change for any decumulation year beyond the tax data's own
+ *  year — cached rows from before this fix understate the household's
+ *  real bracket-fill room and overstate tax burden in later years
+ *  (verified live: a real household's Traditional bracket cap was frozen
+ *  at $133,000 across 40 projected years while nominal spending need
+ *  more than doubled over the same span). */
+export const PROJECTION_CACHE_ENGINE_VERSION = 16;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

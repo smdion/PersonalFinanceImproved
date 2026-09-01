@@ -52,10 +52,6 @@ export function ReportRoot({
     baseYear,
     coastFireAge,
     bracketOptimizerResult,
-    standardDeduction:
-      engineSettings.standardDeduction != null
-        ? Number(engineSettings.standardDeduction)
-        : undefined,
   });
 
   return (

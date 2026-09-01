@@ -390,6 +390,17 @@ export type EngineDecumulationYear = {
   estTraditionalPortion: number;
   /** Debug: bracket-filling traditional cap (income cap - taxable SS). */
   bracketTraditionalCap?: number;
+  /** This year's standard deduction, grown forward from its DB vintage the
+   *  same way `bracketTraditionalCap` above is (`bracket-growth.ts`'s
+   *  `growAmount`) — NOT the plan-level `engineSettings.standardDeduction`
+   *  echo, which stays at its ungrown base value. Advisor-caught
+   *  (2026-08-31): before this field existed, the report/tooltip's
+   *  bracket-ceiling-math narrative (`describeBracketCeilingMath`) paired
+   *  a grown `bracketTraditionalCap` with the ungrown plan-level
+   *  deduction in the same sentence — internally inconsistent for any
+   *  year beyond the tax data's own vintage. Callers building that
+   *  narrative should read THIS field, not the settings echo. */
+  standardDeduction?: number;
   /** How the discretionary need beyond Traditional's bracket-fill target
    *  was actually sourced this year, in draw order, at each tier's real
    *  cost — see `RouteResult.tierBreakdown` (withdrawal-routing.ts) for

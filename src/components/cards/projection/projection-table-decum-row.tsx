@@ -167,7 +167,6 @@ function buildRoutingReasonClause(
   yr: EngineDecumulationYear,
   deflate: (v: number, yr: number) => number,
   bracketOptimizerResult?: BracketOptimizerResult | null,
-  standardDeduction?: number | null,
   includeCapacityNote?: boolean,
   onCapacityNoteUsed?: () => void,
 ): string | undefined {
@@ -200,10 +199,15 @@ function buildRoutingReasonClause(
             {
               bracketTraditionalCap: deflate(yr.bracketTraditionalCap, yr.year),
               taxableSS: deflate(yr.taxableSS, yr.year),
+              // The GROWN per-year deduction (bracket-growth.ts), not the
+              // plan-level engineSettings echo — advisor-caught
+              // (2026-08-31): pairing a grown bracketTraditionalCap with
+              // an ungrown deduction in the same sentence was internally
+              // inconsistent for any year beyond the tax data's vintage.
               standardDeduction:
-                standardDeduction != null
-                  ? deflate(standardDeduction, yr.year)
-                  : standardDeduction,
+                yr.standardDeduction != null
+                  ? deflate(yr.standardDeduction, yr.year)
+                  : yr.standardDeduction,
             },
           )}`
         : `Filled to your configured bracket target — up to ${formatCurrency(deflate(yr.bracketTraditionalCap, yr.year))} of ordinary income`;
@@ -282,7 +286,6 @@ function buildFullAccountNote(
   yr: EngineDecumulationYear,
   deflate: (v: number, yr: number) => number,
   bracketOptimizerResult?: BracketOptimizerResult | null,
-  standardDeduction?: number | null,
   includeCapacityNote?: boolean,
   onCapacityNoteUsed?: () => void,
 ): { note?: string; noteLocked?: boolean } {
@@ -292,7 +295,6 @@ function buildFullAccountNote(
     yr,
     deflate,
     bracketOptimizerResult,
-    standardDeduction,
     includeCapacityNote,
     onCapacityNoteUsed,
   );
@@ -475,7 +477,6 @@ export function DecumulationRow({
                         yr,
                         deflate,
                         bracketOptimizerResult,
-                        engineSettings?.standardDeduction,
                         !capacityNoteShownThisYear,
                         () => {
                           capacityNoteShownThisYear = true;
@@ -862,7 +863,6 @@ export function DecumulationRow({
                     yr,
                     deflate,
                     bracketOptimizerResult,
-                    engineSettings?.standardDeduction,
                     !capacityNoteShownThisYear,
                     () => {
                       capacityNoteShownThisYear = true;

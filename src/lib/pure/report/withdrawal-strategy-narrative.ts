@@ -166,7 +166,6 @@ export function buildWithdrawalStrategyNarrative(
   decumulationYears: EngineDecumulationYear[],
   deflate: (v: number, year: number) => number,
   bracketOptimizerResult?: BracketOptimizerResult | null,
-  standardDeduction?: number | null,
 ): ReportWithdrawalStrategySection {
   const highlights: { year: number; detail: string }[] = [];
 
@@ -254,7 +253,12 @@ export function buildWithdrawalStrategyNarrative(
             ? {
                 bracketTraditionalCap: bracketTargetYear.bracketTraditionalCap,
                 taxableSS: bracketTargetYear.taxableSS,
-                standardDeduction,
+                // The GROWN per-year deduction (`bracket-growth.ts`), not
+                // the ungrown plan-level echo — advisor-caught (2026-08-31):
+                // pairing a grown bracketTraditionalCap with an ungrown
+                // deduction in the same sentence was internally
+                // inconsistent for any year beyond the tax data's vintage.
+                standardDeduction: bracketTargetYear.standardDeduction,
               }
             : undefined,
         )

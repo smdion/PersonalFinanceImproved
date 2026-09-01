@@ -395,6 +395,36 @@ export type DecumulationDefaults = {
      *  fixes additive rather than a forced behavior change for every
      *  caller. */
     standardDeduction?: number;
+    /** The calendar year `taxBrackets`/`standardDeduction`/`ltcgBrackets`
+     *  actually represent (the DB row's own `taxYear`, e.g. the seeded
+     *  `tax_brackets.taxYear` — see `build-engine-payload.ts`'s
+     *  `latestTaxYear`). NOT the same concept as the projection's own
+     *  `yearIndex`/start year — those happen to coincide only because the
+     *  plan starts in the same calendar year this tax data was seeded for.
+     *  Used to grow these otherwise-flat figures forward for years beyond
+     *  this one (found live, 2026-08-31 — every one of these values was
+     *  held flat in NOMINAL dollars for the entire projection despite
+     *  being legally inflation-indexed in reality, silently overstating
+     *  tax burden decades out). Undefined ⇒ no growth applied (treat as
+     *  already-current), matching pre-fix behavior for any caller that
+     *  doesn't thread this through.
+     *
+     *  Advisor-caught nuance (2026-08-31): this is sourced from
+     *  `tax_brackets`' own `MAX(taxYear)` — `standardDeduction`'s actual
+     *  source (`contribution_limits`, queried by `asOfDate`'s calendar
+     *  year, `build-engine-payload.ts` ~line 139) is a SEPARATE query with
+     *  no enforced alignment to it. They currently share the same vintage
+     *  in practice (both 2026-seeded), which is what makes treating them
+     *  as one shared anchor safe today — but nothing prevents that from
+     *  drifting (e.g. next year's brackets seeded in Oct/Nov before the
+     *  matching `contribution_limits` row lands). A drift here doesn't
+     *  desync `toOrdinaryBracketIncome`'s residual math (both are still
+     *  grown by the identical factor off whichever anchor is used) — it
+     *  just makes the growth itself off by however many years the two
+     *  vintages have drifted apart. If that ever becomes a real gap,
+     *  thread a second, `standardDeduction`-specific vintage year instead
+     *  of assuming they match. */
+    taxDataYear?: number;
   };
 
   /** Withdrawal/spending strategy. Defaults to 'fixed'. */

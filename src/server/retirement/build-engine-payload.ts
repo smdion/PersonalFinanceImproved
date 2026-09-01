@@ -1463,6 +1463,13 @@ export async function buildEnginePayload(
     // filing status ⇒ the LTCG helper subtracts 0, reproducing pre-fix
     // behavior rather than throwing.
     standardDeduction: standardDeductionForFilingStatus,
+    // The actual calendar year `bracketData`/`standardDeductionForFilingStatus`
+    // were seeded for — NOT necessarily "this year." See
+    // `DecumulationDefaults.distributionTaxRates.taxDataYear`'s docblock
+    // (engine-config.ts) for why this matters: without it, every one of
+    // these values reads as flat-nominal forever in the engine, which is
+    // wrong once real inflation-indexed brackets are grown forward off it.
+    taxDataYear: latestTaxYear,
   };
 
   // Base engine input (without accumulationOverrides, decumulationOverrides, decumulationDefaults)

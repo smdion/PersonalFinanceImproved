@@ -35,7 +35,6 @@ export function buildReportNarrative(
     baseYear: number;
     coastFireAge?: number | null;
     bracketOptimizerResult?: BracketOptimizerResult | null;
-    standardDeduction?: number | null;
   },
 ): ReportNarrative {
   const executiveSummary = buildExecutiveSummary(projectionResult, mcResult, {
@@ -49,7 +48,6 @@ export function buildReportNarrative(
     decumulationYears,
     opts.deflate,
     opts.bracketOptimizerResult,
-    opts.standardDeduction,
   );
 
   const risk = buildRiskNarrative(mcResult, {

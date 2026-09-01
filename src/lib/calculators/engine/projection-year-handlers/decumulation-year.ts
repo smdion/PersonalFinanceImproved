@@ -32,6 +32,11 @@ import {
   toLtcgTaxableIncome,
 } from "../../../config/tax-tables";
 import { computeNiit } from "../../../config/niit";
+import {
+  taxGrowthFactor,
+  growAmount,
+  growWithholdingBrackets,
+} from "../bracket-growth";
 import { resolveDecumulationConfig } from "../override-resolution";
 import { applyGrowth } from "../growth-application";
 import { computeTaxableSS, computeTaxFromSlots } from "../tax-estimation";
@@ -365,13 +370,49 @@ export function runDecumulationYear(
   const estTraditionalPortion =
     totalBalance > 0 ? balances.preTax / totalBalance : 0;
 
+  // Grow the ordinary tax brackets + standard deduction forward from their
+  // own DB vintage (found live, 2026-08-31 — "outside the box" review):
+  // both are legally inflation-indexed but were being held flat in NOMINAL
+  // dollars for the whole projection while nominal income/spending
+  // correctly grows, silently overstating tax burden in later years. See
+  // `bracket-growth.ts`'s header for the full account, including why this
+  // is NOT the same mistake as the (reverted) NIIT threshold change —
+  // NIIT/SS-taxation thresholds are genuinely flat-nominal by law and are
+  // deliberately NOT touched here.
+  //
+  // Computed ONCE per year, applied everywhere `taxRates.taxBrackets`/
+  // `taxRates.standardDeduction` would otherwise be read raw below — both
+  // MUST share this identical factor (not two separately-derived numbers)
+  // or `toOrdinaryBracketIncome`'s residual math desyncs (see
+  // `growWithholdingBrackets`'s docblock).
+  const taxGrowth = taxGrowthFactor(
+    year,
+    taxRates.taxDataYear,
+    ctx.inflationRate,
+  );
+  const grownTaxBrackets = taxRates.taxBrackets
+    ? growWithholdingBrackets(taxRates.taxBrackets, taxGrowth)
+    : undefined;
+  const grownStandardDeduction = growAmount(
+    taxRates.standardDeduction,
+    taxGrowth,
+  );
+
   // SS convergence + gross-up estimation (extracted to tax-gross-up module)
   const taxEst = estimateWithdrawalTaxCost({
     afterTaxNeed,
     ssIncome,
     filingStatus,
     config,
-    taxRates,
+    // Grown ordinary tax brackets/standard deduction spliced in — the
+    // estimate and the real routing/tax calls below MUST see the
+    // identical grown values, same single-dispatch invariant as every
+    // other field on this object (this file's own header docblock).
+    taxRates: {
+      ...taxRates,
+      taxBrackets: grownTaxBrackets,
+      standardDeduction: grownStandardDeduction,
+    },
     balances,
     acctBal,
     totalBalance,
@@ -431,10 +472,12 @@ export function runDecumulationYear(
     config,
     acctBalances,
     {
-      taxBrackets: taxRates.taxBrackets,
+      taxBrackets: grownTaxBrackets,
       // Added 2026-08-29: read the resolved (possibly per-year-overridden)
       // value first, falling back to the plan's fixed default — was
       // previously always the fixed default, with no override path at all.
+      // rothBracketTarget is a RATE (e.g. 0.12), not a dollar figure —
+      // growth-invariant, deliberately not grown.
       rothBracketTarget: config.rothBracketTarget ?? taxRates.rothBracketTarget,
       taxableSS,
       filingStatus,
@@ -442,7 +485,7 @@ export function runDecumulationYear(
       rothBasisAvailable,
       brokerageBasisRatio,
       conversionsEnabled: taxRates.enableRothConversions,
-      standardDeduction: taxRates.standardDeduction,
+      standardDeduction: grownStandardDeduction,
       discretionaryWithdrawalOrder: config.discretionaryWithdrawalOrder,
     },
     eligibility,
@@ -591,7 +634,11 @@ export function runDecumulationYear(
     slots,
     taxableSS,
     balances,
-    taxRates,
+    taxRates: {
+      ...taxRates,
+      taxBrackets: grownTaxBrackets,
+      standardDeduction: grownStandardDeduction,
+    },
     filingStatus,
     // Pass the authoritative post-RMD totals rather than letting this
     // re-derive from slots: rmd-enforcement.ts tracks
@@ -737,9 +784,9 @@ export function runDecumulationYear(
   // Extracted to post-withdrawal-optimizer.ts -- Roth conversion + IRMAA + ACA chain.
   const rothResult = performRothConversion({
     enableRothConversions: taxRates.enableRothConversions,
-    taxBrackets: taxRates.taxBrackets,
+    taxBrackets: grownTaxBrackets,
     taxMultiplier: taxRates.taxMultiplier,
-    standardDeduction: taxRates.standardDeduction,
+    standardDeduction: grownStandardDeduction,
     rothConversionTarget: config.rothConversionTarget,
     // Fixed 2026-08-29, corrected after real test failures caught an
     // over-eager first attempt: the ORIGINAL expression was
@@ -796,7 +843,7 @@ export function runDecumulationYear(
   let postConversionLtcgRate: number;
   const revisedOrdinary = toLtcgTaxableIncome(
     actualTaxableIncome + rothConversionAmount,
-    taxRates.standardDeduction,
+    grownStandardDeduction,
   );
   if (rothConversionAmount > 0 && filingStatus && brokerageGainsPortion > 0) {
     brokerageTaxCost = roundToCents(
@@ -1153,6 +1200,7 @@ export function runDecumulationYear(
     grossUpFactor,
     estTraditionalPortion,
     bracketTraditionalCap: routeResult.traditionalCap,
+    standardDeduction: grownStandardDeduction,
     discretionaryTierBreakdown: routeResult.tierBreakdown,
     rothBasisCapacity: routeResult.rothBasisCapacity,
     brokerageZeroLtcgCapacity: routeResult.brokerageZeroLtcgCapacity,

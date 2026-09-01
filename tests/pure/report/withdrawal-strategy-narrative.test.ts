@@ -195,28 +195,29 @@ describe("buildWithdrawalStrategyNarrative", () => {
     expect(section.narrative).not.toMatch(/avoids paying a higher rate today/i);
   });
 
-  it("folds the bracket-ceiling math into the narrative when standardDeduction is passed, using the bracket-target year's own bracketTraditionalCap/taxableSS", () => {
+  it("folds the bracket-ceiling math into the narrative when the bracket-target year has a standardDeduction, using that SAME year's own bracketTraditionalCap/taxableSS/standardDeduction", () => {
+    // standardDeduction now comes off the per-year engine field (the
+    // grown value, bracket-growth.ts) rather than a function parameter —
+    // advisor-caught, 2026-08-31: a plan-level ungrown parameter here
+    // paired with a grown bracketTraditionalCap was internally
+    // inconsistent for any year beyond the tax data's own vintage.
     const years = [
       decumYear({
         year: 2040,
         config: { rothBracketTarget: 0.22 },
         bracketTraditionalCap: 60000,
         taxableSS: 15000,
+        standardDeduction: 32200,
       }),
     ];
-    const section = buildWithdrawalStrategyNarrative(
-      years,
-      noopDeflate,
-      undefined,
-      32200,
-    );
+    const section = buildWithdrawalStrategyNarrative(years, noopDeflate);
     expect(section.narrative).toMatch(
       /bracket's ceiling sits at about \$75,000\.00 in gross income/,
     );
     expect(section.narrative).toMatch(/\$32,200\.00 standard deduction/);
   });
 
-  it("omits the bracket-ceiling math when standardDeduction is not passed", () => {
+  it("omits the bracket-ceiling math when the bracket-target year has no standardDeduction", () => {
     const years = [
       decumYear({
         year: 2040,
