@@ -40,6 +40,7 @@ import {
   growIrmaaBrackets,
 } from "../bracket-growth";
 import { IRMAA_DATA_YEAR } from "../../../config/irmaa-tables";
+import { FPL_COVERAGE_YEAR } from "../../../config/aca-tables";
 import { resolveDecumulationConfig } from "../override-resolution";
 import { applyGrowth } from "../growth-application";
 import { computeTaxableSS, computeTaxFromSlots } from "../tax-estimation";
@@ -444,6 +445,20 @@ export function runDecumulationYear(
     irmaaGrowthCheck,
   );
   const grownIrmaaBracketsForCap = growIrmaaBrackets(undefined, irmaaGrowthCap);
+
+  // Phase 4 (2026-08-31): ACA subsidy cliff (400% FPL). Own vintage
+  // anchor (FPL_COVERAGE_YEAR, aca-tables.ts) for the same reason as
+  // IRMAA above -- no coupling to taxDataYear. Single vintage (unlike
+  // IRMAA's two): ACA premium tax credits are computed on the coverage
+  // year's OWN income, no multi-year MAGI lookback the way Medicare's
+  // IRMAA has, so `checkAca` (single call site, no conversion-capping
+  // analog to IRMAA's `irmaaAwareRothConversions`) just needs "this
+  // year's" vintage.
+  const fplGrowthFactor = taxGrowthFactor(
+    year,
+    FPL_COVERAGE_YEAR,
+    ctx.inflationRate,
+  );
 
   // SS convergence + gross-up estimation (extracted to tax-gross-up module)
   const taxEst = estimateWithdrawalTaxCost({
@@ -1081,6 +1096,7 @@ export function runDecumulationYear(
     rothConversionAmount,
     brokerageGainsPortion,
     ssIncome,
+    fplGrowthFactor,
   });
   const { acaSubsidyPreserved, acaMagiHeadroom } = acaResult;
   routeWarnings.push(...acaResult.warnings);

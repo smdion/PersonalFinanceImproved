@@ -38,6 +38,7 @@ import {
 } from "@/lib/config/irmaa-tables";
 import {
   FPL_BY_HOUSEHOLD,
+  FPL_COVERAGE_YEAR,
   getAcaSubsidyCliff,
   estimateAcaSubsidyValue,
 } from "@/lib/config/aca-tables";
@@ -448,6 +449,21 @@ describe("ACA FPL values", () => {
 
   it("subsidy is positive below the cliff", () => {
     expect(estimateAcaSubsidyValue(40000, 2, 55)).toBeGreaterThan(0);
+  });
+
+  // Phase 4 drift guard (2026-08-31), same pattern as IRMAA_DATA_YEAR's
+  // guard above: FPL_COVERAGE_YEAR (bracket-growth.ts's growth anchor,
+  // via fplGrowthFactor) is a hand-maintained constant in a different
+  // file from this registry's own validThrough. Without this assertion,
+  // refreshing FPL_BY_HOUSEHOLD and bumping validThrough (the normal
+  // update procedure) could silently leave FPL_COVERAGE_YEAR stale,
+  // over- or under-growing the ACA cliff for every ACA-aware household.
+  it("FPL_COVERAGE_YEAR matches the registry's own validThrough for this table -- bump both together", () => {
+    const entry = TAX_PARAMETER_REGISTRY.find(
+      (e) => e.name === "ACA Federal Poverty Level",
+    );
+    expect(entry).toBeDefined();
+    expect(FPL_COVERAGE_YEAR).toBe(entry!.validThrough);
   });
 });
 

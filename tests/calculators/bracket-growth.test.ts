@@ -843,3 +843,133 @@ describe("end-to-end: IRMAA brackets grow through both the check and Roth-conver
     expect(y2026.rothConversionAmount).toBeLessThan(20000);
   });
 });
+
+// Phase 4 end-to-end wiring guard (2026-08-31) -- ACA subsidy cliff (400%
+// FPL). Single call site (checkAca), single vintage (no 2-year lookback
+// the way IRMAA has -- confirmed via concept review: ACA premium tax
+// credits are computed on the coverage year's OWN income). Grown via a
+// `fplGrowthFactor` multiplier at the point of use rather than a
+// table-level `grow*` helper, since there's no `fpl_by_household`-style
+// DB override to grow (confirmed -- no such table in schema-pg.ts).
+//
+// Verified BY ACTUAL MUTATION: reverting `checkAca`'s
+// `getAcaSubsidyCliff(householdSize) * fplGrowthFactor` back to the raw
+// `getAcaSubsidyCliff(householdSize)` flips `acaSubsidyPreserved` from
+// `true` to `false` at year 2028 for this household (nominal MAGI grows
+// roughly in step with the correctly-grown cliff, staying just under it,
+// while the frozen cliff gets caught by 2028) -- two years earlier than
+// the fixed run's own flip at 2030 (a separate, unrelated dynamic in this
+// fixture's withdrawal routing, not part of what this test asserts).
+function makeAcaHouseholdInput(): ProjectionInput {
+  const MFJ_BRACKETS = [
+    { threshold: 0, baseWithholding: 0, rate: 0 },
+    { threshold: 23850, baseWithholding: 0, rate: 0.1 },
+    { threshold: 96950, baseWithholding: 2385, rate: 0.12 },
+    { threshold: 206700, baseWithholding: 11157, rate: 0.22 },
+    { threshold: 394600, baseWithholding: 35302, rate: 0.24 },
+  ];
+  return {
+    accumulationDefaults: {
+      contributionRate: 0.2,
+      routingMode: "waterfall",
+      accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
+      accountSplits: {
+        "401k": 0.2,
+        "403b": 0,
+        hsa: 0.05,
+        ira: 0.05,
+        brokerage: 0.7,
+      },
+      taxSplits: { "401k": 0.9, ira: 1.0 },
+    },
+    decumulationDefaults: {
+      withdrawalRate: 0.04,
+      withdrawalRoutingMode: "bracket_filling",
+      withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
+      withdrawalSplits: {
+        "401k": 0.35,
+        "403b": 0,
+        ira: 0.25,
+        brokerage: 0.3,
+        hsa: 0.1,
+      },
+      withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
+      distributionTaxRates: {
+        traditionalFallbackRate: 0.15,
+        roth: 0,
+        hsa: 0,
+        brokerage: 0.15,
+        rothBracketTarget: 0.12,
+        taxBrackets: MFJ_BRACKETS,
+        standardDeduction: 32200,
+        enableRothConversions: false,
+      },
+    },
+    accumulationOverrides: [],
+    decumulationOverrides: [],
+    currentAge: 60,
+    retirementAge: 60,
+    projectionEndAge: 90,
+    currentSalary: 0,
+    salaryGrowthRate: 0.03,
+    salaryCap: null,
+    salaryOverrides: [],
+    budgetOverrides: [],
+    baseLimits: {
+      "401k": 23500,
+      "403b": 23500,
+      hsa: 4300,
+      ira: 7000,
+      brokerage: 0,
+    },
+    limitGrowthRate: 0.02,
+    catchupLimits: { "401k": 7500, ira: 1000, hsa: 1000, "401k_super": 11250 },
+    employerMatchRateByCategory: {
+      "401k": 0.03,
+      "403b": 0,
+      hsa: 0,
+      ira: 0,
+      brokerage: 0,
+    },
+    startingBalances: {
+      preTax: 900000,
+      taxFree: 50000,
+      afterTax: 100000,
+      afterTaxBasis: 80000,
+      hsa: 0,
+    },
+    startingAccountBalances: {
+      "401k": { structure: "roth_traditional", traditional: 900000, roth: 0 },
+      "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+      hsa: { structure: "single_bucket", balance: 0 },
+      ira: { structure: "roth_traditional", traditional: 0, roth: 0 },
+      brokerage: { structure: "basis_tracking", balance: 100000, basis: 80000 },
+    },
+    annualExpenses: 74000,
+    decumulationAnnualExpenses: 74000,
+    inflationRate: 0.03,
+    returnRates: [{ label: "6%", rate: 0.06 }],
+    birthYear: 1965,
+    socialSecurityAnnual: 0,
+    ssStartAge: 67,
+    asOfDate: new Date("2025-03-07"),
+    filingStatus: "MFJ",
+    enableAcaAwareness: true,
+    householdSize: 2,
+  } as ProjectionInput;
+}
+
+describe("end-to-end: ACA subsidy cliff grows through checkAca", () => {
+  it("acaSubsidyPreserved reflects the grown (current-year) cliff, staying true through 2029 instead of flipping false by 2028", () => {
+    const r = calculateProjection(makeAcaHouseholdInput());
+    const y2028 = r.projectionByYear.find(
+      (y) => y.phase === "decumulation" && y.year === 2028,
+    )!;
+    const y2029 = r.projectionByYear.find(
+      (y) => y.phase === "decumulation" && y.year === 2029,
+    )!;
+    expect(y2028.acaSubsidyPreserved).toBe(true);
+    expect(y2029.acaSubsidyPreserved).toBe(true);
+    expect(y2028.acaMagiHeadroom).toBeGreaterThan(0);
+  });
+});

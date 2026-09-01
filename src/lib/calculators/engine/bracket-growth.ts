@@ -1,7 +1,13 @@
 /**
  * Growth helpers for legally inflation-indexed federal tax thresholds —
  * ordinary tax brackets, the standard deduction, LTCG brackets, IRMAA
- * brackets, ACA FPL. Found live, 2026-08-31 ("outside the box" review of
+ * brackets. (ACA's 400%-FPL cliff is inflation-indexed too and gets the
+ * same fix, Phase 4, but grown at its own single call site —
+ * `checkAca`, `post-withdrawal-optimizer.ts` — via a `fplGrowthFactor`
+ * multiplier rather than a `grow*` helper here, since there's no
+ * `fpl_by_household`-style DB override table to grow the way
+ * `growLtcgBrackets`/`growIrmaaBrackets` do.) Found live, 2026-08-31
+ * ("outside the box" review of
  * engine-wide tax assumptions): every one of these is resolved once from a
  * single DB row / hardcoded config and held flat in NOMINAL dollars for
  * the entire 40-60 year projection, while the income/spending figures
@@ -63,10 +69,12 @@ export function taxGrowthFactor(
   return Math.pow(1 + inflationRate, taxGrowthYears(year, taxDataYear));
 }
 
-/** Scalar growth — the standard deduction, a single FPL cell, anything
- *  that's just one dollar figure. `undefined` in ⇒ `undefined` out
- *  (matches every existing "undefined ⇒ 0/unchanged" convention these
- *  values already have elsewhere in the engine). */
+/** Scalar growth — the standard deduction, anything that's just one
+ *  dollar figure. `undefined` in ⇒ `undefined` out (matches every
+ *  existing "undefined ⇒ 0/unchanged" convention these values already
+ *  have elsewhere in the engine). NOT used for the ACA FPL cliff — that
+ *  grows via a `fplGrowthFactor` multiplier at `checkAca`'s point of use
+ *  instead (see this file's header docblock for why). */
 export function growAmount(
   base: number | undefined,
   growthFactor: number,

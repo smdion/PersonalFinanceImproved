@@ -303,6 +303,12 @@ function makeAcaInput(overrides: Partial<AcaInput> = {}): AcaInput {
     rothConversionAmount: 0,
     brokerageGainsPortion: 5000,
     ssIncome: 0,
+    // Phase 4 (2026-08-31): factor 1 == no growth applied (matches
+    // taxGrowthFactor's own "year === dataYear" identity convention) --
+    // these existing fixture-driven tests were written before FPL growth
+    // existed and assert against the raw $84,600 (2-person) cliff, so
+    // keep them at the no-op factor rather than updating every literal.
+    fplGrowthFactor: 1,
     ...overrides,
   };
 }

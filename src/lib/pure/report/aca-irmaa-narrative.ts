@@ -108,16 +108,29 @@ export function buildWatchlist(
     }
     if (y.acaSubsidyPreserved === false) {
       flags.push({ year: y.year, kind: "aca-lost", severity: "warning" });
-    } else if (
-      y.acaMagiHeadroom > 0 &&
-      y.acaMagiHeadroom <= ACA_CLOSE_TO_CLIFF_THRESHOLD
-    ) {
-      flags.push({
-        year: y.year,
-        kind: "aca-close",
-        severity: "info",
-        amount: deflate(y.acaMagiHeadroom, y.year),
-      });
+    } else {
+      // Phase 4 (2026-08-31): acaMagiHeadroom is a NOMINAL dollar figure
+      // (grows with the household's income over the projection, same as
+      // every other engine value), so it must be deflated to real terms
+      // BEFORE comparing against a fixed real-dollar watchlist threshold
+      // -- comparing it nominal, as this used to, silently shrinks the
+      // real window this flag fires in every year further from
+      // FPL_COVERAGE_YEAR (by year 40 at typical inflation, a nominal
+      // $3,000 window is worth well under half that in real terms, so
+      // this watchlist entry would quietly stop firing in exactly the
+      // late years where the cliff bites hardest). Advisor-caught: this
+      // bug was mostly invisible before Phase 4 (a frozen ACA cliff kept
+      // driving headroom to $0 regardless), and only becomes a real,
+      // Phase-4-activated distortion once headroom genuinely grows.
+      const realHeadroom = deflate(y.acaMagiHeadroom, y.year);
+      if (realHeadroom > 0 && realHeadroom <= ACA_CLOSE_TO_CLIFF_THRESHOLD) {
+        flags.push({
+          year: y.year,
+          kind: "aca-close",
+          severity: "info",
+          amount: realHeadroom,
+        });
+      }
     }
   }
 

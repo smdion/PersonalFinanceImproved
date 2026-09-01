@@ -127,8 +127,24 @@ import { log } from "@/lib/logger";
  *  `rothConversionAmount` against the (previously ungrown) next IRMAA
  *  cliff — this changes real withdrawal amounts, not just a displayed
  *  number, for any household with that toggle on (defaults on whenever
- *  `enableIrmaaAwareness` is). */
-export const PROJECTION_CACHE_ENGINE_VERSION = 18;
+ *  `enableIrmaaAwareness` is).
+ *
+ *  19: ACA subsidy cliff (400% FPL, `aca-tables.ts`'s `FPL_BY_HOUSEHOLD`)
+ *  now grows forward off `FPL_COVERAGE_YEAR` — same flat-nominal bug,
+ *  same fix, applied via a `fplGrowthFactor` multiplier at `checkAca`'s
+ *  single call site rather than a table-level `grow*` helper (no
+ *  `fpl_by_household`-style DB override exists to grow). A REAL value
+ *  change for any household with `enableAcaAwareness` on AND everyone
+ *  under 65 (`checkAca` early-returns `acaSubsidyPreserved: false` /
+ *  `acaMagiHeadroom: 0` otherwise, so a Medicare-age household sees no
+ *  movement — this is also why no `engine-snapshot.test.ts` fixture
+ *  moved for this phase, unlike Phase 3's two): `acaSubsidyPreserved`/
+ *  `acaMagiHeadroom` shift for any decumulation year beyond
+ *  `FPL_COVERAGE_YEAR`. Reporting-only (no conversion-cap analog to
+ *  IRMAA's `irmaaAwareRothConversions` exists for ACA), but still a
+ *  real, user-visible number change, same precedent as v15's bump for
+ *  an output-shape addition. */
+export const PROJECTION_CACHE_ENGINE_VERSION = 19;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

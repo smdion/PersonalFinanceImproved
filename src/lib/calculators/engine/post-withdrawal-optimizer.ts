@@ -174,6 +174,20 @@ export interface AcaInput {
    *  MAGI per 26 U.S.C. §36B(d)(2)(B) requires adding back the entire
    *  benefit, unlike income-tax provisional income or IRMAA MAGI. */
   ssIncome: number;
+  /**
+   * `(1 + inflationRate) ^ (year - FPL_COVERAGE_YEAR)` (see
+   * `aca-tables.ts`'s `FPL_COVERAGE_YEAR` docblock) — grows the ACA
+   * subsidy cliff (400% FPL) forward instead of holding it flat nominal.
+   * REQUIRED, not optional: unlike IRMAA/LTCG, there is no
+   * `fpl_by_household`-style DB override table (confirmed — no schema
+   * for it), so `getAcaSubsidyCliff` itself was deliberately left
+   * untouched (no `fplTable?` override param) and growth is applied here
+   * instead, at the single point of use:
+   * `getAcaSubsidyCliff(householdSize) * fplGrowthFactor`. Making this
+   * required rather than defaulting to 1 means a future caller can't
+   * silently skip growth by omission the way an optional param would
+   * allow. */
+  fplGrowthFactor: number;
 }
 
 export interface AcaResult {
@@ -638,6 +652,7 @@ export function checkAca(input: AcaInput): AcaResult {
     rothConversionAmount,
     brokerageGainsPortion,
     ssIncome,
+    fplGrowthFactor,
   } = input;
 
   const warnings: string[] = [];
@@ -646,7 +661,13 @@ export function checkAca(input: AcaInput): AcaResult {
     return { acaSubsidyPreserved: false, acaMagiHeadroom: 0, warnings };
   }
 
-  const acaCliff = getAcaSubsidyCliff(householdSize);
+  // Phase 4 (2026-08-31): grow the 400%-FPL cliff forward instead of
+  // holding it flat nominal — mathematically identical to growing
+  // FPL_BY_HOUSEHOLD's cell first and multiplying by 4 after
+  // (fpl*4*k === (fpl*k)*4), applied here at the single point of use
+  // rather than adding an unused override parameter to
+  // getAcaSubsidyCliff (see AcaInput.fplGrowthFactor's docblock).
+  const acaCliff = getAcaSubsidyCliff(householdSize) * fplGrowthFactor;
   const projectedMagi = acaMagi({
     totalTraditionalWithdrawal,
     rothConversionAmount,
@@ -672,7 +693,11 @@ export function checkAca(input: AcaInput): AcaResult {
       ? ` — sourcing $${overage.toFixed(0)} less from brokerage (and more from Roth) would keep MAGI under the cliff`
       : "";
     warnings.push(
-      `ACA: MAGI $${projectedMagi.toFixed(0)} exceeds $${acaCliff.toLocaleString()} cliff by $${overage.toFixed(0)} — subsidy lost${attribution}`,
+      // Phase 4: acaCliff is now a grown (non-integer) float -- round
+      // before formatting so this sentence doesn't mix cents (from a
+      // grown cliff) with the whole-dollar MAGI/overage figures either
+      // side of it (advisor-caught, 2026-08-31).
+      `ACA: MAGI $${projectedMagi.toFixed(0)} exceeds $${Math.round(acaCliff).toLocaleString()} cliff by $${overage.toFixed(0)} — subsidy lost${attribution}`,
     );
   }
 

@@ -67,6 +67,41 @@ describe("buildWatchlist", () => {
     expect(w.items[0]!.detail).toMatch(/within/i);
   });
 
+  // Phase 4 regression guard (2026-08-31, advisor-caught): acaMagiHeadroom
+  // is a NOMINAL dollar figure (grows with the household's income, like
+  // every other engine value post-Phase-4), so the "close to cliff"
+  // comparison against a flat REAL-dollar threshold must deflate FIRST.
+  // Uses a real (non-identity) deflator, unlike every other test in this
+  // file -- this is the only case where nominal-vs-real actually matters:
+  // nominal headroom ($5,400) sits comfortably above
+  // ACA_CLOSE_TO_CLIFF_THRESHOLD ($3,000), but the same dollars deflated
+  // 20 years back to today's terms ($5,400 / 1.03^20 ≈ $2,990) fall just
+  // under it. Comparing nominal (the bug this test catches if
+  // reintroduced) would silently miss this household's real proximity to
+  // the cliff.
+  it("flags ACA proximity using REAL (deflated) headroom, not nominal -- nominal-looks-safe but real-is-close", () => {
+    const realDeflate = (v: number, year: number) =>
+      v / Math.pow(1.03, year - 2026);
+    const w = buildWatchlist(
+      [
+        decumYear({
+          year: 2046,
+          acaSubsidyPreserved: true,
+          acaMagiHeadroom: 5400,
+        }),
+      ],
+      realDeflate,
+    );
+    expect(w.items).toHaveLength(1);
+    expect(w.items[0]!.severity).toBe("info");
+    expect(w.items[0]!.detail).toMatch(/within/i);
+    // The rendered sentence shows the DEFLATED figure (~$2,990), not the
+    // raw nominal $5,400 -- the specific thing the nominal-comparison bug
+    // this test guards against would have gotten wrong.
+    expect(w.items[0]!.detail).toMatch(/\$2,9\d\d/);
+    expect(w.items[0]!.detail).not.toMatch(/\$5,400/);
+  });
+
   it("does not flag ACA proximity when headroom is comfortably large", () => {
     const w = buildWatchlist(
       [decumYear({ acaSubsidyPreserved: true, acaMagiHeadroom: 50000 })],
