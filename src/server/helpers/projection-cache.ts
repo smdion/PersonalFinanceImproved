@@ -108,8 +108,15 @@ import { log } from "@/lib/logger";
  *  real bracket-fill room and overstate tax burden in later years
  *  (verified live: a real household's Traditional bracket cap was frozen
  *  at $133,000 across 40 projected years while nominal spending need
- *  more than doubled over the same span). */
-export const PROJECTION_CACHE_ENGINE_VERSION = 16;
+ *  more than doubled over the same span).
+ *
+ *  17: LTCG brackets (`growLtcgBrackets`, `bracket-growth.ts`) now grow
+ *  forward the same way ordinary brackets did in v16 — same
+ *  `taxGrowthFactor`, same flat-nominal bug, same fix. A REAL value
+ *  change: per-year `taxCost`, `discretionaryTierBreakdown`, and
+ *  `postConversionLtcgRate` all shift for any household with a
+ *  `taxDataYear` and decumulation years beyond it. */
+export const PROJECTION_CACHE_ENGINE_VERSION = 17;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

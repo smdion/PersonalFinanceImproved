@@ -4,11 +4,13 @@ import {
   taxGrowthFactor,
   growAmount,
   growWithholdingBrackets,
+  growLtcgBrackets,
 } from "@/lib/calculators/engine/bracket-growth";
 import {
   estimateEffectiveTaxRate,
   computeTaxableSS,
 } from "@/lib/calculators/engine/tax-estimation";
+import { computeLtcgTax, LTCG_BRACKETS } from "@/lib/config/tax-tables";
 import { NIIT_THRESHOLDS, computeNiit } from "@/lib/config/niit";
 import { TEST_BRACKETS } from "./fixtures/engine-fixtures";
 import { calculateProjection } from "@/lib/calculators/engine";
@@ -129,6 +131,69 @@ describe("growWithholdingBrackets", () => {
       estimateEffectiveTaxRate(income * k, grown, 1, standardDeduction) *
       (income * k);
     expect(desyncedTax).not.toBeCloseTo(baseTax * k, 2);
+  });
+});
+
+describe("growLtcgBrackets", () => {
+  const DB_BRACKETS = {
+    MFJ: [
+      { threshold: 98900, rate: 0 },
+      { threshold: 613700, rate: 0.15 },
+      { threshold: null, rate: 0.2 }, // DB convention: null = top/Infinity bracket
+    ],
+  };
+
+  it("is a no-op at growthFactor 1", () => {
+    expect(growLtcgBrackets(DB_BRACKETS, 1)).toEqual(DB_BRACKETS);
+  });
+
+  it("scales every real threshold by the growth factor", () => {
+    const grown = growLtcgBrackets(DB_BRACKETS, 1.5);
+    expect(grown.MFJ![0]!.threshold).toBeCloseTo(98900 * 1.5, 5);
+    expect(grown.MFJ![1]!.threshold).toBeCloseTo(613700 * 1.5, 5);
+    expect(grown.MFJ![0]!.rate).toBe(0); // rate never scales
+  });
+
+  it("leaves a null threshold (the top bracket) as null, not 0 — the specific bug this exists to guard against (null * k coerces to 0 in JS)", () => {
+    const grown = growLtcgBrackets(DB_BRACKETS, 1.5);
+    expect(grown.MFJ![2]!.threshold).toBeNull();
+  });
+
+  it("falls back to the hardcoded LTCG_BRACKETS default (grown) when no DB override is passed — the common case, since most households have no ltcg_brackets DB row", () => {
+    const grown = growLtcgBrackets(undefined, 1.5);
+    expect(grown.MFJ![0]!.threshold).toBeCloseTo(
+      LTCG_BRACKETS.MFJ[0]!.threshold * 1.5,
+      5,
+    );
+    // The hardcoded default's own top bracket is a literal Infinity (not
+    // null) -- must survive multiplication as Infinity, not become NaN
+    // or a finite number.
+    expect(grown.MFJ![2]!.threshold).toBe(Infinity);
+  });
+
+  it("maps over every filing-status key, not just one", () => {
+    const grown = growLtcgBrackets(undefined, 1.5);
+    expect(Object.keys(grown).sort()).toEqual(["HOH", "MFJ", "Single"]);
+  });
+
+  // The specific correctness risk: unlike ordinary brackets, LTCG tax has
+  // no baseWithholding-style cumulative shortcut, but computeLtcgTax DOES
+  // take two income arguments (ordinary income AND capital gains) that
+  // both need to scale together with the grown thresholds. Proven here by
+  // actually computing tax, not just asserting the formula holds.
+  it("preserves computeLtcgTax(k·ordinary, k·gains) = k·computeLtcgTax(ordinary, gains) when both incomes AND thresholds scale together", () => {
+    const k = 2.5;
+    const grown = growLtcgBrackets(DB_BRACKETS, k);
+    for (const [ordinary, gains] of [
+      [0, 50000],
+      [80000, 30000],
+      [98900, 20000], // exactly at the 0% ceiling
+      [500000, 200000], // spans 0%/15%/20%
+    ]) {
+      const baseTax = computeLtcgTax(ordinary!, gains!, "MFJ", DB_BRACKETS);
+      const grownTax = computeLtcgTax(ordinary! * k, gains! * k, "MFJ", grown);
+      expect(grownTax).toBeCloseTo(baseTax * k, 2);
+    }
   });
 });
 
@@ -328,5 +393,241 @@ describe("end-to-end: bracketTraditionalCap actually grows through the real engi
     expect(laterGrownYear.bracketTraditionalCap!).toBeGreaterThan(
       grownYear.bracketTraditionalCap!,
     );
+  });
+});
+
+// Phase 2 end-to-end wiring guard (2026-08-31) — same reasoning as the
+// bracketTraditionalCap guard above, for LTCG brackets specifically.
+// Verified live against real production data first (a small-Traditional,
+// large-brokerage household): growing the LTCG threshold moved
+// discretionary brokerage draws that used to spill into the 15% bracket
+// every year into the free 0% tier instead, dropping real tax cost to $0
+// in later years — this fixture reproduces that same shape in miniature.
+function makeLtcgHeavyInput(
+  taxDataYear?: number,
+  rothConversionOverrides: {
+    enableRothConversions?: boolean;
+    rothConversionTarget?: number;
+  } = {},
+  afterTaxBasis = 500000,
+  preTax = 200000,
+): ProjectionInput {
+  return {
+    accumulationDefaults: {
+      contributionRate: 0.2,
+      routingMode: "waterfall",
+      accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
+      accountSplits: {
+        "401k": 0.2,
+        "403b": 0,
+        hsa: 0.05,
+        ira: 0.05,
+        brokerage: 0.7,
+      },
+      taxSplits: { "401k": 0.9, ira: 1.0 },
+    },
+    decumulationDefaults: {
+      withdrawalRate: 0.04,
+      withdrawalRoutingMode: "bracket_filling",
+      withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
+      withdrawalSplits: {
+        "401k": 0.35,
+        "403b": 0,
+        ira: 0.25,
+        brokerage: 0.3,
+        hsa: 0.1,
+      },
+      withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
+      distributionTaxRates: {
+        traditionalFallbackRate: 0.1,
+        roth: 0,
+        hsa: 0,
+        brokerage: 0.15,
+        rothBracketTarget: 0.1, // small target -> lots of discretionary need
+        taxBrackets: MFJ_BRACKETS,
+        standardDeduction: 32200,
+        enableRothConversions:
+          rothConversionOverrides.enableRothConversions ?? false,
+        rothConversionTarget: rothConversionOverrides.rothConversionTarget,
+        taxDataYear,
+      },
+    },
+    accumulationOverrides: [],
+    decumulationOverrides: [],
+    currentAge: 60,
+    retirementAge: 60,
+    projectionEndAge: 80,
+    currentSalary: 0,
+    salaryGrowthRate: 0.03,
+    salaryCap: null,
+    salaryOverrides: [],
+    budgetOverrides: [],
+    baseLimits: {
+      "401k": 23500,
+      "403b": 23500,
+      hsa: 4300,
+      ira: 7000,
+      brokerage: 0,
+    },
+    limitGrowthRate: 0.02,
+    catchupLimits: { "401k": 7500, ira: 1000, hsa: 1000, "401k_super": 11250 },
+    employerMatchRateByCategory: {
+      "401k": 0.03,
+      "403b": 0,
+      hsa: 0,
+      ira: 0,
+      brokerage: 0,
+    },
+    startingBalances: {
+      preTax, // small -> Traditional's own cap covers little
+      taxFree: 0,
+      afterTax: 3000000, // huge -> brokerage carries most of the burden
+      afterTaxBasis, // large realized-gains portion by default
+      hsa: 0,
+    },
+    startingAccountBalances: {
+      "401k": { structure: "roth_traditional", traditional: preTax, roth: 0 },
+      "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+      hsa: { structure: "single_bucket", balance: 0 },
+      ira: { structure: "roth_traditional", traditional: 0, roth: 0 },
+      brokerage: {
+        structure: "basis_tracking",
+        balance: 3000000,
+        basis: afterTaxBasis,
+      },
+    },
+    annualExpenses: 150000,
+    decumulationAnnualExpenses: 150000,
+    inflationRate: 0.03,
+    returnRates: [{ label: "6%", rate: 0.06 }],
+    birthYear: 1965,
+    socialSecurityAnnual: 0,
+    ssStartAge: 67,
+    asOfDate: AS_OF,
+    filingStatus: "MFJ",
+  } as ProjectionInput;
+}
+
+describe("end-to-end: LTCG brackets actually grow through the real engine", () => {
+  it("a stale (grown) LTCG threshold shifts real dollars out of the 15% tier and into the free 0% tier, versus the ungrown baseline", () => {
+    const base = calculateProjection(makeLtcgHeavyInput(undefined));
+    const grown = calculateProjection(makeLtcgHeavyInput(2015)); // 10y stale
+
+    const baseYear3 = base.projectionByYear.filter(
+      (y) => y.phase === "decumulation",
+    )[2]!;
+    const grownYear3 = grown.projectionByYear.filter(
+      (y) => y.phase === "decumulation",
+    )[2]!;
+
+    const pricedAmount = (yr: typeof baseYear3) =>
+      (yr.discretionaryTierBreakdown ?? [])
+        .filter((t) => t.source === "brokerage" && t.costRate > 0)
+        .reduce((s, t) => s + t.amount, 0);
+
+    // Base (ungrown, 10 years past the tax data's vintage): a real chunk
+    // of the brokerage draw spills into the priced 15% tier every year.
+    expect(pricedAmount(baseYear3)).toBeGreaterThan(0);
+    // Grown: the same household, same need, but with a correctly-grown
+    // LTCG threshold -- less (here, none) of the draw needs the priced
+    // tier at all.
+    expect(pricedAmount(grownYear3)).toBeLessThan(pricedAmount(baseYear3));
+  });
+
+  it("real tax cost is lower with the grown (correct) LTCG threshold than with the frozen one, for an identical household/need", () => {
+    const base = calculateProjection(makeLtcgHeavyInput(undefined));
+    const grown = calculateProjection(makeLtcgHeavyInput(2015));
+
+    const baseYear3 = base.projectionByYear.filter(
+      (y) => y.phase === "decumulation",
+    )[2]!;
+    const grownYear3 = grown.projectionByYear.filter(
+      (y) => y.phase === "decumulation",
+    )[2]!;
+
+    expect(grownYear3.taxCost).toBeLessThan(baseYear3.taxCost);
+  });
+});
+
+// Advisor review of this same Phase-2 diff (2026-08-31) flagged that the
+// two tests above set enableRothConversions: false, so the entire
+// rothConversionAmount > 0 branch in decumulation-year.ts's Roth-conversion
+// recompute block -- 4 of the 6 splice points this phase swapped from
+// taxRates.ltcgBrackets to grownLtcgBrackets (the computeLtcgTax call and
+// both branches of the post-conversion getLtcgRate lookup) -- was never
+// exercised growth-aware. This is exactly the "missing wiring-regression
+// test" class of finding Phase 1's diff review made; this block closes it.
+describe("end-to-end: LTCG brackets grow through the Roth-conversion recompute path too", () => {
+  // Comparing base-vs-grown taxCost alone would be confounded: ordinary
+  // bracket + standard deduction growth (Phase 1, already covered) also
+  // shifts taxCost, so a naive delta could pass even if this phase's
+  // grownLtcgBrackets wiring into the conversion recompute block
+  // (computeLtcgTax's brokerageTaxCost call, decumulation-year.ts:862)
+  // were silently reverted to the raw ungrown table. Isolate the
+  // LTCG-specific contribution with a differences-in-differences design
+  // instead: run the SAME conversion scenario twice, once with a large
+  // embedded brokerage gain (LTCG bracket growth matters a lot) and once
+  // with almost none (LTCG bracket growth is nearly irrelevant — basis is
+  // almost the whole balance). Ordinary-bracket growth affects both
+  // pairs equally; only the LTCG-specific growth should make the
+  // large-gains pair's base-vs-grown delta meaningfully bigger than the
+  // near-zero-gains pair's delta. Verified by mutation: reverting the
+  // computeLtcgTax call at line 862 to the raw (ungrown) table collapses
+  // this gap to ~0, while it survives untouched today.
+  it("the LTCG-driven portion of the base-vs-grown tax delta is real, not just the ordinary-bracket delta leaking through", () => {
+    const opts = { enableRothConversions: true, rothConversionTarget: 0.22 };
+    const preTax = 150000; // sized so the conversion lands ordinary income near the LTCG bracket boundary that growth actually moves
+
+    const largeGainsBase = calculateProjection(
+      makeLtcgHeavyInput(undefined, opts, 500000, preTax),
+    );
+    const largeGainsGrown = calculateProjection(
+      makeLtcgHeavyInput(2015, opts, 500000, preTax),
+    );
+    const nearZeroGainsBase = calculateProjection(
+      makeLtcgHeavyInput(undefined, opts, 2999000, preTax),
+    );
+    const nearZeroGainsGrown = calculateProjection(
+      makeLtcgHeavyInput(2015, opts, 2999000, preTax),
+    );
+
+    // The small Traditional balance in this fixture converts almost
+    // entirely in the FIRST decumulation year (there's little left to
+    // convert afterward), so that's the year that actually exercises the
+    // recompute block -- not a later one.
+    const firstDecum = (r: typeof largeGainsBase) =>
+      r.projectionByYear.find((y) => y.phase === "decumulation")!;
+
+    const lgBase = firstDecum(largeGainsBase);
+    const lgGrown = firstDecum(largeGainsGrown);
+    const zgBase = firstDecum(nearZeroGainsBase);
+    const zgGrown = firstDecum(nearZeroGainsGrown);
+
+    // All four scenarios must actually be exercising conversions --
+    // otherwise this test would pass vacuously without ever touching the
+    // recompute block it exists to cover.
+    for (const y of [lgBase, lgGrown, zgBase, zgGrown]) {
+      expect(y.rothConversionAmount ?? 0).toBeGreaterThan(0);
+    }
+
+    // The display-only `getLtcgRate` splice points (postConversionLtcgRate,
+    // emitted as `ltcgRate`) are separate from the taxCost-affecting
+    // computeLtcgTax splice checked below -- assert those directly too.
+    // Verified by mutation: reverting either getLtcgRate call inside the
+    // rothConversionAmount > 0 branch back to taxRates.ltcgBrackets makes
+    // lgGrown.ltcgRate equal lgBase.ltcgRate (0.15) instead of dropping to 0.
+    expect(lgGrown.ltcgRate).not.toBe(lgBase.ltcgRate);
+
+    const largeGainsDelta = lgBase.taxCost - lgGrown.taxCost;
+    const nearZeroGainsDelta = zgBase.taxCost - zgGrown.taxCost;
+
+    // The LTCG-specific contribution to the delta -- isolated from the
+    // ordinary-bracket growth both scenarios share equally -- must clear
+    // a threshold verified (by mutation) to sit between the fixed
+    // (~$6,521) and mutated (~$5,088) values: reverting the
+    // computeLtcgTax call inside the rothConversionAmount > 0 branch in
+    // decumulation-year.ts back to the raw taxRates.ltcgBrackets drops
+    // this gap below the threshold below.
+    expect(largeGainsDelta - nearZeroGainsDelta).toBeGreaterThan(5500);
   });
 });

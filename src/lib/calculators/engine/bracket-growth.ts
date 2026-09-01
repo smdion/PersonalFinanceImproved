@@ -29,6 +29,7 @@
  * higher).
  */
 import type { WithholdingBracket } from "./tax-estimation";
+import { LTCG_BRACKETS } from "../../config/tax-tables";
 
 /**
  * The exponent every grow* helper below expects: years between the
@@ -98,4 +99,43 @@ export function growWithholdingBrackets(
     baseWithholding: b.baseWithholding * growthFactor,
     rate: b.rate,
   }));
+}
+
+/**
+ * Grows LTCG brackets forward. Unlike `growWithholdingBrackets`, there's no
+ * `baseWithholding`-equivalent cumulative shortcut to keep in sync —
+ * `computeLtcgTax`/`getLtcgRate`/`ltcgRateForNextDollar`/`ltcgRoomForRate`
+ * (`config/tax-tables.ts`) all walk the bracket list fresh from `threshold`
+ * and `rate` alone every call, so scaling `threshold` (leaving `rate`
+ * alone) is sufficient and self-consistent on its own.
+ *
+ * `threshold: null` (the DB/API convention for the top/Infinity bracket)
+ * stays `null` — do not multiply it (`null * k` coerces to `0` in JS,
+ * silently turning the top bracket into a $0 threshold). A literal
+ * `Infinity` threshold (this module's own fallback default,
+ * `LTCG_BRACKETS`) is safe to multiply as-is: `Infinity * k === Infinity`
+ * for any finite positive `k`.
+ *
+ * Falls back to the hardcoded `LTCG_BRACKETS` default (grown) when
+ * `brackets` is undefined — most households have no `ltcg_brackets` DB
+ * row (verified this session: the table was empty), so relying on each
+ * consumer's own internal "fall back to `LTCG_BRACKETS`" behavior would
+ * silently skip growth entirely for nearly everyone; grow the fallback
+ * here instead so a caller always gets a real, grown table either way.
+ */
+export function growLtcgBrackets(
+  brackets:
+    Record<string, { threshold: number | null; rate: number }[]> | undefined,
+  growthFactor: number,
+): Record<string, { threshold: number | null; rate: number }[]> {
+  const source = brackets ?? LTCG_BRACKETS;
+  const grown: Record<string, { threshold: number | null; rate: number }[]> =
+    {};
+  for (const [filingStatus, entries] of Object.entries(source)) {
+    grown[filingStatus] = entries.map((b) => ({
+      threshold: b.threshold == null ? null : b.threshold * growthFactor,
+      rate: b.rate,
+    }));
+  }
+  return grown;
 }

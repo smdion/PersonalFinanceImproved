@@ -36,6 +36,7 @@ import {
   taxGrowthFactor,
   growAmount,
   growWithholdingBrackets,
+  growLtcgBrackets,
 } from "../bracket-growth";
 import { resolveDecumulationConfig } from "../override-resolution";
 import { applyGrowth } from "../growth-application";
@@ -397,6 +398,14 @@ export function runDecumulationYear(
     taxRates.standardDeduction,
     taxGrowth,
   );
+  // Phase 2 (2026-08-31): LTCG brackets, same growth factor as ordinary
+  // brackets/standard deduction above — always returns a real, grown
+  // table (falls back to the hardcoded LTCG_BRACKETS default when the
+  // household has no `ltcg_brackets` DB row, which is the common case;
+  // see `growLtcgBrackets`'s docblock for why relying on each consumer's
+  // own internal fallback would silently skip growth for most
+  // households).
+  const grownLtcgBrackets = growLtcgBrackets(taxRates.ltcgBrackets, taxGrowth);
 
   // SS convergence + gross-up estimation (extracted to tax-gross-up module)
   const taxEst = estimateWithdrawalTaxCost({
@@ -404,14 +413,16 @@ export function runDecumulationYear(
     ssIncome,
     filingStatus,
     config,
-    // Grown ordinary tax brackets/standard deduction spliced in — the
-    // estimate and the real routing/tax calls below MUST see the
-    // identical grown values, same single-dispatch invariant as every
-    // other field on this object (this file's own header docblock).
+    // Grown ordinary tax brackets/standard deduction/LTCG brackets
+    // spliced in — the estimate and the real routing/tax calls below
+    // MUST see the identical grown values, same single-dispatch
+    // invariant as every other field on this object (this file's own
+    // header docblock).
     taxRates: {
       ...taxRates,
       taxBrackets: grownTaxBrackets,
       standardDeduction: grownStandardDeduction,
+      ltcgBrackets: grownLtcgBrackets,
     },
     balances,
     acctBal,
@@ -481,7 +492,7 @@ export function runDecumulationYear(
       rothBracketTarget: config.rothBracketTarget ?? taxRates.rothBracketTarget,
       taxableSS,
       filingStatus,
-      ltcgBrackets: taxRates.ltcgBrackets,
+      ltcgBrackets: grownLtcgBrackets,
       rothBasisAvailable,
       brokerageBasisRatio,
       conversionsEnabled: taxRates.enableRothConversions,
@@ -638,6 +649,7 @@ export function runDecumulationYear(
       ...taxRates,
       taxBrackets: grownTaxBrackets,
       standardDeduction: grownStandardDeduction,
+      ltcgBrackets: grownLtcgBrackets,
     },
     filingStatus,
     // Pass the authoritative post-RMD totals rather than letting this
@@ -851,14 +863,14 @@ export function runDecumulationYear(
         revisedOrdinary,
         brokerageGainsPortion,
         filingStatus,
-        taxRates.ltcgBrackets,
+        grownLtcgBrackets,
       ),
     );
     // Marginal rate at the top of the gains stack — display only, tax is in brokerageTaxCost
     postConversionLtcgRate = getLtcgRate(
       revisedOrdinary + brokerageGainsPortion,
       filingStatus,
-      taxRates.ltcgBrackets,
+      grownLtcgBrackets,
     );
     // Recompute taxCost with revised brokerage tax. v0.7.8 advisor review
     // (2026-08-27): this used to tax the WHOLE Roth withdrawal at
@@ -885,12 +897,12 @@ export function runDecumulationYear(
         ? getLtcgRate(
             revisedOrdinary + brokerageGainsPortion,
             filingStatus,
-            taxRates.ltcgBrackets,
+            grownLtcgBrackets,
           )
         : brokerageGainsPortion > 0
           ? taxRates.brokerage
           : filingStatus
-            ? getLtcgRate(revisedOrdinary, filingStatus, taxRates.ltcgBrackets)
+            ? getLtcgRate(revisedOrdinary, filingStatus, grownLtcgBrackets)
             : taxRates.brokerage;
   }
 
