@@ -15,8 +15,22 @@ export interface ProjectionGoalInput {
   id: number;
   current: number;
   monthlyAllocation: number;
-  isApiSyncEnabled?: boolean | null;
-  apiCategoryId?: string | null;
+  /**
+   * The linked category's ACTUAL current-month `budgeted` amount (real
+   * money assigned in YNAB/Actual this month), or `null` when unknown
+   * (not API-linked, or no fresh-enough sync data — see the server's
+   * `currentMonthBudgetedMap`, `savings.ts`, for how this is resolved
+   * and why a stale/wrong-month value is never passed here instead of
+   * `null`).
+   *
+   * Replaces a former `isApiSyncEnabled`/`apiCategoryId` + `now.getDate()
+   * > 1` date heuristic (found live, 2026-09-01: a household that
+   * assigned September's money on the 1st itself broke the heuristic's
+   * assumption that day-1 can never already be funded, double-counting
+   * the contribution). `budgeted` is real evidence instead of a guess —
+   * see `projectGoalBalances`' own docblock for the math.
+   */
+  currentMonthBudgeted?: number | null;
 }
 
 export interface AllocationOverride {
@@ -134,11 +148,36 @@ export interface ProjectGoalBalancesOptions {
 /**
  * Walks `projectionMonths` months forward from `now` for a single goal,
  * folding in that goal's planned-transaction events and allocation
- * overrides. Mirrors the pre-v0.7.1 semantics: for YNAB-linked goals, once
- * the 1st of the current month has passed, the live balance already
- * includes that month's contribution — so month 0's allocation is skipped
- * to avoid double-counting it, while planned-transaction events (settled or
- * not yet settled) always apply in every month they fall in.
+ * overrides.
+ *
+ * Month 0 (the current month) is special for API-linked goals: `current`
+ * is a LIVE balance, which may already reflect part or all of this
+ * month's planned contribution if the household already assigned money
+ * to the linked category. Adding the full `allocation` unconditionally
+ * would double-count whatever's already there.
+ *
+ * Previously this was inferred from the calendar date (`now.getDate() >
+ * 1` — "day 1 can't possibly be funded yet, day 2+ always already is").
+ * That heuristic broke live, 2026-09-01: a household that assigned
+ * September's money on the morning of the 1st itself had it double-
+ * counted, because the heuristic assumed day 1 could never be funded.
+ * Fixed by using `goal.currentMonthBudgeted` — the category's REAL
+ * current-month budgeted amount — as actual evidence instead of a guess:
+ *
+ *   balance += max(0, allocation - currentMonthBudgeted)
+ *
+ * This is the arithmetically correct step, not a skip/don't-skip binary:
+ * `balance` is structurally `carryover + budgeted − activity` on both
+ * YNAB and Actual, so `budgeted` is already INSIDE `current` — the
+ * projection only needs to add whatever portion of this month's
+ * allocation ISN'T already budgeted. A household that partially funds a
+ * category mid-month is handled correctly (adds the remainder), not just
+ * the fully-funded/not-funded cases a binary skip would cover. When
+ * `currentMonthBudgeted` is `null` (not API-linked, or no fresh sync
+ * data for this month), the full `allocation` is added — the same
+ * conservative default as before. Planned-transaction events (settled or
+ * not yet settled) always apply in every month they fall in, unaffected
+ * by any of this.
  */
 export function projectGoalBalances(
   goal: ProjectionGoalInput,
@@ -178,9 +217,6 @@ export function projectGoalBalances(
   const hasOverride: boolean[] = [];
   let balance = goal.current;
 
-  const balanceIncludesCurrentMonth =
-    !!(goal.isApiSyncEnabled && goal.apiCategoryId) && now.getDate() > 1;
-
   for (let i = 0; i < projectionMonths; i++) {
     const mk = monthKey(monthDates[i]!);
     const events = txByMonth?.get(mk) ?? null;
@@ -189,7 +225,12 @@ export function projectGoalBalances(
     const defaultAllocation = allocationForYear(goal.monthlyAllocation, yr);
     const allocation =
       overrideAmount !== undefined ? overrideAmount : defaultAllocation;
-    if (!(i === 0 && balanceIncludesCurrentMonth)) {
+    if (i === 0 && goal.currentMonthBudgeted != null) {
+      // Real evidence, not a date guess — see this function's own
+      // docblock for why this is `max(0, allocation - budgeted)`, not a
+      // binary skip.
+      balance += Math.max(0, allocation - goal.currentMonthBudgeted);
+    } else {
       balance += allocation;
     }
     if (events) {

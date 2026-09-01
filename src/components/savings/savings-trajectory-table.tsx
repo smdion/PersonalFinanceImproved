@@ -6,13 +6,10 @@ import { FUND_COLORS } from "@/lib/utils/colors";
 import type { GoalProjection } from "./types";
 import { trpc } from "@/lib/trpc";
 import { useLocalStorage } from "@/lib/hooks/use-local-storage";
+import { monthKey as monthKeyStr } from "@/lib/pure/date-keys";
 
 function monthLabel(d: Date): string {
   return `${MONTH_NAMES_SHORT[d.getMonth()]} 1 '${String(d.getFullYear()).slice(2)}`;
-}
-
-function monthKeyStr(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
 }
 
 /**

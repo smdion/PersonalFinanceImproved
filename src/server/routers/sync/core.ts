@@ -18,6 +18,7 @@ import {
   cacheGet,
   cacheSet,
 } from "@/lib/budget-api";
+import { currentMonthKey } from "@/lib/pure/date-keys";
 import { detectDrift, hasDrift } from "@/lib/budget-api/drift-detection";
 import { applyPullMapping } from "@/server/helpers/apply-pull-mapping";
 import type {
@@ -70,7 +71,7 @@ export const syncCoreRouter = createTRPCRouter({
         ]);
 
         const now = new Date();
-        const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+        const currentMonth = currentMonthKey(now);
         const monthDetail = await client.getMonthDetail(currentMonth);
 
         const sinceDate = `${now.getFullYear() - 1}-01-01`;
@@ -287,7 +288,7 @@ export const syncCoreRouter = createTRPCRouter({
       const service = input.service as BudgetApiService;
 
       const now = new Date();
-      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+      const currentMonth = currentMonthKey(now);
 
       const currentYear = now.getFullYear();
       const [

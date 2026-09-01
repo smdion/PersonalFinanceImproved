@@ -58,6 +58,7 @@ import {
 } from "@/lib/budget-api";
 import type { BudgetCategoryGroup, BudgetMonthDetail } from "@/lib/budget-api";
 import { YNAB_INTERNAL_GROUPS } from "@/lib/budget-api";
+import { currentMonthKey } from "@/lib/pure/date-keys";
 
 type BudgetItemRow = typeof schema.budgetItems.$inferSelect;
 
@@ -1724,7 +1725,7 @@ export const budgetRouter = createTRPCRouter({
 
       // Get current month detail from cache
       const now = new Date();
-      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+      const currentMonth = currentMonthKey(now);
       const monthCache = await cacheGet<BudgetMonthDetail>(
         ctx.db,
         active,
@@ -1905,7 +1906,7 @@ export const budgetRouter = createTRPCRouter({
         };
 
       const now = new Date();
-      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+      const currentMonth = currentMonthKey(now);
       const monthCache = await cacheGet<BudgetMonthDetail>(
         ctx.db,
         active,

@@ -39,6 +39,7 @@ const mockRefreshCategoryCache = vi.fn().mockResolvedValue(undefined);
 vi.mock("@/lib/budget-api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/budget-api")>();
   return {
+    ...actual,
     getActiveBudgetApi: (...args: unknown[]) => mockGetActiveBudgetApi(...args),
     getBudgetAPIClient: (...args: unknown[]) => mockGetBudgetAPIClient(...args),
     getClientForService: (...args: unknown[]) =>
@@ -46,8 +47,6 @@ vi.mock("@/lib/budget-api", async (importOriginal) => {
     cacheGet: (...args: unknown[]) => mockCacheGet(...args),
     refreshCategoryCache: (...args: unknown[]) =>
       mockRefreshCategoryCache(...args),
-    // Real class — router code does `err instanceof BudgetApiError`.
-    BudgetApiError: actual.BudgetApiError,
   };
 });
 
@@ -174,19 +173,39 @@ describe("savings.computeSummary", () => {
       });
 
       mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
+      // BudgetMonthDetail shape (months/${currentMonthKey} cache entry) —
+      // NOT the generic "categories" cache's nested-groups shape. Both
+      // balance AND currentMonthBudgeted for an API-linked goal are
+      // sourced from this same entry (savings.ts's computeSummary).
       mockCacheGet.mockResolvedValueOnce({
-        data: [
-          {
-            name: "Savings",
-            categories: [
-              { id: "cat-123", balance: 3000, budgeted: 200, activity: -100 },
-            ],
-          },
-        ],
+        data: {
+          month: "2026-09-01",
+          income: 0,
+          budgeted: 0,
+          activity: 0,
+          toBeBudgeted: 0,
+          categories: [
+            {
+              id: "cat-123",
+              name: "API Category",
+              groupId: "g1",
+              groupName: "Savings",
+              hidden: false,
+              balance: 3000,
+              budgeted: 200,
+              activity: -100,
+            },
+          ],
+        },
       });
 
       const result = await freshCtx.caller.savings.computeSummary();
       expect(result.goals.length).toBeGreaterThanOrEqual(1);
+      const goal = result.goals.find((g) => g.apiCategoryId === "cat-123");
+      expect(goal).toBeDefined();
+      expect(goal!.currentMonthBudgeted).toBe(200);
+      const calcGoal = result.savings.goals.find((g) => g.goalId === goal!.id);
+      expect(calcGoal!.current).toBe(3000);
     } finally {
       freshCtx.cleanup();
       mockGetActiveBudgetApi.mockResolvedValue("none");

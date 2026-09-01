@@ -8,6 +8,7 @@ import {
 import { formatCurrency } from "@/lib/utils/format";
 import { sumBy } from "@/lib/utils/math";
 import { type GoalProjection, monthKey } from "./types";
+import { monthKey as fullMonthKey } from "@/lib/pure/date-keys";
 
 const MONTH_NAMES = [
   "January",
@@ -25,7 +26,7 @@ const MONTH_NAMES = [
 ];
 
 function formatMonthDate(d: Date) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+  return fullMonthKey(d);
 }
 
 interface MonthOverrideModalProps {

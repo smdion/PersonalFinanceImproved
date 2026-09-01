@@ -475,8 +475,7 @@ export default function SavingsPage() {
           id: goalId,
           current: goal.current,
           monthlyAllocation: baseAllocation,
-          isApiSyncEnabled: raw?.isApiSyncEnabled,
-          apiCategoryId: raw?.apiCategoryId,
+          currentMonthBudgeted: raw?.currentMonthBudgeted,
         },
         {
           now,

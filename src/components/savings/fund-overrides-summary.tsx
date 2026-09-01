@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { formatCurrency, MONTH_NAMES_SHORT } from "@/lib/utils/format";
+import { monthKey } from "@/lib/pure/date-keys";
 
 interface OverrideRange {
   startMonth: string;
@@ -84,7 +85,7 @@ function monthsBetween(startMonth: string, endMonth: string): number {
 function addMonths(monthStr: string, n: number): string {
   const d = new Date(monthStr + "T00:00:00");
   d.setMonth(d.getMonth() + n);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+  return monthKey(d);
 }
 
 /**
@@ -97,7 +98,7 @@ function splitRangesByMonth(
   ranges: OverrideRange[],
   thisMonth: Date,
 ): { currentRanges: OverrideRange[]; pastRanges: OverrideRange[] } {
-  const thisMonthStr = `${thisMonth.getFullYear()}-${String(thisMonth.getMonth() + 1).padStart(2, "0")}-01`;
+  const thisMonthStr = monthKey(thisMonth);
   const currentRanges: OverrideRange[] = [];
   const pastRanges: OverrideRange[] = [];
 
@@ -226,7 +227,7 @@ export function FundOverridesSummary({
     const end = new Date(range.endMonth + "T00:00:00");
     const d = new Date(start);
     while (d <= end) {
-      const mk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+      const mk = monthKey(d);
       onDeleteOverride({ goalId, monthDate: mk });
       d.setMonth(d.getMonth() + 1);
     }

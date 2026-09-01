@@ -63,7 +63,12 @@ import {
   refreshCategoryCache,
   BudgetApiError,
 } from "@/lib/budget-api";
-import type { BudgetCategoryGroup, BudgetTransaction } from "@/lib/budget-api";
+import type {
+  BudgetCategoryGroup,
+  BudgetMonthDetail,
+  BudgetTransaction,
+} from "@/lib/budget-api";
+import { currentMonthKey } from "@/lib/pure/date-keys";
 
 /**
  * Compute the current net-pay-per-check for a job by running the paycheck
@@ -633,29 +638,57 @@ export const savingsRouter = createTRPCRouter({
         }
       }
 
-      // Override balances for API-linked goals with live YNAB cache values
+      // Override balances for API-linked goals with live cache values, AND
+      // capture each linked category's current-month `budgeted` amount
+      // (currentMonthBudgetedMap) so projectGoalBalances can tell whether
+      // this month's contribution is already reflected in `balance`
+      // instead of guessing from the calendar date.
+      //
+      // Both come from the SAME month-scoped cache entry
+      // (`months/${currentMonthKey}`), not the generic "categories" cache
+      // the balance override used to read alone — advisor review,
+      // 2026-09-01: sourcing balance and budgeted from two independently-
+      // aged snapshots risks subtracting THIS month's budgeted amount
+      // from a STALE prior month's balance (e.g. synced Aug 31 11pm,
+      // read Sept 1 9am — "categories" would still hold August's numbers
+      // with no signal it's the wrong month). The month-scoped key is
+      // self-verifying: if `months/2026-09-01` is absent, we know we
+      // don't have September data at all.
+      //
+      // Degrades safely when that cache entry is missing (no sync yet
+      // this month — most likely right at a month rollover, e.g. viewed
+      // Oct 1 before the first October sync ran): the live balance
+      // override does NOT fire at all for these goals, same as before
+      // this phase existed — `balance` falls back to whatever
+      // savings_monthly last recorded (set above), which could itself be
+      // a prior month's synced snapshot, not "right now". Real but
+      // low-impact: the very next sync (same one that populates
+      // months/${currentMonthKey}) also refreshes savings_monthly.
+      // currentMonthBudgetedMap stays empty for these goals — the same
+      // "unknown, add the full allocation" conservative default a
+      // non-API-synced goal already gets in projectGoalBalances.
       const apiLinkedGoals = activeGoals.filter(
         (g) => g.isApiSyncEnabled && g.apiCategoryId,
       );
+      const currentMonthBudgetedMap = new Map<number, number>();
       if (apiLinkedGoals.length > 0) {
         const active = await getActiveBudgetApi(ctx.db);
         if (active !== "none") {
-          const categoriesCache = await cacheGet<BudgetCategoryGroup[]>(
+          const now = new Date();
+          const monthCache = await cacheGet<BudgetMonthDetail>(
             ctx.db,
             active,
-            "categories",
+            `months/${currentMonthKey(now)}`,
           );
-          if (categoriesCache) {
-            const catBalanceMap = new Map<string, number>();
-            for (const group of categoriesCache.data) {
-              for (const cat of group.categories) {
-                catBalanceMap.set(cat.id, cat.balance);
-              }
-            }
+          if (monthCache) {
+            const catById = new Map(
+              monthCache.data.categories.map((c) => [c.id, c]),
+            );
             for (const goal of apiLinkedGoals) {
-              const apiBalance = catBalanceMap.get(goal.apiCategoryId!);
-              if (apiBalance !== undefined) {
-                balanceMap.set(goal.id, apiBalance);
+              const cat = catById.get(goal.apiCategoryId!);
+              if (cat) {
+                balanceMap.set(goal.id, cat.balance);
+                currentMonthBudgetedMap.set(goal.id, cat.budgeted);
               }
             }
           }
@@ -830,6 +863,13 @@ export const savingsRouter = createTRPCRouter({
               ? resolved.allocationPercent.toFixed(3)
               : null,
           monthlyContribution: resolved.monthlyContribution.toFixed(2),
+          // null (not just absent) when unknown — projectGoalBalances
+          // treats "no evidence this month is already funded" as "add
+          // the full allocation," the same conservative default a
+          // non-API-synced goal already gets. See
+          // currentMonthBudgetedMap's own comment above for why this is
+          // null instead of falling back to a differently-aged number.
+          currentMonthBudgeted: currentMonthBudgetedMap.get(g.id) ?? null,
         };
       });
 
