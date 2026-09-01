@@ -27,6 +27,7 @@ import { type RenderMcCellOptions } from "./projection-table-mc-cell";
 import { AccumulationRow } from "./projection-table-accum-row";
 import { DecumulationRow } from "./projection-table-decum-row";
 import { ContribMethodologySection } from "./projection-table-contrib-methodology";
+import { TaxSummaryCard } from "./tax-summary-card";
 
 /**
  * Unified projection table — accumulation + decumulation year-by-year data.
@@ -394,6 +395,14 @@ export function ProjectionTable({
             </table>
           </div>
         </>
+      )}
+
+      {/* Lifetime tax summary — below the table, above the methodology
+          blurb. Decumulation only, see the card's own docblock. */}
+      {result && (
+        <div className="print:hidden mt-2">
+          <TaxSummaryCard state={state} />
+        </div>
       )}
 
       {/* R42: methodology links/validation-evidence are engine-internal

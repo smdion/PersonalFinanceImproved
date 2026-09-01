@@ -336,6 +336,36 @@ export function AssumptionsBand({
           )}
         </span>
 
+        <span className={chipCls}>
+          <span className={labelCls}>
+            Bracket Ceiling
+            <HelpTip text="Fill traditional (pre-tax) withdrawals up to this bracket, then use Roth for the rest. Keeps taxable income in cheaper brackets. Same setting as the Taxes tab's Bracket Ceiling." />
+          </span>
+          {editable ? (
+            <select
+              value={String(Number(settings.rothBracketTarget ?? "0.12"))}
+              onChange={(e) =>
+                upsertSettings.mutate(
+                  buildSettingsPatch(settings, {
+                    rothBracketTarget: e.target.value,
+                  }),
+                )
+              }
+              className="text-caption bg-transparent"
+            >
+              <option value="0.1">10%</option>
+              <option value="0.12">12%</option>
+              <option value="0.22">22%</option>
+              <option value="0.24">24%</option>
+              <option value="0.32">32%</option>
+            </select>
+          ) : (
+            <span className="font-medium">
+              {formatPercent(Number(settings.rothBracketTarget ?? "0.12"), 0)}
+            </span>
+          )}
+        </span>
+
         {Number(settings.socialSecurityMonthly) > 0 ||
         perPersonSettings?.some((p) => Number(p.socialSecurityMonthly) > 0) ? (
           <button
