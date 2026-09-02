@@ -63,6 +63,7 @@ import {
   depleteIndividualBasis,
   clampIndividualBasis,
   reconcileIndividualToAggregate,
+  specKeyOf,
 } from "../individual-account-tracking";
 import {
   computeWithdrawalEligibility,
@@ -1187,9 +1188,27 @@ export function runDecumulationYear(
       if (amount <= 0) continue;
       decumBrokerageContrib += amount;
       if (spec.accountName) {
-        const matchingAccount = ctx.indAccts.find(
-          (ia) => ia.name === spec.accountName,
-        );
+        // R4 (advisor-reviewed 2026-09-01): this used to match by
+        // `ia.name === spec.accountName` alone — two household members with
+        // identically-named accounts (e.g. both "Traditional 401(k)") would
+        // silently collide, with whichever account `indAccts` happened to
+        // list first absorbing every match regardless of whose contribution
+        // spec it actually was. `state.specToAccount` (built once per year
+        // by `buildSpecToAccountMapping`, individual-account-tracking.ts —
+        // the SAME owner-aware category+owner+taxType+parentCategory
+        // cascade `accumulation-year.ts` already uses for this exact
+        // spec-to-account question) is the single computation path for
+        // "which individual account does this spec belong to" — reusing it
+        // here instead of re-deriving a second, weaker match avoids
+        // RULES.md's single-computation-path trap. Falls back to the old
+        // name-only match only when the spec has no entry in the map at
+        // all (shouldn't happen for a spec with a resolved accountName, but
+        // keeps this from going from "matches something" to "matches
+        // nothing" for an edge case buildSpecToAccountMapping doesn't cover).
+        const matchedKey = state.specToAccount.get(specKeyOf(spec));
+        const matchingAccount = matchedKey
+          ? ctx.indAccts.find((ia) => indKey(ia) === matchedKey)
+          : ctx.indAccts.find((ia) => ia.name === spec.accountName);
         if (matchingAccount) {
           const k = indKey(matchingAccount);
           decumContribByAccount.set(

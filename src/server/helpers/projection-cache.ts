@@ -155,8 +155,33 @@ import { log } from "@/lib/logger";
  *  0%-LTCG room and lower ordinary tax, so `standardDeduction` (output),
  *  `taxCost`, `bracketTraditionalCap`, `discretionaryTierBreakdown`, and
  *  sustainable-withdrawal/end-balance figures all shift. Cached rows from
- *  before this fix understate the household's real tax-bracket room. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 23;
+ *  before this fix understate the household's real tax-bracket room.
+ *
+ *  24: waterfall + Roth-bracket-overlay households now get a real
+ *  `bracketTraditionalCap` on `EngineDecumulationYear` (`dispatchOnce`'s
+ *  waterfall branch, `withdrawal-routing.ts`) — previously only
+ *  `bracket_filling` mode populated this field, even though the overlay was
+ *  actively capping Traditional withdrawals at exactly this figure for
+ *  these households (advisor-reviewed, deliberately not mode-gated: the
+ *  overlay computes the identical cap and forces the identical Traditional-
+ *  first-to-cap behavior, so the report narrative/tooltip that cite it
+ *  describe the same real mechanism as bracket_filling). An output-shape
+ *  addition, not a dollar-figure change (`taxCost`/withdrawal amounts are
+ *  unaffected) — bumped so already-cached rows for these households don't
+ *  keep serving the field as missing under the old engine version.
+ *
+ *  25: R4 — decumulation's "Portfolio contribution continues after
+ *  retirement" spec-to-account matching (`decumulation-year.ts`) now reuses
+ *  `state.specToAccount` (the owner-aware cascade `buildSpecToAccountMapping`
+ *  already builds for the accumulation phase) instead of matching by
+ *  `ia.name === spec.accountName` alone. A REAL value change, but only for
+ *  the narrow household shape this bug required: two people, each with an
+ *  identically-named individual account continuing contributions past
+ *  retirement (e.g. both named "Long Term Brokerage") — for every other
+ *  household the two matching paths agree and nothing moves. Previously
+ *  both people's contributions silently landed on whichever account
+ *  `indAccts` happened to list first. */
+export const PROJECTION_CACHE_ENGINE_VERSION = 25;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

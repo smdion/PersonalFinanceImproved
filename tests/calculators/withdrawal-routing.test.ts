@@ -4,6 +4,7 @@ import {
   routeWithdrawalsPercentage,
   routeWithdrawalsBracketFilling,
   routeForMode,
+  computeBracketTraditionalCap,
 } from "@/lib/calculators/engine/withdrawal-routing";
 import {
   makeDecumulationConfig,
@@ -1268,5 +1269,83 @@ describe("routeForMode (nonRetirement exclusion, R49)", () => {
     );
     expect(withUndefined.slots).toEqual(withAllZero.slots);
     expect(withAllZero.nonRetirementShortfall).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Waterfall + Roth-bracket-overlay: bracketTraditionalCap surfaced (TODO.md,
+// fixed 2026-09-01, advisor-reviewed — deliberately NOT mode-gated).
+// ---------------------------------------------------------------------------
+
+describe("routeForMode (waterfall + Roth-bracket-overlay surfaces bracketTraditionalCap)", () => {
+  const SD = 30000;
+  const bracketInfo = {
+    taxBrackets: TEST_BRACKETS,
+    rothBracketTarget: 0.22,
+    taxableSS: 0,
+    standardDeduction: SD,
+  };
+
+  it("populates traditionalCap for waterfall once the overlay applies, matching computeBracketTraditionalCap directly", () => {
+    const config = makeDecumulationConfig({
+      withdrawalRoutingMode: "waterfall",
+      withdrawalOrder: ["brokerage", "401k", "ira", "403b", "hsa"], // deliberately NOT trad-first
+    });
+    const balances = makeAccountBalances({
+      preTax: 300000,
+      afterTax: 100000,
+      afterTaxBasis: 100000,
+    });
+    const result = routeForMode(80000, config, balances, bracketInfo);
+    expect(result.traditionalCap).toBe(
+      computeBracketTraditionalCap(bracketInfo),
+    );
+    expect(result.traditionalCap).toBeGreaterThan(0);
+  });
+
+  it("stays undefined when no rothBracketTarget is set (overlay never applies — byte-identical to pre-fix)", () => {
+    const config = makeDecumulationConfig({
+      withdrawalRoutingMode: "waterfall",
+    });
+    const balances = makeAccountBalances({ preTax: 300000 });
+    const result = routeForMode(80000, config, balances, {
+      taxableSS: 0,
+    });
+    expect(result.traditionalCap).toBeUndefined();
+  });
+
+  it("stays undefined when there's no tax bracket data (overlay never applies)", () => {
+    const config = makeDecumulationConfig({
+      withdrawalRoutingMode: "waterfall",
+    });
+    const balances = makeAccountBalances({ preTax: 300000 });
+    const result = routeForMode(80000, config, balances, {
+      rothBracketTarget: 0.22,
+      taxableSS: 0,
+    });
+    expect(result.traditionalCap).toBeUndefined();
+  });
+
+  it("reports the SAME cap value as bracket_filling mode for identical bracket inputs (same underlying computeBracketTraditionalCap call)", () => {
+    const balances = makeAccountBalances({
+      preTax: 300000,
+      afterTax: 100000,
+      afterTaxBasis: 100000,
+    });
+    const waterfallResult = routeForMode(
+      80000,
+      makeDecumulationConfig({ withdrawalRoutingMode: "waterfall" }),
+      balances,
+      bracketInfo,
+    );
+    const bracketFillingResult = routeForMode(
+      80000,
+      makeDecumulationConfig({ withdrawalRoutingMode: "bracket_filling" }),
+      balances,
+      bracketInfo,
+    );
+    expect(waterfallResult.traditionalCap).toBe(
+      bracketFillingResult.traditionalCap,
+    );
   });
 });

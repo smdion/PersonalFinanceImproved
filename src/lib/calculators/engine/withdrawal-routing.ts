@@ -47,7 +47,7 @@ export function routeWithdrawals(
   targetWithdrawal: number,
   config: ResolvedDecumulationConfig,
   balances: AccountBalances,
-): { slots: DecumulationSlot[]; warnings: string[]; unmetNeed?: number } {
+): RouteResult {
   const warnings: string[] = [];
   let remaining = targetWithdrawal;
   const slots: DecumulationSlot[] = [];
@@ -999,7 +999,25 @@ function dispatchOnce(
   }
   // Waterfall mode — apply Roth bracket optimization overlay if configured.
   const routeConfig = applyRothBracketOverlay(config, bracketInfo);
-  return routeWithdrawals(targetWithdrawal, routeConfig, balances);
+  const result = routeWithdrawals(targetWithdrawal, routeConfig, balances);
+  // Surface the same bracket ceiling `routeWithdrawalsBracketFilling` reports
+  // as `traditionalCap` (advisor-reviewed 2026-09-01, TODO.md) — previously
+  // only bracket_filling mode populated this field, so waterfall + Roth-
+  // bracket-overlay households never got a `bracketTraditionalCap` even
+  // though the overlay was actively capping their withdrawals at exactly
+  // this figure. `applyRothBracketOverlay` computes the identical
+  // `computeBracketTraditionalCap(bracketInfo)` bracket_filling uses, AND
+  // resets `withdrawalOrder` to force Traditional-first up to that cap
+  // (see its own docblock) — the report narrative / table tooltip that cite
+  // this figure describe the same real mechanism for waterfall as for
+  // bracket_filling, so this is deliberately NOT mode-gated.
+  // `routeConfig !== config` iff the overlay applied, which `applyRothBracketOverlay`
+  // only does when this figure is finite — reusing that as the "did it apply" signal
+  // instead of re-deriving the same null-check here.
+  if (routeConfig !== config) {
+    result.traditionalCap = computeBracketTraditionalCap(bracketInfo);
+  }
+  return result;
 }
 
 /**
