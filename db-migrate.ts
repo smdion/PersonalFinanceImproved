@@ -37,16 +37,47 @@ function getDialect(): "postgresql" | "sqlite" {
  * seed-value *correction* still has to go through the UI or a manual
  * statement (documented in TAX-PARAMETER-RUNBOOK.md).
  *
- * Every table the seed writes MUST carry a `tax_year`-scoped unique
- * constraint. Without one, `ON CONFLICT DO NOTHING` has nothing to conflict
- * on and every reconcile re-inserts duplicate rows. This is asserted before
- * the seed runs and fails the migrate loudly if a table is missing it.
+ * Every table the seed writes MUST be a year-keyed reference table with a
+ * `tax_year`-scoped unique constraint. Without one, `ON CONFLICT DO NOTHING`
+ * has nothing to conflict on and every reconcile re-inserts duplicate rows.
+ * Two guards enforce this before the seed runs, both failing the migrate
+ * loudly:
+ *   1. Every `INSERT INTO` target must be in `REFERENCE_SEED_TABLES` — an
+ *      explicit allowlist, so adding a non-year-keyed `INSERT` to the seed
+ *      file surfaces as a clear "this reconcile only handles year-keyed
+ *      reference tables" error rather than a cryptic constraint failure or
+ *      silent row duplication.
+ *   2. Each of those tables is checked for a `tax_year`-scoped unique index
+ *      in the live schema (belt-and-braces against the allowlist drifting
+ *      from reality).
+ * If you need to seed non-year-keyed reference data, do it through a
+ * separate mechanism — not this file.
  */
+const REFERENCE_SEED_TABLES = new Set([
+  "contribution_limits",
+  "tax_brackets",
+  "ltcg_brackets",
+  "irmaa_brackets",
+  "fpl_by_household",
+  "tax_params",
+]);
+
 function parseSeedTableNames(seedSql: string): string[] {
   const names = new Set<string>();
   const re = /INSERT\s+INTO\s+"?([A-Za-z_][A-Za-z0-9_]*)"?/gi;
   let m: RegExpExecArray | null;
   while ((m = re.exec(seedSql)) !== null) names.add(m[1]!);
+  const unexpected = [...names].filter((n) => !REFERENCE_SEED_TABLES.has(n));
+  if (unexpected.length > 0) {
+    throw new Error(
+      `seed-reference-data.sql inserts into non-reference table(s) [${unexpected.join(
+        ", ",
+      )}]. The migrate reconcile only handles year-keyed reference tables ` +
+        `(${[...REFERENCE_SEED_TABLES].join(", ")}) — add the table to ` +
+        `REFERENCE_SEED_TABLES in db-migrate.ts only if it has a tax_year-scoped ` +
+        `unique index, otherwise seed it through a separate mechanism.`,
+    );
+  }
   return [...names];
 }
 
