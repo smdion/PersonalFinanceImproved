@@ -637,8 +637,23 @@ export function routeWithdrawalsBracketFilling(
   // tax system's cost curve doesn't move enough for more iterations to
   // matter, and unbounded iteration risks non-termination on pathological
   // inputs.
+  // Reserve up to the rate the conversion will ACTUALLY target
+  // (bracketInfo.conversionTarget), not necessarily the withdrawal
+  // target's own traditionalCap above — they can differ (see
+  // RouteBracketInfo.conversionTarget's docblock). Falls back to
+  // traditionalCap itself when conversionTarget is omitted or equals
+  // rothBracketTarget, so this is a no-op for every caller/fixture that
+  // predates this field.
+  const conversionCap =
+    bracketInfo.conversionTarget != null &&
+    bracketInfo.conversionTarget !== bracketInfo.rothBracketTarget
+      ? computeBracketTraditionalCap({
+          ...bracketInfo,
+          rothBracketTarget: bracketInfo.conversionTarget,
+        })
+      : traditionalCap;
   const conversionReservedRoom = bracketInfo.conversionsEnabled
-    ? Math.max(0, roundToCents(traditionalCap - totalTradWithdrawn))
+    ? Math.max(0, roundToCents(conversionCap - totalTradWithdrawn))
     : 0;
   const baseOrdinaryFloor =
     (bracketInfo.taxableSS ?? 0) + totalTradWithdrawn + conversionReservedRoom;
@@ -752,6 +767,17 @@ export function routeWithdrawalsBracketFilling(
 export interface RouteBracketInfo {
   taxBrackets?: WithholdingBracket[];
   rothBracketTarget?: number;
+  /** The rate a same-year Roth conversion will actually target, when it
+   *  differs from rothBracketTarget above (an explicit plan-level
+   *  rothConversionTarget, or a per-year override — see
+   *  decumulation-year.ts's resolvedConversionTarget). Falls back to
+   *  rothBracketTarget when omitted, so existing callers that don't pass
+   *  this (tax-gross-up.ts's estimate) keep prior behavior exactly.
+   *  Advisor-caught 2026-09-01: conversionReservedRoom below used to
+   *  reserve room up to rothBracketTarget's cap even when the conversion
+   *  that actually runs targets a different, more specific rate — two
+   *  names for one quantity, resolved by two different chains. */
+  conversionTarget?: number;
   taxableSS: number;
   /** Below fields power v0.7.9 R40's cost-aware post-bracket-cap ranking
    *  (bracket_filling mode only — see `routeWithdrawalsBracketFilling`,

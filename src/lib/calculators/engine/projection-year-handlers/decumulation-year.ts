@@ -531,6 +531,24 @@ export function runDecumulationYear(
     indKey: hasIndividualAccounts ? indKey : undefined,
   });
 
+  // Resolved ONCE, here, and reused both for the routing reservation below
+  // AND for performRothConversion's own target further down (replacing
+  // that call's separate re-derivation of the identical fallback chain) —
+  // advisor-caught 2026-09-01: conversionReservedRoom used to reserve
+  // room up to `traditionalCap` (derived from bracketInfo.rothBracketTarget,
+  // the WITHDRAWAL target) even though the conversion that actually runs
+  // later this same year targets this resolved value instead, which can
+  // differ (an explicit plan-level rothConversionTarget below the
+  // household's rothBracketTarget). Two names for one quantity, resolved
+  // by two different chains, biased the discretionary-tier ranking away
+  // from brokerage in that configuration — not a wrong final dollar
+  // amount (routing degrades to the next tier when a reservation can't be
+  // filled), but a real ordering bug for the exact household shape
+  // roth-conversion-target-priority.test.ts already covers.
+  const resolvedConversionTarget =
+    taxRates.rothConversionTarget ??
+    config.rothBracketTarget ??
+    taxRates.rothBracketTarget;
   const routeResult = routeForMode(
     targetWithdrawal,
     config,
@@ -543,6 +561,10 @@ export function runDecumulationYear(
       // rothBracketTarget is a RATE (e.g. 0.12), not a dollar figure —
       // growth-invariant, deliberately not grown.
       rothBracketTarget: config.rothBracketTarget ?? taxRates.rothBracketTarget,
+      // The rate performRothConversion will ACTUALLY convert up to, when
+      // it differs from the withdrawal target above — see this const's
+      // own comment. Only meaningful when conversionsEnabled.
+      conversionTarget: resolvedConversionTarget,
       taxableSS,
       filingStatus,
       ltcgBrackets: grownLtcgBrackets,
@@ -880,10 +902,14 @@ export function runDecumulationYear(
     // taxRates.rothConversionTarget can't simply be dropped from this
     // chain -- and the priority-ordering regression test alongside them
     // for why it can't come second either.
-    rothBracketTarget:
-      taxRates.rothConversionTarget ??
-      config.rothBracketTarget ??
-      taxRates.rothBracketTarget,
+    //
+    // Reuses resolvedConversionTarget (computed once, above, before
+    // routeForMode) instead of re-deriving the identical chain a second
+    // time here -- the routing reservation and the conversion that
+    // actually runs must agree on this value, or the two silently drift
+    // (advisor-caught 2026-09-01, see resolvedConversionTarget's own
+    // comment).
+    rothBracketTarget: resolvedConversionTarget,
     totalTraditionalWithdrawal,
     taxableSS,
     brokerageGainsPortion,

@@ -716,6 +716,92 @@ describe("routeWithdrawalsBracketFilling", () => {
       );
     }
   });
+
+  // -------------------------------------------------------------------------
+  // conversionTarget — reserved-room fix (advisor review, 2026-09-01)
+  // -------------------------------------------------------------------------
+
+  it("reserves discretionary-tier room up to conversionTarget's own bracket cap, not rothBracketTarget's, when the two differ", () => {
+    // Same inputs throughout except conversionTarget. Before this fix,
+    // the reservation always used rothBracketTarget's cap (0.32 here,
+    // a huge cap that reserves nearly all remaining Traditional room and
+    // inflates the ordinary-income floor, pricing Roth growth as
+    // expensive). A real, lower conversionTarget reserves less, lowers
+    // the floor, and should price Roth growth relatively cheaper —
+    // shifting some of the discretionary draw from brokerage to Roth.
+    const config = makeDecumulationConfig();
+    const balances = makeAccountBalances({
+      preTax: 5000,
+      taxFree: 200000,
+      afterTax: 30000,
+      afterTaxBasis: 0, // all gains -- worst case for brokerage's cost
+    });
+    const routeWith = (conversionTarget: number) =>
+      routeWithdrawalsBracketFilling(60000, config, balances, {
+        taxBrackets: TEST_BRACKETS,
+        rothBracketTarget: 0.32,
+        conversionTarget,
+        conversionsEnabled: true,
+        taxableSS: 40000,
+        filingStatus: "MFJ",
+        rothBasisAvailable: 0,
+        brokerageBasisRatio: 0,
+        magiBeforeThisDraw: 0,
+      });
+
+    // conversionTarget === rothBracketTarget: no-op, reproduces the cap
+    // used before this field existed.
+    const control = routeWith(0.32);
+    // A materially lower real conversion target.
+    const withLowerTarget = routeWith(0.1);
+
+    const controlRoth =
+      slotFor(control.slots, "401k")?.rothWithdrawal ??
+      slotFor(control.slots, "ira")?.rothWithdrawal ??
+      0;
+    const lowerTargetRoth =
+      slotFor(withLowerTarget.slots, "401k")?.rothWithdrawal ??
+      slotFor(withLowerTarget.slots, "ira")?.rothWithdrawal ??
+      0;
+
+    expect(lowerTargetRoth).not.toBe(controlRoth);
+    // Lower reserved room -> lower ordinary-income floor -> Roth growth
+    // priced cheaper -> the ranking draws MORE from Roth, not less.
+    expect(lowerTargetRoth).toBeGreaterThan(controlRoth);
+  });
+
+  it("omitting conversionTarget reproduces the exact same output as before this field existed (no regression for existing callers)", () => {
+    const config = makeDecumulationConfig();
+    const balances = makeAccountBalances({
+      preTax: 5000,
+      taxFree: 200000,
+      afterTax: 30000,
+      afterTaxBasis: 0,
+    });
+    const bracketInfo = {
+      taxBrackets: TEST_BRACKETS,
+      rothBracketTarget: 0.32,
+      conversionsEnabled: true,
+      taxableSS: 40000,
+      filingStatus: "MFJ" as const,
+      rothBasisAvailable: 0,
+      brokerageBasisRatio: 0,
+      magiBeforeThisDraw: 0,
+    };
+    const withoutField = routeWithdrawalsBracketFilling(
+      60000,
+      config,
+      balances,
+      bracketInfo,
+    );
+    const withEqualField = routeWithdrawalsBracketFilling(
+      60000,
+      config,
+      balances,
+      { ...bracketInfo, conversionTarget: 0.32 },
+    );
+    expect(withoutField.slots).toEqual(withEqualField.slots);
+  });
 });
 
 // ---------------------------------------------------------------------------

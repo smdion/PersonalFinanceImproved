@@ -82,6 +82,8 @@ export interface TaxEstimationInput {
     brokerage: number;
     taxBrackets?: WithholdingBracket[];
     rothBracketTarget?: number;
+    /** See RouteBracketInfo.conversionTarget's docblock (withdrawal-routing.ts). */
+    rothConversionTarget?: number;
     taxMultiplier?: number;
     ltcgBrackets?: Record<string, { threshold: number | null; rate: number }[]>;
     enableRothConversions?: boolean;
@@ -216,6 +218,14 @@ function evaluateCost(
       // diverge on what routing rule applies; leaving this unresolved
       // would violate that for any household using the new override.
       rothBracketTarget: config.rothBracketTarget ?? taxRates.rothBracketTarget,
+      // Same rule, same reason as rothBracketTarget above (advisor-caught
+      // 2026-09-01, alongside the real router's identical fix): the
+      // reserved-room estimate must target the rate a conversion will
+      // ACTUALLY use, not necessarily the withdrawal target.
+      conversionTarget:
+        taxRates.rothConversionTarget ??
+        config.rothBracketTarget ??
+        taxRates.rothBracketTarget,
       taxableSS,
       filingStatus,
       ltcgBrackets: taxRates.ltcgBrackets,
