@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { FormError } from "@/components/ui/form-error";
+import { localDateStr } from "@/lib/utils/date";
 
 // --- Types ---
 
@@ -766,7 +767,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       // Create all jobs, mapping personIndex to the real person ID. A job
       // carries no salary of its own — each one's annualSalary from the
       // Income step goes into the household's Salary Profile below instead.
-      const today = new Date().toISOString().substring(0, 10);
+      const today = localDateStr();
       const jobEntries: Record<
         string,
         { salary: number; payPeriod: JobDraft["payPeriod"] }

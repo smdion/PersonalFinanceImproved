@@ -1,4 +1,5 @@
 import { getDisplayConfig } from "@/lib/config/account-types";
+import { parseLocalDateOnly } from "@/lib/utils/date";
 
 /** Short month labels (index 0 = January), for compact axis/table labels. */
 export const MONTH_NAMES_SHORT = [
@@ -76,12 +77,7 @@ export function formatDate(
   value: string | Date,
   preset: "short" | "medium" | "long" | "default" = "default",
 ): string {
-  // Append T00:00:00 to date-only strings (e.g. "2020-11-01") to avoid timezone shift.
-  // Don't append if the string already has a time component (ISO format from JSON serialization).
-  const date =
-    typeof value === "string"
-      ? new Date(value.includes("T") ? value : value + "T00:00:00")
-      : value;
+  const date = typeof value === "string" ? parseLocalDateOnly(value) : value;
   switch (preset) {
     case "short":
       return date.toLocaleDateString("en-US", {

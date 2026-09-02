@@ -10,6 +10,7 @@ import {
   pickProfileSettingsRow,
 } from "./retirement-profile";
 import { safeDivide } from "@/lib/utils/math";
+import { parseLocalDateOnly, localMidnight } from "@/lib/utils/date";
 import { DEFAULT_WITHDRAWAL_RATE } from "@/lib/constants";
 import type { Db } from "./transforms";
 import { parseAppSettings } from "./settings";
@@ -908,10 +909,17 @@ export async function buildYearEndHistory(
         (settings.find((s) => s.key === "performance_last_updated")
           ?.value as string) ?? null,
       snapshotDate: snapshotData?.snapshot.snapshotDate ?? null,
+      // Calendar-day difference, not a raw ms/86400000 divide — the old
+      // version parsed the date-only snapshotDate as UTC midnight against
+      // Date.now() (a real instant), which reads a same-day snapshot as
+      // already 1 day old for part of every day (found 2026-09-01, TODO.md
+      // date-parsing audit). Compare local calendar dates instead.
       snapshotAgeDays: snapshotData
-        ? Math.floor(
-            (Date.now() -
-              new Date(snapshotData.snapshot.snapshotDate).getTime()) /
+        ? Math.round(
+            (localMidnight(new Date()).getTime() -
+              parseLocalDateOnly(
+                snapshotData.snapshot.snapshotDate,
+              ).getTime()) /
               86_400_000,
           )
         : null,

@@ -7,6 +7,7 @@ import {
   contributionProfileProcedure,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
+import { localDateStr } from "@/lib/utils/date";
 import { materializeExtraPaycheckOverrides } from "@/server/helpers/extra-paycheck-materializer";
 import { getPrimaryPerson } from "@/server/helpers/transforms";
 import {
@@ -46,7 +47,7 @@ export function speculativeJobValues(personId: number) {
   return {
     personId,
     employerName: "Speculative (What-If Planning)",
-    startDate: new Date().toISOString().slice(0, 10),
+    startDate: localDateStr(),
     isSpeculative: true,
   };
 }

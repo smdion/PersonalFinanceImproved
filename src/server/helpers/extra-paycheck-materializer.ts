@@ -24,6 +24,7 @@ import { getExtraPaycheckMonthKeys } from "@/lib/calculators/paycheck";
 import { currentMonthKey } from "@/lib/pure/date-keys";
 import type { Db } from "./transforms";
 import { loadEffectiveSalaryProfile } from "./salary";
+import { localDateStr } from "@/lib/utils/date";
 
 const HORIZON_MONTHS = 120; // covers the max 10-year projection window
 
@@ -83,7 +84,7 @@ async function _materialize(db: Db): Promise<void> {
     .from(schema.jobs);
   const salaryProfileActiveMap = await loadEffectiveSalaryProfile(db, null);
 
-  const todayStr = now.toISOString().slice(0, 10);
+  const todayStr = localDateStr(now);
   const jobsWithRules = (
     allJobs as {
       id: number;

@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { CheckCircle2 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
+import { localDateStr } from "@/lib/utils/date";
 import { AddTransactionForm } from "./add-transaction-form";
 import { PlannedTxForm, emptyTxForm, PlannedTransaction } from "./types";
 import { occurrenceKey } from "@/lib/pure/savings-projection";
@@ -51,7 +52,7 @@ export function FundTransactionList({
   updateTxPending?: boolean;
   canEdit?: boolean;
 }) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateStr();
   const upcomingCount = transactions.filter(
     (tx) => tx.transactionDate >= today,
   ).length;

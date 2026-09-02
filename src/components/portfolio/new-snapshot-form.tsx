@@ -12,6 +12,7 @@ import {
   personDisplayName,
 } from "@/lib/utils/format";
 import { taxTypeLabel } from "@/lib/utils/colors";
+import { localDateStr } from "@/lib/utils/date";
 import { getDisplayConfig } from "@/lib/config/account-types";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
@@ -195,7 +196,7 @@ export function NewSnapshotForm({
     },
   });
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateStr();
   const [snapshotDate, setSnapshotDate] = useState(today);
   const [notes, setNotes] = useState("");
   const [rows, setRows] = useState<AccountRow[] | null>(null);

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { localDateStr } from "@/lib/utils/date";
 
 function formatBytes(bytes: number | null): string {
   if (bytes === null || bytes === 0) return "—";
@@ -135,7 +136,7 @@ export default function VersionsPage() {
     // Optionally create a backup before restoring
     if (restoreCreateBackup) {
       await createMutation.mutateAsync({
-        name: `Pre-restore backup (${new Date().toISOString().split("T")[0]})`,
+        name: `Pre-restore backup (${localDateStr()})`,
         description: `Auto-created before restoring"${restoreTarget.name}"`,
       });
     }
@@ -153,9 +154,7 @@ export default function VersionsPage() {
       const blob = await res.blob();
       const disposition = res.headers.get("Content-Disposition") ?? "";
       const match = disposition.match(/filename="(.+)"/);
-      const filename =
-        match?.[1] ??
-        `ledgr-backup-${new Date().toISOString().split("T")[0]}.json`;
+      const filename = match?.[1] ?? `ledgr-backup-${localDateStr()}.json`;
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;

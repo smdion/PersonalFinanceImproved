@@ -7,6 +7,7 @@ import { Card, ProgressBar } from "@/components/ui/card";
 import { formatCurrency, formatNumber } from "@/lib/utils/format";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { sumBy } from "@/lib/utils/math";
+import { parseLocalDateOnly } from "@/lib/utils/date";
 import {
   projectGoalBalances,
   buildSettledOccurrencesSet,
@@ -123,7 +124,7 @@ function SavingsGoalsCardImpl() {
       const lastTx = goalTxs[goalTxs.length - 1] as
         { transactionDate: string; amount: number } | undefined;
       if (!lastTx) continue;
-      const lastTxDate = new Date(lastTx.transactionDate);
+      const lastTxDate = parseLocalDateOnly(lastTx.transactionDate);
       const monthsToSimulate = Math.max(
         1,
         (lastTxDate.getFullYear() - now.getFullYear()) * 12 +

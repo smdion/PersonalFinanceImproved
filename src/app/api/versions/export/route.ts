@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { auth } from "@/server/auth";
 import { exportBackup } from "@/lib/db/version-logic";
 import { log } from "@/lib/logger";
+import { localDateStr } from "@/lib/utils/date";
 
 // ALLOW_DEV_MODE is only honored in non-production environments — mirrors
 // the guard in src/server/trpc.ts (M16, .scratch/docs/review-findings.md).
@@ -34,7 +35,7 @@ export async function GET() {
 
     const backup = await exportBackup(db as Parameters<typeof exportBackup>[0]);
     const json = JSON.stringify(backup, null, 2);
-    const dateStr = new Date().toISOString().split("T")[0];
+    const dateStr = localDateStr();
 
     return new NextResponse(json, {
       status: 200,

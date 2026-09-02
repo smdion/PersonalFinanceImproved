@@ -8,6 +8,7 @@ import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { parseLocalDateOnly } from "@/lib/utils/date";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { HelpTip } from "@/components/ui/help-tip";
@@ -349,10 +350,10 @@ function HistoricalTable({
   // Current-year row for performance"last updated" display
   const currentRow = rows.find((r) => r.isCurrent);
   const perfLastUpdatedDisplay = currentRow?.perfLastUpdated
-    ? new Date(currentRow.perfLastUpdated).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      })
+    ? parseLocalDateOnly(currentRow.perfLastUpdated).toLocaleDateString(
+        "en-US",
+        { month: "short", day: "numeric" },
+      )
     : null;
 
   return (

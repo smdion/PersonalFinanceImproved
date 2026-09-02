@@ -15,6 +15,7 @@ import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { AccountMapping } from "@/lib/db/schema";
 import type { Db } from "./transforms";
+import { localDateStr } from "@/lib/utils/date";
 
 export type ApplyPullMappingResult =
   | { applied: false }
@@ -74,7 +75,7 @@ export async function applyPullMapping(
         .update(schema.mortgageLoans)
         .set({
           apiBalance: String(Math.abs(apiBalance)),
-          apiBalanceDate: new Date().toISOString().slice(0, 10),
+          apiBalanceDate: localDateStr(),
         })
         .where(eq(schema.mortgageLoans.id, loanId));
       return { applied: true, kind: "mortgageLoanBalance" };
