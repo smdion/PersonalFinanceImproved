@@ -345,7 +345,7 @@ export function SpendingStabilityChart({
                   {d.mc_p50 !== undefined && (
                     <div className="flex justify-between gap-4">
                       <span className="text-muted">Sim. median:</span>
-                      <span className="text-purple-400">
+                      <span className="text-purple-600">
                         {formatPercent(d.mc_p50 / 100, 1)}
                       </span>
                     </div>

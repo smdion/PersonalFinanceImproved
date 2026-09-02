@@ -336,12 +336,12 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
             </span>
           )}
           {!mcBandsByYear && mcPrefetchQuery.isFetching && (
-            <span className="text-micro text-purple-400 animate-pulse ml-2 normal-case font-normal">
+            <span className="text-micro text-purple-600 animate-pulse ml-2 normal-case font-normal">
               Simulating...
             </span>
           )}
           {hasMc && mcIsPrefetch && (
-            <span className="text-micro text-purple-400 ml-2 normal-case font-normal">
+            <span className="text-micro text-purple-600 ml-2 normal-case font-normal">
               Sim. preview
             </span>
           )}

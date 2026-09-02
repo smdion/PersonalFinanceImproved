@@ -109,18 +109,18 @@ export function ProjectionLoader({
             <PhaseChip
               phase={enginePhase}
               label="Projection engine"
-              activeColor="text-blue-400"
+              activeColor="text-blue-600"
             />
             {mcPhase !== "disabled" ? (
               <PhaseChip
                 phase={mcPhase}
                 label="Simulations"
-                activeColor="text-purple-400"
+                activeColor="text-purple-600"
               />
             ) : (
               <button
                 onClick={onRunMonteCarlo}
-                className="text-xs text-purple-400 hover:text-purple-300 font-medium"
+                className="text-xs text-purple-600 hover:text-purple-500 font-medium"
               >
                 + Run simulations
               </button>
@@ -129,7 +129,7 @@ export function ProjectionLoader({
               <PhaseChip
                 phase={coastFireMcPhase}
                 label="Coast FIRE simulations"
-                activeColor="text-amber-400"
+                activeColor="text-amber-700"
               />
             ) : (
               <button
@@ -155,20 +155,20 @@ export function ProjectionLoader({
           <PhaseChip
             phase={enginePhase}
             label="Projection engine"
-            activeColor="text-blue-400"
+            activeColor="text-blue-600"
           />
           {mcPhase !== "disabled" ? (
             <PhaseChip
               phase={mcPhase}
               label="Simulations"
-              activeColor="text-purple-400"
+              activeColor="text-purple-600"
             />
           ) : null}
           {coastFireMcPhase !== "disabled" ? (
             <PhaseChip
               phase={coastFireMcPhase}
               label="Coast FIRE simulations"
-              activeColor="text-amber-400"
+              activeColor="text-amber-700"
             />
           ) : null}
         </div>
@@ -199,7 +199,7 @@ function PhaseChip({
           phase === "active"
             ? activeColor
             : phase === "done"
-              ? "text-green-500"
+              ? "text-green-600"
               : "text-faint"
         }`}
       >
