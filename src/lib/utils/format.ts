@@ -74,7 +74,7 @@ export function formatPercent(value: number, decimals = 0): string {
  */
 export function formatDate(
   value: string | Date,
-  preset: "short" | "medium" | "default" = "default",
+  preset: "short" | "medium" | "long" | "default" = "default",
 ): string {
   // Append T00:00:00 to date-only strings (e.g. "2020-11-01") to avoid timezone shift.
   // Don't append if the string already has a time component (ISO format from JSON serialization).
@@ -91,6 +91,12 @@ export function formatDate(
     case "medium":
       return date.toLocaleDateString("en-US", {
         month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    case "long":
+      return date.toLocaleDateString("en-US", {
+        month: "long",
         day: "numeric",
         year: "numeric",
       });

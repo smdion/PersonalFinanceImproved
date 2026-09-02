@@ -1,3 +1,5 @@
+import { formatDate } from "@/lib/utils/format";
+
 /** Print-only cover header for the retirement advisor report (R42).
  *  Mounted only when reportMode === "advisor" (see index.tsx) — hidden on
  *  screen, visible when printing, via the `hidden print:block` wrapper the
@@ -14,12 +16,7 @@ export function ReportHeader({
       <h1 className="text-2xl font-semibold">Retirement Projection Report</h1>
       <div className="mt-1 text-sm text-muted">
         {peopleNames.length > 0 && <span>{peopleNames.join(" & ")} — </span>}
-        Generated{" "}
-        {generatedAt.toLocaleDateString(undefined, {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        })}
+        Generated {formatDate(generatedAt, "long")}
       </div>
     </div>
   );

@@ -114,6 +114,11 @@ describe("formatDate", () => {
     expect(formatDate("2026-06-15", "medium")).toBe("Jun 15, 2026");
   });
 
+  it("formats with the 'long' preset as Month D, YYYY (spelled-out month)", () => {
+    expect(formatDate("2026-01-05", "long")).toBe("January 5, 2026");
+    expect(formatDate("2026-06-15", "long")).toBe("June 15, 2026");
+  });
+
   it("formats with the 'default' preset as locale MM/DD/YYYY", () => {
     // en-US locale — "1/5/2026"
     expect(formatDate("2026-01-05")).toMatch(/1\/5\/2026/);
