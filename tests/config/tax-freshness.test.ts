@@ -173,27 +173,12 @@ describe("tax_brackets seed data structural invariants", () => {
     expect(rows.length).toBeGreaterThan(0);
   });
 
-  // KNOWN, TRACKED EXCEPTION (R58, see seed-reference-data.sql comment above
-  // the tax_brackets INSERT): the MFJ rows hold real 2026 data duplicated
-  // onto the 2025 row too, while the Single/HOH rows hold real 2025 data
-  // duplicated onto the 2026 row too. That means each row's nominal
-  // tax_year doesn't match its actual source year for exactly these three
-  // (year, status) pairs — the adjustment-consistency checks below correctly
-  // flag them against their nominal year's standard deduction, so they're
-  // excluded here rather than fixed (fixing requires real, externally
-  // verified 2025 MFJ / 2026 Single/HOH bracket tables not available with
-  // confidence). Excluding a KNOWN mismatch keeps the test able to catch any
-  // NEW/different corruption — this is not a blanket suppression.
-  const KNOWN_MISLABELED: Array<{ taxYear: number; filingStatus: string }> = [
-    { taxYear: 2025, filingStatus: "MFJ" },
-    { taxYear: 2026, filingStatus: "Single" },
-    { taxYear: 2026, filingStatus: "HOH" },
-  ];
-  function isKnownMislabeled(row: SeedBracketRow): boolean {
-    return KNOWN_MISLABELED.some(
-      (k) => k.taxYear === row.taxYear && k.filingStatus === row.filingStatus,
-    );
-  }
+  // R58 RESOLVED (2026-09-01): the 2025/2026 rows were byte-identical twins
+  // (MFJ rows held real 2026 on both years; Single/HOH held real 2025 on
+  // both). All 12 rows are now transcribed from the official IRS Pub 15-T
+  // PDFs (p15t--2025.pdf, p15t--2026.pdf) — see seed-reference-data.sql's
+  // comment above the tax_brackets INSERT. No exclusions any more: every row
+  // must satisfy every invariant below.
 
   it("every row's thresholds strictly increase", () => {
     for (const row of rows) {
@@ -206,10 +191,35 @@ describe("tax_brackets seed data structural invariants", () => {
     }
   });
 
+  it("every row's rates are the 7 statutory brackets in order (0/10/12/22/24/32/35/37)", () => {
+    for (const row of rows) {
+      expect(
+        row.brackets.map((b) => b.rate),
+        `${row.taxYear} ${row.filingStatus} w4_checkbox=${row.w4Checkbox}`,
+      ).toEqual([0, 0.1, 0.12, 0.22, 0.24, 0.32, 0.35, 0.37]);
+    }
+  });
+
+  it("every row's tentative amount is forward-cascade consistent (base[i] = base[i-1] + rate[i-1] * threshold delta)", () => {
+    for (const row of rows) {
+      for (let i = 2; i < row.brackets.length; i++) {
+        const prev = row.brackets[i - 1]!;
+        const cur = row.brackets[i]!;
+        const expected =
+          prev.baseWithholding + prev.rate * (cur.threshold - prev.threshold);
+        // IRS rounds the published tentative amounts to the cent, and the
+        // checkbox schedule halves already-rounded standard figures, so allow
+        // a $1 slack rather than exact equality.
+        expect(
+          Math.abs(cur.baseWithholding - expected),
+          `${row.taxYear} ${row.filingStatus} w4_checkbox=${row.w4Checkbox}: bracket ${i} base ${cur.baseWithholding} vs cascade ${expected.toFixed(2)}`,
+        ).toBeLessThanOrEqual(1);
+      }
+    }
+  });
+
   it("w4_checkbox=true rows: second bracket threshold = standardDeduction / 2", () => {
-    for (const row of rows.filter(
-      (r) => r.w4Checkbox && !isKnownMislabeled(r),
-    )) {
+    for (const row of rows.filter((r) => r.w4Checkbox)) {
       const sd = standardDeductions.get(`${row.taxYear}:${row.filingStatus}`);
       if (sd === undefined) continue;
       expect(
@@ -220,9 +230,7 @@ describe("tax_brackets seed data structural invariants", () => {
   });
 
   it("w4_checkbox=false rows: standardDeduction - second bracket threshold = W-4 Worksheet 1A adjustment", () => {
-    for (const row of rows.filter(
-      (r) => !r.w4Checkbox && !isKnownMislabeled(r),
-    )) {
+    for (const row of rows.filter((r) => !r.w4Checkbox)) {
       const sd = standardDeductions.get(`${row.taxYear}:${row.filingStatus}`);
       if (sd === undefined) continue;
       expect(
