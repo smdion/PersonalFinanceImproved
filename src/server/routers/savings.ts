@@ -78,6 +78,7 @@ import type {
   BudgetTransaction,
 } from "@/lib/budget-api";
 import { currentMonthKey } from "@/lib/pure/date-keys";
+import { resolveTaxParams } from "@/lib/config/tax-params";
 
 /**
  * Compute the current net-pay-per-check for a job by running the paycheck
@@ -116,7 +117,6 @@ export async function computeJobNetPayPerCheck(
   payPeriod: PayPeriod;
   anchorPayDate: string | null;
 }> {
-  const taxYear = new Date().getFullYear();
   const asOfDate = new Date();
 
   const [job] = await db
@@ -130,17 +130,15 @@ export async function computeJobNetPayPerCheck(
     });
 
   const [
-    allBrackets,
+    allBracketRows,
     rawJobDeductions,
     rawJobContribs,
     rawPersonalContribs,
-    allLimits,
+    allLimitRows,
     activeContribSetting,
+    allTaxParams,
   ] = await Promise.all([
-    db
-      .select()
-      .from(schema.taxBrackets)
-      .where(eq(schema.taxBrackets.taxYear, taxYear)),
+    db.select().from(schema.taxBrackets),
     db
       .select()
       .from(schema.paycheckDeductions)
@@ -164,15 +162,33 @@ export async function computeJobNetPayPerCheck(
           eq(schema.contributionAccounts.isActive, true),
         ),
       ),
-    db
-      .select()
-      .from(schema.contributionLimits)
-      .where(eq(schema.contributionLimits.taxYear, taxYear)),
+    db.select().from(schema.contributionLimits),
     db
       .select()
       .from(schema.appSettings)
       .where(eq(schema.appSettings.key, SK_ACTIVE_CONTRIB_PROFILE_ID)),
+    db.select().from(schema.taxParams),
   ]);
+
+  // R43: one resolver, same as the retirement engine + paycheck. This path
+  // is always "current year" (no override), so requestedYear is undefined
+  // => newest enacted; `onMissing: "nearest"` is moot but keeps it robust
+  // if the current calendar year has no rows yet (Jan before the seed lands).
+  const resolvedTax = resolveTaxParams(
+    {
+      vintage: allTaxParams,
+      contributionLimits: allLimitRows,
+      withholdingBrackets: allBracketRows,
+      ltcgBrackets: [],
+      irmaaBrackets: [],
+      fpl: [],
+    },
+    undefined,
+    { onMissing: "nearest" },
+  );
+  const allBrackets = allBracketRows.filter(
+    (b) => b.taxYear === resolvedTax.resolvedYear,
+  );
 
   // Accounts carry no contribution value of their own — resolve against the
   // globally-ACTIVE Contribution Profile (not a Plan pin/session override),
@@ -217,13 +233,8 @@ export async function computeJobNetPayPerCheck(
     salaryProfileActiveMap,
   )[0]!;
 
-  const limitsMap = new Map<string, number>();
-  const limitsRecord: Record<string, number> = {};
-  for (const l of allLimits) {
-    const v = toNumber(l.value);
-    limitsMap.set(l.limitType, v);
-    limitsRecord[l.limitType] = v;
-  }
+  const limitsRecord: Record<string, number> = resolvedTax.limits;
+  const limitsMap = new Map<string, number>(Object.entries(limitsRecord));
 
   const bracketRow = allBrackets.find(
     (b) =>

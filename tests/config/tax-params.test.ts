@@ -195,6 +195,16 @@ describe("resolveTaxParams — onMissing contract", () => {
     expect(r.resolvedYear).toBe(2025);
   });
 
+  it('onMissing "null" returns null for a year with no data (paycheck)', () => {
+    expect(
+      resolveTaxParams(seedRows(), 2024, { onMissing: "null" }),
+    ).toBeNull();
+    // an exact hit still resolves normally
+    expect(
+      resolveTaxParams(seedRows(), 2026, { onMissing: "null" })?.resolvedYear,
+    ).toBe(2026);
+  });
+
   it("throws when there is no reference data at all", () => {
     const empty: TaxParamsRowSets = {
       vintage: [],

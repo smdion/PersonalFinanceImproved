@@ -93,8 +93,16 @@ export interface TaxParamsRowSets {
 }
 
 export interface ResolveTaxParamsOptions {
-  /** How to handle a `requestedYear` that has no data. Default "nearest". */
-  onMissing?: "throw" | "nearest";
+  /**
+   * How to handle a `requestedYear` that has no data. Default "nearest".
+   *  - "nearest" (retirement): newest year <= requestedYear, else oldest.
+   *  - "throw"   : reject.
+   *  - "null"    (paycheck): return `null` so the caller can degrade
+   *               gracefully — the paycheck year selector lets a user pick
+   *               a year with no seeded tables, and the contract there is
+   *               "show empty, never another year's figures".
+   */
+  onMissing?: "throw" | "nearest" | "null";
 }
 
 // ── Output shape ─────────────────────────────────────────────────────
@@ -142,8 +150,8 @@ function candidateYears(rows: TaxParamsRowSets): number[] {
 function pickYear(
   years: number[],
   requestedYear: number | undefined,
-  onMissing: "throw" | "nearest",
-): number {
+  onMissing: "throw" | "nearest" | "null",
+): number | null {
   if (years.length === 0) {
     throw new Error(
       "resolveTaxParams: no tax reference data present (contribution_limits / tax_brackets / … are all empty)",
@@ -156,17 +164,30 @@ function pickYear(
       `resolveTaxParams: no tax data for year ${requestedYear} (have ${years.join(", ")})`,
     );
   }
+  if (onMissing === "null") return null;
   const earlier = years.filter((y) => y <= requestedYear);
   return earlier.length > 0 ? earlier[earlier.length - 1]! : years[0]!;
 }
 
+// Overloads: only `onMissing: "null"` can return null.
+export function resolveTaxParams(
+  rows: TaxParamsRowSets,
+  requestedYear: number | undefined,
+  opts: { onMissing: "null" },
+): ResolvedTaxParams | null;
+export function resolveTaxParams(
+  rows: TaxParamsRowSets,
+  requestedYear?: number,
+  opts?: { onMissing?: "throw" | "nearest" },
+): ResolvedTaxParams;
 export function resolveTaxParams(
   rows: TaxParamsRowSets,
   requestedYear?: number,
   opts: ResolveTaxParamsOptions = {},
-): ResolvedTaxParams {
+): ResolvedTaxParams | null {
   const onMissing = opts.onMissing ?? "nearest";
   const resolvedYear = pickYear(candidateYears(rows), requestedYear, onMissing);
+  if (resolvedYear == null) return null;
 
   const version =
     rows.vintage.find((v) => v.taxYear === resolvedYear)?.version ?? 0;

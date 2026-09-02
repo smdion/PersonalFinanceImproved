@@ -45,6 +45,7 @@ import type {
 } from "@/lib/calculators/types";
 import { computeHouseholdTax } from "@/lib/pure/tax";
 import { findActiveJob } from "@/lib/pure/profiles";
+import { resolveTaxParams } from "@/lib/config/tax-params";
 
 /** Build TaxBracketInput from DB bracket row + limits. */
 export function buildBracketInput(
@@ -121,7 +122,7 @@ export const paycheckRouter = createTRPCRouter({
           salaryActiveFields: z
             .array(z.object({ personId: z.number(), salary: z.number() }))
             .optional(),
-          taxYearOverride: z.number().int().optional(),
+          taxYearOverride: z.number().int().min(2000).max(2100).optional(),
           contributionProfileId: z.number().int().optional(),
           salaryProfileId: z.number().int().optional(),
           /** The What-If tab's hand-edited salary/bonus entries — highest
@@ -150,14 +151,14 @@ export const paycheckRouter = createTRPCRouter({
           e.amountPerPeriod,
         ]),
       );
-      const taxYear = input?.taxYearOverride ?? new Date().getFullYear();
       const [
         people,
         allJobs,
         allDeductions,
         allContribs,
-        allLimits,
-        allBrackets,
+        allLimitRows,
+        allBracketRows,
+        allTaxParams,
       ] = await Promise.all([
         ctx.db.select().from(schema.people).orderBy(asc(schema.people.id)),
         ctx.db.select().from(schema.jobs),
@@ -166,21 +167,39 @@ export const paycheckRouter = createTRPCRouter({
           .select()
           .from(schema.contributionAccounts)
           .where(eq(schema.contributionAccounts.isActive, true)),
-        ctx.db
-          .select()
-          .from(schema.contributionLimits)
-          .where(eq(schema.contributionLimits.taxYear, taxYear)),
-        ctx.db
-          .select()
-          .from(schema.taxBrackets)
-          .where(eq(schema.taxBrackets.taxYear, taxYear)),
+        ctx.db.select().from(schema.contributionLimits),
+        ctx.db.select().from(schema.taxBrackets),
+        ctx.db.select().from(schema.taxParams),
       ]);
 
-      const limitsMap = new Map<string, number>();
-      for (const l of allLimits) limitsMap.set(l.limitType, toNumber(l.value));
+      // R43: one resolver, same as the retirement engine — but "null" on a
+      // missing year (not "throw"/"nearest"): the paycheck year selector
+      // lets a user pick a year with no seeded tables, and the contract is
+      // "show empty, never another year's figures" (a person entry still
+      // renders, with paycheck/tax null). `taxYearOverride` undefined =>
+      // newest enacted year.
+      const resolvedTax = resolveTaxParams(
+        {
+          vintage: allTaxParams,
+          contributionLimits: allLimitRows,
+          withholdingBrackets: allBracketRows,
+          ltcgBrackets: [],
+          irmaaBrackets: [],
+          fpl: [],
+        },
+        input?.taxYearOverride,
+        { onMissing: "null" },
+      );
+      const taxYear =
+        resolvedTax?.resolvedYear ??
+        input?.taxYearOverride ??
+        new Date().getFullYear();
+      const allBrackets = resolvedTax
+        ? allBracketRows.filter((b) => b.taxYear === resolvedTax.resolvedYear)
+        : [];
 
-      const limitsRecord: Record<string, number> = {};
-      for (const l of allLimits) limitsRecord[l.limitType] = toNumber(l.value);
+      const limitsRecord: Record<string, number> = resolvedTax?.limits ?? {};
+      const limitsMap = new Map<string, number>(Object.entries(limitsRecord));
 
       // Salary and contribution overrides are two independent axes.
       // Precedence for salary: Plan/session overrides (already in the map,
@@ -577,6 +596,14 @@ export const paycheckRouter = createTRPCRouter({
         }
       }
 
-      return { people: results, jointContribs, householdTax };
+      return {
+        people: results,
+        jointContribs,
+        householdTax,
+        // R43: the tax-data vintage this summary was priced under — for a
+        // "Tax data: YYYY" indicator, matching the retirement projection side.
+        taxYear,
+        taxParamsVersion: resolvedTax?.version ?? 0,
+      };
     }),
 });
