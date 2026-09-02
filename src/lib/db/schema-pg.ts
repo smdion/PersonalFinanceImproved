@@ -1361,10 +1361,15 @@ export const retirementSettings = pgTable(
   "retirement_settings",
   {
     id: serial("id").primaryKey(),
+    // NOT bare .unique() any more (Retirement Profiles step C — advisor
+    // reviewed 2026-08-30). One row per person, PER PROFILE, not one row
+    // per person system-wide — see the composite unique index below. This
+    // is what makes a second retirement profile able to hold genuinely
+    // different household settings; without it there was nowhere to put a
+    // duplicated profile's row (unique(person_id) forbade the INSERT).
     personId: integer("person_id")
       .notNull()
-      .references(() => people.id, { onDelete: "restrict" })
-      .unique(),
+      .references(() => people.id, { onDelete: "restrict" }),
     retirementAge: integer("retirement_age").notNull(),
     endAge: integer("end_age").notNull(),
     returnAfterRetirement: decimal("return_after_retirement", {
@@ -1431,6 +1436,20 @@ export const retirementSettings = pgTable(
     withdrawalStrategy: varchar("withdrawal_strategy", { length: 30 })
       .notNull()
       .default("fixed"),
+    /** R55 follow-up: within the cost-ranked tier (beyond the Traditional
+     *  bracket-fill target), which of Roth basis / brokerage's 0%-LTCG room
+     *  drains first. "roth_first" (default) matches all pre-existing
+     *  behavior. "brokerage_first" is an explicit household opt-in — a
+     *  brokerage LTCG gain still counts toward MAGI for ACA/IRMAA purposes
+     *  even when taxed at 0% federally, so this trades a real ACA/IRMAA
+     *  cost (when either awareness setting is on) for using the "use it or
+     *  lose it" annual 0%-LTCG allowance sooner — an explicit, user-chosen
+     *  tradeoff (with UI warning text), not an automatic optimization. */
+    discretionaryWithdrawalOrder: varchar("discretionary_withdrawal_order", {
+      length: 20,
+    })
+      .notNull()
+      .default("roth_first"),
     /** G-K: upper guardrail — if currentRate < initialRate × this, increase spending (e.g. 0.80). */
     gkUpperGuardrail: decimal("gk_upper_guardrail", {
       precision: 8,
@@ -1555,8 +1574,164 @@ export const retirementSettings = pgTable(
      *  stays in place until this column is reliably non-null for every
      *  household, but no new row can be inserted without one. */
     filingStatus: text("filing_status").$type<W4FilingStatus>().notNull(),
+
+    // --- Retirement Profiles migration, step A (expand) ---------------------
+    // Added additively; nothing reads them yet (step B switches the reads).
+    // See .scratch/docs/plans — "Making Retirement a First-Class Profile".
+
+    /** The profile this row belongs to. Together with `person_id` this is
+     *  now the row's real key (see the composite unique index below,
+     *  replacing the old bare unique(person_id) — step C, 2026-08-30): one
+     *  row per person PER PROFILE, which is what lets two profiles hold
+     *  genuinely different household settings.
+     *
+     *  Still nullable, not NOT NULL — `retirementSettings.upsert`
+     *  (server/routers/retirement.ts) explicitly resolves and sets it on
+     *  every write (falling back to `isNull` scoping, never a bare
+     *  personId match, when no profile resolves), and a null value can't
+     *  weaken the unique index (Postgres/SQLite both treat NULL as
+     *  non-equal there), so there is no correctness gap. Made NOT NULL
+     *  ONLY as part of the v0.8.0 squash: SQLite has no ALTER COLUMN SET NOT
+     *  NULL, so tightening this now would force the exact table-recreate
+     *  path this schema has otherwise avoided since step A. */
+    profileId: integer("profile_id").references(() => retirementProfiles.id, {
+      onDelete: "cascade",
+    }),
+
+    /** Distribution tax rates, relocated from `retirement_scenarios` — a
+     *  table with live engine reads but ZERO UI (its CRUD router has no
+     *  callers), so these values changed every projection while being
+     *  invisible and uneditable. Backfilled from the `is_selected` row.
+     *
+     *  Household-grain, so every person's row carries the same value, matching
+     *  how the other household columns here already behave.
+     *
+     *  DELIBERATELY NULLABLE, against the usual "NOT NULL on financial amount
+     *  columns" convention. Today's read is `selectedScenario ? rate : 0` —
+     *  i.e. no selected row means 0, NOT the DEFAULT_TAX_RATE_* constants.
+     *  Backfilling a literal 0 would preserve behaviour but permanently
+     *  destroy the difference between "the household chose 0%" and "there was
+     *  no row", and the open question of whether these should actually be the
+     *  defaults needs that distinction to remain answerable. So: null means
+     *  absent, and the read stays `!= null ? rate : 0` — byte-identical
+     *  output, no information laundered away.
+     *
+     *  NOTE: `retirement_scenarios.withdrawal_rate` is deliberately NOT
+     *  relocated here. `retirement_settings.withdrawal_rate` (line ~1400)
+     *  already exists, is NOT NULL, and is read in eight+ places; the
+     *  scenarios one is a different value overriding it in exactly one
+     *  consumer (the relocation tool). Collapsing them is correct eventually
+     *  but is a user-visible behaviour change, not a behaviour-neutral
+     *  relocation, so it gets its own change and its own justification. */
+    distributionTaxRateTraditional: decimal(
+      "distribution_tax_rate_traditional",
+      {
+        precision: 8,
+        scale: 6,
+      },
+    ),
+    distributionTaxRateRoth: decimal("distribution_tax_rate_roth", {
+      precision: 8,
+      scale: 6,
+    }),
+    distributionTaxRateHsa: decimal("distribution_tax_rate_hsa", {
+      precision: 8,
+      scale: 6,
+    }),
+    distributionTaxRateBrokerage: decimal("distribution_tax_rate_brokerage", {
+      precision: 8,
+      scale: 6,
+    }),
   },
-  (table) => [index("retirement_settings_person_id_idx").on(table.personId)],
+  (table) => [
+    index("retirement_settings_person_id_idx").on(table.personId),
+    index("retirement_settings_profile_id_idx").on(table.profileId),
+    // Replaces the old bare unique(person_id). profile_id stays nullable
+    // (Postgres/SQLite both treat NULL as non-equal in a unique index, so
+    // this can't be weakened by a null profile_id — every write path sets
+    // one) rather than made NOT NULL now, which would force SQLite's
+    // recreate-table path for no benefit; that tightening folds into the
+    // v0.8.0 squash alongside the rest of the deferred contract step.
+    uniqueIndex("retirement_settings_profile_person_unq").on(
+      table.profileId,
+      table.personId,
+    ),
+  ],
+);
+
+/**
+ * Retirement Profiles — the named, swappable entity.
+ *
+ * Thin parent matching `contribution_profiles` / `salary_profiles`: id, name,
+ * description, created_at. The assumptions themselves stay on
+ * `retirement_settings` (re-keyed to `profile_id`) rather than moving into a
+ * JSON payload like its siblings, because 24 of those columns are typed
+ * decimals with explicit precision — moving them to JSON would turn financial
+ * rates into floats and discard every validator and default binding.
+ *
+ * Each profile is a COMPLETE world: no baseline, no default profile, no
+ * inheritance, no merge at read time. Same contract Salary Profiles already
+ * state ("no fallback to a job record: if you want a different number, use a
+ * different profile").
+ */
+export const retirementProfiles = pgTable("retirement_profiles", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  description: text("description"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/**
+ * Per-person retirement assumptions within a profile.
+ *
+ * Only the fields the engine genuinely reads per person live here. Everything
+ * else is household-grain and stays on `retirement_settings` — see the design
+ * plan's §01 for why the household/per-person line falls where it does.
+ *
+ * `end_age` is here because the engine reads it per person
+ * (`Math.max(...perPersonSettings.map(p => p.endAge))` →
+ * `projectionEndAge`), which is also what made the household "Plan Through"
+ * control silently discard edits before commit 0b5d5fe.
+ *
+ * COMPLETENESS INVARIANT: every profile must hold a row for every person.
+ * With no baseline to fall back to, a missing row is a missing retirement
+ * age — not a number the engine can invent. Enforced on profile create,
+ * duplicate, person create (fan a row into every existing profile — the one
+ * that gets forgotten), and person delete.
+ */
+export const retirementProfilePeople = pgTable(
+  "retirement_profile_people",
+  {
+    id: serial("id").primaryKey(),
+    profileId: integer("profile_id")
+      .notNull()
+      .references(() => retirementProfiles.id, { onDelete: "cascade" }),
+    personId: integer("person_id")
+      .notNull()
+      .references(() => people.id, { onDelete: "cascade" }),
+    retirementAge: integer("retirement_age").notNull(),
+    endAge: integer("end_age").notNull(),
+    socialSecurityMonthly: decimal("social_security_monthly", {
+      precision: 14,
+      scale: 2,
+    }),
+    ssStartAge: integer("ss_start_age"),
+    ruleOf55Override: boolean("rule_of_55_override"),
+    salaryAnnualIncrease: decimal("salary_annual_increase", {
+      precision: 8,
+      scale: 6,
+    }),
+  },
+  (table) => [
+    uniqueIndex("retirement_profile_people_profile_person_unq").on(
+      table.profileId,
+      table.personId,
+    ),
+    index("retirement_profile_people_profile_id_idx").on(table.profileId),
+    index("retirement_profile_people_person_id_idx").on(table.personId),
+  ],
 );
 
 export const retirementSalaryOverrides = pgTable(
@@ -1776,7 +1951,12 @@ export const irmaaBrackets = pgTable(
 export type ApiConfig = Record<string, string | undefined>;
 
 export type AccountMapping = {
-  localId?: string; // "performance:{id}" | "asset:{id}" | "mortgage:{loanId}:{type}" (legacy prefix format)
+  // "performance:{id}" | "asset:{id}" | "mortgage:{loanId}:{type}" (legacy
+  // prefix format) | "cash" | "creditCard" (fixed pseudo-accounts — many
+  // mappings can share these two values, summed by getEffectiveCash /
+  // getEffectiveCreditCardDebt; never resolve to a single Ledgr row the
+  // way the others do, and applyPullMapping skips them on purpose).
+  localId?: string;
   localName: string; // Cached display name (UI only, not for resolution)
   remoteAccountId: string;
   syncDirection: "pull" | "push" | "both";
@@ -2047,6 +2227,15 @@ export const scenarios = pgTable(
       () => salaryProfiles.id,
       { onDelete: "set null" },
     ),
+    /** Sets which Retirement Profile is active for this Plan — the fourth
+     *  profile axis, alongside budget/contribution/salary above. `null` means
+     *  this Plan sets nothing for retirement and resolution falls through to
+     *  the global active profile; never backfill it to a real id, which would
+     *  convert "sets nothing" into "sets profile 1" for every existing Plan. */
+    retirementProfileId: integer("retirement_profile_id").references(
+      () => retirementProfiles.id,
+      { onDelete: "set null" },
+    ),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -2060,6 +2249,7 @@ export const scenarios = pgTable(
       table.contributionProfileId,
     ),
     index("scenarios_salary_profile_id_idx").on(table.salaryProfileId),
+    index("scenarios_retirement_profile_id_idx").on(table.retirementProfileId),
   ],
 );
 

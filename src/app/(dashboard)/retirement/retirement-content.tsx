@@ -17,8 +17,11 @@ import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
+import { useActiveRetirementProfile } from "@/lib/hooks/use-active-retirement-profile";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
+import { useUser, isAdmin } from "@/lib/context/user-context";
 import { ProjectionCard } from "@/components/cards/projection";
+import { AssumptionsBand } from "@/components/retirement/assumptions-band";
 
 // Code-split the recharts-heavy withdrawal comparison card (v0.5
 // expert-review M8). Loads on retirement page mount; ssr:false because
@@ -34,10 +37,35 @@ import { CardBoundary } from "@/components/cards/dashboard/utils";
 import { PlanHealthCard } from "@/components/cards/plan-health";
 
 export function RetirementContent() {
+  const user = useUser();
+  const admin = isAdmin(user);
+  const utils = trpc.useUtils();
   const [pageTab, setPageTab] = useState<
     "projection" | "comparison" | "planHealth"
   >("projection");
   const [dollarMode, setDollarMode] = useState<"nominal" | "real">("real");
+  // Retirement Profile axis (phase 4, the assumptions band) — same
+  // three-tier resolution as Contribution/Salary above: Plan pin -> this
+  // page's local viewing selection -> globally-active profile. Unlike
+  // those two, retirement previously had NO "view without activating"
+  // support server-side; retirementProfileId in baseInput below is what
+  // adds it (build-engine-payload.ts, phase 4).
+  const [activeRetirementId, setActiveRetirementId] =
+    useActiveRetirementProfile();
+  const retirementProfilesQuery =
+    trpc.retirement.retirementProfiles.list.useQuery();
+  const retirementProfiles = retirementProfilesQuery.data ?? [];
+  const [viewingRetirementId, setViewingRetirementId] = useState<number | null>(
+    null,
+  );
+  const {
+    profileId: effectiveRetirementProfileId,
+    source: retirementProfileSource,
+  } = useEffectiveProfileId("retirement", {
+    validIds: retirementProfiles.map((p) => p.id),
+    localSelection: viewingRetirementId,
+    globalDefaultId: activeRetirementId,
+  });
   const salaryActiveFields = useActiveSalaries();
   // Read-only here — the editor for these moved to the Budget page's
   // Retirement Profile tab (retirement-profile-tab.tsx), which writes the
@@ -110,6 +138,9 @@ export function RetirementContent() {
         ? { decumulationExpenseOverride: parseFloat(decExpenseOverride) }
         : {}),
       ...(snapshotId != null ? { snapshotId } : {}),
+      ...(effectiveRetirementProfileId != null
+        ? { retirementProfileId: effectiveRetirementProfileId }
+        : {}),
     }),
     [
       salaryActiveFields,
@@ -119,6 +150,7 @@ export function RetirementContent() {
       decBudgetCol,
       decExpenseOverride,
       snapshotId,
+      effectiveRetirementProfileId,
     ],
   );
   const engineInput = useMemo(
@@ -173,7 +205,7 @@ export function RetirementContent() {
     );
   }
 
-  const { settings, people: peopleLookup } = data;
+  const { settings, people: peopleLookup, perPersonSettings } = data;
 
   // Resolve active budget column label for subtitle
   const accProfileSummary = data.budgetProfileSummaries?.find(
@@ -327,6 +359,21 @@ export function RetirementContent() {
         )
       ) : (
         <>
+          <AssumptionsBand
+            settings={settings}
+            perPersonSettings={perPersonSettings}
+            profiles={retirementProfiles}
+            viewingProfileId={effectiveRetirementProfileId}
+            onViewingProfileChange={setViewingRetirementId}
+            activeProfileId={activeRetirementId}
+            onActivate={(id) => {
+              setActiveRetirementId(id);
+              utils.projection.invalidate();
+            }}
+            effectiveSource={retirementProfileSource}
+            admin={admin}
+          />
+
           {/* Contribution / Distribution Engine — primary view */}
           <CardBoundary title="Retirement Projection">
             <ProjectionCard
@@ -340,6 +387,7 @@ export function RetirementContent() {
               parentCategoryFilter="Retirement"
               contributionProfileId={effectiveContribProfileId ?? undefined}
               salaryProfileId={effectiveSalaryProfileId ?? undefined}
+              retirementProfileId={effectiveRetirementProfileId ?? undefined}
               snapshotId={snapshotId ?? undefined}
               dollarMode={dollarMode}
               onDollarModeChange={setDollarMode}

@@ -259,6 +259,34 @@ export default function SavingsPage() {
         )
       : maxMonthlyFunding;
 
+  // The exact Contribution/Salary Profile selection `paycheckData` (and so
+  // recalcMaxMonthlyFunding/maxMonthlyFunding) was computed from — threaded
+  // into recalculateAllocation/lockInAllocationPercent's mutation calls so
+  // the server-side live-pool recompute can't silently diverge from what
+  // this same preview just showed (found live, 2026-08-31 — the mutation
+  // previously always used the household's globally-active Contribution/
+  // Salary Profile regardless of what was actually selected here, so a
+  // household with any non-default selection saw "Pull in new pay" report
+  // success while the persisted value never moved). Not tied to
+  // effectiveRecalcProfileId — that's the BUDGET-side profile being
+  // previewed, orthogonal to which Contribution/Salary Profile computes
+  // take-home pay.
+  const recalcIncomeParams = {
+    ...(effectiveContribProfileId != null
+      ? { contributionProfileId: effectiveContribProfileId }
+      : {}),
+    ...(effectiveSalaryProfileId != null
+      ? { salaryProfileId: effectiveSalaryProfileId }
+      : {}),
+    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
+    // Threaded through so budget.computeActiveSummary's OWN per-column
+    // resolution (inside computeLiveMaxMonthlyFunding, savings.ts) matches
+    // exactly what this page's own maxMonthlyFunding query above used —
+    // not just a single resolved id (found live, 2026-08-31, round two).
+    contributionProfileTiers: contributionProfileTiers,
+    salaryProfileTiers: salaryProfileTiers,
+  };
+
   // ── Cross-section coordination ──
   const apiSync = useApiSync();
   const [editingMonth, setEditingMonth] = useState<Date | null>(null);
@@ -447,8 +475,7 @@ export default function SavingsPage() {
           id: goalId,
           current: goal.current,
           monthlyAllocation: baseAllocation,
-          isApiSyncEnabled: raw?.isApiSyncEnabled,
-          apiCategoryId: raw?.apiCategoryId,
+          currentMonthBudgeted: raw?.currentMonthBudgeted,
         },
         {
           now,
@@ -777,6 +804,7 @@ export default function SavingsPage() {
                                     recalcMaxMonthlyFunding,
                                     undefined,
                                     effectiveRecalcProfileId ?? undefined,
+                                    recalcIncomeParams,
                                   )
                                 }
                                 disabled={
@@ -796,6 +824,7 @@ export default function SavingsPage() {
                                     recalcMaxMonthlyFunding,
                                     undefined,
                                     effectiveRecalcProfileId ?? undefined,
+                                    recalcIncomeParams,
                                   )
                                 }
                                 disabled={
@@ -993,6 +1022,7 @@ export default function SavingsPage() {
               recalculateAllocation={apiSync.recalculateAllocation}
               lockInAllocationPercent={apiSync.lockInAllocationPercent}
               recalcProfileId={effectiveRecalcProfileId}
+              recalcIncomeParams={recalcIncomeParams}
               callbacksRef={fundCallbacksRef}
               showNewFund={showNewFund}
               setShowNewFund={setShowNewFund}
@@ -1027,6 +1057,8 @@ export default function SavingsPage() {
         setPendingRecalcGoalId={apiSync.setPendingRecalcGoalId}
         pendingRecalcProfileId={apiSync.pendingRecalcProfileId}
         setPendingRecalcProfileId={apiSync.setPendingRecalcProfileId}
+        pendingRecalcIncome={apiSync.pendingRecalcIncome}
+        setPendingRecalcIncome={apiSync.setPendingRecalcIncome}
         recalculateMutation={apiSync.recalculateAllocation}
         lockInPreviewItems={apiSync.lockInPreviewItems}
         setLockInPreviewItems={apiSync.setLockInPreviewItems}
@@ -1034,6 +1066,8 @@ export default function SavingsPage() {
         setPendingLockInGoalId={apiSync.setPendingLockInGoalId}
         pendingLockInProfileId={apiSync.pendingLockInProfileId}
         setPendingLockInProfileId={apiSync.setPendingLockInProfileId}
+        pendingLockInIncome={apiSync.pendingLockInIncome}
+        setPendingLockInIncome={apiSync.setPendingLockInIncome}
         lockInMutation={apiSync.lockInAllocationPercent}
       />
     </div>

@@ -12,6 +12,7 @@ import type {
 } from "./types";
 import { emptyAccumForm, emptyDecumForm } from "./types";
 import { usePersistedToggle } from "@/lib/hooks/use-persisted-setting";
+import { MC_DEFAULT_TRIALS } from "@/lib/constants";
 
 export function useProjectionFormState() {
   // --- Withdrawal config ---
@@ -86,7 +87,7 @@ export function useProjectionFormState() {
   const [projectionMode, setProjectionMode] = useState<
     "deterministic" | "monteCarlo"
   >("monteCarlo");
-  const [mcTrials, setMcTrials] = useState(1000);
+  const [mcTrials, setMcTrials] = useState(MC_DEFAULT_TRIALS);
   const [mcPreset, setMcPreset] = useState<
     "aggressive" | "default" | "conservative" | "custom"
   >("default");
@@ -112,8 +113,35 @@ export function useProjectionFormState() {
     "balance",
   );
   const [scenarioView, setScenarioView] = useState<
-    "baseline" | "coastFire" | "coastFireToday" | "rateSeeded"
+    | "baseline"
+    | "coastFire"
+    | "coastFireToday"
+    | "coastFireCustom"
+    | "rateSeeded"
   >("baseline");
+  // Coast FIRE "Custom Age" picker (advisor-reviewed 2026-08-30, see
+  // .scratch/docs/plans/PLAN-coast-fire-custom-age.md). `null` until the
+  // household has typed/stepped a value OR `currentAge` becomes known
+  // (derived layer defaults the DISPLAYED value to currentAge when this
+  // is null — kept null here, not seeded to currentAge directly, since
+  // this hook has no access to currentAge at initialization time; it
+  // only arrives later from engineQuery's server response).
+  const [coastFireCustomAge, setCoastFireCustomAge] = useState<number | null>(
+    null,
+  );
+  // Raw text the "Check age" input displays WHILE typing — separate from
+  // coastFireCustomAge (the committed, clamped number). Clamping on every
+  // keystroke (the original implementation) corrupted multi-digit entry:
+  // typing "42" with a min bound above 4 clamped the first "4" up to the
+  // min immediately, forcing the DOM value to e.g. "38" mid-keystroke, so
+  // the next digit landed in the wrong place and produced a mangled number
+  // like "54" instead of "42" (live-user finding, 2026-08-30). Clamping
+  // now happens only on blur / "Check this age", via commitCoastFireAgeDraft
+  // in index.tsx — this field just tracks whatever the user has typed so
+  // far, unclamped.
+  const [coastFireCustomAgeDraft, setCoastFireCustomAgeDraft] = useState<
+    string | null
+  >(null);
   const [showAllYears, setShowAllYears] = useState(false);
   const [showBars, setShowBars] = useState(true);
   // Separate from `showBars` (the Balance chart's own baseline toggle) so
@@ -127,6 +155,12 @@ export function useProjectionFormState() {
   // a separate "Show anyway" link was confusing because the real BASELINE
   // toggle appeared to do nothing on this chart).
   const [showStabilityBars, setShowStabilityBars] = useState(true);
+  // Balance chart's decumulation-year income overlay (total portfolio
+  // withdrawal + Social Security, secondary axis) — see projection-chart.tsx.
+  // Default on: this answers a real question ("what am I actually living
+  // on, and how much of it is SS") every retiree-facing view of this chart
+  // should surface, not an opt-in power-user feature.
+  const [showIncome, setShowIncome] = useState(true);
   const [fanBandRange, setFanBandRange] = useState<
     "off" | "p25-p75" | "p10-p90" | "p5-p95"
   >("p25-p75");
@@ -210,12 +244,18 @@ export function useProjectionFormState() {
     setChartView,
     scenarioView,
     setScenarioView,
+    coastFireCustomAge,
+    setCoastFireCustomAge,
+    coastFireCustomAgeDraft,
+    setCoastFireCustomAgeDraft,
     showAllYears,
     setShowAllYears,
     showBars,
     setShowBars,
     showStabilityBars,
     setShowStabilityBars,
+    showIncome,
+    setShowIncome,
     fanBandRange,
     setFanBandRange,
     diagMode,

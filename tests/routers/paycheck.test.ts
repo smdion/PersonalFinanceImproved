@@ -16,7 +16,10 @@ import {
   seedJob,
   seedPerformanceAccount,
   seedContributionProfile,
+  seedRetirementProfile,
+  seedRetirementProfilePerson,
 } from "./setup";
+import { eq } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
 import * as schema from "@/lib/db/schema-sqlite";
@@ -292,6 +295,97 @@ describe("settings.people CRUD", () => {
 });
 
 // ── Settings: speculative-job auto-provisioning ─────────────────────────────
+
+// ── Retirement Profiles completeness invariant ──────────────────────────────
+//
+// Every retirement_profiles row must hold a retirement_settings + a
+// retirement_profile_people row for every person. Person B has no such row
+// itself yet when the new person is created, so build-engine-payload has
+// nothing to invent one from -- settings/paycheck.ts's people.create fans a
+// row into every EXISTING profile, sourced from that profile's primary
+// person, the same rule retirementProfiles.duplicate uses.
+
+describe("settings.people.create fans out to every existing retirement profile", () => {
+  let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
+  let db: BetterSQLite3Database<typeof sqliteSchema>;
+  let cleanup: () => void;
+  let personA: number;
+  let profileId: number;
+
+  beforeAll(async () => {
+    const ctx = await createTestCaller();
+    caller = ctx.caller;
+    db = ctx.db;
+    cleanup = ctx.cleanup;
+
+    personA = await seedPerson(db, "Person A", "1985-01-01");
+    // isPrimaryUser defaults false via seedPerson's raw insert — mark A
+    // primary directly so the fan-out has a deterministic source.
+    db.update(schema.people)
+      .set({ isPrimaryUser: true })
+      .where(eq(schema.people.id, personA))
+      .run();
+
+    await caller.retirement.retirementSettings.upsert({
+      personId: personA,
+      retirementAge: 63,
+      endAge: 92,
+      returnAfterRetirement: "0.06",
+      annualInflation: "0.03",
+      salaryAnnualIncrease: "0.04",
+    });
+    profileId = await seedRetirementProfile(db, "Current Plan");
+    await seedRetirementProfilePerson(db, profileId, personA, {
+      retirementAge: 63,
+      endAge: 92,
+      ssStartAge: 68,
+    });
+  });
+
+  afterAll(() => cleanup());
+
+  it("gives the new person a retirement_settings row cloned from the primary person's, in every existing profile", async () => {
+    const newPerson = await caller.settings.people.create({
+      name: "Person B",
+      dateOfBirth: "1987-06-01",
+    });
+
+    const settings = await caller.retirement.retirementSettings.list();
+    const bRow = settings.find((s) => s.personId === newPerson!.id);
+    expect(bRow).toBeDefined();
+    expect(bRow!.profileId).toBe(profileId);
+    // Cloned from A's household-grain values.
+    expect(bRow!.retirementAge).toBe(63);
+    expect(bRow!.endAge).toBe(92);
+  });
+
+  it("gives the new person a retirement_profile_people row too", async () => {
+    const people = await caller.retirement.retirementProfilePeople.list();
+    const bRow = people.find(
+      (p) => p.profileId === profileId && p.personId !== personA,
+    );
+    expect(bRow).toBeDefined();
+    expect(bRow!.retirementAge).toBe(63);
+    expect(bRow!.ssStartAge).toBe(68);
+  });
+});
+
+describe("settings.people.create with zero existing retirement profiles does nothing extra", () => {
+  it("does not error when there are no retirement_profiles rows to fan out to", async () => {
+    const { caller, cleanup } = await createTestCaller();
+    try {
+      const person = await caller.settings.people.create({
+        name: "Nobody's Household Yet",
+        dateOfBirth: "1990-01-01",
+      });
+      expect(person).toBeDefined();
+      const settings = await caller.retirement.retirementSettings.list();
+      expect(settings).toHaveLength(0);
+    } finally {
+      cleanup();
+    }
+  });
+});
 
 describe("settings.people.create auto-provisions a speculative job", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];

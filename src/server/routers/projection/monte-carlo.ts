@@ -22,6 +22,10 @@ import {
 import * as schema from "@/lib/db/schema";
 import { calculateMonteCarlo } from "@/lib/calculators/monte-carlo";
 import {
+  runMonteCarloOffThread,
+  getMonteCarloProgress,
+} from "@/server/helpers/monte-carlo-worker-client";
+import {
   interpolateAllocations,
   geometricMean,
 } from "@/lib/calculators/random";
@@ -88,6 +92,16 @@ export const monteCarloRouter = createTRPCRouter({
         contributionProfileId: z.number().int().optional(),
         /** Optional Salary Profile — the independent "what if I earned X" axis. */
         salaryProfileId: z.number().int().optional(),
+        /** View a non-active Retirement Profile (phase 4 assumptions band) —
+         *  same "view without activating" contract as the two profile ids
+         *  above. Falls back to the household's globally-active profile
+         *  when omitted. Advisor-caught 2026-09-01: getProjection/
+         *  computeStrategyComparison already accepted this; the Monte
+         *  Carlo query (this endpoint) never did, so the AssumptionsBand's
+         *  "view a non-active profile" never reached the chart/table it
+         *  sits directly above — silently kept showing the globally-active
+         *  profile's numbers regardless of what the band was viewing. */
+        retirementProfileId: z.number().int().optional(),
         /** Optional per-asset-class return/volatility overrides from the UI. */
         assetClassOverrides: z
           .array(
@@ -142,6 +156,11 @@ export const monteCarloRouter = createTRPCRouter({
         forceRefresh: z.boolean().optional(),
         /** Read-only cache peek — never runs the (expensive) trials, just returns a cache hit or a null result. For cheap dashboard-tile display of "whatever the last real run found." */
         peekOnly: z.boolean().optional(),
+        /** Client-generated id (crypto.randomUUID()) this same request's
+         *  in-flight progress can be polled under via
+         *  `getMonteCarloProgress` — see monte-carlo-worker-client.ts.
+         *  Optional: omit for call sites that don't need live progress. */
+        runId: z.string().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -186,6 +205,7 @@ export const monteCarloRouter = createTRPCRouter({
         decumulationBudgetProfileId: input.decumulationBudgetProfileId,
         decumulationBudgetColumn: input.decumulationBudgetColumn,
         decumulationExpenseOverride: input.decumulationExpenseOverride,
+        retirementProfileId: input.retirementProfileId,
       });
       if (!payload)
         return {
@@ -505,17 +525,20 @@ export const monteCarloRouter = createTRPCRouter({
         computedAt = null;
       } else {
         usedSeed = input.seed ?? generateSeed();
-        result = calculateMonteCarlo({
-          engineInput: mcEngineInput,
-          numTrials: input.numTrials,
-          seed: usedSeed,
-          assetClasses: mcAssetClasses,
-          correlations: mcCorrelations,
-          glidePath: mcGlidePath,
-          inflationRisk: effectiveInflationRisk,
-          returnClampMin,
-          returnClampMax,
-        });
+        result = await runMonteCarloOffThread(
+          {
+            engineInput: mcEngineInput,
+            numTrials: input.numTrials,
+            seed: usedSeed,
+            assetClasses: mcAssetClasses,
+            correlations: mcCorrelations,
+            glidePath: mcGlidePath,
+            inflationRisk: effectiveInflationRisk,
+            returnClampMin,
+            returnClampMax,
+          },
+          input.runId,
+        );
         computedAt = new Date();
         await writeProjectionCache(ctx.db, mcInputHash, result, usedSeed);
       }
@@ -593,6 +616,22 @@ export const monteCarloRouter = createTRPCRouter({
           inflationOverrides: savedInflationOverrides,
         },
       };
+    }),
+
+  /**
+   * Live progress for an in-flight `computeMonteCarloProjection` (or any
+   * other `runMonteCarloOffThread` call passed the same `runId`). Cheap,
+   * meant to be polled every ~500ms by the client while a simulation is
+   * running — see monte-carlo-worker-client.ts's module docblock for why
+   * this is an in-memory Map rather than a DB table or a subscription.
+   * Returns null once the job is done or if the runId is unknown (e.g. the
+   * job hasn't reached the worker's queue front yet, or the poll started
+   * after the run already finished).
+   */
+  getMonteCarloProgress: protectedProcedure
+    .input(z.object({ runId: z.string() }))
+    .query(({ input }) => {
+      return getMonteCarloProgress(input.runId);
     }),
 
   // --- Mutations for editing projection assumptions ---

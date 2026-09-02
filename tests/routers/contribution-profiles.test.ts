@@ -6,7 +6,7 @@
  */
 import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { createTestCaller } from "./setup";
+import { createTestCaller, createViewerSessionWithPermissions } from "./setup";
 
 describe("contributionProfiles router", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
@@ -201,6 +201,89 @@ describe("contributionProfiles router", () => {
       await expect(
         caller.contributionProfile.delete({ id: 0 }),
       ).rejects.toThrow("Profile not found");
+    });
+  });
+
+  // ── SET ACTIVE ──
+  // Regression coverage: activating a profile used to write through
+  // settings.appSettings.upsert, which is adminProcedure-gated (it also
+  // guards RBAC config) — a household member holding only the
+  // contributionProfile permission could click Activate and see it
+  // silently no-op. setActive is contributionProfileProcedure-gated
+  // instead, matching whatever permission actually controls this tab.
+
+  describe("setActive", () => {
+    it("writes the target profile id to app_settings", async () => {
+      const target = await caller.contributionProfile.create({
+        name: "To Activate",
+        description: "",
+        contributionActiveFields: { contributionAccounts: {} },
+      });
+
+      const result = await caller.contributionProfile.setActive({
+        id: target.id,
+      });
+      expect(result).toEqual({ success: true });
+
+      const settings = await caller.settings.appSettings.list();
+      const row = settings.find(
+        (s: { key: string }) => s.key === "active_contrib_profile_id",
+      );
+      expect(row?.value).toBe(target.id);
+    });
+
+    it("throws for a non-existent profile id", async () => {
+      await expect(
+        caller.contributionProfile.setActive({ id: 999_999 }),
+      ).rejects.toThrow("Profile not found");
+    });
+
+    it("succeeds for a non-admin session holding only the contributionProfile permission", async () => {
+      const { caller: viewerCaller, cleanup: viewerCleanup } =
+        await createTestCaller(
+          createViewerSessionWithPermissions(["contributionProfile"]),
+        );
+      try {
+        const target = await viewerCaller.contributionProfile.create({
+          name: "Non-Admin Activate Target",
+          description: "",
+          contributionActiveFields: { contributionAccounts: {} },
+        });
+
+        const result = await viewerCaller.contributionProfile.setActive({
+          id: target.id,
+        });
+        expect(result).toEqual({ success: true });
+      } finally {
+        viewerCleanup();
+      }
+    });
+
+    it("id: null clears the active-profile app_settings row instead of silently no-op'ing (advisor-caught 2026-09-01)", async () => {
+      const target = await caller.contributionProfile.create({
+        name: "To Clear",
+        description: "",
+        contributionActiveFields: { contributionAccounts: {} },
+      });
+      await caller.contributionProfile.setActive({ id: target.id });
+      let settings = await caller.settings.appSettings.list();
+      expect(
+        settings.find(
+          (s: { key: string }) => s.key === "active_contrib_profile_id",
+        )?.value,
+      ).toBe(target.id);
+
+      const result = await caller.contributionProfile.setActive({
+        id: null,
+      });
+      expect(result).toEqual({ success: true });
+
+      settings = await caller.settings.appSettings.list();
+      expect(
+        settings.find(
+          (s: { key: string }) => s.key === "active_contrib_profile_id",
+        ),
+      ).toBeUndefined();
     });
   });
 

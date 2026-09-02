@@ -21,7 +21,7 @@ import {
   getAccountTypeConfig,
   isOverflowTarget,
 } from "../../config/account-types";
-import { computeLtcgTax } from "../../config/tax-tables";
+import { computeLtcgTax, toLtcgTaxableIncome } from "../../config/tax-tables";
 import { MAX_EFFECTIVE_TAX_RATE } from "../../constants";
 
 // ---------------------------------------------------------------------------
@@ -35,46 +35,105 @@ export type WithholdingBracket = {
 };
 
 /**
+ * Gross ordinary income -> the adjusted-annual-wage figure the Pub 15-T
+ * percentage-method table (`WithholdingBracket[]`) is actually denominated
+ * in. Worksheet 1A line 1g's real adjustment is `standardDeduction -
+ * table's first non-zero threshold` (e.g. $32,200 - $19,300 = $12,900 MFJ
+ * for 2026 — R56/R58) — the threshold ALONE is not the offset, it's only
+ * one term of it (advisor-caught 2026-09-01: an earlier version of this
+ * comment claimed the threshold itself was the full Worksheet 1A offset,
+ * which fed directly into a real bug in paycheck.ts's buildBracketInput
+ * that used the threshold alone as `w4Adjustment` — see that file's
+ * comment for the real-dollar impact). `standardDeduction` undefined
+ * returns gross unchanged (pre-R56 behavior, still correct for callers that
+ * don't have a standard deduction to thread through, e.g. tests).
+ *
+ * Deliberately does NOT reuse `toLtcgTaxableIncome`/`toTaxableIncomeBrackets`
+ * (tax-tables.ts / tax-brackets.ts) — those shift `TaxBracket{min,max,rate}`
+ * boundaries for a true progressive walk; this shifts the INCOME instead,
+ * which is the only safe move against `WithholdingBracket{threshold,
+ * baseWithholding,rate}`'s baseWithholding-shortcut shape (shifting
+ * `threshold` alone without recomputing `baseWithholding` would be wrong).
+ */
+export function toOrdinaryBracketIncome(
+  grossOrdinaryIncome: number,
+  brackets: WithholdingBracket[],
+  standardDeduction: number | undefined,
+): number {
+  if (standardDeduction == null) return grossOrdinaryIncome;
+  const firstTaxedThreshold = brackets.find((b) => b.rate > 0)?.threshold ?? 0;
+  const residual = Math.max(0, standardDeduction - firstTaxedThreshold);
+  return Math.max(0, grossOrdinaryIncome - residual);
+}
+
+/**
  * Estimate effective federal income tax rate on traditional retirement withdrawals.
- * Uses W-4 withholding brackets (which embed the standard deduction in the 0% bracket).
+ * Uses W-4 withholding brackets. NOTE: these embed only the smaller Pub 15-T
+ * Worksheet 1A adjustment in the 0% bracket's ceiling (e.g. $19,300 MFJ for
+ * 2026), NOT the full standard deduction ($32,200 MFJ) — verified via
+ * tests/config/tax-freshness.test.ts's structural invariants (R56/R58).
+ * Pass `standardDeduction` so the bracket lookup subtracts the remaining
+ * residual via `toOrdinaryBracketIncome` — omitting it (undefined) keeps
+ * the old, overstating-by-the-residual behavior; it's optional only so
+ * call sites without a standard deduction handy still compile.
  *
  * @param taxableIncome - Total taxable income (traditional withdrawals + taxable SS)
  * @param brackets - W-4 withholding brackets (from tax_brackets table), sorted by threshold ascending
  * @param taxMultiplier - Scales the computed tax (1.0 = current law, 1.2 = 20% higher, etc.)
- * @returns Effective tax rate as decimal (e.g. 0.14 = 14%)
+ * @param standardDeduction - Filing status's standard deduction, for the Worksheet 1A residual (R56)
+ * @returns Effective tax rate as decimal (e.g. 0.14 = 14%), against GROSS taxableIncome —
+ *   callers multiply this rate back against gross dollars, so the denominator here
+ *   stays gross even though the bracket lookup itself runs on the reduced base.
  */
 export function estimateEffectiveTaxRate(
   taxableIncome: number,
   brackets: WithholdingBracket[],
   taxMultiplier: number = 1.0,
+  standardDeduction?: number,
 ): number {
   if (taxableIncome <= 0 || brackets.length === 0) return 0;
+
+  const bracketIncome = toOrdinaryBracketIncome(
+    taxableIncome,
+    brackets,
+    standardDeduction,
+  );
+  if (bracketIncome <= 0) return 0;
 
   // Find the applicable bracket
   let tax = 0;
   for (let i = brackets.length - 1; i >= 0; i--) {
     const b = brackets[i]!;
-    if (taxableIncome >= b.threshold) {
-      tax = b.baseWithholding + (taxableIncome - b.threshold) * b.rate;
+    if (bracketIncome >= b.threshold) {
+      tax = b.baseWithholding + (bracketIncome - b.threshold) * b.rate;
       break;
     }
   }
 
   tax *= taxMultiplier;
-  return Math.min(tax / taxableIncome, MAX_EFFECTIVE_TAX_RATE); // cap sanity check
+  return Math.min(tax / taxableIncome, MAX_EFFECTIVE_TAX_RATE); // cap sanity check — gross denominator
 }
 
 /**
  * Find the maximum taxable income that stays within a target marginal rate.
- * Returns the threshold of the first bracket whose rate exceeds the target.
+ * Returns the threshold of the first bracket whose rate exceeds the target,
+ * converted back to GROSS income space by adding back the Worksheet 1A
+ * residual (R56) — callers use the return value as a gross withdrawal cap.
  * If no bracket exceeds the target, returns Infinity (no cap needed).
  */
 export function incomeCapForMarginalRate(
   targetRate: number,
   brackets: WithholdingBracket[],
+  standardDeduction?: number,
 ): number {
   for (const b of brackets) {
-    if (b.rate > targetRate) return b.threshold;
+    if (b.rate > targetRate) {
+      if (standardDeduction == null) return b.threshold;
+      const firstTaxedThreshold =
+        brackets.find((br) => br.rate > 0)?.threshold ?? 0;
+      const residual = Math.max(0, standardDeduction - firstTaxedThreshold);
+      return b.threshold + residual;
+    }
   }
   return Infinity;
 }
@@ -114,16 +173,26 @@ export function marginalRateAboveTarget(
  * bracket than `targetRate` implies, and pricing off `targetRate`
  * systematically overprices the withdrawal). Returns 0 for `income <= 0`
  * or an empty bracket list, matching `estimateEffectiveTaxRate`'s
- * "nothing taxable" convention.
+ * "nothing taxable" convention. Pass `standardDeduction` for the Worksheet
+ * 1A residual (R56) — a household whose gross sits between the table's
+ * first threshold and the full standard deduction now correctly returns
+ * 0% here instead of the first nonzero bracket's rate.
  */
 export function marginalRateAtIncome(
   income: number,
   brackets: WithholdingBracket[],
+  standardDeduction?: number,
 ): number {
   if (income <= 0 || brackets.length === 0) return 0;
+  const bracketIncome = toOrdinaryBracketIncome(
+    income,
+    brackets,
+    standardDeduction,
+  );
+  if (bracketIncome <= 0) return 0;
   for (let i = brackets.length - 1; i >= 0; i--) {
     const b = brackets[i]!;
-    if (income >= b.threshold) return b.rate;
+    if (bracketIncome >= b.threshold) return b.rate;
   }
   return 0;
 }
@@ -234,6 +303,10 @@ export interface ComputeTaxFromSlotsInput {
     taxBrackets?: WithholdingBracket[];
     taxMultiplier?: number;
     ltcgBrackets?: Record<string, { threshold: number | null; rate: number }[]>;
+    /** See `toLtcgTaxableIncome`'s docblock — converts `actualTaxableIncome`
+     *  (gross) into real taxable income before the LTCG bracket lookup
+     *  below. Omitted ⇒ 0 (pre-2026-08-30 behavior). */
+    standardDeduction?: number;
   };
   filingStatus: FilingStatusType | null | undefined;
 }
@@ -323,6 +396,7 @@ export function computeTaxFromSlots(
           actualTaxableIncome,
           taxRates.taxBrackets,
           taxRates.taxMultiplier,
+          taxRates.standardDeduction,
         )
       : taxRates.traditionalFallbackRate;
 
@@ -336,11 +410,19 @@ export function computeTaxFromSlots(
     brokerageGainsPortion = roundToCents(
       brokerageWithdrawal - brokerageBasisPortion,
     );
-    // Progressive LTCG tax: stack gains on top of ordinary income across 0%/15%/20% brackets
+    // Progressive LTCG tax: stack gains on top of ordinary income across
+    // 0%/15%/20% brackets. `actualTaxableIncome` is GROSS (correct for
+    // `actualTraditionalRate` above, against the ordinary W-4 brackets) —
+    // LTCG brackets are real taxable-income thresholds, so this call needs
+    // the standard deduction subtracted first. See
+    // `toLtcgTaxableIncome`'s docblock.
     brokerageTaxCost = filingStatus
       ? roundToCents(
           computeLtcgTax(
-            actualTaxableIncome,
+            toLtcgTaxableIncome(
+              actualTaxableIncome,
+              taxRates.standardDeduction,
+            ),
             brokerageGainsPortion,
             filingStatus,
             taxRates.ltcgBrackets,

@@ -28,10 +28,14 @@ vi.mock("@/lib/db/schema", async () => {
 });
 
 // Mock budget-api (dynamic import in getEffectiveCash)
-vi.mock("@/lib/budget-api", () => ({
-  getActiveBudgetApi: vi.fn().mockResolvedValue("none"),
-  cacheGet: vi.fn().mockResolvedValue(null),
-}));
+vi.mock("@/lib/budget-api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/budget-api")>();
+  return {
+    ...actual,
+    getActiveBudgetApi: vi.fn().mockResolvedValue("none"),
+    cacheGet: vi.fn().mockResolvedValue(null),
+  };
+});
 
 // Mock logger
 vi.mock("@/lib/logger", () => ({

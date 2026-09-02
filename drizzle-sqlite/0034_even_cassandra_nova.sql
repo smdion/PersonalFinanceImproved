@@ -1,0 +1,1 @@
+ALTER TABLE `retirement_settings` ADD `discretionary_withdrawal_order` text DEFAULT 'roth_first' NOT NULL;

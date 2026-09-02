@@ -14,7 +14,7 @@ export type BudgetMatch = {
   ledgrName: string;
   ledgrCategory: string;
   ledgrAmount: number;
-  status: "linked" | "suggested" | "unmatched";
+  status: "linked" | "suggested" | "unmatched" | "orphaned";
   apiCategoryId: string | null;
   apiCategoryName: string | null;
   apiGroupName: string | null;
@@ -29,7 +29,7 @@ export type BudgetMatch = {
 export type SavingsMatch = {
   goalId: number;
   goalName: string;
-  status: "linked" | "suggested" | "unmatched";
+  status: "linked" | "suggested" | "unmatched" | "orphaned";
   apiCategoryId: string | null;
   apiCategoryName: string | null;
   apiBalance: number | null;
@@ -73,12 +73,18 @@ export type PreviewData = {
       linked: number;
       suggested: number;
       unmatched: number;
+      orphaned: number;
       apiOnly: number;
     };
   };
   savings?: {
     matches: SavingsMatch[];
-    summary: { linked: number; suggested: number; unmatched: number };
+    summary: {
+      linked: number;
+      suggested: number;
+      unmatched: number;
+      orphaned: number;
+    };
   };
   profile?: {
     linkedProfileId: number | null;
@@ -113,6 +119,16 @@ export type PreviewData = {
       balance: number;
       type: string;
     }[];
+    /** Every non-closed account, on-budget included — the remote-account
+     *  picker for the "Cash" and "Credit Card" pseudo-mappings needs
+     *  on-budget accounts, which trackingAccounts (off-budget only)
+     *  excludes by design. */
+    allAccounts: {
+      id: string;
+      name: string;
+      balance: number;
+      type: string;
+    }[];
     existingMappings: {
       localId?: string;
       localName: string;
@@ -133,5 +149,15 @@ export const STATUS_STYLES = {
     bg: "bg-surface-elevated",
     text: "text-faint",
     label: "No match",
+  },
+  // A stored id that no longer resolves to any current API category — e.g.
+  // the household's budget was rebuilt/re-imported upstream, regenerating
+  // every category's id. Distinct from "unmatched" (never linked) so a
+  // household can tell "needs a first link" apart from "was linked, broke
+  // silently" (found live, 2026-08-31).
+  orphaned: {
+    bg: "bg-red-50",
+    text: "text-red-700",
+    label: "Orphaned",
   },
 } as const;

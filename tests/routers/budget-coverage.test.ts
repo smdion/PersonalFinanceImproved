@@ -25,16 +25,20 @@ import {
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 
-vi.mock("@/lib/budget-api", () => ({
-  getActiveBudgetApi: vi.fn().mockResolvedValue("none"),
-  cacheGet: vi.fn().mockResolvedValue(null),
-  getClientForService: vi.fn().mockResolvedValue(null),
-  refreshCategoryCache: vi.fn().mockResolvedValue(undefined),
-  YNAB_INTERNAL_GROUPS: new Set([
-    "Internal Master Category",
-    "Credit Card Payments",
-  ]),
-}));
+vi.mock("@/lib/budget-api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/budget-api")>();
+  return {
+    ...actual,
+    getActiveBudgetApi: vi.fn().mockResolvedValue("none"),
+    cacheGet: vi.fn().mockResolvedValue(null),
+    getClientForService: vi.fn().mockResolvedValue(null),
+    refreshCategoryCache: vi.fn().mockResolvedValue(undefined),
+    YNAB_INTERNAL_GROUPS: new Set([
+      "Internal Master Category",
+      "Credit Card Payments",
+    ]),
+  };
+});
 
 async function getSchema() {
   return await import("@/lib/db/schema");

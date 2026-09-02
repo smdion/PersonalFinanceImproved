@@ -3,11 +3,15 @@
  * the Decumulation Plan block in retirement-content.tsx in PR 8/3c of the
  * v0.5.2 file-split refactor. Pure relocation — no behavior changes.
  *
- * Each input is dimmed to 40% opacity when the active withdrawal strategy
- * doesn't use it (the strategy registry's `usesPostRetirementRaise` /
- * `usesWithdrawalRate` flags). The Withdrawal Rate label and help text also
- * flip between "Withdrawal Rate" / "Initial Withdrawal Rate" depending on
- * the strategy's `incomeSource`.
+ * Each input is dimmed to 40% opacity AND made read-only when the active
+ * withdrawal strategy doesn't use it (the strategy registry's
+ * `usesPostRetirementRaise` / `usesWithdrawalRate` flags) — editing a value
+ * the active strategy ignores used to still work silently (found
+ * 2026-08-30: the wrapper dimmed but `isEditable` stayed unconditional, so
+ * the field looked like a live input, accepted edits, and did nothing).
+ * The Withdrawal Rate label and help text also flip between "Withdrawal
+ * Rate" / "Initial Withdrawal Rate" depending on the strategy's
+ * `incomeSource`.
  *
  * The `decToWhole` helper lives in `./helpers` and is shared across the
  * retirement sections that need it (not duplicated locally).
@@ -56,7 +60,7 @@ export function RaiseAndRateSection({
             parseInput={(v) => v.replace(/[^0-9.]/g, "")}
             type="number"
             className="text-sm"
-            isEditable={isEditable}
+            isEditable={isEditable && meta.usesPostRetirementRaise}
           />
         </div>
       </div>
@@ -83,7 +87,7 @@ export function RaiseAndRateSection({
             parseInput={(v) => v.replace(/[^0-9.]/g, "")}
             type="number"
             className="text-sm"
-            isEditable={isEditable}
+            isEditable={isEditable && meta.usesWithdrawalRate}
           />
         </div>
       </div>

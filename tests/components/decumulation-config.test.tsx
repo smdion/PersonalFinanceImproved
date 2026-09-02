@@ -134,6 +134,89 @@ describe("DecumulationConfig", () => {
     expect(newOrder[1]).toBe(order[0]);
   });
 
+  // v0.7.10 R51 (Gap A): bracket_filling's "Traditional Account Order"
+  // sub-control -- shows/reorders only the Traditional-preference subset,
+  // splicing changes back into the SAME full withdrawalOrder waterfall's
+  // editor writes.
+  it("shows only the Traditional-preference accounts in bracket_filling's order sub-control", () => {
+    render(
+      <DecumulationConfig
+        {...baseProps({
+          showDecumConfig: true,
+          withdrawalRoutingMode: "bracket_filling",
+        })}
+      />,
+    );
+    expect(screen.getByText("Traditional Account Order")).toBeInTheDocument();
+    // Only 401k/403b/IRA are reorderable here -- 2 move-left buttons for
+    // 3 visible entries, not 4 for all 5 categories.
+    const moveButtons = screen.getAllByTitle(/Move .* left/);
+    expect(moveButtons.length).toBe(categoriesWithTaxPreference().length - 1);
+  });
+
+  it("does NOT show the Traditional Account Order sub-control in waterfall or percentage mode", () => {
+    render(
+      <DecumulationConfig
+        {...baseProps({
+          showDecumConfig: true,
+          withdrawalRoutingMode: "waterfall",
+        })}
+      />,
+    );
+    expect(
+      screen.queryByText("Traditional Account Order"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("splices a Traditional-subset swap back into the full withdrawalOrder, leaving brokerage/HSA positions untouched", () => {
+    const setWithdrawalOrder = vi.fn();
+    const order = getDefaultDecumulationOrder(); // 401k, 403b, ira, brokerage, hsa
+    render(
+      <DecumulationConfig
+        {...baseProps({
+          showDecumConfig: true,
+          withdrawalRoutingMode: "bracket_filling",
+          withdrawalOrder: order,
+          setWithdrawalOrder,
+        })}
+      />,
+    );
+    const moveButtons = screen.getAllByTitle(/Move .* left/);
+    // First move-left button swaps the 2nd visible entry (403b) with the
+    // 1st (401k) -- both currently at full-array positions 0 and 1.
+    fireEvent.click(moveButtons[0]!);
+    expect(setWithdrawalOrder).toHaveBeenCalledTimes(1);
+    const newOrder = setWithdrawalOrder.mock.calls[0]![0];
+    expect(newOrder).toEqual(["403b", "401k", "ira", "brokerage", "hsa"]);
+    // brokerage/hsa kept their exact original positions (indices 3, 4).
+    expect(newOrder[3]).toBe(order[3]);
+    expect(newOrder[4]).toBe(order[4]);
+  });
+
+  it("swaps two Traditional categories that are NOT adjacent in the full array (a non-Traditional category sits between them)", () => {
+    const setWithdrawalOrder = vi.fn();
+    // 401k and ira are separated by brokerage in the full array here.
+    const order = ["401k", "brokerage", "ira", "403b", "hsa"] as const;
+    render(
+      <DecumulationConfig
+        {...baseProps({
+          showDecumConfig: true,
+          withdrawalRoutingMode: "bracket_filling",
+          withdrawalOrder: [...order],
+          setWithdrawalOrder,
+        })}
+      />,
+    );
+    // Visible (Traditional-preference) order is 401k, ira, 403b -- move
+    // the 2nd visible entry (ira) left, past 401k.
+    const moveButtons = screen.getAllByTitle(/Move .* left/);
+    fireEvent.click(moveButtons[0]!);
+    const newOrder = setWithdrawalOrder.mock.calls[0]![0];
+    // 401k and ira swapped positions (0 and 2); brokerage (position 1)
+    // and everything else stayed exactly where it was.
+    expect(newOrder).toEqual(["ira", "brokerage", "401k", "403b", "hsa"]);
+  });
+
   it("shows the withdrawal splits editor in percentage mode", () => {
     render(
       <DecumulationConfig

@@ -21,7 +21,11 @@ import {
   type CapacityPerson,
 } from "@/lib/calculators/savings-capacity";
 import { paycheckRouter } from "./paycheck";
-import { budgetRouter } from "./budget";
+import {
+  budgetRouter,
+  profileResolutionTiersSchema,
+  type ProfileResolutionTiers,
+} from "./budget";
 import {
   toNumber,
   computeBudgetAnnualTotal,
@@ -59,7 +63,12 @@ import {
   refreshCategoryCache,
   BudgetApiError,
 } from "@/lib/budget-api";
-import type { BudgetCategoryGroup, BudgetTransaction } from "@/lib/budget-api";
+import type {
+  BudgetCategoryGroup,
+  BudgetMonthDetail,
+  BudgetTransaction,
+} from "@/lib/budget-api";
+import { currentMonthKey } from "@/lib/pure/date-keys";
 
 /**
  * Compute the current net-pay-per-check for a job by running the paycheck
@@ -398,12 +407,69 @@ function resolveEfundTierIndex(
 async function computeLiveMaxMonthlyFunding(
   ctx: Context,
   profileId?: number,
+  /** The caller's already-resolved Contribution/Salary Profile selection
+   *  (savings/page.tsx's effectiveContribProfileId/effectiveSalaryProfileId
+   *  — the SAME precedence chain, Plan pin > column pin > local selection >
+   *  active, computeActiveSummary's own contributionProfile/salaryProfile
+   *  tiers resolve against). Found live, 2026-08-31: the paycheck.computeSummary
+   *  call below had NO such resolution at all — it always used whichever
+   *  contribution/salary profile is globally active, regardless of what
+   *  column/profile the caller was actually viewing. A household with any
+   *  non-default (column-pinned or locally-selected) Contribution/Salary
+   *  Profile saw recalculateAllocation/lockInAllocationPercent silently
+   *  compute against the WRONG live pool — the preview (built client-side
+   *  from the correct effective profile) showed a real change, but the
+   *  persisted write, computed here against the household's default profile
+   *  instead, could match the already-stored value almost exactly and look
+   *  like a complete no-op (`updated: N` returned, nothing actually moved).
+   *  budgetCaller.computeActiveSummary ALSO needs the caller's raw
+   *  contribution/salary TIERS (not just a resolved id) passed as its own
+   *  `contributionProfile`/`salaryProfile` input — found live, 2026-08-31,
+   *  round two: leaving that call bare (as the first fix here did) makes it
+   *  fall back to NO_PROFILE_TIERS (column pins only, no Plan pin / global
+   *  default), so contribution-linked budget items resolve against a
+   *  DIFFERENT profile than the client's own top-level maxMonthlyFunding
+   *  query used (savings/page.tsx passes contributionProfileTiers/
+   *  salaryProfileTiers there) — budgetMonthlyTotal, and so the persisted
+   *  live pool, still silently diverged from the preview even after the
+   *  paycheck-side fix. */
+  income?: {
+    contributionProfileId?: number;
+    salaryProfileId?: number;
+    salaryActiveFields?: { personId: number; salary: number }[];
+    contributionProfileTiers?: ProfileResolutionTiers;
+    salaryProfileTiers?: ProfileResolutionTiers;
+  },
 ): Promise<number | null> {
   const paycheckCaller = createCallerFactory(paycheckRouter)(ctx);
   const budgetCaller = createCallerFactory(budgetRouter)(ctx);
+  const paycheckInput = {
+    ...(income?.contributionProfileId != null
+      ? { contributionProfileId: income.contributionProfileId }
+      : {}),
+    ...(income?.salaryProfileId != null
+      ? { salaryProfileId: income.salaryProfileId }
+      : {}),
+    ...(income?.salaryActiveFields && income.salaryActiveFields.length > 0
+      ? { salaryActiveFields: income.salaryActiveFields }
+      : {}),
+  };
   const [paycheckData, budgetSummary] = await Promise.all([
-    paycheckCaller.computeSummary(),
-    budgetCaller.computeActiveSummary(profileId ? { profileId } : undefined),
+    paycheckCaller.computeSummary(
+      Object.keys(paycheckInput).length > 0 ? paycheckInput : undefined,
+    ),
+    budgetCaller.computeActiveSummary({
+      ...(profileId ? { profileId } : {}),
+      ...(income?.contributionProfileTiers
+        ? { contributionProfile: income.contributionProfileTiers }
+        : {}),
+      ...(income?.salaryProfileTiers
+        ? { salaryProfile: income.salaryProfileTiers }
+        : {}),
+      ...(income?.salaryActiveFields && income.salaryActiveFields.length > 0
+        ? { salaryActiveFields: income.salaryActiveFields }
+        : {}),
+    }),
   ]);
   const budgetMonthlyTotal = deriveBudgetMonthlyTotal(budgetSummary);
   return paycheckData && budgetMonthlyTotal !== null
@@ -572,29 +638,57 @@ export const savingsRouter = createTRPCRouter({
         }
       }
 
-      // Override balances for API-linked goals with live YNAB cache values
+      // Override balances for API-linked goals with live cache values, AND
+      // capture each linked category's current-month `budgeted` amount
+      // (currentMonthBudgetedMap) so projectGoalBalances can tell whether
+      // this month's contribution is already reflected in `balance`
+      // instead of guessing from the calendar date.
+      //
+      // Both come from the SAME month-scoped cache entry
+      // (`months/${currentMonthKey}`), not the generic "categories" cache
+      // the balance override used to read alone — advisor review,
+      // 2026-09-01: sourcing balance and budgeted from two independently-
+      // aged snapshots risks subtracting THIS month's budgeted amount
+      // from a STALE prior month's balance (e.g. synced Aug 31 11pm,
+      // read Sept 1 9am — "categories" would still hold August's numbers
+      // with no signal it's the wrong month). The month-scoped key is
+      // self-verifying: if `months/2026-09-01` is absent, we know we
+      // don't have September data at all.
+      //
+      // Degrades safely when that cache entry is missing (no sync yet
+      // this month — most likely right at a month rollover, e.g. viewed
+      // Oct 1 before the first October sync ran): the live balance
+      // override does NOT fire at all for these goals, same as before
+      // this phase existed — `balance` falls back to whatever
+      // savings_monthly last recorded (set above), which could itself be
+      // a prior month's synced snapshot, not "right now". Real but
+      // low-impact: the very next sync (same one that populates
+      // months/${currentMonthKey}) also refreshes savings_monthly.
+      // currentMonthBudgetedMap stays empty for these goals — the same
+      // "unknown, add the full allocation" conservative default a
+      // non-API-synced goal already gets in projectGoalBalances.
       const apiLinkedGoals = activeGoals.filter(
         (g) => g.isApiSyncEnabled && g.apiCategoryId,
       );
+      const currentMonthBudgetedMap = new Map<number, number>();
       if (apiLinkedGoals.length > 0) {
         const active = await getActiveBudgetApi(ctx.db);
         if (active !== "none") {
-          const categoriesCache = await cacheGet<BudgetCategoryGroup[]>(
+          const now = new Date();
+          const monthCache = await cacheGet<BudgetMonthDetail>(
             ctx.db,
             active,
-            "categories",
+            `months/${currentMonthKey(now)}`,
           );
-          if (categoriesCache) {
-            const catBalanceMap = new Map<string, number>();
-            for (const group of categoriesCache.data) {
-              for (const cat of group.categories) {
-                catBalanceMap.set(cat.id, cat.balance);
-              }
-            }
+          if (monthCache) {
+            const catById = new Map(
+              monthCache.data.categories.map((c) => [c.id, c]),
+            );
             for (const goal of apiLinkedGoals) {
-              const apiBalance = catBalanceMap.get(goal.apiCategoryId!);
-              if (apiBalance !== undefined) {
-                balanceMap.set(goal.id, apiBalance);
+              const cat = catById.get(goal.apiCategoryId!);
+              if (cat) {
+                balanceMap.set(goal.id, cat.balance);
+                currentMonthBudgetedMap.set(goal.id, cat.budgeted);
               }
             }
           }
@@ -769,6 +863,13 @@ export const savingsRouter = createTRPCRouter({
               ? resolved.allocationPercent.toFixed(3)
               : null,
           monthlyContribution: resolved.monthlyContribution.toFixed(2),
+          // null (not just absent) when unknown — projectGoalBalances
+          // treats "no evidence this month is already funded" as "add
+          // the full allocation," the same conservative default a
+          // non-API-synced goal already gets. See
+          // currentMonthBudgetedMap's own comment above for why this is
+          // null instead of falling back to a differently-aged number.
+          currentMonthBudgeted: currentMonthBudgetedMap.get(g.id) ?? null,
         };
       });
 
@@ -1573,7 +1674,13 @@ export const savingsRouter = createTRPCRouter({
         : linked;
 
       if (toPush.length === 0)
-        return { pushed: 0, skippedUnsupported: 0, service: active };
+        return {
+          pushed: 0,
+          skippedUnsupported: 0,
+          failed: 0,
+          failureMessage: undefined,
+          service: active,
+        };
 
       // Same tier resolution as computeSummary — see resolveEfundTierIndex.
       const efundTierIndex = resolveEfundTierIndex(
@@ -1615,6 +1722,20 @@ export const savingsRouter = createTRPCRouter({
       // distinctly to the caller so the UI doesn't tell the user "already
       // up to date" when nothing was ever pushed.
       let skippedUnsupported = 0;
+      // A genuine failure (network/auth/rate-limit/unexpected API shape) was
+      // previously only `log("warn", ...)`'d server-side and otherwise
+      // treated identically to "nothing needed pushing" — the caller got
+      // back `pushed: 0, skippedUnsupported: 0` either way, and
+      // formatSyncResultToast reads that combination as "No changes to
+      // push — already up to date," an actively misleading success message
+      // for what was really a silent failure (found live, 2026-08-31 — a
+      // household whose goals DO have nonzero resolved amounts still saw
+      // "0 pushed" with no error on every attempt). Counted and reported
+      // distinctly, same reasoning as skippedUnsupported above but for the
+      // "provider request itself failed" case rather than "provider
+      // rejected this specific write."
+      let failed = 0;
+      let firstFailureMessage: string | undefined;
       for (const goal of toPush) {
         try {
           if (goal.isEmergencyFund) {
@@ -1657,10 +1778,13 @@ export const savingsRouter = createTRPCRouter({
           ) {
             skippedUnsupported++;
           } else {
+            const message = err instanceof Error ? err.message : String(err);
             log("warn", "push_goal_target_failed", {
               goalId: goal.id,
-              error: err instanceof Error ? err.message : String(err),
+              error: message,
             });
+            failed++;
+            firstFailureMessage ??= message;
           }
         }
       }
@@ -1672,7 +1796,13 @@ export const savingsRouter = createTRPCRouter({
         await refreshCategoryCache(ctx.db, active, client);
       }
 
-      return { pushed, skippedUnsupported, service: active };
+      return {
+        pushed,
+        skippedUnsupported,
+        failed,
+        failureMessage: firstFailureMessage,
+        service: active,
+      };
     }),
 
   /**
@@ -1698,6 +1828,17 @@ export const savingsRouter = createTRPCRouter({
         .object({
           goalId: z.number().int().optional(),
           profileId: z.number().int().optional(),
+          // See computeLiveMaxMonthlyFunding's `income` param docblock — the
+          // caller's already-resolved Contribution/Salary Profile
+          // selection, so the live pool this mutation recomputes against
+          // can't silently diverge from what its own preview showed.
+          contributionProfileId: z.number().int().optional(),
+          salaryProfileId: z.number().int().optional(),
+          salaryActiveFields: z
+            .array(z.object({ personId: z.number(), salary: z.number() }))
+            .optional(),
+          contributionProfileTiers: profileResolutionTiersSchema.optional(),
+          salaryProfileTiers: profileResolutionTiersSchema.optional(),
         })
         .optional(),
     )
@@ -1734,6 +1875,13 @@ export const savingsRouter = createTRPCRouter({
       const maxMonthlyFunding = await computeLiveMaxMonthlyFunding(
         ctx,
         targetProfileId,
+        {
+          contributionProfileId: input?.contributionProfileId,
+          salaryProfileId: input?.salaryProfileId,
+          salaryActiveFields: input?.salaryActiveFields,
+          contributionProfileTiers: input?.contributionProfileTiers,
+          salaryProfileTiers: input?.salaryProfileTiers,
+        },
       );
       if (maxMonthlyFunding === null) {
         throw new TRPCError({
@@ -1785,6 +1933,14 @@ export const savingsRouter = createTRPCRouter({
         .object({
           goalId: z.number().int().optional(),
           profileId: z.number().int().optional(),
+          // See computeLiveMaxMonthlyFunding's `income` param docblock.
+          contributionProfileId: z.number().int().optional(),
+          salaryProfileId: z.number().int().optional(),
+          salaryActiveFields: z
+            .array(z.object({ personId: z.number(), salary: z.number() }))
+            .optional(),
+          contributionProfileTiers: profileResolutionTiersSchema.optional(),
+          salaryProfileTiers: profileResolutionTiersSchema.optional(),
         })
         .optional(),
     )
@@ -1817,6 +1973,13 @@ export const savingsRouter = createTRPCRouter({
       const maxMonthlyFunding = await computeLiveMaxMonthlyFunding(
         ctx,
         targetProfileId,
+        {
+          contributionProfileId: input?.contributionProfileId,
+          salaryProfileId: input?.salaryProfileId,
+          salaryActiveFields: input?.salaryActiveFields,
+          contributionProfileTiers: input?.contributionProfileTiers,
+          salaryProfileTiers: input?.salaryProfileTiers,
+        },
       );
       if (maxMonthlyFunding === null) {
         throw new TRPCError({

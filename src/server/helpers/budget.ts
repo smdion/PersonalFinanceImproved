@@ -7,6 +7,7 @@ import { roundToCents } from "@/lib/utils/math";
 import { toNumber } from "./transforms";
 import type { Db } from "./transforms";
 import { parseAppSettings } from "./settings";
+import type { ActiveBudgetApi } from "@/lib/budget-api/types";
 import {
   filterActiveJobs,
   type ContribResolutionStatus,
@@ -85,22 +86,87 @@ export async function resolveTargetBudgetProfile(
 }
 
 /**
+ * Sum the CACHED balances of every account manually mapped to a fixed
+ * pseudo-account (`localId` "cash" or "creditCard") for the given service —
+ * see AccountMapping's docblock (schema-pg.ts). Returns `null` when the
+ * service has no such mappings at all, so callers can fall back to their
+ * own auto-detection instead of reporting a real $0.
+ *
+ * Manual mapping exists because Actual's API has no account "type" field
+ * at all (verified live, 2026-08-31 — the plain `/accounts` endpoint
+ * returns only id/name/offbudget/closed, and a raw query against the
+ * underlying `accounts` table itself has no `type` column either), so
+ * there's no way to auto-detect "this is a checking account" the way
+ * YNAB's account type lets `getEffectiveCash` do below. `Math.abs` on each
+ * matched balance — a credit card mapping's balance is typically negative
+ * (money owed); this returns its magnitude as a debt figure, matching how
+ * apply-pull-mapping.ts already treats a mapped mortgage loan balance.
+ */
+async function sumMappedAccountBalances(
+  db: Db,
+  service: "ynab" | "actual",
+  localId: "cash" | "creditCard",
+): Promise<number | null> {
+  const { cacheGet } = await import("@/lib/budget-api");
+  const [conn] = await db
+    .select({ accountMappings: schema.apiConnections.accountMappings })
+    .from(schema.apiConnections)
+    .where(eq(schema.apiConnections.service, service));
+  const mapped = (conn?.accountMappings ?? []).filter(
+    (m) =>
+      m.localId === localId &&
+      (m.syncDirection === "pull" || m.syncDirection === "both"),
+  );
+  if (mapped.length === 0) return null;
+
+  type BudgetAccount = { id: string; balance: number };
+  const cached = await cacheGet<BudgetAccount[]>(
+    db,
+    service,
+    "accounts",
+    BUDGET_CACHE_MAX_AGE_MS,
+  );
+  if (!cached) return null;
+  const byId = new Map(cached.data.map((a) => [a.id, a.balance]));
+  return mapped.reduce(
+    (sum, m) => sum + Math.abs(byId.get(m.remoteAccountId) ?? 0),
+    0,
+  );
+}
+
+/**
  * Get effective cash balance.
- * When a budget API is active, sums on-budget cash-like account balances from cache.
- * Falls back to manual `current_cash` from app_settings when no API is active or cache is stale/empty.
+ * When the active service has explicit "Cash" account mappings (see
+ * sumMappedAccountBalances), sums those. Otherwise, for a budget API with a
+ * real account-type field (YNAB), falls back to auto-detecting on-budget
+ * checking/savings/cash accounts from cache. Falls back further to manual
+ * `current_cash` from app_settings when no API is active, the cache is
+ * stale/empty, or auto-detection finds nothing (e.g. Actual, which has no
+ * account-type field to auto-detect from at all).
  */
 export async function getEffectiveCash(
   db: Db,
   settings: { key: string; value: unknown }[],
+  /** Pass this when the caller already resolved it (e.g. alongside a
+   *  sibling getEffectiveCreditCardDebt call in the same procedure) —
+   *  avoids re-querying apiConnections/cached balances for a value that
+   *  can't have changed mid-request (code-review efficiency finding,
+   *  2026-09-01). Omit to resolve it here as before. */
+  activeBudgetApi?: ActiveBudgetApi,
 ): Promise<{
   cash: number;
   source: "ynab" | "actual" | "manual";
   cacheAgeDays: number | null;
 }> {
   const { getActiveBudgetApi, cacheGet } = await import("@/lib/budget-api");
-  const active = await getActiveBudgetApi(db);
+  const active = activeBudgetApi ?? (await getActiveBudgetApi(db));
 
   if (active !== "none") {
+    const mappedCash = await sumMappedAccountBalances(db, active, "cash");
+    if (mappedCash !== null) {
+      return { cash: mappedCash, source: active, cacheAgeDays: 0 };
+    }
+
     type BudgetAccount = {
       onBudget: boolean;
       closed: boolean;
@@ -132,6 +198,28 @@ export async function getEffectiveCash(
     source: "manual",
     cacheAgeDays: null,
   };
+}
+
+/**
+ * Effective credit-card debt from explicit "Credit Card" account mappings
+ * (see sumMappedAccountBalances) — additive on top of the household's
+ * manual `current_other_liabilities` figure, not a replacement for it,
+ * since that setting may legitimately hold other debts too. Unlike
+ * getEffectiveCash there's no auto-detection fallback for either service:
+ * neither YNAB nor Actual's account list distinguishes a credit card from
+ * any other on-budget account well enough to guess safely, so this only
+ * ever returns a nonzero figure once the household has mapped at least one
+ * account.
+ */
+export async function getEffectiveCreditCardDebt(
+  db: Db,
+  /** See getEffectiveCash's matching param. */
+  activeBudgetApi?: ActiveBudgetApi,
+): Promise<number> {
+  const { getActiveBudgetApi } = await import("@/lib/budget-api");
+  const active = activeBudgetApi ?? (await getActiveBudgetApi(db));
+  if (active === "none") return 0;
+  return (await sumMappedAccountBalances(db, active, "creditCard")) ?? 0;
 }
 
 /**

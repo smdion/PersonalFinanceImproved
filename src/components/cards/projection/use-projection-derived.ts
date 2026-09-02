@@ -89,13 +89,15 @@ export function useProjectionDerived(
     // `engineSettings` defined below, removing the need for `!` assertions
     // at every consumer.
     if (!engineData?.result) return null;
-    // Rate-Seeded (Feature B) joins the same swap Coast FIRE already uses —
-    // both source their deterministic line from their own MonteCarloResult
-    // rather than the baseline engineQuery, via the shared activeAltMcResult
-    // selector (use-projection-queries.ts).
+    // Rate-Seeded (Feature B) and Coast FIRE Custom Age both join the same
+    // swap Coast FIRE (found/today) already uses — all source their
+    // deterministic line from their own MonteCarloResult rather than the
+    // baseline engineQuery, via the shared activeAltMcResult selector
+    // (use-projection-queries.ts).
     if (
       (scenarioView === "coastFire" ||
         scenarioView === "coastFireToday" ||
+        scenarioView === "coastFireCustom" ||
         scenarioView === "rateSeeded") &&
       activeAltMcResult?.deterministicProjection
     ) {

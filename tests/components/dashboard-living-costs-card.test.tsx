@@ -102,9 +102,18 @@ const extraPaycheckQuery = { isLoading: false, data: [] };
 
 vi.mock("@/lib/trpc", () => ({
   trpc: {
+    useUtils: () => ({
+      settings: { appSettings: { list: { invalidate: vi.fn() } } },
+    }),
     settings: { appSettings: { list: { useQuery: () => ({ data: [] }) } } },
-    salaryProfile: { list: { useQuery: () => ({ data: [] }) } },
-    contributionProfile: { list: { useQuery: () => ({ data: [] }) } },
+    salaryProfile: {
+      list: { useQuery: () => ({ data: [] }) },
+      setActive: { useMutation: () => ({ mutateAsync: vi.fn() }) },
+    },
+    contributionProfile: {
+      list: { useQuery: () => ({ data: [] }) },
+      setActive: { useMutation: () => ({ mutateAsync: vi.fn() }) },
+    },
     budget: {
       computeActiveSummary: { useQuery: () => budgetQuery },
       listProfiles: { useQuery: () => ({ data: [] }) },

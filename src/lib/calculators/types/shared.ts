@@ -28,6 +28,12 @@ export type TaxBracketInput = {
   w4Checkbox: boolean; // whether this bracket set is the 2(c) checked version
   brackets: { min: number; max: number | null; rate: number }[];
   standardDeduction: number;
+  /** Pub 15-T Worksheet 1A line 1g: the flat amount subtracted from
+   *  annualized wages (line 1h) before the bracket lookup, when the W-4
+   *  Step 2(c) box is unchecked. 0 when w4Checkbox is true (no worksheet
+   *  adjustment applies — the 2(c) tables already assume it isn't taken).
+   *  Withholding-only; annual tax liability (calculateTax) doesn't use it. */
+  w4Adjustment: number;
   socialSecurityWageBase: number;
   socialSecurityRate: number;
   medicareRate: number;

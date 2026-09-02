@@ -21,6 +21,7 @@ import type {
   YearlyGrowthEntry,
 } from "@/lib/db/schema-pg";
 import { getExtraPaycheckMonthKeys } from "@/lib/calculators/paycheck";
+import { currentMonthKey } from "@/lib/pure/date-keys";
 import type { Db } from "./transforms";
 import { loadEffectiveSalaryProfile } from "./salary";
 
@@ -221,7 +222,7 @@ async function _materialize(db: Db): Promise<void> {
   // regardless of month: deleting and reinserting allocates a new row id,
   // which would silently orphan (and cascade-delete) their settlement
   // records the moment the materializer next ran.
-  const currentMonthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+  const currentMonthStart = currentMonthKey(now);
   await db.transaction(async (tx) => {
     const settledRows = await tx
       .select({ plannedTxId: schema.savingsPlannedTxSettlements.plannedTxId })

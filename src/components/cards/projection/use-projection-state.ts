@@ -41,6 +41,9 @@ export type UseProjectionStateProps = {
   contributionProfileId?: number;
   /** Independent Salary Profile axis. */
   salaryProfileId?: number;
+  /** View a non-active Retirement Profile — see ProjectionCard's matching
+   *  prop docblock (index.tsx). */
+  retirementProfileId?: number | null;
   snapshotId?: number;
 };
 

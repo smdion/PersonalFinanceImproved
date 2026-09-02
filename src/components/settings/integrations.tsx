@@ -288,6 +288,18 @@ function ServiceCard({
                 {setActiveMut.isPending ? "Activating..." : "Activate"}
               </button>
             )}
+            {/* Live-user finding, 2026-08-30: a connected-but-never-synced
+                service silently had NO Activate button and no explanation
+                why — `getPreview` returns `synced: false` until a sync has
+                completed at least once, so the only way to make this
+                service active was invisible unless you already knew to
+                click "Sync Now" first. This makes the missing precondition
+                explicit instead of a silent gap. */}
+            {!isActive && preview && !preview.synced && (
+              <span className="text-xs text-muted italic">
+                Sync Now to enable activation
+              </span>
+            )}
             {isActive && (
               <button
                 onClick={() => setActiveMut.mutate({ value: "none" })}

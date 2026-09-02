@@ -10,7 +10,14 @@
  *
  * The block also shows an amber "strategy X computes spending from ..."
  * banner when the active withdrawal strategy doesn't consume the budget /
- * withdrawal rate / post-retirement raise.
+ * withdrawal rate / post-retirement raise — and, since 2026-08-30, actually
+ * disables the budget-source select/column select/salary-override edit in
+ * that case too (previously only dimmed via opacity, still fully editable
+ * underneath — same class of bug as raise-and-rate.tsx's two fields, found
+ * alongside it). This component also had no `isEditable`/admin gating at
+ * all until the same pass — every other section in this tab disables for
+ * non-admins; this one let a non-admin interact freely and only failed
+ * silently at the (adminProcedure-gated) mutation layer.
  */
 "use client";
 
@@ -21,7 +28,7 @@ import {
   type WithdrawalStrategyType,
 } from "@/lib/config/withdrawal-strategies";
 import { formatCurrency } from "@/lib/utils/format";
-import type { Settings, BudgetProfileSummaries } from "./types";
+import type { Settings, BudgetProfileSummaries, IsEditable } from "./types";
 
 type Props = {
   settings: Settings;
@@ -32,6 +39,7 @@ type Props = {
   setDecExpenseOverride: (v: string | null) => void;
   setDecBudgetProfileId: (id: number | null) => void;
   setDecBudgetCol: (col: number | null) => void;
+  isEditable: IsEditable;
 };
 
 export function PerPhaseBudgetSection({
@@ -43,6 +51,7 @@ export function PerPhaseBudgetSection({
   setDecExpenseOverride,
   setDecBudgetProfileId,
   setDecBudgetCol,
+  isEditable,
 }: Props) {
   const activeStrategy = (settings?.withdrawalStrategy ??
     "fixed") as WithdrawalStrategyType;
@@ -110,8 +119,9 @@ export function PerPhaseBudgetSection({
             ) : (
               <>
                 <select
-                  className="text-sm border rounded px-2 py-1 bg-surface-primary"
+                  className="text-sm border rounded px-2 py-1 bg-surface-primary disabled:cursor-not-allowed disabled:opacity-50"
                   value={decumulationBudgetProfileId ?? ""}
+                  disabled={!isEditable || budgetNotUsed}
                   onChange={(e) => {
                     setDecBudgetProfileId(
                       e.target.value ? Number(e.target.value) : null,
@@ -140,8 +150,9 @@ export function PerPhaseBudgetSection({
                   </span>
                 ) : decLabels.length >= 2 ? (
                   <select
-                    className="text-sm border rounded px-2 py-1 bg-surface-primary"
+                    className="text-sm border rounded px-2 py-1 bg-surface-primary disabled:cursor-not-allowed disabled:opacity-50"
                     value={decumulationBudgetColumn}
+                    disabled={!isEditable || budgetNotUsed}
                     onChange={(e) => setDecBudgetCol(Number(e.target.value))}
                   >
                     {decLabels.map((label: string, idx: number) => (
@@ -175,11 +186,12 @@ export function PerPhaseBudgetSection({
               parseInput={(v) => v.replace(/[^0-9]/g, "")}
               type="number"
               className="text-sm"
-              isEditable={!!settings}
+              isEditable={isEditable && !!settings && !budgetNotUsed}
             />
             {decExpenseOverride && (
               <button
-                className="text-caption text-red-400 hover:text-red-600"
+                disabled={!isEditable}
+                className="text-caption text-red-400 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
                 onClick={() => setDecExpenseOverride(null)}
               >
                 clear

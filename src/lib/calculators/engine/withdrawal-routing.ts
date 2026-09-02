@@ -21,6 +21,7 @@ import {
   getAccountTypeConfig,
   isOverflowTarget,
   categoriesWithTaxPreference,
+  tradPreferenceEngineCategories,
   getTraditionalBalance,
   getRothBalance,
   getTotalBalance,
@@ -330,11 +331,16 @@ export function routeWithdrawalsPercentage(
  * Instead of draining accounts sequentially (waterfall) or splitting by fixed %
  * (percentage), this mode optimizes tax efficiency each year:
  *
- * 1. Fill traditional withdrawals (401k/IRA traditional) up to a tax bracket cap.
- *    This uses the cheap bracket space without overfilling into expensive brackets.
- * 2. Fill remaining need from Roth (401k/IRA Roth) — tax-free, no bracket impact.
- * 3. Use brokerage as overflow (capital gains rate, usually lower than income).
- * 4. HSA is last resort — most tax-advantaged, let it compound longest.
+ * 1. Fill traditional withdrawals (401k/403b/IRA traditional) up to a tax
+ *    bracket cap, in the household's own configured account order (v0.7.10
+ *    R51 Gap A — previously a hardcoded 401k→403b→IRA order regardless of
+ *    what the user configured; see `phase1Order` below). This uses the
+ *    cheap bracket space without overfilling into expensive brackets.
+ * 2-4. Rank the remainder (Roth growth, brokerage LTCG, HSA) by real
+ *    marginal cost each year instead of a fixed order (v0.7.9 R40 —
+ *    `withdrawal-cost-ranking.ts`'s `rankWithdrawalTiers`; corrected this
+ *    docblock, which still described the pre-R40 fixed Roth→brokerage→HSA
+ *    order months after R40 shipped).
  *
  * The bracket cap is determined by `rothBracketTarget` (target marginal rate).
  * If no brackets or target are provided, falls back to waterfall behavior.
@@ -344,12 +350,16 @@ export function routeWithdrawalsBracketFilling(
   config: ResolvedDecumulationConfig,
   balances: AccountBalances,
   bracketInfo: RouteBracketInfo,
-): {
-  slots: DecumulationSlot[];
-  warnings: string[];
-  traditionalCap?: number;
-  unmetNeed?: number;
-} {
+): Pick<
+  RouteResult,
+  | "slots"
+  | "warnings"
+  | "traditionalCap"
+  | "unmetNeed"
+  | "tierBreakdown"
+  | "rothBasisCapacity"
+  | "brokerageZeroLtcgCapacity"
+> {
   const warnings: string[] = [];
 
   // If we don't have brackets or a target, fall back to waterfall
@@ -361,16 +371,11 @@ export function routeWithdrawalsBracketFilling(
     return routeWithdrawals(targetWithdrawal, config, balances);
   }
 
-  // Compute the traditional income cap: max traditional withdrawals before
-  // exceeding the target marginal bracket, minus SS income already occupying
-  // that bracket space.
-  const incomeCap = incomeCapForMarginalRate(
-    bracketInfo.rothBracketTarget,
-    bracketInfo.taxBrackets,
-  );
-  const traditionalCap = roundToCents(
-    Math.max(0, incomeCap - bracketInfo.taxableSS),
-  );
+  // Traditional income cap: max traditional withdrawals before exceeding
+  // the target marginal bracket, minus SS income already occupying that
+  // bracket space. Shared with applyRothBracketOverlay below — see
+  // computeBracketTraditionalCap's docblock.
+  const traditionalCap = computeBracketTraditionalCap(bracketInfo);
 
   let remaining = targetWithdrawal;
   const slots: DecumulationSlot[] = [];
@@ -382,8 +387,28 @@ export function routeWithdrawalsBracketFilling(
   const tradTypeCap = config.withdrawalTaxTypeCaps.traditional;
   const rothTypeCap = config.withdrawalTaxTypeCaps.roth;
 
+  // Advisor review, 2026-08-29 (v0.7.10 R51 Gap A): computed ONCE, shared
+  // by both Phase 1 (below) and `drawRothTierCapped` further down — both
+  // loops need "which Traditional-preference account first," and a single
+  // local here means the two can't drift the way they would if each
+  // independently filtered `config.withdrawalOrder`. Previously both
+  // loops ignored `config.withdrawalOrder` entirely and iterated
+  // `categoriesWithTaxPreference()` directly (a config-declaration-order
+  // list, not the user's own editable order) — waterfall and percentage
+  // modes already honored the user's order; bracket_filling silently
+  // didn't. Filtering the user's FULL order down to just the
+  // Traditional-preference categories preserves their relative order
+  // among themselves; `tradPreferenceEngineCategories()` (not
+  // `categoriesWithTaxPreference()` alone) is the correct membership test
+  // — see that function's docblock for why the two aren't guaranteed
+  // identical by construction, even though they coincide today.
+  const tradPreferenceCategories = new Set(tradPreferenceEngineCategories());
+  const phase1Order = config.withdrawalOrder.filter((c) =>
+    tradPreferenceCategories.has(c),
+  );
+
   // --- Phase 1: Traditional from 401k/403b + IRA up to bracket cap ---
-  for (const category of categoriesWithTaxPreference()) {
+  for (const category of phase1Order) {
     if (remaining <= 0 || totalTradWithdrawn >= traditionalCap) break;
 
     const accountCap = config.withdrawalAccountCaps[category];
@@ -433,7 +458,11 @@ export function routeWithdrawalsBracketFilling(
 
   function drawRothTierCapped(cap: number): void {
     let tierRemaining = Math.min(remaining, cap);
-    for (const category of categoriesWithTaxPreference()) {
+    // Same `phase1Order` as Phase 1 above (v0.7.10 R51 Gap A) — Roth
+    // withdrawals draw from the same physical accounts, so using a
+    // different order here would let a household's configured order
+    // apply to Traditional draws but not Roth draws in the same year.
+    for (const category of phase1Order) {
       if (remaining <= 0 || tierRemaining <= 0) break;
 
       const accountCap = config.withdrawalAccountCaps[category];
@@ -608,8 +637,23 @@ export function routeWithdrawalsBracketFilling(
   // tax system's cost curve doesn't move enough for more iterations to
   // matter, and unbounded iteration risks non-termination on pathological
   // inputs.
+  // Reserve up to the rate the conversion will ACTUALLY target
+  // (bracketInfo.conversionTarget), not necessarily the withdrawal
+  // target's own traditionalCap above — they can differ (see
+  // RouteBracketInfo.conversionTarget's docblock). Falls back to
+  // traditionalCap itself when conversionTarget is omitted or equals
+  // rothBracketTarget, so this is a no-op for every caller/fixture that
+  // predates this field.
+  const conversionCap =
+    bracketInfo.conversionTarget != null &&
+    bracketInfo.conversionTarget !== bracketInfo.rothBracketTarget
+      ? computeBracketTraditionalCap({
+          ...bracketInfo,
+          rothBracketTarget: bracketInfo.conversionTarget,
+        })
+      : traditionalCap;
   const conversionReservedRoom = bracketInfo.conversionsEnabled
-    ? Math.max(0, roundToCents(traditionalCap - totalTradWithdrawn))
+    ? Math.max(0, roundToCents(conversionCap - totalTradWithdrawn))
     : 0;
   const baseOrdinaryFloor =
     (bracketInfo.taxableSS ?? 0) + totalTradWithdrawn + conversionReservedRoom;
@@ -629,16 +673,18 @@ export function routeWithdrawalsBracketFilling(
     brokerageBasisRatio: bracketInfo.brokerageBasisRatio ?? 0,
     hsaAvailable: hsaAvailableTotal,
     magiBeforeThisDraw: bracketInfo.magiBeforeThisDraw ?? baseOrdinaryFloor,
+    standardDeduction: bracketInfo.standardDeduction,
+    discretionaryWithdrawalOrder: bracketInfo.discretionaryWithdrawalOrder,
   };
   let impliedRothGrowth = 0;
-  let tiers = rankWithdrawalTiers({
+  let ranked = rankWithdrawalTiers({
     ...rankingBaseInput,
     ordinaryIncomeFloor: baseOrdinaryFloor,
   });
   for (let iter = 0; iter < 3; iter++) {
     let capacitySoFar = 0;
     let growthTierCapacity = 0;
-    for (const tier of tiers) {
+    for (const tier of ranked.tiers) {
       if (tier.source === "roth" && tier.costRate > 0) {
         growthTierCapacity = Math.max(
           0,
@@ -650,20 +696,31 @@ export function routeWithdrawalsBracketFilling(
     }
     if (Math.abs(growthTierCapacity - impliedRothGrowth) < 1) break;
     impliedRothGrowth = growthTierCapacity;
-    tiers = rankWithdrawalTiers({
+    ranked = rankWithdrawalTiers({
       ...rankingBaseInput,
       ordinaryIncomeFloor: baseOrdinaryFloor + impliedRothGrowth,
     });
   }
+  const tiers = ranked.tiers;
 
   const tierDrawers: Record<WithdrawalSourceKind, (cap: number) => void> = {
     roth: drawRothTierCapped,
     brokerage: drawBrokerageTierCapped,
     hsa: drawHsaTierCapped,
   };
+  const tierBreakdown: NonNullable<RouteResult["tierBreakdown"]> = [];
   for (const tier of tiers) {
     if (remaining <= 0) break;
+    const before = remaining;
     tierDrawers[tier.source](tier.capacity);
+    const drawn = roundToCents(before - remaining);
+    if (drawn > 0) {
+      tierBreakdown.push({
+        source: tier.source,
+        costRate: tier.costRate,
+        amount: drawn,
+      });
+    }
   }
 
   // Ensure all 4 categories have slots (brokerage might be missing if not needed)
@@ -696,6 +753,9 @@ export function routeWithdrawalsBracketFilling(
     warnings,
     traditionalCap,
     unmetNeed: remaining > 0 ? remaining : undefined,
+    tierBreakdown,
+    rothBasisCapacity: ranked.rothBasisCapacity,
+    brokerageZeroLtcgCapacity: ranked.brokerageZeroLtcgCapacity,
   };
 }
 
@@ -707,6 +767,17 @@ export function routeWithdrawalsBracketFilling(
 export interface RouteBracketInfo {
   taxBrackets?: WithholdingBracket[];
   rothBracketTarget?: number;
+  /** The rate a same-year Roth conversion will actually target, when it
+   *  differs from rothBracketTarget above (an explicit plan-level
+   *  rothConversionTarget, or a per-year override — see
+   *  decumulation-year.ts's resolvedConversionTarget). Falls back to
+   *  rothBracketTarget when omitted, so existing callers that don't pass
+   *  this (tax-gross-up.ts's estimate) keep prior behavior exactly.
+   *  Advisor-caught 2026-09-01: conversionReservedRoom below used to
+   *  reserve room up to rothBracketTarget's cap even when the conversion
+   *  that actually runs targets a different, more specific rate — two
+   *  names for one quantity, resolved by two different chains. */
+  conversionTarget?: number;
   taxableSS: number;
   /** Below fields power v0.7.9 R40's cost-aware post-bracket-cap ranking
    *  (bracket_filling mode only — see `routeWithdrawalsBracketFilling`,
@@ -744,6 +815,47 @@ export interface RouteBracketInfo {
    *  identical balance data, so `traditionalCap - totalTradWithdrawn` IS
    *  that same "unused room" quantity, not an approximation of it. */
   conversionsEnabled?: boolean;
+  /** Household's annual standard deduction — converts the gross ordinary-
+   *  income floor into real taxable income before LTCG bracket lookups.
+   *  Omitted ⇒ 0 (pre-2026-08-30 behavior: LTCG room systematically
+   *  understated, real LTCG tax overcharged). See `toLtcgTaxableIncome`. */
+  standardDeduction?: number;
+  /** R55 follow-up — see `RankWithdrawalTiersInput`'s field of the same
+   *  name (`withdrawal-cost-ranking.ts`) for the full explanation.
+   *  Undefined ⇒ "roth_first", matching all pre-existing behavior. */
+  discretionaryWithdrawalOrder?: "roth_first" | "brokerage_first";
+}
+
+/**
+ * The dollar cap on Traditional withdrawals/conversions that keeps ordinary
+ * income within `bracketInfo.rothBracketTarget`'s bracket — the gross-income
+ * ceiling for that bracket (after standard deduction) minus SS income
+ * already occupying part of that room. Shared by
+ * `routeWithdrawalsBracketFilling` and `applyRothBracketOverlay`
+ * (advisor-caught 2026-09-01: these computed the byte-identical formula
+ * independently under different variable names — same risk class as any
+ * other duplicated computation, RULES.md single-computation-path).
+ * Returns Infinity when there's no bracket data or target to compute from —
+ * callers already branch on that case, this just makes "no cap" explicit
+ * rather than requiring each caller to re-check `taxBrackets`/
+ * `rothBracketTarget` before calling.
+ */
+export function computeBracketTraditionalCap(
+  bracketInfo: RouteBracketInfo,
+): number {
+  if (
+    !bracketInfo.taxBrackets ||
+    bracketInfo.taxBrackets.length === 0 ||
+    bracketInfo.rothBracketTarget == null
+  ) {
+    return Infinity;
+  }
+  const incomeCap = incomeCapForMarginalRate(
+    bracketInfo.rothBracketTarget,
+    bracketInfo.taxBrackets,
+    bracketInfo.standardDeduction,
+  );
+  return roundToCents(Math.max(0, incomeCap - bracketInfo.taxableSS));
 }
 
 export type RouteResult = {
@@ -769,6 +881,33 @@ export type RouteResult = {
    *  destroy the distinction this field exists to preserve.
    *  `min(unmetNeed, nonRetirement.grandTotal)`. */
   nonRetirementShortfall?: number;
+  /** How the discretionary need beyond Traditional's bracket-fill target
+   *  was actually sourced, in draw order, at each tier's real cost —
+   *  bracket_filling mode only (waterfall/percentage never rank by cost,
+   *  so this is always empty there). Powers the "why was this account
+   *  used" UI explanation: reads directly off `rankWithdrawalTiers`'
+   *  own tiers (`withdrawal-cost-ranking.ts`) rather than re-deriving the
+   *  reasoning from the resulting dollar amounts, so the explanation can
+   *  never drift from what routing actually decided (RULES.md
+   *  single-computation-path). Only tiers that were actually drawn from
+   *  (amount > 0) are included. */
+  tierBreakdown?: {
+    source: WithdrawalSourceKind;
+    costRate: number;
+    amount: number;
+  }[];
+  /** The two zero-cost discretionary tiers' real capacity this year,
+   *  computed BEFORE `discretionaryWithdrawalOrder` decides which drains
+   *  first and before either is actually drawn from — so a tier that had
+   *  real room but was never reached by the draw loop (e.g. Roth basis
+   *  alone covered the year's need) still has its capacity visible, not
+   *  silently discarded like `tierBreakdown` would. Passthrough of
+   *  `rankWithdrawalTiers`' own return value (`withdrawal-cost-ranking.ts`)
+   *  — see `RankedWithdrawalTiers`'s docblock for why this exists. Both are
+   *  0 (bracket_filling mode with a resolvable bracket cap), not present,
+   *  in waterfall/percentage modes — same scoping as `tierBreakdown`. */
+  rothBasisCapacity?: number;
+  brokerageZeroLtcgCapacity?: number;
 };
 
 /**
@@ -790,13 +929,7 @@ export function applyRothBracketOverlay(
   ) {
     return config;
   }
-  const incomeCap = incomeCapForMarginalRate(
-    bracketInfo.rothBracketTarget,
-    bracketInfo.taxBrackets,
-  );
-  const rothOptTraditionalCap = roundToCents(
-    Math.max(0, incomeCap - bracketInfo.taxableSS),
-  );
+  const rothOptTraditionalCap = computeBracketTraditionalCap(bracketInfo);
   // Written as a negation of "< Infinity" (not ">= Infinity") so a NaN cap
   // (shouldn't happen, but taxableSS/incomeCap are computed values) takes
   // the same no-overlay path as the original inline logic did — NaN
@@ -823,6 +956,19 @@ export function applyRothBracketOverlay(
       ...config.withdrawalTaxPreference,
       ...tradOverrides,
     },
+    // Advisor review, 2026-08-29 (v0.7.10 R51 Gap A round 2) — confirmed
+    // load-bearing, NOT an oversight: this overlay adds a Traditional
+    // tax-type cap above so the "Roth bracket optimization" this overlay
+    // implements means anything in waterfall mode, `routeWithdrawals`'s
+    // category loop still runs in the user's OWN configured order. If
+    // that order puts a non-Traditional category (e.g. brokerage) ahead
+    // of every Traditional-preference one, `remaining` gets consumed
+    // before the cap ever binds, making the whole overlay a near-no-op —
+    // confirmed against 3 real engine-snapshot fixtures that exercise
+    // exactly this combination. Resetting to the default order guarantees
+    // Traditional actually gets drawn first, which is the entire point of
+    // this overlay. Do not remove without its own dedicated behavior-
+    // change PR and tests, separate from any other withdrawalOrder fix.
     withdrawalOrder: getDefaultDecumulationOrder(),
   };
 }

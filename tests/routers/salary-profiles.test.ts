@@ -17,7 +17,13 @@ vi.mock("@/lib/budget-api", () => ({
   cacheGet: vi.fn().mockResolvedValue(null),
 }));
 
-import { createTestCaller, adminSession, seedPerson, seedJob } from "./setup";
+import {
+  createTestCaller,
+  adminSession,
+  seedPerson,
+  seedJob,
+  createViewerSessionWithPermissions,
+} from "./setup";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
 import { eq, and } from "drizzle-orm";
 import {
@@ -420,6 +426,86 @@ describe("salaryProfile router", () => {
         await expect(
           caller.salaryProfile.delete({ id: profileId }),
         ).rejects.toThrow("pinned by 1 Plan");
+      } finally {
+        cleanup();
+      }
+    });
+  });
+
+  // ── SET ACTIVE ──
+  // Regression coverage: same bug/fix as contributionProfile.setActive —
+  // activating used to write through the adminProcedure-gated
+  // settings.appSettings.upsert, silently no-op-ing for a household member
+  // holding only the (shared) contributionProfile permission.
+
+  describe("setActive", () => {
+    it("writes the target profile id to app_settings", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const profileId = seedSalaryProfile(db, { name: "To Activate" });
+
+        const result = await caller.salaryProfile.setActive({
+          id: profileId,
+        });
+        expect(result).toEqual({ success: true });
+
+        const settings = await caller.settings.appSettings.list();
+        const row = settings.find(
+          (s: { key: string }) => s.key === "active_salary_profile_id",
+        );
+        expect(row?.value).toBe(profileId);
+      } finally {
+        cleanup();
+      }
+    });
+
+    it("throws for a non-existent profile id", async () => {
+      const { caller, cleanup } = await createTestCaller(adminSession);
+      try {
+        await expect(
+          caller.salaryProfile.setActive({ id: 999_999 }),
+        ).rejects.toThrow("Profile not found");
+      } finally {
+        cleanup();
+      }
+    });
+
+    it("succeeds for a non-admin session holding only the contributionProfile permission", async () => {
+      const { caller, db, cleanup } = await createTestCaller(
+        createViewerSessionWithPermissions(["contributionProfile"]),
+      );
+      try {
+        const profileId = seedSalaryProfile(db, { name: "Non-Admin Target" });
+        const result = await caller.salaryProfile.setActive({
+          id: profileId,
+        });
+        expect(result).toEqual({ success: true });
+      } finally {
+        cleanup();
+      }
+    });
+
+    it("id: null clears the active-profile app_settings row instead of silently no-op'ing (advisor-caught 2026-09-01)", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const profileId = seedSalaryProfile(db, { name: "To Clear" });
+        await caller.salaryProfile.setActive({ id: profileId });
+        let settings = await caller.settings.appSettings.list();
+        expect(
+          settings.find(
+            (s: { key: string }) => s.key === "active_salary_profile_id",
+          )?.value,
+        ).toBe(profileId);
+
+        const result = await caller.salaryProfile.setActive({ id: null });
+        expect(result).toEqual({ success: true });
+
+        settings = await caller.settings.appSettings.list();
+        expect(
+          settings.find(
+            (s: { key: string }) => s.key === "active_salary_profile_id",
+          ),
+        ).toBeUndefined();
       } finally {
         cleanup();
       }

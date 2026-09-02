@@ -170,9 +170,11 @@ export function BudgetSection({
     }
   };
 
-  // Unlinked Ledgr items for the "link to existing" dropdown
+  // Unlinked Ledgr items for the "link to existing" dropdown — orphaned
+  // items (a stale id that no longer resolves) need exactly the same
+  // re-link treatment as never-linked items.
   const unlinkedLedgrItems = budget.matches
-    .filter((m) => m.status === "unmatched")
+    .filter((m) => m.status === "unmatched" || m.status === "orphaned")
     .sort((a, b) =>
       `${a.ledgrCategory} ${a.ledgrName}`.localeCompare(
         `${b.ledgrCategory} ${b.ledgrName}`,
@@ -218,6 +220,13 @@ export function BudgetSection({
             label="unmatched"
             tone="faint"
           />
+          {budget.summary.orphaned > 0 && (
+            <SectionSummaryBadge
+              value={budget.summary.orphaned}
+              label="orphaned"
+              tone="red"
+            />
+          )}
           {budget.summary.apiOnly > 0 && (
             <SectionSummaryBadge
               value={budget.summary.apiOnly}
@@ -447,26 +456,40 @@ export function BudgetSection({
                           </>
                         )}
 
-                        {m.status === "unmatched" && expandedBudget && (
-                          <div className="flex-1">
-                            <ApiCategorySelect
-                              value={budgetOverrides[m.budgetItemId] ?? ""}
-                              options={allApiCats}
-                              onChange={(v) =>
-                                setBudgetOverrides((prev) => ({
-                                  ...prev,
-                                  [m.budgetItemId]: v,
-                                }))
-                              }
-                            />
-                          </div>
-                        )}
+                        {(m.status === "unmatched" ||
+                          m.status === "orphaned") &&
+                          expandedBudget && (
+                            <div className="flex-1">
+                              {m.status === "orphaned" && m.apiCategoryName && (
+                                <span
+                                  className="text-red-600 text-caption italic mr-1"
+                                  title={`Was linked to "${m.apiCategoryName}" (id ${m.apiCategoryId}), which no longer exists`}
+                                >
+                                  was &ldquo;{m.apiCategoryName}&rdquo; —
+                                </span>
+                              )}
+                              <ApiCategorySelect
+                                value={budgetOverrides[m.budgetItemId] ?? ""}
+                                options={allApiCats}
+                                onChange={(v) =>
+                                  setBudgetOverrides((prev) => ({
+                                    ...prev,
+                                    [m.budgetItemId]: v,
+                                  }))
+                                }
+                              />
+                            </div>
+                          )}
 
-                        {m.status === "unmatched" && !expandedBudget && (
-                          <span className="text-faint text-caption italic flex-1">
-                            unmapped
-                          </span>
-                        )}
+                        {(m.status === "unmatched" ||
+                          m.status === "orphaned") &&
+                          !expandedBudget && (
+                            <span className="text-faint text-caption italic flex-1">
+                              {m.status === "orphaned"
+                                ? "orphaned"
+                                : "unmapped"}
+                            </span>
+                          )}
 
                         {m.apiBudgeted != null && (
                           <span className="text-faint tabular-nums whitespace-nowrap text-caption">
@@ -548,7 +571,8 @@ export function BudgetSection({
                   {(unlinkedLedgrItems.length > 0 ||
                     (savings &&
                       savings.matches.some(
-                        (m) => m.status === "unmatched",
+                        (m) =>
+                          m.status === "unmatched" || m.status === "orphaned",
                       ))) && (
                     <div className="flex items-center gap-1 pl-14">
                       <select
@@ -576,11 +600,17 @@ export function BudgetSection({
                         )}
                         {savings &&
                           savings.matches.filter(
-                            (m) => m.status === "unmatched",
+                            (m) =>
+                              m.status === "unmatched" ||
+                              m.status === "orphaned",
                           ).length > 0 && (
                             <optgroup label="Sinking Funds">
                               {savings.matches
-                                .filter((m) => m.status === "unmatched")
+                                .filter(
+                                  (m) =>
+                                    m.status === "unmatched" ||
+                                    m.status === "orphaned",
+                                )
                                 .map((m) => (
                                   <option
                                     key={`s:${m.goalId}`}

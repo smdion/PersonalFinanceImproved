@@ -96,6 +96,13 @@ export function SavingsSection({
             label="unmatched"
             tone="faint"
           />
+          {savings.summary.orphaned > 0 && (
+            <SectionSummaryBadge
+              value={savings.summary.orphaned}
+              label="orphaned"
+              tone="red"
+            />
+          )}
         </SectionSummaryRow>
       </summary>
       <div className="px-3 pb-3 space-y-2">
@@ -191,8 +198,16 @@ export function SavingsSection({
                   </>
                 )}
 
-                {m.status === "unmatched" && (
+                {(m.status === "unmatched" || m.status === "orphaned") && (
                   <div className="flex-1">
+                    {m.status === "orphaned" && m.apiCategoryName && (
+                      <span
+                        className="text-red-600 text-caption italic mr-1"
+                        title={`Was linked to "${m.apiCategoryName}" (id ${m.apiCategoryId}), which no longer exists in ${allApiCats.length > 0 ? "the connected budget" : "the API"}`}
+                      >
+                        was &ldquo;{m.apiCategoryName}&rdquo; —
+                      </span>
+                    )}
                     <ApiCategorySelect
                       value={savingsOverrides[m.goalId] ?? ""}
                       options={allApiCats}

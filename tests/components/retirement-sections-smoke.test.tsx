@@ -22,6 +22,7 @@ import type { Settings } from "@/components/retirement/sections/types";
 
 const baseSettings: Settings = {
   personId: 1,
+  profileId: 1,
   retirementAge: 65,
   endAge: 95,
   returnAfterRetirement: "0.05",
@@ -125,7 +126,8 @@ describe("SocialSecuritySection smoke", () => {
       <SocialSecuritySection
         settings={baseSettings}
         perPersonSettings={null}
-        upsertSettings={{ mutate: vi.fn() }}
+        upsertPerson={{ mutate: vi.fn() }}
+        upsertHouseholdFields={{ mutate: vi.fn() }}
         isEditable={true}
       />,
     );
@@ -155,7 +157,8 @@ describe("SocialSecuritySection smoke", () => {
             socialSecurityMonthly: "1500",
           },
         ]}
-        upsertSettings={{ mutate: vi.fn() }}
+        upsertPerson={{ mutate: vi.fn() }}
+        upsertHouseholdFields={{ mutate: vi.fn() }}
         isEditable={true}
       />,
     );
@@ -338,7 +341,8 @@ describe("isEditable={false} gating (Group B)", () => {
       <SocialSecuritySection
         settings={baseSettings}
         perPersonSettings={null}
-        upsertSettings={{ mutate: vi.fn() }}
+        upsertPerson={{ mutate: vi.fn() }}
+        upsertHouseholdFields={{ mutate: vi.fn() }}
         isEditable={false}
       />,
     );

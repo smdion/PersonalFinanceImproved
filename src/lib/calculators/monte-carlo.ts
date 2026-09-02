@@ -100,8 +100,20 @@ function computeDistribution(values: number[]): DistributionSummary {
  * 4. Record end balance and depletion age
  *
  * Then aggregate all trials into percentile bands.
+ *
+ * `onProgress`, if given, is called periodically (not every trial — every
+ * ~2% of numTrials, to keep the overhead of the callback itself negligible
+ * against the loop it's instrumenting) with the trial count completed so
+ * far. It's a plain in-process callback — callers running this off-thread
+ * (see `src/workers/monte-carlo-worker.ts`) wire their OWN callback that
+ * posts a worker message; never pass a caller-supplied function through
+ * `postMessage` itself, since a function reference can't survive
+ * structured clone.
  */
-export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
+export function calculateMonteCarlo(
+  input: MonteCarloInput,
+  onProgress?: (done: number, total: number) => void,
+): MonteCarloResult {
   const startTime = performance.now();
   const warnings: string[] = [];
 
@@ -208,8 +220,20 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
   const yearsToRetirement = engineInput.retirementAge - startAge;
   const pvDeflator = Math.pow(1 + engineInput.inflationRate, yearsToRetirement);
 
+  // Report progress every ~2% of trials (min every 20 trials) so the
+  // callback overhead never becomes noticeable against the loop itself,
+  // while still giving a caller something to show a determinate "N/total"
+  // state with.
+  const progressInterval = Math.max(1, Math.floor(numTrials / 50));
+
   // Run trials
   for (let trial = 0; trial < numTrials; trial++) {
+    if (
+      onProgress &&
+      (trial % progressInterval === 0 || trial === numTrials - 1)
+    ) {
+      onProgress(trial, numTrials);
+    }
     const rng = createPRNG(seed + trial);
 
     // Generate randomized return rates for this trial
@@ -398,6 +422,7 @@ export function calculateMonteCarlo(input: MonteCarloInput): MonteCarloResult {
       safeDivide(result.sustainableWithdrawal, pvDeflator, 0),
     );
   }
+  onProgress?.(numTrials, numTrials);
 
   // Aggregate into percentile bands
   const percentileBands: MonteCarloPercentileBand[] = [];

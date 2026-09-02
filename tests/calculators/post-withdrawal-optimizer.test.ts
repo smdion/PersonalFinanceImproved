@@ -33,6 +33,7 @@ function makeRothInput(
     rothBracketTarget: 0.22, // fill up to 22% bracket (cap at 96175)
     totalTraditionalWithdrawal: 40000,
     taxableSS: 10000,
+    rothTaxableGrowth: 0,
     brokerageGainsPortion: 5000,
     filingStatus: "MFJ",
     balances: makeTaxBuckets(),
@@ -101,6 +102,21 @@ describe("performRothConversion", () => {
     expect(balances.taxFree).toBeCloseTo(200000 + 151550, 0);
     // Brokerage should decrease by tax cost
     expect(balances.afterTax).toBeLessThan(300000);
+  });
+
+  it("includes rothTaxableGrowth in yearTaxableIncome, shrinking conversionRoom by exactly that amount (advisor-flagged 2026-09-01)", () => {
+    // Same setup as the previous test, but with a real non-qualified Roth
+    // growth draw this year. Before this fix, yearTaxableIncome silently
+    // dropped rothTaxableGrowth (exactly the bug actualTaxableIncome's own
+    // docblock, tax-estimation.ts, was added to prevent), overstating
+    // conversionRoom by the full $20,000.
+    const balances = makeTaxBuckets();
+    const acctBal = makeAccountBalances();
+    const result = performRothConversion(
+      makeRothInput({ balances, acctBal, rothTaxableGrowth: 20000 }),
+    );
+    // conversionRoom = 201550 - (40000 + 10000 + 20000) = 131550
+    expect(result.rothConversionAmount).toBeCloseTo(131550, 0);
   });
 
   it("caps conversion at available Traditional balance", () => {
@@ -302,7 +318,14 @@ function makeAcaInput(overrides: Partial<AcaInput> = {}): AcaInput {
     totalTraditionalWithdrawal: 30000,
     rothConversionAmount: 0,
     brokerageGainsPortion: 5000,
+    rothTaxableGrowth: 0,
     ssIncome: 0,
+    // Phase 4 (2026-08-31): factor 1 == no growth applied (matches
+    // taxGrowthFactor's own "year === dataYear" identity convention) --
+    // these existing fixture-driven tests were written before FPL growth
+    // existed and assert against the raw $84,600 (2-person) cliff, so
+    // keep them at the no-op factor rather than updating every literal.
+    fplGrowthFactor: 1,
     ...overrides,
   };
 }
@@ -343,6 +366,27 @@ describe("checkAca", () => {
     expect(result.warnings[0]).toContain("cliff");
   });
 
+  it("warning attributes the overage to brokerage when brokerage gains could cover it (R55)", () => {
+    // MAGI = 80000 + 0 + 5000 + 0 = 85000, overage = 400, brokerageGainsPortion 5000 >= 400
+    const result = checkAca(
+      makeAcaInput({ totalTraditionalWithdrawal: 80000 }),
+    );
+    expect(result.warnings[0]).toContain("sourcing");
+    expect(result.warnings[0]).toContain("less from brokerage");
+  });
+
+  it("warning omits the brokerage attribution when brokerage gains can't cover the overage (R55)", () => {
+    // MAGI = 84700 + 0 + 0 + 0 = 84700, overage = 100, brokerageGainsPortion 0 < 100
+    const result = checkAca(
+      makeAcaInput({
+        totalTraditionalWithdrawal: 84700,
+        brokerageGainsPortion: 0,
+      }),
+    );
+    expect(result.acaSubsidyPreserved).toBe(false);
+    expect(result.warnings[0]).not.toContain("sourcing");
+  });
+
   it("includes Roth conversion in MAGI calculation", () => {
     // Base MAGI = 30000 + 5000 = 35000 (under cliff)
     // With 60000 conversion: 35000 + 60000 = 95000 (over 84600 cliff)
@@ -356,6 +400,14 @@ describe("checkAca", () => {
     // 0-85% taxable slice used for IRMAA/income tax: 35000 + 50000 = 85000
     // (over 84600 cliff)
     const result = checkAca(makeAcaInput({ ssIncome: 50000 }));
+    expect(result.acaSubsidyPreserved).toBe(false);
+  });
+
+  it("includes non-qualified Roth growth income in MAGI (advisor-caught 2026-09-01: previously omitted here while currentYearMagi/NIIT already included it)", () => {
+    // Base MAGI = 30000 + 5000 = 35000 (under cliff). Adding rothTaxableGrowth
+    // must push it over the same way rothConversionAmount/ssIncome already do:
+    // 35000 + 50000 = 85000 (over 84600 cliff).
+    const result = checkAca(makeAcaInput({ rothTaxableGrowth: 50000 }));
     expect(result.acaSubsidyPreserved).toBe(false);
   });
 

@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**339 procedures across 38 routers.**
+**348 procedures across 40 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -110,6 +110,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `list`                     | query    | `protectedProcedure`           | List all contribution profiles with resolved summary totals.                                                                                                                                             |
 | `resolve`                  | query    | `protectedProcedure`           | Resolve a profile to aggregate totals — used by the relocation tool and any other consumer that needs salary/contribution/match numbers for a given profile.                                             |
 | `setAccountActiveFields`   | mutation | `contributionProfileProcedure` | field optional, no cross-field constraint); the paired-or-neither contributionValue/contributionMethod invariant is checked on the MERGED result below, not on the patch itself, since a legitimate sing |
+| `setActive`                | mutation | `contributionProfileProcedure` | (`(id: number \| null) => void`) documents null as a valid call, so a caller that reaches it silently loses the write. Deleting the app_settings row mirrors settings.appSettings.upsert's own existing  |
 | `setDeductionActiveFields` | mutation | `contributionProfileProcedure` | Patch (merge) one deduction's active amount within a profile — same field-level-patch, same-transaction pattern as setAccountActiveFields. A deduction has no live amountPerPeriod any more (Stage B dro |
 | `update`                   | mutation | `contributionProfileProcedure` | Update an existing contribution profile.                                                                                                                                                                 |
 
@@ -209,12 +210,19 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `computeCoastFire`   | query | `protectedProcedure` | ~log₂(retirementAge - currentAge) engine runs. Success criterion: `portfolioDepletionAge === null` AND `sustainableWithdrawal >= projectedExpenses` at the first decumulation year. See `findCoastFireAg |
 | `computeCoastFireMC` | query | `protectedProcedure` | If the re-probe also passes, the true earliest age may be lower but we return the search result honestly with a warning. Cost: ~5-6 probes × 1 MC run × 1000 trials ≈ 4-6s wall clock (profiled 2026-04- |
 
+## `projection/coast-fire-probe`
+
+| Procedure               | Kind  | Auth                 | Description                                                                                                                                                                                              |
+| ----------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `computeCoastFireProbe` | query | `protectedProcedure` | the binary search's earliest-passing-age or "today." Reuses the same `buildCoastFireProfileSwitches` probe mechanism `computeCoastFireMC`'s binary search already uses; no new simulation logic. Returns |
+
 ## `projection/monte-carlo`
 
 | Procedure                     | Kind     | Auth                 | Description                                                                                                                                                                                              |
 | ----------------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `clearCache`                  | mutation | `adminProcedure`     | forces a full recompute without bumping PROJECTION_CACHE_ENGINE_VERSION and redeploying. Admin-only: destructive against shared cache state.                                                             |
 | `computeMonteCarloProjection` | query    | `protectedProcedure` | Runs N trials of the contribution engine with randomized return rates sampled from correlated log-normal distributions based on asset class parameters and glide path allocations from the DB. Returns p |
+| `getMonteCarloProgress`       | query    | `protectedProcedure` | running — see monte-carlo-worker-client.ts's module docblock for why this is an in-memory Map rather than a DB table or a subscription. Returns null once the job is done or if the runId is unknown (e. |
 | `updateClampBounds`           | mutation | `scenarioProcedure`  | (no description)                                                                                                                                                                                         |
 | `updateGlidePathAllocations`  | mutation | `scenarioProcedure`  | (no description)                                                                                                                                                                                         |
 | `updateReturnRateTable`       | mutation | `scenarioProcedure`  | (no description)                                                                                                                                                                                         |
@@ -259,31 +267,40 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | ------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `computeStressTest` | query | `protectedProcedure` | returnRates / inflationRate / salaryGrowthRate / withdrawalRate before calling calculateProjection. Returns summary metrics (nest egg at retirement, sustainable withdrawal, depletion age) so the PlanH |
 
+## `projection/withdrawal-bracket-optimizer`
+
+| Procedure                           | Kind  | Auth                 | Description                                                                                                                                                                                              |
+| ----------------------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `computeWithdrawalBracketOptimizer` | query | `protectedProcedure` | Searches the household's own real marginal bracket rates for the `rothBracketTarget` that minimizes lifetime tax cost (plus a terminal-value penalty for Traditional money left unconverted), subject to |
+
 ## `retirement`
 
-| Procedure                   | Kind     | Auth                 | Description      |
-| --------------------------- | -------- | -------------------- | ---------------- |
-| `clear`                     | mutation | `brokerageProcedure` | (no description) |
-| `computeRelocationAnalysis` | query    | `protectedProcedure` | (no description) |
-| `create`                    | mutation | `adminProcedure`     | (no description) |
-| `create`                    | mutation | `adminProcedure`     | (no description) |
-| `create`                    | mutation | `adminProcedure`     | (no description) |
-| `delete`                    | mutation | `adminProcedure`     | (no description) |
-| `delete`                    | mutation | `adminProcedure`     | (no description) |
-| `delete`                    | mutation | `adminProcedure`     | (no description) |
-| `delete`                    | mutation | `adminProcedure`     | (no description) |
-| `get`                       | query    | `protectedProcedure` | (no description) |
-| `list`                      | query    | `protectedProcedure` | (no description) |
-| `list`                      | query    | `protectedProcedure` | (no description) |
-| `list`                      | query    | `protectedProcedure` | (no description) |
-| `list`                      | query    | `protectedProcedure` | (no description) |
-| `list`                      | query    | `protectedProcedure` | (no description) |
-| `save`                      | mutation | `brokerageProcedure` | (no description) |
-| `update`                    | mutation | `adminProcedure`     | (no description) |
-| `update`                    | mutation | `adminProcedure`     | (no description) |
-| `update`                    | mutation | `adminProcedure`     | (no description) |
-| `upsert`                    | mutation | `adminProcedure`     | (no description) |
-| `upsert`                    | mutation | `adminProcedure`     | (no description) |
+| Procedure                   | Kind     | Auth                 | Description                                                                                                                                                                                              |
+| --------------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `clear`                     | mutation | `brokerageProcedure` | (no description)                                                                                                                                                                                         |
+| `computeRelocationAnalysis` | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
+| `create`                    | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
+| `create`                    | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
+| `delete`                    | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
+| `delete`                    | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
+| `delete`                    | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
+| `delete`                    | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
+| `duplicate`                 | mutation | `adminProcedure`     | a real household whose withdrawal_rate/rmd_excess_handling disagreed across person rows. Cloning from the PRIMARY person's source row into every person's new row (not each person's own current row) av |
+| `get`                       | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
+| `list`                      | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
+| `list`                      | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
+| `list`                      | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
+| `list`                      | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
+| `list`                      | query    | `protectedProcedure` | adminProcedure throughout, matching retirementSettings.upsert's existing gate — RULES.md Composed Router: an inconsistent procedure type within one group is a bug, not a design choice.                 |
+| `list`                      | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
+| `save`                      | mutation | `brokerageProcedure` | (no description)                                                                                                                                                                                         |
+| `update`                    | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
+| `update`                    | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
+| `update`                    | mutation | `adminProcedure`     | through retirementSettings.upsert, scoped to whichever profile is active — not here.                                                                                                                     |
+| `upsert`                    | mutation | `adminProcedure`     | household with zero profiles yet) — that is NOT the same as "use the active profile," and must NOT silently retarget the write there; it scopes to the (rare, legitimate) null-profile rows via `isNull` |
+| `upsert`                    | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
+| `upsertHouseholdFields`     | mutation | `adminProcedure`     | engine's real per-person read source for both (`retirement_profile_people`) is per-person storage. Fan whichever field the caller sends to every person's row in the profile — same shape as `retirement |
+| `upsertPerson`              | mutation | `adminProcedure`     | from once step B (2026-08-30) switched those reads to `retirement_profile_people`. The edits saved, the UI showed the new number optimistically, and the projection never moved — same failure shape as  |
 
 ## `salary-profiles`
 
@@ -296,6 +313,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `list`        | query    | `protectedProcedure`           | All salary profiles, oldest first. Real rows only.                                                                                                                                                       |
 | `patchEntry`  | mutation | `contributionProfileProcedure` | The read-merge-write happens inside a transaction so two overlapping patches to the same profile (two fields committed in quick succession, a second tab/device) can't silently clobber each other the w |
 | `removeEntry` | mutation | `contributionProfileProcedure` | Remove one job's entry from a profile entirely — it goes back to contributing $0, the same as a job that was never added. Same transactional read-merge-write pattern as patchEntry.                     |
+| `setActive`   | mutation | `contributionProfileProcedure` | is split out from settings.appSettings.upsert instead of writing through it (same admin-only-write-vs-contributionProfile-permission gap) and for why null is accepted (advisor-caught 2026-09-01 — the  |
 | `update`      | mutation | `contributionProfileProcedure` | (no description)                                                                                                                                                                                         |
 
 ## `savings`
@@ -362,6 +380,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `setBudgetProfilePin`           | mutation | `scenarioProcedure`  | Pin (or clear, with null) which Budget Profile is "active" when this Plan is selected.       |
 | `setContributionProfilePin`     | mutation | `scenarioProcedure`  | Pin (or clear, with null) which Contribution Profile is "active" when this Plan is selected. |
 | `setOverride`                   | mutation | `scenarioProcedure`  | Update a single override within a scenario's overrides JSONB                                 |
+| `setRetirementProfilePin`       | mutation | `scenarioProcedure`  | Set (or clear, with null) which Retirement Profile is active when this Plan is selected.     |
 | `setSalaryProfilePin`           | mutation | `scenarioProcedure`  | Pin (or clear, with null) which Salary Profile is "active" when this Plan is selected.       |
 | `update`                        | mutation | `scenarioProcedure`  | (no description)                                                                             |
 | `updateDataFreshness`           | mutation | `adminProcedure`     | (no description)                                                                             |
@@ -395,7 +414,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `list`               | query    | `protectedProcedure`           | (no description)                                                                                                                                                                                         |
 | `setActive`          | mutation | `adminProcedure`               | have the curated accountDetails/compareData view of an account, not every raw structural field. Deliberately separate from any profile-scoped mutation: this flag isn't profile-owned (it gates the acco |
 | `setPriorYearAmount` | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
-| `update`             | mutation | `adminProcedure`               | routing rules has no need for.                                                                                                                                                                           |
+| `update`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
 | `update`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
 | `update`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
 | `update`             | mutation | `contributionProfileProcedure` | (no description)                                                                                                                                                                                         |

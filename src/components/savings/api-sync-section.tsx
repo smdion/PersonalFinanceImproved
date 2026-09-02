@@ -14,6 +14,30 @@ import {
 } from "@/components/ui/push-preview-modal";
 import type { RawGoal } from "./types";
 
+/** The caller's already-resolved Contribution/Salary Profile selection —
+ *  see computeLiveMaxMonthlyFunding's `income` param docblock (savings.ts)
+ *  for why the recalculate/lock-in mutations need this threaded through
+ *  explicitly rather than re-resolving it themselves. */
+interface ProfileResolutionTiers {
+  planPinId: number | null;
+  localSelectionId: number | null;
+  globalDefaultId: number | null;
+}
+
+export interface RecalcIncomeParams {
+  contributionProfileId?: number;
+  salaryProfileId?: number;
+  salaryActiveFields?: { personId: number; salary: number }[];
+  /** The raw tiers behind `contributionProfileId`/`salaryProfileId` — the
+   *  mutation forwards these to budget.computeActiveSummary so that
+   *  procedure's OWN per-column profile resolution (Plan pin > column pin >
+   *  local selection > global default) matches what the client's own
+   *  maxMonthlyFunding query used, not just the paycheck side (found live,
+   *  2026-08-31, round two — see computeLiveMaxMonthlyFunding in savings.ts). */
+  contributionProfileTiers?: ProfileResolutionTiers;
+  salaryProfileTiers?: ProfileResolutionTiers;
+}
+
 interface ApiCategoryGroup {
   id: string;
   name: string;
@@ -70,6 +94,8 @@ export interface ApiSyncSectionProps {
   setPendingRecalcGoalId: (id: number | undefined) => void;
   pendingRecalcProfileId: number | undefined;
   setPendingRecalcProfileId: (id: number | undefined) => void;
+  pendingRecalcIncome: RecalcIncomeParams | undefined;
+  setPendingRecalcIncome: (income: RecalcIncomeParams | undefined) => void;
   recalculateMutation: RecalculateMutation;
   lockInPreviewItems: PushPreviewItem[] | null;
   setLockInPreviewItems: (items: PushPreviewItem[] | null) => void;
@@ -77,6 +103,8 @@ export interface ApiSyncSectionProps {
   setPendingLockInGoalId: (id: number | undefined) => void;
   pendingLockInProfileId: number | undefined;
   setPendingLockInProfileId: (id: number | undefined) => void;
+  pendingLockInIncome: RecalcIncomeParams | undefined;
+  setPendingLockInIncome: (income: RecalcIncomeParams | undefined) => void;
   lockInMutation: LockInMutation;
 }
 
@@ -99,6 +127,8 @@ export function ApiSyncSection({
   setPendingRecalcGoalId,
   pendingRecalcProfileId,
   setPendingRecalcProfileId,
+  pendingRecalcIncome,
+  setPendingRecalcIncome,
   recalculateMutation,
   lockInPreviewItems,
   setLockInPreviewItems,
@@ -106,6 +136,8 @@ export function ApiSyncSection({
   setPendingLockInGoalId,
   pendingLockInProfileId,
   setPendingLockInProfileId,
+  pendingLockInIncome,
+  setPendingLockInIncome,
   lockInMutation,
 }: ApiSyncSectionProps) {
   const utils = trpc.useUtils();
@@ -170,6 +202,7 @@ export function ApiSyncSection({
         <PushPreviewModal
           title={`Push contributions to ${apiBalancesData?.service?.toUpperCase() ?? "API"}`}
           items={pushPreviewItems}
+          destinationLabel={apiBalancesData?.service?.toUpperCase() ?? "YNAB"}
           onConfirm={() => {
             pushMutation.mutate(
               pendingPushGoalId ? { goalId: pendingPushGoalId } : {},
@@ -204,12 +237,14 @@ export function ApiSyncSection({
                 ...(pendingRecalcProfileId !== undefined
                   ? { profileId: pendingRecalcProfileId }
                   : {}),
+                ...pendingRecalcIncome,
               },
               {
                 onSettled: () => {
                   setRecalcPreviewItems(null);
                   setPendingRecalcGoalId(undefined);
                   setPendingRecalcProfileId(undefined);
+                  setPendingRecalcIncome(undefined);
                 },
               },
             );
@@ -218,6 +253,7 @@ export function ApiSyncSection({
             setRecalcPreviewItems(null);
             setPendingRecalcGoalId(undefined);
             setPendingRecalcProfileId(undefined);
+            setPendingRecalcIncome(undefined);
           }}
           isPending={recalculateMutation.isPending}
         />
@@ -239,12 +275,14 @@ export function ApiSyncSection({
                 ...(pendingLockInProfileId !== undefined
                   ? { profileId: pendingLockInProfileId }
                   : {}),
+                ...pendingLockInIncome,
               },
               {
                 onSettled: () => {
                   setLockInPreviewItems(null);
                   setPendingLockInGoalId(undefined);
                   setPendingLockInProfileId(undefined);
+                  setPendingLockInIncome(undefined);
                 },
               },
             );
@@ -253,6 +291,7 @@ export function ApiSyncSection({
             setLockInPreviewItems(null);
             setPendingLockInGoalId(undefined);
             setPendingLockInProfileId(undefined);
+            setPendingLockInIncome(undefined);
           }}
           isPending={lockInMutation.isPending}
         />
@@ -286,14 +325,27 @@ export function useApiSync() {
   const pushToApi = trpc.savings.pushContributionsToApi.useMutation({
     onSuccess: (data) => {
       utils.savings.invalidate();
-      toast.success(
-        formatSyncResultToast(
-          data.pushed,
-          "push",
-          budgetApiServiceLabel(data.service),
-          data.skippedUnsupported,
-        ),
+      const message = formatSyncResultToast(
+        data.pushed,
+        "push",
+        budgetApiServiceLabel(data.service),
+        data.skippedUnsupported,
+        data.failed,
+        data.failureMessage,
+        // Actual's goal push only writes a #template note, not a live
+        // budgeted amount — see formatSyncResultToast's requiresManualApply
+        // docblock. YNAB writes the real goal field directly.
+        data.service === "actual",
       );
+      // A genuine failure with nothing pushed is a real error, not a
+      // quiet "already up to date" — surface it as one (found live,
+      // 2026-08-31: this previously always showed a success toast, even
+      // when every single push attempt failed server-side).
+      if (data.failed > 0 && data.pushed === 0) {
+        toast.error(message);
+      } else {
+        toast.success(message);
+      }
     },
   });
   const deleteOverride = trpc.savings.allocationOverrides.delete.useMutation({
@@ -346,6 +398,13 @@ export function useApiSync() {
   const [pendingRecalcProfileId, setPendingRecalcProfileId] = useState<
     number | undefined
   >(undefined);
+  // Threaded into recalculateMutation/lockInMutation's `income` fields so
+  // the live pool the MUTATION recomputes against can't diverge from what
+  // this same preview just showed the household (found live, 2026-08-31 —
+  // see computeLiveMaxMonthlyFunding's docblock, savings.ts).
+  const [pendingRecalcIncome, setPendingRecalcIncome] = useState<
+    RecalcIncomeParams | undefined
+  >(undefined);
   const [lockInPreviewItems, setLockInPreviewItems] = useState<
     PushPreviewItem[] | null
   >(null);
@@ -354,6 +413,9 @@ export function useApiSync() {
   >(undefined);
   const [pendingLockInProfileId, setPendingLockInProfileId] = useState<
     number | undefined
+  >(undefined);
+  const [pendingLockInIncome, setPendingLockInIncome] = useState<
+    RecalcIncomeParams | undefined
   >(undefined);
 
   const onLinkToApi = useCallback(
@@ -391,6 +453,7 @@ export function useApiSync() {
       maxMonthlyFunding: number | null,
       goalId?: number,
       profileId?: number,
+      income?: RecalcIncomeParams,
     ) => {
       const items: PushPreviewItem[] = [];
       for (const g of rawGoals) {
@@ -412,6 +475,7 @@ export function useApiSync() {
       }
       setPendingRecalcGoalId(goalId);
       setPendingRecalcProfileId(profileId);
+      setPendingRecalcIncome(income);
       setRecalcPreviewItems(items);
     },
     [],
@@ -422,6 +486,7 @@ export function useApiSync() {
       maxMonthlyFunding: number | null,
       goalId?: number,
       profileId?: number,
+      income?: RecalcIncomeParams,
     ) => {
       const items: PushPreviewItem[] = [];
       for (const g of rawGoals) {
@@ -442,6 +507,7 @@ export function useApiSync() {
       }
       setPendingLockInGoalId(goalId);
       setPendingLockInProfileId(profileId);
+      setPendingLockInIncome(income);
       setLockInPreviewItems(items);
     },
     [],
@@ -461,6 +527,8 @@ export function useApiSync() {
     setPendingRecalcGoalId,
     pendingRecalcProfileId,
     setPendingRecalcProfileId,
+    pendingRecalcIncome,
+    setPendingRecalcIncome,
     buildRecalculateAllPreview,
     lockInPreviewItems,
     setLockInPreviewItems,
@@ -468,6 +536,8 @@ export function useApiSync() {
     setPendingLockInGoalId,
     pendingLockInProfileId,
     setPendingLockInProfileId,
+    pendingLockInIncome,
+    setPendingLockInIncome,
     buildLockInAllPreview,
     // Callbacks for header buttons
     pushToApiPending: pushToApi.isPending,

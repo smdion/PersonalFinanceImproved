@@ -13,24 +13,33 @@ import { formatCurrency } from "@/lib/utils/format";
 import type {
   Settings,
   PerPersonSettings,
-  UpsertSettingsMutation,
+  UpsertProfilePersonMutation,
+  UpsertProfileHouseholdFieldsMutation,
   IsEditable,
 } from "./types";
-import { buildSettingsPatch } from "./settings-patch";
 
 type Props = {
   settings: Settings;
   perPersonSettings: PerPersonSettings;
-  upsertSettings: UpsertSettingsMutation;
+  /** SS Benefit is genuinely per-person — writes `retirement_profile_people`
+   *  directly for whichever person the chip belongs to. */
+  upsertPerson: UpsertProfilePersonMutation;
+  /** SS Start Age renders as ONE household-wide control regardless of
+   *  person count, but its read source is per-person storage — fans out
+   *  server-side. See retirementProfilePeople.upsertHouseholdFields. */
+  upsertHouseholdFields: UpsertProfileHouseholdFieldsMutation;
   isEditable: IsEditable;
 };
 
 export function SocialSecuritySection({
   settings,
   perPersonSettings,
-  upsertSettings,
+  upsertPerson,
+  upsertHouseholdFields,
   isEditable,
 }: Props) {
+  if (settings.profileId == null) return null;
+  const profileId = settings.profileId;
   return (
     <div className="bg-surface-sunken rounded-lg p-3">
       <div className="flex items-center gap-2 mb-2">
@@ -56,17 +65,11 @@ export function SocialSecuritySection({
                   onSave={(v) => {
                     const parsed = parseFloat(v);
                     if (isNaN(parsed) || parsed < 0) return;
-                    upsertSettings.mutate(
-                      buildSettingsPatch(
-                        {
-                          ...settings,
-                          personId: ps.personId,
-                          retirementAge: ps.retirementAge,
-                          endAge: ps.endAge ?? settings.endAge,
-                        },
-                        { socialSecurityMonthly: String(parsed) },
-                      ),
-                    );
+                    upsertPerson.mutate({
+                      profileId,
+                      personId: ps.personId,
+                      socialSecurityMonthly: String(parsed),
+                    });
                   }}
                   formatDisplay={(v) => `${formatCurrency(Number(v))}/mo`}
                   parseInput={(v) => v.replace(/[^0-9.]/g, "")}
@@ -91,14 +94,13 @@ export function SocialSecuritySection({
               <InlineEdit
                 value={settings.socialSecurityMonthly}
                 onSave={(v) => {
-                  if (!settings) return;
                   const parsed = parseFloat(v);
                   if (isNaN(parsed) || parsed < 0) return;
-                  upsertSettings.mutate(
-                    buildSettingsPatch(settings, {
-                      socialSecurityMonthly: String(parsed),
-                    }),
-                  );
+                  upsertPerson.mutate({
+                    profileId,
+                    personId: settings.personId,
+                    socialSecurityMonthly: String(parsed),
+                  });
                 }}
                 formatDisplay={(v) => `${formatCurrency(Number(v))}/mo`}
                 parseInput={(v) => v.replace(/[^0-9.]/g, "")}
@@ -122,12 +124,9 @@ export function SocialSecuritySection({
             <InlineEdit
               value={String(settings.ssStartAge)}
               onSave={(v) => {
-                if (!settings) return;
                 const parsed = parseInt(v, 10);
                 if (isNaN(parsed) || parsed < 62 || parsed > 75) return;
-                upsertSettings.mutate(
-                  buildSettingsPatch(settings, { ssStartAge: parsed }),
-                );
+                upsertHouseholdFields.mutate({ profileId, ssStartAge: parsed });
               }}
               type="number"
               className="text-sm"

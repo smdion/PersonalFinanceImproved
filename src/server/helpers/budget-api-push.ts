@@ -268,6 +268,7 @@ export async function pushSnapshotToBudgetApi(input: {
         payeeName: "Portfolio Sync",
         memo,
         cleared: true,
+        reconciled: true,
         approved: true,
       });
       createdTransactionIds.push({

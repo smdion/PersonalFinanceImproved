@@ -26,8 +26,21 @@ import {
   QCD_MIN_ELIGIBILITY_AGE,
 } from "../../../constants";
 import { cloneAccountBalances } from "../balance-utils";
-import { getLtcgRate, computeLtcgTax } from "../../../config/tax-tables";
+import {
+  getLtcgRate,
+  computeLtcgTax,
+  toLtcgTaxableIncome,
+} from "../../../config/tax-tables";
 import { computeNiit } from "../../../config/niit";
+import {
+  taxGrowthFactor,
+  growAmount,
+  growWithholdingBrackets,
+  growLtcgBrackets,
+  growIrmaaBrackets,
+} from "../bracket-growth";
+import { IRMAA_DATA_YEAR } from "../../../config/irmaa-tables";
+import { FPL_COVERAGE_YEAR } from "../../../config/aca-tables";
 import { resolveDecumulationConfig } from "../override-resolution";
 import { applyGrowth } from "../growth-application";
 import { computeTaxableSS, computeTaxFromSlots } from "../tax-estimation";
@@ -64,7 +77,7 @@ import {
   trackDepletions,
   cleanupDust,
 } from "../balance-deduction";
-import { computeRmdAmount } from "../../../config/rmd-tables";
+import { computeRmdAmount, getRmdFactor } from "../../../config/rmd-tables";
 import type {
   PreYearSetup,
   ProjectionContext,
@@ -206,7 +219,15 @@ export function runDecumulationYear(
   // after. Pure computation, no dependency on routing -- safe to hoist.
   let perPersonRmdTotal: number | undefined;
   let rmdByPerson:
-    { personId: number; personName: string; amount: number }[] | undefined;
+    | {
+        personId: number;
+        personName: string;
+        amount: number;
+        divisor?: number;
+        priorYearEndTradBalance?: number;
+        age?: number;
+      }[]
+    | undefined;
   if (rmdStartAgeByPerson.size > 0 && priorYearEndTradByPerson.size > 0) {
     rmdByPerson = [];
     let total = 0;
@@ -222,6 +243,15 @@ export function runDecumulationYear(
               input.socialSecurityEntries?.find((e) => e.personId === personId)
                 ?.personName ?? `Person ${personId}`,
             amount: rmdAmount,
+            // "Why is my RMD this amount" — the IRS Uniform Lifetime Table
+            // divisor and the prior-year-end Traditional balance it's
+            // divided by, both already computed just above (computeRmdAmount
+            // itself calls getRmdFactor internally) — surfaced here rather
+            // than re-derived by the UI, so the displayed math can't drift
+            // from what actually produced `amount`.
+            divisor: getRmdFactor(personAge) ?? undefined,
+            priorYearEndTradBalance: personTrad,
+            age: personAge,
           });
           total += rmdAmount;
         }
@@ -344,13 +374,109 @@ export function runDecumulationYear(
   const estTraditionalPortion =
     totalBalance > 0 ? balances.preTax / totalBalance : 0;
 
+  // Grow the ordinary tax brackets + standard deduction forward from their
+  // own DB vintage (found live, 2026-08-31 — "outside the box" review):
+  // both are legally inflation-indexed but were being held flat in NOMINAL
+  // dollars for the whole projection while nominal income/spending
+  // correctly grows, silently overstating tax burden in later years. See
+  // `bracket-growth.ts`'s header for the full account, including why this
+  // is NOT the same mistake as the (reverted) NIIT threshold change —
+  // NIIT/SS-taxation thresholds are genuinely flat-nominal by law and are
+  // deliberately NOT touched here.
+  //
+  // Computed ONCE per year, applied everywhere `taxRates.taxBrackets`/
+  // `taxRates.standardDeduction` would otherwise be read raw below — both
+  // MUST share this identical factor (not two separately-derived numbers)
+  // or `toOrdinaryBracketIncome`'s residual math desyncs (see
+  // `growWithholdingBrackets`'s docblock).
+  const taxGrowth = taxGrowthFactor(
+    year,
+    taxRates.taxDataYear,
+    ctx.inflationRate,
+  );
+  const grownTaxBrackets = taxRates.taxBrackets
+    ? growWithholdingBrackets(taxRates.taxBrackets, taxGrowth)
+    : undefined;
+  const grownStandardDeduction = growAmount(
+    taxRates.standardDeduction,
+    taxGrowth,
+  );
+  // Phase 2 (2026-08-31): LTCG brackets, same growth factor as ordinary
+  // brackets/standard deduction above — always returns a real, grown
+  // table (falls back to the hardcoded LTCG_BRACKETS default when the
+  // household has no `ltcg_brackets` DB row, which is the common case;
+  // see `growLtcgBrackets`'s docblock for why relying on each consumer's
+  // own internal fallback would silently skip growth for most
+  // households).
+  const grownLtcgBrackets = growLtcgBrackets(taxRates.ltcgBrackets, taxGrowth);
+
+  // Phase 3 (2026-08-31): IRMAA brackets. Anchored on IRMAA_BRACKETS' OWN
+  // vintage (IRMAA_DATA_YEAR, irmaa-tables.ts) rather than taxGrowth's
+  // taxDataYear above -- the ordinary-bracket/LTCG tables share one
+  // vintage because they come from the same DB query and (for ordinary
+  // brackets + standard deduction) are mathematically coupled; IRMAA has
+  // neither property, so reusing taxDataYear would silently mis-grow it
+  // the day the two tables' real vintages drift apart.
+  //
+  // TWO different growth factors, not one -- this is not a copy-paste
+  // duplication, it answers two different questions:
+  //  - grownIrmaaBracketsForCheck (checkIrmaa, below): "what surcharge
+  //    schedule applies THIS calendar year" -- anchored on `year`.
+  //  - grownIrmaaBracketsForCap (performRothConversion, above -- passed
+  //    in via rothResult's call below): "what surcharge schedule will
+  //    apply when THIS year's MAGI is looked back at" -- IRMAA has a
+  //    2-year lookback (year N's MAGI sets year N+2's premium), so the
+  //    cap must compare this year's MAGI against the N+2 vintage of the
+  //    threshold, not N's -- anchored on `year + 2`. Using the same
+  //    factor for both would silently UNDER-cap every conversion by two
+  //    years of real threshold growth (advisor-caught, 2026-08-31).
+  const irmaaGrowthCheck = taxGrowthFactor(
+    year,
+    IRMAA_DATA_YEAR,
+    ctx.inflationRate,
+  );
+  const irmaaGrowthCap = taxGrowthFactor(
+    year + 2,
+    IRMAA_DATA_YEAR,
+    ctx.inflationRate,
+  );
+  const grownIrmaaBracketsForCheck = growIrmaaBrackets(
+    undefined, // no engine payload source yet -- see growIrmaaBrackets' docblock
+    irmaaGrowthCheck,
+  );
+  const grownIrmaaBracketsForCap = growIrmaaBrackets(undefined, irmaaGrowthCap);
+
+  // Phase 4 (2026-08-31): ACA subsidy cliff (400% FPL). Own vintage
+  // anchor (FPL_COVERAGE_YEAR, aca-tables.ts) for the same reason as
+  // IRMAA above -- no coupling to taxDataYear. Single vintage (unlike
+  // IRMAA's two): ACA premium tax credits are computed on the coverage
+  // year's OWN income, no multi-year MAGI lookback the way Medicare's
+  // IRMAA has, so `checkAca` (single call site, no conversion-capping
+  // analog to IRMAA's `irmaaAwareRothConversions`) just needs "this
+  // year's" vintage.
+  const fplGrowthFactor = taxGrowthFactor(
+    year,
+    FPL_COVERAGE_YEAR,
+    ctx.inflationRate,
+  );
+
   // SS convergence + gross-up estimation (extracted to tax-gross-up module)
   const taxEst = estimateWithdrawalTaxCost({
     afterTaxNeed,
     ssIncome,
     filingStatus,
     config,
-    taxRates,
+    // Grown ordinary tax brackets/standard deduction/LTCG brackets
+    // spliced in — the estimate and the real routing/tax calls below
+    // MUST see the identical grown values, same single-dispatch
+    // invariant as every other field on this object (this file's own
+    // header docblock).
+    taxRates: {
+      ...taxRates,
+      taxBrackets: grownTaxBrackets,
+      standardDeduction: grownStandardDeduction,
+      ltcgBrackets: grownLtcgBrackets,
+    },
     balances,
     acctBal,
     totalBalance,
@@ -405,19 +531,48 @@ export function runDecumulationYear(
     indKey: hasIndividualAccounts ? indKey : undefined,
   });
 
+  // Resolved ONCE, here, and reused both for the routing reservation below
+  // AND for performRothConversion's own target further down (replacing
+  // that call's separate re-derivation of the identical fallback chain) —
+  // advisor-caught 2026-09-01: conversionReservedRoom used to reserve
+  // room up to `traditionalCap` (derived from bracketInfo.rothBracketTarget,
+  // the WITHDRAWAL target) even though the conversion that actually runs
+  // later this same year targets this resolved value instead, which can
+  // differ (an explicit plan-level rothConversionTarget below the
+  // household's rothBracketTarget). Two names for one quantity, resolved
+  // by two different chains, biased the discretionary-tier ranking away
+  // from brokerage in that configuration — not a wrong final dollar
+  // amount (routing degrades to the next tier when a reservation can't be
+  // filled), but a real ordering bug for the exact household shape
+  // roth-conversion-target-priority.test.ts already covers.
+  const resolvedConversionTarget =
+    taxRates.rothConversionTarget ??
+    config.rothBracketTarget ??
+    taxRates.rothBracketTarget;
   const routeResult = routeForMode(
     targetWithdrawal,
     config,
     acctBalances,
     {
-      taxBrackets: taxRates.taxBrackets,
-      rothBracketTarget: taxRates.rothBracketTarget,
+      taxBrackets: grownTaxBrackets,
+      // Added 2026-08-29: read the resolved (possibly per-year-overridden)
+      // value first, falling back to the plan's fixed default — was
+      // previously always the fixed default, with no override path at all.
+      // rothBracketTarget is a RATE (e.g. 0.12), not a dollar figure —
+      // growth-invariant, deliberately not grown.
+      rothBracketTarget: config.rothBracketTarget ?? taxRates.rothBracketTarget,
+      // The rate performRothConversion will ACTUALLY convert up to, when
+      // it differs from the withdrawal target above — see this const's
+      // own comment. Only meaningful when conversionsEnabled.
+      conversionTarget: resolvedConversionTarget,
       taxableSS,
       filingStatus,
-      ltcgBrackets: taxRates.ltcgBrackets,
+      ltcgBrackets: grownLtcgBrackets,
       rothBasisAvailable,
       brokerageBasisRatio,
       conversionsEnabled: taxRates.enableRothConversions,
+      standardDeduction: grownStandardDeduction,
+      discretionaryWithdrawalOrder: config.discretionaryWithdrawalOrder,
     },
     eligibility,
     nonRetirement,
@@ -450,6 +605,18 @@ export function runDecumulationYear(
   const rmdRequiredAfterQcd =
     perPersonRmdTotal != null
       ? roundToCents(Math.max(0, perPersonRmdTotal - totalQcd))
+      : undefined;
+
+  // Household-level "why is my RMD this amount" fallback — same
+  // getRmdFactor/priorYearEndTradBalance enforceRmd's own internal
+  // computeRmdAmount call uses when no per-person override is supplied
+  // (rmdRequiredAfterQcd undefined below), surfaced here rather than
+  // re-derived by the UI. Only meaningful when rmdByPerson isn't
+  // populated (single-person households / no per-person RMD tracking) —
+  // the per-person breakdown above always wins when both exist.
+  const rmdDivisor =
+    rmdStartAge != null && age >= rmdStartAge && priorYearEndTradBalance > 0
+      ? (getRmdFactor(age) ?? undefined)
       : undefined;
 
   // Extracted to rmd-enforcement.ts -- enforces minimum Traditional withdrawals per IRS rules.
@@ -553,7 +720,12 @@ export function runDecumulationYear(
     slots,
     taxableSS,
     balances,
-    taxRates,
+    taxRates: {
+      ...taxRates,
+      taxBrackets: grownTaxBrackets,
+      standardDeduction: grownStandardDeduction,
+      ltcgBrackets: grownLtcgBrackets,
+    },
     filingStatus,
     // Pass the authoritative post-RMD totals rather than letting this
     // re-derive from slots: rmd-enforcement.ts tracks
@@ -699,17 +871,53 @@ export function runDecumulationYear(
   // Extracted to post-withdrawal-optimizer.ts -- Roth conversion + IRMAA + ACA chain.
   const rothResult = performRothConversion({
     enableRothConversions: taxRates.enableRothConversions,
-    taxBrackets: taxRates.taxBrackets,
+    taxBrackets: grownTaxBrackets,
     taxMultiplier: taxRates.taxMultiplier,
+    standardDeduction: grownStandardDeduction,
     rothConversionTarget: config.rothConversionTarget,
-    rothBracketTarget:
-      taxRates.rothConversionTarget ?? taxRates.rothBracketTarget,
+    // This param is performRothConversion's fallback, consulted ONLY when
+    // config.rothConversionTarget (above) is undefined. Priority (most to
+    // least specific):
+    //   1. taxRates.rothConversionTarget -- an explicit plan-level
+    //      conversion target the household set deliberately, separate
+    //      from (and possibly more conservative than) their withdrawal
+    //      bracket target.
+    //   2. config.rothBracketTarget -- a per-year WITHDRAWAL-routing
+    //      override. Advisor-caught 2026-09-01: an earlier version put
+    //      this FIRST, ahead of taxRates.rothConversionTarget -- a
+    //      household with an explicit plan-level rothConversionTarget
+    //      (say 12%, deliberately below their rothBracketTarget) whose
+    //      per-year override bumps rothBracketTarget to 32% for one year
+    //      would have had that override silently retarget CONVERSIONS to
+    //      32% too, even though nothing about a withdrawal-routing
+    //      override should touch the conversion target. Never shipped
+    //      wrong numbers (buildCandidateInput always pairs an explicit
+    //      rothConversionTarget when conversions are on, bypassing this
+    //      fallback), but was a real, reachable bug for any household
+    //      that later creates that override combination by hand.
+    //   3. taxRates.rothBracketTarget -- final fallback when nothing else
+    //      is set, same as before.
+    // See fixtures 31/41/54/55/61 (engine-snapshot.test.ts) and the Bug-B
+    // MAGI test (roth-growth-magi-tax-fix.test.ts) for why
+    // taxRates.rothConversionTarget can't simply be dropped from this
+    // chain -- and the priority-ordering regression test alongside them
+    // for why it can't come second either.
+    //
+    // Reuses resolvedConversionTarget (computed once, above, before
+    // routeForMode) instead of re-deriving the identical chain a second
+    // time here -- the routing reservation and the conversion that
+    // actually runs must agree on this value, or the two silently drift
+    // (advisor-caught 2026-09-01, see resolvedConversionTarget's own
+    // comment).
+    rothBracketTarget: resolvedConversionTarget,
     totalTraditionalWithdrawal,
     taxableSS,
+    rothTaxableGrowth: taxFromSlots.rothTaxableGrowth,
     brokerageGainsPortion,
     irmaaAwareRothConversions:
       input.irmaaAwareRothConversions ??
       (enableIrmaaAwareness ? true : undefined),
+    irmaaBrackets: grownIrmaaBracketsForCap,
     filingStatus,
     balances,
     acctBal,
@@ -730,22 +938,30 @@ export function runDecumulationYear(
   // Recompute LTCG tax including Roth conversion income (#37).
   // Roth conversions are taxed as ordinary income and push total taxable income
   // into potentially higher LTCG brackets (0%/15%/20%).
+  // `revisedOrdinary` is used ONLY for the LTCG calls below (never for an
+  // ordinary-bracket lookup), so it's converted to real taxable income
+  // once, here, rather than at each call site — `actualTaxableIncome` and
+  // `rothConversionAmount` are both gross; LTCG brackets are real
+  // taxable-income thresholds. See `toLtcgTaxableIncome`'s docblock.
   let postConversionLtcgRate: number;
-  const revisedOrdinary = actualTaxableIncome + rothConversionAmount;
+  const revisedOrdinary = toLtcgTaxableIncome(
+    actualTaxableIncome + rothConversionAmount,
+    grownStandardDeduction,
+  );
   if (rothConversionAmount > 0 && filingStatus && brokerageGainsPortion > 0) {
     brokerageTaxCost = roundToCents(
       computeLtcgTax(
         revisedOrdinary,
         brokerageGainsPortion,
         filingStatus,
-        taxRates.ltcgBrackets,
+        grownLtcgBrackets,
       ),
     );
     // Marginal rate at the top of the gains stack — display only, tax is in brokerageTaxCost
     postConversionLtcgRate = getLtcgRate(
       revisedOrdinary + brokerageGainsPortion,
       filingStatus,
-      taxRates.ltcgBrackets,
+      grownLtcgBrackets,
     );
     // Recompute taxCost with revised brokerage tax. v0.7.8 advisor review
     // (2026-08-27): this used to tax the WHOLE Roth withdrawal at
@@ -772,12 +988,12 @@ export function runDecumulationYear(
         ? getLtcgRate(
             revisedOrdinary + brokerageGainsPortion,
             filingStatus,
-            taxRates.ltcgBrackets,
+            grownLtcgBrackets,
           )
         : brokerageGainsPortion > 0
           ? taxRates.brokerage
           : filingStatus
-            ? getLtcgRate(revisedOrdinary, filingStatus, taxRates.ltcgBrackets)
+            ? getLtcgRate(revisedOrdinary, filingStatus, grownLtcgBrackets)
             : taxRates.brokerage;
   }
 
@@ -894,6 +1110,7 @@ export function runDecumulationYear(
     anyPersonAge65,
     projectedMagi: irmaaLookbackMagi,
     rothConversionAmount,
+    irmaaBrackets: grownIrmaaBracketsForCheck,
   });
   // IRMAA surcharge is per-person — each Medicare-eligible person pays separately
   const irmaaCost = irmaaResult.irmaaCost * personsAge65Plus;
@@ -915,7 +1132,9 @@ export function runDecumulationYear(
     totalTraditionalWithdrawal,
     rothConversionAmount,
     brokerageGainsPortion,
+    rothTaxableGrowth: taxFromSlots.rothTaxableGrowth,
     ssIncome,
+    fplGrowthFactor,
   });
   const { acaSubsidyPreserved, acaMagiHeadroom } = acaResult;
   routeWarnings.push(...acaResult.warnings);
@@ -1087,6 +1306,10 @@ export function runDecumulationYear(
     grossUpFactor,
     estTraditionalPortion,
     bracketTraditionalCap: routeResult.traditionalCap,
+    standardDeduction: grownStandardDeduction,
+    discretionaryTierBreakdown: routeResult.tierBreakdown,
+    rothBasisCapacity: routeResult.rothBasisCapacity,
+    brokerageZeroLtcgCapacity: routeResult.brokerageZeroLtcgCapacity,
     unmetNeed: finalUnmetNeed,
     unmetNeedMaterial,
     penaltyAvoidedShortfall,
@@ -1101,6 +1324,8 @@ export function runDecumulationYear(
     annualizedReturnRate: returnRate,
     rmdAmount,
     rmdByPerson,
+    rmdDivisor,
+    priorYearEndTradBalance,
     rmdOverrodeRouting,
     rmdShortfallAmount,
     rmdExcessAmount,

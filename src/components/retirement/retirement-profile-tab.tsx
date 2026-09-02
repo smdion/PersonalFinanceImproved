@@ -24,7 +24,8 @@
  * from the Retirement-page fix (Group B).
  */
 
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useRef } from "react";
+import { toast } from "@/lib/hooks/use-toast";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
@@ -55,6 +56,7 @@ import {
   decToWhole,
   wholeToDec,
 } from "@/components/retirement/sections/helpers";
+import { buildSettingsPatch } from "@/components/retirement/sections/settings-patch";
 import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
@@ -64,7 +66,18 @@ import { useScenario } from "@/lib/context/scenario-context";
 import { StrategyGuideButton } from "@/components/cards/strategy-guide-panel";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 
-export function RetirementProfileTab() {
+export function RetirementProfileTab({
+  profileId,
+}: {
+  /** View a specific retirement profile without it needing to be the
+   *  household's globally-active one — same "view without activating"
+   *  contract contributionProfileId/salaryProfileId already have on
+   *  computeProjection (phase 4 of the Retirement Profiles migration).
+   *  Omit to fall back to the active profile (server-side resolution),
+   *  matching this component's original behavior before it had a sibling
+   *  list to view non-active profiles from. */
+  profileId?: number | null;
+} = {}) {
   const currentYear = new Date().getFullYear();
   const user = useUser();
   const admin = isAdmin(user);
@@ -122,6 +135,7 @@ export function RetirementProfileTab() {
       ...(decExpenseOverride
         ? { decumulationExpenseOverride: parseFloat(decExpenseOverride) }
         : {}),
+      ...(profileId != null ? { retirementProfileId: profileId } : {}),
     }),
     [
       salaryActiveFields,
@@ -130,6 +144,7 @@ export function RetirementProfileTab() {
       decBudgetProfileId,
       decBudgetCol,
       decExpenseOverride,
+      profileId,
     ],
   );
   const engineInput = useMemo(
@@ -141,6 +156,68 @@ export function RetirementProfileTab() {
     debouncedEngineInput,
     { placeholderData: (prev) => prev },
   );
+  // Multi-year withdrawal-policy optimizer, Phase 4 (2026-08-29) — queried
+  // here (not inside TaxesSection, a documented pure-presentational leaf)
+  // so it can be passed down as a plain prop, same pattern as CoastFireCard
+  // receiving coastFireMcResult. Queried with `{}` — this tab reflects the
+  // household's persisted baseline settings, not a scenario-override
+  // projection, so there are no accumulation/decumulation overrides to
+  // thread through. staleTime of a few minutes (not `staleTime: 0` +
+  // refetchOnMount: "always"): a household's balances don't meaningfully
+  // change mid-session, matching plan-health.tsx's stress-test query
+  // precedent — explicit, not left to the query library's default (which
+  // would otherwise silently serve a possibly-very-stale cached response
+  // on remount). See PLAN-v0.7.10-multi-year-withdrawal-optimizer.md.
+  const bracketOptimizerQuery =
+    trpc.projection.computeWithdrawalBracketOptimizer.useQuery(
+      {},
+      { staleTime: 5 * 60 * 1000 },
+    );
+  // This tab holds many separate InlineEdit fields (Timeline, Rule of 55,
+  // Raise-and-Rate, Strategy Params, SS, Taxes, Healthcare), but they all
+  // funnel through this ONE upsertSettings mutation, called once per field
+  // as the household edits. Nothing on THIS page ever shows a recompute is
+  // happening — the Retirement page's ProjectionCard (where the actual
+  // recalculation UI lives) isn't mounted here, so utils.projection.
+  // invalidate() above just marks the data stale for next time, silently
+  // (live-user finding, 2026-08-30: "does it wait till the portfolio page
+  // is reloaded?" — yes, and there was no confirmation it even queued).
+  // Debounced so a quick burst of edits (several fields in a row) collapses
+  // into ONE toast after saves settle, not one per field.
+  const recalcToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const notifyRecalcQueued = useCallback(() => {
+    if (recalcToastTimer.current) clearTimeout(recalcToastTimer.current);
+    recalcToastTimer.current = setTimeout(() => {
+      recalcToastTimer.current = null;
+      toast.info(
+        "Retirement settings updated — your projection will recalculate next time you view it.",
+      );
+    }, 1000);
+  }, []);
+
+  // Per-person / household-but-per-person-stored fields (Retirement Age,
+  // Rule of 55, Plan Through, SS Start Age, SS Benefit) write through these
+  // two mutations, NOT retirementSettings.upsert — build-engine-payload.ts
+  // reads them from `retirement_profile_people`, not `retirement_settings`,
+  // as of the Retirement Profiles migration step B. See
+  // retirementProfilePeople.upsertPerson's docblock (retirement.ts).
+  const upsertProfilePerson =
+    trpc.retirement.retirementProfilePeople.upsertPerson.useMutation({
+      onSuccess: () => {
+        utils.retirement.invalidate();
+        utils.projection.invalidate();
+        notifyRecalcQueued();
+      },
+    });
+  const upsertProfileHouseholdFields =
+    trpc.retirement.retirementProfilePeople.upsertHouseholdFields.useMutation({
+      onSuccess: () => {
+        utils.retirement.invalidate();
+        utils.projection.invalidate();
+        notifyRecalcQueued();
+      },
+    });
+
   const upsertSettings = trpc.retirement.retirementSettings.upsert.useMutation({
     onMutate: async (newSettings) => {
       await utils.projection.computeProjection.cancel();
@@ -161,6 +238,7 @@ export function RetirementProfileTab() {
     onSuccess: () => {
       utils.retirement.invalidate();
       utils.projection.invalidate();
+      notifyRecalcQueued();
     },
   });
   // Same TypeScript inference gap as the Retirement page had — tRPC's
@@ -171,23 +249,33 @@ export function RetirementProfileTab() {
   const upsertSettingsMutation =
     upsertSettings as unknown as UpsertSettingsMutation; // eslint-disable-line no-restricted-syntax
 
+  // Only ever called with "retirementAge" (single-person household) or
+  // "endAge" ("Plan Through") — both per-person-stored fields on
+  // `retirement_profile_people`, not `retirement_settings`. See the
+  // mutations' docblocks for why this can't go through upsertSettings.
   const handleRetirementSettingUpdate = useCallback(
     (field: string, value: string) => {
       const settings = data && "settings" in data ? data.settings : null;
-      if (!settings) return;
+      if (!settings || settings.profileId == null) return;
       const numVal = parseInt(value, 10);
       if (isNaN(numVal)) return;
-      upsertSettings.mutate({
-        personId: settings.personId,
-        retirementAge: settings.retirementAge,
-        endAge: settings.endAge,
-        returnAfterRetirement: settings.returnAfterRetirement,
-        annualInflation: settings.annualInflation,
-        salaryAnnualIncrease: settings.salaryAnnualIncrease,
-        [field]: numVal,
-      });
+      if (field === "endAge") {
+        upsertProfileHouseholdFields.mutate({
+          profileId: settings.profileId,
+          endAge: numVal,
+        });
+        return;
+      }
+      if (field === "retirementAge") {
+        upsertProfilePerson.mutate({
+          profileId: settings.profileId,
+          personId: settings.personId,
+          retirementAge: numVal,
+        });
+        return;
+      }
     },
-    [data, upsertSettings],
+    [data, upsertProfileHouseholdFields, upsertProfilePerson],
   );
 
   const handleSettingPercentUpdate = useCallback(
@@ -195,60 +283,37 @@ export function RetirementProfileTab() {
       const settings = data && "settings" in data ? data.settings : null;
       if (!settings) return;
       const dec = wholeToDec(wholePercent);
-      upsertSettings.mutate({
-        personId: settings.personId,
-        retirementAge: settings.retirementAge,
-        endAge: settings.endAge,
-        returnAfterRetirement: settings.returnAfterRetirement,
-        annualInflation: settings.annualInflation,
-        salaryAnnualIncrease: settings.salaryAnnualIncrease,
-        [field]: dec,
-      });
+      upsertSettingsMutation.mutate(
+        buildSettingsPatch(settings, { [field]: dec }),
+      );
     },
-    [data, upsertSettings],
+    [data, upsertSettingsMutation],
   );
 
   const handlePerPersonRetirementAge = useCallback(
     (personId: number, newAge: number) => {
       const settings = data && "settings" in data ? data.settings : null;
-      const perPersonSettings =
-        data && "perPersonSettings" in data ? data.perPersonSettings : null;
-      if (!settings || isNaN(newAge)) return;
-      const ps = perPersonSettings?.find(
-        (p: { personId: number }) => p.personId === personId,
-      );
-      upsertSettings.mutate({
+      if (!settings || settings.profileId == null || isNaN(newAge)) return;
+      upsertProfilePerson.mutate({
+        profileId: settings.profileId,
         personId,
         retirementAge: newAge,
-        endAge: ps?.endAge ?? settings.endAge,
-        returnAfterRetirement: settings.returnAfterRetirement,
-        annualInflation: settings.annualInflation,
-        salaryAnnualIncrease: settings.salaryAnnualIncrease,
       });
     },
-    [data, upsertSettings],
+    [data, upsertProfilePerson],
   );
 
   const handlePerPersonRuleOf55Override = useCallback(
     (personId: number, ruleOf55Override: boolean) => {
       const settings = data && "settings" in data ? data.settings : null;
-      const perPersonSettings =
-        data && "perPersonSettings" in data ? data.perPersonSettings : null;
-      if (!settings) return;
-      const ps = perPersonSettings?.find(
-        (p: { personId: number }) => p.personId === personId,
-      );
-      upsertSettings.mutate({
+      if (!settings || settings.profileId == null) return;
+      upsertProfilePerson.mutate({
+        profileId: settings.profileId,
         personId,
-        retirementAge: ps?.retirementAge ?? settings.retirementAge,
-        endAge: ps?.endAge ?? settings.endAge,
-        returnAfterRetirement: settings.returnAfterRetirement,
-        annualInflation: settings.annualInflation,
-        salaryAnnualIncrease: settings.salaryAnnualIncrease,
         ruleOf55Override,
       });
     },
-    [data, upsertSettings],
+    [data, upsertProfilePerson],
   );
 
   if (isLoading) {
@@ -348,16 +413,12 @@ export function RetirementProfileTab() {
                       value={settings?.withdrawalStrategy ?? "fixed"}
                       onChange={(e) => {
                         if (!settings) return;
-                        upsertSettings.mutate({
-                          personId: settings.personId,
-                          retirementAge: settings.retirementAge,
-                          endAge: settings.endAge,
-                          returnAfterRetirement: settings.returnAfterRetirement,
-                          annualInflation: settings.annualInflation,
-                          salaryAnnualIncrease: settings.salaryAnnualIncrease,
-                          withdrawalStrategy: e.target
-                            .value as WithdrawalStrategyType,
-                        });
+                        upsertSettingsMutation.mutate(
+                          buildSettingsPatch(settings, {
+                            withdrawalStrategy: e.target
+                              .value as WithdrawalStrategyType,
+                          }),
+                        );
                       }}
                       disabled={!admin}
                       className="text-sm border rounded px-1.5 py-0.5 w-full disabled:cursor-not-allowed disabled:opacity-50"
@@ -407,6 +468,7 @@ export function RetirementProfileTab() {
                 setDecExpenseOverride={setDecExpenseOverride}
                 setDecBudgetProfileId={setDecBudgetProfileId}
                 setDecBudgetCol={setDecBudgetCol}
+                isEditable={admin}
               />
 
               <RaiseAndRateSection
@@ -468,7 +530,8 @@ export function RetirementProfileTab() {
             <SocialSecuritySection
               settings={settings}
               perPersonSettings={perPersonSettings}
-              upsertSettings={upsertSettingsMutation}
+              upsertPerson={upsertProfilePerson}
+              upsertHouseholdFields={upsertProfileHouseholdFields}
               isEditable={admin}
             />
 
@@ -477,6 +540,7 @@ export function RetirementProfileTab() {
               selectedScenario={selectedScenario}
               upsertSettings={upsertSettingsMutation}
               isEditable={admin}
+              bracketOptimizerResult={bracketOptimizerQuery.data?.result}
             />
 
             <HealthcareSection

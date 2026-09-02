@@ -18,6 +18,7 @@ import { fromCents, toCents } from "./conversions";
 import { budgetApiRequest, BudgetApiError } from "./errors";
 import {
   mergeGoalIntoNote,
+  parseGoalFromNote,
   type ActualTemplateShape,
 } from "./actual-goal-notes";
 import { transactionIdempotencyKey } from "./idempotency";
@@ -180,6 +181,28 @@ function mapTransaction(t: ActualTransaction): BudgetTransaction {
 
 // -- Client --
 
+/**
+ * `BudgetAPIClient.getMonthDetail`'s `month` param has no format documented
+ * on the shared interface (interface.ts) -- every caller (sync/core.ts,
+ * budget-api/cache.ts) has always passed YNAB's own native month format,
+ * `YYYY-MM-01` (a full ISO date, first of the month -- YNAB's real API
+ * requires exactly this). Actual's `actual-http-api` wrapper's `/months/:id`
+ * route wants the SHORTER `YYYY-MM` (no day) -- confirmed live, 2026-08-30,
+ * via a real "Invalid month format, use YYYY-MM: 2026-08-01" error from a
+ * live sync attempt. Never worked for Actual before this fix; nothing
+ * in this codebase had ever exercised the mismatch until this specific
+ * error surfaced.
+ *
+ * `slice(0, 7)` is idempotent regardless of which format arrives --
+ * `"2026-08-01".slice(0, 7)` and `"2026-08".slice(0, 7)` both produce
+ * `"2026-08"` -- so this is safe against getMonths()'s own internal
+ * getMonthDetail(id) calls, which already pass bare YYYY-MM ids straight
+ * from Actual's own `/months` list.
+ */
+function toActualMonthId(month: string): string {
+  return month.slice(0, 7);
+}
+
 export class ActualClient implements BudgetAPIClient {
   readonly supportsDeltaSync = false;
 
@@ -279,13 +302,45 @@ export class ActualClient implements BudgetAPIClient {
 
   // -- Categories & Months --
 
+  /** The plain `/categorygroups` + `/categories` endpoints only carry
+   *  id/name/hidden/group_id — verified live: a raw `/categories` category
+   *  object has NO `budgeted`/`spent`/`balance`/`goal` keys at all, unlike
+   *  YNAB's categories endpoint, which does carry a real running balance
+   *  per category. Actual's balance/budgeted/activity are inherently
+   *  month-scoped (carryover + this month's budgeted − spent), only
+   *  returned by `/months/:id`. Reading `.balance`/`.budgeted` off the
+   *  plain-categories response (the original code here) silently produced
+   *  $0 for every category on every Actual household — the savings goal
+   *  balance override in savings.ts's computeSummary reads exactly this
+   *  cache, so every API-linked sinking fund showed a $0 current balance
+   *  even though its real Actual balance (and Ledgr's own separately-
+   *  tracked `savings_monthly` history) was correct (found live,
+   *  2026-08-31 — this had silently never worked for any Actual household,
+   *  masked until now because the same balance also renders correctly
+   *  from savings_monthly whenever the override doesn't fire). Fetch the
+   *  current month's detail too and merge its real per-category numbers
+   *  in by id — the ActualCategory type already carries these fields
+   *  (mapCategory needs no change), they just aren't populated by the
+   *  bare category list. */
   async getCategories(): Promise<BudgetCategoryGroup[]> {
-    const [groupsRes, catsRes] = await Promise.all([
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const [groupsRes, catsRes, monthDetail] = await Promise.all([
       this.request<{ data: ActualCategoryGroup[] }>("/categorygroups"),
       this.request<{ data: ActualCategory[] }>("/categories"),
+      this.getMonthDetail(currentMonth),
     ]);
 
-    // Merge categories into groups
+    // monthDetail.categories already carries this month's real numbers AND
+    // the note-goal overlay (getMonthDetail applies both) — reuse it
+    // instead of a second raw /months/:id fetch plus a second
+    // overlayNoteGoals pass over every category (previously fetched the
+    // month and ran the per-category note overlay twice; code-review
+    // efficiency finding, 2026-09-01).
+    const currentByCatId = new Map(
+      monthDetail.categories.map((c) => [c.id, c]),
+    );
+
     const catsByGroup = new Map<string, ActualCategory[]>();
     for (const cat of catsRes.data) {
       const list = catsByGroup.get(cat.group_id) ?? [];
@@ -293,12 +348,16 @@ export class ActualClient implements BudgetAPIClient {
       catsByGroup.set(cat.group_id, list);
     }
 
-    return groupsRes.data.map((g) => ({
-      ...mapCategoryGroup({
+    return groupsRes.data.map((g) => {
+      const mapped = mapCategoryGroup({
         ...g,
         categories: catsByGroup.get(g.id) ?? [],
-      }),
-    }));
+      });
+      return {
+        ...mapped,
+        categories: mapped.categories.map((c) => currentByCatId.get(c.id) ?? c),
+      };
+    });
   }
 
   /** `GET /months` (no month id) does NOT return `ActualMonth` objects —
@@ -328,8 +387,60 @@ export class ActualClient implements BudgetAPIClient {
   }
 
   async getMonthDetail(month: string): Promise<BudgetMonthDetail> {
-    const res = await this.request<{ data: ActualMonth }>(`/months/${month}`);
-    return mapMonthDetail(res.data);
+    const res = await this.request<{ data: ActualMonth }>(
+      `/months/${toActualMonthId(month)}`,
+    );
+    const detail = mapMonthDetail(res.data);
+    await this.overlayNoteGoals(detail.categories);
+    return detail;
+  }
+
+  /**
+   * Overlays note-parsed goal amounts onto categories, in place. Actual's
+   * structured `goal` field (what `mapCategory`'s `goalTarget` reads,
+   * i.e. `cat.goal`) is never updated by `writeGoalNote`'s note-based
+   * write mechanism — there's no API to write it (see `writeGoalNote`'s
+   * own docblock). Comparing a push/pull preview's "current" value
+   * against a `goalTarget` derived purely from `cat.goal` shows every
+   * Ledgr-managed goal as permanently changed, even immediately after a
+   * successful push, because the two never touch the same field (found
+   * live, 2026-09-01: every item in a budget push preview showed $0
+   * "current" and its full new amount as the delta, regardless of
+   * whether it had already been pushed). Read the note back instead —
+   * the ONLY field Ledgr's own write path actually affects — and prefer
+   * it over `cat.goal` when a `#template` of either shape is present, so
+   * the diff stays internally consistent with what a push/pull actually
+   * did. Falls back to whatever `goalTarget` already was (possibly
+   * undefined) when no template is found, or on a per-category fetch
+   * failure — non-fatal, same "degrade, don't abort" pattern
+   * `getAccounts()`'s per-account balance fetch already uses.
+   *
+   * Parallelized across categories (same pattern as `getAccounts()`).
+   * Only called from `getMonthDetail`, which itself runs once per sync
+   * or post-push cache refresh (see `refreshCategoryCache`,
+   * `sync/core.ts`) — not once per page load — so the extra
+   * per-category request is amortized the same way every other
+   * per-item fetch in this client already is.
+   */
+  private async overlayNoteGoals(categories: BudgetCategory[]): Promise<void> {
+    await Promise.all(
+      categories.map(async (cat) => {
+        try {
+          const noteRes = await this.request<{ data: string | null }>(
+            `/notes/category/${cat.id}`,
+          );
+          const noteGoal =
+            parseGoalFromNote(noteRes.data, "fixed") ??
+            parseGoalFromNote(noteRes.data, "target-balance");
+          if (noteGoal !== undefined) cat.goalTarget = noteGoal;
+        } catch (err) {
+          log("warn", "actual_client.goal_note_fetch_failed", {
+            categoryId: cat.id,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }),
+    );
   }
 
   /** The wrapper's `PATCH /months/:month/categories/:id` requires
@@ -342,10 +453,13 @@ export class ActualClient implements BudgetAPIClient {
     categoryId: string,
     amount: number,
   ): Promise<void> {
-    await this.request(`/months/${month}/categories/${categoryId}`, {
-      method: "PATCH",
-      body: JSON.stringify({ category: { budgeted: toCents(amount) } }),
-    });
+    await this.request(
+      `/months/${toActualMonthId(month)}/categories/${categoryId}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ category: { budgeted: toCents(amount) } }),
+      },
+    );
   }
 
   /**
@@ -475,7 +589,11 @@ export class ActualClient implements BudgetAPIClient {
           payee_name: tx.payeeName,
           category: tx.categoryId,
           notes: tx.memo,
-          cleared: tx.cleared ?? false,
+          // reconciled implies cleared — never send reconciled: true with
+          // cleared: false, an inconsistent state Actual's own UI can't
+          // produce. See NewBudgetTransaction.reconciled docblock.
+          cleared: tx.cleared || tx.reconciled || false,
+          reconciled: tx.reconciled,
           imported_id: importedId,
         },
       }),
@@ -523,6 +641,12 @@ export class ActualClient implements BudgetAPIClient {
     if (tx.categoryId !== undefined) transaction.category = tx.categoryId;
     if (tx.memo !== undefined) transaction.notes = tx.memo;
     if (tx.cleared !== undefined) transaction.cleared = tx.cleared;
+    if (tx.reconciled !== undefined) {
+      transaction.reconciled = tx.reconciled;
+      // Same defensive coupling as createTransaction: reconciled implies
+      // cleared, and wins over an explicit cleared:false in the same call.
+      if (tx.reconciled) transaction.cleared = true;
+    }
 
     await this.request(`/transactions/${txId}`, {
       method: "PATCH",

@@ -5,6 +5,10 @@ import { eq, desc, asc } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { AccountCategory } from "@/lib/calculators/types";
 import { toNumber, getPrimaryPerson } from "./transforms";
+import {
+  resolveRetirementProfileIdFrom,
+  pickProfileSettingsRow,
+} from "./retirement-profile";
 import { safeDivide } from "@/lib/utils/math";
 import { DEFAULT_WITHDRAWAL_RATE } from "@/lib/constants";
 import type { Db } from "./transforms";
@@ -20,6 +24,7 @@ import type { SalaryActiveMap, SalaryProfileActiveMap } from "./salary";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 import {
   getEffectiveCash,
+  getEffectiveCreditCardDebt,
   getEffectiveOtherAssets,
   getAnnualExpensesFromBudget,
   type BudgetTargeting,
@@ -331,6 +336,7 @@ export async function buildYearEndHistory(
     propTaxRows,
     people,
     retirementSettingsRows,
+    retirementProfileRows,
     annualExpensesBudget,
     homeImprovementItems,
   ] = await Promise.all([
@@ -352,6 +358,10 @@ export async function buildYearEndHistory(
     db.select().from(schema.propertyTaxes),
     db.select().from(schema.people).orderBy(asc(schema.people.id)),
     db.select().from(schema.retirementSettings),
+    db
+      .select()
+      .from(schema.retirementProfiles)
+      .orderBy(asc(schema.retirementProfiles.id)),
     getAnnualExpensesFromBudget(db, targeting),
     db
       .select()
@@ -768,7 +778,14 @@ export async function buildYearEndHistory(
     const setting = parseAppSettings(settings);
     const { cash } = await getEffectiveCash(db, settings);
     const otherAssets = await getEffectiveOtherAssets(db, settings, asOfDate);
-    const otherLiabilities = setting("current_other_liabilities", 0);
+    // Additive on top of the manual figure — see getEffectiveCreditCardDebt's
+    // docblock. Only computed for the CURRENT (isCurrent: true) row; a
+    // finalized past year always reads otherLiabilities from the stored
+    // net_worth_annual row instead (below), which finalizeYear (performance.ts)
+    // writes with this same addition baked in at finalize time.
+    const otherLiabilities =
+      setting("current_other_liabilities", 0) +
+      (await getEffectiveCreditCardDebt(db));
 
     const mortgageBalance = computeMortgageBalance(
       mortgageLoans,
@@ -1036,11 +1053,20 @@ export async function buildYearEndHistory(
   // Birth years for average age
   const birthYears = people.map((p) => new Date(p.dateOfBirth).getFullYear());
 
-  // Withdrawal rate from primary person's retirement settings
+  // Withdrawal rate from the ACTIVE RETIREMENT PROFILE's settings row.
+  // Was "the primary person's row", which read an arbitrary row when no
+  // person is flagged primary; resolving through the profile makes this
+  // agree with what the projection itself uses.
   const primaryPerson = getPrimaryPerson(people);
-  const primaryRetSettings = primaryPerson
-    ? retirementSettingsRows.find((rs) => rs.personId === primaryPerson.id)
-    : retirementSettingsRows[0];
+  const activeRetProfileId = resolveRetirementProfileIdFrom(
+    settings,
+    retirementProfileRows,
+  );
+  const primaryRetSettings = pickProfileSettingsRow(
+    retirementSettingsRows,
+    activeRetProfileId,
+    primaryPerson?.id ?? null,
+  );
   const withdrawalRate = primaryRetSettings
     ? toNumber(primaryRetSettings.withdrawalRate)
     : DEFAULT_WITHDRAWAL_RATE;

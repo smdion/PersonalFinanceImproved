@@ -543,6 +543,202 @@ describe("sync core — getPreview", () => {
     expect(insuranceMatch!.syncDirection).toBe("pull");
   });
 
+  // Found live, 2026-08-31: a household's Actual budget was rebuilt/
+  // re-imported upstream, which regenerates every category's internal id
+  // while keeping its name and balance — every stored apiCategoryId in
+  // Ledgr went stale at once. This previously still reported "linked"
+  // (the check only asked "is some id stored," never "does it still
+  // resolve"), so a push silently wrote to a category that no longer
+  // existed while the UI claimed everything was fine.
+  it("reports a budget item as orphaned, not linked, when its stored category id no longer resolves", async () => {
+    const profiles = db.select().from(schema.budgetProfiles).all();
+    const profileId = profiles[0]!.id;
+
+    seedBudgetItem(db, profileId, {
+      category: "Essentials",
+      subcategory: "Orphaned Insurance",
+      amounts: [300],
+      apiCategoryId: "c-insurance-old-stale-id",
+      apiCategoryName: "Insurance",
+      apiSyncDirection: "pull",
+    });
+
+    const mockAccounts = [
+      {
+        id: "a1",
+        name: "Checking",
+        balance: 5000,
+        onBudget: true,
+        closed: false,
+        type: "checking",
+      },
+    ];
+    // The current category list has an "Insurance" category, but under a
+    // DIFFERENT id than what's stored — simulating a rebuilt budget.
+    const mockCategories = [
+      {
+        id: "g1",
+        name: "Essentials",
+        hidden: false,
+        categories: [
+          { id: "c-insurance-new-id", name: "Insurance", hidden: false },
+        ],
+      },
+    ];
+
+    mockCacheGet.mockImplementation(
+      async (_db: unknown, _service: unknown, key: string) => {
+        if (key === "accounts")
+          return { data: mockAccounts, fetchedAt: new Date() };
+        if (key === "categories")
+          return { data: mockCategories, fetchedAt: new Date() };
+        return null;
+      },
+    );
+
+    mockGetApiConnection.mockResolvedValue({
+      accountMappings: [],
+      skippedCategoryIds: [],
+      linkedProfileId: profileId,
+      linkedColumnIndex: 0,
+      lastSyncedAt: null,
+    });
+
+    const result = await caller.sync.getPreview({ service: "ynab" });
+    expect(result.synced).toBe(true);
+    if (!result.synced) throw new Error("Expected synced:true");
+
+    const insuranceMatch = result.budget.matches.find(
+      (m) => m.ledgrName === "Orphaned Insurance",
+    );
+    expect(insuranceMatch).toBeDefined();
+    expect(insuranceMatch!.status).toBe("orphaned");
+    expect(insuranceMatch!.apiCategoryId).toBe("c-insurance-old-stale-id");
+    expect(result.budget.summary.orphaned).toBeGreaterThanOrEqual(1);
+  });
+
+  it("reports a savings goal as orphaned, not linked, when its stored category id no longer resolves", async () => {
+    seedSavingsGoal(db, {
+      name: "Car",
+      isApiSyncEnabled: true,
+      apiCategoryId: "c-car-old-stale-id",
+      apiCategoryName: "Car",
+    });
+
+    const mockAccounts = [
+      {
+        id: "a1",
+        name: "Checking",
+        balance: 5000,
+        onBudget: true,
+        closed: false,
+        type: "checking",
+      },
+    ];
+    const mockCategories = [
+      {
+        id: "g1",
+        name: "Sinking Funds",
+        hidden: false,
+        categories: [{ id: "c-car-new-id", name: "Car", hidden: false }],
+      },
+    ];
+
+    mockCacheGet.mockImplementation(
+      async (_db: unknown, _service: unknown, key: string) => {
+        if (key === "accounts")
+          return { data: mockAccounts, fetchedAt: new Date() };
+        if (key === "categories")
+          return { data: mockCategories, fetchedAt: new Date() };
+        return null;
+      },
+    );
+
+    mockGetApiConnection.mockResolvedValue({
+      accountMappings: [],
+      skippedCategoryIds: [],
+      linkedProfileId: null,
+      linkedColumnIndex: 0,
+      lastSyncedAt: null,
+    });
+
+    const result = await caller.sync.getPreview({ service: "ynab" });
+    expect(result.synced).toBe(true);
+    if (!result.synced) throw new Error("Expected synced:true");
+
+    const carMatch = result.savings.matches.find((m) => m.goalName === "Car");
+    expect(carMatch).toBeDefined();
+    expect(carMatch!.status).toBe("orphaned");
+    expect(carMatch!.apiCategoryId).toBe("c-car-old-stale-id");
+    expect(carMatch!.apiBalance).toBeNull();
+    expect(result.savings.summary.orphaned).toBeGreaterThanOrEqual(1);
+  });
+
+  // Found live, 2026-08-31: this preview's cash figure was an independent
+  // duplicate of getEffectiveCash's type-based auto-detection, so mapping
+  // "Cash" accounts on the Integrations page (server/helpers/budget.ts's
+  // sumMappedAccountBalances) fixed Net Worth/Assets but this preview kept
+  // showing $0 — a second, differently-computed number for the same thing.
+  it("uses mapped Cash accounts for the preview total when mappings exist, ignoring type", async () => {
+    const mockAccounts = [
+      // No recognizable "type" at all — matches Actual's real account
+      // shape (no account-type field exists there), which is exactly why
+      // type-based detection alone can't work for this household.
+      { id: "acct-checking", name: "BCU Checking", balance: 21112.06 },
+      { id: "acct-hysa", name: "Vanguard HYSA", balance: 33623.99 },
+      // Present but NOT mapped to cash — must be excluded from the total.
+      { id: "acct-other", name: "Unrelated", balance: 999999 },
+    ];
+    const mockCategories: {
+      id: string;
+      name: string;
+      hidden: boolean;
+      categories: unknown[];
+    }[] = [];
+
+    mockCacheGet.mockImplementation(
+      async (_db: unknown, _service: unknown, key: string) => {
+        if (key === "accounts")
+          return { data: mockAccounts, fetchedAt: new Date() };
+        if (key === "categories")
+          return { data: mockCategories, fetchedAt: new Date() };
+        return null;
+      },
+    );
+
+    mockGetApiConnection.mockResolvedValue({
+      accountMappings: [
+        {
+          localId: "cash",
+          localName: "Cash",
+          remoteAccountId: "acct-checking",
+          syncDirection: "pull",
+        },
+        {
+          localId: "cash",
+          localName: "Cash",
+          remoteAccountId: "acct-hysa",
+          syncDirection: "pull",
+        },
+      ],
+      skippedCategoryIds: [],
+      linkedProfileId: null,
+      linkedColumnIndex: 0,
+      lastSyncedAt: null,
+    });
+
+    const result = await caller.sync.getPreview({ service: "actual" });
+    expect(result.synced).toBe(true);
+    if (!result.synced) throw new Error("Expected synced:true");
+
+    expect(result.cash.api).toBeCloseTo(21112.06 + 33623.99, 2);
+    expect(result.cash.apiAccounts).toHaveLength(2);
+    expect(result.cash.apiAccounts.map((a) => a.name).sort()).toEqual([
+      "BCU Checking",
+      "Vanguard HYSA",
+    ]);
+  });
+
   it("skipped categories appear in skippedApiCategories", async () => {
     const mockAccounts = [
       {

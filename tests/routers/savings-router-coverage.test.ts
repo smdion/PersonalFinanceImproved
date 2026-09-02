@@ -39,6 +39,7 @@ const mockRefreshCategoryCache = vi.fn().mockResolvedValue(undefined);
 vi.mock("@/lib/budget-api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/budget-api")>();
   return {
+    ...actual,
     getActiveBudgetApi: (...args: unknown[]) => mockGetActiveBudgetApi(...args),
     getBudgetAPIClient: (...args: unknown[]) => mockGetBudgetAPIClient(...args),
     getClientForService: (...args: unknown[]) =>
@@ -46,8 +47,6 @@ vi.mock("@/lib/budget-api", async (importOriginal) => {
     cacheGet: (...args: unknown[]) => mockCacheGet(...args),
     refreshCategoryCache: (...args: unknown[]) =>
       mockRefreshCategoryCache(...args),
-    // Real class — router code does `err instanceof BudgetApiError`.
-    BudgetApiError: actual.BudgetApiError,
   };
 });
 
@@ -174,19 +173,39 @@ describe("savings.computeSummary", () => {
       });
 
       mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
+      // BudgetMonthDetail shape (months/${currentMonthKey} cache entry) —
+      // NOT the generic "categories" cache's nested-groups shape. Both
+      // balance AND currentMonthBudgeted for an API-linked goal are
+      // sourced from this same entry (savings.ts's computeSummary).
       mockCacheGet.mockResolvedValueOnce({
-        data: [
-          {
-            name: "Savings",
-            categories: [
-              { id: "cat-123", balance: 3000, budgeted: 200, activity: -100 },
-            ],
-          },
-        ],
+        data: {
+          month: "2026-09-01",
+          income: 0,
+          budgeted: 0,
+          activity: 0,
+          toBeBudgeted: 0,
+          categories: [
+            {
+              id: "cat-123",
+              name: "API Category",
+              groupId: "g1",
+              groupName: "Savings",
+              hidden: false,
+              balance: 3000,
+              budgeted: 200,
+              activity: -100,
+            },
+          ],
+        },
       });
 
       const result = await freshCtx.caller.savings.computeSummary();
       expect(result.goals.length).toBeGreaterThanOrEqual(1);
+      const goal = result.goals.find((g) => g.apiCategoryId === "cat-123");
+      expect(goal).toBeDefined();
+      expect(goal!.currentMonthBudgeted).toBe(200);
+      const calcGoal = result.savings.goals.find((g) => g.goalId === goal!.id);
+      expect(calcGoal!.current).toBe(3000);
     } finally {
       freshCtx.cleanup();
       mockGetActiveBudgetApi.mockResolvedValue("none");
@@ -301,6 +320,41 @@ describe("savings.pushContributionsToApi", () => {
       const result = await ctx.caller.savings.pushContributionsToApi();
       expect(result.pushed).toBe(1);
       expect(mockUpdateGoal).toHaveBeenCalledWith("cat-push-001", 200);
+    } finally {
+      ctx.cleanup();
+      mockGetActiveBudgetApi.mockResolvedValue("none");
+      mockGetClientForService.mockResolvedValue(null);
+    }
+  });
+
+  it("reports a genuine API failure as `failed`, not silently as pushed:0/skippedUnsupported:0 (found live, 2026-08-31 — this previously looked identical to 'nothing needed pushing')", async () => {
+    const ctx = await createTestCaller();
+    try {
+      const profileId = await seedBudgetProfile(ctx.db);
+      const goalId = seedSavingsGoal(ctx.db, {
+        name: "Failing Push Goal",
+        targetAmount: "5000",
+        isApiSyncEnabled: true,
+        apiCategoryId: "cat-fail-001",
+      });
+      seedSavingsGoalAllocation(ctx.db, goalId, profileId, {
+        monthlyContribution: "200",
+      });
+
+      const mockUpdateGoal = vi
+        .fn()
+        .mockRejectedValue(new Error("401 Unauthorized"));
+      mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
+      mockGetClientForService.mockResolvedValueOnce({
+        updateCategoryGoalTarget: mockUpdateGoal,
+      });
+
+      const result = await ctx.caller.savings.pushContributionsToApi();
+      expect(result.pushed).toBe(0);
+      expect(result.failed).toBe(1);
+      expect(result.failureMessage).toBe("401 Unauthorized");
+      // The mutation itself must not throw — the household still gets a
+      // response back with the failure reported IN it, not a hard error.
     } finally {
       ctx.cleanup();
       mockGetActiveBudgetApi.mockResolvedValue("none");
@@ -485,6 +539,47 @@ describe("savings.recalculateAllocation", () => {
       const override = getOverrideRow(ctx.db, goalId, profileId);
       expect(override).toBeDefined();
       expect(Number(override!.monthlyContribution)).not.toBe(150);
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
+  it("threads salaryActiveFields through to the live pool recompute, so the persisted amount matches what the caller's own preview showed (found live, 2026-08-31 — previously silently dropped, always computing against the stored salary instead of the active override)", async () => {
+    const ctx = await createTestCaller();
+    try {
+      const { profileId, personId } = seedStandardDataset(ctx.db);
+      const goalId = seedSavingsGoal(ctx.db, {
+        name: "Percent Goal",
+        isActive: true,
+      });
+      seedSavingsGoalAllocation(ctx.db, goalId, profileId, {
+        monthlyContribution: "150",
+        allocationPercent: "10",
+      });
+
+      // Baseline: no override, computed against the stored ($120k) salary.
+      const baseline = await ctx.caller.savings.recalculateAllocation({
+        goalId,
+      });
+      expect(baseline.updated).toBe(1);
+      const baselineAmount = Number(
+        getOverrideRow(ctx.db, goalId, profileId)!.monthlyContribution,
+      );
+
+      // Same call, but with a salaryActiveFields override doubling the
+      // salary — must produce a materially different persisted amount if
+      // the override is genuinely threaded through to the live-pool
+      // recompute, not silently dropped.
+      const withOverride = await ctx.caller.savings.recalculateAllocation({
+        goalId,
+        salaryActiveFields: [{ personId, salary: 240000 }],
+      });
+      expect(withOverride.updated).toBe(1);
+      const overriddenAmount = Number(
+        getOverrideRow(ctx.db, goalId, profileId)!.monthlyContribution,
+      );
+
+      expect(overriddenAmount).not.toBeCloseTo(baselineAmount, 0);
     } finally {
       ctx.cleanup();
     }
@@ -1665,9 +1760,12 @@ describe("savings.extraPaycheckRouting", () => {
     expect(baseNetPayPerCheck).not.toBe(999999);
     // $120,000 / 26 biweekly periods = $4,615.38 gross, minus federal
     // withholding and FICA (no deductions/contributions seeded).
+    // R56: calculatePaycheck now applies the Pub 15-T Worksheet 1A adjustment
+    // before the withholding bracket lookup (previously missing, which
+    // over-withheld and understated net pay) — net pay rose accordingly.
     expect(baseNetPayPerCheck).toBeGreaterThan(3700);
-    expect(baseNetPayPerCheck).toBeLessThan(3900);
-    expect(baseNetPayPerCheck).toBe(3816.61);
+    expect(baseNetPayPerCheck).toBeLessThan(4000);
+    expect(baseNetPayPerCheck).toBe(3876.15);
   });
 
   it("list resolves live from the job's own column when no routing rule has ever been saved for it", async () => {

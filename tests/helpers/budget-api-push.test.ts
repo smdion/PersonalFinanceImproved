@@ -135,6 +135,8 @@ describe("pushSnapshotToBudgetApi — aggregation + create mode", () => {
     expect(call.memo).toContain("snapshot:7");
     expect(call.memo).toContain("Checking");
     expect(call.memo).toContain("Savings");
+    expect(call.cleared).toBe(true);
+    expect(call.reconciled).toBe(true);
   });
 
   it("dedupes a performance account referenced by two mappings in the same group, summing its balance once", async () => {

@@ -15,6 +15,8 @@
  * See: .scratch/docs/TAX-PARAMETER-RUNBOOK.md for the full update procedure.
  */
 import { describe, it, expect } from "vitest";
+import fs from "node:fs";
+import path from "node:path";
 import {
   TAX_PARAMETER_REGISTRY,
   assertTaxFreshness,
@@ -30,11 +32,13 @@ import {
 import { NIIT_RATE, NIIT_THRESHOLDS, computeNiit } from "@/lib/config/niit";
 import {
   IRMAA_BRACKETS,
+  IRMAA_DATA_YEAR,
   getIrmaaCost,
   getNextIrmaaCliff,
 } from "@/lib/config/irmaa-tables";
 import {
   FPL_BY_HOUSEHOLD,
+  FPL_COVERAGE_YEAR,
   getAcaSubsidyCliff,
   estimateAcaSubsidyValue,
 } from "@/lib/config/aca-tables";
@@ -92,6 +96,139 @@ describe("Tax parameter freshness", () => {
         `${stale.length} tax parameter(s) are expired:\n${details}\n\n` +
           `See .scratch/docs/TAX-PARAMETER-RUNBOOK.md for update instructions.`,
       );
+    }
+  });
+});
+
+// ============================================================================
+// Part 1b: tax_brackets seed-data structural invariants (R58 regression guard)
+// ============================================================================
+//
+// R58 found two typos in seed-reference-data.sql's w4_checkbox=true rows
+// (a dropped digit in a baseWithholding value, a dropped digit in a
+// threshold) that only surfaced via manual arithmetic verification. These
+// invariants catch that whole bug class automatically: every row's
+// thresholds must strictly increase, and the Pub 15-T Worksheet 1A
+// adjustment baked into each row's first non-zero threshold must be
+// internally consistent with the filing status's standard deduction.
+
+type SeedBracket = { rate: number; threshold: number; baseWithholding: number };
+type SeedBracketRow = {
+  taxYear: number;
+  filingStatus: "MFJ" | "Single" | "HOH";
+  w4Checkbox: boolean;
+  brackets: SeedBracket[];
+};
+
+function parseSeedTaxBrackets(): SeedBracketRow[] {
+  const sql = fs.readFileSync(
+    path.resolve(__dirname, "../../seed-reference-data.sql"),
+    "utf8",
+  );
+  const rows: SeedBracketRow[] = [];
+  const rowRe = /\((\d{4}), '(MFJ|Single|HOH)', (true|false), '(\[.*?\])'\)/g;
+  let m: RegExpExecArray | null;
+  while ((m = rowRe.exec(sql))) {
+    rows.push({
+      taxYear: Number(m[1]),
+      filingStatus: m[2] as "MFJ" | "Single" | "HOH",
+      w4Checkbox: m[3] === "true",
+      brackets: JSON.parse(m[4]!),
+    });
+  }
+  return rows;
+}
+
+function parseSeedStandardDeductions(): Map<string, number> {
+  const sql = fs.readFileSync(
+    path.resolve(__dirname, "../../seed-reference-data.sql"),
+    "utf8",
+  );
+  const map = new Map<string, number>();
+  const re = /\((\d{4}), 'standard_deduction_(mfj|single|hoh)', ([\d.]+)/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(sql))) {
+    map.set(`${m[1]}:${m[2]!.toUpperCase()}`, Number(m[3]));
+  }
+  return map;
+}
+
+describe("tax_brackets seed data structural invariants", () => {
+  const rows = parseSeedTaxBrackets();
+  const standardDeductions = parseSeedStandardDeductions();
+
+  // Pub 15-T Worksheet 1A "adjustment for annual W-4 filing status" — the
+  // amount subtracted from wages before the withholding bracket walk. This
+  // is NOT the standard deduction; it's smaller and only applies when the
+  // W-4 checkbox (multiple jobs) is unchecked. Verified independently of
+  // the (mislabeled) seed data by matching bracket residuals against real
+  // 1040 bracket boundaries — see the seed file's R58 comment.
+  const W4_ADJUSTMENT: Record<"MFJ" | "Single" | "HOH", number> = {
+    MFJ: 12900,
+    Single: 8600,
+    HOH: 8600,
+  };
+
+  it("found rows to check", () => {
+    expect(rows.length).toBeGreaterThan(0);
+  });
+
+  // KNOWN, TRACKED EXCEPTION (R58, see seed-reference-data.sql comment above
+  // the tax_brackets INSERT): the MFJ rows hold real 2026 data duplicated
+  // onto the 2025 row too, while the Single/HOH rows hold real 2025 data
+  // duplicated onto the 2026 row too. That means each row's nominal
+  // tax_year doesn't match its actual source year for exactly these three
+  // (year, status) pairs — the adjustment-consistency checks below correctly
+  // flag them against their nominal year's standard deduction, so they're
+  // excluded here rather than fixed (fixing requires real, externally
+  // verified 2025 MFJ / 2026 Single/HOH bracket tables not available with
+  // confidence). Excluding a KNOWN mismatch keeps the test able to catch any
+  // NEW/different corruption — this is not a blanket suppression.
+  const KNOWN_MISLABELED: Array<{ taxYear: number; filingStatus: string }> = [
+    { taxYear: 2025, filingStatus: "MFJ" },
+    { taxYear: 2026, filingStatus: "Single" },
+    { taxYear: 2026, filingStatus: "HOH" },
+  ];
+  function isKnownMislabeled(row: SeedBracketRow): boolean {
+    return KNOWN_MISLABELED.some(
+      (k) => k.taxYear === row.taxYear && k.filingStatus === row.filingStatus,
+    );
+  }
+
+  it("every row's thresholds strictly increase", () => {
+    for (const row of rows) {
+      for (let i = 1; i < row.brackets.length; i++) {
+        expect(
+          row.brackets[i]!.threshold,
+          `${row.taxYear} ${row.filingStatus} w4_checkbox=${row.w4Checkbox}: bracket ${i} threshold ${row.brackets[i]!.threshold} should exceed bracket ${i - 1} threshold ${row.brackets[i - 1]!.threshold}`,
+        ).toBeGreaterThan(row.brackets[i - 1]!.threshold);
+      }
+    }
+  });
+
+  it("w4_checkbox=true rows: second bracket threshold = standardDeduction / 2", () => {
+    for (const row of rows.filter(
+      (r) => r.w4Checkbox && !isKnownMislabeled(r),
+    )) {
+      const sd = standardDeductions.get(`${row.taxYear}:${row.filingStatus}`);
+      if (sd === undefined) continue;
+      expect(
+        row.brackets[1]!.threshold,
+        `${row.taxYear} ${row.filingStatus} w4_checkbox=true`,
+      ).toBe(sd / 2);
+    }
+  });
+
+  it("w4_checkbox=false rows: standardDeduction - second bracket threshold = W-4 Worksheet 1A adjustment", () => {
+    for (const row of rows.filter(
+      (r) => !r.w4Checkbox && !isKnownMislabeled(r),
+    )) {
+      const sd = standardDeductions.get(`${row.taxYear}:${row.filingStatus}`);
+      if (sd === undefined) continue;
+      expect(
+        sd - row.brackets[1]!.threshold,
+        `${row.taxYear} ${row.filingStatus} w4_checkbox=false`,
+      ).toBe(W4_ADJUSTMENT[row.filingStatus]);
     }
   });
 });
@@ -263,6 +400,25 @@ describe("IRMAA bracket values", () => {
   it("getNextIrmaaCliff returns null when above all tiers", () => {
     expect(getNextIrmaaCliff(800000, "MFJ")).toBeNull();
   });
+
+  // Phase 3 drift guard (2026-08-31, advisor-caught): IRMAA_DATA_YEAR
+  // (bracket-growth.ts's growIrmaaBrackets anchor) is a hand-maintained
+  // constant in a DIFFERENT file from this registry's "IRMAA bracket
+  // fallback (code)" entry -- unlike taxDataYear (Phases 1-2), which
+  // arrives from the DB alongside its table and physically can't drift.
+  // Without this assertion, refreshing IRMAA_BRACKETS to a new tax year
+  // and bumping this registry's validThrough (the normal update
+  // procedure) would silently leave IRMAA_DATA_YEAR stale -- over-growing
+  // every IRMAA threshold by a year, every projected year, for every
+  // household with enableIrmaaAwareness on, with no test failure anywhere
+  // else to catch it.
+  it("IRMAA_DATA_YEAR matches the registry's own validThrough for this table -- bump both together", () => {
+    const entry = TAX_PARAMETER_REGISTRY.find(
+      (e) => e.name === "IRMAA bracket fallback (code)",
+    );
+    expect(entry).toBeDefined();
+    expect(IRMAA_DATA_YEAR).toBe(entry!.validThrough);
+  });
 });
 
 describe("ACA FPL values", () => {
@@ -293,6 +449,21 @@ describe("ACA FPL values", () => {
 
   it("subsidy is positive below the cliff", () => {
     expect(estimateAcaSubsidyValue(40000, 2, 55)).toBeGreaterThan(0);
+  });
+
+  // Phase 4 drift guard (2026-08-31), same pattern as IRMAA_DATA_YEAR's
+  // guard above: FPL_COVERAGE_YEAR (bracket-growth.ts's growth anchor,
+  // via fplGrowthFactor) is a hand-maintained constant in a different
+  // file from this registry's own validThrough. Without this assertion,
+  // refreshing FPL_BY_HOUSEHOLD and bumping validThrough (the normal
+  // update procedure) could silently leave FPL_COVERAGE_YEAR stale,
+  // over- or under-growing the ACA cliff for every ACA-aware household.
+  it("FPL_COVERAGE_YEAR matches the registry's own validThrough for this table -- bump both together", () => {
+    const entry = TAX_PARAMETER_REGISTRY.find(
+      (e) => e.name === "ACA Federal Poverty Level",
+    );
+    expect(entry).toBeDefined();
+    expect(FPL_COVERAGE_YEAR).toBe(entry!.validThrough);
   });
 });
 

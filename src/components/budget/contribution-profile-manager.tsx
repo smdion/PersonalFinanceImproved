@@ -17,6 +17,10 @@ import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { useDraftCommit } from "@/lib/hooks/use-draft-commit";
 import { ProfileViewingBadge } from "./profile-viewing-badge";
+import {
+  ProfileListRow,
+  ProfileSidebarHeader,
+} from "@/components/ui/profile-sidebar";
 import { confirm, confirmWithDiff } from "@/components/ui/confirm-dialog";
 import { useCloneProfile } from "@/lib/hooks/use-clone-profile";
 import { diffContribProfileSwap } from "@/lib/pure/contrib-profile-diff";
@@ -34,17 +38,6 @@ import {
   DeductionForm,
   type DeductionFormValues,
 } from "@/components/paycheck/deduction-form";
-
-type ProfileSummary = {
-  id: number;
-  name: string;
-  description: string | null;
-  activeFieldCount: number;
-  summary: {
-    annualContributions: number;
-    annualEmployerMatch: number;
-  };
-};
 
 export function ContributionProfileManager({
   canEdit,
@@ -290,35 +283,28 @@ export function ContributionProfileManager({
           <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-4">
             {/* Left: profile list */}
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-label font-semibold text-muted uppercase tracking-wide">
-                  Profiles
-                </h3>
-                {canEdit && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedProfileId(null);
-                      setCreatingNew(true);
-                    }}
-                    className="text-caption font-medium text-blue-600 hover:text-blue-700"
-                  >
-                    + New
-                  </button>
-                )}
-              </div>
+              <ProfileSidebarHeader
+                onCreate={
+                  canEdit
+                    ? () => {
+                        setSelectedProfileId(null);
+                        setCreatingNew(true);
+                      }
+                    : undefined
+                }
+              />
 
               {profiles.map((p) => (
-                <ProfileListItem
+                <ProfileListRow
                   key={p.id}
-                  profile={p}
+                  name={p.name}
                   isSelected={!creatingNew && effectiveSelectedId === p.id}
                   isActive={globalActiveContribId === p.id}
                   onSelect={() => {
                     setCreatingNew(false);
                     setSelectedProfileId(p.id);
                   }}
-                  onRename={
+                  onStartRename={
                     canEdit
                       ? () => {
                           setRenamingProfileId(p.id);
@@ -362,6 +348,18 @@ export function ContributionProfileManager({
                   }
                   onClone={
                     canEdit ? () => cloneProfile(p.id, p.name) : undefined
+                  }
+                  meta={
+                    <>
+                      <span>
+                        {formatCurrency(p.summary.annualContributions)}/yr
+                      </span>
+                      {p.summary.annualEmployerMatch > 0 && (
+                        <span className="text-green-600">
+                          +{formatCurrency(p.summary.annualEmployerMatch)}
+                        </span>
+                      )}
+                    </>
                   }
                 />
               ))}
@@ -413,140 +411,6 @@ export function ContributionProfileManager({
           </div>
         </>
       )}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Profile List Item (sidebar)
-// ---------------------------------------------------------------------------
-
-function ProfileListItem({
-  profile,
-  isSelected,
-  isActive,
-  onSelect,
-  onActivate,
-  onDelete,
-  onRename,
-  onClone,
-  isRenaming,
-  renameValue,
-  onRenameValueChange,
-  onRenameComplete,
-  onRenameCancel,
-}: {
-  profile: ProfileSummary;
-  isSelected: boolean;
-  /** Whether this profile is the currently (globally-)active one. */
-  isActive: boolean;
-  onSelect: () => void;
-  onActivate?: () => void;
-  onDelete?: () => void;
-  onRename?: () => void;
-  onClone?: () => void;
-  isRenaming?: boolean;
-  renameValue?: string;
-  onRenameValueChange?: (value: string) => void;
-  onRenameComplete?: () => void;
-  onRenameCancel?: () => void;
-}) {
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={onSelect}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onSelect();
-        }
-      }}
-      className={`w-full text-left px-3 py-2 rounded-md transition-colors group cursor-pointer ${
-        isSelected
-          ? "bg-blue-50 border border-blue-300"
-          : "hover:bg-surface-sunken border border-transparent"
-      }`}
-    >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5 min-w-0">
-          {isRenaming ? (
-            <input
-              type="text"
-              value={renameValue ?? ""}
-              onChange={(e) => onRenameValueChange?.(e.target.value)}
-              onBlur={() => onRenameComplete?.()}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-                if (e.key === "Escape") onRenameCancel?.();
-              }}
-              autoFocus
-              onClick={(e) => e.stopPropagation()}
-              className="text-xs font-medium text-primary bg-surface-primary border border-strong rounded px-1 py-0.5 w-full"
-            />
-          ) : (
-            <span className="text-xs font-medium text-primary truncate">
-              {profile.name}
-            </span>
-          )}
-          {isActive && (
-            <span className="text-micro px-1 py-0.5 rounded bg-green-100 text-green-700 font-semibold shrink-0">
-              ACTIVE
-            </span>
-          )}
-        </div>
-        {(onActivate || onDelete || onRename || onClone) && !isRenaming && (
-          <div
-            className="flex gap-1 shrink-0 md:max-w-0 md:overflow-hidden md:opacity-0 md:group-hover:max-w-[13rem] md:group-hover:opacity-100 transition-all"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {onActivate && !isActive && (
-              <button
-                type="button"
-                onClick={onActivate}
-                className="text-caption text-faint hover:text-green-600"
-              >
-                activate
-              </button>
-            )}
-            {onRename && (
-              <button
-                type="button"
-                onClick={onRename}
-                className="text-caption text-faint hover:text-blue-600"
-              >
-                rename
-              </button>
-            )}
-            {onClone && (
-              <button
-                type="button"
-                onClick={onClone}
-                className="text-caption text-faint hover:text-blue-600"
-              >
-                clone
-              </button>
-            )}
-            {onDelete && (
-              <button
-                type="button"
-                onClick={onDelete}
-                className="text-caption text-faint hover:text-red-600"
-              >
-                ×
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-      <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-1 text-caption text-muted">
-        <span>{formatCurrency(profile.summary.annualContributions)}/yr</span>
-        {profile.summary.annualEmployerMatch > 0 && (
-          <span className="text-green-600">
-            +{formatCurrency(profile.summary.annualEmployerMatch)}
-          </span>
-        )}
-      </div>
     </div>
   );
 }

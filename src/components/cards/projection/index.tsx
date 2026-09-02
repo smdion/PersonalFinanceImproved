@@ -2,7 +2,6 @@
 
 /** Top-level ProjectionCard component — orchestrates the projection state hook and delegates to sub-components. */
 import { useEffect, useRef, useState } from "react";
-import { toast, useToasts } from "@/lib/hooks/use-toast";
 import dynamic from "next/dynamic";
 import { HelpTip } from "@/components/ui/help-tip";
 import { SlidePanel } from "@/components/ui/slide-panel";
@@ -18,6 +17,8 @@ import { AccumulationMethodologyContent } from "@/components/accumulation-method
 import { DecumulationMethodologyContent } from "@/components/decumulation-methodology-content";
 import { ValidationContent } from "@/components/validation-content";
 // formatCurrency import removed — no longer used inline
+import { formatPercent } from "@/lib/utils/format";
+import { safeDivide } from "@/lib/utils/math";
 import { SimulationAssumptions } from "@/components/cards/mc-simulation-assumptions";
 import { DecumulationConfig } from "./decumulation-config";
 import { OverridesPanelV2 as OverridesPanel } from "./overrides-panel-v2";
@@ -25,8 +26,10 @@ import { ProjectionTable } from "./projection-table";
 import { ProjectionHeroKpis } from "./projection-hero-kpis";
 import { ProjectionChartSkeleton } from "./projection-chart-skeleton";
 import { ProjectionTableSkeleton } from "./projection-table-skeleton";
-import { ReportHeader, ReportFooter } from "./report-header";
-import { ReportAssumptionsSummary } from "./report-assumptions-summary";
+import { ReportRoot } from "./report/report-root";
+import { checkReportGate } from "@/lib/pure/report/mc-freshness";
+import type { ReportGateFailure } from "@/lib/pure/report/mc-freshness";
+import { ReportGateModal } from "./report/report-gate-modal";
 
 // Code-split Recharts-heavy children (v0.5 expert-review M8). Each chart is
 // ~250KB of recharts payload that loads only when the projection card mounts.
@@ -69,6 +72,13 @@ export function ProjectionCard(props: {
   parentCategoryFilter?: string;
   contributionProfileId?: number;
   salaryProfileId?: number;
+  /** View a non-active Retirement Profile (AssumptionsBand) — threaded to
+   *  every engine query so the chart/table this card renders agrees with
+   *  whichever profile the band above it is showing (advisor-caught
+   *  2026-09-01: previously accepted nowhere in this card's query layer,
+   *  so the band's "view a non-active profile" silently never reached the
+   *  chart — it kept showing the globally-active profile regardless). */
+  retirementProfileId?: number | null;
   snapshotId?: number;
   /** When provided, overrides the internal dollarMode state (for shared page-level toggle). */
   dollarMode?: "nominal" | "real";
@@ -87,6 +97,7 @@ export function ProjectionCard(props: {
     parentCategoryFilter: props.parentCategoryFilter,
     contributionProfileId: props.contributionProfileId,
     salaryProfileId: props.salaryProfileId,
+    retirementProfileId: props.retirementProfileId,
     snapshotId: props.snapshotId,
   });
 
@@ -118,12 +129,21 @@ export function ProjectionCard(props: {
     setShowBars,
     showStabilityBars,
     setShowStabilityBars,
+    showIncome,
+    setShowIncome,
     fanBandRange,
     setFanBandRange,
     mcBandsByYear,
     scenarioView,
     setScenarioView,
-    coastFireAge,
+    coastFireCustomAge,
+    setCoastFireCustomAge,
+    coastFireCustomAgeDraft,
+    setCoastFireCustomAgeDraft,
+    coastFireProbeResult,
+    coastFireProbeLoading,
+    coastFireProbeError,
+    checkCoastFireCustomAge,
     showMethodology,
     setShowMethodology,
     showAccumMethodology,
@@ -147,6 +167,8 @@ export function ProjectionCard(props: {
     engineQuery,
     mcPrefetchQuery,
     mcQuery,
+    sharedInput,
+    debouncedInput,
     personFilterName,
     mcChartPending,
     result,
@@ -159,9 +181,18 @@ export function ProjectionCard(props: {
     runSimulation,
     mcAutoloadEnabled,
     runMonteCarlo,
-    coastFireMcAutoloadEnabled,
     runCoastFireMc,
     coastFireMcQuery,
+    coastFireMcQueryEnabled,
+    coastFireAge: deterministicCoastFireAge,
+    bracketOptimizerResult,
+    mcProgressQuery,
+    mcPrefetchProgressQuery,
+    coastFireMcProgressQuery,
+    rateSeededMcProgressQuery,
+    coastFireProbeProgressQuery,
+    rateSeededMcQuery,
+    isRerunning,
   } = state;
 
   // If the active scenario's result has no per-person data (Simple-tax-mode
@@ -175,35 +206,53 @@ export function ProjectionCard(props: {
     if (!hasIndividualAccountData) setPersonFilter("all");
   }, [result, isPersonFiltered, hasIndividualAccountData, setPersonFilter]);
 
-  // "Recalculating…" toast — visible regardless of scroll position, unlike
-  // ProjectionLoader's in-place strip (deliberately positioned between the
-  // chart and table, per its own header comment, "so layout never shifts")
-  // which is invisible if the user is scrolled away from that spot, and
-  // doesn't cover the engine-fetch phase at all. Reuses the existing
-  // fixed-position toast system instead of adding a second one.
-  const { dismiss: dismissToast } = useToasts();
+  // "Recalculating…" indicator. Previously a corner toast (bottom-right,
+  // easy to miss and easy to scroll past) that also only covered 4 of the
+  // queries that can actually trigger a real recalculation — Rate-Seeded
+  // and the Coast FIRE Custom Age probe could run with NO visible
+  // indicator at all. Replaced with a fixed banner pinned to the top of
+  // the viewport (impossible to miss regardless of scroll position, same
+  // z-index precedent as ToastContainer) that now covers every query that
+  // can trigger a real wait, consistently (live-user finding, 2026-08-30).
+  //
+  // Shows real "N / total trials" progress once available — see
+  // mcProgressQuery in use-projection-queries.ts, backed by the Monte
+  // Carlo worker's own progress messages (monte-carlo-worker-client.ts).
+  // Only the main mcQuery carries a trackable runId today; every other
+  // query here still shows the plain indeterminate state, which is
+  // honest — they're either fast (engine-only) or don't yet report
+  // sub-progress (Coast FIRE's multi-probe binary search).
   const isRecalculating =
     engineQuery.isFetching ||
     mcPrefetchQuery.isFetching ||
     mcQuery.isFetching ||
-    coastFireMcQuery.isFetching;
-  const recalcToastId = useRef<string | null>(null);
-  useEffect(() => {
-    if (isRecalculating && recalcToastId.current === null) {
-      recalcToastId.current = toast.loading("Recalculating…");
-    } else if (!isRecalculating && recalcToastId.current !== null) {
-      dismissToast(recalcToastId.current);
-      recalcToastId.current = null;
-    }
-  }, [isRecalculating, dismissToast]);
-  // Dismiss on unmount so navigating away mid-fetch doesn't leave an
-  // orphaned toast with nothing left to clear it.
-  useEffect(() => {
-    return () => {
-      if (recalcToastId.current !== null) dismissToast(recalcToastId.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- unmount-only cleanup
-  }, []);
+    coastFireMcQuery.isFetching ||
+    rateSeededMcQuery.isFetching ||
+    coastFireProbeLoading ||
+    isRerunning;
+  // Whichever MC-ish job is actually running right now, in priority order
+  // — the ones tied to what the user is actively viewing/doing outrank
+  // the passive background prefetch, so switching to (say) Coast FIRE
+  // while the baseline prefetch happens to also be mid-run shows YOUR
+  // progress, not a random one. Each *ProgressQuery only polls (and thus
+  // only has data) while its OWN query/action is in flight — see each
+  // one's `enabled` clause in use-projection-queries.ts — so at most one
+  // of these should ever be non-null in practice; the fallback chain
+  // exists for the rare moment two overlap (e.g. "Re-run" fires both
+  // baseline and Coast FIRE MC together via Promise.all).
+  const mcProgress = mcQuery.isFetching
+    ? (mcProgressQuery.data ?? null)
+    : coastFireMcQuery.isFetching
+      ? (coastFireMcProgressQuery.data ?? null)
+      : rateSeededMcQuery.isFetching
+        ? (rateSeededMcProgressQuery.data ?? null)
+        : coastFireProbeLoading
+          ? (coastFireProbeProgressQuery.data ?? null)
+          : mcPrefetchQuery.isFetching
+            ? (mcPrefetchProgressQuery.data ?? null)
+            : isRerunning
+              ? (mcProgressQuery.data ?? coastFireMcProgressQuery.data ?? null)
+              : null;
 
   // Allow page-level dollarMode override (for shared toggle across tabs).
   // Sync the prop into internal state so derived data (deflate) reads the correct value.
@@ -231,34 +280,113 @@ export function ProjectionCard(props: {
 
   // R42 — print/export report. "none" = normal screen view (default print
   // behavior, unchanged). "basic" prints just the chart+table with page
-  // chrome hidden. "fancy" additionally mounts the report header, hero KPI
-  // summary, and assumptions section (all print-only — hidden on screen via
-  // `hidden print:block`, so this is a no-op on layout until printed).
-  const [reportMode, setReportMode] = useState<"none" | "basic" | "fancy">(
+  // chrome hidden. "advisor" (was "fancy") mounts the purpose-built
+  // advisor-report document instead — ReportRoot, not the interactive
+  // chart/table — hidden on screen via `hidden print:block`, so this is a
+  // no-op on layout until printed. Only reachable after checkReportGate
+  // passes (see handlePrintAdvisor below) — never printed with stale/
+  // missing Monte Carlo data.
+  const [reportMode, setReportMode] = useState<"none" | "basic" | "advisor">(
     "none",
   );
+  const [gateFailure, setGateFailure] = useState<ReportGateFailure | null>(
+    null,
+  );
   const originalTitleRef = useRef<string>("");
-  const handlePrint = (mode: "basic" | "fancy") => {
+  // "Print Chart & Table" is a deliberate export action, not a screenshot
+  // of whatever's on screen — it should always include every year
+  // regardless of the interactive table's own milestone-only toggle
+  // state, restored after printing so it doesn't silently change what the
+  // user was looking at on screen.
+  const priorShowAllYearsRef = useRef<boolean | null>(null);
+  const handlePrint = (mode: "basic" | "advisor") => {
     originalTitleRef.current = document.title;
     setReportMode(mode);
     document.title = `Retirement Projection - ${new Date().toLocaleDateString()}`;
+    if (mode === "basic" && !state.showAllYears) {
+      priorShowAllYearsRef.current = state.showAllYears;
+      state.setShowAllYears(true);
+    }
     // Two rAFs: one for React to commit the report-only DOM, one for the
     // browser to paint it, before the print dialog captures the page.
     requestAnimationFrame(() => {
       requestAnimationFrame(() => window.print());
     });
   };
+  const handlePrintAdvisor = () => {
+    const gate = checkReportGate({
+      scenarioView,
+      mcTaxMode,
+      sharedInput,
+      debouncedInput,
+      engineQuery: {
+        isFetching: engineQuery.isFetching,
+        isPlaceholderData: engineQuery.isPlaceholderData,
+        data: engineQuery.data,
+      },
+      mcQuery: {
+        isFetching: mcQuery.isFetching,
+        data: mcQuery.data?.result ?? null,
+      },
+    });
+    if (!gate.ok) {
+      setGateFailure(gate.failure ?? null);
+      return;
+    }
+    handlePrint("advisor");
+  };
   useEffect(() => {
     const reset = () => {
       setReportMode("none");
       if (originalTitleRef.current) document.title = originalTitleRef.current;
+      if (priorShowAllYearsRef.current != null) {
+        state.setShowAllYears(priorShowAllYearsRef.current);
+        priorShowAllYearsRef.current = null;
+      }
     };
     window.addEventListener("afterprint", reset);
     return () => window.removeEventListener("afterprint", reset);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- state.setShowAllYears is a stable useState setter, safe to close over once
   }, []);
 
   return (
     <>
+      {isRecalculating && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed top-0 inset-x-0 z-[100] print:hidden flex items-center justify-center gap-3 bg-blue-600 text-white text-sm font-medium px-4 py-2 shadow-md"
+        >
+          <span
+            className="h-3.5 w-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin shrink-0"
+            aria-hidden="true"
+          />
+          {mcProgress && mcProgress.total > 0 ? (
+            <>
+              <span>
+                Running simulation… {mcProgress.done.toLocaleString()}
+                {" / "}
+                {mcProgress.total.toLocaleString()} trials (
+                {formatPercent(
+                  safeDivide(mcProgress.done, mcProgress.total, 0),
+                  0,
+                )}
+                )
+              </span>
+              <span className="w-32 h-1.5 rounded-full bg-white/25 overflow-hidden shrink-0">
+                <span
+                  className="block h-full bg-white rounded-full transition-[width]"
+                  style={{
+                    width: `${Math.min(100, safeDivide(mcProgress.done, mcProgress.total, 0) * 100)}%`,
+                  }}
+                />
+              </span>
+            </>
+          ) : (
+            <span>Recalculating…</span>
+          )}
+        </div>
+      )}
       <div className="space-y-6 mb-6">
         <div className="space-y-6">
           {/* ================================================================= */}
@@ -284,24 +412,63 @@ export function ProjectionCard(props: {
               </button>
               <button
                 type="button"
-                onClick={() => handlePrint("fancy")}
+                onClick={handlePrintAdvisor}
                 className="text-muted hover:text-secondary underline"
               >
-                Print Full Report
+                Print Advisor Report
               </button>
             </div>
           )}
 
-          {/* Fancy-report-only header — mounted only in "fancy" mode, hidden
-              on screen, print-visible. */}
-          {reportMode === "fancy" && (
-            <div className="hidden print:block">
-              <ReportHeader
-                peopleNames={(people ?? enginePeople ?? []).map((p) => p.name)}
-                generatedAt={new Date()}
-              />
-            </div>
+          {gateFailure && (
+            <ReportGateModal
+              failure={gateFailure}
+              isRunning={isRerunning}
+              onRunSimulation={() => {
+                runMonteCarlo();
+                setGateFailure(null);
+              }}
+              onCancel={() => setGateFailure(null)}
+            />
           )}
+
+          {/* Advisor-report-only root — mounted only in "advisor" mode,
+              hidden on screen, print-visible. Only reached when the gate
+              already passed, so `result`/`mcQuery.data`/`engineSettings`
+              are all guaranteed present here. */}
+          {reportMode === "advisor" &&
+            result &&
+            mcQuery.data?.result &&
+            engineSettings && (
+              <div className="hidden print:block">
+                <ReportRoot
+                  projectionResult={result}
+                  mcResult={mcQuery.data.result}
+                  deflate={deflate}
+                  baseYear={baseYear}
+                  coastFireAge={deterministicCoastFireAge}
+                  peopleNames={(people ?? enginePeople ?? []).map(
+                    (p) => p.name,
+                  )}
+                  generatedAt={new Date()}
+                  engineSettings={engineSettings}
+                  rmdExcessYears={
+                    result.projectionByYear.filter(
+                      (y) =>
+                        y.phase === "decumulation" &&
+                        (y.rmdExcessAmount ?? 0) > 0.01,
+                    ).length
+                  }
+                  qcdYears={
+                    result.projectionByYear.filter(
+                      (y) =>
+                        y.phase === "decumulation" && (y.qcdAmount ?? 0) > 0.01,
+                    ).length
+                  }
+                  bracketOptimizerResult={bracketOptimizerResult}
+                />
+              </div>
+            )}
 
           {/* ── CONTENT BLOCK ────────────────────────────────────────────────
                Every section renders a skeleton or real content at the SAME
@@ -309,10 +476,12 @@ export function ProjectionCard(props: {
           {(engineQuery.isLoading || !!result) && (
             <div className="space-y-4">
               {/* Hero KPIs (headline numbers) — always shown on screen;
-                  print-visible only in the "fancy" report tier (basic tier
-                  prints just the chart+table, per R42 scope). */}
+                  print-visible only in the "advisor" report tier (basic
+                  tier prints just the chart+table, per R42 scope). */}
               <div
-                className={reportMode === "fancy" ? undefined : "print:hidden"}
+                className={
+                  reportMode === "advisor" ? undefined : "print:hidden"
+                }
               >
                 {engineQuery.isLoading ? (
                   <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
@@ -378,7 +547,38 @@ export function ProjectionCard(props: {
                 (() => {
                   const pp = people ?? enginePeople;
                   const isMc = projectionMode === "monteCarlo";
-                  const coastFireAvailable = coastFireAge != null;
+                  // AVAILABILITY (can the pill be clicked at all) is sourced
+                  // from the cheap deterministic `coastFireQuery`, which
+                  // always runs — the MC probe is now on-demand (fires once
+                  // this scenario is actually selected, see
+                  // use-projection-queries.ts's coastFireMcQuery docblock),
+                  // so gating availability on MC data would make the pill
+                  // permanently unclickable (it needs a click to start
+                  // loading, but couldn't be clicked until it had loaded).
+                  //
+                  // The LABEL/NUMBER still prefers the MC-verified result
+                  // once it's loaded — deterministic ignores sequence-of-
+                  // returns risk, so the two can legitimately disagree, and
+                  // this pill's own scenario runs off coastFireMcResult (see
+                  // use-projection-queries.ts's activeCoastFireMcResult).
+                  // Before MC data exists, showing the deterministic guess
+                  // is the "basic KPI info" — it self-corrects to the
+                  // verified number the moment MC loads. status ===
+                  // "already_coast" is the one case where MC HAS resolved
+                  // and definitively says there's no distinct future age to
+                  // show (that's the separate "Coast FIRE (Today)" pill) —
+                  // showing a fallback age there would be the exact bug
+                  // fixed 2026-08-30 (pill said "Age 37", hero card said
+                  // "Age 47" for the same household), so that case still
+                  // nulls out rather than falling back.
+                  const coastFireMcData = coastFireMcQuery.data?.result;
+                  const coastFireAge =
+                    coastFireMcData?.status === "found"
+                      ? coastFireMcData.coastFireAge
+                      : coastFireMcData?.status === "already_coast"
+                        ? null
+                        : deterministicCoastFireAge;
+                  const coastFireAvailable = deterministicCoastFireAge != null;
                   const hasMc = mcBandsByYear != null;
                   // hasIndividualAccountData computed once in
                   // use-projection-derived.ts — MC "Simple" tax mode (the
@@ -424,7 +624,8 @@ export function ProjectionCard(props: {
                                   ? `Coast FIRE (Age ${coastFireAge}): contributions zeroed from age ${coastFireAge} onward — the earliest age that still passes.`
                                   : "Coast FIRE (Age N): contributions zeroed from your Coast FIRE age onward — the earliest age that still passes. Not yet available.",
                                 "Coast FIRE (Today): the SAME idea, but stopping right now instead of at the earliest passing age. Use this to see exactly what breaks (and when) if you stopped contributing today — often a shortfall in the years before 59½, which the passing-age view won't show since it's built to avoid it.",
-                                "Rate-Seeded: an alternate simulation where year 1 of retirement spending is set from your Initial Withdrawal Rate × starting balance instead of your stated budget/override — your budget is ignored entirely for the starting point. Every year after that still runs your ACTIVE strategy's own ongoing rules (guardrails, decline schedule, etc.) unchanged — this only changes where the number starts, not how it evolves. Computed on demand (not preloaded in the background like Coast FIRE), so the first switch takes a few seconds.",
+                                'Coast FIRE (Custom): check any age you pick, not just the earliest passing one or today — pick an age and press "Check this age" to see whether it passes.',
+                                "Initial Rate: an alternate simulation where year 1 of retirement spending is set from your Initial Withdrawal Rate setting × starting balance instead of your stated budget or customized amount — your budget is ignored entirely for the starting point. Every year after that still runs your ACTIVE strategy's own ongoing rules (guardrails, decline schedule, etc.) unchanged — this only changes where the number starts, not how it evolves. Computed on demand (not preloaded in the background like Coast FIRE), so the first switch takes a few seconds.",
                               ]}
                             />
                           }
@@ -465,11 +666,112 @@ export function ProjectionCard(props: {
                           <PillBtn
                             size="lg"
                             tone="compute"
+                            active={scenarioView === "coastFireCustom"}
+                            onClick={() => setScenarioView("coastFireCustom")}
+                            label="Coast FIRE (Custom)"
+                          />
+                          <PillBtn
+                            size="lg"
+                            tone="compute"
                             active={scenarioView === "rateSeeded"}
                             onClick={() => setScenarioView("rateSeeded")}
-                            label="Rate-Seeded"
+                            label="Initial Rate"
                           />
                         </LabeledPillGroup>
+                        {scenarioView === "coastFireCustom" &&
+                          (() => {
+                            const currentAge =
+                              result?.projectionByYear[0]?.age ?? 0;
+                            const maxAge = engineSettings.retirementAge - 1;
+                            const committedAge =
+                              coastFireCustomAge ?? currentAge;
+                            // What the box actually shows while typing —
+                            // the raw, unclamped draft if the user has one,
+                            // else the last committed age. Clamping used to
+                            // happen on every keystroke (via
+                            // setCoastFireCustomAge directly in onChange),
+                            // which corrupted multi-digit entry: typing "4"
+                            // of "42" got clamped up to the min bound
+                            // immediately, forcing the DOM value to change
+                            // mid-keystroke so the "2" landed in the wrong
+                            // position — e.g. produced "54" instead of "42"
+                            // (live-user finding, 2026-08-30). Clamping now
+                            // happens only in commitDraft, on blur or
+                            // "Check this age".
+                            const draftText =
+                              coastFireCustomAgeDraft ?? String(committedAge);
+                            const commitDraft = (): number => {
+                              const v = parseInt(draftText, 10);
+                              const clamped = isNaN(v)
+                                ? committedAge
+                                : Math.min(maxAge, Math.max(currentAge, v));
+                              setCoastFireCustomAge(clamped);
+                              setCoastFireCustomAgeDraft(null);
+                              return clamped;
+                            };
+                            return (
+                              <div className="flex items-center gap-2 text-sm bg-surface-sunken rounded-md px-2.5 py-1.5 -mt-1">
+                                <label
+                                  htmlFor="coast-fire-custom-age"
+                                  className="text-caption text-muted"
+                                >
+                                  Check age
+                                </label>
+                                <input
+                                  id="coast-fire-custom-age"
+                                  type="number"
+                                  min={currentAge}
+                                  max={maxAge}
+                                  step={1}
+                                  value={draftText}
+                                  onChange={(e) =>
+                                    setCoastFireCustomAgeDraft(e.target.value)
+                                  }
+                                  onBlur={commitDraft}
+                                  className="w-16 text-sm border rounded px-1.5 py-0.5 tabular-nums"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    checkCoastFireCustomAge(commitDraft())
+                                  }
+                                  disabled={coastFireProbeLoading}
+                                  className="px-2.5 py-1 rounded-md text-label font-semibold border border-subtle text-muted shadow-sm transition-colors hover:bg-surface-primary/80 disabled:opacity-50"
+                                >
+                                  {coastFireProbeLoading
+                                    ? "Checking…"
+                                    : "Check this age"}
+                                </button>
+                                {coastFireProbeError && (
+                                  <span className="text-caption text-red-600">
+                                    {coastFireProbeError}
+                                  </span>
+                                )}
+                                {!coastFireProbeError &&
+                                  coastFireProbeResult &&
+                                  coastFireProbeResult.probeAge ===
+                                    committedAge && (
+                                    <span
+                                      className={`text-caption font-medium ${
+                                        coastFireProbeResult.passes
+                                          ? "text-green-600"
+                                          : "text-red-600"
+                                      }`}
+                                    >
+                                      {coastFireProbeResult.passes
+                                        ? "✓ Passes"
+                                        : "✗ Doesn't pass"}{" "}
+                                      (
+                                      {formatPercent(
+                                        coastFireProbeResult.successRate,
+                                        0,
+                                      )}
+                                      )
+                                    </span>
+                                  )}
+                              </div>
+                            );
+                          })()}
                         <ZoneSecondaryRow>
                           {pp && pp.length > 1 && (
                             <LabeledPillGroup label="View">
@@ -876,6 +1178,28 @@ export function ProjectionCard(props: {
                               title={baselineDisabledTitle}
                             />
                           </LabeledPillGroup>
+                          {chartView === "balance" && (
+                            <LabeledPillGroup
+                              label="Income"
+                              helpTip={
+                                <HelpTip
+                                  maxWidth={320}
+                                  text="Shows total portfolio withdrawal and Social Security income for each retirement year, on their own axis to the right — separate from the account balances the bars show. Both are your strategy's real computed numbers, not estimates."
+                                />
+                              }
+                            >
+                              <PillBtn
+                                active={showIncome}
+                                onClick={() => setShowIncome(true)}
+                                label="On"
+                              />
+                              <PillBtn
+                                active={!showIncome}
+                                onClick={() => setShowIncome(false)}
+                                label="Off"
+                              />
+                            </LabeledPillGroup>
+                          )}
                           {hasMc && (
                             <LabeledPillGroup
                               label="Confidence Band"
@@ -937,16 +1261,25 @@ export function ProjectionCard(props: {
                 })()}
 
               {/* Chart area — engine skeleton, then real chart (with MC skeleton
-                  if MC is still pending after engine completes) */}
-              {engineQuery.isLoading ? (
-                <ProjectionChartSkeleton phase="engine" />
-              ) : chartView === "strategy" || chartView === "budget" ? (
-                <SpendingStabilityChart state={state} view={chartView} />
-              ) : mcChartPending && chartView === "balance" ? (
-                <ProjectionChartSkeleton phase="simulation" />
-              ) : (
-                <ProjectionChart state={state} />
-              )}
+                  if MC is still pending after engine completes). The advisor
+                  report is a purpose-built document, not a printout of the
+                  interactive chart (correction #8, advisor report plan) —
+                  print:hidden whenever "advisor" mode is active. */}
+              <div
+                className={
+                  reportMode === "advisor" ? "print:hidden" : undefined
+                }
+              >
+                {engineQuery.isLoading ? (
+                  <ProjectionChartSkeleton phase="engine" />
+                ) : chartView === "strategy" || chartView === "budget" ? (
+                  <SpendingStabilityChart state={state} view={chartView} />
+                ) : mcChartPending && chartView === "balance" ? (
+                  <ProjectionChartSkeleton phase="simulation" />
+                ) : (
+                  <ProjectionChart state={state} />
+                )}
+              </div>
             </div>
           )}
 
@@ -969,7 +1302,12 @@ export function ProjectionCard(props: {
                   ? ("done" as const)
                   : ("pending" as const);
 
-            const coastFireMcPhase = !coastFireMcAutoloadEnabled
+            // "disabled" here means the strip hides entirely (see the
+            // !== "disabled" guards below). coastFireMcQueryEnabled comes
+            // from use-projection-queries.ts — the same value that gates
+            // coastFireMcQuery's own `enabled` there, so this can't drift
+            // out of sync with it the way a locally re-derived copy could.
+            const coastFireMcPhase = !coastFireMcQueryEnabled
               ? ("disabled" as const)
               : coastFireMcQuery.isLoading || coastFireMcQuery.isFetching
                 ? ("active" as const)
@@ -996,48 +1334,30 @@ export function ProjectionCard(props: {
           })()}
 
           {/* TABLE — skeleton while engine is loading or in action state,
-              real table otherwise. Same DOM position always. */}
-          {engineQuery.isLoading || (!autoloadEnabled && !engineQuery.data) ? (
-            <ProjectionTableSkeleton />
-          ) : (
-            <ProjectionTable
-              state={state}
-              people={people}
-              parentCategoryFilter={parentCategoryFilter}
-              accumulationBudgetProfileId={accumulationBudgetProfileId}
-              accumulationBudgetColumn={accumulationBudgetColumn}
-              accumulationExpenseOverride={accumulationExpenseOverride}
-              decumulationBudgetProfileId={decumulationBudgetProfileId}
-              decumulationBudgetColumn={decumulationBudgetColumn}
-              decumulationExpenseOverride={decumulationExpenseOverride}
-            />
-          )}
-
-          {/* Fancy-report-only "behind the scenes" assumptions + footer —
-              mounted only in "fancy" mode, hidden on screen, print-visible.
-              Placed right after the table so it reads as the report's
-              closing section rather than interrupting the chart/table. */}
-          {reportMode === "fancy" && (
-            <div className="hidden print:block">
-              <ReportAssumptionsSummary
-                settings={engineSettings}
-                rmdExcessYears={
-                  result?.projectionByYear.filter(
-                    (y) =>
-                      y.phase === "decumulation" &&
-                      (y.rmdExcessAmount ?? 0) > 0.01,
-                  ).length ?? 0
-                }
-                qcdYears={
-                  result?.projectionByYear.filter(
-                    (y) =>
-                      y.phase === "decumulation" && (y.qcdAmount ?? 0) > 0.01,
-                  ).length ?? 0
-                }
+              real table otherwise. Same DOM position always. The advisor
+              report is a purpose-built document, not a printout of the
+              interactive table — print:hidden whenever "advisor" mode is
+              active (its own simplified table is Phase 4). */}
+          <div
+            className={reportMode === "advisor" ? "print:hidden" : undefined}
+          >
+            {engineQuery.isLoading ||
+            (!autoloadEnabled && !engineQuery.data) ? (
+              <ProjectionTableSkeleton />
+            ) : (
+              <ProjectionTable
+                state={state}
+                people={people}
+                parentCategoryFilter={parentCategoryFilter}
+                accumulationBudgetProfileId={accumulationBudgetProfileId}
+                accumulationBudgetColumn={accumulationBudgetColumn}
+                accumulationExpenseOverride={accumulationExpenseOverride}
+                decumulationBudgetProfileId={decumulationBudgetProfileId}
+                decumulationBudgetColumn={decumulationBudgetColumn}
+                decumulationExpenseOverride={decumulationExpenseOverride}
               />
-              <ReportFooter generatedAt={new Date()} />
-            </div>
-          )}
+            )}
+          </div>
 
           {/* DECUMULATION DEFAULTS */}
           <div className="print:hidden">
@@ -1055,6 +1375,11 @@ export function ProjectionCard(props: {
               withdrawalTaxPref={withdrawalTaxPref}
               setWithdrawalTaxPref={setWithdrawalTaxPref}
               activeSpendingStrategy={engineSettings?.withdrawalStrategy}
+              discretionaryWithdrawalOrder={
+                engineSettings?.discretionaryWithdrawalOrder
+              }
+              enableAcaAwareness={engineSettings?.enableAcaAwareness}
+              enableIrmaaAwareness={engineSettings?.enableIrmaaAwareness}
             />
           </div>
 

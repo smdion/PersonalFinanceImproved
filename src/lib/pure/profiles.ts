@@ -72,6 +72,31 @@ export function canDeleteSalaryProfile(
 }
 
 /**
+ * Check if a retirement profile can be deleted. Twin of
+ * canDeleteContribProfile/canDeleteSalaryProfile — no sentinel id, same
+ * last-one-standing rule. "Pinned by a Plan" lives in the router, same as
+ * the other two, which has to name the offending Plans in its message.
+ */
+export function canDeleteRetirementProfile(
+  activeProfileId: number | null,
+  profileId: number,
+  profileCount: number,
+): DeletionCheck {
+  if (profileCount <= 1)
+    return {
+      allowed: false,
+      reason: "Cannot delete the only remaining Retirement Profile",
+    };
+  if (activeProfileId === profileId)
+    return {
+      allowed: false,
+      reason:
+        "Cannot delete the active profile. Switch to a different profile first.",
+    };
+  return { allowed: true };
+}
+
+/**
  * Check if a column can be removed from a budget profile.
  */
 export function canRemoveColumn(

@@ -32,8 +32,7 @@ function makeGoal(
     id: 1,
     current: 1000,
     monthlyAllocation: 100,
-    isApiSyncEnabled: false,
-    apiCategoryId: null,
+    currentMonthBudgeted: null,
     ...overrides,
   };
 }
@@ -115,69 +114,105 @@ describe("projectGoalBalances — basic allocation walk", () => {
   });
 });
 
-describe("projectGoalBalances — YNAB double-count guard", () => {
-  // This is the specific bug the module was written to prevent: for a
-  // YNAB-linked goal, once the 1st of the current month has passed, the
-  // live `current` balance already reflects this month's contribution —
-  // so month 0's allocation must be skipped, or it gets counted twice.
-  const ynabGoal = makeGoal({
-    current: 1000,
-    monthlyAllocation: 100,
-    isApiSyncEnabled: true,
-    apiCategoryId: "cat-123",
-  });
-
-  it("skips month 0's allocation for a YNAB-linked goal after the 1st", () => {
-    const result = projectGoalBalances(ynabGoal, {
-      now: new Date(2026, 2, 15), // March 15 — past the 1st
+// Found live, 2026-09-01: a household assigned September's money to a
+// linked category on the morning of the 1st itself. The projection still
+// added the full monthly allocation on top of the live (already-funded)
+// balance, because the guard inferred "already funded" from the calendar
+// date (`now.getDate() > 1`) instead of checking real data — day 1 was
+// hardcoded to always mean "not funded yet." Replaced with
+// `currentMonthBudgeted`, the linked category's REAL current-month
+// budgeted amount, applied as `max(0, allocation - budgeted)` — evidence,
+// not a date guess, and additive (handles partial funding) rather than a
+// skip/don't-skip binary.
+describe("projectGoalBalances — current-month-budgeted double-count fix", () => {
+  it("adds nothing for month 0 when the category is already funded at or above the planned allocation, regardless of the date", () => {
+    const goal = makeGoal({
+      current: 1000, // already includes this month's $100 contribution
+      monthlyAllocation: 100,
+      currentMonthBudgeted: 100,
+    });
+    // The 1st of the month itself — the exact case the date heuristic
+    // got backwards live. max(0, 100 - 100) = 0.
+    const result = projectGoalBalances(goal, {
+      now: new Date(2026, 2, 1),
       projectionMonths: 3,
       plannedTransactions: [],
     });
-    // Month 0: no allocation added (already counted in `current`).
-    // Month 1 and 2: normal allocation.
     expect(result.balances).toEqual([1000, 1100, 1200]);
     // monthlyAllocations still reports what WOULD apply, for display —
-    // only the running `balance` skips it.
+    // only the running `balance` accounts for what's already funded.
     expect(result.monthlyAllocations).toEqual([100, 100, 100]);
   });
 
-  it("does NOT skip month 0's allocation on the 1st itself (getDate() > 1 is false)", () => {
-    const result = projectGoalBalances(ynabGoal, {
-      now: new Date(2026, 2, 1), // exactly the 1st
+  it("adds only the unfunded remainder when the category is PARTIALLY funded this month", () => {
+    const goal = makeGoal({
+      current: 1000, // includes $40 of this month's $100 planned contribution
+      monthlyAllocation: 100,
+      currentMonthBudgeted: 40,
+    });
+    const result = projectGoalBalances(goal, {
+      now: new Date(2026, 2, 1),
+      projectionMonths: 2,
+      plannedTransactions: [],
+    });
+    // Month 0: max(0, 100 - 40) = 60 added, not the full 100 (would
+    // double-count the $40 already budgeted) and not 0 (would drop the
+    // unfunded $60). Month 1: normal full allocation.
+    expect(result.balances).toEqual([1060, 1160]);
+  });
+
+  it("adds the full allocation when the category has $0 budgeted this month, even though it's API-linked", () => {
+    const goal = makeGoal({
+      current: 1000,
+      monthlyAllocation: 100,
+      currentMonthBudgeted: 0,
+    });
+    const result = projectGoalBalances(goal, {
+      now: new Date(2026, 2, 15),
       projectionMonths: 2,
       plannedTransactions: [],
     });
     expect(result.balances).toEqual([1100, 1200]);
   });
 
-  it("does NOT skip month 0's allocation for a non-API-synced goal, even after the 1st", () => {
+  it("adds the full allocation when currentMonthBudgeted is null (not API-linked, or no fresh sync data for this month) — the conservative default, unaffected by the date", () => {
     const nonApiGoal = makeGoal({
       current: 1000,
       monthlyAllocation: 100,
-      isApiSyncEnabled: false,
-      apiCategoryId: null,
+      currentMonthBudgeted: null,
     });
     const result = projectGoalBalances(nonApiGoal, {
-      now: new Date(2026, 2, 15),
+      now: new Date(2026, 2, 1), // day 1 — used to matter, must not anymore
       projectionMonths: 2,
       plannedTransactions: [],
     });
     expect(result.balances).toEqual([1100, 1200]);
   });
 
-  it("does NOT skip month 0's allocation when isApiSyncEnabled but apiCategoryId is null", () => {
-    const halfLinkedGoal = makeGoal({
-      current: 1000,
-      monthlyAllocation: 100,
-      isApiSyncEnabled: true,
-      apiCategoryId: null,
-    });
-    const result = projectGoalBalances(halfLinkedGoal, {
-      now: new Date(2026, 2, 15),
-      projectionMonths: 2,
+  it("adds the full allocation when currentMonthBudgeted is undefined (field omitted entirely)", () => {
+    const goal = makeGoal({ current: 1000, monthlyAllocation: 100 });
+    delete (goal as { currentMonthBudgeted?: number | null })
+      .currentMonthBudgeted;
+    const result = projectGoalBalances(goal, {
+      now: new Date(2026, 2, 1),
+      projectionMonths: 1,
       plannedTransactions: [],
     });
-    expect(result.balances).toEqual([1100, 1200]);
+    expect(result.balances).toEqual([1100]);
+  });
+
+  it("only applies the budgeted adjustment to month 0 — later months always use the full allocation", () => {
+    const goal = makeGoal({
+      current: 1000,
+      monthlyAllocation: 100,
+      currentMonthBudgeted: 100, // fully funds month 0 only
+    });
+    const result = projectGoalBalances(goal, {
+      now: new Date(2026, 2, 1),
+      projectionMonths: 4,
+      plannedTransactions: [],
+    });
+    expect(result.balances).toEqual([1000, 1100, 1200, 1300]);
   });
 });
 

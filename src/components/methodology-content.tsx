@@ -546,11 +546,15 @@ export function MethodologyContent() {
             for early retirement.
           </li>
           <li>
-            <strong>IRMAA/ACA awareness is reporting-only.</strong> The engine
-            reports IRMAA surcharges and ACA subsidy cliff warnings but does not
-            yet automatically reduce Roth conversions or cap Traditional
-            withdrawals to stay below cliffs. Use the warnings to manually
-            adjust.
+            <strong>
+              ACA awareness is reporting-only; IRMAA caps conversions.
+            </strong>{" "}
+            The engine reports both IRMAA surcharges and ACA subsidy cliff
+            proximity, but only IRMAA actually changes a number: when IRMAA
+            awareness is on (the default once enabled), Roth conversions are
+            automatically capped to stay under the next IRMAA cliff. ACA never
+            caps a conversion or withdrawal — use its warning to manually adjust
+            via overrides. Neither ever reduces a Traditional withdrawal amount.
           </li>
           <li>
             <strong>Parametric vs historical.</strong> Log-normal returns can

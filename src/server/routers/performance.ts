@@ -20,6 +20,7 @@ import {
   getActiveMortgageLoan,
   parseAppSettings,
   getEffectiveCash,
+  getEffectiveCreditCardDebt,
   getEffectiveOtherAssets,
   invalidateYearEndCache,
   loadEffectiveSalaryProfile,
@@ -1435,7 +1436,13 @@ export const performanceRouter = createTRPCRouter({
           allSettings,
           asOfDate,
         );
-        const otherLiabilities = setting("current_other_liabilities", 0);
+        // Same addition as buildYearEndHistory's current-year branch
+        // (snapshot.ts) — locks in whatever the live view showed right
+        // before finalizing, so the permanently-stored figure doesn't
+        // silently drop the API-mapped credit-card debt component.
+        const otherLiabilities =
+          setting("current_other_liabilities", 0) +
+          (await getEffectiveCreditCardDebt(tx));
 
         // Compute cumulative home improvements from items table (not app_settings scalar)
         const homeImprovements = computeHomeImpCumulative(homeImpItems, year);

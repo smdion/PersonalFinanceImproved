@@ -18,6 +18,7 @@ import type {
 } from "./types";
 import type { TargetMode } from "@/lib/config/enum-values";
 import type { PushPreviewItem } from "@/components/ui/push-preview-modal";
+import type { RecalcIncomeParams } from "./api-sync-section";
 import { useUpdatePlannedTx } from "./use-update-planned-tx";
 import { buildSettledOccurrencesSet } from "@/lib/pure/savings-projection";
 
@@ -125,6 +126,13 @@ export interface FundManagementSectionProps {
    *  recalculate/lock-in; null/undefined uses the active profile (see the
    *  savings page's recalcProfileId for the full explanation). */
   recalcProfileId?: number | null;
+  /** The Contribution/Salary Profile selection the live pool preview these
+   *  buttons implicitly promise was computed from — see the savings page's
+   *  recalcIncomeParams for the full explanation (found live, 2026-08-31:
+   *  without this, a per-goal Recalculate/Update % click silently used the
+   *  household's globally-active profile instead, same bug as the page's
+   *  bulk buttons). */
+  recalcIncomeParams?: RecalcIncomeParams;
   /** Ref exposing goal update callbacks for the page to pipe to other sections */
   callbacksRef: React.MutableRefObject<FundManagementCallbacks | null>;
   /** Shared new fund form state — page owns for top-level form, shared for sub-goal creation */
@@ -178,6 +186,7 @@ export function FundManagementSection({
   recalculateAllocation,
   lockInAllocationPercent,
   recalcProfileId,
+  recalcIncomeParams,
   callbacksRef,
   showNewFund: _showNewFund,
   setShowNewFund: _setShowNewFund,
@@ -559,6 +568,7 @@ export function FundManagementSection({
                       ...(recalcProfileId != null
                         ? { profileId: recalcProfileId }
                         : {}),
+                      ...recalcIncomeParams,
                     })
                   }
                   recalculateAllocationPending={recalculateAllocation.isPending}
@@ -568,6 +578,7 @@ export function FundManagementSection({
                       ...(recalcProfileId != null
                         ? { profileId: recalcProfileId }
                         : {}),
+                      ...recalcIncomeParams,
                     })
                   }
                   lockInAllocationPercentPending={

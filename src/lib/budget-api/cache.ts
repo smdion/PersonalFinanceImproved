@@ -6,6 +6,7 @@ import { eq, and } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { BudgetApiService } from "./types";
 import type { BudgetAPIClient } from "./interface";
+import { currentMonthKey } from "@/lib/pure/date-keys";
 
 type Db = typeof import("@/lib/db").db;
 
@@ -116,8 +117,7 @@ export async function refreshCategoryCache(
   service: BudgetApiService,
   client: BudgetAPIClient,
 ): Promise<void> {
-  const now = new Date();
-  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+  const currentMonth = currentMonthKey(new Date());
   const [categories, monthDetail] = await Promise.all([
     client.getCategories(),
     client.getMonthDetail(currentMonth),

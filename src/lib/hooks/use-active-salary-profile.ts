@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { usePersistedSetting } from "./use-persisted-setting";
+import { useActiveProfileRepair } from "./use-active-profile-repair";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 
 /**
@@ -24,19 +24,39 @@ export function useActiveSalaryProfile(): [
   number | null,
   (id: number | null) => void,
 ] {
+  const utils = trpc.useUtils();
+  const setActive = trpc.salaryProfile.setActive.useMutation({
+    // See useActiveContribProfile's matching docblock — switching the
+    // active Salary Profile changes real input data for all of these, not
+    // just the "which profile is active" pointer.
+    // See useActiveContribProfile's matching comment — batched instead of
+    // 10 uncoordinated calls.
+    onSuccess: () =>
+      Promise.all([
+        utils.settings.appSettings.list.invalidate(),
+        utils.salaryProfile.invalidate(),
+        utils.contribution.invalidate(),
+        utils.paycheck.invalidate(),
+        utils.projection.invalidate(),
+        utils.retirement.invalidate(),
+        utils.brokerage.invalidate(),
+        utils.budget.invalidate(),
+        utils.savings.invalidate(),
+        utils.settings.contributionAccounts.invalidate(),
+      ]),
+  });
   const [activeId, setActiveId] = usePersistedSetting<number | null>(
     SK_ACTIVE_SALARY_PROFILE_ID,
     null,
+    {
+      // See useActiveContribProfile's matching comment — null used to
+      // silently no-op instead of persisting the cleared selection.
+      writeVia: (id) => setActive.mutateAsync({ id }),
+    },
   );
   const { data: profiles } = trpc.salaryProfile.list.useQuery();
 
-  // Re-point at a real row whenever the stored id names one that's gone (or
-  // is absent entirely, e.g. a pre-migration snapshot restore).
-  useEffect(() => {
-    if (!profiles || profiles.length === 0) return;
-    if (activeId != null && profiles.some((p) => p.id === activeId)) return;
-    setActiveId(profiles[0]!.id);
-  }, [activeId, profiles, setActiveId]);
+  useActiveProfileRepair(activeId, profiles, setActiveId);
 
   return [activeId, setActiveId];
 }

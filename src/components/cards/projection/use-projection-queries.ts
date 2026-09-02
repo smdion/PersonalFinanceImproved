@@ -1,5 +1,5 @@
 /** Data fetching and mutations for the projection card — deterministic engine query, Monte Carlo queries with prefetch, salary/budget override CRUD, and glide-path mutations. */
-import { useMemo, useEffect, useRef } from "react";
+import { useMemo, useEffect, useRef, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
@@ -22,6 +22,22 @@ import type { ProjectionFormState } from "./use-projection-form-state";
 import type { UseProjectionStateProps } from "./use-projection-state";
 import { filterYearByParentCategory } from "./utils";
 
+/** Mirrors the server's `CoastFireProbeResult`
+ *  (server/routers/projection/coast-fire-probe.ts) — hand-rolled, not
+ *  imported, since src/components/** is lint-forbidden from importing
+ *  @/server/* (no-restricted-imports rule, eslint.config.mjs; same
+ *  reasoning as projection/sections/types.ts's own docblock). */
+type CoastFireProbeResult = {
+  probeAge: number;
+  successRate: number;
+  passes: boolean;
+  spendingStabilityRate: number;
+  penaltyAvoidedShortfallRate: number;
+  medianPenaltyAvoidedShortfallPV: number;
+  confidenceThreshold: number;
+  mcResult: MonteCarloResult;
+};
+
 export function useProjectionQueries(
   form: ProjectionFormState,
   props: UseProjectionStateProps,
@@ -41,6 +57,7 @@ export function useProjectionQueries(
     mcAssetClassOverrides,
     setMcAssetClassOverrides,
     scenarioView,
+    coastFireCustomAge,
   } = form;
 
   const {
@@ -53,6 +70,7 @@ export function useProjectionQueries(
     decumulationExpenseOverride,
     contributionProfileId,
     salaryProfileId,
+    retirementProfileId,
     snapshotId,
     parentCategoryFilter,
   } = props;
@@ -92,6 +110,13 @@ export function useProjectionQueries(
         : {}),
       ...(contributionProfileId != null ? { contributionProfileId } : {}),
       ...(salaryProfileId != null ? { salaryProfileId } : {}),
+      // Advisor-caught 2026-09-01: this object is spread into every engine
+      // query in this hook (computeProjection, computeMonteCarloProjection,
+      // computeCoastFire/MC/Probe, the bracket optimizer) — adding
+      // retirementProfileId here once threads the AssumptionsBand's "view
+      // a non-active profile" selection to all of them in one place,
+      // instead of needing it wired into each query's input separately.
+      ...(retirementProfileId != null ? { retirementProfileId } : {}),
       ...(snapshotId != null ? { snapshotId } : {}),
     }),
     [
@@ -111,6 +136,7 @@ export function useProjectionQueries(
       decumulationExpenseOverride,
       contributionProfileId,
       salaryProfileId,
+      retirementProfileId,
       snapshotId,
     ],
   );
@@ -127,6 +153,29 @@ export function useProjectionQueries(
     { placeholderData: (prev) => prev, staleTime: PROJECTION_STALE_TIME_MS },
   );
   const coastFireAge = coastFireQuery.data?.result?.coastFireAge ?? null;
+
+  // Multi-year withdrawal-bracket-target optimizer — same procedure and
+  // input shape retirement-profile-tab.tsx's Taxes settings section
+  // already queries (see that file's docblock for the staleTime
+  // rationale: a household's balances don't meaningfully change
+  // mid-session). Feeds the "why THIS bracket, not another" explanation
+  // in both the table/chart tooltips (projection-table-decum-row.tsx) and
+  // the advisor report (lib/pure/report) — one shared query, one shared
+  // narrative function, not two independently-worded explanations.
+  // `debouncedBaseInput` (not `debouncedInput`) matches coastFireQuery's
+  // own precedent above: always the baseline plan, not a scenario
+  // override. Only relevant under bracket_filling — Waterfall mode has no
+  // bracket target to explain — so gated off otherwise to avoid an
+  // unnecessary multi-projection-run query for households not using it.
+  const bracketOptimizerQuery =
+    trpc.projection.computeWithdrawalBracketOptimizer.useQuery(
+      debouncedBaseInput,
+      {
+        enabled: withdrawalRoutingMode === "bracket_filling",
+        staleTime: 5 * 60 * 1000,
+      },
+    );
+  const bracketOptimizerResult = bracketOptimizerQuery.data?.result ?? null;
 
   // sharedInput is baseSharedInput + the Coast FIRE override when the user
   // has toggled to the Coast FIRE scenario view. Only set when the age is
@@ -149,9 +198,16 @@ export function useProjectionQueries(
     SK_RETIREMENT_MC_AUTOLOAD,
     true,
   );
+  // Default flipped false 2026-08-30 (live-user finding: the eager
+  // background Coast FIRE MC probe was adding ~4-6s of server work to
+  // EVERY projection page load, whether or not the household ever looks
+  // at Coast FIRE) — see coastFireMcQuery's docblock below for the new
+  // default behavior. Flipping this setting back on restores the old
+  // "always prefetched in the background" experience for anyone who
+  // prefers instant scenario switching over a faster initial load.
   const [coastFireMcAutoloadEnabled] = usePersistedToggle(
     SK_RETIREMENT_COASTFIRE_MC_AUTOLOAD,
-    true,
+    false,
   );
 
   // --- tRPC query ---
@@ -231,31 +287,162 @@ export function useProjectionQueries(
   // "re-run succeeded" toast still fires. Invisible whenever the user
   // hasn't customized MC assumptions, since the defaults and mcQuery's
   // input coincide at their initial values — that's why this went unnoticed.
-  const runMonteCarloInput = {
-    numTrials: mcTrials,
-    preset: mcPreset,
-    taxMode: mcTaxMode,
-    assetClassOverrides:
-      mcAssetClassOverrides.length > 0 ? mcAssetClassOverrides : undefined,
-    ...debouncedBaseInput,
-  };
+  const runMonteCarloInput = useMemo(
+    () => ({
+      numTrials: mcTrials,
+      preset: mcPreset,
+      taxMode: mcTaxMode,
+      assetClassOverrides:
+        mcAssetClassOverrides.length > 0 ? mcAssetClassOverrides : undefined,
+      ...debouncedBaseInput,
+    }),
+    [mcTrials, mcPreset, mcTaxMode, mcAssetClassOverrides, debouncedBaseInput],
+  );
+  // Shared by coastFireMcQuery/mcQuery further down (same inputs, same
+  // ids) so the manual "Re-run" buttons and the queries they refresh
+  // always agree on which progress-map entry to poll. Derived from the
+  // input itself, not a fresh random id per mount — a fresh id wouldn't
+  // match the worker's actual in-progress job id, so progress would
+  // silently reset to indeterminate on remount instead of resuming the
+  // real trial count (this is the same fix already applied to mcQuery
+  // 2026-08-30 — see monte-carlo-worker-client.ts's runId docblock).
+  // Memoized — these ran on every render otherwise, re-stringifying an
+  // input object that (per the docblock above) only needs to change when
+  // the underlying input actually does (code-review efficiency finding,
+  // 2026-09-01).
+  const coastFireMcRunId = useMemo(
+    () => JSON.stringify(debouncedBaseInput),
+    [debouncedBaseInput],
+  );
+  const mcRunId = useMemo(
+    () => JSON.stringify(runMonteCarloInput),
+    [runMonteCarloInput],
+  );
+  // `runMonteCarlo`/`runCoastFireMc` use an imperative `.fetch()` (not
+  // `mcQuery.refetch()`/`.invalidate()`) specifically to pass
+  // `forceRefresh: true` — a field that only exists on this one-off call,
+  // not on the hook's own steady-state input — so the fetch bypasses the
+  // cache and gets a genuinely new random seed, then writes the result
+  // back under the hook's real key via `.setData()`. Trade-off: because
+  // this bypasses the `useQuery` hook entirely, `mcQuery.isFetching` /
+  // `coastFireMcQuery.isFetching` never flip true during this call, so
+  // nothing driven by them (the top-of-page "recalculating" banner, the
+  // chart/table loading skeleton) showed anything during a manual Re-run —
+  // found live 2026-08-30. `isRerunning` is the explicit stand-in signal
+  // for exactly that gap; every consumer that reads *Query.isFetching for
+  // "is MC busy" must OR this in too (see mcLoading below and
+  // index.tsx's isRecalculating).
+  // Counted, not a plain boolean — runMonteCarlo/runCoastFireMc can run
+  // concurrently (the "Re-run" button fires both via Promise.all), and a
+  // shared boolean would get clipped false by whichever one finishes
+  // first while the other is still running. A count only reaches 0 once
+  // every in-flight run has actually finished.
+  const [activeMcReruns, setActiveMcReruns] = useState(0);
+  const isRerunning = activeMcReruns > 0;
   const runMonteCarlo = async () => {
-    const result = await utils.projection.computeMonteCarloProjection.fetch({
-      ...runMonteCarloInput,
-      forceRefresh: true,
-    });
-    utils.projection.computeMonteCarloProjection.setData(
-      runMonteCarloInput,
-      result,
-    );
+    setActiveMcReruns((n) => n + 1);
+    try {
+      // `mcRunId`/`coastFireMcRunId` (below runMonteCarloInput/
+      // coastFireMcQuery further down in this file — referenced here via
+      // closure, safe: this body only runs on a later button click, well
+      // after those consts have initialized) are the SAME ids mcQuery /
+      // coastFireMcQuery poll progress under — passing them here means a
+      // manual "Re-run" reports live trial progress too, not just the
+      // steady-state query path. See mcProgressQuery's docblock.
+      const result = await utils.projection.computeMonteCarloProjection.fetch({
+        ...runMonteCarloInput,
+        runId: mcRunId,
+        forceRefresh: true,
+      });
+      utils.projection.computeMonteCarloProjection.setData(
+        { ...runMonteCarloInput, runId: mcRunId },
+        result,
+      );
+    } finally {
+      setActiveMcReruns((n) => n - 1);
+    }
   };
   const runCoastFireMc = async () => {
-    const result = await utils.projection.computeCoastFireMC.fetch({
-      ...debouncedBaseInput,
-      forceRefresh: true,
-    });
-    utils.projection.computeCoastFireMC.setData(debouncedBaseInput, result);
+    setActiveMcReruns((n) => n + 1);
+    try {
+      const result = await utils.projection.computeCoastFireMC.fetch({
+        ...debouncedBaseInput,
+        runId: coastFireMcRunId,
+        forceRefresh: true,
+      });
+      utils.projection.computeCoastFireMC.setData(
+        { ...debouncedBaseInput, runId: coastFireMcRunId },
+        result,
+      );
+    } finally {
+      setActiveMcReruns((n) => n - 1);
+    }
   };
+  /** Both baseline MC + Coast FIRE MC together — what the "Re-run" button
+   *  actually triggers. */
+  const rerunAllMc = async () => {
+    await Promise.all([runMonteCarlo(), runCoastFireMc()]);
+  };
+
+  // Coast FIRE "Custom Age" probe (advisor-reviewed 2026-08-30, see
+  // .scratch/docs/plans/PLAN-coast-fire-custom-age.md) — deliberately
+  // EXPLICIT-run, not a `useQuery` with a debounced `enabled`. Every
+  // check is a real, rate-limited MC run; auto-firing on every
+  // stepper/debounce tick would let deliberate exploration (checking 6+
+  // ages in a session, which debounce does nothing to prevent) exhaust
+  // the shared expensive-rate-limit bucket and produce a silently
+  // half-populated pill instead of the clean, expected "you hit the
+  // limit" error this button-driven version produces instead. Plain
+  // local state, not a query cache entry -- there's no reactive query
+  // whose cache this needs to stay in sync with. `baseSharedInput` (not
+  // the debounced variant) since a button press is already the
+  // deliberate, one-shot moment debouncing exists to approximate.
+  const [coastFireProbeResult, setCoastFireProbeResult] =
+    useState<CoastFireProbeResult | null>(null);
+  const [coastFireProbeLoading, setCoastFireProbeLoading] = useState(false);
+  const [coastFireProbeError, setCoastFireProbeError] = useState<string | null>(
+    null,
+  );
+  // Set right before the fetch starts, read by coastFireProbeProgressQuery
+  // below while it's in flight — this is an imperative one-off call (see
+  // this function's own docblock above), not a `useQuery`, so there's no
+  // stable input object to derive an id from ahead of time the way the
+  // other MC-launching queries in this file do; a fresh id per click is
+  // fine here since there's no remount-reconnect case to worry about (the
+  // whole call completes or errors within one button press).
+  const [coastFireProbeRunId, setCoastFireProbeRunId] = useState<string | null>(
+    null,
+  );
+  const checkCoastFireCustomAge = async (probeAge: number) => {
+    const runId = crypto.randomUUID();
+    setCoastFireProbeRunId(runId);
+    setCoastFireProbeLoading(true);
+    setCoastFireProbeError(null);
+    try {
+      const response = await utils.projection.computeCoastFireProbe.fetch({
+        ...baseSharedInput,
+        probeAge,
+        runId,
+      });
+      setCoastFireProbeResult(response.result as CoastFireProbeResult | null);
+    } catch (err) {
+      setCoastFireProbeError(
+        err instanceof Error ? err.message : "Failed to check this age.",
+      );
+    } finally {
+      setCoastFireProbeLoading(false);
+      setCoastFireProbeRunId(null);
+    }
+  };
+  const coastFireProbeProgressQuery =
+    trpc.projection.getMonteCarloProgress.useQuery(
+      { runId: coastFireProbeRunId ?? "" },
+      {
+        enabled: coastFireProbeLoading && coastFireProbeRunId != null,
+        refetchInterval: 400,
+        staleTime: 0,
+      },
+    );
 
   // Operational escape hatch (user request, 2026-08-28): wipe every cached
   // projection row server-side without bumping PROJECTION_CACHE_ENGINE_VERSION
@@ -277,28 +464,84 @@ export function useProjectionQueries(
   // coastFireMcQuery below — the chart data selectors pick between the two
   // based on scenarioView so switching scenarios doesn't invalidate the
   // baseline MC cache.
-  const mcPrefetchQuery = trpc.projection.computeMonteCarloProjection.useQuery(
-    {
+  // Derived the same way mcRunId is below — see that comment for why a
+  // stable, input-derived id (not a fresh UUID per mount) is what makes
+  // the progress poll survive remounts and reconnect to an in-flight
+  // server-side run instead of resetting to indeterminate.
+  const mcPrefetchQueryInput = useMemo(
+    () => ({
       numTrials: MC_DEFAULT_TRIALS,
       preset: "default" as const,
       taxMode: mcTaxMode,
       ...debouncedBaseInput,
-    },
+    }),
+    [mcTaxMode, debouncedBaseInput],
+  );
+  const mcPrefetchRunId = useMemo(
+    () => JSON.stringify(mcPrefetchQueryInput),
+    [mcPrefetchQueryInput],
+  );
+  const mcPrefetchQuery = trpc.projection.computeMonteCarloProjection.useQuery(
+    { ...mcPrefetchQueryInput, runId: mcPrefetchRunId },
     {
       enabled:
         mcAutoloadEnabled && engineQuery.isSuccess && !engineQuery.isFetching,
       placeholderData: (prev) => prev,
     },
   );
+  // Live "N / total trials" for this background prefetch specifically —
+  // separate from mcProgressQuery below (that one tracks the FOREGROUND
+  // mcQuery/"Simulation" run; this tracks the passive one that starts
+  // right after the engine finishes, in every projection mode). See
+  // index.tsx's mcProgress for how these are merged into one banner.
+  const mcPrefetchProgressQuery =
+    trpc.projection.getMonteCarloProgress.useQuery(
+      { runId: mcPrefetchRunId },
+      {
+        enabled: mcPrefetchQuery.isFetching,
+        refetchInterval: 400,
+        staleTime: 0,
+      },
+    );
 
+  // Stable for this hook instance's whole lifetime, reused across every
+  // mcQuery fetch (fetches never overlap for one hook instance — TanStack
+  // Query supersedes/cancels the prior one), so the server-side progress
+  // map entry naturally gets recreated fresh under the same key each run
+  // and cleared on completion. See monte-carlo-worker-client.ts.
+  //
+  // Derived from the query's own input (not a random id generated once per
+  // mount) — a `useState(() => crypto.randomUUID())` regenerates on every
+  // fresh mount of this hook, including navigating away from the page and
+  // back while the SAME run is still in flight server-side. TanStack
+  // Query's query cache is a single app-wide instance (providers.tsx) that
+  // survives client-side navigation, so the newly-mounted mcQuery hook
+  // correctly re-subscribes to the same in-flight request when the input
+  // is unchanged — but a fresh random runId wouldn't match the worker's
+  // actual in-progress job id, so progress would silently reset to the
+  // plain indeterminate state on return instead of resuming the real
+  // trial count (live-user finding, 2026-08-30). Deriving the id from the
+  // input itself means "same inputs → same runId" across remounts, so the
+  // progress poll reconnects to the correct in-flight job. Genuinely new
+  // inputs naturally get a new id, matching the new (different) job the
+  // server will actually run.
+  // mcQueryInput is the exact same shape as runMonteCarloInput above (that
+  // one's docblock explains why they must match) — mcRunId itself was
+  // already computed from it there; not re-derived here to avoid the two
+  // silently drifting apart if one of the two literals is ever edited
+  // without the other.
+  const mcQueryInput = {
+    numTrials: mcTrials,
+    preset: mcPreset,
+    taxMode: mcTaxMode,
+    assetClassOverrides:
+      mcAssetClassOverrides.length > 0 ? mcAssetClassOverrides : undefined,
+    ...debouncedBaseInput,
+  };
   const mcQuery = trpc.projection.computeMonteCarloProjection.useQuery(
     {
-      numTrials: mcTrials,
-      preset: mcPreset,
-      taxMode: mcTaxMode,
-      assetClassOverrides:
-        mcAssetClassOverrides.length > 0 ? mcAssetClassOverrides : undefined,
-      ...debouncedBaseInput,
+      ...mcQueryInput,
+      runId: mcRunId,
     },
     {
       enabled:
@@ -309,32 +552,78 @@ export function useProjectionQueries(
       placeholderData: undefined,
     },
   );
+  // Live "N / total trials" for the "recalculating" indicator (index.tsx) —
+  // polls while mcQuery is fetching OR a manual "Re-run" is in flight
+  // (runMonteCarlo reuses this same mcRunId — see its own comment) so a
+  // forced re-run reports real progress too, not just the steady-state
+  // query path. See monte-carlo-worker-client.ts's module docblock for
+  // why this is a lightweight poll against an in-memory map rather than a
+  // subscription.
+  const mcProgressQuery = trpc.projection.getMonteCarloProgress.useQuery(
+    { runId: mcRunId },
+    {
+      enabled: mcQuery.isFetching || isRerunning,
+      refetchInterval: 400,
+      staleTime: 0,
+    },
+  );
 
-  // Coast FIRE Monte Carlo — prefetched on engineQuery success, same
-  // trigger as the baseline mcPrefetchQuery. Runs in the background (~4-6s
-  // for the binary search) while the user looks at the baseline view; by
-  // the time they toggle to Coast FIRE, the data is already cached and the
-  // toggle is instant. Returns binary-search result PLUS the full
-  // MonteCarloResult from its final probe (mcResult) so the chart and the
-  // hero card can both read from this single query. React Query dedupes on
-  // the query key, so any other consumer firing the same procedure with
-  // the same input hits the cache.
+  // Coast FIRE Monte Carlo — on demand by default (2026-08-30), same
+  // pattern as rateSeededMcQuery below: fires once the household actually
+  // selects a Coast FIRE scenario, not on every page load. The KPI hero
+  // card's "basic" Coast FIRE info (the earliest passing age) comes from
+  // the cheap deterministic `coastFireQuery` above regardless — this MC
+  // probe only adds the sequence-of-returns-verified confidence numbers,
+  // which nothing needs until the household is actually looking at this
+  // scenario. Returns binary-search result PLUS the full MonteCarloResult
+  // from its final probe (mcResult) so the chart and the hero card can
+  // both read from this single query. React Query dedupes on the query
+  // key, so any other consumer firing the same procedure with the same
+  // input hits the cache.
   //
-  // Cost: one additional expensive-rate-limit slot per page load plus
-  // ~4-6s of background server CPU. For a self-hosted deployment this is
-  // negligible compared to the UX improvement of an instant Coast FIRE
-  // toggle.
+  // `coastFireMcAutoloadEnabled` (default false) is the opt-in escape
+  // hatch back to the old always-prefetched behavior (~4-6s of background
+  // server CPU on every load, in exchange for an instant scenario toggle)
+  // for anyone who wants it — see the setting's own docblock above.
+  //
+  // IMPORTANT: `inCoastFireScenario` isn't defined yet at this point in
+  // the file (it's derived below, after this query, from the same
+  // `scenarioView` this reads directly) — keep this condition and that
+  // one in sync if either changes.
+  // Exposed on the return value below so index.tsx's progress-strip phase
+  // computation can reuse this instead of re-deriving the same condition
+  // (previously copy-pasted there, with only a comment tying the two
+  // together — code-review reuse/duplication finding, 2026-09-01).
+  const coastFireMcQueryEnabled =
+    coastFireMcAutoloadEnabled ||
+    scenarioView === "coastFire" ||
+    scenarioView === "coastFireToday";
   const coastFireMcQuery = trpc.projection.computeCoastFireMC.useQuery(
-    debouncedBaseInput,
+    { ...debouncedBaseInput, runId: coastFireMcRunId },
     {
       enabled:
-        coastFireMcAutoloadEnabled &&
+        coastFireMcQueryEnabled &&
         engineQuery.isSuccess &&
         !engineQuery.isFetching,
       placeholderData: (prev) => prev,
       staleTime: 5 * PROJECTION_STALE_TIME_MS,
     },
   );
+  // Same live-progress treatment as mcProgressQuery — the binary search
+  // runs several sequential probes server-side (see computeCoastFireMC's
+  // docblock), each up to numTrials=1000; this shows whichever probe is
+  // currently running, resetting to 0 as each new one starts. Also polls
+  // during a manual "Re-run Coast FIRE" (runCoastFireMc reuses this same
+  // coastFireMcRunId).
+  const coastFireMcProgressQuery =
+    trpc.projection.getMonteCarloProgress.useQuery(
+      { runId: coastFireMcRunId },
+      {
+        enabled: coastFireMcQuery.isFetching || isRerunning,
+        refetchInterval: 400,
+        staleTime: 0,
+      },
+    );
   // Cast to MonteCarloResult — tRPC's return-type inference widens the
   // nested mcResult because of the union across the binary-search branches
   // (already_coast / found / unreachable). The calculator authors this field
@@ -363,15 +652,23 @@ export function useProjectionQueries(
   // autoloaded in the background like Coast FIRE — a third always-on MC
   // run per page load was judged not worth the extra background server
   // cost for a scenario most households won't open every visit.
+  const rateSeededMcQueryInput = useMemo(
+    () => ({
+      numTrials: MC_DEFAULT_TRIALS,
+      preset: "default" as const,
+      taxMode: mcTaxMode,
+      ...debouncedBaseInput,
+      rateSeededDecumulationYear1: true,
+    }),
+    [mcTaxMode, debouncedBaseInput],
+  );
+  const rateSeededMcRunId = useMemo(
+    () => JSON.stringify(rateSeededMcQueryInput),
+    [rateSeededMcQueryInput],
+  );
   const rateSeededMcQuery =
     trpc.projection.computeMonteCarloProjection.useQuery(
-      {
-        numTrials: MC_DEFAULT_TRIALS,
-        preset: "default" as const,
-        taxMode: mcTaxMode,
-        ...debouncedBaseInput,
-        rateSeededDecumulationYear1: true,
-      },
+      { ...rateSeededMcQueryInput, runId: rateSeededMcRunId },
       {
         enabled:
           scenarioView === "rateSeeded" &&
@@ -383,6 +680,18 @@ export function useProjectionQueries(
     );
   const rateSeededMcResult = rateSeededMcQuery.data?.result as
     MonteCarloResult | undefined;
+  // No manual "Re-run" action exists for this scenario (unlike mc/coast
+  // fire above) — only the steady-state query itself, so this doesn't
+  // need an `isRerunning` OR'd into its enabled condition.
+  const rateSeededMcProgressQuery =
+    trpc.projection.getMonteCarloProgress.useQuery(
+      { runId: rateSeededMcRunId },
+      {
+        enabled: rateSeededMcQuery.isFetching,
+        refetchInterval: 400,
+        staleTime: 0,
+      },
+    );
 
   // Initialize asset class overrides from saved DB values on first MC query success
   const mcOverridesInitialized = useRef(false);
@@ -420,24 +729,44 @@ export function useProjectionQueries(
       ? coastFireTodayMcResult
       : coastFireMcResult;
   // Generalized "which non-baseline scenario, if any, is active" — Coast
-  // FIRE (either variant) and Rate-Seeded both source their deterministic
-  // line + MC bands from their own MonteCarloResult rather than the
-  // baseline mcQuery/mcPrefetchQuery, exactly the same selection shape,
-  // just a different query behind it.
-  const inAltScenario = inCoastFireScenario || scenarioView === "rateSeeded";
+  // FIRE (either variant), Coast FIRE Custom, and Rate-Seeded all source
+  // their deterministic line + MC bands from their own MonteCarloResult
+  // rather than the baseline mcQuery/mcPrefetchQuery, exactly the same
+  // selection shape, just a different source behind it (Custom's is
+  // plain state, not a query — see checkCoastFireCustomAge above).
+  const inAltScenario =
+    inCoastFireScenario ||
+    scenarioView === "rateSeeded" ||
+    scenarioView === "coastFireCustom";
   const activeAltMcResult =
     scenarioView === "rateSeeded"
       ? rateSeededMcResult
-      : activeCoastFireMcResult;
+      : scenarioView === "coastFireCustom"
+        ? // Advisor-caught 2026-09-01: without this guard, changing the
+          // custom age (committing a new coastFireCustomAge) without
+          // clicking "Check this age" again kept rendering the PREVIOUS
+          // age's MC bands/deterministic line with no loading indicator —
+          // mcLoading below is only tied to coastFireProbeLoading, so
+          // nothing signaled the chart was showing the wrong scenario.
+          // The pass/fail label (index.tsx) already guards on this same
+          // probeAge === committedAge check; the chart/table data needs
+          // the identical guard, not a separate one that can drift.
+          coastFireProbeResult?.probeAge === coastFireCustomAge
+          ? coastFireProbeResult.mcResult
+          : undefined
+        : activeCoastFireMcResult;
   const useCoastFireMc = inAltScenario && !!activeAltMcResult;
 
   const mcLoading =
     projectionMode === "monteCarlo" &&
-    (scenarioView === "rateSeeded"
-      ? rateSeededMcQuery.isLoading || rateSeededMcQuery.isFetching
-      : inCoastFireScenario
-        ? coastFireMcQuery.isLoading || coastFireMcQuery.isFetching
-        : mcQuery.isLoading || mcQuery.isFetching);
+    (isRerunning ||
+      (scenarioView === "rateSeeded"
+        ? rateSeededMcQuery.isLoading || rateSeededMcQuery.isFetching
+        : scenarioView === "coastFireCustom"
+          ? coastFireProbeLoading
+          : inCoastFireScenario
+            ? coastFireMcQuery.isLoading || coastFireMcQuery.isFetching
+            : mcQuery.isLoading || mcQuery.isFetching));
 
   const mcBandsByYear = useMemo(() => {
     if (
@@ -552,12 +881,24 @@ export function useProjectionQueries(
     debouncedBaseInput,
     coastFireQuery,
     coastFireAge,
+    bracketOptimizerQuery,
+    bracketOptimizerResult,
     coastFireMcQuery,
+    coastFireMcQueryEnabled,
+    mcProgressQuery,
+    mcPrefetchProgressQuery,
+    coastFireMcProgressQuery,
+    rateSeededMcProgressQuery,
+    coastFireProbeProgressQuery,
     coastFireMcResult,
     coastFireTodayMcResult,
     activeCoastFireMcResult,
     rateSeededMcQuery,
     rateSeededMcResult,
+    coastFireProbeResult,
+    coastFireProbeLoading,
+    coastFireProbeError,
+    checkCoastFireCustomAge,
     activeAltMcResult,
     autoloadEnabled,
     runSimulation,
@@ -565,6 +906,8 @@ export function useProjectionQueries(
     runMonteCarlo,
     coastFireMcAutoloadEnabled,
     runCoastFireMc,
+    rerunAllMc,
+    isRerunning,
     clearProjectionCacheMutation,
     engineQuery,
     mcPrefetchQuery,

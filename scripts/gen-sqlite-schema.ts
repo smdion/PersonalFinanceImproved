@@ -72,8 +72,19 @@ out = out.replace(
 );
 
 // --- decimal("col", { precision: X, scale: Y }) → text("col") ---
-// Handle multi-line decimal declarations
-out = out.replace(/decimal\("([^"]+)",\s*\{[^}]*\}\)/g, 'text("$1")');
+// Handle multi-line decimal declarations, including the form Prettier wraps
+// a long column name into — decimal(\n  "col",\n  { ... },\n) — where the
+// string literal itself sits on its own line rather than immediately after
+// `decimal(`. Found 2026-08-30: `distributionTaxRateTraditional`'s name is
+// long enough that Prettier wraps it this way and the previous pattern
+// (which required the quote right after the opening paren) silently left it
+// as an un-translated decimal() call, which doesn't exist in the SQLite
+// dialect's import set — a real regression a schema regen should never
+// produce silently. `[\s\S]` (not `.`) so it matches across the newlines.
+out = out.replace(
+  /decimal\(\s*"([^"]+)",\s*\{[\s\S]*?\}\s*,?\s*\)/g,
+  'text("$1")',
+);
 
 // --- jsonb("col") → text("col", { mode: "json" }) ---
 // Single-line form

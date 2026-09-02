@@ -36,6 +36,7 @@ import {
   ALL_CATEGORIES,
   catDisplayLabel,
   bucketSlotMap,
+  formatDiscretionaryTierBreakdown,
 } from "@/components/cards/projection/utils";
 import { accountBalancesFromTaxBuckets } from "@/lib/calculators/engine/balance-utils";
 import type { EngineYearProjection } from "@/lib/calculators/types";
@@ -835,5 +836,48 @@ describe("bucketSlotMap", () => {
     // hsa is a known single-bucket category
     expect(bucketSlotMap.hsa).toBeDefined();
     expect(bucketSlotMap.hsa!.categoryFilter).toBe("hsa");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// formatDiscretionaryTierBreakdown — "why was this account used" tooltips
+// ---------------------------------------------------------------------------
+
+describe("formatDiscretionaryTierBreakdown", () => {
+  it("returns undefined for an empty/missing breakdown", () => {
+    expect(formatDiscretionaryTierBreakdown(undefined)).toBeUndefined();
+    expect(formatDiscretionaryTierBreakdown([])).toBeUndefined();
+  });
+
+  it("labels a 0%-cost tier as 'cheapest available', not free/0% (avoids clashing with a 'taxable' note shown alongside it)", () => {
+    const result = formatDiscretionaryTierBreakdown([
+      { source: "brokerage", costRate: 0, amount: 5000 },
+    ]);
+    expect(result).toContain("cheapest available");
+    expect(result).not.toContain("free");
+    expect(result).not.toContain("0.0%");
+  });
+
+  it("formats a priced tier's rate as a percentage", () => {
+    const result = formatDiscretionaryTierBreakdown([
+      { source: "brokerage", costRate: 0.188, amount: 3000 },
+    ]);
+    expect(result).toContain("18.8%");
+  });
+
+  it("joins multiple tiers in draw order with an arrow", () => {
+    const result = formatDiscretionaryTierBreakdown([
+      { source: "brokerage", costRate: 0, amount: 74100 },
+      { source: "roth", costRate: 0, amount: 20000 },
+      { source: "brokerage", costRate: 0.15, amount: 15000 },
+    ])!;
+    const brokerageFreeIdx = result.indexOf("Brokerage (cheapest available");
+    const rothFreeIdx = result.indexOf("Roth (cheapest available");
+    const brokeragePricedIdx = result.indexOf(
+      "Brokerage (15.0% long-term capital-gains rate)",
+    );
+    expect(brokerageFreeIdx).toBeGreaterThanOrEqual(0);
+    expect(rothFreeIdx).toBeGreaterThan(brokerageFreeIdx);
+    expect(brokeragePricedIdx).toBeGreaterThan(rothFreeIdx);
   });
 });

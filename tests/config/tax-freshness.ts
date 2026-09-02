@@ -154,8 +154,15 @@ export const TAX_PARAMETER_REGISTRY: TaxFreshnessEntry[] = [
   },
   {
     name: "ACA Federal Poverty Level",
+    // `validThrough` names the COVERAGE year (matches `FPL_COVERAGE_YEAR`
+    // in aca-tables.ts, and this entry's own drift-guard test in
+    // tax-freshness.test.ts) -- NOT the HHS publication year. Per 26 CFR
+    // §1.36B-1(h), a coverage year's PTC eligibility uses the guidelines
+    // HHS published the PRIOR calendar year, so this table's actual
+    // source data was published in (validThrough - 1).
     validThrough: 2026,
-    source: "HHS Federal Register (2026 projected)",
+    source:
+      "HHS Federal Register (guidelines published 2025, for 2026 coverage)",
     updateUrl:
       "https://aspe.hhs.gov/topics/poverty-economic-mobility/hhs-poverty-guidelines",
     location: "src/lib/config/aca-tables.ts → FPL_BY_HOUSEHOLD",
@@ -165,6 +172,11 @@ export const TAX_PARAMETER_REGISTRY: TaxFreshnessEntry[] = [
     name: "ACA premium estimates",
     validThrough: 2026,
     source: "National average benchmark estimates (2026 projected)",
+    // DEAD CODE (confirmed 2026-08-31, Phase 4): estimateAcaSubsidyValue
+    // has no production caller and was deliberately NOT given Phase 4's
+    // fplGrowthFactor treatment -- see its own docblock in aca-tables.ts.
+    // If reviving it, it needs the same year-aware growth checkAca got,
+    // not a naive refresh of this entry's validThrough alone.
     location: "src/lib/config/aca-tables.ts → estimateAcaSubsidyValue()",
     changeFrequency: "annual",
   },

@@ -66,9 +66,10 @@ export function PushPreviewModal({
       ? "Pulling..."
       : "Pushing...";
 
-  // Push sends one request per changed item to YNAB, so a full push can
-  // take well over 30 seconds — show elapsed time so it's clear the app is
-  // still working, not stuck. setState only ever happens from the
+  // Push sends one request per changed item to the connected budget API
+  // (YNAB or Actual), so a full push can take well over 30 seconds — show
+  // elapsed time so it's clear the app is still working, not stuck.
+  // setState only ever happens from the
   // interval's own callback (never synchronously in the effect body) — the
   // parent unmounts this modal once the mutation settles (see
   // BudgetPushYnabModal/BudgetPullYnabModal), so a fresh mount next time
@@ -108,8 +109,9 @@ export function PushPreviewModal({
             <>
               {" "}
               <span className="text-faint">
-                Each item is a separate request to YNAB, so this can take 30
-                seconds or more — keep this window open until it finishes.
+                Each item is a separate request to {destinationLabel}, so this
+                can take 30 seconds or more — keep this window open until it
+                finishes.
               </span>
             </>
           )}

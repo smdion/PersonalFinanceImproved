@@ -17,6 +17,7 @@ import * as schema from "@/lib/db/schema";
 import { createCallerFactory } from "@/server/trpc";
 import { appRouter } from "@/server/routers";
 import type { Session } from "next-auth";
+import { defaultDecumulationConfig } from "@/lib/config/account-types";
 
 const adminSession: Session = {
   user: {
@@ -82,6 +83,41 @@ async function main() {
     }
   }
 
+  // The actual projection output.
+  //
+  // This file's header has always claimed to capture "the selected
+  // tax-bracket row per person's retirement projection", but the loop above
+  // only ever recorded name + filing status — it never ran the engine. That
+  // made the whole gate structurally incapable of detecting a change in
+  // projected numbers, which is precisely what it exists to catch (found
+  // 2026-08-30, by perturbing the engine's inputs and watching the "gate"
+  // stay green).
+  //
+  // Captures the year-by-year engine output plus the headline scalars. Not
+  // the whole response: percentile bands and other Monte Carlo fields carry
+  // a random seed and would make every run differ. calculateProjection is
+  // deterministic, so this diffs cleanly.
+  console.log("Capturing computeProjection() engine output...");
+  let projection: unknown;
+  try {
+    const res = await caller.projection.computeProjection({
+      decumulationDefaults: defaultDecumulationConfig(),
+      accumulationOverrides: [],
+      decumulationOverrides: [],
+    });
+    const r = res as Record<string, unknown>;
+    const result = r.result as Record<string, unknown> | undefined;
+    projection = {
+      portfolioDepletionAge: result?.portfolioDepletionAge ?? null,
+      sustainableWithdrawal: result?.sustainableWithdrawal ?? null,
+      projectionByYear: result?.projectionByYear ?? null,
+      settings: r.settings ?? null,
+      perPersonSettings: r.perPersonSettings ?? null,
+    };
+  } catch (e) {
+    projection = { error: String(e) };
+  }
+
   console.log("Capturing savings_planned_transactions WHERE source='rule'...");
   const plannedRuleTxns = await db
     .select()
@@ -97,13 +133,34 @@ async function main() {
     capturedAt: new Date().toISOString(),
     paycheckSummary,
     retirementByPerson,
+    projection,
     plannedRuleTxns,
     contribCompareData,
   };
 
-  fs.writeFileSync(outPath, JSON.stringify(fixture, replacer, 2));
+  // Canonical key order. The engine builds some objects by different code
+  // paths depending on branch, so raw JSON.stringify emits the same VALUES
+  // with keys in a different order — which a byte-diff reports as a change.
+  // Sorting makes the artifact a stable value comparison (found 2026-08-30:
+  // a restore-to-identical-data run diffed on ordering alone).
+  fs.writeFileSync(outPath, JSON.stringify(sortDeep(fixture), replacer, 2));
   console.log(`Golden baseline written to ${outPath}`);
   process.exit(0);
+}
+
+/** Recursively sort object keys so the emitted fixture is canonical. */
+function sortDeep(value: unknown): unknown {
+  if (value instanceof Map) return sortDeep(Object.fromEntries(value));
+  if (Array.isArray(value)) return value.map(sortDeep);
+  if (value && typeof value === "object" && !(value instanceof Date)) {
+    const src = value as Record<string, unknown>;
+    return Object.fromEntries(
+      Object.keys(src)
+        .sort()
+        .map((k) => [k, sortDeep(src[k])]),
+    );
+  }
+  return value;
 }
 
 // Map/Date-safe JSON replacer

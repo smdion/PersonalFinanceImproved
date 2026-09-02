@@ -28,8 +28,10 @@ import type * as sqliteSchema from "@/lib/db/schema-sqlite";
 import {
   getActiveBudgetApi,
   getClientForService,
+  cacheGet,
   BudgetApiError,
 } from "@/lib/budget-api";
+import type { BudgetMonthDetail } from "@/lib/budget-api";
 import type { BudgetAPIClient } from "@/lib/budget-api";
 
 vi.mock("@/lib/budget-api", async () => {
@@ -1265,6 +1267,166 @@ describe("savings.computeSummary", () => {
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
+// savings.computeSummary — currentMonthBudgeted (the double-count fix,
+// 2026-09-01). Both `balance` and `budgeted` must come from the SAME
+// month-scoped cache entry (`months/${currentMonthKey}`) — see that
+// block's own comment in savings.ts for why mixing a month-scoped
+// `budgeted` read with the old generic "categories" balance read risked
+// subtracting the wrong month's numbers.
+// ══════════════════════════════════════════════════════════════════════════════
+
+describe("savings.computeSummary — currentMonthBudgeted", () => {
+  function monthDetailFixture(
+    categoryId: string,
+    balance: number,
+    budgeted: number,
+  ): BudgetMonthDetail {
+    return {
+      month: "2026-09-01",
+      income: 0,
+      budgeted: 0,
+      activity: 0,
+      toBeBudgeted: 0,
+      categories: [
+        {
+          id: categoryId,
+          name: "Linked Category",
+          groupId: "g1",
+          groupName: "Group",
+          hidden: false,
+          budgeted,
+          activity: 0,
+          balance,
+        },
+      ],
+    };
+  }
+
+  it("returns the month-scoped budgeted amount for an API-linked goal when the cache entry exists", async () => {
+    const ctx = await createTestCaller();
+    try {
+      const { profileId } = seedStandardDataset(ctx.db);
+      const goalId = seedSavingsGoal(ctx.db, {
+        name: "Linked Goal",
+        isApiSyncEnabled: true,
+        apiCategoryId: "cat-linked",
+        isEmergencyFund: false,
+      });
+      seedSavingsGoalAllocation(ctx.db, goalId, profileId, {
+        monthlyContribution: "100",
+      });
+
+      vi.mocked(getActiveBudgetApi).mockResolvedValueOnce("actual");
+      vi.mocked(cacheGet).mockImplementation((_db, _service, key: string) => {
+        if (key.startsWith("months/")) {
+          return Promise.resolve({
+            data: monthDetailFixture("cat-linked", 500, 100),
+            serverKnowledge: null,
+            fetchedAt: new Date(),
+          });
+        }
+        return Promise.resolve(null);
+      });
+
+      const result = await ctx.caller.savings.computeSummary();
+      const goal = result.goals.find((g) => g.id === goalId);
+      expect(goal).toBeDefined();
+      expect(goal!.currentMonthBudgeted).toBe(100);
+      // Balance also comes from the same month-scoped entry.
+      const calcGoal = result.savings.goals.find((g) => g.goalId === goalId);
+      expect(calcGoal!.current).toBe(500);
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
+  it("degrades to null (not a stale fallback) when the month-scoped cache entry is missing", async () => {
+    const ctx = await createTestCaller();
+    try {
+      const { profileId } = seedStandardDataset(ctx.db);
+      const goalId = seedSavingsGoal(ctx.db, {
+        name: "Linked Goal No Cache",
+        isApiSyncEnabled: true,
+        apiCategoryId: "cat-no-cache",
+        isEmergencyFund: false,
+      });
+      seedSavingsGoalAllocation(ctx.db, goalId, profileId, {
+        monthlyContribution: "100",
+      });
+
+      vi.mocked(getActiveBudgetApi).mockResolvedValueOnce("actual");
+      // Default mock (mockResolvedValue(null) from the factory) applies —
+      // no months/ cache entry exists yet this month.
+      const result = await ctx.caller.savings.computeSummary();
+      const goal = result.goals.find((g) => g.id === goalId);
+      expect(goal).toBeDefined();
+      expect(goal!.currentMonthBudgeted).toBeNull();
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
+  it("is null for a goal that isn't API-linked, regardless of cache state", async () => {
+    const ctx = await createTestCaller();
+    try {
+      const { profileId } = seedStandardDataset(ctx.db);
+      const goalId = seedSavingsGoal(ctx.db, {
+        name: "Unlinked Goal",
+        isApiSyncEnabled: false,
+        apiCategoryId: null,
+        isEmergencyFund: false,
+      });
+      seedSavingsGoalAllocation(ctx.db, goalId, profileId, {
+        monthlyContribution: "100",
+      });
+
+      const result = await ctx.caller.savings.computeSummary();
+      const goal = result.goals.find((g) => g.id === goalId);
+      expect(goal).toBeDefined();
+      expect(goal!.currentMonthBudgeted).toBeNull();
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
+  it("leaves currentMonthBudgeted null for a linked goal whose category isn't in the cached month (e.g. deleted/renamed remote category)", async () => {
+    const ctx = await createTestCaller();
+    try {
+      const { profileId } = seedStandardDataset(ctx.db);
+      const goalId = seedSavingsGoal(ctx.db, {
+        name: "Orphaned Link Goal",
+        isApiSyncEnabled: true,
+        apiCategoryId: "cat-gone",
+        isEmergencyFund: false,
+      });
+      seedSavingsGoalAllocation(ctx.db, goalId, profileId, {
+        monthlyContribution: "100",
+      });
+
+      vi.mocked(getActiveBudgetApi).mockResolvedValueOnce("actual");
+      vi.mocked(cacheGet).mockImplementation((_db, _service, key: string) => {
+        if (key.startsWith("months/")) {
+          // The cached month exists, but "cat-gone" isn't in it.
+          return Promise.resolve({
+            data: monthDetailFixture("cat-some-other-category", 500, 100),
+            serverKnowledge: null,
+            fetchedAt: new Date(),
+          });
+        }
+        return Promise.resolve(null);
+      });
+
+      const result = await ctx.caller.savings.computeSummary();
+      const goal = result.goals.find((g) => g.id === goalId);
+      expect(goal).toBeDefined();
+      expect(goal!.currentMonthBudgeted).toBeNull();
+    } finally {
+      ctx.cleanup();
+    }
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
 // savings.pushContributionsToApi — the active provider having no API for
 // this write at all (currently only Actual) must be counted and reported
 // separately from a real success, not silently treated as "nothing to
@@ -1312,6 +1474,8 @@ describe("savings.pushContributionsToApi", () => {
       expect(result).toEqual({
         pushed: 0,
         skippedUnsupported: 1,
+        failed: 0,
+        failureMessage: undefined,
         service: "actual",
       });
     } finally {
@@ -1319,7 +1483,7 @@ describe("savings.pushContributionsToApi", () => {
     }
   });
 
-  it("a generic (non-unsupported) error is still logged and skipped, not counted as skippedUnsupported", async () => {
+  it("a generic (non-unsupported) error is counted as `failed` and reported, not silently indistinguishable from 'nothing to push' (fixed 2026-08-31 — previously identical to skippedUnsupported:0/pushed:0, a real failure the user couldn't tell apart from success)", async () => {
     const ctx = await createTestCaller();
     try {
       const { profileId } = seedStandardDataset(ctx.db);
@@ -1347,6 +1511,8 @@ describe("savings.pushContributionsToApi", () => {
       expect(result).toEqual({
         pushed: 0,
         skippedUnsupported: 0,
+        failed: 1,
+        failureMessage: "network blip",
         service: "ynab",
       });
     } finally {

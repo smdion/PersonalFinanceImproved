@@ -664,6 +664,34 @@ th {
   .shadow-lg {
     box-shadow: none !important;
   }
+
+  /* Landscape gives the wide Projection table (up to ~20 columns in
+     Account view) real room instead of forcing an even smaller font. */
+  @page {
+    size: landscape;
+  }
+
+  /* "Print Chart & Table" (R42 basic mode) previously just screenshotted
+     the on-screen scroll container: overflow-y/x: auto clips content to a
+     fixed pixel box on screen, and print does NOT paginate a clipped
+     overflow container the way it paginates normal flowed content — the
+     rest of the rows/columns were silently never printed. Un-clip it here
+     so the full table flows and paginates naturally; the fixed pixel
+     minWidth (set inline, per-column-count, for the on-screen horizontal
+     scroll) is dropped too so the table shrinks to the printed page's
+     actual width instead of continuing to demand 1100-1400px. */
+  .projection-table-scroll {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  .projection-table {
+    min-width: 0 !important;
+    width: 100% !important;
+    table-layout: auto;
+  }
+  .projection-table thead {
+    display: table-header-group; /* repeat column headers on every printed page */
+  }
 }
 
 /* WCAG 2.3.3 — Respect user's reduced-motion preference (v0.5 expert-review M11).

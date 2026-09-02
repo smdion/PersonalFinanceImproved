@@ -36,6 +36,9 @@ let networthQuery: { data: unknown; isLoading: boolean; error: unknown };
 
 vi.mock("@/lib/trpc", () => ({
   trpc: {
+    useUtils: () => ({
+      settings: { appSettings: { list: { invalidate: vi.fn() } } },
+    }),
     savings: { computeSummary: { useQuery: () => savingsQuery } },
     contribution: { computeSummary: { useQuery: () => contribsQuery } },
     mortgage: { computeActiveSummary: { useQuery: () => mortgageQuery } },
@@ -44,8 +47,14 @@ vi.mock("@/lib/trpc", () => ({
     // useEffectiveContribProfileId → useActiveContribProfile. An empty list
     // is the "nothing to resolve" case: the hook leaves the active id alone
     // rather than re-pointing it.
-    salaryProfile: { list: { useQuery: () => ({ data: [] }) } },
-    contributionProfile: { list: { useQuery: () => ({ data: [] }) } },
+    salaryProfile: {
+      list: { useQuery: () => ({ data: [] }) },
+      setActive: { useMutation: () => ({ mutateAsync: vi.fn() }) },
+    },
+    contributionProfile: {
+      list: { useQuery: () => ({ data: [] }) },
+      setActive: { useMutation: () => ({ mutateAsync: vi.fn() }) },
+    },
   },
 }));
 

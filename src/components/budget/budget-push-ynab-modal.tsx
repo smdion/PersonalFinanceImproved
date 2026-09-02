@@ -34,8 +34,9 @@ export function BudgetPushYnabModal({
 }: Props) {
   return (
     <PushPreviewModal
-      title={`Push"${activeColumnLabel}" budget amounts to ${apiService?.toUpperCase()}`}
+      title={`Push "${activeColumnLabel}" budget amounts to ${apiService?.toUpperCase()}`}
       items={items}
+      destinationLabel={apiService?.toUpperCase() ?? "YNAB"}
       onConfirm={onConfirm}
       onCancel={onCancel}
       isPending={isPending}

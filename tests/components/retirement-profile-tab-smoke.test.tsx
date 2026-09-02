@@ -49,6 +49,7 @@ vi.mock("@/lib/context/scenario-context", () => ({
 
 const mockSettings = {
   personId: 1,
+  profileId: 1,
   retirementAge: 65,
   endAge: 95,
   returnAfterRetirement: "0.05",
@@ -98,10 +99,28 @@ vi.mock("@/lib/trpc", () => ({
           error: null,
         }),
       },
+      // Multi-year withdrawal-policy optimizer, Phase 4 — retirement-
+      // profile-tab.tsx queries this directly (TaxesSection is a pure
+      // presentational leaf, see retirement-sections-smoke.test.tsx) and
+      // passes the result down as a prop. `data: undefined` here matches
+      // "query hasn't resolved yet" -- TaxesSection renders no
+      // recommendation either way, so this smoke test's assertions are
+      // unaffected.
+      computeWithdrawalBracketOptimizer: {
+        useQuery: () => ({ data: undefined }),
+      },
     },
     retirement: {
       retirementSettings: {
         upsert: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
+      },
+      retirementProfilePeople: {
+        upsertPerson: {
+          useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+        },
+        upsertHouseholdFields: {
+          useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+        },
       },
     },
   },

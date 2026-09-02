@@ -16,11 +16,15 @@
 // filled-pill treatment for individual match rows on a light background,
 // a different context, not this one). "amber" here means the SAME
 // yellow-400 both sections already used for "suggested," under one name.
-const TONE_CLASSES: Record<"green" | "amber" | "purple" | "faint", string> = {
+const TONE_CLASSES: Record<
+  "green" | "amber" | "purple" | "faint" | "red",
+  string
+> = {
   green: "text-green-400",
   amber: "text-yellow-400",
   purple: "text-purple-400",
   faint: "text-faint",
+  red: "text-red-400",
 };
 
 export function SectionSummaryBadge({
@@ -30,7 +34,7 @@ export function SectionSummaryBadge({
 }: {
   value: number;
   label: string;
-  tone: "green" | "amber" | "purple" | "faint";
+  tone: "green" | "amber" | "purple" | "faint" | "red";
 }) {
   return (
     <span className={`${TONE_CLASSES[tone]} whitespace-nowrap`}>

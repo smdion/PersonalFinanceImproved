@@ -15,6 +15,79 @@ import { log } from "@/lib/logger";
 // Known schema versions
 // ---------------------------------------------------------------------------
 
+/**
+ * Every v0.7-line journal tag, in both dialects.
+ *
+ * Declared ONCE and consumed by both `KNOWN_SCHEMA_VERSIONS` (which decides
+ * whether a backup is importable at all) and `schemaEra()` (which decides
+ * which transform runs). Those two lists were previously maintained by hand
+ * and drifted: tags `0002`–`0031` shipped without being added to either, so
+ * `transformBackupToCurrentSchema` threw `Unknown schema version` for any
+ * backup taken between v0.7.0 and v0.7.10 — restore was simply broken across
+ * most of the v0.7 line (found 2026-08-30). Sharing one list means adding a
+ * migration can't silently break restore again.
+ *
+ * Tags 0007–0024 are hand-named and identical in both journals, so they
+ * appear once. 0002–0006 and 0025–0031 are drizzle-generated and differ per
+ * dialect, so both spellings are listed.
+ */
+const V07_SCHEMA_TAGS = [
+  "0000_v7_initial_schema", // PG + SQLite (identical tag in both journals)
+  // --- PG + SQLite diverge (drizzle-generated names) ---
+  "0001_parched_karma", // PG
+  "0001_fresh_masque", // SQLite
+  "0002_oval_thunderbolt", // PG
+  "0002_public_marvel_apes", // SQLite
+  "0003_graceful_satana", // PG
+  "0003_loose_wonder_man", // SQLite
+  "0004_clumsy_cargill", // PG
+  "0004_wooden_starfox", // SQLite
+  "0005_slim_daimon_hellstrom", // PG
+  "0005_free_patch", // SQLite
+  "0006_thin_molecule_man", // PG
+  "0006_silent_gorgon", // SQLite
+  // --- hand-named, identical in both journals ---
+  "0007_salary_profiles",
+  "0008_kill_live_sentinel",
+  "0009_salary_profile_bonus_terms",
+  "0010_contribution_active_fields",
+  "0011_contribution_accounts_no_base_value",
+  "0012_salary_profile_job_keyed",
+  "0013_speculative_jobs",
+  "0014_salary_no_base_value",
+  "0015_historical_salaries",
+  "0016_drop_salary_ledger_tables",
+  "0017_salary_entry_bonus_override",
+  "0018_fk_index_cleanup",
+  "0019_mortgage_refinanced_from_fk",
+  "0020_employer_match_grouping_unq",
+  "0021_retirement_filing_status_backfill",
+  "0022_salary_profile_full_shape",
+  "0023_extra_paycheck_routing_to_salary_profile",
+  "0024_projection_cache",
+  // --- diverge again ---
+  "0025_nosy_korg", // PG
+  "0025_empty_xorn", // SQLite
+  "0026_illegal_raider", // PG
+  "0026_wet_sumo", // SQLite
+  "0027_tough_fenris", // PG
+  "0027_previous_mojo", // SQLite
+  "0028_classy_speedball", // PG
+  "0028_daily_maximus", // SQLite
+  "0029_magical_the_spike", // PG
+  "0029_stale_richard_fisk", // SQLite
+  "0030_acoustic_blue_shield", // PG
+  "0030_hesitant_micromacro", // SQLite
+  "0031_wide_winter_soldier", // PG
+  "0031_mighty_energizer", // SQLite
+  "0032_curved_silhouette", // PG: retirement profiles, step A (expand)
+  "0032_demonic_firelord", // SQLite counterpart of 0032
+  "0033_stormy_shiver_man", // PG: retirement_settings unique(person_id) -> unique(profile_id, person_id)
+  "0033_far_hellfire_club", // SQLite counterpart of 0033
+  "0034_nice_omega_red", // PG: retirement_settings.discretionary_withdrawal_order (R55 follow-up)
+  "0034_even_cassandra_nova", // SQLite counterpart of 0034
+] as const;
+
 /** All schema version tags that we know how to import from. */
 export const KNOWN_SCHEMA_VERSIONS = [
   // v0.1.x series — PostgreSQL journal tags
@@ -65,11 +138,9 @@ export const KNOWN_SCHEMA_VERSIONS = [
   "0004_calm_dazzler", // SQLite counterpart of 0004
   "0005_zippy_warlock", // SQLite counterpart of 0005
   "0006_concerned_psylocke", // SQLite counterpart of 0006
-  // v0.7.x series — squashed v7 baseline (same tag string in both PG and
-  // SQLite journals) + incremental migrations
-  "0000_v7_initial_schema", // PG + SQLite (identical tag in both journals)
-  "0001_parched_karma", // PG: savings_planned_tx_settlements table
-  "0001_fresh_masque", // SQLite counterpart of 0001_parched_karma
+  // v0.7.x series — squashed v7 baseline + every incremental migration,
+  // from the single V07_SCHEMA_TAGS list above (shared with schemaEra()).
+  ...V07_SCHEMA_TAGS,
 ] as const;
 
 export type KnownSchemaVersion = (typeof KNOWN_SCHEMA_VERSIONS)[number];
@@ -173,13 +244,9 @@ function schemaEra(
   if (tag === "v0.3_final") return "v0.3";
   if (tag === "v0.2_final") return "v0.2";
 
-  // v0.7.x tags (squashed v7 baseline + incremental).
-  const v07Tags = new Set([
-    "0000_v7_initial_schema", // PG + SQLite
-    "0001_parched_karma", // PG
-    "0001_fresh_masque", // SQLite
-  ]);
-  if (v07Tags.has(tag)) return "v0.7";
+  // v0.7.x tags (squashed v7 baseline + every incremental migration).
+  // Same single source as KNOWN_SCHEMA_VERSIONS — see V07_SCHEMA_TAGS.
+  if ((V07_SCHEMA_TAGS as readonly string[]).includes(tag)) return "v0.7";
 
   // v0.6.x tags (squashed v6 baseline + incremental). Routed to a minimal
   // transform that only backfills tables added within the v0.6 line.
@@ -506,6 +573,149 @@ function transformV07xToCurrent(tables: TableData): TableData {
   if (!tables["savings_planned_tx_settlements"]) {
     tables["savings_planned_tx_settlements"] = [];
   }
+
+  // 0032: Retirement Profiles, step A (expand) + the backfill migration
+  // 0032_curved_silhouette.sql itself performs in the same file (advisor-
+  // caught 2026-09-01: this function used to stop at step A — empty
+  // tables, null profile_id — leaving a restored pre-0032 backup in the
+  // migration's INTERMEDIATE state instead of where a live upgrade
+  // actually lands. Real households upgrading get a real "Current Plan"
+  // profile via the migration's own backfill; restoring an old backup
+  // AFTER upgrading truncated that profile back to nothing with no way to
+  // recreate one in-app — retirementProfiles.duplicate is the only
+  // creation path and needs an existing profile to clone FROM. Mirrors
+  // the migration SQL's 5 steps exactly, in JS, against in-memory rows.)
+  if (!tables["retirement_profiles"]) tables["retirement_profiles"] = [];
+  if (!tables["retirement_profile_people"]) {
+    tables["retirement_profile_people"] = [];
+  }
+  addColumnDefault(tables, "retirement_settings", "profile_id", null);
+  for (const col of [
+    "distribution_tax_rate_traditional",
+    "distribution_tax_rate_roth",
+    "distribution_tax_rate_hsa",
+    "distribution_tax_rate_brokerage",
+  ]) {
+    addColumnDefault(tables, "retirement_settings", col, null);
+  }
+
+  {
+    const settingsRows = (tables["retirement_settings"] ?? []) as Record<
+      string,
+      unknown
+    >[];
+    const profileRows = tables["retirement_profiles"] as Record<
+      string,
+      unknown
+    >[];
+    // Step 1+2: one "Current Plan" profile, only when settings exist and
+    // no profile does yet (idempotent — a backup already at the current
+    // shape, or one with no retirement data at all, is a pure pass-through).
+    if (settingsRows.length > 0 && profileRows.length === 0) {
+      const profileId = 1;
+      profileRows.push({
+        id: profileId,
+        name: "Current Plan",
+        description:
+          "Your existing retirement assumptions, carried over when Retirement Profiles were introduced.",
+        created_at: new Date().toISOString(),
+      });
+      for (const row of settingsRows) {
+        if (row["profile_id"] == null) row["profile_id"] = profileId;
+      }
+
+      // Step 3: one retirement_profile_people row per person, completeness
+      // invariant. "prim" = the settings row belonging to whichever person
+      // has a settings row AND ranks highest by is_primary_user, then id —
+      // matching getPrimaryPerson()'s own rule, not necessarily the actual
+      // primary person if they have no settings row of their own.
+      const peopleRows = (tables["people"] ?? []) as Record<string, unknown>[];
+      const settingsByPerson = new Map(
+        settingsRows.map((r) => [String(r["person_id"]), r]),
+      );
+      const orderedPeopleWithSettings = peopleRows
+        .filter((p) => settingsByPerson.has(String(p["id"])))
+        .sort((a, b) => {
+          const aPrimary = a["is_primary_user"] ? 1 : 0;
+          const bPrimary = b["is_primary_user"] ? 1 : 0;
+          if (aPrimary !== bPrimary) return bPrimary - aPrimary;
+          return Number(a["id"]) - Number(b["id"]);
+        });
+      const primaryRow =
+        orderedPeopleWithSettings.length > 0
+          ? settingsByPerson.get(String(orderedPeopleWithSettings[0]!["id"]))
+          : undefined;
+
+      const peopleRowsTable = tables["retirement_profile_people"] as Record<
+        string,
+        unknown
+      >[];
+      if (primaryRow && peopleRowsTable.length === 0) {
+        let nextId = 1;
+        for (const p of peopleRows) {
+          const own = settingsByPerson.get(String(p["id"]));
+          const src = own ?? primaryRow;
+          peopleRowsTable.push({
+            id: nextId++,
+            profile_id: profileId,
+            person_id: p["id"],
+            retirement_age: src["retirement_age"],
+            end_age: src["end_age"],
+            social_security_monthly: src["social_security_monthly"] ?? null,
+            ss_start_age: src["ss_start_age"] ?? null,
+            rule_of_55_override: src["rule_of_55_override"] ?? null,
+            salary_annual_increase: src["salary_annual_increase"] ?? null,
+          });
+        }
+      }
+
+      // Step 4: distribution tax rates, relocated off retirement_scenarios.
+      const selectedScenario = (
+        (tables["retirement_scenarios"] ?? []) as Record<string, unknown>[]
+      )
+        .filter((r) => r["is_selected"] === true)
+        .sort((a, b) => Number(a["id"]) - Number(b["id"]))[0];
+      if (selectedScenario) {
+        for (const row of settingsRows) {
+          if (row["distribution_tax_rate_traditional"] == null) {
+            row["distribution_tax_rate_traditional"] =
+              selectedScenario["distribution_tax_rate_traditional"] ?? null;
+            row["distribution_tax_rate_roth"] =
+              selectedScenario["distribution_tax_rate_roth"] ?? null;
+            row["distribution_tax_rate_hsa"] =
+              selectedScenario["distribution_tax_rate_hsa"] ?? null;
+            row["distribution_tax_rate_brokerage"] =
+              selectedScenario["distribution_tax_rate_brokerage"] ?? null;
+          }
+        }
+      }
+
+      // Step 5: the global active-profile pointer — without it,
+      // useEffectiveProfileId has nothing to resolve to for a household
+      // with no active Plan, and build-engine-payload returns null
+      // (blank Retirement page) even though a real profile now exists.
+      const appSettingsRows = (tables["app_settings"] ?? []) as Record<
+        string,
+        unknown
+      >[];
+      if (
+        !appSettingsRows.some(
+          (r) => r["key"] === "active_retirement_profile_id",
+        )
+      ) {
+        appSettingsRows.push({
+          key: "active_retirement_profile_id",
+          value: profileId,
+        });
+      }
+      tables["app_settings"] = appSettingsRows;
+    }
+  }
+
+  // null, never a real id — see the scenarios.retirement_profile_id docblock.
+  // Backfilling this would turn "this Plan sets nothing for retirement" into
+  // "this Plan sets profile 1" for every Plan that ever existed.
+  addColumnDefault(tables, "scenarios", "retirement_profile_id", null);
 
   // 0008: contribution_profiles.is_default no longer exists — the row it
   // flagged survives as an ordinary profile, so the flag is simply dropped.

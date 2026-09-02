@@ -262,6 +262,21 @@ describe("YnabClient", () => {
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(body.transaction.approved).toBe(true);
     });
+
+    it("sends cleared: 'reconciled' when reconciled is true, regardless of cleared", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({ data: { transaction: { id: "tx-r" } } }),
+      );
+      await client.createTransaction({
+        accountId: "a",
+        date: "2026-01-20",
+        amount: -10,
+        cleared: false,
+        reconciled: true,
+      });
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.transaction.cleared).toBe("reconciled");
+    });
   });
 
   describe("getMonths", () => {

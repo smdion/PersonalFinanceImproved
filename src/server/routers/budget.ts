@@ -58,6 +58,7 @@ import {
 } from "@/lib/budget-api";
 import type { BudgetCategoryGroup, BudgetMonthDetail } from "@/lib/budget-api";
 import { YNAB_INTERNAL_GROUPS } from "@/lib/budget-api";
+import { currentMonthKey } from "@/lib/pure/date-keys";
 
 type BudgetItemRow = typeof schema.budgetItems.$inferSelect;
 
@@ -111,7 +112,7 @@ async function renumberItems(
  * and is never sent over the wire. All three fields are required (nullable)
  * so a caller can't silently omit one and get the old, wrong fallback.
  */
-const profileResolutionTiersSchema = z.object({
+export const profileResolutionTiersSchema = z.object({
   /** The active Plan's pin for this axis, already validated client-side. */
   planPinId: z.number().int().nullable(),
   /** The calling page's own local selection / preview pick, if it has one. */
@@ -120,7 +121,9 @@ const profileResolutionTiersSchema = z.object({
   globalDefaultId: z.number().int().nullable(),
 });
 
-type ProfileResolutionTiers = z.infer<typeof profileResolutionTiersSchema>;
+export type ProfileResolutionTiers = z.infer<
+  typeof profileResolutionTiersSchema
+>;
 
 /**
  * Resolve which Contribution Profile a budget-linked item edit should write
@@ -1722,7 +1725,7 @@ export const budgetRouter = createTRPCRouter({
 
       // Get current month detail from cache
       const now = new Date();
-      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+      const currentMonth = currentMonthKey(now);
       const monthCache = await cacheGet<BudgetMonthDetail>(
         ctx.db,
         active,
@@ -1903,7 +1906,7 @@ export const budgetRouter = createTRPCRouter({
         };
 
       const now = new Date();
-      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+      const currentMonth = currentMonthKey(now);
       const monthCache = await cacheGet<BudgetMonthDetail>(
         ctx.db,
         active,

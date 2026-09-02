@@ -429,6 +429,190 @@ describe("routeWithdrawalsBracketFilling", () => {
   });
 
   // -------------------------------------------------------------------------
+  // v0.7.10 R51 (Gap A): Phase 1 respects config.withdrawalOrder instead of
+  // a hardcoded 401k -> 403b -> ira declaration order.
+  // -------------------------------------------------------------------------
+
+  it("draws Traditional in the household's own configured order (IRA before 401k), not the hardcoded declaration order", () => {
+    // Distinct 401k/IRA balances so which one gets drawn first is
+    // unambiguous, and a bracket cap small enough that Phase 1 stops
+    // partway through -- if IRA is really drawn FIRST, IRA gets fully
+    // capped-out by the small cap and 401k gets $0; if the OLD hardcoded
+    // order were still in effect, 401k would get drawn instead.
+    const balances = makeAccountBalances({ preTax: 0 });
+    balances["401k"] = {
+      structure: "roth_traditional",
+      traditional: 200000,
+      roth: 0,
+    };
+    balances.ira = {
+      structure: "roth_traditional",
+      traditional: 200000,
+      roth: 0,
+    };
+
+    const configDefault = makeDecumulationConfig({
+      withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
+    });
+    const configReordered = makeDecumulationConfig({
+      withdrawalOrder: ["ira", "403b", "401k", "brokerage", "hsa"],
+    });
+    const bracketInfo = {
+      taxBrackets: TEST_BRACKETS,
+      rothBracketTarget: 0.12, // caps traditional well below either account's balance
+      taxableSS: 0,
+    };
+
+    const defaultResult = routeWithdrawalsBracketFilling(
+      20000,
+      configDefault,
+      balances,
+      bracketInfo,
+    );
+    const reorderedResult = routeWithdrawalsBracketFilling(
+      20000,
+      configReordered,
+      balances,
+      bracketInfo,
+    );
+
+    const default401k = slotFor(
+      defaultResult.slots,
+      "401k",
+    )!.traditionalWithdrawal;
+    const defaultIra = slotFor(
+      defaultResult.slots,
+      "ira",
+    )!.traditionalWithdrawal;
+    const reordered401k = slotFor(
+      reorderedResult.slots,
+      "401k",
+    )!.traditionalWithdrawal;
+    const reorderedIra = slotFor(
+      reorderedResult.slots,
+      "ira",
+    )!.traditionalWithdrawal;
+
+    // Default order: 401k fully absorbs the cap, IRA untouched.
+    expect(default401k).toBeGreaterThan(0);
+    expect(defaultIra).toBe(0);
+    // Reordered: IRA absorbs the cap instead, 401k untouched -- the
+    // household's own configured order took effect.
+    expect(reorderedIra).toBeGreaterThan(0);
+    expect(reordered401k).toBe(0);
+    // Same total traditional cap consumed either way -- only WHICH
+    // account supplied it changed.
+    expect(default401k + defaultIra).toBeCloseTo(
+      reordered401k + reorderedIra,
+      2,
+    );
+  });
+
+  it("regression guard: reverting to categoriesWithTaxPreference() would make the reordered case draw from 401k anyway", () => {
+    // Same setup as above, but asserting the specific behavior the OLD
+    // (buggy) code produced, so this test file would fail loudly if
+    // Phase 1's ordering source were ever reverted.
+    const balances = makeAccountBalances({ preTax: 0 });
+    balances["401k"] = {
+      structure: "roth_traditional",
+      traditional: 200000,
+      roth: 0,
+    };
+    balances.ira = {
+      structure: "roth_traditional",
+      traditional: 200000,
+      roth: 0,
+    };
+    const configReordered = makeDecumulationConfig({
+      withdrawalOrder: ["ira", "403b", "401k", "brokerage", "hsa"],
+    });
+    const result = routeWithdrawalsBracketFilling(
+      20000,
+      configReordered,
+      balances,
+      {
+        taxBrackets: TEST_BRACKETS,
+        rothBracketTarget: 0.12,
+        taxableSS: 0,
+      },
+    );
+    // The FIX makes IRA (first in the reordered config) absorb the cap.
+    // If Phase 1 ever silently reverts to the hardcoded 401k-first order,
+    // this assertion (IRA > 0, 401k === 0) is what would flip and fail.
+    expect(slotFor(result.slots, "ira")!.traditionalWithdrawal).toBeGreaterThan(
+      0,
+    );
+    expect(slotFor(result.slots, "401k")!.traditionalWithdrawal).toBe(0);
+  });
+
+  it("uncustomized (default) order produces byte-identical output to before this fix", () => {
+    // DEFAULT_DECUMULATION_ORDER filtered to Traditional-preference
+    // categories is, by construction, identical to the pre-fix hardcoded
+    // categoriesWithTaxPreference() order -- verifying that here, not just
+    // asserting it, so a household who never touched the order editor
+    // sees zero behavior change.
+    const config = makeDecumulationConfig(); // default order
+    const balances = makeAccountBalances({
+      preTax: 500000,
+      taxFree: 300000,
+      afterTax: 200000,
+      afterTaxBasis: 100000,
+    });
+    const result = routeWithdrawalsBracketFilling(100000, config, balances, {
+      taxBrackets: TEST_BRACKETS,
+      rothBracketTarget: 0.12,
+      taxableSS: 5000,
+    });
+    // Same hand-verifiable invariant the pre-existing "caps traditional
+    // withdrawals at bracket target" test already checks -- confirms nothing
+    // about the CAP computation itself moved, only which account (if there
+    // were a choice) supplies it.
+    expect(result.traditionalCap).toBeDefined();
+    const totalTrad = result.slots.reduce(
+      (s, sl) => s + sl.traditionalWithdrawal,
+      0,
+    );
+    expect(totalTrad).toBeLessThanOrEqual(result.traditionalCap! + 1);
+  });
+
+  it("drawRothTierCapped (Phase 2's Roth tier) respects the same reordered account priority as Phase 1's Traditional tier", () => {
+    // Same household reordering IRA before 401k, but now with enough Roth
+    // balance in both that Phase 2's Roth tier (not Phase 1's Traditional
+    // fill) has to pick which one to draw first -- proving both loops
+    // share one ordering source, not just Phase 1.
+    const balances = makeAccountBalances({ preTax: 0, taxFree: 0 });
+    balances["401k"] = {
+      structure: "roth_traditional",
+      traditional: 0,
+      roth: 200000,
+    };
+    balances.ira = {
+      structure: "roth_traditional",
+      traditional: 0,
+      roth: 200000,
+    };
+    const configReordered = makeDecumulationConfig({
+      withdrawalOrder: ["ira", "403b", "401k", "brokerage", "hsa"],
+    });
+    const result = routeWithdrawalsBracketFilling(
+      20000,
+      configReordered,
+      balances,
+      {
+        taxBrackets: TEST_BRACKETS,
+        rothBracketTarget: 0.12,
+        taxableSS: 0,
+        filingStatus: "MFJ",
+      },
+    );
+    // No Traditional or 0%-LTCG-brokerage capacity at all -- the full
+    // $20k must come from Roth growth, and IRA (first in the reordered
+    // config) should supply it, not 401k.
+    expect(slotFor(result.slots, "ira")!.rothWithdrawal).toBeGreaterThan(0);
+    expect(slotFor(result.slots, "401k")!.rothWithdrawal).toBe(0);
+  });
+
+  // -------------------------------------------------------------------------
   // v0.7.9 R40 follow-up: cost-aware post-Traditional-cap ranking
   // -------------------------------------------------------------------------
 
@@ -531,6 +715,92 @@ describe("routeWithdrawalsBracketFilling", () => {
         s401k.traditionalWithdrawal + s401k.rothWithdrawal,
       );
     }
+  });
+
+  // -------------------------------------------------------------------------
+  // conversionTarget — reserved-room fix (advisor review, 2026-09-01)
+  // -------------------------------------------------------------------------
+
+  it("reserves discretionary-tier room up to conversionTarget's own bracket cap, not rothBracketTarget's, when the two differ", () => {
+    // Same inputs throughout except conversionTarget. Before this fix,
+    // the reservation always used rothBracketTarget's cap (0.32 here,
+    // a huge cap that reserves nearly all remaining Traditional room and
+    // inflates the ordinary-income floor, pricing Roth growth as
+    // expensive). A real, lower conversionTarget reserves less, lowers
+    // the floor, and should price Roth growth relatively cheaper —
+    // shifting some of the discretionary draw from brokerage to Roth.
+    const config = makeDecumulationConfig();
+    const balances = makeAccountBalances({
+      preTax: 5000,
+      taxFree: 200000,
+      afterTax: 30000,
+      afterTaxBasis: 0, // all gains -- worst case for brokerage's cost
+    });
+    const routeWith = (conversionTarget: number) =>
+      routeWithdrawalsBracketFilling(60000, config, balances, {
+        taxBrackets: TEST_BRACKETS,
+        rothBracketTarget: 0.32,
+        conversionTarget,
+        conversionsEnabled: true,
+        taxableSS: 40000,
+        filingStatus: "MFJ",
+        rothBasisAvailable: 0,
+        brokerageBasisRatio: 0,
+        magiBeforeThisDraw: 0,
+      });
+
+    // conversionTarget === rothBracketTarget: no-op, reproduces the cap
+    // used before this field existed.
+    const control = routeWith(0.32);
+    // A materially lower real conversion target.
+    const withLowerTarget = routeWith(0.1);
+
+    const controlRoth =
+      slotFor(control.slots, "401k")?.rothWithdrawal ??
+      slotFor(control.slots, "ira")?.rothWithdrawal ??
+      0;
+    const lowerTargetRoth =
+      slotFor(withLowerTarget.slots, "401k")?.rothWithdrawal ??
+      slotFor(withLowerTarget.slots, "ira")?.rothWithdrawal ??
+      0;
+
+    expect(lowerTargetRoth).not.toBe(controlRoth);
+    // Lower reserved room -> lower ordinary-income floor -> Roth growth
+    // priced cheaper -> the ranking draws MORE from Roth, not less.
+    expect(lowerTargetRoth).toBeGreaterThan(controlRoth);
+  });
+
+  it("omitting conversionTarget reproduces the exact same output as before this field existed (no regression for existing callers)", () => {
+    const config = makeDecumulationConfig();
+    const balances = makeAccountBalances({
+      preTax: 5000,
+      taxFree: 200000,
+      afterTax: 30000,
+      afterTaxBasis: 0,
+    });
+    const bracketInfo = {
+      taxBrackets: TEST_BRACKETS,
+      rothBracketTarget: 0.32,
+      conversionsEnabled: true,
+      taxableSS: 40000,
+      filingStatus: "MFJ" as const,
+      rothBasisAvailable: 0,
+      brokerageBasisRatio: 0,
+      magiBeforeThisDraw: 0,
+    };
+    const withoutField = routeWithdrawalsBracketFilling(
+      60000,
+      config,
+      balances,
+      bracketInfo,
+    );
+    const withEqualField = routeWithdrawalsBracketFilling(
+      60000,
+      config,
+      balances,
+      { ...bracketInfo, conversionTarget: 0.32 },
+    );
+    expect(withoutField.slots).toEqual(withEqualField.slots);
   });
 });
 

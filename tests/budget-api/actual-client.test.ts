@@ -324,6 +324,41 @@ describe("ActualClient", () => {
       expect(capture[0]).toMatch(/^ledgr:/);
       expect(capture[0]).toBe(capture[1]);
     });
+
+    it("sends reconciled: true and derives cleared: true, even if cleared wasn't set", async () => {
+      let sentImportedId = "";
+      mockFetch.mockImplementationOnce(
+        async (_url: string, init: RequestInit) => {
+          sentImportedId = JSON.parse(init.body as string).transaction
+            .imported_id;
+          return jsonResponse({ message: "ok" });
+        },
+      );
+      mockFetch.mockImplementationOnce(async () =>
+        jsonResponse({
+          data: [
+            {
+              id: "tx-recon",
+              account: "acct-1",
+              date: "2026-01-20",
+              amount: -5000,
+              cleared: true,
+              reconciled: true,
+              imported_id: sentImportedId,
+            },
+          ],
+        }),
+      );
+      await client.createTransaction({
+        accountId: "acct-1",
+        date: "2026-01-20",
+        amount: -50,
+        reconciled: true,
+      });
+      const postBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(postBody.transaction.reconciled).toBe(true);
+      expect(postBody.transaction.cleared).toBe(true);
+    });
   });
 
   describe("updateTransaction", () => {
@@ -336,6 +371,14 @@ describe("ActualClient", () => {
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(body.transaction.amount).toBe(-7500);
       expect(body.transaction.notes).toBe("Updated");
+    });
+
+    it("sets cleared: true when reconciled: true is sent, even without an explicit cleared field", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({}));
+      await client.updateTransaction("tx-1", { reconciled: true });
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.transaction.reconciled).toBe(true);
+      expect(body.transaction.cleared).toBe(true);
     });
   });
 
@@ -406,12 +449,17 @@ describe("ActualClient", () => {
   });
 
   describe("getCategories", () => {
-    it("merges categories into groups and maps cents to dollars", async () => {
-      // /categorygroups + /categories are fetched in parallel and merged
-      // by group_id. We provide both responses in the order the client
-      // fires them (Promise.all → request 1 then request 2 on Actual's
-      // HTTP impl; the test tolerates both orders by returning the same
-      // shape twice).
+    it("merges categories into groups, enriched with the current month's real numbers", async () => {
+      // Verified live, 2026-08-31: the bare /categorygroups + /categories
+      // endpoints carry only id/name/hidden/group_id — NO budgeted/spent/
+      // balance/goal keys at all (unlike YNAB, whose categories endpoint
+      // does carry a real running balance). Those numbers are inherently
+      // month-scoped in Actual and only come back from /months/:id, which
+      // getCategories() now fetches and merges in by category id. This
+      // test previously mocked budgeted/spent/balance directly on the bare
+      // /categories response — a shape that doesn't exist on Actual's real
+      // API and silently encoded the bug (every Actual household's
+      // category/goal balance read as $0).
       mockFetch.mockReturnValueOnce(
         jsonResponse({
           data: [
@@ -433,19 +481,93 @@ describe("ActualClient", () => {
               name: "Rent",
               group_id: "g1",
               hidden: false,
-              budgeted: 150000, // cents = $1500
-              spent: -140000,
-              balance: 10000,
             },
           ],
         }),
       );
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({
+          data: {
+            month: "2026-08",
+            totalIncome: 0,
+            totalBudgeted: 0,
+            totalSpent: 0,
+            toBudget: 0,
+            categoryGroups: [
+              {
+                id: "g1",
+                name: "Bills",
+                is_income: false,
+                hidden: false,
+                categories: [
+                  {
+                    id: "c1",
+                    name: "Rent",
+                    group_id: "g1",
+                    hidden: false,
+                    budgeted: 150000, // cents = $1500
+                    spent: -140000,
+                    balance: 10000,
+                  },
+                ],
+              },
+            ],
+          },
+        }),
+      );
+      // getCategories() now also overlays note-parsed goal amounts (see
+      // overlayNoteGoals) -- one GET /notes/category/:id per category.
+      // No #template here, so this category's goalTarget stays whatever
+      // getMonthDetail/mapCategory already produced (undefined -- this
+      // fixture doesn't set a `goal` field either).
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: null }));
       const groups = await client.getCategories();
       expect(groups).toHaveLength(1);
       expect(groups[0]!.name).toBe("Bills");
       expect(groups[0]!.categories[0]).toMatchObject({
         name: "Rent",
         budgeted: 1500,
+        balance: 100,
+      });
+    });
+
+    it("falls back to $0 for a category the current month doesn't report (no crash)", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({
+          data: [
+            {
+              id: "g1",
+              name: "Bills",
+              is_income: false,
+              hidden: false,
+              categories: [],
+            },
+          ],
+        }),
+      );
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({
+          data: [{ id: "c1", name: "Rent", group_id: "g1", hidden: false }],
+        }),
+      );
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({
+          data: {
+            month: "2026-08",
+            totalIncome: 0,
+            totalBudgeted: 0,
+            totalSpent: 0,
+            toBudget: 0,
+            categoryGroups: [],
+          },
+        }),
+      );
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: null }));
+      const groups = await client.getCategories();
+      expect(groups[0]!.categories[0]).toMatchObject({
+        name: "Rent",
+        budgeted: 0,
+        balance: 0,
       });
     });
   });
@@ -505,8 +627,15 @@ describe("ActualClient", () => {
           },
         }),
       );
+      // getMonthDetail() overlays note-parsed goal amounts (see
+      // overlayNoteGoals) -- one GET /notes/category/:id per category,
+      // no #template in either fixture so goalTarget is unaffected here.
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: null }));
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: null }));
       const detail = await client.getMonthDetail("2026-01");
       expect(detail.month).toBe("2026-01");
+      const url = mockFetch.mock.calls[0]![0] as string;
+      expect(url).toContain("/months/2026-01");
       expect(detail.income).toBe(5000);
       // totalBudgeted comes back negative from Actual — mapped to a
       // positive dollar amount matching the per-category convention.
@@ -519,15 +648,167 @@ describe("ActualClient", () => {
       expect(detail.categories[0].groupName).toBe("Housing");
       expect(detail.categories[1].groupName).toBe("Food");
     });
+
+    // Live-user bug, 2026-08-30: every caller in this codebase
+    // (sync/core.ts, budget-api/cache.ts) computes `month` as YNAB's own
+    // native format, `YYYY-MM-01` (a full ISO date) -- correct for YNAB's
+    // real API, but Actual's actual-http-api wrapper's `/months/:id` route
+    // rejects anything but the shorter `YYYY-MM` with a real 400 error
+    // ("Invalid month format, use YYYY-MM: 2026-08-01"). This was a
+    // genuine, previously-unexercised bug: the pre-existing test above
+    // only ever passed the already-short "2026-01" form, so the mismatch
+    // never surfaced until a real sync attempt hit it live.
+    it("strips the day component from a YYYY-MM-01 month before building the URL (Actual's API rejects the day)", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({
+          data: {
+            month: "2026-08",
+            totalIncome: 0,
+            totalBudgeted: 0,
+            totalSpent: 0,
+            toBudget: 0,
+            categoryGroups: [],
+          },
+        }),
+      );
+      await client.getMonthDetail("2026-08-01");
+      const url = mockFetch.mock.calls[0]![0] as string;
+      expect(url).toContain("/months/2026-08");
+      expect(url).not.toContain("2026-08-01");
+    });
+
+    // Found live, 2026-09-01: a budget push-preview showed every linked
+    // category's "current" value as $0, even for categories already
+    // pushed successfully -- goalTarget was reading Actual's structured
+    // `goal` field, which writeGoalNote's note-based write never touches.
+    // overlayNoteGoals is the fix: read the note back and prefer it.
+    it("overrides goalTarget with the note-parsed amount when a #template is present, even though the structured goal field says something else", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({
+          data: {
+            month: "2026-01",
+            totalIncome: 0,
+            totalBudgeted: 0,
+            totalSpent: 0,
+            toBudget: 0,
+            categoryGroups: [
+              {
+                id: "g1",
+                name: "Bills",
+                is_income: false,
+                hidden: false,
+                categories: [
+                  {
+                    id: "c1",
+                    name: "Rent",
+                    group_id: "g1",
+                    hidden: false,
+                    goal: 0, // structured field: stale/never-written
+                  },
+                ],
+              },
+            ],
+          },
+        }),
+      );
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: "#template 450" }));
+      const detail = await client.getMonthDetail("2026-01");
+      expect(detail.categories[0].goalTarget).toBe(450);
+      const noteCall = mockFetch.mock.calls[1]!;
+      expect(noteCall[0]).toContain("/notes/category/c1");
+    });
+
+    it("falls back to the structured goal field's value when the note has no #template", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({
+          data: {
+            month: "2026-01",
+            totalIncome: 0,
+            totalBudgeted: 0,
+            totalSpent: 0,
+            toBudget: 0,
+            categoryGroups: [
+              {
+                id: "g1",
+                name: "Bills",
+                is_income: false,
+                hidden: false,
+                categories: [
+                  {
+                    id: "c1",
+                    name: "Rent",
+                    group_id: "g1",
+                    hidden: false,
+                    goal: 30000, // $300, set directly in Actual's own UI
+                  },
+                ],
+              },
+            ],
+          },
+        }),
+      );
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({ data: "Just a free-text note, no goal" }),
+      );
+      const detail = await client.getMonthDetail("2026-01");
+      expect(detail.categories[0].goalTarget).toBe(300);
+    });
+
+    it("does not blow up the whole call when a single category's note fetch fails -- degrades to the structured value", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({
+          data: {
+            month: "2026-01",
+            totalIncome: 0,
+            totalBudgeted: 0,
+            totalSpent: 0,
+            toBudget: 0,
+            categoryGroups: [
+              {
+                id: "g1",
+                name: "Bills",
+                is_income: false,
+                hidden: false,
+                categories: [
+                  {
+                    id: "c1",
+                    name: "Rent",
+                    group_id: "g1",
+                    hidden: false,
+                    goal: 30000,
+                  },
+                ],
+              },
+            ],
+          },
+        }),
+      );
+      // 404, not 500/429 -- "client" errors aren't retried by
+      // budgetApiRequest (see errors.ts's isRetryable), so this stays a
+      // single fast mock call instead of burning real wall-clock time on
+      // exponential-backoff retries (no fake timers in this test file).
+      mockFetch.mockReturnValueOnce(jsonResponse({ error: "not found" }, 404));
+      const detail = await client.getMonthDetail("2026-01");
+      expect(detail.categories[0].goalTarget).toBe(300);
+    });
   });
 
   describe("updateCategoryBudgeted", () => {
     it("PATCHes with cents conversion, nested under `category` (actual-http-api's real request shape)", async () => {
       mockFetch.mockReturnValueOnce(jsonResponse({}));
       await client.updateCategoryBudgeted("2026-01", "cat-1", 150);
-      const [, init] = mockFetch.mock.calls[0]!;
+      const [url, init] = mockFetch.mock.calls[0]!;
+      expect(url).toContain("/months/2026-01");
       expect(init.method).toBe("PATCH");
       expect(JSON.parse(init.body).category.budgeted).toBe(15000);
+    });
+
+    it("also strips the day component from a YYYY-MM-01 month", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({}));
+      await client.updateCategoryBudgeted("2026-08-01", "cat-1", 150);
+      const url = mockFetch.mock.calls[0]![0] as string;
+      expect(url).toContain("/months/2026-08/categories/cat-1");
+      expect(url).not.toContain("2026-08-01");
     });
   });
 

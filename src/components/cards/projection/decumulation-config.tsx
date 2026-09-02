@@ -10,6 +10,7 @@ import {
   getAccountTypeConfig,
   categoriesWithTaxPreference,
   categoriesWithoutTaxPreference,
+  tradPreferenceEngineCategories,
 } from "@/lib/config/account-types";
 import { ALL_CATEGORIES } from "./utils";
 import {
@@ -21,24 +22,58 @@ import { SectionHeader } from "./overrides-panel";
 function OrderEditor({
   order,
   onChange,
+  filter,
 }: {
   order: AccountCategory[];
   onChange: (order: AccountCategory[]) => void;
+  /** v0.7.10 R51 (Gap A): when set, only these categories are shown and
+   *  reordered — used by bracket_filling's "Traditional Account Order"
+   *  sub-control, which edits the SAME underlying `withdrawalOrder`
+   *  waterfall's full editor writes (single source of truth — the
+   *  engine's Phase 1 loop reads `withdrawalOrder` filtered to
+   *  Traditional-preference categories regardless of which UI wrote it),
+   *  just restricted to the subset that actually affects bracket_filling.
+   *  A swap permutes only the filtered categories' OCCUPANTS — every
+   *  other category (brokerage/HSA) keeps its exact position in the full
+   *  array, since bracket_filling's cost-ranked Phases 2-4 already decide
+   *  those, unaffected by this order. Omitted ⇒ identical behavior to
+   *  before this prop existed (waterfall's unrestricted full-order
+   *  editor). */
+  filter?: AccountCategory[];
 }) {
+  const filterSet = filter ? new Set(filter) : null;
+  const visible = filterSet ? order.filter((c) => filterSet.has(c)) : order;
+
+  function swapWithPrevious(idx: number) {
+    if (!filterSet) {
+      const next = [...order];
+      [next[idx - 1], next[idx]] = [next[idx]!, next[idx - 1]!];
+      onChange(next);
+      return;
+    }
+    // Filtered mode: find where these two categories actually sit in the
+    // FULL array (not necessarily adjacent there — an unfiltered category
+    // may sit between them) and swap only those two slots.
+    const a = visible[idx - 1]!;
+    const b = visible[idx]!;
+    const posA = order.indexOf(a);
+    const posB = order.indexOf(b);
+    const next = [...order];
+    next[posA] = b;
+    next[posB] = a;
+    onChange(next);
+  }
+
   return (
     <div className="flex items-center gap-1">
-      {order.map((cat, idx) => (
+      {visible.map((cat, idx) => (
         <span key={cat} className="flex items-center gap-0.5">
           {idx > 0 && <span className="text-faint mx-0.5">&rarr;</span>}
           <AccountBadge type={cat} />
           {idx > 0 && (
             <button
               type="button"
-              onClick={() => {
-                const next = [...order];
-                [next[idx - 1], next[idx]] = [next[idx]!, next[idx - 1]!];
-                onChange(next);
-              }}
+              onClick={() => swapWithPrevious(idx)}
               className="text-faint hover:text-blue-600 p-0.5"
               title={`Move ${cat} left`}
             >
@@ -87,6 +122,13 @@ type DecumulationConfigProps = {
   >;
   /** Active spending strategy key (from retirement settings). */
   activeSpendingStrategy?: string;
+  /** R55 follow-up — household default from retirement settings, displayed
+   *  read-only here (edited on the settings page, not this per-session
+   *  routing-override panel) so it's visible right next to bracket_filling's
+   *  other routing controls. */
+  discretionaryWithdrawalOrder?: string | null;
+  enableAcaAwareness?: boolean;
+  enableIrmaaAwareness?: boolean;
 };
 
 /**
@@ -107,6 +149,9 @@ export function DecumulationConfig({
   withdrawalTaxPref,
   setWithdrawalTaxPref,
   activeSpendingStrategy,
+  discretionaryWithdrawalOrder,
+  enableAcaAwareness,
+  enableIrmaaAwareness,
 }: DecumulationConfigProps) {
   const strategyKey = (activeSpendingStrategy ??
     "fixed") as WithdrawalStrategyType;
@@ -126,10 +171,19 @@ export function DecumulationConfig({
         ? "Drain accounts in priority order. Customize the order below."
         : "Split withdrawals by fixed percentages across accounts.";
 
+  // v0.7.10 R51 (Gap A): bracket_filling's Phase 1 only ever consults the
+  // Traditional-preference subset of withdrawalOrder (401k/403b/IRA) —
+  // brokerage/HSA's position is decided by cost-ranking regardless of
+  // where they sit in the full array, so both the sub-editor and the
+  // summary below only show/build from that subset, not the full order.
+  const tradPreferenceOrder = withdrawalOrder.filter((c) =>
+    tradPreferenceEngineCategories().includes(c),
+  );
+
   // Compact order display for collapsed view
   const orderSummary =
     withdrawalRoutingMode === "bracket_filling"
-      ? `${taxTypeLabel("preTax")} → ${taxTypeLabel("taxFree")}/Brokerage (cost-ranked) → HSA`
+      ? `${tradPreferenceOrder.map((c) => getAccountTypeConfig(c).displayLabel).join(" → ")} → ${taxTypeLabel("taxFree")}/Brokerage/HSA (cost-ranked)`
       : withdrawalRoutingMode === "waterfall"
         ? withdrawalOrder
             .map((c) => getAccountTypeConfig(c).displayLabel)
@@ -221,6 +275,49 @@ export function DecumulationConfig({
                 order={withdrawalOrder}
                 onChange={setWithdrawalOrder}
               />
+            </div>
+          )}
+
+          {/* Traditional account order (bracket_filling) — v0.7.10 R51
+              Gap A: Phase 1 fills Traditional up to the bracket cap from
+              401k/403b/IRA in THIS order before anything else; previously
+              hardcoded, now user-editable like the other two modes. */}
+          {withdrawalRoutingMode === "bracket_filling" && (
+            <div className="bg-surface-sunken rounded-lg p-3">
+              <SectionHeader
+                title="Traditional Account Order"
+                help="Which Traditional account (401k/403b/IRA) fills the tax bracket first, before anything else is touched. Roth, Brokerage, and HSA are unaffected — bracket_filling always picks whichever of those actually costs least that year. This is the same underlying order Waterfall mode's editor writes, just restricted to the accounts bracket_filling's Traditional fill actually consults."
+              />
+              <OrderEditor
+                order={withdrawalOrder}
+                onChange={setWithdrawalOrder}
+                filter={tradPreferenceEngineCategories()}
+              />
+              <div className="mt-3 pt-3 border-t">
+                <SectionHeader
+                  title="Discretionary Withdrawal Order"
+                  help="Beyond the Traditional bracket target, which free source drains first: Roth basis, or brokerage's 0%-capital-gains room. Brokerage-first uses that room up sooner, but a brokerage gain still counts toward MAGI for ACA/IRMAA even at 0% federal tax — Roth withdrawals never touch MAGI."
+                />
+                <div className="text-caption">
+                  <span className="font-medium text-foreground">
+                    {discretionaryWithdrawalOrder === "brokerage_first"
+                      ? "Brokerage 0% room first"
+                      : "Roth basis first (default)"}
+                  </span>
+                  <span className="text-faint">
+                    {" "}
+                    — edit in Retirement Settings &rarr; Taxes in Retirement.
+                  </span>
+                </div>
+                {discretionaryWithdrawalOrder === "brokerage_first" &&
+                  (enableAcaAwareness || enableIrmaaAwareness) && (
+                    <p className="mt-1 text-caption text-amber-700">
+                      ACA/IRMAA awareness is on — this will realize MAGI-counted
+                      gains sooner each year, which can reduce ACA subsidy or
+                      bring you closer to an IRMAA surcharge tier.
+                    </p>
+                  )}
+              </div>
             </div>
           )}
 

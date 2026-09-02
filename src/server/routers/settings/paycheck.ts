@@ -8,6 +8,7 @@ import {
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { materializeExtraPaycheckOverrides } from "@/server/helpers/extra-paycheck-materializer";
+import { getPrimaryPerson } from "@/server/helpers/transforms";
 import {
   accountCategoryEnum,
   getAccountTypeConfig,
@@ -147,19 +148,86 @@ export const paycheckProcedures = {
     create: adminProcedure
       .input(personInput)
       .mutation(async ({ ctx, input }) => {
-        const person = await ctx.db
-          .insert(schema.people)
-          .values(input)
-          .returning()
-          .then((r) => r[0]!);
-        // Provision the speculative-job peg atomically with the person —
-        // inserted directly (not via jobs.create) so it doesn't trigger
-        // materializeExtraPaycheckOverrides, which a job that never has real
-        // routing rules has no need for.
-        await ctx.db
-          .insert(schema.jobs)
-          .values(speculativeJobValues(person.id));
-        return person;
+        return ctx.db.transaction(async (tx) => {
+          // Resolved BEFORE inserting the new person — this is who existing
+          // retirement_profile rows are cloned FROM, and the new person (who
+          // by definition has no row of their own yet in any profile) must
+          // not be a candidate for that.
+          const existingPeople = await tx
+            .select()
+            .from(schema.people)
+            .orderBy(asc(schema.people.id));
+          const primaryPerson = getPrimaryPerson(existingPeople);
+
+          const person = await tx
+            .insert(schema.people)
+            .values(input)
+            .returning()
+            .then((r) => r[0]!);
+          // Provision the speculative-job peg atomically with the person —
+          // inserted directly (not via jobs.create) so it doesn't trigger
+          // materializeExtraPaycheckOverrides, which a job that never has
+          // real routing rules has no need for.
+          await tx.insert(schema.jobs).values(speculativeJobValues(person.id));
+
+          // Completeness invariant (Retirement Profiles): every profile
+          // holds a row for every person. A new person starts with none, so
+          // fan a row into every EXISTING profile — sourced from that
+          // profile's own primary-person row, same rule `duplicate` and the
+          // step-A backfill both use, so a new household member doesn't
+          // silently leave any profile incomplete (build-engine-payload.ts
+          // has no other way to invent a missing person's assumptions).
+          const existingProfiles = await tx
+            .select({ id: schema.retirementProfiles.id })
+            .from(schema.retirementProfiles);
+          for (const profile of existingProfiles) {
+            const settingsRows = await tx
+              .select()
+              .from(schema.retirementSettings)
+              .where(eq(schema.retirementSettings.profileId, profile.id));
+            const sourceHousehold =
+              (primaryPerson
+                ? settingsRows.find((s) => s.personId === primaryPerson.id)
+                : undefined) ?? settingsRows[0];
+            if (sourceHousehold) {
+              const {
+                id: _hhId,
+                personId: _hhPersonId,
+                profileId: _hhProfileId,
+                ...householdFields
+              } = sourceHousehold;
+              await tx.insert(schema.retirementSettings).values({
+                ...householdFields,
+                personId: person.id,
+                profileId: profile.id,
+              });
+            }
+
+            const peopleRows = await tx
+              .select()
+              .from(schema.retirementProfilePeople)
+              .where(eq(schema.retirementProfilePeople.profileId, profile.id));
+            const sourcePersonRow =
+              (primaryPerson
+                ? peopleRows.find((r) => r.personId === primaryPerson.id)
+                : undefined) ?? peopleRows[0];
+            if (sourcePersonRow) {
+              const {
+                id: _ppId,
+                personId: _ppPersonId,
+                profileId: _ppProfileId,
+                ...perPersonFields
+              } = sourcePersonRow;
+              await tx.insert(schema.retirementProfilePeople).values({
+                ...perPersonFields,
+                personId: person.id,
+                profileId: profile.id,
+              });
+            }
+          }
+
+          return person;
+        });
       }),
     update: adminProcedure
       .input(z.object({ id: z.number().int() }).extend(personInput.shape))

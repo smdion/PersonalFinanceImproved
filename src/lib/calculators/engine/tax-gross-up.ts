@@ -82,9 +82,18 @@ export interface TaxEstimationInput {
     brokerage: number;
     taxBrackets?: WithholdingBracket[];
     rothBracketTarget?: number;
+    /** See RouteBracketInfo.conversionTarget's docblock (withdrawal-routing.ts). */
+    rothConversionTarget?: number;
     taxMultiplier?: number;
     ltcgBrackets?: Record<string, { threshold: number | null; rate: number }[]>;
     enableRothConversions?: boolean;
+    /** Household's annual standard deduction — see `RouteBracketInfo.standardDeduction`
+     *  (withdrawal-routing.ts). Declared here (not just structurally passed
+     *  through) so it's a documented contract, not a field the next reader
+     *  could "clean up" by destructuring and dropping — this module's own
+     *  header docblock is a record of exactly that failure mode happening
+     *  before (2026-08-19 routing-divergence fixes). */
+    standardDeduction?: number;
   };
   /** Current balances by tax bucket */
   balances: TaxBuckets;
@@ -202,13 +211,35 @@ function evaluateCost(
     clonedAcctBal,
     {
       taxBrackets: taxRates.taxBrackets,
-      rothBracketTarget: taxRates.rothBracketTarget,
+      // Added 2026-08-29: read the resolved (possibly per-year-overridden)
+      // value, same fix as the real router's own call site
+      // (decumulation-year.ts) -- this file's own header docblock (Part
+      // "2." above) says this estimate and the real router must never
+      // diverge on what routing rule applies; leaving this unresolved
+      // would violate that for any household using the new override.
+      rothBracketTarget: config.rothBracketTarget ?? taxRates.rothBracketTarget,
+      // Same rule, same reason as rothBracketTarget above (advisor-caught
+      // 2026-09-01, alongside the real router's identical fix): the
+      // reserved-room estimate must target the rate a conversion will
+      // ACTUALLY use, not necessarily the withdrawal target.
+      conversionTarget:
+        taxRates.rothConversionTarget ??
+        config.rothBracketTarget ??
+        taxRates.rothBracketTarget,
       taxableSS,
       filingStatus,
       ltcgBrackets: taxRates.ltcgBrackets,
       rothBasisAvailable,
       brokerageBasisRatio,
       conversionsEnabled: taxRates.enableRothConversions,
+      // Fixed alongside R59 (2026-08-30) — this was missing entirely, a
+      // live divergence from the real router's own call site
+      // (decumulation-year.ts), which has passed this since the LTCG fix
+      // earlier in this same session. Same rule as the rothBracketTarget
+      // comment above: this estimate and the real router must never
+      // diverge on what routing rule applies.
+      standardDeduction: taxRates.standardDeduction,
+      discretionaryWithdrawalOrder: config.discretionaryWithdrawalOrder,
     },
     eligibility,
     nonRetirement,

@@ -390,6 +390,40 @@ export type EngineDecumulationYear = {
   estTraditionalPortion: number;
   /** Debug: bracket-filling traditional cap (income cap - taxable SS). */
   bracketTraditionalCap?: number;
+  /** This year's standard deduction, grown forward from its DB vintage the
+   *  same way `bracketTraditionalCap` above is (`bracket-growth.ts`'s
+   *  `growAmount`) — NOT the plan-level `engineSettings.standardDeduction`
+   *  echo, which stays at its ungrown base value. Advisor-caught
+   *  (2026-08-31): before this field existed, the report/tooltip's
+   *  bracket-ceiling-math narrative (`describeBracketCeilingMath`) paired
+   *  a grown `bracketTraditionalCap` with the ungrown plan-level
+   *  deduction in the same sentence — internally inconsistent for any
+   *  year beyond the tax data's own vintage. Callers building that
+   *  narrative should read THIS field, not the settings echo. */
+  standardDeduction?: number;
+  /** How the discretionary need beyond Traditional's bracket-fill target
+   *  was actually sourced this year, in draw order, at each tier's real
+   *  cost — see `RouteResult.tierBreakdown` (withdrawal-routing.ts) for
+   *  the full explanation. bracket_filling mode only; undefined/empty for
+   *  waterfall/percentage (they don't rank by cost) or a year with no
+   *  discretionary need. Powers the "why was this account used" UI
+   *  explanation. */
+  discretionaryTierBreakdown?: {
+    source: "roth" | "brokerage" | "hsa";
+    costRate: number;
+    amount: number;
+  }[];
+  /** The two zero-cost discretionary tiers' real capacity this year, BEFORE
+   *  `discretionaryWithdrawalOrder` decides which drains first and before
+   *  either is actually drawn from — unlike `discretionaryTierBreakdown`
+   *  (drawn amounts only), a tier's capacity here is visible even in years
+   *  the draw loop never reached it (e.g. Roth basis alone covered the
+   *  year's need). See `RankedWithdrawalTiers` (withdrawal-cost-ranking.ts)
+   *  for the full explanation — found live, 2026-08-31, when a household
+   *  couldn't tell why brokerage's 0%-LTCG room wasn't draining before
+   *  Roth. bracket_filling mode only; undefined for waterfall/percentage. */
+  rothBasisCapacity?: number;
+  brokerageZeroLtcgCapacity?: number;
   /** Unmet withdrawal need after routing (target - actual) — a REAL output
    *  now, not debug-only (v0.7.8 penalty-hard-exclusion follow-up,
    *  DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md § Q3/C1): under the
@@ -445,8 +479,29 @@ export type EngineDecumulationYear = {
   // --- RMD fields (Phase 1) ---
   /** Required Minimum Distribution amount for this year (0 if not applicable). */
   rmdAmount: number;
-  /** Per-person RMD breakdown (populated when per-person RMD tracking is active). */
-  rmdByPerson?: { personId: number; personName: string; amount: number }[];
+  /** Per-person RMD breakdown (populated when per-person RMD tracking is
+   *  active). `divisor`/`priorYearEndTradBalance`/`age` power the "why is
+   *  my RMD this amount" UI explanation (`amount = priorYearEndTradBalance
+   *  / divisor`, the IRS Uniform Lifetime Table divisor for `age`) —
+   *  undefined only in the rare case `getRmdFactor` has no entry for this
+   *  person's age. */
+  rmdByPerson?: {
+    personId: number;
+    personName: string;
+    amount: number;
+    divisor?: number;
+    priorYearEndTradBalance?: number;
+    age?: number;
+  }[];
+  /** Household-level "why is my RMD this amount" fallback — the IRS
+   *  Uniform Lifetime Table divisor for `age`, when `rmdByPerson` isn't
+   *  populated (single-person households / no per-person RMD tracking).
+   *  `rmdAmount = priorYearEndTradBalance / rmdDivisor`. Prefer
+   *  `rmdByPerson`'s own per-person fields when present. */
+  rmdDivisor?: number;
+  /** Prior-year-end Traditional balance the household-level RMD divided.
+   *  Pairs with `rmdDivisor`. */
+  priorYearEndTradBalance?: number;
   /** True if the RMD forced additional Traditional withdrawals beyond what routing chose. */
   rmdOverrodeRouting: boolean;
   /** R49: dollars of `rmdAmount` that could NOT be forced through as a real

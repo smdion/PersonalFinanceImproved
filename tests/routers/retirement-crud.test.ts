@@ -5,7 +5,6 @@
  *   - retirement.retirementSettings (list / upsert)
  *   - retirement.retirementSalaryOverrides (list / create / update / delete)
  *   - retirement.retirementBudgetOverrides (list / create / update / delete)
- *   - retirement.retirementScenarios (list / create / update / delete)
  *   - retirement.returnRates (list / upsert / delete)
  *
  * Moved from routers/settings/retirement.ts to routers/retirement.ts (audit
@@ -17,6 +16,8 @@ import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
 import {
   createTestCaller,
   seedPerson,
+  seedRetirementProfile,
+  seedRetirementProfilePerson,
   viewerSession,
   adminSession,
 } from "./setup";
@@ -116,6 +117,62 @@ describe("retirement.retirementSettings", () => {
       expect(result!.salaryCap).toBe("200000");
       expect(result!.socialSecurityMonthly).toBe("2500");
       expect(result!.ssStartAge).toBe(67);
+    });
+  });
+
+  // Regression: "Plan Through" is ONE household control (sections/timeline.tsx)
+  // but retirement_settings is per-person and the engine reads
+  // Math.max(...perPersonSettings.map(p => p.endAge)) (build-engine-payload.ts:380).
+  // Writing only the caller's row let a two-person household save endAge 90
+  // against a sibling row still holding 95, so max() stayed 95 and the
+  // projection silently ignored the edit (found 2026-08-30).
+  describe("household field fan-out", () => {
+    let secondPersonId: number;
+
+    it("propagates endAge to every person's row, not just the caller's", async () => {
+      secondPersonId = await seedPerson(db);
+      await caller.retirement.retirementSettings.upsert({
+        ...baseSettings(),
+        personId: secondPersonId,
+        endAge: 95,
+      });
+
+      // Edit "Plan Through" as the FIRST person — the household control.
+      await caller.retirement.retirementSettings.upsert({
+        ...baseSettings(),
+        endAge: 90,
+      });
+
+      const rows = await caller.retirement.retirementSettings.list();
+      expect(rows.length).toBeGreaterThanOrEqual(2);
+      // Every row agrees, so the engine's max() reflects the edit.
+      expect(rows.map((r) => r.endAge)).toEqual(rows.map(() => 90));
+      expect(Math.max(...rows.map((r) => r.endAge))).toBe(90);
+    });
+
+    it("does NOT fan out salaryAnnualIncrease — it is genuinely per-person", async () => {
+      // build-engine-payload.ts:1020-1025 reads this per person, and its
+      // docblock records that applying the primary's rate to everyone
+      // "silently produced the wrong number". Fanning it out would
+      // re-introduce an already-fixed bug.
+      await caller.retirement.retirementSettings.upsert({
+        ...baseSettings(),
+        personId: secondPersonId,
+        endAge: 90,
+        salaryAnnualIncrease: "0.07",
+      });
+      await caller.retirement.retirementSettings.upsert({
+        ...baseSettings(),
+        endAge: 90,
+        salaryAnnualIncrease: "0.02",
+      });
+
+      const rows = await caller.retirement.retirementSettings.list();
+      const byPerson = new Map(
+        rows.map((r) => [r.personId, r.salaryAnnualIncrease]),
+      );
+      expect(byPerson.get(personId)).toBe("0.02");
+      expect(byPerson.get(secondPersonId)).toBe("0.07");
     });
   });
 
@@ -298,86 +355,11 @@ describe("retirement.retirementBudgetOverrides", () => {
 // RETIREMENT SCENARIOS
 // ---------------------------------------------------------------------------
 
-describe("retirement.retirementScenarios", () => {
-  let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
-  let cleanup: () => void;
-
-  beforeAll(async () => {
-    const ctx = await createTestCaller(adminSession);
-    caller = ctx.caller;
-    cleanup = ctx.cleanup;
-  });
-
-  afterAll(() => cleanup());
-
-  describe("CRUD", () => {
-    let scenarioId: number;
-
-    it("list is empty initially", async () => {
-      const rows = await caller.retirement.retirementScenarios.list();
-      expect(rows).toHaveLength(0);
-    });
-
-    it("creates a scenario", async () => {
-      const created = await caller.retirement.retirementScenarios.create({
-        name: "Conservative",
-        withdrawalRate: "0.035",
-        targetAnnualIncome: "70000",
-        annualInflation: "0.03",
-        isSelected: true,
-      });
-      expect(created).toBeDefined();
-      expect(created!.name).toBe("Conservative");
-      expect(created!.withdrawalRate).toBe("0.035");
-      expect(created!.isSelected).toBe(true);
-      scenarioId = created!.id;
-    });
-
-    it("creates a second scenario with custom tax rates", async () => {
-      const created = await caller.retirement.retirementScenarios.create({
-        name: "Aggressive",
-        withdrawalRate: "0.05",
-        targetAnnualIncome: "100000",
-        annualInflation: "0.025",
-        distributionTaxRateTraditional: "0.25",
-        distributionTaxRateRoth: "0",
-        distributionTaxRateHsa: "0",
-        distributionTaxRateBrokerage: "0.15",
-        isLtBrokerageEnabled: true,
-        ltBrokerageAnnualContribution: "12000",
-        notes: "Optimistic scenario",
-      });
-      expect(created!.distributionTaxRateTraditional).toBe("0.25");
-      expect(created!.ltBrokerageAnnualContribution).toBe("12000");
-    });
-
-    it("list returns both scenarios ordered by id", async () => {
-      const rows = await caller.retirement.retirementScenarios.list();
-      expect(rows.length).toBe(2);
-      expect(rows[0]!.id).toBeLessThan(rows[1]!.id);
-    });
-
-    it("updates a scenario", async () => {
-      const updated = await caller.retirement.retirementScenarios.update({
-        id: scenarioId,
-        name: "Moderate Conservative",
-        withdrawalRate: "0.038",
-        targetAnnualIncome: "75000",
-        annualInflation: "0.03",
-        isSelected: false,
-      });
-      expect(updated!.name).toBe("Moderate Conservative");
-      expect(updated!.withdrawalRate).toBe("0.038");
-      expect(updated!.isSelected).toBe(false);
-    });
-
-    it("deletes a scenario", async () => {
-      await caller.retirement.retirementScenarios.delete({ id: scenarioId });
-      const rows = await caller.retirement.retirementScenarios.list();
-      expect(rows.every((r) => r.id !== scenarioId)).toBe(true);
-    });
-  });
-});
+// retirement.retirementScenarios CRUD tests removed alongside the router
+// (Retirement Profiles step B, 2026-08-30). The router had no UI callers and
+// wrote columns the engine no longer reads; the four distribution tax rates
+// it carried are now on retirement_settings. The table itself survives only
+// for the relocation comparison's withdrawal_rate read.
 
 // ---------------------------------------------------------------------------
 // RETURN RATES
@@ -467,6 +449,318 @@ describe("retirement.returnRates", () => {
           viewerCaller.retirement.returnRates.upsert({
             age: 40,
             rateOfReturn: "0.06",
+          }),
+        ).rejects.toThrow();
+      } finally {
+        vc();
+      }
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// RETIREMENT PROFILES (multiple profiles + the Plan field).
+//
+// Every real household starts with exactly one profile ("Current Plan"),
+// created by step A's migration backfill against pre-existing data. There is
+// no bare `create` on this router -- retirement_settings has too many
+// NOT NULL columns with no sensible blank default, so `duplicate` is the
+// only creation path (matching the design plan's own recommendation that
+// "duplicate to compare" be the primary action). Tests here bootstrap their
+// first profile the same way the real migration did: seedRetirementProfile
+// inserts the retirement_profiles row directly and points existing
+// retirement_settings rows at it.
+// ---------------------------------------------------------------------------
+
+describe("retirement.retirementProfiles", () => {
+  let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
+  let cleanup: () => void;
+  let personA: number;
+  let personB: number;
+  let firstProfileId: number;
+
+  beforeAll(async () => {
+    const ctx = await createTestCaller(adminSession);
+    caller = ctx.caller;
+    cleanup = ctx.cleanup;
+    personA = await seedPerson(ctx.db, "Person A");
+    personB = await seedPerson(ctx.db, "Person B");
+
+    await caller.retirement.retirementSettings.upsert({
+      personId: personA,
+      retirementAge: 65,
+      endAge: 95,
+      returnAfterRetirement: "0.06",
+      annualInflation: "0.03",
+      salaryAnnualIncrease: "0.03",
+    });
+    await caller.retirement.retirementSettings.upsert({
+      personId: personB,
+      retirementAge: 62,
+      endAge: 90,
+      returnAfterRetirement: "0.06",
+      annualInflation: "0.03",
+      salaryAnnualIncrease: "0.02",
+    });
+
+    firstProfileId = await seedRetirementProfile(ctx.db, "Current Plan");
+    await seedRetirementProfilePerson(ctx.db, firstProfileId, personA, {
+      retirementAge: 65,
+      endAge: 95,
+      ssStartAge: 67,
+    });
+    await seedRetirementProfilePerson(ctx.db, firstProfileId, personB, {
+      retirementAge: 62,
+      endAge: 90,
+      ssStartAge: 65,
+    });
+  });
+
+  afterAll(() => cleanup());
+
+  it("list returns the seeded profile", async () => {
+    const rows = await caller.retirement.retirementProfiles.list();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.name).toBe("Current Plan");
+    expect(rows[0]!.id).toBe(firstProfileId);
+  });
+
+  it("duplicate refuses a source profile that doesn't exist", async () => {
+    await expect(
+      caller.retirement.retirementProfiles.duplicate({
+        sourceProfileId: 999,
+        name: "Won't work",
+      }),
+    ).rejects.toThrow();
+  });
+
+  let secondProfileId: number;
+
+  it("duplicate creates a second profile", async () => {
+    const created = await caller.retirement.retirementProfiles.duplicate({
+      sourceProfileId: firstProfileId,
+      name: "Retire Early",
+      description: "What if we both stop at 60?",
+    });
+    expect(created).toBeDefined();
+    expect(created!.name).toBe("Retire Early");
+    secondProfileId = created!.id;
+
+    const rows = await caller.retirement.retirementProfiles.list();
+    expect(rows).toHaveLength(2);
+  });
+
+  it("duplicate clones household settings from the PRIMARY person's row, not each person's own", async () => {
+    // personA has retirementAge 65, personB has 62 -- they DISAGREE on this
+    // household-grain field (matching the real-world drift
+    // pickProfileSettingsRow's docblock documents). Neither person is
+    // flagged isPrimaryUser here, so getPrimaryPerson falls back to the
+    // first person in id order -- personA. Both new rows must carry
+    // personA's retirementAge (65), not a per-person mix.
+    const settings = await caller.retirement.retirementSettings.list();
+    const newRows = settings.filter((s) => s.profileId === secondProfileId);
+    expect(newRows).toHaveLength(2);
+    expect(newRows.every((r) => r.retirementAge === 65)).toBe(true);
+  });
+
+  it("duplicate creates a retirement_profile_people row for every person (completeness invariant), sourced from the primary person", async () => {
+    const rows = await caller.retirement.retirementProfilePeople.list();
+    const newRows = rows.filter((r) => r.profileId === secondProfileId);
+    expect(newRows).toHaveLength(2);
+    // personA (first by id, no isPrimaryUser set on either) is the source
+    // for BOTH new rows -- personB's own distinct retirementAge (62) must
+    // NOT appear on personB's new row, same rule as the household-settings
+    // assertion above.
+    expect(newRows.every((r) => r.retirementAge === 65)).toBe(true);
+    expect(newRows.every((r) => r.ssStartAge === 67)).toBe(true);
+    expect(new Set(newRows.map((r) => r.personId))).toEqual(
+      new Set([personA, personB]),
+    );
+  });
+
+  // Regression: retirementSettings.upsert / retirementProfilePeople.upsertPerson
+  // used to scope their writes by personId ALONE. Once a person can hold one
+  // row per profile (this describe block: personA/personB each have a row in
+  // BOTH firstProfileId and secondProfileId), an edit to one profile matched
+  // and silently overwrote every profile's row for that person (found
+  // 2026-08-30, phase 4 of the Retirement Profiles migration).
+  describe("profile-scoped writes", () => {
+    it("retirementSettings.upsert only touches the targeted profile's row", async () => {
+      const before = await caller.retirement.retirementSettings.list();
+      const firstRow = before.find(
+        (s) => s.personId === personA && s.profileId === firstProfileId,
+      )!;
+      const secondRow = before.find(
+        (s) => s.personId === personA && s.profileId === secondProfileId,
+      )!;
+      expect(firstRow.annualInflation).toBe(secondRow.annualInflation);
+
+      await caller.retirement.retirementSettings.upsert({
+        personId: personA,
+        profileId: firstProfileId,
+        retirementAge: firstRow.retirementAge,
+        endAge: firstRow.endAge,
+        returnAfterRetirement: firstRow.returnAfterRetirement,
+        annualInflation: "0.05",
+        salaryAnnualIncrease: firstRow.salaryAnnualIncrease,
+      });
+
+      const after = await caller.retirement.retirementSettings.list();
+      const firstAfter = after.find(
+        (s) => s.personId === personA && s.profileId === firstProfileId,
+      )!;
+      const secondAfter = after.find(
+        (s) => s.personId === personA && s.profileId === secondProfileId,
+      )!;
+      expect(firstAfter.annualInflation).toBe("0.05");
+      // The OTHER profile's row for the same person must be untouched.
+      expect(secondAfter.annualInflation).toBe(secondRow.annualInflation);
+    });
+
+    it("retirementSettings.upsert's endAge fan-out stays within one profile", async () => {
+      // Edit personA's endAge in firstProfileId; personB's row in
+      // secondProfileId must not move.
+      const before = await caller.retirement.retirementSettings.list();
+      const secondPersonBRow = before.find(
+        (s) => s.personId === personB && s.profileId === secondProfileId,
+      )!;
+
+      await caller.retirement.retirementSettings.upsert({
+        personId: personA,
+        profileId: firstProfileId,
+        retirementAge: 65,
+        endAge: 80,
+        returnAfterRetirement: "0.06",
+        annualInflation: "0.05",
+        salaryAnnualIncrease: "0.03",
+      });
+
+      const after = await caller.retirement.retirementSettings.list();
+      const firstPersonBRow = after.find(
+        (s) => s.personId === personB && s.profileId === firstProfileId,
+      )!;
+      const secondPersonBAfter = after.find(
+        (s) => s.personId === personB && s.profileId === secondProfileId,
+      )!;
+      // Fanned out WITHIN firstProfileId...
+      expect(firstPersonBRow.endAge).toBe(80);
+      // ...but secondProfileId's row for the same person is untouched.
+      expect(secondPersonBAfter.endAge).toBe(secondPersonBRow.endAge);
+    });
+
+    it("retirementProfilePeople.upsertPerson only touches the targeted profile's row", async () => {
+      await caller.retirement.retirementProfilePeople.upsertPerson({
+        profileId: firstProfileId,
+        personId: personA,
+        retirementAge: 68,
+      });
+      const rows = await caller.retirement.retirementProfilePeople.list();
+      const firstRow = rows.find(
+        (r) => r.personId === personA && r.profileId === firstProfileId,
+      )!;
+      const secondRow = rows.find(
+        (r) => r.personId === personA && r.profileId === secondProfileId,
+      )!;
+      expect(firstRow.retirementAge).toBe(68);
+      // The clone in the other profile must not have moved.
+      expect(secondRow.retirementAge).toBe(65);
+    });
+
+    it("retirementProfilePeople.upsertHouseholdFields fans endAge to every person WITHIN one profile only", async () => {
+      await caller.retirement.retirementProfilePeople.upsertHouseholdFields({
+        profileId: firstProfileId,
+        endAge: 92,
+      });
+      const rows = await caller.retirement.retirementProfilePeople.list();
+      const firstProfileRows = rows.filter(
+        (r) => r.profileId === firstProfileId,
+      );
+      const secondProfileRows = rows.filter(
+        (r) => r.profileId === secondProfileId,
+      );
+      expect(firstProfileRows.every((r) => r.endAge === 92)).toBe(true);
+      // secondProfileId's rows are untouched by the fan-out.
+      expect(secondProfileRows.some((r) => r.endAge === 92)).toBe(false);
+    });
+  });
+
+  it("update renames a profile", async () => {
+    const updated = await caller.retirement.retirementProfiles.update({
+      id: secondProfileId,
+      name: "Retire Early (renamed)",
+    });
+    expect(updated!.name).toBe("Retire Early (renamed)");
+  });
+
+  it("delete refuses to remove the only remaining profile", async () => {
+    // secondProfileId still exists alongside firstProfileId at this point,
+    // so deleting ONE of two is fine -- but deleting the last one left must
+    // fail. Delete secondProfileId first, then assert the guard on the last.
+    await caller.retirement.retirementProfiles.delete({ id: secondProfileId });
+    const rows = await caller.retirement.retirementProfiles.list();
+    expect(rows).toHaveLength(1);
+
+    await expect(
+      caller.retirement.retirementProfiles.delete({ id: firstProfileId }),
+    ).rejects.toThrow(/only remaining/);
+  });
+
+  it("delete refuses to remove the active profile", async () => {
+    const recreated = await caller.retirement.retirementProfiles.duplicate({
+      sourceProfileId: firstProfileId,
+      name: "Second profile again",
+    });
+    await caller.settings.appSettings.upsert({
+      key: "active_retirement_profile_id",
+      value: firstProfileId,
+    });
+    await expect(
+      caller.retirement.retirementProfiles.delete({ id: firstProfileId }),
+    ).rejects.toThrow(/active profile/);
+    // Cleanup for the next test -- the non-active one deletes fine.
+    await caller.retirement.retirementProfiles.delete({ id: recreated!.id });
+  });
+
+  it("delete refuses to remove a profile a Plan is set to", async () => {
+    const recreated = await caller.retirement.retirementProfiles.duplicate({
+      sourceProfileId: firstProfileId,
+      name: "Pinned by a Plan",
+    });
+    const plan = await caller.settings.scenarios.create({
+      name: "Test Plan",
+      retirementProfileId: recreated!.id,
+    });
+    await expect(
+      caller.retirement.retirementProfiles.delete({ id: recreated!.id }),
+    ).rejects.toThrow(/active in/);
+    // Clear the Plan's pin so cleanup doesn't leave a dangling reference.
+    await caller.settings.scenarios.setRetirementProfilePin({
+      id: plan!.id,
+      retirementProfileId: null,
+    });
+    await caller.retirement.retirementProfiles.delete({ id: recreated!.id });
+  });
+
+  describe("auth", () => {
+    it("viewer can list retirement profiles", async () => {
+      const { caller: viewerCaller, cleanup: vc } =
+        await createTestCaller(viewerSession);
+      try {
+        const rows = await viewerCaller.retirement.retirementProfiles.list();
+        expect(Array.isArray(rows)).toBe(true);
+      } finally {
+        vc();
+      }
+    });
+
+    it("viewer cannot duplicate a retirement profile", async () => {
+      const { caller: viewerCaller, cleanup: vc } =
+        await createTestCaller(viewerSession);
+      try {
+        await expect(
+          viewerCaller.retirement.retirementProfiles.duplicate({
+            sourceProfileId: firstProfileId,
+            name: "Nope",
           }),
         ).rejects.toThrow();
       } finally {

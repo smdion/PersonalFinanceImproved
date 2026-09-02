@@ -61,9 +61,15 @@ function RetirementSettings() {
     SK_RETIREMENT_MC_AUTOLOAD,
     true,
   );
+  // Default false (2026-08-30) — Coast FIRE MC now runs on demand (when the
+  // scenario is actually selected), not eagerly on every page load. This
+  // toggle is the opt-in back to the old always-prefetched behavior. Must
+  // match the default in use-projection-queries.ts's own usePersistedToggle
+  // call for this same key, or this page shows the toggle in a state that
+  // disagrees with actual behavior until the user touches it.
   const [coastFireMcAutoload, setCoastFireMcAutoload] = usePersistedToggle(
     SK_RETIREMENT_COASTFIRE_MC_AUTOLOAD,
-    true,
+    false,
   );
 
   return (
@@ -108,11 +114,14 @@ function RetirementSettings() {
         <div className="flex items-center justify-between px-3 py-3">
           <div>
             <div className="text-sm font-medium text-primary">
-              Auto-load Coast FIRE simulations
+              Always prefetch Coast FIRE simulations
             </div>
             <div className="text-xs text-muted mt-0.5">
-              Runs the Coast FIRE simulation after the engine completes. Takes
-              4–6s. Disable if you don&apos;t use the Coast FIRE scenario.
+              Runs the Coast FIRE simulation after the engine completes, even
+              before you select that scenario. Takes 4–6s. Off by default — it
+              already runs automatically the moment you pick a Coast FIRE
+              scenario; enable this only if you want that switch to feel instant
+              at the cost of a slower page load every time.
             </div>
           </div>
           <Toggle

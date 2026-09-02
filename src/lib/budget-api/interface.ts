@@ -34,10 +34,21 @@ export interface BudgetAPIClient {
   /** List monthly summaries for a date range */
   getMonths(start: string, end: string): Promise<BudgetMonth[]>;
 
-  /** Get detailed month with per-category data */
+  /** Get detailed month with per-category data.
+   *
+   *  `month` is always `YYYY-MM-01` (a full ISO date, first of the month —
+   *  every caller in this codebase computes it this way, matching YNAB's
+   *  own native format, which YNAB's real API requires exactly). NOT every
+   *  underlying service's API actually wants this shape on the wire —
+   *  Actual's wrapper wants the shorter `YYYY-MM` — so each client
+   *  implementation is responsible for converting to whatever its own API
+   *  needs internally (see ActualClient's `toActualMonthId` for why this
+   *  bit the app in practice, 2026-08-30). Callers should never need to
+   *  know this; always pass `YYYY-MM-01`. */
   getMonthDetail(month: string): Promise<BudgetMonthDetail>;
 
-  /** Update the budgeted amount for a category in a month */
+  /** Update the budgeted amount for a category in a month.
+   *  `month` format: same `YYYY-MM-01` contract as getMonthDetail above. */
   updateCategoryBudgeted(
     month: string,
     categoryId: string,

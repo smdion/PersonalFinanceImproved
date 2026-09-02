@@ -77,8 +77,7 @@ function SavingsGoalsCardImpl() {
       targetDate: string | null;
       monthlyContribution: string | null;
       isEmergencyFund?: boolean;
-      isApiSyncEnabled?: boolean | null;
-      apiCategoryId?: string | null;
+      currentMonthBudgeted?: number | null;
     };
     const calcGoal = savings.goals.find((g) => g.goalId === rg.id);
     if (!calcGoal) continue;
@@ -136,8 +135,7 @@ function SavingsGoalsCardImpl() {
           id: rg.id,
           current,
           monthlyAllocation: calcGoal.monthlyAllocation,
-          isApiSyncEnabled: rg.isApiSyncEnabled,
-          apiCategoryId: rg.apiCategoryId,
+          currentMonthBudgeted: rg.currentMonthBudgeted,
         },
         {
           now,

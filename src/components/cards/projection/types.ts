@@ -13,7 +13,15 @@ import {
 // ---------------------------------------------------------------------------
 
 export type TipColor =
-  "green" | "blue" | "red" | "amber" | "emerald" | "violet" | "gray";
+  | "green"
+  | "blue"
+  | "red"
+  | "amber"
+  | "emerald"
+  | "violet"
+  | "gray"
+  | "teal"
+  | "purple";
 
 /** A single line item — contribution, withdrawal, balance component, etc. */
 export type TooltipLineItem = {
@@ -70,6 +78,15 @@ export type TooltipData =
          *  from this specific "Total Withdrawals" rmd block (UI/UX review,
          *  2026-08-28). */
         qcdAmount?: number;
+        /** "Why is my RMD this amount" — per-person divisor × balance
+         *  breakdown (2026-08-31, user follow-up), e.g. "Sean: $45,231
+         *  (÷27.4, balance $1,239,329) · Joanna: $12,000 (÷25.5, balance
+         *  $306,000)". Pre-formatted by the caller from
+         *  `EngineDecumulationYear.rmdByPerson`'s divisor/priorYearEndTradBalance/age
+         *  fields (or the household-level `rmdDivisor`/`priorYearEndTradBalance`
+         *  fallback) — never re-derived here, so it can't drift from the
+         *  real IRS Uniform Lifetime Table math that produced `amount`. */
+        divisorDetail?: string;
       };
       /** Real, material spending-need shortfall for this year (engine's
        *  `unmetNeedMaterial` verdict — advisor review, 2026-08-28). Was

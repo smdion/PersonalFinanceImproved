@@ -1,12 +1,7 @@
 /** Retirement router for readiness analysis including savings rates, employer matches, tax bucket projections, relocation comparisons, profile-switching scenarios, and retirement-settings/scenario/override/return-rate CRUD. */
-import { eq, asc, and, isNull } from "drizzle-orm";
+import { eq, ne, asc, and, isNull } from "drizzle-orm";
 import { z } from "zod/v4";
-import {
-  DEFAULT_RETURN_RATE,
-  DEFAULT_TAX_RATE_TRADITIONAL,
-  DEFAULT_TAX_RATE_ROTH,
-  DEFAULT_TAX_RATE_BROKERAGE,
-} from "@/lib/constants";
+import { DEFAULT_RETURN_RATE } from "@/lib/constants";
 import {
   createTRPCRouter,
   protectedProcedure,
@@ -38,9 +33,18 @@ import type { ContribRowWithActiveFields } from "@/server/helpers/contribution";
 import { isRetirementParent } from "@/lib/config/account-types";
 import { getAge } from "@/lib/utils/date";
 import { roundToCents } from "@/lib/utils/math";
-import { filterActiveJobs } from "@/lib/pure/profiles";
+import {
+  filterActiveJobs,
+  canDeleteRetirementProfile,
+} from "@/lib/pure/profiles";
+import { SK_ACTIVE_RETIREMENT_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { withdrawalStrategyEnum } from "@/lib/config/withdrawal-strategies";
 import { zDecimal } from "./settings/_shared";
+import {
+  resolveRetirementProfileIdFrom,
+  pickProfileSettingsRow,
+  resolveRetirementProfileId,
+} from "@/server/helpers/retirement-profile";
 
 /**
  * Resolve the filing status to store when a caller sends null/undefined
@@ -74,6 +78,12 @@ async function resolveDefaultFilingStatus(
 
 const retirementSettingsInput = z.object({
   personId: z.number().int(),
+  /** Which retirement profile this write targets. Explicit key presence
+   *  matters, not just the value — see the upsert mutation's docblock. Omit
+   *  the field entirely only from legacy/API callers that predate profiles;
+   *  every UI call site should send it (sourced from the `settings.profileId`
+   *  already on the wire from computeProjection, via buildSettingsPatch). */
+  profileId: z.number().int().nullable().optional(),
   retirementAge: z.number().int().min(18).max(100),
   endAge: z.number().int().min(30).max(120),
   returnAfterRetirement: zDecimal,
@@ -90,6 +100,9 @@ const retirementSettingsInput = z.object({
   enableRothConversions: z.boolean().optional(),
   rothConversionTarget: zDecimal.nullable().optional(),
   withdrawalStrategy: z.enum(withdrawalStrategyEnum()).optional(),
+  discretionaryWithdrawalOrder: z
+    .enum(["roth_first", "brokerage_first"])
+    .optional(),
   gkUpperGuardrail: zDecimal.optional(),
   gkLowerGuardrail: zDecimal.optional(),
   gkIncreasePct: zDecimal.optional(),
@@ -117,24 +130,8 @@ const retirementSettingsInput = z.object({
   filingStatus: z.enum(["MFJ", "Single", "HOH"]).nullable().optional(),
 });
 
-const retirementScenarioInput = z.object({
-  name: z.string().min(1),
-  withdrawalRate: zDecimal,
-  targetAnnualIncome: zDecimal,
-  annualInflation: zDecimal,
-  distributionTaxRateTraditional: zDecimal.default(
-    String(DEFAULT_TAX_RATE_TRADITIONAL),
-  ),
-  distributionTaxRateRoth: zDecimal.default(String(DEFAULT_TAX_RATE_ROTH)),
-  distributionTaxRateHsa: zDecimal.default("0"),
-  distributionTaxRateBrokerage: zDecimal.default(
-    String(DEFAULT_TAX_RATE_BROKERAGE),
-  ),
-  isLtBrokerageEnabled: z.boolean().default(true),
-  ltBrokerageAnnualContribution: zDecimal.default("0"),
-  isSelected: z.boolean().default(false),
-  notes: z.string().nullable().optional(),
-});
+// retirementScenarioInput removed with the retirementScenarios router
+// (Retirement Profiles step B) — nothing writes that table any more.
 
 const returnRateInput = z.object({
   age: z.number().int(),
@@ -212,6 +209,7 @@ export const retirementRouter = createTRPCRouter({
         people,
         allJobs,
         retSettings,
+        retProfiles,
         retScenarios,
         returnRates,
         allContribsRaw,
@@ -219,10 +217,15 @@ export const retirementRouter = createTRPCRouter({
         allBudgetProfiles,
         allBudgetItems,
         perfAccounts,
+        appSettingsRows,
       ] = await Promise.all([
         ctx.db.select().from(schema.people).orderBy(asc(schema.people.id)),
         ctx.db.select().from(schema.jobs),
         ctx.db.select().from(schema.retirementSettings),
+        ctx.db
+          .select()
+          .from(schema.retirementProfiles)
+          .orderBy(asc(schema.retirementProfiles.id)),
         ctx.db.select().from(schema.retirementScenarios),
         ctx.db
           .select()
@@ -239,6 +242,7 @@ export const retirementRouter = createTRPCRouter({
           .orderBy(asc(schema.budgetProfiles.id)),
         ctx.db.select().from(schema.budgetItems),
         ctx.db.select().from(schema.performanceAccounts),
+        ctx.db.select().from(schema.appSettings),
       ]);
       // Filter to Retirement-only contributions for the relocation tool.
       const perfCatMap = new Map(
@@ -253,7 +257,17 @@ export const retirementRouter = createTRPCRouter({
       const primaryPerson = getPrimaryPerson(people);
       if (!primaryPerson) return { result: null, budgetInfo: null };
 
-      const settings = retSettings.find((s) => s.personId === primaryPerson.id);
+      // Active profile's row, matching build-engine-payload — the readiness
+      // analysis must read the same assumptions the projection does.
+      const activeRetProfileId = resolveRetirementProfileIdFrom(
+        appSettingsRows,
+        retProfiles,
+      );
+      const settings = pickProfileSettingsRow(
+        retSettings,
+        activeRetProfileId,
+        primaryPerson.id,
+      );
       if (!settings) return { result: null, budgetInfo: null };
 
       if (allBudgetProfiles.length === 0)
@@ -607,6 +621,122 @@ export const retirementRouter = createTRPCRouter({
 
   // getProjection and getMonteCarloProjection moved to projection.ts
 
+  retirementProfilePeople: createTRPCRouter({
+    list: protectedProcedure.query(({ ctx }) =>
+      ctx.db
+        .select()
+        .from(schema.retirementProfilePeople)
+        .orderBy(
+          asc(schema.retirementProfilePeople.profileId),
+          asc(schema.retirementProfilePeople.personId),
+        ),
+    ),
+
+    // Retirement Profiles phase 4 (the assumptions band). Until this
+    // mutation existed, every per-person editor on the Projection
+    // Assumptions card (Timeline's per-person Retirement Age + Rule of 55,
+    // Social Security's per-person benefit) actually called
+    // `retirementSettings.upsert`, writing `retirement_settings` — the
+    // table `build-engine-payload.ts` stopped reading per-person values
+    // from once step B (2026-08-30) switched those reads to
+    // `retirement_profile_people`. The edits saved, the UI showed the new
+    // number optimistically, and the projection never moved — same failure
+    // shape as the pre-0b5d5fe `end_age` bug, just at this table instead.
+    // This is the real write path now; the affected client call sites are
+    // updated in the same commit as this mutation.
+    upsertPerson: adminProcedure
+      .input(
+        z.object({
+          profileId: z.number().int(),
+          personId: z.number().int(),
+          retirementAge: z.number().int().min(18).max(100).optional(),
+          endAge: z.number().int().min(30).max(120).optional(),
+          socialSecurityMonthly: zDecimal.nullable().optional(),
+          ssStartAge: z.number().int().min(62).max(70).nullable().optional(),
+          ruleOf55Override: z.boolean().nullable().optional(),
+        }),
+      )
+      .mutation(async ({ ctx, input }) => {
+        const [existing] = await ctx.db
+          .select()
+          .from(schema.retirementProfilePeople)
+          .where(
+            and(
+              eq(schema.retirementProfilePeople.profileId, input.profileId),
+              eq(schema.retirementProfilePeople.personId, input.personId),
+            ),
+          );
+        // retirementAge/endAge are NOT NULL — the completeness invariant
+        // (profile duplicate / person create, see retirementProfiles below)
+        // guarantees `existing` here in every real flow, but an insert path
+        // still needs concrete values if it's ever reached cold.
+        if (
+          !existing &&
+          (input.retirementAge == null || input.endAge == null)
+        ) {
+          throw new Error(
+            "retirementAge and endAge are required to create a new retirement_profile_people row",
+          );
+        }
+        const { profileId, personId, ...patch } = input;
+        const values = {
+          profileId,
+          personId,
+          retirementAge: patch.retirementAge ?? existing!.retirementAge,
+          endAge: patch.endAge ?? existing!.endAge,
+          ...("socialSecurityMonthly" in patch
+            ? { socialSecurityMonthly: patch.socialSecurityMonthly }
+            : {}),
+          ...("ssStartAge" in patch ? { ssStartAge: patch.ssStartAge } : {}),
+          ...("ruleOf55Override" in patch
+            ? { ruleOf55Override: patch.ruleOf55Override }
+            : {}),
+        };
+        return existing
+          ? ctx.db
+              .update(schema.retirementProfilePeople)
+              .set(values)
+              .where(eq(schema.retirementProfilePeople.id, existing.id))
+              .returning()
+              .then((r) => r[0])
+          : ctx.db
+              .insert(schema.retirementProfilePeople)
+              .values(values)
+              .returning()
+              .then((r) => r[0]);
+      }),
+
+    // "Plan Through" (end age) and Social Security "Start Age" both render
+    // as ONE household-wide control regardless of person count
+    // (sections/timeline.tsx, sections/social-security.tsx), but the
+    // engine's real per-person read source for both
+    // (`retirement_profile_people`) is per-person storage. Fan whichever
+    // field the caller sends to every person's row in the profile — same
+    // shape as `retirementSettings.upsert`'s endAge fan-out used to be the
+    // fix for, before the read moved to this table out from under it (see
+    // upsertPerson's docblock above).
+    upsertHouseholdFields: adminProcedure
+      .input(
+        z.object({
+          profileId: z.number().int(),
+          endAge: z.number().int().min(30).max(120).optional(),
+          ssStartAge: z.number().int().min(62).max(70).nullable().optional(),
+        }),
+      )
+      .mutation(async ({ ctx, input }) => {
+        const { profileId, ...fields } = input;
+        const patch = Object.fromEntries(
+          Object.entries(fields).filter(([, v]) => v !== undefined),
+        );
+        if (Object.keys(patch).length === 0) return [];
+        return ctx.db
+          .update(schema.retirementProfilePeople)
+          .set(patch)
+          .where(eq(schema.retirementProfilePeople.profileId, profileId))
+          .returning();
+      }),
+  }),
+
   retirementSettings: createTRPCRouter({
     list: protectedProcedure.query(({ ctx }) =>
       ctx.db
@@ -614,37 +744,131 @@ export const retirementRouter = createTRPCRouter({
         .from(schema.retirementSettings)
         .orderBy(asc(schema.retirementSettings.personId)),
     ),
+    // Retirement Profiles phase 4: `retirement_settings` was re-keyed in
+    // step C to a composite (profile_id, person_id) index — a person can
+    // now hold ONE ROW PER PROFILE. This mutation must scope every read and
+    // write by profile, or a household with 2+ profiles gets every profile's
+    // row for that person matched (and overwritten) by a single edit.
+    //
+    // Key PRESENCE, not just value, matters: `profileId: undefined` (key
+    // omitted — a legacy/API caller that predates profiles) resolves
+    // server-side to the household's globally-active profile, so every
+    // existing UI call site keeps editing exactly what it edits today.
+    // `profileId: null` (key present, value null) means "the caller
+    // resolved a real profileId and it was null" (e.g. a fresh/pre-backfill
+    // household with zero profiles yet) — that is NOT the same as "use the
+    // active profile," and must NOT silently retarget the write there; it
+    // scopes to the (rare, legitimate) null-profile rows via `isNull`
+    // instead of `eq`. Collapsing these two cases with `??` was the bug:
+    // once the assumptions band lets you VIEW a non-active profile, an
+    // omitted-vs-null mixup would render profile B while writing profile A.
     upsert: adminProcedure
       .input(retirementSettingsInput)
       .mutation(async ({ ctx, input }) => {
+        const profileIdGiven = Object.prototype.hasOwnProperty.call(
+          input,
+          "profileId",
+        );
+        const resolvedProfileId = profileIdGiven
+          ? input.profileId!
+          : await resolveRetirementProfileId(ctx.db);
+        const profileScope =
+          resolvedProfileId != null
+            ? eq(schema.retirementSettings.profileId, resolvedProfileId)
+            : isNull(schema.retirementSettings.profileId);
+
         const existing = await ctx.db
           .select()
           .from(schema.retirementSettings)
-          .where(eq(schema.retirementSettings.personId, input.personId));
+          .where(
+            and(
+              eq(schema.retirementSettings.personId, input.personId),
+              profileScope,
+            ),
+          );
         // filing_status is NOT NULL on the DB row (see drizzle/0021's
         // backfill) even though a caller may still send null/undefined to
         // mean "auto" — resolve that request to a concrete value here, the
         // same way build-engine-payload.ts's job-facts tier does at read
         // time, so the column never gets a null written to it.
+        const { profileId: _profileIdKey, ...inputFields } = input;
         const resolvedInput = {
-          ...input,
+          ...inputFields,
+          profileId: resolvedProfileId,
           filingStatus:
             input.filingStatus ??
             (await resolveDefaultFilingStatus(ctx.db, input.personId)),
         };
-        if (existing.length > 0) {
-          return ctx.db
-            .update(schema.retirementSettings)
-            .set(resolvedInput)
-            .where(eq(schema.retirementSettings.personId, input.personId))
-            .returning()
-            .then((r) => r[0]);
-        }
-        return ctx.db
-          .insert(schema.retirementSettings)
-          .values(resolvedInput)
-          .returning()
-          .then((r) => r[0]);
+        return ctx.db.transaction(async (tx) => {
+          const saved =
+            existing.length > 0
+              ? await tx
+                  .update(schema.retirementSettings)
+                  .set(resolvedInput)
+                  .where(
+                    and(
+                      eq(schema.retirementSettings.personId, input.personId),
+                      profileScope,
+                    ),
+                  )
+                  .returning()
+                  .then((r) => r[0])
+              : await tx
+                  .insert(schema.retirementSettings)
+                  .values(resolvedInput)
+                  .returning()
+                  .then((r) => r[0]);
+
+          // Propagate household-grain fields to every other person's row —
+          // WITHIN THE SAME PROFILE ONLY (the `profileScope` filter below).
+          //
+          // `retirement_settings` is one row per (profile, person), but a
+          // few of its columns are presented in the UI as a SINGLE
+          // household control while being read across all people within
+          // that profile. Historically `end_age` was the live case here
+          // ("Plan Through" — see sections/timeline.tsx). As of the
+          // Retirement Profiles migration (step B), the engine's actual
+          // per-person read for end_age moved to `retirement_profile_people`
+          // — see the `retirementProfilePeople.upsertPerson` /
+          // `upsertHouseholdEndAge` mutations below, which are now the
+          // real write path for that field. This fan-out stays for
+          // whatever legacy readers still fall back to
+          // `retirement_settings.end_age` (build-engine-payload.ts's
+          // `pp ?? retSettings.find(...)` fallback, reached only when a
+          // profile-person row is missing).
+          //
+          // DELIBERATELY NARROW. Do not extend this to every column:
+          // `salary_annual_increase` is genuinely per-person and read
+          // per-person (build-engine-payload.ts, whose docblock records
+          // that applying the primary's raise rate to everyone "silently
+          // produced the wrong number" — a bug already fixed once). Fanning
+          // that out would re-introduce it. Only add a field here if its UI
+          // control is household-wide AND its read path aggregates across
+          // people within one profile.
+          const HOUSEHOLD_FANOUT_FIELDS = ["endAge"] as const;
+          const fanout = Object.fromEntries(
+            HOUSEHOLD_FANOUT_FIELDS.filter(
+              (f) => resolvedInput[f] !== undefined,
+            ).map((f) => [f, resolvedInput[f]]),
+          );
+          if (Object.keys(fanout).length > 0) {
+            // Existing rows only — a person with no row already inherits the
+            // primary's value via the `?? settings.endAge` fallback in
+            // build-engine-payload.ts, so creating rows here would add
+            // state without changing the result.
+            await tx
+              .update(schema.retirementSettings)
+              .set(fanout)
+              .where(
+                and(
+                  ne(schema.retirementSettings.personId, input.personId),
+                  profileScope,
+                ),
+              );
+          }
+
+          return saved;
+        });
       }),
   }),
 
@@ -808,43 +1032,224 @@ export const retirementRouter = createTRPCRouter({
       ),
   }),
 
-  retirementScenarios: createTRPCRouter({
+  // retirementScenarios CRUD removed 2026-08-30 (Retirement Profiles step B).
+  // It had ZERO UI callers while the table it wrote was read on every engine
+  // build, so it could silently change every projection with no way to see
+  // or undo it. The four distribution tax rates it carried now live on
+  // retirement_settings and are read from there; leaving a writable router
+  // pointed at the now-ignored columns would be a second, invisible answer
+  // to "what drives my projection" — the exact thing this work removes.
+  //
+  // The TABLE survives for now: retirement.ts's relocation comparison still
+  // reads its withdrawal_rate, which is deliberately NOT relocated (see the
+  // schema docblock — retirement_settings.withdrawal_rate already exists and
+  // collapsing the two is a user-visible change needing its own commit).
+
+  /**
+   * Retirement Profiles CRUD (Retirement Profiles step D — "multiple
+   * profiles + the Plan field"). Each profile is a COMPLETE WORLD: no
+   * baseline, no default, no inheritance, no merge at read time — same
+   * contract Salary Profiles already state. `duplicate` is the one creation
+   * path (no bare `create`): retirement_settings has ~40 columns, many
+   * NOT NULL with no sensible blank default, so every new profile starts as
+   * a clone of an existing one, matching the plan's own recommendation that
+   * "duplicate to compare" be the primary action.
+   *
+   * adminProcedure throughout, matching retirementSettings.upsert's existing
+   * gate — RULES.md Composed Router: an inconsistent procedure type within
+   * one group is a bug, not a design choice.
+   */
+  retirementProfiles: createTRPCRouter({
     list: protectedProcedure.query(({ ctx }) =>
       ctx.db
         .select()
-        .from(schema.retirementScenarios)
-        .orderBy(asc(schema.retirementScenarios.id)),
+        .from(schema.retirementProfiles)
+        .orderBy(asc(schema.retirementProfiles.id)),
     ),
-    create: adminProcedure
-      .input(retirementScenarioInput)
-      .mutation(({ ctx, input }) =>
-        ctx.db
-          .insert(schema.retirementScenarios)
-          .values(input)
-          .returning()
-          .then((r) => r[0]),
-      ),
+
+    /**
+     * Clone an existing profile's retirement_settings row (per person) and
+     * retirement_profile_people row (per person) into a new profile.
+     *
+     * Household-grain columns on retirement_settings are still duplicated
+     * onto every person's row (the contract step that collapses this to one
+     * row per profile is deferred to v0.8.0) and can legitimately have
+     * drifted between people — pickProfileSettingsRow's own docblock records
+     * a real household whose withdrawal_rate/rmd_excess_handling disagreed
+     * across person rows. Cloning from the PRIMARY person's source row into
+     * every person's new row (not each person's own current row) avoids
+     * baking that drift in as if it were intentional per-person
+     * configuration in the new profile.
+     */
+    duplicate: adminProcedure
+      .input(
+        z.object({
+          sourceProfileId: z.number().int(),
+          name: z.string().min(1).max(100),
+          description: z.string().max(500).optional(),
+        }),
+      )
+      .mutation(async ({ ctx, input }) => {
+        return ctx.db.transaction(async (tx) => {
+          const people = await tx
+            .select()
+            .from(schema.people)
+            .orderBy(asc(schema.people.id));
+          if (people.length === 0) {
+            throw new Error("No people exist to seed the new profile with.");
+          }
+          const primaryPerson = getPrimaryPerson(people);
+
+          const sourceSettings = await tx
+            .select()
+            .from(schema.retirementSettings)
+            .where(
+              eq(schema.retirementSettings.profileId, input.sourceProfileId),
+            );
+          const sourceHousehold =
+            (primaryPerson
+              ? sourceSettings.find((s) => s.personId === primaryPerson.id)
+              : undefined) ?? sourceSettings[0];
+          if (!sourceHousehold) {
+            throw new Error("Source profile has no settings to clone.");
+          }
+
+          const sourcePeopleRows = await tx
+            .select()
+            .from(schema.retirementProfilePeople)
+            .where(
+              eq(
+                schema.retirementProfilePeople.profileId,
+                input.sourceProfileId,
+              ),
+            );
+          const sourcePrimaryPeopleRow =
+            (primaryPerson
+              ? sourcePeopleRows.find((r) => r.personId === primaryPerson.id)
+              : undefined) ?? sourcePeopleRows[0];
+
+          const [newProfile] = await tx
+            .insert(schema.retirementProfiles)
+            .values({
+              name: input.name,
+              description: input.description ?? null,
+            })
+            .returning();
+          if (!newProfile) throw new Error("Failed to create profile.");
+
+          const {
+            id: _hhId,
+            personId: _hhPersonId,
+            profileId: _hhProfileId,
+            ...householdFields
+          } = sourceHousehold;
+          await tx.insert(schema.retirementSettings).values(
+            people.map((p) => ({
+              ...householdFields,
+              personId: p.id,
+              profileId: newProfile.id,
+            })),
+          );
+
+          if (sourcePrimaryPeopleRow) {
+            const {
+              id: _ppId,
+              personId: _ppPersonId,
+              profileId: _ppProfileId,
+              ...perPersonFields
+            } = sourcePrimaryPeopleRow;
+            await tx.insert(schema.retirementProfilePeople).values(
+              people.map((p) => ({
+                ...perPersonFields,
+                personId: p.id,
+                profileId: newProfile.id,
+              })),
+            );
+          }
+
+          return newProfile;
+        });
+      }),
+
+    /** Rename / re-describe a profile. Assumptions themselves are edited
+     *  through retirementSettings.upsert, scoped to whichever profile is
+     *  active — not here. */
     update: adminProcedure
       .input(
-        z
-          .object({ id: z.number().int() })
-          .extend(retirementScenarioInput.shape),
+        z.object({
+          id: z.number().int(),
+          name: z.string().min(1).max(100).optional(),
+          description: z.string().max(500).nullish(),
+        }),
       )
       .mutation(({ ctx, input: { id, ...data } }) =>
         ctx.db
-          .update(schema.retirementScenarios)
+          .update(schema.retirementProfiles)
           .set(data)
-          .where(eq(schema.retirementScenarios.id, id))
+          .where(eq(schema.retirementProfiles.id, id))
           .returning()
           .then((r) => r[0]),
       ),
+
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
-      .mutation(({ ctx, input }) =>
-        ctx.db
-          .delete(schema.retirementScenarios)
-          .where(eq(schema.retirementScenarios.id, input.id)),
-      ),
+      .mutation(async ({ ctx, input }) => {
+        const activeSettingRows = await ctx.db
+          .select()
+          .from(schema.appSettings)
+          .where(eq(schema.appSettings.key, SK_ACTIVE_RETIREMENT_PROFILE_ID));
+        const activeId = (activeSettingRows[0]?.value ?? null) as number | null;
+
+        const allProfiles = await ctx.db
+          .select({ id: schema.retirementProfiles.id })
+          .from(schema.retirementProfiles);
+
+        const deleteCheck = canDeleteRetirementProfile(
+          activeId,
+          input.id,
+          allProfiles.length,
+        );
+        if (!deleteCheck.allowed) throw new Error(deleteCheck.reason);
+
+        if (!allProfiles.some((p) => p.id === input.id))
+          throw new Error("Profile not found");
+
+        const pinningPlans = await ctx.db
+          .select({ name: schema.scenarios.name })
+          .from(schema.scenarios)
+          .where(eq(schema.scenarios.retirementProfileId, input.id));
+        if (pinningPlans.length > 0) {
+          throw new Error(
+            `Cannot delete: active in ${pinningPlans.length} Plan(s) (${pinningPlans
+              .map((p) => p.name)
+              .join(", ")}). Change that Plan's retirement profile first.`,
+          );
+        }
+
+        // Explicit child-row cleanup, NOT relying on ON DELETE cascade.
+        // Both FKs declare cascade in schema-pg.ts, and Postgres (the
+        // production dialect) honours it — but the migration that added
+        // retirement_settings.profile_id used ALTER TABLE ADD COLUMN, and
+        // drizzle-kit's SQLite generator emits that form WITHOUT the ON
+        // DELETE clause (confirmed live 2026-08-30: SQLite CREATE TABLE
+        // preserves it, ALTER TABLE ADD COLUMN silently drops it). Any
+        // SQLite-dialect install — which schema-sqlite.ts exists to
+        // support, not just tests — would fail this delete with a foreign
+        // key error instead of cascading. Deleting explicitly here is
+        // correct and harmless on both dialects.
+        await ctx.db.transaction(async (tx) => {
+          await tx
+            .delete(schema.retirementProfilePeople)
+            .where(eq(schema.retirementProfilePeople.profileId, input.id));
+          await tx
+            .delete(schema.retirementSettings)
+            .where(eq(schema.retirementSettings.profileId, input.id));
+          await tx
+            .delete(schema.retirementProfiles)
+            .where(eq(schema.retirementProfiles.id, input.id));
+        });
+        return { success: true };
+      }),
   }),
 
   returnRates: createTRPCRouter({

@@ -8,7 +8,11 @@ import {
   CHART_COLORS,
 } from "@/lib/utils/colors";
 import { formatCurrency, compactCurrency } from "@/lib/utils/format";
-import { buildStrategyEventStyle } from "./utils";
+import {
+  buildStrategyEventStyle,
+  tipColorClass,
+  formatDiscretionaryTierBreakdown,
+} from "./utils";
 import type { EngineYearProjection } from "@/lib/calculators/types";
 import {
   ComposedChart,
@@ -27,6 +31,7 @@ import {
   getSegmentBalance,
 } from "@/lib/config/account-types";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
+import { TOOLTIP_SURFACE_CLASSES } from "@/components/ui/tooltip";
 import type { ProjectionState } from "./projection-table-types";
 
 // Skeleton lives in its own file so the parent (cards/projection/index.tsx)
@@ -191,6 +196,11 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
       // so the chart and table disagreed on every one of these numbers
       // in "Today's $" mode).
       datum._ssIncome = deflate(yr.ssIncome, yr.year);
+      // Total portfolio withdrawal (all accounts/tax types combined,
+      // already tax-grossed-up per grossUpForTaxes) — the "Income" overlay
+      // series below, alongside SS. Real strategy-computed spending, not a
+      // derived/estimated figure.
+      datum._totalWithdrawal = deflate(yr.totalWithdrawal, yr.year);
       datum._rmdAmount = deflate(yr.rmdAmount, yr.year);
       // R46 Phase 1: RMD-forced excess reinvested into brokerage — unlike
       // `_rmdStart` (which only flags the single year RMDs begin), this can
@@ -228,6 +238,18 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
       // showed nothing about why it was marked. Threaded through the same
       // way SS/RMD milestones are.
       datum._strategyAction = yr.strategyAction ?? "";
+      // "Why was this account used" hover explanation — see
+      // formatDiscretionaryTierBreakdown's docblock (utils.ts). Stored as
+      // the pre-formatted string (not the raw array) since this datum
+      // object otherwise only carries numbers/flags for Recharts' own
+      // dataKey lookups.
+      datum._discretionaryRoutingNote =
+        formatDiscretionaryTierBreakdown(
+          yr.discretionaryTierBreakdown?.map((t) => ({
+            ...t,
+            amount: deflate(t.amount, yr.year),
+          })),
+        ) ?? "";
     }
 
     return datum;
@@ -248,9 +270,18 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
 
   const hasMcData = mcBandsByYear != null;
   const showMc = hasMcData && fanBandRange !== "off";
-  const { showBars } = state;
+  const { showBars, showIncome } = state;
   // Keep hasMc for backward compat in data building (always build MC data points)
   const hasMc = hasMcData;
+
+  // Decumulation-year income overlay (total portfolio withdrawal + Social
+  // Security, secondary axis) — only worth a second axis + legend entry
+  // when there's actually decumulation data with a nonzero figure to show;
+  // an accumulation-only projection (not yet retired) has no such data.
+  const hasIncomeData = chartData.some(
+    (d) => Number(d._totalWithdrawal) > 0 || Number(d._ssIncome) > 0,
+  );
+  const showIncomeOverlay = showIncome && hasIncomeData;
 
   // R45 Step 5 + follow-up: per-strategy spending-adjustment event markers,
   // one per triggering year. Covers every strategy with a real, SPORADIC
@@ -343,12 +374,27 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
               axisLine={{ stroke: CHART_COLORS.axisLine }}
             />
             <YAxis
+              yAxisId="balance"
               tick={{ fontSize: CHART_FONT.tick, fill: CHART_COLORS.axisMuted }}
               tickLine={false}
               axisLine={false}
               tickFormatter={(v: number) => compactCurrency(v)}
               width={55}
             />
+            {showIncomeOverlay && (
+              <YAxis
+                yAxisId="income"
+                orientation="right"
+                tick={{
+                  fontSize: CHART_FONT.tick,
+                  fill: CHART_COLORS.axisMuted,
+                }}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(v: number) => compactCurrency(v)}
+                width={55}
+              />
+            )}
             <RechartsTooltip
               content={({ active, payload }) => {
                 if (!active || !payload?.length) return null;
@@ -369,7 +415,9 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                 const rmdShortfall = Number(d._rmdShortfallAmount) > 0;
                 const rmdSatisfiedNotably = !rmdShortfall;
                 return (
-                  <div className="bg-surface-primary text-primary text-xs rounded-md px-3 py-2 shadow-lg max-w-xs">
+                  <div
+                    className={`${TOOLTIP_SURFACE_CLASSES} text-xs max-w-xs`}
+                  >
                     <div className="font-medium mb-1">
                       Age {d.age} · {d.year}
                     </div>
@@ -389,21 +437,23 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                           </span>
                         </div>
                       ))}
-                    <div className="border-t mt-1 pt-1 flex justify-between font-medium">
+                    <div className="border-t border-white/10 mt-1 pt-1 flex justify-between font-medium">
                       <span>Total</span>
                       <span className="tabular-nums">
                         {formatCurrency(totalBal)}
                       </span>
                     </div>
                     {hasMc && d.mc_p50 != null && (
-                      <div className="border-t mt-1 pt-1">
-                        <div className="flex justify-between text-purple-300">
+                      <div className="border-t border-white/10 mt-1 pt-1">
+                        <div
+                          className={`flex justify-between ${tipColorClass.purple}`}
+                        >
                           <span>Typical outcome</span>
                           <span className="tabular-nums">
                             {formatCurrency(Number(d.mc_p50))}
                           </span>
                         </div>
-                        <div className="text-purple-400/70 mt-0.5">
+                        <div className={`${tipColorClass.purple}/70 mt-0.5`}>
                           <div>Likely range:</div>
                           <div className="tabular-nums">
                             {formatCurrency(Number(d.mc_dp25))}
@@ -420,19 +470,38 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                       Number(d._rmdAmount) > 0 ||
                       Number(d._rmdExcessAmount) > 0 ||
                       Number(d._qcdAmount) > 0 ||
+                      Number(d._totalWithdrawal) > 0 ||
                       Number(d._unmetNeedMaterial) === 1 ||
                       rmdShortfall) && (
-                      <div className="border-t mt-1 pt-1 space-y-0.5">
+                      <div className="border-t border-white/10 mt-1 pt-1 space-y-0.5">
+                        {Number(d._totalWithdrawal) > 0 && (
+                          <div
+                            className={`flex justify-between gap-4 ${tipColorClass.blue}`}
+                          >
+                            <span>Portfolio withdrawal</span>
+                            <span className="tabular-nums">
+                              {formatCurrency(Number(d._totalWithdrawal))}/yr
+                            </span>
+                          </div>
+                        )}
+                        {typeof d._discretionaryRoutingNote === "string" &&
+                          d._discretionaryRoutingNote && (
+                            <div
+                              className={`${tipColorClass.gray} text-[11px]`}
+                            >
+                              {d._discretionaryRoutingNote}
+                            </div>
+                          )}
                         {Number(d._unmetNeedMaterial) === 1 && (
                           <>
-                            <div className="flex justify-between gap-4 font-medium text-red-600">
+                            <div className="flex justify-between gap-4 font-medium text-red-400">
                               <span>⚠ Unmet need</span>
                               <span className="tabular-nums">
                                 -{formatCurrency(Number(d._unmetNeed))}
                               </span>
                             </div>
                             {Number(d._unmetNeedNonRetirement) > 0 && (
-                              <div className="flex justify-between gap-4 text-red-600/70 text-caption">
+                              <div className="flex justify-between gap-4 text-red-400/70 text-caption">
                                 <span>
                                   · excluding non-retirement (Portfolio)
                                   accounts
@@ -446,7 +515,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                               </div>
                             )}
                             {Number(d._unmetNeedPenaltyAvoided) > 0 && (
-                              <div className="flex justify-between gap-4 text-red-600/70 text-caption">
+                              <div className="flex justify-between gap-4 text-red-400/70 text-caption">
                                 <span>· excluding penalty-exposed money</span>
                                 <span className="tabular-nums">
                                   -
@@ -459,7 +528,9 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                           </>
                         )}
                         {Number(d._ssStart) === 1 && (
-                          <div className="flex justify-between gap-4 text-teal-400 font-medium">
+                          <div
+                            className={`flex justify-between gap-4 ${tipColorClass.teal} font-medium`}
+                          >
                             <span>Social Security begins</span>
                             <span className="tabular-nums">
                               {formatCurrency(Number(d._ssIncome))}/yr
@@ -469,7 +540,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                         {Number(d._rmdStart) === 1 && (
                           <div
                             className={
-                              rmdShortfall ? "text-red-400" : "text-amber-400"
+                              rmdShortfall ? "text-red-400" : "text-amber-600"
                             }
                           >
                             <div className="flex justify-between gap-4 font-medium">
@@ -488,7 +559,9 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                         )}
                         {Number(d._ssStart) !== 1 &&
                           Number(d._ssIncome) > 0 && (
-                            <div className="flex justify-between gap-4 text-teal-400/70 text-caption">
+                            <div
+                              className={`flex justify-between gap-4 ${tipColorClass.teal}/70 text-caption`}
+                            >
                               <span>Incl. SS income</span>
                               <span className="tabular-nums">
                                 {formatCurrency(Number(d._ssIncome))}/yr
@@ -501,7 +574,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                               className={
                                 rmdShortfall
                                   ? "text-red-400"
-                                  : "text-amber-400/70"
+                                  : `${tipColorClass.amber}/70`
                               }
                             >
                               <div className="flex justify-between gap-4 text-caption">
@@ -543,7 +616,9 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                             household's rmdExcessHandling setting — nothing
                             was actually reinvested under "spend". */}
                         {Number(d._rmdExcessAmount) > 0 && (
-                          <div className="flex justify-between gap-4 text-amber-400/70 text-caption">
+                          <div
+                            className={`flex justify-between gap-4 ${tipColorClass.amber}/70 text-caption`}
+                          >
                             <span>
                               {engineSettings?.rmdExcessHandling === "spend"
                                 ? "RMD excess spent"
@@ -562,7 +637,9 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                             separately from "RMD" above since it's the
                             portion that never became taxable income. */}
                         {Number(d._qcdAmount) > 0 && (
-                          <div className="flex justify-between gap-4 text-violet-400/70 text-caption">
+                          <div
+                            className={`flex justify-between gap-4 ${tipColorClass.violet}/70 text-caption`}
+                          >
                             <span>QCD to charity</span>
                             <span className="tabular-nums">
                               {formatCurrency(Number(d._qcdAmount))}
@@ -582,7 +659,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                       if (!eventStyle) return null;
                       return (
                         <div
-                          className="border-t mt-1 pt-1 flex justify-between gap-4 font-medium"
+                          className="border-t border-white/10 mt-1 pt-1 flex justify-between gap-4 font-medium"
                           style={{ color: eventStyle.color }}
                         >
                           <span>Strategy</span>
@@ -600,6 +677,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
               <>
                 <Area
                   type="monotone"
+                  yAxisId="balance"
                   dataKey="mc_base"
                   stackId="mc"
                   fill="transparent"
@@ -609,6 +687,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                 {fanBandRange === "p5-p95" && (
                   <Area
                     type="monotone"
+                    yAxisId="balance"
                     dataKey="mc_5_10"
                     stackId="mc"
                     fill={CHART_COLORS.mcBandOuter}
@@ -620,6 +699,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                 {fanBandRange !== "p25-p75" && (
                   <Area
                     type="monotone"
+                    yAxisId="balance"
                     dataKey="mc_10_25"
                     stackId="mc"
                     fill={CHART_COLORS.mcBandInner}
@@ -630,6 +710,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                 )}
                 <Area
                   type="monotone"
+                  yAxisId="balance"
                   dataKey="mc_25_75"
                   stackId="mc"
                   fill={CHART_COLORS.mcBandMiddle}
@@ -640,6 +721,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                 {fanBandRange !== "p25-p75" && (
                   <Area
                     type="monotone"
+                    yAxisId="balance"
                     dataKey="mc_75_90"
                     stackId="mc"
                     fill={CHART_COLORS.mcBandInner}
@@ -651,6 +733,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                 {fanBandRange === "p5-p95" && (
                   <Area
                     type="monotone"
+                    yAxisId="balance"
                     dataKey="mc_90_95"
                     stackId="mc"
                     fill={CHART_COLORS.mcBandOuter}
@@ -668,6 +751,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                 <Bar
                   key={seg.key}
                   dataKey={seg.key}
+                  yAxisId="balance"
                   stackId="det"
                   fill={seg.hex}
                   fillOpacity={0.85}
@@ -678,10 +762,47 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                 />
               ))}
 
+            {/* Decumulation-year income overlay: total portfolio withdrawal
+                + Social Security, secondary right-hand axis. Two separate
+                lines (not stacked into one "total") — SS and withdrawal are
+                drawn from genuinely different sources (guaranteed income vs.
+                the portfolio itself) and stacking them would imply a single
+                combined figure without a clean name; showing each real,
+                strategy-computed number lets a household see both "what am
+                I living on" and "how much of that is SS" without inventing
+                a third derived quantity. */}
+            {showIncomeOverlay && (
+              <>
+                <Line
+                  type="monotone"
+                  yAxisId="income"
+                  dataKey="_totalWithdrawal"
+                  name="Portfolio withdrawal"
+                  stroke={CHART_COLORS.withdrawalFlow}
+                  strokeWidth={2}
+                  dot={false}
+                  isAnimationActive={false}
+                  connectNulls
+                />
+                <Line
+                  type="monotone"
+                  yAxisId="income"
+                  dataKey="_ssIncome"
+                  name="Social Security"
+                  stroke={CHART_COLORS.ssMarker}
+                  strokeWidth={2}
+                  dot={false}
+                  isAnimationActive={false}
+                  connectNulls
+                />
+              </>
+            )}
+
             {/* MC median line */}
             {showMc && (
               <Line
                 type="monotone"
+                yAxisId="balance"
                 dataKey="mc_p50"
                 stroke={CHART_COLORS.mcMedian}
                 strokeWidth={2}
@@ -700,6 +821,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
               return (
                 <Line
                   type="monotone"
+                  yAxisId="balance"
                   dataKey={() => undefined}
                   stroke="transparent"
                   dot={false}
@@ -712,6 +834,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
             {/* Social Security start age marker */}
             {chartData.some((d) => Number(d.age) === ssStartAge) && (
               <ReferenceLine
+                yAxisId="balance"
                 x={ssStartAge}
                 stroke={CHART_COLORS.ssMarker}
                 strokeDasharray="6 3"
@@ -729,6 +852,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
             {rmdStartAge != null &&
               chartData.some((d) => Number(d.age) === rmdStartAge) && (
                 <ReferenceLine
+                  yAxisId="balance"
                   x={rmdStartAge}
                   stroke={CHART_COLORS.rmdMarker}
                   strokeDasharray="6 3"
@@ -751,6 +875,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                 chartData.some((d) => Number(d.age) === ev.age) && (
                   <ReferenceLine
                     key={`guardrail-${ev.age}`}
+                    yAxisId="balance"
                     x={ev.age}
                     stroke={ev.style.color}
                     strokeDasharray="2 2"
@@ -775,6 +900,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                 chartData.some((d) => Number(d.age) === ev.age) && (
                   <ReferenceLine
                     key={`shortfall-${ev.age}`}
+                    yAxisId="balance"
                     x={ev.age}
                     stroke={CHART_COLORS.shortfallMarker}
                     strokeDasharray="2 2"
@@ -802,6 +928,24 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
             {seg.label}
           </span>
         ))}
+        {showIncomeOverlay && (
+          <>
+            <span className="flex items-center gap-1">
+              <span
+                className="w-3 h-0.5 rounded"
+                style={{ backgroundColor: CHART_COLORS.withdrawalFlow }}
+              />{" "}
+              Withdrawal
+            </span>
+            <span className="flex items-center gap-1">
+              <span
+                className="w-3 h-0.5 rounded"
+                style={{ backgroundColor: CHART_COLORS.ssMarker }}
+              />{" "}
+              SS Income
+            </span>
+          </>
+        )}
         {hasMc && (
           <>
             <span className="flex items-center gap-1">

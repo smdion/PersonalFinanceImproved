@@ -194,6 +194,64 @@ export async function seedPerson(
 }
 
 /**
+ * Seed a first Retirement Profile directly, mirroring what step A's real
+ * migration backfill does for an already-existing household: create the
+ * `retirement_profiles` row, then point every existing `retirement_settings`
+ * row at it. Router tests need this because there is no bare `create` on
+ * `retirement.retirementProfiles` — the only creation path is `duplicate`,
+ * which needs a real profile to clone FROM, so tests exercising duplicate/
+ * update/delete have to bootstrap their first profile the same way a real
+ * pre-migration install did, not through the router under test.
+ */
+export async function seedRetirementProfile(
+  db: BetterSQLite3Database<typeof sqliteSchema>,
+  name = "Current Plan",
+): Promise<number> {
+  const profile = db
+    .insert(sqliteSchema.retirementProfiles)
+    .values({ name })
+    .returning({ id: sqliteSchema.retirementProfiles.id })
+    .get();
+  db.update(sqliteSchema.retirementSettings)
+    .set({ profileId: profile.id })
+    .run();
+  return profile.id;
+}
+
+/** Seed a `retirement_profile_people` row directly — the per-person side of
+ *  the completeness invariant (every profile holds a row for every person).
+ *  Mirrors seedRetirementProfile: real installs get these from the real
+ *  migration/duplicate/person-create fan-out; tests exercising `duplicate`
+ *  need at least one already in place to clone FROM. */
+export async function seedRetirementProfilePerson(
+  db: BetterSQLite3Database<typeof sqliteSchema>,
+  profileId: number,
+  personId: number,
+  overrides: Partial<{
+    retirementAge: number;
+    endAge: number;
+    ssStartAge: number | null;
+    ruleOf55Override: boolean | null;
+    salaryAnnualIncrease: string | null;
+  }> = {},
+): Promise<number> {
+  const result = db
+    .insert(sqliteSchema.retirementProfilePeople)
+    .values({
+      profileId,
+      personId,
+      retirementAge: overrides.retirementAge ?? 65,
+      endAge: overrides.endAge ?? 95,
+      ssStartAge: overrides.ssStartAge ?? null,
+      ruleOf55Override: overrides.ruleOf55Override ?? null,
+      salaryAnnualIncrease: overrides.salaryAnnualIncrease ?? null,
+    })
+    .returning({ id: sqliteSchema.retirementProfilePeople.id })
+    .get();
+  return result.id;
+}
+
+/**
  * Seed a budget profile with optional items.
  */
 export async function seedBudgetProfile(

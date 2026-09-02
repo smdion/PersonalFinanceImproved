@@ -14,6 +14,11 @@ import type {
   DecumulationSlot,
   IndividualAccountYearBalance,
 } from "@/lib/calculators/types";
+import type { BracketOptimizerResult } from "@/lib/calculators/withdrawal-bracket-optimizer";
+import {
+  describeBracketTargetChoice,
+  describeDiscretionaryCapacityMath,
+} from "@/lib/pure/report/bracket-target-narrative";
 import {
   getAccountSegments,
   getSegmentBalance,
@@ -23,6 +28,8 @@ import {
   ACCOUNT_TYPE_CONFIG,
   isTaxFreeBucket,
   isIraCategory,
+  isHsaCategory,
+  tradPreferenceEngineCategories,
 } from "@/lib/config/account-types";
 import type { TipColor, TooltipLineItem } from "./types";
 import {
@@ -40,12 +47,19 @@ import {
   lumpSumsForCategory,
   lumpSumTotal,
   buildStrategyEventStyle,
+  formatDiscretionaryTierBreakdown,
+  formatRmdDivisorDetail,
 } from "./utils";
 import type { ProjectionState } from "./projection-table-types";
 import {
   renderMcCell,
   type RenderMcCellOptions,
 } from "./projection-table-mc-cell";
+
+// getAllCategories() returns a fixed list — module-level so the account-sort
+// comparators below don't call it (and re-scan .indexOf) twice per
+// comparison on every render (code-review efficiency finding, 2026-09-01).
+const CATEGORY_ORDER = new Map(getAllCategories().map((c, i) => [c, i]));
 
 /**
  * Builds the merged eligibility + tracked-basis note for one account's
@@ -130,6 +144,170 @@ function buildEligibilityNote(
   return { note: parts.join(" · "), noteLocked: !!ia.eligibilityLocked };
 }
 
+/**
+ * "Why was this account used" tax-reasoning clause — the household asked
+ * directly for this (2026-08-31): eligibility/basis info alone doesn't say
+ * WHY a discretionary (beyond-Traditional-bracket-target) dollar came from
+ * this account instead of another. Reads `discretionaryTierBreakdown`
+ * (`RouteResult.tierBreakdown`, withdrawal-routing.ts) filtered to this
+ * account's source kind — see `formatDiscretionaryTierBreakdown`'s
+ * docblock (utils.ts) for why this is read directly off routing's own
+ * decision rather than re-derived.
+ *
+ * The breakdown is aggregated at the SOURCE-KIND level (roth/brokerage/
+ * hsa), not per-account — a household with more than one account of the
+ * same kind (e.g. both spouses' Roth 401k) would see the same combined
+ * figures on each. `formatDiscretionaryTierBreakdown`'s own text is
+ * explicitly "household-wide" framing for exactly this reason — never
+ * implies this is a per-account cost breakdown this data can't actually
+ * support, and deliberately avoids "free"/"0%" wording that would clash
+ * with `buildEligibilityNote`'s own "taxable" note shown right above it on
+ * the same line (found live, 2026-08-31 — Roth basis is genuinely
+ * tax-free, but a Roth GROWTH tier entry can also legitimately show a
+ * costRate of 0 at the household level, which is an ORDERING statement,
+ * not a claim about this specific account's tax treatment).
+ */
+function buildRoutingReasonClause(
+  ia: Pick<IndividualAccountYearBalance, "category" | "taxType" | "withdrawal">,
+  yr: EngineDecumulationYear,
+  deflate: (v: number, yr: number) => number,
+  bracketOptimizerResult?: BracketOptimizerResult | null,
+  includeCapacityNote?: boolean,
+  onCapacityNoteUsed?: () => void,
+): string | undefined {
+  const catCfg = ACCOUNT_TYPE_CONFIG[ia.category];
+  // Traditional portion of a split-capable account (401k/IRA/403b): this
+  // is Phase 1 of bracket_filling, not the cost-ranked discretionary tier
+  // below — a completely different "why" (a configured bracket TARGET,
+  // not a cost comparison between sources). bracketTraditionalCap is the
+  // resolved income cap (rothBracketTarget's marginal-rate threshold minus
+  // taxable SS) the engine actually filled Traditional up to — see
+  // withdrawal-routing.ts's routeWithdrawalsBracketFilling.
+  if (
+    catCfg?.supportsRothSplit &&
+    !isTaxFreeBucket(ia.taxType) &&
+    yr.config.withdrawalRoutingMode === "bracket_filling" &&
+    yr.bracketTraditionalCap != null
+  ) {
+    const targetPct = yr.config.rothBracketTarget;
+    // "Why THIS bracket" (found live, 2026-08-31) — shares
+    // describeBracketTargetChoice with the advisor report
+    // (lib/pure/report/bracket-target-narrative.ts) so the two can never
+    // disagree; folds in the real numeric comparison from the bracket
+    // optimizer when available, falls back to the qualitative-only
+    // version otherwise.
+    const targetClause =
+      targetPct != null
+        ? `Filled up to ${formatCurrency(deflate(yr.bracketTraditionalCap, yr.year))} of ordinary income this year (RMDs still apply on top when required). ${describeBracketTargetChoice(
+            bracketOptimizerResult,
+            targetPct,
+            {
+              bracketTraditionalCap: deflate(yr.bracketTraditionalCap, yr.year),
+              taxableSS: deflate(yr.taxableSS, yr.year),
+              // The GROWN per-year deduction (bracket-growth.ts), not the
+              // plan-level engineSettings echo — advisor-caught
+              // (2026-08-31): pairing a grown bracketTraditionalCap with
+              // an ungrown deduction in the same sentence was internally
+              // inconsistent for any year beyond the tax data's vintage.
+              standardDeduction:
+                yr.standardDeduction != null
+                  ? deflate(yr.standardDeduction, yr.year)
+                  : yr.standardDeduction,
+            },
+          )}`
+        : `Filled to your configured bracket target — up to ${formatCurrency(deflate(yr.bracketTraditionalCap, yr.year))} of ordinary income`;
+    // "Why this account over another" (cross-category order, e.g. 401k
+    // before IRA) — your configured Traditional Account Order, restricted
+    // to the Traditional-preference categories Phase 1 actually consults
+    // (same restriction the order editor itself uses — decumulation-
+    // config.tsx's R51 Gap A note).
+    const tradOrder = yr.config.withdrawalOrder.filter((c) =>
+      tradPreferenceEngineCategories().includes(c),
+    );
+    const orderIdx = tradOrder.indexOf(ia.category);
+    const orderClause =
+      tradOrder.length > 1 && orderIdx >= 0
+        ? ` · Order: ${tradOrder.map((c) => getAccountTypeConfig(c).displayLabel).join(" → ")} (this account: #${orderIdx + 1})`
+        : "";
+    return `${targetClause}${orderClause}`;
+  }
+  if (!yr.discretionaryTierBreakdown?.length) return undefined;
+  let sourceKind: "roth" | "brokerage" | "hsa" | undefined;
+  if (catCfg?.isOverflowTarget) sourceKind = "brokerage";
+  else if (isHsaCategory(ia.category)) sourceKind = "hsa";
+  else if (catCfg?.supportsRothSplit && isTaxFreeBucket(ia.taxType))
+    sourceKind = "roth";
+  if (!sourceKind) return undefined;
+  const relevant = yr.discretionaryTierBreakdown.filter(
+    (t) => t.source === sourceKind,
+  );
+  if (relevant.length === 0) return undefined;
+  const breakdownClause = formatDiscretionaryTierBreakdown(
+    relevant.map((t) => ({ ...t, amount: deflate(t.amount, yr.year) })),
+  );
+  // "Why isn't brokerage draining before Roth" (found live, 2026-08-31) —
+  // shares describeDiscretionaryCapacityMath with the advisor report so
+  // the two can never disagree. Household-wide (not scoped to this
+  // account's sourceKind, unlike breakdownClause above), so this uses the
+  // FULL yr.discretionaryTierBreakdown, deflated the same way. Gated to
+  // roth/brokerage rows only (advisor review, 2026-08-31) — this paragraph
+  // discusses neither of an HSA row's dollars — AND to `includeCapacityNote`
+  // (found live, 2026-08-31: with 1 Roth + 2 brokerage accounts drawing the
+  // same year, the identical household-wide paragraph showed up 3 times;
+  // the caller sets this true for only the first qualifying account row).
+  // lint-violation-ok: sourceKind is WithdrawalSourceKind, not an AccountCategory.
+  const capacityClause =
+    includeCapacityNote && (sourceKind === "roth" || sourceKind === "brokerage")
+      ? describeDiscretionaryCapacityMath(
+          yr.rothBasisCapacity != null && yr.brokerageZeroLtcgCapacity != null
+            ? {
+                rothBasisCapacity: deflate(yr.rothBasisCapacity, yr.year),
+                brokerageZeroLtcgCapacity: deflate(
+                  yr.brokerageZeroLtcgCapacity,
+                  yr.year,
+                ),
+              }
+            : undefined,
+          yr.discretionaryTierBreakdown.map((t) => ({
+            ...t,
+            amount: deflate(t.amount, yr.year),
+          })),
+          yr.config.discretionaryWithdrawalOrder,
+          yr.rmdOverrodeRouting,
+        )
+      : undefined;
+  if (capacityClause) onCapacityNoteUsed?.();
+  return capacityClause
+    ? `${breakdownClause} ${capacityClause}`
+    : breakdownClause;
+}
+
+/** Merges `buildEligibilityNote` (eligibility/basis) with
+ *  `buildRoutingReasonClause` (tax reasoning) into the one note line an
+ *  account's tooltip row shows — both answer "why," just different
+ *  questions (can this money be touched vs. why did routing pick it). */
+function buildFullAccountNote(
+  ia: IndividualAccountYearBalance,
+  yr: EngineDecumulationYear,
+  deflate: (v: number, yr: number) => number,
+  bracketOptimizerResult?: BracketOptimizerResult | null,
+  includeCapacityNote?: boolean,
+  onCapacityNoteUsed?: () => void,
+): { note?: string; noteLocked?: boolean } {
+  const eligibility = buildEligibilityNote(ia, yr, deflate);
+  const reason = buildRoutingReasonClause(
+    ia,
+    yr,
+    deflate,
+    bracketOptimizerResult,
+    includeCapacityNote,
+    onCapacityNoteUsed,
+  );
+  if (!reason) return eligibility;
+  const note = eligibility.note ? `${eligibility.note} · ${reason}` : reason;
+  return { note, noteLocked: eligibility.noteLocked };
+}
+
 /** Owner-prefixed account label for tooltip lines — omits the "Owner — "
  *  prefix when the account's own name already starts with the owner's
  *  name (many real account names, e.g. "Joanna IRA (Vanguard)", already
@@ -191,11 +369,37 @@ export function DecumulationRow({
     withdrawalRoutingMode: _withdrawalRoutingMode,
     budgetProfileSummaries,
     result,
+    bracketOptimizerResult,
   } = state;
   if (!result) return null;
 
   // Alias for code extracted from inline — uses `yr` throughout
   const yr = dyr;
+
+  // The household-wide discretionary-capacity paragraph
+  // (describeDiscretionaryCapacityMath) is the same text regardless of
+  // WHICH roth/brokerage account row triggers it — found live, 2026-08-31,
+  // a household with 1 Roth + 2 brokerage accounts saw it verbatim 3 times
+  // in one year. Show it on the first qualifying row only per year (this
+  // component renders once per year, so a plain local flag closed over by
+  // the per-account calls below is safe — synchronous, no cross-row state).
+  let capacityNoteShownThisYear = false;
+
+  // Shared by all three withdrawal-by-tax-type/withdrawal-by-account
+  // branches below — was the same 6-arg buildFullAccountNote call (incl.
+  // the same capacityNoteShownThisYear closure) copy-pasted 3x (code-review
+  // reuse/duplication finding, 2026-09-01).
+  const noteFor = (ia: IndividualAccountYearBalance) =>
+    buildFullAccountNote(
+      ia,
+      yr,
+      deflate,
+      bracketOptimizerResult,
+      !capacityNoteShownThisYear,
+      () => {
+        capacityNoteShownThisYear = true;
+      },
+    );
 
   const dSlotMap = new Map<AccountCategory, DecumulationSlot>(
     dyr.slots.map((s) => [s.category, s]),
@@ -288,8 +492,7 @@ export function DecumulationRow({
                     // fact. See buildEligibilityNote's docblock for why the
                     // basis-remaining figure is reconstructed rather than
                     // reusing eligibilityReason's embedded dollar amount.
-                    const buildNote = (ia: (typeof catAccts)[number]) =>
-                      buildEligibilityNote(ia, yr, deflate);
+                    const buildNote = noteFor;
                     if (wd > 0) {
                       // Per-account breakdown ("no magic money"): when a
                       // category holds more than one tracked account (e.g.
@@ -412,6 +615,31 @@ export function DecumulationRow({
                       });
                     }
                     const catLumpTotal = lumpSumTotal(catLumps);
+                    // "Why was this account used" — which source kind(s)
+                    // this category's withdrawal drew through in the
+                    // cost-ranked discretionary tier (beyond Traditional's
+                    // bracket-fill target). A category can match more than
+                    // one kind (e.g. a 401k/IRA with both a Roth sub-
+                    // balance AND acting as the overflow/brokerage target
+                    // is not possible today, but HSA and brokerage never
+                    // overlap with "roth") — filtering by source keeps this
+                    // scoped to what's actually relevant to THIS account,
+                    // not the whole household's breakdown.
+                    const catSourceKinds = new Set<
+                      "roth" | "brokerage" | "hsa"
+                    >();
+                    if (catCfg.isOverflowTarget)
+                      catSourceKinds.add("brokerage");
+                    if (isHsaCategory(cat)) catSourceKinds.add("hsa");
+                    if (
+                      catCfg.supportsRothSplit &&
+                      (dSlot?.rothWithdrawal ?? 0) > 0.01
+                    )
+                      catSourceKinds.add("roth");
+                    const catTierBreakdown =
+                      yr.discretionaryTierBreakdown?.filter((t) =>
+                        catSourceKinds.has(t.source),
+                      );
                     return renderTooltip({
                       kind: "money",
                       header: `${catDisplayLabel[cat] ?? cat}${catLumpTotal > 0 || rmdExcess > 0.01 || qcdAmount > 0.01 ? " Activity" : " Withdrawals"}`,
@@ -428,6 +656,12 @@ export function DecumulationRow({
                               amount: deflate(catGrowth, yr.year),
                             }
                           : undefined,
+                      routingNote: formatDiscretionaryTierBreakdown(
+                        catTierBreakdown?.map((t) => ({
+                          ...t,
+                          amount: deflate(t.amount, yr.year),
+                        })),
+                      ),
                       balance: deflate(catBal, yr.year),
                     });
                   })()}
@@ -481,6 +715,30 @@ export function DecumulationRow({
                   bucketWd += wd;
                 }
               }
+              // Per-account breakdown (same "why was this account used"
+              // reasoning the Account view already shows — see buildNote
+              // above) — grouping by tax type shouldn't mean losing it.
+              // Falls back to the coarser `parts` aggregate below when no
+              // individual-account data exists, same as the Account view.
+              const bucketIabsAll = yr.individualAccountBalances ?? [];
+              const bucketIabs = (
+                dpt
+                  ? bucketIabsAll.filter(
+                      (ia) => ia.ownerPersonId === personFilter,
+                    )
+                  : bucketIabsAll
+              ).filter((ia) => iaBelongsToBucket(ia, bucket));
+              const withdrawingAccts = bucketIabs
+                .filter((ia) => (ia.withdrawal ?? 0) > 0.01)
+                .sort((a, b) => {
+                  const catDiff =
+                    (CATEGORY_ORDER.get(a.category as AccountCategory) ?? 0) -
+                    (CATEGORY_ORDER.get(b.category as AccountCategory) ?? 0);
+                  if (catDiff !== 0) return catDiff;
+                  return (a.ownerName ?? a.name).localeCompare(
+                    b.ownerName ?? b.name,
+                  );
+                });
               return (
                 <Tooltip
                   key={bucket}
@@ -498,14 +756,27 @@ export function DecumulationRow({
                             yearLumpSums,
                             bucket,
                           );
+                          const multiAcct = withdrawingAccts.length > 1;
                           const allItems = [
-                            ...parts.map((p) => ({
-                              label: catDisplayLabel[p.cat] ?? p.cat,
-                              amount: deflate(p.wd, yr.year),
-                              prefix: "-" as const,
-                              taxType: itemTaxType(p.cat, wdTaxType),
-                              color: "red" as TipColor,
-                            })),
+                            ...(withdrawingAccts.length > 0
+                              ? withdrawingAccts.map((ia) => ({
+                                  label: multiAcct
+                                    ? ownerAccountLabel(ia)
+                                    : (catDisplayLabel[ia.category] ??
+                                      ia.category),
+                                  amount: deflate(ia.withdrawal!, yr.year),
+                                  prefix: "-" as const,
+                                  taxType: itemTaxType(ia.category, wdTaxType),
+                                  color: "red" as TipColor,
+                                  ...noteFor(ia),
+                                }))
+                              : parts.map((p) => ({
+                                  label: catDisplayLabel[p.cat] ?? p.cat,
+                                  amount: deflate(p.wd, yr.year),
+                                  prefix: "-" as const,
+                                  taxType: itemTaxType(p.cat, wdTaxType),
+                                  color: "red" as TipColor,
+                                }))),
                             ...bucketLumps.map((ls) => ({
                               label: ls.label ?? "Lump sum",
                               amount: deflate(ls.amount, yr.year),
@@ -600,13 +871,12 @@ export function DecumulationRow({
             // aggregate Trad/Roth split — the user can see exactly which
             // account(s), whose, funded it. Ordered by category (accum
             // order), then traditional before roth, then owner name.
-            const catOrder = new Map(getAllCategories().map((c, i) => [c, i]));
             const withdrawingAccts = filteredIabs
               .filter((ia) => (ia.withdrawal ?? 0) > 0.01)
               .sort((a, b) => {
                 const catDiff =
-                  (catOrder.get(a.category) ?? 0) -
-                  (catOrder.get(b.category) ?? 0);
+                  (CATEGORY_ORDER.get(a.category) ?? 0) -
+                  (CATEGORY_ORDER.get(b.category) ?? 0);
                 if (catDiff !== 0) return catDiff;
                 const taxDiff =
                   (isTaxFreeBucket(a.taxType) ? 1 : 0) -
@@ -635,7 +905,7 @@ export function DecumulationRow({
                   taxType: itemTaxType(ia.category, ia.taxType),
                   color: "red",
                   group: catDisplayLabel[ia.category] ?? ia.category,
-                  ...buildEligibilityNote(ia, yr, deflate),
+                  ...noteFor(ia),
                 });
               }
             } else {
@@ -759,6 +1029,7 @@ export function DecumulationRow({
                     (dyr.qcdAmount ?? 0) > 0
                       ? deflate(dyr.qcdAmount!, yr.year)
                       : undefined,
+                  divisorDetail: formatRmdDivisorDetail(dyr, deflate, yr.year),
                 }
               : undefined,
             strategyEvent: (() => {
@@ -855,7 +1126,32 @@ export function DecumulationRow({
                 key={bucket}
                 content={(() => {
                   const wdLineItems: TooltipLineItem[] = [];
-                  if (!dpt) {
+                  // Per-account items in BOTH household and person-filtered
+                  // views — previously the household view fell back to a
+                  // per-CATEGORY slot aggregate here, collapsing e.g. two
+                  // people's separate 401ks into one line, while the
+                  // Balance-by-Account view always broke it out per account.
+                  const multiAcctBucket = bucketAccts.length > 1;
+                  if (bucketAccts.length > 0) {
+                    const bucketTaxField = bucketSlotMap[bucket]?.taxField;
+                    for (const ia of bucketAccts) {
+                      const wd = ia.withdrawal ?? 0;
+                      if (wd > 0) {
+                        wdLineItems.push({
+                          label: multiAcctBucket
+                            ? ownerAccountLabel(ia)
+                            : (catDisplayLabel[ia.category] ?? ia.category),
+                          amount: deflate(wd, yr.year),
+                          prefix: "-",
+                          taxType: bucketTaxField
+                            ? itemTaxType(ia.category, bucketTaxField)
+                            : undefined,
+                          color: "red",
+                        });
+                      }
+                    }
+                  } else if (!dpt) {
+                    // Fallback when no individual-account data exists.
                     const bucketTaxField = bucketSlotMap[bucket]?.taxField;
                     for (const slot of dyr.slots) {
                       const wd = slotBucketWithdrawal(slot, bucket);
@@ -868,19 +1164,6 @@ export function DecumulationRow({
                           taxType: bucketTaxField
                             ? itemTaxType(slot.category, bucketTaxField)
                             : undefined,
-                          color: "red",
-                        });
-                      }
-                    }
-                  } else {
-                    // Person-filtered: show per-account withdrawals from individual account data
-                    for (const ia of bucketAccts) {
-                      const wd = ia.withdrawal ?? 0;
-                      if (wd > 0) {
-                        wdLineItems.push({
-                          label: ia.name,
-                          amount: deflate(wd, yr.year),
-                          prefix: "-",
                           color: "red",
                         });
                       }
@@ -1300,7 +1583,13 @@ export function DecumulationRow({
             side="left"
             maxWidth={320}
           >
-            <span className="text-blue-400 ml-1 cursor-help">diag</span>
+            {/* This "diag" label is the Tooltip's TRIGGER, rendered on the
+                page's own (theme-adaptive) background — NOT inside the
+                tooltip's always-dark popup content. blue-300 has a real
+                --c-blue-300 override (globals.css) and correctly tracks
+                page theme here, unlike tipColorClass's shades (used for
+                text INSIDE the dark popup, see cards/projection/utils.ts). */}
+            <span className="text-blue-300 ml-1 cursor-help">diag</span>
           </Tooltip>
         )}
         {dyr.warnings.length > 0 && (

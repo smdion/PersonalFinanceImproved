@@ -377,10 +377,69 @@ export type DecumulationDefaults = {
      *  above overrides the ordinary W-4 defaults. Threshold `null` = the top
      *  (Infinity) bracket. Undefined = fall back to the hardcoded table. */
     ltcgBrackets?: Record<string, { threshold: number | null; rate: number }[]>;
+    /** Household's annual standard deduction (from `contribution_limits`,
+     *  filing-status-keyed), for converting GROSS ordinary income into the
+     *  TAXABLE income LTCG brackets are actually denominated in (found
+     *  2026-08-30 — `LTCG_BRACKETS`/`ltcgBrackets` use real IRS
+     *  taxable-income thresholds, but every LTCG-stacking call site fed
+     *  them a gross figure with nothing subtracted, systematically
+     *  overstating how much of the 0%/15% room ordinary income had
+     *  already consumed and overcharging real LTCG tax as a result).
+     *  This same value ALSO feeds `taxBrackets`/`incomeCapForMarginalRate`
+     *  above (R56) — but via `toOrdinaryBracketIncome` in
+     *  `tax-estimation.ts`, which subtracts only the smaller residual
+     *  between this figure and the Pub 15-T table's own embedded offset,
+     *  not this full figure directly (that WOULD double-count). Undefined
+     *  ⇒ 0 for the LTCG path / gross-unchanged for the ordinary path,
+     *  reproducing pre-fix behavior exactly — this is what makes both
+     *  fixes additive rather than a forced behavior change for every
+     *  caller. */
+    standardDeduction?: number;
+    /** The calendar year `taxBrackets`/`standardDeduction`/`ltcgBrackets`
+     *  actually represent (the DB row's own `taxYear`, e.g. the seeded
+     *  `tax_brackets.taxYear` — see `build-engine-payload.ts`'s
+     *  `latestTaxYear`). NOT the same concept as the projection's own
+     *  `yearIndex`/start year — those happen to coincide only because the
+     *  plan starts in the same calendar year this tax data was seeded for.
+     *  Used to grow these otherwise-flat figures forward for years beyond
+     *  this one (found live, 2026-08-31 — every one of these values was
+     *  held flat in NOMINAL dollars for the entire projection despite
+     *  being legally inflation-indexed in reality, silently overstating
+     *  tax burden decades out). Undefined ⇒ no growth applied (treat as
+     *  already-current), matching pre-fix behavior for any caller that
+     *  doesn't thread this through.
+     *
+     *  Advisor-caught nuance (2026-08-31): this is sourced from
+     *  `tax_brackets`' own `MAX(taxYear)` — `standardDeduction`'s actual
+     *  source (`contribution_limits`, queried by `asOfDate`'s calendar
+     *  year, `build-engine-payload.ts` ~line 139) is a SEPARATE query with
+     *  no enforced alignment to it. They currently share the same vintage
+     *  in practice (both 2026-seeded), which is what makes treating them
+     *  as one shared anchor safe today — but nothing prevents that from
+     *  drifting (e.g. next year's brackets seeded in Oct/Nov before the
+     *  matching `contribution_limits` row lands). A drift here doesn't
+     *  desync `toOrdinaryBracketIncome`'s residual math (both are still
+     *  grown by the identical factor off whichever anchor is used) — it
+     *  just makes the growth itself off by however many years the two
+     *  vintages have drifted apart. If that ever becomes a real gap,
+     *  thread a second, `standardDeduction`-specific vintage year instead
+     *  of assuming they match. */
+    taxDataYear?: number;
   };
 
   /** Withdrawal/spending strategy. Defaults to 'fixed'. */
   withdrawalStrategy?: WithdrawalStrategyType;
+
+  /** R55 follow-up (2026-08-30): within `bracket_filling` mode's cost-
+   *  ranked tier beyond the Traditional bracket-fill target, which of Roth
+   *  basis / brokerage's 0%-LTCG room drains first — see
+   *  `RankWithdrawalTiersInput.discretionaryWithdrawalOrder`
+   *  (withdrawal-cost-ranking.ts) for the full tradeoff explanation.
+   *  Defaults to `"roth_first"`, matching all pre-existing behavior. An
+   *  explicit household opt-in, not an automatic optimization — a
+   *  brokerage gain still counts toward MAGI for ACA/IRMAA even when taxed
+   *  at 0% federally. */
+  discretionaryWithdrawalOrder?: "roth_first" | "brokerage_first";
 
   /**
    * Strategy-specific parameters. Keyed by strategy type.
@@ -533,6 +592,28 @@ export type DecumulationOverride = {
   rothConversionTarget?: number;
 
   /**
+   * Override the bracket_filling target marginal rate (see
+   * `DistributionTaxRates.rothBracketTarget`) for this year onward.
+   * Omit to keep the plan's configured target. Added 2026-08-29 so a
+   * multi-year withdrawal-policy search can express "try this bracket
+   * target for this candidate" the same way `accumulationOverrides`
+   * already lets Coast FIRE express a candidate contribution rate — see
+   * `.scratch/docs/plans/PLAN-v0.7.10-multi-year-withdrawal-optimizer.md`.
+   */
+  rothBracketTarget?: number;
+
+  /**
+   * Override R47's RMD-smoothing ceiling (see
+   * `DecumulationDefaults.rmdSmoothingMaxBracketTarget`) for this year
+   * onward. Omit to keep the plan's configured ceiling. Added 2026-08-29
+   * alongside `rothBracketTarget` so a search that varies the bracket
+   * target can keep this ceiling consistent with whatever target it's
+   * evaluating, instead of scoring a candidate against a stale ceiling
+   * seeded from a different value.
+   */
+  rmdSmoothingMaxBracketTarget?: number;
+
+  /**
    * One-time dollar withdrawals for this year. NOT sticky-forward.
    * Models windfall spending, one-time distributions, etc.
    */
@@ -566,6 +647,10 @@ export type ResolvedDecumulationConfig = {
   withdrawalTaxTypeCaps: Record<RoutingTaxType, number | null>;
   /** Resolved Roth conversion target marginal rate (sticky-forward from overrides). undefined = use defaults. */
   rothConversionTarget?: number;
+  /** Resolved bracket_filling target marginal rate (sticky-forward from
+   *  overrides). undefined = use `decumulationDefaults.distributionTaxRates.rothBracketTarget`.
+   *  Added 2026-08-29 — see `rothBracketTarget` on `DecumulationOverride`. */
+  rothBracketTarget?: number;
   /** Lump sums for this year only (NOT sticky-forward). Empty if none. */
   lumpSums: LumpSum[];
   /** See DecumulationDefaults.avoidPenalizedWithdrawals. Always resolved
@@ -584,6 +669,9 @@ export type ResolvedDecumulationConfig = {
    *  resolved (never undefined) — defaults to
    *  `RMD_SMOOTHING_MAX_BRACKET_TARGET_FALLBACK`. */
   rmdSmoothingMaxBracketTarget: number;
+  /** See DecumulationDefaults.discretionaryWithdrawalOrder. Always
+   *  resolved (never undefined) — defaults to `"roth_first"`. */
+  discretionaryWithdrawalOrder: "roth_first" | "brokerage_first";
 };
 
 /**

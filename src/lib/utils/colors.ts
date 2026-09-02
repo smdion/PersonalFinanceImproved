@@ -215,6 +215,16 @@ export const CHART_COLORS = {
   // Projection chart reference-line markers (age axis + legend swatch)
   ssMarker: "#2dd4bf", // teal-400 — Social Security start-age marker
   rmdMarker: "#f59e0b", // amber-500 — RMD start-age marker
+  // Projection chart's decumulation-year income overlay (secondary axis) —
+  // reuses ssMarker's teal for the SS line so the same color means "Social
+  // Security" everywhere on this chart. withdrawalFlow is a new, neutral
+  // slate tone (no existing account-type or tax-bucket hue uses this
+  // family) for total portfolio withdrawal — deliberately NOT blue/violet/
+  // emerald/orange (Traditional/Roth/HSA/After-Tax) or teal/amber (SS/RMD
+  // markers above), per DESIGN.md's "distinct hue families, no overlap"
+  // rule — this is an aggregate flow across all tax types, not a specific
+  // account or bucket.
+  withdrawalFlow: "#475569", // slate-600 — total portfolio withdrawal
   // Guyton-Klinger guardrail event markers (R45 Step 5)
   guardrailIncreaseMarker: "#22c55e", // green-500 — spending raised
   guardrailDecreaseMarker: "#ef4444", // red-500 — spending cut

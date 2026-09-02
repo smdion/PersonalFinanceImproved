@@ -10,9 +10,11 @@ import type {
   ContributionAccountInput,
   PaycheckInput,
 } from "@/lib/calculators/types";
+import { toTaxableIncomeBrackets } from "@/lib/calculators/tax-brackets";
 
-// ── 2025 MFJ Tax Brackets (W-4 2(c) CHECKED) ──
+// ── 2026 MFJ Tax Brackets (W-4 2(c) CHECKED) ──
 // These are the halved brackets used for paycheck withholding when both spouses work.
+// Source: seed-reference-data.sql tax_brackets (2026, MFJ, true).
 export const MFJ_2C_BRACKETS: TaxBracketInput = {
   filingStatus: "MFJ",
   w4Checkbox: true,
@@ -26,7 +28,8 @@ export const MFJ_2C_BRACKETS: TaxBracketInput = {
     { min: 272325, max: 400450, rate: 0.35 },
     { min: 400450, max: null, rate: 0.37 },
   ],
-  standardDeduction: 30000,
+  standardDeduction: 32200,
+  w4Adjustment: 0,
   socialSecurityWageBase: 176100,
   socialSecurityRate: 0.062,
   medicareRate: 0.0145,
@@ -34,8 +37,11 @@ export const MFJ_2C_BRACKETS: TaxBracketInput = {
   medicareAdditionalThreshold: 200000,
 };
 
-// ── 2025 MFJ Tax Brackets (NO checkbox) ──
-// Standard brackets for annual tax estimation.
+// ── 2026 MFJ Tax Brackets (NO checkbox) ──
+// Standard brackets for annual tax estimation and paycheck withholding.
+// Source: seed-reference-data.sql tax_brackets (2026, MFJ, false) — R57 fixed
+// this fixture, which previously dropped the 24% bracket entirely and
+// duplicated 0.37 in its place (jumped 230700@0.22 -> 422850@0.32).
 export const MFJ_NO_CHECKBOX_BRACKETS: TaxBracketInput = {
   filingStatus: "MFJ",
   w4Checkbox: false,
@@ -44,17 +50,32 @@ export const MFJ_NO_CHECKBOX_BRACKETS: TaxBracketInput = {
     { min: 19300, max: 44100, rate: 0.1 },
     { min: 44100, max: 120100, rate: 0.12 },
     { min: 120100, max: 230700, rate: 0.22 },
-    { min: 230700, max: 422850, rate: 0.32 },
-    { min: 422850, max: 531750, rate: 0.35 },
-    { min: 531750, max: 788000, rate: 0.37 },
+    { min: 230700, max: 422850, rate: 0.24 },
+    { min: 422850, max: 531750, rate: 0.32 },
+    { min: 531750, max: 788000, rate: 0.35 },
     { min: 788000, max: null, rate: 0.37 },
   ],
-  standardDeduction: 30000,
+  standardDeduction: 32200,
+  // Pub 15-T Worksheet 1A line 1g, MFJ standard table (R56/R58):
+  // standardDeduction (32200) - this row's first non-zero threshold (19300).
+  w4Adjustment: 12900,
   socialSecurityWageBase: 176100,
   socialSecurityRate: 0.062,
   medicareRate: 0.0145,
   medicareAdditionalRate: 0.009,
   medicareAdditionalThreshold: 200000,
+};
+
+// ── 2026 MFJ Tax Brackets, real Form 1040 taxable-income space (R57) ──
+// This is what calculateTax actually needs — MFJ_NO_CHECKBOX_BRACKETS above
+// is Pub 15-T withholding-space (for calculatePaycheck); feeding THAT
+// directly to calculateTax was the R57 double-deduction bug. Production
+// derives this the same way, via buildLiabilityBracketInput ->
+// toTaxableIncomeBrackets — this fixture reuses that exact function so it
+// can't silently drift from what tax.ts actually receives.
+export const MFJ_TAXABLE_INCOME_BRACKETS: TaxBracketInput = {
+  ...MFJ_NO_CHECKBOX_BRACKETS,
+  brackets: toTaxableIncomeBrackets(MFJ_NO_CHECKBOX_BRACKETS.brackets),
 };
 
 // ── Person A's Paycheck Input ──

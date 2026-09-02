@@ -18,6 +18,15 @@ export const SK_ACTIVE_CONTRIB_PROFILE_ID = "active_contrib_profile_id";
 // ── Salary Profile ──────────────────────────────────────────────────
 export const SK_ACTIVE_SALARY_PROFILE_ID = "active_salary_profile_id";
 
+// ── Retirement Profile ──────────────────────────────────────────────
+/** The globally active Retirement Profile — the lowest tier of
+ *  useEffectiveProfileId's resolution (Plan's choice → local selection →
+ *  this). Required, not optional: without it a household with no active Plan
+ *  resolves to no profile at all, and build-engine-payload returns null,
+ *  which blanks the retirement page. Mirrors SK_ACTIVE_CONTRIB_PROFILE_ID /
+ *  SK_ACTIVE_SALARY_PROFILE_ID above. */
+export const SK_ACTIVE_RETIREMENT_PROFILE_ID = "active_retirement_profile_id";
+
 // ── Retirement ──────────────────────────────────────────────────────
 export const SK_RETIREMENT_SIMULATION_AUTOLOAD =
   "retirement_simulation_autoload";

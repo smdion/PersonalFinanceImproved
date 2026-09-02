@@ -27,6 +27,7 @@ import { type RenderMcCellOptions } from "./projection-table-mc-cell";
 import { AccumulationRow } from "./projection-table-accum-row";
 import { DecumulationRow } from "./projection-table-decum-row";
 import { ContribMethodologySection } from "./projection-table-contrib-methodology";
+import { TaxSummaryCard } from "./tax-summary-card";
 
 /**
  * Unified projection table — accumulation + decumulation year-by-year data.
@@ -98,7 +99,7 @@ export function ProjectionTable({
       )}
       {result && (
         <>
-          <div className="flex items-center gap-2 flex-wrap mb-2">
+          <div className="print:hidden flex items-center gap-2 flex-wrap mb-2">
             <LabeledPillGroup label="Contributions">
               <PillBtn
                 active={contribView === "account"}
@@ -132,9 +133,9 @@ export function ProjectionTable({
               size="xs"
             />
           </div>
-          <div className="overflow-x-auto max-h-[28rem] overflow-y-auto">
+          <div className="projection-table-scroll overflow-x-auto max-h-[28rem] overflow-y-auto print:max-h-none print:overflow-visible">
             <table
-              className="text-xs"
+              className="projection-table text-xs print:text-[7px]"
               aria-label="Year-by-year retirement projection table with contributions, balances by tax bucket, and withdrawals"
               style={{
                 minWidth:
@@ -394,6 +395,14 @@ export function ProjectionTable({
             </table>
           </div>
         </>
+      )}
+
+      {/* Lifetime tax summary — below the table, above the methodology
+          blurb. Decumulation only, see the card's own docblock. */}
+      {result && (
+        <div className="print:hidden mt-2">
+          <TaxSummaryCard state={state} />
+        </div>
       )}
 
       {/* R42: methodology links/validation-evidence are engine-internal
