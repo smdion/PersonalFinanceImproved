@@ -754,6 +754,32 @@ describe("retirement.retirementProfiles", () => {
     expect(updated!.name).toBe("Retire Early (renamed)");
   });
 
+  // R43: taxParamsYear pins the profile's resolveTaxParams base year.
+  // Reachable via this mutation (advisor-caught gap: the column existed
+  // and was read correctly, but nothing could ever set it).
+  it("update sets and clears taxParamsYear", async () => {
+    const pinned = await caller.retirement.retirementProfiles.update({
+      id: secondProfileId,
+      taxParamsYear: 2025,
+    });
+    expect(pinned!.taxParamsYear).toBe(2025);
+
+    const cleared = await caller.retirement.retirementProfiles.update({
+      id: secondProfileId,
+      taxParamsYear: null,
+    });
+    expect(cleared!.taxParamsYear).toBeNull();
+  });
+
+  it("update rejects an out-of-range taxParamsYear", async () => {
+    await expect(
+      caller.retirement.retirementProfiles.update({
+        id: secondProfileId,
+        taxParamsYear: 1900,
+      }),
+    ).rejects.toThrow();
+  });
+
   it("delete refuses to remove the only remaining profile", async () => {
     // secondProfileId still exists alongside firstProfileId at this point,
     // so deleting ONE of two is fine -- but deleting the last one left must

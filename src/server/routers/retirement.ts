@@ -1215,15 +1215,20 @@ export const retirementRouter = createTRPCRouter({
         });
       }),
 
-    /** Rename / re-describe a profile. Assumptions themselves are edited
-     *  through retirementSettings.upsert, scoped to whichever profile is
-     *  active — not here. */
+    /** Rename / re-describe a profile, or pin its tax-law year. Household/
+     *  per-person assumptions themselves are edited through
+     *  retirementSettings.upsert, scoped to whichever profile is active —
+     *  not here. taxParamsYear lives on retirement_profiles itself (R43):
+     *  null (default) tracks the latest enacted tax data; a real year pins
+     *  resolveTaxParams's base year so re-opening this profile reproduces
+     *  its numbers instead of re-pricing under whatever year is newest. */
     update: adminProcedure
       .input(
         z.object({
           id: z.number().int(),
           name: z.string().min(1).max(100).optional(),
           description: z.string().max(500).nullish(),
+          taxParamsYear: z.number().int().min(2000).max(2100).nullish(),
         }),
       )
       .mutation(({ ctx, input: { id, ...data } }) =>
