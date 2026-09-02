@@ -98,3 +98,19 @@ INSERT INTO irmaa_brackets (tax_year, filing_status, brackets) VALUES
   (2026, 'Single', '[{"magiThreshold": 103000, "annualSurcharge": 1056}, {"magiThreshold": 129000, "annualSurcharge": 2640}, {"magiThreshold": 161000, "annualSurcharge": 4224}, {"magiThreshold": 193000, "annualSurcharge": 5808}, {"magiThreshold": 375000, "annualSurcharge": 6924}]'),
   (2026, 'HOH', '[{"magiThreshold": 103000, "annualSurcharge": 1056}, {"magiThreshold": 129000, "annualSurcharge": 2640}, {"magiThreshold": 161000, "annualSurcharge": 4224}, {"magiThreshold": 193000, "annualSurcharge": 5808}, {"magiThreshold": 375000, "annualSurcharge": 6924}]')
 ON CONFLICT DO NOTHING;
+
+-- ACA Federal Poverty Level by household size (R43) — keyed by ACA COVERAGE
+-- year, which uses the HHS guidelines published the PRIOR calendar year
+-- (26 CFR 1.36B-1(h)). Mirrors src/lib/config/aca-tables.ts FPL_BY_HOUSEHOLD.
+INSERT INTO fpl_by_household (tax_year, amounts) VALUES
+  (2026, '{"1": 15650, "2": 21150, "3": 26650, "4": 32150, "5": 37650, "6": 43150, "7": 48650, "8": 54150}')
+ON CONFLICT DO NOTHING;
+
+-- Tax-parameter vintage markers (R43). One thin row per tax year — no figure
+-- values. resolveTaxParams uses these for the "Tax data: YYYY, rev N" label
+-- and version; the actual figures live in the tables above. Bump `version`
+-- when re-seeding a year's figures.
+INSERT INTO tax_params (tax_year, version, source, notes) VALUES
+  (2025, 1, 'IRS Notice 2024-80; IRS Rev. Proc. 2024-40; Pub 15-T (2025)', 'R43 backfill of the pre-existing 2025 reference data'),
+  (2026, 1, 'IRS Notice 2025-67; IRS Rev. Proc. 2025-32; Pub 15-T (2026); CMS 2026; HHS 2025', 'R43 backfill of the pre-existing 2026 reference data')
+ON CONFLICT DO NOTHING;
