@@ -206,6 +206,9 @@ export const CHART_COLORS = {
   expenseOver: "#ef4444", // red-500
   // Generic muted axis tick color (Recharts)
   axisMuted: "#6b7280", // gray-500
+  // Spending-stability chart "75% floor" reference line — theme-var with a
+  // hex fallback so it tracks the palette in both themes.
+  stabilityFloorLine: "var(--text-red-500, #ef4444)",
   // Withdrawal strategy comparison chart (fixed dark-styled tooltip/axes)
   wdComparisonGrid: "#374151", // gray-700
   wdComparisonAxis: "#9ca3af", // gray-400

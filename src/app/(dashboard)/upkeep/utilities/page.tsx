@@ -18,7 +18,11 @@ import { Card, Metric } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
-import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import {
+  formatCurrency,
+  formatPercent,
+  compactCurrency,
+} from "@/lib/utils/format";
 import { CHART_COLORS } from "@/lib/utils/colors";
 import { gridProps, axisProps } from "@/components/charts";
 import { ChevronDown, ChevronRight, Lock, LockOpen } from "lucide-react";
@@ -129,9 +133,7 @@ function CostTrend({
           <YAxis
             {...axisProps}
             width={48}
-            tickFormatter={(v: number) =>
-              v >= 1000 ? `$${(v / 1000).toFixed(1)}k` : `$${v}`
-            }
+            tickFormatter={(v: number) => compactCurrency(v)}
           />
           <RechartsTooltip
             cursor={{ fill: "rgba(148,163,184,0.12)" }}

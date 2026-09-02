@@ -379,13 +379,13 @@ export function SpendingStabilityChart({
           <ReferenceLine
             yAxisId="left"
             y={75}
-            stroke="var(--text-red-500, #ef4444)"
+            stroke={CHART_COLORS.stabilityFloorLine}
             strokeDasharray="6 3"
             strokeWidth={1.5}
             label={{
               value: "75% Floor",
               position: "right",
-              fill: "var(--text-red-500, #ef4444)",
+              fill: CHART_COLORS.stabilityFloorLine,
               fontSize: CHART_FONT.tiny,
             }}
           />
