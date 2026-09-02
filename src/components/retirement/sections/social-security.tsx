@@ -8,6 +8,7 @@
 "use client";
 
 import { HelpTip } from "@/components/ui/help-tip";
+import { Badge } from "@/components/ui/badge";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatCurrency } from "@/lib/utils/format";
 import type {
@@ -46,9 +47,7 @@ export function SocialSecuritySection({
         <h4 className="text-label font-semibold text-muted uppercase tracking-wider">
           Social Security
         </h4>
-        <span className="text-micro text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
-          Baseline + Simulation
-        </span>
+        <Badge color="indigo">Baseline + Simulation</Badge>
         <div className="flex-1 border-t" />
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2 text-sm">

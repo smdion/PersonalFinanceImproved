@@ -18,6 +18,7 @@
 "use client";
 
 import { HelpTip } from "@/components/ui/help-tip";
+import { Badge } from "@/components/ui/badge";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatPercent } from "@/lib/utils/format";
 import { taxTypeTextColor } from "@/lib/utils/colors";
@@ -116,9 +117,7 @@ export function TaxesSection({
         </select>
         <span className="text-caption text-faint">brackets</span>
         <HelpTip text="Tax filing status used for retirement tax estimates — affects federal brackets, LTCG rates, IRMAA thresholds, and Social Security taxation. 'Auto' inherits from your primary job's W-4. Override it here if your filing status will change in retirement." />
-        <span className="text-micro text-purple-400 bg-purple-50 px-1.5 py-0.5 rounded">
-          Baseline + Simulation
-        </span>
+        <Badge color="indigo">Baseline + Simulation</Badge>
         <div className="flex-1 border-t" />
       </div>
       {/* Tax rates by account type — compact row */}

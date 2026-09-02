@@ -31,6 +31,7 @@ import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatPercent } from "@/lib/utils/format";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -421,9 +422,7 @@ export function RetirementProfileTab({
                 <h4 className="text-label font-semibold text-muted uppercase tracking-wider">
                   Decumulation Plan
                 </h4>
-                <span className="text-micro text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
-                  Baseline + Simulation
-                </span>
+                <Badge color="indigo">Baseline + Simulation</Badge>
                 <div className="flex-1 border-t" />
                 <StrategyGuideButton />
               </div>
@@ -517,9 +516,7 @@ export function RetirementProfileTab({
               <h4 className="text-label font-semibold text-muted uppercase tracking-wider">
                 Plan Assumptions
               </h4>
-              <span className="text-micro text-purple-400 bg-purple-50 px-1.5 py-0.5 rounded">
-                Baseline
-              </span>
+              <Badge color="indigo">Baseline</Badge>
               <div className="flex-1 border-t" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">

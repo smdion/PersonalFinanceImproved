@@ -11,6 +11,7 @@
 "use client";
 
 import { HelpTip } from "@/components/ui/help-tip";
+import { Badge } from "@/components/ui/badge";
 import { formatPercent } from "@/lib/utils/format";
 import { glidePathHsl } from "@/lib/utils/colors";
 import type { ReturnRateSummary } from "./types";
@@ -29,9 +30,7 @@ export function GlidePathSection({ returnRateSummary }: Props) {
         </h4>
         <span className="text-caption text-faint">age-based glide path</span>
         <HelpTip text="Your portfolio return rate shifts with age based on the glide path configured in Settings. Deterministic mode uses these rates directly as fixed annual returns. Simulation (Simple + Advanced) uses them as the mean of a probability distribution — each trial samples random returns around these rates, capturing real-world volatility and sequence-of-returns risk. Darker segments in the bar below indicate higher return rates (younger, more aggressive allocation)." />
-        <span className="text-micro text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
-          Baseline + Simulation
-        </span>
+        <Badge color="indigo">Baseline + Simulation</Badge>
         <div className="flex-1 border-t" />
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 text-sm mb-2">

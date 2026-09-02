@@ -19,6 +19,7 @@
 "use client";
 
 import { HelpTip } from "@/components/ui/help-tip";
+import { Badge } from "@/components/ui/badge";
 import type { Settings, UpsertSettingsMutation, IsEditable } from "./types";
 import { buildSettingsPatch } from "./settings-patch";
 
@@ -49,9 +50,7 @@ export function RmdHandlingSection({
         <h4 className="text-label font-semibold text-muted uppercase tracking-wider">
           RMD Handling
         </h4>
-        <span className="text-micro text-purple-400 bg-purple-50 px-1.5 py-0.5 rounded">
-          Baseline + Simulation
-        </span>
+        <Badge color="indigo">Baseline + Simulation</Badge>
         <div className="flex-1 border-t" />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 text-sm">
