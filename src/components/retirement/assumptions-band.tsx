@@ -33,7 +33,7 @@
  * control to link out to.
  */
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { trpc } from "@/lib/trpc";
 import { HelpTip } from "@/components/ui/help-tip";
 import { InlineEdit } from "@/components/ui/inline-edit";
@@ -60,6 +60,42 @@ import type {
 } from "@/components/retirement/sections/types";
 
 type ProfileListEntry = { id: number; name: string };
+
+/** Inflation/Withdrawal-Rate/Raise chips were structurally identical
+ *  (~16 lines each, same InlineEdit percent wiring) — code-review
+ *  reuse/duplication finding, 2026-09-01. */
+function PercentChip({
+  chipCls,
+  labelCls,
+  label,
+  value,
+  editable,
+  onChange,
+}: {
+  chipCls: string;
+  labelCls: string;
+  label: ReactNode;
+  /** Decimal fraction from settings (e.g. "0.035"), not a whole percent. */
+  value: string;
+  editable: boolean;
+  /** Receives the new value as a decimal fraction, ready for buildSettingsPatch. */
+  onChange: (decValue: string) => void;
+}) {
+  return (
+    <span className={chipCls}>
+      <span className={labelCls}>{label}</span>
+      <InlineEdit
+        value={decToWhole(value)}
+        onSave={(v) => onChange(wholeToDec(v))}
+        formatDisplay={(v) => formatPercent(Number(v) / 100, 2)}
+        parseInput={(v) => v.replace(/[^0-9.]/g, "")}
+        type="number"
+        className="text-caption"
+        isEditable={editable}
+      />
+    </span>
+  );
+}
 
 type Props = {
   settings: Settings;
@@ -243,71 +279,51 @@ export function AssumptionsBand({
           />
         </span>
 
-        <span className={chipCls}>
-          <span className={labelCls}>Inflation</span>
-          <InlineEdit
-            value={decToWhole(settings.annualInflation)}
-            onSave={(v) =>
-              upsertSettings.mutate(
-                buildSettingsPatch(settings, {
-                  annualInflation: wholeToDec(v),
-                }),
-              )
-            }
-            formatDisplay={(v) => formatPercent(Number(v) / 100, 2)}
-            parseInput={(v) => v.replace(/[^0-9.]/g, "")}
-            type="number"
-            className="text-caption"
-            isEditable={editable}
-          />
-        </span>
+        <PercentChip
+          chipCls={chipCls}
+          labelCls={labelCls}
+          label="Inflation"
+          value={settings.annualInflation}
+          editable={editable}
+          onChange={(v) =>
+            upsertSettings.mutate(
+              buildSettingsPatch(settings, { annualInflation: v }),
+            )
+          }
+        />
 
         {strategyMeta.usesWithdrawalRate && (
-          <span className={chipCls}>
-            <span className={labelCls}>
-              {strategyMeta.incomeSource === "budget"
+          <PercentChip
+            chipCls={chipCls}
+            labelCls={labelCls}
+            label={
+              strategyMeta.incomeSource === "budget"
                 ? "Withdrawal Rate"
-                : "Initial Rate"}
-            </span>
-            <InlineEdit
-              value={decToWhole(settings.withdrawalRate)}
-              onSave={(v) =>
-                upsertSettings.mutate(
-                  buildSettingsPatch(settings, {
-                    withdrawalRate: wholeToDec(v),
-                  }),
-                )
-              }
-              formatDisplay={(v) => formatPercent(Number(v) / 100, 2)}
-              parseInput={(v) => v.replace(/[^0-9.]/g, "")}
-              type="number"
-              className="text-caption"
-              isEditable={editable}
-            />
-          </span>
+                : "Initial Rate"
+            }
+            value={settings.withdrawalRate}
+            editable={editable}
+            onChange={(v) =>
+              upsertSettings.mutate(
+                buildSettingsPatch(settings, { withdrawalRate: v }),
+              )
+            }
+          />
         )}
 
         {strategyMeta.usesPostRetirementRaise && (
-          <span className={chipCls}>
-            <span className={labelCls}>Raise</span>
-            <InlineEdit
-              value={decToWhole(
-                settings.postRetirementInflation ?? settings.annualInflation,
-              )}
-              onSave={(v) =>
-                upsertSettings.mutate(
-                  buildSettingsPatch(settings, {
-                    postRetirementInflation: wholeToDec(v),
-                  }),
-                )
-              }
-              formatDisplay={(v) => formatPercent(Number(v) / 100, 2)}
-              parseInput={(v) => v.replace(/[^0-9.]/g, "")}
-              type="number"
-              className="text-caption"
-              isEditable={editable}
-            />
-          </span>
+          <PercentChip
+            chipCls={chipCls}
+            labelCls={labelCls}
+            label="Raise"
+            value={settings.postRetirementInflation ?? settings.annualInflation}
+            editable={editable}
+            onChange={(v) =>
+              upsertSettings.mutate(
+                buildSettingsPatch(settings, { postRetirementInflation: v }),
+              )
+            }
+          />
         )}
 
         <span className={chipCls}>
