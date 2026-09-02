@@ -37,6 +37,12 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
     "push" | "pull" | "both"
   >("push");
 
+  // Was re-derived 4x below with the identical two-way startsWith check —
+  // code-review reuse/duplication finding, 2026-09-01.
+  const newPortfolioIsCashOrCredit =
+    newPortfolioLocal.startsWith("cash|") ||
+    newPortfolioLocal.startsWith("creditCard|");
+
   if (portfolio.trackingAccounts.length === 0) return null;
 
   const mappedRemoteIds = new Set(
@@ -464,10 +470,7 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
           </div>
           <div className="flex-1 min-w-[100px]">
             <label className="block text-caption font-medium text-muted mb-0.5">
-              {newPortfolioLocal.startsWith("cash|") ||
-              newPortfolioLocal.startsWith("creditCard|")
-                ? "Account"
-                : "Tracking Account"}
+              {newPortfolioIsCashOrCredit ? "Account" : "Tracking Account"}
             </label>
             <select
               value={newPortfolioRemote}
@@ -476,10 +479,7 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
             >
               <option value="">Select...</option>
               {(() => {
-                const isCashOrCredit =
-                  newPortfolioLocal.startsWith("cash|") ||
-                  newPortfolioLocal.startsWith("creditCard|");
-                if (!isCashOrCredit) {
+                if (!newPortfolioIsCashOrCredit) {
                   return portfolio.trackingAccounts.map((a) => (
                     <option key={a.id} value={a.id}>
                       {a.name} ({formatCurrency(a.balance)})
@@ -510,8 +510,7 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
             <label className="block text-caption font-medium text-muted mb-0.5">
               Dir
             </label>
-            {newPortfolioLocal.startsWith("cash|") ||
-            newPortfolioLocal.startsWith("creditCard|") ? (
+            {newPortfolioIsCashOrCredit ? (
               // Pull-only — see the fixed-direction note on existing
               // Cash/Credit Card rows above.
               <div className="w-full px-1 py-1 text-label border border-strong rounded bg-surface-sunken text-faint">
