@@ -41,6 +41,10 @@ export const lumpSumSchema = z
       targetAccount: z.enum(accountCategoryEnum()),
       taxType: z.enum(["traditional", "roth"]).optional(),
       targetAccountName: z.string().max(200).optional(),
+      // R4 (v0.7.11): disambiguates two household members' identically-named
+      // accounts — see LumpSum.targetOwnerName's docblock (calculators/types/shared.ts).
+      // Optional so lump sums saved before this field existed keep parsing.
+      targetOwnerName: z.string().max(200).optional(),
       label: z.string().max(100).optional(),
     }),
   )

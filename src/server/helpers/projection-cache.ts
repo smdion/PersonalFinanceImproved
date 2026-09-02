@@ -190,8 +190,18 @@ import { log } from "@/lib/logger";
  *  means more 0%-LTCG room and lower ordinary tax, same shift class as v23.
  *  Cached rows from before this understate the household's real deduction
  *  for those years. Year 1 of decumulation and any year outside 2025-2028
- *  are unaffected (no prior-year MAGI / outside the statutory window). */
-export const PROJECTION_CACHE_ENGINE_VERSION = 26;
+ *  are unaffected (no prior-year MAGI / outside the statutory window).
+ *
+ *  27: R4 (part 2) — a lump sum's individual-account target now matches by
+ *  (name, owner) when `targetOwnerName` is set, not name alone
+ *  (`lump-sum.ts`). Same narrow-household-shape value change as v25's
+ *  decumulation-year.ts fix: only affects a lump sum explicitly targeting a
+ *  specific individual account, on a household where two people share that
+ *  account name. `targetOwnerName` didn't exist before this version, so no
+ *  previously-saved lump sum carries it — this only takes effect for lump
+ *  sums created/edited after this ships, which is also when it's included
+ *  in the engine-input hash for the first time. */
+export const PROJECTION_CACHE_ENGINE_VERSION = 27;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

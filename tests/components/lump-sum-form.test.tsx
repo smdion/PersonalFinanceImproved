@@ -118,8 +118,12 @@ describe("LumpSumForm", () => {
   it("updates targetAccount when a different account is selected", () => {
     const onAdd = vi.fn();
     render(<LumpSumForm accounts={accounts} onAdd={onAdd} />);
+    // Option values are now a "name::ownerName" composite key (R4, v0.7.11)
+    // — plain name alone can't disambiguate two owners sharing an account
+    // name, so the picker no longer uses it as the <option> value. These
+    // fixture accounts have no ownerName, so the key is "name::".
     fireEvent.change(screen.getByDisplayValue("401k - Alice"), {
-      target: { value: "Brokerage - Joint" },
+      target: { value: "Brokerage - Joint::" },
     });
     fireEvent.change(screen.getByPlaceholderText("$50,000"), {
       target: { value: "1000" },
@@ -128,6 +132,38 @@ describe("LumpSumForm", () => {
 
     expect(onAdd.mock.calls[0]![0].targetAccountName).toBe("Brokerage - Joint");
     expect(onAdd.mock.calls[0]![0].targetAccount).toBe("brokerage");
+    expect(onAdd.mock.calls[0]![0].targetOwnerName).toBe("");
+  });
+
+  it("R4: two accounts sharing a name show the owner in the label and are individually selectable", () => {
+    const onAdd = vi.fn();
+    const duplicateNameAccounts = [
+      { name: "Long Term Brokerage", category: "brokerage", ownerName: "Sean" },
+      {
+        name: "Long Term Brokerage",
+        category: "brokerage",
+        ownerName: "Joanna",
+      },
+    ];
+    render(<LumpSumForm accounts={duplicateNameAccounts} onAdd={onAdd} />);
+    // Both owner-qualified labels render distinctly.
+    expect(screen.getByText("Long Term Brokerage (Sean)")).toBeInTheDocument();
+    expect(
+      screen.getByText("Long Term Brokerage (Joanna)"),
+    ).toBeInTheDocument();
+
+    fireEvent.change(screen.getByDisplayValue("Long Term Brokerage (Sean)"), {
+      target: { value: "Long Term Brokerage::Joanna" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("$50,000"), {
+      target: { value: "1000" },
+    });
+    fireEvent.click(screen.getByText("Add"));
+
+    expect(onAdd.mock.calls[0]![0].targetAccountName).toBe(
+      "Long Term Brokerage",
+    );
+    expect(onAdd.mock.calls[0]![0].targetOwnerName).toBe("Joanna");
   });
 
   it("renders with an empty accounts list without crashing", () => {

@@ -57,8 +57,23 @@ export function applyLumpSums(
           : bs === "roth_traditional"
             ? "preTax"
             : "afterTax");
+      // R4 (v0.7.11): match by name AND owner when the lump sum was created
+      // after targetOwnerName existed — falls back to name-only for lump
+      // sums saved before that field existed, or when the household has
+      // never had two people share an account name (the common case, where
+      // both match paths agree). Two household members with an
+      // identically-named account (e.g. both "Long Term Brokerage") used to
+      // silently collide here, always landing on whichever account
+      // `indAccts` happened to list first.
       const target = ls.targetAccountName
-        ? indAccts.find((ia) => ia.name === ls.targetAccountName)
+        ? ((ls.targetOwnerName
+            ? indAccts.find(
+                (ia) =>
+                  ia.name === ls.targetAccountName &&
+                  ia.ownerName === ls.targetOwnerName,
+              )
+            : undefined) ??
+          indAccts.find((ia) => ia.name === ls.targetAccountName))
         : (indAccts.find(
             (ia) => ia.category === ls.targetAccount && ia.taxType === taxType,
           ) ?? indAccts.find((ia) => ia.category === ls.targetAccount));

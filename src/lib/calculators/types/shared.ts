@@ -68,6 +68,16 @@ export type LumpSum = {
   /** Specific individual account name (e.g., "Long Term Brokerage (Vanguard)").
    *  When set, the engine adds the lump sum to this exact account in indBal. */
   targetAccountName?: string;
+  /** Owner name of the targeted individual account (R4, v0.7.11) — two
+   *  household members can independently choose the same account name (e.g.
+   *  both "Long Term Brokerage"), and `targetAccountName` alone can't tell
+   *  them apart. When set, the engine matches on (name, ownerName) before
+   *  falling back to name alone, mirroring how `ContributionSpec.ownerName`
+   *  already disambiguates the same collision for ongoing contributions
+   *  (`individual-account-tracking.ts`'s `buildSpecToAccountMapping`).
+   *  Undefined ⇒ name-only match, unchanged behavior for every lump sum
+   *  saved before this field existed. */
+  targetOwnerName?: string;
   label?: string;
 };
 

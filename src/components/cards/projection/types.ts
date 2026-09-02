@@ -161,6 +161,10 @@ export type LumpSumFormEntry = {
   targetAccount: AccountCategory;
   /** Specific individual account name. When set, overrides targetAccount for routing. */
   targetAccountName: string;
+  /** Owner of the targeted individual account (R4, v0.7.11) — disambiguates
+   *  two household members' identically-named accounts. "" = not set (name
+   *  matches uniquely, or no specific account targeted). */
+  targetOwnerName: string;
   taxType: "traditional" | "roth" | "";
   label: string;
 };
@@ -172,6 +176,8 @@ export type LumpSumEvent = {
   amount: string; // negative for withdrawals
   targetAccount: AccountCategory;
   targetAccountName: string;
+  /** See LumpSumFormEntry.targetOwnerName. */
+  targetOwnerName: string;
   taxType: "traditional" | "roth" | "";
   label: string;
 };
@@ -274,6 +280,7 @@ export type AccumOverride = {
     amount: number;
     targetAccount: AccountCategory;
     targetAccountName?: string;
+    targetOwnerName?: string;
     taxType?: "traditional" | "roth";
     label?: string;
   }>;
@@ -297,6 +304,7 @@ export type DecumOverride = {
     amount: number;
     targetAccount: AccountCategory;
     targetAccountName?: string;
+    targetOwnerName?: string;
     taxType?: "traditional" | "roth";
     label?: string;
   }>;
@@ -358,6 +366,7 @@ export function accumOverrideToForm(o: AccumOverride): AccumOverrideForm {
       amount: String(ls.amount),
       targetAccount: ls.targetAccount,
       targetAccountName: ls.targetAccountName ?? "",
+      targetOwnerName: ls.targetOwnerName ?? "",
       taxType: ls.taxType ?? "",
       label: ls.label ?? "",
     })),
@@ -415,6 +424,7 @@ export function decumOverrideToForm(o: DecumOverride): DecumOverrideForm {
       amount: String(ls.amount),
       targetAccount: ls.targetAccount,
       targetAccountName: ls.targetAccountName ?? "",
+      targetOwnerName: ls.targetOwnerName ?? "",
       taxType: ls.taxType ?? "",
       label: ls.label ?? "",
     })),

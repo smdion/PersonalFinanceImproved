@@ -400,6 +400,9 @@ export function OverridesPanelV2({
                   ...(ls.targetAccountName
                     ? { targetAccountName: ls.targetAccountName }
                     : {}),
+                  ...(ls.targetOwnerName
+                    ? { targetOwnerName: ls.targetOwnerName }
+                    : {}),
                   ...(ls.label ? { label: ls.label } : {}),
                 };
                 if (isPostRetirement) {
