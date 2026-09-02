@@ -2,8 +2,8 @@
  * Shared helper for pushing portfolio snapshot balances to a budget API
  * (YNAB / Actual). Single computation path used by:
  *   - networth.portfolioSnapshots.create (auto-push on new snapshot)
- *   - sync.pushPortfolioToApi             (manual push of latest)
- *   - sync.resyncSnapshot                  (re-push an existing snapshot)
+ *   - sync.pushPortfolioToApi   (manual push of latest)
+ *   - sync.resyncPortfolioPush  (re-push an existing snapshot)
  *
  * Aggregates by remoteAccountId, computes (snapshotSum - liveYnabBalance) per
  * group, posts one transaction per group with a `snapshot:{id}` memo tag.

@@ -1,4 +1,4 @@
-/** Version router for creating, listing, restoring, and deleting full database state snapshots used for undo/backup. */
+/** Version router for creating, listing, restoring, and deleting full database state versions used for undo/backup. */
 import { z } from "zod/v4";
 import { eq, sql, desc } from "drizzle-orm";
 import {

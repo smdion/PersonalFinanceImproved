@@ -214,7 +214,8 @@ export function PortfolioContent() {
       utils.networth.listSnapshots.invalidate();
     },
   });
-  const resyncSnapshotMutation = trpc.sync.resyncSnapshot.useMutation();
+  const resyncPortfolioPushMutation =
+    trpc.sync.resyncPortfolioPush.useMutation();
 
   const snapshotDate = data?.snapshotDate;
 
@@ -551,7 +552,7 @@ export function PortfolioContent() {
                                   {canEdit && (
                                     <button
                                       disabled={
-                                        resyncSnapshotMutation.isPending
+                                        resyncPortfolioPushMutation.isPending
                                       }
                                       onClick={async () => {
                                         if (!isLatest) {
@@ -562,7 +563,7 @@ export function PortfolioContent() {
                                         }
                                         try {
                                           const result =
-                                            await resyncSnapshotMutation.mutateAsync(
+                                            await resyncPortfolioPushMutation.mutateAsync(
                                               {
                                                 snapshotId: snap.id,
                                                 confirmNonLatest: !isLatest,
@@ -579,8 +580,8 @@ export function PortfolioContent() {
                                       }}
                                       className="text-xs text-muted hover:text-primary disabled:opacity-50"
                                     >
-                                      {resyncSnapshotMutation.isPending &&
-                                      resyncSnapshotMutation.variables
+                                      {resyncPortfolioPushMutation.isPending &&
+                                      resyncPortfolioPushMutation.variables
                                         ?.snapshotId === snap.id
                                         ? "Resyncing…"
                                         : "Resync"}

@@ -809,28 +809,28 @@ export function HelpContent() {
       <Section title="Versions" icon={Save}>
         <p>
           The <NavLink href="/versions">Versions</NavLink> page manages database
-          snapshots &mdash; your safety net.
+          versions &mdash; your safety net.
         </p>
         <ul className="list-disc list-inside space-y-1 ml-2">
           <li>
-            <strong>Create snapshot</strong> &mdash; Save the current state of
+            <strong>Create version</strong> &mdash; Save the current state of
             your data with a name and description. Useful before making
             significant changes.
           </li>
           <li>
-            <strong>Restore</strong> &mdash; Roll back to any previous snapshot.
+            <strong>Restore</strong> &mdash; Roll back to any previous version.
             A confirmation dialog prevents accidental restores.
           </li>
           <li>
             <strong>Auto-backup</strong> &mdash; The app automatically creates
-            snapshots on startup.
+            versions on startup.
           </li>
           <li>
             <strong>Retention policy</strong> &mdash; Configure how long old
-            snapshots are kept before automatic cleanup.
+            versions are kept before automatic cleanup.
           </li>
           <li>
-            <strong>Preview</strong> &mdash; Inspect the contents of a snapshot
+            <strong>Preview</strong> &mdash; Inspect the contents of a version
             before restoring.
           </li>
         </ul>
@@ -1030,8 +1030,8 @@ export function HelpContent() {
             check Settings if something looks wrong.
           </li>
           <li>
-            <strong>Snapshots before big changes</strong> &mdash; Visit{" "}
-            <NavLink href="/versions">Versions</NavLink> and create a snapshot
+            <strong>Versions before big changes</strong> &mdash; Visit{" "}
+            <NavLink href="/versions">Versions</NavLink> and create a version
             before making significant data changes. You can always restore if
             something goes wrong.
           </li>

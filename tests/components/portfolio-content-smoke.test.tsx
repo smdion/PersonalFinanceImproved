@@ -194,7 +194,7 @@ vi.mock("@/lib/trpc", () => ({
       },
     },
     sync: {
-      resyncSnapshot: {
+      resyncPortfolioPush: {
         useMutation: () => ({ mutate: vi.fn(), isPending: false }),
       },
     },

@@ -500,7 +500,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `pullAssetsFromApi`           | mutation | `syncProcedure`      | Pull tracking account balances from budget API into Ledgr asset values.                                                                                                                                  |
 | `pullPortfolioFromApi`        | mutation | `syncProcedure`      | Pull portfolio balances from budget API tracking accounts into the latest snapshot.                                                                                                                      |
 | `pushPortfolioToApi`          | mutation | `syncProcedure`      | Push portfolio snapshot balances to budget API tracking accounts.                                                                                                                                        |
-| `resyncSnapshot`              | mutation | `syncProcedure`      | fresh tagged transactions. Resyncing a non-latest snapshot causes historical drift (later snapshot deltas were computed against the old state). Pass `confirmNonLatest` after warning the user.          |
+| `resyncPortfolioPush`         | mutation | `syncProcedure`      | fresh tagged transactions. Resyncing a non-latest snapshot causes historical drift (later snapshot deltas were computed against the old state). Pass `confirmNonLatest` after warning the user.          |
 | `updateAccountMappings`       | mutation | `syncProcedure`      | Update account mappings for a service (works pre-activation).                                                                                                                                            |
 
 ## `sync/names`
