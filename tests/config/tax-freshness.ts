@@ -168,18 +168,8 @@ export const TAX_PARAMETER_REGISTRY: TaxFreshnessEntry[] = [
     location: "src/lib/config/aca-tables.ts → FPL_BY_HOUSEHOLD",
     changeFrequency: "annual",
   },
-  {
-    name: "ACA premium estimates",
-    validThrough: 2026,
-    source: "National average benchmark estimates (2026 projected)",
-    // DEAD CODE (confirmed 2026-08-31, Phase 4): estimateAcaSubsidyValue
-    // has no production caller and was deliberately NOT given Phase 4's
-    // fplGrowthFactor treatment -- see its own docblock in aca-tables.ts.
-    // If reviving it, it needs the same year-aware growth checkAca got,
-    // not a naive refresh of this entry's validThrough alone.
-    location: "src/lib/config/aca-tables.ts → estimateAcaSubsidyValue()",
-    changeFrequency: "annual",
-  },
+  // (The "ACA premium estimates" entry was removed in R43 (C5) along with
+  // its dead `estimateAcaSubsidyValue` function — see aca-tables.ts.)
 
   // --- Structurally stable (rarely change) ---
   {

@@ -40,7 +40,6 @@ import {
   FPL_BY_HOUSEHOLD,
   FPL_COVERAGE_YEAR,
   getAcaSubsidyCliff,
-  estimateAcaSubsidyValue,
 } from "@/lib/config/aca-tables";
 import {
   UNIFORM_LIFETIME_TABLE,
@@ -490,14 +489,6 @@ describe("ACA FPL values", () => {
 
   it("400% FPL cliff for 2-person household = $84,600", () => {
     expect(getAcaSubsidyCliff(2)).toBe(21150 * 4);
-  });
-
-  it("subsidy is 0 above the cliff", () => {
-    expect(estimateAcaSubsidyValue(90000, 2, 55)).toBe(0);
-  });
-
-  it("subsidy is positive below the cliff", () => {
-    expect(estimateAcaSubsidyValue(40000, 2, 55)).toBeGreaterThan(0);
   });
 
   // Phase 4 drift guard (2026-08-31), same pattern as IRMAA_DATA_YEAR's

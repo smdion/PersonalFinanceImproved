@@ -388,6 +388,10 @@ export type DecumulationDefaults = {
       string,
       { magiThreshold: number; annualSurcharge: number }[]
     >;
+    /** DB-resolved FPL map from `fpl_by_household` (R43), keyed by household
+     *  size. Overrides `FPL_BY_HOUSEHOLD` when present — same pattern as
+     *  `ltcgBrackets`/`irmaaBrackets`. Undefined ⇒ hardcoded fallback. */
+    fplByHousehold?: Record<number, number>;
     /** Household's annual standard deduction (from `contribution_limits`,
      *  filing-status-keyed), for converting GROSS ordinary income into the
      *  TAXABLE income LTCG brackets are actually denominated in (found

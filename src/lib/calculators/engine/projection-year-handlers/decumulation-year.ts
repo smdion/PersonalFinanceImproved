@@ -1186,6 +1186,7 @@ export function runDecumulationYear(
     rothTaxableGrowth: taxFromSlots.rothTaxableGrowth,
     ssIncome,
     fplGrowthFactor,
+    fplByHousehold: taxRates.fplByHousehold, // DB-resolved FPL (R43); undefined => hardcoded fallback
   });
   const { acaSubsidyPreserved, acaMagiHeadroom } = acaResult;
   routeWarnings.push(...acaResult.warnings);

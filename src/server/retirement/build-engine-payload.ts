@@ -1517,6 +1517,7 @@ export async function buildEnginePayload(
     taxBrackets: bracketData.length > 0 ? bracketData : undefined,
     ltcgBrackets: ltcgBracketData,
     irmaaBrackets: irmaaBracketData,
+    fplByHousehold: resolvedTax.fplByHousehold,
     taxMultiplier: taxMult,
     grossUpForTaxes: settings.grossUpForTaxes,
     rothBracketTarget: toNumber(settings.rothBracketTarget ?? "0.12"),

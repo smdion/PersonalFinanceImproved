@@ -198,16 +198,17 @@ export interface AcaInput {
    * `(1 + inflationRate) ^ (year - FPL_COVERAGE_YEAR)` (see
    * `aca-tables.ts`'s `FPL_COVERAGE_YEAR` docblock) — grows the ACA
    * subsidy cliff (400% FPL) forward instead of holding it flat nominal.
-   * REQUIRED, not optional: unlike IRMAA/LTCG, there is no
-   * `fpl_by_household`-style DB override table (confirmed — no schema
-   * for it), so `getAcaSubsidyCliff` itself was deliberately left
-   * untouched (no `fplTable?` override param) and growth is applied here
-   * instead, at the single point of use:
-   * `getAcaSubsidyCliff(householdSize) * fplGrowthFactor`. Making this
-   * required rather than defaulting to 1 means a future caller can't
-   * silently skip growth by omission the way an optional param would
-   * allow. */
+   * REQUIRED, not optional: making this required rather than defaulting to
+   * 1 means a future caller can't silently skip growth by omission. Growth
+   * is applied at the single point of use
+   * (`getAcaSubsidyCliff(householdSize, fplByHousehold) * fplGrowthFactor`)
+   * — mathematically identical to growing each FPL cell first
+   * (fpl*4*k === (fpl*k)*4). */
   fplGrowthFactor: number;
+  /** DB-resolved FPL map from `fpl_by_household` (R43). Same
+   *  override-else-default pattern as `ltcgBrackets`/`irmaaBrackets`:
+   *  undefined ⇒ the hardcoded `FPL_BY_HOUSEHOLD` fallback. */
+  fplByHousehold?: Record<number, number>;
 }
 
 export interface AcaResult {
@@ -681,6 +682,7 @@ export function checkAca(input: AcaInput): AcaResult {
     rothTaxableGrowth,
     ssIncome,
     fplGrowthFactor,
+    fplByHousehold,
   } = input;
 
   const warnings: string[] = [];
@@ -689,13 +691,12 @@ export function checkAca(input: AcaInput): AcaResult {
     return { acaSubsidyPreserved: false, acaMagiHeadroom: 0, warnings };
   }
 
-  // Phase 4 (2026-08-31): grow the 400%-FPL cliff forward instead of
-  // holding it flat nominal — mathematically identical to growing
-  // FPL_BY_HOUSEHOLD's cell first and multiplying by 4 after
-  // (fpl*4*k === (fpl*k)*4), applied here at the single point of use
-  // rather than adding an unused override parameter to
-  // getAcaSubsidyCliff (see AcaInput.fplGrowthFactor's docblock).
-  const acaCliff = getAcaSubsidyCliff(householdSize) * fplGrowthFactor;
+  // Grow the 400%-FPL cliff forward instead of holding it flat nominal —
+  // mathematically identical to growing each FPL cell first and
+  // multiplying by 4 after (fpl*4*k === (fpl*k)*4). `fplByHousehold` is
+  // the DB-resolved FPL map (R43); undefined ⇒ hardcoded fallback.
+  const acaCliff =
+    getAcaSubsidyCliff(householdSize, fplByHousehold) * fplGrowthFactor;
   const projectedMagi = acaMagi({
     totalTraditionalWithdrawal,
     rothConversionAmount,
@@ -710,8 +711,8 @@ export function checkAca(input: AcaInput): AcaResult {
     const overage = roundToCents(projectedMagi - acaCliff);
     // R55 (advisor review, 2026-08-30): a ranking change to avoid this was
     // considered and rejected — brokerage gains aren't actually "free" MAGI
-    // below the cliff either (the subsidy phases out continuously, see
-    // estimateAcaSubsidyValue's sliding scale), so preferring brokerage
+    // below the cliff either (the premium tax credit phases out
+    // continuously as MAGI rises toward 400% FPL), so preferring brokerage
     // over Roth basis would cost more than it saves. This warning instead
     // reports whether re-sourcing the overage from Roth (which doesn't
     // touch MAGI at all) would have kept the household under the cliff —
