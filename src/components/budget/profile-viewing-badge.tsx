@@ -1,18 +1,15 @@
 /**
- * "ACTIVE" / "PINNED" / "VIEWING (active: X)" badge — the shared visual
- * language for "which budget profile does the data on screen belong to."
- * Used by both the Budget Profiles tab (BudgetSummaryBar) and the Savings
- * Profiles tab (SavingsAllocationPanel), since both are scoped to the same
- * budget-profile selection and should say so identically, rather than each
- * inventing its own "which profile" indicator.
+ * "ACTIVE" / "VIEWING (active: X)" badge — the shared visual language for
+ * "which budget profile does the data on screen belong to." Used by both
+ * the Budget Profiles tab (BudgetSummaryBar) and the Savings Profiles tab
+ * (SavingsAllocationPanel), since both are scoped to the same budget-profile
+ * selection and should say so identically, rather than each inventing its
+ * own "which profile" indicator.
  *
- * Three states, not two: "Active" is the globally-active profile with no
- * Plan pin in effect; "Pinned" is the profile the current Plan has pinned as
- * active (see useEffectiveProfileId); "Viewing" is neither — the page is
- * just looking at a profile without it being in effect anywhere else.
- *
- * (The "Pinned" label is on R52's Profile/Plan vocabulary sweep — left as-is
- * here; this change is styling only.)
+ * "Active" covers both the globally-active profile and one a Plan has made
+ * active (R52 — a Plan making a profile effective is just that profile being
+ * active, so there's no separate "pinned" state). "Viewing" is neither — the
+ * page is just looking at a profile without it being in effect anywhere else.
  */
 import { Badge } from "@/components/ui/badge";
 
@@ -20,13 +17,11 @@ export function ProfileViewingBadge({
   profileName,
   activeProfileName,
   isViewingNonActive,
-  isPinned,
   onActivate,
 }: {
   profileName: string | null | undefined;
   activeProfileName?: string | null;
   isViewingNonActive: boolean;
-  isPinned?: boolean;
   /** Shown as a visible "Activate" button (not hover-only) while viewing a
    *  non-active profile, so switching doesn't require finding the row in
    *  the sidebar. Omit to hide the button entirely (e.g. read-only views). */
@@ -51,14 +46,6 @@ export function ProfileViewingBadge({
             Activate
           </button>
         )}
-      </span>
-    );
-  }
-  if (isPinned) {
-    return (
-      <span className="flex items-center gap-2">
-        <Badge color="amber">Pinned</Badge>
-        <span className="text-xs text-muted">{profileName}</span>
       </span>
     );
   }

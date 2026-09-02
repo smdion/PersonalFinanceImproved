@@ -133,7 +133,7 @@ export function RelocationBudgetSelectors({
             ) : null}
             {/* Override */}
             <div className="flex items-center gap-1">
-              <span className="text-caption text-faint">Override:</span>
+              <span className="text-caption text-faint">Custom:</span>
               <input
                 type="number"
                 className="border rounded px-2 py-0.5 text-xs w-24"
@@ -159,7 +159,7 @@ export function RelocationBudgetSelectors({
         <div>
           <label className="block text-muted mb-1">
             Relocation Budget
-            <HelpTip text="Budget profile for projected expenses after relocating. Use the override to enter a custom monthly amount." />
+            <HelpTip text="Budget profile for projected expenses after relocating. Use the custom field to enter a monthly amount." />
           </label>
           <div className="flex flex-col gap-1">
             <select
@@ -207,7 +207,7 @@ export function RelocationBudgetSelectors({
             ) : null}
             {/* Override */}
             <div className="flex items-center gap-1">
-              <span className="text-caption text-faint">Override:</span>
+              <span className="text-caption text-faint">Custom:</span>
               <input
                 type="number"
                 className="border rounded px-2 py-0.5 text-xs w-24"

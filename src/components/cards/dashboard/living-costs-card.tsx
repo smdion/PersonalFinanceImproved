@@ -443,7 +443,7 @@ function LivingCostsCardImpl() {
       }
       subtitle={`${onTarget}/${rows.length} within range${
         activeBudgetProfileName
-          ? ` · ${activeBudgetProfileName}${isBudgetPinned ? " (pinned)" : ""}`
+          ? ` · ${activeBudgetProfileName}${isBudgetPinned ? " (active)" : ""}`
           : ""
       } · full-year view`}
       href="/budget"

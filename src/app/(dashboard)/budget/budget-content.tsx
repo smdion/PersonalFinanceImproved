@@ -546,7 +546,6 @@ export function BudgetContent() {
                 profileName: profile?.name ?? null,
                 activeProfileName: activeProfile?.name ?? null,
                 isViewingNonActive,
-                isPinned: isPinnedProfile,
                 onActivate:
                   profile?.id != null
                     ? () => handleActivateBudgetProfile(profile.id!)

@@ -32,7 +32,6 @@ type Props = {
     profileName: string | null | undefined;
     activeProfileName: string | null | undefined;
     isViewingNonActive: boolean;
-    isPinned?: boolean;
     onActivate?: () => void;
   };
   // Column display data (not in context — derived from server query result)
@@ -80,13 +79,8 @@ export function BudgetSummaryBar({
     canEdit,
     editMode,
   } = useBudgetPageContext();
-  const {
-    profileName,
-    activeProfileName,
-    isViewingNonActive,
-    isPinned,
-    onActivate,
-  } = profileDisplay;
+  const { profileName, activeProfileName, isViewingNonActive, onActivate } =
+    profileDisplay;
   const {
     isWeighted,
     columnMonths,
@@ -115,7 +109,6 @@ export function BudgetSummaryBar({
             profileName={profileName}
             activeProfileName={activeProfileName}
             isViewingNonActive={isViewingNonActive}
-            isPinned={isPinned}
             onActivate={canEdit ? onActivate : undefined}
           />
           {apiService && apiLinkedProfileId === profileId && (

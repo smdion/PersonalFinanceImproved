@@ -200,7 +200,7 @@ export function IncomeSection({
         <div>
           <span className="text-muted">
             Salary Profile
-            <HelpTip text="Which Salary Profile the salaries in this projection come from. Each profile sets every person to either follow their job record or a fixed amount. Independent of the Contribution Profile beside it — the two are separate selections. This selection is saved as your active Salary Profile and applies on every page until you change it back; it is not a one-off preview. A Plan pin, if one is set, overrides it." />
+            <HelpTip text="Which Salary Profile the salaries in this projection come from. Each profile sets every person to either follow their job record or a fixed amount. Independent of the Contribution Profile beside it — the two are separate selections. This selection is saved as your active Salary Profile and applies on every page until you change it back; it is not a one-off preview. An active Plan, if one is set, takes precedence." />
           </span>
           <div className="font-medium">
             <select
@@ -221,8 +221,8 @@ export function IncomeSection({
             </select>
             {isSalaryPinned && (
               <div className="text-caption text-amber-600 mt-0.5">
-                Pinned by Plan{pinnedPlanName ? ` "${pinnedPlanName}"` : ""} —
-                clear the pin to change this here.
+                Active via Plan{pinnedPlanName ? ` "${pinnedPlanName}"` : ""} —
+                clear the Plan to change this here.
               </div>
             )}
           </div>
@@ -230,7 +230,7 @@ export function IncomeSection({
         <div>
           <span className="text-muted">
             Contribution Profile
-            <HelpTip text="Which Contribution Profile the contribution assumptions in this projection come from. Salary is a separate selection — see Salary Profile. This selection is saved as your active Contribution Profile and applies on every page until you change it back; it is not a one-off preview. A Plan pin, if one is set, overrides it." />
+            <HelpTip text="Which Contribution Profile the contribution assumptions in this projection come from. Salary is a separate selection — see Salary Profile. This selection is saved as your active Contribution Profile and applies on every page until you change it back; it is not a one-off preview. An active Plan, if one is set, takes precedence." />
           </span>
           <div className="font-medium">
             <select
@@ -251,8 +251,8 @@ export function IncomeSection({
             </select>
             {isContribPinned && (
               <div className="text-caption text-amber-600 mt-0.5">
-                Pinned by Plan{pinnedPlanName ? ` "${pinnedPlanName}"` : ""} —
-                clear the pin to change this here.
+                Active via Plan{pinnedPlanName ? ` "${pinnedPlanName}"` : ""} —
+                clear the Plan to change this here.
               </div>
             )}
           </div>

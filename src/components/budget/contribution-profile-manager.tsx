@@ -110,15 +110,12 @@ export function ContributionProfileManager({
   // useActiveContribProfile repairs it if that row ever goes missing.
   const globalActiveContribId = activeContribId;
   // Plan pin -> local selection -> globally-active profile (single computation path)
-  const {
-    profileId: effectiveSelectedId,
-    source: effectiveSelectedSource,
-    isPinned: isPinnedProfile,
-  } = useEffectiveProfileId("contribution", {
-    validIds: profiles?.map((p) => p.id),
-    localSelection: selectedProfileId,
-    globalDefaultId: globalActiveContribId,
-  });
+  const { profileId: effectiveSelectedId, source: effectiveSelectedSource } =
+    useEffectiveProfileId("contribution", {
+      validIds: profiles?.map((p) => p.id),
+      localSelection: selectedProfileId,
+      globalDefaultId: globalActiveContribId,
+    });
   const activeProfileName = profiles?.find(
     (p) => p.id === globalActiveContribId,
   )?.name;
@@ -244,7 +241,6 @@ export function ContributionProfileManager({
                   profileName={displayedProfile.name}
                   activeProfileName={activeProfileName}
                   isViewingNonActive={isViewingNonActive}
-                  isPinned={isPinnedProfile}
                   onActivate={
                     canEdit
                       ? () => handleActivate(displayedProfile.id)
@@ -334,7 +330,7 @@ export function ContributionProfileManager({
                             .map((s) => s.name);
                           const pinnedByClause =
                             pinnedBy.length > 0
-                              ? ` The Plan${pinnedBy.length > 1 ? "s" : ""} "${pinnedBy.join('", "')}" pin${pinnedBy.length > 1 ? "" : "s"} this profile, so deleting is blocked until you unpin it there.`
+                              ? ` The Plan${pinnedBy.length > 1 ? "s" : ""} "${pinnedBy.join('", "')}" ${pinnedBy.length > 1 ? "have" : "has"} this profile active, so deleting is blocked until you clear it there.`
                               : "";
                           if (
                             await confirm(
@@ -1798,7 +1794,7 @@ function ProfileInlineEditor({
                               title={
                                 af.employerMatchValue === undefined &&
                                 storedMatch !== ""
-                                  ? "Inherited from the account's own settings — editing this sets an override for this profile only"
+                                  ? "Inherited from the account's own settings — editing this sets a customization for this profile only"
                                   : undefined
                               }
                               placeholder="—"
@@ -1849,7 +1845,7 @@ function ProfileInlineEditor({
                               title={
                                 af.employerMaxMatchPct === undefined &&
                                 storedCap !== ""
-                                  ? "Inherited from the account's own settings — editing this sets an override for this profile only"
+                                  ? "Inherited from the account's own settings — editing this sets a customization for this profile only"
                                   : undefined
                               }
                               placeholder="—"
