@@ -217,6 +217,7 @@ export const retirementRouter = createTRPCRouter({
         allBudgetProfiles,
         allBudgetItems,
         perfAccounts,
+        appSettingsRows,
       ] = await Promise.all([
         ctx.db.select().from(schema.people).orderBy(asc(schema.people.id)),
         ctx.db.select().from(schema.jobs),
@@ -241,6 +242,7 @@ export const retirementRouter = createTRPCRouter({
           .orderBy(asc(schema.budgetProfiles.id)),
         ctx.db.select().from(schema.budgetItems),
         ctx.db.select().from(schema.performanceAccounts),
+        ctx.db.select().from(schema.appSettings),
       ]);
       // Filter to Retirement-only contributions for the relocation tool.
       const perfCatMap = new Map(
@@ -258,7 +260,7 @@ export const retirementRouter = createTRPCRouter({
       // Active profile's row, matching build-engine-payload — the readiness
       // analysis must read the same assumptions the projection does.
       const activeRetProfileId = resolveRetirementProfileIdFrom(
-        await ctx.db.select().from(schema.appSettings),
+        appSettingsRows,
         retProfiles,
       );
       const settings = pickProfileSettingsRow(
