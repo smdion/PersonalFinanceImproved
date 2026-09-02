@@ -251,14 +251,35 @@ export function buildWithdrawalStrategyNarrative(
           bracketTarget,
           bracketTargetYear?.bracketTraditionalCap != null
             ? {
-                bracketTraditionalCap: bracketTargetYear.bracketTraditionalCap,
-                taxableSS: bracketTargetYear.taxableSS,
+                // Deflated to today's dollars — advisor-caught 2026-09-01:
+                // every other figure in this narrative goes through
+                // `deflate` (see the discretionary-tier detail above), but
+                // these three were passed raw/nominal. bracketTargetYear
+                // is typically 15-25 years into decumulation and these
+                // figures are grown by bracket-growth.ts, so the report
+                // was printing a nominal bracket-ceiling dollar amount
+                // next to today's-dollar figures everywhere else in the
+                // same document.
+                bracketTraditionalCap: deflate(
+                  bracketTargetYear.bracketTraditionalCap,
+                  bracketTargetYear.year,
+                ),
+                taxableSS: deflate(
+                  bracketTargetYear.taxableSS,
+                  bracketTargetYear.year,
+                ),
                 // The GROWN per-year deduction (`bracket-growth.ts`), not
                 // the ungrown plan-level echo — advisor-caught (2026-08-31):
                 // pairing a grown bracketTraditionalCap with an ungrown
                 // deduction in the same sentence was internally
                 // inconsistent for any year beyond the tax data's vintage.
-                standardDeduction: bracketTargetYear.standardDeduction,
+                standardDeduction:
+                  bracketTargetYear.standardDeduction != null
+                    ? deflate(
+                        bracketTargetYear.standardDeduction,
+                        bracketTargetYear.year,
+                      )
+                    : bracketTargetYear.standardDeduction,
               }
             : undefined,
         )

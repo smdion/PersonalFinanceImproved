@@ -58,6 +58,18 @@ export function describeBracketCeilingMath(
   input?: BracketCeilingMathInput | null,
 ): string | undefined {
   if (!input || input.standardDeduction == null) return undefined;
+  // `bracketTraditionalCap` is already clamped to >= 0 upstream
+  // (computeBracketTraditionalCap, withdrawal-routing.ts) — when taxable SS
+  // alone exceeds the bracket's real income cap, the cap clamps to 0 and
+  // that information (how far over it SS pushed things) is gone.
+  // Reconstructing incomeCap as bracketTraditionalCap + taxableSS in that
+  // case silently reports taxableSS itself as "the ceiling," UNDER-stating
+  // the true (higher) ceiling (advisor-caught 2026-09-01). No honest dollar
+  // figure can be recovered from the clamped value alone, so state the real
+  // fact instead of a fabricated number.
+  if (input.bracketTraditionalCap <= 0 && input.taxableSS > 0) {
+    return `Your taxable Social Security income alone (${formatCurrency(input.taxableSS)}) already fills the ${formatPercent(currentTargetPct, 0)} bracket's room once your ${formatCurrency(input.standardDeduction)} standard deduction is factored in, leaving no room for Traditional withdrawals at this target.`;
+  }
   const incomeCap = input.bracketTraditionalCap + input.taxableSS;
   const ssClause =
     input.taxableSS > 0

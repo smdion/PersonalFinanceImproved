@@ -208,6 +208,37 @@ describe("describeBracketCeilingMath", () => {
     );
     expect(text).not.toMatch(/\$0\.00 of that room/);
   });
+
+  it("does NOT reconstruct incomeCap as bracketTraditionalCap + taxableSS when the cap was clamped to 0 by SS alone (advisor-caught 2026-09-01)", () => {
+    // A household with high taxable SS and a low bracket target: the real
+    // income cap for a 10% bracket might be, say, $30,000, but taxable SS
+    // alone is $40,000 — computeBracketTraditionalCap
+    // (withdrawal-routing.ts) clamps bracketTraditionalCap to 0 in this
+    // case, discarding how far over the real cap SS actually pushed
+    // things. Reconstructing incomeCap as 0 + 40,000 = $40,000 would
+    // UNDER-state the true (higher) ceiling as exactly equal to taxable
+    // SS — this must not happen.
+    const text = describeBracketCeilingMath(0.1, {
+      bracketTraditionalCap: 0,
+      taxableSS: 40000,
+      standardDeduction: 32200,
+    })!;
+    expect(text).toBeDefined();
+    expect(text).not.toMatch(/\$40,000\.00 in gross income/);
+    expect(text).toMatch(
+      /taxable Social Security income alone \(\$40,000\.00\) already fills the 10% bracket's room/,
+    );
+    expect(text).toMatch(/no room for Traditional withdrawals/);
+  });
+
+  it("still uses the normal ceiling-math sentence when bracketTraditionalCap is 0 but taxableSS is also 0 (nothing clamped, just no room)", () => {
+    const text = describeBracketCeilingMath(0.1, {
+      bracketTraditionalCap: 0,
+      taxableSS: 0,
+      standardDeduction: 32200,
+    })!;
+    expect(text).toMatch(/bracket's ceiling sits at about \$0\.00/);
+  });
 });
 
 describe("describeDiscretionaryCapacityMath", () => {

@@ -217,6 +217,37 @@ describe("buildWithdrawalStrategyNarrative", () => {
     expect(section.narrative).toMatch(/\$32,200\.00 standard deduction/);
   });
 
+  it("deflates bracketTraditionalCap/taxableSS/standardDeduction before handing them to the math sentence, not just standardDeduction alone (advisor-caught 2026-09-01)", () => {
+    // Every other figure in this narrative is deflated (the discretionary
+    // tier detail below, RMD divisor balances) — these three were the only
+    // ones passed raw/nominal, so a bracket-target year 15-25 years into
+    // decumulation (typical) printed a nominal dollar figure next to
+    // today's-dollar figures everywhere else in the report. A halving
+    // deflate makes the bug unmissable: the buggy version prints the raw
+    // $60,000/$15,000/$32,200 nominal inputs; the fixed version must print
+    // half of each.
+    const halvingDeflate = (v: number) => v / 2;
+    const years = [
+      decumYear({
+        year: 2040,
+        config: { rothBracketTarget: 0.22 },
+        bracketTraditionalCap: 60000,
+        taxableSS: 15000,
+        standardDeduction: 32200,
+      }),
+    ];
+    const section = buildWithdrawalStrategyNarrative(years, halvingDeflate);
+    // ceiling math = bracketTraditionalCap + taxableSS, each halved:
+    // 30,000 + 7,500 = 37,500
+    expect(section.narrative).toMatch(
+      /bracket's ceiling sits at about \$37,500\.00 in gross income/,
+    );
+    expect(section.narrative).toMatch(/\$16,100\.00 standard deduction/);
+    // Never the raw nominal figures.
+    expect(section.narrative).not.toMatch(/\$75,000\.00/);
+    expect(section.narrative).not.toMatch(/\$32,200\.00/);
+  });
+
   it("omits the bracket-ceiling math when the bracket-target year has no standardDeduction", () => {
     const years = [
       decumYear({
