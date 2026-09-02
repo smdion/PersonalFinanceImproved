@@ -143,8 +143,20 @@ import { log } from "@/lib/logger";
  *  `FPL_COVERAGE_YEAR`. Reporting-only (no conversion-cap analog to
  *  IRMAA's `irmaaAwareRothConversions` exists for ACA), but still a
  *  real, user-visible number change, same precedent as v15's bump for
- *  an output-shape addition. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 22;
+ *  an output-shape addition.
+ *
+ *  20–22: (see git history — bumps between v19 and this entry.)
+ *
+ *  23: IRC §63(f)(1) age-65+ additional standard deduction now modeled
+ *  (R59, `decumulation-year.ts` folds `additionalStdDeduction65PerSenior ×
+ *  65+ headcount` into the deduction before growth). A REAL value change
+ *  for any decumulation year in which a household member is 65+ (nearly
+ *  every year for a real household): a larger standard deduction means more
+ *  0%-LTCG room and lower ordinary tax, so `standardDeduction` (output),
+ *  `taxCost`, `bracketTraditionalCap`, `discretionaryTierBreakdown`, and
+ *  sustainable-withdrawal/end-balance figures all shift. Cached rows from
+ *  before this fix understate the household's real tax-bracket room. */
+export const PROJECTION_CACHE_ENGINE_VERSION = 23;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

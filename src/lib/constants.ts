@@ -136,6 +136,14 @@ export const ROTH_CONVERSION_SEASONING_YEARS = 5;
  *  tax-free at any age, so this only matters for the non-medical case. */
 export const HSA_NON_MEDICAL_PENALTY_AGE = 65;
 
+/** Age at which a taxpayer qualifies for the additional standard deduction
+ *  under IRC §63(f)(1) ("65 or older"). A person is treated as 65 for the
+ *  whole tax year if they turn 65 by the first day of the following year, but
+ *  the projection works in whole years so a simple `age >= 65` test is used.
+ *  Distinct from the OBBBA senior deduction (2025–2028, MAGI-phased), which
+ *  is deliberately NOT modeled — see `toLtcgTaxableIncome`. */
+export const ADDITIONAL_STANDARD_DEDUCTION_AGE = 65;
+
 /** 10% early-withdrawal penalty rate for Traditional/Roth IRA and 401k/403b
  *  (IRC §72(t)) — every account type this module gates EXCEPT HSA, which
  *  has its own, higher rate (see `HSA_NON_MEDICAL_PENALTY_RATE` immediately

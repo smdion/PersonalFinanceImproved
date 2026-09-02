@@ -109,6 +109,16 @@ const limitGroups: LimitGroupEntry[] = [
         format: "dollar",
       },
       {
+        key: "additional_std_deduction_65_married",
+        label: "Additional standard deduction, age 65+ (married, per spouse)",
+        format: "dollar",
+      },
+      {
+        key: "additional_std_deduction_65_unmarried",
+        label: "Additional standard deduction, age 65+ (single / HoH)",
+        format: "dollar",
+      },
+      {
         key: "supplemental_tax_rate",
         label: "Supplemental tax rate",
         format: "percent",

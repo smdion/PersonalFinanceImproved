@@ -395,6 +395,20 @@ export type DecumulationDefaults = {
      *  fixes additive rather than a forced behavior change for every
      *  caller. */
     standardDeduction?: number;
+    /** IRC §63(f)(1) additional standard deduction for taxpayers age 65+,
+     *  per qualifying senior, already resolved to the household's filing
+     *  status (married-per-spouse vs. unmarried single/HoH) from
+     *  `contribution_limits` (`additional_std_deduction_65_{married,unmarried}`).
+     *  The decumulation-year handler multiplies this by the number of
+     *  household members who are 65+ in that projection year and folds the
+     *  result into `standardDeduction` BEFORE the per-year inflation growth,
+     *  so it grows on the same `taxDataYear` vintage as the base deduction
+     *  (both are CPI-indexed). Undefined ⇒ 0 additional deduction,
+     *  reproducing pre-R59 behavior (which understated 0%-LTCG room for the
+     *  ~always-65+ decumulation population). Deliberately does NOT model the
+     *  temporary OBBBA senior deduction (2025–2028, MAGI-phased) — see
+     *  `toLtcgTaxableIncome`'s docblock. */
+    additionalStdDeduction65PerSenior?: number;
     /** The calendar year `taxBrackets`/`standardDeduction`/`ltcgBrackets`
      *  actually represent (the DB row's own `taxYear`, e.g. the seeded
      *  `tax_brackets.taxYear` — see `build-engine-payload.ts`'s

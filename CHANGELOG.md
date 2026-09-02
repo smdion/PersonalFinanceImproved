@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.7
 
+## [0.7.11] - 2026-09-01
+
+### Fixed
+
+- **Retirement projections now apply the extra standard deduction the IRS gives filers age 65 and older.** Because nearly every year of a retirement projection is at 65+, leaving this out was quietly understating how much room you have in the 0% long-term capital-gains bracket and overstating the tax owed in your withdrawal years. Married households get the addition for each spouse who is 65+ in a given year. Households younger than 65, and the working (accumulation) years, are unaffected. The separate temporary senior deduction added by the 2025 tax law — which phases out at higher incomes — is still not modeled.
+- **The "Pre-Retirement Raise" rate can now be set for each household member.** For a two-person household, the single control on the retirement profile only ever saved the first person's rate, leaving the second person's raise rate stuck at whatever it was first seeded to and unreachable from the app. It now shows one control per person (like Retirement Age already does), and each person's projected salary growth uses their own rate.
+
+---
+
 ## [0.7.10] - 2026-08-31
 
 ### Added

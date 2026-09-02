@@ -870,6 +870,50 @@ export const retirementRouter = createTRPCRouter({
           return saved;
         });
       }),
+
+    // R53: `salary_annual_increase` is stored per (profile, person) on
+    // `retirement_settings` and read per-person by the engine
+    // (`build-engine-payload.ts`'s `raiseRateByPerson`), but the "Pre-
+    // Retirement Raise" UI control was a single household control that only
+    // ever wrote the primary person's row via `retirementSettings.upsert` —
+    // so a second household member's raise rate was unreachable after seed
+    // time. This narrow mutation writes ONLY that one column for one
+    // (profile, person); the multi-person Income section calls it per person.
+    // Deliberately NOT a fan-out (that would overwrite each person's distinct
+    // rate with the primary's — the exact bug `raiseRateByPerson`'s docblock
+    // records as already fixed once) and deliberately NOT folded into
+    // `upsert` (which requires a full anchor payload the per-person UI
+    // doesn't have, runs the endAge fan-out, and resolves+writes a default
+    // filing status — all wrong for a one-field raise-rate edit).
+    // UPDATE-only: the step-A completeness invariant guarantees a row per
+    // (profile, person); a missing row is an error, not a silent insert with
+    // guessed NOT NULL anchor values.
+    upsertPersonRaiseRate: adminProcedure
+      .input(
+        z.object({
+          profileId: z.number().int(),
+          personId: z.number().int(),
+          salaryAnnualIncrease: zDecimal,
+        }),
+      )
+      .mutation(async ({ ctx, input }) => {
+        const [row] = await ctx.db
+          .update(schema.retirementSettings)
+          .set({ salaryAnnualIncrease: input.salaryAnnualIncrease })
+          .where(
+            and(
+              eq(schema.retirementSettings.profileId, input.profileId),
+              eq(schema.retirementSettings.personId, input.personId),
+            ),
+          )
+          .returning();
+        if (!row) {
+          throw new Error(
+            `No retirement_settings row for profile ${input.profileId}, person ${input.personId} — cannot set the pre-retirement raise rate`,
+          );
+        }
+        return row;
+      }),
   }),
 
   retirementSalaryOverrides: createTRPCRouter({

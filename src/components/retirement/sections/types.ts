@@ -93,6 +93,13 @@ export type PerPersonSettings = ReadonlyArray<{
   birthYear: number;
   retirementAge: number;
   endAge: number | null;
+  /** This person's EFFECTIVE pre-retirement raise rate (decimal string, e.g.
+   *  "0.03"). Resolved server-side: their own `retirement_settings` rate for
+   *  the active profile, or the primary person's rate when they have none.
+   *  Written per-person via `retirementSettings.upsertPersonRaiseRate` (R53) —
+   *  the single household "Pre-Retirement Raise" control only ever wrote the
+   *  primary's row, leaving a second household member's rate unreachable. */
+  salaryAnnualIncrease: string;
   socialSecurityMonthly: string;
   ssStartAge?: number | null;
   /** Rule of 55 forecasting override (v0.7.8) — true (default) = no
@@ -133,6 +140,19 @@ export type UpsertProfilePersonMutation = {
     socialSecurityMonthly?: string | null;
     ssStartAge?: number | null;
     ruleOf55Override?: boolean | null;
+  }) => void;
+};
+
+/** `retirementSettings.upsertPersonRaiseRate` pass-through — writes ONLY
+ *  `salary_annual_increase` for one (profile, person), used by the per-person
+ *  "Pre-Retirement Raise" control when the household has more than one person
+ *  (R53). `wholePercent` is a decimal string ("0.03"), same convention as
+ *  `buildSettingsPatch`'s other percent fields. */
+export type UpsertPersonRaiseRateMutation = {
+  mutate: (input: {
+    profileId: number;
+    personId: number;
+    salaryAnnualIncrease: string;
   }) => void;
 };
 

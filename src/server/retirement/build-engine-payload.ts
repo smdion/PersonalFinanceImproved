@@ -398,16 +398,38 @@ export async function buildEnginePayload(
   const profilePeople = retProfilePeople.filter(
     (r) => r.profileId === activeProfileId,
   );
+  // Primary person's raise rate — the fallback every other person inherits
+  // when their own `retirement_settings` row carries no distinct rate (a
+  // stored 0 or unparseable value counts as "no distinct rate", matching the
+  // engine's long-standing `|| primaryRaiseRate` semantics). Computed here so
+  // BOTH `perPersonSettings` (below, for the per-person UI control — R53) and
+  // `raiseRateByPerson` (further down, for salary-override growth) resolve
+  // the effective rate the same way — one decision, one code path.
+  const primaryRaiseRate = toNumber(settings.salaryAnnualIncrease);
   const perPersonSettings = people.map((p) => {
     const pp = profilePeople.find((r) => r.personId === p.id);
     // Legacy path: no profile resolved at all (see `settings` above).
     const ps = pp ?? retSettings.find((s) => s.personId === p.id);
+    // salary_annual_increase never moved to retirement_profile_people — it's
+    // still on retirement_settings, genuinely per (profile, person). Scope to
+    // the active profile so a household with 2+ profiles doesn't pick an
+    // arbitrary one's rate (same fix the raiseRateByPerson docblock records).
+    const rsRowForRaise = retSettings.find(
+      (s) => s.personId === p.id && s.profileId === activeProfileId,
+    );
+    const effectiveRaiseRate =
+      toNumber(rsRowForRaise?.salaryAnnualIncrease ?? "") || primaryRaiseRate;
     return {
       personId: p.id,
       name: p.name,
       birthYear: new Date(p.dateOfBirth).getFullYear(),
       retirementAge: ps?.retirementAge ?? settings.retirementAge,
       endAge: ps?.endAge ?? settings.endAge,
+      // Effective pre-retirement raise rate for THIS person (R53). A person
+      // whose row has no distinct rate shows the primary's rate here rather
+      // than a misleading 0 — the per-person control edits the effective
+      // value, and writing a nonzero value through it stores a real rate.
+      salaryAnnualIncrease: String(effectiveRaiseRate),
       // Still read from THIS person's own retirement_settings row, not from
       // the profile's. The field is dead (the client's PerPersonSettings type
       // doesn't carry it and nothing writes it back), but rows can disagree
@@ -1078,26 +1100,20 @@ export async function buildEnginePayload(
 
   const profileSwitches: ProfileSwitch[] = [];
 
-  /** Each person's own annual raise rate, falling back to the primary
-   *  person's when they have no retirement_settings row. retirementSettings
-   *  is per-person, so growing person B's future salary by person A's raise
-   *  rate (what this used to do) silently produced the wrong number.
-   *
-   *  Scoped to `activeProfileId` (Retirement Profiles phase 4) — a person
-   *  can now hold one row PER PROFILE, and `retSettings` here is every row
-   *  across every profile. Without this filter, `new Map(...)` keys on
-   *  personId and the last matching row wins, an arbitrary pick once a
-   *  household has 2+ profiles — the same class of bug
-   *  `pickProfileSettingsRow` exists to prevent for the household-grain
-   *  `settings` row above; this is its per-person-map equivalent. */
-  const retSettingsForActiveProfile = retSettings.filter(
-    (rs) => rs.profileId === activeProfileId,
-  );
-  const primaryRaiseRate = toNumber(settings.salaryAnnualIncrease);
+  /** Each person's effective annual raise rate, keyed by personId. Derived
+   *  from `perPersonSettings` (built above), whose `salaryAnnualIncrease`
+   *  already resolves each person's own `retirement_settings` rate —
+   *  active-profile-scoped — falling back to the primary's when that row
+   *  carries no distinct rate. Reading it back here (instead of re-deriving
+   *  from `retSettings`) is what keeps this map and the per-person UI control
+   *  in exact agreement about a person's raise rate — the divergence an
+   *  earlier version of R53 would have introduced. retirementSettings is
+   *  per-person, so growing person B's future salary by person A's rate
+   *  (what a naive fan-out would do) silently produces the wrong number. */
   const raiseRateByPerson = new Map(
-    retSettingsForActiveProfile.map((rs) => [
-      rs.personId,
-      toNumber(rs.salaryAnnualIncrease) || primaryRaiseRate,
+    perPersonSettings.map((ps) => [
+      ps.personId,
+      toNumber(ps.salaryAnnualIncrease),
     ]),
   );
 
@@ -1400,6 +1416,19 @@ export async function buildEnginePayload(
     ? limitsMap[`standard_deduction_${filingStatus.toLowerCase()}`]
     : undefined;
 
+  // IRC §63(f)(1) additional standard deduction for filers 65+ (R59). One
+  // amount for married filers (per qualifying spouse), a larger one for
+  // unmarried (Single/HoH). The decumulation-year handler multiplies this by
+  // how many household members are 65+ in each projection year — nearly
+  // every decumulation year for a real household — and folds it into the
+  // standard deduction before growth. Undefined when not seeded ⇒ 0, exactly
+  // like `standardDeductionForFilingStatus` above.
+  const additionalStdDeduction65PerSenior = filingStatus
+    ? filingStatus === "MFJ"
+      ? limitsMap["additional_std_deduction_65_married"]
+      : limitsMap["additional_std_deduction_65_unmarried"]
+    : undefined;
+
   if (bracketData.length > 0) {
     // Estimate effective income tax rate at retirement income level.
     // Use decumulation budget when set (it's the actual retirement spending level);
@@ -1408,6 +1437,11 @@ export async function buildEnginePayload(
       decumulationExpenses !== accumulationExpenses
         ? decumulationExpenses
         : annualExpensesVal;
+    // NOTE (R59): deliberately the FLAT filing-status deduction, not the
+    // age-65+ senior-adjusted figure. This is a single scalar fallback rate
+    // used only when no tax brackets are seeded; it can't be per-projection-
+    // year age-aware. The real per-year LTCG/tax path applies the §63(f)
+    // addition in decumulation-year.ts. Do not "consolidate" the two.
     const estimatedRate = estimateEffectiveTaxRate(
       retirementIncome,
       bracketData,
@@ -1463,6 +1497,11 @@ export async function buildEnginePayload(
     // filing status ⇒ the LTCG helper subtracts 0, reproducing pre-fix
     // behavior rather than throwing.
     standardDeduction: standardDeductionForFilingStatus,
+    // IRC §63(f) age-65+ additional standard deduction, per qualifying
+    // senior, filing-status-resolved (R59). decumulation-year.ts scales it
+    // by the 65+ headcount for each projection year and folds it into the
+    // deduction before growth.
+    additionalStdDeduction65PerSenior,
     // The actual calendar year `bracketData`/`standardDeductionForFilingStatus`
     // were seeded for — NOT necessarily "this year." See
     // `DecumulationDefaults.distributionTaxRates.taxDataYear`'s docblock

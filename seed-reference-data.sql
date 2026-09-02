@@ -20,6 +20,8 @@ INSERT INTO contribution_limits (tax_year, limit_type, value, notes) VALUES
   (2025, 'standard_deduction_mfj', 30000.000000, 'MFJ standard deduction'),
   (2025, 'standard_deduction_single', 15000.000000, 'Single standard deduction'),
   (2025, 'standard_deduction_hoh', 22500.000000, 'HoH standard deduction'),
+  (2025, 'additional_std_deduction_65_married', 1600.000000, 'IRC 63(f) age-65+ additional standard deduction, per spouse, MFJ/MFS/QSS (Rev. Proc. 2024-40)'),
+  (2025, 'additional_std_deduction_65_unmarried', 2000.000000, 'IRC 63(f) age-65+ additional standard deduction, Single/HoH (Rev. Proc. 2024-40)'),
   (2025, 'roth_ira_magi_limit_mfj', 236000.000000, 'Roth IRA MAGI phaseout START, MFJ'),
   (2026, '401k_employee_limit', 24500.000000, 'IRS Notice 2025-67'),
   (2026, '401k_catchup_limit', 8000.000000, 'Age 50+ catch-up (2026)'),
@@ -38,6 +40,8 @@ INSERT INTO contribution_limits (tax_year, limit_type, value, notes) VALUES
   (2026, 'standard_deduction_mfj', 32200.000000, 'IRS Rev. Proc. 2025-XX'),
   (2026, 'standard_deduction_single', 16100.000000, 'IRS Rev. Proc. 2025-XX'),
   (2026, 'standard_deduction_hoh', 24150.000000, 'IRS Rev. Proc. 2025-XX'),
+  (2026, 'additional_std_deduction_65_married', 1650.000000, 'IRC 63(f) age-65+ additional standard deduction, per spouse, MFJ/MFS/QSS (Rev. Proc. 2025-32)'),
+  (2026, 'additional_std_deduction_65_unmarried', 2050.000000, 'IRC 63(f) age-65+ additional standard deduction, Single/HoH (Rev. Proc. 2025-32)'),
   (2026, 'roth_ira_magi_limit_mfj', 236000.000000, 'Roth IRA MAGI phaseout START, MFJ')
 ON CONFLICT DO NOTHING;
 

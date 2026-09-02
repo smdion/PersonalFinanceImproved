@@ -24,6 +24,7 @@ import { computeRmdSmoothingTargets } from "../rmd-smoothing";
 import {
   MAX_BROKERAGE_RAMP_YEARS,
   QCD_MIN_ELIGIBILITY_AGE,
+  ADDITIONAL_STANDARD_DEDUCTION_AGE,
 } from "../../../constants";
 import { cloneAccountBalances } from "../balance-utils";
 import {
@@ -397,8 +398,34 @@ export function runDecumulationYear(
   const grownTaxBrackets = taxRates.taxBrackets
     ? growWithholdingBrackets(taxRates.taxBrackets, taxGrowth)
     : undefined;
+  // R59: fold the IRC §63(f)(1) age-65+ additional standard deduction into
+  // the base deduction BEFORE growth, so the senior amount is grown on the
+  // same tax-data vintage as the base (both are CPI-indexed). `seniorCount`
+  // is the number of household members who are 65+ in THIS projection year —
+  // for a real decumulation-phase household that's almost every year, which
+  // is exactly why omitting this systematically understated 0%-LTCG room.
+  // The `perPersonBirthYears`-absent fallback (single senior when the
+  // household representative age is 65+) mirrors the Medicare-age filter's
+  // own fallback further below. Applied only when a base deduction exists —
+  // `undefined` must keep meaning "subtract 0" for the LTCG path, and
+  // `undefined + n*x` would be NaN.
+  const seniorCount =
+    perPersonBirthYears && perPersonBirthYears.length > 0
+      ? perPersonBirthYears.filter(
+          (by) => year - by >= ADDITIONAL_STANDARD_DEDUCTION_AGE,
+        ).length
+      : age >= ADDITIONAL_STANDARD_DEDUCTION_AGE
+        ? 1
+        : 0;
+  const seniorStandardDeductionAddon =
+    taxRates.standardDeduction != null &&
+    taxRates.additionalStdDeduction65PerSenior
+      ? seniorCount * taxRates.additionalStdDeduction65PerSenior
+      : 0;
   const grownStandardDeduction = growAmount(
-    taxRates.standardDeduction,
+    taxRates.standardDeduction != null
+      ? taxRates.standardDeduction + seniorStandardDeductionAddon
+      : taxRates.standardDeduction,
     taxGrowth,
   );
   // Phase 2 (2026-08-31): LTCG brackets, same growth factor as ordinary

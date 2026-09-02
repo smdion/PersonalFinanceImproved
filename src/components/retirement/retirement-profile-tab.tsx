@@ -218,6 +218,17 @@ export function RetirementProfileTab({
       },
     });
 
+  // R53 — per-person "Pre-Retirement Raise". Writes only
+  // retirement_settings.salary_annual_increase for one (profile, person).
+  const upsertPersonRaiseRate =
+    trpc.retirement.retirementSettings.upsertPersonRaiseRate.useMutation({
+      onSuccess: () => {
+        utils.retirement.invalidate();
+        utils.projection.invalidate();
+        notifyRecalcQueued();
+      },
+    });
+
   const upsertSettings = trpc.retirement.retirementSettings.upsert.useMutation({
     onMutate: async (newSettings) => {
       await utils.projection.computeProjection.cancel();
@@ -316,6 +327,19 @@ export function RetirementProfileTab({
     [data, upsertProfilePerson],
   );
 
+  const handlePerPersonRaiseRate = useCallback(
+    (personId: number, wholePercent: string) => {
+      const settings = data && "settings" in data ? data.settings : null;
+      if (!settings || settings.profileId == null) return;
+      upsertPersonRaiseRate.mutate({
+        profileId: settings.profileId,
+        personId,
+        salaryAnnualIncrease: wholeToDec(wholePercent),
+      });
+    },
+    [data, upsertPersonRaiseRate],
+  );
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -371,11 +395,13 @@ export function RetirementProfileTab({
 
               <IncomeSection
                 settings={settings}
+                perPersonSettings={perPersonSettings}
                 combinedSalary={data.combinedSalary}
                 people={data.people}
                 salaryByPerson={data.salaryByPerson}
                 upsertSettings={upsertSettingsMutation}
                 handleSettingPercentUpdate={handleSettingPercentUpdate}
+                handlePerPersonRaiseRate={handlePerPersonRaiseRate}
                 contribProfiles={contribProfiles}
                 contribProfileId={contribProfileId}
                 setContribProfileId={setContribProfileId}

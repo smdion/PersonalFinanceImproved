@@ -16,6 +16,7 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import type {
   Settings,
+  PerPersonSettings,
   UpsertSettingsMutation,
   ContribProfileListEntry as ContribProfile,
   IsEditable,
@@ -35,8 +36,17 @@ type Props = {
    *  (totalComp, includes bonus) as combinedSalary itself — the per-person
    *  lines always sum to the displayed total. */
   salaryByPerson?: Record<number, number>;
+  /** Per-person settings — present when the household has more than one
+   *  person. When set (length > 1), "Pre-Retirement Raise" renders one
+   *  control per person instead of a single household control (R53). */
+  perPersonSettings?: PerPersonSettings;
   upsertSettings: UpsertSettingsMutation;
   handleSettingPercentUpdate: (field: string, wholePercent: string) => void;
+  /** Per-person "Pre-Retirement Raise" writer. `wholePercent` is a
+   *  whole-number string ("3"), same shape `handleSettingPercentUpdate`
+   *  receives — the handler converts it to a decimal. Required whenever
+   *  `perPersonSettings` has more than one entry. */
+  handlePerPersonRaiseRate?: (personId: number, wholePercent: string) => void;
   contribProfiles: ContribProfile[];
   contribProfileId: number | null;
   setContribProfileId: (id: number | null) => void;
@@ -56,11 +66,13 @@ type Props = {
 
 export function IncomeSection({
   settings,
+  perPersonSettings,
   combinedSalary,
   people,
   salaryByPerson,
   upsertSettings,
   handleSettingPercentUpdate,
+  handlePerPersonRaiseRate,
   contribProfiles,
   contribProfileId,
   setContribProfileId,
@@ -113,25 +125,49 @@ export function IncomeSection({
             </span>
           </div>
         </div>
-        <div>
-          <span className="text-muted">
-            Pre-Retirement Raise
-            <HelpTip text="Annual salary raise % during working years. Affects future contributions and employer match." />
-          </span>
-          <div className="font-medium">
-            <InlineEdit
-              value={decToWhole(settings.salaryAnnualIncrease)}
-              onSave={(v) =>
-                handleSettingPercentUpdate("salaryAnnualIncrease", v)
-              }
-              formatDisplay={(v) => formatPercent(Number(v) / 100, 2)}
-              parseInput={(v) => v.replace(/[^0-9.]/g, "")}
-              type="number"
-              className="text-sm"
-              isEditable={isEditable}
-            />
+        {perPersonSettings && perPersonSettings.length > 1 ? (
+          perPersonSettings.map((ps) => (
+            <div key={ps.personId}>
+              <span className="text-muted">
+                {ps.name}&apos;s Pre-Retirement Raise
+                {ps.personId === perPersonSettings[0]!.personId && (
+                  <HelpTip text="Annual salary raise % during working years, set per person. Affects future contributions and employer match." />
+                )}
+              </span>
+              <div className="font-medium">
+                <InlineEdit
+                  value={decToWhole(ps.salaryAnnualIncrease)}
+                  onSave={(v) => handlePerPersonRaiseRate?.(ps.personId, v)}
+                  formatDisplay={(v) => formatPercent(Number(v) / 100, 2)}
+                  parseInput={(v) => v.replace(/[^0-9.]/g, "")}
+                  type="number"
+                  className="text-sm"
+                  isEditable={isEditable}
+                />
+              </div>
+            </div>
+          ))
+        ) : (
+          <div>
+            <span className="text-muted">
+              Pre-Retirement Raise
+              <HelpTip text="Annual salary raise % during working years. Affects future contributions and employer match." />
+            </span>
+            <div className="font-medium">
+              <InlineEdit
+                value={decToWhole(settings.salaryAnnualIncrease)}
+                onSave={(v) =>
+                  handleSettingPercentUpdate("salaryAnnualIncrease", v)
+                }
+                formatDisplay={(v) => formatPercent(Number(v) / 100, 2)}
+                parseInput={(v) => v.replace(/[^0-9.]/g, "")}
+                type="number"
+                className="text-sm"
+                isEditable={isEditable}
+              />
+            </div>
           </div>
-        </div>
+        )}
         <div>
           <span className="text-muted">
             Salary Cap

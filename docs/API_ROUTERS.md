@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**348 procedures across 40 routers.**
+**349 procedures across 40 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -301,6 +301,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `upsert`                    | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
 | `upsertHouseholdFields`     | mutation | `adminProcedure`     | engine's real per-person read source for both (`retirement_profile_people`) is per-person storage. Fan whichever field the caller sends to every person's row in the profile — same shape as `retirement |
 | `upsertPerson`              | mutation | `adminProcedure`     | from once step B (2026-08-30) switched those reads to `retirement_profile_people`. The edits saved, the UI showed the new number optimistically, and the projection never moved — same failure shape as  |
+| `upsertPersonRaiseRate`     | mutation | `adminProcedure`     | `upsert` (which requires a full anchor payload the per-person UI doesn't have, runs the endAge fan-out, and resolves+writes a default filing status — all wrong for a one-field raise-rate edit). UPDATE |
 
 ## `salary-profiles`
 

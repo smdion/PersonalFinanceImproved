@@ -682,6 +682,68 @@ describe("retirement.retirementProfiles", () => {
       // secondProfileId's rows are untouched by the fan-out.
       expect(secondProfileRows.some((r) => r.endAge === 92)).toBe(false);
     });
+
+    // R53: before this, the only "Pre-Retirement Raise" control wrote the
+    // primary person's retirement_settings row via `upsert` — a second
+    // household member's `salary_annual_increase` was unreachable from the
+    // UI. `upsertPersonRaiseRate` targets one (profile, person) and writes
+    // ONLY that column.
+    describe("upsertPersonRaiseRate (R53 — per-person Pre-Retirement Raise)", () => {
+      it("sets a second household member's raise rate independently, touching nothing else", async () => {
+        const before = await caller.retirement.retirementSettings.list();
+        const personARow = before.find(
+          (s) => s.personId === personA && s.profileId === firstProfileId,
+        )!;
+        const personBOtherProfile = before.find(
+          (s) => s.personId === personB && s.profileId === secondProfileId,
+        )!;
+
+        await caller.retirement.retirementSettings.upsertPersonRaiseRate({
+          profileId: firstProfileId,
+          personId: personB,
+          salaryAnnualIncrease: "0.045",
+        });
+
+        const after = await caller.retirement.retirementSettings.list();
+        const personBAfter = after.find(
+          (s) => s.personId === personB && s.profileId === firstProfileId,
+        )!;
+        const personAAfter = after.find(
+          (s) => s.personId === personA && s.profileId === firstProfileId,
+        )!;
+        const personBOtherAfter = after.find(
+          (s) => s.personId === personB && s.profileId === secondProfileId,
+        )!;
+
+        // Person B's rate in this profile is now the value we set — and it's
+        // genuinely distinct from person A's (the whole point of R53).
+        expect(personBAfter.salaryAnnualIncrease).toBe("0.045");
+        expect(personAAfter.salaryAnnualIncrease).toBe(
+          personARow.salaryAnnualIncrease,
+        );
+        expect(personAAfter.salaryAnnualIncrease).not.toBe("0.045");
+        // The other profile's row for the same person is untouched.
+        expect(personBOtherAfter.salaryAnnualIncrease).toBe(
+          personBOtherProfile.salaryAnnualIncrease,
+        );
+        // No fan-out: only the one row moved, every other column on it too.
+        expect(personBAfter.retirementAge).toBe(
+          before.find(
+            (s) => s.personId === personB && s.profileId === firstProfileId,
+          )!.retirementAge,
+        );
+      });
+
+      it("throws when no retirement_settings row exists for that (profile, person)", async () => {
+        await expect(
+          caller.retirement.retirementSettings.upsertPersonRaiseRate({
+            profileId: 999999,
+            personId: personA,
+            salaryAnnualIncrease: "0.03",
+          }),
+        ).rejects.toThrow();
+      });
+    });
   });
 
   it("update renames a profile", async () => {
