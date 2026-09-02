@@ -246,6 +246,20 @@
       "when": 1788145536264,
       "tag": "0034_even_cassandra_nova",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "6",
+      "when": 1788362426957,
+      "tag": "0035_salty_warbird",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "6",
+      "when": 1788362436423,
+      "tag": "0036_category_links_backfill",
+      "breakpoints": true
     }
   ]
 }

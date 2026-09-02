@@ -72,6 +72,7 @@ export function PreviewPanel({
     if (!cat) return;
     savingsMutations.linkSavings.mutate({
       goalId,
+      service,
       apiCategoryId: apiId,
       apiCategoryName: cat.name,
     });
@@ -90,6 +91,7 @@ export function PreviewPanel({
       if (created) {
         await savingsMutations.linkSavings.mutateAsync({
           goalId: created.id,
+          service,
           apiCategoryId: apiCat.id,
           apiCategoryName: apiCat.name,
         });
@@ -228,6 +230,7 @@ export function PreviewPanel({
 
       {savings && (
         <SavingsSection
+          service={service}
           savings={savings}
           allApiCats={allApiCats}
           mutations={savingsMutations}

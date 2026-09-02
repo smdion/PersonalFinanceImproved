@@ -142,6 +142,11 @@ export function ApiSyncSection({
 }: ApiSyncSectionProps) {
   const utils = trpc.useUtils();
 
+  // Same single-service assumption as useApiSync's onUnlinkFromApi above —
+  // this page has no per-service selector, so the currently active service
+  // is the only correct, non-ambiguous target for a new link.
+  const { data: activeService } = trpc.sync.getActiveBudgetApi.useQuery();
+
   // ── Mutations ──
   const linkGoalToApi = trpc.savings.linkGoalToApi.useMutation({
     onSuccess: () => utils.savings.invalidate(),
@@ -178,8 +183,10 @@ export function ApiSyncSection({
                     <button
                       key={cat.id}
                       onClick={() => {
+                        if (!activeService || activeService === "none") return;
                         linkGoalToApi.mutate({
                           goalId: linkingGoalId,
+                          service: activeService,
                           apiCategoryId: cat.id,
                           apiCategoryName: `${group.name}: ${cat.name}`,
                         });
@@ -308,6 +315,12 @@ export function ApiSyncSection({
 export function useApiSync() {
   const utils = trpc.useUtils();
 
+  // The main Savings page always operates on the currently active service
+  // (there's no per-service selector here, unlike the Integrations sync
+  // page) — apiBalanceMap/apiBalancesData are already resolved against this
+  // same active service server-side.
+  const { data: activeService } = trpc.sync.getActiveBudgetApi.useQuery();
+
   const unlinkGoalFromApi = trpc.savings.unlinkGoalFromApi.useMutation({
     onSuccess: () => utils.savings.invalidate(),
   });
@@ -423,8 +436,11 @@ export function useApiSync() {
     [],
   );
   const onUnlinkFromApi = useCallback(
-    (goalId: number) => unlinkGoalFromApi.mutate({ goalId }),
-    [unlinkGoalFromApi],
+    (goalId: number) => {
+      if (!activeService || activeService === "none") return;
+      unlinkGoalFromApi.mutate({ goalId, service: activeService });
+    },
+    [unlinkGoalFromApi, activeService],
   );
   const onConvertToBudgetItem = useCallback(
     (goalId: number, name: string) =>

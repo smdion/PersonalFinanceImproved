@@ -86,6 +86,9 @@ const V07_SCHEMA_TAGS = [
   "0033_far_hellfire_club", // SQLite counterpart of 0033
   "0034_nice_omega_red", // PG: retirement_settings.discretionary_withdrawal_order (R55 follow-up)
   "0034_even_cassandra_nova", // SQLite counterpart of 0034
+  "0035_harsh_gabe_jones", // PG: budget_item_category_links + savings_goal_category_links tables
+  "0035_salty_warbird", // SQLite counterpart of 0035
+  "0036_category_links_backfill", // PG + SQLite (identical tag) — backfill only, no schema shape change
 ] as const;
 
 /** All schema version tags that we know how to import from. */

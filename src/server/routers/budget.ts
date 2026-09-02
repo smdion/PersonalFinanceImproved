@@ -46,7 +46,11 @@ import {
   resolveTargetBudgetProfile,
   getResolvedGoalAllocations,
   resolveLinkedBudgetItemAmounts,
+  loadBudgetItemLinks,
+  setBudgetItemLink,
+  deleteBudgetItemLink,
 } from "@/server/helpers";
+import { budgetApiServiceSchema } from "@/lib/config/enum-values";
 import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
 import { TAX_TREATMENT_LABELS } from "@/lib/config/display-labels";
 import {
@@ -699,11 +703,34 @@ export const budgetRouter = createTRPCRouter({
         return { profile: null, result: null, columnLabels: [] as string[] };
       }
 
-      const items = await ctx.db
+      const rawItemRows = await ctx.db
         .select()
         .from(schema.budgetItems)
         .where(eq(schema.budgetItems.profileId, activeProfile.id))
         .orderBy(asc(schema.budgetItems.sortOrder));
+
+      // Read-only display path — resolve links for the currently active
+      // service only (no cross-service ambiguity here; see
+      // src/server/helpers/category-links.ts).
+      const displayService = await getActiveBudgetApi(ctx.db);
+      const displayItemLinks =
+        displayService === "none"
+          ? new Map()
+          : await loadBudgetItemLinks(
+              ctx.db,
+              rawItemRows.map((i) => i.id),
+              displayService,
+            );
+      const items = rawItemRows.map((i) => {
+        const link = displayItemLinks.get(i.id);
+        return {
+          ...i,
+          apiCategoryId: link?.categoryId ?? null,
+          apiCategoryName: link?.categoryName ?? null,
+          apiLastSyncedAt: link?.lastSyncedAt ?? null,
+          apiSyncDirection: link?.syncDirection ?? "pull",
+        };
+      });
 
       const columnLabels = activeProfile.columnLabels;
       const numColumns = columnLabels.length;
@@ -1661,37 +1688,37 @@ export const budgetRouter = createTRPCRouter({
     .input(
       z.object({
         budgetItemId: z.number().int(),
+        service: budgetApiServiceSchema,
         apiCategoryId: z.string().min(1),
         apiCategoryName: z.string().min(1),
         syncDirection: z.enum(["pull", "push", "both"]).default("pull"),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      await ctx.db
-        .update(schema.budgetItems)
-        .set({
-          apiCategoryId: input.apiCategoryId,
-          apiCategoryName: input.apiCategoryName,
-          apiSyncDirection: input.syncDirection,
-          apiLastSyncedAt: null,
-        })
-        .where(eq(schema.budgetItems.id, input.budgetItemId));
+      await setBudgetItemLink(ctx.db, {
+        budgetItemId: input.budgetItemId,
+        service: input.service,
+        categoryId: input.apiCategoryId,
+        categoryName: input.apiCategoryName,
+        syncDirection: input.syncDirection,
+        lastSyncedAt: null,
+      });
       return { ok: true };
     }),
 
   /** Remove API link from a budget item. */
   unlinkFromApi: budgetProcedure
-    .input(z.object({ budgetItemId: z.number().int() }))
+    .input(
+      z.object({
+        budgetItemId: z.number().int(),
+        service: budgetApiServiceSchema,
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
-      await ctx.db
-        .update(schema.budgetItems)
-        .set({
-          apiCategoryId: null,
-          apiCategoryName: null,
-          apiSyncDirection: "pull",
-          apiLastSyncedAt: null,
-        })
-        .where(eq(schema.budgetItems.id, input.budgetItemId));
+      await deleteBudgetItemLink(ctx.db, {
+        budgetItemId: input.budgetItemId,
+        service: input.service,
+      });
       return { ok: true };
     }),
 
@@ -1700,14 +1727,31 @@ export const budgetRouter = createTRPCRouter({
     .input(
       z.object({
         budgetItemId: z.number(),
+        service: budgetApiServiceSchema,
         syncDirection: z.enum(["pull", "push", "both"]),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      await ctx.db
-        .update(schema.budgetItems)
-        .set({ apiSyncDirection: input.syncDirection })
-        .where(eq(schema.budgetItems.id, input.budgetItemId));
+      const links = await loadBudgetItemLinks(
+        ctx.db,
+        [input.budgetItemId],
+        input.service,
+      );
+      const existing = links.get(input.budgetItemId);
+      if (!existing) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Budget item is not linked to this service",
+        });
+      }
+      await setBudgetItemLink(ctx.db, {
+        budgetItemId: input.budgetItemId,
+        service: input.service,
+        categoryId: existing.categoryId,
+        categoryName: existing.categoryName,
+        syncDirection: input.syncDirection,
+        lastSyncedAt: existing.lastSyncedAt,
+      });
       return { ok: true };
     }),
 
@@ -1758,10 +1802,24 @@ export const budgetRouter = createTRPCRouter({
           message: "No linked or active budget profile",
         });
 
-      const items = await ctx.db
+      const itemRows = await ctx.db
         .select()
         .from(schema.budgetItems)
         .where(eq(schema.budgetItems.profileId, profile.id));
+      const itemLinks = await loadBudgetItemLinks(
+        ctx.db,
+        itemRows.map((i) => i.id),
+        active,
+      );
+      const items = itemRows.map((i) => {
+        const link = itemLinks.get(i.id);
+        return {
+          ...i,
+          apiCategoryId: link?.categoryId ?? null,
+          apiCategoryName: link?.categoryName ?? null,
+          apiSyncDirection: link?.syncDirection ?? "pull",
+        };
+      });
 
       let updated = 0;
       for (const item of items) {
@@ -1781,8 +1839,16 @@ export const budgetRouter = createTRPCRouter({
 
         await ctx.db
           .update(schema.budgetItems)
-          .set({ amounts, apiLastSyncedAt: new Date() })
+          .set({ amounts })
           .where(eq(schema.budgetItems.id, item.id));
+        await setBudgetItemLink(ctx.db, {
+          budgetItemId: item.id,
+          service: active,
+          categoryId: item.apiCategoryId,
+          categoryName: item.apiCategoryName,
+          syncDirection: item.apiSyncDirection,
+          lastSyncedAt: new Date(),
+        });
         updated++;
       }
 
@@ -1824,10 +1890,24 @@ export const budgetRouter = createTRPCRouter({
           message: "No linked or active budget profile",
         });
 
-      const items = await ctx.db
+      const pushItemRows = await ctx.db
         .select()
         .from(schema.budgetItems)
         .where(eq(schema.budgetItems.profileId, profile.id));
+      const pushItemLinks = await loadBudgetItemLinks(
+        ctx.db,
+        pushItemRows.map((i) => i.id),
+        active,
+      );
+      const items = pushItemRows.map((i) => {
+        const link = pushItemLinks.get(i.id);
+        return {
+          ...i,
+          apiCategoryId: link?.categoryId ?? null,
+          apiCategoryName: link?.categoryName ?? null,
+          apiSyncDirection: link?.syncDirection ?? "pull",
+        };
+      });
 
       let pushed = 0;
       // Counted separately from a hard failure below — the provider
@@ -1865,10 +1945,14 @@ export const budgetRouter = createTRPCRouter({
           }
           throw err;
         }
-        await ctx.db
-          .update(schema.budgetItems)
-          .set({ apiLastSyncedAt: new Date() })
-          .where(eq(schema.budgetItems.id, item.id));
+        await setBudgetItemLink(ctx.db, {
+          budgetItemId: item.id,
+          service: active,
+          categoryId: item.apiCategoryId,
+          categoryName: item.apiCategoryName,
+          syncDirection: item.apiSyncDirection,
+          lastSyncedAt: new Date(),
+        });
         pushed++;
       }
 
@@ -1938,10 +2022,23 @@ export const budgetRouter = createTRPCRouter({
           linkedColumnIndex: 0,
         };
 
-      const items = await ctx.db
+      const actualsItemRows = await ctx.db
         .select()
         .from(schema.budgetItems)
         .where(eq(schema.budgetItems.profileId, profile.id));
+      const actualsItemLinks = await loadBudgetItemLinks(
+        ctx.db,
+        actualsItemRows.map((i) => i.id),
+        active,
+      );
+      const items = actualsItemRows.map((i) => {
+        const link = actualsItemLinks.get(i.id);
+        return {
+          ...i,
+          apiCategoryId: link?.categoryId ?? null,
+          apiCategoryName: link?.categoryName ?? null,
+        };
+      });
 
       const actuals = items
         .filter((i) => i.apiCategoryId)

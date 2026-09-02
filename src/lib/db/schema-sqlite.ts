@@ -388,6 +388,37 @@ export const budgetItems = sqliteTable(
   ],
 );
 
+// One row per (budget item, service) — replaces the old single-slot
+// apiCategoryId/apiCategoryName/apiLastSyncedAt/apiSyncDirection columns on
+// budgetItems, which could only hold ONE service's link at a time and
+// silently clobbered it when a household linked the same item to a second
+// service (YNAB + Actual both connected). Those columns stay on budgetItems,
+// dead-but-present, through v0.7.x; cleanup deferred to a future v0.8.0
+// squash (see retirement_settings.person_id's precedent).
+export const budgetItemCategoryLinks = sqliteTable(
+  "budget_item_category_links",
+  {
+    id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    budgetItemId: integer("budget_item_id")
+      .notNull()
+      .references(() => budgetItems.id, { onDelete: "cascade" }),
+    service: text("service").notNull().$type<BudgetApiService>(),
+    categoryId: text("category_id").notNull(),
+    categoryName: text("category_name"),
+    lastSyncedAt: integer("last_synced_at", { mode: "timestamp" }),
+    syncDirection: text("sync_direction").$type<ApiSyncDirection>(),
+  },
+  (table) => [
+    index("budget_item_category_links_budget_item_id_idx").on(
+      table.budgetItemId,
+    ),
+    uniqueIndex("budget_item_category_links_item_service_idx").on(
+      table.budgetItemId,
+      table.service,
+    ),
+  ],
+);
+
 // ────────────────────────────────────────────────────────────────────────────
 // 4. Savings (sinking funds)
 // ────────────────────────────────────────────────────────────────────────────
@@ -417,6 +448,37 @@ export const savingsGoals = sqliteTable(
     targetMode: text("target_mode").notNull().default("fixed"), // 'fixed' | 'ongoing' | 'bucket' — validated by Zod (app-layer, no DB constraint)
   },
   (table) => [index("savings_goals_is_active_idx").on(table.isActive)],
+);
+
+// One row per (savings goal, service, role) — replaces the old single-slot
+// apiCategoryId/apiCategoryName/isApiSyncEnabled/reimbursementApiCategoryId
+// columns on savingsGoals, which could only hold ONE service's link (plus
+// one reimbursement link) at a time. See budgetItemCategoryLinks above for
+// the same fix applied to budget items; those raw columns stay dead-but-
+// present through v0.7.x, cleanup deferred to a future v0.8.0 squash.
+export const savingsGoalCategoryLinks = sqliteTable(
+  "savings_goal_category_links",
+  {
+    id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    savingsGoalId: integer("savings_goal_id")
+      .notNull()
+      .references(() => savingsGoals.id, { onDelete: "cascade" }),
+    service: text("service").notNull().$type<BudgetApiService>(),
+    role: text("role").notNull().default("primary"), // 'primary' | 'reimbursement'
+    categoryId: text("category_id").notNull(),
+    categoryName: text("category_name"),
+    lastSyncedAt: integer("last_synced_at", { mode: "timestamp" }),
+  },
+  (table) => [
+    index("savings_goal_category_links_savings_goal_id_idx").on(
+      table.savingsGoalId,
+    ),
+    uniqueIndex("savings_goal_category_links_goal_service_role_idx").on(
+      table.savingsGoalId,
+      table.service,
+      table.role,
+    ),
+  ],
 );
 
 export const savingsMonthly = sqliteTable(

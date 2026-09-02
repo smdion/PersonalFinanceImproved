@@ -508,6 +508,7 @@ describe("savings.linkGoalToApi / unlinkGoalFromApi", () => {
     it("links a goal to a budget API category", async () => {
       const result = await caller.savings.linkGoalToApi({
         goalId,
+        service: "ynab",
         apiCategoryId: "cat-abc-123",
         apiCategoryName: "Sinking Fund Category",
       });
@@ -517,6 +518,7 @@ describe("savings.linkGoalToApi / unlinkGoalFromApi", () => {
     it("can re-link a goal to a different API category", async () => {
       const result = await caller.savings.linkGoalToApi({
         goalId,
+        service: "ynab",
         apiCategoryId: "cat-xyz-999",
         apiCategoryName: "New Category Name",
       });
@@ -527,6 +529,7 @@ describe("savings.linkGoalToApi / unlinkGoalFromApi", () => {
       await expect(
         caller.savings.linkGoalToApi({
           goalId,
+          service: "ynab",
           apiCategoryId: "",
           apiCategoryName: "Some Name",
         }),
@@ -537,10 +540,50 @@ describe("savings.linkGoalToApi / unlinkGoalFromApi", () => {
       await expect(
         caller.savings.linkGoalToApi({
           goalId,
+          service: "ynab",
           apiCategoryId: "cat-abc",
           apiCategoryName: "",
         }),
       ).rejects.toThrow();
+    });
+
+    it("keeps a YNAB link and an Actual link on the SAME goal isolated — the core fix", async () => {
+      const dualGoalId = seedSavingsGoal(db, {
+        name: "Dual-Service Goal",
+        targetAmount: "5000",
+        monthlyContribution: "200",
+      });
+      await caller.savings.linkGoalToApi({
+        goalId: dualGoalId,
+        service: "ynab",
+        apiCategoryId: "ynab-only-cat",
+        apiCategoryName: "YNAB Category",
+      });
+      await caller.savings.linkGoalToApi({
+        goalId: dualGoalId,
+        service: "actual",
+        apiCategoryId: "actual-only-cat",
+        apiCategoryName: "Actual Category",
+      });
+
+      const { loadSavingsGoalLinks } =
+        await import("@/server/helpers/category-links");
+      const rawDb = db as unknown as Parameters<typeof loadSavingsGoalLinks>[0];
+      const ynabLinks = await loadSavingsGoalLinks(
+        rawDb,
+        [dualGoalId],
+        "ynab",
+        "primary",
+      );
+      const actualLinks = await loadSavingsGoalLinks(
+        rawDb,
+        [dualGoalId],
+        "actual",
+        "primary",
+      );
+      // Linking to Actual must NOT have clobbered the YNAB link.
+      expect(ynabLinks.get(dualGoalId)?.categoryId).toBe("ynab-only-cat");
+      expect(actualLinks.get(dualGoalId)?.categoryId).toBe("actual-only-cat");
     });
   });
 
@@ -548,10 +591,14 @@ describe("savings.linkGoalToApi / unlinkGoalFromApi", () => {
     it("unlinks a previously linked goal from the budget API", async () => {
       await caller.savings.linkGoalToApi({
         goalId,
+        service: "ynab",
         apiCategoryId: "cat-abc-123",
         apiCategoryName: "Sinking Fund Category",
       });
-      const result = await caller.savings.unlinkGoalFromApi({ goalId });
+      const result = await caller.savings.unlinkGoalFromApi({
+        goalId,
+        service: "ynab",
+      });
       expect(result).toEqual({ ok: true });
     });
 
@@ -563,6 +610,7 @@ describe("savings.linkGoalToApi / unlinkGoalFromApi", () => {
       });
       const result = await caller.savings.unlinkGoalFromApi({
         goalId: freshGoalId,
+        service: "ynab",
       });
       expect(result).toEqual({ ok: true });
     });
@@ -589,11 +637,15 @@ describe("savings.convertBudgetItemToGoal", () => {
 
   afterAll(() => cleanup());
 
-  it("converts a budget item with apiCategoryId into a savings goal", async () => {
+  it("converts a budget item linked to a service into a savings goal, copying the link", async () => {
     const itemId = seedBudgetItem(db, profileId, {
       category: "Savings",
       subcategory: "New Car",
       amounts: [300],
+    });
+    await caller.budget.linkToApi({
+      budgetItemId: itemId,
+      service: "ynab",
       apiCategoryId: "ynab-cat-car-001",
       apiCategoryName: "New Car Fund",
     });
@@ -603,15 +655,30 @@ describe("savings.convertBudgetItemToGoal", () => {
       monthlyContribution: "300",
       targetAmount: "15000",
       targetMode: "fixed",
+      service: "ynab",
     });
     expect(result).toBeDefined();
     expect(result.name).toBe("New Car Savings Goal");
-    expect(result.apiCategoryId).toBe("ynab-cat-car-001");
-    expect(result.apiCategoryName).toBe("New Car Fund");
-    expect(result.isApiSyncEnabled).toBe(true);
+    // The raw (dead) columns on the newly-created goal stay null — the
+    // link lives in savings_goal_category_links instead.
+    expect(result.apiCategoryId).toBeNull();
+
+    const { loadSavingsGoalLinks } =
+      await import("@/server/helpers/category-links");
+    const rawDb = db as unknown as Parameters<typeof loadSavingsGoalLinks>[0];
+    const links = await loadSavingsGoalLinks(
+      rawDb,
+      [result.id],
+      "ynab",
+      "primary",
+    );
+    expect(links.get(result.id)).toMatchObject({
+      categoryId: "ynab-cat-car-001",
+      categoryName: "New Car Fund",
+    });
   });
 
-  it("creates a goal even when apiCategoryId is null on the budget item", async () => {
+  it("creates a goal with no copied link when the budget item has none for the given service", async () => {
     const itemId = seedBudgetItem(db, profileId, {
       category: "Savings",
       subcategory: "Rainy Day",
@@ -622,10 +689,21 @@ describe("savings.convertBudgetItemToGoal", () => {
       goalName: "Rainy Day Goal",
       monthlyContribution: "100",
       targetMode: "ongoing",
+      service: "ynab",
     });
     expect(result.name).toBe("Rainy Day Goal");
-    expect(result.isApiSyncEnabled).toBe(false);
     expect(result.apiCategoryId).toBeNull();
+
+    const { loadSavingsGoalLinks } =
+      await import("@/server/helpers/category-links");
+    const rawDb = db as unknown as Parameters<typeof loadSavingsGoalLinks>[0];
+    const links = await loadSavingsGoalLinks(
+      rawDb,
+      [result.id],
+      "ynab",
+      "primary",
+    );
+    expect(links.has(result.id)).toBe(false);
   });
 
   it("applies the given targetMode to the resulting goal", async () => {
@@ -711,28 +789,42 @@ describe("savings.convertGoalToBudgetItem", () => {
 
   afterAll(() => cleanup());
 
-  it("converts a savings goal to a budget item using the active budget profile", async () => {
+  it("converts a savings goal to a budget item using the active budget profile, copying the link", async () => {
     const profileId = await seedBudgetProfile(db, "Active Budget", true);
     const goalId = seedSavingsGoal(db, {
       name: "Convertible Goal",
       targetAmount: "8000",
       monthlyContribution: "400",
+    });
+    await caller.savings.linkGoalToApi({
+      goalId,
+      service: "ynab",
       apiCategoryId: "ynab-savings-001",
       apiCategoryName: "Savings Bucket",
-      isApiSyncEnabled: true,
     });
     const result = await caller.savings.convertGoalToBudgetItem({
       goalId,
       category: "Savings",
       subcategory: "Convertible Goal",
       isEssential: false,
+      service: "ynab",
     });
     expect(result).toBeDefined();
-    expect(result.category).toBe("Savings");
-    expect(result.subcategory).toBe("Convertible Goal");
-    expect(result.profileId).toBe(profileId);
-    expect(result.apiCategoryId).toBe("ynab-savings-001");
-    expect(result.apiCategoryName).toBe("Savings Bucket");
+    expect(result!.category).toBe("Savings");
+    expect(result!.subcategory).toBe("Convertible Goal");
+    expect(result!.profileId).toBe(profileId);
+    // Raw (dead) columns stay null on the new item — the link lives in
+    // budget_item_category_links instead.
+    expect(result!.apiCategoryId).toBeNull();
+
+    const { loadBudgetItemLinks } =
+      await import("@/server/helpers/category-links");
+    const rawDb = db as unknown as Parameters<typeof loadBudgetItemLinks>[0];
+    const links = await loadBudgetItemLinks(rawDb, [result!.id], "ynab");
+    expect(links.get(result!.id)).toMatchObject({
+      categoryId: "ynab-savings-001",
+      categoryName: "Savings Bucket",
+    });
   });
 
   it("transfers the isEssential flag to the new budget item", async () => {
@@ -836,6 +928,7 @@ describe("savings.linkReimbursementCategory", () => {
   it("links a reimbursement category to the e-fund goal", async () => {
     const result = await caller.savings.linkReimbursementCategory({
       goalId: efundGoalId,
+      service: "ynab",
       apiCategoryId: "reimb-cat-001",
     });
     expect(result).toEqual({ ok: true });
@@ -844,6 +937,7 @@ describe("savings.linkReimbursementCategory", () => {
   it("can update the reimbursement category to a different id", async () => {
     const result = await caller.savings.linkReimbursementCategory({
       goalId: efundGoalId,
+      service: "ynab",
       apiCategoryId: "reimb-cat-002",
     });
     expect(result).toEqual({ ok: true });
@@ -852,6 +946,7 @@ describe("savings.linkReimbursementCategory", () => {
   it("clears the reimbursement category when apiCategoryId is null", async () => {
     const result = await caller.savings.linkReimbursementCategory({
       goalId: efundGoalId,
+      service: "ynab",
       apiCategoryId: null,
     });
     expect(result).toEqual({ ok: true });
@@ -866,6 +961,7 @@ describe("savings.linkReimbursementCategory", () => {
     });
     const result = await caller.savings.linkReimbursementCategory({
       goalId: regularGoalId,
+      service: "ynab",
       apiCategoryId: "reimb-cat-regular",
     });
     expect(result).toEqual({ ok: true });
@@ -875,9 +971,40 @@ describe("savings.linkReimbursementCategory", () => {
     await expect(
       caller.savings.linkReimbursementCategory({
         goalId: efundGoalId,
+        service: "ynab",
         apiCategoryId: "",
       }),
     ).rejects.toThrow();
+  });
+
+  it("keeps YNAB and Actual reimbursement links on the SAME goal isolated", async () => {
+    await caller.savings.linkReimbursementCategory({
+      goalId: efundGoalId,
+      service: "ynab",
+      apiCategoryId: "reimb-ynab",
+    });
+    await caller.savings.linkReimbursementCategory({
+      goalId: efundGoalId,
+      service: "actual",
+      apiCategoryId: "reimb-actual",
+    });
+    const { loadSavingsGoalLinks } =
+      await import("@/server/helpers/category-links");
+    const rawDb = db as unknown as Parameters<typeof loadSavingsGoalLinks>[0];
+    const ynabLinks = await loadSavingsGoalLinks(
+      rawDb,
+      [efundGoalId],
+      "ynab",
+      "reimbursement",
+    );
+    const actualLinks = await loadSavingsGoalLinks(
+      rawDb,
+      [efundGoalId],
+      "actual",
+      "reimbursement",
+    );
+    expect(ynabLinks.get(efundGoalId)?.categoryId).toBe("reimb-ynab");
+    expect(actualLinks.get(efundGoalId)?.categoryId).toBe("reimb-actual");
   });
 });
 
@@ -1315,6 +1442,12 @@ describe("savings.computeSummary — currentMonthBudgeted", () => {
       seedSavingsGoalAllocation(ctx.db, goalId, profileId, {
         monthlyContribution: "100",
       });
+      await ctx.caller.savings.linkGoalToApi({
+        goalId,
+        service: "actual",
+        apiCategoryId: "cat-linked",
+        apiCategoryName: "Linked Goal",
+      });
 
       vi.mocked(getActiveBudgetApi).mockResolvedValueOnce("actual");
       vi.mocked(cacheGet).mockImplementation((_db, _service, key: string) => {
@@ -1352,6 +1485,12 @@ describe("savings.computeSummary — currentMonthBudgeted", () => {
       });
       seedSavingsGoalAllocation(ctx.db, goalId, profileId, {
         monthlyContribution: "100",
+      });
+      await ctx.caller.savings.linkGoalToApi({
+        goalId,
+        service: "actual",
+        apiCategoryId: "cat-no-cache",
+        apiCategoryName: "Linked Goal No Cache",
       });
 
       vi.mocked(getActiveBudgetApi).mockResolvedValueOnce("actual");
@@ -1402,6 +1541,12 @@ describe("savings.computeSummary — currentMonthBudgeted", () => {
       seedSavingsGoalAllocation(ctx.db, goalId, profileId, {
         monthlyContribution: "100",
       });
+      await ctx.caller.savings.linkGoalToApi({
+        goalId,
+        service: "actual",
+        apiCategoryId: "cat-gone",
+        apiCategoryName: "Orphaned Link Goal",
+      });
 
       vi.mocked(getActiveBudgetApi).mockResolvedValueOnce("actual");
       vi.mocked(cacheGet).mockImplementation((_db, _service, key: string) => {
@@ -1446,6 +1591,12 @@ describe("savings.pushContributionsToApi", () => {
       });
       seedSavingsGoalAllocation(ctx.db, goalId, profileId, {
         monthlyContribution: "100",
+      });
+      await ctx.caller.savings.linkGoalToApi({
+        goalId,
+        service: "actual",
+        apiCategoryId: "cat-unsupported",
+        apiCategoryName: "Synced Goal",
       });
 
       vi.mocked(getActiveBudgetApi).mockResolvedValueOnce("actual");
@@ -1495,6 +1646,12 @@ describe("savings.pushContributionsToApi", () => {
       });
       seedSavingsGoalAllocation(ctx.db, goalId, profileId, {
         monthlyContribution: "100",
+      });
+      await ctx.caller.savings.linkGoalToApi({
+        goalId,
+        service: "ynab",
+        apiCategoryId: "cat-network-fail",
+        apiCategoryName: "Synced Goal",
       });
 
       vi.mocked(getActiveBudgetApi).mockResolvedValueOnce("ynab");

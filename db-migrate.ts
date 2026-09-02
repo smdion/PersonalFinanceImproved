@@ -357,6 +357,9 @@ async function handleSquashUpgrade(
       if (entry.tag === "0016_drop_salary_ledger_tables") {
         await backfillHistoricalSalaries(pool);
       }
+      if (entry.tag === "0036_category_links_backfill") {
+        await backfillCategoryLinks(pool);
+      }
 
       const statements = sql
         .split("--> statement-breakpoint")
@@ -754,6 +757,85 @@ async function backfillHistoricalSalaries(
   }
 }
 
+/**
+ * One-time, idempotent backfill for migration 0036_category_links_backfill:
+ * copies budget_items.api_category_id (and the matching savings_goals
+ * columns) into the new budget_item_category_links / savings_goal_
+ * category_links tables (see 0035), which — unlike the old single-slot
+ * columns — can hold a separate link per connected service.
+ *
+ * We cannot know which service an existing undisambiguated id actually
+ * belongs to, so every row this writes is a best-effort guess keyed to the
+ * household's CURRENT app_settings.active_budget_api value. Logs the exact
+ * count of guessed rows per table so whoever runs this in prod knows how
+ * many links to go verify by hand for any household with more than one
+ * connected service.
+ */
+async function backfillCategoryLinks(pool: import("pg").Pool): Promise<void> {
+  const client = await pool.connect();
+  try {
+    const { rows: settingRows } = await client.query<{ value: unknown }>(
+      `SELECT value FROM app_settings WHERE key = 'active_budget_api'`,
+    );
+    const activeService = settingRows[0]?.value;
+    if (activeService !== "ynab" && activeService !== "actual") {
+      log("info", "category_links_backfill_skipped", {
+        reason:
+          "no active_budget_api set (or unrecognized value) — nothing to guess",
+        activeService: activeService ?? null,
+      });
+      return;
+    }
+
+    await client.query("BEGIN");
+    try {
+      const { rowCount: budgetItemLinks } = await client.query(
+        `INSERT INTO budget_item_category_links
+           (budget_item_id, service, category_id, category_name, last_synced_at, sync_direction)
+         SELECT id, $1, api_category_id, api_category_name, api_last_synced_at, api_sync_direction
+         FROM budget_items
+         WHERE api_category_id IS NOT NULL
+         ON CONFLICT (budget_item_id, service) DO NOTHING`,
+        [activeService],
+      );
+
+      const { rowCount: savingsPrimaryLinks } = await client.query(
+        `INSERT INTO savings_goal_category_links
+           (savings_goal_id, service, role, category_id, category_name)
+         SELECT id, $1, 'primary', api_category_id, api_category_name
+         FROM savings_goals
+         WHERE api_category_id IS NOT NULL
+         ON CONFLICT (savings_goal_id, service, role) DO NOTHING`,
+        [activeService],
+      );
+
+      const { rowCount: savingsReimbursementLinks } = await client.query(
+        `INSERT INTO savings_goal_category_links
+           (savings_goal_id, service, role, category_id, category_name)
+         SELECT id, $1, 'reimbursement', reimbursement_api_category_id, NULL
+         FROM savings_goals
+         WHERE reimbursement_api_category_id IS NOT NULL
+         ON CONFLICT (savings_goal_id, service, role) DO NOTHING`,
+        [activeService],
+      );
+
+      await client.query("COMMIT");
+      log("info", "category_links_backfill_complete", {
+        guessedService: activeService,
+        budgetItemLinksBackfilled: budgetItemLinks ?? 0,
+        savingsGoalPrimaryLinksBackfilled: savingsPrimaryLinks ?? 0,
+        savingsGoalReimbursementLinksBackfilled: savingsReimbursementLinks ?? 0,
+        note: "every row above is a guess keyed to the current active_budget_api — verify by hand for any household with more than one connected service",
+      });
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    }
+  } finally {
+    client.release();
+  }
+}
+
 async function runPostgres() {
   const { drizzle } = await import("drizzle-orm/node-postgres");
   const { migrate } = await import("drizzle-orm/node-postgres/migrator");
@@ -846,6 +928,9 @@ async function runPostgres() {
             "pre_0016_drop_salary_ledger_tables",
           );
           await backfillHistoricalSalaries(pool);
+        }
+        if (entry.tag === "0036_category_links_backfill") {
+          await backfillCategoryLinks(pool);
         }
         const statements = sql
           .split("--> statement-breakpoint")
@@ -1187,6 +1272,9 @@ function handleSQLiteSquashUpgrade(
     if (entry.tag === "0016_drop_salary_ledger_tables") {
       backfillHistoricalSalariesSQLite(sqlite);
     }
+    if (entry.tag === "0036_category_links_backfill") {
+      backfillCategoryLinksSQLite(sqlite);
+    }
 
     const statements = sql
       .split("--> statement-breakpoint")
@@ -1466,6 +1554,79 @@ export function backfillHistoricalSalariesSQLite(
   tx();
 }
 
+/**
+ * SQLite twin of backfillCategoryLinks (see its docblock above) — same
+ * one-time, idempotent, best-effort-guessed backfill of budget_item_
+ * category_links / savings_goal_category_links keyed to the household's
+ * current active_budget_api, with the same per-table counts logged.
+ */
+function backfillCategoryLinksSQLite(
+  sqlite: InstanceType<typeof import("better-sqlite3")>,
+): void {
+  const settingRow = sqlite
+    .prepare("SELECT value FROM app_settings WHERE key = 'active_budget_api'")
+    .get() as { value: string } | undefined;
+  let activeService: string | null = null;
+  if (settingRow) {
+    try {
+      const parsed = JSON.parse(settingRow.value);
+      if (parsed === "ynab" || parsed === "actual") activeService = parsed;
+    } catch {
+      // malformed value — treat as unset
+    }
+  }
+  if (activeService === null) {
+    log("info", "category_links_backfill_skipped", {
+      dialect: "sqlite",
+      reason:
+        "no active_budget_api set (or unrecognized value) — nothing to guess",
+    });
+    return;
+  }
+
+  const tx = sqlite.transaction(() => {
+    const budgetItemLinks = sqlite
+      .prepare(
+        `INSERT OR IGNORE INTO budget_item_category_links
+           (budget_item_id, service, category_id, category_name, last_synced_at, sync_direction)
+         SELECT id, ?, api_category_id, api_category_name, api_last_synced_at, api_sync_direction
+         FROM budget_items
+         WHERE api_category_id IS NOT NULL`,
+      )
+      .run(activeService).changes;
+
+    const savingsPrimaryLinks = sqlite
+      .prepare(
+        `INSERT OR IGNORE INTO savings_goal_category_links
+           (savings_goal_id, service, role, category_id, category_name)
+         SELECT id, ?, 'primary', api_category_id, api_category_name
+         FROM savings_goals
+         WHERE api_category_id IS NOT NULL`,
+      )
+      .run(activeService).changes;
+
+    const savingsReimbursementLinks = sqlite
+      .prepare(
+        `INSERT OR IGNORE INTO savings_goal_category_links
+           (savings_goal_id, service, role, category_id, category_name)
+         SELECT id, ?, 'reimbursement', reimbursement_api_category_id, NULL
+         FROM savings_goals
+         WHERE reimbursement_api_category_id IS NOT NULL`,
+      )
+      .run(activeService).changes;
+
+    log("info", "category_links_backfill_complete", {
+      dialect: "sqlite",
+      guessedService: activeService,
+      budgetItemLinksBackfilled: budgetItemLinks,
+      savingsGoalPrimaryLinksBackfilled: savingsPrimaryLinks,
+      savingsGoalReimbursementLinksBackfilled: savingsReimbursementLinks,
+      note: "every row above is a guess keyed to the current active_budget_api — verify by hand for any household with more than one connected service",
+    });
+  });
+  tx();
+}
+
 function runSQLite() {
   /* eslint-disable @typescript-eslint/no-require-imports -- dynamic require for SQLite dialect */
   const Database = require("better-sqlite3");
@@ -1534,6 +1695,9 @@ function runSQLite() {
           "pre_0016_drop_salary_ledger_tables",
         );
         backfillHistoricalSalariesSQLite(sqlite);
+      }
+      if (entry.tag === "0036_category_links_backfill") {
+        backfillCategoryLinksSQLite(sqlite);
       }
       const statements = sql
         .split("--> statement-breakpoint")

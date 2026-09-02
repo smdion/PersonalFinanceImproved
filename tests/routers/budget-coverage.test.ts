@@ -818,6 +818,7 @@ describe("budget router — syncBudgetFromApi", () => {
       // Link an item to the API category with pull direction
       await caller.budget.linkToApi({
         budgetItemId: seed.itemIds[0]!,
+        service: "ynab",
         apiCategoryId: "api-cat-1",
         apiCategoryName: "Rent",
         syncDirection: "pull",
@@ -853,6 +854,7 @@ describe("budget router — syncBudgetFromApi", () => {
       const seed = seedStandardDataset(db);
       await caller.budget.linkToApi({
         budgetItemId: seed.itemIds[0]!,
+        service: "ynab",
         apiCategoryId: "api-cat-push",
         apiCategoryName: "Push Only",
         syncDirection: "push",
@@ -883,6 +885,7 @@ describe("budget router — syncBudgetFromApi", () => {
       const seed = seedStandardDataset(db);
       await caller.budget.linkToApi({
         budgetItemId: seed.itemIds[0]!,
+        service: "ynab",
         apiCategoryId: "api-cat-both",
         apiCategoryName: "Both Dir",
         syncDirection: "both",
@@ -990,6 +993,7 @@ describe("budget router — syncBudgetToApi", () => {
       const seed = seedStandardDataset(db);
       await caller.budget.linkToApi({
         budgetItemId: seed.itemIds[0]!,
+        service: "ynab",
         apiCategoryId: "api-push-cat",
         apiCategoryName: "Push Cat",
         syncDirection: "push",
@@ -1049,6 +1053,7 @@ describe("budget router — syncBudgetToApi", () => {
       const seed = seedStandardDataset(db);
       await caller.budget.linkToApi({
         budgetItemId: seed.itemIds[0]!,
+        service: "ynab",
         apiCategoryId: "api-pull-cat",
         apiCategoryName: "Pull Cat",
         syncDirection: "pull",
@@ -1080,6 +1085,7 @@ describe("budget router — syncBudgetToApi", () => {
       const seed = seedStandardDataset(db);
       await caller.budget.linkToApi({
         budgetItemId: seed.itemIds[0]!,
+        service: "ynab",
         apiCategoryId: "api-both-cat",
         apiCategoryName: "Both Cat",
         syncDirection: "both",
@@ -1218,6 +1224,7 @@ describe("budget router — listApiActuals", () => {
       const seed = seedStandardDataset(db);
       await caller.budget.linkToApi({
         budgetItemId: seed.itemIds[0]!,
+        service: "ynab",
         apiCategoryId: "actual-cat-1",
         apiCategoryName: "Rent",
         syncDirection: "pull",

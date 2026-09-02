@@ -44,6 +44,11 @@ import {
   fetchContributionProfile,
   buildPaycheckInputForJob,
   mergeSalaryProfileJobFields,
+  setBudgetItemLink,
+  loadSavingsGoalLinks,
+  setSavingsGoalLink,
+  deleteSavingsGoalLink,
+  copySavingsGoalLinks,
 } from "@/server/helpers";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { buildBracketInput } from "./paycheck";
@@ -53,7 +58,10 @@ import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
 import type { PayPeriod } from "@/lib/config/enum-values";
 import { materializeExtraPaycheckOverrides } from "@/server/helpers/extra-paycheck-materializer";
 import { zDecimal } from "./settings/_shared";
-import { targetModeSchema } from "@/lib/config/enum-values";
+import {
+  targetModeSchema,
+  budgetApiServiceSchema,
+} from "@/lib/config/enum-values";
 import { log } from "@/lib/logger";
 import type { SavingsInput, EFundInput } from "@/lib/calculators/types";
 import {
@@ -667,29 +675,46 @@ export const savingsRouter = createTRPCRouter({
       // currentMonthBudgetedMap stays empty for these goals — the same
       // "unknown, add the full allocation" conservative default a
       // non-API-synced goal already gets in projectGoalBalances.
-      const apiLinkedGoals = activeGoals.filter(
-        (g) => g.isApiSyncEnabled && g.apiCategoryId,
-      );
-      const currentMonthBudgetedMap = new Map<number, number>();
-      if (apiLinkedGoals.length > 0) {
-        const active = await getActiveBudgetApi(ctx.db);
-        if (active !== "none") {
-          const now = new Date();
-          const monthCache = await cacheGet<BudgetMonthDetail>(
-            ctx.db,
-            active,
-            `months/${currentMonthKey(now)}`,
-          );
-          if (monthCache) {
-            const catById = new Map(
-              monthCache.data.categories.map((c) => [c.id, c]),
+      // Read-only display path — resolve against the currently active
+      // service only (no cross-service ambiguity here; see
+      // src/server/helpers/category-links.ts).
+      const activeServiceForSummary = await getActiveBudgetApi(ctx.db);
+      // Loaded for EVERY goal (not just active ones) — goalsForClient below
+      // sends the full goals list to the client, and each goal's
+      // isApiSyncEnabled/apiCategoryId/apiCategoryName must reflect this
+      // same resolved link, not the dead raw columns.
+      const summaryPrimaryLinks =
+        activeServiceForSummary === "none"
+          ? new Map()
+          : await loadSavingsGoalLinks(
+              ctx.db,
+              goals.map((g) => g.id),
+              activeServiceForSummary,
+              "primary",
             );
-            for (const goal of apiLinkedGoals) {
-              const cat = catById.get(goal.apiCategoryId!);
-              if (cat) {
-                balanceMap.set(goal.id, cat.balance);
-                currentMonthBudgetedMap.set(goal.id, cat.budgeted);
-              }
+      const apiLinkedGoals = activeGoals
+        .map((g) => ({
+          ...g,
+          apiCategoryId: summaryPrimaryLinks.get(g.id)?.categoryId ?? null,
+        }))
+        .filter((g) => g.apiCategoryId);
+      const currentMonthBudgetedMap = new Map<number, number>();
+      if (apiLinkedGoals.length > 0 && activeServiceForSummary !== "none") {
+        const now = new Date();
+        const monthCache = await cacheGet<BudgetMonthDetail>(
+          ctx.db,
+          activeServiceForSummary,
+          `months/${currentMonthKey(now)}`,
+        );
+        if (monthCache) {
+          const catById = new Map(
+            monthCache.data.categories.map((c) => [c.id, c]),
+          );
+          for (const goal of apiLinkedGoals) {
+            const cat = catById.get(goal.apiCategoryId!);
+            if (cat) {
+              balanceMap.set(goal.id, cat.balance);
+              currentMonthBudgetedMap.set(goal.id, cat.budgeted);
             }
           }
         }
@@ -729,19 +754,30 @@ export const savingsRouter = createTRPCRouter({
         // Otherwise fall back to the Ledgr DB self_loans table. Using both at
         // once causes double-counting because the same money appears in both places.
         let outstandingSelfLoans: number;
-        if (efundGoal.reimbursementApiCategoryId) {
-          const active = await getActiveBudgetApi(ctx.db);
+        const efundReimbursementLinks =
+          activeServiceForSummary === "none"
+            ? new Map()
+            : await loadSavingsGoalLinks(
+                ctx.db,
+                [efundGoal.id],
+                activeServiceForSummary,
+                "reimbursement",
+              );
+        const efundReimbursementCategoryId = efundReimbursementLinks.get(
+          efundGoal.id,
+        )?.categoryId;
+        if (efundReimbursementCategoryId) {
           outstandingSelfLoans = 0;
-          if (active !== "none") {
+          if (activeServiceForSummary !== "none") {
             const categoriesCache = await cacheGet<BudgetCategoryGroup[]>(
               ctx.db,
-              active,
+              activeServiceForSummary,
               "categories",
             );
             if (categoriesCache) {
               for (const group of categoriesCache.data) {
                 for (const cat of group.categories) {
-                  if (cat.id === efundGoal.reimbursementApiCategoryId) {
+                  if (cat.id === efundReimbursementCategoryId) {
                     outstandingSelfLoans = cat.goalTarget ?? 0;
                   }
                 }
@@ -856,8 +892,14 @@ export const savingsRouter = createTRPCRouter({
         // getResolvedGoalAllocations always returns one entry per input
         // goal (defaulting to $0/no-percent), never leaves one unset.
         const resolved = resolvedByGoal.get(g.id)!;
+        const link = summaryPrimaryLinks.get(g.id);
         return {
           ...g,
+          // Resolved link for the active service — overrides the dead raw
+          // columns still present on `g` (see category-links.ts).
+          apiCategoryId: link?.categoryId ?? null,
+          apiCategoryName: link?.categoryName ?? null,
+          isApiSyncEnabled: !!link,
           allocationPercent:
             resolved.allocationPercent != null
               ? resolved.allocationPercent.toFixed(3)
@@ -1036,13 +1078,7 @@ export const savingsRouter = createTRPCRouter({
             occurrenceMonth: schema.savingsPlannedTxSettlements.occurrenceMonth,
           })
           .from(schema.savingsPlannedTxSettlements),
-        ctx.db
-          .select({
-            id: schema.savingsGoals.id,
-            apiCategoryId: schema.savingsGoals.apiCategoryId,
-          })
-          .from(schema.savingsGoals)
-          .where(eq(schema.savingsGoals.isApiSyncEnabled, true)),
+        ctx.db.select({ id: schema.savingsGoals.id }).from(schema.savingsGoals),
       ]);
 
       const settledSet = new Set(
@@ -1050,10 +1086,17 @@ export const savingsRouter = createTRPCRouter({
           (s) => `${s.plannedTxId}:${s.occurrenceMonth.slice(0, 7)}`,
         ),
       );
+      const settlementGoalLinks = await loadSavingsGoalLinks(
+        ctx.db,
+        goals.map((g) => g.id),
+        active,
+        "primary",
+      );
       const apiCategoryByGoal = new Map(
-        goals
-          .filter((g) => g.apiCategoryId)
-          .map((g) => [g.id, g.apiCategoryId!]),
+        [...settlementGoalLinks.entries()].map(([goalId, link]) => [
+          goalId,
+          link.categoryId,
+        ]),
       );
 
       // Real transactions grouped by category + month ("YYYY-MM"), keeping
@@ -1406,34 +1449,36 @@ export const savingsRouter = createTRPCRouter({
     .input(
       z.object({
         goalId: z.number().int(),
+        service: budgetApiServiceSchema,
         apiCategoryId: z.string().min(1),
         apiCategoryName: z.string().min(1),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      await ctx.db
-        .update(schema.savingsGoals)
-        .set({
-          apiCategoryId: input.apiCategoryId,
-          apiCategoryName: input.apiCategoryName,
-          isApiSyncEnabled: true,
-        })
-        .where(eq(schema.savingsGoals.id, input.goalId));
+      await setSavingsGoalLink(ctx.db, {
+        savingsGoalId: input.goalId,
+        service: input.service,
+        role: "primary",
+        categoryId: input.apiCategoryId,
+        categoryName: input.apiCategoryName,
+      });
       return { ok: true };
     }),
 
   /** Unlink a savings goal from a budget API category. */
   unlinkGoalFromApi: savingsProcedure
-    .input(z.object({ goalId: z.number().int() }))
+    .input(
+      z.object({
+        goalId: z.number().int(),
+        service: budgetApiServiceSchema,
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
-      await ctx.db
-        .update(schema.savingsGoals)
-        .set({
-          apiCategoryId: null,
-          apiCategoryName: null,
-          isApiSyncEnabled: false,
-        })
-        .where(eq(schema.savingsGoals.id, input.goalId));
+      await deleteSavingsGoalLink(ctx.db, {
+        savingsGoalId: input.goalId,
+        service: input.service,
+        role: "primary",
+      });
       return { ok: true };
     }),
 
@@ -1448,6 +1493,12 @@ export const savingsRouter = createTRPCRouter({
         monthlyContribution: z.string().default("0"),
         targetAmount: z.string().nullable().optional(),
         targetMode: targetModeSchema.default("ongoing"),
+        // Which service's link (if any) to carry over to the new goal.
+        // Omitted: defensible default for a conversion action — copy the
+        // link for whichever service is currently active, if the item has
+        // one. Writes always require an explicit service when the caller
+        // knows it; this is not a silent fallback for a plain link-mutation.
+        service: budgetApiServiceSchema.optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -1462,18 +1513,28 @@ export const savingsRouter = createTRPCRouter({
           message: "Budget item not found",
         });
 
-      // Create the savings goal with the API link transferred
+      // Create the savings goal WITHOUT the raw (dead) API-linking columns —
+      // the link, if any, is copied below via copySavingsGoalLinks.
       const [goal] = await ctx.db
         .insert(schema.savingsGoals)
         .values({
           name: input.goalName,
           targetAmount: input.targetAmount ?? null,
           targetMode: input.targetMode,
-          apiCategoryId: item.apiCategoryId,
-          apiCategoryName: item.apiCategoryName,
-          isApiSyncEnabled: !!item.apiCategoryId,
         })
         .returning();
+
+      if (goal) {
+        const conversionService =
+          input.service ?? (await getActiveBudgetApi(ctx.db));
+        if (conversionService !== "none") {
+          await copySavingsGoalLinks(ctx.db, {
+            fromBudgetItemId: item.id,
+            toSavingsGoalId: goal.id,
+            service: conversionService,
+          });
+        }
+      }
 
       // Funding is per-profile with no shared default — seed every existing
       // budget profile with the converted amount (closest match to the old
@@ -1509,6 +1570,11 @@ export const savingsRouter = createTRPCRouter({
         subcategory: z.string().min(1),
         isEssential: z.boolean().default(false),
         profileId: z.number().optional(),
+        // Which service's link (if any) to carry over to the new budget
+        // item. Omitted: defensible default for a conversion action — copy
+        // the link for whichever service is currently active, if the goal
+        // has one.
+        service: budgetApiServiceSchema.optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -1553,7 +1619,8 @@ export const savingsRouter = createTRPCRouter({
             ? Math.max(...existingItems.map((i) => i.sortOrder))
             : 0;
 
-      // Create budget item with the API link transferred
+      // Create budget item WITHOUT the raw (dead) API-linking columns — the
+      // link, if any, is copied below.
       const [item] = await ctx.db
         .insert(schema.budgetItems)
         .values({
@@ -1563,11 +1630,32 @@ export const savingsRouter = createTRPCRouter({
           amounts,
           isEssential: input.isEssential,
           sortOrder: maxSort + 1,
-          apiCategoryId: goal.apiCategoryId,
-          apiCategoryName: goal.apiCategoryName,
-          apiSyncDirection: "pull",
         })
         .returning();
+
+      if (item) {
+        const conversionService =
+          input.service ?? (await getActiveBudgetApi(ctx.db));
+        if (conversionService !== "none") {
+          const goalLinks = await loadSavingsGoalLinks(
+            ctx.db,
+            [goal.id],
+            conversionService,
+            "primary",
+          );
+          const goalLink = goalLinks.get(goal.id);
+          if (goalLink) {
+            await setBudgetItemLink(ctx.db, {
+              budgetItemId: item.id,
+              service: conversionService,
+              categoryId: goalLink.categoryId,
+              categoryName: goalLink.categoryName,
+              syncDirection: "pull",
+              lastSyncedAt: goalLink.lastSyncedAt,
+            });
+          }
+        }
+      }
 
       // Delete the savings goal (cascades to savings_monthly, planned transactions, overrides)
       await ctx.db
@@ -1610,13 +1698,20 @@ export const savingsRouter = createTRPCRouter({
     }
 
     const goals = await ctx.db.select().from(schema.savingsGoals);
+    const balancesGoalLinks = await loadSavingsGoalLinks(
+      ctx.db,
+      goals.map((g) => g.id),
+      active,
+      "primary",
+    );
     const balances = goals
-      .filter((g) => g.isApiSyncEnabled && g.apiCategoryId)
+      .map((g) => ({ ...g, link: balancesGoalLinks.get(g.id) }))
+      .filter((g) => g.link)
       .map((g) => {
-        const cat = catMap.get(g.apiCategoryId!);
+        const cat = catMap.get(g.link!.categoryId);
         return {
           goalId: g.id,
-          apiCategoryName: g.apiCategoryName,
+          apiCategoryName: g.link!.categoryName,
           balance: cat?.balance ?? 0,
           budgeted: cat?.budgeted ?? 0,
           activity: cat?.activity ?? 0,
@@ -1668,7 +1763,18 @@ export const savingsRouter = createTRPCRouter({
           ctx.db.select().from(schema.appSettings),
         ]);
 
-      const linked = goals.filter((g) => g.isApiSyncEnabled && g.apiCategoryId);
+      const pushGoalLinks = await loadSavingsGoalLinks(
+        ctx.db,
+        goals.map((g) => g.id),
+        active,
+        "primary",
+      );
+      const linked = goals
+        .map((g) => ({
+          ...g,
+          apiCategoryId: pushGoalLinks.get(g.id)?.categoryId ?? null,
+        }))
+        .filter((g) => g.apiCategoryId);
       const toPush = input?.goalId
         ? linked.filter((g) => g.id === input.goalId)
         : linked;
@@ -2017,14 +2123,25 @@ export const savingsRouter = createTRPCRouter({
     .input(
       z.object({
         goalId: z.number().int(),
+        service: budgetApiServiceSchema,
         apiCategoryId: z.string().min(1).nullable(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      await ctx.db
-        .update(schema.savingsGoals)
-        .set({ reimbursementApiCategoryId: input.apiCategoryId })
-        .where(eq(schema.savingsGoals.id, input.goalId));
+      if (input.apiCategoryId === null) {
+        await deleteSavingsGoalLink(ctx.db, {
+          savingsGoalId: input.goalId,
+          service: input.service,
+          role: "reimbursement",
+        });
+      } else {
+        await setSavingsGoalLink(ctx.db, {
+          savingsGoalId: input.goalId,
+          service: input.service,
+          role: "reimbursement",
+          categoryId: input.apiCategoryId,
+        });
+      }
       return { ok: true };
     }),
 
@@ -2035,10 +2152,22 @@ export const savingsRouter = createTRPCRouter({
 
     // Find the e-fund goal with a linked reimbursement category
     const goals = await ctx.db.select().from(schema.savingsGoals);
-    const efundGoal = goals.find(
-      (g) => g.isEmergencyFund && g.reimbursementApiCategoryId,
+    const efundGoalCandidate = goals.find((g) => g.isEmergencyFund);
+    if (!efundGoalCandidate) return null;
+    const reimbursementLinks = await loadSavingsGoalLinks(
+      ctx.db,
+      [efundGoalCandidate.id],
+      active,
+      "reimbursement",
     );
-    if (!efundGoal) return null;
+    const reimbursementCategoryId = reimbursementLinks.get(
+      efundGoalCandidate.id,
+    )?.categoryId;
+    if (!reimbursementCategoryId) return null;
+    const efundGoal = {
+      ...efundGoalCandidate,
+      reimbursementApiCategoryId: reimbursementCategoryId,
+    };
 
     const categoriesCache = await cacheGet<BudgetCategoryGroup[]>(
       ctx.db,
@@ -2498,12 +2627,37 @@ export const savingsRouter = createTRPCRouter({
   }),
 
   savingsGoals: createTRPCRouter({
-    list: protectedProcedure.query(({ ctx }) =>
-      ctx.db
+    // No live UI consumer reads this today (the Savings page uses
+    // computeSummary's goalsForClient instead — see budget-content.tsx's
+    // comment), but it's a general-purpose CRUD list endpoint, so its
+    // apiCategoryId/apiCategoryName/isApiSyncEnabled must still reflect the
+    // resolved link, not the dead raw columns, in case something starts
+    // reading them.
+    list: protectedProcedure.query(async ({ ctx }) => {
+      const rows = await ctx.db
         .select()
         .from(schema.savingsGoals)
-        .orderBy(asc(schema.savingsGoals.priority)),
-    ),
+        .orderBy(asc(schema.savingsGoals.priority));
+      const active = await getActiveBudgetApi(ctx.db);
+      const links =
+        active === "none"
+          ? new Map()
+          : await loadSavingsGoalLinks(
+              ctx.db,
+              rows.map((r) => r.id),
+              active,
+              "primary",
+            );
+      return rows.map((r) => {
+        const link = links.get(r.id);
+        return {
+          ...r,
+          apiCategoryId: link?.categoryId ?? null,
+          apiCategoryName: link?.categoryName ?? null,
+          isApiSyncEnabled: !!link,
+        };
+      });
+    }),
     create: savingsProcedure
       .input(savingsGoalInput)
       .mutation(async ({ ctx, input }) => {

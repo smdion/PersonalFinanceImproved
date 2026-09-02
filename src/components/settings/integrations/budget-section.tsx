@@ -92,6 +92,7 @@ export function BudgetSection({
     if (!cat) return;
     linkBudgetMut.mutate({
       budgetItemId: itemId,
+      service,
       apiCategoryId: apiId,
       apiCategoryName: cat.name,
       syncDirection: "pull",
@@ -129,6 +130,7 @@ export function BudgetSection({
           if (created) {
             linkBudgetMut.mutate({
               budgetItemId: created.id,
+              service,
               apiCategoryId: apiCat.id,
               apiCategoryName: apiCat.name,
               syncDirection: "pull",
@@ -147,6 +149,7 @@ export function BudgetSection({
   ) => {
     linkBudgetMut.mutate({
       budgetItemId,
+      service,
       apiCategoryId: apiCatId,
       apiCategoryName: apiCatName,
       syncDirection: "pull",
@@ -165,6 +168,7 @@ export function BudgetSection({
     for (const m of linked) {
       setBudgetSyncDirMut.mutate({
         budgetItemId: m.budgetItemId,
+        service,
         syncDirection: dir,
       });
     }
@@ -351,6 +355,7 @@ export function BudgetSection({
                                       : "pull";
                                 setBudgetSyncDirMut.mutate({
                                   budgetItemId: m.budgetItemId,
+                                  service,
                                   syncDirection: next,
                                 });
                               }}
@@ -377,6 +382,7 @@ export function BudgetSection({
                                     onClick={() =>
                                       renameBudgetToApiMut.mutate({
                                         budgetItemId: m.budgetItemId,
+                                        service,
                                       })
                                     }
                                     disabled={renameBudgetToApiMut.isPending}
@@ -392,6 +398,7 @@ export function BudgetSection({
                                       moveBudgetToApiGroupMut.mutate({
                                         budgetItemId: m.budgetItemId,
                                         apiGroupName: m.apiGroupName!,
+                                        service,
                                       })
                                     }
                                     disabled={moveBudgetToApiGroupMut.isPending}
@@ -406,6 +413,7 @@ export function BudgetSection({
                                     if (m.nameDrifted)
                                       renameBudgetApiNameMut.mutate({
                                         budgetItemId: m.budgetItemId,
+                                        service,
                                       });
                                   }}
                                   disabled={renameBudgetApiNameMut.isPending}
@@ -420,6 +428,7 @@ export function BudgetSection({
                               onClick={() =>
                                 unlinkBudgetMut.mutate({
                                   budgetItemId: m.budgetItemId,
+                                  service,
                                 })
                               }
                               disabled={unlinkBudgetMut.isPending}

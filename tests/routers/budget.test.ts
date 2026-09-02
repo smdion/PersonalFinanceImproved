@@ -53,7 +53,7 @@ function seedLinkableContributionAccount(
 }
 
 vi.mock("@/lib/budget-api", () => ({
-  getActiveBudgetApi: vi.fn().mockResolvedValue("none"),
+  getActiveBudgetApi: vi.fn().mockResolvedValue("ynab"),
   cacheGet: vi.fn().mockResolvedValue(null),
   getClientForService: vi.fn().mockResolvedValue(null),
   YNAB_INTERNAL_GROUPS: new Set([
@@ -911,6 +911,7 @@ describe("budget router", () => {
       const itemId = itemIds[0]!;
       const result = await caller.budget.linkToApi({
         budgetItemId: itemId,
+        service: "ynab",
         apiCategoryId: "cat-abc-123",
         apiCategoryName: "Rent & Mortgage",
         syncDirection: "pull",
@@ -930,6 +931,7 @@ describe("budget router", () => {
       const itemId = itemIds[1]!;
       await caller.budget.linkToApi({
         budgetItemId: itemId,
+        service: "ynab",
         apiCategoryId: "cat-xyz-456",
         apiCategoryName: "Groceries",
         syncDirection: "push",
@@ -944,6 +946,7 @@ describe("budget router", () => {
       const itemId = itemIds[2]!;
       await caller.budget.linkToApi({
         budgetItemId: itemId,
+        service: "ynab",
         apiCategoryId: "cat-both-789",
         apiCategoryName: "Dining Out",
         syncDirection: "both",
@@ -961,6 +964,7 @@ describe("budget router", () => {
       });
       await caller.budget.linkToApi({
         budgetItemId: created!.id,
+        service: "ynab",
         apiCategoryId: "cat-default",
         apiCategoryName: "Default Category",
       });
@@ -975,6 +979,7 @@ describe("budget router", () => {
       const itemId = itemIds[0]!;
       const result = await caller.budget.unlinkFromApi({
         budgetItemId: itemId,
+        service: "ynab",
       });
       expect(result).toEqual({ ok: true });
     });
@@ -988,7 +993,10 @@ describe("budget router", () => {
 
     it("resets apiSyncDirection to pull after unlinking", async () => {
       const itemId = itemIds[1]!; // was linked with push
-      await caller.budget.unlinkFromApi({ budgetItemId: itemId });
+      await caller.budget.unlinkFromApi({
+        budgetItemId: itemId,
+        service: "ynab",
+      });
       const summary = await caller.budget.computeActiveSummary();
       const item = summary.rawItems!.find((i) => i.id === itemId);
       expect(item!.apiSyncDirection).toBe("pull");
@@ -998,6 +1006,7 @@ describe("budget router", () => {
       const itemId = itemIds[0]!; // already unlinked above
       const result = await caller.budget.unlinkFromApi({
         budgetItemId: itemId,
+        service: "ynab",
       });
       expect(result).toEqual({ ok: true });
     });
@@ -1012,6 +1021,7 @@ describe("budget router", () => {
       const itemId = itemIds[2]!;
       const result = await caller.budget.setSyncDirection({
         budgetItemId: itemId,
+        service: "ynab",
         syncDirection: "push",
       });
       expect(result).toEqual({ ok: true });
@@ -1026,6 +1036,7 @@ describe("budget router", () => {
       const itemId = itemIds[2]!;
       await caller.budget.setSyncDirection({
         budgetItemId: itemId,
+        service: "ynab",
         syncDirection: "both",
       });
       const summary = await caller.budget.computeActiveSummary();
@@ -1038,6 +1049,7 @@ describe("budget router", () => {
       const itemId = itemIds[2]!;
       await caller.budget.setSyncDirection({
         budgetItemId: itemId,
+        service: "ynab",
         syncDirection: "pull",
       });
       const summary = await caller.budget.computeActiveSummary();
@@ -1051,6 +1063,7 @@ describe("budget router", () => {
         // @ts-expect-error intentionally wrong value
         caller.budget.setSyncDirection({
           budgetItemId: itemIds[0]!,
+          service: "ynab",
           syncDirection: "invalid",
         }),
       ).rejects.toThrow();

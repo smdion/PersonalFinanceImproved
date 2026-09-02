@@ -1,24 +1,32 @@
 /** Sync names router for renaming budget item subcategories to match API category names or vice versa. */
 
 import { z } from "zod/v4";
-import { eq, isNotNull } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, syncProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { getActiveBudgetApi, cacheGet } from "@/lib/budget-api";
+import { cacheGet } from "@/lib/budget-api";
 import type { BudgetApiService, BudgetCategoryGroup } from "@/lib/budget-api";
+import {
+  loadBudgetItemLinks,
+  setBudgetItemLink,
+  loadSavingsGoalLinks,
+  setSavingsGoalLink,
+} from "@/server/helpers";
 import { serviceEnum } from "./_shared";
 
 export const syncNamesRouter = createTRPCRouter({
   /** Rename a budget item's subcategory to match the API category name. */
   renameBudgetItemToApi: syncProcedure
-    .input(z.object({ budgetItemId: z.number().int() }))
+    .input(z.object({ budgetItemId: z.number().int(), service: serviceEnum }))
     .mutation(async ({ ctx, input }) => {
-      const [item] = await ctx.db
-        .select({ apiCategoryName: schema.budgetItems.apiCategoryName })
-        .from(schema.budgetItems)
-        .where(eq(schema.budgetItems.id, input.budgetItemId));
-      if (!item?.apiCategoryName) {
+      const links = await loadBudgetItemLinks(
+        ctx.db,
+        [input.budgetItemId],
+        input.service as BudgetApiService,
+      );
+      const link = links.get(input.budgetItemId);
+      if (!link?.categoryName) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
           message: "Item not linked to API category",
@@ -26,14 +34,14 @@ export const syncNamesRouter = createTRPCRouter({
       }
       await ctx.db
         .update(schema.budgetItems)
-        .set({ subcategory: item.apiCategoryName })
+        .set({ subcategory: link.categoryName })
         .where(eq(schema.budgetItems.id, input.budgetItemId));
-      return { ok: true, newName: item.apiCategoryName };
+      return { ok: true, newName: link.categoryName };
     }),
 
   /** Rename a budget item's API category name to match the Ledgr subcategory (update stored name). */
   renameBudgetItemApiName: syncProcedure
-    .input(z.object({ budgetItemId: z.number().int() }))
+    .input(z.object({ budgetItemId: z.number().int(), service: serviceEnum }))
     .mutation(async ({ ctx, input }) => {
       const [item] = await ctx.db
         .select({ subcategory: schema.budgetItems.subcategory })
@@ -45,10 +53,26 @@ export const syncNamesRouter = createTRPCRouter({
           message: "Budget item not found",
         });
       }
-      await ctx.db
-        .update(schema.budgetItems)
-        .set({ apiCategoryName: item.subcategory })
-        .where(eq(schema.budgetItems.id, input.budgetItemId));
+      const links = await loadBudgetItemLinks(
+        ctx.db,
+        [input.budgetItemId],
+        input.service as BudgetApiService,
+      );
+      const link = links.get(input.budgetItemId);
+      if (!link) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Item not linked to API category",
+        });
+      }
+      await setBudgetItemLink(ctx.db, {
+        budgetItemId: input.budgetItemId,
+        service: input.service as BudgetApiService,
+        categoryId: link.categoryId,
+        categoryName: item.subcategory,
+        syncDirection: link.syncDirection,
+        lastSyncedAt: link.lastSyncedAt,
+      });
       return { ok: true, newApiName: item.subcategory };
     }),
 
@@ -58,6 +82,7 @@ export const syncNamesRouter = createTRPCRouter({
       z.object({
         budgetItemId: z.number().int(),
         apiGroupName: z.string().min(1),
+        service: serviceEnum,
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -70,13 +95,16 @@ export const syncNamesRouter = createTRPCRouter({
 
   /** Rename a savings goal to match the API category name. */
   renameSavingsGoalToApi: syncProcedure
-    .input(z.object({ goalId: z.number().int() }))
+    .input(z.object({ goalId: z.number().int(), service: serviceEnum }))
     .mutation(async ({ ctx, input }) => {
-      const [goal] = await ctx.db
-        .select({ apiCategoryName: schema.savingsGoals.apiCategoryName })
-        .from(schema.savingsGoals)
-        .where(eq(schema.savingsGoals.id, input.goalId));
-      if (!goal?.apiCategoryName) {
+      const links = await loadSavingsGoalLinks(
+        ctx.db,
+        [input.goalId],
+        input.service as BudgetApiService,
+        "primary",
+      );
+      const link = links.get(input.goalId);
+      if (!link?.categoryName) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
           message: "Goal not linked to API category",
@@ -84,14 +112,14 @@ export const syncNamesRouter = createTRPCRouter({
       }
       await ctx.db
         .update(schema.savingsGoals)
-        .set({ name: goal.apiCategoryName })
+        .set({ name: link.categoryName })
         .where(eq(schema.savingsGoals.id, input.goalId));
-      return { ok: true, newName: goal.apiCategoryName };
+      return { ok: true, newName: link.categoryName };
     }),
 
   /** Update a savings goal's stored API name to match its current Ledgr name. */
   renameSavingsGoalApiName: syncProcedure
-    .input(z.object({ goalId: z.number().int() }))
+    .input(z.object({ goalId: z.number().int(), service: serviceEnum }))
     .mutation(async ({ ctx, input }) => {
       const [goal] = await ctx.db
         .select({ name: schema.savingsGoals.name })
@@ -103,10 +131,27 @@ export const syncNamesRouter = createTRPCRouter({
           message: "Savings goal not found",
         });
       }
-      await ctx.db
-        .update(schema.savingsGoals)
-        .set({ apiCategoryName: goal.name })
-        .where(eq(schema.savingsGoals.id, input.goalId));
+      const links = await loadSavingsGoalLinks(
+        ctx.db,
+        [input.goalId],
+        input.service as BudgetApiService,
+        "primary",
+      );
+      const link = links.get(input.goalId);
+      if (!link) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Goal not linked to API category",
+        });
+      }
+      await setSavingsGoalLink(ctx.db, {
+        savingsGoalId: input.goalId,
+        service: input.service as BudgetApiService,
+        role: "primary",
+        categoryId: link.categoryId,
+        categoryName: goal.name,
+        lastSyncedAt: link.lastSyncedAt,
+      });
       return { ok: true, newApiName: goal.name };
     }),
 
@@ -114,7 +159,7 @@ export const syncNamesRouter = createTRPCRouter({
   syncAllNames: syncProcedure
     .input(
       z.object({
-        service: serviceEnum.optional(),
+        service: serviceEnum,
         direction: z.enum(["pull", "keepLedgr"]),
         includeCategories: z.boolean().default(true),
       }),
@@ -124,17 +169,31 @@ export const syncNamesRouter = createTRPCRouter({
       let savingsRenamed = 0;
       let categoriesMoved = 0;
 
-      // Budget items with drift (name or category group)
-      const allBudgetItems = await ctx.db
+      const service = input.service as BudgetApiService;
+
+      // Budget items with a link for this service
+      const allBudgetItemRows = await ctx.db
         .select({
           id: schema.budgetItems.id,
           category: schema.budgetItems.category,
           subcategory: schema.budgetItems.subcategory,
-          apiCategoryId: schema.budgetItems.apiCategoryId,
-          apiCategoryName: schema.budgetItems.apiCategoryName,
         })
-        .from(schema.budgetItems)
-        .where(isNotNull(schema.budgetItems.apiCategoryId));
+        .from(schema.budgetItems);
+      const budgetItemLinks = await loadBudgetItemLinks(
+        ctx.db,
+        allBudgetItemRows.map((i) => i.id),
+        service,
+      );
+      const allBudgetItems = allBudgetItemRows
+        .map((i) => {
+          const link = budgetItemLinks.get(i.id);
+          return {
+            ...i,
+            apiCategoryId: link?.categoryId ?? null,
+            apiCategoryName: link?.categoryName ?? null,
+          };
+        })
+        .filter((i) => i.apiCategoryId);
 
       // Look up API category groups from cache for name + group resolution
       const apiCategoryMap = new Map<
@@ -142,13 +201,10 @@ export const syncNamesRouter = createTRPCRouter({
         { name: string; groupName: string }
       >();
       if (input.direction === "pull") {
-        // Use provided service or fall back to active API
-        const cacheService =
-          input.service ?? (await getActiveBudgetApi(ctx.db));
-        if (cacheService !== "none") {
+        {
           const cached = await cacheGet<BudgetCategoryGroup[]>(
             ctx.db,
-            cacheService as BudgetApiService,
+            service,
             "categories",
           );
           if (cached) {
@@ -165,7 +221,8 @@ export const syncNamesRouter = createTRPCRouter({
       }
 
       for (const item of allBudgetItems) {
-        const updates: Record<string, string> = {};
+        const updates: { subcategory?: string; category?: string } = {};
+        let newApiCategoryName: string | null = null;
 
         // For pull: use the current API name from cache (if available), not stored name
         const currentApiName =
@@ -177,9 +234,9 @@ export const syncNamesRouter = createTRPCRouter({
         if (currentApiName && item.subcategory !== currentApiName) {
           if (input.direction === "pull") {
             updates.subcategory = currentApiName;
-            updates.apiCategoryName = currentApiName;
+            newApiCategoryName = currentApiName;
           } else {
-            updates.apiCategoryName = item.subcategory;
+            newApiCategoryName = item.subcategory;
           }
           budgetRenamed++;
         }
@@ -203,18 +260,36 @@ export const syncNamesRouter = createTRPCRouter({
             .set(updates)
             .where(eq(schema.budgetItems.id, item.id));
         }
+        if (newApiCategoryName !== null && item.apiCategoryId) {
+          await setBudgetItemLink(ctx.db, {
+            budgetItemId: item.id,
+            service,
+            categoryId: item.apiCategoryId,
+            categoryName: newApiCategoryName,
+          });
+        }
       }
 
-      // Savings goals with drift
-      const goals = await ctx.db
-        .select({
-          id: schema.savingsGoals.id,
-          name: schema.savingsGoals.name,
-          apiCategoryId: schema.savingsGoals.apiCategoryId,
-          apiCategoryName: schema.savingsGoals.apiCategoryName,
+      // Savings goals with a primary link for this service
+      const allGoalRows = await ctx.db
+        .select({ id: schema.savingsGoals.id, name: schema.savingsGoals.name })
+        .from(schema.savingsGoals);
+      const goalLinks = await loadSavingsGoalLinks(
+        ctx.db,
+        allGoalRows.map((g) => g.id),
+        service,
+        "primary",
+      );
+      const goals = allGoalRows
+        .map((g) => {
+          const link = goalLinks.get(g.id);
+          return {
+            ...g,
+            apiCategoryId: link?.categoryId ?? null,
+            apiCategoryName: link?.categoryName ?? null,
+          };
         })
-        .from(schema.savingsGoals)
-        .where(isNotNull(schema.savingsGoals.apiCategoryId));
+        .filter((g) => g.apiCategoryId);
 
       for (const goal of goals) {
         const currentGoalApiName =
@@ -225,16 +300,23 @@ export const syncNamesRouter = createTRPCRouter({
         if (input.direction === "pull") {
           await ctx.db
             .update(schema.savingsGoals)
-            .set({
-              name: currentGoalApiName,
-              apiCategoryName: currentGoalApiName,
-            })
+            .set({ name: currentGoalApiName })
             .where(eq(schema.savingsGoals.id, goal.id));
+          await setSavingsGoalLink(ctx.db, {
+            savingsGoalId: goal.id,
+            service,
+            role: "primary",
+            categoryId: goal.apiCategoryId!,
+            categoryName: currentGoalApiName,
+          });
         } else {
-          await ctx.db
-            .update(schema.savingsGoals)
-            .set({ apiCategoryName: goal.name })
-            .where(eq(schema.savingsGoals.id, goal.id));
+          await setSavingsGoalLink(ctx.db, {
+            savingsGoalId: goal.id,
+            service,
+            role: "primary",
+            categoryId: goal.apiCategoryId!,
+            categoryName: goal.name,
+          });
         }
         savingsRenamed++;
       }

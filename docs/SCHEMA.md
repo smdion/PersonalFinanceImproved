@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**67 tables.**
+**69 tables.**
 
 ## Mermaid diagram
 
@@ -29,7 +29,13 @@ erDiagram
   budget_items {
     int id PK
   }
+  budget_item_category_links {
+    int id PK
+  }
   savings_goals {
+    int id PK
+  }
+  savings_goal_category_links {
     int id PK
   }
   savings_monthly {
@@ -214,6 +220,8 @@ erDiagram
   contribution_accounts }o--|| people : references
   paycheck_deductions }o--|| jobs : references
   budget_items }o--|| budget_profiles : references
+  budget_item_category_links }o--|| budget_items : references
+  savings_goal_category_links }o--|| savings_goals : references
   savings_monthly }o--|| savings_goals : references
   savings_planned_transactions }o--|| savings_goals : references
   savings_planned_tx_settlements }o--|| savings_planned_transactions : references
@@ -269,6 +277,7 @@ erDiagram
 - **brokerage_goals**
 - **brokerage_planned_transactions** → brokerage_goals
 - **budget_api_cache**
+- **budget_item_category_links** → budget_items
 - **budget_items** → budget_profiles
 - **budget_profiles**
 - **change_log**
@@ -311,6 +320,7 @@ erDiagram
 - **return_rate_table**
 - **salary_profiles**
 - **savings_allocation_overrides** → savings_goals
+- **savings_goal_category_links** → savings_goals
 - **savings_goal_profile_allocations** → savings_goals, budget_profiles
 - **savings_goals**
 - **savings_monthly** → savings_goals

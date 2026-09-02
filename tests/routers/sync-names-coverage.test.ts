@@ -1,6 +1,11 @@
 /**
  * Additional sync-names coverage tests — targets uncovered lines/branches
- * in syncAllNames (lines 196-197, 201-206, 226-240) and edge cases.
+ * in syncAllNames and edge cases.
+ *
+ * All budget-item/savings-goal "linked to API" state is seeded via the real
+ * budget_item_category_links / savings_goal_category_links tables (not the
+ * dead apiCategoryId/apiCategoryName columns) — see
+ * src/server/helpers/category-links.ts.
  */
 import "./setup-mocks";
 import { vi, describe, it, expect } from "vitest";
@@ -23,40 +28,67 @@ import {
   seedSavingsGoal,
 } from "./setup";
 
+/** Link a seeded budget item to a service's category via the real link table. */
+async function linkBudgetItem(
+  db: Awaited<ReturnType<typeof createTestCaller>>["db"],
+  budgetItemId: number,
+  service: "ynab" | "actual",
+  categoryId: string,
+  categoryName: string | null,
+) {
+  const schema = await import("@/lib/db/schema-sqlite");
+  db.insert(schema.budgetItemCategoryLinks)
+    .values({ budgetItemId, service, categoryId, categoryName })
+    .run();
+}
+
+/** Link a seeded savings goal to a service's category via the real link table. */
+async function linkSavingsGoal(
+  db: Awaited<ReturnType<typeof createTestCaller>>["db"],
+  savingsGoalId: number,
+  service: "ynab" | "actual",
+  categoryId: string,
+  categoryName: string | null,
+) {
+  const schema = await import("@/lib/db/schema-sqlite");
+  db.insert(schema.savingsGoalCategoryLinks)
+    .values({
+      savingsGoalId,
+      service,
+      role: "primary",
+      categoryId,
+      categoryName,
+    })
+    .run();
+}
+
 describe("sync-names coverage", () => {
   // ── syncAllNames: pull with cached API data (name drift + category group drift) ──
 
   describe("syncAllNames pull with cached categories", () => {
-    it("renames drifted budget items and moves category groups from cache (lines 196-202)", async () => {
+    it("renames drifted budget items and moves category groups from cache", async () => {
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
         const profileId = await seedBudgetProfile(db);
 
         // Item with name drift AND category group drift
-        seedBudgetItem(db, profileId, {
+        const itemA = seedBudgetItem(db, profileId, {
           subcategory: "Old Groceries",
           category: "OldGroup",
-          apiCategoryId: "cat-aaa",
-          apiCategoryName: "Old Groceries",
         });
+        await linkBudgetItem(db, itemA, "ynab", "cat-aaa", "Old Groceries");
 
         // Item with ONLY category group drift (name matches cache)
-        seedBudgetItem(db, profileId, {
+        const itemB = seedBudgetItem(db, profileId, {
           subcategory: "Utilities",
           category: "WrongGroup",
-          apiCategoryId: "cat-bbb",
-          apiCategoryName: "Utilities",
         });
+        await linkBudgetItem(db, itemB, "ynab", "cat-bbb", "Utilities");
 
         // Savings goal with name drift
-        seedSavingsGoal(db, {
-          name: "Old Goal Name",
-          apiCategoryId: "cat-ccc",
-          apiCategoryName: "Old Goal Name",
-        });
+        const goal = seedSavingsGoal(db, { name: "Old Goal Name" });
+        await linkSavingsGoal(db, goal, "ynab", "cat-ccc", "Old Goal Name");
 
-        // Mock: getActiveBudgetApi returns "ynab" and cacheGet returns category data
-        mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
         mockCacheGet.mockResolvedValueOnce({
           data: [
             {
@@ -74,6 +106,7 @@ describe("sync-names coverage", () => {
         });
 
         const result = await caller.sync.syncAllNames({
+          service: "ynab",
           direction: "pull",
           includeCategories: true,
         });
@@ -94,14 +127,12 @@ describe("sync-names coverage", () => {
       try {
         const profileId = await seedBudgetProfile(db);
 
-        seedBudgetItem(db, profileId, {
+        const item = seedBudgetItem(db, profileId, {
           subcategory: "Old Name",
           category: "WrongGroup",
-          apiCategoryId: "cat-ddd",
-          apiCategoryName: "Old Name",
         });
+        await linkBudgetItem(db, item, "ynab", "cat-ddd", "Old Name");
 
-        mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
         mockCacheGet.mockResolvedValueOnce({
           data: [
             {
@@ -112,6 +143,7 @@ describe("sync-names coverage", () => {
         });
 
         const result = await caller.sync.syncAllNames({
+          service: "ynab",
           direction: "pull",
           includeCategories: false,
         });
@@ -125,23 +157,23 @@ describe("sync-names coverage", () => {
     });
   });
 
-  // ── syncAllNames: keepLedgr with drifted items (lines 182-184, 234-238) ──
+  // ── syncAllNames: keepLedgr with drifted items ──
 
   describe("syncAllNames keepLedgr with drifted items", () => {
-    it("updates apiCategoryName to match subcategory for budget items (line 183)", async () => {
+    it("updates apiCategoryName to match subcategory for budget items", async () => {
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
         const profileId = await seedBudgetProfile(db);
 
-        // Budget item where subcategory differs from apiCategoryName
-        seedBudgetItem(db, profileId, {
+        // Budget item where subcategory differs from the linked category name
+        const item = seedBudgetItem(db, profileId, {
           subcategory: "My Groceries",
           category: "Food",
-          apiCategoryId: "cat-111",
-          apiCategoryName: "API Groceries",
         });
+        await linkBudgetItem(db, item, "ynab", "cat-111", "API Groceries");
 
         const result = await caller.sync.syncAllNames({
+          service: "ynab",
           direction: "keepLedgr",
         });
 
@@ -153,27 +185,24 @@ describe("sync-names coverage", () => {
       }
     });
 
-    it("updates apiCategoryName to match goal name for savings goals (lines 234-238)", async () => {
+    it("updates apiCategoryName to match goal name for savings goals", async () => {
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
         const profileId = await seedBudgetProfile(db);
 
         // No budget drift
-        seedBudgetItem(db, profileId, {
+        const item = seedBudgetItem(db, profileId, {
           subcategory: "Same",
           category: "Food",
-          apiCategoryId: "cat-222",
-          apiCategoryName: "Same",
         });
+        await linkBudgetItem(db, item, "ynab", "cat-222", "Same");
 
         // Savings goal with name drift
-        seedSavingsGoal(db, {
-          name: "My Emergency",
-          apiCategoryId: "cat-333",
-          apiCategoryName: "API Emergency",
-        });
+        const goal = seedSavingsGoal(db, { name: "My Emergency" });
+        await linkSavingsGoal(db, goal, "ynab", "cat-333", "API Emergency");
 
         const result = await caller.sync.syncAllNames({
+          service: "ynab",
           direction: "keepLedgr",
         });
 
@@ -186,20 +215,21 @@ describe("sync-names coverage", () => {
     });
   });
 
-  // ── syncAllNames: pull with savings goal drift (lines 226-233) ──
+  // ── syncAllNames: pull with savings goal drift ──
 
   describe("syncAllNames pull with savings goal drift", () => {
-    it("renames savings goals to match cached API name (lines 226-233)", async () => {
+    it("renames savings goals to match cached API name", async () => {
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
-        // Savings goal with drifted name
-        seedSavingsGoal(db, {
-          name: "Old Savings Name",
-          apiCategoryId: "cat-goal-1",
-          apiCategoryName: "Old Savings Name",
-        });
+        const goal = seedSavingsGoal(db, { name: "Old Savings Name" });
+        await linkSavingsGoal(
+          db,
+          goal,
+          "actual",
+          "cat-goal-1",
+          "Old Savings Name",
+        );
 
-        mockGetActiveBudgetApi.mockResolvedValueOnce("actual");
         mockCacheGet.mockResolvedValueOnce({
           data: [
             {
@@ -210,6 +240,7 @@ describe("sync-names coverage", () => {
         });
 
         const result = await caller.sync.syncAllNames({
+          service: "actual",
           direction: "pull",
           includeCategories: true,
         });
@@ -224,14 +255,12 @@ describe("sync-names coverage", () => {
     it("skips savings goals with no drift", async () => {
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
-        seedSavingsGoal(db, {
-          name: "Matching Name",
-          apiCategoryId: "cat-goal-2",
-          apiCategoryName: "Matching Name",
-        });
+        const goal = seedSavingsGoal(db, { name: "Matching Name" });
+        await linkSavingsGoal(db, goal, "ynab", "cat-goal-2", "Matching Name");
 
-        // No cache data, so stored apiCategoryName is used — it matches name
+        // No cache data, so stored category name is used — it matches name
         const result = await caller.sync.syncAllNames({
+          service: "ynab",
           direction: "pull",
         });
 
@@ -246,8 +275,7 @@ describe("sync-names coverage", () => {
   // ── syncAllNames: explicit service parameter ──
 
   describe("syncAllNames with explicit service", () => {
-    it("uses provided service instead of getActiveBudgetApi (line 148)", async () => {
-      // Clear call history from prior tests
+    it("uses the provided service for the cache lookup", async () => {
       mockGetActiveBudgetApi.mockClear();
       mockCacheGet.mockClear();
 
@@ -255,12 +283,11 @@ describe("sync-names coverage", () => {
       try {
         const profileId = await seedBudgetProfile(db);
 
-        seedBudgetItem(db, profileId, {
+        const item = seedBudgetItem(db, profileId, {
           subcategory: "Original",
           category: "Bills",
-          apiCategoryId: "cat-svc",
-          apiCategoryName: "Original",
         });
+        await linkBudgetItem(db, item, "actual", "cat-svc", "Original");
 
         // cacheGet should be called with "actual" (the explicit service)
         mockCacheGet.mockResolvedValueOnce({
@@ -279,15 +306,31 @@ describe("sync-names coverage", () => {
 
         expect(result.ok).toBe(true);
         expect(result.budgetRenamed).toBe(1);
-        // getActiveBudgetApi should NOT have been called (service was explicit)
+        // service is now a required input — getActiveBudgetApi is never
+        // consulted for syncAllNames at all (see sync/names.ts).
         expect(mockGetActiveBudgetApi).not.toHaveBeenCalled();
+      } finally {
+        cleanup();
+      }
+    });
+
+    it("rejects a call with no service — required input, no silent fallback to active", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        await seedBudgetProfile(db);
+        await expect(
+          caller.sync.syncAllNames({
+            // @ts-expect-error intentionally omitted — service is required
+            direction: "pull",
+          }),
+        ).rejects.toThrow();
       } finally {
         cleanup();
       }
     });
   });
 
-  // ── syncAllNames: budget item with apiCategoryId but no cache entry (fallback to stored name) ──
+  // ── syncAllNames: budget item with a link but no cache entry (fallback to stored name) ──
 
   describe("syncAllNames cache miss fallback", () => {
     it("falls back to stored apiCategoryName when cache has no entry for apiCategoryId", async () => {
@@ -295,15 +338,20 @@ describe("sync-names coverage", () => {
       try {
         const profileId = await seedBudgetProfile(db);
 
-        // Item has apiCategoryId but cache won't have it — falls back to stored apiCategoryName
-        seedBudgetItem(db, profileId, {
+        // Item is linked but cache won't have an entry for it — falls back
+        // to the stored category name.
+        const item = seedBudgetItem(db, profileId, {
           subcategory: "Local Name",
           category: "Food",
-          apiCategoryId: "cat-missing",
-          apiCategoryName: "Stored API Name",
         });
+        await linkBudgetItem(
+          db,
+          item,
+          "ynab",
+          "cat-missing",
+          "Stored API Name",
+        );
 
-        mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
         mockCacheGet.mockResolvedValueOnce({
           data: [
             {
@@ -314,6 +362,7 @@ describe("sync-names coverage", () => {
         });
 
         const result = await caller.sync.syncAllNames({
+          service: "ynab",
           direction: "pull",
           includeCategories: true,
         });
@@ -337,15 +386,16 @@ describe("sync-names coverage", () => {
       try {
         const profileId = await seedBudgetProfile(db);
 
-        // Item has apiCategoryId (so it passes the isNotNull filter) but null apiCategoryName
-        seedBudgetItem(db, profileId, {
+        // Item is linked (so it passes the "has a link" filter) but with a
+        // null category name.
+        const item = seedBudgetItem(db, profileId, {
           subcategory: "Something",
           category: "Bills",
-          apiCategoryId: "cat-nullname",
-          apiCategoryName: null,
         });
+        await linkBudgetItem(db, item, "ynab", "cat-nullname", null);
 
         const result = await caller.sync.syncAllNames({
+          service: "ynab",
           direction: "pull",
         });
 
@@ -363,13 +413,11 @@ describe("sync-names coverage", () => {
     it("skips goals where currentGoalApiName is null", async () => {
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
-        seedSavingsGoal(db, {
-          name: "Some Goal",
-          apiCategoryId: "cat-nullgoal",
-          apiCategoryName: null,
-        });
+        const goal = seedSavingsGoal(db, { name: "Some Goal" });
+        await linkSavingsGoal(db, goal, "ynab", "cat-nullgoal", null);
 
         const result = await caller.sync.syncAllNames({
+          service: "ynab",
           direction: "keepLedgr",
         });
 
@@ -381,26 +429,24 @@ describe("sync-names coverage", () => {
     });
   });
 
-  // ── syncAllNames: service is active but cache is null (line 155 false branch) ──
+  // ── syncAllNames: service is active but cache is null ──
 
   describe("syncAllNames pull with active service but null cache", () => {
-    it("falls back to stored names when cacheGet returns null (line 155)", async () => {
+    it("falls back to stored names when cacheGet returns null", async () => {
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
         const profileId = await seedBudgetProfile(db);
 
-        seedBudgetItem(db, profileId, {
+        const item = seedBudgetItem(db, profileId, {
           subcategory: "Local",
           category: "Bills",
-          apiCategoryId: "cat-nocache",
-          apiCategoryName: "Stored Name",
         });
+        await linkBudgetItem(db, item, "ynab", "cat-nocache", "Stored Name");
 
-        // Service is active but cache is null
-        mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
         mockCacheGet.mockResolvedValueOnce(null);
 
         const result = await caller.sync.syncAllNames({
+          service: "ynab",
           direction: "pull",
           includeCategories: true,
         });
@@ -422,7 +468,10 @@ describe("sync-names coverage", () => {
       const { caller, cleanup } = await createTestCaller(adminSession);
       try {
         await expect(
-          caller.sync.renameBudgetItemToApi({ budgetItemId: 99999 }),
+          caller.sync.renameBudgetItemToApi({
+            budgetItemId: 99999,
+            service: "ynab",
+          }),
         ).rejects.toThrow("Item not linked to API category");
       } finally {
         cleanup();
@@ -437,7 +486,10 @@ describe("sync-names coverage", () => {
       const { caller, cleanup } = await createTestCaller(adminSession);
       try {
         await expect(
-          caller.sync.renameSavingsGoalToApi({ goalId: 99999 }),
+          caller.sync.renameSavingsGoalToApi({
+            goalId: 99999,
+            service: "ynab",
+          }),
         ).rejects.toThrow("Goal not linked to API category");
       } finally {
         cleanup();
@@ -445,22 +497,27 @@ describe("sync-names coverage", () => {
     });
   });
 
-  // ── syncAllNames: pull direction where getActiveBudgetApi is called (no explicit service) ──
+  // ── syncAllNames: cross-service isolation — the core fix ──
 
-  describe("syncAllNames pull without explicit service", () => {
-    it("calls getActiveBudgetApi when no service provided and renames drifted items", async () => {
+  describe("syncAllNames cross-service isolation", () => {
+    it("renaming via YNAB does not touch the SAME item's Actual link", async () => {
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
         const profileId = await seedBudgetProfile(db);
 
-        seedBudgetItem(db, profileId, {
+        const item = seedBudgetItem(db, profileId, {
           subcategory: "Stale Name",
           category: "Bills",
-          apiCategoryId: "cat-auto",
-          apiCategoryName: "Stale Name",
         });
+        await linkBudgetItem(db, item, "ynab", "cat-auto", "Stale Name");
+        await linkBudgetItem(
+          db,
+          item,
+          "actual",
+          "cat-auto-actual",
+          "Actual Name",
+        );
 
-        mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
         mockCacheGet.mockResolvedValueOnce({
           data: [
             {
@@ -471,11 +528,21 @@ describe("sync-names coverage", () => {
         });
 
         const result = await caller.sync.syncAllNames({
+          service: "ynab",
           direction: "pull",
         });
 
         expect(result.ok).toBe(true);
         expect(result.budgetRenamed).toBe(1);
+
+        const { loadBudgetItemLinks } =
+          await import("@/server/helpers/category-links");
+        // eslint-disable-next-line no-restricted-syntax -- test-only cast to the pg Db type the helper expects
+        const rawDb = db as unknown as Parameters<
+          typeof loadBudgetItemLinks
+        >[0];
+        const actualLinks = await loadBudgetItemLinks(rawDb, [item], "actual");
+        expect(actualLinks.get(item)?.categoryName).toBe("Actual Name");
       } finally {
         mockGetActiveBudgetApi.mockClear();
         mockCacheGet.mockClear();

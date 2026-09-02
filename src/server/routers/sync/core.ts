@@ -28,7 +28,12 @@ import type {
   BudgetMonthDetail,
   BudgetTransaction,
 } from "@/lib/budget-api";
-import { parseAppSettings, buildMortgageInputs } from "@/server/helpers";
+import {
+  parseAppSettings,
+  buildMortgageInputs,
+  loadBudgetItemLinks,
+  loadSavingsGoalLinks,
+} from "@/server/helpers";
 import { calculateMortgage } from "@/lib/calculators/mortgage";
 import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
 import { safeDivide } from "@/lib/utils/math";
@@ -124,19 +129,23 @@ export const syncCoreRouter = createTRPCRouter({
           // balances should not overwrite savings history.
           const activeService = await getActiveBudgetApi(ctx.db);
           if (service === activeService) {
-            // Fetch all API-linked savings goals.
-            const linkedGoals = await tx
-              .select({
-                id: schema.savingsGoals.id,
-                apiCategoryId: schema.savingsGoals.apiCategoryId,
-              })
+            // Fetch all savings goals with a primary link for THIS service.
+            const activeGoalRows = await tx
+              .select({ id: schema.savingsGoals.id })
               .from(schema.savingsGoals)
-              .where(
-                and(
-                  eq(schema.savingsGoals.isApiSyncEnabled, true),
-                  eq(schema.savingsGoals.isActive, true),
-                ),
-              );
+              .where(eq(schema.savingsGoals.isActive, true));
+            const syncGoalLinks = await loadSavingsGoalLinks(
+              tx,
+              activeGoalRows.map((g) => g.id),
+              service,
+              "primary",
+            );
+            const linkedGoals = activeGoalRows
+              .map((g) => ({
+                id: g.id,
+                apiCategoryId: syncGoalLinks.get(g.id)?.categoryId ?? null,
+              }))
+              .filter((g) => g.apiCategoryId);
 
             // Build categoryId → balance map from this sync's month detail.
             const catBalanceMap = new Map<string, number>(
@@ -198,8 +207,7 @@ export const syncCoreRouter = createTRPCRouter({
                   .map((c) => [c.id, c.balance]),
               );
               for (const goal of linkedGoals) {
-                if (!goal.apiCategoryId) continue;
-                const balance = priorCatMap.get(goal.apiCategoryId);
+                const balance = priorCatMap.get(goal.apiCategoryId!);
                 if (balance === undefined) continue;
                 // Insert only — never overwrite an existing month's recorded balance.
                 await tx
@@ -329,6 +337,27 @@ export const syncCoreRouter = createTRPCRouter({
         return { synced: false } as const;
       }
 
+      const previewGoalPrimaryLinks = await loadSavingsGoalLinks(
+        ctx.db,
+        savingsGoalRows.map((g) => g.id),
+        service,
+        "primary",
+      );
+      const previewGoalReimbursementLinks = await loadSavingsGoalLinks(
+        ctx.db,
+        savingsGoalRows.map((g) => g.id),
+        service,
+        "reimbursement",
+      );
+      const savingsGoalRowsWithLinks = savingsGoalRows.map((g) => ({
+        ...g,
+        apiCategoryId: previewGoalPrimaryLinks.get(g.id)?.categoryId ?? null,
+        apiCategoryName:
+          previewGoalPrimaryLinks.get(g.id)?.categoryName ?? null,
+        reimbursementApiCategoryId:
+          previewGoalReimbursementLinks.get(g.id)?.categoryId ?? null,
+      }));
+
       const accounts = accountsCache.data;
       const categoryGroups = categoriesCache?.data ?? [];
 
@@ -437,19 +466,30 @@ export const syncCoreRouter = createTRPCRouter({
         contributionAccountId: number | null;
       }> = [];
       if (activeProfile) {
-        budgetItemRows = await ctx.db
+        const rawBudgetItemRows = await ctx.db
           .select({
             id: schema.budgetItems.id,
             category: schema.budgetItems.category,
             subcategory: schema.budgetItems.subcategory,
             amounts: schema.budgetItems.amounts,
-            apiCategoryId: schema.budgetItems.apiCategoryId,
-            apiCategoryName: schema.budgetItems.apiCategoryName,
-            apiSyncDirection: schema.budgetItems.apiSyncDirection,
             contributionAccountId: schema.budgetItems.contributionAccountId,
           })
           .from(schema.budgetItems)
           .where(eq(schema.budgetItems.profileId, activeProfile.id));
+        const previewItemLinks = await loadBudgetItemLinks(
+          ctx.db,
+          rawBudgetItemRows.map((i) => i.id),
+          service,
+        );
+        budgetItemRows = rawBudgetItemRows.map((i) => {
+          const link = previewItemLinks.get(i.id);
+          return {
+            ...i,
+            apiCategoryId: link?.categoryId ?? null,
+            apiCategoryName: link?.categoryName ?? null,
+            apiSyncDirection: link?.syncDirection ?? null,
+          };
+        });
       }
 
       // Determine which budget column to use (linked or active)
@@ -587,7 +627,7 @@ export const syncCoreRouter = createTRPCRouter({
       const usedSavingsApiIds = new Set<string>();
       const savingsMatches: SavingsMatch[] = [];
 
-      for (const goal of savingsGoalRows) {
+      for (const goal of savingsGoalRowsWithLinks) {
         if (goal.apiCategoryId) {
           const apiCat = apiCats.find((c) => c.id === goal.apiCategoryId);
           usedSavingsApiIds.add(goal.apiCategoryId);
@@ -624,7 +664,7 @@ export const syncCoreRouter = createTRPCRouter({
       }
 
       // Fuzzy match unlinked savings goals
-      for (const goal of savingsGoalRows) {
+      for (const goal of savingsGoalRowsWithLinks) {
         if (goal.apiCategoryId) continue;
         const normGoal = normalize(goal.name);
         const match = apiCats.find(
