@@ -181,9 +181,9 @@ export function ProjectionCard(props: {
     runSimulation,
     mcAutoloadEnabled,
     runMonteCarlo,
-    coastFireMcAutoloadEnabled,
     runCoastFireMc,
     coastFireMcQuery,
+    coastFireMcQueryEnabled,
     coastFireAge: deterministicCoastFireAge,
     bracketOptimizerResult,
     mcProgressQuery,
@@ -1303,14 +1303,10 @@ export function ProjectionCard(props: {
                   : ("pending" as const);
 
             // "disabled" here means the strip hides entirely (see the
-            // !== "disabled" guards below) — must mirror coastFireMcQuery's
-            // own `enabled` condition in use-projection-queries.ts exactly,
-            // or this shows "disabled" while the query is actually running
-            // (selected but not yet autoloaded), or vice versa.
-            const coastFireMcQueryEnabled =
-              coastFireMcAutoloadEnabled ||
-              scenarioView === "coastFire" ||
-              scenarioView === "coastFireToday";
+            // !== "disabled" guards below). coastFireMcQueryEnabled comes
+            // from use-projection-queries.ts — the same value that gates
+            // coastFireMcQuery's own `enabled` there, so this can't drift
+            // out of sync with it the way a locally re-derived copy could.
             const coastFireMcPhase = !coastFireMcQueryEnabled
               ? ("disabled" as const)
               : coastFireMcQuery.isLoading || coastFireMcQuery.isFetching

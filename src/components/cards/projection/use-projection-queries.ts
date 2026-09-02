@@ -287,14 +287,17 @@ export function useProjectionQueries(
   // "re-run succeeded" toast still fires. Invisible whenever the user
   // hasn't customized MC assumptions, since the defaults and mcQuery's
   // input coincide at their initial values — that's why this went unnoticed.
-  const runMonteCarloInput = {
-    numTrials: mcTrials,
-    preset: mcPreset,
-    taxMode: mcTaxMode,
-    assetClassOverrides:
-      mcAssetClassOverrides.length > 0 ? mcAssetClassOverrides : undefined,
-    ...debouncedBaseInput,
-  };
+  const runMonteCarloInput = useMemo(
+    () => ({
+      numTrials: mcTrials,
+      preset: mcPreset,
+      taxMode: mcTaxMode,
+      assetClassOverrides:
+        mcAssetClassOverrides.length > 0 ? mcAssetClassOverrides : undefined,
+      ...debouncedBaseInput,
+    }),
+    [mcTrials, mcPreset, mcTaxMode, mcAssetClassOverrides, debouncedBaseInput],
+  );
   // Shared by coastFireMcQuery/mcQuery further down (same inputs, same
   // ids) so the manual "Re-run" buttons and the queries they refresh
   // always agree on which progress-map entry to poll. Derived from the
@@ -303,8 +306,18 @@ export function useProjectionQueries(
   // silently reset to indeterminate on remount instead of resuming the
   // real trial count (this is the same fix already applied to mcQuery
   // 2026-08-30 — see monte-carlo-worker-client.ts's runId docblock).
-  const coastFireMcRunId = JSON.stringify(debouncedBaseInput);
-  const mcRunId = JSON.stringify(runMonteCarloInput);
+  // Memoized — these ran on every render otherwise, re-stringifying an
+  // input object that (per the docblock above) only needs to change when
+  // the underlying input actually does (code-review efficiency finding,
+  // 2026-09-01).
+  const coastFireMcRunId = useMemo(
+    () => JSON.stringify(debouncedBaseInput),
+    [debouncedBaseInput],
+  );
+  const mcRunId = useMemo(
+    () => JSON.stringify(runMonteCarloInput),
+    [runMonteCarloInput],
+  );
   // `runMonteCarlo`/`runCoastFireMc` use an imperative `.fetch()` (not
   // `mcQuery.refetch()`/`.invalidate()`) specifically to pass
   // `forceRefresh: true` — a field that only exists on this one-off call,
@@ -455,13 +468,19 @@ export function useProjectionQueries(
   // stable, input-derived id (not a fresh UUID per mount) is what makes
   // the progress poll survive remounts and reconnect to an in-flight
   // server-side run instead of resetting to indeterminate.
-  const mcPrefetchQueryInput = {
-    numTrials: MC_DEFAULT_TRIALS,
-    preset: "default" as const,
-    taxMode: mcTaxMode,
-    ...debouncedBaseInput,
-  };
-  const mcPrefetchRunId = JSON.stringify(mcPrefetchQueryInput);
+  const mcPrefetchQueryInput = useMemo(
+    () => ({
+      numTrials: MC_DEFAULT_TRIALS,
+      preset: "default" as const,
+      taxMode: mcTaxMode,
+      ...debouncedBaseInput,
+    }),
+    [mcTaxMode, debouncedBaseInput],
+  );
+  const mcPrefetchRunId = useMemo(
+    () => JSON.stringify(mcPrefetchQueryInput),
+    [mcPrefetchQueryInput],
+  );
   const mcPrefetchQuery = trpc.projection.computeMonteCarloProjection.useQuery(
     { ...mcPrefetchQueryInput, runId: mcPrefetchRunId },
     {
@@ -571,13 +590,19 @@ export function useProjectionQueries(
   // the file (it's derived below, after this query, from the same
   // `scenarioView` this reads directly) — keep this condition and that
   // one in sync if either changes.
+  // Exposed on the return value below so index.tsx's progress-strip phase
+  // computation can reuse this instead of re-deriving the same condition
+  // (previously copy-pasted there, with only a comment tying the two
+  // together — code-review reuse/duplication finding, 2026-09-01).
+  const coastFireMcQueryEnabled =
+    coastFireMcAutoloadEnabled ||
+    scenarioView === "coastFire" ||
+    scenarioView === "coastFireToday";
   const coastFireMcQuery = trpc.projection.computeCoastFireMC.useQuery(
     { ...debouncedBaseInput, runId: coastFireMcRunId },
     {
       enabled:
-        (coastFireMcAutoloadEnabled ||
-          scenarioView === "coastFire" ||
-          scenarioView === "coastFireToday") &&
+        coastFireMcQueryEnabled &&
         engineQuery.isSuccess &&
         !engineQuery.isFetching,
       placeholderData: (prev) => prev,
@@ -627,14 +652,20 @@ export function useProjectionQueries(
   // autoloaded in the background like Coast FIRE — a third always-on MC
   // run per page load was judged not worth the extra background server
   // cost for a scenario most households won't open every visit.
-  const rateSeededMcQueryInput = {
-    numTrials: MC_DEFAULT_TRIALS,
-    preset: "default" as const,
-    taxMode: mcTaxMode,
-    ...debouncedBaseInput,
-    rateSeededDecumulationYear1: true,
-  };
-  const rateSeededMcRunId = JSON.stringify(rateSeededMcQueryInput);
+  const rateSeededMcQueryInput = useMemo(
+    () => ({
+      numTrials: MC_DEFAULT_TRIALS,
+      preset: "default" as const,
+      taxMode: mcTaxMode,
+      ...debouncedBaseInput,
+      rateSeededDecumulationYear1: true,
+    }),
+    [mcTaxMode, debouncedBaseInput],
+  );
+  const rateSeededMcRunId = useMemo(
+    () => JSON.stringify(rateSeededMcQueryInput),
+    [rateSeededMcQueryInput],
+  );
   const rateSeededMcQuery =
     trpc.projection.computeMonteCarloProjection.useQuery(
       { ...rateSeededMcQueryInput, runId: rateSeededMcRunId },
@@ -853,6 +884,7 @@ export function useProjectionQueries(
     bracketOptimizerQuery,
     bracketOptimizerResult,
     coastFireMcQuery,
+    coastFireMcQueryEnabled,
     mcProgressQuery,
     mcPrefetchProgressQuery,
     coastFireMcProgressQuery,
