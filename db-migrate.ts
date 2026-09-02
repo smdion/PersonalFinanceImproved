@@ -22,6 +22,34 @@ function getDialect(): "postgresql" | "sqlite" {
   return "sqlite";
 }
 
+/**
+ * Reference-data reconcile (R43).
+ *
+ * `seed-reference-data.sql` is `INSERT … ON CONFLICT DO NOTHING` only — no
+ * DDL, no UPDATE/DELETE. It is safe to re-run on every migrate, and doing so
+ * is the only way a new tax year added to the seed reaches an existing
+ * install. Previously the seed ran only when `contribution_limits` was empty,
+ * so annual figure updates never propagated to a populated DB (R43 audit,
+ * systemic problem #3).
+ *
+ * Additive only: `ON CONFLICT DO NOTHING` never overwrites an admin's
+ * Settings edit and never corrects an already-seeded wrong value — a
+ * seed-value *correction* still has to go through the UI or a manual
+ * statement (documented in TAX-PARAMETER-RUNBOOK.md).
+ *
+ * Every table the seed writes MUST carry a `tax_year`-scoped unique
+ * constraint. Without one, `ON CONFLICT DO NOTHING` has nothing to conflict
+ * on and every reconcile re-inserts duplicate rows. This is asserted before
+ * the seed runs and fails the migrate loudly if a table is missing it.
+ */
+function parseSeedTableNames(seedSql: string): string[] {
+  const names = new Set<string>();
+  const re = /INSERT\s+INTO\s+"?([A-Za-z_][A-Za-z0-9_]*)"?/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(seedSql)) !== null) names.add(m[1]!);
+  return [...names];
+}
+
 // Table names that are included in versioned backups (must match version-tables.ts).
 // This is a local copy because db-migrate.ts runs in Docker where src/ isn't available.
 const VERSION_TABLE_NAMES = [
@@ -1045,25 +1073,38 @@ async function runPostgres() {
       }
     }
 
-    // Seed reference data if empty
+    // Reference-data reconcile (R43): additive, runs on every migrate so a
+    // new tax year in the seed reaches existing installs. Fails the migrate
+    // loudly on any error — a silently skipped reconcile is the "seed never
+    // reaches prod" bug this replaces.
     const seedClient = await pool.connect();
     try {
-      const { rows } = await seedClient.query(
-        "SELECT count(*)::int AS n FROM contribution_limits",
+      const seedSql = fs.readFileSync(
+        path.resolve("./seed-reference-data.sql"),
+        "utf-8",
       );
-      if (rows[0]?.n === 0) {
-        const seedSql = fs.readFileSync(
-          path.resolve("./seed-reference-data.sql"),
-          "utf-8",
+      const seedTables = parseSeedTableNames(seedSql);
+      for (const table of seedTables) {
+        const { rows } = await seedClient.query(
+          `SELECT 1
+             FROM pg_index i
+             JOIN pg_class c ON c.oid = i.indrelid
+             JOIN pg_attribute a ON a.attrelid = i.indrelid
+                                AND a.attnum = ANY(i.indkey)
+            WHERE c.relname = $1 AND i.indisunique AND a.attname = 'tax_year'
+            LIMIT 1`,
+          [table],
         );
-        await seedClient.query(seedSql);
-        log("info", "reference_data_seeded", {
-          tables: "contribution_limits, tax_brackets",
-        });
+        if (rows.length === 0) {
+          throw new Error(
+            `Reference table "${table}" has no tax_year-scoped unique constraint — ` +
+              `seed reconcile would duplicate rows on every migrate. Add a unique index first.`,
+          );
+        }
       }
-    } catch (seedErr) {
-      log("warn", "reference_data_seed_skipped", {
-        error: (seedErr as Error).message,
+      await seedClient.query(seedSql);
+      log("info", "reference_data_reconciled", {
+        tables: seedTables.join(", "),
       });
     } finally {
       seedClient.release();
@@ -1763,25 +1804,35 @@ function runSQLite() {
     }
   }
 
-  // Seed reference data if empty
+  // Reference-data reconcile (R43): additive, runs on every migrate. Mirrors
+  // the Postgres path above — fails loudly rather than warn-and-continue.
   try {
-    const row = sqlite
-      .prepare("SELECT count(*) AS n FROM contribution_limits")
-      .get() as { n: number };
-    if (row.n === 0) {
-      const seedSql = fs.readFileSync(
-        path.resolve("./seed-reference-data.sql"),
-        "utf-8",
-      );
-      sqlite.exec(seedSql);
-      log("info", "reference_data_seeded", {
-        tables: "contribution_limits, tax_brackets",
+    const seedSql = fs.readFileSync(
+      path.resolve("./seed-reference-data.sql"),
+      "utf-8",
+    );
+    const seedTables = parseSeedTableNames(seedSql);
+    for (const table of seedTables) {
+      const indexes = sqlite.prepare(`PRAGMA index_list("${table}")`).all() as {
+        name: string;
+        unique: number;
+      }[];
+      const hasYearScopedUnique = indexes.some((idx) => {
+        if (idx.unique !== 1) return false;
+        const cols = sqlite
+          .prepare(`PRAGMA index_info("${idx.name}")`)
+          .all() as { name: string }[];
+        return cols.some((c) => c.name === "tax_year");
       });
+      if (!hasYearScopedUnique) {
+        throw new Error(
+          `Reference table "${table}" has no tax_year-scoped unique constraint — ` +
+            `seed reconcile would duplicate rows on every migrate. Add a unique index first.`,
+        );
+      }
     }
-  } catch (seedErr) {
-    log("warn", "reference_data_seed_skipped", {
-      error: (seedErr as Error).message,
-    });
+    sqlite.exec(seedSql);
+    log("info", "reference_data_reconciled", { tables: seedTables.join(", ") });
   } finally {
     sqlite.close();
   }
