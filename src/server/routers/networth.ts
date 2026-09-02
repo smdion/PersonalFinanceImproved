@@ -139,20 +139,22 @@ export const networthRouter = createTRPCRouter({
 
       // Current-state values from app_settings (editable, not tied to year-end snapshots)
       const setting = parseAppSettings(settings);
-      const {
-        cash,
-        source: cashSource,
-        cacheAgeDays: cashCacheAgeDays,
-      } = await getEffectiveCash(ctx.db, settings);
-      const otherAssetsResult = await getEffectiveOtherAssetsDetailed(
-        ctx.db,
-        settings,
-      );
+      // Resolved once and threaded into getEffectiveCash/
+      // getEffectiveCreditCardDebt below instead of each independently
+      // re-querying it (previously 3 separate getActiveBudgetApi calls in
+      // this one procedure; code-review efficiency finding, 2026-09-01).
+      const { getActiveBudgetApi } = await import("@/lib/budget-api");
+      const activeBudgetApi = await getActiveBudgetApi(ctx.db);
+      const [
+        { cash, source: cashSource, cacheAgeDays: cashCacheAgeDays },
+        otherAssetsResult,
+      ] = await Promise.all([
+        getEffectiveCash(ctx.db, settings, activeBudgetApi),
+        getEffectiveOtherAssetsDetailed(ctx.db, settings),
+      ]);
       const otherAssets = otherAssetsResult.total;
 
       // Enrich other-asset items with API sync status (same pattern as assets.ts)
-      const { getActiveBudgetApi } = await import("@/lib/budget-api");
-      const activeBudgetApi = await getActiveBudgetApi(ctx.db);
       const apiConn = apiConnections.find((c) => c.service === activeBudgetApi);
       const apiMappings = (apiConn?.accountMappings ?? []) as {
         localId?: string;
@@ -184,7 +186,7 @@ export const networthRouter = createTRPCRouter({
       // household maps a "Credit Card" account for the active service.
       const otherLiabilities =
         setting("current_other_liabilities", 0) +
-        (await getEffectiveCreditCardDebt(ctx.db));
+        (await getEffectiveCreditCardDebt(ctx.db, activeBudgetApi));
       const homeImprovements = setting("current_home_improvements", 0);
 
       // Home values: market (estimated) and cost basis (purchase + improvements)
@@ -725,11 +727,20 @@ export const networthRouter = createTRPCRouter({
           toNumber(activeMortgage.propertyValuePurchase) + homeImprovements
         );
       })();
-      const { cash } = await getEffectiveCash(ctx.db, settings);
-      const otherAssets = await getEffectiveOtherAssets(ctx.db, settings);
+      // Resolved once, threaded into getEffectiveCash/
+      // getEffectiveCreditCardDebt, and run alongside the independent
+      // otherAssets lookup instead of 2 separate getActiveBudgetApi calls
+      // plus a serialized otherAssets fetch (code-review efficiency
+      // finding, 2026-09-01).
+      const { getActiveBudgetApi } = await import("@/lib/budget-api");
+      const activeBudgetApi = await getActiveBudgetApi(ctx.db);
+      const [{ cash }, otherAssets] = await Promise.all([
+        getEffectiveCash(ctx.db, settings, activeBudgetApi),
+        getEffectiveOtherAssets(ctx.db, settings),
+      ]);
       const otherLiabilities =
         setting("current_other_liabilities", 0) +
-        (await getEffectiveCreditCardDebt(ctx.db));
+        (await getEffectiveCreditCardDebt(ctx.db, activeBudgetApi));
 
       // Find nearest snapshot to a target date
       async function getSnapshotAtDate(targetDate: string) {

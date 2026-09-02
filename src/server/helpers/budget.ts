@@ -7,6 +7,7 @@ import { roundToCents } from "@/lib/utils/math";
 import { toNumber } from "./transforms";
 import type { Db } from "./transforms";
 import { parseAppSettings } from "./settings";
+import type { ActiveBudgetApi } from "@/lib/budget-api/types";
 import {
   filterActiveJobs,
   type ContribResolutionStatus,
@@ -146,13 +147,19 @@ async function sumMappedAccountBalances(
 export async function getEffectiveCash(
   db: Db,
   settings: { key: string; value: unknown }[],
+  /** Pass this when the caller already resolved it (e.g. alongside a
+   *  sibling getEffectiveCreditCardDebt call in the same procedure) —
+   *  avoids re-querying apiConnections/cached balances for a value that
+   *  can't have changed mid-request (code-review efficiency finding,
+   *  2026-09-01). Omit to resolve it here as before. */
+  activeBudgetApi?: ActiveBudgetApi,
 ): Promise<{
   cash: number;
   source: "ynab" | "actual" | "manual";
   cacheAgeDays: number | null;
 }> {
   const { getActiveBudgetApi, cacheGet } = await import("@/lib/budget-api");
-  const active = await getActiveBudgetApi(db);
+  const active = activeBudgetApi ?? (await getActiveBudgetApi(db));
 
   if (active !== "none") {
     const mappedCash = await sumMappedAccountBalances(db, active, "cash");
@@ -204,9 +211,13 @@ export async function getEffectiveCash(
  * ever returns a nonzero figure once the household has mapped at least one
  * account.
  */
-export async function getEffectiveCreditCardDebt(db: Db): Promise<number> {
+export async function getEffectiveCreditCardDebt(
+  db: Db,
+  /** See getEffectiveCash's matching param. */
+  activeBudgetApi?: ActiveBudgetApi,
+): Promise<number> {
   const { getActiveBudgetApi } = await import("@/lib/budget-api");
-  const active = await getActiveBudgetApi(db);
+  const active = activeBudgetApi ?? (await getActiveBudgetApi(db));
   if (active === "none") return 0;
   return (await sumMappedAccountBalances(db, active, "creditCard")) ?? 0;
 }
