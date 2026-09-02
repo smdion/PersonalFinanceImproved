@@ -1765,7 +1765,7 @@ describe("savings.extraPaycheckRouting", () => {
     // over-withheld and understated net pay) — net pay rose accordingly.
     expect(baseNetPayPerCheck).toBeGreaterThan(3700);
     expect(baseNetPayPerCheck).toBeLessThan(4000);
-    expect(baseNetPayPerCheck).toBe(3905.69);
+    expect(baseNetPayPerCheck).toBe(3876.15);
   });
 
   it("list resolves live from the job's own column when no routing rule has ever been saved for it", async () => {

@@ -37,10 +37,14 @@ export type WithholdingBracket = {
 /**
  * Gross ordinary income -> the adjusted-annual-wage figure the Pub 15-T
  * percentage-method table (`WithholdingBracket[]`) is actually denominated
- * in. The table's own first non-zero threshold IS the Pub 15-T Worksheet 1A
- * offset (e.g. $19,300 MFJ for 2026 — R56/R58), so the residual still owed
- * is `standardDeduction - thatThreshold`, derived from the table already in
- * hand rather than a second stored constant. `standardDeduction` undefined
+ * in. Worksheet 1A line 1g's real adjustment is `standardDeduction -
+ * table's first non-zero threshold` (e.g. $32,200 - $19,300 = $12,900 MFJ
+ * for 2026 — R56/R58) — the threshold ALONE is not the offset, it's only
+ * one term of it (advisor-caught 2026-09-01: an earlier version of this
+ * comment claimed the threshold itself was the full Worksheet 1A offset,
+ * which fed directly into a real bug in paycheck.ts's buildBracketInput
+ * that used the threshold alone as `w4Adjustment` — see that file's
+ * comment for the real-dollar impact). `standardDeduction` undefined
  * returns gross unchanged (pre-R56 behavior, still correct for callers that
  * don't have a standard deduction to thread through, e.g. tests).
  *

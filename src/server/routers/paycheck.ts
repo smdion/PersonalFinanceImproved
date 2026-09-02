@@ -57,23 +57,30 @@ export function buildBracketInput(
     rate: b.rate,
   }));
 
+  const standardDeduction = requireLimit(
+    limits,
+    `standard_deduction_${bracketRow.filingStatus.toLowerCase()}`,
+  );
+  // Pub 15-T Worksheet 1A line 1g: standardDeduction minus the standard
+  // table's own first non-zero threshold — the threshold alone is only
+  // ONE term of the real offset, not the whole thing (advisor-caught
+  // 2026-09-01, real bug: this previously used `brackets[1].threshold`
+  // alone as the full adjustment, e.g. $19,300 MFJ for 2026 instead of the
+  // real $32,200 - $19,300 = $12,900, under-withholding a $120k MFJ
+  // household by ~$768/yr at the 12% bracket, more at higher brackets).
+  // Mirrors tax-estimation.ts's toOrdinaryBracketIncome, which computes
+  // this same residual correctly — see that function's docblock. 0 for
+  // w4Checkbox=true rows (2(c) tables assume no worksheet adjustment).
+  const w4Adjustment = bracketRow.w4Checkbox
+    ? 0
+    : Math.max(0, standardDeduction - (bracketRow.brackets[1]?.threshold ?? 0));
+
   return {
     filingStatus: bracketRow.filingStatus,
     w4Checkbox: bracketRow.w4Checkbox,
     brackets,
-    // Pub 15-T Worksheet 1A line 1g: the standard-table's own first
-    // non-zero threshold IS the adjustment amount (R56/R58 — see
-    // seed-reference-data.sql's tax_brackets comment), so it's read
-    // directly off this row rather than duplicated as a separate
-    // hardcoded constant. 0 for w4Checkbox=true rows (2(c) tables assume
-    // no worksheet adjustment).
-    w4Adjustment: bracketRow.w4Checkbox
-      ? 0
-      : (bracketRow.brackets[1]?.threshold ?? 0),
-    standardDeduction: requireLimit(
-      limits,
-      `standard_deduction_${bracketRow.filingStatus.toLowerCase()}`,
-    ),
+    w4Adjustment,
+    standardDeduction,
     socialSecurityWageBase: requireLimit(limits, "ss_wage_base"),
     socialSecurityRate: requireLimit(limits, "fica_ss_rate"),
     medicareRate: requireLimit(limits, "fica_medicare_rate"),
