@@ -72,6 +72,13 @@ export function ProjectionCard(props: {
   parentCategoryFilter?: string;
   contributionProfileId?: number;
   salaryProfileId?: number;
+  /** View a non-active Retirement Profile (AssumptionsBand) — threaded to
+   *  every engine query so the chart/table this card renders agrees with
+   *  whichever profile the band above it is showing (advisor-caught
+   *  2026-09-01: previously accepted nowhere in this card's query layer,
+   *  so the band's "view a non-active profile" silently never reached the
+   *  chart — it kept showing the globally-active profile regardless). */
+  retirementProfileId?: number | null;
   snapshotId?: number;
   /** When provided, overrides the internal dollarMode state (for shared page-level toggle). */
   dollarMode?: "nominal" | "real";
@@ -90,6 +97,7 @@ export function ProjectionCard(props: {
     parentCategoryFilter: props.parentCategoryFilter,
     contributionProfileId: props.contributionProfileId,
     salaryProfileId: props.salaryProfileId,
+    retirementProfileId: props.retirementProfileId,
     snapshotId: props.snapshotId,
   });
 
@@ -617,7 +625,7 @@ export function ProjectionCard(props: {
                                   : "Coast FIRE (Age N): contributions zeroed from your Coast FIRE age onward — the earliest age that still passes. Not yet available.",
                                 "Coast FIRE (Today): the SAME idea, but stopping right now instead of at the earliest passing age. Use this to see exactly what breaks (and when) if you stopped contributing today — often a shortfall in the years before 59½, which the passing-age view won't show since it's built to avoid it.",
                                 'Coast FIRE (Custom): check any age you pick, not just the earliest passing one or today — pick an age and press "Check this age" to see whether it passes.',
-                                "Initial Rate: an alternate simulation where year 1 of retirement spending is set from your Initial Withdrawal Rate setting × starting balance instead of your stated budget/override — your budget is ignored entirely for the starting point. Every year after that still runs your ACTIVE strategy's own ongoing rules (guardrails, decline schedule, etc.) unchanged — this only changes where the number starts, not how it evolves. Computed on demand (not preloaded in the background like Coast FIRE), so the first switch takes a few seconds.",
+                                "Initial Rate: an alternate simulation where year 1 of retirement spending is set from your Initial Withdrawal Rate setting × starting balance instead of your stated budget or customized amount — your budget is ignored entirely for the starting point. Every year after that still runs your ACTIVE strategy's own ongoing rules (guardrails, decline schedule, etc.) unchanged — this only changes where the number starts, not how it evolves. Computed on demand (not preloaded in the background like Coast FIRE), so the first switch takes a few seconds.",
                               ]}
                             />
                           }

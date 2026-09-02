@@ -129,9 +129,10 @@ export function BudgetProfileSidebar({
               canEdit && !p.isActive
                 ? async () => {
                     const pinnedBy = pinningPlanNames(p.id);
+                    // "active" not "pin/pinned" in user-facing text (RULES.md).
                     const pinnedByClause =
                       pinnedBy.length > 0
-                        ? ` The Plan${pinnedBy.length > 1 ? "s" : ""} "${pinnedBy.join('", "')}" pin${pinnedBy.length > 1 ? "" : "s"} this profile and will fall back to the active profile once it's gone.`
+                        ? ` The Plan${pinnedBy.length > 1 ? "s" : ""} "${pinnedBy.join('", "')}" ${pinnedBy.length > 1 ? "have" : "has"} this profile active and will fall back to the household's active profile once it's gone.`
                         : "";
                     if (
                       await confirm(

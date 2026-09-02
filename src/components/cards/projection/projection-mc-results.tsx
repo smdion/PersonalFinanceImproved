@@ -357,7 +357,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                             )}
                             <HelpTip
                               maxWidth={260}
-                              text={`Your ${firstDecumYear.year} retirement year's actual spending, as computed by your ACTIVE withdrawal strategy (${si.withdrawalStrategy.replace(/_/g, " ")}) and any overrides in effect that year -- not a flat rate applied to today's balance. Shown in ${dollarMode === "nominal" ? "future" : "today's"} dollars, matching the Dollars toggle above the chart.`}
+                              text={`Your ${firstDecumYear.year} retirement year's actual spending, as computed by your ACTIVE withdrawal strategy (${si.withdrawalStrategy.replace(/_/g, " ")}) and any customizations in effect that year -- not a flat rate applied to today's balance. Shown in ${dollarMode === "nominal" ? "future" : "today's"} dollars, matching the Dollars toggle above the chart.`}
                             />
                           </div>
                           <div className="text-micro text-faint">
