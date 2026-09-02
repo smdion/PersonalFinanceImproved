@@ -172,6 +172,24 @@ describe("resolveTaxParams — Oct-Jan drift window (F2-4)", () => {
     expect(r.ltcgByStatus).toBeUndefined();
     expect(r.irmaaByStatus).toBeUndefined();
   });
+
+  // R43 C6 (F2-3): before R43, growLtcgBrackets was fed a taxDataYear
+  // sourced from tax_brackets' own MAX(taxYear), independent of
+  // ltcg_brackets' own MAX — so a tax_brackets-only year bump would
+  // silently grow the OLDER LTCG thresholds as if they were the newer
+  // vintage. Now there is one resolvedYear for every slice, so LTCG never
+  // gets silently paired with a bracket vintage it doesn't have data for
+  // — it correctly reports "no LTCG here" (above) rather than reusing an
+  // older year's numbers under a newer year's label.
+  it("never pairs one year's LTCG brackets with another year's label (F2-3)", () => {
+    const r = resolveTaxParams(rows, 2027, { onMissing: "nearest" });
+    // 2026's LTCG thresholds must NOT leak into the 2027-labelled result.
+    const ltcg2026 = resolveTaxParams(rows, 2026, {
+      onMissing: "nearest",
+    }).ltcgByStatus;
+    expect(r.ltcgByStatus).not.toEqual(ltcg2026);
+    expect(r.ltcgByStatus).toBeUndefined();
+  });
 });
 
 // ---------------------------------------------------------------------------
