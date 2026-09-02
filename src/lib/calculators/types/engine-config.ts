@@ -377,6 +377,17 @@ export type DecumulationDefaults = {
      *  above overrides the ordinary W-4 defaults. Threshold `null` = the top
      *  (Infinity) bracket. Undefined = fall back to the hardcoded table. */
     ltcgBrackets?: Record<string, { threshold: number | null; rate: number }[]>;
+    /** DB-loaded IRMAA brackets by filing status, from the `irmaa_brackets`
+     *  table (R43). Overrides `IRMAA_BRACKETS`' hardcoded defaults in
+     *  `irmaa-tables.ts` when present — same pattern as `ltcgBrackets` above.
+     *  Undefined = fall back to the hardcoded table. Before R43 this channel
+     *  did not exist: the `irmaa_brackets` table + its Settings editor were
+     *  live but no engine path read them, so edits changed no projection
+     *  output (the F2 that prompted R43). */
+    irmaaBrackets?: Record<
+      string,
+      { magiThreshold: number; annualSurcharge: number }[]
+    >;
     /** Household's annual standard deduction (from `contribution_limits`,
      *  filing-status-keyed), for converting GROSS ordinary income into the
      *  TAXABLE income LTCG brackets are actually denominated in (found

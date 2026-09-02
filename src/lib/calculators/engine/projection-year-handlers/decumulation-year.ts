@@ -489,10 +489,13 @@ export function runDecumulationYear(
     ctx.inflationRate,
   );
   const grownIrmaaBracketsForCheck = growIrmaaBrackets(
-    undefined, // no engine payload source yet -- see growIrmaaBrackets' docblock
+    taxRates.irmaaBrackets, // DB-loaded irmaa_brackets (R43); undefined => IRMAA_BRACKETS default
     irmaaGrowthCheck,
   );
-  const grownIrmaaBracketsForCap = growIrmaaBrackets(undefined, irmaaGrowthCap);
+  const grownIrmaaBracketsForCap = growIrmaaBrackets(
+    taxRates.irmaaBrackets,
+    irmaaGrowthCap,
+  );
 
   // Phase 4 (2026-08-31): ACA subsidy cliff (400% FPL). Own vintage
   // anchor (FPL_COVERAGE_YEAR, aca-tables.ts) for the same reason as

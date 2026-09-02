@@ -339,3 +339,72 @@ describe("buildEnginePayload — two-person household (H10/T24 wiring)", () => {
     expect(payload.portfolioTotal).toBe(650000);
   });
 });
+
+// ---------------------------------------------------------------------------
+// R43 — irmaa_brackets is now wired into the engine payload.
+// Before R43 the table + its Settings editor were live but no engine path
+// read them; distributionTaxRates had no irmaaBrackets field, and
+// decumulation-year.ts passed literal `undefined` to growIrmaaBrackets.
+// These lock in that (a) the seeded rows now reach the payload, and
+// (b) an admin edit to a row moves the resolved value.
+// ---------------------------------------------------------------------------
+describe("buildEnginePayload — irmaa_brackets wiring (R43)", () => {
+  let db: BetterSQLite3Database<typeof sqliteSchema>;
+  let cleanup: () => void;
+
+  beforeAll(async () => {
+    const ctx = await createTestCaller();
+    db = ctx.db;
+    cleanup = ctx.cleanup;
+    const personId = await seedPerson(db, "Sam", "1980-01-10");
+    await markPrimary(db, personId);
+    await seedRetirementSettings(db, personId, { filingStatus: "Single" });
+  });
+
+  afterAll(() => cleanup());
+
+  it("surfaces the seeded irmaa_brackets rows on distributionTaxRates", async () => {
+    const data = await fetchRetirementData(db, {});
+    const payload = await buildEnginePayload(db, data, {});
+    const irmaa = payload!.distributionTaxRates.irmaaBrackets;
+    expect(irmaa).toBeDefined();
+    // Seed Single tier 1 threshold = 103000 (matches IRMAA_BRACKETS default).
+    expect(irmaa!.Single?.[0]?.magiThreshold).toBe(103000);
+  });
+
+  it("an admin edit to an irmaa_brackets row moves the resolved value", async () => {
+    const schema = await getSchema();
+    const { and, eq } = await import("drizzle-orm");
+    const latestYear = Math.max(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ...(
+        (db as any)
+          .select({ y: schema.irmaaBrackets.taxYear })
+          .from(schema.irmaaBrackets)
+          .all() as { y: number }[]
+      ).map((r) => r.y),
+    );
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (db as any)
+      .update(schema.irmaaBrackets)
+      .set({
+        brackets: [
+          { magiThreshold: 999000, annualSurcharge: 4321 },
+          { magiThreshold: 1000000, annualSurcharge: 5432 },
+        ],
+      })
+      .where(
+        and(
+          eq(schema.irmaaBrackets.taxYear, latestYear),
+          eq(schema.irmaaBrackets.filingStatus, "Single"),
+        ),
+      )
+      .run();
+
+    const data = await fetchRetirementData(db, {});
+    const payload = await buildEnginePayload(db, data, {});
+    const irmaa = payload!.distributionTaxRates.irmaaBrackets;
+    expect(irmaa!.Single?.[0]?.magiThreshold).toBe(999000);
+    expect(irmaa!.Single?.[0]?.annualSurcharge).toBe(4321);
+  });
+});

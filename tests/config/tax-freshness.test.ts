@@ -427,6 +427,47 @@ describe("IRMAA bracket values", () => {
     expect(entry).toBeDefined();
     expect(IRMAA_DATA_YEAR).toBe(entry!.validThrough);
   });
+
+  // R43: irmaa_brackets is now READ by the engine payload
+  // (build-engine-payload.ts -> distributionTaxRates.irmaaBrackets ->
+  // decumulation-year.ts's growIrmaaBrackets). Before R43 the table was
+  // live but inert. This asserts the seed rows for the latest seeded year
+  // are byte-identical to the IRMAA_BRACKETS hardcoded fallback, so the
+  // wiring is a pure no-op for any household on seeded data (no
+  // engine-snapshot / golden movement). If a future seed edit diverges
+  // the seed from the fallback, THIS test fails -- update both together,
+  // exactly like the LTCG fallback.
+  it("seed irmaa_brackets (latest year) == IRMAA_BRACKETS fallback", () => {
+    const sql = fs.readFileSync(
+      path.resolve(__dirname, "../../seed-reference-data.sql"),
+      "utf8",
+    );
+    const rowRe = /\((\d{4}), '(MFJ|Single|HOH)', '(\[[^']*\])'\)/g;
+    const seedByYear = new Map<
+      number,
+      Partial<Record<"MFJ" | "Single" | "HOH", unknown>>
+    >();
+    // Only the irmaa_brackets INSERT block uses the
+    // (year, status, json) 3-tuple shape without a w4 flag AND with
+    // magiThreshold keys — scope by the latter to avoid matching LTCG.
+    let m: RegExpExecArray | null;
+    while ((m = rowRe.exec(sql)) !== null) {
+      if (!m[3]!.includes("magiThreshold")) continue;
+      const year = Number(m[1]);
+      if (!seedByYear.has(year)) seedByYear.set(year, {});
+      seedByYear.get(year)![m[2] as "MFJ" | "Single" | "HOH"] = JSON.parse(
+        m[3]!,
+      );
+    }
+    expect(seedByYear.size).toBeGreaterThan(0);
+    const latestYear = Math.max(...seedByYear.keys());
+    const seedLatest = seedByYear.get(latestYear)!;
+    for (const status of ["MFJ", "Single", "HOH"] as const) {
+      expect(seedLatest[status], `seed missing irmaa ${status}`).toEqual(
+        IRMAA_BRACKETS[status],
+      );
+    }
+  });
 });
 
 describe("ACA FPL values", () => {

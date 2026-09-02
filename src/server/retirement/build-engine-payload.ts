@@ -107,6 +107,7 @@ export async function fetchRetirementData(
     perfAccounts,
     allTaxBrackets,
     allLtcgBrackets,
+    allIrmaaBrackets,
     brokerageGoalRows,
     allAppSettings,
     contribProfileRow,
@@ -157,6 +158,7 @@ export async function fetchRetirementData(
     db.select().from(schema.performanceAccounts),
     db.select().from(schema.taxBrackets),
     db.select().from(schema.ltcgBrackets),
+    db.select().from(schema.irmaaBrackets),
     db
       .select()
       .from(schema.brokerageGoals)
@@ -216,6 +218,7 @@ export async function fetchRetirementData(
     perfAccounts,
     allTaxBrackets,
     allLtcgBrackets,
+    allIrmaaBrackets,
     brokerageGoalRows,
     allAppSettings,
     contribProfileRow,
@@ -273,6 +276,7 @@ export async function buildEnginePayload(
     perfAccounts,
     allTaxBrackets,
     allLtcgBrackets,
+    allIrmaaBrackets,
     brokerageGoalRows,
     allAppSettings,
     jobLinkRows,
@@ -380,6 +384,27 @@ export async function buildEnginePayload(
     ltcgBracketData = Object.fromEntries(
       allLtcgBrackets
         .filter((b) => b.taxYear === latestLtcgTaxYear)
+        .map((b) => [b.filingStatus, b.brackets]),
+    );
+  }
+
+  // DB-loaded IRMAA brackets (R43 — closes the F2 that prompted R43: the
+  // irmaa_brackets table + its Settings editor existed but no engine path
+  // read it, so edits changed no projection output). Same shape and
+  // fall-back semantics as ltcgBracketData above: Record<filingStatus,
+  // IrmaaBracket[]>, or undefined when nothing's seeded so the engine's
+  // grow*/getIrmaaCost helpers fall back to the hardcoded IRMAA_BRACKETS
+  // default exactly as before.
+  let irmaaBracketData:
+    | Record<string, { magiThreshold: number; annualSurcharge: number }[]>
+    | undefined;
+  if (allIrmaaBrackets.length > 0) {
+    const latestIrmaaTaxYear = Math.max(
+      ...allIrmaaBrackets.map((b) => b.taxYear),
+    );
+    irmaaBracketData = Object.fromEntries(
+      allIrmaaBrackets
+        .filter((b) => b.taxYear === latestIrmaaTaxYear)
         .map((b) => [b.filingStatus, b.brackets]),
     );
   }
@@ -1499,6 +1524,7 @@ export async function buildEnginePayload(
     brokerage: effectiveBrokerageRate,
     taxBrackets: bracketData.length > 0 ? bracketData : undefined,
     ltcgBrackets: ltcgBracketData,
+    irmaaBrackets: irmaaBracketData,
     taxMultiplier: taxMult,
     grossUpForTaxes: settings.grossUpForTaxes,
     rothBracketTarget: toNumber(settings.rothBracketTarget ?? "0.12"),

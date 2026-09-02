@@ -215,8 +215,18 @@ import { log } from "@/lib/logger";
  *  `allowPenalizedWithdrawals` override AND a year where that account's
  *  exposed money would previously have been drawn before it was truly
  *  needed. Every household without an R41 override is unaffected
- *  (`hasLastResortAllowance` false, byte-identical single-pass path). */
-export const PROJECTION_CACHE_ENGINE_VERSION = 28;
+ *  (`hasLastResortAllowance` false, byte-identical single-pass path).
+ *
+ *  29: R43 — the `irmaa_brackets` DB table is now read by the engine
+ *  payload (`build-engine-payload.ts` -> `distributionTaxRates.irmaaBrackets`
+ *  -> `decumulation-year.ts`'s `growIrmaaBrackets`). Before this the table +
+ *  its Settings editor were live but no engine path consumed them, so IRMAA
+ *  was always priced off the hardcoded `IRMAA_BRACKETS` fallback. The seed
+ *  rows are byte-identical to that fallback, so for a household on seeded
+ *  data this bump is a no-op; it exists so a household that had *edited*
+ *  IRMAA brackets in Settings stops being served stale pre-R43 cached
+ *  projections for the 36h TTL. */
+export const PROJECTION_CACHE_ENGINE_VERSION = 29;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;
