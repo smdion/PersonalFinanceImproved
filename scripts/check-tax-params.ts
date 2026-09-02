@@ -1,13 +1,24 @@
 /**
  * Tax Parameter Staleness Checker
  *
- * Validates that seed data and code fallbacks are current for the active tax year.
- * Runs as a CI check and on a monthly schedule (Oct–Jan) when IRS publishes new data.
+ * Validates that seed data and code fallbacks are current for the active tax
+ * year. Runs as a CI check and on a monthly schedule (Oct-Jan) when
+ * IRS/CMS/HHS publishes new data.
  *
  * Checks:
- *   1. seed-reference-data.sql has rows for the expected tax year in all 4 tables
- *   2. Code fallback constants in tax-tables.ts, irmaa-tables.ts, aca-tables.ts
- *      reference the same year as the latest seed data
+ *   1. seed-reference-data.sql has rows for the expected tax year in every
+ *      reference table (contribution_limits, tax_brackets, ltcg_brackets,
+ *      irmaa_brackets, fpl_by_household).
+ *   1b. tax_params vintage rows (R43) don't claim a year the actual value
+ *       tables haven't been seeded for — catches "bumped tax_params to 2027
+ *       but forgot to add the 2027 brackets."
+ *   2. Code fallback constants (irmaa-tables.ts's IRMAA_DATA_YEAR,
+ *      aca-tables.ts's FPL_COVERAGE_YEAR, tax-tables.ts's LTCG_BRACKETS)
+ *      are in sync with the latest seed data — read via real `import`s of
+ *      the config modules, not comment-text scraping (R43 C10: the old
+ *      comment-regex approach silently returned "?" for aca-tables.ts, and
+ *      a stale/reworded comment could drift from the real exported value
+ *      with nothing to catch it).
  *
  * See TAX-PARAMETER-RUNBOOK.md for the full annual update procedure.
  *
@@ -16,25 +27,33 @@
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
+import { IRMAA_DATA_YEAR } from "../src/lib/config/irmaa-tables";
+import { FPL_COVERAGE_YEAR } from "../src/lib/config/aca-tables";
+import { LTCG_BRACKETS } from "../src/lib/config/tax-tables";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 
 // ---------------------------------------------------------------------------
-// Configuration: when each parameter set is expected to be available
+// Configuration: when each reference table is expected to be available
 // ---------------------------------------------------------------------------
 
 /**
- * Cutoff date (month, day) after which each parameter set should be available
- * for the next tax year. Uses mid-month dates to avoid false failures on the
- * 1st when IRS/CMS data may not yet be published.
+ * Cutoff date (month, day) after which each table should have a row for the
+ * next tax year. Mid-month dates avoid false failures on the 1st when
+ * IRS/CMS/HHS data may not yet be published.
  */
 const EXPECTED_AVAILABILITY: Record<string, { month: number; day: number }> = {
   contribution_limits: { month: 10, day: 15 }, // Mid-October — IRS Rev. Proc.
   tax_brackets: { month: 10, day: 15 }, // Mid-October — IRS Pub 15-T
   ltcg_brackets: { month: 10, day: 15 }, // Mid-October — IRS Rev. Proc.
   irmaa_brackets: { month: 11, day: 15 }, // Mid-November — CMS announcement
+  fpl_by_household: { month: 1, day: 15 }, // Mid-January — HHS Federal Register
 };
+
+// tax_params (R43) has no availability cutoff of its own — it's a vintage
+// marker, not a figure. It's checked against the other tables' max years
+// instead (check 1b below).
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -53,8 +72,22 @@ function readFile(relativePath: string): string {
   return fs.readFileSync(path.join(ROOT, relativePath), "utf-8");
 }
 
+/** Every `tax_year` value found in `table`'s INSERT block in the seed. */
+function seedYearsForTable(sql: string, table: string): number[] {
+  const pattern = new RegExp(`INSERT INTO ${table}[\\s\\S]*?ON CONFLICT`, "g");
+  const match = pattern.exec(sql);
+  if (!match) return [];
+  const years: number[] = [];
+  const yearPattern = /\((\d{4}),\s/g;
+  let m: RegExpExecArray | null;
+  while ((m = yearPattern.exec(match[0])) !== null) {
+    years.push(parseInt(m[1]!, 10));
+  }
+  return years;
+}
+
 // ---------------------------------------------------------------------------
-// Check 1: Seed file has rows for expected tax year
+// Check 1: seed file has rows for the expected tax year, per table
 // ---------------------------------------------------------------------------
 
 interface SeedCheck {
@@ -65,107 +98,111 @@ interface SeedCheck {
   cutoff: { month: number; day: number };
 }
 
-function checkSeedFile(expectedTaxYear: number): SeedCheck[] {
-  const sql = readFile("seed-reference-data.sql");
-  const results: SeedCheck[] = [];
-
-  for (const [table, cutoff] of Object.entries(EXPECTED_AVAILABILITY)) {
-    // Find all tax_year values for this table's INSERT
-    const pattern = new RegExp(
-      `INSERT INTO ${table}[\\s\\S]*?ON CONFLICT`,
-      "g",
-    );
-    const match = pattern.exec(sql);
-
-    let maxYear = 0;
-    let foundExpected = false;
-
-    if (match) {
-      // Extract all year values from (YYYY, ...) tuples
-      const yearPattern = /\((\d{4}),\s/g;
-      let yearMatch;
-      while ((yearMatch = yearPattern.exec(match[0])) !== null) {
-        const year = parseInt(yearMatch[1]!, 10);
-        if (year > maxYear) maxYear = year;
-        if (year === expectedTaxYear) foundExpected = true;
-      }
-    }
-
-    results.push({
+function checkSeedFile(sql: string, expectedTaxYear: number): SeedCheck[] {
+  return Object.entries(EXPECTED_AVAILABILITY).map(([table, cutoff]) => {
+    const years = seedYearsForTable(sql, table);
+    return {
       table,
       expectedYear: expectedTaxYear,
-      found: foundExpected,
-      maxYear,
+      found: years.includes(expectedTaxYear),
+      maxYear: years.length > 0 ? Math.max(...years) : 0,
       cutoff,
-    });
-  }
-
-  return results;
+    };
+  });
 }
 
 // ---------------------------------------------------------------------------
-// Check 2: Code fallback year matches latest seed year
+// Check 1b (R43): tax_params vintage rows shouldn't outrun the real data
+// ---------------------------------------------------------------------------
+
+interface VintageCheck {
+  year: number;
+  behindTables: string[];
+}
+
+/** The evergreen value tables every tax_params year must be backed by. */
+const VINTAGE_BACKING_TABLES = ["contribution_limits", "tax_brackets"];
+
+function checkTaxParamsVintage(sql: string): VintageCheck[] {
+  const vintageYears = seedYearsForTable(sql, "tax_params");
+  return vintageYears
+    .map((year) => {
+      const behindTables = VINTAGE_BACKING_TABLES.filter(
+        (table) => !seedYearsForTable(sql, table).includes(year),
+      );
+      return { year, behindTables };
+    })
+    .filter((c) => c.behindTables.length > 0);
+}
+
+// ---------------------------------------------------------------------------
+// Check 2: code fallbacks are in sync with the latest seed data — via real
+// imports of the config modules, not comment-text scraping.
 // ---------------------------------------------------------------------------
 
 interface FallbackCheck {
   file: string;
   label: string;
-  codeYear: number | null;
-  seedMaxYear: number;
-  matches: boolean;
+  ok: boolean;
+  detail: string;
 }
 
-function extractYearFromComment(content: string): number | null {
-  // Match patterns like "2026 tax year", "2026 thresholds", "2026 projected"
-  const match = content.match(
-    /\b(20\d{2})\s+(?:tax year|thresholds|projected|LTCG|IRMAA|FPL)/i,
-  );
-  return match ? parseInt(match[1]!, 10) : null;
-}
-
-function checkCodeFallbacks(seedChecks: SeedCheck[]): FallbackCheck[] {
+function checkCodeFallbacks(sql: string): FallbackCheck[] {
   const results: FallbackCheck[] = [];
 
-  const seedMaxByTable = new Map<string, number>();
-  for (const s of seedChecks) {
-    seedMaxByTable.set(s.table, s.maxYear);
-  }
-
-  // tax-tables.ts fallback LTCG brackets
-  const taxTables = readFile("src/lib/config/tax-tables.ts");
-  const ltcgYear = extractYearFromComment(taxTables);
-  results.push({
-    file: "src/lib/config/tax-tables.ts",
-    label: "LTCG fallback brackets",
-    codeYear: ltcgYear,
-    seedMaxYear: seedMaxByTable.get("ltcg_brackets") ?? 0,
-    matches: ltcgYear === (seedMaxByTable.get("ltcg_brackets") ?? 0),
-  });
-
-  // irmaa-tables.ts fallback IRMAA brackets
-  const irmaaTables = readFile("src/lib/config/irmaa-tables.ts");
-  const irmaaYear = extractYearFromComment(irmaaTables);
+  // irmaa-tables.ts: IRMAA_DATA_YEAR must equal the seed's latest
+  // irmaa_brackets year.
+  const irmaaSeedMax = Math.max(0, ...seedYearsForTable(sql, "irmaa_brackets"));
   results.push({
     file: "src/lib/config/irmaa-tables.ts",
-    label: "IRMAA fallback brackets",
-    codeYear: irmaaYear,
-    seedMaxYear: seedMaxByTable.get("irmaa_brackets") ?? 0,
-    matches: irmaaYear === (seedMaxByTable.get("irmaa_brackets") ?? 0),
+    label: "IRMAA_DATA_YEAR",
+    ok: IRMAA_DATA_YEAR === irmaaSeedMax,
+    detail: `code=${IRMAA_DATA_YEAR}, seed max=${irmaaSeedMax}`,
   });
 
-  // aca-tables.ts FPL values
-  const acaTables = readFile("src/lib/config/aca-tables.ts");
-  const acaYear = extractYearFromComment(acaTables);
-  // ACA FPL doesn't have a seed table — just check the code comment is for current year
-  const currentYear = new Date().getFullYear();
-  const acaExpected =
-    new Date().getMonth() + 1 >= 1 ? currentYear : currentYear - 1;
+  // aca-tables.ts: FPL_COVERAGE_YEAR must equal the seed's latest
+  // fpl_by_household year.
+  const fplSeedMax = Math.max(0, ...seedYearsForTable(sql, "fpl_by_household"));
   results.push({
     file: "src/lib/config/aca-tables.ts",
-    label: "ACA FPL values",
-    codeYear: acaYear,
-    seedMaxYear: acaExpected, // No seed table — compare against calendar year
-    matches: acaYear !== null && acaYear >= acaExpected,
+    label: "FPL_COVERAGE_YEAR",
+    ok: FPL_COVERAGE_YEAR === fplSeedMax,
+    detail: `code=${FPL_COVERAGE_YEAR}, seed max=${fplSeedMax}`,
+  });
+
+  // tax-tables.ts: LTCG_BRACKETS should match the seed's latest ltcg_brackets
+  // year's values exactly (a value comparison, not a year comparison — more
+  // precise, and doesn't depend on a parseable header comment).
+  const ltcgYears = seedYearsForTable(sql, "ltcg_brackets");
+  const ltcgSeedMax = ltcgYears.length > 0 ? Math.max(...ltcgYears) : 0;
+  // Scope the row regex to JUST the ltcg_brackets INSERT block — irmaa_brackets
+  // rows have the identical (year, 'status', '[...]') shape, and running this
+  // against the whole file would let a later irmaa_brackets match silently
+  // overwrite the ltcg capture.
+  const ltcgBlockMatch = /INSERT INTO ltcg_brackets[\s\S]*?ON CONFLICT/.exec(
+    sql,
+  );
+  const ltcgRowRe = /\((\d{4}), '(MFJ|Single|HOH)', '(\[[^']*\])'\)/g;
+  const seedLtcgLatest: Record<string, unknown> = {};
+  let m: RegExpExecArray | null;
+  if (ltcgBlockMatch) {
+    while ((m = ltcgRowRe.exec(ltcgBlockMatch[0])) !== null) {
+      if (Number(m[1]) !== ltcgSeedMax) continue;
+      seedLtcgLatest[m[2]!] = JSON.parse(m[3]!);
+    }
+  }
+  const ltcgMatches =
+    JSON.stringify(LTCG_BRACKETS.MFJ) === JSON.stringify(seedLtcgLatest.MFJ) &&
+    JSON.stringify(LTCG_BRACKETS.Single) ===
+      JSON.stringify(seedLtcgLatest.Single) &&
+    JSON.stringify(LTCG_BRACKETS.HOH) === JSON.stringify(seedLtcgLatest.HOH);
+  results.push({
+    file: "src/lib/config/tax-tables.ts",
+    label: "LTCG_BRACKETS",
+    ok: ltcgMatches,
+    detail: ltcgMatches
+      ? `matches seed ${ltcgSeedMax}`
+      : `does not match seed ${ltcgSeedMax} values`,
   });
 
   return results;
@@ -177,14 +214,14 @@ function checkCodeFallbacks(seedChecks: SeedCheck[]): FallbackCheck[] {
 
 function run() {
   const expectedTaxYear = getCurrentTaxYear();
-  const currentMonth = new Date().getMonth() + 1;
+  const sql = readFile("seed-reference-data.sql");
 
   console.log(
-    `Tax parameter staleness check (expected tax year: ${expectedTaxYear}, current month: ${currentMonth})\n`,
+    `Tax parameter staleness check (expected tax year: ${expectedTaxYear})\n`,
   );
 
   // --- Check 1: Seed file ---
-  const seedChecks = checkSeedFile(expectedTaxYear);
+  const seedChecks = checkSeedFile(sql, expectedTaxYear);
   let seedWarnings = 0;
   let seedErrors = 0;
 
@@ -216,34 +253,39 @@ function run() {
     }
   }
 
+  // --- Check 1b: tax_params vintage rows ---
+  const vintageChecks = checkTaxParamsVintage(sql);
+  console.log("\n=== tax_params Vintage Rows (R43) ===\n");
+  if (vintageChecks.length === 0) {
+    console.log("  ✓ every tax_params year is backed by real reference data");
+  } else {
+    for (const c of vintageChecks) {
+      console.log(
+        `  ✗ tax_params has a ${c.year} row, but ${c.behindTables.join(", ")} ${c.behindTables.length > 1 ? "have" : "has"} no ${c.year} data`,
+      );
+    }
+  }
+
   // --- Check 2: Code fallbacks ---
-  const fallbackChecks = checkCodeFallbacks(seedChecks);
+  const fallbackChecks = checkCodeFallbacks(sql);
   let fallbackErrors = 0;
 
   console.log("\n=== Code Fallback Sync ===\n");
 
   for (const check of fallbackChecks) {
-    if (check.matches) {
-      console.log(
-        `  ✓ ${check.file}: ${check.label} — year ${check.codeYear} matches seed`,
-      );
-    } else if (check.codeYear === null) {
-      console.log(
-        `  ? ${check.file}: ${check.label} — could not extract year from source comment`,
-      );
-      // Don't fail — manual review needed
+    if (check.ok) {
+      console.log(`  ✓ ${check.file}: ${check.label} — ${check.detail}`);
     } else {
-      console.log(
-        `  ✗ ${check.file}: ${check.label} — code says ${check.codeYear}, seed max is ${check.seedMaxYear}`,
-      );
+      console.log(`  ✗ ${check.file}: ${check.label} — ${check.detail}`);
       fallbackErrors++;
     }
   }
 
   // --- Summary ---
-  const totalErrors = seedErrors + fallbackErrors;
+  const totalErrors = seedErrors + vintageChecks.length + fallbackErrors;
   console.log(`\n--- Summary ---`);
   console.log(`Seed:      ${seedErrors} error(s), ${seedWarnings} not-yet-due`);
+  console.log(`Vintage:   ${vintageChecks.length} error(s)`);
   console.log(`Fallbacks: ${fallbackErrors} error(s)`);
 
   if (totalErrors > 0) {

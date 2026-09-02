@@ -61,13 +61,14 @@ describe("Tax parameter freshness", () => {
 
   it("registry covers all parameter categories", () => {
     const names = TAX_PARAMETER_REGISTRY.map((e) => e.name);
-    // Ensure we haven't forgotten a category
-    expect(names).toContain("Federal tax brackets (seed)");
-    expect(names).toContain("Contribution limits (seed)");
-    expect(names).toContain("Standard deduction (seed)");
-    expect(names).toContain("LTCG brackets (seed)");
+    // Ensure we haven't forgotten a category. R43 (C10) collapsed the
+    // seed-brackets/limits/deductions/LTCG entries + the LTCG code
+    // fallback into one combined entry — pnpm check:tax-params verifies
+    // each of those individually now, so this registry only needs one.
+    expect(names).toContain(
+      "Seed reference data (brackets, limits, deductions, LTCG) + LTCG fallback",
+    );
     expect(names).toContain("IRMAA brackets (seed)");
-    expect(names).toContain("LTCG bracket fallback (code)");
     expect(names).toContain("IRMAA bracket fallback (code)");
     expect(names).toContain("ACA Federal Poverty Level");
     expect(names).toContain("SS taxation thresholds");

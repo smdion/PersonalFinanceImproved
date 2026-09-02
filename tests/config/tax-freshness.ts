@@ -90,39 +90,28 @@ export function assertTaxFreshness(entry: TaxFreshnessEntry): void {
  */
 export const TAX_PARAMETER_REGISTRY: TaxFreshnessEntry[] = [
   // --- DB-driven (annual, updated via seed file or Settings UI) ---
+  //
+  // R43 (C10): the 6 seed-table + LTCG-fallback entries that used to live
+  // here individually (Federal tax brackets, Contribution limits, Standard
+  // deduction, LTCG brackets, IRMAA brackets — all seed-only, no dedicated
+  // drift-guard test referencing their name — plus the LTCG code fallback)
+  // are collapsed into one entry below. `pnpm check:tax-params`
+  // (scripts/check-tax-params.ts) now verifies each of those, individually
+  // and structurally, against the real seed file + the real LTCG_BRACKETS
+  // export on every run — this registry entry is a once-a-year manual
+  // "I checked this" attestation, not the thing that actually catches
+  // drift, so one combined validThrough is enough. IRMAA's code fallback
+  // and the ACA FPL entry stay separate below — each has its own
+  // dedicated drift-guard test (tax-freshness.test.ts) that looks it up
+  // by name.
   {
-    name: "Federal tax brackets (seed)",
+    name: "Seed reference data (brackets, limits, deductions, LTCG) + LTCG fallback",
     validThrough: 2026,
-    source: "IRS Publication 15-T (2025/2026)",
+    source:
+      "IRS Publication 15-T (2025/2026); IRS Notice 2025-67; IRS Revenue Procedure 2025-32",
     updateUrl: "https://www.irs.gov/pub/irs-pdf/p15t.pdf",
-    location: "seed-reference-data.sql → tax_brackets",
-    changeFrequency: "annual",
-  },
-  {
-    name: "Contribution limits (seed)",
-    validThrough: 2026,
-    source: "IRS Notice 2025-67",
-    updateUrl: "https://www.irs.gov/newsroom/401k-limit-increases",
-    location: "seed-reference-data.sql → contribution_limits",
-    changeFrequency: "annual",
-  },
-  {
-    name: "Standard deduction (seed)",
-    validThrough: 2026,
-    source: "IRS Revenue Procedure 2025-32",
-    updateUrl:
-      "https://www.irs.gov/newsroom/irs-provides-tax-inflation-adjustments",
     location:
-      "seed-reference-data.sql → contribution_limits (standard_deduction_*)",
-    changeFrequency: "annual",
-  },
-  {
-    name: "LTCG brackets (seed)",
-    validThrough: 2026,
-    source: "IRS Revenue Procedure 2025-32",
-    updateUrl:
-      "https://www.irs.gov/newsroom/irs-provides-tax-inflation-adjustments",
-    location: "seed-reference-data.sql → ltcg_brackets",
+      "seed-reference-data.sql (tax_brackets, contribution_limits, ltcg_brackets) + src/lib/config/tax-tables.ts LTCG_BRACKETS fallback — verified structurally by `pnpm check:tax-params`",
     changeFrequency: "annual",
   },
   {
@@ -131,17 +120,6 @@ export const TAX_PARAMETER_REGISTRY: TaxFreshnessEntry[] = [
     source: "CMS 2026 projected thresholds",
     updateUrl: "https://www.cms.gov/newsroom/fact-sheets",
     location: "seed-reference-data.sql → irmaa_brackets",
-    changeFrequency: "annual",
-  },
-
-  // --- Code fallbacks (should match latest seed data) ---
-  {
-    name: "LTCG bracket fallback (code)",
-    validThrough: 2026,
-    source: "IRS Revenue Procedure 2025-32",
-    updateUrl:
-      "https://www.irs.gov/newsroom/irs-provides-tax-inflation-adjustments",
-    location: "src/lib/config/tax-tables.ts → LTCG_BRACKETS",
     changeFrequency: "annual",
   },
   {
