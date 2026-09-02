@@ -325,41 +325,39 @@ export class ActualClient implements BudgetAPIClient {
   async getCategories(): Promise<BudgetCategoryGroup[]> {
     const now = new Date();
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    const [groupsRes, catsRes, monthRes] = await Promise.all([
+    const [groupsRes, catsRes, monthDetail] = await Promise.all([
       this.request<{ data: ActualCategoryGroup[] }>("/categorygroups"),
       this.request<{ data: ActualCategory[] }>("/categories"),
-      this.request<{ data: ActualMonth }>(`/months/${currentMonth}`),
+      this.getMonthDetail(currentMonth),
     ]);
 
-    const currentByCatId = new Map<string, ActualCategory>();
-    for (const g of monthRes.data.categoryGroups ?? []) {
-      for (const c of g.categories) {
-        currentByCatId.set(c.id, c);
-      }
-    }
+    // monthDetail.categories already carries this month's real numbers AND
+    // the note-goal overlay (getMonthDetail applies both) — reuse it
+    // instead of a second raw /months/:id fetch plus a second
+    // overlayNoteGoals pass over every category (previously fetched the
+    // month and ran the per-category note overlay twice; code-review
+    // efficiency finding, 2026-09-01).
+    const currentByCatId = new Map(
+      monthDetail.categories.map((c) => [c.id, c]),
+    );
 
-    // Merge categories into groups, enriched with this month's real numbers.
     const catsByGroup = new Map<string, ActualCategory[]>();
     for (const cat of catsRes.data) {
-      const enriched = { ...cat, ...currentByCatId.get(cat.id) };
       const list = catsByGroup.get(cat.group_id) ?? [];
-      list.push(enriched);
+      list.push(cat);
       catsByGroup.set(cat.group_id, list);
     }
 
-    const groups = groupsRes.data.map((g) => ({
-      ...mapCategoryGroup({
+    return groupsRes.data.map((g) => {
+      const mapped = mapCategoryGroup({
         ...g,
         categories: catsByGroup.get(g.id) ?? [],
-      }),
-    }));
-    // Same note-goal overlay as getMonthDetail (see overlayNoteGoals'
-    // docblock) — this method has its OWN inline month-merge above
-    // rather than delegating to getMonthDetail, so it needs the same fix
-    // applied separately. Mutates the category objects already inside
-    // `groups` in place (flatMap collects references, doesn't clone).
-    await this.overlayNoteGoals(groups.flatMap((g) => g.categories));
-    return groups;
+      });
+      return {
+        ...mapped,
+        categories: mapped.categories.map((c) => currentByCatId.get(c.id) ?? c),
+      };
+    });
   }
 
   /** `GET /months` (no month id) does NOT return `ActualMonth` objects —
