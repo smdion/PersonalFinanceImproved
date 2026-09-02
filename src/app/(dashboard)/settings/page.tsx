@@ -14,6 +14,7 @@ import { AuthSettings } from "@/components/settings/auth-settings";
 import { ReturnRatesSettings } from "@/components/settings/return-rates";
 import { LtcgBracketsSettings } from "@/components/settings/ltcg-brackets";
 import { IrmaaBracketsSettings } from "@/components/settings/irmaa-brackets";
+import { FplByHouseholdSettings } from "@/components/settings/fpl-by-household";
 import { PageHeader } from "@/components/ui/page-header";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
@@ -25,6 +26,7 @@ const baseTabs = [
   { key: "tax", label: "Tax Brackets" },
   { key: "ltcg", label: "LTCG Brackets" },
   { key: "irmaa", label: "IRMAA Tables" },
+  { key: "fpl", label: "ACA/FPL" },
   { key: "returns", label: "Return Rates" },
   { key: "integrations", label: "Integrations" },
 ] as const;
@@ -81,6 +83,7 @@ export default function SettingsPage() {
         {activeTab === "tax" && <TaxBracketsSettings />}
         {activeTab === "ltcg" && <LtcgBracketsSettings />}
         {activeTab === "irmaa" && <IrmaaBracketsSettings />}
+        {activeTab === "fpl" && <FplByHouseholdSettings />}
         {activeTab === "returns" && <ReturnRatesSettings />}
         {activeTab === "integrations" && <IntegrationsSettings />}
         {activeTab === "auth" && admin && <AuthSettings />}

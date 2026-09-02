@@ -89,6 +89,28 @@ export const irmaaBracketEntrySchema = z.object({
 /** irmaa_brackets.brackets — ordered list of IRMAA bracket entries */
 export const irmaaBracketsSchema = z.array(irmaaBracketEntrySchema);
 
+// ── fpl_by_household ────────────────────────────────────────────
+
+/**
+ * fpl_by_household.amounts — Federal Poverty Level dollar figure by
+ * household size, ALL 8 keys required (not a partial z.record). R43
+ * follow-up: getAcaSubsidyCliff (aca-tables.ts) does
+ * `table[size] ?? table[2] ?? FPL_BY_HOUSEHOLD[2]!` when reading this —
+ * a missing size would silently fall back to size-2's dollar figure at
+ * READ time instead of failing at WRITE time. Requiring all 8 keys here
+ * turns that into a rejected write.
+ */
+export const fplByHouseholdAmountsSchema = z.object({
+  "1": z.number(),
+  "2": z.number(),
+  "3": z.number(),
+  "4": z.number(),
+  "5": z.number(),
+  "6": z.number(),
+  "7": z.number(),
+  "8": z.number(),
+});
+
 // ── api_connections ─────────────────────────────────────────────
 
 /** api_connections.config */

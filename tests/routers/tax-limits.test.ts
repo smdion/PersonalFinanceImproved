@@ -1,6 +1,6 @@
 /**
  * Tax limits router tests — CRUD for contributionLimits, taxBrackets,
- * ltcgBrackets, and irmaaBrackets.
+ * ltcgBrackets, irmaaBrackets, and fplByHousehold.
  *
  * Each test uses its own createTestCaller() to get a fresh isolated DB,
  * avoiding conflicts with pre-seeded migration data.
@@ -413,6 +413,97 @@ describe("settings.irmaaBrackets", () => {
           // @ts-expect-error — testing invalid input
           filingStatus: "BadStatus",
           brackets: SAMPLE_IRMAA,
+        }),
+      ).rejects.toThrow();
+    } finally {
+      cleanup();
+    }
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FPL BY HOUSEHOLD (R43 follow-up)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const SAMPLE_FPL = {
+  "1": 15650,
+  "2": 21150,
+  "3": 26650,
+  "4": 32150,
+  "5": 37650,
+  "6": 43150,
+  "7": 48650,
+  "8": 54150,
+};
+
+describe("settings.fplByHousehold", () => {
+  it("list returns an array", async () => {
+    const { caller, cleanup } = await createTestCaller(adminSession);
+    try {
+      const rows = await caller.settings.fplByHousehold.list();
+      expect(Array.isArray(rows)).toBe(true);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("create inserts an FPL row", async () => {
+    const { caller, cleanup } = await createTestCaller(adminSession);
+    try {
+      const result = await caller.settings.fplByHousehold.create({
+        taxYear: 2099,
+        amounts: SAMPLE_FPL,
+      });
+      expect(result).toBeDefined();
+      expect(result!.taxYear).toBe(2099);
+      expect((result!.amounts as Record<string, number>)["4"]).toBe(32150);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("update changes FPL amounts", async () => {
+    const { caller, cleanup } = await createTestCaller(adminSession);
+    try {
+      const created = await caller.settings.fplByHousehold.create({
+        taxYear: 2098,
+        amounts: SAMPLE_FPL,
+      });
+      const updated = await caller.settings.fplByHousehold.update({
+        id: created!.id,
+        taxYear: 2098,
+        amounts: { ...SAMPLE_FPL, "1": 16000 },
+      });
+      expect((updated!.amounts as Record<string, number>)["1"]).toBe(16000);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("delete removes the row", async () => {
+    const { caller, cleanup } = await createTestCaller(adminSession);
+    try {
+      const created = await caller.settings.fplByHousehold.create({
+        taxYear: 2097,
+        amounts: SAMPLE_FPL,
+      });
+      await caller.settings.fplByHousehold.delete({ id: created!.id });
+      const rows = await caller.settings.fplByHousehold.list();
+      const found = rows.find((r: { id: number }) => r.id === created!.id);
+      expect(found).toBeUndefined();
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("rejects a partial amounts map (missing household sizes)", async () => {
+    const { caller, cleanup } = await createTestCaller(adminSession);
+    try {
+      await expect(
+        caller.settings.fplByHousehold.create({
+          taxYear: 2099,
+          // @ts-expect-error — testing invalid input (missing sizes 5-8)
+          amounts: { "1": 15650, "2": 21150, "3": 26650, "4": 32150 },
         }),
       ).rejects.toThrow();
     } finally {
