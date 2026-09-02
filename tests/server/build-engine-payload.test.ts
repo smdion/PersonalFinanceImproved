@@ -466,4 +466,48 @@ describe("buildEnginePayload — tax_params_year profile pin (R43)", () => {
     // 2025 MFJ standard deduction is 30000 (seed); 2026 is 32200.
     expect(payload!.distributionTaxRates.standardDeduction).toBe(30000);
   });
+
+  // R43 C7: a resolved year missing the evergreen standard-deduction row
+  // throws instead of silently pricing on gross income with $0 deduction
+  // (the F2-4 class of bug). This only fires when the resolved year truly
+  // has no contribution_limits rows at all — onMissing: "nearest" already
+  // prevents it for a pinned year with no data of its own.
+  it("throws when the resolved year has withholding brackets but no contribution_limits row (F2-4 hard case)", async () => {
+    const schema = await getSchema();
+    const { eq } = await import("drizzle-orm");
+    // A year with tax_brackets seeded but deliberately NO
+    // contribution_limits row — the drift-window scenario, taken to its
+    // extreme (zero limits rows for the resolved year, not just a partial
+    // set).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (db as any)
+      .insert(schema.taxBrackets)
+      .values({
+        taxYear: 2030,
+        filingStatus: "MFJ",
+        w4Checkbox: false,
+        brackets: [{ threshold: 0, baseWithholding: 0, rate: 0.1 }],
+      })
+      .run();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (db as any)
+      .update(schema.retirementProfiles)
+      .set({ taxParamsYear: 2030 })
+      .where(eq(schema.retirementProfiles.id, profileId))
+      .run();
+
+    const data = await fetchRetirementData(db, {});
+    await expect(buildEnginePayload(db, data, {})).rejects.toThrow(
+      /standard_deduction_mfj/,
+    );
+
+    // Clean up so later tests in this describe block aren't affected by
+    // vitest's shared beforeAll DB (none currently follow, but be defensive).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (db as any)
+      .update(schema.retirementProfiles)
+      .set({ taxParamsYear: null })
+      .where(eq(schema.retirementProfiles.id, profileId))
+      .run();
+  });
 });

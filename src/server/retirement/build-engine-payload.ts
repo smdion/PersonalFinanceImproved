@@ -1426,11 +1426,20 @@ export async function buildEnginePayload(
   let effectiveTraditionalRate = dbTraditionalRate;
   let effectiveBrokerageRate = dbBrokerageRate;
 
-  // Hoisted above its other use (distributionTaxRates.standardDeduction
+  // R43 (C7): the standard deduction and the §63(f) senior deduction are
+  // permanent, evergreen figures — the IRS publishes a value for them
+  // every year, so a resolved tax year with no row for one is a genuine
+  // seed-completeness bug, not a legitimate state. `requireLimit` throws
+  // rather than silently computing on gross income with no deduction
+  // (the year-boundary F2-4 class of bug this whole mechanism exists to
+  // close). Hoisted above its other use (distributionTaxRates.standardDeduction
   // below) so the R56 fallback-rate estimate uses the same value —
   // computing it twice would risk the two silently drifting.
   const standardDeductionForFilingStatus = filingStatus
-    ? limitsMap[`standard_deduction_${filingStatus.toLowerCase()}`]
+    ? requireLimit(
+        limitsMap,
+        `standard_deduction_${filingStatus.toLowerCase()}`,
+      )
     : undefined;
 
   // IRC §63(f)(1) additional standard deduction for filers 65+ (R59). One
@@ -1438,12 +1447,15 @@ export async function buildEnginePayload(
   // unmarried (Single/HoH). The decumulation-year handler multiplies this by
   // how many household members are 65+ in each projection year — nearly
   // every decumulation year for a real household — and folds it into the
-  // standard deduction before growth. Undefined when not seeded ⇒ 0, exactly
-  // like `standardDeductionForFilingStatus` above.
+  // standard deduction before growth. Also evergreen (IRC §63(f) doesn't
+  // expire) — `requireLimit`, same reasoning as the base deduction above.
   const additionalStdDeduction65PerSenior = filingStatus
-    ? filingStatus === "MFJ"
-      ? limitsMap["additional_std_deduction_65_married"]
-      : limitsMap["additional_std_deduction_65_unmarried"]
+    ? requireLimit(
+        limitsMap,
+        filingStatus === "MFJ"
+          ? "additional_std_deduction_65_married"
+          : "additional_std_deduction_65_unmarried",
+      )
     : undefined;
 
   // OBBBA temporary senior deduction (One Big Beautiful Bill Act, 2025) —
@@ -1452,8 +1464,15 @@ export async function buildEnginePayload(
   // folded into the standard deduction alongside it in decumulation-year.ts
   // using LAST YEAR's MAGI as the phaseout basis (see
   // obbba-senior-deduction.ts's docblock for why — same circularity IRMAA's
-  // 2-year lookback already breaks). Undefined when not seeded ⇒ $0, same
-  // convention as every other deduction figure here.
+  // 2-year lookback already breaks).
+  //
+  // Deliberately KEPT undefined-tolerant (bare `limitsMap[key]`, not
+  // `requireLimit`), unlike the two evergreen deductions above: OBBBA is
+  // statutorily self-expiring (obbbaSeniorSunsetYear gates
+  // computeObbbaSeniorDeduction's own `year > sunsetYear ⇒ 0`), so a
+  // future tax year seeded AFTER 2028 that correctly omits these rows
+  // must degrade to "no OBBBA deduction," not throw. Making this strict
+  // would turn a legitimate post-sunset state into a crash.
   const obbbaSeniorDeductionPerPerson =
     limitsMap["obbba_senior_deduction_per_person"];
   const obbbaSeniorPhaseoutStart = filingStatus
