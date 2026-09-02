@@ -5,6 +5,7 @@ import { eq, desc, asc } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { AccountCategory } from "@/lib/calculators/types";
 import { toNumber, getPrimaryPerson } from "./transforms";
+import { getAllPeople } from "./people";
 import {
   resolveRetirementProfileIdFrom,
   pickProfileSettingsRow,
@@ -357,7 +358,7 @@ export async function buildYearEndHistory(
     db.select().from(schema.jobs).orderBy(asc(schema.jobs.startDate)),
     getLatestSnapshot(db),
     db.select().from(schema.propertyTaxes),
-    db.select().from(schema.people).orderBy(asc(schema.people.id)),
+    getAllPeople(db),
     db.select().from(schema.retirementSettings),
     db
       .select()

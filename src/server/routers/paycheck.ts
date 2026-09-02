@@ -1,5 +1,5 @@
 /** Paycheck router for gross-to-net pay calculations including federal/state tax withholding, pre-tax deductions, and per-period contribution breakdowns. */
-import { eq, asc } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
@@ -28,6 +28,7 @@ import {
   fetchContributionProfile,
   getIncompleteContribAccountIds,
 } from "@/server/helpers";
+import { getAllPeople } from "@/server/helpers/people";
 import { applySandboxSalaryEntries } from "@/server/helpers/salary";
 import {
   toSalaryActiveMap,
@@ -160,7 +161,7 @@ export const paycheckRouter = createTRPCRouter({
         allBracketRows,
         allTaxParams,
       ] = await Promise.all([
-        ctx.db.select().from(schema.people).orderBy(asc(schema.people.id)),
+        getAllPeople(ctx.db),
         ctx.db.select().from(schema.jobs),
         ctx.db.select().from(schema.paycheckDeductions),
         ctx.db

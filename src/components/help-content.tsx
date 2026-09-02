@@ -336,9 +336,9 @@ export function HelpContent() {
         </ul>
       </Section>
 
-      {/* ━━ WEALTH ━━ */}
+      {/* ━━ INVESTMENTS ━━ */}
       <h3 className="text-xs font-semibold uppercase tracking-wider text-faint pt-2">
-        Wealth
+        Investments
       </h3>
 
       {/* ── Savings ── */}

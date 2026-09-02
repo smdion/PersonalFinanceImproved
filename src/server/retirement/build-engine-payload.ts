@@ -37,6 +37,7 @@ import {
   pickActiveBudgetProfile,
   resolveLinkedBudgetItemAmounts,
 } from "@/server/helpers";
+import { getAllPeople } from "@/server/helpers/people";
 import {
   resolveRetirementProfileIdFrom,
   pickProfileSettingsRow,
@@ -118,7 +119,7 @@ export async function fetchRetirementData(
     jobLinkRows,
     accountBasisRows,
   ] = await Promise.all([
-    db.select().from(schema.people).orderBy(asc(schema.people.id)),
+    getAllPeople(db),
     db.select().from(schema.jobs),
     db.select().from(schema.retirementSettings),
     db

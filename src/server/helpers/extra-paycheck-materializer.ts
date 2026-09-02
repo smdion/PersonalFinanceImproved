@@ -54,7 +54,7 @@ function projectedNetPay(
 // fire simultaneously and each runs a full materialize cycle.
 let materializerLock: Promise<void> = Promise.resolve();
 
-export async function materializeExtraPaycheckOverrides(db: Db): Promise<void> {
+export async function materializeExtraPaycheckSavings(db: Db): Promise<void> {
   const prev = materializerLock;
   let unlock!: () => void;
   materializerLock = new Promise<void>((r) => {

@@ -56,7 +56,7 @@ import type { DeductionLine } from "@/lib/calculators/types";
 import type { SalaryEntryMap } from "@/server/helpers/salary";
 import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
 import type { PayPeriod } from "@/lib/config/enum-values";
-import { materializeExtraPaycheckOverrides } from "@/server/helpers/extra-paycheck-materializer";
+import { materializeExtraPaycheckSavings } from "@/server/helpers/extra-paycheck-materializer";
 import { materializeBudgetIncomeAdjustments } from "@/server/helpers/budget-income-materializer";
 import { zDecimal } from "./settings/_shared";
 import {
@@ -2443,7 +2443,7 @@ export const savingsRouter = createTRPCRouter({
             : null,
         );
 
-        await materializeExtraPaycheckOverrides(ctx.db);
+        await materializeExtraPaycheckSavings(ctx.db);
         await materializeBudgetIncomeAdjustments(ctx.db);
         return { ok: true };
       }),
@@ -2484,7 +2484,7 @@ export const savingsRouter = createTRPCRouter({
           yearlyGrowth: input.yearlyGrowth,
         });
 
-        await materializeExtraPaycheckOverrides(ctx.db);
+        await materializeExtraPaycheckSavings(ctx.db);
         await materializeBudgetIncomeAdjustments(ctx.db);
         return { ok: true };
       }),
@@ -2514,7 +2514,7 @@ export const savingsRouter = createTRPCRouter({
           enabled: input.enabled,
         });
 
-        await materializeExtraPaycheckOverrides(ctx.db);
+        await materializeExtraPaycheckSavings(ctx.db);
         await materializeBudgetIncomeAdjustments(ctx.db);
         return { ok: true };
       }),
@@ -2583,14 +2583,14 @@ export const savingsRouter = createTRPCRouter({
           overrides,
         });
 
-        await materializeExtraPaycheckOverrides(ctx.db);
+        await materializeExtraPaycheckSavings(ctx.db);
         await materializeBudgetIncomeAdjustments(ctx.db);
         return { ok: true };
       }),
 
     /** Re-run materializer without changing rules (e.g. after goal rename). */
     rematerialize: savingsProcedure.mutation(async ({ ctx }) => {
-      await materializeExtraPaycheckOverrides(ctx.db);
+      await materializeExtraPaycheckSavings(ctx.db);
       await materializeBudgetIncomeAdjustments(ctx.db);
       return { ok: true };
     }),

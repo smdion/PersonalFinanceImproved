@@ -15,6 +15,7 @@ export * from "./savings-allocation";
 export * from "./paycheck-input";
 export * from "./portfolio-labels";
 export * from "./category-links";
+export * from "./people";
 
 // Canonical implementation lives in @/lib/utils/format — re-export for server-side consumers
 export { accountDisplayName } from "@/lib/utils/format";

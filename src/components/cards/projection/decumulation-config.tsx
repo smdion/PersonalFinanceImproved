@@ -17,7 +17,28 @@ import {
   WITHDRAWAL_STRATEGY_CONFIG,
   type WithdrawalStrategyType,
 } from "@/lib/config/withdrawal-strategies";
-import { SectionHeader } from "./overrides-panel";
+/** Shared small heading for the config sub-sections below. (Formerly lived
+ *  in overrides-panel.tsx alongside a since-deleted unified panel; that
+ *  file's only remaining export, so folded in here — its one consumer.) */
+function SectionHeader({
+  title,
+  help,
+  children,
+}: {
+  title: string;
+  help?: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between mb-2">
+      <h4 className="text-xs font-medium text-muted uppercase tracking-wide">
+        {title}
+        {help && <HelpTip text={help} />}
+      </h4>
+      {children}
+    </div>
+  );
+}
 
 function OrderEditor({
   order,

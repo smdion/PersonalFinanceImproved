@@ -27,6 +27,7 @@ import {
   buildYearEndHistory,
   pushSnapshotToBudgetApi,
 } from "@/server/helpers";
+import { getAllPeople } from "@/server/helpers/people";
 import { zYearEndTargeting, toSalaryActiveMap } from "./_shared";
 import { zDecimal, recomputeAnnualRollups } from "./settings/_shared";
 import {
@@ -72,7 +73,7 @@ export const networthRouter = createTRPCRouter({
         snapshotData,
         apiConnections,
       ] = await Promise.all([
-        ctx.db.select().from(schema.people).orderBy(asc(schema.people.id)),
+        getAllPeople(ctx.db),
         ctx.db.select().from(schema.mortgageLoans),
         ctx.db
           .select()
@@ -294,7 +295,7 @@ export const networthRouter = createTRPCRouter({
           budgetColumn: input?.budgetColumn,
           salaryActiveFields: toSalaryActiveMap(input?.salaryActiveFields),
         }),
-        ctx.db.select().from(schema.people).orderBy(asc(schema.people.id)),
+        getAllPeople(ctx.db),
         ctx.db.select().from(schema.mortgageLoans),
       ]);
 
@@ -357,7 +358,7 @@ export const networthRouter = createTRPCRouter({
           budgetColumn: input?.budgetColumn,
           salaryActiveFields: toSalaryActiveMap(input?.salaryActiveFields),
         }),
-        ctx.db.select().from(schema.people).orderBy(asc(schema.people.id)),
+        getAllPeople(ctx.db),
       ]);
 
       const primaryPerson = getPrimaryPerson(people);

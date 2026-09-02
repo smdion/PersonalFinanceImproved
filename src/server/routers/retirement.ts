@@ -27,6 +27,7 @@ import {
   resolveLinkedBudgetItemAmounts,
   resolveContribPeriods,
 } from "@/server/helpers";
+import { getAllPeople } from "@/server/helpers/people";
 import type { Db } from "@/server/helpers";
 import type { W4FilingStatus } from "@/lib/config/enum-values";
 import type { ContribRowWithActiveFields } from "@/server/helpers/contribution";
@@ -219,7 +220,7 @@ export const retirementRouter = createTRPCRouter({
         perfAccounts,
         appSettingsRows,
       ] = await Promise.all([
-        ctx.db.select().from(schema.people).orderBy(asc(schema.people.id)),
+        getAllPeople(ctx.db),
         ctx.db.select().from(schema.jobs),
         ctx.db.select().from(schema.retirementSettings),
         ctx.db

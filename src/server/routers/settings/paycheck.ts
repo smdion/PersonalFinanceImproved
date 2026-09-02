@@ -8,9 +8,10 @@ import {
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { localDateStr } from "@/lib/utils/date";
-import { materializeExtraPaycheckOverrides } from "@/server/helpers/extra-paycheck-materializer";
+import { materializeExtraPaycheckSavings } from "@/server/helpers/extra-paycheck-materializer";
 import { materializeBudgetIncomeAdjustments } from "@/server/helpers/budget-income-materializer";
 import { getPrimaryPerson } from "@/server/helpers/transforms";
+import { getAllPeople } from "@/server/helpers/people";
 import {
   accountCategoryEnum,
   getAccountTypeConfig,
@@ -144,9 +145,7 @@ const deductionInput = z.object({
 
 export const paycheckProcedures = {
   people: createTRPCRouter({
-    list: protectedProcedure.query(({ ctx }) =>
-      ctx.db.select().from(schema.people).orderBy(asc(schema.people.id)),
-    ),
+    list: protectedProcedure.query(({ ctx }) => getAllPeople(ctx.db)),
     create: adminProcedure
       .input(personInput)
       .mutation(async ({ ctx, input }) => {
@@ -168,7 +167,7 @@ export const paycheckProcedures = {
             .then((r) => r[0]!);
           // Provision the speculative-job peg atomically with the person —
           // inserted directly (not via jobs.create) so it doesn't trigger
-          // materializeExtraPaycheckOverrides, which a job that never has
+          // materializeExtraPaycheckSavings, which a job that never has
           // real routing rules has no need for.
           await tx.insert(schema.jobs).values(speculativeJobValues(person.id));
 
@@ -280,7 +279,7 @@ export const paycheckProcedures = {
           .values(jobData)
           .returning()
           .then((r) => r[0]);
-        await materializeExtraPaycheckOverrides(ctx.db);
+        await materializeExtraPaycheckSavings(ctx.db);
         await materializeBudgetIncomeAdjustments(ctx.db);
         return result;
       }),
@@ -293,7 +292,7 @@ export const paycheckProcedures = {
           .where(eq(schema.jobs.id, id))
           .returning()
           .then((r) => r[0]);
-        await materializeExtraPaycheckOverrides(ctx.db);
+        await materializeExtraPaycheckSavings(ctx.db);
         await materializeBudgetIncomeAdjustments(ctx.db);
         return result;
       }),
@@ -310,7 +309,7 @@ export const paycheckProcedures = {
           );
         }
         await ctx.db.delete(schema.jobs).where(eq(schema.jobs.id, input.id));
-        await materializeExtraPaycheckOverrides(ctx.db);
+        await materializeExtraPaycheckSavings(ctx.db);
         await materializeBudgetIncomeAdjustments(ctx.db);
         return { ok: true };
       }),

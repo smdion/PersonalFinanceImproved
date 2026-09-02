@@ -15,7 +15,7 @@
  * ONE row per (job, month) rather than fanning out per split.
  *
  * Call after: job create/update/delete, explicit rule/override save — at
- * every call site that also calls materializeExtraPaycheckOverrides.
+ * every call site that also calls materializeExtraPaycheckSavings.
  */
 
 import { eq, gte, and } from "drizzle-orm";
