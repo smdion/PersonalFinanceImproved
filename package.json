@@ -5,7 +5,7 @@
   "packageManager": "pnpm@10.32.1",
   "scripts": {
     "dev": "pnpm build:mc-worker && next dev",
-    "build": "next build && pnpm build:mc-worker",
+    "build": "pnpm build:mc-worker && next build",
     "build:mc-worker": "esbuild src/workers/monte-carlo-worker.ts --bundle --platform=node --format=cjs --outfile=monte-carlo-worker.js",
     "start": "next start",
     "lint": "eslint . --max-warnings 0 && prettier --check .",
