@@ -364,6 +364,8 @@ a Contribution Profile's `deductions` active-field entry
 - Tax location data derived from account type config instead of stored/snapshot data
 - A component or router with `if (category === '401k')` or similar string check
 - A local label map duplicating what exists in `src/lib/config/`
+- A `{ MFJ: <figure>, Single: <figure>, HOH: <figure> }` tax-figure table (rates, thresholds, bracket data) declared outside `src/lib/config/` instead of imported from a config module (R43 — `tests/lint/violations.test.ts` rule 23)
+- A local `const` re-declaring an ALL_CAPS name already exported from `src/lib/constants.ts` or a `src/lib/config/` module, instead of importing it (R43 — rule 24)
 - A hardcoded `['401k', '403b', 'hsa', 'ira', 'brokerage']` array instead of `getAllCategories()`
 - A new account type requiring code changes beyond one config entry
 - A router or component using `displayName ?? accountLabel` inline instead of `accountDisplayName()`

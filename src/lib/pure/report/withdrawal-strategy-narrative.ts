@@ -13,6 +13,8 @@ import {
   describeBracketTargetChoice,
   describeDiscretionaryCapacityMath,
 } from "./bracket-target-narrative";
+import { LTCG_BRACKETS as CONFIG_LTCG_BRACKETS } from "@/lib/config/tax-tables";
+import { NIIT_RATE } from "@/lib/config/niit";
 
 const TIER_SOURCE_LABEL: Record<"roth" | "brokerage" | "hsa", string> = {
   roth: "Roth",
@@ -20,15 +22,19 @@ const TIER_SOURCE_LABEL: Record<"roth" | "brokerage" | "hsa", string> = {
   hsa: "HSA",
 };
 
-/** Real LTCG brackets (0%, 15%, 20%) and the NIIT surtax rate — used only
+/** The real LTCG rates (0%, 15%, 20% — identical across filing statuses,
+ *  so any one status's ladder works) and the NIIT surtax rate — used only
  *  to LABEL a brokerage tier's rate as "capital-gains" vs "capital-gains +
  *  Medicare surtax" for the explanation text below. Not a second pricing
  *  computation: withdrawal-cost-ranking.ts already computed `costRate`
  *  itself (`ltcgRate` or `ltcgRate + NIIT_RATE`); this only pattern-matches
  *  the result against the small, fixed set of values it could legitimately
- *  be, to describe it in words. See that module for the real rate logic. */
-const LTCG_BRACKETS = [0, 0.15, 0.2];
-const NIIT_RATE = 0.038;
+ *  be, to describe it in words. See that module for the real rate logic.
+ *  R43 (C9): derived from the config module instead of a re-declared
+ *  literal, so a rate-ladder change (legislative only — these are
+ *  statutory percentages, not annually-indexed) can't drift between the
+ *  two copies. */
+const LTCG_RATE_LADDER = CONFIG_LTCG_BRACKETS.MFJ.map((b) => b.rate);
 const RATE_EPSILON = 0.0005;
 
 function approxEquals(a: number, b: number): boolean {
@@ -73,10 +79,10 @@ function describeTierRate(
     return `taxed at your ${formatPercent(costRate, 1)} ordinary income rate (a non-medical HSA withdrawal)`;
   }
   // brokerage
-  const withNiit = LTCG_BRACKETS.some((b) =>
+  const withNiit = LTCG_RATE_LADDER.some((b) =>
     approxEquals(costRate, b + NIIT_RATE),
   );
-  const ltcgOnly = LTCG_BRACKETS.some((b) => approxEquals(costRate, b));
+  const ltcgOnly = LTCG_RATE_LADDER.some((b) => approxEquals(costRate, b));
   if (withNiit) {
     return `${formatPercent(costRate, 1)} — your long-term capital-gains rate plus the 3.8% Medicare surtax, since this draw crosses that income threshold`;
   }

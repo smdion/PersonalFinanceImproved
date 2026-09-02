@@ -176,8 +176,7 @@ export const TAX_PARAMETER_REGISTRY: TaxFreshnessEntry[] = [
     name: "SS taxation thresholds",
     validThrough: 2026,
     source: "IRC §86 — unchanged since 1993, not indexed",
-    location:
-      "src/lib/calculators/engine/tax-estimation.ts → SS_TAX_THRESHOLDS",
+    location: "src/lib/config/ss-tax.ts → SS_TAX_THRESHOLDS",
     changeFrequency: "legislative-only",
   },
   {

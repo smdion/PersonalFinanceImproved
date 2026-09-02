@@ -28,6 +28,8 @@
  *   20. "Monte Carlo" in user-facing .tsx text (JSX text/string literals) — use "Simulation"/"Simulations" (L126 class)
  *   21. `process.env.CRON_SECRET` read outside src/lib/auth/cron.ts (H1 class)
  *   22. API route under src/app/api/ that writes to the DB with no DEMO_ONLY guard (M5 class)
+ *   23. { MFJ: <figure> Single: <figure> HOH: <figure> } object literal outside src/lib/config/ (R43 audit F4 class)
+ *   24. Local const re-declaring an ALL_CAPS name already exported from constants.ts / config/ (R43 audit F1 class)
  *
  * Intentionally NOT checked (needs semantic analysis, not string matching):
  *   - "Router computing budget expenses with different column index" (#1)
@@ -667,6 +669,133 @@ function findMissingDemoOnlyGuardViolations(): Violation[] {
   return violations;
 }
 
+// Rule 23 (R43): a `{ MFJ: <figure> … Single: <figure> … HOH: <figure> }`-
+// shaped object literal outside src/lib/config/. Every filing-status-keyed
+// tax FIGURE (a rate, threshold, or bracket table) belongs in a config
+// module (see docs/RULES.md § Data-Driven Architecture and the R43 audit)
+// — a re-declared one outside config/ is exactly the class of duplication
+// that let `SS_TAX_THRESHOLDS` sit inline in an engine module with no
+// config home (F4). Deliberately scoped to FIGURE values (the value after
+// `MFJ:` must start with a digit, `[`, or `{` — a number, array, or nested
+// object) so it does NOT flag `{ MFJ: "Married Filing Jointly", … }`-style
+// UI display-label maps, which are a real but separate concern (RULES.md's
+// "local label map duplicating config" rule already covers those) —
+// several exist in Settings editor components and are legitimate there.
+// Whole-file regex (not line-by-line — a real multi-line literal spans
+// several lines) matching the three keys within one balanced-ish brace
+// span. Narrower than a full parser, which is fine: false negatives (a
+// literal spread oddly enough to dodge the regex) are acceptable for a
+// lint sweep; false positives are not, hence the curated exempt set below.
+const FILING_STATUS_OBJECT_LITERAL_PATTERN =
+  /\{[^{}]*\bMFJ\s*:\s*[\d[{][^{}]*\bSingle\s*:[^{}]*\bHOH\s*:[^{}]*\}/s;
+const FILING_STATUS_LITERAL_EXEMPT = new Set([
+  // Type/union declarations and Zod enums name the three statuses as
+  // STRING VALUES ("MFJ" | "Single" | ...), not as object keys (MFJ: …) —
+  // the pattern only matches the latter, but these files are exempted
+  // defensively since they're the canonical definition site for the
+  // enum itself, not a figure.
+  "src/lib/config/enum-values.ts",
+  "src/lib/calculators/types/shared.ts",
+  // Schema files reference the column's runtime type, not a literal.
+  "src/lib/db/schema-pg.ts",
+  "src/lib/db/schema-sqlite.ts",
+]);
+function findFilingStatusObjectLiteralViolations(): Violation[] {
+  const violations: Violation[] = [];
+  for (const file of walkTsFiles(SRC_DIR)) {
+    const rel = relPath(file);
+    if (rel.startsWith("src/lib/config/")) continue;
+    if (FILING_STATUS_LITERAL_EXEMPT.has(rel)) continue;
+    const content = fs.readFileSync(file, "utf8");
+    if (content.includes("lint-violation-ok")) continue;
+    const m = FILING_STATUS_OBJECT_LITERAL_PATTERN.exec(content);
+    if (m) {
+      const line = content.slice(0, m.index).split("\n").length;
+      violations.push({
+        file: rel,
+        line,
+        rule: "no-filing-status-object-literal-outside-config",
+        snippet: m[0].replace(/\s+/g, " ").slice(0, 100),
+      });
+    }
+  }
+  return violations;
+}
+
+// Rule 24 (R43): re-declaring an ALL_CAPS constant already exported from
+// src/lib/constants.ts or src/lib/config/*.ts anywhere else in src/. Two-
+// phase: collect the export names from the canonical modules, then scan
+// every OTHER file for a local `const` declaration reusing one of those
+// names — the exact pattern that let withdrawal-strategy-narrative.ts
+// silently redeclare `NIIT_RATE = 0.038` instead of importing it from
+// config/niit.ts. Deliberately scoped to ALL_CAPS constant names only, not
+// PascalCase types/interfaces — a local component legitimately narrows or
+// shadows a type name for its own scoped purpose far more often than it
+// legitimately redeclares a shouting-case constant, so the type-name
+// version of this check is left for a human pass, not a lint gate.
+const CONFIG_EXPORT_DIRS = ["src/lib/constants.ts", "src/lib/config"];
+const RESERVED_NAME_PATTERN = /^[A-Z][A-Z0-9_]{3,}$/;
+const REDECLARATION_EXEMPT = new Set([
+  // The config modules themselves are the canonical declaration site.
+  ...walkConfigFiles(),
+]);
+function walkConfigFiles(): string[] {
+  const files: string[] = [];
+  for (const dir of CONFIG_EXPORT_DIRS) {
+    const abs = path.resolve(__dirname, "../..", dir);
+    if (!fs.existsSync(abs)) continue;
+    if (fs.statSync(abs).isFile()) {
+      files.push(dir);
+      continue;
+    }
+    for (const file of walkTsFiles(abs)) files.push(relPath(file));
+  }
+  return files;
+}
+function collectConfigExportNames(): Set<string> {
+  const names = new Set<string>();
+  const exportRe =
+    /export\s+(?:const|function|class)\s+([A-Za-z0-9_]+)|export\s+type\s+([A-Za-z0-9_]+)/g;
+  for (const rel of walkConfigFiles()) {
+    const abs = path.resolve(__dirname, "../..", rel);
+    const content = fs.readFileSync(abs, "utf8");
+    let m: RegExpExecArray | null;
+    while ((m = exportRe.exec(content)) !== null) {
+      const name = m[1] ?? m[2]!;
+      if (RESERVED_NAME_PATTERN.test(name)) names.add(name);
+    }
+  }
+  return names;
+}
+function findRedeclaredConfigExportViolations(): Violation[] {
+  const violations: Violation[] = [];
+  const reserved = collectConfigExportNames();
+  const declRe =
+    /^\s*(?:export\s+)?(?:const|function|class|interface|enum)\s+([A-Za-z0-9_]+)\b/;
+  const typeDeclRe = /^\s*(?:export\s+)?type\s+([A-Za-z0-9_]+)\s*=/;
+  for (const file of walkTsFiles(SRC_DIR)) {
+    const rel = relPath(file);
+    if (REDECLARATION_EXEMPT.has(rel)) continue;
+    if (isExempt(rel)) continue;
+    const lines = readFileLines(file);
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i]!;
+      if (line.includes("lint-violation-ok")) continue;
+      const m = declRe.exec(line) ?? typeDeclRe.exec(line);
+      if (!m) continue;
+      const name = m[1]!;
+      if (!reserved.has(name)) continue;
+      violations.push({
+        file: rel,
+        line: i + 1,
+        rule: "no-redeclared-config-export",
+        snippet: line.trim().slice(0, 100),
+      });
+    }
+  }
+  return violations;
+}
+
 // ── Tests ───────────────────────────────────────────────────────────
 
 function formatViolations(label: string, violations: Violation[]): string {
@@ -951,6 +1080,34 @@ describe("RULES.md violations sweep", () => {
           `write, matching every sibling write route. If this route is ` +
           `genuinely read-only or enforces demo-mode elsewhere, add it to ` +
           `DEMO_GUARD_EXEMPT_ROUTES in this file instead.\n` +
+          formatViolations("Violations", violations),
+      );
+    }
+  });
+
+  it("no { MFJ: … Single: … HOH: … } object literal outside src/lib/config/ (R43)", () => {
+    const violations = findFilingStatusObjectLiteralViolations();
+    if (violations.length > 0) {
+      expect.fail(
+        `Found ${violations.length} filing-status-object-literal violations. ` +
+          `Every filing-status-keyed tax figure belongs in a config module ` +
+          `(src/lib/config/) — move this table there and import it, rather ` +
+          `than re-declaring it. If this really is the canonical definition ` +
+          `site for the MFJ/Single/HOH enum itself (not a figure), add it to ` +
+          `FILING_STATUS_LITERAL_EXEMPT in this file instead.\n` +
+          formatViolations("Violations", violations),
+      );
+    }
+  });
+
+  it("no re-declared name already exported from constants.ts / config/ (R43)", () => {
+    const violations = findRedeclaredConfigExportViolations();
+    if (violations.length > 0) {
+      expect.fail(
+        `Found ${violations.length} redeclared-config-export violations. ` +
+          `This name is already exported from src/lib/constants.ts or a ` +
+          `src/lib/config/ module — import it instead of re-declaring a ` +
+          `local copy that can silently drift from the original.\n` +
           formatViolations("Violations", violations),
       );
     }

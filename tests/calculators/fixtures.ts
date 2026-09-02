@@ -12,6 +12,14 @@ import type {
 } from "@/lib/calculators/types";
 import { toTaxableIncomeBrackets } from "@/lib/calculators/tax-brackets";
 
+// R43 (C9): a single source for the 2026 figures repeated across this
+// file's bracket fixtures below, so a January bump is one edit here
+// instead of finding every inline copy. (The audit found the standard
+// deduction alone hand-copied 35x across 11 test files — this file was
+// one of them.) Source: seed-reference-data.sql (2026, MFJ, ...).
+export const FIXTURE_STANDARD_DEDUCTION_MFJ_2026 = 32200;
+export const FIXTURE_SS_WAGE_BASE_2026 = 176100;
+
 // ── 2026 MFJ Tax Brackets (W-4 2(c) CHECKED) ──
 // These are the halved brackets used for paycheck withholding when both spouses work.
 // Source: seed-reference-data.sql tax_brackets (2026, MFJ, true).
@@ -28,9 +36,9 @@ export const MFJ_2C_BRACKETS: TaxBracketInput = {
     { min: 272325, max: 400450, rate: 0.35 },
     { min: 400450, max: null, rate: 0.37 },
   ],
-  standardDeduction: 32200,
+  standardDeduction: FIXTURE_STANDARD_DEDUCTION_MFJ_2026,
   w4Adjustment: 0,
-  socialSecurityWageBase: 176100,
+  socialSecurityWageBase: FIXTURE_SS_WAGE_BASE_2026,
   socialSecurityRate: 0.062,
   medicareRate: 0.0145,
   medicareAdditionalRate: 0.009,
@@ -55,11 +63,11 @@ export const MFJ_NO_CHECKBOX_BRACKETS: TaxBracketInput = {
     { min: 531750, max: 788000, rate: 0.35 },
     { min: 788000, max: null, rate: 0.37 },
   ],
-  standardDeduction: 32200,
+  standardDeduction: FIXTURE_STANDARD_DEDUCTION_MFJ_2026,
   // Pub 15-T Worksheet 1A line 1g, MFJ standard table (R56/R58):
   // standardDeduction (32200) - this row's first non-zero threshold (19300).
   w4Adjustment: 12900,
-  socialSecurityWageBase: 176100,
+  socialSecurityWageBase: FIXTURE_SS_WAGE_BASE_2026,
   socialSecurityRate: 0.062,
   medicareRate: 0.0145,
   medicareAdditionalRate: 0.009,

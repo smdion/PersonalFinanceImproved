@@ -23,6 +23,11 @@ import {
 } from "../../config/account-types";
 import { computeLtcgTax, toLtcgTaxableIncome } from "../../config/tax-tables";
 import { MAX_EFFECTIVE_TAX_RATE } from "../../constants";
+import {
+  SS_TAX_THRESHOLDS,
+  SS_TAX_TIER1_INCLUSION_RATE,
+  SS_TAX_TIER2_INCLUSION_RATE,
+} from "../../config/ss-tax";
 
 // ---------------------------------------------------------------------------
 // Tax bracket estimator — computes effective tax rate on traditional withdrawals
@@ -201,13 +206,6 @@ export function marginalRateAtIncome(
 // Social Security taxation — IRS provisional income formula (Phase 2)
 // ---------------------------------------------------------------------------
 
-/** SS taxation thresholds by filing status (unchanged since 1993). */
-const SS_TAX_THRESHOLDS: Record<string, { tier1: number; tier2: number }> = {
-  MFJ: { tier1: 32000, tier2: 44000 },
-  Single: { tier1: 25000, tier2: 34000 },
-  HOH: { tier1: 25000, tier2: 34000 }, // Same as Single
-};
-
 /**
  * Compute the taxable portion of Social Security income using the IRS
  * 3-tier provisional income formula.
@@ -229,11 +227,13 @@ export function computeTaxableSS(
   if (ssIncome <= 0) return 0;
 
   const thresholds = SS_TAX_THRESHOLDS[filingStatus];
-  if (!thresholds) return ssIncome * 0.85; // fallback
+  if (!thresholds) return ssIncome * SS_TAX_TIER2_INCLUSION_RATE; // fallback
 
   // IRS Pub 915: provisional income includes tax-exempt interest (e.g. municipal bonds)
   const provisionalIncome =
-    otherTaxableIncome + 0.5 * ssIncome + taxExemptInterest;
+    otherTaxableIncome +
+    SS_TAX_TIER1_INCLUSION_RATE * ssIncome +
+    taxExemptInterest;
 
   if (provisionalIncome <= thresholds.tier1) {
     return 0;
@@ -244,12 +244,18 @@ export function computeTaxableSS(
     provisionalIncome - thresholds.tier1,
     thresholds.tier2 - thresholds.tier1,
   );
-  let taxable = Math.min(0.5 * tier1Excess, 0.5 * ssIncome);
+  let taxable = Math.min(
+    SS_TAX_TIER1_INCLUSION_RATE * tier1Excess,
+    SS_TAX_TIER1_INCLUSION_RATE * ssIncome,
+  );
 
   // Above tier 2: up to 85% of SS is taxable
   if (provisionalIncome > thresholds.tier2) {
     const tier2Excess = provisionalIncome - thresholds.tier2;
-    taxable = Math.min(taxable + 0.85 * tier2Excess, 0.85 * ssIncome);
+    taxable = Math.min(
+      taxable + SS_TAX_TIER2_INCLUSION_RATE * tier2Excess,
+      SS_TAX_TIER2_INCLUSION_RATE * ssIncome,
+    );
   }
 
   return roundToCents(Math.max(0, taxable));
