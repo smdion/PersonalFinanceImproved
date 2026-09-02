@@ -79,6 +79,7 @@ const VERSION_TABLE_NAMES = [
   "projection_overrides",
   "mc_user_presets",
   "account_holdings",
+  "budget_income_adjustments",
   "pending_rollovers",
   "simplefin_balance_snapshots",
   "simplefin_accounts",

@@ -573,6 +573,30 @@ export const savingsAllocationOverrides = sqliteTable(
   ],
 );
 
+// Materialized extra-paycheck amounts for jobs whose routing is in Budget
+// mode (the complement of the Savings-mode materializer, which writes to
+// savings_planned_transactions instead — see extra-paycheck-materializer.ts
+// vs. budget-income-materializer.ts). One row per (job, month); no split/goal
+// fan-out, since Budget mode has no split concept.
+export const budgetIncomeAdjustments = sqliteTable(
+  "budget_income_adjustments",
+  {
+    id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    jobId: integer("job_id")
+      .notNull()
+      .references(() => jobs.id, { onDelete: "cascade" }),
+    monthDate: text("month_date").notNull(), // "YYYY-MM-01"
+    amount: text("amount").notNull(),
+    source: text("source").notNull().default("rule"),
+  },
+  (table) => [
+    uniqueIndex("budget_income_adjustments_job_month_idx").on(
+      table.jobId,
+      table.monthDate,
+    ),
+  ],
+);
+
 // Per-(goal, budget profile) funding — how much a goal is funded, and how
 // (percent of leftover vs. flat dollar), is entirely owned per profile.
 // Every active (goal, profile) pair has an explicit row; there is no shared

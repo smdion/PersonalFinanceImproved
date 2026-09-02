@@ -1178,6 +1178,59 @@ describe("budget router", () => {
         }
       }
     });
+
+    it("budgetIncomeAdjustmentThisMonth sums the current real month only, identically across selectedColumn", async () => {
+      const fresh = await createTestCaller();
+      try {
+        seedStandardDataset(fresh.db);
+        const personId = await seedPerson(fresh.db, "Adj Tester");
+        const jobId = seedJob(fresh.db, personId);
+        const jobId2 = seedJob(fresh.db, personId);
+        // Give the profile a second column so selectedColumn 0 vs 1 is a
+        // real distinction, not a no-op clamp.
+        const prof = await fresh.caller.budget.listProfiles();
+        const activeProf = prof.find((p) => p.isActive)!;
+        await fresh.caller.budget.addColumn({
+          profileId: activeProf.id,
+          label: "Tight",
+        });
+
+        const now = new Date();
+        const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+        const nextMonth = `${now.getMonth() === 11 ? now.getFullYear() + 1 : now.getFullYear()}-${String(now.getMonth() === 11 ? 1 : now.getMonth() + 2).padStart(2, "0")}-01`;
+        fresh.db
+          .insert(sqliteSchema.budgetIncomeAdjustments)
+          .values([
+            { jobId, monthDate: thisMonth, amount: "500.00", source: "rule" },
+            {
+              jobId: jobId2,
+              monthDate: thisMonth,
+              amount: "250.00",
+              source: "rule",
+            },
+            // A different month must be excluded from the sum.
+            { jobId, monthDate: nextMonth, amount: "999.00", source: "rule" },
+          ])
+          .run();
+
+        const col0 = await fresh.caller.budget.computeActiveSummary({
+          selectedColumn: 0,
+        });
+        const col1 = await fresh.caller.budget.computeActiveSummary({
+          selectedColumn: 1,
+        });
+
+        expect(col0.budgetIncomeAdjustmentThisMonth).toBe(750);
+        // The invariant the advisor required: this figure is a pure
+        // function of the real current month, never varies with the
+        // scenario column the caller asked for.
+        expect(col1.budgetIncomeAdjustmentThisMonth).toBe(
+          col0.budgetIncomeAdjustmentThisMonth,
+        );
+      } finally {
+        fresh.cleanup();
+      }
+    });
   });
 
   // =========================================================================

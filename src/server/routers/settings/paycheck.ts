@@ -9,6 +9,7 @@ import {
 import * as schema from "@/lib/db/schema";
 import { localDateStr } from "@/lib/utils/date";
 import { materializeExtraPaycheckOverrides } from "@/server/helpers/extra-paycheck-materializer";
+import { materializeBudgetIncomeAdjustments } from "@/server/helpers/budget-income-materializer";
 import { getPrimaryPerson } from "@/server/helpers/transforms";
 import {
   accountCategoryEnum,
@@ -280,6 +281,7 @@ export const paycheckProcedures = {
           .returning()
           .then((r) => r[0]);
         await materializeExtraPaycheckOverrides(ctx.db);
+        await materializeBudgetIncomeAdjustments(ctx.db);
         return result;
       }),
     update: adminProcedure
@@ -292,6 +294,7 @@ export const paycheckProcedures = {
           .returning()
           .then((r) => r[0]);
         await materializeExtraPaycheckOverrides(ctx.db);
+        await materializeBudgetIncomeAdjustments(ctx.db);
         return result;
       }),
     delete: adminProcedure
@@ -308,6 +311,7 @@ export const paycheckProcedures = {
         }
         await ctx.db.delete(schema.jobs).where(eq(schema.jobs.id, input.id));
         await materializeExtraPaycheckOverrides(ctx.db);
+        await materializeBudgetIncomeAdjustments(ctx.db);
         return { ok: true };
       }),
   }),

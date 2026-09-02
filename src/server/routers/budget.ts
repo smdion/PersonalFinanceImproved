@@ -1,5 +1,5 @@
 /** Budget router for multi-profile budget management including category items, column tiers, contribution profile linking, and budget API integration. */
-import { eq, asc, inArray } from "drizzle-orm";
+import { eq, asc, inArray, and, gte, lt } from "drizzle-orm";
 import { log } from "@/lib/logger";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
@@ -699,8 +699,42 @@ export const budgetRouter = createTRPCRouter({
         ctx.db,
         input?.profileId,
       );
+
+      // Sum of budget_income_adjustments (Budget-mode extra-paycheck
+      // materializer output) landing in the REAL current calendar month.
+      // Computed unconditionally, before activeProfile is even checked —
+      // deliberately NOT parameterized by selectedColumn/profileId, so it
+      // can't be used to silently corrupt a What-If scenario comparison
+      // (the advisor rejected folding this into netMonthlyIncome for
+      // exactly that reason: netMonthlyIncome is per-selectedColumn and has
+      // no "this is the live view" signal). Same value regardless of which
+      // scenario column the caller asked for — see
+      // tests/routers/budget-coverage.test.ts for the invariant test.
+      const nowMonthStart = currentMonthKey(new Date());
+      const nextMonthStart = currentMonthKey(
+        new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1),
+      );
+      const budgetIncomeAdjustmentRows = await ctx.db
+        .select({ amount: schema.budgetIncomeAdjustments.amount })
+        .from(schema.budgetIncomeAdjustments)
+        .where(
+          and(
+            gte(schema.budgetIncomeAdjustments.monthDate, nowMonthStart),
+            lt(schema.budgetIncomeAdjustments.monthDate, nextMonthStart),
+          ),
+        );
+      const budgetIncomeAdjustmentThisMonth = budgetIncomeAdjustmentRows.reduce(
+        (sum, r) => sum + Number(r.amount),
+        0,
+      );
+
       if (!activeProfile) {
-        return { profile: null, result: null, columnLabels: [] as string[] };
+        return {
+          profile: null,
+          result: null,
+          columnLabels: [] as string[],
+          budgetIncomeAdjustmentThisMonth,
+        };
       }
 
       const rawItemRows = await ctx.db
@@ -964,6 +998,11 @@ export const budgetRouter = createTRPCRouter({
          *  pair — see the computation above for why this must be read
          *  instead of re-deriving income client-side. */
         netMonthlyIncome,
+        /** Sum of Budget-mode extra-paycheck adjustments landing in the
+         *  REAL current calendar month — independent of selectedColumn, see
+         *  computation above. A separate, additively-labeled figure; never
+         *  folded into netMonthlyIncome or any What-If total. */
+        budgetIncomeAdjustmentThisMonth,
         /** What each column actually resolved to, per the documented
          *  precedence — surfaced so the UI can explain a column whose
          *  effective profile differs from the page's own picker. */

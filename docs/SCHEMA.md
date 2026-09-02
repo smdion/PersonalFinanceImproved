@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**69 tables.**
+**70 tables.**
 
 ## Mermaid diagram
 
@@ -48,6 +48,9 @@ erDiagram
     int id PK
   }
   savings_allocation_overrides {
+    int id PK
+  }
+  budget_income_adjustments {
     int id PK
   }
   savings_goal_profile_allocations {
@@ -226,6 +229,7 @@ erDiagram
   savings_planned_transactions }o--|| savings_goals : references
   savings_planned_tx_settlements }o--|| savings_planned_transactions : references
   savings_allocation_overrides }o--|| savings_goals : references
+  budget_income_adjustments }o--|| jobs : references
   savings_goal_profile_allocations }o--|| savings_goals : references
   savings_goal_profile_allocations }o--|| budget_profiles : references
   brokerage_planned_transactions }o--|| brokerage_goals : references
@@ -277,6 +281,7 @@ erDiagram
 - **brokerage_goals**
 - **brokerage_planned_transactions** → brokerage_goals
 - **budget_api_cache**
+- **budget_income_adjustments** → jobs
 - **budget_item_category_links** → budget_items
 - **budget_items** → budget_profiles
 - **budget_profiles**

@@ -3,13 +3,14 @@
 /**
  * ExtraPaycheckBudgetNote
  *
- * Plain informational text for the Budget page: which biweekly jobs have an
- * extra paycheck NOT routed to a savings goal (the "Budget" toggle on the
- * Savings page's extra-paycheck editor), and which upcoming months to expect
- * it in. Purely a display note — it does not add anything to the Budget
- * page's computed totals. See RULES.md's extraPaycheckRouting section:
- * actually folding this into the live budget totals (smoothed average or a
- * discrete monthly bump) is a follow-up, not done here.
+ * Informational note for the Budget page: which biweekly jobs have an extra
+ * paycheck NOT routed to a savings goal (the "Budget" toggle on the Savings
+ * page's extra-paycheck editor), and which upcoming months to expect it in.
+ * When the CURRENT month is one of them, also surfaces the real dollar
+ * figure the budget-income-materializer wrote to `budget_income_adjustments`
+ * for that job/month — a clearly separate, additively-labeled line, never
+ * merged into any other number this component or the Budget page shows. See
+ * RULES.md's extraPaycheckRouting section.
  */
 
 import { trpc } from "@/lib/trpc";
@@ -18,6 +19,7 @@ import {
   getExtraPaycheckMonthKeys,
   isExtraPaycheckBudgetMode,
 } from "@/lib/calculators/paycheck";
+import { currentMonthKey } from "@/lib/pure/date-keys";
 
 const HORIZON_MONTHS = 12;
 
@@ -33,6 +35,7 @@ export function ExtraPaycheckBudgetNote() {
 
   const now = new Date();
   const asOf = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
+  const thisMonthKey = currentMonthKey(now);
 
   const entries = jobs
     .filter((j) => j.payPeriod === "biweekly" && j.anchorPayDate)
@@ -51,6 +54,10 @@ export function ExtraPaycheckBudgetNote() {
         employerName: j.employerName,
         months,
         amount: j.extraPaycheckRouting?.baseNetPayPerCheck,
+        // The current month's extra paycheck already landed as real income
+        // this cycle (see budget-income-materializer.ts) — surfaced as a
+        // separate line below, not merged into the "expected" list.
+        landsThisMonth: months.includes(thisMonthKey),
       };
     })
     .filter((e) => e.months.length > 0);
@@ -63,14 +70,22 @@ export function ExtraPaycheckBudgetNote() {
         Extra paychecks not routed to savings
       </p>
       {entries.map((e) => (
-        <p key={e.jobId}>
-          {e.personName} ({e.employerName}):{" "}
-          {e.amount != null
-            ? `${formatCurrency(e.amount)} expected`
-            : "an extra check expected"}{" "}
-          in {e.months.map(fmtMonth).join(", ")} — lands as regular income, not
-          counted in the totals above.
-        </p>
+        <div key={e.jobId} className="space-y-0.5">
+          <p>
+            {e.personName} ({e.employerName}):{" "}
+            {e.amount != null
+              ? `${formatCurrency(e.amount)} expected`
+              : "an extra check expected"}{" "}
+            in {e.months.map(fmtMonth).join(", ")} — lands as regular income,
+            not counted in the totals above.
+          </p>
+          {e.landsThisMonth && e.amount != null && (
+            <p className="font-medium text-secondary">
+              +{formatCurrency(e.amount)} already included in{" "}
+              {fmtMonth(thisMonthKey)}&rsquo;s income.
+            </p>
+          )}
+        </div>
       ))}
     </div>
   );

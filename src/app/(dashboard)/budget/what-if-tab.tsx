@@ -1290,6 +1290,14 @@ export function WhatIfTab({
     netMonthlyIncome != null && budgetTotal != null
       ? netMonthlyIncome - budgetTotal
       : null;
+  // Budget-mode extra-paycheck adjustment landing in the REAL current
+  // calendar month — independent of activeColumn/selectedColumn (see
+  // budget.computeActiveSummary's docblock). A separate, additively-labeled
+  // annotation only; never folded into netMonthlyIncome or `leftover`.
+  const budgetIncomeAdjustmentThisMonth =
+    budgetData && "budgetIncomeAdjustmentThisMonth" in budgetData
+      ? (budgetData.budgetIncomeAdjustmentThisMonth ?? null)
+      : null;
 
   // ── Sandbox-local Budget table wiring (amounts-only, no live mutation) ──
   const sentinelRef = useRef<HTMLTableRowElement>(null);
@@ -1736,6 +1744,14 @@ export function WhatIfTab({
             </span>
           </div>
         )}
+        {budgetIncomeAdjustmentThisMonth != null &&
+          budgetIncomeAdjustmentThisMonth !== 0 && (
+            <p className="text-xs text-muted mb-3 -mt-2">
+              +{formatCurrency(budgetIncomeAdjustmentThisMonth)} extra paycheck
+              already included in this month&rsquo;s income (not part of Net
+              above).
+            </p>
+          )}
         {allColumnResults && allColumnResults.length > 0 ? (
           <div className="max-h-[520px] w-full overflow-y-auto rounded-md border border-subtle">
             <BudgetPageContext.Provider value={budgetPageContextValue}>

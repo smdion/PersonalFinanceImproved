@@ -45,6 +45,7 @@ export const savingsMonthly = active.savingsMonthly;
 export const savingsPlannedTransactions = active.savingsPlannedTransactions;
 export const savingsPlannedTxSettlements = active.savingsPlannedTxSettlements;
 export const savingsAllocationOverrides = active.savingsAllocationOverrides;
+export const budgetIncomeAdjustments = active.budgetIncomeAdjustments;
 export const savingsGoalProfileAllocations =
   active.savingsGoalProfileAllocations;
 export const brokerageGoals = active.brokerageGoals;

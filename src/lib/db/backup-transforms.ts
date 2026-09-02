@@ -89,6 +89,8 @@ const V07_SCHEMA_TAGS = [
   "0035_harsh_gabe_jones", // PG: budget_item_category_links + savings_goal_category_links tables
   "0035_salty_warbird", // SQLite counterpart of 0035
   "0036_category_links_backfill", // PG + SQLite (identical tag) — backfill only, no schema shape change
+  "0037_sad_thanos", // PG: budget_income_adjustments table (R32 Budget-mode extra paycheck)
+  "0037_majestic_caretaker", // SQLite counterpart of 0037
 ] as const;
 
 /** All schema version tags that we know how to import from. */
