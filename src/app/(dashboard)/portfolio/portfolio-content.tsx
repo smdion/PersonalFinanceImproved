@@ -28,6 +28,7 @@ import { SlidePanel } from "@/components/ui/slide-panel";
 import { AccountBalanceOverview } from "@/components/portfolio/account-balance-overview";
 import { PortfolioQuickLook } from "@/components/portfolio/portfolio-quick-look";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
+import { usePortfolioSnapshotMutations } from "@/components/portfolio/hooks/use-portfolio-snapshot-mutations";
 
 // v0.5 expert-review M8: code-split Recharts. PortfolioChart pulls in
 // ~250KB of recharts code; lazy-loading moves it to a dedicated chunk.
@@ -175,7 +176,6 @@ function buildSubRowLabel(
 export function PortfolioContent() {
   const user = useUser();
   const canEdit = hasPermission(user, "portfolio");
-  const utils = trpc.useUtils();
   const targeting = useYearEndTargetingInput();
   const { data, isLoading, error } =
     trpc.networth.computeSummary.useQuery(targeting);
@@ -207,15 +207,8 @@ export function PortfolioContent() {
     sortCol: sortCol ?? undefined,
     sortDir: sortDir,
   });
-  const deleteMutation = trpc.networth.portfolioSnapshots.delete.useMutation({
-    onSuccess: () => {
-      utils.networth.computeSummary.invalidate();
-      utils.networth.listHistory.invalidate();
-      utils.networth.listSnapshots.invalidate();
-    },
-  });
-  const resyncPortfolioPushMutation =
-    trpc.sync.resyncPortfolioPush.useMutation();
+  const { deleteSnapshot, resyncPush, invalidateSnapshotQueries } =
+    usePortfolioSnapshotMutations();
 
   const snapshotDate = data?.snapshotDate;
 
@@ -334,10 +327,7 @@ export function PortfolioContent() {
             onClose={() => setShowNewSnapshot(false)}
             onSaved={() => {
               setShowNewSnapshot(false);
-              utils.networth.computeSummary.invalidate();
-              utils.networth.listHistory.invalidate();
-              utils.networth.listSnapshots.invalidate();
-              utils.networth.portfolioSnapshots.getLatest.invalidate();
+              invalidateSnapshotQueries();
             }}
           />
         </SlidePanel>
@@ -551,9 +541,7 @@ export function PortfolioContent() {
                                 <div className="flex items-center gap-3 justify-end">
                                   {canEdit && (
                                     <button
-                                      disabled={
-                                        resyncPortfolioPushMutation.isPending
-                                      }
+                                      disabled={resyncPush.isPending}
                                       onClick={async () => {
                                         if (!isLatest) {
                                           const confirmed = await confirm(
@@ -563,12 +551,10 @@ export function PortfolioContent() {
                                         }
                                         try {
                                           const result =
-                                            await resyncPortfolioPushMutation.mutateAsync(
-                                              {
-                                                snapshotId: snap.id,
-                                                confirmNonLatest: !isLatest,
-                                              },
-                                            );
+                                            await resyncPush.mutateAsync({
+                                              snapshotId: snap.id,
+                                              confirmNonLatest: !isLatest,
+                                            });
                                           alert(
                                             `Resync complete: posted ${result.posted}, cleaned ${result.cleaned}.`,
                                           );
@@ -580,9 +566,9 @@ export function PortfolioContent() {
                                       }}
                                       className="text-xs text-muted hover:text-primary disabled:opacity-50"
                                     >
-                                      {resyncPortfolioPushMutation.isPending &&
-                                      resyncPortfolioPushMutation.variables
-                                        ?.snapshotId === snap.id
+                                      {resyncPush.isPending &&
+                                      resyncPush.variables?.snapshotId ===
+                                        snap.id
                                         ? "Resyncing…"
                                         : "Resync"}
                                     </button>
@@ -595,7 +581,7 @@ export function PortfolioContent() {
                                             `Delete snapshot from ${snap.snapshotDate}?`,
                                           )
                                         ) {
-                                          deleteMutation.mutate({
+                                          deleteSnapshot.mutate({
                                             id: snap.id,
                                           });
                                         }
