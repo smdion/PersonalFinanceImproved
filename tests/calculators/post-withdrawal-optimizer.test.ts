@@ -33,6 +33,7 @@ function makeRothInput(
     rothBracketTarget: 0.22, // fill up to 22% bracket (cap at 96175)
     totalTraditionalWithdrawal: 40000,
     taxableSS: 10000,
+    rothTaxableGrowth: 0,
     brokerageGainsPortion: 5000,
     filingStatus: "MFJ",
     balances: makeTaxBuckets(),
@@ -101,6 +102,21 @@ describe("performRothConversion", () => {
     expect(balances.taxFree).toBeCloseTo(200000 + 151550, 0);
     // Brokerage should decrease by tax cost
     expect(balances.afterTax).toBeLessThan(300000);
+  });
+
+  it("includes rothTaxableGrowth in yearTaxableIncome, shrinking conversionRoom by exactly that amount (advisor-flagged 2026-09-01)", () => {
+    // Same setup as the previous test, but with a real non-qualified Roth
+    // growth draw this year. Before this fix, yearTaxableIncome silently
+    // dropped rothTaxableGrowth (exactly the bug actualTaxableIncome's own
+    // docblock, tax-estimation.ts, was added to prevent), overstating
+    // conversionRoom by the full $20,000.
+    const balances = makeTaxBuckets();
+    const acctBal = makeAccountBalances();
+    const result = performRothConversion(
+      makeRothInput({ balances, acctBal, rothTaxableGrowth: 20000 }),
+    );
+    // conversionRoom = 201550 - (40000 + 10000 + 20000) = 131550
+    expect(result.rothConversionAmount).toBeCloseTo(131550, 0);
   });
 
   it("caps conversion at available Traditional balance", () => {

@@ -388,7 +388,25 @@ export function rankWithdrawalTiers(
   // itself pushes them over, and one just over no longer gets 3.8% priced
   // on the whole tier including the portion that was under.
   const niitThreshold = NIIT_THRESHOLDS[filingStatus];
-  const magiHeadroomForNiit = Math.max(0, niitThreshold - magiBeforeThisDraw);
+  // `magiBeforeThisDraw` is measured before ANY tier in this ranking
+  // draws — it doesn't yet reflect the 0%-LTCG brokerage tier
+  // (brokerageZeroCapacity, above), which is ranked and drawn ahead of
+  // this NIIT-split tier in the same discretionary sequence. Only the
+  // GAINS portion of that draw raises MAGI (a $1 gain contributes $1 to
+  // MAGI regardless of its 0% federal LTCG rate — the basis portion
+  // doesn't), so net that out before computing how much NIIT-threshold
+  // room is left for the tier that runs next (advisor-flagged 2026-09-01:
+  // without this, brokeragePreNiitCapacity is systematically overstated,
+  // and some dollars get ranked at the bare ltcgRate when their real
+  // marginal cost — once the zero tier's own gains are accounted for — is
+  // ltcgRate + NIIT). Ordering-only: computeNiit prices the real charge
+  // downstream regardless, so no dollar is mispriced in the final output.
+  const zeroTierGainsPortion =
+    brokerageZeroCapacity * (1 - brokerageBasisRatio);
+  const magiHeadroomForNiit = Math.max(
+    0,
+    niitThreshold - magiBeforeThisDraw - zeroTierGainsPortion,
+  );
   const preNiitWithdrawalRoom =
     brokerageBasisRatio < 1
       ? magiHeadroomForNiit / (1 - brokerageBasisRatio)

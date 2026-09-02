@@ -912,6 +912,7 @@ export function runDecumulationYear(
     rothBracketTarget: resolvedConversionTarget,
     totalTraditionalWithdrawal,
     taxableSS,
+    rothTaxableGrowth: taxFromSlots.rothTaxableGrowth,
     brokerageGainsPortion,
     irmaaAwareRothConversions:
       input.irmaaAwareRothConversions ??

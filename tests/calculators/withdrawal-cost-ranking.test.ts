@@ -306,6 +306,47 @@ describe("rankWithdrawalTiers", () => {
     expect(preNiit.capacity + postNiit.capacity).toBeCloseTo(100000, 2);
   });
 
+  // NIIT headroom nets out the 0%-LTCG zero tier's own MAGI contribution
+  // (advisor-flagged 2026-09-01): that tier is ranked and drawn ahead of
+  // the NIIT-split tier in the same sequence, and its GAINS (not basis)
+  // count toward MAGI just like any other realized gain, 0% federal rate
+  // notwithstanding.
+  it("nets the 0%-LTCG zero tier's own gains out of NIIT headroom, instead of measuring headroom as if that tier never drew", () => {
+    // ordinary=40000 gross, standardDeduction=32200 -> taxable=7800.
+    // zeroGainsRoom (0% LTCG ceiling 98900 - 7800) = 91100 -- a real,
+    // sizeable zero-rate tier that drawer BEFORE the NIIT-split tier.
+    // magiBeforeThisDraw=153900 -> raw headroom to the $250k MFJ threshold
+    // is $96,100 -- but $91,100 of that headroom is already consumed by
+    // the zero tier's own gains (brokerageBasisRatio: 0, all gains), so
+    // the REAL headroom left for the next tier is only $5,000.
+    const { tiers } = rankWithdrawalTiers(
+      baseInput({
+        ordinaryIncomeFloor: 40000,
+        standardDeduction: 32200,
+        rothAvailable: 0,
+        rothBasisAvailable: 0,
+        brokerageAvailable: 150000,
+        brokerageBasisRatio: 0,
+        magiBeforeThisDraw: 153900,
+        hsaAvailable: 0,
+      }),
+    );
+    const brokerageTiers = tiers.filter((t) => t.source === "brokerage");
+    expect(brokerageTiers.length).toBe(3);
+    const zeroTier = brokerageTiers.find((t) => t.costRate === 0)!;
+    const preNiit = brokerageTiers.find(
+      (t) => t.costRate > 0 && t.costRate < 0.18,
+    )!;
+    const postNiit = brokerageTiers.find((t) => t.costRate > 0.18)!;
+    expect(zeroTier.capacity).toBeCloseTo(91100, 2);
+    // Without the fix, this would read ~$96,100 (the raw threshold
+    // headroom, ignoring the zero tier's own $91,100 of gains).
+    expect(preNiit.capacity).toBeCloseTo(5000, 2);
+    expect(preNiit.costRate).toBeCloseTo(0.15, 5);
+    expect(postNiit.costRate).toBeCloseTo(0.188, 5);
+    expect(postNiit.capacity).toBeCloseTo(53900, 2);
+  });
+
   // HSA is no longer hardcoded last (advisor review, 2026-08-29) -- once
   // its balance reaches this ranking it's ordinarily already the
   // penalty-free portion (excluded upstream when still locked, per

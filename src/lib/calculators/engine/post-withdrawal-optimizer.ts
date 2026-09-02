@@ -62,6 +62,16 @@ export interface RothConversionInput {
   taxableSS: number;
   /** Brokerage capital gains portion (for MAGI computation). */
   brokerageGainsPortion: number;
+  /** Non-qualified Roth growth income (taxFromSlots.rothTaxableGrowth) —
+   *  ordinary income, so it belongs in this year's real taxable income
+   *  like any other (advisor-flagged 2026-09-01: `actualTaxableIncome`'s
+   *  own docblock, tax-estimation.ts, names
+   *  "totalTraditionalWithdrawal + taxableSS alone" as the EXACT bug this
+   *  field exists to prevent — this function's yearTaxableIncome/
+   *  magiWithoutConversion below were doing precisely that, understating
+   *  real income and overstating both the conversion room and the
+   *  IRMAA-cliff headroom for any year with a real Roth growth draw). */
+  rothTaxableGrowth: number;
   /** Cap conversions to stay below next IRMAA cliff (#38). */
   irmaaAwareRothConversions?: boolean;
   /**
@@ -226,6 +236,7 @@ export function performRothConversion(
     standardDeduction,
     totalTraditionalWithdrawal,
     taxableSS,
+    rothTaxableGrowth,
     balances,
     acctBal,
     nonRetirement,
@@ -277,10 +288,13 @@ export function performRothConversion(
     return zero();
   }
 
-  // Total taxable income this year (Traditional withdrawals + taxable SS)
-  // -- needed before target resolution now, since smoothing's elevated
-  // target (if any) is sized against it.
-  const yearTaxableIncome = totalTraditionalWithdrawal + taxableSS;
+  // Total taxable income this year (Traditional withdrawals + taxable SS +
+  // non-qualified Roth growth) -- needed before target resolution now,
+  // since smoothing's elevated target (if any) is sized against it.
+  // Advisor-flagged 2026-09-01: previously omitted rothTaxableGrowth,
+  // understating real income and overstating conversionRoom below.
+  const yearTaxableIncome =
+    totalTraditionalWithdrawal + taxableSS + rothTaxableGrowth;
 
   let conversionTarget = configTarget ?? input.rothBracketTarget;
   if (smoothingActive) {
@@ -353,7 +367,10 @@ export function performRothConversion(
   // IRMAA-aware cap (#38): reduce conversion to stay below next IRMAA cliff.
   if (input.irmaaAwareRothConversions && input.filingStatus && conversion > 0) {
     const magiWithoutConversion =
-      totalTraditionalWithdrawal + input.brokerageGainsPortion + taxableSS;
+      totalTraditionalWithdrawal +
+      input.brokerageGainsPortion +
+      taxableSS +
+      rothTaxableGrowth;
     const nextCliff = getNextIrmaaCliff(
       magiWithoutConversion,
       input.filingStatus,

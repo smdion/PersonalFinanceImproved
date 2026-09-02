@@ -144,7 +144,7 @@ import { log } from "@/lib/logger";
  *  IRMAA's `irmaaAwareRothConversions` exists for ACA), but still a
  *  real, user-visible number change, same precedent as v15's bump for
  *  an output-shape addition. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 21;
+export const PROJECTION_CACHE_ENGINE_VERSION = 22;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;
