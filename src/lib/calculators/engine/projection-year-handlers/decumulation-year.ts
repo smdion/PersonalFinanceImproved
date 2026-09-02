@@ -1105,6 +1105,7 @@ export function runDecumulationYear(
     totalTraditionalWithdrawal,
     rothConversionAmount,
     brokerageGainsPortion,
+    rothTaxableGrowth: taxFromSlots.rothTaxableGrowth,
     ssIncome,
     fplGrowthFactor,
   });

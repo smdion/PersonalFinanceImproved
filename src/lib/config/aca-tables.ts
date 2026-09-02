@@ -68,12 +68,19 @@ export function acaMagi(input: {
   totalTraditionalWithdrawal: number;
   rothConversionAmount: number;
   brokerageGainsPortion: number;
+  /** Non-qualified Roth growth income — ordinary income, belongs in AGI/MAGI
+   *  like any other (advisor-caught 2026-09-01: previously omitted here
+   *  while currentYearMagi/NIIT/the IRMAA lookback already included it —
+   *  see decumulation-year.ts's own comment on this exact field, which
+   *  named "the ACA subsidy check below" as needing it too). */
+  rothTaxableGrowth: number;
   ssIncome: number;
 }): number {
   return (
     input.totalTraditionalWithdrawal +
     input.rothConversionAmount +
     input.brokerageGainsPortion +
+    input.rothTaxableGrowth +
     input.ssIncome
   );
 }

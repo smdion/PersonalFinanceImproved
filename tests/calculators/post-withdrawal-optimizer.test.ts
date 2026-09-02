@@ -302,6 +302,7 @@ function makeAcaInput(overrides: Partial<AcaInput> = {}): AcaInput {
     totalTraditionalWithdrawal: 30000,
     rothConversionAmount: 0,
     brokerageGainsPortion: 5000,
+    rothTaxableGrowth: 0,
     ssIncome: 0,
     // Phase 4 (2026-08-31): factor 1 == no growth applied (matches
     // taxGrowthFactor's own "year === dataYear" identity convention) --
@@ -383,6 +384,14 @@ describe("checkAca", () => {
     // 0-85% taxable slice used for IRMAA/income tax: 35000 + 50000 = 85000
     // (over 84600 cliff)
     const result = checkAca(makeAcaInput({ ssIncome: 50000 }));
+    expect(result.acaSubsidyPreserved).toBe(false);
+  });
+
+  it("includes non-qualified Roth growth income in MAGI (advisor-caught 2026-09-01: previously omitted here while currentYearMagi/NIIT already included it)", () => {
+    // Base MAGI = 30000 + 5000 = 35000 (under cliff). Adding rothTaxableGrowth
+    // must push it over the same way rothConversionAmount/ssIncome already do:
+    // 35000 + 50000 = 85000 (over 84600 cliff).
+    const result = checkAca(makeAcaInput({ rothTaxableGrowth: 50000 }));
     expect(result.acaSubsidyPreserved).toBe(false);
   });
 

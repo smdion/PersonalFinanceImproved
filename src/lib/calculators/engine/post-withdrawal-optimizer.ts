@@ -170,6 +170,16 @@ export interface AcaInput {
   totalTraditionalWithdrawal: number;
   rothConversionAmount: number;
   brokerageGainsPortion: number;
+  /** Non-qualified Roth growth income (taxFromSlots.rothTaxableGrowth) —
+   *  ordinary income, so it belongs in AGI/MAGI like any other. Advisor-
+   *  caught 2026-09-01: this docblock right here already documents that
+   *  the same omission was fixed for currentYearMagi/NIIT/the IRMAA
+   *  lookback (decumulation-year.ts) "and the ACA subsidy check below" —
+   *  but checkAca's own call site never actually passed it, so a pre-65
+   *  household with a real non-qualified Roth growth draw could see
+   *  acaSubsidyPreserved read true across a cliff that was really
+   *  crossed. */
+  rothTaxableGrowth: number;
   /** Full gross Social Security benefit (not the 0-85% taxable slice) — ACA
    *  MAGI per 26 U.S.C. §36B(d)(2)(B) requires adding back the entire
    *  benefit, unlike income-tax provisional income or IRMAA MAGI. */
@@ -651,6 +661,7 @@ export function checkAca(input: AcaInput): AcaResult {
     totalTraditionalWithdrawal,
     rothConversionAmount,
     brokerageGainsPortion,
+    rothTaxableGrowth,
     ssIncome,
     fplGrowthFactor,
   } = input;
@@ -672,6 +683,7 @@ export function checkAca(input: AcaInput): AcaResult {
     totalTraditionalWithdrawal,
     rothConversionAmount,
     brokerageGainsPortion,
+    rothTaxableGrowth,
     ssIncome,
   });
   const acaMagiHeadroom = roundToCents(Math.max(0, acaCliff - projectedMagi));
