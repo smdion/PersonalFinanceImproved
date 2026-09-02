@@ -225,8 +225,21 @@ import { log } from "@/lib/logger";
  *  rows are byte-identical to that fallback, so for a household on seeded
  *  data this bump is a no-op; it exists so a household that had *edited*
  *  IRMAA brackets in Settings stops being served stale pre-R43 cached
- *  projections for the 36h TTL. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 29;
+ *  projections for the 36h TTL.
+ *
+ *  30: R43 — every per-year tax slice (withholding brackets, contribution
+ *  limits + standard/senior deductions, LTCG + IRMAA brackets, FPL) is now
+ *  resolved through one `resolveTaxParams` call anchored on one year, driven
+ *  by `retirement_profiles.tax_params_year` (NULL = newest enacted). The
+ *  resolution PATH changed; for a household on current seeded data with an
+ *  unpinned profile the resolved values are byte-identical to the pre-R43
+ *  `Math.max(tax_year)` + `WHERE tax_year = getFullYear()` logic (asserted
+ *  by `tests/config/tax-params.test.ts` and `engine-input-snapshot.test.ts`),
+ *  so this is a no-op there. One-time bump so pre-R43 cached rows don't
+ *  serve for the 36h TTL on deploy day, and so a profile that gets pinned
+ *  (or a `tax_params` revision) invalidates cleanly. Future vintage edits
+ *  invalidate via the resolved values in the input hash — no further bump. */
+export const PROJECTION_CACHE_ENGINE_VERSION = 30;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

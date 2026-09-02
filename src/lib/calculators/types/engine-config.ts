@@ -472,8 +472,19 @@ export type DecumulationDefaults = {
      *  just makes the growth itself off by however many years the two
      *  vintages have drifted apart. If that ever becomes a real gap,
      *  thread a second, `standardDeduction`-specific vintage year instead
-     *  of assuming they match. */
+     *  of assuming they match.
+     *
+     *  R43: the split-vintage risk this docblock describes is now closed —
+     *  `build-engine-payload.ts` resolves `taxBrackets`, `standardDeduction`
+     *  and the LTCG/IRMAA slices through one `resolveTaxParams` call anchored
+     *  on a single year, so `taxDataYear` = that resolved year for all of
+     *  them. */
     taxDataYear?: number;
+    /** R43: `tax_params.version` for `taxDataYear` — a human-legible
+     *  "Tax data: 2026, rev N" revision counter. Informational; cache
+     *  coherence comes from the resolved values themselves. Undefined for
+     *  callers that don't thread it (calculator-level fixtures). */
+    taxParamsVersion?: number;
   };
 
   /** Withdrawal/spending strategy. Defaults to 'fixed'. */

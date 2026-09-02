@@ -375,17 +375,16 @@ describe("buildEnginePayload — irmaa_brackets wiring (R43)", () => {
   it("an admin edit to an irmaa_brackets row moves the resolved value", async () => {
     const schema = await getSchema();
     const { and, eq } = await import("drizzle-orm");
-    const latestYear = Math.max(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ...(
-        (db as any)
-          .select({ y: schema.irmaaBrackets.taxYear })
-          .from(schema.irmaaBrackets)
-          .all() as { y: number }[]
-      ).map((r) => r.y),
-    );
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (db as any)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic schema import requires runtime cast
+    const rawDb = db as any;
+    const years = (
+      rawDb
+        .select({ y: schema.irmaaBrackets.taxYear })
+        .from(schema.irmaaBrackets)
+        .all() as { y: number }[]
+    ).map((r) => r.y);
+    const latestYear = Math.max(...years);
+    rawDb
       .update(schema.irmaaBrackets)
       .set({
         brackets: [
@@ -406,5 +405,65 @@ describe("buildEnginePayload — irmaa_brackets wiring (R43)", () => {
     const irmaa = payload!.distributionTaxRates.irmaaBrackets;
     expect(irmaa!.Single?.[0]?.magiThreshold).toBe(999000);
     expect(irmaa!.Single?.[0]?.annualSurcharge).toBe(4321);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// R43 C4d — retirement_profiles.tax_params_year pins the resolved year.
+// NULL (default) => newest enacted, byte-identical to pre-R43. A non-null
+// value re-prices the projection under that year's reference data.
+// ---------------------------------------------------------------------------
+describe("buildEnginePayload — tax_params_year profile pin (R43)", () => {
+  let db: BetterSQLite3Database<typeof sqliteSchema>;
+  let cleanup: () => void;
+  let profileId: number;
+
+  beforeAll(async () => {
+    const ctx = await createTestCaller();
+    db = ctx.db;
+    cleanup = ctx.cleanup;
+    const schema = await getSchema();
+    const personId = await seedPerson(db, "Jo", "1975-03-03");
+    await markPrimary(db, personId);
+    await seedRetirementSettings(db, personId, { filingStatus: "MFJ" });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    profileId = (db as any)
+      .insert(schema.retirementProfiles)
+      .values({ name: "Current Plan" })
+      .returning({ id: schema.retirementProfiles.id })
+      .get().id;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (db as any).update(schema.retirementSettings).set({ profileId }).run();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (db as any)
+      .insert(schema.retirementProfilePeople)
+      .values({ profileId, personId, retirementAge: 65, endAge: 95 })
+      .run();
+  });
+
+  afterAll(() => cleanup());
+
+  it("NULL pin => resolved year is the newest seeded year (2026)", async () => {
+    const data = await fetchRetirementData(db, {});
+    const payload = await buildEnginePayload(db, data, {});
+    expect(payload!.distributionTaxRates.taxDataYear).toBe(2026);
+    expect(payload!.distributionTaxRates.standardDeduction).toBe(32200);
+  });
+
+  it("pinning the active profile to 2025 re-prices under 2025 data", async () => {
+    const schema = await getSchema();
+    const { eq } = await import("drizzle-orm");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (db as any)
+      .update(schema.retirementProfiles)
+      .set({ taxParamsYear: 2025 })
+      .where(eq(schema.retirementProfiles.id, profileId))
+      .run();
+
+    const data = await fetchRetirementData(db, {});
+    const payload = await buildEnginePayload(db, data, {});
+    expect(payload!.distributionTaxRates.taxDataYear).toBe(2025);
+    // 2025 MFJ standard deduction is 30000 (seed); 2026 is 32200.
+    expect(payload!.distributionTaxRates.standardDeduction).toBe(30000);
   });
 });

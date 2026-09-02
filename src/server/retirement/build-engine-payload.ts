@@ -58,6 +58,7 @@ import {
 } from "@/lib/constants";
 import { estimateEffectiveTaxRate } from "@/lib/calculators/engine";
 import { getLtcgRate } from "@/lib/config/tax-tables";
+import { resolveTaxParams } from "@/lib/config/tax-params";
 import type { db as _db } from "@/lib/db";
 import { filterActiveJobs } from "@/lib/pure/profiles";
 import { computeTaxBucketBreakdown } from "@/lib/pure/tax-buckets";
@@ -108,6 +109,8 @@ export async function fetchRetirementData(
     allTaxBrackets,
     allLtcgBrackets,
     allIrmaaBrackets,
+    allFplByHousehold,
+    allTaxParams,
     brokerageGoalRows,
     allAppSettings,
     contribProfileRow,
@@ -132,15 +135,11 @@ export async function fetchRetirementData(
       .select()
       .from(schema.contributionAccounts)
       .where(eq(schema.contributionAccounts.isActive, true)),
-    db
-      .select()
-      .from(schema.contributionLimits)
-      .where(
-        eq(
-          schema.contributionLimits.taxYear,
-          (opts?.asOfDate ?? new Date()).getFullYear(),
-        ),
-      ),
+    // Unfiltered (R43): resolveTaxParams picks the year. Was previously
+    // filtered to asOfDate.getFullYear() here, which — combined with
+    // tax_brackets being taken at MAX(tax_year) — was the split-vintage
+    // gap (F2-4). The resolver now anchors every slice on one year.
+    db.select().from(schema.contributionLimits),
     getLatestSnapshot(db, opts?.snapshotId),
     db
       .select()
@@ -159,6 +158,8 @@ export async function fetchRetirementData(
     db.select().from(schema.taxBrackets),
     db.select().from(schema.ltcgBrackets),
     db.select().from(schema.irmaaBrackets),
+    db.select().from(schema.fplByHousehold),
+    db.select().from(schema.taxParams),
     db
       .select()
       .from(schema.brokerageGoals)
@@ -219,6 +220,8 @@ export async function fetchRetirementData(
     allTaxBrackets,
     allLtcgBrackets,
     allIrmaaBrackets,
+    allFplByHousehold,
+    allTaxParams,
     brokerageGoalRows,
     allAppSettings,
     contribProfileRow,
@@ -277,6 +280,8 @@ export async function buildEnginePayload(
     allTaxBrackets,
     allLtcgBrackets,
     allIrmaaBrackets,
+    allFplByHousehold,
+    allTaxParams,
     brokerageGoalRows,
     allAppSettings,
     jobLinkRows,
@@ -346,68 +351,54 @@ export async function buildEnginePayload(
   // (findActiveJob(...)?.w4FilingStatus ?? "MFJ") is gone; it was only kept
   // until that backfill landed.
   const filingStatus = settings.filingStatus;
-  const latestTaxYear =
-    allTaxBrackets.length > 0
-      ? Math.max(...allTaxBrackets.map((b) => b.taxYear))
-      : new Date().getFullYear();
-  const matchingBrackets = allTaxBrackets.find(
-    (b) =>
-      b.taxYear === latestTaxYear &&
-      b.filingStatus === filingStatus &&
-      !b.w4Checkbox,
+
+  // R43: every per-year tax slice (withholding brackets, contribution
+  // limits + standard/senior deductions, LTCG brackets, IRMAA brackets,
+  // FPL) is resolved through ONE call, anchored on ONE year — instead of
+  // the old mix of `Math.max(tax_brackets.taxYear)` for brackets and
+  // `WHERE tax_year = asOfDate.getFullYear()` for limits, which could
+  // silently split across two vintages in the Oct-Jan window (F2-4).
+  //
+  // requestedYear: the active retirement profile's pin
+  // (`tax_params_year`, null ⇒ undefined ⇒ newest enacted — the pre-R43
+  // default, since no production caller ever passed the latent `asOfDate`
+  // opt and the old `contribution_limits` filter was therefore always the
+  // current calendar year, which equals the newest seeded year). Historical
+  // portfolio snapshots already priced tax off current data, not the
+  // snapshot's year, so there is nothing year-specific to carry over here.
+  // `onMissing: "nearest"` — a projection uses this as a base year then
+  // grows it forward, so an unseeded pin year falls back to the newest
+  // earlier year rather than throwing.
+  const activeProfile = retProfiles.find((p) => p.id === activeProfileId);
+  const requestedTaxYear = activeProfile?.taxParamsYear ?? undefined;
+  const resolvedTax = resolveTaxParams(
+    {
+      vintage: allTaxParams,
+      contributionLimits: allLimits,
+      withholdingBrackets: allTaxBrackets,
+      ltcgBrackets: allLtcgBrackets,
+      irmaaBrackets: allIrmaaBrackets,
+      fpl: allFplByHousehold,
+    },
+    requestedTaxYear,
+    { onMissing: "nearest" },
   );
-  const bracketData = (matchingBrackets?.brackets ?? []) as {
+  const latestTaxYear = resolvedTax.resolvedYear;
+
+  // Same shapes the engine already consumed — the diff is "swap the
+  // source, not the shape". `?? []` / `undefined` fall-backs are
+  // unchanged, so a slice with no rows for `latestTaxYear` still degrades
+  // to the engine's own hardcoded default exactly as before.
+  const bracketData = (resolvedTax.withholdingBrackets?.[filingStatus]?.false ??
+    []) as {
     threshold: number;
     baseWithholding: number;
     rate: number;
   }[];
-
-  // DB-loaded LTCG brackets (v0.7.9 R40 follow-up) — mirrors bracketData
-  // above, but ltcg_brackets is keyed by filing status per row (one row per
-  // (taxYear, filingStatus)), not a single flat table, so build a
-  // Record<filingStatus, brackets[]> covering every filing status found in
-  // the latest tax year rather than filtering to just this household's own
-  // status — `computeLtcgTax`/`getLtcgRate` index into it by filing status
-  // themselves. Undefined (not an empty object) when nothing's seeded, so
-  // `computeLtcgTax`/`getLtcgRate` fall back to their hardcoded defaults
-  // exactly as before this change.
-  // (advisor review, 2026-08-29): the `new Date().getFullYear()` fallback
-  // this used to have was dead code — latestLtcgTaxYear is only ever
-  // needed inside the `allLtcgBrackets.length > 0` branch below, so it's
-  // only computed there now, where Math.max has real data to work with.
-  let ltcgBracketData:
-    Record<string, { threshold: number | null; rate: number }[]> | undefined;
-  if (allLtcgBrackets.length > 0) {
-    const latestLtcgTaxYear = Math.max(
-      ...allLtcgBrackets.map((b) => b.taxYear),
-    );
-    ltcgBracketData = Object.fromEntries(
-      allLtcgBrackets
-        .filter((b) => b.taxYear === latestLtcgTaxYear)
-        .map((b) => [b.filingStatus, b.brackets]),
-    );
-  }
-
-  // DB-loaded IRMAA brackets (R43 — closes the F2 that prompted R43: the
-  // irmaa_brackets table + its Settings editor existed but no engine path
-  // read it, so edits changed no projection output). Same shape and
-  // fall-back semantics as ltcgBracketData above: Record<filingStatus,
-  // IrmaaBracket[]>, or undefined when nothing's seeded so the engine's
-  // grow*/getIrmaaCost helpers fall back to the hardcoded IRMAA_BRACKETS
-  // default exactly as before.
-  let irmaaBracketData:
-    | Record<string, { magiThreshold: number; annualSurcharge: number }[]>
-    | undefined;
-  if (allIrmaaBrackets.length > 0) {
-    const latestIrmaaTaxYear = Math.max(
-      ...allIrmaaBrackets.map((b) => b.taxYear),
-    );
-    irmaaBracketData = Object.fromEntries(
-      allIrmaaBrackets
-        .filter((b) => b.taxYear === latestIrmaaTaxYear)
-        .map((b) => [b.filingStatus, b.brackets]),
-    );
-  }
+  const ltcgBracketData: typeof resolvedTax.ltcgByStatus =
+    resolvedTax.ltcgByStatus;
+  const irmaaBracketData: typeof resolvedTax.irmaaByStatus =
+    resolvedTax.irmaaByStatus;
 
   // Per-person retirement settings (for per-person age display + editing)
   // Per-person assumptions come from the active profile's own child rows.
@@ -774,9 +765,10 @@ export async function buildEnginePayload(
       ? toNumber(String(limitGrowthRaw))
       : IRS_LIMIT_GROWTH_RATE;
 
-  // IRS limits
-  const limitsMap: Record<string, number> = {};
-  for (const l of allLimits) limitsMap[l.limitType] = toNumber(l.value);
+  // IRS limits — the `contribution_limits` rows for the resolved tax year
+  // (R43: resolveTaxParams already filtered + coerced to numbers). Same
+  // map shape as the old `for (const l of allLimits)` loop.
+  const limitsMap: Record<string, number> = resolvedTax.limits;
 
   // Per-person account types for limit aggregation.
   // A jobless row is "active" if it's tied to a currently-known person, OR
@@ -1560,6 +1552,11 @@ export async function buildEnginePayload(
     // these values reads as flat-nominal forever in the engine, which is
     // wrong once real inflation-indexed brackets are grown forward off it.
     taxDataYear: latestTaxYear,
+    // R43: the `tax_params` vintage revision for `taxDataYear`. Informational
+    // (a "Tax data: 2026, rev N" label) — but threaded into the engine input
+    // so a vintage bump is explicit in `hashEngineInput`'s digest rather than
+    // only implicit via the resolved values.
+    taxParamsVersion: resolvedTax.version,
   };
 
   // Base engine input (without accumulationOverrides, decumulationOverrides, decumulationDefaults)
