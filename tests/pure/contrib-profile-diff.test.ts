@@ -23,9 +23,9 @@ describe("diffContribProfileSwap", () => {
     expect(diffContribProfileSwap(outgoing, incoming, [account()])).toEqual([]);
   });
 
-  it("a displayNameActive-only difference produces no line (cosmetic)", () => {
+  it("a displayNameCustom-only difference produces no line (cosmetic)", () => {
     const outgoing = {
-      "1": { contributionValue: "14", displayNameActive: "My 401k" },
+      "1": { contributionValue: "14", displayNameCustom: "My 401k" },
     };
     const incoming = { "1": { contributionValue: "14" } };
     expect(diffContribProfileSwap(outgoing, incoming, [account()])).toEqual([]);

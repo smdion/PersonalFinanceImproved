@@ -185,7 +185,7 @@ export type ContribFieldDisplayState = {
    *  account, including an explicit value of "0" — absence, not zero, is
    *  what excludes a row (matches getIncompleteContribAccountIds's own
    *  definition of "incomplete"). An entry can exist without this being
-   *  true — e.g. a custom `displayNameActive` set on an account that was
+   *  true — e.g. a custom `displayNameCustom` set on an account that was
    *  never given a value — so this deliberately checks `contributionValue`
    *  directly rather than "does an entry object exist at all," which
    *  previously let a value-less entry fall through to rendering the

@@ -449,7 +449,14 @@ describe("contribAccountActiveFieldsSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  it("accepts displayNameActive", () => {
+  it("accepts displayNameCustom", () => {
+    const result = contribAccountActiveFieldsSchema.safeParse({
+      displayNameCustom: "My Custom Name",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("still accepts the deprecated displayNameActive key (R22 — pre-rename blobs)", () => {
     const result = contribAccountActiveFieldsSchema.safeParse({
       displayNameActive: "My Custom Name",
     });

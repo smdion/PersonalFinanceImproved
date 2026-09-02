@@ -298,7 +298,7 @@ export const salaryEntriesSchema = z.record(z.string(), salaryEntrySchema);
 /**
  * Detailed contribution account active-field set (write-path). An entry
  * existing at all does NOT by itself mean this profile has a value —
- * an entry can legitimately exist to set only `isActive`/`displayNameActive`/
+ * an entry can legitimately exist to set only `isActive`/`displayNameCustom`/
  * a match field. `contributionValue`/`contributionMethod` are the only
  * pair required TOGETHER (both or neither, enforced below) whenever either
  * is present, because the account row itself carries no value to fall back
@@ -331,6 +331,15 @@ export const contribAccountActiveFieldsPatchSchema = z
     employerMaxMatchPct: z.union([z.string(), z.number()]).optional(),
     autoMaximize: z.boolean().optional(),
     isActive: z.boolean().optional(),
+    /** A custom display label for this account within this profile —
+     *  cosmetic, not financial (R22: was `displayNameActive`, whose `Active`
+     *  suffix falsely implied it behaves like `isActive` for swap-safety —
+     *  it doesn't, see contrib-profile-diff.ts). */
+    displayNameCustom: z.string().optional(),
+    /** @deprecated R22 legacy key. Still accepted so profiles saved before
+     *  the rename pass `.strict()` validation; readers fall back to it
+     *  (`displayNameCustom ?? displayNameActive`) and writers only emit the
+     *  new key, so it decays to dead weight. Drop in the v0.8.0 squash. */
     displayNameActive: z.string().optional(),
   })
   .strict();

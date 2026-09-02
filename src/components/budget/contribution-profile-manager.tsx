@@ -782,7 +782,7 @@ function ProfileEditor({
       if (nameVal.trim()) {
         contribAccounts[accountId] = {
           ...(contribAccounts[accountId] ?? {}),
-          displayNameActive: nameVal.trim(),
+          displayNameCustom: nameVal.trim(),
         };
       }
     }
@@ -1561,8 +1561,8 @@ function ProfileInlineEditor({
                       ? String(af.contributionValue)
                       : "";
                   const storedName =
-                    af.displayNameActive !== undefined
-                      ? String(af.displayNameActive)
+                    (af.displayNameCustom ?? af.displayNameActive) !== undefined
+                      ? String(af.displayNameCustom ?? af.displayNameActive)
                       : "";
                   // A profile that resolves no value for this account
                   // (hasValue false) contributes nothing to the engine —
@@ -1660,7 +1660,7 @@ function ProfileInlineEditor({
                                 storedName,
                                 (value) =>
                                   patchAccount(ad.id, {
-                                    displayNameActive: value,
+                                    displayNameCustom: value,
                                   }),
                               )
                             }

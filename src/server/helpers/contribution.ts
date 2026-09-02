@@ -917,7 +917,7 @@ export function resolveProfile<
   const activeContribs = liveContribs
     .map((c) => {
       const activeFields = accountActiveFields[String(c.id)];
-      // An entry can legitimately exist for isActive/displayNameActive/match
+      // An entry can legitimately exist for isActive/displayNameCustom/match
       // fields alone — contributionValue is the specific thing with no
       // fallback, so that's what determines whether this account resolves
       // to anything at all.
@@ -980,6 +980,8 @@ export type ContribRowWithActiveFields =
   typeof schema.contributionAccounts.$inferSelect & {
     contributionValue: string | number;
     contributionMethod: string;
+    displayNameCustom?: string;
+    /** @deprecated R22 legacy key. */
     displayNameActive?: string;
   };
 

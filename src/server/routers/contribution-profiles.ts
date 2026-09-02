@@ -468,15 +468,15 @@ export const contributionProfileRouter = createTRPCRouter({
         const disambiguatedName =
           sameName.length > 0 ? `${accountName} — ${taxLabel}` : accountName;
 
-        const displayNameActive = activeFields?.displayNameActive as
-          string | undefined;
+        const displayNameCustom = (activeFields?.displayNameCustom ??
+          activeFields?.displayNameActive) as string | undefined;
 
         return {
           id: row.id,
           accountType: row.accountType,
           subType: row.subType,
           label: row.label,
-          accountName: displayNameActive || disambiguatedName,
+          accountName: displayNameCustom || disambiguatedName,
           liveAccountName: disambiguatedName,
           personId: row.personId,
           taxTreatment: row.taxTreatment,
