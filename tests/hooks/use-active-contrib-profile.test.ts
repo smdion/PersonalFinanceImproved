@@ -84,6 +84,17 @@ describe("useActiveContribProfile", () => {
     expect(setActiveMutateAsync).toHaveBeenCalledWith({ id: 2 });
   });
 
+  it("writes through contributionProfile.setActive with id: null when clearing the selection, instead of silently no-op'ing (advisor-caught 2026-09-01)", async () => {
+    const { result } = renderHook(() => useActiveContribProfile());
+
+    await act(async () => {
+      result.current[1](null);
+      await Promise.resolve();
+    });
+
+    expect(setActiveMutateAsync).toHaveBeenCalledWith({ id: null });
+  });
+
   it("invalidates every downstream query on a successful activation, not just the settings pointer", () => {
     renderHook(() => useActiveContribProfile());
 

@@ -484,6 +484,32 @@ describe("salaryProfile router", () => {
         cleanup();
       }
     });
+
+    it("id: null clears the active-profile app_settings row instead of silently no-op'ing (advisor-caught 2026-09-01)", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const profileId = seedSalaryProfile(db, { name: "To Clear" });
+        await caller.salaryProfile.setActive({ id: profileId });
+        let settings = await caller.settings.appSettings.list();
+        expect(
+          settings.find(
+            (s: { key: string }) => s.key === "active_salary_profile_id",
+          )?.value,
+        ).toBe(profileId);
+
+        const result = await caller.salaryProfile.setActive({ id: null });
+        expect(result).toEqual({ success: true });
+
+        settings = await caller.settings.appSettings.list();
+        expect(
+          settings.find(
+            (s: { key: string }) => s.key === "active_salary_profile_id",
+          ),
+        ).toBeUndefined();
+      } finally {
+        cleanup();
+      }
+    });
   });
 
   describe("duplicate", () => {

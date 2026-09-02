@@ -47,10 +47,12 @@ export function useActiveContribProfile(): [
     SK_ACTIVE_CONTRIB_PROFILE_ID,
     null,
     {
-      writeVia: (id) => {
-        if (id == null) return Promise.resolve();
-        return setActive.mutateAsync({ id });
-      },
+      // Advisor-caught 2026-09-01: null used to short-circuit into a
+      // silent no-op (setActive's input required a real id, which can't
+      // express "clear the selection") — this hook's own return type is
+      // `(id: number | null) => void`, so a caller reaching that branch
+      // silently lost the write. setActive now accepts null directly.
+      writeVia: (id) => setActive.mutateAsync({ id }),
     },
   );
   const { data: profiles } = trpc.contributionProfile.list.useQuery();

@@ -779,19 +779,37 @@ export const contributionProfileRouter = createTRPCRouter({
     }),
 
   /**
-   * Mark a profile as the globally-active one. Split out from
-   * settings.appSettings.upsert (which the client-side hooks used to write
-   * this through) because that endpoint is adminProcedure-gated to protect
-   * RBAC config that lives in the same app_settings table — a household
-   * member holding only the contributionProfile permission (not full admin)
-   * could see and click Activate, but the write silently 403'd with no
-   * error surfaced, leaving the UI showing a false "activated" state until
-   * the next remount snapped it back. Mirrors budget.setActiveProfile's
-   * pattern of a narrowly-scoped, correctly-permissioned write.
+   * Mark a profile as the globally-active one (or clear the setting with
+   * id: null). Split out from settings.appSettings.upsert (which the
+   * client-side hooks used to write this through) because that endpoint is
+   * adminProcedure-gated to protect RBAC config that lives in the same
+   * app_settings table — a household member holding only the
+   * contributionProfile permission (not full admin) could see and click
+   * Activate, but the write silently 403'd with no error surfaced, leaving
+   * the UI showing a false "activated" state until the next remount
+   * snapped it back. Mirrors budget.setActiveProfile's pattern of a
+   * narrowly-scoped, correctly-permissioned write.
+   *
+   * `id: null` is accepted (advisor-caught 2026-09-01): the client-side
+   * hook's writeVia originally special-cased null into a silent no-op
+   * (this endpoint's input used to require a real id, which can't express
+   * "clear the selection") — the hook's own return type
+   * (`(id: number | null) => void`) documents null as a valid call, so a
+   * caller that reaches it silently loses the write. Deleting the
+   * app_settings row mirrors settings.appSettings.upsert's own existing
+   * null-handling convention (value is NOT NULL — null means "delete the
+   * row so the default applies").
    */
   setActive: contributionProfileProcedure
-    .input(z.object({ id: z.number() }))
+    .input(z.object({ id: z.number().nullable() }))
     .mutation(async ({ ctx, input }) => {
+      if (input.id === null) {
+        await ctx.db
+          .delete(schema.appSettings)
+          .where(eq(schema.appSettings.key, SK_ACTIVE_CONTRIB_PROFILE_ID));
+        return { success: true };
+      }
+
       const [profile] = await ctx.db
         .select({ id: schema.contributionProfiles.id })
         .from(schema.contributionProfiles)

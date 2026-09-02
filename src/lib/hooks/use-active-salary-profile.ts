@@ -46,10 +46,9 @@ export function useActiveSalaryProfile(): [
     SK_ACTIVE_SALARY_PROFILE_ID,
     null,
     {
-      writeVia: (id) => {
-        if (id == null) return Promise.resolve();
-        return setActive.mutateAsync({ id });
-      },
+      // See useActiveContribProfile's matching comment — null used to
+      // silently no-op instead of persisting the cleared selection.
+      writeVia: (id) => setActive.mutateAsync({ id }),
     },
   );
   const { data: profiles } = trpc.salaryProfile.list.useQuery();

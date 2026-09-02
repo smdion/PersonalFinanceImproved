@@ -258,6 +258,33 @@ describe("contributionProfiles router", () => {
         viewerCleanup();
       }
     });
+
+    it("id: null clears the active-profile app_settings row instead of silently no-op'ing (advisor-caught 2026-09-01)", async () => {
+      const target = await caller.contributionProfile.create({
+        name: "To Clear",
+        description: "",
+        contributionActiveFields: { contributionAccounts: {} },
+      });
+      await caller.contributionProfile.setActive({ id: target.id });
+      let settings = await caller.settings.appSettings.list();
+      expect(
+        settings.find(
+          (s: { key: string }) => s.key === "active_contrib_profile_id",
+        )?.value,
+      ).toBe(target.id);
+
+      const result = await caller.contributionProfile.setActive({
+        id: null,
+      });
+      expect(result).toEqual({ success: true });
+
+      settings = await caller.settings.appSettings.list();
+      expect(
+        settings.find(
+          (s: { key: string }) => s.key === "active_contrib_profile_id",
+        ),
+      ).toBeUndefined();
+    });
   });
 
   // ── RESOLVE ──
