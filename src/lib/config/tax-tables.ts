@@ -46,14 +46,15 @@ type LtcgBracket = { threshold: number; rate: number };
  * default keeps the fix additive rather than a forced behavior change for
  * any caller that hasn't been updated to supply it.
  *
- * The IRC §63(f)(1) age-65+ additional standard deduction IS modeled as of
- * R59 (v0.7.11): `decumulation-year.ts` folds `additionalStdDeduction65PerSenior
- * × (65+ household headcount that year)` into the deduction before growth, so
- * the `standardDeduction` this helper receives from a decumulation year is
- * already senior-adjusted. Still NOT modeled: the temporary OBBBA senior
- * deduction (2025–2028, $6,000/person, phased out above $75k/$150k MAGI) —
- * its sunset + MAGI phase-out need their own design pass; a household eligible
- * for it will still see 0%-LTCG room understated by up to that amount.
+ * Both the IRC §63(f)(1) age-65+ additional standard deduction (R59,
+ * v0.7.11) and the temporary OBBBA senior deduction (2025-2028, v0.7.11
+ * follow-on) ARE modeled as of this version: `decumulation-year.ts` folds
+ * both into the deduction before growth, so the `standardDeduction` this
+ * helper receives from a decumulation year is already senior-adjusted for
+ * both. See `obbba-senior-deduction.ts`'s docblock for the OBBBA mechanism
+ * (MAGI-phased, sunset-gated, uses last year's MAGI as the phaseout basis —
+ * decumulation year 1 gets $0 OBBBA deduction, no prior-year MAGI exists
+ * yet).
  */
 export function toLtcgTaxableIncome(
   grossOrdinaryIncome: number,

@@ -405,10 +405,34 @@ export type DecumulationDefaults = {
      *  so it grows on the same `taxDataYear` vintage as the base deduction
      *  (both are CPI-indexed). Undefined ⇒ 0 additional deduction,
      *  reproducing pre-R59 behavior (which understated 0%-LTCG room for the
-     *  ~always-65+ decumulation population). Deliberately does NOT model the
-     *  temporary OBBBA senior deduction (2025–2028, MAGI-phased) — see
-     *  `toLtcgTaxableIncome`'s docblock. */
+     *  ~always-65+ decumulation population). The temporary OBBBA senior
+     *  deduction (2025–2028, MAGI-phased) is a SEPARATE lever — see the four
+     *  `obbbaSenior*` fields below — folded in alongside this one but
+     *  resolved differently (needs a MAGI phaseout basis this field doesn't). */
     additionalStdDeduction65PerSenior?: number;
+    /** OBBBA temporary senior deduction (One Big Beautiful Bill Act, 2025) —
+     *  $6,000/person 65+, tax years 2025–2028 only, from `contribution_limits`
+     *  (`obbba_senior_deduction_per_person`). Undefined ⇒ not seeded for this
+     *  tax year ⇒ $0, same convention as every other deduction figure here.
+     *  See `obbba-senior-deduction.ts`'s docblock for the full mechanism
+     *  (folded into `standardDeduction` pre-routing using LAST YEAR's MAGI
+     *  as the phaseout basis — same circularity-breaking lag IRMAA's 2-year
+     *  lookback already uses). */
+    obbbaSeniorDeductionPerPerson?: number;
+    /** Filing-status-resolved MAGI phaseout start ($150k MFJ / $75k
+     *  Single/HoH/MFS) — from `contribution_limits`
+     *  (`obbba_senior_deduction_phaseout_start_{mfj,unmarried}`). */
+    obbbaSeniorPhaseoutStart?: number;
+    /** OBBBA phaseout rate — 6% of MAGI over the threshold, per the statute.
+     *  From `contribution_limits` (`obbba_senior_deduction_phaseout_rate`). */
+    obbbaSeniorPhaseoutRate?: number;
+    /** Last tax year the OBBBA senior deduction is authorized (2028) — from
+     *  `contribution_limits` (`obbba_senior_deduction_sunset_year`), NOT a
+     *  hardcoded literal in engine code, so the sunset tracks the seed data
+     *  rather than a second, independently-maintained boundary. Undefined ⇒
+     *  not seeded ⇒ the deduction computes as $0 for every year (treated as
+     *  "doesn't exist," not "no sunset"). */
+    obbbaSeniorSunsetYear?: number;
     /** The calendar year `taxBrackets`/`standardDeduction`/`ltcgBrackets`
      *  actually represent (the DB row's own `taxYear`, e.g. the seeded
      *  `tax_brackets.taxYear` — see `build-engine-payload.ts`'s

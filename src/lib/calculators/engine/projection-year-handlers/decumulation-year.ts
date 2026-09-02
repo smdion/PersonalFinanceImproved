@@ -21,6 +21,7 @@ import {
 } from "../../../config/account-types";
 import { computeQcdAmounts, totalQcdAmount } from "../qcd";
 import { computeRmdSmoothingTargets } from "../rmd-smoothing";
+import { computeObbbaSeniorDeduction } from "../obbba-senior-deduction";
 import {
   MAX_BROKERAGE_RAMP_YEARS,
   QCD_MIN_ELIGIBILITY_AGE,
@@ -423,9 +424,28 @@ export function runDecumulationYear(
     taxRates.additionalStdDeduction65PerSenior
       ? seniorCount * taxRates.additionalStdDeduction65PerSenior
       : 0;
+  // OBBBA temporary senior deduction (2025-2028) — same injection point as
+  // §63(f) above (folded in BEFORE routing/tax estimation runs; see
+  // obbba-senior-deduction.ts's docblock for why it can't be applied later).
+  // Uses LAST YEAR's MAGI (magiHistory, not yet pushed for `year` at this
+  // point in the function) as the phaseout basis, the same 1-year-lag
+  // circularity-breaking pattern IRMAA's 2-year lookback uses further below.
+  // Decumulation year 1 has no MAGI history yet ⇒ $0 that year only, a
+  // deliberate, understood, self-healing gap (advisor-reviewed decision, not
+  // a silent omission) — real accuracy resumes from year 2 on.
+  const obbbaAddon = computeObbbaSeniorDeduction({
+    seniorCount,
+    magi:
+      magiHistory.length > 0 ? magiHistory[magiHistory.length - 1] : undefined,
+    perPerson: taxRates.obbbaSeniorDeductionPerPerson,
+    phaseoutStart: taxRates.obbbaSeniorPhaseoutStart,
+    phaseoutRate: taxRates.obbbaSeniorPhaseoutRate,
+    year,
+    sunsetYear: taxRates.obbbaSeniorSunsetYear,
+  });
   const grownStandardDeduction = growAmount(
     taxRates.standardDeduction != null
-      ? taxRates.standardDeduction + seniorStandardDeductionAddon
+      ? taxRates.standardDeduction + seniorStandardDeductionAddon + obbbaAddon
       : taxRates.standardDeduction,
     taxGrowth,
   );

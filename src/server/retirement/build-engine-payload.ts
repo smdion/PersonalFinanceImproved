@@ -1429,6 +1429,25 @@ export async function buildEnginePayload(
       : limitsMap["additional_std_deduction_65_unmarried"]
     : undefined;
 
+  // OBBBA temporary senior deduction (One Big Beautiful Bill Act, 2025) —
+  // $6,000/person 65+, 2025-2028 only, phased out 6% of MAGI above
+  // $150k MFJ / $75k Single/HoH/MFS. Separate lever from §63(f) above;
+  // folded into the standard deduction alongside it in decumulation-year.ts
+  // using LAST YEAR's MAGI as the phaseout basis (see
+  // obbba-senior-deduction.ts's docblock for why — same circularity IRMAA's
+  // 2-year lookback already breaks). Undefined when not seeded ⇒ $0, same
+  // convention as every other deduction figure here.
+  const obbbaSeniorDeductionPerPerson =
+    limitsMap["obbba_senior_deduction_per_person"];
+  const obbbaSeniorPhaseoutStart = filingStatus
+    ? filingStatus === "MFJ"
+      ? limitsMap["obbba_senior_deduction_phaseout_start_mfj"]
+      : limitsMap["obbba_senior_deduction_phaseout_start_unmarried"]
+    : undefined;
+  const obbbaSeniorPhaseoutRate =
+    limitsMap["obbba_senior_deduction_phaseout_rate"];
+  const obbbaSeniorSunsetYear = limitsMap["obbba_senior_deduction_sunset_year"];
+
   if (bracketData.length > 0) {
     // Estimate effective income tax rate at retirement income level.
     // Use decumulation budget when set (it's the actual retirement spending level);
@@ -1502,6 +1521,12 @@ export async function buildEnginePayload(
     // by the 65+ headcount for each projection year and folds it into the
     // deduction before growth.
     additionalStdDeduction65PerSenior,
+    // OBBBA temporary senior deduction (2025-2028) — see this file's own
+    // resolution above for how each figure is sourced.
+    obbbaSeniorDeductionPerPerson,
+    obbbaSeniorPhaseoutStart,
+    obbbaSeniorPhaseoutRate,
+    obbbaSeniorSunsetYear,
     // The actual calendar year `bracketData`/`standardDeductionForFilingStatus`
     // were seeded for — NOT necessarily "this year." See
     // `DecumulationDefaults.distributionTaxRates.taxDataYear`'s docblock

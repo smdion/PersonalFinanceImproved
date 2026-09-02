@@ -180,8 +180,18 @@ import { log } from "@/lib/logger";
  *  retirement (e.g. both named "Long Term Brokerage") — for every other
  *  household the two matching paths agree and nothing moves. Previously
  *  both people's contributions silently landed on whichever account
- *  `indAccts` happened to list first. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 25;
+ *  `indAccts` happened to list first.
+ *
+ *  26: OBBBA temporary senior deduction (2025-2028) now modeled —
+ *  `decumulation-year.ts` folds it into the standard deduction alongside
+ *  §63(f) (R59), using last year's MAGI as the phaseout basis. A REAL value
+ *  change for any decumulation year (2 and later) where a household member
+ *  is 65+ and the year is 2025-2028: a larger effective standard deduction
+ *  means more 0%-LTCG room and lower ordinary tax, same shift class as v23.
+ *  Cached rows from before this understate the household's real deduction
+ *  for those years. Year 1 of decumulation and any year outside 2025-2028
+ *  are unaffected (no prior-year MAGI / outside the statutory window). */
+export const PROJECTION_CACHE_ENGINE_VERSION = 26;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

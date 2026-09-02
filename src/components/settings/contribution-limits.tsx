@@ -119,6 +119,31 @@ const limitGroups: LimitGroupEntry[] = [
         format: "dollar",
       },
       {
+        key: "obbba_senior_deduction_per_person",
+        label: "OBBBA senior deduction, per person 65+ (2025-2028 only)",
+        format: "dollar",
+      },
+      {
+        key: "obbba_senior_deduction_phaseout_start_mfj",
+        label: "OBBBA senior deduction phaseout start (MFJ)",
+        format: "dollar",
+      },
+      {
+        key: "obbba_senior_deduction_phaseout_start_unmarried",
+        label: "OBBBA senior deduction phaseout start (single / HoH)",
+        format: "dollar",
+      },
+      {
+        key: "obbba_senior_deduction_phaseout_rate",
+        label: "OBBBA senior deduction phaseout rate",
+        format: "percent",
+      },
+      // obbba_senior_deduction_sunset_year deliberately NOT listed here — a
+      // plain year (e.g. "2028"), not a dollar or percent figure, and this
+      // table's format union is dollar|percent only. It still edits fine
+      // via the "custom" fallback section below, which renders unknown
+      // limit types generically.
+      {
         key: "supplemental_tax_rate",
         label: "Supplemental tax rate",
         format: "percent",
