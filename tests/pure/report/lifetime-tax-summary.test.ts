@@ -75,6 +75,21 @@ describe("computeLifetimeTaxSummary", () => {
     expect(summary!.decades.map((d) => d.label)).toEqual(["50s", "60s", "70s"]);
   });
 
+  it("sorts decades numerically past age 100, not lexicographically ('100s' would otherwise sort before '50s')", () => {
+    const years: EngineDecumulationYear[] = [
+      decumYear({ age: 101, year: 2090 }),
+      decumYear({ age: 55, year: 2044 }),
+      decumYear({ age: 90, year: 2079 }),
+    ];
+    const summary = computeLifetimeTaxSummary(years, identityDeflate);
+    expect(summary!.decades.map((d) => d.label)).toEqual([
+      "50s",
+      "90s",
+      "100s",
+    ]);
+    expect(summary!.decades.map((d) => d.decadeStart)).toEqual([50, 90, 100]);
+  });
+
   it("passes each year's own `year` field to deflate, not a shared base year", () => {
     const calls: number[] = [];
     const trackingDeflate = (v: number, year: number) => {

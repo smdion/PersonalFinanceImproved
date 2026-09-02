@@ -10,6 +10,10 @@ import type { EngineDecumulationYear } from "@/lib/calculators/types/engine-proj
 export type LifetimeTaxDecade = {
   /** e.g. "50s" for ages 50-59. */
   label: string;
+  /** e.g. 50 for "50s" — sort key, since string labels sort wrong past 100
+   *  ("100s".localeCompare("50s") < 0, so a plan reaching age 100 rendered
+   *  100s before 50s). */
+  decadeStart: number;
   taxToday: number;
   withdrawalToday: number;
   years: number;
@@ -21,9 +25,9 @@ export type LifetimeTaxSummary = {
   /** totalTaxToday / totalWithdrawalToday, 0 if nothing was withdrawn. */
   weightedRate: number;
   yearsCovered: number;
-  /** Sorted by decade label ascending. Only present when there's real
-   *  multi-decade data (a single-decade retirement has nothing to break
-   *  down). */
+  /** Sorted by decadeStart ascending. Always present, even for a
+   *  single-decade retirement — callers decide whether a one-row
+   *  breakdown is worth rendering. */
   decades: LifetimeTaxDecade[];
 };
 
@@ -52,6 +56,7 @@ export function computeLifetimeTaxSummary(
     } else {
       buckets.set(decadeStart, {
         label: `${decadeStart}s`,
+        decadeStart,
         taxToday,
         withdrawalToday: wdToday,
         years: 1,
@@ -65,8 +70,8 @@ export function computeLifetimeTaxSummary(
     weightedRate:
       totalWithdrawalToday > 0 ? totalTaxToday / totalWithdrawalToday : 0,
     yearsCovered: decumulationYears.length,
-    decades: Array.from(buckets.values()).sort((a, b) =>
-      a.label.localeCompare(b.label),
+    decades: Array.from(buckets.values()).sort(
+      (a, b) => a.decadeStart - b.decadeStart,
     ),
   };
 }
