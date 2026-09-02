@@ -26,6 +26,8 @@ export const VERSION_TABLES: VersionTableEntry[] = [
   { name: "tax_brackets", tier: 0 },
   { name: "ltcg_brackets", tier: 0 },
   { name: "irmaa_brackets", tier: 0 },
+  { name: "fpl_by_household", tier: 0 },
+  { name: "tax_params", tier: 0 },
   { name: "api_connections", tier: 0 },
   { name: "app_settings", tier: 0 },
   { name: "local_admins", tier: 0 },

@@ -1565,6 +1565,15 @@ export const retirementProfiles = sqliteTable("retirement_profiles", {
   id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
   name: text("name").notNull().unique(),
   description: text("description"),
+  /**
+   * Tax-law year this profile's projections are priced under (R43).
+   * NULL = track the latest enacted tax data — the historical behaviour, so
+   * every pre-R43 profile is byte-identical after the migration adds this
+   * column. A non-null value pins the `resolveTaxParams` base year (with
+   * `onMissing: "nearest"`); "Latest = current law" in the profile
+   * assumptions UI.
+   */
+  taxParamsYear: integer("tax_params_year"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),
@@ -1807,6 +1816,53 @@ export const irmaaBrackets = sqliteTable(
       table.filingStatus,
     ),
   ],
+);
+
+// ── ACA Federal Poverty Level ──────────────────────────────────
+//
+// R43: FPL was the one annually-indexed federal figure set with no DB home
+// (it lived only in `aca-tables.ts`'s `FPL_BY_HOUSEHOLD`). One row per ACA
+// COVERAGE year (not the HHS publication year, which is one calendar year
+// earlier — see aca-tables.ts). `amounts` maps household size "1".."8" to
+// the annual FPL dollar figure.
+
+export const fplByHousehold = sqliteTable(
+  "fpl_by_household",
+  {
+    id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    taxYear: integer("tax_year").notNull(),
+    amounts: text("amounts", { mode: "json" })
+      .$type<Record<string, number>>()
+      .notNull(),
+  },
+  (table) => [uniqueIndex("fpl_by_household_year_idx").on(table.taxYear)],
+);
+
+// ── Tax-parameter vintage rows ─────────────────────────────────
+//
+// R43: a thin per-year vintage marker. It carries NO figure values — the
+// existing `contribution_limits` / `tax_brackets` / `ltcg_brackets` /
+// `irmaa_brackets` / `fpl_by_household` tables remain the one and only value
+// store. `resolveTaxParams` maps a requested year to a resolved year via
+// these rows, then reads the value tables for that year. `version` is a
+// human-legible "Tax data: 2026, rev N" counter — cache coherence comes from
+// the resolved values themselves (already in the engine-input hash), not
+// from this column. Absent entirely (old-backup restore) ⇒ the resolver
+// falls back to the value tables' own MAX(tax_year), i.e. today's behaviour.
+
+export const taxParams = sqliteTable(
+  "tax_params",
+  {
+    id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    taxYear: integer("tax_year").notNull(),
+    version: integer("version").notNull().default(1),
+    source: text("source"),
+    notes: text("notes"),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [uniqueIndex("tax_params_year_idx").on(table.taxYear)],
 );
 
 export type ApiConfig = Record<string, string | undefined>;

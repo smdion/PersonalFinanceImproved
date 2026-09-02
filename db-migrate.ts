@@ -63,6 +63,8 @@ const VERSION_TABLE_NAMES = [
   "tax_brackets",
   "ltcg_brackets",
   "irmaa_brackets",
+  "fpl_by_household",
+  "tax_params",
   "api_connections",
   "app_settings",
   "local_admins",

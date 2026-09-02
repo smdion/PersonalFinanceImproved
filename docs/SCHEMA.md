@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**70 tables.**
+**72 tables.**
 
 ## Mermaid diagram
 
@@ -155,6 +155,12 @@ erDiagram
   irmaa_brackets {
     int id PK
   }
+  fpl_by_household {
+    int id PK
+  }
+  tax_params {
+    int id PK
+  }
   api_connections {
     int id PK
   }
@@ -289,6 +295,7 @@ erDiagram
 - **contribution_accounts** → jobs, people
 - **contribution_limits**
 - **contribution_profiles**
+- **fpl_by_household**
 - **glide_path_allocations** → asset_class_params
 - **historical_notes**
 - **historical_salaries** → people
@@ -338,5 +345,6 @@ erDiagram
 - **state_version_tables** → state_versions
 - **state_versions**
 - **tax_brackets**
+- **tax_params**
 - **utility_reading** → utility_service
 - **utility_service**

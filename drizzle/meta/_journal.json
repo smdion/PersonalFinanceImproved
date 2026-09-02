@@ -267,6 +267,13 @@
       "when": 1788364500887,
       "tag": "0037_sad_thanos",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1788369793328,
+      "tag": "0038_pink_crusher_hogan",
+      "breakpoints": true
     }
   ]
 }
