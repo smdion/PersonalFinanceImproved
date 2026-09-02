@@ -1862,7 +1862,14 @@ export const taxParams = sqliteTable(
       .notNull()
       .default(sql`(unixepoch())`),
   },
-  (table) => [uniqueIndex("tax_params_year_idx").on(table.taxYear)],
+  (table) => [
+    uniqueIndex("tax_params_year_idx").on(table.taxYear),
+    // R43 follow-up (schema-reviewer suggestion): version is a monotonic
+    // "Tax data: 2026, rev N" revision counter — never meaningfully zero
+    // or negative. Cheap to enforce now, before any admin-facing mutation
+    // of this column ships.
+    // prettier-ignore
+  ],
 );
 
 export type ApiConfig = Record<string, string | undefined>;

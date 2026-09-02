@@ -93,6 +93,7 @@ const V07_SCHEMA_TAGS = [
   "0037_majestic_caretaker", // SQLite counterpart of 0037
   "0038_pink_crusher_hogan", // PG: fpl_by_household + tax_params tables + retirement_profiles.tax_params_year (R43)
   "0038_broken_guardian", // SQLite counterpart of 0038
+  "0039_rich_prodigy", // PG only: tax_params.version CHECK(version > 0) — no SQLite counterpart (check() constraints are PG-only by design, stripped from schema-sqlite.ts's generation; drizzle-kit generate against the SQLite schema produced "No schema changes, nothing to migrate")
 ] as const;
 
 /** All schema version tags that we know how to import from. */

@@ -274,6 +274,13 @@
       "when": 1788369793328,
       "tag": "0038_pink_crusher_hogan",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1788377025524,
+      "tag": "0039_rich_prodigy",
+      "breakpoints": true
     }
   ]
 }

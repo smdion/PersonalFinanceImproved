@@ -52,6 +52,14 @@ function parseSeedTableNames(seedSql: string): string[] {
 
 // Table names that are included in versioned backups (must match version-tables.ts).
 // This is a local copy because db-migrate.ts runs in Docker where src/ isn't available.
+// R43 follow-up (schema-reviewer suggestion): "retirement_profiles" and
+// "retirement_profile_people" were missing from this mirror entirely — a
+// pre-existing gap, not introduced by R43, found while reviewing the table
+// R43's own tax_params_year column lives on. Order within this array is not
+// load-bearing (both use sites just dump each table's rows into a JSON
+// snapshot independently, read-only, no FK-insert-order constraint) —
+// unlike version-tables.ts's VERSION_TABLES, which does encode tier order
+// for restore.
 const VERSION_TABLE_NAMES = [
   "people",
   "budget_profiles",
@@ -70,6 +78,7 @@ const VERSION_TABLE_NAMES = [
   "local_admins",
   "salary_profiles",
   "contribution_profiles",
+  "retirement_profiles",
   "scenarios",
   "asset_class_params",
   "mc_presets",
@@ -93,6 +102,7 @@ const VERSION_TABLE_NAMES = [
   "mortgage_what_if_scenarios",
   "mortgage_extra_payments",
   "retirement_settings",
+  "retirement_profile_people",
   "retirement_salary_overrides",
   "retirement_budget_overrides",
   "asset_class_correlations",
