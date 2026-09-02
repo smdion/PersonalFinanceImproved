@@ -2,48 +2,57 @@
 
 /** Settings page with tabbed panels for managing people, tax brackets, contribution limits, and app config. */
 
-import { PeopleSettings } from "@/components/settings/people";
-import { ContributionLimitsSettings } from "@/components/settings/contribution-limits";
-import { TaxBracketsSettings } from "@/components/settings/tax-brackets";
+import {
+  TaxDataSettings,
+  OLD_TAX_TAB_KEYS,
+} from "@/components/settings/tax-data";
+import {
+  AccessControlSettings,
+  OLD_ACCESS_TAB_KEYS,
+} from "@/components/settings/access-control";
 import { GeneralSettings } from "@/components/settings/general";
 import { DebugSettings } from "@/components/settings/debug";
-import { RbacGroupsSettings } from "@/components/settings/rbac-groups";
 import { ApiDocsSettings } from "@/components/settings/api-docs";
 import { IntegrationsSettings } from "@/components/settings/integrations";
-import { AuthSettings } from "@/components/settings/auth-settings";
-import { ReturnRatesSettings } from "@/components/settings/return-rates";
-import { LtcgBracketsSettings } from "@/components/settings/ltcg-brackets";
-import { IrmaaBracketsSettings } from "@/components/settings/irmaa-brackets";
-import { FplByHouseholdSettings } from "@/components/settings/fpl-by-household";
 import { PageHeader } from "@/components/ui/page-header";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
+import { SK_SETTINGS_ACTIVE_TAB } from "@/lib/constants/settings-keys";
 
+// Internal key stays "taxdata" (unchanged since the original Tax Data
+// consolidation) even though the visible label is now "Reference Data" —
+// Return Rates folded in alongside the 5 tax-year tables (see
+// tax-data.tsx), and renaming the key itself would just be churn for no
+// user-facing benefit.
 const baseTabs = [
   { key: "general", label: "General" },
-  { key: "people", label: "People" },
-  { key: "limits", label: "IRS Limits" },
-  { key: "tax", label: "Tax Brackets" },
-  { key: "ltcg", label: "LTCG Brackets" },
-  { key: "irmaa", label: "IRMAA Tables" },
-  { key: "fpl", label: "ACA/FPL" },
-  { key: "returns", label: "Return Rates" },
+  { key: "taxdata", label: "Reference Data" },
   { key: "integrations", label: "Integrations" },
 ] as const;
+
+// "people" folded into General as a sub-item — an existing user's
+// SK_SETTINGS_ACTIVE_TAB may still hold it.
+const OLD_GENERAL_TAB_KEYS = ["people"];
 
 export default function SettingsPage() {
   const user = useUser();
   const admin = isAdmin(user);
-  const [activeTab, setActiveTab] = usePersistedSetting<string>(
-    "settings_active_tab",
+  const [persistedTab, setActiveTab] = usePersistedSetting<string>(
+    SK_SETTINGS_ACTIVE_TAB,
     "general",
   );
+  const activeTab = OLD_TAX_TAB_KEYS.includes(persistedTab)
+    ? "taxdata"
+    : OLD_ACCESS_TAB_KEYS.includes(persistedTab)
+      ? "access"
+      : OLD_GENERAL_TAB_KEYS.includes(persistedTab)
+        ? "general"
+        : persistedTab;
   const tabs = admin
     ? [
         ...baseTabs,
-        { key: "auth" as const, label: "Auth" },
+        { key: "access" as const, label: "Access Control" },
         { key: "debug" as const, label: "Debug" },
-        { key: "rbac" as const, label: "RBAC" },
         { key: "api" as const, label: "API" },
       ]
     : [...baseTabs];
@@ -78,17 +87,10 @@ export default function SettingsPage() {
       </div>
       <div>
         {activeTab === "general" && <GeneralSettings />}
-        {activeTab === "people" && <PeopleSettings />}
-        {activeTab === "limits" && <ContributionLimitsSettings />}
-        {activeTab === "tax" && <TaxBracketsSettings />}
-        {activeTab === "ltcg" && <LtcgBracketsSettings />}
-        {activeTab === "irmaa" && <IrmaaBracketsSettings />}
-        {activeTab === "fpl" && <FplByHouseholdSettings />}
-        {activeTab === "returns" && <ReturnRatesSettings />}
+        {activeTab === "taxdata" && <TaxDataSettings />}
         {activeTab === "integrations" && <IntegrationsSettings />}
-        {activeTab === "auth" && admin && <AuthSettings />}
+        {activeTab === "access" && admin && <AccessControlSettings />}
         {activeTab === "debug" && admin && <DebugSettings />}
-        {activeTab === "rbac" && admin && <RbacGroupsSettings />}
         {activeTab === "api" && admin && <ApiDocsSettings />}
       </div>
     </div>

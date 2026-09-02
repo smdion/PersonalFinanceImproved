@@ -7,16 +7,13 @@ import { useUser, isAdmin } from "@/lib/context/user-context";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/utils/format";
-import { TAX_YEAR_MIN, TAX_YEAR_MAX } from "@/lib/constants";
-import { YearSelector } from "@/components/settings/year-selector";
-
 const HOUSEHOLD_SIZES = ["1", "2", "3", "4", "5", "6", "7", "8"] as const;
 
 function parseDollar(raw: string): string {
   return raw.replace(/[$,\s]/g, "");
 }
 
-export function FplByHouseholdSettings() {
+export function FplByHouseholdSettings({ year }: { year: number }) {
   const user = useUser();
   const admin = isAdmin(user);
   const utils = trpc.useUtils();
@@ -31,38 +28,18 @@ export function FplByHouseholdSettings() {
     onSuccess: () => utils.settings.fplByHousehold.invalidate(),
   });
 
-  const [selectedYear, setSelectedYear] = useState<number | null>(null);
-  const [showAddYear, setShowAddYear] = useState(false);
-  const [newYear, setNewYear] = useState("");
   const [copyFrom, setCopyFrom] = useState<number | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
 
   if (isLoading) return <Skeleton className="h-6 w-48" />;
-  if (!data || data.length === 0) {
-    return (
-      <div>
-        <h2 className="text-lg font-semibold mb-4">
-          ACA Federal Poverty Level
-        </h2>
-        <p className="text-muted text-sm mb-3">No FPL table configured.</p>
-        {admin && (
-          <button
-            onClick={() => setShowAddYear(true)}
-            className="text-sm text-blue-600 hover:text-blue-800"
-          >
-            + Add year
-          </button>
-        )}
-      </div>
-    );
-  }
 
-  const years = Array.from(new Set(data.map((r) => r.taxYear))).sort(
+  const years = Array.from(new Set((data ?? []).map((r) => r.taxYear))).sort(
     (a, b) => b - a,
   );
-  const activeYear = selectedYear ?? years[0]!;
-  const row = data.find((r) => r.taxYear === activeYear);
+  const activeYear = year;
+  const row = (data ?? []).find((r) => r.taxYear === activeYear);
   const amounts = (row?.amounts ?? {}) as Record<string, number>;
+  const effectiveCopyFrom = copyFrom ?? years[0] ?? null;
 
   const handleAmountUpdate = (size: string, rawValue: string) => {
     const numValue = parseFloat(rawValue);
@@ -78,105 +55,83 @@ export function FplByHouseholdSettings() {
   };
 
   const handleAddYear = async () => {
-    const yr = parseInt(newYear);
-    if (isNaN(yr) || yr < TAX_YEAR_MIN || yr > TAX_YEAR_MAX) return;
-    if (years.includes(yr)) return;
+    if (years.includes(activeYear)) return;
 
-    const sourceAmounts = copyFrom
-      ? ((data.find((r) => r.taxYear === copyFrom)?.amounts ?? {}) as Record<
-          string,
-          number
-        >)
-      : {};
+    const sourceAmounts = effectiveCopyFrom
+      ? (((data ?? []).find((r) => r.taxYear === effectiveCopyFrom)?.amounts ??
+          {}) as Record<string, number>)
+      : ({} as Record<string, number>);
     await createMutation.mutateAsync({
-      taxYear: yr,
+      taxYear: activeYear,
       amounts: Object.fromEntries(
         HOUSEHOLD_SIZES.map((s) => [s, sourceAmounts[s] ?? 0]),
       ) as Record<"1" | "2" | "3" | "4" | "5" | "6" | "7" | "8", number>,
     });
 
-    setSelectedYear(yr);
-    setShowAddYear(false);
-    setNewYear("");
     setCopyFrom(null);
   };
 
   const handleDeleteYear = async (yr: number) => {
-    const toDelete = data.find((r) => r.taxYear === yr);
+    const toDelete = (data ?? []).find((r) => r.taxYear === yr);
     if (toDelete) await deleteMutation.mutateAsync({ id: toDelete.id });
     setConfirmDelete(null);
-    if (activeYear === yr) setSelectedYear(null);
   };
+
+  if (!row) {
+    return (
+      <div>
+        <h2 className="text-lg font-semibold mb-4">
+          ACA Federal Poverty Level
+        </h2>
+        <div className="p-4 border border-dashed rounded-lg text-center">
+          <p className="text-muted text-sm mb-3">
+            No FPL table configured for {activeYear}.
+          </p>
+          {admin && (
+            <div className="flex items-center justify-center gap-3">
+              {years.length > 0 && (
+                <label className="text-sm text-secondary">
+                  Copy from:
+                  <select
+                    value={effectiveCopyFrom ?? ""}
+                    onChange={(e) =>
+                      setCopyFrom(
+                        e.target.value ? parseInt(e.target.value) : null,
+                      )
+                    }
+                    className="ml-2 px-2 py-1 text-sm border rounded"
+                  >
+                    <option value="">All zero</option>
+                    {years.map((yr) => (
+                      <option key={yr} value={yr}>
+                        {yr}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              <button
+                onClick={handleAddYear}
+                className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Add {activeYear}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold">ACA Federal Poverty Level</h2>
-        <YearSelector
-          years={years}
-          activeYear={activeYear}
-          onSelectYear={setSelectedYear}
-          admin={admin}
-          ariaLabel="FPL year"
-          onAddYearClick={() => {
-            setShowAddYear(!showAddYear);
-            setNewYear(String((years[0] ?? new Date().getFullYear()) + 1));
-            setCopyFrom(years[0] ?? null);
-          }}
-        />
-      </div>
+      <h2 className="text-lg font-semibold mb-4">ACA Federal Poverty Level</h2>
 
       <p className="text-xs text-muted mb-4">
         Coverage-year FPL — HHS publishes these guidelines the PRIOR calendar
         year. Determines the 400% FPL ACA subsidy cliff (4× the
         household&rsquo;s figure below).
       </p>
-
-      {/* Add year dialog */}
-      {showAddYear && (
-        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="flex items-center gap-3">
-            <label className="text-sm text-secondary">
-              Year:
-              <input
-                type="number"
-                value={newYear}
-                onChange={(e) => setNewYear(e.target.value)}
-                className="ml-2 w-20 px-2 py-1 text-sm border rounded"
-              />
-            </label>
-            <label className="text-sm text-secondary">
-              Copy from:
-              <select
-                value={copyFrom ?? ""}
-                onChange={(e) =>
-                  setCopyFrom(e.target.value ? parseInt(e.target.value) : null)
-                }
-                className="ml-2 px-2 py-1 text-sm border rounded"
-              >
-                <option value="">All zero</option>
-                {years.map((yr) => (
-                  <option key={yr} value={yr}>
-                    {yr}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button
-              onClick={handleAddYear}
-              className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-              Add
-            </button>
-            <button
-              onClick={() => setShowAddYear(false)}
-              className="px-3 py-1 text-sm text-muted hover:text-primary"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Delete year confirmation */}
       {confirmDelete === activeYear && (

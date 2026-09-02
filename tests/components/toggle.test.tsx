@@ -40,6 +40,19 @@ describe("Toggle", () => {
     expect(screen.getByRole("switch").textContent).toBe("");
   });
 
+  it("uses ariaLabel as the accessible name without rendering visible text (settings-row usage)", () => {
+    render(
+      <Toggle
+        isChecked={false}
+        onChange={vi.fn()}
+        ariaLabel="Auto-load simulation"
+      />,
+    );
+    const el = screen.getByRole("switch");
+    expect(el).toHaveAttribute("aria-label", "Auto-load simulation");
+    expect(el.textContent).toBe("");
+  });
+
   it("sets the title attribute when provided", () => {
     render(
       <Toggle isChecked={false} onChange={vi.fn()} title="Enable feature" />,

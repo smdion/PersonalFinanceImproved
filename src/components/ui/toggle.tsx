@@ -9,13 +9,19 @@ export function Toggle({
   isChecked,
   onChange,
   label,
+  ariaLabel,
   size = "sm",
   title,
   disabled = false,
 }: {
   isChecked: boolean;
   onChange: (checked: boolean) => void;
+  /** Visible pill text next to the switch. */
   label?: string;
+  /** Accessible name when the switch sits beside its own title/description
+   *  elsewhere (a settings row) instead of owning a visible label here —
+   *  rendering `label` in that layout would duplicate the row's title. */
+  ariaLabel?: string;
   size?: "xs" | "sm";
   title?: string;
   /** Renders the switch inert (read-only preview surfaces). */
@@ -31,6 +37,7 @@ export function Toggle({
       type="button"
       role="switch"
       aria-checked={isChecked}
+      aria-label={ariaLabel ?? label}
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();

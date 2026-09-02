@@ -8,47 +8,70 @@ import {
   DEFAULT_LIVING_COST_MAPPING,
 } from "@/lib/config/living-costs";
 import { formatPercent } from "@/lib/utils/format";
-import { usePersistedToggle } from "@/lib/hooks/use-persisted-setting";
+import { STATUS_COLORS } from "@/lib/utils/colors";
+import {
+  usePersistedToggle,
+  usePersistedSetting,
+} from "@/lib/hooks/use-persisted-setting";
 import {
   SK_RETIREMENT_SIMULATION_AUTOLOAD,
   SK_RETIREMENT_MC_AUTOLOAD,
   SK_RETIREMENT_COASTFIRE_MC_AUTOLOAD,
+  SK_SETTINGS_GENERAL_SECTION,
 } from "@/lib/constants/settings-keys";
+import { Button } from "@/components/ui/button";
+import { Toggle } from "@/components/ui/toggle";
+import { PeopleSettings } from "@/components/settings/people";
+
+const GENERAL_SECTIONS = [
+  { key: "people", label: "People" },
+  { key: "retirement", label: "Retirement" },
+  { key: "livingCosts", label: "Living Costs Mapping" },
+] as const;
+
+type GeneralSectionKey = (typeof GENERAL_SECTIONS)[number]["key"];
 
 export function GeneralSettings() {
-  return (
-    <div className="space-y-8">
-      <RetirementSettings />
-      <LivingCostMappingEditor />
-    </div>
+  const [section, setSection] = usePersistedSetting<GeneralSectionKey>(
+    SK_SETTINGS_GENERAL_SECTION,
+    "people",
   );
-}
 
-function Toggle({
-  checked,
-  onChange,
-  ariaLabel,
-}: {
-  checked: boolean;
-  onChange: (v: boolean) => void;
-  ariaLabel: string;
-}) {
   return (
-    <button
-      role="switch"
-      aria-checked={checked}
-      aria-label={ariaLabel}
-      onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-        checked ? "bg-blue-600" : "bg-surface-strong" // theme-audit-ok: toggle off-state
-      }`}
-    >
-      <span
-        className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
-          checked ? "translate-x-4" : "translate-x-1"
-        }`}
-      />
-    </button>
+    <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-6">
+      <nav className="flex md:flex-col gap-1 overflow-x-auto">
+        {GENERAL_SECTIONS.map((s) => (
+          <button
+            key={s.key}
+            onClick={() => setSection(s.key)}
+            className={`px-3 py-2 text-sm text-left rounded-md whitespace-nowrap transition-colors ${
+              section === s.key
+                ? "bg-blue-600 text-white"
+                : "text-secondary hover:bg-surface-elevated"
+            }`}
+          >
+            {s.label}
+          </button>
+        ))}
+      </nav>
+
+      <div>
+        {/* Both stay mounted — LivingCostMappingEditor holds in-progress
+         *  local draft state (category assignments not yet saved) that
+         *  would silently reset if switching away and back unmounted it,
+         *  same risk the Integrations shell's connection cards have. Only
+         *  visibility toggles. */}
+        <div className={section === "people" ? "" : "hidden"}>
+          <PeopleSettings />
+        </div>
+        <div className={section === "retirement" ? "" : "hidden"}>
+          <RetirementSettings />
+        </div>
+        <div className={section === "livingCosts" ? "" : "hidden"}>
+          <LivingCostMappingEditor />
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -90,7 +113,7 @@ function RetirementSettings() {
             </div>
           </div>
           <Toggle
-            checked={engineAutoload}
+            isChecked={engineAutoload}
             onChange={setEngineAutoload}
             ariaLabel="Auto-load simulation"
           />
@@ -106,7 +129,7 @@ function RetirementSettings() {
             </div>
           </div>
           <Toggle
-            checked={mcAutoload}
+            isChecked={mcAutoload}
             onChange={setMcAutoload}
             ariaLabel="Auto-load simulations"
           />
@@ -125,7 +148,7 @@ function RetirementSettings() {
             </div>
           </div>
           <Toggle
-            checked={coastFireMcAutoload}
+            isChecked={coastFireMcAutoload}
             onChange={setCoastFireMcAutoload}
             ariaLabel="Auto-load Coast FIRE simulations"
           />
@@ -231,30 +254,29 @@ function LivingCostMappingEditor() {
         </div>
         <div className="flex items-center gap-2">
           {isDirty && (
-            <button
-              onClick={() => setDraft(null)}
-              className="text-xs text-muted hover:text-secondary px-2 py-1"
-            >
+            <Button variant="ghost" size="xs" onClick={() => setDraft(null)}>
               Discard
-            </button>
+            </Button>
           )}
           {savedMapping && (
-            <button
+            <Button
+              variant="danger"
+              size="xs"
               onClick={reset}
               disabled={upsert.isPending}
-              className="text-xs text-red-500 hover:text-red-700 px-2 py-1"
               title="Reset to defaults"
             >
               Reset to Defaults
-            </button>
+            </Button>
           )}
-          <button
+          <Button
+            variant="primary"
+            size="xs"
             onClick={save}
             disabled={!isDirty || upsert.isPending}
-            className="text-xs px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           >
             {upsert.isPending ? "Saving..." : "Save"}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -273,6 +295,10 @@ function LivingCostMappingEditor() {
                     of income
                   </span>
                 </div>
+                {/* Matches the "+Year"/"+ Add year" blue-link pattern used
+                 *  by the other Settings add-flows (YearSelector and
+                 *  friends) rather than Button's ghost variant, which
+                 *  reads as a neutral toggle, not an "add" affordance. */}
                 <button
                   onClick={() =>
                     setAddingTo(addingTo === range.name ? null : range.name)
@@ -355,7 +381,9 @@ function LivingCostMappingEditor() {
       </div>
 
       {unassigned.length > 0 && (
-        <div className="mt-3 p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
+        <div
+          className={`mt-3 p-2 rounded text-xs border ${STATUS_COLORS.amber.bg} ${STATUS_COLORS.amber.border} ${STATUS_COLORS.amber.text}`}
+        >
           <span className="font-medium">Unmapped categories:</span>{" "}
           {unassigned.join(", ")}
         </div>
