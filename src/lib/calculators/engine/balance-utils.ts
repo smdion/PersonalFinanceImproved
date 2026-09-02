@@ -4,7 +4,7 @@
  * Shared helpers for working with AccountBalances and TaxBuckets.
  * Used by the orchestrator and multiple extraction modules.
  */
-import type { TaxBuckets, AccountBalances } from "../types";
+import type { TaxBuckets, AccountBalances, DecumulationSlot } from "../types";
 import {
   getAllCategories,
   getLimitGroup,
@@ -159,6 +159,56 @@ export function subtractExcluded(
         (exposure?.penaltyExposedTotalStillExcluded[cat] ?? 0) +
         (nonRetirement?.total[cat] ?? 0);
       setBalance(bal, Math.max(0, getTotalBalance(bal) - totalExcl));
+    }
+  }
+  return result;
+}
+
+/**
+ * Replay a `RouteResult`'s drawn slots back onto an `AccountBalances`
+ * clone — reduces each category by what was actually withdrawn, mirroring
+ * `routeWithdrawals`'s own per-category branching (roth/traditional split
+ * for `roth_traditional` categories, total withdrawal for everything else:
+ * `single_bucket` HSA and `basis_tracking`/overflow brokerage both reduce
+ * by total dollars the same way `subtractExcluded`'s own `else` branch
+ * already does). Floors at 0 for the same drift-safety reason
+ * `subtractPenaltyExposed` floors — a slot's withdrawal can't exceed the
+ * balance it was drawn from BY CONSTRUCTION (`routeWithdrawals` clamps to
+ * available balance), but flooring costs nothing and guards against any
+ * future divergence.
+ *
+ * R44 (v0.7.11): the one piece of new balance-mutation arithmetic
+ * `routeWithLastResortAllowance`'s two-dispatch merge needs and that didn't
+ * exist anywhere in the engine before — `dispatchOnce`/`routeWithdrawals`
+ * never mutate the `AccountBalances` they're given, they only compute
+ * slots; the real balance reduction has always happened elsewhere
+ * (decumulation-year.ts's own post-routing bookkeeping), which is fine for
+ * a single dispatch per year but not for chaining a second dispatch against
+ * "what's left after the first one drew."
+ *
+ * Categories with no slot entry are left untouched (not zeroed) — a slot
+ * array need not cover every category (e.g. a category the withdrawal
+ * order skipped, or a partial/filtered slots array from a caller that only
+ * cares about specific categories).
+ */
+export function applySlotsToBalances(
+  balances: AccountBalances,
+  slots: DecumulationSlot[],
+): AccountBalances {
+  const result = cloneAccountBalances(balances);
+  const byCategory = new Map(slots.map((s) => [s.category, s]));
+  for (const cat of getAllCategories()) {
+    const slot = byCategory.get(cat);
+    if (!slot || slot.withdrawal === 0) continue;
+    const bal = result[cat];
+    if (bal.structure === "roth_traditional") {
+      setTraditional(
+        bal,
+        Math.max(0, bal.traditional - slot.traditionalWithdrawal),
+      );
+      setRoth(bal, Math.max(0, bal.roth - slot.rothWithdrawal));
+    } else {
+      setBalance(bal, Math.max(0, getTotalBalance(bal) - slot.withdrawal));
     }
   }
   return result;

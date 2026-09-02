@@ -200,8 +200,23 @@ import { log } from "@/lib/logger";
  *  account name. `targetOwnerName` didn't exist before this version, so no
  *  previously-saved lump sum carries it — this only takes effect for lump
  *  sums created/edited after this ships, which is also when it's included
- *  in the engine-input hash for the first time. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 27;
+ *  in the engine-input hash for the first time.
+ *
+ *  28: R44 — the R41 per-account penalty-allowance override is now a
+ *  genuine last resort (`routeWithLastResortAllowance`, withdrawal-routing.ts):
+ *  a two-dispatch model excludes the allowed account's exposure too on the
+ *  first pass, only reaching into it on a second pass for the true residual
+ *  if the household would otherwise be short. Previously the allowed
+ *  account's money was ordinary, reachable balance from the start — drawn
+ *  whenever `withdrawalOrder`/tax-preference ranking happened to reach it,
+ *  not held back until genuinely needed. A REAL value change, but narrow:
+ *  only affects a household with `avoidPenalizedWithdrawals: true`
+ *  (default) AND at least one account with the R41
+ *  `allowPenalizedWithdrawals` override AND a year where that account's
+ *  exposed money would previously have been drawn before it was truly
+ *  needed. Every household without an R41 override is unaffected
+ *  (`hasLastResortAllowance` false, byte-identical single-pass path). */
+export const PROJECTION_CACHE_ENGINE_VERSION = 28;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;
