@@ -530,6 +530,170 @@ describe("transformBackupToCurrentSchema — v0.6_final to v0.7.0", () => {
 });
 
 // ---------------------------------------------------------------------------
+// v0.7.x — Retirement Profiles backfill (0032_curved_silhouette.sql mirror)
+// ---------------------------------------------------------------------------
+
+describe("transformBackupToCurrentSchema — v0.7.x Retirement Profiles backfill", () => {
+  // Advisor-caught 2026-09-01 (code-review "removed-behavior auditor"):
+  // this transform used to stop at 0032's step A (empty retirement_profiles/
+  // retirement_profile_people, null profile_id) — the INTERMEDIATE state
+  // the real migration passes through before its own backfill runs, not
+  // where a live upgrade actually lands. Restoring a genuinely old backup
+  // (from before Retirement Profiles existed) left the Retirement Profile
+  // Manager sidebar permanently empty with no in-app way to create a
+  // profile (duplicate needs an existing profile to clone FROM).
+  const PRE_0032_VERSION = "0000_v7_initial_schema";
+
+  it("creates a 'Current Plan' profile and points retirement_settings at it, when settings exist but no profile does", () => {
+    const tables = makeBackup({
+      people: [{ id: 1, name: "Alice", is_primary_user: true }],
+      retirement_settings: [
+        {
+          id: 1,
+          person_id: 1,
+          retirement_age: 65,
+          end_age: 95,
+          social_security_monthly: "2500",
+          ss_start_age: 67,
+        },
+      ],
+    });
+    const result = transformBackupToCurrentSchema(
+      tables,
+      PRE_0032_VERSION,
+      CURRENT_VERSION,
+    );
+
+    expect(result.tables["retirement_profiles"]).toHaveLength(1);
+    const profile = result.tables["retirement_profiles"]![0] as Record<
+      string,
+      unknown
+    >;
+    expect(profile.name).toBe("Current Plan");
+
+    const settingsRow = result.tables["retirement_settings"]![0] as Record<
+      string,
+      unknown
+    >;
+    expect(settingsRow.profile_id).toBe(profile.id);
+  });
+
+  it("creates a retirement_profile_people row for every person (completeness invariant), even one with no settings row of their own", () => {
+    const tables = makeBackup({
+      people: [
+        { id: 1, name: "Alice", is_primary_user: true },
+        { id: 2, name: "Bob", is_primary_user: false },
+      ],
+      retirement_settings: [
+        {
+          id: 1,
+          person_id: 1,
+          retirement_age: 65,
+          end_age: 95,
+          social_security_monthly: "2500",
+          ss_start_age: 67,
+        },
+      ],
+    });
+    const result = transformBackupToCurrentSchema(
+      tables,
+      PRE_0032_VERSION,
+      CURRENT_VERSION,
+    );
+
+    const people = result.tables["retirement_profile_people"] as Record<
+      string,
+      unknown
+    >[];
+    expect(people).toHaveLength(2);
+    const bobRow = people.find((r) => r.person_id === 2)!;
+    // Bob has no retirement_settings row of his own -- must fall back to
+    // the primary person's (Alice's) values, not be skipped or zeroed.
+    expect(bobRow.retirement_age).toBe(65);
+    expect(bobRow.end_age).toBe(95);
+    expect(bobRow.ss_start_age).toBe(67);
+  });
+
+  it("sets active_retirement_profile_id in app_settings so the Retirement page doesn't render blank", () => {
+    const tables = makeBackup({
+      people: [{ id: 1, name: "Alice", is_primary_user: true }],
+      retirement_settings: [
+        { id: 1, person_id: 1, retirement_age: 65, end_age: 95 },
+      ],
+      app_settings: [],
+    });
+    const result = transformBackupToCurrentSchema(
+      tables,
+      PRE_0032_VERSION,
+      CURRENT_VERSION,
+    );
+
+    const appSettings = result.tables["app_settings"] as Record<
+      string,
+      unknown
+    >[];
+    const activeRow = appSettings.find(
+      (r) => r.key === "active_retirement_profile_id",
+    );
+    expect(activeRow).toBeDefined();
+    const profile = result.tables["retirement_profiles"]![0] as Record<
+      string,
+      unknown
+    >;
+    expect(activeRow!.value).toBe(profile.id);
+  });
+
+  it("is a no-op when there is no retirement_settings data at all (fresh household, matches the migration's own WHERE EXISTS guard)", () => {
+    const tables = makeBackup({ people: [], retirement_settings: [] });
+    const result = transformBackupToCurrentSchema(
+      tables,
+      PRE_0032_VERSION,
+      CURRENT_VERSION,
+    );
+    expect(result.tables["retirement_profiles"]).toEqual([]);
+    expect(result.tables["retirement_profile_people"]).toEqual([]);
+  });
+
+  it("is idempotent — a backup that already has a real profile is left untouched", () => {
+    const tables = makeBackup({
+      people: [{ id: 1, name: "Alice", is_primary_user: true }],
+      retirement_settings: [
+        {
+          id: 1,
+          person_id: 1,
+          profile_id: 42,
+          retirement_age: 65,
+          end_age: 95,
+        },
+      ],
+      retirement_profiles: [{ id: 42, name: "My Real Plan" }],
+      retirement_profile_people: [
+        {
+          id: 1,
+          profile_id: 42,
+          person_id: 1,
+          retirement_age: 65,
+          end_age: 95,
+        },
+      ],
+    });
+    const result = transformBackupToCurrentSchema(
+      tables,
+      PRE_0032_VERSION,
+      CURRENT_VERSION,
+    );
+    expect(result.tables["retirement_profiles"]).toEqual([
+      { id: 42, name: "My Real Plan" },
+    ]);
+    const settingsRow = result.tables["retirement_settings"]![0] as Record<
+      string,
+      unknown
+    >;
+    expect(settingsRow.profile_id).toBe(42);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Data isolation — transform doesn't mutate original
 // ---------------------------------------------------------------------------
 

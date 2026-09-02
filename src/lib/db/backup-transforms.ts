@@ -574,11 +574,17 @@ function transformV07xToCurrent(tables: TableData): TableData {
     tables["savings_planned_tx_settlements"] = [];
   }
 
-  // 0032: Retirement Profiles, step A (expand). Purely additive — the tables
-  // are empty and the new columns are null until the backfill runs, which
-  // matches a pre-0032 backup exactly: no profiles existed, and the
-  // distribution rates still lived on retirement_scenarios (which the backup
-  // still carries, and which step A does not remove).
+  // 0032: Retirement Profiles, step A (expand) + the backfill migration
+  // 0032_curved_silhouette.sql itself performs in the same file (advisor-
+  // caught 2026-09-01: this function used to stop at step A — empty
+  // tables, null profile_id — leaving a restored pre-0032 backup in the
+  // migration's INTERMEDIATE state instead of where a live upgrade
+  // actually lands. Real households upgrading get a real "Current Plan"
+  // profile via the migration's own backfill; restoring an old backup
+  // AFTER upgrading truncated that profile back to nothing with no way to
+  // recreate one in-app — retirementProfiles.duplicate is the only
+  // creation path and needs an existing profile to clone FROM. Mirrors
+  // the migration SQL's 5 steps exactly, in JS, against in-memory rows.)
   if (!tables["retirement_profiles"]) tables["retirement_profiles"] = [];
   if (!tables["retirement_profile_people"]) {
     tables["retirement_profile_people"] = [];
@@ -592,6 +598,120 @@ function transformV07xToCurrent(tables: TableData): TableData {
   ]) {
     addColumnDefault(tables, "retirement_settings", col, null);
   }
+
+  {
+    const settingsRows = (tables["retirement_settings"] ?? []) as Record<
+      string,
+      unknown
+    >[];
+    const profileRows = tables["retirement_profiles"] as Record<
+      string,
+      unknown
+    >[];
+    // Step 1+2: one "Current Plan" profile, only when settings exist and
+    // no profile does yet (idempotent — a backup already at the current
+    // shape, or one with no retirement data at all, is a pure pass-through).
+    if (settingsRows.length > 0 && profileRows.length === 0) {
+      const profileId = 1;
+      profileRows.push({
+        id: profileId,
+        name: "Current Plan",
+        description:
+          "Your existing retirement assumptions, carried over when Retirement Profiles were introduced.",
+        created_at: new Date().toISOString(),
+      });
+      for (const row of settingsRows) {
+        if (row["profile_id"] == null) row["profile_id"] = profileId;
+      }
+
+      // Step 3: one retirement_profile_people row per person, completeness
+      // invariant. "prim" = the settings row belonging to whichever person
+      // has a settings row AND ranks highest by is_primary_user, then id —
+      // matching getPrimaryPerson()'s own rule, not necessarily the actual
+      // primary person if they have no settings row of their own.
+      const peopleRows = (tables["people"] ?? []) as Record<string, unknown>[];
+      const settingsByPerson = new Map(
+        settingsRows.map((r) => [String(r["person_id"]), r]),
+      );
+      const orderedPeopleWithSettings = peopleRows
+        .filter((p) => settingsByPerson.has(String(p["id"])))
+        .sort((a, b) => {
+          const aPrimary = a["is_primary_user"] ? 1 : 0;
+          const bPrimary = b["is_primary_user"] ? 1 : 0;
+          if (aPrimary !== bPrimary) return bPrimary - aPrimary;
+          return Number(a["id"]) - Number(b["id"]);
+        });
+      const primaryRow =
+        orderedPeopleWithSettings.length > 0
+          ? settingsByPerson.get(String(orderedPeopleWithSettings[0]!["id"]))
+          : undefined;
+
+      const peopleRowsTable = tables["retirement_profile_people"] as Record<
+        string,
+        unknown
+      >[];
+      if (primaryRow && peopleRowsTable.length === 0) {
+        let nextId = 1;
+        for (const p of peopleRows) {
+          const own = settingsByPerson.get(String(p["id"]));
+          const src = own ?? primaryRow;
+          peopleRowsTable.push({
+            id: nextId++,
+            profile_id: profileId,
+            person_id: p["id"],
+            retirement_age: src["retirement_age"],
+            end_age: src["end_age"],
+            social_security_monthly: src["social_security_monthly"] ?? null,
+            ss_start_age: src["ss_start_age"] ?? null,
+            rule_of_55_override: src["rule_of_55_override"] ?? null,
+            salary_annual_increase: src["salary_annual_increase"] ?? null,
+          });
+        }
+      }
+
+      // Step 4: distribution tax rates, relocated off retirement_scenarios.
+      const selectedScenario = (
+        (tables["retirement_scenarios"] ?? []) as Record<string, unknown>[]
+      )
+        .filter((r) => r["is_selected"] === true)
+        .sort((a, b) => Number(a["id"]) - Number(b["id"]))[0];
+      if (selectedScenario) {
+        for (const row of settingsRows) {
+          if (row["distribution_tax_rate_traditional"] == null) {
+            row["distribution_tax_rate_traditional"] =
+              selectedScenario["distribution_tax_rate_traditional"] ?? null;
+            row["distribution_tax_rate_roth"] =
+              selectedScenario["distribution_tax_rate_roth"] ?? null;
+            row["distribution_tax_rate_hsa"] =
+              selectedScenario["distribution_tax_rate_hsa"] ?? null;
+            row["distribution_tax_rate_brokerage"] =
+              selectedScenario["distribution_tax_rate_brokerage"] ?? null;
+          }
+        }
+      }
+
+      // Step 5: the global active-profile pointer — without it,
+      // useEffectiveProfileId has nothing to resolve to for a household
+      // with no active Plan, and build-engine-payload returns null
+      // (blank Retirement page) even though a real profile now exists.
+      const appSettingsRows = (tables["app_settings"] ?? []) as Record<
+        string,
+        unknown
+      >[];
+      if (
+        !appSettingsRows.some(
+          (r) => r["key"] === "active_retirement_profile_id",
+        )
+      ) {
+        appSettingsRows.push({
+          key: "active_retirement_profile_id",
+          value: profileId,
+        });
+      }
+      tables["app_settings"] = appSettingsRows;
+    }
+  }
+
   // null, never a real id — see the scenarios.retirement_profile_id docblock.
   // Backfilling this would turn "this Plan sets nothing for retirement" into
   // "this Plan sets profile 1" for every Plan that ever existed.

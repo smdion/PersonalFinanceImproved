@@ -17,6 +17,7 @@ import {
 import { speculativeJobValues } from "./settings/paycheck";
 import type { W4FilingStatus } from "@/lib/config/enum-values";
 import type { SalaryProfileEntry } from "../helpers/salary";
+import { SK_ACTIVE_RETIREMENT_PROFILE_ID } from "@/lib/constants/settings-keys";
 
 /** Safe slug pattern — lowercase alphanumeric + hyphens, 1-40 chars. */
 const DEMO_SLUG_REGEX = /^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/;
@@ -338,6 +339,18 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
     ssStartAge: rs.ssStartAge,
     filingStatus: filingStatusByPersonName(rs.personName),
   });
+  // Tracks each person's real retirement-age/end-age/SS figures for step
+  // 12c's retirement_profile_people backfill below — mirrors what was
+  // actually inserted into retirement_settings for each person.
+  const retirementFieldsByPersonId = new Map([[personId, rs]] as [
+    number,
+    {
+      retirementAge: number;
+      endAge: number;
+      socialSecurityMonthly: string | null;
+      ssStartAge: number | null;
+    },
+  ][]);
 
   // 12b. Per-person retirement settings overrides
   if (profile.perPersonRetirementSettings) {
@@ -357,9 +370,55 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
           ssStartAge: prs.ssStartAge,
           filingStatus: filingStatusByPersonName(prs.personName),
         });
+        retirementFieldsByPersonId.set(prsPersonId, {
+          retirementAge: prs.retirementAge ?? rs.retirementAge,
+          endAge: prs.endAge ?? rs.endAge,
+          socialSecurityMonthly: prs.socialSecurityMonthly,
+          ssStartAge: prs.ssStartAge,
+        });
       }
     }
   }
+
+  // 12c. Retirement Profiles backfill — mirrors migration
+  // 0032_curved_silhouette.sql's own backfill (advisor-caught 2026-09-01:
+  // this seeder used to insert retirement_settings rows directly with no
+  // profile_id at all and never created a retirement_profiles row,
+  // leaving the Retirement Profile Manager sidebar permanently empty for
+  // any demo household — retirementProfiles.duplicate is the only
+  // creation path and needs an existing profile to clone FROM, so there
+  // was no in-app way to recover). One "Current Plan" profile, every
+  // retirement_settings row pointed at it, one retirement_profile_people
+  // row per person (falling back to the primary person's figures for
+  // anyone without their own retirement_settings row, same rule the real
+  // migration's backfill uses), and the active-profile app_setting so the
+  // Retirement page doesn't render blank.
+  const [retirementProfile] = await db
+    .insert(schema.retirementProfiles)
+    .values({
+      name: "Current Plan",
+      description:
+        "Your existing retirement assumptions, carried over when Retirement Profiles were introduced.",
+    })
+    .returning({ id: schema.retirementProfiles.id });
+  await db
+    .update(schema.retirementSettings)
+    .set({ profileId: retirementProfile!.id });
+  for (const pId of personIdByName.values()) {
+    const fields = retirementFieldsByPersonId.get(pId) ?? rs;
+    await db.insert(schema.retirementProfilePeople).values({
+      profileId: retirementProfile!.id,
+      personId: pId,
+      retirementAge: fields.retirementAge,
+      endAge: fields.endAge,
+      socialSecurityMonthly: fields.socialSecurityMonthly,
+      ssStartAge: fields.ssStartAge,
+    });
+  }
+  await db.insert(schema.appSettings).values({
+    key: SK_ACTIVE_RETIREMENT_PROFILE_ID,
+    value: retirementProfile!.id,
+  });
 
   // 13. Return rate table
   for (const rr of profile.returnRates) {
