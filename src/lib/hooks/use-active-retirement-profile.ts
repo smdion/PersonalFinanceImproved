@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { usePersistedSetting } from "./use-persisted-setting";
+import { useActiveProfileRepair } from "./use-active-profile-repair";
 import { SK_ACTIVE_RETIREMENT_PROFILE_ID } from "@/lib/constants/settings-keys";
 
 /**
@@ -36,14 +36,17 @@ export function useActiveRetirementProfile(): [
   // writeVia (same admin-gated upsert mutation, broader invalidation)
   // closes that without needing a new endpoint.
   const upsertWithInvalidation = trpc.settings.appSettings.upsert.useMutation({
-    onSuccess: () => {
-      utils.settings.appSettings.list.invalidate();
-      utils.retirement.invalidate();
-      utils.projection.invalidate();
-      utils.brokerage.invalidate();
-      utils.budget.invalidate();
-      utils.savings.invalidate();
-    },
+    // See useActiveContribProfile's matching comment — batched instead of
+    // uncoordinated calls.
+    onSuccess: () =>
+      Promise.all([
+        utils.settings.appSettings.list.invalidate(),
+        utils.retirement.invalidate(),
+        utils.projection.invalidate(),
+        utils.brokerage.invalidate(),
+        utils.budget.invalidate(),
+        utils.savings.invalidate(),
+      ]),
   });
   const [activeId, setActiveId] = usePersistedSetting<number | null>(
     SK_ACTIVE_RETIREMENT_PROFILE_ID,
@@ -58,11 +61,7 @@ export function useActiveRetirementProfile(): [
   );
   const { data: profiles } = trpc.retirement.retirementProfiles.list.useQuery();
 
-  useEffect(() => {
-    if (!profiles || profiles.length === 0) return;
-    if (activeId != null && profiles.some((p) => p.id === activeId)) return;
-    setActiveId(profiles[0]!.id);
-  }, [activeId, profiles, setActiveId]);
+  useActiveProfileRepair(activeId, profiles, setActiveId);
 
   return [activeId, setActiveId];
 }

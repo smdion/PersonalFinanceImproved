@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { usePersistedSetting } from "./use-persisted-setting";
+import { useActiveProfileRepair } from "./use-active-profile-repair";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 
 /**
@@ -30,18 +30,23 @@ export function useActiveContribProfile(): [
     // unrelated navigation happens to refetch them. Mirrors
     // ContributionProfileManager's own invalidateProfileDeps (create/
     // rename/duplicate/delete) plus budget's invalidateSummaryAndContributions.
-    onSuccess: () => {
-      utils.settings.appSettings.list.invalidate();
-      utils.contributionProfile.invalidate();
-      utils.contribution.invalidate();
-      utils.paycheck.invalidate();
-      utils.projection.invalidate();
-      utils.retirement.invalidate();
-      utils.brokerage.invalidate();
-      utils.budget.invalidate();
-      utils.savings.invalidate();
-      utils.settings.contributionAccounts.invalidate();
-    },
+    // Promise.all instead of 10 uncoordinated fire-and-forget calls — same
+    // outcome, dispatched together instead of serialized by whatever order
+    // they happen to be written in (code-review efficiency finding,
+    // 2026-09-01).
+    onSuccess: () =>
+      Promise.all([
+        utils.settings.appSettings.list.invalidate(),
+        utils.contributionProfile.invalidate(),
+        utils.contribution.invalidate(),
+        utils.paycheck.invalidate(),
+        utils.projection.invalidate(),
+        utils.retirement.invalidate(),
+        utils.brokerage.invalidate(),
+        utils.budget.invalidate(),
+        utils.savings.invalidate(),
+        utils.settings.contributionAccounts.invalidate(),
+      ]),
   });
   const [activeId, setActiveId] = usePersistedSetting<number | null>(
     SK_ACTIVE_CONTRIB_PROFILE_ID,
@@ -57,13 +62,7 @@ export function useActiveContribProfile(): [
   );
   const { data: profiles } = trpc.contributionProfile.list.useQuery();
 
-  // Re-point at a real row whenever the stored id names one that's gone (or
-  // is absent entirely, e.g. a pre-migration snapshot restore).
-  useEffect(() => {
-    if (!profiles || profiles.length === 0) return;
-    if (activeId != null && profiles.some((p) => p.id === activeId)) return;
-    setActiveId(profiles[0]!.id);
-  }, [activeId, profiles, setActiveId]);
+  useActiveProfileRepair(activeId, profiles, setActiveId);
 
   return [activeId, setActiveId];
 }
