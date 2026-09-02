@@ -56,6 +56,11 @@ import {
   type RenderMcCellOptions,
 } from "./projection-table-mc-cell";
 
+// getAllCategories() returns a fixed list — module-level so the account-sort
+// comparators below don't call it (and re-scan .indexOf) twice per
+// comparison on every render (code-review efficiency finding, 2026-09-01).
+const CATEGORY_ORDER = new Map(getAllCategories().map((c, i) => [c, i]));
+
 /**
  * Builds the merged eligibility + tracked-basis note for one account's
  * tooltip line. Bug fix (found live, real household data): the engine's
@@ -380,6 +385,22 @@ export function DecumulationRow({
   // the per-account calls below is safe — synchronous, no cross-row state).
   let capacityNoteShownThisYear = false;
 
+  // Shared by all three withdrawal-by-tax-type/withdrawal-by-account
+  // branches below — was the same 6-arg buildFullAccountNote call (incl.
+  // the same capacityNoteShownThisYear closure) copy-pasted 3x (code-review
+  // reuse/duplication finding, 2026-09-01).
+  const noteFor = (ia: IndividualAccountYearBalance) =>
+    buildFullAccountNote(
+      ia,
+      yr,
+      deflate,
+      bracketOptimizerResult,
+      !capacityNoteShownThisYear,
+      () => {
+        capacityNoteShownThisYear = true;
+      },
+    );
+
   const dSlotMap = new Map<AccountCategory, DecumulationSlot>(
     dyr.slots.map((s) => [s.category, s]),
   );
@@ -471,17 +492,7 @@ export function DecumulationRow({
                     // fact. See buildEligibilityNote's docblock for why the
                     // basis-remaining figure is reconstructed rather than
                     // reusing eligibilityReason's embedded dollar amount.
-                    const buildNote = (ia: (typeof catAccts)[number]) =>
-                      buildFullAccountNote(
-                        ia,
-                        yr,
-                        deflate,
-                        bracketOptimizerResult,
-                        !capacityNoteShownThisYear,
-                        () => {
-                          capacityNoteShownThisYear = true;
-                        },
-                      );
+                    const buildNote = noteFor;
                     if (wd > 0) {
                       // Per-account breakdown ("no magic money"): when a
                       // category holds more than one tracked account (e.g.
@@ -721,8 +732,8 @@ export function DecumulationRow({
                 .filter((ia) => (ia.withdrawal ?? 0) > 0.01)
                 .sort((a, b) => {
                   const catDiff =
-                    getAllCategories().indexOf(a.category as AccountCategory) -
-                    getAllCategories().indexOf(b.category as AccountCategory);
+                    (CATEGORY_ORDER.get(a.category as AccountCategory) ?? 0) -
+                    (CATEGORY_ORDER.get(b.category as AccountCategory) ?? 0);
                   if (catDiff !== 0) return catDiff;
                   return (a.ownerName ?? a.name).localeCompare(
                     b.ownerName ?? b.name,
@@ -757,16 +768,7 @@ export function DecumulationRow({
                                   prefix: "-" as const,
                                   taxType: itemTaxType(ia.category, wdTaxType),
                                   color: "red" as TipColor,
-                                  ...buildFullAccountNote(
-                                    ia,
-                                    yr,
-                                    deflate,
-                                    bracketOptimizerResult,
-                                    !capacityNoteShownThisYear,
-                                    () => {
-                                      capacityNoteShownThisYear = true;
-                                    },
-                                  ),
+                                  ...noteFor(ia),
                                 }))
                               : parts.map((p) => ({
                                   label: catDisplayLabel[p.cat] ?? p.cat,
@@ -869,13 +871,12 @@ export function DecumulationRow({
             // aggregate Trad/Roth split — the user can see exactly which
             // account(s), whose, funded it. Ordered by category (accum
             // order), then traditional before roth, then owner name.
-            const catOrder = new Map(getAllCategories().map((c, i) => [c, i]));
             const withdrawingAccts = filteredIabs
               .filter((ia) => (ia.withdrawal ?? 0) > 0.01)
               .sort((a, b) => {
                 const catDiff =
-                  (catOrder.get(a.category) ?? 0) -
-                  (catOrder.get(b.category) ?? 0);
+                  (CATEGORY_ORDER.get(a.category) ?? 0) -
+                  (CATEGORY_ORDER.get(b.category) ?? 0);
                 if (catDiff !== 0) return catDiff;
                 const taxDiff =
                   (isTaxFreeBucket(a.taxType) ? 1 : 0) -
@@ -904,16 +905,7 @@ export function DecumulationRow({
                   taxType: itemTaxType(ia.category, ia.taxType),
                   color: "red",
                   group: catDisplayLabel[ia.category] ?? ia.category,
-                  ...buildFullAccountNote(
-                    ia,
-                    yr,
-                    deflate,
-                    bracketOptimizerResult,
-                    !capacityNoteShownThisYear,
-                    () => {
-                      capacityNoteShownThisYear = true;
-                    },
-                  ),
+                  ...noteFor(ia),
                 });
               }
             } else {
