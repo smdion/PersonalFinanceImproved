@@ -5,6 +5,7 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
@@ -675,9 +676,9 @@ function HistoricalTable({
                 <StickyLeftCell offset={0} borderRight>
                   <span className="font-medium">{row.year}</span>
                   {row.isCurrent && (
-                    <span className="ml-1 text-caption font-medium text-blue-600 bg-blue-50 px-1 py-0.5 rounded">
+                    <Badge color="blue" size="sm" className="ml-1">
                       YTD
-                    </span>
+                    </Badge>
                   )}
                 </StickyLeftCell>
                 {/* Net Worth group — scrollable, toggleable */}

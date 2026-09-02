@@ -3,6 +3,7 @@
 /** Monte Carlo results — loading spinner, errors, warnings, depletion callout, and compact summary bar. */
 import { trpc } from "@/lib/trpc";
 import { HelpTip } from "@/components/ui/help-tip";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "@/lib/hooks/use-toast";
 import { ControlZone } from "./pill-btn";
 import {
@@ -253,13 +254,13 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                         </span>
                       )}
                       {si.hasAssetClassOverrides && (
-                        <span className="px-1.5 py-0.5 rounded text-caption bg-amber-100 text-amber-700 font-medium inline-flex items-center">
+                        <Badge color="amber" size="sm" case="normal">
                           Overrides
                           <HelpTip
                             maxWidth={260}
                             text="One or more asset classes are using custom return/volatility figures instead of this preset's own values — the return, volatility, and asset-mix figures below already reflect the overridden numbers."
                           />
-                        </span>
+                        </Badge>
                       )}
                     </div>
                     <div className="flex items-center gap-3 text-xs text-muted">

@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { FormError } from "@/components/ui/form-error";
+import { Badge } from "@/components/ui/badge";
 import { localDateStr } from "@/lib/utils/date";
 
 // --- Types ---
@@ -366,9 +367,9 @@ function PeopleStep({
                   (born {person.dateOfBirth.substring(0, 4)})
                 </span>
                 {person.isPrimaryUser && (
-                  <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                  <Badge color="blue" size="sm" shape="pill" className="ml-2">
                     Primary
-                  </span>
+                  </Badge>
                 )}
               </div>
               <button

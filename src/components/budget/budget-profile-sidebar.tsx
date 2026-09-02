@@ -18,6 +18,7 @@ import {
   ProfileListRow,
   ProfileSidebarHeader,
 } from "@/components/ui/profile-sidebar";
+import { Badge } from "@/components/ui/badge";
 import type { BudgetProfileListEntry } from "./types";
 
 type Props = {
@@ -146,11 +147,11 @@ export function BudgetProfileSidebar({
             }
             extraBadge={
               apiService && apiLinkedProfileId === p.id ? (
-                <span className="text-micro px-1 py-0.5 rounded bg-blue-100 text-blue-700 font-semibold shrink-0">
+                <Badge color="blue" case="normal" className="shrink-0">
                   ⇄ {apiService.toUpperCase()} →{" "}
                   {(p.columnLabels as string[])?.[apiLinkedColumnIndex] ??
                     "Mode" + apiLinkedColumnIndex}
-                </span>
+                </Badge>
               ) : undefined
             }
             meta={

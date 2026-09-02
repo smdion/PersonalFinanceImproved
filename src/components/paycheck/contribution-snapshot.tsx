@@ -7,6 +7,7 @@ import { useScenario } from "@/lib/context/scenario-context";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { sumBy } from "@/lib/utils/math";
 import { HelpTip } from "@/components/ui/help-tip";
+import { Badge } from "@/components/ui/badge";
 import {
   accountColor,
   accountMatchColor,
@@ -457,9 +458,9 @@ export function ContributionSnapshot() {
                               {formatCurrency(at.limit)}
                               {at.views[viewMode].fundingPct >
                                 OVER_LIMIT_THRESHOLD && (
-                                <span className="ml-1 text-caption bg-red-100 text-red-700 px-1 rounded">
+                                <Badge color="red" size="sm" className="ml-1">
                                   Over limit
-                                </span>
+                                </Badge>
                               )}
                             </span>
                             {at.views[viewMode].fundingMissing > 0 && (

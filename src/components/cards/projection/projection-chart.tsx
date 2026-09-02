@@ -32,6 +32,7 @@ import {
 } from "@/lib/config/account-types";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
 import { TOOLTIP_SURFACE_CLASSES } from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
 import type { ProjectionState } from "./projection-table-types";
 
 // Skeleton lives in its own file so the parent (cards/projection/index.tsx)
@@ -326,9 +327,9 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
     <div className="bg-surface-sunken rounded-lg p-3 chart-fade-in">
       <div className="flex items-start justify-between mb-2 gap-2">
         <h5 className="text-xs font-medium text-muted uppercase">
-          <span className="text-micro font-semibold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded mr-1.5 normal-case">
+          <Badge color="blue" case="normal" className="mr-1.5">
             $
-          </span>
+          </Badge>
           Balance Projection
           {isPersonFiltered && (
             <span className="text-caption text-faint font-normal normal-case ml-2">

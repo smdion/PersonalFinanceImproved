@@ -12,7 +12,7 @@ import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile"
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
-import { Badge } from "@/components/ui/badge";
+import { Badge, StatusDot } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useClickOutside } from "@/lib/hooks/use-click-outside";
 
@@ -336,7 +336,7 @@ export function ScenarioBar() {
                     : "text-secondary"
                 }`}
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                <StatusDot color="green" size="xs" />
                 Main Plan
                 {activeSelection.type === "main" && (
                   <span className="ml-auto">
@@ -373,7 +373,7 @@ export function ScenarioBar() {
                         }}
                         className="flex-1 text-left flex items-center gap-2"
                       >
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                        <StatusDot color="blue" size="xs" />
                         {s.name}
                       </button>
                       {canManageScenarios && (

@@ -5,6 +5,7 @@ import { toast } from "@/lib/hooks/use-toast";
 import { formatCurrency } from "@/lib/utils/format";
 import { sumBy } from "@/lib/utils/math";
 import { HelpTip } from "@/components/ui/help-tip";
+import { Badge } from "@/components/ui/badge";
 import { FormError } from "@/components/ui/form-error";
 import { ProfileViewingBadge } from "./profile-viewing-badge";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
@@ -146,21 +147,20 @@ export function SavingsAllocationPanel({
                 <span className="truncate">{p.name}</span>
                 {p.isActive && (
                   <span className="flex items-center gap-0.5 shrink-0">
-                    <span className="text-micro px-1 py-0.5 rounded bg-green-100 text-green-700 font-semibold">
-                      ACTIVE
-                    </span>
+                    <Badge color="green">ACTIVE</Badge>
                     {sandbox && (
                       <HelpTip text="This is your household's actual active budget profile — not necessarily the one this What-If preview is showing below." />
                     )}
                   </span>
                 )}
                 {sandbox && effectiveProfileId === p.id && (
-                  <span
-                    className="text-micro px-1 py-0.5 rounded bg-blue-100 text-blue-700 font-semibold shrink-0"
+                  <Badge
+                    color="blue"
                     title="The profile this What-If view is currently showing"
+                    className="shrink-0"
                   >
                     VIEWING
-                  </span>
+                  </Badge>
                 )}
               </div>
               {summary &&

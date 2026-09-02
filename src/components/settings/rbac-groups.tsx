@@ -5,6 +5,7 @@ import React, { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 export function RbacGroupsSettings() {
   const utils = trpc.useUtils();
@@ -193,9 +194,9 @@ export function RbacGroupsSettings() {
                 placeholder={`ledgr-${p.permission}`}
               />
               {p.isCustom && (
-                <span className="text-caption text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
+                <Badge color="amber" size="sm" case="normal">
                   custom
-                </span>
+                </Badge>
               )}
             </div>
           ))}

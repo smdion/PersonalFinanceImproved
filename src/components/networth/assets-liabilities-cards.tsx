@@ -3,6 +3,7 @@
 import { Card } from "@/components/ui/card";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { HelpTip } from "@/components/ui/help-tip";
+import { SyncBadge } from "@/components/ui/sync-badge";
 import { formatCurrency } from "@/lib/utils/format";
 import { taxTypeLabel } from "@/lib/utils/colors";
 
@@ -84,11 +85,7 @@ export function AssetsLiabilitiesCards({
           <div className="flex justify-between items-center py-1 border-b border-subtle">
             <span className="text-muted">
               Cash
-              {cashSource !== "manual" && (
-                <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-caption font-medium bg-blue-50 text-blue-600">
-                  Synced from {cashSource.toUpperCase()}
-                </span>
-              )}
+              {cashSource !== "manual" && <SyncBadge source={cashSource} />}
             </span>
             {cashSource === "manual" ? (
               <InlineEdit
@@ -122,9 +119,7 @@ export function AssetsLiabilitiesCards({
                 <span className="text-muted">
                   {item.name}
                   {item.synced && otherAssetsSyncSource && (
-                    <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-caption font-medium bg-blue-50 text-blue-600">
-                      Synced from {otherAssetsSyncSource.toUpperCase()}
-                    </span>
+                    <SyncBadge source={otherAssetsSyncSource} />
                   )}
                 </span>
                 <span className="font-medium">

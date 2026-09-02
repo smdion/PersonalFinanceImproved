@@ -10,7 +10,12 @@
  * Plan pin in effect; "Pinned" is the profile the current Plan has pinned as
  * active (see useEffectiveProfileId); "Viewing" is neither — the page is
  * just looking at a profile without it being in effect anywhere else.
+ *
+ * (The "Pinned" label is on R52's Profile/Plan vocabulary sweep — left as-is
+ * here; this change is styling only.)
  */
+import { Badge } from "@/components/ui/badge";
+
 export function ProfileViewingBadge({
   profileName,
   activeProfileName,
@@ -30,9 +35,7 @@ export function ProfileViewingBadge({
   if (isViewingNonActive) {
     return (
       <span className="flex items-center gap-2">
-        <span className="text-micro px-1.5 py-0.5 rounded bg-surface-strong text-muted font-semibold uppercase">
-          Viewing
-        </span>
+        <Badge color="gray">Viewing</Badge>
         <span className="text-xs text-muted">{profileName}</span>
         {activeProfileName && (
           <span className="text-caption text-faint">
@@ -54,18 +57,14 @@ export function ProfileViewingBadge({
   if (isPinned) {
     return (
       <span className="flex items-center gap-2">
-        <span className="text-micro px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-semibold uppercase">
-          Pinned
-        </span>
+        <Badge color="amber">Pinned</Badge>
         <span className="text-xs text-muted">{profileName}</span>
       </span>
     );
   }
   return (
     <span className="flex items-center gap-2">
-      <span className="text-micro px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-semibold uppercase">
-        Active
-      </span>
+      <Badge color="green">Active</Badge>
       <span className="text-xs text-muted">{profileName}</span>
     </span>
   );

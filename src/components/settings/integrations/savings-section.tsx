@@ -18,6 +18,7 @@ import type {
   PreviewData,
   Service,
 } from "../integrations-types";
+import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "../integrations-status-badge";
 import { ApiCategorySelect } from "../integrations-api-category-select";
 import type { SavingsMutations } from "./hooks/use-savings-mutations";
@@ -141,12 +142,13 @@ export function SavingsSection({
                     <span className="text-muted truncate flex-1">
                       {m.apiCategoryName}
                     </span>
-                    <span
-                      className="text-micro px-1 py-0.5 rounded bg-purple-50 text-purple-600"
+                    <Badge
+                      color="purple"
+                      case="normal"
                       title="Balance pulled from API, monthly contribution pushed to API"
                     >
                       ⇄ pull balance / push contribution
-                    </span>
+                    </Badge>
                     {m.nameDrifted && (
                       <>
                         <button

@@ -23,6 +23,7 @@
 
 import { HelpTip } from "@/components/ui/help-tip";
 import { InlineEdit } from "@/components/ui/inline-edit";
+import { Badge } from "@/components/ui/badge";
 import {
   getStrategyMeta,
   type WithdrawalStrategyType,
@@ -137,7 +138,7 @@ export function PerPhaseBudgetSection({
                   ))}
                 </select>
                 {decMonths ? (
-                  <span className="text-xs text-amber-700 bg-amber-50 rounded px-2 py-1">
+                  <Badge color="amber" size="sm" case="normal">
                     Weighted: {formatCurrency(decWeighted ?? 0)}
                     /yr
                     <span className="text-caption text-faint ml-1">
@@ -147,7 +148,7 @@ export function PerPhaseBudgetSection({
                         .join(" +")}
                       )
                     </span>
-                  </span>
+                  </Badge>
                 ) : decLabels.length >= 2 ? (
                   <select
                     className="text-sm border rounded px-2 py-1 bg-surface-primary disabled:cursor-not-allowed disabled:opacity-50"

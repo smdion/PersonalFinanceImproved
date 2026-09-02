@@ -23,6 +23,7 @@ import { FormError } from "@/components/ui/form-error";
 import { useBudgetPageContext } from "./budget-page-context";
 import { computeTotalSinking, computeUnallocated } from "./helpers";
 import { ProfileViewingBadge } from "./profile-viewing-badge";
+import { Badge } from "@/components/ui/badge";
 import type { ColumnResult, PayrollBreakdown, SinkingFundLine } from "./types";
 
 type Props = {
@@ -118,12 +119,12 @@ export function BudgetSummaryBar({
             onActivate={canEdit ? onActivate : undefined}
           />
           {apiService && apiLinkedProfileId === profileId && (
-            <span className="text-micro px-1.5 py-0.5 rounded bg-blue-100 text-blue-600 font-semibold">
+            <Badge color="blue" case="normal">
               ⇄ {apiService.toUpperCase()} →{" "}
               {apiLinkedColumnIndex != null
                 ? (cols[apiLinkedColumnIndex] ?? "Unknown")
                 : "Unknown"}
-            </span>
+            </Badge>
           )}
         </div>
         <div className="flex items-center gap-4 text-xs">

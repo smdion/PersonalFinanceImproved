@@ -15,7 +15,7 @@ export { ContribPeriodToggle } from "./contrib-period-toggle";
 export { PushPreviewModal } from "./push-preview-modal";
 export { FormError, FormErrorBlock } from "./form-error";
 export { Button } from "./button";
-export { Badge } from "./badge";
+export { Badge, StatusDot } from "./badge";
 export { ErrorBoundary } from "./error-boundary";
 export { SyncBadge } from "./sync-badge";
 export { DataTable } from "./data-table";

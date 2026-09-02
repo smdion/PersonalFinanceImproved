@@ -24,6 +24,7 @@ import type {
   Service,
 } from "../integrations-types";
 import { StatusBadge } from "../integrations-status-badge";
+import { Badge } from "@/components/ui/badge";
 import {
   SectionSummaryBadge,
   SectionSummaryRow,
@@ -528,9 +529,14 @@ export function BudgetSection({
               {budget.unmatchedApiCategories.map((c) => (
                 <div key={c.id} className="space-y-0.5">
                   <div className="flex items-center gap-1.5 text-xs">
-                    <span className="text-caption px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 whitespace-nowrap">
+                    <Badge
+                      color="purple"
+                      size="sm"
+                      case="normal"
+                      className="whitespace-nowrap"
+                    >
                       API only
-                    </span>
+                    </Badge>
                     <span
                       className="text-muted truncate flex-1"
                       title={`${c.groupName} > ${c.name}`}

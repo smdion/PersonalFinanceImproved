@@ -7,6 +7,7 @@ import { localDateStr } from "@/lib/utils/date";
 import { AddTransactionForm } from "./add-transaction-form";
 import { PlannedTxForm, emptyTxForm, PlannedTransaction } from "./types";
 import { occurrenceKey } from "@/lib/pure/savings-projection";
+import { Badge } from "@/components/ui/badge";
 
 function txToForm(tx: PlannedTransaction): PlannedTxForm {
   return {
@@ -341,9 +342,9 @@ function TransactionRow({
           {formatDate(tx.transactionDate, "short")}
         </span>
         {isTransfer && (
-          <span className="text-micro font-medium text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded shrink-0">
+          <Badge color="blue" case="normal" className="shrink-0">
             {transferLabel}
-          </span>
+          </Badge>
         )}
         <span className="text-secondary truncate">{tx.description}</span>
         {tx.isRecurring && (

@@ -6,6 +6,7 @@
  */
 
 import { HelpTip } from "@/components/ui/help-tip";
+import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils/format";
 import type {
   RelocationBudgetInfo,
@@ -102,7 +103,7 @@ export function RelocationBudgetSelectors({
               ))}
             </select>
             {currentMonths ? (
-              <span className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded px-2 py-1">
+              <Badge color="amber" size="sm" case="normal">
                 Weighted: {formatCurrency((currentWeighted ?? 0) / 12)}/mo
                 <span className="text-caption text-faint ml-1">
                   (
@@ -114,7 +115,7 @@ export function RelocationBudgetSelectors({
                     .join(" +")}
                   )
                 </span>
-              </span>
+              </Badge>
             ) : (currentProf?.columnLabels ?? []).length >= 2 ? (
               <select
                 className="border rounded px-2 py-1 text-sm"
@@ -176,7 +177,7 @@ export function RelocationBudgetSelectors({
               ))}
             </select>
             {targetMonths ? (
-              <span className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded px-2 py-1">
+              <Badge color="amber" size="sm" case="normal">
                 Weighted: {formatCurrency((targetWeighted ?? 0) / 12)}/mo
                 <span className="text-caption text-faint ml-1">
                   (
@@ -188,7 +189,7 @@ export function RelocationBudgetSelectors({
                     .join(" +")}
                   )
                 </span>
-              </span>
+              </Badge>
             ) : (targetProf?.columnLabels ?? []).length >= 2 ? (
               <select
                 className="border rounded px-2 py-1 text-sm"

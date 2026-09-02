@@ -3,6 +3,7 @@
 import { Card, ProgressBar } from "@/components/ui/card";
 import { formatCurrency, formatDate, formatNumber } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
+import { Badge } from "@/components/ui/badge";
 import { AmortizationTable } from "./amortization-table";
 import type { LoanSummary } from "./types";
 
@@ -19,9 +20,9 @@ export function ActiveLoanCard({
     <div className="mb-6">
       <Card title={loan.name}>
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-xs rounded-full px-2 py-0.5 bg-green-100 text-green-700">
+          <Badge color="green" size="sm" shape="pill" case="normal">
             Active
-          </span>
+          </Badge>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
           <div>
