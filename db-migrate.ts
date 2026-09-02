@@ -214,6 +214,49 @@ async function detectSchemaEra(
 }
 
 /**
+ * First directory that actually accepts a write, from an ordered candidate
+ * list. The pre-upgrade backup is the safety net before a destructive
+ * squash / DROP, so "the directory exists" (the old `fs.existsSync`
+ * heuristic) is not enough — on the hardened homelab stack the container
+ * rootfs is read-only and `/app/data` is present but not a writable mount,
+ * so `writeFileSync` there throws EROFS and the backup silently never
+ * happened (R18).
+ *
+ *  1. `LEDGR_BACKUP_DIR` — point this at a writable volume mount in the
+ *     deployment (the fix for a read-only-rootfs container).
+ *  2. `/app/data` — the historical location; works when it IS a writable
+ *     mount.
+ *  3. `/tmp` — last resort that still beats no backup: it survives the
+ *     migration run (long enough for an operator to copy the file out),
+ *     just not a container restart. Usually a tmpfs even on a read-only
+ *     rootfs.
+ *  4. `.` — local/dev.
+ *
+ * Returns `null` only when every candidate rejects a probe write — a
+ * genuinely unwritable environment, which the callers log at error level.
+ */
+function resolveWritableBackupDir(): string | null {
+  const candidates = [
+    process.env.LEDGR_BACKUP_DIR,
+    "/app/data",
+    "/tmp",
+    ".",
+  ].filter((d): d is string => !!d && d.trim().length > 0);
+  for (const dir of candidates) {
+    try {
+      fs.mkdirSync(dir, { recursive: true });
+      const probe = path.join(dir, `.pre-upgrade-backup-probe-${process.pid}`);
+      fs.writeFileSync(probe, "");
+      fs.unlinkSync(probe);
+      return dir;
+    } catch {
+      // not writable — try the next candidate
+    }
+  }
+  return null;
+}
+
+/**
  * Export a JSON snapshot of every VERSION_TABLE_NAMES table and write it to
  * disk. Shared by handleSquashUpgrade (pre-squash safety net) and the normal
  * idempotent pre-apply loop's pre-0016 backup (see the call site right
@@ -243,8 +286,15 @@ async function writePreMigrationBackupPg(
     tables,
   };
 
+  const backupDir = resolveWritableBackupDir();
+  if (!backupDir) {
+    log("error", "pre_migration_backup_no_writable_dir", {
+      message:
+        "No writable directory for the pre-upgrade backup (tried LEDGR_BACKUP_DIR, /app/data, /tmp, .). Migration is proceeding WITHOUT an on-disk safety net — set LEDGR_BACKUP_DIR to a writable volume mount.",
+    });
+    return null;
+  }
   try {
-    const backupDir = fs.existsSync("/app/data") ? "/app/data" : ".";
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     const backupPath = path.join(
       backupDir,
@@ -261,8 +311,11 @@ async function writePreMigrationBackupPg(
     });
     return backupPath;
   } catch (backupErr) {
-    log("warn", "pre_migration_backup_write_failed", {
+    log("error", "pre_migration_backup_write_failed", {
+      dir: backupDir,
       error: backupErr instanceof Error ? backupErr.message : String(backupErr),
+      message:
+        "Pre-upgrade backup write failed after its directory passed a probe. Migration is proceeding WITHOUT an on-disk safety net.",
     });
     return null;
   }
@@ -1182,8 +1235,15 @@ function writePreMigrationBackupSQLite(
     tables,
   };
 
+  const backupDir = resolveWritableBackupDir();
+  if (!backupDir) {
+    log("error", "pre_migration_backup_no_writable_dir", {
+      message:
+        "No writable directory for the pre-upgrade backup (tried LEDGR_BACKUP_DIR, /app/data, /tmp, .). Migration is proceeding WITHOUT an on-disk safety net — set LEDGR_BACKUP_DIR to a writable volume mount.",
+    });
+    return null;
+  }
   try {
-    const backupDir = fs.existsSync("/app/data") ? "/app/data" : ".";
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     const backupPath = path.join(
       backupDir,
@@ -1200,8 +1260,11 @@ function writePreMigrationBackupSQLite(
     });
     return backupPath;
   } catch (backupErr) {
-    log("warn", "pre_migration_backup_write_failed", {
+    log("error", "pre_migration_backup_write_failed", {
+      dir: backupDir,
       error: backupErr instanceof Error ? backupErr.message : String(backupErr),
+      message:
+        "Pre-upgrade backup write failed after its directory passed a probe. Migration is proceeding WITHOUT an on-disk safety net.",
     });
     return null;
   }
