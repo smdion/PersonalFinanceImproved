@@ -57,6 +57,7 @@ export function useProjectionQueries(
     mcAssetClassOverrides,
     setMcAssetClassOverrides,
     scenarioView,
+    coastFireCustomAge,
   } = form;
 
   const {
@@ -69,6 +70,7 @@ export function useProjectionQueries(
     decumulationExpenseOverride,
     contributionProfileId,
     salaryProfileId,
+    retirementProfileId,
     snapshotId,
     parentCategoryFilter,
   } = props;
@@ -108,6 +110,13 @@ export function useProjectionQueries(
         : {}),
       ...(contributionProfileId != null ? { contributionProfileId } : {}),
       ...(salaryProfileId != null ? { salaryProfileId } : {}),
+      // Advisor-caught 2026-09-01: this object is spread into every engine
+      // query in this hook (computeProjection, computeMonteCarloProjection,
+      // computeCoastFire/MC/Probe, the bracket optimizer) — adding
+      // retirementProfileId here once threads the AssumptionsBand's "view
+      // a non-active profile" selection to all of them in one place,
+      // instead of needing it wired into each query's input separately.
+      ...(retirementProfileId != null ? { retirementProfileId } : {}),
       ...(snapshotId != null ? { snapshotId } : {}),
     }),
     [
@@ -127,6 +136,7 @@ export function useProjectionQueries(
       decumulationExpenseOverride,
       contributionProfileId,
       salaryProfileId,
+      retirementProfileId,
       snapshotId,
     ],
   );
@@ -701,7 +711,18 @@ export function useProjectionQueries(
     scenarioView === "rateSeeded"
       ? rateSeededMcResult
       : scenarioView === "coastFireCustom"
-        ? coastFireProbeResult?.mcResult
+        ? // Advisor-caught 2026-09-01: without this guard, changing the
+          // custom age (committing a new coastFireCustomAge) without
+          // clicking "Check this age" again kept rendering the PREVIOUS
+          // age's MC bands/deterministic line with no loading indicator —
+          // mcLoading below is only tied to coastFireProbeLoading, so
+          // nothing signaled the chart was showing the wrong scenario.
+          // The pass/fail label (index.tsx) already guards on this same
+          // probeAge === committedAge check; the chart/table data needs
+          // the identical guard, not a separate one that can drift.
+          coastFireProbeResult?.probeAge === coastFireCustomAge
+          ? coastFireProbeResult.mcResult
+          : undefined
         : activeCoastFireMcResult;
   const useCoastFireMc = inAltScenario && !!activeAltMcResult;
 

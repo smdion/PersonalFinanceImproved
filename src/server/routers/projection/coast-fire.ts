@@ -101,6 +101,11 @@ export const coastFireRouter = createTRPCRouter({
         contributionProfileId: z.number().int().optional(),
         /** Optional Salary Profile — the independent "what if I earned X" axis. */
         salaryProfileId: z.number().int().optional(),
+        /** View a non-active Retirement Profile — see
+         *  computeMonteCarloProjection's matching field docblock
+         *  (monte-carlo.ts) for the full context (advisor-caught
+         *  2026-09-01). */
+        retirementProfileId: z.number().int().optional(),
         accumulationBudgetProfileId: z.number().int().optional(),
         accumulationBudgetColumn: z.number().int().min(0).optional(),
         accumulationExpenseOverride: z.number().min(0).optional(),
@@ -126,6 +131,7 @@ export const coastFireRouter = createTRPCRouter({
         decumulationBudgetProfileId: input.decumulationBudgetProfileId,
         decumulationBudgetColumn: input.decumulationBudgetColumn,
         decumulationExpenseOverride: input.decumulationExpenseOverride,
+        retirementProfileId: input.retirementProfileId,
       });
       if (!payload) return { result: null };
 
@@ -209,6 +215,11 @@ export const coastFireRouter = createTRPCRouter({
         contributionProfileId: z.number().int().optional(),
         /** Optional Salary Profile — the independent "what if I earned X" axis. */
         salaryProfileId: z.number().int().optional(),
+        /** View a non-active Retirement Profile — see
+         *  computeMonteCarloProjection's matching field docblock
+         *  (monte-carlo.ts) for the full context (advisor-caught
+         *  2026-09-01). */
+        retirementProfileId: z.number().int().optional(),
         accumulationBudgetProfileId: z.number().int().optional(),
         accumulationBudgetColumn: z.number().int().min(0).optional(),
         accumulationExpenseOverride: z.number().min(0).optional(),
@@ -276,6 +287,7 @@ export const coastFireRouter = createTRPCRouter({
         decumulationBudgetProfileId: input.decumulationBudgetProfileId,
         decumulationBudgetColumn: input.decumulationBudgetColumn,
         decumulationExpenseOverride: input.decumulationExpenseOverride,
+        retirementProfileId: input.retirementProfileId,
       });
       if (!payload) return { result: null, computedAt: null };
 

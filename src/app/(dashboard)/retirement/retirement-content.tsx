@@ -387,6 +387,7 @@ export function RetirementContent() {
               parentCategoryFilter="Retirement"
               contributionProfileId={effectiveContribProfileId ?? undefined}
               salaryProfileId={effectiveSalaryProfileId ?? undefined}
+              retirementProfileId={effectiveRetirementProfileId ?? undefined}
               snapshotId={snapshotId ?? undefined}
               dollarMode={dollarMode}
               onDollarModeChange={setDollarMode}

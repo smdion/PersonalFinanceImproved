@@ -92,6 +92,16 @@ export const monteCarloRouter = createTRPCRouter({
         contributionProfileId: z.number().int().optional(),
         /** Optional Salary Profile — the independent "what if I earned X" axis. */
         salaryProfileId: z.number().int().optional(),
+        /** View a non-active Retirement Profile (phase 4 assumptions band) —
+         *  same "view without activating" contract as the two profile ids
+         *  above. Falls back to the household's globally-active profile
+         *  when omitted. Advisor-caught 2026-09-01: getProjection/
+         *  computeStrategyComparison already accepted this; the Monte
+         *  Carlo query (this endpoint) never did, so the AssumptionsBand's
+         *  "view a non-active profile" never reached the chart/table it
+         *  sits directly above — silently kept showing the globally-active
+         *  profile's numbers regardless of what the band was viewing. */
+        retirementProfileId: z.number().int().optional(),
         /** Optional per-asset-class return/volatility overrides from the UI. */
         assetClassOverrides: z
           .array(
@@ -195,6 +205,7 @@ export const monteCarloRouter = createTRPCRouter({
         decumulationBudgetProfileId: input.decumulationBudgetProfileId,
         decumulationBudgetColumn: input.decumulationBudgetColumn,
         decumulationExpenseOverride: input.decumulationExpenseOverride,
+        retirementProfileId: input.retirementProfileId,
       });
       if (!payload)
         return {
