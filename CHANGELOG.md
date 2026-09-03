@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.8
 
+## [0.8.2] - 2026-09-03
+
+Hotfix. No schema changes, no migration.
+
+### Fixed
+
+- **Contribution Profile data loss from the Paycheck page.** Editing a contribution or deduction value on the Paycheck page (in profile mode) rebuilt the profile's entire `contributionActiveFields` blob from a client-side query snapshot and wrote the whole thing back. If that snapshot was stale — e.g. right after a profile rename, which invalidates the query — the write silently wiped every account and deduction entry the snapshot didn't have, leaving the profile "Incomplete" with everything falling back to no value. The Paycheck page now uses the same field-level, server-side, transactional patch procedures (`setAccountActiveFields` / `setDeductionActiveFields`) the Contribution Profile Manager already moved to — it was the last caller still doing the full-blob rewrite.
+
 ## [0.8.1] - 2026-09-03
 
 Accessibility, print, and internal-quality pass. No schema changes, no migration — a plain code release.

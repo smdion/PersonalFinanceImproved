@@ -87,24 +87,38 @@ export default function PaycheckPage() {
    *  direct-write path instead of the profile's active fields. */
   const isProfileMode = contribProfileActive && !profileLocked;
 
-  const updateProfile = trpc.contributionProfile.update.useMutation({
-    onSuccess: () => {
-      utils.paycheck.invalidate();
-      utils.contribution.invalidate();
-      utils.contributionProfile.invalidate();
-      utils.projection.invalidate();
-    },
-  });
+  const invalidateProfileWrite = () => {
+    utils.paycheck.invalidate();
+    utils.contribution.invalidate();
+    utils.contributionProfile.invalidate();
+    utils.projection.invalidate();
+  };
+  // Field-level patch procedures — a transactional read-merge-write of one
+  // sub-entry off the freshest profile row. NOT `contributionProfile.update`
+  // with a client-rebuilt blob: that rebuild reads from a `getById` snapshot
+  // that goes stale the instant an invalidation (e.g. a profile rename)
+  // fires, and PUTting the whole `contributionActiveFields` column back then
+  // silently wipes every entry the snapshot didn't have. Same clobber class
+  // contribution-profile-manager.tsx already moved off (see its patchAccount
+  // comment) — this page was the last caller still doing it the old way.
+  const setAccountFields =
+    trpc.contributionProfile.setAccountActiveFields.useMutation({
+      onSuccess: invalidateProfileWrite,
+    });
+  const setDeductionFields =
+    trpc.contributionProfile.setDeductionActiveFields.useMutation({
+      onSuccess: invalidateProfileWrite,
+    });
 
-  // Helper: update one or more fields in the active profile's active
-  // fields, in a single atomic write. The multi-field form exists for
-  // entity kinds whose write schema requires certain fields to be set
-  // together (or none) — a caller editing an independent field can keep
-  // passing a single field/value pair. There is no more "jobs" entity kind
-  // here: that active-fields bucket (payPeriod/payWeek/anchorPayDate, W-4,
-  // bonus timing/flags) was retired in the Stage B migration — those 11
-  // fields now live on the Salary Profile entry instead (see
-  // writeSalaryProfileEntry above).
+  // Helper: patch one or more fields on one entry in the active profile's
+  // active fields. The multi-field form exists for entity kinds whose write
+  // schema requires certain fields to be set together (or none) — a caller
+  // editing an independent field can keep passing a single field/value pair.
+  // A field whose value is `undefined` is unset (removed) rather than
+  // written. There is no more "jobs" entity kind here: that active-fields
+  // bucket (payPeriod/payWeek/anchorPayDate, W-4, bonus timing/flags) was
+  // retired in the Stage B migration — those 11 fields now live on the
+  // Salary Profile entry instead (see writeSalaryProfileEntry above).
   function updateProfileActiveField(
     entityType: "contributionAccounts" | "deductions",
     entityId: number,
@@ -112,26 +126,31 @@ export default function PaycheckPage() {
     value?: unknown,
   ) {
     if (!activeProfile) return;
-    const existing = activeProfile.contributionActiveFields as Record<
-      string,
-      Record<string, Record<string, unknown>>
-    >;
-    const entityActiveFields = { ...(existing[entityType] ?? {}) };
     const patch =
       typeof fieldOrFields === "string"
         ? { [fieldOrFields]: value }
         : fieldOrFields;
-    entityActiveFields[String(entityId)] = {
-      ...(entityActiveFields[String(entityId)] ?? {}),
-      ...patch,
-    };
-    updateProfile.mutate({
-      id: activeProfile.id,
-      contributionActiveFields: {
-        ...existing,
-        [entityType]: entityActiveFields,
-      },
-    });
+    const fields: Record<string, unknown> = {};
+    const unset: string[] = [];
+    for (const [k, v] of Object.entries(patch)) {
+      if (v === undefined) unset.push(k);
+      else fields[k] = v;
+    }
+    if (entityType === "contributionAccounts") {
+      setAccountFields.mutate({
+        profileId: activeProfile.id,
+        accountId: entityId,
+        fields,
+        unset: unset.length ? unset : undefined,
+      });
+    } else {
+      setDeductionFields.mutate({
+        profileId: activeProfile.id,
+        deductionId: entityId,
+        fields,
+        unset: unset.length ? unset : undefined,
+      });
+    }
   }
 
   /**
@@ -717,43 +736,32 @@ export default function PaycheckPage() {
                           );
                           if (!raw) return;
                           if (isProfileMode) {
-                            // Set both autoMaximize and contributionValue in one profile update
-                            if (!activeProfile) return;
-                            const existing =
-                              activeProfile.contributionActiveFields as Record<
-                                string,
-                                Record<string, Record<string, unknown>>
-                              >;
-                            const entityActiveFields = {
-                              ...(existing.contributionAccounts ?? {}),
-                            };
-                            // An entry can carry just autoMaximize with no value —
-                            // contributionValue/Method are only required together
-                            // (see contribAccountActiveFieldsSchema), not whenever
-                            // an entry exists at all. `raw` only appears here if
-                            // this account already resolves under this profile, so
-                            // if a real value exists it's already in `prior`.
-                            const prior = entityActiveFields[String(id)] ?? {};
-                            entityActiveFields[String(id)] = {
-                              ...prior,
-                              autoMaximize: value,
-                              ...(value && targetContribValue != null
-                                ? {
-                                    contributionValue:
-                                      String(targetContribValue),
-                                    contributionMethod:
-                                      prior.contributionMethod ??
-                                      raw.contributionMethod,
-                                  }
-                                : {}),
-                            };
-                            updateProfile.mutate({
-                              id: activeProfile.id,
-                              contributionActiveFields: {
-                                ...existing,
-                                contributionAccounts: entityActiveFields,
-                              } as typeof activeProfile.contributionActiveFields,
-                            });
+                            // Set autoMaximize (and, when turning it on with a
+                            // known target, the resolved contributionValue) via
+                            // the field-level patch — the server merges onto the
+                            // freshest profile row. An entry can carry just
+                            // autoMaximize with no value; contributionValue/Method
+                            // are only required together (see
+                            // contribAccountActiveFieldsSchema), not whenever an
+                            // entry exists. `raw` only appears here if this account
+                            // already resolves under this profile, so a stored
+                            // method already survives the merge — raw's method is
+                            // just the fallback for the rare bare entry.
+                            updateProfileActiveField(
+                              "contributionAccounts",
+                              id,
+                              {
+                                autoMaximize: value,
+                                ...(value && targetContribValue != null
+                                  ? {
+                                      contributionValue:
+                                        String(targetContribValue),
+                                      contributionMethod:
+                                        raw.contributionMethod,
+                                    }
+                                  : {}),
+                              },
+                            );
                             return;
                           }
                           // No profile loaded / no edit permission — autoMaximize
