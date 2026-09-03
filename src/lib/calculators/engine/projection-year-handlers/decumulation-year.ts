@@ -438,12 +438,24 @@ export function runDecumulationYear(
     year,
     sunsetYear: taxRates.obbbaSeniorSunsetYear,
   });
-  const grownStandardDeduction = growAmount(
+  // obbbaAddon is NOT grown with the rest — it's a fixed, non-indexed
+  // statutory dollar amount ($6,000/senior, phased out and sunset by
+  // computeObbbaSeniorDeduction itself for the CURRENT `year`), unlike the
+  // base standard deduction and §63(f) addon above, which are the
+  // CPI-indexed amounts `taxGrowth` exists to project forward. Folding it
+  // into the pre-growth sum inflated the fixed $6,000 by 1-2 years of CPI
+  // for any projection year past the tax-data vintage — added back in
+  // after growth instead.
+  const grownBaseAndSeniorDeduction = growAmount(
     taxRates.standardDeduction != null
-      ? taxRates.standardDeduction + seniorStandardDeductionAddon + obbbaAddon
+      ? taxRates.standardDeduction + seniorStandardDeductionAddon
       : taxRates.standardDeduction,
     taxGrowth,
   );
+  const grownStandardDeduction =
+    grownBaseAndSeniorDeduction != null
+      ? grownBaseAndSeniorDeduction + obbbaAddon
+      : grownBaseAndSeniorDeduction;
   // Phase 2: LTCG brackets, same growth factor as ordinary
   // brackets/standard deduction above — always returns a real, grown
   // table (falls back to the hardcoded LTCG_BRACKETS default when the

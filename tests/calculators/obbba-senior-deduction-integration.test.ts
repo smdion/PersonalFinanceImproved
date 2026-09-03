@@ -122,7 +122,7 @@ function makeInput(withObbba: boolean): ProjectionInput {
     },
     // Low spending relative to balance -> low MAGI, comfortably under the
     // $150k OBBBA phaseout start, so the addon should apply at its full
-    // (grown) per-person amount from decumulation year 2 on.
+    // per-person amount from decumulation year 2 on.
     annualExpenses: 55000,
     decumulationAnnualExpenses: 55000,
     inflationRate: 0.025,
@@ -163,12 +163,16 @@ describe("OBBBA senior deduction — end-to-end engine integration", () => {
     expect(yr2With.standardDeduction!).toBeGreaterThan(
       yr2Without.standardDeduction!,
     );
-    // The delta should be close to the (grown) $6,000/person figure for a
-    // single-senior household well under the $150k phaseout start.
-    const grownFactor = yr2Without.standardDeduction! / BASE_SD;
+    // The delta should be close to the flat $6,000/person figure for a
+    // single-senior household well under the $150k phaseout start — NOT
+    // grown by taxGrowth. OBBBA's $6,000 is a fixed, non-CPI-indexed
+    // statutory amount (unlike the base standard deduction and §63(f)
+    // addon, which are); computeObbbaSeniorDeduction already resolves the
+    // correct nominal figure for the projection year, so folding it in
+    // after growWithholdingBrackets/growAmount preserves that.
     expect(
       yr2With.standardDeduction! - yr2Without.standardDeduction!,
-    ).toBeCloseTo(6000 * grownFactor, 0);
+    ).toBeCloseTo(6000, 0);
   });
 
   it("years after the 2028 sunset get NO OBBBA addon (gated on sunsetYear, not a hardcoded literal)", () => {
