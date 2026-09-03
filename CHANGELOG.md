@@ -22,13 +22,19 @@ Accessibility, print, and internal-quality pass. No schema changes, no migration
 - Printing in dark mode no longer produces a dark, toner-heavy page — print forces a light color scheme.
 - Amortization-schedule and net-worth-history table rows no longer split across a page break.
 
+### Settings
+
+- **IRS limit growth rate is now editable** (Settings → Reference Data → Return Rates). The projection engine grows IRS contribution limits by this rate each future year; it was previously a fixed, invisible 2%.
+
 ### Under the hood
 
 - **Dual-DB parity test suite** (`tests/db/transforms-parity.test.ts`) — guards the Postgres-string vs SQLite-number boundary on every helper that reads a `decimal` column, a bug class that is invisible in CI (SQLite-only) and surfaces only in production.
 - `prettier-plugin-tailwindcss` — Tailwind class order is now sorted and enforced on every commit.
 - Recharts animation-disable is explicit on all chart components (was relying on a global reduced-motion CSS fallback).
 - `performance/` page converted to the server-shell prefetch pattern (`page.tsx` + `performance-content.tsx`), matching `brokerage/` and `contributions/` — first paint now hydrates with data and persisted column state instead of snapping.
-- Engine audit (R48) for calculations/assumptions with no UI or report surface — four minor findings triaged to the backlog; none change projection math.
+- **Batched budget-amount saves are now atomic** — a grid paste (and the add/remove-column and reorder operations) either lands whole or not at all, and a paste cell that can't be saved is reported back rather than silently dropped.
+- Recharts is code-split out of the `analytics` and `upkeep/utilities` page chunks; the projection table's year rows are memoized; four static page wrappers dropped an unnecessary `"use client"`.
+- Engine audit (R48) for calculations/assumptions with no UI or report surface — the IRS-limit-growth-rate finding is fixed above; three smaller findings triaged to the backlog; none change projection math.
 
 ## [0.8.0] - 2026-09-03
 
