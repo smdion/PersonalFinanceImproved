@@ -7,6 +7,7 @@
  * and `updateClampBounds`.
  */
 import { eq, sql } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
 import { queryRaw } from "@/lib/db/compat";
 import { z } from "zod/v4";
 import {
@@ -376,9 +377,10 @@ export const monteCarloRouter = createTRPCRouter({
         const activeIds = new Set(baseMcAssetClasses.map((ac) => ac.id));
         for (const override of input.assetClassOverrides) {
           if (!activeIds.has(override.id)) {
-            throw new Error(
-              `Asset class override id '${override.id}' does not match any active asset class`,
-            );
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Asset class override id '${override.id}' does not match any active asset class`,
+            });
           }
         }
       }

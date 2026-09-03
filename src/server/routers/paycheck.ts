@@ -1,5 +1,6 @@
 /** Paycheck router for gross-to-net pay calculations including federal/state tax withholding, pre-tax deductions, and per-period contribution breakdowns. */
 import { eq } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
@@ -107,9 +108,11 @@ export function buildLiabilityBracketInput(
   limits: Map<string, number>,
 ): TaxBracketInput {
   if (bracketRow.w4Checkbox) {
-    throw new Error(
-      "Annual tax liability requires standard (non-2(c)) brackets",
-    );
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message:
+        "This calculation needs standard W-4 tax brackets (not the multiple-jobs checkbox).",
+    });
   }
   const base = buildBracketInput(bracketRow, limits);
   return { ...base, brackets: toTaxableIncomeBrackets(base.brackets) };

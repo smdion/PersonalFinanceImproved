@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { TRPCError } from "@trpc/server";
 import { eq, asc, desc } from "drizzle-orm";
 import {
   createTRPCRouter,
@@ -332,7 +333,11 @@ export const adminProcedures = {
             .select()
             .from(schema.scenarios)
             .where(eq(schema.scenarios.id, input.id));
-          if (!existing) throw new Error("Scenario not found");
+          if (!existing)
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Scenario not found",
+            });
           const overrides = (existing.overrides ?? {}) as Record<
             string,
             Record<string, Record<string, unknown>>
@@ -371,7 +376,11 @@ export const adminProcedures = {
             .select()
             .from(schema.scenarios)
             .where(eq(schema.scenarios.id, input.id));
-          if (!existing) throw new Error("Scenario not found");
+          if (!existing)
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Scenario not found",
+            });
           const overrides = (existing.overrides ?? {}) as Record<
             string,
             Record<string, Record<string, unknown>>

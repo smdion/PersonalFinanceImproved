@@ -1,5 +1,6 @@
 /** Retirement router for readiness analysis including savings rates, employer matches, tax bucket projections, relocation comparisons, profile-switching scenarios, and retirement-settings/scenario/override/return-rate CRUD. */
 import { eq, ne, asc, and, isNull } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
 import { DEFAULT_RETURN_RATE } from "@/lib/constants";
 import {
@@ -675,9 +676,11 @@ export const retirementRouter = createTRPCRouter({
           !existing &&
           (input.retirementAge == null || input.endAge == null)
         ) {
-          throw new Error(
-            "retirementAge and endAge are required to create a new retirement_profile_people row",
-          );
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message:
+              "Retirement age and end age are required to add a person to a new profile.",
+          });
         }
         const { profileId, personId, ...patch } = input;
         const values = {
@@ -909,9 +912,11 @@ export const retirementRouter = createTRPCRouter({
           )
           .returning();
         if (!row) {
-          throw new Error(
-            `No retirement_settings row for profile ${input.profileId}, person ${input.personId} — cannot set the pre-retirement raise rate`,
-          );
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message:
+              "No retirement settings found for this person — open the Retirement page first.",
+          });
         }
         return row;
       }),
@@ -1141,7 +1146,10 @@ export const retirementRouter = createTRPCRouter({
             .from(schema.people)
             .orderBy(asc(schema.people.id));
           if (people.length === 0) {
-            throw new Error("No people exist to seed the new profile with.");
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "No people exist to seed the new profile with.",
+            });
           }
           const primaryPerson = getPrimaryPerson(people);
 
@@ -1156,7 +1164,10 @@ export const retirementRouter = createTRPCRouter({
               ? sourceSettings.find((s) => s.personId === primaryPerson.id)
               : undefined) ?? sourceSettings[0];
           if (!sourceHousehold) {
-            throw new Error("Source profile has no settings to clone.");
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Source profile has no settings to clone.",
+            });
           }
 
           const sourcePeopleRows = await tx
@@ -1272,21 +1283,29 @@ export const retirementRouter = createTRPCRouter({
           input.id,
           allProfiles.length,
         );
-        if (!deleteCheck.allowed) throw new Error(deleteCheck.reason);
+        if (!deleteCheck.allowed)
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: deleteCheck.reason ?? "This profile can't be deleted.",
+          });
 
         if (!allProfiles.some((p) => p.id === input.id))
-          throw new Error("Profile not found");
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Profile not found",
+          });
 
         const pinningPlans = await ctx.db
           .select({ name: schema.scenarios.name })
           .from(schema.scenarios)
           .where(eq(schema.scenarios.retirementProfileId, input.id));
         if (pinningPlans.length > 0) {
-          throw new Error(
-            `Cannot delete: active in ${pinningPlans.length} Plan(s) (${pinningPlans
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Cannot delete: active in ${pinningPlans.length} Plan(s) (${pinningPlans
               .map((p) => p.name)
               .join(", ")}). Change that Plan's retirement profile first.`,
-          );
+          });
         }
 
         // Explicit child-row cleanup, NOT relying on ON DELETE cascade.

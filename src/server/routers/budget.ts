@@ -1611,13 +1611,17 @@ export const budgetRouter = createTRPCRouter({
 
       if (input.columnMonths) {
         if (input.columnMonths.length !== profile.columnLabels.length) {
-          throw new Error("columnMonths length must match columnLabels length");
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "This budget's columns changed — reload and try again.",
+          });
         }
         const sum = input.columnMonths.reduce((s, m) => s + m, 0);
         if (sum !== 12) {
-          throw new Error(
-            `columnMonths must sum to 12 (got ${sum}) — the weighted annual total assumes a full year is covered`,
-          );
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Column months must sum to 12 (got ${sum}) — the weighted annual total assumes a full year.`,
+          });
         }
       }
 
@@ -1649,9 +1653,10 @@ export const budgetRouter = createTRPCRouter({
           input.columnContributionProfileIds.length !==
           profile.columnLabels.length
         ) {
-          throw new Error(
-            "columnContributionProfileIds length must match columnLabels length",
-          );
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "This budget's columns changed — reload and try again.",
+          });
         }
       }
 
@@ -1690,9 +1695,10 @@ export const budgetRouter = createTRPCRouter({
         input.columnSalaryProfileIds &&
         input.columnSalaryProfileIds.length !== profile.columnLabels.length
       ) {
-        throw new Error(
-          "columnSalaryProfileIds length must match columnLabels length",
-        );
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "This budget's columns changed — reload and try again.",
+        });
       }
 
       // Store null if all entries are null (clean up to default behavior)

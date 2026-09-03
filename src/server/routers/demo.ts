@@ -1,5 +1,6 @@
 /** Demo router for creating, listing, activating, and destroying isolated demo schemas seeded with predefined financial profiles. */
 import { z } from "zod/v4";
+import { TRPCError } from "@trpc/server";
 import { sql } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -445,6 +446,8 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
 
   // 15. Account performance (per-account yearly breakdown)
   // Build a lookup from accountLabel → perfAccount.id for FK linking
+  // These three guard the DEMO_PROFILES fixture's own consistency — a
+  // malformed constant is a dev bug, not a user error. Left as plain Error.
   for (const ap of profile.accountPerformance) {
     if (!ap.perfAccountLabel) {
       throw new Error(
@@ -566,14 +569,19 @@ export const demoRouter = createTRPCRouter({
     .input(z.object({ slug: demoSlugSchema }))
     .mutation(async ({ input }) => {
       if (!isPostgres()) {
-        throw new Error(
-          "Demo mode requires PostgreSQL (uses PG schemas for isolation)",
-        );
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            "Demo mode requires PostgreSQL (uses PG schemas for isolation)",
+        });
       }
 
       const profile = DEMO_PROFILES[input.slug];
       if (!profile) {
-        throw new Error(`Unknown demo profile: ${input.slug}`);
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Unknown demo profile: ${input.slug}`,
+        });
       }
 
       const schemaName = `demo_${input.slug.replace(/-/g, "_")}`;
@@ -586,9 +594,10 @@ export const demoRouter = createTRPCRouter({
           `SELECT count(*)::int AS cnt FROM information_schema.schemata WHERE schema_name LIKE 'demo_%'`,
         );
         if ((schemaCount.rows[0]?.cnt ?? 0) >= MAX_DEMO_SCHEMAS) {
-          throw new Error(
-            `Maximum demo schemas (${MAX_DEMO_SCHEMAS}) reached. Deactivate an existing profile first.`,
-          );
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Maximum demo schemas (${MAX_DEMO_SCHEMAS}) reached. Deactivate an existing profile first.`,
+          });
         }
 
         const { drizzle } = await import("drizzle-orm/node-postgres");

@@ -350,9 +350,7 @@ describe("budget router — updateColumnContributionProfileIds", () => {
         caller.budget.updateColumnContributionProfileIds({
           columnContributionProfileIds: [null, null],
         }),
-      ).rejects.toThrow(
-        "columnContributionProfileIds length must match columnLabels length",
-      );
+      ).rejects.toThrow(/columns changed/);
     } finally {
       cleanup();
     }
