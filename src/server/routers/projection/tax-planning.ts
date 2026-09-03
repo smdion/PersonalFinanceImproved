@@ -325,4 +325,63 @@ export const taxPlanningRouter = createTRPCRouter({
         },
       };
     }),
+
+  /**
+   * Run the household's projection once per named withdrawal-sequencing
+   * strategy and score each on lifetime tax — the side-by-side comparison
+   * (roadmap #2). Clone-and-score, same pattern as
+   * `optimizeRothBracketTarget`: a baseline run learns the first
+   * decumulation year, then each strategy is one extra
+   * `decumulationOverride` from that year forward.
+   */
+  compareWithdrawalStrategies: protectedProcedure
+    .input(
+      taxPlanningBaseInput.extend({
+        strategies: z.array(withdrawalStrategyChoiceSchema).min(2).max(5),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const baseline = await runProjection(ctx.db, input);
+      if (!baseline) return { strategies: [], baselineLabel: null };
+
+      const baselineDecum = decumulationYears(baseline.result.projectionByYear);
+      const firstDecumYear = baselineDecum[0]?.year;
+      if (firstDecumYear === undefined) {
+        return { strategies: [], baselineLabel: null };
+      }
+
+      const scored = [];
+      for (const strategy of input.strategies) {
+        const override: DecumulationOverride = {
+          year: firstDecumYear,
+          withdrawalRoutingMode: strategy.mode,
+          ...(strategy.mode === "waterfall" && strategy.order
+            ? { withdrawalOrder: strategy.order }
+            : {}),
+        } as DecumulationOverride;
+
+        const run = await runProjection(ctx.db, input, [override]);
+        const years = run ? decumulationYears(run.result.projectionByYear) : [];
+        const finalYear = years[years.length - 1];
+        scored.push({
+          label: strategy.label,
+          mode: strategy.mode,
+          lifetimeTax: lifetimeTax(years),
+          terminalByTaxType: finalYear?.balanceByTaxType ?? null,
+          depletedYear: run?.result.portfolioDepletionYear ?? null,
+        });
+      }
+
+      // The cheapest lifetime tax among non-depleting strategies (any
+      // strategy — fall back to overall cheapest if all deplete).
+      const viable = scored.filter((s) => s.depletedYear === null);
+      const ranked = (viable.length ? viable : scored)
+        .slice()
+        .sort((a, b) => a.lifetimeTax - b.lifetimeTax);
+
+      return {
+        strategies: scored,
+        baselineLabel: ranked[0]?.label ?? null,
+      };
+    }),
 });
