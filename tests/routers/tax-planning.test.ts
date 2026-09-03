@@ -139,3 +139,62 @@ describe("projection router — projectTaxYears", () => {
     }
   });
 });
+
+describe("projection router — compareWithdrawalStrategies", () => {
+  it("scores each strategy and names the cheapest as baselineLabel", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedTaxPlanningHousehold(db);
+      const res = await caller.projection.compareWithdrawalStrategies({
+        strategies: [
+          {
+            label: "Traditional first",
+            mode: "waterfall",
+            order: ["401k", "403b", "ira", "brokerage", "hsa"],
+          },
+          { label: "Tax-optimized", mode: "bracket_filling" },
+        ],
+      });
+      expect(res.strategies).toHaveLength(2);
+      for (const s of res.strategies) {
+        expect(s.lifetimeTax).toBeGreaterThanOrEqual(0);
+        expect(s).toHaveProperty("terminalByTaxType");
+        expect(s).toHaveProperty("depletedYear");
+      }
+      const cheapest = res.strategies
+        .slice()
+        .sort((a, b) => a.lifetimeTax - b.lifetimeTax)[0];
+      // baselineLabel is only forced to the overall-cheapest when at least
+      // one strategy doesn't deplete; this fixture doesn't deplete.
+      expect(res.baselineLabel).toBe(cheapest.label);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("bracket_filling never costs more lifetime tax than naive traditional-first", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedTaxPlanningHousehold(db);
+      const res = await caller.projection.compareWithdrawalStrategies({
+        strategies: [
+          {
+            label: "trad-first",
+            mode: "waterfall",
+            order: ["401k", "403b", "ira", "brokerage", "hsa"],
+          },
+          { label: "optimized", mode: "bracket_filling" },
+        ],
+      });
+      const tradFirst = res.strategies.find((s) => s.label === "trad-first")!;
+      const optimized = res.strategies.find((s) => s.label === "optimized")!;
+      // Tax-optimized routing never loses to naive on LIFETIME tax.
+      // `<=` with tolerance, not `<` — some balance mixes legitimately tie.
+      expect(optimized.lifetimeTax).toBeLessThanOrEqual(
+        tradFirst.lifetimeTax + 1e-6,
+      );
+    } finally {
+      cleanup();
+    }
+  });
+});
