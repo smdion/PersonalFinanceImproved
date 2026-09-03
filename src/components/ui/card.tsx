@@ -166,7 +166,7 @@ export function ProgressBar({
     <div
       title={
         tooltip ??
-        (label ? undefined : `${name} ${formatPercent(percent / 100)}`)
+        (label ? undefined : `${formatPercent(percent / 100)} progress`)
       }
     >
       <div className="mb-1 flex justify-between text-sm">

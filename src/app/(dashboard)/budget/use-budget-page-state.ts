@@ -30,11 +30,17 @@ type ProfileResolutionTiers = {
   globalDefaultId: number | null;
 };
 
+// Hand-written (client code can't import `@/server/*` — lint rule). Keep in
+// sync with budget.ts::updateItemAmounts' return.
 type UpdateBatchResult = {
   ok: boolean;
   updated: number;
   updatedItems: number;
-  skipped: Array<{ id: number; colIndex: number; reason: string }>;
+  skipped: Array<{
+    id: number;
+    colIndex: number;
+    reason: "deleted" | "column-out-of-range";
+  }>;
 };
 
 type UpdateBatch = {
@@ -142,14 +148,11 @@ export function useBudgetPageState({
     if (editMode) {
       // A thrown save (validation reject, transaction rollback, network
       // failure) previously went to console only, leaving the user stuck
-      // in edit mode with no feedback.
+      // in edit mode with no feedback. Keep the raw message (may carry DB
+      // ids) out of user-facing copy.
       saveAllDrafts().catch((e: unknown) => {
-        toast(
-          e instanceof Error && e.message
-            ? `Couldn't save budget changes: ${e.message}`
-            : "Couldn't save budget changes — please try again.",
-          "error",
-        );
+        console.warn("budget batch save failed", e);
+        toast("Couldn't save budget changes — please try again.", "error");
       });
     } else {
       setEditDrafts(new Map());

@@ -7,6 +7,7 @@
  *  drove the numbers above it rather than a second, possibly-stale query.
  */
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { MAX_BROKERAGE_RAMP_YEARS } from "@/lib/constants";
 import { WITHDRAWAL_STRATEGY_CONFIG } from "@/lib/config/withdrawal-strategies";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 
@@ -241,7 +242,7 @@ export function ReportAssumptionsSummary({
           brokerageContributionIncrease > 0 && (
             <Row
               label="Brokerage contribution increase"
-              value={`${formatCurrency(brokerageContributionIncrease)}/yr`}
+              value={`${formatCurrency(brokerageContributionIncrease)}/yr (first ${MAX_BROKERAGE_RAMP_YEARS} years)`}
             />
           )}
       </Section>

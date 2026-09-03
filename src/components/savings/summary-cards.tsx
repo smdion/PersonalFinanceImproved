@@ -115,6 +115,7 @@ export function SummaryCards({
             <ProgressBar
               value={efund.progress}
               variant={efund.progress >= 1 ? "success" : "warning"}
+              ariaLabel="Emergency fund progress"
             />
           </div>
         </Card>

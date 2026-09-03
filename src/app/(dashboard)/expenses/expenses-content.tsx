@@ -839,6 +839,9 @@ function ProgressBar({ value, small }: { value: number; small?: boolean }) {
           aria-valuenow={Math.round(Math.min(value, 1) * 100)}
           aria-valuemin={0}
           aria-valuemax={100}
+          // valuenow is clamped to 100 (ARIA requires it in range); the
+          // real over-budget figure lives here.
+          aria-valuetext={formatPercent(value)}
         />
       </div>
       <span

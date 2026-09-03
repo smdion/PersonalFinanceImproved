@@ -69,6 +69,7 @@ export function MetricsRow({
           <ProgressBar
             value={fiProgress}
             variant={fiProgress >= 1 ? "success" : "info"}
+            ariaLabel="Financial independence progress"
           />
         </div>
       </Card>
