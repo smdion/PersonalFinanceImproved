@@ -1,5 +1,3 @@
-"use client";
-
 /** Renders the help and documentation page with guides and contextual tips for using the dashboard. */
 
 import Link from "next/link";

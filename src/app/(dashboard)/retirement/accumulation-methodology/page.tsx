@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { AccumulationMethodologyContent } from "@/components/accumulation-methodology-content";

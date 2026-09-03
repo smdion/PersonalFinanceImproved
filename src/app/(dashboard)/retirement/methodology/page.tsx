@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { MethodologyContent } from "@/components/methodology-content";
