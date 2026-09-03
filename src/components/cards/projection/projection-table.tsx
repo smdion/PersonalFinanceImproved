@@ -1,6 +1,7 @@
 "use client";
 
 /** Year-by-year projection table with dynamic column headers, accumulation/decumulation row delegation, and Monte Carlo overlay. */
+import { useMemo } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Toggle } from "@/components/ui/toggle";
 import { PillBtn, LabeledPillGroup } from "./pill-btn";
@@ -71,16 +72,29 @@ export function ProjectionTable({
     hasIndividualAccountData,
   } = state;
 
-  // Shared MC cell rendering options — passed to row components
-  const mcCellOpts: RenderMcCellOptions = {
-    mcBandsByYear,
-    mcDetByYear,
-    deflate,
-    isPersonFiltered,
-    parentCategoryFilter,
-    diagMode,
-    renderTooltip,
-  };
+  // Shared MC cell rendering options — passed to row components. Memoized so
+  // its reference is stable across ProjectionTable re-renders; the row
+  // components are React.memo'd and take this by reference.
+  const mcCellOpts: RenderMcCellOptions = useMemo(
+    () => ({
+      mcBandsByYear,
+      mcDetByYear,
+      deflate,
+      isPersonFiltered,
+      parentCategoryFilter,
+      diagMode,
+      renderTooltip,
+    }),
+    [
+      mcBandsByYear,
+      mcDetByYear,
+      deflate,
+      isPersonFiltered,
+      parentCategoryFilter,
+      diagMode,
+      renderTooltip,
+    ],
+  );
 
   return (
     <>

@@ -334,7 +334,7 @@ export type DecumulationRowProps = {
   mcCellOpts: RenderMcCellOptions;
 };
 
-export function DecumulationRow({
+function DecumulationRowImpl({
   yr: dyr,
   state,
   parentCategoryFilter: _parentCategoryFilter,
@@ -1607,3 +1607,5 @@ export function DecumulationRow({
     </tr>
   );
 }
+
+export const DecumulationRow = React.memo(DecumulationRowImpl);
