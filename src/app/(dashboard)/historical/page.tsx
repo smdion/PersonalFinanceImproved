@@ -668,7 +668,7 @@ function HistoricalTable({
             return (
               <tr
                 key={row.year}
-                className={`border-b border-subtle hover:bg-surface-sunken/50 ${
+                className={`border-b border-subtle hover:bg-surface-sunken/50 print:break-inside-avoid ${
                   row.isCurrent ? "bg-blue-50/30" : ""
                 }`}
               >

@@ -50,7 +50,7 @@ export function AmortizationTable({ schedule }: { schedule: AmortEntry[] }) {
               <tr
                 key={entry.month}
                 ref={isToday ? todayRowRef : undefined}
-                className={`border-b border-subtle ${
+                className={`border-b border-subtle print:break-inside-avoid ${
                   isToday
                     ? "bg-blue-100 font-semibold"
                     : isPast
