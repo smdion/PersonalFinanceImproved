@@ -31,7 +31,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
         },
         mutationCache: new MutationCache({
           onError: (error) => {
-            toast.error(friendlyMutationError(error));
+            // Keep the raw error in the console for field diagnosis; the
+            // toast gets the friendly version (or nothing, for aborts).
+            console.warn("mutation failed", error);
+            const msg = friendlyMutationError(error);
+            if (msg) toast.error(msg);
           },
         }),
       }),
