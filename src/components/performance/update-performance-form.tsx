@@ -455,7 +455,7 @@ function AccountFormRow({
                   onChange={(e) =>
                     onFieldChange(id, "endingBalance", e.target.value)
                   }
-                  className="w-24 bg-transparent px-1 py-0.5 text-xs text-right text-primary focus:outline-none"
+                  className="w-24 bg-transparent px-1 py-0.5 text-xs text-right text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1 focus-visible:ring-offset-surface-primary rounded"
                 />
               </div>
               <span className="text-caption text-amber-600">(no snapshot)</span>
@@ -470,7 +470,7 @@ function AccountFormRow({
                 onChange={(e) =>
                   onFieldChange(id, "endingBalance", e.target.value)
                 }
-                className="w-24 bg-transparent px-1 py-0.5 text-xs text-right text-primary focus:outline-none"
+                className="w-24 bg-transparent px-1 py-0.5 text-xs text-right text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1 focus-visible:ring-offset-surface-primary rounded"
               />
             </div>
           )}
@@ -495,7 +495,7 @@ function AccountFormRow({
                   onChange={(e) =>
                     onFieldChange(id, "yearlyGainLoss", e.target.value)
                   }
-                  className="w-24 bg-transparent px-1 py-0.5 text-xs text-right text-primary focus:outline-none"
+                  className="w-24 bg-transparent px-1 py-0.5 text-xs text-right text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1 focus-visible:ring-offset-surface-primary rounded"
                 />
               </div>
               <span className="text-caption text-amber-600 italic">manual</span>
@@ -590,7 +590,7 @@ function CompactCurrencyField({
           step="0.01"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="flex-1 min-w-0 bg-transparent px-1 py-0.5 text-xs text-right text-primary focus:outline-none"
+          className="flex-1 min-w-0 bg-transparent px-1 py-0.5 text-xs text-right text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1 focus-visible:ring-offset-surface-primary rounded"
         />
       </div>
       {changed && originalValue !== 0 && (

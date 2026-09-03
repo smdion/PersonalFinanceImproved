@@ -126,7 +126,7 @@ export function UpdateBasisForm({
                     onChange={(e) =>
                       updateRow(idx, "contributionBasis", e.target.value)
                     }
-                    className="flex-1 min-w-0 bg-transparent px-1 py-1 text-xs text-right text-primary focus:outline-none"
+                    className="flex-1 min-w-0 bg-transparent px-1 py-1 text-xs text-right text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1 focus-visible:ring-offset-surface-primary rounded"
                   />
                 </div>
               </div>
@@ -145,7 +145,7 @@ export function UpdateBasisForm({
                     onChange={(e) =>
                       updateRow(idx, "conversionBasis", e.target.value)
                     }
-                    className="flex-1 min-w-0 bg-transparent px-1 py-1 text-xs text-right text-primary focus:outline-none"
+                    className="flex-1 min-w-0 bg-transparent px-1 py-1 text-xs text-right text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1 focus-visible:ring-offset-surface-primary rounded"
                   />
                 </div>
               </div>

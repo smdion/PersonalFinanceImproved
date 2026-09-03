@@ -168,7 +168,7 @@ function PendingRolloverRow({
               min="0"
               value={actualAmount}
               onChange={(e) => setActualAmount(e.target.value)}
-              className="flex-1 bg-transparent px-1 py-0.5 text-xs text-right text-primary focus:outline-none"
+              className="flex-1 bg-transparent px-1 py-0.5 text-xs text-right text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1 focus-visible:ring-offset-surface-primary rounded"
             />
           </div>
         </div>

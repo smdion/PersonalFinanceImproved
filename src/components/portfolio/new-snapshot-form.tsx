@@ -442,7 +442,7 @@ export function NewSnapshotForm({
                                         e.target.value,
                                       )
                                     }
-                                    className="w-28 bg-transparent px-1 py-0.5 text-xs text-right text-primary focus:outline-none disabled:cursor-not-allowed"
+                                    className="w-28 bg-transparent px-1 py-0.5 text-xs text-right text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1 focus-visible:ring-offset-surface-primary rounded disabled:cursor-not-allowed"
                                   />
                                 </div>
                                 {row.isClosedAccount ? null : row.previousAmount ===
