@@ -985,8 +985,12 @@ export function runDecumulationYear(
     rmdSmoothingTarget,
     rmdSmoothingMaxBracketTarget: config.rmdSmoothingMaxBracketTarget,
   });
-  const { rothConversionAmount, rothConversionTaxCost, rmdSmoothingShortfall } =
-    rothResult;
+  const {
+    rothConversionAmount,
+    rothConversionTaxCost,
+    rmdSmoothingShortfall,
+    rothConversionIrmaaCapped,
+  } = rothResult;
 
   // Recompute LTCG tax including Roth conversion income (#37).
   // Roth conversions are taxed as ordinary income and push total taxable income
@@ -1407,6 +1411,7 @@ export function runDecumulationYear(
     ltcgRate: postConversionLtcgRate,
     rothConversionAmount,
     rothConversionTaxCost,
+    rothConversionIrmaaCapped,
     strategyAction,
     niitAmount,
     irmaaCost,

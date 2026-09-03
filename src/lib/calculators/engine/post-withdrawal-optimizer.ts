@@ -139,6 +139,14 @@ export interface RothConversionResult {
    *  isn't enough to hit the target, not silently dropped. Only ever
    *  set when `rmdSmoothingTarget` was supplied and positive. */
   rmdSmoothingShortfall?: number;
+  /** True when this year's Roth conversion was reduced (or eliminated) to
+   *  keep MAGI below the next IRMAA threshold — the `irmaaAwareRothConversions`
+   *  clamp actually bit. Undefined/absent when it never applied. Surfaced so
+   *  the Tax Planning page and advisor report can say "N years had
+   *  conversions capped for IRMAA" instead of the cap being invisible
+   *  (R48 F1). Records a decision the engine already made — zero numeric
+   *  effect. */
+  rothConversionIrmaaCapped?: boolean;
 }
 
 export interface IrmaaInput {
@@ -263,10 +271,15 @@ export function performRothConversion(
   // OTHER gate (no tax brackets, no Traditional balance, an explicit
   // opt-out) stopped the conversion before smoothing's own logic ran.
   const smoothingActive = (rmdSmoothingTarget ?? 0) > 0;
+  // Set at the IRMAA-cliff clamp below; `zero()` carries it on every
+  // early-return after that point (a conversion clamped to exactly $0 of
+  // headroom is the loudest capping case, and it exits through `zero()`).
+  let irmaaCapped = false;
   const zero = (): RothConversionResult => ({
     rothConversionAmount: 0,
     rothConversionTaxCost: 0,
     ...(smoothingActive ? { rmdSmoothingShortfall: rmdSmoothingTarget } : {}),
+    ...(irmaaCapped ? { rothConversionIrmaaCapped: true } : {}),
   });
 
   if (
@@ -381,6 +394,7 @@ export function performRothConversion(
       );
       if (maxConversionForCliff < conversion) {
         conversion = maxConversionForCliff;
+        irmaaCapped = true;
       }
     }
   }
@@ -597,6 +611,7 @@ export function performRothConversion(
           ),
         }
       : {}),
+    ...(irmaaCapped ? { rothConversionIrmaaCapped: true } : {}),
   };
 }
 

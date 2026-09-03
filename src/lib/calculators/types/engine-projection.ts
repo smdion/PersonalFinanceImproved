@@ -548,6 +548,13 @@ export type EngineDecumulationYear = {
   rothConversionAmount: number;
   /** Tax cost of the Roth conversion (paid from portfolio). */
   rothConversionTaxCost: number;
+  /** True when this year's Roth conversion was reduced (or zeroed) to keep
+   *  MAGI below the next IRMAA threshold (`irmaaAwareRothConversions`).
+   *  Undefined when the clamp never applied. Additive/optional — no
+   *  `PROJECTION_CACHE_ENGINE_VERSION` bump for the field itself; the
+   *  one-time bump to 31 is only so warm pre-R48a cached rows don't serve
+   *  flag-less for the deploy-day TTL. Every numeric field is unchanged. */
+  rothConversionIrmaaCapped?: boolean;
   // --- Spending strategy fields (Phase 5) ---
   /** Strategy action taken this year (e.g. 'increase', 'decrease', 'skip_inflation', 'floor_applied'). */
   strategyAction: string | null;

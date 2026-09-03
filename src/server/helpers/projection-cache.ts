@@ -238,8 +238,17 @@ import { log } from "@/lib/logger";
  *  so this is a no-op there. One-time bump so pre-R43 cached rows don't
  *  serve for the 36h TTL on deploy day, and so a profile that gets pinned
  *  (or a `tax_params` revision) invalidates cleanly. Future vintage edits
- *  invalidate via the resolved values in the input hash — no further bump. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 30;
+ *  invalidate via the resolved values in the input hash — no further bump.
+ *
+ *  31: R48a — decumulation years gained an additive optional
+ *  `rothConversionIrmaaCapped?: boolean` (post-withdrawal-optimizer.ts sets
+ *  it when a Roth conversion is clamped to the next IRMAA threshold). Every
+ *  numeric field is byte-identical — but the cache stores the raw engine
+ *  RESULT, so a warm pre-R48a row would serve flag-less years for the 36h
+ *  TTL on deploy day, exactly when the new Tax Planning page's IRMAA alert
+ *  and assumptions note debut. One-time bump, no further one needed (an
+ *  output field never touches the input hash). */
+export const PROJECTION_CACHE_ENGINE_VERSION = 31;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;
