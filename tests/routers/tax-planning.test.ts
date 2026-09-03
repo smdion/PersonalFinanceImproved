@@ -198,3 +198,73 @@ describe("projection router — compareWithdrawalStrategies", () => {
     }
   });
 });
+
+describe("projection router — rothConversionWhatIf", () => {
+  it("optimize mode delegates to optimizeRothBracketTarget (candidates sorted by netCost)", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedTaxPlanningHousehold(db);
+      const res = await caller.projection.rothConversionWhatIf({
+        mode: "optimize",
+      });
+      expect(res.mode).toBe("optimize");
+      expect(res.result).not.toBeNull();
+      const r = res.result as {
+        recommendedTarget: number | null;
+        currentTarget: number | null;
+        candidates: { target: number; netCost: number }[];
+      };
+      expect(r.candidates.length).toBeGreaterThan(0);
+      for (let i = 1; i < r.candidates.length; i++) {
+        expect(r.candidates[i].netCost).toBeGreaterThanOrEqual(
+          r.candidates[i - 1].netCost,
+        );
+      }
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("explicit mode returns a before/after with a sane break-even and bounded conversions", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedTaxPlanningHousehold(db);
+
+      // Baseline projection to learn the horizon + starting Traditional balance.
+      const base = await caller.projection.projectTaxYears({});
+      const firstYear = base.rows[0].year;
+      const lastYear = base.rows[base.rows.length - 1].year;
+      const startingTraditional = base.rows[0].balanceByTaxType.preTax;
+
+      const res = await caller.projection.rothConversionWhatIf({
+        mode: "explicit",
+        conversionTargets: [{ year: firstYear, targetRate: 0.24 }],
+      });
+      expect(res.mode).toBe("explicit");
+      const r = res.result as {
+        perYear: { year: number; conversionAmount: number }[];
+        breakEvenYear: number | null;
+        lifetimeTaxWith: number;
+        lifetimeTaxWithout: number;
+      };
+      expect(r.perYear.length).toBeGreaterThan(0);
+
+      if (r.breakEvenYear !== null) {
+        expect(r.breakEvenYear).toBeGreaterThanOrEqual(firstYear);
+        expect(r.breakEvenYear).toBeLessThanOrEqual(lastYear);
+      }
+
+      const totalConverted = r.perYear.reduce(
+        (s, y) => s + y.conversionAmount,
+        0,
+      );
+      // Can't convert more Traditional than existed at the start (+ growth
+      // that lands in Traditional along the way — generous 3x headroom).
+      expect(totalConverted).toBeLessThanOrEqual(startingTraditional * 3);
+      expect(r.lifetimeTaxWith).toBeGreaterThanOrEqual(0);
+      expect(r.lifetimeTaxWithout).toBeGreaterThanOrEqual(0);
+    } finally {
+      cleanup();
+    }
+  });
+});

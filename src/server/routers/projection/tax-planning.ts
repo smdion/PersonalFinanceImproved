@@ -28,6 +28,7 @@
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
 import { calculateProjection } from "@/lib/calculators/engine";
+import { optimizeRothBracketTarget } from "@/lib/calculators/withdrawal-bracket-optimizer";
 import type {
   AccumulationOverride,
   DecumulationOverride,
@@ -179,6 +180,7 @@ async function runProjection(
   };
 
   return {
+    engineInput,
     result: calculateProjection(engineInput),
     taxDataYear: distributionTaxRates.taxDataYear,
     taxParamsVersion: distributionTaxRates.taxParamsVersion,
@@ -382,6 +384,116 @@ export const taxPlanningRouter = createTRPCRouter({
       return {
         strategies: scored,
         baselineLabel: ranked[0]?.label ?? null,
+      };
+    }),
+
+  /**
+   * Roth conversion what-if (roadmap #1). Two modes in one procedure:
+   *
+   * - `optimize` → delegates to the already-shipped
+   *   `optimizeRothBracketTarget` (the multi-year clone-and-score search
+   *   over the household's real marginal brackets). Not re-implemented.
+   * - `explicit` → applies the caller's per-year `targetRate` schedule as
+   *   sticky-forward `decumulationOverrides`, runs the engine once, and
+   *   also runs a baseline with conversions switched off, then returns the
+   *   before/after: per-year conversion + tax now, RMD reduction, IRMAA
+   *   delta, and the first year cumulative tax-with-conversions drops
+   *   below cumulative tax-without (`breakEvenYear`).
+   */
+  rothConversionWhatIf: protectedProcedure
+    .input(
+      z.discriminatedUnion("mode", [
+        taxPlanningBaseInput.extend({ mode: z.literal("optimize") }),
+        taxPlanningBaseInput.extend({
+          mode: z.literal("explicit"),
+          conversionTargets: z.array(rothConversionTargetSchema).min(1).max(60),
+        }),
+      ]),
+    )
+    .query(async ({ ctx, input }) => {
+      const run = await runProjection(ctx.db, input);
+      if (!run) return { mode: input.mode, result: null };
+
+      if (input.mode === "optimize") {
+        return {
+          mode: "optimize" as const,
+          result: optimizeRothBracketTarget(run.engineInput),
+        };
+      }
+
+      const baselineDecum = decumulationYears(run.result.projectionByYear);
+      const firstDecumYear = baselineDecum[0]?.year;
+      if (firstDecumYear === undefined) {
+        return { mode: "explicit" as const, result: null };
+      }
+
+      // WITH the caller's schedule: one sticky-forward override per target.
+      const withOverrides: DecumulationOverride[] = input.conversionTargets.map(
+        (t) =>
+          ({
+            year: t.year,
+            rothConversionTarget: t.targetRate,
+          }) as DecumulationOverride,
+      );
+      // WITHOUT conversions: a single override from the first decum year
+      // capping the conversion target at 0 (convert up to a 0% marginal
+      // rate = nothing).
+      const offOverride = [
+        {
+          year: firstDecumYear,
+          rothConversionTarget: 0,
+        } as DecumulationOverride,
+      ];
+
+      const [withRun, offRun] = await Promise.all([
+        runProjection(ctx.db, input, withOverrides),
+        runProjection(ctx.db, input, offOverride),
+      ]);
+      const withYears = withRun
+        ? decumulationYears(withRun.result.projectionByYear)
+        : [];
+      const offYears = offRun
+        ? decumulationYears(offRun.result.projectionByYear)
+        : [];
+      const offByYear = new Map(offYears.map((y) => [y.year, y]));
+
+      let cumWith = 0;
+      let cumOff = 0;
+      let breakEvenYear: number | null = null;
+      const perYear = withYears.map((y) => {
+        const off = offByYear.get(y.year);
+        cumWith +=
+          y.taxCost + y.niitAmount + y.irmaaCost + y.rothConversionTaxCost;
+        cumOff += off
+          ? off.taxCost +
+            off.niitAmount +
+            off.irmaaCost +
+            off.rothConversionTaxCost
+          : 0;
+        if (breakEvenYear === null && cumWith < cumOff) breakEvenYear = y.year;
+        return {
+          year: y.year,
+          age: y.age,
+          conversionAmount: y.rothConversionAmount,
+          conversionTaxNow: y.rothConversionTaxCost,
+          rmdWith: y.rmdAmount,
+          rmdOff: off?.rmdAmount ?? 0,
+          rmdReduction: (off?.rmdAmount ?? 0) - y.rmdAmount,
+          irmaaWith: y.irmaaCost,
+          irmaaOff: off?.irmaaCost ?? 0,
+          cumulativeTaxWith: cumWith,
+          cumulativeTaxWithout: cumOff,
+        };
+      });
+
+      return {
+        mode: "explicit" as const,
+        result: {
+          perYear,
+          breakEvenYear,
+          lifetimeTaxWith: lifetimeTax(withYears),
+          lifetimeTaxWithout: lifetimeTax(offYears),
+        },
       };
     }),
 });
