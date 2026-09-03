@@ -58,7 +58,6 @@ describe("useOptimisticMutation", () => {
         onSettled: expect.any(Function),
       }),
     );
-    expect(result.current.hasRolledBack).toBe(false);
   });
 
   it("rolls back to the captured previous state on error", () => {
@@ -80,7 +79,6 @@ describe("useOptimisticMutation", () => {
     });
 
     expect(rollback).toHaveBeenCalledWith("previous-state");
-    expect(result.current.hasRolledBack).toBe(true);
   });
 
   it("does not roll back on success", () => {
@@ -101,7 +99,6 @@ describe("useOptimisticMutation", () => {
     });
 
     expect(rollback).not.toHaveBeenCalled();
-    expect(result.current.hasRolledBack).toBe(false);
   });
 
   it("does not let an earlier in-flight mutation's onSettled clear a still-pending later mutation's guard", () => {
@@ -166,54 +163,6 @@ describe("useOptimisticMutation", () => {
       expect.any(Function),
       5000,
     );
-  });
-
-  it("shows the generic error toast on failure by default", async () => {
-    const { toast } = await import("@/lib/hooks/use-toast");
-    const { mutation, calls } = makeFakeMutation<{ id: number }, unknown>();
-    const optimisticUpdate = vi.fn().mockReturnValue("previous-state");
-    const rollback = vi.fn();
-
-    const { result } = renderHook(() =>
-      useOptimisticMutation(mutation, { optimisticUpdate, rollback }),
-    );
-
-    act(() => {
-      result.current.mutate({ id: 1 });
-    });
-    act(() => {
-      calls[0]!.opts!.onError!(new Error("boom"));
-    });
-
-    expect(toast.error).toHaveBeenCalledWith(
-      "Save failed — your change has been rolled back.",
-    );
-  });
-
-  it("suppresses the error toast when showErrorToast is false", async () => {
-    const { toast } = await import("@/lib/hooks/use-toast");
-    vi.mocked(toast.error).mockClear();
-    const { mutation, calls } = makeFakeMutation<{ id: number }, unknown>();
-    const optimisticUpdate = vi.fn().mockReturnValue("previous-state");
-    const rollback = vi.fn();
-
-    const { result } = renderHook(() =>
-      useOptimisticMutation(mutation, {
-        optimisticUpdate,
-        rollback,
-        showErrorToast: false,
-      }),
-    );
-
-    act(() => {
-      result.current.mutate({ id: 1 });
-    });
-    act(() => {
-      calls[0]!.opts!.onError!(new Error("boom"));
-    });
-
-    expect(toast.error).not.toHaveBeenCalled();
-    expect(rollback).toHaveBeenCalled();
   });
 
   it("awaits an async optimisticUpdate before firing the mutation", async () => {

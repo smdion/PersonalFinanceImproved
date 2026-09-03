@@ -32,11 +32,13 @@
  * { mutate(input, opts?), isPending } — works with tRPC's useMutation
  * return value, manual fetch wrappers, etc.
  *
- * Undo-toast support is a separate feature (requires extending the Toast
- * API with action buttons).
+ * On error it rolls back and lets the failure surface through the app-wide
+ * mutation-error toast (providers.tsx's MutationCache.onError →
+ * friendlyMutationError); the visible value snapping back is the rollback
+ * signal. `undo` adds a "… Undo" toast after a *successful* mutation.
  */
 
-import { useState, useCallback, useRef } from "react";
+import { useCallback, useRef } from "react";
 import { toast } from "@/lib/hooks/use-toast";
 
 interface OptimisticMutationOptions<TInput, TPrevious> {
@@ -57,11 +59,6 @@ interface OptimisticMutationOptions<TInput, TPrevious> {
    * rollback. Typical use: invalidate queries to reconcile with the server.
    */
   onSettled?: () => void;
-  /**
-   * If true (default), shows a generic "Save failed — change rolled back"
-   * toast on error. Set to false if the call site renders its own error UI.
-   */
-  showErrorToast?: boolean;
   /**
    * Optional undo affordance shown as a toast.undo() after a successful
    * mutation. undoFn receives the original input and should issue the
@@ -93,25 +90,20 @@ interface GenericMutation<TInput, TOutput> {
 interface UseOptimisticMutationReturn<TInput> {
   mutate: (input: TInput) => void;
   isPending: boolean;
-  /** True if the most recent mutation failed and was rolled back. */
-  hasRolledBack: boolean;
 }
 
 export function useOptimisticMutation<TInput, TOutput, TPrevious>(
   mutation: GenericMutation<TInput, TOutput>,
   options: OptimisticMutationOptions<TInput, TPrevious>,
 ): UseOptimisticMutationReturn<TInput> {
-  const [hasRolledBack, setHasRolledBack] = useState(false);
   // Track the previous data per in-flight mutation so rapid clicks don't
   // clobber each other. Map keyed by call ordinal.
   const inflightRef = useRef(new Map<number, TPrevious>());
   const callOrdinalRef = useRef(0);
-  const showErrorToast = options.showErrorToast ?? true;
 
   const mutate = useCallback(
     (input: TInput) => {
       const ordinal = ++callOrdinalRef.current;
-      setHasRolledBack(false);
 
       // Optimistically apply, capture previous state. May be async (e.g. an
       // in-flight-query cancel before reading/writing cache) — the mutation
@@ -132,11 +124,8 @@ export function useOptimisticMutation<TInput, TOutput, TPrevious>(
             const prev = inflightRef.current.get(ordinal);
             if (prev !== undefined) {
               options.rollback(prev);
-              setHasRolledBack(true);
             }
-            if (showErrorToast) {
-              toast.error("Save failed — your change has been rolled back.");
-            }
+            // The failure toast is the app-wide MutationCache.onError's job.
           },
           onSettled: () => {
             inflightRef.current.delete(ordinal);
@@ -152,12 +141,11 @@ export function useOptimisticMutation<TInput, TOutput, TPrevious>(
         proceed(result);
       }
     },
-    [mutation, options, showErrorToast],
+    [mutation, options],
   );
 
   return {
     mutate,
     isPending: mutation.isPending,
-    hasRolledBack,
   };
 }
