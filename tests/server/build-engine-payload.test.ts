@@ -467,12 +467,20 @@ describe("buildEnginePayload — tax_params_year profile pin (R43)", () => {
     expect(payload!.distributionTaxRates.standardDeduction).toBe(30000);
   });
 
-  // R43 C7: a resolved year missing the evergreen standard-deduction row
-  // throws instead of silently pricing on gross income with $0 deduction
-  // (the F2-4 class of bug). This only fires when the resolved year truly
-  // has no contribution_limits rows at all — onMissing: "nearest" already
-  // prevents it for a pinned year with no data of its own.
-  it("throws when the resolved year has withholding brackets but no contribution_limits row (F2-4 hard case)", async () => {
+  // R43 C7 + post-release fix: resolveTaxParams's candidateYears() is
+  // sourced from contribution_limits ALONE (not the union of all five
+  // reference tables) specifically so a year like this — tax_brackets
+  // seeded, contribution_limits not — is never selectable at all, pinned
+  // or not. Pinning taxParamsYear to 2030 here degrades via "nearest" to
+  // the newest year that DOES have complete data (2026), never throws.
+  // requireLimit() still throws for a genuinely incomplete resolved year
+  // (see the contribution-limits-completeness coverage in
+  // tests/config/tax-params.test.ts) — that's the case this test used to
+  // exercise before the fix, but candidateYears() now makes that case
+  // unreachable through normal resolution, closing the outage vector
+  // where an admin seeding one table early could 500 every household's
+  // projections.
+  it("pinning a year with brackets but no contribution_limits row degrades to nearest, never throws (F2-4 hard case)", async () => {
     const schema = await getSchema();
     const { eq } = await import("drizzle-orm");
     // A year with tax_brackets seeded but deliberately NO
@@ -497,9 +505,9 @@ describe("buildEnginePayload — tax_params_year profile pin (R43)", () => {
       .run();
 
     const data = await fetchRetirementData(db, {});
-    await expect(buildEnginePayload(db, data, {})).rejects.toThrow(
-      /standard_deduction_mfj/,
-    );
+    const payload = await buildEnginePayload(db, data, {});
+    expect(payload!.distributionTaxRates.taxDataYear).toBe(2026);
+    expect(payload!.distributionTaxRates.standardDeduction).toBe(32200);
 
     // Clean up so later tests in this describe block aren't affected by
     // vitest's shared beforeAll DB (none currently follow, but be defensive).

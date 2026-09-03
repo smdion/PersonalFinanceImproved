@@ -160,35 +160,43 @@ describe("resolveTaxParams — Oct-Jan drift window (F2-4)", () => {
     expect(r.limits.standard_deduction_mfj).toBeGreaterThan(0);
   });
 
-  it("requesting 2027 (nearest): brackets are 2027, everything else falls back to 2026", () => {
+  // candidateYears() (and therefore every resolution, pinned or not) is
+  // sourced from contribution_limits alone, not the union of all five
+  // tables (see tax-params.ts's candidateYears docblock) — 2027 has
+  // withholding-bracket rows but no contribution_limits row, so it is not
+  // a selectable year at all. Requesting 2027 with onMissing "nearest"
+  // degrades to the newest year that DOES have complete data (2026) for
+  // every slice, brackets included — never a split vintage (2027 brackets
+  // paired with 2026-or-undefined everything else), which is exactly the
+  // "no split vintage" invariant the 2026 test above already enforces for
+  // the exact-match case. requireLimit()'s callers (build-engine-payload.ts,
+  // paycheck.ts, contributions.ts) depend on this: a year selectable at all
+  // must have the limits they need, or they throw for every household —
+  // not just the one an admin happened to be mid-edit on.
+  it("requesting 2027 (nearest, no contribution_limits for 2027): falls back entirely to 2026, not a split vintage", () => {
     const r = resolveTaxParams(rows, 2027, { onMissing: "nearest" });
-    expect(r.resolvedYear).toBe(2027);
-    // 2027 has withholding rows -> used
-    expect(r.withholdingBrackets!.MFJ.false.length).toBe(2);
-    // 2027 has no contribution_limits / ltcg / irmaa rows -> undefined / empty,
-    // NOT silently the 2026 values. The engine's own `?? DEFAULT` handles the
-    // bracket slices; C7 makes the limits map strict.
-    expect(r.limits.standard_deduction_mfj).toBeUndefined();
-    expect(r.ltcgByStatus).toBeUndefined();
-    expect(r.irmaaByStatus).toBeUndefined();
+    expect(r.resolvedYear).toBe(2026);
+    expect(r.withholdingBrackets!.MFJ.false.length).toBe(8);
+    expect(r.limits.standard_deduction_mfj).toBeGreaterThan(0);
   });
 
   // R43 C6 (F2-3): before R43, growLtcgBrackets was fed a taxDataYear
   // sourced from tax_brackets' own MAX(taxYear), independent of
   // ltcg_brackets' own MAX — so a tax_brackets-only year bump would
   // silently grow the OLDER LTCG thresholds as if they were the newer
-  // vintage. Now there is one resolvedYear for every slice, so LTCG never
-  // gets silently paired with a bracket vintage it doesn't have data for
-  // — it correctly reports "no LTCG here" (above) rather than reusing an
-  // older year's numbers under a newer year's label.
+  // vintage. Now there is one resolvedYear for every slice (and that year
+  // is only ever one with complete contribution_limits data), so LTCG
+  // never gets silently paired with a bracket vintage it doesn't have data
+  // for.
   it("never pairs one year's LTCG brackets with another year's label (F2-3)", () => {
     const r = resolveTaxParams(rows, 2027, { onMissing: "nearest" });
-    // 2026's LTCG thresholds must NOT leak into the 2027-labelled result.
     const ltcg2026 = resolveTaxParams(rows, 2026, {
       onMissing: "nearest",
     }).ltcgByStatus;
-    expect(r.ltcgByStatus).not.toEqual(ltcg2026);
-    expect(r.ltcgByStatus).toBeUndefined();
+    // Both resolve to 2026 (2027 isn't a candidate year at all), so LTCG
+    // is identical, not merely coincidentally equal — same resolvedYear.
+    expect(r.resolvedYear).toBe(2026);
+    expect(r.ltcgByStatus).toEqual(ltcg2026);
   });
 });
 

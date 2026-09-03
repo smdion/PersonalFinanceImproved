@@ -135,15 +135,23 @@ function toNum(v: number | string): number {
   return typeof v === "number" ? v : parseFloat(v);
 }
 
-/** Every distinct `tax_year` that has at least one value row. */
+/** Every distinct `tax_year` that has `contribution_limits` rows.
+ *  Deliberately NOT the union across all five tables: `contribution_limits`
+ *  is the only slice `requireLimit()` callers read (standard deduction,
+ *  §63(f) senior deduction, IRS contribution limits, FICA/paycheck
+ *  constants) — those throw when their key is missing for the resolved
+ *  year. If a year could be selected from, say, `tax_brackets` alone, an
+ *  admin seeding next year's withholding brackets early (before
+ *  contribution limits are published) would make that year "newest" and
+ *  take down every household's projections and the paycheck router with a
+ *  throw, even though the previous year has complete data. The other four
+ *  slices (`withholdingBrackets`/`ltcgByStatus`/`irmaaByStatus`/
+ *  `fplByHousehold`) are `| undefined` by design and degrade gracefully —
+ *  they don't need to gate year selection. */
 function candidateYears(rows: TaxParamsRowSets): number[] {
-  const years = new Set<number>();
-  for (const r of rows.contributionLimits) years.add(r.taxYear);
-  for (const r of rows.withholdingBrackets) years.add(r.taxYear);
-  for (const r of rows.ltcgBrackets) years.add(r.taxYear);
-  for (const r of rows.irmaaBrackets) years.add(r.taxYear);
-  for (const r of rows.fpl) years.add(r.taxYear);
-  return [...years].sort((a, b) => a - b);
+  return [...new Set(rows.contributionLimits.map((r) => r.taxYear))].sort(
+    (a, b) => a - b,
+  );
 }
 
 function pickYear(
@@ -153,7 +161,7 @@ function pickYear(
 ): number | null {
   if (years.length === 0) {
     throw new Error(
-      "resolveTaxParams: no tax reference data present (contribution_limits / tax_brackets / … are all empty)",
+      "resolveTaxParams: no tax reference data present (contribution_limits is empty)",
     );
   }
   if (requestedYear == null) return years[years.length - 1]!;
