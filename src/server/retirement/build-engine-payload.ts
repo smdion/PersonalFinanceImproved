@@ -765,10 +765,17 @@ export async function buildEnginePayload(
     rampRaw != null && rampRaw !== "null" && rampRaw !== '"0"'
       ? toNumber(String(rampRaw).replace(/"/g, ""))
       : 0;
-  const limitGrowthRaw = settingsMap.get("irs_limit_growth_rate");
+  // Settable in Settings → Reference Data → Return Rates; falls back to the
+  // constant when unset. Guard against a NaN/garbage stored value (empty
+  // string, bad manual edit) — an unguarded NaN here compounds through
+  // Math.pow(1 + rate, year) and silently NaNs the whole projection.
+  const limitGrowthParsed = toNumber(
+    String(settingsMap.get("irs_limit_growth_rate")),
+  );
   const irsLimitGrowthRate =
-    limitGrowthRaw != null
-      ? toNumber(String(limitGrowthRaw))
+    settingsMap.get("irs_limit_growth_rate") != null &&
+    Number.isFinite(limitGrowthParsed)
+      ? limitGrowthParsed
       : IRS_LIMIT_GROWTH_RATE;
 
   // IRS limits — the `contribution_limits` rows for the resolved tax year

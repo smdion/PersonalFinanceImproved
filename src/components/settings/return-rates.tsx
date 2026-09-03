@@ -24,6 +24,16 @@ import { InlineEdit } from "@/components/ui/inline-edit";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatPercent } from "@/lib/utils/format";
+import { IRS_LIMIT_GROWTH_RATE } from "@/lib/constants";
+
+/** App-settings key the projection engine reads for how fast IRS
+ *  contribution limits grow each future year. Kept as a literal (not a
+ *  SK_ constant) to match the reader in
+ *  server/retirement/build-engine-payload.ts. */
+const IRS_LIMIT_GROWTH_RATE_KEY = "irs_limit_growth_rate";
+/** Sanity bounds for the editable rate — 0% to 10%/yr. */
+const IRS_GROWTH_MIN = 0;
+const IRS_GROWTH_MAX = 0.1;
 
 /** Display-only cap for the glide-path bar and the last breakpoint's
  *  open-ended range label — the engine itself has no upper bound, a
@@ -55,6 +65,30 @@ export function ReturnRatesSettings() {
   const deleteMut = trpc.retirement.returnRates.delete.useMutation({
     onSuccess: () => utils.retirement.returnRates.list.invalidate(),
   });
+
+  const { data: appSettings } = trpc.settings.appSettings.list.useQuery();
+  const upsertSetting = trpc.settings.appSettings.upsert.useMutation({
+    onSuccess: () => utils.settings.appSettings.list.invalidate(),
+  });
+  const irsGrowthRow = appSettings?.find(
+    (s) => s.key === IRS_LIMIT_GROWTH_RATE_KEY,
+  );
+  const irsGrowthRate =
+    irsGrowthRow && Number.isFinite(Number(irsGrowthRow.value))
+      ? Number(irsGrowthRow.value)
+      : IRS_LIMIT_GROWTH_RATE;
+  const irsGrowthIsDefault = !irsGrowthRow;
+
+  const handleSaveIrsGrowth = (rawPercent: string) => {
+    const pct = parseFloat(rawPercent);
+    if (isNaN(pct)) return;
+    const rate = pct / 100;
+    if (rate < IRS_GROWTH_MIN || rate > IRS_GROWTH_MAX) return;
+    // Clearing back to the engine default: delete the row (upsert with a
+    // null value removes it), so the constant fallback applies.
+    if (Math.abs(rate - IRS_LIMIT_GROWTH_RATE) < 1e-9 && !irsGrowthRow) return;
+    upsertSetting.mutate({ key: IRS_LIMIT_GROWTH_RATE_KEY, value: rate });
+  };
 
   const [showAddRow, setShowAddRow] = useState(false);
   const [newAge, setNewAge] = useState("");
@@ -110,6 +144,40 @@ export function ReturnRatesSettings() {
 
   return (
     <div>
+      {/* IRS limit growth rate — a forward projection assumption (how fast
+          IRS contribution limits are assumed to rise each future year),
+          not tax law, so it lives here alongside the return-rate table
+          rather than in the per-year IRS Limits section. */}
+      <div className="border-subtle bg-surface-sunken mb-6 rounded-lg border p-3">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className="text-secondary text-sm font-medium">
+              IRS limit growth rate
+            </div>
+            <div className="text-faint text-xs">
+              How fast IRS contribution limits are assumed to grow each
+              projected year beyond the last entered tax year.
+            </div>
+          </div>
+          <div className="flex items-center gap-2 whitespace-nowrap">
+            {admin ? (
+              <InlineEdit
+                value={String(irsGrowthRate * 100)}
+                onSave={handleSaveIrsGrowth}
+                formatDisplay={(v) => `${parseFloat(v).toFixed(1)}%`}
+              />
+            ) : (
+              <span className="text-primary text-sm">
+                {formatPercent(irsGrowthRate, 1)}
+              </span>
+            )}
+            {irsGrowthIsDefault && (
+              <span className="text-faint text-xs">(default)</span>
+            )}
+          </div>
+        </div>
+      </div>
+
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold">Return Rate Table</h2>
         {admin && (
