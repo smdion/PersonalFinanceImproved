@@ -37,6 +37,9 @@ export type ReportEngineSettings = {
   annualInflation?: NumLike | null;
   postRetirementInflation?: NumLike | null;
   salaryAnnualIncrease?: NumLike | null;
+  /** app_settings["brokerage_contribution_increase"] — annual $ added to
+   *  brokerage contributions each projected year. */
+  brokerageContributionIncrease?: NumLike | null;
   salaryCap?: NumLike | null;
   withdrawalRate?: NumLike | null;
   withdrawalStrategy?: string | null;
@@ -168,6 +171,9 @@ export function ReportAssumptionsSummary({
   const annualInflation = num(settings.annualInflation);
   const postRetirementInflation = num(settings.postRetirementInflation);
   const salaryAnnualIncrease = num(settings.salaryAnnualIncrease);
+  const brokerageContributionIncrease = num(
+    settings.brokerageContributionIncrease,
+  );
   const salaryCap = num(settings.salaryCap);
   const withdrawalRate = num(settings.withdrawalRate);
   const rothConversionTarget = num(settings.rothConversionTarget);
@@ -231,6 +237,13 @@ export function ReportAssumptionsSummary({
         {salaryCap != null && (
           <Row label="Salary growth cap" value={formatCurrency(salaryCap)} />
         )}
+        {brokerageContributionIncrease != null &&
+          brokerageContributionIncrease > 0 && (
+            <Row
+              label="Brokerage contribution increase"
+              value={`${formatCurrency(brokerageContributionIncrease)}/yr`}
+            />
+          )}
       </Section>
 
       <Section title="Withdrawal Strategy">

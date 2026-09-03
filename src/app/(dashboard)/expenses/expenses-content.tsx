@@ -824,6 +824,7 @@ function ProgressBar({ value, small }: { value: number; small?: boolean }) {
   const width = Math.min(clamped * 100, 100);
   const isOver = value > 1;
   const h = small ? "h-1.5" : "h-2";
+  const name = `${formatPercent(value)} of budget${isOver ? " — over budget" : ""}`;
 
   return (
     <div className="flex items-center gap-1.5">
@@ -833,9 +834,15 @@ function ProgressBar({ value, small }: { value: number; small?: boolean }) {
         <div
           className={`${h} rounded-full transition-all ${isOver ? "bg-red-400" : "bg-green-400"}`}
           style={{ width: `${width}%` }}
+          role="progressbar"
+          aria-label={name}
+          aria-valuenow={Math.round(Math.min(value, 1) * 100)}
+          aria-valuemin={0}
+          aria-valuemax={100}
         />
       </div>
       <span
+        aria-hidden="true"
         className={`text-caption w-8 text-right tabular-nums ${isOver ? "font-semibold text-red-600" : "text-muted"}`}
       >
         {value >= 9.99 ? "—" : formatPercent(value)}

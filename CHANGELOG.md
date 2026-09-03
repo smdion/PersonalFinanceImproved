@@ -16,6 +16,7 @@ Accessibility, print, and internal-quality pass. No schema changes, no migration
 
 - **Value cells that signal a number's sign with red/green** now pair the color with a non-color cue everywhere. Signed-value colors are centralized (`gainLossTextColor` / `overUnderTextColor`), the portfolio snapshot delta cells gained a ▲/▼ glyph and a screen-reader-only "increase/decrease from previous snapshot" label, and the budget diff cells keep their existing "over"/"under" text.
 - **Keyboard focus is visible** on the nine transparent inline-editing inputs in the performance and portfolio editors that previously suppressed the focus outline with no replacement — now a `focus-visible` ring (keyboard only, not on mouse click).
+- **Progress bars are exposed to screen readers** — the shared `ProgressBar` and the expenses budget-vs-actual bar now carry `role="progressbar"` with a name and value (previously a bare `<div>` with no semantics).
 
 ### Print
 
@@ -32,9 +33,9 @@ Accessibility, print, and internal-quality pass. No schema changes, no migration
 - `prettier-plugin-tailwindcss` — Tailwind class order is now sorted and enforced on every commit.
 - Recharts animation-disable is explicit on all chart components (was relying on a global reduced-motion CSS fallback).
 - `performance/` page converted to the server-shell prefetch pattern (`page.tsx` + `performance-content.tsx`), matching `brokerage/` and `contributions/` — first paint now hydrates with data and persisted column state instead of snapping.
-- **Batched budget-amount saves are now atomic** — a grid paste (and the add/remove-column and reorder operations) either lands whole or not at all, and a paste cell that can't be saved is reported back rather than silently dropped.
+- **Batched budget-amount saves are now atomic** — a grid paste (and the add/remove-column and reorder operations) either lands whole or not at all, and a paste cell that can't be saved is now surfaced with a toast (and a failed save no longer fails silently to the console).
 - Recharts is code-split out of the `analytics` and `upkeep/utilities` page chunks; four static page wrappers dropped an unnecessary `"use client"`.
-- Engine audit (R48) for calculations/assumptions with no UI or report surface — the IRS-limit-growth-rate finding is fixed above; three smaller findings triaged to the backlog; none change projection math.
+- Engine audit (R48) for calculations/assumptions with no UI or report surface — the IRS-limit-growth-rate finding is fixed above; the Print Advisor Report now also states an assumed annual brokerage-contribution increase when one is set; two smaller findings triaged to the backlog; none change projection math.
 
 ## [0.8.0] - 2026-09-03
 
