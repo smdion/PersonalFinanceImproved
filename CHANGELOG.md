@@ -8,7 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.7
 
-## [0.7.11] - 2026-09-01
+## [0.7.11] - 2026-09-02
+
+### Added
+
+- **A new Settings tab for the Federal Poverty Level (FPL) figures** used in ACA subsidy-cliff calculations, so household-size dollar amounts can be reviewed and updated directly instead of only existing as a background data table.
+- **A "Tax law year" control on the retirement profile list**, letting a profile pin itself to a specific year's tax tables (for reproducing an old projection exactly) instead of always tracking the latest data automatically.
+
+### Changed
+
+- **Retirement-profile language**: a profile "pinned" by a Plan is now called "active," and a per-profile value change is called a "customization" rather than an "override," matching the terms used elsewhere in the app.
 
 ### Fixed
 
@@ -22,6 +31,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **The "allow the early-withdrawal penalty on this account" per-account setting now genuinely holds that account back as a last resort**, drawing from it only once every other account is actually exhausted, instead of treating it as ordinary spendable balance available whenever your configured withdrawal order happened to reach it. Only affects households who have explicitly turned this setting on for a specific account.
 - **Linking a budget item or savings goal to Actual Budget no longer erases its YNAB link (or vice versa).** Each item/goal could previously hold only one budget-API link at a time, so a household with both services connected would silently lose the first service's link the moment they linked the second. Each service's link is now tracked separately, so both stay intact.
 - **Fixed: extra paychecks routed to Budget mode are now reflected in the month they actually land**, instead of being invisible. The Budget page's note and the What-If tab's leftover-income line now show the real dollar amount for the current month when a job's extra paycheck stays as regular income rather than being routed to savings.
+- **A 0% "Pre-Retirement Raise" rate entered for a household member now actually sticks**, instead of silently reverting to the primary person's rate. Affects anyone who set a rate of exactly 0% (e.g. modeling a salary freeze).
+- **Duplicating a retirement profile in a household with more than one person now correctly copies each person's own retirement age, end age, Social Security amount and start age, and raise rate** — it previously copied only the first person's values onto everyone in the new profile.
+- **Corrected the temporary additional senior deduction (2025-2028) so it's no longer inflated by inflation growth in later projection years.** It's a fixed dollar amount by law; the effect was a small overstatement (roughly $150-450/year) in later retirement years within the window.
+- **Retirement projections and paycheck estimates are more resilient to in-progress tax-data updates** — if next year's withholding brackets are entered before the rest of that year's figures are, projections now keep using the most recent complete year instead of any of them potentially failing to load.
+- **Syncing category names in bulk with YNAB or Actual Budget no longer resets an item or goal's sync direction or "last synced" timestamp** if only its name changed.
+- **Converting a budget item to a savings goal (or back) now carries over the category link for every connected budget-API service**, not just whichever one happened to be active — a household connected to both YNAB and Actual Budget could previously lose one service's link on conversion.
+- **Fixed two admin-only bugs in the IRMAA/LTCG bracket-year editor**: choosing "Empty brackets" when adding a new tax year now actually starts it empty instead of always copying the most recent year, and a new LTCG bracket year's default rows no longer risk an edit landing on the wrong bracket.
 
 ---
 
