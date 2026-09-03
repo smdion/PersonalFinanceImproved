@@ -8,6 +8,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.8
 
+## [0.8.1] - 2026-09-03
+
+Accessibility, print, and internal-quality pass. No schema changes, no migration — a plain code release.
+
+### Accessibility
+
+- **Value cells that signal a number's sign with red/green** now pair the color with a non-color cue everywhere. Signed-value colors are centralized (`gainLossTextColor` / `overUnderTextColor`), the portfolio snapshot delta cells gained a ▲/▼ glyph and a screen-reader-only "increase/decrease from previous snapshot" label, and the budget diff cells keep their existing "over"/"under" text.
+- **Keyboard focus is visible** on the nine transparent inline-editing inputs in the performance and portfolio editors that previously suppressed the focus outline with no replacement — now a `focus-visible` ring (keyboard only, not on mouse click).
+
+### Print
+
+- Printing in dark mode no longer produces a dark, toner-heavy page — print forces a light color scheme.
+- Amortization-schedule and net-worth-history table rows no longer split across a page break.
+
+### Under the hood
+
+- **Dual-DB parity test suite** (`tests/db/transforms-parity.test.ts`) — guards the Postgres-string vs SQLite-number boundary on every helper that reads a `decimal` column, a bug class that is invisible in CI (SQLite-only) and surfaces only in production.
+- `prettier-plugin-tailwindcss` — Tailwind class order is now sorted and enforced on every commit.
+- Recharts animation-disable is explicit on all chart components (was relying on a global reduced-motion CSS fallback).
+- `performance/` page converted to the server-shell prefetch pattern (`page.tsx` + `performance-content.tsx`), matching `brokerage/` and `contributions/` — first paint now hydrates with data and persisted column state instead of snapping.
+- Engine audit (R48) for calculations/assumptions with no UI or report surface — four minor findings triaged to the backlog; none change projection math.
+
 ## [0.8.0] - 2026-09-03
 
 > Rollup of everything since v0.7.0. For patch-level detail, see the v0.7.x entries below.
