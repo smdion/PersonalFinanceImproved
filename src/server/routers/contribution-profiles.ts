@@ -16,6 +16,7 @@
  * contributionActiveFields is simply a profile with nothing customized.
  */
 import { z } from "zod/v4";
+import { TRPCError } from "@trpc/server";
 import { eq, inArray } from "drizzle-orm";
 import { createTRPCRouter } from "../trpc";
 import { canDeleteContribProfile } from "@/lib/pure/profiles";
@@ -76,9 +77,11 @@ async function assertNoJointPercentOfSalaryWithoutJob(
     .where(inArray(schema.contributionAccounts.id, percentOfSalaryIds));
   const invalid = accounts.find((a) => a.ownership === "joint" && !a.jobId);
   if (invalid) {
-    throw new Error(
-      "Joint accounts using percent-of-salary contributions must be linked to a specific job",
-    );
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message:
+        "Joint accounts using percent-of-salary contributions must be linked to a specific job",
+    });
   }
 }
 
@@ -106,7 +109,8 @@ async function patchProfileSubEntry<T extends Record<string, unknown>>(
     .from(schema.contributionProfiles)
     .where(eq(schema.contributionProfiles.id, profileId));
   const profile = existing[0];
-  if (!profile) throw new Error("Profile not found");
+  if (!profile)
+    throw new TRPCError({ code: "NOT_FOUND", message: "Profile not found" });
 
   const root = profile.contributionActiveFields as Record<
     string,
@@ -120,9 +124,11 @@ async function patchProfileSubEntry<T extends Record<string, unknown>>(
 
   const parsed = entrySchema.safeParse(mergedEntry);
   if (!parsed.success) {
-    throw new Error(
-      `Invalid ${errorLabel} after patch: ${parsed.error.issues[0]?.message}`,
-    );
+    // Message only, no `cause` — see salary-profiles.ts patchEntry.
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: `Invalid ${errorLabel} after patch: ${parsed.error.issues[0]?.message}`,
+    });
   }
 
   // A fully-unset entry is removed entirely, not stored as `{}` — an
@@ -580,7 +586,11 @@ export const contributionProfileRouter = createTRPCRouter({
         .from(schema.contributionProfiles)
         .where(eq(schema.contributionProfiles.id, input.sourceProfileId))
         .then((r) => r[0]);
-      if (!source) throw new Error("Source profile not found");
+      if (!source)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Source profile not found",
+        });
 
       const contributionActiveFields = source.contributionActiveFields ?? {};
       await assertNoJointPercentOfSalaryWithoutJob(
@@ -616,7 +626,11 @@ export const contributionProfileRouter = createTRPCRouter({
         .select()
         .from(schema.contributionProfiles)
         .where(eq(schema.contributionProfiles.id, input.id));
-      if (!existing[0]) throw new Error("Profile not found");
+      if (!existing[0])
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Profile not found",
+        });
 
       await assertNoJointPercentOfSalaryWithoutJob(
         ctx.db,
@@ -679,9 +693,11 @@ export const contributionProfileRouter = createTRPCRouter({
           .from(schema.contributionAccounts)
           .where(eq(schema.contributionAccounts.id, input.accountId));
         if (account?.ownership === "joint" && !account.jobId) {
-          throw new Error(
-            "Joint accounts using percent-of-salary contributions must be linked to a specific job",
-          );
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message:
+              "Joint accounts using percent-of-salary contributions must be linked to a specific job",
+          });
         }
       }
 
@@ -755,21 +771,29 @@ export const contributionProfileRouter = createTRPCRouter({
         input.id,
         allProfiles.length,
       );
-      if (!deleteCheck.allowed) throw new Error(deleteCheck.reason);
+      if (!deleteCheck.allowed)
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: deleteCheck.reason ?? "This profile can't be deleted.",
+        });
 
       if (!allProfiles.some((p) => p.id === input.id))
-        throw new Error("Profile not found");
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Profile not found",
+        });
 
       const pinningPlans = await ctx.db
         .select({ name: schema.scenarios.name })
         .from(schema.scenarios)
         .where(eq(schema.scenarios.contributionProfileId, input.id));
       if (pinningPlans.length > 0) {
-        throw new Error(
-          `Cannot delete: pinned by ${pinningPlans.length} Plan(s) (${pinningPlans
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Cannot delete: pinned by ${pinningPlans.length} Plan(s) (${pinningPlans
             .map((p) => p.name)
             .join(", ")}). Unpin it there first.`,
-        );
+        });
       }
 
       await ctx.db
@@ -814,7 +838,11 @@ export const contributionProfileRouter = createTRPCRouter({
         .select({ id: schema.contributionProfiles.id })
         .from(schema.contributionProfiles)
         .where(eq(schema.contributionProfiles.id, input.id));
-      if (!profile) throw new Error("Profile not found");
+      if (!profile)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Profile not found",
+        });
 
       await ctx.db
         .insert(schema.appSettings)
