@@ -90,8 +90,6 @@ export function RetirementProfileManager({
     },
   );
 
-  const [renamingId, setRenamingId] = useState<number | null>(null);
-  const [renameValue, setRenameValue] = useState("");
   const [duplicating, setDuplicating] = useState(false);
   const [duplicateSourceId, setDuplicateSourceId] = useState<number | null>(
     null,
@@ -127,7 +125,6 @@ export function RetirementProfileManager({
   const renameMut = trpc.retirement.retirementProfiles.update.useMutation({
     onSuccess: () => {
       invalidate();
-      setRenamingId(null);
       setError(null);
     },
     onError: (e) => setError(e.message),
@@ -194,11 +191,6 @@ export function RetirementProfileManager({
     });
   };
 
-  const handleConfirmRename = (id: number) => {
-    if (!renameValue.trim()) return;
-    renameMut.mutate({ id, name: renameValue.trim() });
-  };
-
   const handleDelete = async (id: number, name: string) => {
     const ok = await confirm(
       `Delete "${name}"? This removes its retirement assumptions for every household member. This cannot be undone.`,
@@ -232,17 +224,11 @@ export function RetirementProfileManager({
                 : "ACTIVE"
             }
             onSelect={() => onViewingProfileChange(profile.id)}
-            isRenaming={renamingId === profile.id}
-            renameValue={renameValue}
-            onRenameValueChange={setRenameValue}
-            onRenameComplete={() => handleConfirmRename(profile.id)}
-            onRenameCancel={() => setRenamingId(null)}
-            onStartRename={
+            onRename={
               admin
-                ? () => {
+                ? (name) => {
                     setError(null);
-                    setRenamingId(profile.id);
-                    setRenameValue(profile.name);
+                    renameMut.mutate({ id: profile.id, name });
                   }
                 : undefined
             }

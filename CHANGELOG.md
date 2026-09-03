@@ -10,11 +10,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.8.2] - 2026-09-03
 
-Hotfix. No schema changes, no migration.
+No schema changes, no migration.
 
 ### Fixed
 
 - **Contribution Profile data loss from the Paycheck page.** Editing a contribution or deduction value on the Paycheck page (in profile mode) rebuilt the profile's entire `contributionActiveFields` blob from a client-side query snapshot and wrote the whole thing back. If that snapshot was stale — e.g. right after a profile rename, which invalidates the query — the write silently wiped every account and deduction entry the snapshot didn't have, leaving the profile "Incomplete" with everything falling back to no value. The Paycheck page now uses the same field-level, server-side, transactional patch procedures (`setAccountActiveFields` / `setDeductionActiveFields`) the Contribution Profile Manager already moved to — it was the last caller still doing the full-blob rewrite.
+
+### Changed
+
+- **One consistent way to rename a profile.** Budget, Contribution, Salary, and Retirement profiles are all renamed the same way now: click the profile's name in the list to edit it inline. Previously three of the four had a faint hover-only "rename" button in the list while two had a separate "Name" field in the editor pane — and Salary had no list-level rename at all. The Savings tab still has no rename (its rail reuses Budget profiles — rename them from the Budget → Profiles tab).
 
 ## [0.8.1] - 2026-09-03
 
