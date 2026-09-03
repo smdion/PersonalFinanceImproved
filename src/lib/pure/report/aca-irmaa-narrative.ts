@@ -109,7 +109,7 @@ export function buildWatchlist(
     if (y.acaSubsidyPreserved === false) {
       flags.push({ year: y.year, kind: "aca-lost", severity: "warning" });
     } else {
-      // Phase 4 (2026-08-31): acaMagiHeadroom is a NOMINAL dollar figure
+      // acaMagiHeadroom is a NOMINAL dollar figure
       // (grows with the household's income over the projection, same as
       // every other engine value), so it must be deflated to real terms
       // BEFORE comparing against a fixed real-dollar watchlist threshold

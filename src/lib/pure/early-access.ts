@@ -101,9 +101,9 @@ export type EarlyAccessSlice = {
  * `withdrawal-eligibility.ts`, specifically so the Tax Buckets UI can
  * import it directly rather than re-deriving "accessible now" with its own
  * sum-every-penalty-free-slice loop — a real second definition of this
- * quantity, found in code review (2026-08-27), that happened to agree with
- * the prefix rule for every shape shipped so far only by the same
- * coincidence this docblock already warns about.
+ * quantity that happened to agree with the prefix rule for every shape
+ * shipped so far only by the same coincidence this docblock already warns
+ * about.
  */
 export function penaltyFreePrefixAmount(slices: EarlyAccessSlice[]): number {
   let sum = 0;

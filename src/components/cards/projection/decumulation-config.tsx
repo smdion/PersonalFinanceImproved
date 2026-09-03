@@ -298,8 +298,8 @@ export function DecumulationConfig({
             </div>
           )}
 
-          {/* Traditional account order (bracket_filling) — v0.7.10 R51
-              Gap A: Phase 1 fills Traditional up to the bracket cap from
+          {/* Traditional account order (bracket_filling) — Phase 1 fills
+              Traditional up to the bracket cap from
               401k/403b/IRA in THIS order before anything else; previously
               hardcoded, now user-editable like the other two modes. */}
           {withdrawalRoutingMode === "bracket_filling" && (

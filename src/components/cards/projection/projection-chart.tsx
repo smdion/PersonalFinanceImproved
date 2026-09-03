@@ -591,7 +591,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                               )}
                             </div>
                           )}
-                        {/* R49: real IRS exposure — the only RMD-related
+                        {/* Real IRS exposure — the only RMD-related
                             state that earns its own extra line, since it's
                             the only one with actual tax-penalty
                             consequences. Deliberately breaks the amber
@@ -608,7 +608,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                             met · 25% excise tax risk
                           </div>
                         )}
-                        {/* R46: RMD-forced excess — real money forced out
+                        {/* RMD-forced excess — real money forced out
                             by the RMD floor beyond what the strategy
                             needed, with no prior UI trace anywhere. Can
                             recur every year once RMDs start, unlike the
@@ -633,7 +633,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                             </span>
                           </div>
                         )}
-                        {/* R46: QCD — money sent directly to charity,
+                        {/* QCD — money sent directly to charity,
                             satisfying part of the RMD tax-free. Shown
                             separately from "RMD" above since it's the
                             portion that never became taxable income. */}
@@ -867,7 +867,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                 />
               )}
 
-            {/* Guyton-Klinger guardrail event markers (R45 Step 5) — a
+            {/* Guyton-Klinger guardrail event markers — a
                 household running Guardrails could previously only see
                 which years triggered a raise/cut via the table-row
                 tooltip; now visible at a glance on the chart too. */}

@@ -397,7 +397,7 @@ export function RetirementContent() {
           {/* Strategy Comparison moved to page-level tab */}
 
           {/* Projection Assumptions moved to Budget page's Retirement
-              Profile tab (v0.7.8, PLAN-v0.7.8-v4 Group A) — see
+              Profile tab — see
               src/components/retirement/retirement-profile-tab.tsx. */}
         </>
       )}

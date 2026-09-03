@@ -639,8 +639,8 @@ export const retirementRouter = createTRPCRouter({
     // Social Security's per-person benefit) actually called
     // `retirementSettings.upsert`, writing `retirement_settings` — the
     // table `build-engine-payload.ts` stopped reading per-person values
-    // from once step B (2026-08-30) switched those reads to
-    // `retirement_profile_people`. The edits saved, the UI showed the new
+    // from once those reads were switched to `retirement_profile_people`.
+    // The edits saved, the UI showed the new
     // number optimistically, and the projection never moved — same failure
     // shape as the pre-0b5d5fe `end_age` bug, just at this table instead.
     // This is the real write path now; the affected client call sites are

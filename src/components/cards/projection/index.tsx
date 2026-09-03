@@ -399,7 +399,7 @@ export function ProjectionCard(props: {
             </div>
           )}
 
-          {/* R42 — print/export report controls. print:hidden so the
+          {/* Print/export report controls. print:hidden so the
               buttons themselves never appear in the printed output. */}
           {result && (
             <div className="print:hidden flex items-center gap-3 text-caption">
@@ -477,7 +477,7 @@ export function ProjectionCard(props: {
             <div className="space-y-4">
               {/* Hero KPIs (headline numbers) — always shown on screen;
                   print-visible only in the "advisor" report tier (basic
-                  tier prints just the chart+table, per R42 scope). */}
+                  tier prints just the chart+table). */}
               <div
                 className={
                   reportMode === "advisor" ? undefined : "print:hidden"

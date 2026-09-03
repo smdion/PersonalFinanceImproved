@@ -157,7 +157,7 @@ export function RetirementProfileTab({
     debouncedEngineInput,
     { placeholderData: (prev) => prev },
   );
-  // Multi-year withdrawal-policy optimizer, Phase 4 (2026-08-29) — queried
+  // Multi-year withdrawal-policy optimizer — queried
   // here (not inside TaxesSection, a documented pure-presentational leaf)
   // so it can be passed down as a plain prop, same pattern as CoastFireCard
   // receiving coastFireMcResult. Queried with `{}` — this tab reflects the

@@ -582,7 +582,7 @@ export function iaBelongsToBucket(
 
 // --- Shared calculation helpers ---
 
-// Moved to lib/pure/report/withdrawal-strategy-narrative.ts (2026-08-31) so
+// Moved to lib/pure/report/withdrawal-strategy-narrative.ts so
 // the retirement advisor report can reuse them without a pure module
 // importing this component-layer file — re-exported here so the existing
 // tooltip call sites (projection-table-decum-row.tsx) don't need to change

@@ -145,7 +145,7 @@ function buildEligibilityNote(
 
 /**
  * "Why was this account used" tax-reasoning clause — the household asked
- * directly for this (2026-08-31): eligibility/basis info alone doesn't say
+ * directly for this: eligibility/basis info alone doesn't say
  * WHY a discretionary (beyond-Traditional-bracket-target) dollar came from
  * this account instead of another. Reads `discretionaryTierBreakdown`
  * (`RouteResult.tierBreakdown`, withdrawal-routing.ts) filtered to this
@@ -204,10 +204,10 @@ function buildRoutingReasonClause(
               bracketTraditionalCap: deflate(yr.bracketTraditionalCap, yr.year),
               taxableSS: deflate(yr.taxableSS, yr.year),
               // The GROWN per-year deduction (bracket-growth.ts), not the
-              // plan-level engineSettings echo — advisor-caught
-              // (2026-08-31): pairing a grown bracketTraditionalCap with
-              // an ungrown deduction in the same sentence was internally
-              // inconsistent for any year beyond the tax data's vintage.
+              // plan-level engineSettings echo — advisor-caught: pairing a
+              // grown bracketTraditionalCap with an ungrown deduction in the
+              // same sentence was internally inconsistent for any year
+              // beyond the tax data's vintage.
               standardDeduction:
                 yr.standardDeduction != null
                   ? deflate(yr.standardDeduction, yr.year)

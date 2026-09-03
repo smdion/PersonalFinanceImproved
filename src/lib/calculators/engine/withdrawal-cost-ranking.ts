@@ -368,7 +368,7 @@ export function rankWithdrawalTiers(
   // ceiling minus brokerageOrdinaryIncome) — `getLtcgRate`'s inclusive
   // `<=` would answer "what's the rate for a real dollar sitting AT the
   // ceiling" (0%), not "what's the rate for the tier starting past it"
-  // (found 2026-08-31, mispriced brokerage as free/NIIT-only well beyond
+  // (mispriced brokerage as free/NIIT-only well beyond
   // its real rate). Use the exclusive next-dollar lookup instead — see
   // its docblock for why this isn't just `getLtcgRate` with the numbers
   // shuffled.

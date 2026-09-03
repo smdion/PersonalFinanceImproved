@@ -328,7 +328,7 @@ export function useProjectionQueries(
   // `coastFireMcQuery.isFetching` never flip true during this call, so
   // nothing driven by them (the top-of-page "recalculating" banner, the
   // chart/table loading skeleton) showed anything during a manual Re-run —
-  // found live 2026-08-30. `isRerunning` is the explicit stand-in signal
+  // `isRerunning` is the explicit stand-in signal
   // for exactly that gap; every consumer that reads *Query.isFetching for
   // "is MC busy" must OR this in too (see mcLoading below and
   // index.tsx's isRecalculating).
@@ -567,7 +567,7 @@ export function useProjectionQueries(
     },
   );
 
-  // Coast FIRE Monte Carlo — on demand by default (2026-08-30), same
+  // Coast FIRE Monte Carlo — on demand by default, same
   // pattern as rateSeededMcQuery below: fires once the household actually
   // selects a Coast FIRE scenario, not on every page load. The KPI hero
   // card's "basic" Coast FIRE info (the earliest passing age) comes from

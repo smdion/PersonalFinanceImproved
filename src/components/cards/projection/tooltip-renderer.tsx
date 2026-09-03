@@ -164,7 +164,7 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
           )}
         </div>
       )}
-      {/* 3b. RMD (R47 follow-up — table/chart parity, see types.ts docblock) */}
+      {/* 3b. RMD (table/chart parity — see types.ts docblock) */}
       {d.rmd && (
         <div className="space-y-0.5">
           <div

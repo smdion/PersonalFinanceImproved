@@ -169,7 +169,7 @@ export function ContributionProfileManager({
 
   return (
     <div>
-      {/* R20: a standing audit view — accounts × profiles, not just this one
+      {/* A standing audit view — accounts × profiles, not just this one
           profile's editor — kept as an internal toggle rather than a new
           top-level Budget-page tab (see contribution-profile-compare.tsx). */}
       <div className="flex items-center justify-between mb-4 border-b">

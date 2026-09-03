@@ -24,7 +24,7 @@ import { log } from "@/lib/logger";
  * and drifted: tags `0002`–`0031` shipped without being added to either, so
  * `transformBackupToCurrentSchema` threw `Unknown schema version` for any
  * backup taken between v0.7.0 and v0.7.10 — restore was simply broken across
- * most of the v0.7 line (found 2026-08-30). Sharing one list means adding a
+ * most of the v0.7 line. Sharing one list means adding a
  * migration can't silently break restore again.
  *
  * Tags 0007–0024 are hand-named and identical in both journals, so they

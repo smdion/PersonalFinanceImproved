@@ -315,12 +315,11 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                             />
                           )}
                         </div>
-                        {/* R45 Step 3, Finding 4 (base case) + this session
-                          (GK case): for every other strategy this is still
+                        {/* For every other strategy this is still
                           the flat "Initial Withdrawal Rate" household
                           setting, an input echo like the return/volatility/
                           inflation figures beside it — not what any
-                          strategy's spending math reads (Finding 0). For
+                          strategy's spending math actually reads. For
                           Guyton-Klinger specifically, it's replaced with the
                           rate GK actually captured and will defend — a real
                           number, not a reference figure — since a user

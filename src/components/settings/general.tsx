@@ -84,7 +84,7 @@ function RetirementSettings() {
     SK_RETIREMENT_MC_AUTOLOAD,
     true,
   );
-  // Default false (2026-08-30) — Coast FIRE MC now runs on demand (when the
+  // Default false — Coast FIRE MC now runs on demand (when the
   // scenario is actually selected), not eagerly on every page load. This
   // toggle is the opt-in back to the old always-prefetched behavior. Must
   // match the default in use-projection-queries.ts's own usePersistedToggle

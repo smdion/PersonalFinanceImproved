@@ -405,7 +405,7 @@ export function ProjectionTable({
         </div>
       )}
 
-      {/* R42: methodology links/validation-evidence are engine-internal
+      {/* Methodology links/validation-evidence are engine-internal
           detail, not report content — the print report's own "Behind the
           Scenes" section covers assumptions instead. */}
       <div className="print:hidden">

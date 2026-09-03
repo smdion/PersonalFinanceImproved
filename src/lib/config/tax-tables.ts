@@ -124,7 +124,7 @@ export function getLtcgRate(
  * answers a different, also-correct question — "what bracket is a real
  * dollar SITTING AT" (income exactly at the 0% ceiling genuinely IS taxed
  * at 0%) — and returning the bracket BELOW for a "what's next" query
- * silently under-prices that entire next tier (found 2026-08-31: this
+ * silently under-prices that entire next tier — this
  * exact substitution mispriced brokerage as 0%/NIIT-only well past its
  * real 15% rate for any household whose ordinary income left room in the
  * 0% zone, causing `rankWithdrawalTiers` to disagree with the real tax
