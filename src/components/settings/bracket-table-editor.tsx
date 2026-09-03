@@ -117,6 +117,12 @@ export function BracketTableEditor<TEntry>({
   sourceNote,
 }: Props<TEntry>) {
   const [copyFrom, setCopyFrom] = useState<number | null>(null);
+  // Distinguishes "the dropdown hasn't been touched yet" (fall back to the
+  // most recent year, `copyFrom` is still its `null` initial value) from
+  // "the admin explicitly picked Empty brackets" (also `null`, but must NOT
+  // fall back — the two states used to collapse into the same value, which
+  // made "Empty brackets" unreachable whenever any prior year existed).
+  const [copyFromTouched, setCopyFromTouched] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
 
   if (isLoading) return <Skeleton className="h-6 w-48" />;
@@ -125,7 +131,9 @@ export function BracketTableEditor<TEntry>({
     (a, b) => b - a,
   );
   const yearData = rows.filter((r) => r.taxYear === year);
-  const effectiveCopyFrom = copyFrom ?? years[0] ?? null;
+  const effectiveCopyFrom = copyFromTouched
+    ? copyFrom
+    : (copyFrom ?? years[0] ?? null);
 
   const handleAddYear = async () => {
     if (years.includes(year)) return;
@@ -143,6 +151,7 @@ export function BracketTableEditor<TEntry>({
       }
     }
     setCopyFrom(null);
+    setCopyFromTouched(false);
   };
 
   const handleDeleteYear = async () => {
@@ -167,11 +176,12 @@ export function BracketTableEditor<TEntry>({
                   Copy from:
                   <select
                     value={effectiveCopyFrom ?? ""}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setCopyFrom(
                         e.target.value ? parseInt(e.target.value) : null,
-                      )
-                    }
+                      );
+                      setCopyFromTouched(true);
+                    }}
                     className="ml-2 px-2 py-1 text-sm border rounded"
                   >
                     <option value="">Empty brackets</option>

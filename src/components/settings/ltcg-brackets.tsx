@@ -44,7 +44,10 @@ export function LtcgBracketsSettings({ year }: { year: number }) {
         { threshold: 0, rate: 0.15 },
         { threshold: null, rate: 0.2 },
       ]}
-      entryKey={(e) => String(e.threshold)}
+      // Index prefix, not just `threshold`: the default seed (below) has
+      // two rows sharing `threshold: 0` (the 0% and 15% tiers), which
+      // produced a duplicate React key and let edits stick to the wrong row.
+      entryKey={(e, i) => `${i}-${e.threshold}`}
       sourceNote="Source: IRS Revenue Procedure (adjusted annually for inflation). Rates apply to long-term gains based on total taxable income. Edit rates as percentages (e.g., enter 15 for 15%)."
       columns={[
         {
