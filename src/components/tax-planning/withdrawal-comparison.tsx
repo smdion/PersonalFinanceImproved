@@ -15,6 +15,10 @@ import type { RouterInputs } from "@/lib/trpc";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils/format";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  getDefaultDecumulationOrder,
+  isOverflowTarget,
+} from "@/lib/config/account-types";
 
 type Selection = Partial<
   Pick<
@@ -23,17 +27,22 @@ type Selection = Partial<
   >
 >;
 
+// Orders are derived from config, never hardcoded (RULES.md). The default
+// decumulation order is already pre-tax-first ("traditional first");
+// "brokerage first" hoists the overflow/taxable bucket to the front.
+const TRAD_FIRST_ORDER = getDefaultDecumulationOrder();
+const BROKERAGE_FIRST_ORDER = [
+  ...TRAD_FIRST_ORDER.filter((c) => isOverflowTarget(c)),
+  ...TRAD_FIRST_ORDER.filter((c) => !isOverflowTarget(c)),
+];
+
 const STRATEGIES: RouterInputs["projection"]["compareWithdrawalStrategies"]["strategies"] =
   [
-    {
-      label: "Traditional first",
-      mode: "waterfall",
-      order: ["401k", "403b", "ira", "brokerage", "hsa"],
-    },
+    { label: "Traditional first", mode: "waterfall", order: TRAD_FIRST_ORDER },
     {
       label: "Brokerage first",
       mode: "waterfall",
-      order: ["brokerage", "401k", "403b", "ira", "hsa"],
+      order: BROKERAGE_FIRST_ORDER,
     },
     { label: "Tax-optimized", mode: "bracket_filling" },
   ];
