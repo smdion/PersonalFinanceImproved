@@ -30,8 +30,9 @@ type ProfileResolutionTiers = {
   globalDefaultId: number | null;
 };
 
-// Hand-written (client code can't import `@/server/*` — lint rule). Keep in
-// sync with budget.ts::updateItemAmounts' return.
+// Hand-written — keep in sync with budget.ts::updateItemAmounts' return.
+// (A shared `RouterOutputs` from lib/trpc.ts would remove the copy — see
+// roadmap R57.)
 type UpdateBatchResult = {
   ok: boolean;
   updated: number;
