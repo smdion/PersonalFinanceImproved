@@ -34,8 +34,9 @@ const CODE_COPY: Record<string, string> = {
   TOO_MANY_REQUESTS: "Too many requests — wait a moment and try again.",
   PAYLOAD_TOO_LARGE: "That request was too large to process.",
   UNPROCESSABLE_CONTENT: "Please check the values you entered.",
-  METHOD_NOT_SUPPORTED: "Something went wrong. Please try again.",
   INTERNAL_SERVER_ERROR: "Something went wrong on our end. Please try again.",
+  // Codes not listed here (PARSE_ERROR, METHOD_NOT_SUPPORTED, BAD_GATEWAY,
+  // …) fall through to GENERIC below.
 };
 
 const GENERIC = "Something went wrong. Please try again.";

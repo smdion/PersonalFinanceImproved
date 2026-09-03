@@ -17,6 +17,7 @@ import {
   type RefObject,
 } from "react";
 import type { RawItem } from "@/components/budget";
+import type { RouterOutputs } from "@/lib/trpc";
 import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 import { EDIT_LOCK_KEYS } from "@/components/ui/edit-lock-toggle";
 import { toast } from "@/lib/hooks/use-toast";
@@ -30,19 +31,7 @@ type ProfileResolutionTiers = {
   globalDefaultId: number | null;
 };
 
-// Hand-written — keep in sync with budget.ts::updateItemAmounts' return.
-// (A shared `RouterOutputs` from lib/trpc.ts would remove the copy — see
-// roadmap R57.)
-type UpdateBatchResult = {
-  ok: boolean;
-  updated: number;
-  updatedItems: number;
-  skipped: Array<{
-    id: number;
-    colIndex: number;
-    reason: "deleted" | "column-out-of-range";
-  }>;
-};
+type UpdateBatchResult = RouterOutputs["budget"]["updateItemAmounts"];
 
 type UpdateBatch = {
   mutateAsync: (args: {
