@@ -65,7 +65,7 @@ export type AccumulationRowProps = {
   mcCellOpts: RenderMcCellOptions;
 };
 
-function AccumulationRowImpl({
+export function AccumulationRow({
   yr,
   state,
   parentCategoryFilter,
@@ -1397,10 +1397,3 @@ function AccumulationRowImpl({
     </tr>
   );
 }
-
-/**
- * Memoized: props are shallow-comparable (yr comes straight from
- * result.projectionByYear, mcCellOpts is useMemo'd in ProjectionTable) so a
- * parent re-render that does not change this row's year skips re-rendering it.
- */
-export const AccumulationRow = React.memo(AccumulationRowImpl);
