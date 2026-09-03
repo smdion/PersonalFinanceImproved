@@ -26,7 +26,7 @@ type BudgetSummaryTableProps = {
 function ChevronIcon({ expanded }: { expanded: boolean }) {
   return (
     <svg
-      className={`w-2.5 h-2.5 text-faint transition-transform ${expanded ? "rotate-90" : ""}`}
+      className={`text-faint h-2.5 w-2.5 transition-transform ${expanded ? "rotate-90" : ""}`}
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -121,26 +121,26 @@ export function BudgetSummaryTable({
   );
 
   return (
-    <div className="overflow-x-auto mb-3">
+    <div className="mb-3 overflow-x-auto">
       {isWeighted && (
         <p className="text-caption text-faint mb-1.5">
           Each mode&rsquo;s column shows{" "}
-          <span className="font-medium text-secondary">
+          <span className="text-secondary font-medium">
             that mode&rsquo;s own monthly amount
           </span>{" "}
           — e.g. what Traveling costs during its 1 month.{" "}
-          <span className="font-medium text-secondary">Blended</span> is the
+          <span className="text-secondary font-medium">Blended</span> is the
           weighted average across all 12 months — a typical month.
         </p>
       )}
       <table
-        className="w-full text-xs border-collapse"
+        className="w-full border-collapse text-xs"
         style={{ tableLayout: "fixed" }}
       >
         <thead>
-          <tr className="border-b-2 border-strong">
+          <tr className="border-strong border-b-2">
             <th
-              className="text-left py-1.5 pr-3 text-muted font-medium"
+              className="text-muted py-1.5 pr-3 text-left font-medium"
               style={{
                 width: nameColWidth ?? 192,
                 minWidth: 120,
@@ -150,12 +150,12 @@ export function BudgetSummaryTable({
             {cols.map((label, colIdx) => (
               <th
                 key={label}
-                className={`text-right py-1.5 px-2 font-semibold min-w-[90px] transition-colors ${
+                className={`min-w-[90px] px-2 py-1.5 text-right font-semibold transition-colors ${
                   isWeighted
                     ? "text-primary"
                     : colIdx === activeColumn
-                      ? "text-blue-700 bg-blue-50 cursor-pointer"
-                      : "text-primary hover:text-blue-600 cursor-pointer"
+                      ? "cursor-pointer bg-blue-50 text-blue-700"
+                      : "text-primary cursor-pointer hover:text-blue-600"
                 }`}
                 onClick={
                   isWeighted ? undefined : () => onSetActiveColumn(colIdx)
@@ -170,7 +170,7 @@ export function BudgetSummaryTable({
               >
                 {label}
                 {!isWeighted && colIdx === activeColumn && (
-                  <span className="ml-1 text-caption align-super text-blue-500">
+                  <span className="text-caption ml-1 align-super text-blue-500">
                     ●
                   </span>
                 )}
@@ -187,7 +187,7 @@ export function BudgetSummaryTable({
             ))}
             {isWeighted && (
               <th
-                className="text-right py-1.5 px-2 font-semibold min-w-[90px] text-primary bg-surface-sunken/60"
+                className="text-primary bg-surface-sunken/60 min-w-[90px] px-2 py-1.5 text-right font-semibold"
                 title="Weighted average across modes — what a typical month looks like"
               >
                 Blended
@@ -200,7 +200,7 @@ export function BudgetSummaryTable({
             <>
               {/* Gross income row */}
               <tr
-                className={`border-t-2 border-strong${grossDetailLines.length > 1 ? "cursor-pointer hover:bg-surface-sunken" : ""}`}
+                className={`border-t-2 border-strong${grossDetailLines.length > 1 ? "hover:bg-surface-sunken cursor-pointer" : ""}`}
                 onClick={
                   grossDetailLines.length > 1
                     ? () => setShowGross(!showGross)
@@ -212,7 +212,7 @@ export function BudgetSummaryTable({
                     {grossDetailLines.length > 1 ? (
                       <ChevronIcon expanded={showGross} />
                     ) : (
-                      <span className="w-2 h-2 rounded-full bg-green-600" />
+                      <span className="h-2 w-2 rounded-full bg-green-600" />
                     )}
                     Gross Income
                   </span>
@@ -220,7 +220,7 @@ export function BudgetSummaryTable({
                 {allColumnResults.map((_, i) => (
                   <td
                     key={cols[i]}
-                    className="text-right py-1 px-2 tabular-nums text-green-800 font-medium"
+                    className="px-2 py-1 text-right font-medium text-green-800 tabular-nums"
                   >
                     {formatCurrency(payrollBreakdowns[i]?.grossMonthly ?? 0)}
                   </td>
@@ -239,21 +239,21 @@ export function BudgetSummaryTable({
                 grossDetailLines.map((line) => (
                   <tr
                     key={line.name}
-                    className="border-b border-subtle bg-surface-sunken/50"
+                    className="border-subtle bg-surface-sunken/50 border-b"
                   >
-                    <td className="py-0.5 pr-3 pl-8 text-faint text-caption">
+                    <td className="text-faint text-caption py-0.5 pr-3 pl-8">
                       {line.name}
                     </td>
                     {line.amounts.map((amt, i) => (
                       <td
                         key={cols[i]}
-                        className="text-right py-0.5 px-2 tabular-nums text-green-700 text-caption"
+                        className="text-caption px-2 py-0.5 text-right text-green-700 tabular-nums"
                       >
                         {formatCurrency(amt ?? 0)}
                       </td>
                     ))}
                     {isWeighted && (
-                      <td className="text-right py-0.5 px-2 tabular-nums text-green-700 text-caption bg-surface-sunken/60">
+                      <td className="text-caption bg-surface-sunken/60 px-2 py-0.5 text-right text-green-700 tabular-nums">
                         {formatCurrency(blended(line.amounts))}
                       </td>
                     )}
@@ -262,10 +262,10 @@ export function BudgetSummaryTable({
 
               {/* Taxes subtotal */}
               <tr
-                className="border-b border-subtle cursor-pointer hover:bg-surface-sunken"
+                className="border-subtle hover:bg-surface-sunken cursor-pointer border-b"
                 onClick={() => setShowTaxes(!showTaxes)}
               >
-                <td className="py-1 pr-3 text-red-600 font-medium">
+                <td className="py-1 pr-3 font-medium text-red-600">
                   <span className="flex items-center gap-1.5">
                     <ChevronIcon expanded={showTaxes} />
                     Taxes
@@ -274,7 +274,7 @@ export function BudgetSummaryTable({
                 {allColumnResults.map((_, i) => (
                   <td
                     key={cols[i]}
-                    className="text-right py-1 px-2 tabular-nums text-red-600"
+                    className="px-2 py-1 text-right text-red-600 tabular-nums"
                   >
                     −{formatCurrency(payrollBreakdowns[i]?.totalTaxes ?? 0)}
                   </td>
@@ -290,14 +290,14 @@ export function BudgetSummaryTable({
               </tr>
               {showTaxes && (
                 <>
-                  <tr className="border-b border-subtle bg-surface-sunken/50">
-                    <td className="py-0.5 pr-3 pl-8 text-faint text-caption">
+                  <tr className="border-subtle bg-surface-sunken/50 border-b">
+                    <td className="text-faint text-caption py-0.5 pr-3 pl-8">
                       Federal Withholding
                     </td>
                     {allColumnResults.map((_, i) => (
                       <td
                         key={cols[i]}
-                        className="text-right py-0.5 px-2 tabular-nums text-red-500 text-caption"
+                        className="text-caption px-2 py-0.5 text-right text-red-500 tabular-nums"
                       >
                         −
                         {formatCurrency(
@@ -306,7 +306,7 @@ export function BudgetSummaryTable({
                       </td>
                     ))}
                     {isWeighted && (
-                      <td className="text-right py-0.5 px-2 tabular-nums text-red-500 text-caption bg-surface-sunken/60">
+                      <td className="text-caption bg-surface-sunken/60 px-2 py-0.5 text-right text-red-500 tabular-nums">
                         −
                         {formatCurrency(
                           blended(
@@ -318,20 +318,20 @@ export function BudgetSummaryTable({
                       </td>
                     )}
                   </tr>
-                  <tr className="border-b border-subtle bg-surface-sunken/50">
-                    <td className="py-0.5 pr-3 pl-8 text-faint text-caption">
+                  <tr className="border-subtle bg-surface-sunken/50 border-b">
+                    <td className="text-faint text-caption py-0.5 pr-3 pl-8">
                       Social Security
                     </td>
                     {allColumnResults.map((_, i) => (
                       <td
                         key={cols[i]}
-                        className="text-right py-0.5 px-2 tabular-nums text-red-500 text-caption"
+                        className="text-caption px-2 py-0.5 text-right text-red-500 tabular-nums"
                       >
                         −{formatCurrency(payrollBreakdowns[i]?.ficaSS ?? 0)}
                       </td>
                     ))}
                     {isWeighted && (
-                      <td className="text-right py-0.5 px-2 tabular-nums text-red-500 text-caption bg-surface-sunken/60">
+                      <td className="text-caption bg-surface-sunken/60 px-2 py-0.5 text-right text-red-500 tabular-nums">
                         −
                         {formatCurrency(
                           blended(payrollBreakdowns.map((b) => b?.ficaSS ?? 0)),
@@ -339,14 +339,14 @@ export function BudgetSummaryTable({
                       </td>
                     )}
                   </tr>
-                  <tr className="border-b border-subtle bg-surface-sunken/50">
-                    <td className="py-0.5 pr-3 pl-8 text-faint text-caption">
+                  <tr className="border-subtle bg-surface-sunken/50 border-b">
+                    <td className="text-faint text-caption py-0.5 pr-3 pl-8">
                       Medicare
                     </td>
                     {allColumnResults.map((_, i) => (
                       <td
                         key={cols[i]}
-                        className="text-right py-0.5 px-2 tabular-nums text-red-500 text-caption"
+                        className="text-caption px-2 py-0.5 text-right text-red-500 tabular-nums"
                       >
                         −
                         {formatCurrency(
@@ -355,7 +355,7 @@ export function BudgetSummaryTable({
                       </td>
                     ))}
                     {isWeighted && (
-                      <td className="text-right py-0.5 px-2 tabular-nums text-red-500 text-caption bg-surface-sunken/60">
+                      <td className="text-caption bg-surface-sunken/60 px-2 py-0.5 text-right text-red-500 tabular-nums">
                         −
                         {formatCurrency(
                           blended(
@@ -372,10 +372,10 @@ export function BudgetSummaryTable({
               {preTaxDetailLines.length > 0 && (
                 <>
                   <tr
-                    className="border-b border-subtle cursor-pointer hover:bg-surface-sunken"
+                    className="border-subtle hover:bg-surface-sunken cursor-pointer border-b"
                     onClick={() => setShowPreTax(!showPreTax)}
                   >
-                    <td className="py-1 pr-3 text-red-600 font-medium">
+                    <td className="py-1 pr-3 font-medium text-red-600">
                       <span className="flex items-center gap-1.5">
                         <ChevronIcon expanded={showPreTax} />
                         Pre-Tax Deductions
@@ -385,7 +385,7 @@ export function BudgetSummaryTable({
                     {allColumnResults.map((_, i) => (
                       <td
                         key={cols[i]}
-                        className="text-right py-1 px-2 tabular-nums text-red-600"
+                        className="px-2 py-1 text-right text-red-600 tabular-nums"
                       >
                         −
                         {formatCurrency(payrollBreakdowns[i]?.totalPreTax ?? 0)}
@@ -406,21 +406,21 @@ export function BudgetSummaryTable({
                     preTaxDetailLines.map((line) => (
                       <tr
                         key={`pre-${line.name}`}
-                        className="border-b border-subtle bg-surface-sunken/50"
+                        className="border-subtle bg-surface-sunken/50 border-b"
                       >
-                        <td className="py-0.5 pr-3 pl-8 text-faint text-caption">
+                        <td className="text-faint text-caption py-0.5 pr-3 pl-8">
                           {line.name}
                         </td>
                         {line.amounts.map((amt, i) => (
                           <td
                             key={cols[i]}
-                            className="text-right py-0.5 px-2 tabular-nums text-red-500 text-caption"
+                            className="text-caption px-2 py-0.5 text-right text-red-500 tabular-nums"
                           >
                             −{formatCurrency(amt ?? 0)}
                           </td>
                         ))}
                         {isWeighted && (
-                          <td className="text-right py-0.5 px-2 tabular-nums text-red-500 text-caption bg-surface-sunken/60">
+                          <td className="text-caption bg-surface-sunken/60 px-2 py-0.5 text-right text-red-500 tabular-nums">
                             −{formatCurrency(blended(line.amounts))}
                           </td>
                         )}
@@ -433,10 +433,10 @@ export function BudgetSummaryTable({
               {postTaxDetailLines.length > 0 && (
                 <>
                   <tr
-                    className="border-b border-subtle cursor-pointer hover:bg-surface-sunken"
+                    className="border-subtle hover:bg-surface-sunken cursor-pointer border-b"
                     onClick={() => setShowPostTax(!showPostTax)}
                   >
-                    <td className="py-1 pr-3 text-red-600 font-medium">
+                    <td className="py-1 pr-3 font-medium text-red-600">
                       <span className="flex items-center gap-1.5">
                         <ChevronIcon expanded={showPostTax} />
                         After-Tax Deductions
@@ -446,7 +446,7 @@ export function BudgetSummaryTable({
                     {allColumnResults.map((_, i) => (
                       <td
                         key={cols[i]}
-                        className="text-right py-1 px-2 tabular-nums text-red-600"
+                        className="px-2 py-1 text-right text-red-600 tabular-nums"
                       >
                         −
                         {formatCurrency(
@@ -469,21 +469,21 @@ export function BudgetSummaryTable({
                     postTaxDetailLines.map((line) => (
                       <tr
                         key={`post-${line.name}`}
-                        className="border-b border-subtle bg-surface-sunken/50"
+                        className="border-subtle bg-surface-sunken/50 border-b"
                       >
-                        <td className="py-0.5 pr-3 pl-8 text-faint text-caption">
+                        <td className="text-faint text-caption py-0.5 pr-3 pl-8">
                           {line.name}
                         </td>
                         {line.amounts.map((amt, i) => (
                           <td
                             key={cols[i]}
-                            className="text-right py-0.5 px-2 tabular-nums text-red-500 text-caption"
+                            className="text-caption px-2 py-0.5 text-right text-red-500 tabular-nums"
                           >
                             −{formatCurrency(amt ?? 0)}
                           </td>
                         ))}
                         {isWeighted && (
-                          <td className="text-right py-0.5 px-2 tabular-nums text-red-500 text-caption bg-surface-sunken/60">
+                          <td className="text-caption bg-surface-sunken/60 px-2 py-0.5 text-right text-red-500 tabular-nums">
                             −{formatCurrency(blended(line.amounts))}
                           </td>
                         )}
@@ -494,7 +494,7 @@ export function BudgetSummaryTable({
 
               {/* Net take-home */}
               <tr
-                className={`border-b ${takeHomeDetailLines.length > 1 ? "cursor-pointer hover:bg-surface-sunken" : ""}`}
+                className={`border-b ${takeHomeDetailLines.length > 1 ? "hover:bg-surface-sunken cursor-pointer" : ""}`}
                 onClick={
                   takeHomeDetailLines.length > 1
                     ? () => setShowTakeHome(!showTakeHome)
@@ -517,7 +517,7 @@ export function BudgetSummaryTable({
                 {allColumnResults.map((_, i) => (
                   <td
                     key={cols[i]}
-                    className="text-right py-1 px-2 tabular-nums text-green-700 font-semibold"
+                    className="px-2 py-1 text-right font-semibold text-green-700 tabular-nums"
                   >
                     {formatCurrency(payrollBreakdowns[i]?.netMonthly ?? 0)}
                   </td>
@@ -534,21 +534,21 @@ export function BudgetSummaryTable({
                 takeHomeDetailLines.map((line) => (
                   <tr
                     key={line.name}
-                    className="border-b border-subtle bg-surface-sunken/50"
+                    className="border-subtle bg-surface-sunken/50 border-b"
                   >
-                    <td className="py-0.5 pr-3 pl-8 text-faint text-caption">
+                    <td className="text-faint text-caption py-0.5 pr-3 pl-8">
                       {line.name}
                     </td>
                     {line.amounts.map((amt, i) => (
                       <td
                         key={cols[i]}
-                        className="text-right py-0.5 px-2 tabular-nums text-green-600 text-caption"
+                        className="text-caption px-2 py-0.5 text-right text-green-600 tabular-nums"
                       >
                         {formatCurrency(amt ?? 0)}
                       </td>
                     ))}
                     {isWeighted && (
-                      <td className="text-right py-0.5 px-2 tabular-nums text-green-600 text-caption bg-surface-sunken/60">
+                      <td className="text-caption bg-surface-sunken/60 px-2 py-0.5 text-right text-green-600 tabular-nums">
                         {formatCurrency(blended(line.amounts))}
                       </td>
                     )}
@@ -556,7 +556,7 @@ export function BudgetSummaryTable({
                 ))}
 
               {/* Essential / Discretionary split */}
-              <tr className="border-b border-subtle">
+              <tr className="border-subtle border-b">
                 <td className="py-1 pr-3 font-medium text-blue-700">
                   <span className="flex items-center gap-1.5">
                     <StatusDot color="blue" className="flex-shrink-0" />
@@ -567,7 +567,7 @@ export function BudgetSummaryTable({
                 {allColumnResults.map((r, i) => (
                   <td
                     key={cols[i]}
-                    className="text-right py-1 px-2 tabular-nums text-blue-600"
+                    className="px-2 py-1 text-right text-blue-600 tabular-nums"
                   >
                     −{formatCurrency(r.essentialTotal)}
                   </td>
@@ -581,10 +581,10 @@ export function BudgetSummaryTable({
                   </td>
                 )}
               </tr>
-              <tr className="border-b border-subtle">
+              <tr className="border-subtle border-b">
                 <td className="py-1 pr-3 font-medium text-purple-500">
                   <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-purple-400 flex-shrink-0" />
+                    <span className="h-2 w-2 flex-shrink-0 rounded-full bg-purple-400" />
                     Discretionary
                     <HelpTip text="Optional spending you could cut in a pinch — not counted toward your emergency fund." />
                   </span>
@@ -592,7 +592,7 @@ export function BudgetSummaryTable({
                 {allColumnResults.map((r, i) => (
                   <td
                     key={cols[i]}
-                    className="text-right py-1 px-2 tabular-nums text-purple-500"
+                    className="px-2 py-1 text-right text-purple-500 tabular-nums"
                   >
                     −{formatCurrency(r.discretionaryTotal)}
                   </td>
@@ -616,7 +616,7 @@ export function BudgetSummaryTable({
                 return (
                   <>
                     <tr
-                      className={`font-bold${hasSinkingFunds ? "cursor-pointer hover:bg-surface-sunken" : ""}`}
+                      className={`font-bold${hasSinkingFunds ? "hover:bg-surface-sunken cursor-pointer" : ""}`}
                       onClick={
                         hasSinkingFunds
                           ? () => setShowSavings(!showSavings)
@@ -628,11 +628,11 @@ export function BudgetSummaryTable({
                           {hasSinkingFunds ? (
                             <ChevronIcon expanded={showSavings} />
                           ) : (
-                            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                            <span className="h-2 w-2 rounded-full bg-emerald-500" />
                           )}
                           Savings
                           {savingsProfileName && (
-                            <span className="text-micro font-normal text-faint">
+                            <span className="text-micro text-faint font-normal">
                               ({savingsProfileName})
                             </span>
                           )}
@@ -655,11 +655,11 @@ export function BudgetSummaryTable({
                         return (
                           <td
                             key={cols[i]}
-                            className={`text-right py-1.5 px-2 tabular-nums ${totalSavings >= 0 ? "text-emerald-700" : "text-red-600"}`}
+                            className={`px-2 py-1.5 text-right tabular-nums ${totalSavings >= 0 ? "text-emerald-700" : "text-red-600"}`}
                           >
                             {formatCurrency(totalSavings)}
                             {isOverCapacity && (
-                              <div className="text-micro text-red-500 leading-tight mt-0.5">
+                              <div className="text-micro mt-0.5 leading-tight text-red-500">
                                 ⚠ {formatCurrency(overage)} over → fix in
                                 Savings
                               </div>
@@ -684,7 +684,7 @@ export function BudgetSummaryTable({
                             >
                               {formatCurrency(blendedSavings)}
                               {isOverCapacity && (
-                                <div className="text-micro text-red-500 leading-tight mt-0.5 font-normal">
+                                <div className="text-micro mt-0.5 leading-tight font-normal text-red-500">
                                   ⚠ {formatCurrency(blendedOverage)} over
                                 </div>
                               )}
@@ -697,28 +697,28 @@ export function BudgetSummaryTable({
                         {sinkingFunds.map((fund) => (
                           <tr
                             key={fund.id}
-                            className="border-b border-subtle bg-surface-sunken/50"
+                            className="border-subtle bg-surface-sunken/50 border-b"
                           >
-                            <td className="py-0.5 pr-3 pl-8 text-faint text-caption">
+                            <td className="text-faint text-caption py-0.5 pr-3 pl-8">
                               {fund.name}
                             </td>
                             {allColumnResults.map((_, i) => (
                               <td
                                 key={cols[i]}
-                                className="text-right py-0.5 px-2 tabular-nums text-amber-500 text-caption"
+                                className="text-caption px-2 py-0.5 text-right text-amber-500 tabular-nums"
                               >
                                 {formatCurrency(fund.monthlyContribution)}
                               </td>
                             ))}
                             {isWeighted && (
-                              <td className="text-right py-0.5 px-2 tabular-nums text-amber-500 text-caption bg-surface-sunken/60">
+                              <td className="text-caption bg-surface-sunken/60 px-2 py-0.5 text-right text-amber-500 tabular-nums">
                                 {formatCurrency(fund.monthlyContribution)}
                               </td>
                             )}
                           </tr>
                         ))}
-                        <tr className="border-b border-subtle bg-surface-sunken/50">
-                          <td className="py-0.5 pr-3 pl-8 text-faint text-caption">
+                        <tr className="border-subtle bg-surface-sunken/50 border-b">
+                          <td className="text-faint text-caption py-0.5 pr-3 pl-8">
                             Unallocated
                           </td>
                           {allColumnResults.map((r, i) => {
@@ -730,7 +730,7 @@ export function BudgetSummaryTable({
                             return (
                               <td
                                 key={cols[i]}
-                                className={`text-right py-0.5 px-2 tabular-nums text-caption ${unallocated >= 0 ? "text-emerald-600" : "text-red-500"}`}
+                                className={`text-caption px-2 py-0.5 text-right tabular-nums ${unallocated >= 0 ? "text-emerald-600" : "text-red-500"}`}
                               >
                                 {formatCurrency(unallocated)}
                               </td>
@@ -751,7 +751,7 @@ export function BudgetSummaryTable({
                               );
                               return (
                                 <td
-                                  className={`text-right py-0.5 px-2 tabular-nums text-caption bg-surface-sunken/60 ${blendedUnallocated >= 0 ? "text-emerald-600" : "text-red-500"}`}
+                                  className={`text-caption bg-surface-sunken/60 px-2 py-0.5 text-right tabular-nums ${blendedUnallocated >= 0 ? "text-emerald-600" : "text-red-500"}`}
                                 >
                                   {formatCurrency(blendedUnallocated)}
                                 </td>

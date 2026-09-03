@@ -61,7 +61,7 @@ export function Card({
           <div className="flex items-center gap-2">
             {isCollapsible && (
               <svg
-                className={`w-4 h-4 text-faint transition-transform ${isOpen ? "rotate-90" : ""}`}
+                className={`text-faint h-4 w-4 transition-transform ${isOpen ? "rotate-90" : ""}`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -76,11 +76,11 @@ export function Card({
               </svg>
             )}
             <div>
-              <h3 className="text-sm font-medium text-muted tracking-wide">
+              <h3 className="text-muted text-sm font-medium tracking-wide">
                 {title}
               </h3>
               {subtitle && (
-                <p className="text-xs text-faint mt-0.5">{subtitle}</p>
+                <p className="text-faint mt-0.5 text-xs">{subtitle}</p>
               )}
             </div>
           </div>
@@ -119,11 +119,11 @@ type MetricProps = {
 export function Metric({ value, label, trend }: MetricProps) {
   return (
     <div>
-      <p className="text-2xl font-semibold text-primary">{value}</p>
-      {label && <p className="text-sm text-muted mt-1">{label}</p>}
+      <p className="text-primary text-2xl font-semibold">{value}</p>
+      {label && <p className="text-muted mt-1 text-sm">{label}</p>}
       {trend && (
         <p
-          className={`text-sm mt-1 ${trend.isPositive ? "text-green-600" : "text-red-600"}`}
+          className={`mt-1 text-sm ${trend.isPositive ? "text-green-600" : "text-red-600"}`}
         >
           {trend.isPositive ? "↑" : "↓"} {trend.value}
         </p>
@@ -145,6 +145,9 @@ type ProgressBarProps = {
   label?: ReactNode;
   variant?: keyof typeof PROGRESS_BAR_VARIANT_COLORS;
   tooltip?: string;
+  /** Accessible name for the bar. Falls back to a string `label`, then
+   *  "Progress". Pass this when `label` is a non-string node. */
+  ariaLabel?: string;
 };
 
 export function ProgressBar({
@@ -152,22 +155,38 @@ export function ProgressBar({
   label,
   variant = "default",
   tooltip,
+  ariaLabel,
 }: ProgressBarProps) {
   const color = PROGRESS_BAR_VARIANT_COLORS[variant];
   const percent = Math.min(100, Math.max(0, value * 100));
-  const defaultTooltip = `${formatPercent(percent / 100)} progress`;
+  const name =
+    ariaLabel ?? (typeof label === "string" ? label : undefined) ?? "Progress";
   return (
-    <div title={tooltip ?? defaultTooltip}>
-      <div className="flex justify-between text-sm mb-1">
+    // Redundant `title` only when there's no visible label to describe it.
+    <div
+      title={
+        tooltip ??
+        (label ? undefined : `${formatPercent(percent / 100)} progress`)
+      }
+    >
+      <div className="mb-1 flex justify-between text-sm">
         {label && <span className="text-secondary">{label}</span>}
-        <span className="text-muted font-medium">
+        {/* Value is exposed via the progressbar role below — hide the
+            visual copy from AT so it isn't announced twice. */}
+        <span className="text-muted font-medium" aria-hidden="true">
           {formatPercent(percent / 100)}
         </span>
       </div>
-      <div className="h-2 sm:h-3 bg-surface-sunken rounded-full overflow-hidden">
+      <div className="bg-surface-sunken h-2 overflow-hidden rounded-full sm:h-3">
         <div
           className={`h-full ${color} rounded-full transition-all`}
           style={{ width: `${percent}%` }}
+          role="progressbar"
+          aria-label={name}
+          aria-valuenow={Math.round(percent)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuetext={formatPercent(percent / 100)}
         />
       </div>
     </div>

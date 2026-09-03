@@ -121,12 +121,12 @@ export function NetWorthCompare({
       isDefaultOpen={false}
     >
       {/* Preset buttons */}
-      <div className="flex flex-wrap gap-1.5 mb-4">
+      <div className="mb-4 flex flex-wrap gap-1.5">
         {PRESETS.map((p) => (
           <button
             key={p.key}
             onClick={() => setActivePreset(p.key)}
-            className={`px-3 py-1 text-xs rounded-full transition-colors ${
+            className={`rounded-full px-3 py-1 text-xs transition-colors ${
               activePreset === p.key
                 ? "bg-blue-600 text-white"
                 : "bg-surface-elevated text-muted hover:bg-surface-strong"
@@ -139,13 +139,13 @@ export function NetWorthCompare({
 
       {/* Year vs Year pickers */}
       {activePreset === "yoy" && (
-        <div className="flex gap-3 mb-4 items-center">
+        <div className="mb-4 flex items-center gap-3">
           <div className="flex items-center gap-1.5">
-            <label className="text-xs text-muted">From Year</label>
+            <label className="text-muted text-xs">From Year</label>
             <select
               value={yoyFrom}
               onChange={(e) => setYoyFrom(Number(e.target.value))}
-              className="border border-strong rounded px-2 py-1 text-sm"
+              className="border-strong rounded border px-2 py-1 text-sm"
             >
               {years.map((y) => (
                 <option key={y} value={y}>
@@ -156,11 +156,11 @@ export function NetWorthCompare({
           </div>
           <span className="text-faint text-sm">vs</span>
           <div className="flex items-center gap-1.5">
-            <label className="text-xs text-muted">To Year</label>
+            <label className="text-muted text-xs">To Year</label>
             <select
               value={yoyTo}
               onChange={(e) => setYoyTo(Number(e.target.value))}
-              className="border border-strong rounded px-2 py-1 text-sm"
+              className="border-strong rounded border px-2 py-1 text-sm"
             >
               {years.map((y) => (
                 <option key={y} value={y}>
@@ -174,23 +174,23 @@ export function NetWorthCompare({
 
       {/* Custom date pickers */}
       {activePreset === "custom" && (
-        <div className="flex gap-3 mb-4 items-center">
+        <div className="mb-4 flex items-center gap-3">
           <div className="flex items-center gap-1.5">
-            <label className="text-xs text-muted">From</label>
+            <label className="text-muted text-xs">From</label>
             <input
               type="date"
               value={customFrom}
               onChange={(e) => setCustomFrom(e.target.value)}
-              className="border border-strong rounded px-2 py-1 text-sm"
+              className="border-strong rounded border px-2 py-1 text-sm"
             />
           </div>
           <div className="flex items-center gap-1.5">
-            <label className="text-xs text-muted">To</label>
+            <label className="text-muted text-xs">To</label>
             <input
               type="date"
               value={customTo}
               onChange={(e) => setCustomTo(e.target.value)}
-              className="border border-strong rounded px-2 py-1 text-sm"
+              className="border-strong rounded border px-2 py-1 text-sm"
             />
           </div>
         </div>
@@ -221,10 +221,10 @@ export function NetWorthCompare({
           <div className="grid grid-cols-3 gap-4">
             {/* From date */}
             <div className="text-center">
-              <p className="text-xs text-muted mb-1">
+              <p className="text-muted mb-1 text-xs">
                 {formatDate(data.from.date, "medium")}
               </p>
-              <p className="text-lg font-semibold text-primary">
+              <p className="text-primary text-lg font-semibold">
                 {formatCurrency(data.from.netWorth)}
               </p>
               {data.from.snapshotDate &&
@@ -236,7 +236,7 @@ export function NetWorthCompare({
             </div>
 
             {/* Change */}
-            <div className="text-center flex flex-col items-center justify-center">
+            <div className="flex flex-col items-center justify-center text-center">
               <p
                 className={`text-xl font-bold ${data.absoluteChange >= 0 ? "text-green-600" : "text-red-600"}`}
               >
@@ -253,10 +253,10 @@ export function NetWorthCompare({
 
             {/* To date */}
             <div className="text-center">
-              <p className="text-xs text-muted mb-1">
+              <p className="text-muted mb-1 text-xs">
                 {formatDate(data.to.date, "medium")}
               </p>
-              <p className="text-lg font-semibold text-primary">
+              <p className="text-primary text-lg font-semibold">
                 {formatCurrency(data.to.netWorth)}
               </p>
               {data.to.snapshotDate &&
@@ -269,8 +269,8 @@ export function NetWorthCompare({
           </div>
 
           {/* Category breakdown */}
-          <div className="border-t border-subtle pt-3">
-            <p className="text-xs font-medium text-muted uppercase tracking-wide mb-2">
+          <div className="border-subtle border-t pt-3">
+            <p className="text-muted mb-2 text-xs font-medium tracking-wide uppercase">
               Change by Category
             </p>
             <div className="space-y-1.5">
@@ -279,19 +279,19 @@ export function NetWorthCompare({
                 .map((cat) => (
                   <div
                     key={cat.label}
-                    className="flex items-center justify-between text-sm py-1"
+                    className="flex items-center justify-between py-1 text-sm"
                   >
                     <span className="text-muted">{cat.label}</span>
                     <div className="flex items-center gap-4">
-                      <span className="text-faint text-xs w-24 text-right">
+                      <span className="text-faint w-24 text-right text-xs">
                         {formatCurrency(cat.from)}
                       </span>
                       <span className="text-faint text-xs">-&gt;</span>
-                      <span className="text-faint text-xs w-24 text-right">
+                      <span className="text-faint w-24 text-right text-xs">
                         {formatCurrency(cat.to)}
                       </span>
                       <span
-                        className={`font-medium w-24 text-right ${
+                        className={`w-24 text-right font-medium ${
                           cat.delta > 0
                             ? "text-green-600"
                             : cat.delta < 0
@@ -306,14 +306,14 @@ export function NetWorthCompare({
                   </div>
                 ))}
               {/* Total row */}
-              <div className="flex items-center justify-between text-sm py-1 border-t font-semibold">
+              <div className="flex items-center justify-between border-t py-1 text-sm font-semibold">
                 <span className="text-primary">Net Worth</span>
                 <div className="flex items-center gap-4">
-                  <span className="text-muted text-xs w-24 text-right">
+                  <span className="text-muted w-24 text-right text-xs">
                     {formatCurrency(data.from.netWorth)}
                   </span>
                   <span className="text-faint text-xs">-&gt;</span>
-                  <span className="text-muted text-xs w-24 text-right">
+                  <span className="text-muted w-24 text-right text-xs">
                     {formatCurrency(data.to.netWorth)}
                   </span>
                   <span
@@ -333,27 +333,27 @@ export function NetWorthCompare({
 
           {/* Portfolio sub-breakdown by tax type */}
           {data.portfolioBreakdown.length > 0 && (
-            <div className="border-t border-subtle pt-3">
-              <p className="text-xs font-medium text-muted uppercase tracking-wide mb-2">
+            <div className="border-subtle border-t pt-3">
+              <p className="text-muted mb-2 text-xs font-medium tracking-wide uppercase">
                 Portfolio by Tax Type
               </p>
               <div className="space-y-1">
                 {data.portfolioBreakdown.map((pb) => (
                   <div
                     key={pb.label}
-                    className="flex items-center justify-between text-sm py-0.5"
+                    className="flex items-center justify-between py-0.5 text-sm"
                   >
                     <span className="text-muted text-xs">{pb.label}</span>
                     <div className="flex items-center gap-4">
-                      <span className="text-faint text-xs w-24 text-right">
+                      <span className="text-faint w-24 text-right text-xs">
                         {formatCurrency(pb.from)}
                       </span>
                       <span className="text-faint text-xs">-&gt;</span>
-                      <span className="text-faint text-xs w-24 text-right">
+                      <span className="text-faint w-24 text-right text-xs">
                         {formatCurrency(pb.to)}
                       </span>
                       <span
-                        className={`text-xs font-medium w-24 text-right ${
+                        className={`w-24 text-right text-xs font-medium ${
                           pb.delta > 0
                             ? "text-green-600"
                             : pb.delta < 0
@@ -373,7 +373,7 @@ export function NetWorthCompare({
 
           {/* Limitations note */}
           {data.limitations.length > 0 && (
-            <div className="text-caption text-faint pt-2 border-t border-subtle space-y-0.5">
+            <div className="text-caption text-faint border-subtle space-y-0.5 border-t pt-2">
               {data.limitations.map((l) => (
                 <p key={l}>{l}</p>
               ))}

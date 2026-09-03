@@ -23,7 +23,7 @@ export function MetricsRow({
   const tier = wealthScoreTier(aawScore);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+    <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
       <Card
         title={
           <>
@@ -33,14 +33,14 @@ export function MetricsRow({
         }
       >
         <div className="space-y-2">
-          <div className="flex justify-between items-baseline">
-            <span className="text-sm text-muted">Wealth Score</span>
+          <div className="flex items-baseline justify-between">
+            <span className="text-muted text-sm">Wealth Score</span>
             <span className="text-2xl font-bold">
               {formatPercent(wealthScore)}
             </span>
           </div>
-          <div className="flex justify-between items-baseline">
-            <span className="text-sm text-muted">AAW Score</span>
+          <div className="flex items-baseline justify-between">
+            <span className="text-muted text-sm">AAW Score</span>
             <span className="text-2xl font-bold">{aawScore.toFixed(1)}x</span>
           </div>
         </div>
@@ -69,6 +69,7 @@ export function MetricsRow({
           <ProgressBar
             value={fiProgress}
             variant={fiProgress >= 1 ? "success" : "info"}
+            ariaLabel="Financial independence progress"
           />
         </div>
       </Card>
@@ -94,7 +95,7 @@ export function MetricsRow({
               {formatCurrency(netWorthCostBasis)}
             </span>
           </div>
-          <div className="flex justify-between py-1 text-xs text-faint">
+          <div className="text-faint flex justify-between py-1 text-xs">
             <span>Difference</span>
             <span>{formatCurrency(netWorthMarket - netWorthCostBasis)}</span>
           </div>

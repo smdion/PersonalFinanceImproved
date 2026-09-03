@@ -159,7 +159,7 @@ export function RetirementProfileManager({
   if (isLoading) {
     return (
       <div className="space-y-1.5">
-        <div className="animate-pulse h-16 bg-surface-elevated rounded-lg" />
+        <div className="bg-surface-elevated h-16 animate-pulse rounded-lg" />
       </div>
     );
   }
@@ -279,7 +279,7 @@ export function RetirementProfileManager({
                           : null,
                       })
                     }
-                    className="text-caption bg-transparent border border-transparent hover:border-border rounded px-0.5 cursor-pointer focus:outline-none focus:border-accent"
+                    className="text-caption hover:border-border focus:border-accent cursor-pointer rounded border border-transparent bg-transparent px-0.5 focus:outline-none"
                   >
                     <option value="">Latest (auto)</option>
                     {availableTaxYears.map((yr) => (
@@ -298,7 +298,7 @@ export function RetirementProfileManager({
       })}
 
       {admin && duplicating && (
-        <div className="flex items-center gap-2 rounded-md border border-dashed border-subtle px-3 py-2 mt-1.5">
+        <div className="border-subtle mt-1.5 flex items-center gap-2 rounded-md border border-dashed px-3 py-2">
           <span className="text-caption text-muted whitespace-nowrap">
             New profile name
           </span>
@@ -311,20 +311,20 @@ export function RetirementProfileManager({
               if (e.key === "Escape") setDuplicating(false);
             }}
             placeholder="e.g. Retire at 60"
-            className="flex-1 border rounded px-2 py-1 text-sm min-w-0"
+            className="min-w-0 flex-1 rounded border px-2 py-1 text-sm"
           />
           <button
             type="button"
             onClick={handleConfirmDuplicate}
             disabled={!duplicateName.trim() || duplicateMut.isPending}
-            className="text-caption text-blue-600 hover:underline disabled:opacity-50 shrink-0"
+            className="text-caption shrink-0 text-blue-600 hover:underline disabled:opacity-50"
           >
             {duplicateMut.isPending ? "Creating…" : "Create"}
           </button>
           <button
             type="button"
             onClick={() => setDuplicating(false)}
-            className="text-caption text-muted hover:underline shrink-0"
+            className="text-caption text-muted shrink-0 hover:underline"
           >
             Cancel
           </button>

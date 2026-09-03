@@ -36,19 +36,19 @@ export function TabGroup({
 }: TabGroupProps) {
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs text-muted uppercase tracking-wide font-medium inline-flex items-center gap-1">
+      <span className="text-muted inline-flex items-center gap-1 text-xs font-medium tracking-wide uppercase">
         {label}
         <HelpTip text={helpText} />
       </span>
-      <div className="flex gap-1 bg-surface-elevated rounded-lg p-1">
+      <div className="bg-surface-elevated flex gap-1 rounded-lg p-1">
         {categories.map((cat) => (
           <button
             key={cat}
             onClick={() => onCategoryChange(cat)}
             title={CATEGORY_HELP[cat]}
-            className={`px-4 py-1.5 text-sm rounded-md transition-colors ${
+            className={`rounded-md px-4 py-1.5 text-sm transition-colors ${
               activeCategory === cat
-                ? "bg-surface-primary text-primary shadow-sm font-medium"
+                ? "bg-surface-primary text-primary font-medium shadow-sm"
                 : "text-muted hover:text-primary"
             }`}
           >
@@ -94,11 +94,11 @@ export function BasisToggleGroup({
     }`;
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs text-muted uppercase tracking-wide font-medium inline-flex items-center gap-1">
+      <span className="text-muted inline-flex items-center gap-1 text-xs font-medium tracking-wide uppercase">
         Basis
         <HelpTip text="Show cost/Roth basis columns in the table below — hidden by default." />
       </span>
-      <div className="flex gap-1 bg-surface-elevated rounded-lg p-1">
+      <div className="bg-surface-elevated flex gap-1 rounded-lg p-1">
         <button
           onClick={onToggleBasis}
           aria-pressed={showBasis}
@@ -154,7 +154,7 @@ export function CategoryTabs({
   onToggleOnlyBasis,
 }: CategoryTabsProps) {
   return (
-    <div className="flex flex-wrap items-center gap-4 mb-6">
+    <div className="mb-6 flex flex-wrap items-center gap-4">
       <TabGroup
         label="By Account"
         helpText="Performance broken down by account type"

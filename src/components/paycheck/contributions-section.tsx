@@ -163,18 +163,18 @@ export function ContributionsSection({
     <div>
       <button
         onClick={onToggleExpand}
-        className="w-full text-left cursor-pointer"
+        className="w-full cursor-pointer text-left"
         aria-expanded={isExpanded}
       >
         <SectionHeader>
           <span className="flex items-center gap-1.5">
             Contribution Accounts
             <HelpTip text="Retirement and investment accounts you contribute to from each paycheck (401k, IRA, HSA, etc.)" />
-            <span className="text-faint text-caption font-normal normal-case tracking-normal">
+            <span className="text-faint text-caption font-normal tracking-normal normal-case">
               ({rawContribs.length})
             </span>
             <svg
-              className={`w-3 h-3 text-faint transition-transform ${isExpanded ? "rotate-90" : ""}`}
+              className={`text-faint h-3 w-3 transition-transform ${isExpanded ? "rotate-90" : ""}`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -191,7 +191,7 @@ export function ContributionsSection({
         </SectionHeader>
       </button>
       {isExpanded && (
-        <div className="space-y-4 mt-2">
+        <div className="mt-2 space-y-4">
           {groupOrder.map((groupKey) => {
             const contribs = groupedContribs.get(groupKey) ?? [];
             const jointContribs = groupedJoint.get(groupKey) ?? [];
@@ -225,7 +225,7 @@ export function ContributionsSection({
             return (
               <div key={groupKey}>
                 {/* Group header */}
-                <div className="flex items-center gap-2 mb-2">
+                <div className="mb-2 flex items-center gap-2">
                   {isSharedLimit ? (
                     <>
                       {/* Show all account type badges in the group */}
@@ -242,7 +242,7 @@ export function ContributionsSection({
                               <span
                                 className={
                                   sharedLimitUsed > sharedLimitAmount
-                                    ? "text-red-600 font-medium ml-1"
+                                    ? "ml-1 font-medium text-red-600"
                                     : "text-faint ml-1"
                                 }
                               >
@@ -255,11 +255,11 @@ export function ContributionsSection({
                   ) : (
                     <AccountBadge type={groupKey} />
                   )}
-                  <span className="flex-1 h-px bg-surface-strong" />
+                  <span className="bg-surface-strong h-px flex-1" />
                 </div>
 
                 {/* Account cards */}
-                <div className="space-y-2 ml-1">
+                <div className="ml-1 space-y-2">
                   {contribs.map((c) => {
                     const pcd = perContribMap.get(c.id);
                     return (
@@ -291,17 +291,17 @@ export function ContributionsSection({
                     return (
                       <div
                         key={`joint-${jc.id}`}
-                        className="bg-surface-primary border rounded-lg p-3 text-sm shadow-sm"
+                        className="bg-surface-primary rounded-lg border p-3 text-sm shadow-sm"
                       >
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
                             <AccountBadge type={jc.accountType} />
-                            <span className="text-xs text-faint font-medium">
+                            <span className="text-faint text-xs font-medium">
                               (Joint)
                             </span>
                             {isOverflowTarget(jc.accountType) &&
                               (jc.subType || jc.label) && (
-                                <span className="text-xs text-muted font-medium">
+                                <span className="text-muted text-xs font-medium">
                                   {jDisplay.displayLabel.toLowerCase() !==
                                   jc.accountType.toLowerCase()
                                     ? jDisplay.displayLabel
@@ -312,7 +312,7 @@ export function ContributionsSection({
                               {TAX_LABELS[jc.taxTreatment] ?? jc.taxTreatment}
                             </span>
                           </div>
-                          <span className="text-xs flex items-center gap-1">
+                          <span className="flex items-center gap-1 text-xs">
                             <InlineEdit
                               value={jc.contributionValue}
                               onSave={(v) =>
@@ -344,8 +344,8 @@ export function ContributionsSection({
                   {groupKey === coverageNoteGroup &&
                     coverageNote &&
                     contribs.length === 0 && (
-                      <div className="bg-surface-sunken border rounded-lg p-3 text-sm">
-                        <div className="flex justify-between items-center text-faint">
+                      <div className="bg-surface-sunken rounded-lg border p-3 text-sm">
+                        <div className="text-faint flex items-center justify-between">
                           <span className="font-medium">{coverageNote}</span>
                           <span>&mdash;</span>
                         </div>
@@ -362,10 +362,10 @@ export function ContributionsSection({
               <button
                 type="button"
                 onClick={() => setAddingAccount(true)}
-                className="inline-flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 transition-colors"
+                className="inline-flex items-center gap-1 text-xs text-blue-500 transition-colors hover:text-blue-700"
               >
                 <svg
-                  className="w-3.5 h-3.5"
+                  className="h-3.5 w-3.5"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -404,12 +404,12 @@ export function ContributionsSection({
             coverageNoteGroup &&
             !groupOrder.includes(coverageNoteGroup) && (
               <div>
-                <div className="flex items-center gap-2 mb-2">
+                <div className="mb-2 flex items-center gap-2">
                   <AccountBadge type={coverageNoteGroup} />
-                  <span className="flex-1 h-px bg-surface-strong" />
+                  <span className="bg-surface-strong h-px flex-1" />
                 </div>
-                <div className="ml-1 bg-surface-sunken border rounded-lg p-3 text-sm">
-                  <div className="flex justify-between items-center text-faint">
+                <div className="bg-surface-sunken ml-1 rounded-lg border p-3 text-sm">
+                  <div className="text-faint flex items-center justify-between">
                     <span className="font-medium">{coverageNote}</span>
                     <span>&mdash;</span>
                   </div>

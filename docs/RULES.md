@@ -124,7 +124,7 @@ When a contribution account is created linked to a performance account, inactive
 
 ## Engine Modularity
 
-> **Each engine concern lives in its own module.** The projection engine (`lib/calculators/engine/`) is decomposed into 20 focused modules. Never add new logic inline in the orchestrator — extract it into a dedicated module with a clear interface.
+> **Each engine concern lives in its own module.** The projection engine (`lib/calculators/engine/`) is decomposed into 26 focused modules (plus the `projection-year-handlers/` sub-package). Never add new logic inline in the orchestrator — extract it into a dedicated module with a clear interface.
 
 The engine was refactored from a single ~3100-line file into a modular architecture. The orchestrator (`projection.ts`) calls modules in an explicit pipeline order. Each module is a pure function with typed inputs and outputs.
 
@@ -616,7 +616,7 @@ These are true cross-cutting reference data that no single page owns.
 
 ## Coding Conventions
 
-- **Pure calculators.** `lib/calculators/` contains pure functions only — no DB, no tRPC, no React. Given the same inputs, always the same outputs. The engine is a modular subdirectory (`lib/calculators/engine/`) with 20 focused modules — see § "Engine Modularity".
+- **Pure calculators.** `lib/calculators/` contains pure functions only — no DB, no tRPC, no React. Given the same inputs, always the same outputs. The engine is a modular subdirectory (`lib/calculators/engine/`) with 26 focused modules — see § "Engine Modularity".
 - **tRPC routers are the bridge.** They fetch from Drizzle, convert decimal strings to numbers via `toNumber()`, call calculators, return results.
 - **tRPC verb prefixes:** `get*` — single stored item or current state; `list*` — collection/array result; `compute*` — derived calculation or aggregation. Never use `get*` for procedures that aggregate or compute.
 - **Variable naming — no abbreviations.** Use full names: `percent` not `pct`, `amount` not `amt`, `account` not `acct`, `year` not `yr`, `index` not `idx`, `month` not `mo`. Existing abbreviations are migrated incrementally when files are touched for other reasons.

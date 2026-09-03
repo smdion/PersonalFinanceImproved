@@ -38,15 +38,15 @@ export function ProjectionImpactBar({
   );
 
   return (
-    <div className="space-y-2 border border-subtle rounded-lg p-3 bg-surface-sunken">
+    <div className="border-subtle bg-surface-sunken space-y-2 rounded-lg border p-3">
       <div className="flex items-center gap-2">
-        <span className="text-xs font-medium text-muted">Fund Tracker</span>
+        <span className="text-muted text-xs font-medium">Fund Tracker</span>
         <span className="text-caption text-faint">Toggle columns</span>
       </div>
 
       {/* Visible funds — full chips */}
       {visibleProjections.length > 0 && (
-        <div className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(220px,1fr))]">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-2">
           {visibleProjections.map((gp) => {
             const i = goalProjections.indexOf(gp);
             const color = FUND_COLORS[i % FUND_COLORS.length]!;
@@ -62,19 +62,19 @@ export function ProjectionImpactBar({
             let statusEl: React.ReactNode;
             if (negIdx !== -1) {
               statusEl = (
-                <span className="text-red-500 font-medium whitespace-nowrap">
+                <span className="font-medium whitespace-nowrap text-red-500">
                   ✗ Neg {shortMonth(monthDates[negIdx]!)}
                 </span>
               );
             } else if (atRisk) {
               statusEl = (
-                <span className="text-amber-500 font-medium whitespace-nowrap">
+                <span className="font-medium whitespace-nowrap text-amber-500">
                   ⚠ At risk
                 </span>
               );
             } else if (fundedIdx !== -1) {
               statusEl = (
-                <span className="text-green-600 font-medium whitespace-nowrap">
+                <span className="font-medium whitespace-nowrap text-green-600">
                   ✓ {shortMonth(monthDates[fundedIdx]!)}
                 </span>
               );
@@ -89,20 +89,20 @@ export function ProjectionImpactBar({
                 key={gp.goalId}
                 onClick={() => onToggle(gp.goalId)}
                 aria-pressed={true}
-                className="flex flex-col gap-0.5 px-3 py-1.5 rounded-lg border bg-surface-elevated/30 text-xs transition-colors cursor-pointer hover:bg-surface-elevated min-w-0"
+                className="bg-surface-elevated/30 hover:bg-surface-elevated flex min-w-0 cursor-pointer flex-col gap-0.5 rounded-lg border px-3 py-1.5 text-xs transition-colors"
                 style={{ borderLeftColor: color, borderLeftWidth: 3 }}
               >
-                <span className="flex items-center justify-between gap-2 min-w-0">
-                  <span className="font-medium text-secondary truncate">
+                <span className="flex min-w-0 items-center justify-between gap-2">
+                  <span className="text-secondary truncate font-medium">
                     {gp.name}
                   </span>
                   {statusEl}
                 </span>
-                <span className="flex items-center justify-between text-caption tabular-nums">
+                <span className="text-caption flex items-center justify-between tabular-nums">
                   <span className="text-faint">
                     {compactCurrency(gp.current)}
                   </span>
-                  <span className="flex items-center gap-1 text-primary font-medium">
+                  <span className="text-primary flex items-center gap-1 font-medium">
                     <span className="text-faint">proj</span>
                     {compactCurrency(endBalance)}
                   </span>
@@ -125,10 +125,10 @@ export function ProjectionImpactBar({
                 onClick={() => onToggle(gp.goalId)}
                 aria-pressed={false}
                 title={`Show ${gp.name}`}
-                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-dashed border-strong text-caption text-faint hover:text-muted transition-colors cursor-pointer"
+                className="border-strong text-caption text-faint hover:text-muted inline-flex cursor-pointer items-center gap-1.5 rounded border border-dashed px-2 py-0.5 transition-colors"
               >
                 <span
-                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                  className="h-1.5 w-1.5 shrink-0 rounded-full"
                   style={{ backgroundColor: color, opacity: 0.5 }}
                 />
                 <span className="line-through">{gp.name}</span>

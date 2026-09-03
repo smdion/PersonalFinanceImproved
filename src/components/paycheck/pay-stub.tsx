@@ -60,7 +60,7 @@ export function PayStub({
   return (
     <div className="space-y-2">
       <SectionHeader>Per-Period Pay Stub</SectionHeader>
-      <div className="bg-surface-sunken rounded-lg p-4 space-y-2 text-sm">
+      <div className="bg-surface-sunken space-y-2 rounded-lg p-4 text-sm">
         <div className="flex justify-between font-medium">
           <span>
             Gross Pay
@@ -71,15 +71,15 @@ export function PayStub({
 
         {preTaxRows.length > 0 && (
           <div className="border-t pt-2">
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-xs text-faint uppercase">
+            <div className="mb-1 flex items-center justify-between">
+              <p className="text-faint text-xs uppercase">
                 Pre-Tax Deductions
                 <HelpTip text="Taken from your pay before taxes, reducing your taxable income (e.g. health insurance, 401k)" />
               </p>
               {!readOnly && (
                 <button
                   onClick={() => onAddDeduction?.(true)}
-                  className="text-xs text-blue-500 hover:text-blue-700 transition-colors"
+                  className="text-xs text-blue-500 transition-colors hover:text-blue-700"
                   title="Add pre-tax deduction"
                 >
                   + Add
@@ -97,12 +97,12 @@ export function PayStub({
                 {!readOnly && row.type === "real" && row.raw && (
                   <button
                     onClick={() => onDeleteDeduction?.(row.raw!.id)}
-                    className="absolute -left-5 top-0.5 text-faint hover:text-red-500 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                    className="text-faint absolute top-0.5 -left-5 transition-opacity hover:text-red-500 md:opacity-0 md:group-hover:opacity-100"
                     title="Remove deduction"
                     aria-label="Remove deduction"
                   >
                     <svg
-                      className="w-3.5 h-3.5"
+                      className="h-3.5 w-3.5"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -124,27 +124,27 @@ export function PayStub({
 
         {preTaxRows.length === 0 && (
           <div className="border-t pt-2">
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-xs text-faint uppercase">
+            <div className="mb-1 flex items-center justify-between">
+              <p className="text-faint text-xs uppercase">
                 Pre-Tax Deductions
                 <HelpTip text="Taken from your pay before taxes, reducing your taxable income (e.g. health insurance, 401k)" />
               </p>
               {!readOnly && (
                 <button
                   onClick={() => onAddDeduction?.(true)}
-                  className="text-xs text-blue-500 hover:text-blue-700 transition-colors"
+                  className="text-xs text-blue-500 transition-colors hover:text-blue-700"
                   title="Add pre-tax deduction"
                 >
                   + Add
                 </button>
               )}
             </div>
-            <p className="text-xs text-faint italic">None</p>
+            <p className="text-faint text-xs italic">None</p>
           </div>
         )}
 
         <div className="border-t pt-2">
-          <div className="flex justify-between text-muted">
+          <div className="text-muted flex justify-between">
             <span>
               Federal Taxable
               <HelpTip text="Gross pay minus pre-tax deductions — this is the amount federal income tax is calculated on" />
@@ -154,8 +154,8 @@ export function PayStub({
         </div>
 
         <div className="border-t pt-2">
-          <p className="text-xs text-faint uppercase mb-1">Taxes</p>
-          <div className="flex justify-between text-muted">
+          <p className="text-faint mb-1 text-xs uppercase">Taxes</p>
+          <div className="text-muted flex justify-between">
             <span>
               Federal W/H
               <HelpTip text="Federal income tax withheld based on your W-4 filing status and salary. This is your per-job withholding election — retirement projections use a separate filing status setting." />
@@ -164,7 +164,7 @@ export function PayStub({
               -{formatCurrency(paycheck.federalWithholding)}
             </span>
           </div>
-          <div className="flex justify-between text-muted">
+          <div className="text-muted flex justify-between">
             <span>
               Social Security
               <HelpTip text="6.2% of wages up to the annual wage base limit — stops once you hit the cap" />
@@ -173,7 +173,7 @@ export function PayStub({
               -{formatCurrency(paycheck.ficaSS)}
             </span>
           </div>
-          <div className="flex justify-between text-muted">
+          <div className="text-muted flex justify-between">
             <span>
               Medicare
               <HelpTip text="1.45% of all wages with no cap — an additional 0.9% applies above $200k/person. Note: MFJ filers' actual liability threshold is $250k combined, so you may receive a credit if household income is below that." />
@@ -186,15 +186,15 @@ export function PayStub({
 
         {postTaxRows.length > 0 && (
           <div className="border-t pt-2">
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-xs text-faint uppercase">
+            <div className="mb-1 flex items-center justify-between">
+              <p className="text-faint text-xs uppercase">
                 Post-Tax Deductions
                 <HelpTip text="Taken from your pay after taxes — does not reduce your taxable income (e.g. Roth 401k, disability)" />
               </p>
               {!readOnly && (
                 <button
                   onClick={() => onAddDeduction?.(false)}
-                  className="text-xs text-blue-500 hover:text-blue-700 transition-colors"
+                  className="text-xs text-blue-500 transition-colors hover:text-blue-700"
                   title="Add post-tax deduction"
                 >
                   + Add
@@ -212,12 +212,12 @@ export function PayStub({
                 {!readOnly && row.type === "real" && row.raw && (
                   <button
                     onClick={() => onDeleteDeduction?.(row.raw!.id)}
-                    className="absolute -left-5 top-0.5 text-faint hover:text-red-500 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                    className="text-faint absolute top-0.5 -left-5 transition-opacity hover:text-red-500 md:opacity-0 md:group-hover:opacity-100"
                     title="Remove deduction"
                     aria-label="Remove deduction"
                   >
                     <svg
-                      className="w-3.5 h-3.5"
+                      className="h-3.5 w-3.5"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -239,27 +239,27 @@ export function PayStub({
 
         {postTaxRows.length === 0 && (
           <div className="border-t pt-2">
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-xs text-faint uppercase">
+            <div className="mb-1 flex items-center justify-between">
+              <p className="text-faint text-xs uppercase">
                 Post-Tax Deductions
                 <HelpTip text="Taken from your pay after taxes — does not reduce your taxable income (e.g. Roth 401k, disability)" />
               </p>
               {!readOnly && (
                 <button
                   onClick={() => onAddDeduction?.(false)}
-                  className="text-xs text-blue-500 hover:text-blue-700 transition-colors"
+                  className="text-xs text-blue-500 transition-colors hover:text-blue-700"
                   title="Add post-tax deduction"
                 >
                   + Add
                 </button>
               )}
             </div>
-            <p className="text-xs text-faint italic">None</p>
+            <p className="text-faint text-xs italic">None</p>
           </div>
         )}
 
-        <div className="border-t-2 border-strong pt-2">
-          <div className="flex justify-between font-semibold text-lg">
+        <div className="border-strong border-t-2 pt-2">
+          <div className="flex justify-between text-lg font-semibold">
             <span>
               Net Pay
               <HelpTip text="Your actual take-home amount after all deductions and taxes" />

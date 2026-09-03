@@ -89,7 +89,7 @@ function PersonForm({
         e.preventDefault();
         onSubmit({ name, dateOfBirth: dob, isPrimaryUser: primary });
       }}
-      className="flex flex-wrap gap-3 items-end"
+      className="flex flex-wrap items-end gap-3"
     >
       <FormField label="Name">
         <FormInput
@@ -118,14 +118,14 @@ function PersonForm({
         <button
           type="submit"
           disabled={isPending}
-          className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+          className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
         >
           {initial ? "Update" : "Create"}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="px-3 py-1.5 text-sm border rounded hover:bg-surface-elevated"
+          className="hover:bg-surface-elevated rounded border px-3 py-1.5 text-sm"
         >
           Cancel
         </button>

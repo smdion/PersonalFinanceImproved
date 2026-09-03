@@ -199,7 +199,7 @@ function ServiceCard({
                   </div>
                   {fetchBudgetsMut.isSuccess &&
                     !fetchBudgetsMut.data.success && (
-                      <p className="text-xs text-red-600 mt-1">
+                      <p className="mt-1 text-xs text-red-600">
                         {fetchBudgetsMut.data.error}
                       </p>
                     )}
@@ -271,7 +271,7 @@ function ServiceCard({
 
         {/* Actions (when connected) */}
         {isConnected && (
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               variant="secondary"
               size="sm"
@@ -307,7 +307,7 @@ function ServiceCard({
                 click "Sync Now" first. This makes the missing precondition
                 explicit instead of a silent gap. */}
             {!isActive && preview && !preview.synced && (
-              <span className="text-xs text-muted italic">
+              <span className="text-muted text-xs italic">
                 Sync Now to enable activation
               </span>
             )}
@@ -398,7 +398,7 @@ type IntegrationsSectionKey = (typeof INTEGRATIONS_SECTIONS)[number]["key"];
 function NavStatusDot({ connected }: { connected: boolean }) {
   return (
     <span
-      className={`inline-block w-1.5 h-1.5 rounded-full shrink-0 ${connected ? "bg-green-500" : "bg-surface-strong"}`}
+      className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${connected ? "bg-green-500" : "bg-surface-strong"}`}
     />
   );
 }
@@ -415,7 +415,7 @@ export function IntegrationsSettings() {
 
   if (!admin) {
     return (
-      <div className="text-sm text-muted">
+      <div className="text-muted text-sm">
         Budget API integrations can only be configured by an admin.
       </div>
     );
@@ -426,7 +426,7 @@ export function IntegrationsSettings() {
   return (
     <div className="space-y-6">
       {/* Explanation */}
-      <div className="text-sm text-muted space-y-2">
+      <div className="text-muted space-y-2 text-sm">
         <p>
           Connect a budget API to sync cash balances, categories, and
           transactions. The app works fully without any integration.
@@ -435,11 +435,11 @@ export function IntegrationsSettings() {
           <strong>Setup:</strong> Save credentials &rarr; Test &rarr; Sync
           &rarr; Review mappings &rarr; Activate when ready.
         </p>
-        <details className="bg-surface-sunken rounded-lg text-xs text-muted">
-          <summary className="px-3 py-2 cursor-pointer font-medium text-muted hover:text-primary select-none">
+        <details className="bg-surface-sunken text-muted rounded-lg text-xs">
+          <summary className="text-muted hover:text-primary cursor-pointer px-3 py-2 font-medium select-none">
             How syncing works
           </summary>
-          <div className="px-3 pb-3 space-y-1.5">
+          <div className="space-y-1.5 px-3 pb-3">
             <p>
               <strong className="text-blue-600">Sync Now</strong> (this page)
               pulls data <em>from</em> the API into Ledgr&apos;s local cache
@@ -450,7 +450,7 @@ export function IntegrationsSettings() {
               <strong className="text-green-600">Pushing to the API</strong>{" "}
               happens on individual pages when you&apos;re ready:
             </p>
-            <ul className="list-disc pl-4 space-y-0.5">
+            <ul className="list-disc space-y-0.5 pl-4">
               <li>
                 <strong>Budget page</strong> &mdash; &ldquo;Push to YNAB&rdquo;
                 sends budgeted amounts for items with push/both direction.
@@ -494,13 +494,13 @@ export function IntegrationsSettings() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-6">
-        <nav className="flex md:flex-col gap-1 overflow-x-auto">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-[200px_1fr]">
+        <nav className="flex gap-1 overflow-x-auto md:flex-col">
           {INTEGRATIONS_SECTIONS.map((s) => (
             <button
               key={s.key}
               onClick={() => setSection(s.key)}
-              className={`flex items-center gap-2 px-3 py-2 text-sm text-left rounded-md whitespace-nowrap transition-colors ${
+              className={`flex items-center gap-2 rounded-md px-3 py-2 text-left text-sm whitespace-nowrap transition-colors ${
                 section === s.key
                   ? "bg-blue-600 text-white"
                   : "text-secondary hover:bg-surface-elevated"

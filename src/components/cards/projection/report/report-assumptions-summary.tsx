@@ -7,6 +7,7 @@
  *  drove the numbers above it rather than a second, possibly-stale query.
  */
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { MAX_BROKERAGE_RAMP_YEARS } from "@/lib/constants";
 import { WITHDRAWAL_STRATEGY_CONFIG } from "@/lib/config/withdrawal-strategies";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 
@@ -37,6 +38,9 @@ export type ReportEngineSettings = {
   annualInflation?: NumLike | null;
   postRetirementInflation?: NumLike | null;
   salaryAnnualIncrease?: NumLike | null;
+  /** app_settings["brokerage_contribution_increase"] — annual $ added to
+   *  brokerage contributions each projected year. */
+  brokerageContributionIncrease?: NumLike | null;
   salaryCap?: NumLike | null;
   withdrawalRate?: NumLike | null;
   withdrawalStrategy?: string | null;
@@ -100,7 +104,7 @@ function Section({
 }) {
   return (
     <div className="mb-3 break-inside-avoid">
-      <div className="text-xs font-semibold uppercase tracking-wide text-faint mb-1">
+      <div className="text-faint mb-1 text-xs font-semibold tracking-wide uppercase">
         {title}
       </div>
       {children}
@@ -168,6 +172,9 @@ export function ReportAssumptionsSummary({
   const annualInflation = num(settings.annualInflation);
   const postRetirementInflation = num(settings.postRetirementInflation);
   const salaryAnnualIncrease = num(settings.salaryAnnualIncrease);
+  const brokerageContributionIncrease = num(
+    settings.brokerageContributionIncrease,
+  );
   const salaryCap = num(settings.salaryCap);
   const withdrawalRate = num(settings.withdrawalRate);
   const rothConversionTarget = num(settings.rothConversionTarget);
@@ -175,9 +182,9 @@ export function ReportAssumptionsSummary({
   const ssStartAge = num(settings.ssStartAge);
 
   return (
-    <div className="mt-6 border-t pt-4 break-before-page">
-      <h2 className="text-lg font-semibold mb-2">Behind the Scenes</h2>
-      <p className="text-xs text-muted mb-3">
+    <div className="mt-6 break-before-page border-t pt-4">
+      <h2 className="mb-2 text-lg font-semibold">Behind the Scenes</h2>
+      <p className="text-muted mb-3 text-xs">
         The assumptions this projection is built on — change any of these on the
         Retirement or Budget pages and the numbers above will change too.
       </p>
@@ -231,6 +238,13 @@ export function ReportAssumptionsSummary({
         {salaryCap != null && (
           <Row label="Salary growth cap" value={formatCurrency(salaryCap)} />
         )}
+        {brokerageContributionIncrease != null &&
+          brokerageContributionIncrease > 0 && (
+            <Row
+              label="Brokerage contribution increase"
+              value={`${formatCurrency(brokerageContributionIncrease)}/yr (first ${MAX_BROKERAGE_RAMP_YEARS} years)`}
+            />
+          )}
       </Section>
 
       <Section title="Withdrawal Strategy">
@@ -242,7 +256,7 @@ export function ReportAssumptionsSummary({
             withdrawalRate != null ? formatPercent(withdrawalRate, 1) : "—"
           }
         />
-        <p className="text-xs text-faint mt-0.5">
+        <p className="text-faint mt-0.5 text-xs">
           {strategyLabel} doesn&apos;t spend based on this rate — none of the 8
           withdrawal strategies do. It&apos;s a reference figure only (also used
           to size the &ldquo;years to FI&rdquo; estimate elsewhere in the app).
@@ -285,7 +299,7 @@ export function ReportAssumptionsSummary({
       )}
 
       {rmdExcessYears > 0 && (
-        <p className="text-xs text-faint mt-2">
+        <p className="text-faint mt-2 text-xs">
           Note: {rmdExcessYears} year{rmdExcessYears === 1 ? "" : "s"} in this
           projection {rmdExcessYears === 1 ? "has" : "have"} Required Minimum
           Distributions exceeding this plan&apos;s stated spending need —
@@ -297,7 +311,7 @@ export function ReportAssumptionsSummary({
       )}
 
       {qcdYears > 0 && (
-        <p className="text-xs text-faint mt-2">
+        <p className="text-faint mt-2 text-xs">
           Note: {qcdYears} year{qcdYears === 1 ? "" : "s"} in this projection{" "}
           {qcdYears === 1 ? "applies" : "apply"} a Qualified Charitable
           Distribution — money sent directly to charity from an IRA, satisfying

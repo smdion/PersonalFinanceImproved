@@ -19,7 +19,7 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
     return (
       <button
         onClick={() => setTheme(next)}
-        className="p-1 text-faint hover:text-primary transition-colors"
+        className="text-faint hover:text-primary p-1 transition-colors"
         aria-label={`Theme: ${current.label}. Click to switch.`}
         title={`Theme: ${current.label}`}
       >
@@ -34,7 +34,7 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
         <button
           key={opt.value}
           onClick={() => setTheme(opt.value)}
-          className={`flex-1 flex items-center justify-center gap-1 px-1.5 py-1 rounded text-label transition-colors ${
+          className={`text-label flex flex-1 items-center justify-center gap-1 rounded px-1.5 py-1 transition-colors ${
             theme === opt.value
               ? "bg-blue-600 text-white"
               : "text-faint hover:text-primary hover:bg-surface-primary"

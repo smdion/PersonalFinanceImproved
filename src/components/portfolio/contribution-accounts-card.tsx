@@ -153,41 +153,41 @@ export function AccountCard({
 
   return (
     <div
-      className={`border rounded-lg overflow-hidden ${!pa.isActive ? "opacity-50" : ""} ${borderColor}`}
+      className={`overflow-hidden rounded-lg border ${!pa.isActive ? "opacity-50" : ""} ${borderColor}`}
     >
       {" "}
       {/* Header row — always visible fields */}{" "}
       <div
-        className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-surface-sunken ${isExpanded ? bgLight : "bg-surface-primary"}`}
+        className={`hover:bg-surface-sunken flex cursor-pointer items-center gap-3 px-4 py-2.5 ${isExpanded ? bgLight : "bg-surface-primary"}`}
         onClick={onToggleExpand}
       >
         {/* Color indicator */}
         <div
-          className={`w-1.5 h-8 rounded-full ${acctType ? accountColor(acctType) : "bg-surface-strong"} flex-shrink-0`}
+          className={`h-8 w-1.5 rounded-full ${acctType ? accountColor(acctType) : "bg-surface-strong"} flex-shrink-0`}
         />
         {/* Name */}
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-medium text-primary truncate">
+        <div className="min-w-0 flex-1">
+          <div className="text-primary truncate text-sm font-medium">
             {accountDisplayName(pa)}
           </div>
           <div className="text-caption text-faint">{pa.institution}</div>
         </div>
         {/* Account Type */}
-        <div className="text-xs text-muted w-20 text-center">
+        <div className="text-muted w-20 text-center text-xs">
           {cfg?.displayLabel ?? "—"}
         </div>
         {/* Balance */}
-        <div className="text-xs text-muted w-24 text-right font-mono">
+        <div className="text-muted w-24 text-right font-mono text-xs">
           {balance !== null ? formatCurrency(balance) : "—"}
         </div>
         {/* Owner */}
-        <div className="text-xs text-muted w-20 text-center">
+        <div className="text-muted w-20 text-center text-xs">
           {pa.ownerPersonId
             ? (people.find((p) => p.id === pa.ownerPersonId)?.name ?? "?")
             : "Joint"}
         </div>
         {/* Category */}
-        <div className="text-xs text-muted w-20 text-center">
+        <div className="text-muted w-20 text-center text-xs">
           {pa.parentCategory}
         </div>
         {/* Contrib count */}
@@ -198,7 +198,7 @@ export function AccountCard({
         </div>{" "}
         {/* Expand indicator */}{" "}
         <span
-          className={`text-xs text-faint transition-transform ${isExpanded ? "rotate-90" : ""}`}
+          className={`text-faint text-xs transition-transform ${isExpanded ? "rotate-90" : ""}`}
         >
           {" "}
           &#9654;{" "}
@@ -206,15 +206,15 @@ export function AccountCard({
       </div>{" "}
       {/* Expanded detail — collapsible sections */}{" "}
       {isExpanded && (
-        <div className="border-t border-subtle bg-surface-sunken/50">
+        <div className="border-subtle bg-surface-sunken/50 border-t">
           {" "}
           {/* ── Account Settings section (auto-expanded, first) ── */}{" "}
           {onPerfUpdate && (
-            <div className="border-b border-subtle">
+            <div className="border-subtle border-b">
               {" "}
               <button
                 onClick={() => toggleSection("settings")}
-                className="w-full flex items-center justify-between px-4 py-2 text-caption font-semibold text-muted uppercase tracking-wider hover:bg-surface-elevated/50"
+                className="text-caption text-muted hover:bg-surface-elevated/50 flex w-full items-center justify-between px-4 py-2 font-semibold tracking-wider uppercase"
               >
                 {" "}
                 <span>Account Settings</span>{" "}
@@ -225,13 +225,13 @@ export function AccountCard({
                 </span>
               </button>
               {openSection === "settings" && (
-                <div className="px-4 pb-3 space-y-4">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="space-y-4 px-4 pb-3">
+                  <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                     <div>
-                      <label className="block text-caption text-muted mb-0.5">
+                      <label className="text-caption text-muted mb-0.5 block">
                         Name (computed)
                       </label>
-                      <div className="border border-subtle bg-surface-sunken rounded px-2 py-1 text-xs text-muted">
+                      <div className="border-subtle bg-surface-sunken text-muted rounded border px-2 py-1 text-xs">
                         {/* lint-violation-ok: "Name (computed)" field deliberately shows the raw programmatic label, not the user-override displayName */}
                         {pa.accountLabel}
                       </div>
@@ -331,15 +331,15 @@ export function AccountCard({
                     />
                   </div>
                   {/* Danger zone — collapsed by default */}
-                  <div className="border-t pt-2 mt-3">
+                  <div className="mt-3 border-t pt-2">
                     <button
                       onClick={() => setShowDanger(!showDanger)}
-                      className="text-caption text-red-400 hover:text-red-500 font-semibold uppercase tracking-wider"
+                      className="text-caption font-semibold tracking-wider text-red-400 uppercase hover:text-red-500"
                     >
                       {showDanger ? "▾" : "▸"} Danger Zone
                     </button>
                     {showDanger && (
-                      <div className="flex items-center gap-3 mt-2">
+                      <div className="mt-2 flex items-center gap-3">
                         <button
                           onClick={async () => {
                             if (
@@ -351,7 +351,7 @@ export function AccountCard({
                               onPerfUpdate({ isActive: !pa.isActive });
                             }
                           }}
-                          className={`text-xs px-2.5 py-1 rounded border ${pa.isActive ? "border-red-200 text-red-500 hover:bg-red-50" : "border-green-200 text-green-600 hover:bg-green-50"}`}
+                          className={`rounded border px-2.5 py-1 text-xs ${pa.isActive ? "border-red-200 text-red-500 hover:bg-red-50" : "border-green-200 text-green-600 hover:bg-green-50"}`}
                         >
                           {" "}
                           {pa.isActive
@@ -361,7 +361,7 @@ export function AccountCard({
                         {onDelete && (
                           <button
                             onClick={onDelete}
-                            className="text-xs px-2.5 py-1 rounded border border-red-200 text-red-400 hover:bg-red-50 hover:text-red-600"
+                            className="rounded border border-red-200 px-2.5 py-1 text-xs text-red-400 hover:bg-red-50 hover:text-red-600"
                           >
                             {" "}
                             Delete Account{" "}
@@ -370,7 +370,7 @@ export function AccountCard({
                       </div>
                     )}{" "}
                     {showDanger && pa.ownershipType !== "joint" && (
-                      <div className="flex items-center gap-2 mt-2">
+                      <div className="mt-2 flex items-center gap-2">
                         <input
                           type="checkbox"
                           checked={pa.allowPenalizedWithdrawals ?? false}
@@ -394,12 +394,12 @@ export function AccountCard({
                             }
                           }}
                           disabled={!onPerfUpdate}
-                          className="rounded border-strong"
+                          className="border-strong rounded"
                           id={`allow-penalty-${pa.id}`}
                         />
                         <label
                           htmlFor={`allow-penalty-${pa.id}`}
-                          className="text-xs text-muted"
+                          className="text-muted text-xs"
                         >
                           Allow early-withdrawal penalty on this account
                         </label>
@@ -415,11 +415,11 @@ export function AccountCard({
           )}{" "}
           {/* ── Sub-Accounts section ── */}{" "}
           {portfolioSubs.length > 0 && (
-            <div className="border-b border-subtle">
+            <div className="border-subtle border-b">
               {" "}
               <button
                 onClick={() => toggleSection("subs")}
-                className="w-full flex items-center justify-between px-4 py-2 text-caption font-semibold text-muted uppercase tracking-wider hover:bg-surface-elevated/50"
+                className="text-caption text-muted hover:bg-surface-elevated/50 flex w-full items-center justify-between px-4 py-2 font-semibold tracking-wider uppercase"
               >
                 {" "}
                 <span>
@@ -438,14 +438,14 @@ export function AccountCard({
                 </span>{" "}
               </button>{" "}
               {openSection === "subs" && (
-                <div className="px-4 pb-3 space-y-2">
+                <div className="space-y-2 px-4 pb-3">
                   {" "}
                   <p className="text-caption text-faint -mt-1 mb-1">
                     Balance entries tracked in your portfolio snapshots for this
                     account — distinct from the Contributions below, which is
                     about where new money is directed.
                   </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                  <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
                     {" "}
                     {activeSubs.map((sub) => (
                       <SubAccountRow
@@ -499,7 +499,7 @@ export function AccountCard({
             {" "}
             <button
               onClick={() => toggleSection("contribs")}
-              className="w-full flex items-center justify-between px-4 py-2 text-caption font-semibold text-muted uppercase tracking-wider hover:bg-surface-elevated/50"
+              className="text-caption text-muted hover:bg-surface-elevated/50 flex w-full items-center justify-between px-4 py-2 font-semibold tracking-wider uppercase"
             >
               {" "}
               <span> Contributions ({activeContribs.length})</span>
@@ -553,7 +553,7 @@ export function AccountCard({
                       {inactiveContribs.length} not funding a target
                     </button>
                     {showInactiveContribs && (
-                      <div className="space-y-2 mt-2">
+                      <div className="mt-2 space-y-2">
                         {inactiveContribs.map((c) => (
                           <ContributionRow
                             key={c.id}
@@ -579,7 +579,7 @@ export function AccountCard({
                 {activeContribs.length === 0 &&
                   inactiveContribs.length === 0 &&
                   !showAddContrib && (
-                    <p className="text-xs text-faint py-1">
+                    <p className="text-faint py-1 text-xs">
                       No contributions linked yet.
                     </p>
                   )}

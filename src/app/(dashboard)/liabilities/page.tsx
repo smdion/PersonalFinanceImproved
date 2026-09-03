@@ -30,7 +30,7 @@ export default function LiabilitiesPage() {
     return (
       <div className="space-y-4">
         <Skeleton className="h-8 w-1/3" />
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           {[1, 2, 3].map((i) => (
             <SkeletonChart key={i} height={112} />
           ))}
@@ -42,7 +42,7 @@ export default function LiabilitiesPage() {
 
   if (error) {
     return (
-      <p className="text-red-600 text-sm">
+      <p className="text-sm text-red-600">
         Failed to load liability data: {error.message}
       </p>
     );
@@ -64,9 +64,9 @@ export default function LiabilitiesPage() {
         {result && (
           <button
             onClick={() => setShowManageLoans(!showManageLoans)}
-            className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+            className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
               showManageLoans
-                ? "bg-surface-primary text-white hover:bg-surface-primary"
+                ? "bg-surface-primary hover:bg-surface-primary text-white"
                 : "bg-surface-elevated text-secondary hover:bg-surface-strong"
             }`}
           >
@@ -77,7 +77,7 @@ export default function LiabilitiesPage() {
 
       {/* Summary Cards — only show when there are loans */}
       {hasLoans && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Card
             title={
               <>
@@ -109,7 +109,7 @@ export default function LiabilitiesPage() {
         .map((loan) => (
           <div
             key={loan.name}
-            className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800"
+            className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800"
           >
             <strong>{loan.name}</strong>: YNAB balance{" "}
             {formatCurrency(loan.apiBalance!)} vs. Calculated{" "}
@@ -129,7 +129,7 @@ export default function LiabilitiesPage() {
 
       {!result || !hasLoans ? (
         <Card title="Mortgage">
-          <p className="text-sm text-faint">
+          <p className="text-faint text-sm">
             No mortgage loans configured. Add one below to track amortization,
             equity, and payoff scenarios.
           </p>
@@ -188,7 +188,7 @@ export default function LiabilitiesPage() {
           )}
 
           {result.warnings.length > 0 && (
-            <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+            <div className="mt-4 rounded-lg border border-yellow-200 bg-yellow-50 p-3">
               {result.warnings.map((w) => (
                 <p key={w} className="text-sm text-yellow-800">
                   {w}

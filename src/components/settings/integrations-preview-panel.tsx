@@ -112,9 +112,9 @@ export function PreviewPanel({
   const totalDrifted = driftedBudgetCount + driftedSavingsCount;
 
   return (
-    <div className="border-t border-subtle pt-4 space-y-4">
+    <div className="border-subtle space-y-4 border-t pt-4">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-muted uppercase tracking-wider">
+        <span className="text-muted text-xs font-medium tracking-wider uppercase">
           {isActive ? "Synced Data" : "Preview"}
         </span>
         {fetchedAt && (
@@ -132,12 +132,12 @@ export function PreviewPanel({
       />
 
       {/* Dashboard — compact overview row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="bg-surface-sunken rounded-lg p-3">
-          <p className="text-caption font-medium text-muted uppercase tracking-wide">
+          <p className="text-caption text-muted font-medium tracking-wide uppercase">
             Cash
           </p>
-          <div className="text-lg font-semibold text-primary">
+          <div className="text-primary text-lg font-semibold">
             {formatCurrency(cash.api)}
           </div>
           {cashDiff !== 0 && (
@@ -150,16 +150,16 @@ export function PreviewPanel({
           )}
           {cash.apiAccounts.length > 0 && (
             <details className="mt-1.5">
-              <summary className="text-caption text-faint cursor-pointer hover:text-secondary select-none">
+              <summary className="text-caption text-faint hover:text-secondary cursor-pointer select-none">
                 {cash.apiAccounts.length} accounts
               </summary>
               <div className="mt-1 space-y-0.5">
                 {cash.apiAccounts.map((a) => (
                   <div
                     key={a.name}
-                    className="flex justify-between text-caption text-faint"
+                    className="text-caption text-faint flex justify-between"
                   >
-                    <span className="truncate mr-1">{a.name}</span>
+                    <span className="mr-1 truncate">{a.name}</span>
                     <span className="tabular-nums">
                       {formatCurrency(a.balance)}
                     </span>
@@ -170,10 +170,10 @@ export function PreviewPanel({
           )}
         </div>
         <div className="bg-surface-sunken rounded-lg p-3">
-          <p className="text-caption font-medium text-muted uppercase tracking-wide">
+          <p className="text-caption text-muted font-medium tracking-wide uppercase">
             Accounts
           </p>
-          <div className="text-lg font-semibold text-primary">
+          <div className="text-primary text-lg font-semibold">
             {accounts.total}
           </div>
           <p className="text-caption text-faint">
@@ -181,7 +181,7 @@ export function PreviewPanel({
           </p>
           {Object.keys(accounts.byType).length > 0 && (
             <details className="mt-1.5">
-              <summary className="text-caption text-faint cursor-pointer hover:text-secondary select-none">
+              <summary className="text-caption text-faint hover:text-secondary cursor-pointer select-none">
                 By type
               </summary>
               <div className="mt-1 space-y-0.5">
@@ -190,7 +190,7 @@ export function PreviewPanel({
                   .map(([type, info]) => (
                     <div
                       key={type}
-                      className="flex justify-between text-caption text-faint"
+                      className="text-caption text-faint flex justify-between"
                     >
                       <span>
                         {type} ({info.count})
@@ -205,10 +205,10 @@ export function PreviewPanel({
           )}
         </div>
         <div className="bg-surface-sunken rounded-lg p-3">
-          <p className="text-caption font-medium text-muted uppercase tracking-wide">
+          <p className="text-caption text-muted font-medium tracking-wide uppercase">
             Categories
           </p>
-          <div className="text-lg font-semibold text-primary">
+          <div className="text-primary text-lg font-semibold">
             {categories.total}
           </div>
           <p className="text-caption text-faint">{categories.groups} groups</p>

@@ -42,7 +42,7 @@ function TaxesCardImpl() {
   if (people.length === 0)
     return (
       <Card title="Taxes" href="/paycheck">
-        <p className="text-sm text-faint">
+        <p className="text-faint text-sm">
           Add a job on the Paycheck page to see tax estimates.
         </p>
       </Card>

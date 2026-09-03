@@ -61,14 +61,14 @@ export function ApiCategoryPicker({
 
   return createPortal(
     <div
-      className="fixed z-50 bg-surface-primary border rounded-lg shadow-lg p-3 w-72 max-h-80 overflow-y-auto"
+      className="bg-surface-primary fixed z-50 max-h-80 w-72 overflow-y-auto rounded-lg border p-3 shadow-lg"
       style={{
         top: anchorRect.bottom + 4,
         left: Math.min(anchorRect.left, window.innerWidth - 300),
       }}
     >
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-medium text-muted">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-muted text-xs font-medium">
           Link to API Category
         </span>
         <button
@@ -80,7 +80,7 @@ export function ApiCategoryPicker({
       </div>
 
       {currentApiCategoryId && (
-        <div className="mb-2 p-2 bg-blue-50 rounded text-xs">
+        <div className="mb-2 rounded bg-blue-50 p-2 text-xs">
           <div className="flex items-center justify-between">
             <span className="text-blue-700">
               Linked: {currentApiCategoryName}
@@ -96,7 +96,7 @@ export function ApiCategoryPicker({
                 !activeService ||
                 activeService === "none"
               }
-              className="text-red-500 hover:text-red-700 text-caption"
+              className="text-caption text-red-500 hover:text-red-700"
             >
               Unlink
             </button>
@@ -110,7 +110,7 @@ export function ApiCategoryPicker({
           onChange={(e) =>
             setSyncDirection(e.target.value as "pull" | "push" | "both")
           }
-          className="w-full text-caption border rounded px-1.5 py-1"
+          className="text-caption w-full rounded border px-1.5 py-1"
         >
           <option value="pull">Pull (API is master)</option>
           <option value="push">Push (Ledgr is master)</option>
@@ -123,19 +123,19 @@ export function ApiCategoryPicker({
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder="Search categories..."
-        className="w-full text-xs border rounded px-2 py-1 mb-2"
+        className="mb-2 w-full rounded border px-2 py-1 text-xs"
         autoFocus
       />
 
       {filtered.length === 0 && (
-        <p className="text-xs text-faint text-center py-4">
+        <p className="text-faint py-4 text-center text-xs">
           No categories. Sync budget API first.
         </p>
       )}
 
       {filtered.map((group) => (
         <div key={group.id} className="mb-1">
-          <div className="text-caption font-semibold text-muted uppercase tracking-wider px-1 py-0.5">
+          <div className="text-caption text-muted px-1 py-0.5 font-semibold tracking-wider uppercase">
             {group.name}
           </div>
           {group.categories.map((cat) => (
@@ -155,7 +155,7 @@ export function ApiCategoryPicker({
               disabled={
                 linkMut.isPending || !activeService || activeService === "none"
               }
-              className={`w-full text-left px-2 py-1 text-xs rounded hover:bg-blue-50 transition-colors ${
+              className={`w-full rounded px-2 py-1 text-left text-xs transition-colors hover:bg-blue-50 ${
                 cat.id === currentApiCategoryId
                   ? "bg-blue-50 text-blue-700"
                   : "text-secondary"

@@ -20,11 +20,11 @@ export function AddTransactionForm({
   onCancel: () => void;
 }) {
   return (
-    <div className="mt-3 border rounded-lg p-3 bg-surface-primary/50">
-      <p className="text-xs font-medium text-faint mb-2">
+    <div className="bg-surface-primary/50 mt-3 rounded-lg border p-3">
+      <p className="text-faint mb-2 text-xs font-medium">
         Add Transaction &mdash; {goalName}
       </p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <FormField label="Date">
           <FormInput
             type="date"
@@ -54,7 +54,7 @@ export function AddTransactionForm({
           />
         </FormField>
         <div>
-          <label className="block text-xs text-faint mb-1">Recurring?</label>
+          <label className="text-faint mb-1 block text-xs">Recurring?</label>
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -78,17 +78,17 @@ export function AddTransactionForm({
           </div>
         </div>
       </div>
-      <div className="flex gap-2 mt-3">
+      <div className="mt-3 flex gap-2">
         <button
           onClick={onAddTx}
           disabled={createTxPending}
-          className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
+          className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
         >
           {createTxPending ? "Saving..." : "Add"}
         </button>
         <button
           onClick={onCancel}
-          className="px-3 py-1 border text-faint rounded text-sm hover:bg-surface-elevated"
+          className="text-faint hover:bg-surface-elevated rounded border px-3 py-1 text-sm"
         >
           Cancel
         </button>

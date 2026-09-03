@@ -87,45 +87,45 @@ export function BudgetCategoryRow({
       {/* Category header row */}
       <tr className="bg-surface-elevated border-b">
         <td
-          className="py-1.5 pr-3 font-semibold text-primary sticky left-0 bg-surface-elevated z-10 overflow-hidden"
+          className="text-primary bg-surface-elevated sticky left-0 z-10 overflow-hidden py-1.5 pr-3 font-semibold"
           style={
             nameColWidth
               ? { width: nameColWidth, maxWidth: nameColWidth }
               : { maxWidth: "12rem" }
           }
         >
-          <span className="flex flex-wrap items-center gap-2 min-w-0">
+          <span className="flex min-w-0 flex-wrap items-center gap-2">
             {canEdit && !amountsOnly ? (
               <button
                 onClick={() =>
                   onToggleCategoryEssential(categoryName, !allEssential)
                 }
-                className="p-3 -m-3 flex-shrink-0 cursor-pointer touch-target flex items-center justify-center"
+                className="touch-target -m-3 flex flex-shrink-0 cursor-pointer items-center justify-center p-3"
                 title={`${allEssential ? "Mark all discretionary" : "Mark all essential"} in ${categoryName}`}
               >
                 <span
-                  className={`w-2.5 h-2.5 rounded-full border-2 transition-colors ${
+                  className={`h-2.5 w-2.5 rounded-full border-2 transition-colors ${
                     allEssential
-                      ? "bg-blue-500 border-blue-500"
+                      ? "border-blue-500 bg-blue-500"
                       : allDiscretionary
-                        ? "bg-purple-400 border-purple-400"
-                        : "bg-gradient-to-r from-blue-500 to-purple-400 border-strong"
+                        ? "border-purple-400 bg-purple-400"
+                        : "border-strong bg-gradient-to-r from-blue-500 to-purple-400"
                   }`}
                 />
               </button>
             ) : (
               <span
-                className={`w-2.5 h-2.5 rounded-full flex-shrink-0 border-2 ${
+                className={`h-2.5 w-2.5 flex-shrink-0 rounded-full border-2 ${
                   allEssential
-                    ? "bg-blue-500 border-blue-500"
+                    ? "border-blue-500 bg-blue-500"
                     : allDiscretionary
-                      ? "bg-purple-400 border-purple-400"
-                      : "bg-gradient-to-r from-blue-500 to-purple-400 border-strong"
+                      ? "border-purple-400 bg-purple-400"
+                      : "border-strong bg-gradient-to-r from-blue-500 to-purple-400"
                 }`}
               />
             )}
             <span
-              className="truncate max-w-[10rem] flex-shrink-0"
+              className="max-w-[10rem] flex-shrink-0 truncate"
               title={categoryName}
             >
               {categoryName}
@@ -135,7 +135,7 @@ export function BudgetCategoryRow({
                 <button
                   onClick={() => onReorderCategory(categoryName, "up")}
                   disabled={isFirstCategory}
-                  className="text-faint hover:text-secondary disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="text-faint hover:text-secondary disabled:cursor-not-allowed disabled:opacity-30"
                   title="Move category up"
                 >
                   ↑
@@ -143,7 +143,7 @@ export function BudgetCategoryRow({
                 <button
                   onClick={() => onReorderCategory(categoryName, "down")}
                   disabled={isLastCategory}
-                  className="text-faint hover:text-secondary disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="text-faint hover:text-secondary disabled:cursor-not-allowed disabled:opacity-30"
                   title="Move category down"
                 >
                   ↓
@@ -156,7 +156,7 @@ export function BudgetCategoryRow({
                         : categoryName,
                     );
                   }}
-                  className="text-blue-500 hover:text-blue-700 text-caption font-medium"
+                  className="text-caption font-medium text-blue-500 hover:text-blue-700"
                   title={`Add item to ${categoryName}`}
                 >
                   + item
@@ -169,7 +169,7 @@ export function BudgetCategoryRow({
           <td
             // eslint-disable-next-line react/no-array-index-key -- positional column totals have no stable identity
             key={i}
-            className="text-right py-1.5 px-3 font-semibold text-primary tabular-nums"
+            className="text-primary px-3 py-1.5 text-right font-semibold tabular-nums"
           >
             {formatCurrency(total)}
           </td>

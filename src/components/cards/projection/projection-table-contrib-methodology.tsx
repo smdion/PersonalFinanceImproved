@@ -48,12 +48,12 @@ export function ContribMethodologySection({ state }: ContribMethodologyProps) {
         <button
           type="button"
           onClick={() => setShowModels(!showModels)}
-          className="flex items-center gap-1.5 text-label font-medium text-faint uppercase tracking-wide hover:text-secondary transition-colors mb-2"
+          className="text-label text-faint hover:text-secondary mb-2 flex items-center gap-1.5 font-medium tracking-wide uppercase transition-colors"
         >
           How contributions &amp; distributions are projected
           <svg
             aria-hidden="true"
-            className={`w-3.5 h-3.5 transition-transform ${showModels ? "rotate-180" : ""}`}
+            className={`h-3.5 w-3.5 transition-transform ${showModels ? "rotate-180" : ""}`}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -67,11 +67,11 @@ export function ContribMethodologySection({ state }: ContribMethodologyProps) {
           </svg>
         </button>
         {showModels && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             {/* How Contributions Are Projected */}
             {contribSpecs && contribSpecs.length > 0 && (
-              <div className="bg-blue-50/50 border border-blue-100 rounded-lg p-3 text-xs">
-                <h5 className="font-medium text-secondary uppercase mb-2">
+              <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-3 text-xs">
+                <h5 className="text-secondary mb-2 font-medium uppercase">
                   How {isPersonFiltered ? `${personFilterName}'s` : ""}{" "}
                   Contributions Are Projected
                   <HelpTip
@@ -82,14 +82,14 @@ export function ContribMethodologySection({ state }: ContribMethodologyProps) {
                     }
                   />
                 </h5>
-                <table className="w-full text-muted">
+                <table className="text-muted w-full">
                   <thead>
                     <tr className="text-caption text-faint uppercase">
-                      <th className="text-left pb-1 font-medium">Account</th>
-                      <th className="text-left pb-1 font-medium">Tax Type</th>
-                      <th className="text-right pb-1 font-medium">Amount</th>
-                      <th className="text-right pb-1 font-medium">Match</th>
-                      <th className="text-left pb-1 pl-2 font-medium">
+                      <th className="pb-1 text-left font-medium">Account</th>
+                      <th className="pb-1 text-left font-medium">Tax Type</th>
+                      <th className="pb-1 text-right font-medium">Amount</th>
+                      <th className="pb-1 text-right font-medium">Match</th>
+                      <th className="pb-1 pl-2 text-left font-medium">
                         Scaling
                       </th>
                     </tr>
@@ -113,7 +113,7 @@ export function ContribMethodologySection({ state }: ContribMethodologyProps) {
                             <td className="py-1 pr-2">
                               <div className="flex items-center gap-1.5">
                                 <span
-                                  className={`inline-block w-1.5 h-1.5 rounded-full ${accountColor(spec.category)}`}
+                                  className={`inline-block h-1.5 w-1.5 rounded-full ${accountColor(spec.category)}`}
                                 />
                                 <span className="font-medium">
                                   {spec.accountDisplayName ?? spec.name}
@@ -121,7 +121,7 @@ export function ContribMethodologySection({ state }: ContribMethodologyProps) {
                               </div>
                             </td>
                             <td
-                              className={`py-1 whitespace-nowrap text-caption ${taxTypeTextColor(bucket)}`}
+                              className={`text-caption py-1 whitespace-nowrap ${taxTypeTextColor(bucket)}`}
                             >
                               {taxTypeLabel(bucket)}
                             </td>
@@ -137,7 +137,7 @@ export function ContribMethodologySection({ state }: ContribMethodologyProps) {
                                 <span className="text-faint">—</span>
                               )}
                             </td>
-                            <td className="py-1 pl-2 text-faint whitespace-nowrap">
+                            <td className="text-faint py-1 pl-2 whitespace-nowrap">
                               {(() => {
                                 const scalesWithSalary =
                                   spec.method === "percent_of_salary" ||
@@ -169,7 +169,7 @@ export function ContribMethodologySection({ state }: ContribMethodologyProps) {
                     ).reduce((s: number, v: number) => s + v, 0);
                     if (totalMatch <= 0) return null;
                     return (
-                      <div className="mt-2 pt-1.5 border-t border-blue-100 text-caption text-faint">
+                      <div className="text-caption text-faint mt-2 border-t border-blue-100 pt-1.5">
                         Match grows with salary. Look for{" "}
                         <span className="font-bold text-green-600">+m</span> in
                         the table and hover for breakdown.
@@ -177,7 +177,7 @@ export function ContribMethodologySection({ state }: ContribMethodologyProps) {
                     );
                   })()}
                 {result.firstOverflowYear && (
-                  <div className="mt-1.5 pt-1.5 border-t border-blue-100 text-amber-600 font-medium">
+                  <div className="mt-1.5 border-t border-blue-100 pt-1.5 font-medium text-amber-600">
                     Contributions exceed IRS limits starting age{" "}
                     {result.firstOverflowAge} ({result.firstOverflowYear}) —{" "}
                     {formatCurrency(
@@ -194,8 +194,8 @@ export function ContribMethodologySection({ state }: ContribMethodologyProps) {
 
             {/* Methodology Links */}
             <div className="space-y-3">
-              <div className="bg-blue-50/50 border border-blue-100 rounded-lg p-3 text-xs">
-                <h5 className="font-medium text-secondary uppercase mb-1.5">
+              <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-3 text-xs">
+                <h5 className="text-secondary mb-1.5 font-medium uppercase">
                   Accumulation Engine
                   <HelpTip text="How salary, contributions, IRS limits, employer matches, and routing work during working years." />
                 </h5>
@@ -208,13 +208,13 @@ export function ContribMethodologySection({ state }: ContribMethodologyProps) {
                 <button
                   type="button"
                   onClick={() => setShowAccumMethodology(true)}
-                  className="text-blue-600 hover:text-blue-700 underline font-medium"
+                  className="font-medium text-blue-600 underline hover:text-blue-700"
                 >
                   Full methodology &rarr;
                 </button>
               </div>
-              <div className="bg-amber-50/50 border border-amber-100 rounded-lg p-3 text-xs">
-                <h5 className="font-medium text-secondary uppercase mb-1.5">
+              <div className="rounded-lg border border-amber-100 bg-amber-50/50 p-3 text-xs">
+                <h5 className="text-secondary mb-1.5 font-medium uppercase">
                   Decumulation Engine
                   <HelpTip text="How withdrawals, taxes, RMDs, Roth conversions, and dynamic spending work during retirement." />
                 </h5>
@@ -233,19 +233,19 @@ export function ContribMethodologySection({ state }: ContribMethodologyProps) {
                 <button
                   type="button"
                   onClick={() => setShowDecumMethodology(true)}
-                  className="text-amber-600 hover:text-amber-700 underline font-medium"
+                  className="font-medium text-amber-600 underline hover:text-amber-700"
                 >
                   Full methodology &rarr;
                 </button>
                 {result.portfolioDepletionYear && (
-                  <div className="mt-2 pt-1.5 border-t border-amber-100 text-red-600 font-medium">
+                  <div className="mt-2 border-t border-amber-100 pt-1.5 font-medium text-red-600">
                     Portfolio depleted at age {result.portfolioDepletionAge} (
                     {result.portfolioDepletionYear})
                   </div>
                 )}
               </div>
-              <div className="bg-green-50/50 border border-green-100 rounded-lg p-3 text-xs">
-                <h5 className="font-medium text-secondary uppercase mb-1.5">
+              <div className="rounded-lg border border-green-100 bg-green-50/50 p-3 text-xs">
+                <h5 className="text-secondary mb-1.5 font-medium uppercase">
                   Why Trust These Numbers?
                   <HelpTip text="How the engine is validated against published research, IRS tax law, and mathematical invariants." />
                 </h5>
@@ -258,7 +258,7 @@ export function ContribMethodologySection({ state }: ContribMethodologyProps) {
                 <button
                   type="button"
                   onClick={() => setShowValidation(true)}
-                  className="text-green-600 hover:text-green-700 underline font-medium"
+                  className="font-medium text-green-600 underline hover:text-green-700"
                 >
                   Full validation evidence &rarr;
                 </button>
@@ -274,7 +274,7 @@ export function ContribMethodologySection({ state }: ContribMethodologyProps) {
           {result.warnings.map((w) => (
             <div
               key={w}
-              className="text-xs text-amber-600 bg-amber-50 rounded px-3 py-1.5"
+              className="rounded bg-amber-50 px-3 py-1.5 text-xs text-amber-600"
             >
               {w}
             </div>

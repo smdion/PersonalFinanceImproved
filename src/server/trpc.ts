@@ -1,4 +1,5 @@
 import { initTRPC, TRPCError } from "@trpc/server";
+import { ZodError, z } from "zod/v4";
 import type { Session } from "next-auth";
 import { cookies, headers } from "next/headers";
 import { auth } from "./auth";
@@ -98,7 +99,27 @@ export async function createContext(): Promise<Context> {
   return { db, session, demoSchema };
 }
 
-const t = initTRPC.context<Context>().meta<ProcedureMeta>().create();
+const t = initTRPC
+  .context<Context>()
+  .meta<ProcedureMeta>()
+  .create({
+    // Surface Zod input-validation failures as a structured `data.zodError`
+    // (`{ formErrors, fieldErrors }`) so the client's global error toast
+    // (friendlyMutationError) can show a concrete field message instead of
+    // the raw ZodError JSON in `message`.
+    errorFormatter({ shape, error }) {
+      return {
+        ...shape,
+        data: {
+          ...shape.data,
+          zodError:
+            error.code === "BAD_REQUEST" && error.cause instanceof ZodError
+              ? z.flattenError(error.cause)
+              : null,
+        },
+      };
+    },
+  });
 
 export const createTRPCRouter = t.router;
 export const mergeRouters = t.mergeRouters;

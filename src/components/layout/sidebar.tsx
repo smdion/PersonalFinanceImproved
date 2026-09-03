@@ -168,15 +168,15 @@ function NavLink({
       aria-current={isActive ? "page" : undefined}
       onClick={onMobileClose}
       title={collapsed ? item.label : undefined}
-      className={`flex items-center gap-3 px-3 py-2 rounded text-sm transition-all duration-150 min-h-[44px] ${
+      className={`flex min-h-[44px] items-center gap-3 rounded px-3 py-2 text-sm transition-all duration-150 ${
         indent && !collapsed ? "ml-4" : ""
       } ${collapsed ? "md:justify-center" : ""} ${
         isActive
-          ? "bg-surface-elevated/60 text-white border-l-[3px] border-sky-400"
+          ? "bg-surface-elevated/60 border-l-[3px] border-sky-400 text-white"
           : "text-faint hover:bg-surface-elevated border-l-[3px] border-transparent"
       }`}
     >
-      <item.Icon className="w-4 h-4 shrink-0" />
+      <item.Icon className="h-4 w-4 shrink-0" />
       {showLabels && <span className="hidden md:inline">{item.label}</span>}
       <span className="md:hidden">{item.label}</span>
     </Link>
@@ -226,20 +226,20 @@ function CollapsibleNavGroup({
         onClick={() => setIsOpen((o) => !o)}
         aria-expanded={isOpen}
         aria-label={`${isOpen ? "Collapse" : "Expand"} ${group.label}`}
-        className="w-full flex items-center gap-3 px-3 py-2 rounded text-sm text-faint hover:text-primary hover:bg-surface-elevated/50 transition-colors min-h-[44px]"
+        className="text-faint hover:text-primary hover:bg-surface-elevated/50 flex min-h-[44px] w-full items-center gap-3 rounded px-3 py-2 text-sm transition-colors"
       >
-        <group.Icon className="w-4 h-4 shrink-0" aria-hidden="true" />
+        <group.Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
         {showLabels && (
-          <span className="hidden md:inline flex-1 text-left text-xs font-semibold uppercase tracking-wider">
+          <span className="hidden flex-1 text-left text-xs font-semibold tracking-wider uppercase md:inline">
             {group.label}
           </span>
         )}
-        <span className="md:hidden flex-1 text-left text-xs font-semibold uppercase tracking-wider">
+        <span className="flex-1 text-left text-xs font-semibold tracking-wider uppercase md:hidden">
           {group.label}
         </span>
         <ChevronRight
           aria-hidden="true"
-          className={`w-3 h-3 shrink-0 transition-transform duration-150 ${isOpen ? "rotate-90" : ""}`}
+          className={`h-3 w-3 shrink-0 transition-transform duration-150 ${isOpen ? "rotate-90" : ""}`}
         />
       </button>
       {isOpen && (
@@ -295,12 +295,12 @@ export function Sidebar({
       <aside
         className={`fixed inset-y-0 left-0 z-50 transform transition-all duration-200 ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
-        } md:translate-x-0 md:static md:h-screen md:sticky md:top-0 ${
+        } md:static md:sticky md:top-0 md:h-screen md:translate-x-0 ${
           collapsed ? "md:w-16" : "md:w-64"
-        } w-64 dark bg-surface-primary text-white flex flex-col`}
+        } dark bg-surface-primary flex w-64 flex-col text-white`}
       >
-        <div className="p-4 border-b">
-          <h1 className="text-lg font-bold flex items-center gap-2">
+        <div className="border-b p-4">
+          <h1 className="flex items-center gap-2 text-lg font-bold">
             <svg
               aria-hidden="true"
               width="24"
@@ -349,14 +349,14 @@ export function Sidebar({
             <span className="md:hidden">Ledgr</span>
           </h1>
           {showLabels && (
-            <p className="text-sm text-faint hidden md:block">
+            <p className="text-faint hidden text-sm md:block">
               {user.name} ({user.role})
             </p>
           )}
         </div>
         <nav
           aria-label="Main navigation"
-          className="flex-1 overflow-y-auto p-2 space-y-1"
+          className="flex-1 space-y-1 overflow-y-auto p-2"
         >
           {navStructure.map((entry) =>
             isGroup(entry) ? (
@@ -382,7 +382,7 @@ export function Sidebar({
         </nav>
 
         {/* Footer */}
-        <div className="border-t px-2 py-1.5 space-y-0.5">
+        <div className="space-y-0.5 border-t px-2 py-1.5">
           <DataFreshness compact={collapsed} />
           <NavLink
             item={helpItem}
@@ -395,10 +395,10 @@ export function Sidebar({
             <Link
               href="/demo"
               onClick={onMobileClose}
-              className={`flex items-center gap-3 px-3 py-2 rounded text-sm text-faint hover:text-blue-400 hover:bg-surface-elevated transition-colors ${collapsed ? "md:justify-center" : ""}`}
+              className={`text-faint hover:bg-surface-elevated flex items-center gap-3 rounded px-3 py-2 text-sm transition-colors hover:text-blue-400 ${collapsed ? "md:justify-center" : ""}`}
               title={collapsed ? "Switch Profile" : undefined}
             >
-              <LogOut className="w-4 h-4 shrink-0" />
+              <LogOut className="h-4 w-4 shrink-0" />
               {showLabels && (
                 <span className="hidden md:inline">Switch Profile</span>
               )}
@@ -410,10 +410,10 @@ export function Sidebar({
                 onMobileClose?.();
                 signOut({ callbackUrl: "/" });
               }}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded text-sm text-faint hover:text-red-400 hover:bg-surface-elevated transition-colors ${collapsed ? "md:justify-center" : ""}`}
+              className={`text-faint hover:bg-surface-elevated flex w-full items-center gap-3 rounded px-3 py-2 text-sm transition-colors hover:text-red-400 ${collapsed ? "md:justify-center" : ""}`}
               title={collapsed ? "Sign Out" : undefined}
             >
-              <LogOut className="w-4 h-4 shrink-0" />
+              <LogOut className="h-4 w-4 shrink-0" />
               {showLabels && <span className="hidden md:inline">Sign Out</span>}
               <span className="md:hidden">Sign Out</span>
             </button>
@@ -421,13 +421,13 @@ export function Sidebar({
         </div>
 
         {/* Mobile theme toggle */}
-        <div className="md:hidden px-2 pb-1">
+        <div className="px-2 pb-1 md:hidden">
           <ThemeToggle />
         </div>
 
         {/* Utility bar — theme + collapse + version (desktop only) */}
         <div
-          className={`hidden md:flex items-center border-t py-1.5 ${
+          className={`hidden items-center border-t py-1.5 md:flex ${
             collapsed ? "flex-col gap-1 px-0" : "flex-row px-2"
           }`}
         >
@@ -449,7 +449,7 @@ export function Sidebar({
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             <ChevronsLeft
-              className={`w-4 h-4 transition-transform duration-200 ${collapsed ? "rotate-180" : ""}`}
+              className={`h-4 w-4 transition-transform duration-200 ${collapsed ? "rotate-180" : ""}`}
             />
           </Button>
         </div>

@@ -100,7 +100,7 @@ export function BudgetSummaryBar({
   const { isPulling, isPushing, onPullFromApi, onOpenPushPreview } =
     syncActions;
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 bg-surface-sunken rounded-lg px-4 py-3 mb-4">
+    <div className="bg-surface-sunken mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg px-4 py-3">
       <div className="flex flex-wrap items-center gap-3 sm:gap-6">
         <div className="flex items-center gap-2">
           <ProfileViewingBadge
@@ -122,7 +122,7 @@ export function BudgetSummaryBar({
           {cols.length > 0 && !isWeighted && (
             <span className="text-faint">
               Mode:{" "}
-              <span className="font-medium text-secondary">
+              <span className="text-secondary font-medium">
                 {cols[activeColumn] ?? cols[0]}
               </span>
             </span>
@@ -155,7 +155,7 @@ export function BudgetSummaryBar({
               title="Budgeted spending + savings allocations, annualized"
             >
               Total spending + savings:{" "}
-              <span className="font-semibold text-secondary">
+              <span className="text-secondary font-semibold">
                 {formatCurrency(
                   (isWeighted && columnMonths
                     ? allColumnResults.reduce(
@@ -187,7 +187,7 @@ export function BudgetSummaryBar({
           <button
             type="button"
             onClick={onToggleModeManager}
-            className="px-2 py-1 text-caption font-medium rounded bg-surface-strong text-muted hover:bg-surface-strong"
+            className="text-caption bg-surface-strong text-muted hover:bg-surface-strong rounded px-2 py-1 font-medium"
           >
             Manage Modes
           </button>
@@ -198,7 +198,7 @@ export function BudgetSummaryBar({
               type="button"
               onClick={onPullFromApi}
               disabled={isPulling}
-              className="px-2 py-1 text-caption font-medium rounded bg-blue-100 text-blue-700 hover:bg-blue-200 disabled:opacity-50"
+              className="text-caption rounded bg-blue-100 px-2 py-1 font-medium text-blue-700 hover:bg-blue-200 disabled:opacity-50"
               title={`Pull linked amounts from ${apiService?.toUpperCase()} into"${cols[activeColumn]}" mode`}
             >
               {isPulling
@@ -209,7 +209,7 @@ export function BudgetSummaryBar({
               type="button"
               onClick={onOpenPushPreview}
               disabled={isPushing}
-              className="px-2 py-1 text-caption font-medium rounded bg-blue-100 text-blue-700 hover:bg-blue-200 disabled:opacity-50"
+              className="text-caption rounded bg-blue-100 px-2 py-1 font-medium text-blue-700 hover:bg-blue-200 disabled:opacity-50"
               title={`Push"${cols[activeColumn]}" mode amounts to ${apiService?.toUpperCase()}`}
             >
               {isPushing ? "Pushing…" : `Push to ${apiService?.toUpperCase()}`}

@@ -137,15 +137,15 @@ export function TaxBracketsSettings({ year }: { year: number }) {
   if (!hasYearData) {
     return (
       <div>
-        <h2 className="text-lg font-semibold mb-4">Tax Brackets</h2>
-        <div className="p-4 border border-dashed rounded-lg text-center">
-          <p className="text-muted text-sm mb-3">
+        <h2 className="mb-4 text-lg font-semibold">Tax Brackets</h2>
+        <div className="rounded-lg border border-dashed p-4 text-center">
+          <p className="text-muted mb-3 text-sm">
             No tax brackets configured for {activeYear}.
           </p>
           {admin && (
             <div className="flex items-center justify-center gap-3">
               {years.length > 0 && (
-                <label className="text-sm text-secondary">
+                <label className="text-secondary text-sm">
                   Copy from:
                   <select
                     value={effectiveCopyFrom ?? ""}
@@ -154,7 +154,7 @@ export function TaxBracketsSettings({ year }: { year: number }) {
                         e.target.value ? parseInt(e.target.value) : null,
                       )
                     }
-                    className="ml-2 px-2 py-1 text-sm border rounded"
+                    className="ml-2 rounded border px-2 py-1 text-sm"
                   >
                     <option value="">Empty brackets</option>
                     {years.map((yr) => (
@@ -167,7 +167,7 @@ export function TaxBracketsSettings({ year }: { year: number }) {
               )}
               <button
                 onClick={handleAddYear}
-                className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
               >
                 Add {activeYear}
               </button>
@@ -180,24 +180,24 @@ export function TaxBracketsSettings({ year }: { year: number }) {
 
   return (
     <div>
-      <h2 className="text-lg font-semibold mb-4">Tax Brackets</h2>
+      <h2 className="mb-4 text-lg font-semibold">Tax Brackets</h2>
 
       {/* Delete year confirmation */}
       {confirmDelete === activeYear && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
+        <div className="mb-4 flex items-center justify-between rounded-lg border border-red-200 bg-red-50 p-3">
           <span className="text-sm text-red-800">
             Delete all {activeYear} brackets? This cannot be undone.
           </span>
           <div className="flex gap-2">
             <button
               onClick={() => handleDeleteYear(activeYear)}
-              className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+              className="rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700"
             >
               Delete
             </button>
             <button
               onClick={() => setConfirmDelete(null)}
-              className="px-3 py-1 text-sm text-muted hover:text-primary"
+              className="text-muted hover:text-primary px-3 py-1 text-sm"
             >
               Cancel
             </button>
@@ -213,14 +213,14 @@ export function TaxBracketsSettings({ year }: { year: number }) {
           if (statusBrackets.length === 0) return null;
 
           return (
-            <div key={status} className="border rounded-lg overflow-hidden">
-              <div className="bg-surface-sunken px-4 py-2 border-b">
-                <h3 className="font-medium text-primary">
+            <div key={status} className="overflow-hidden rounded-lg border">
+              <div className="bg-surface-sunken border-b px-4 py-2">
+                <h3 className="text-primary font-medium">
                   {statusLabels[status]}
                 </h3>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x">
+              <div className="grid grid-cols-1 divide-y lg:grid-cols-2 lg:divide-x lg:divide-y-0">
                 {statusBrackets
                   .sort(
                     (a, b) => (a.w4Checkbox ? 1 : 0) - (b.w4Checkbox ? 1 : 0),
@@ -229,21 +229,21 @@ export function TaxBracketsSettings({ year }: { year: number }) {
                     const brackets = tb.brackets as BracketEntry[];
                     return (
                       <div key={tb.id} className="p-3">
-                        <p className="text-xs font-medium text-muted mb-2 uppercase tracking-wide">
+                        <p className="text-muted mb-2 text-xs font-medium tracking-wide uppercase">
                           {tb.w4Checkbox
                             ? "W-4 Box 2(c) Checked"
                             : "W-4 Box 2(c) Not Checked"}
                         </p>
-                        <table className="w-full text-sm border-collapse">
+                        <table className="w-full border-collapse text-sm">
                           <thead>
-                            <tr className="text-xs text-muted">
-                              <th className="text-left pb-1 font-normal">
+                            <tr className="text-muted text-xs">
+                              <th className="pb-1 text-left font-normal">
                                 Over
                               </th>
-                              <th className="text-right pb-1 font-normal">
+                              <th className="pb-1 text-right font-normal">
                                 Base
                               </th>
-                              <th className="text-right pb-1 font-normal">
+                              <th className="pb-1 text-right font-normal">
                                 Rate
                               </th>
                             </tr>
@@ -252,7 +252,7 @@ export function TaxBracketsSettings({ year }: { year: number }) {
                             {brackets.map((b, i) => (
                               <tr
                                 key={b.threshold}
-                                className="border-t border-subtle"
+                                className="border-subtle border-t"
                               >
                                 <td className="py-1 pr-2">
                                   <InlineEdit
@@ -275,7 +275,7 @@ export function TaxBracketsSettings({ year }: { year: number }) {
                                     isEditable={admin}
                                   />
                                 </td>
-                                <td className="py-1 px-2 text-right">
+                                <td className="px-2 py-1 text-right">
                                   <InlineEdit
                                     value={b.baseWithholding.toString()}
                                     formatDisplay={() =>
@@ -328,8 +328,8 @@ export function TaxBracketsSettings({ year }: { year: number }) {
         })}
       </div>
 
-      <div className="flex items-center justify-between mt-4">
-        <p className="text-xs text-faint">
+      <div className="mt-4 flex items-center justify-between">
+        <p className="text-faint text-xs">
           Source: IRS Publication 15-T. Click any value to edit. Edit rates as
           percentages (e.g., enter 22 for 22%).
         </p>

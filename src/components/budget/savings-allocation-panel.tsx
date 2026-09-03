@@ -104,8 +104,8 @@ export function SavingsAllocationPanel({
   if (profilesLoading) {
     return (
       <div className="space-y-2">
-        <div className="animate-pulse h-8 bg-surface-elevated rounded" />
-        <div className="animate-pulse h-32 bg-surface-elevated rounded" />
+        <div className="bg-surface-elevated h-8 animate-pulse rounded" />
+        <div className="bg-surface-elevated h-32 animate-pulse rounded" />
       </div>
     );
   }
@@ -119,10 +119,10 @@ export function SavingsAllocationPanel({
     profiles.find((p) => p.id === effectiveProfileId) ?? null;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-4">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-[220px_1fr]">
       {/* Left: profile list (select-only, shared selection with Budget Profiles tab) */}
       <div className="space-y-1">
-        <h3 className="text-label font-semibold text-muted uppercase tracking-wide mb-2">
+        <h3 className="text-label text-muted mb-2 font-semibold tracking-wide uppercase">
           Profiles
         </h3>
         <p className="text-caption text-faint mb-2">
@@ -137,16 +137,16 @@ export function SavingsAllocationPanel({
               key={p.id}
               type="button"
               onClick={() => onSelectProfile(p.id)}
-              className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs transition-colors ${
+              className={`w-full rounded-md px-2.5 py-1.5 text-left text-xs transition-colors ${
                 effectiveProfileId === p.id
-                  ? "bg-blue-50 border border-blue-300 text-primary font-medium"
-                  : "hover:bg-surface-sunken border border-transparent text-secondary"
+                  ? "text-primary border border-blue-300 bg-blue-50 font-medium"
+                  : "hover:bg-surface-sunken text-secondary border border-transparent"
               }`}
             >
               <div className="flex items-center gap-1.5">
                 <span className="truncate">{p.name}</span>
                 {p.isActive && (
-                  <span className="flex items-center gap-0.5 shrink-0">
+                  <span className="flex shrink-0 items-center gap-0.5">
                     <Badge color="green">ACTIVE</Badge>
                     {sandbox && (
                       <HelpTip text="This is your household's actual active budget profile — not necessarily the one this What-If preview is showing below." />
@@ -172,7 +172,7 @@ export function SavingsAllocationPanel({
                   // pay are blended the same way, server-side.
                   const unspent = p.unspentMonthly;
                   return (
-                    <div className="mt-0.5 text-caption text-muted space-y-0.5">
+                    <div className="text-caption text-muted mt-0.5 space-y-0.5">
                       <div className="flex gap-2">
                         <span>
                           Allocated:{" "}
@@ -228,7 +228,7 @@ export function SavingsAllocationPanel({
             onLocalChange={onLocalChange}
           />
         ) : (
-          <div className="flex items-center justify-center h-40 text-xs text-faint">
+          <div className="text-faint flex h-40 items-center justify-center text-xs">
             Select a profile
           </div>
         )}
@@ -293,12 +293,12 @@ function SavingsAllocationTable({
     });
 
   if (isLoading) {
-    return <div className="animate-pulse h-32 bg-surface-elevated rounded" />;
+    return <div className="bg-surface-elevated h-32 animate-pulse rounded" />;
   }
 
   if (!rows || rows.length === 0) {
     return (
-      <p className="text-caption text-faint italic px-2 py-3">
+      <p className="text-caption text-faint px-2 py-3 italic">
         No active savings goals to allocate.
       </p>
     );
@@ -368,7 +368,7 @@ function SavingsAllocationTable({
 
   return (
     <div>
-      <div className="flex items-center gap-2 mb-3">
+      <div className="mb-3 flex items-center gap-2">
         <ProfileViewingBadge
           profileName={profileName ?? "This profile"}
           activeProfileName={activeProfileName}
@@ -388,7 +388,7 @@ function SavingsAllocationTable({
                 resetAllToZero.mutate({ profileId });
               }
             }}
-            className="ml-auto text-caption text-faint hover:text-red-600"
+            className="text-caption text-faint ml-auto hover:text-red-600"
           >
             Reset all to zero
           </button>
@@ -396,10 +396,10 @@ function SavingsAllocationTable({
       </div>
 
       {livePoolEstimate != null && (
-        <div className="flex items-center gap-2 mb-3 text-caption text-muted">
+        <div className="text-caption text-muted mb-3 flex items-center gap-2">
           <span>
             Live pool{livePoolColumnLabel ? ` (${livePoolColumnLabel})` : ""}:{" "}
-            <span className="font-semibold text-secondary">
+            <span className="text-secondary font-semibold">
               {formatCurrency(livePoolEstimate)}
               <span className="text-faint font-normal">/mo</span>
             </span>
@@ -413,7 +413,7 @@ function SavingsAllocationTable({
                 {Math.abs(diff) > 0.01 && (
                   <span
                     className={
-                      diff > 0 ? "text-emerald-600 ml-1" : "text-red-600 ml-1"
+                      diff > 0 ? "ml-1 text-emerald-600" : "ml-1 text-red-600"
                     }
                   >
                     ({diff > 0 ? "+" : ""}
@@ -433,16 +433,16 @@ function SavingsAllocationTable({
         className="mb-2"
       />
 
-      <table className="w-full text-xs border-collapse">
+      <table className="w-full border-collapse text-xs">
         <thead>
-          <tr className="border-b-2 border-strong">
-            <th className="text-left py-2 pl-4 pr-3 text-muted font-medium">
+          <tr className="border-strong border-b-2">
+            <th className="text-muted py-2 pr-3 pl-4 text-left font-medium">
               Goal
             </th>
-            <th className="text-right py-2 px-3 text-muted font-medium w-24">
+            <th className="text-muted w-24 px-3 py-2 text-right font-medium">
               Allocation %
             </th>
-            <th className="text-right py-2 px-3 text-muted font-medium w-28">
+            <th className="text-muted w-28 px-3 py-2 text-right font-medium">
               Monthly $
             </th>
           </tr>
@@ -451,17 +451,17 @@ function SavingsAllocationTable({
           {rows.map((r, rowIdx) => (
             <tr
               key={r.goalId}
-              className={`border-b border-subtle hover:bg-blue-50/60 transition-colors ${
+              className={`border-subtle border-b transition-colors hover:bg-blue-50/60 ${
                 rowIdx % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"
               }`}
             >
-              <td className="py-1.5 pl-4 pr-3 text-secondary">
+              <td className="text-secondary py-1.5 pr-3 pl-4">
                 {r.name}
                 {r.isEmergencyFund && (
-                  <span className="ml-1 text-micro text-faint">(e-fund)</span>
+                  <span className="text-micro text-faint ml-1">(e-fund)</span>
                 )}
               </td>
-              <td className="py-1.5 px-3 text-right">
+              <td className="px-3 py-1.5 text-right">
                 {!canEdit || locked ? (
                   <span className="text-secondary font-mono">
                     {r.allocationPercent != null
@@ -489,11 +489,11 @@ function SavingsAllocationTable({
                       )
                     }
                     placeholder="—"
-                    className="w-16 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-secondary"
+                    className="bg-surface-primary text-secondary w-16 rounded border px-1.5 py-0.5 text-right text-xs"
                   />
                 )}
               </td>
-              <td className="py-1.5 px-3 text-right">
+              <td className="px-3 py-1.5 text-right">
                 {!canEdit || locked ? (
                   <span className="text-secondary font-mono">
                     {formatCurrency(r.monthlyContribution)}
@@ -516,7 +516,7 @@ function SavingsAllocationTable({
                         r.monthlyContribution,
                       )
                     }
-                    className="w-20 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-secondary"
+                    className="bg-surface-primary text-secondary w-20 rounded border px-1.5 py-0.5 text-right text-xs"
                   />
                 )}
               </td>

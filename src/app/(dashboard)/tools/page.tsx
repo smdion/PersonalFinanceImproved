@@ -417,7 +417,7 @@ export default function ToolsPage() {
             const r = relocQuery.data.result;
             if (!r)
               return (
-                <p className="text-sm text-muted">
+                <p className="text-muted text-sm">
                   No retirement settings found.
                 </p>
               );
@@ -459,12 +459,12 @@ export default function ToolsPage() {
 
                 {/* Planned Move Year input */}
                 <div className="flex items-center gap-3">
-                  <label className="text-sm text-muted whitespace-nowrap">
+                  <label className="text-muted text-sm whitespace-nowrap">
                     Planned Move Year
                   </label>
                   <input
                     type="number"
-                    className="border rounded px-2 py-1 text-sm w-24"
+                    className="w-24 rounded border px-2 py-1 text-sm"
                     placeholder={
                       relocFiQuery.data?.earliestRelocateYear != null
                         ? String(relocFiQuery.data.earliestRelocateYear)
@@ -486,7 +486,7 @@ export default function ToolsPage() {
                   />
                   {relocMoveYear !== null && (
                     <button
-                      className="text-xs text-muted hover:text-secondary"
+                      className="text-muted hover:text-secondary text-xs"
                       onClick={() => {
                         setRelocMoveYear(null);
                         setRelocMoveYearInput("");
@@ -497,7 +497,7 @@ export default function ToolsPage() {
                   )}
                   {relocFiQuery.data?.earliestRelocateYear != null &&
                     relocMoveYear === null && (
-                      <span className="text-xs text-faint">
+                      <span className="text-faint text-xs">
                         Earliest viable:{" "}
                         {relocFiQuery.data.earliestRelocateYear} (age{" "}
                         {relocFiQuery.data.earliestRelocateAge})
@@ -555,7 +555,7 @@ export default function ToolsPage() {
         ) : relocQuery.isLoading ? (
           <div className="space-y-3">
             <Skeleton className="h-8 w-1/2" />
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
               <SkeletonChart height={80} />
               <SkeletonChart height={80} />
               <SkeletonChart height={80} />
@@ -563,7 +563,7 @@ export default function ToolsPage() {
             </div>
           </div>
         ) : (
-          <p className="text-sm text-muted">
+          <p className="text-muted text-sm">
             No active budget profile found. Create a budget profile first.
           </p>
         )}

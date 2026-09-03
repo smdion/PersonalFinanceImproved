@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
-import { categoryChartHex } from "@/lib/utils/colors";
+import { categoryChartHex, gainLossTextColor } from "@/lib/utils/colors";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { useScenario } from "@/lib/context/scenario-context";
 import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
@@ -100,7 +100,7 @@ export function ContributionsContent() {
           title="Contributions"
           subtitle="Household contribution breakdown and savings rates"
         />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
           <Skeleton className="h-32" />
           <Skeleton className="h-32" />
           <Skeleton className="h-32" />
@@ -121,7 +121,7 @@ export function ContributionsContent() {
           subtitle="Household contribution breakdown and savings rates"
         />
         <Card>
-          <p className="text-muted text-sm py-8 text-center">
+          <p className="text-muted py-8 text-center text-sm">
             No contribution accounts configured. Add contribution accounts on
             the Paycheck page.
           </p>
@@ -217,7 +217,7 @@ export function ContributionsContent() {
                   e.target.value ? parseInt(e.target.value) : undefined,
                 )
               }
-              className="px-2 py-1 text-sm border rounded bg-surface-primary text-primary"
+              className="bg-surface-primary text-primary rounded border px-2 py-1 text-sm"
             >
               <option value="">Current</option>
               {profiles.map((p) => (
@@ -229,20 +229,20 @@ export function ContributionsContent() {
           )}
           <button
             onClick={() => setMatchOverride(excludeMatch ? false : true)}
-            className={`text-xs px-2 py-1 rounded transition-colors ${
+            className={`rounded px-2 py-1 text-xs transition-colors ${
               matchOverride !== null
-                ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 font-medium"
+                ? "bg-blue-100 font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
                 : "text-muted hover:bg-surface-elevated"
             }`}
           >
             {excludeMatch ? "Incl. match" : "Excl. match"}
           </button>
-          <div className="flex gap-1 bg-surface-elevated rounded-full p-0.5">
+          <div className="bg-surface-elevated flex gap-1 rounded-full p-0.5">
             {(["annual", "monthly", "per-period"] as const).map((m) => (
               <button
                 key={m}
                 onClick={() => setPeriod(m)}
-                className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                className={`rounded-full px-3 py-1 text-xs transition-colors ${
                   period === m
                     ? "bg-blue-600 text-white"
                     : "text-muted hover:text-primary"
@@ -261,9 +261,9 @@ export function ContributionsContent() {
 
       {/* Prior-year contribution window banner */}
       {priorYearWindow && (
-        <div className="bg-surface-elevated border border-subtle rounded-lg px-4 py-3 mb-6">
-          <p className="text-sm text-secondary">
-            <span className="font-medium text-primary">
+        <div className="bg-surface-elevated border-subtle mb-6 rounded-lg border px-4 py-3">
+          <p className="text-secondary text-sm">
+            <span className="text-primary font-medium">
               Prior-year contributions:
             </span>{" "}
             You can designate IRA and HSA contributions for tax year{" "}
@@ -274,7 +274,7 @@ export function ContributionsContent() {
       )}
 
       {/* Household summary — rates from server (single source of truth) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
         {(() => {
           // Total savings rate — totalWith/Without already include joint accounts,
           // so this naturally captures the full household picture.
@@ -356,20 +356,20 @@ export function ContributionsContent() {
               {formatCurrency(
                 toDisplay(totalEmployerMatch, avgPeriodsPerYear, period),
               )}
-              <span className="text-sm font-normal text-muted ml-1">{pl}</span>
+              <span className="text-muted ml-1 text-sm font-normal">{pl}</span>
             </div>
-            <span className="text-sm text-muted">
+            <span className="text-muted text-sm">
               {formatCurrency(totalEmployerMatch)} annual employer match across
               all accounts
             </span>
           </div>
-          <table className="w-full text-sm mt-2">
+          <table className="mt-2 w-full text-sm">
             <thead>
-              <tr className="text-xs text-muted border-b">
-                <th className="text-left py-1 font-normal">Account</th>
-                <th className="text-right py-1 font-normal">Employee</th>
-                <th className="text-right py-1 font-normal">Match</th>
-                <th className="text-right py-1 font-normal">Total</th>
+              <tr className="text-muted border-b text-xs">
+                <th className="py-1 text-left font-normal">Account</th>
+                <th className="py-1 text-right font-normal">Employee</th>
+                <th className="py-1 text-right font-normal">Match</th>
+                <th className="py-1 text-right font-normal">Total</th>
               </tr>
             </thead>
             <tbody>
@@ -379,12 +379,12 @@ export function ContributionsContent() {
                   .map((a) => (
                     <tr
                       key={`${person.person.id}-${a.accountType}`}
-                      className="border-b border-subtle"
+                      className="border-subtle border-b"
                     >
                       <td className="py-1.5">
                         <span className="flex items-center gap-2">
                           <span
-                            className="w-2 h-2 rounded-full shrink-0"
+                            className="h-2 w-2 shrink-0 rounded-full"
                             style={{
                               backgroundColor: categoryChartHex(
                                 a.categoryKey,
@@ -394,13 +394,13 @@ export function ContributionsContent() {
                           />
                           {a.accountType}
                           {activePeople.length > 1 && (
-                            <span className="text-xs text-muted">
+                            <span className="text-muted text-xs">
                               ({person.person.name})
                             </span>
                           )}
                         </span>
                       </td>
-                      <td className="text-right py-1.5">
+                      <td className="py-1.5 text-right">
                         {formatCurrency(
                           toDisplay(
                             a.views[viewMode].employeeContrib,
@@ -409,7 +409,7 @@ export function ContributionsContent() {
                           ),
                         )}
                       </td>
-                      <td className="text-right py-1.5 text-emerald-600">
+                      <td className="py-1.5 text-right text-emerald-600">
                         {formatCurrency(
                           toDisplay(
                             a.views[viewMode].employerMatch,
@@ -418,7 +418,7 @@ export function ContributionsContent() {
                           ),
                         )}
                       </td>
-                      <td className="text-right py-1.5 font-medium">
+                      <td className="py-1.5 text-right font-medium">
                         {formatCurrency(
                           toDisplay(
                             a.views[viewMode].totalContrib,
@@ -435,12 +435,12 @@ export function ContributionsContent() {
                 .map((a) => (
                   <tr
                     key={`joint-${a.accountType}`}
-                    className="border-b border-subtle"
+                    className="border-subtle border-b"
                   >
                     <td className="py-1.5">
                       <span className="flex items-center gap-2">
                         <span
-                          className="w-2 h-2 rounded-full shrink-0"
+                          className="h-2 w-2 shrink-0 rounded-full"
                           style={{
                             backgroundColor: categoryChartHex(
                               a.categoryKey,
@@ -449,10 +449,10 @@ export function ContributionsContent() {
                           }}
                         />
                         {a.accountType}
-                        <span className="text-xs text-muted">(Joint)</span>
+                        <span className="text-muted text-xs">(Joint)</span>
                       </span>
                     </td>
-                    <td className="text-right py-1.5">
+                    <td className="py-1.5 text-right">
                       {formatCurrency(
                         toDisplay(
                           a.views[viewMode].employeeContrib,
@@ -461,7 +461,7 @@ export function ContributionsContent() {
                         ),
                       )}
                     </td>
-                    <td className="text-right py-1.5 text-emerald-600">
+                    <td className="py-1.5 text-right text-emerald-600">
                       {formatCurrency(
                         toDisplay(
                           a.views[viewMode].employerMatch,
@@ -470,7 +470,7 @@ export function ContributionsContent() {
                         ),
                       )}
                     </td>
-                    <td className="text-right py-1.5 font-medium">
+                    <td className="py-1.5 text-right font-medium">
                       {formatCurrency(
                         toDisplay(
                           a.views[viewMode].totalContrib,
@@ -499,12 +499,12 @@ export function ContributionsContent() {
         >
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-xs text-muted border-b">
-                <th className="text-left py-1 font-normal">Account</th>
-                <th className="text-right py-1 font-normal">Employee</th>
-                <th className="text-right py-1 font-normal">Match</th>
-                <th className="text-right py-1 font-normal">Limit</th>
-                <th className="text-left py-1 font-normal pl-4 w-48">
+              <tr className="text-muted border-b text-xs">
+                <th className="py-1 text-left font-normal">Account</th>
+                <th className="py-1 text-right font-normal">Employee</th>
+                <th className="py-1 text-right font-normal">Match</th>
+                <th className="py-1 text-right font-normal">Limit</th>
+                <th className="w-48 py-1 pl-4 text-left font-normal">
                   Utilization
                 </th>
               </tr>
@@ -521,11 +521,11 @@ export function ContributionsContent() {
 
                 return (
                   <React.Fragment key={a.accountType}>
-                    <tr className="border-b border-subtle">
+                    <tr className="border-subtle border-b">
                       <td className="py-2">
                         <span className="flex items-center gap-2">
                           <span
-                            className="w-2 h-2 rounded-full shrink-0"
+                            className="h-2 w-2 shrink-0 rounded-full"
                             style={{
                               backgroundColor: categoryChartHex(
                                 a.categoryKey,
@@ -535,7 +535,7 @@ export function ContributionsContent() {
                           />
                           <span>{a.accountType}</span>
                           {a.tradContrib > 0 && a.taxFreeContrib > 0 && (
-                            <span className="text-xs text-muted">
+                            <span className="text-muted text-xs">
                               T:
                               {formatPercent(
                                 a.tradContrib /
@@ -552,7 +552,7 @@ export function ContributionsContent() {
                           )}
                         </span>
                       </td>
-                      <td className="text-right py-2">
+                      <td className="py-2 text-right">
                         {formatCurrency(
                           toDisplay(
                             a.views[viewMode].employeeContrib,
@@ -561,7 +561,7 @@ export function ContributionsContent() {
                           ),
                         )}
                       </td>
-                      <td className="text-right py-2">
+                      <td className="py-2 text-right">
                         {a.employerMatch > 0 ? (
                           <span className="text-emerald-600">
                             {formatCurrency(
@@ -576,13 +576,13 @@ export function ContributionsContent() {
                           <span className="text-muted">—</span>
                         )}
                       </td>
-                      <td className="text-right py-2 text-muted">
+                      <td className="text-muted py-2 text-right">
                         {a.limit > 0 ? formatCurrency(a.limit) : "—"}
                       </td>
                       <td className="py-2 pl-4">
                         {a.limit > 0 ? (
                           <div className="flex items-center gap-2">
-                            <div className="flex-1 h-2 bg-surface-elevated rounded-full overflow-hidden">
+                            <div className="bg-surface-elevated h-2 flex-1 overflow-hidden rounded-full">
                               <div
                                 className={`h-full rounded-full ${barColor}`}
                                 style={{
@@ -590,21 +590,21 @@ export function ContributionsContent() {
                                 }}
                               />
                             </div>
-                            <span className="text-xs text-muted w-10 text-right">
+                            <span className="text-muted w-10 text-right text-xs">
                               {formatPercent(a.views[viewMode].fundingPct, 0)}
                             </span>
                           </div>
                         ) : (
-                          <span className="text-xs text-muted">No limit</span>
+                          <span className="text-muted text-xs">No limit</span>
                         )}
                       </td>
                     </tr>
                     {a.priorYear && (
-                      <tr className="border-b border-subtle bg-surface-elevated">
-                        <td className="py-1.5 pl-6 text-xs text-secondary">
+                      <tr className="border-subtle bg-surface-elevated border-b">
+                        <td className="text-secondary py-1.5 pl-6 text-xs">
                           Prior year ({priorYearWindow?.priorYear})
                         </td>
-                        <td className="text-right py-1.5">
+                        <td className="py-1.5 text-right">
                           {canEdit && a.priorYear.contribs.length === 1 ? (
                             <input
                               type="number"
@@ -613,7 +613,7 @@ export function ContributionsContent() {
                               max={a.priorYear.limit}
                               defaultValue={a.priorYear.amount || ""}
                               placeholder="0"
-                              className="w-24 text-right text-xs border rounded px-1.5 py-0.5 bg-surface-primary text-primary border-subtle"
+                              className="bg-surface-primary text-primary border-subtle w-24 rounded border px-1.5 py-0.5 text-right text-xs"
                               onBlur={(e) => {
                                 const val = e.target.value || "0";
                                 if (Number(val) !== a.priorYear!.amount) {
@@ -633,24 +633,24 @@ export function ContributionsContent() {
                               }}
                             />
                           ) : canEdit && a.priorYear.contribs.length > 1 ? (
-                            <span className="text-xs text-muted">
+                            <span className="text-muted text-xs">
                               {formatCurrency(a.priorYear.amount)} (split)
                             </span>
                           ) : (
-                            <span className="text-xs text-muted">
+                            <span className="text-muted text-xs">
                               {formatCurrency(a.priorYear.amount)}
                             </span>
                           )}
                         </td>
-                        <td className="text-right py-1.5 text-xs text-muted">
+                        <td className="text-muted py-1.5 text-right text-xs">
                           {formatCurrency(a.priorYear.remaining)} left
                         </td>
-                        <td className="text-right py-1.5 text-xs text-muted">
+                        <td className="text-muted py-1.5 text-right text-xs">
                           {formatCurrency(a.priorYear.limit)}
                         </td>
                         <td className="py-1.5 pl-4">
                           <div className="flex items-center gap-2">
-                            <div className="flex-1 h-1.5 bg-surface-sunken rounded-full overflow-hidden">
+                            <div className="bg-surface-sunken h-1.5 flex-1 overflow-hidden rounded-full">
                               <div
                                 className="h-full rounded-full bg-blue-500"
                                 style={{
@@ -681,7 +681,7 @@ export function ContributionsContent() {
             <tfoot>
               <tr className="border-t-2">
                 <td className="py-2 font-medium">Total</td>
-                <td className="text-right py-2 font-medium">
+                <td className="py-2 text-right font-medium">
                   {formatCurrency(
                     toDisplay(
                       person.totals.views[viewMode].totalWithoutMatch,
@@ -690,7 +690,7 @@ export function ContributionsContent() {
                     ),
                   )}
                 </td>
-                <td className="text-right py-2 font-medium text-emerald-600">
+                <td className="py-2 text-right font-medium text-emerald-600">
                   {formatCurrency(
                     toDisplay(
                       person.totals.views[viewMode].totalWithMatch -
@@ -700,7 +700,7 @@ export function ContributionsContent() {
                     ),
                   )}
                 </td>
-                <td colSpan={2} className="text-right py-2 text-sm text-muted">
+                <td colSpan={2} className="text-muted py-2 text-right text-sm">
                   {combinedSalary > 0 && (
                     <>
                       Savings rate:{" "}
@@ -729,23 +729,23 @@ export function ContributionsContent() {
         >
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-xs text-muted border-b">
-                <th className="text-left py-1 font-normal">Account</th>
-                <th className="text-right py-1 font-normal">Employee</th>
-                <th className="text-right py-1 font-normal">Match</th>
-                <th className="text-right py-1 font-normal">Limit</th>
-                <th className="text-left py-1 font-normal pl-4 w-48">
+              <tr className="text-muted border-b text-xs">
+                <th className="py-1 text-left font-normal">Account</th>
+                <th className="py-1 text-right font-normal">Employee</th>
+                <th className="py-1 text-right font-normal">Match</th>
+                <th className="py-1 text-right font-normal">Limit</th>
+                <th className="w-48 py-1 pl-4 text-left font-normal">
                   Utilization
                 </th>
               </tr>
             </thead>
             <tbody>
               {jointAccountTypes.map((a) => (
-                <tr key={a.accountType} className="border-b border-subtle">
+                <tr key={a.accountType} className="border-subtle border-b">
                   <td className="py-2">
                     <span className="flex items-center gap-2">
                       <span
-                        className="w-2 h-2 rounded-full shrink-0"
+                        className="h-2 w-2 shrink-0 rounded-full"
                         style={{
                           backgroundColor: categoryChartHex(
                             a.categoryKey,
@@ -756,7 +756,7 @@ export function ContributionsContent() {
                       <span>{a.accountType}</span>
                     </span>
                   </td>
-                  <td className="text-right py-2">
+                  <td className="py-2 text-right">
                     {formatCurrency(
                       toDisplay(
                         a.views[viewMode].employeeContrib,
@@ -765,7 +765,7 @@ export function ContributionsContent() {
                       ),
                     )}
                   </td>
-                  <td className="text-right py-2">
+                  <td className="py-2 text-right">
                     {a.employerMatch > 0 ? (
                       <span className="text-emerald-600">
                         {formatCurrency(
@@ -780,9 +780,9 @@ export function ContributionsContent() {
                       <span className="text-muted">—</span>
                     )}
                   </td>
-                  <td className="text-right py-2 text-muted">—</td>
+                  <td className="text-muted py-2 text-right">—</td>
                   <td className="py-2 pl-4">
-                    <span className="text-xs text-muted">No limit</span>
+                    <span className="text-muted text-xs">No limit</span>
                   </td>
                 </tr>
               ))}
@@ -790,7 +790,7 @@ export function ContributionsContent() {
             <tfoot>
               <tr className="border-t-2">
                 <td className="py-2 font-medium">Total</td>
-                <td className="text-right py-2 font-medium">
+                <td className="py-2 text-right font-medium">
                   {formatCurrency(
                     toDisplay(
                       jointTotals.totalWithoutMatch,
@@ -799,7 +799,7 @@ export function ContributionsContent() {
                     ),
                   )}
                 </td>
-                <td className="text-right py-2 font-medium text-emerald-600">
+                <td className="py-2 text-right font-medium text-emerald-600">
                   {formatCurrency(
                     toDisplay(
                       jointTotals.totalWithMatch -
@@ -821,11 +821,11 @@ export function ContributionsContent() {
         <Card title="Profile Comparison" className="mb-6">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-xs text-muted border-b">
-                <th className="text-left py-1 font-normal">Metric</th>
-                <th className="text-right py-1 font-normal">Current</th>
-                <th className="text-right py-1 font-normal">Profile</th>
-                <th className="text-right py-1 font-normal">Delta</th>
+              <tr className="text-muted border-b text-xs">
+                <th className="py-1 text-left font-normal">Metric</th>
+                <th className="py-1 text-right font-normal">Current</th>
+                <th className="py-1 text-right font-normal">Profile</th>
+                <th className="py-1 text-right font-normal">Delta</th>
               </tr>
             </thead>
             <tbody>
@@ -896,26 +896,20 @@ export function ContributionsContent() {
               })().map((row) => {
                 const delta = row.profile - row.current;
                 return (
-                  <tr key={row.label} className="border-b border-subtle">
+                  <tr key={row.label} className="border-subtle border-b">
                     <td className="py-1.5">{row.label}</td>
-                    <td className="text-right py-1.5">
+                    <td className="py-1.5 text-right">
                       {formatCurrency(
                         toDisplay(row.current, avgPeriodsPerYear, period),
                       )}
                     </td>
-                    <td className="text-right py-1.5">
+                    <td className="py-1.5 text-right">
                       {formatCurrency(
                         toDisplay(row.profile, avgPeriodsPerYear, period),
                       )}
                     </td>
                     <td
-                      className={`text-right py-1.5 font-medium ${
-                        delta > 0
-                          ? "text-emerald-600"
-                          : delta < 0
-                            ? "text-red-500"
-                            : "text-muted"
-                      }`}
+                      className={`py-1.5 text-right font-medium ${gainLossTextColor(delta)}`}
                     >
                       {delta > 0 ? "+" : ""}
                       {formatCurrency(
@@ -953,11 +947,11 @@ function SummaryCard({
   return (
     <Card>
       <div className="flex flex-col gap-2 py-1">
-        <span className="text-xs text-muted uppercase tracking-wide">
+        <span className="text-muted text-xs tracking-wide uppercase">
           {label}
         </span>
         <div className="text-3xl font-bold">{formatPercent(rate, 1)}</div>
-        <div className="text-sm text-muted">
+        <div className="text-muted text-sm">
           {formatCurrency(amount)}
           {pl}
           {rate !== rateAlt && (
@@ -966,7 +960,7 @@ function SummaryCard({
             </span>
           )}
         </div>
-        <div className="h-1.5 bg-surface-elevated rounded-full overflow-hidden">
+        <div className="bg-surface-elevated h-1.5 overflow-hidden rounded-full">
           <div
             className={`h-full rounded-full ${color}`}
             style={{ width: `${Math.min(100, rate * 100)}%` }}

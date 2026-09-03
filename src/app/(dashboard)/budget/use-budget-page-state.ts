@@ -17,8 +17,10 @@ import {
   type RefObject,
 } from "react";
 import type { RawItem } from "@/components/budget";
+import type { RouterOutputs } from "@/lib/trpc";
 import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 import { EDIT_LOCK_KEYS } from "@/components/ui/edit-lock-toggle";
+import { toast } from "@/lib/hooks/use-toast";
 
 const INITIAL_VISIBLE = 15;
 const LOAD_MORE_COUNT = 10;
@@ -29,11 +31,13 @@ type ProfileResolutionTiers = {
   globalDefaultId: number | null;
 };
 
+type UpdateBatchResult = RouterOutputs["budget"]["updateItemAmounts"];
+
 type UpdateBatch = {
   mutateAsync: (args: {
     updates: Array<{ id: number; colIndex: number; amount: number }>;
     contributionProfile?: ProfileResolutionTiers;
-  }) => Promise<unknown>;
+  }) => Promise<UpdateBatchResult>;
 };
 
 export function useBudgetPageState({
@@ -111,17 +115,34 @@ export function useBudgetPageState({
         amount,
       };
     });
-    await updateBatchRef.current.mutateAsync({
+    const res = await updateBatchRef.current.mutateAsync({
       updates,
       contributionProfile: contributionProfileTiersRef.current,
     });
+    // Cells the server couldn't apply (a since-deleted item, or a column
+    // that no longer exists because the budget's columns changed while
+    // editing). They can't be re-saved without a reload, so clear the
+    // drafts as usual and just tell the user what didn't land.
+    if (res.skipped.length > 0) {
+      const total = res.updated + res.skipped.length;
+      toast(
+        `${res.skipped.length} of ${total} amounts couldn't be saved — this budget changed since you started editing. Reload to see the current columns.`,
+        "error",
+      );
+    }
     setEditDrafts(new Map());
     setEditMode(false);
   };
 
   const toggleEditMode = () => {
     if (editMode) {
-      saveAllDrafts().catch(console.warn);
+      // A thrown save is already surfaced app-wide by the QueryClient's
+      // MutationCache.onError (providers.tsx). Just swallow the rejection
+      // here so it isn't an unhandled promise; the `skipped[]` partial-
+      // success toast in saveAllDrafts is the only budget-specific case.
+      saveAllDrafts().catch((e: unknown) => {
+        console.warn("budget batch save failed", e);
+      });
     } else {
       setEditDrafts(new Map());
       setEditMode(true);

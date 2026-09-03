@@ -60,16 +60,16 @@ export function FormField({
 
   return (
     <label className={`flex flex-col text-sm ${className}`}>
-      <span className="font-medium text-secondary">
+      <span className="text-secondary font-medium">
         {label}
         {tooltip && <HelpTip text={tooltip} />}
       </span>
       <div className="mt-1">{enhancedChildren}</div>
       {help && !error && (
-        <span className="text-xs text-faint mt-1">{help}</span>
+        <span className="text-faint mt-1 text-xs">{help}</span>
       )}
       {error && (
-        <span id={errorId} role="alert" className="text-xs text-red-600 mt-1">
+        <span id={errorId} role="alert" className="mt-1 text-xs text-red-600">
           {error}
         </span>
       )}

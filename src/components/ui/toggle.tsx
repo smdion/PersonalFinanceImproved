@@ -45,17 +45,17 @@ export function Toggle({
       }}
       title={title}
       disabled={disabled}
-      className={`${disabled ? "opacity-60 cursor-not-allowed " : ""}inline-flex items-center gap-1.5 ${label ? "px-2 py-1 rounded text-caption font-medium" : ""} ${
+      className={`${disabled ? "cursor-not-allowed opacity-60" : ""}inline-flex items-center gap-1.5 ${label ? "text-caption rounded px-2 py-1 font-medium" : ""} ${
         label
           ? isChecked
-            ? "bg-blue-50 text-blue-700 border border-blue-200"
-            : "bg-surface-sunken text-muted border hover:bg-surface-elevated"
+            ? "border border-blue-200 bg-blue-50 text-blue-700"
+            : "bg-surface-sunken text-muted hover:bg-surface-elevated border"
           : ""
       } transition-colors`}
     >
       <span
-        className={`inline-block ${track} rounded-full relative transition-colors duration-200 ${
-          isChecked ? "bg-blue-500" : "bg-surface-strong border border-strong"
+        className={`inline-block ${track} relative rounded-full transition-colors duration-200 ${
+          isChecked ? "bg-blue-500" : "bg-surface-strong border-strong border"
         }`}
       >
         <span
@@ -64,7 +64,7 @@ export function Toggle({
             // bg-gray-400 (invisible on light surfaces in some themes).
             isChecked
               ? `${dotOn} bg-white`
-              : `${dotOff} bg-surface-elevated dark:bg-surface-primary border border-default`
+              : `${dotOff} bg-surface-elevated dark:bg-surface-primary border-default border`
           }`}
         />
       </span>

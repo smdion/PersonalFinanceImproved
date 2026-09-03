@@ -40,7 +40,7 @@ export function FinancialIndependenceCard({
     >
       <div className="space-y-3 text-sm">
         {budgetColumnLabels && budgetColumnLabels.length > 1 && (
-          <div className="flex items-center justify-between py-2 border-b border-subtle">
+          <div className="border-subtle flex items-center justify-between border-b py-2">
             <span className="text-muted">
               Expense Scenario{" "}
               <HelpTip text="Choose which budget scenario to use for calculating your FI target" />
@@ -50,7 +50,7 @@ export function FinancialIndependenceCard({
                 <button
                   key={label}
                   onClick={() => onExpenseColumnChange(index)}
-                  className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
+                  className={`rounded-full px-2 py-0.5 text-xs transition-colors ${
                     index === currentExpenseColumn
                       ? "bg-blue-600 text-white"
                       : "bg-surface-elevated text-muted hover:bg-surface-strong"
@@ -62,34 +62,34 @@ export function FinancialIndependenceCard({
             </div>
           </div>
         )}
-        <div className="flex justify-between py-2 border-b border-subtle">
+        <div className="border-subtle flex justify-between border-b py-2">
           <span className="text-muted">Annual Expenses</span>
           <span className="font-medium">
             {formatCurrency(fiTarget * withdrawalRate)}
           </span>
         </div>
-        <div className="flex justify-between py-2 border-b border-subtle">
+        <div className="border-subtle flex justify-between border-b py-2">
           <span className="text-muted">
             Withdrawal Rate{" "}
             <HelpTip text="Set in Retirement settings. Applied to your portfolio to determine FI target (expenses / rate)." />
           </span>
-          <span className="font-medium text-right">
+          <span className="text-right font-medium">
             {formatPercent(withdrawalRate)}
             {withdrawalRateIsDefault && (
-              <span className="block text-xs text-amber-600 dark:text-amber-400 font-normal">
+              <span className="block text-xs font-normal text-amber-600 dark:text-amber-400">
                 using default {formatPercent(withdrawalRate, 1)} — configure in
                 Retirement settings
               </span>
             )}
           </span>
         </div>
-        <div className="flex justify-between py-2 border-b border-subtle">
+        <div className="border-subtle flex justify-between border-b py-2">
           <span className="text-muted">
             FI Target (expenses / withdrawal rate)
           </span>
           <span className="font-medium">{formatCurrency(fiTarget)}</span>
         </div>
-        <div className="flex justify-between py-2 border-b border-subtle">
+        <div className="border-subtle flex justify-between border-b py-2">
           <span className="text-muted">Portfolio + Cash</span>
           <span className="font-medium">
             {formatCurrency(portfolioTotal + cash)}
@@ -103,13 +103,13 @@ export function FinancialIndependenceCard({
             {formatPercent(fiProgress)}
           </span>
         </div>
-        <div className="py-2 border-t border-subtle text-xs text-muted">
+        <div className="border-subtle text-muted border-t py-2 text-xs">
           <div className="flex justify-between">
             <span>
               Projected FI Year{" "}
               <HelpTip text="Projected year your portfolio reaches your FI target, based on your retirement plan. Visit the Retirement page to run a projection." />
             </span>
-            <span className="font-medium text-primary">
+            <span className="text-primary font-medium">
               {fiCache === null ? (
                 <a href="/retirement" className="text-blue-600 hover:underline">
                   Run projection →
@@ -122,7 +122,7 @@ export function FinancialIndependenceCard({
             </span>
           </div>
           {fiCache !== null && fiCache.fiYear !== null && (
-            <div className="text-caption text-faint text-right mt-0.5">
+            <div className="text-caption text-faint mt-0.5 text-right">
               Based on retirement plan
             </div>
           )}

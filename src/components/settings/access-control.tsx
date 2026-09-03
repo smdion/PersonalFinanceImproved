@@ -34,13 +34,13 @@ export function AccessControlSettings() {
   );
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-6">
-      <nav className="flex md:flex-col gap-1 overflow-x-auto">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-[200px_1fr]">
+      <nav className="flex gap-1 overflow-x-auto md:flex-col">
         {SECTIONS.map((s) => (
           <button
             key={s.key}
             onClick={() => setSection(s.key)}
-            className={`px-3 py-2 text-sm text-left rounded-md whitespace-nowrap transition-colors ${
+            className={`rounded-md px-3 py-2 text-left text-sm whitespace-nowrap transition-colors ${
               section === s.key
                 ? "bg-blue-600 text-white"
                 : "text-secondary hover:bg-surface-elevated"

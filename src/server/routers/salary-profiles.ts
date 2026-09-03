@@ -34,7 +34,9 @@
  * protectedProcedure, writes on contributionProfileProcedure.
  */
 import { z } from "zod/v4";
+import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
+import { log } from "@/lib/logger";
 import { createTRPCRouter } from "../trpc";
 import { protectedProcedure, contributionProfileProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
@@ -166,11 +168,20 @@ async function assertSalaryEntryTaxBracketsExist(
 
   for (const [jobId, entry] of entries) {
     if (!bracketKeys.has(`${entry.w4FilingStatus}|${entry.w4Box2cChecked}`)) {
-      throw new Error(
-        `No tax bracket data found for filing status "${entry.w4FilingStatus}" ` +
+      // Missing reference data, not a user mistake — BAD_REQUEST is skipped
+      // by errorLoggingMiddleware, so log it explicitly.
+      log("error", "tax_brackets_missing", {
+        taxYear,
+        filingStatus: entry.w4FilingStatus,
+        box2c: entry.w4Box2cChecked,
+      });
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message:
+          `No tax bracket data found for filing status "${entry.w4FilingStatus}" ` +
           `(multiple jobs: ${entry.w4Box2cChecked}) for tax year ${taxYear} — ` +
           `cannot save this entry for job ${jobId}.`,
-      );
+      });
     }
   }
 }
@@ -401,7 +412,11 @@ export const salaryProfileRouter = createTRPCRouter({
         .from(schema.salaryProfiles)
         .where(eq(schema.salaryProfiles.id, input.sourceProfileId))
         .then((r) => r[0]);
-      if (!source) throw new Error("Source profile not found");
+      if (!source)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Source profile not found",
+        });
 
       const sourceSalaries = (source.salaries ?? {}) as SalaryEntryMap;
       const salaries: SalaryEntryMap = Object.fromEntries(
@@ -436,7 +451,11 @@ export const salaryProfileRouter = createTRPCRouter({
         .select()
         .from(schema.salaryProfiles)
         .where(eq(schema.salaryProfiles.id, input.id));
-      if (!existing[0]) throw new Error("Profile not found");
+      if (!existing[0])
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Profile not found",
+        });
 
       await assertSalaryEntryTaxBracketsExist(ctx.db, input.salaries);
 
@@ -497,7 +516,11 @@ export const salaryProfileRouter = createTRPCRouter({
           .from(schema.salaryProfiles)
           .where(eq(schema.salaryProfiles.id, input.id));
         const profile = existing[0];
-        if (!profile) throw new Error("Profile not found");
+        if (!profile)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Profile not found",
+          });
 
         const salaries = profile.salaries as SalaryEntryMap;
         const key = String(input.jobId);
@@ -507,9 +530,13 @@ export const salaryProfileRouter = createTRPCRouter({
 
         const parsed = salaryEntrySchema.safeParse(mergedEntry);
         if (!parsed.success) {
-          throw new Error(
-            `Invalid salary entry after patch: ${parsed.error.issues[0]?.message}`,
-          );
+          // Message only, no `cause` — trpc.ts's errorFormatter attaches a
+          // `data.zodError` for any BAD_REQUEST caused by a ZodError, and
+          // friendlyMutationError prefers that over this message.
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Invalid salary entry after patch: ${parsed.error.issues[0]?.message}`,
+          });
         }
 
         const nextSalaries = { ...salaries, [key]: parsed.data };
@@ -551,7 +578,11 @@ export const salaryProfileRouter = createTRPCRouter({
           .from(schema.salaryProfiles)
           .where(eq(schema.salaryProfiles.id, input.id));
         const profile = existing[0];
-        if (!profile) throw new Error("Profile not found");
+        if (!profile)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Profile not found",
+          });
 
         const salaries = { ...(profile.salaries as SalaryEntryMap) };
         delete salaries[String(input.jobId)];
@@ -596,21 +627,29 @@ export const salaryProfileRouter = createTRPCRouter({
         input.id,
         allProfiles.length,
       );
-      if (!deleteCheck.allowed) throw new Error(deleteCheck.reason);
+      if (!deleteCheck.allowed)
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: deleteCheck.reason ?? "This profile can't be deleted.",
+        });
 
       if (!allProfiles.some((p) => p.id === input.id))
-        throw new Error("Profile not found");
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Profile not found",
+        });
 
       const pinningPlans = await ctx.db
         .select({ name: schema.scenarios.name })
         .from(schema.scenarios)
         .where(eq(schema.scenarios.salaryProfileId, input.id));
       if (pinningPlans.length > 0) {
-        throw new Error(
-          `Cannot delete: pinned by ${pinningPlans.length} Plan(s) (${pinningPlans
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Cannot delete: pinned by ${pinningPlans.length} Plan(s) (${pinningPlans
             .map((p) => p.name)
             .join(", ")}). Unpin it there first.`,
-        );
+        });
       }
 
       await ctx.db
@@ -642,7 +681,11 @@ export const salaryProfileRouter = createTRPCRouter({
         .select({ id: schema.salaryProfiles.id })
         .from(schema.salaryProfiles)
         .where(eq(schema.salaryProfiles.id, input.id));
-      if (!profile) throw new Error("Profile not found");
+      if (!profile)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Profile not found",
+        });
 
       await ctx.db
         .insert(schema.appSettings)

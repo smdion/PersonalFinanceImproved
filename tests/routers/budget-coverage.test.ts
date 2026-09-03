@@ -118,7 +118,7 @@ describe("budget router — updateItemAmounts", () => {
           { id: seed.itemIds[1]!, colIndex: 0, amount: 2222 },
         ],
       });
-      expect(result).toEqual({ ok: true });
+      expect(result.ok).toBe(true);
 
       // Verify amounts changed
       const summary = await caller.budget.computeActiveSummary();
@@ -138,7 +138,7 @@ describe("budget router — updateItemAmounts", () => {
       const result = await caller.budget.updateItemAmounts({
         updates: [{ id: 999999, colIndex: 0, amount: 100 }],
       });
-      expect(result).toEqual({ ok: true });
+      expect(result.ok).toBe(true);
     } finally {
       cleanup();
     }
@@ -151,7 +151,7 @@ describe("budget router — updateItemAmounts", () => {
       const result = await caller.budget.updateItemAmounts({
         updates: [{ id: seed.itemIds[0]!, colIndex: 99, amount: 100 }],
       });
-      expect(result).toEqual({ ok: true });
+      expect(result.ok).toBe(true);
 
       // Amount should be unchanged
       const summary = await caller.budget.computeActiveSummary();
@@ -173,7 +173,7 @@ describe("budget router — updateItemAmounts", () => {
           { id: seed.itemIds[0]!, colIndex: 0, amount: 200 },
         ],
       });
-      expect(result).toEqual({ ok: true });
+      expect(result.ok).toBe(true);
 
       const summary = await caller.budget.computeActiveSummary();
       const item = summary.rawItems!.find((i) => i.id === seed.itemIds[0]!);
@@ -188,7 +188,38 @@ describe("budget router — updateItemAmounts", () => {
     try {
       seedStandardDataset(db);
       const result = await caller.budget.updateItemAmounts({ updates: [] });
-      expect(result).toEqual({ ok: true });
+      expect(result.ok).toBe(true);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("reports skipped cells (deleted item / out-of-range column) and counts applied cells", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const seed = seedStandardDataset(db);
+      const result = await caller.budget.updateItemAmounts({
+        updates: [
+          { id: seed.itemIds[0]!, colIndex: 0, amount: 500 }, // applies
+          { id: seed.itemIds[1]!, colIndex: 0, amount: 600 }, // applies
+          { id: seed.itemIds[0]!, colIndex: 99, amount: 700 }, // out of range
+          { id: 999999, colIndex: 0, amount: 800 }, // deleted / never existed
+        ],
+      });
+      expect(result.ok).toBe(true);
+      expect(result.updated).toBe(2); // applied cells
+      expect(result.updatedItems).toBe(2); // distinct items touched
+      expect(result.skipped).toEqual(
+        expect.arrayContaining([
+          { id: seed.itemIds[0]!, colIndex: 99, reason: "column-out-of-range" },
+          { id: 999999, colIndex: 0, reason: "deleted" },
+        ]),
+      );
+      expect(result.skipped).toHaveLength(2);
+
+      const summary = await caller.budget.computeActiveSummary();
+      const item0 = summary.rawItems!.find((i) => i.id === seed.itemIds[0]!);
+      expect((item0!.amounts as number[])[0]).toBe(500); // valid cell landed
     } finally {
       cleanup();
     }
@@ -208,7 +239,7 @@ describe("budget router — updateCategoryEssential", () => {
         category: "Essentials",
         isEssential: false,
       });
-      expect(result).toEqual({ ok: true });
+      expect(result.ok).toBe(true);
 
       const summary = await caller.budget.computeActiveSummary();
       const essentials = summary.rawItems!.filter(
@@ -236,7 +267,7 @@ describe("budget router — updateCategoryEssential", () => {
         category: "Essentials",
         isEssential: true,
       });
-      expect(result).toEqual({ ok: true });
+      expect(result.ok).toBe(true);
 
       const summary = await caller.budget.computeActiveSummary();
       const essentials = summary.rawItems!.filter(
@@ -272,7 +303,7 @@ describe("budget router — updateCategoryEssential", () => {
         category: "NonExistentCategory",
         isEssential: false,
       });
-      expect(result).toEqual({ ok: true });
+      expect(result.ok).toBe(true);
     } finally {
       cleanup();
     }
@@ -292,7 +323,7 @@ describe("budget router — updateColumnContributionProfileIds", () => {
       const result = await caller.budget.updateColumnContributionProfileIds({
         columnContributionProfileIds: [contribProfileId],
       });
-      expect(result).toEqual({ ok: true });
+      expect(result.ok).toBe(true);
     } finally {
       cleanup();
     }
@@ -305,7 +336,7 @@ describe("budget router — updateColumnContributionProfileIds", () => {
       const result = await caller.budget.updateColumnContributionProfileIds({
         columnContributionProfileIds: [null],
       });
-      expect(result).toEqual({ ok: true });
+      expect(result.ok).toBe(true);
     } finally {
       cleanup();
     }
@@ -319,9 +350,7 @@ describe("budget router — updateColumnContributionProfileIds", () => {
         caller.budget.updateColumnContributionProfileIds({
           columnContributionProfileIds: [null, null],
         }),
-      ).rejects.toThrow(
-        "columnContributionProfileIds length must match columnLabels length",
-      );
+      ).rejects.toThrow(/columns changed/);
     } finally {
       cleanup();
     }
@@ -347,7 +376,7 @@ describe("budget router — updateColumnContributionProfileIds", () => {
       const result = await caller.budget.updateColumnContributionProfileIds({
         columnContributionProfileIds: null,
       });
-      expect(result).toEqual({ ok: true });
+      expect(result.ok).toBe(true);
     } finally {
       cleanup();
     }
@@ -368,7 +397,7 @@ describe("budget router — linkContributionAccount", () => {
         budgetItemId: seed.itemIds[0]!,
         contributionAccountId: contrib.id,
       });
-      expect(result).toEqual({ ok: true });
+      expect(result.ok).toBe(true);
 
       // Verify via computeActiveSummary
       const summary = await caller.budget.computeActiveSummary();
@@ -395,7 +424,7 @@ describe("budget router — unlinkContributionAccount", () => {
       const result = await caller.budget.unlinkContributionAccount({
         budgetItemId: seed.itemIds[0]!,
       });
-      expect(result).toEqual({ ok: true });
+      expect(result.ok).toBe(true);
 
       const summary = await caller.budget.computeActiveSummary();
       const item = summary.rawItems!.find((i) => i.id === seed.itemIds[0]!);

@@ -99,11 +99,11 @@ export function UpcomingGoals({
 
   return (
     <div className="bg-surface-primary rounded-lg border p-3 sm:p-4">
-      <h2 className="text-sm font-semibold text-primary mb-3">
+      <h2 className="text-primary mb-3 text-sm font-semibold">
         What You&apos;re Saving For
       </h2>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
         {cards.map(({ gp, sg, color, nextExpense, progress, hasTarget }) => {
           const isShort = !nextExpense.funded;
           const monthsAway = nextExpense.monthsAway;
@@ -111,20 +111,20 @@ export function UpcomingGoals({
           return (
             <div
               key={gp.goalId}
-              className={`rounded-lg border overflow-hidden ${
+              className={`overflow-hidden rounded-lg border ${
                 isShort ? "border-red-400/40" : "border-surface-strong"
               }`}
             >
               {/* Colored top accent bar */}
               <div className="h-1 w-full" style={{ backgroundColor: color }} />
 
-              <div className="px-3 py-2.5 space-y-2">
+              <div className="space-y-2 px-3 py-2.5">
                 {/* Fund name + balance */}
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-semibold text-primary truncate">
+                  <span className="text-primary truncate text-xs font-semibold">
                     {gp.name}
                   </span>
-                  <span className="text-xs tabular-nums text-muted shrink-0">
+                  <span className="text-muted shrink-0 text-xs tabular-nums">
                     {formatCurrency(gp.current)}
                     {hasTarget && sg && (
                       <span className="text-faint">
@@ -140,7 +140,7 @@ export function UpcomingGoals({
                   progress !== null &&
                   sg &&
                   gp.current < sg.target && (
-                    <div className="relative h-1.5 rounded-full bg-surface-strong overflow-visible">
+                    <div className="bg-surface-strong relative h-1.5 overflow-visible rounded-full">
                       <div
                         className="absolute inset-y-0 left-0 rounded-full"
                         style={{
@@ -151,7 +151,7 @@ export function UpcomingGoals({
                       />
                       {/* Tick at right edge = target */}
                       <div
-                        className="absolute top-1/2 -translate-y-1/2 w-0.5 h-3 rounded-full bg-white/30"
+                        className="absolute top-1/2 h-3 w-0.5 -translate-y-1/2 rounded-full bg-white/30"
                         style={{ left: "100%" }}
                       />
                     </div>
@@ -159,14 +159,14 @@ export function UpcomingGoals({
 
                 {/* Next expense — hero block */}
                 <div
-                  className={`rounded-md px-2.5 py-2 space-y-1 ${
+                  className={`space-y-1 rounded-md px-2.5 py-2 ${
                     isShort
-                      ? "bg-red-500/8 border border-red-400/20"
+                      ? "border border-red-400/20 bg-red-500/8"
                       : "bg-surface-elevated"
                   }`}
                 >
                   {/* Description — hero text */}
-                  <p className="text-sm font-semibold text-primary leading-tight truncate">
+                  <p className="text-primary truncate text-sm leading-tight font-semibold">
                     {nextExpense.tx.description}
                   </p>
 
@@ -185,11 +185,11 @@ export function UpcomingGoals({
                       </p>
                     </div>
 
-                    <div className="text-right shrink-0">
+                    <div className="shrink-0 text-right">
                       {/* Big countdown number */}
-                      <div className="flex items-baseline gap-0.5 justify-end">
+                      <div className="flex items-baseline justify-end gap-0.5">
                         <span
-                          className="text-2xl font-bold tabular-nums leading-none"
+                          className="text-2xl leading-none font-bold tabular-nums"
                           style={{ color }}
                         >
                           {monthsAway <= 0 ? "Now" : monthsAway}

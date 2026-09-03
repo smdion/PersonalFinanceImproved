@@ -152,7 +152,7 @@ export function AccumulationRow({
   return (
     <tr
       key={yr.year}
-      className={`border-b border-subtle hover:bg-surface-elevated/60 transition-colors ${
+      className={`border-subtle hover:bg-surface-elevated/60 border-b transition-colors ${
         isPhaseTransition
           ? "bg-blue-50 font-medium"
           : hasOverride
@@ -170,7 +170,7 @@ export function AccumulationRow({
             side="right"
             maxWidth={220}
           >
-            <span className="text-micro text-blue-500 align-super">*</span>
+            <span className="text-micro align-super text-blue-500">*</span>
           </Tooltip>
         )}
       </td>
@@ -188,10 +188,10 @@ export function AccumulationRow({
         })()}
         side="top"
       >
-        <td className="py-1.5 px-2">{displayAge(yr.year) ?? yr.age}</td>
+        <td className="px-2 py-1.5">{displayAge(yr.year) ?? yr.age}</td>
       </Tooltip>
-      <td className="py-1.5 px-2">
-        <span className="text-green-600 text-caption font-medium">SAVE</span>
+      <td className="px-2 py-1.5">
+        <span className="text-caption font-medium text-green-600">SAVE</span>
       </td>
       <Tooltip
         content={(() => {
@@ -269,7 +269,7 @@ export function AccumulationRow({
         })()}
         side="top"
       >
-        <td className="text-right py-1.5 px-2 text-muted">
+        <td className="text-muted px-2 py-1.5 text-right">
           {(() => {
             let displaySalary = yr.projectedSalary;
             if (
@@ -360,7 +360,7 @@ export function AccumulationRow({
         }
         side="top"
       >
-        <td className="text-right py-1.5 px-2 text-faint">
+        <td className="text-faint px-2 py-1.5 text-right">
           {yr.projectedSalary > 0
             ? formatPercent(
                 safeDivide(
@@ -515,18 +515,18 @@ export function AccumulationRow({
               return (
                 <Tooltip key={cat} content={finalTooltip} side="top">
                   <td
-                    className={`text-right py-1.5 px-2 ${accountTextColor(cat)}`}
+                    className={`px-2 py-1.5 text-right ${accountTextColor(cat)}`}
                   >
                     {formatCurrency(deflate(total, yr.year))}
                     {match > 0 && (
-                      <span className="text-micro text-green-600 align-super ml-px">
+                      <span className="text-micro ml-px align-super text-green-600">
                         +m
                       </span>
                     )}
                     {getAccountTypeConfig(cat).hasIrsLimit &&
                       slot?.cappedByAccount && (
                         <Tooltip content="Account cap hit" side="top">
-                          <span className="text-amber-500 ml-0.5">^</span>
+                          <span className="ml-0.5 text-amber-500">^</span>
                         </Tooltip>
                       )}
                   </td>
@@ -644,13 +644,13 @@ export function AccumulationRow({
               return (
                 <Tooltip key={ofCat} content={finalOfTooltip} side="top">
                   <td
-                    className={`text-right py-1.5 px-2 ${accountTextColor(ofCat)}${yr.overflowToBrokerage > 0 ? " font-medium" : ""}`}
+                    className={`px-2 py-1.5 text-right ${accountTextColor(ofCat)}${yr.overflowToBrokerage > 0 ? "font-medium" : ""}`}
                   >
                     {ofEmp + ofMatch > 0
                       ? formatCurrency(deflate(ofEmp + ofMatch, yr.year))
                       : "---"}
                     {ofMatch > 0 && (
-                      <span className="text-micro text-green-600 align-super ml-px">
+                      <span className="text-micro ml-px align-super text-green-600">
                         +m
                       </span>
                     )}
@@ -803,11 +803,11 @@ export function AccumulationRow({
                 side="top"
               >
                 <td
-                  className={`text-right py-1.5 px-2 ${taxTypeTextColor(bucket)}`}
+                  className={`px-2 py-1.5 text-right ${taxTypeTextColor(bucket)}`}
                 >
                   {total > 0 ? formatCurrency(deflate(total, yr.year)) : "---"}
                   {(bucketMatch > 0 || bucketAssocMatch > 0) && (
-                    <span className="text-micro text-green-600 align-super ml-px">
+                    <span className="text-micro ml-px align-super text-green-600">
                       +m
                     </span>
                   )}
@@ -992,7 +992,7 @@ export function AccumulationRow({
         })()}
         side="top"
       >
-        <td className="text-right py-1.5 px-2 font-medium">
+        <td className="px-2 py-1.5 text-right font-medium">
           {formatCurrency(
             deflate(
               pt
@@ -1005,7 +1005,7 @@ export function AccumulationRow({
             ),
           )}
           {yr.totalEmployer - pcfBrokAdj.match > 0 && (
-            <span className="text-micro text-green-600 align-super ml-px">
+            <span className="text-micro ml-px align-super text-green-600">
               +m
             </span>
           )}
@@ -1132,7 +1132,7 @@ export function AccumulationRow({
             return (
               <Tooltip key={bucket} content={tooltipContent} side="top">
                 <td
-                  className={`text-right py-1.5 px-2 ${taxTypeTextColor(bucket)}`}
+                  className={`px-2 py-1.5 text-right ${taxTypeTextColor(bucket)}`}
                 >
                   {formatCurrency(deflate(bal, yr.year))}
                 </td>
@@ -1289,7 +1289,7 @@ export function AccumulationRow({
                   : undefined;
               return (
                 <Tooltip key={col.key} content={tooltipContent} side="top">
-                  <td className={`text-right py-1.5 px-2 ${col.color}`}>
+                  <td className={`px-2 py-1.5 text-right ${col.color}`}>
                     {formatCurrency(deflate(bal, yr.year))}
                   </td>
                 </Tooltip>
@@ -1342,7 +1342,7 @@ export function AccumulationRow({
         }
         side="top"
       >
-        <td className="text-right py-1.5 px-2 font-semibold">
+        <td className="px-2 py-1.5 text-right font-semibold">
           {formatCurrency(deflate(pt ? pt.balance : yr.endBalance, yr.year))}
         </td>
       </Tooltip>
@@ -1351,7 +1351,7 @@ export function AccumulationRow({
         deflate(pt ? pt.balance : yr.endBalance, yr.year),
         mcCellOpts,
       )}
-      <td className="py-1.5 pl-2 text-caption text-faint whitespace-nowrap border-l border-subtle">
+      <td className="text-caption text-faint border-subtle border-l py-1.5 pl-2 whitespace-nowrap">
         {yr.proRateFraction != null && (
           <Tooltip
             content={`Partial year — only ${proRateMonths(yr.proRateFraction)} months remain. All dollar values in this row show what's left for the year, not a full 12-month amount.`}
@@ -1387,7 +1387,7 @@ export function AccumulationRow({
             })}
             side="left"
           >
-            <span className="text-amber-500 ml-1">
+            <span className="ml-1 text-amber-500">
               {yr.warnings.length} warning
               {yr.warnings.length > 1 ? "s" : ""}
             </span>

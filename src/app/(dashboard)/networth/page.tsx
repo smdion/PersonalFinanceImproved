@@ -174,7 +174,7 @@ export default function NetWorthPage() {
     return (
       <div className="space-y-4">
         <Skeleton className="h-8 w-1/3" />
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <SkeletonChart height={128} />
           <SkeletonChart height={128} />
           <SkeletonChart height={128} />
@@ -185,7 +185,7 @@ export default function NetWorthPage() {
 
   if (error) {
     return (
-      <p className="text-red-600 text-sm">
+      <p className="text-sm text-red-600">
         Failed to load net worth data: {error.message}
       </p>
     );
@@ -243,7 +243,7 @@ export default function NetWorthPage() {
               onClick={() =>
                 setViewMode(viewMode === "cards" ? "spreadsheet" : "cards")
               }
-              className="ml-auto text-xs bg-surface-elevated hover:bg-surface-strong border rounded-full px-3 py-1 transition-colors text-muted"
+              className="bg-surface-elevated hover:bg-surface-strong text-muted ml-auto rounded-full border px-3 py-1 text-xs transition-colors"
               title={
                 viewMode === "cards"
                   ? "Switch to spreadsheet view"
@@ -257,23 +257,23 @@ export default function NetWorthPage() {
       />
 
       {/* Hero: Net Worth with toggle — always shown */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl p-6 text-white mb-8">
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-sm opacity-80 uppercase tracking-wide">
+      <div className="mb-8 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white">
+        <div className="mb-2 flex items-center justify-between">
+          <p className="text-sm tracking-wide uppercase opacity-80">
             Net Worth
           </p>
           <button
             onClick={() => setUseMarketValue(!useMarketValue)}
-            className="text-xs bg-surface-primary/20 hover:bg-surface-primary/30 rounded-full px-3 py-1 transition-colors"
+            className="bg-surface-primary/20 hover:bg-surface-primary/30 rounded-full px-3 py-1 text-xs transition-colors"
           >
             {useMarketValue ? "Market Value" : "Cost Basis"}
           </button>
         </div>
-        <p className="text-3xl sm:text-4xl font-bold">
+        <p className="text-3xl font-bold sm:text-4xl">
           {formatCurrency(displayNetWorth)}
         </p>
         {hasHouse && (
-          <p className="text-sm opacity-70 mt-1">
+          <p className="mt-1 text-sm opacity-70">
             {useMarketValue
               ? "Using current market value for home"
               : "Using purchase price + improvements for home"}
@@ -300,18 +300,18 @@ export default function NetWorthPage() {
           {/* Net Worth Over Time */}
           <CardBoundary title="Net Worth Charts">
             {/* Chart X-axis toggle */}
-            <div className="flex justify-end mb-2">
+            <div className="mb-2 flex justify-end">
               <div className="flex items-center gap-1 text-xs">
                 <span className="text-muted">X-Axis:</span>
                 <button
                   onClick={() => setChartXAxis("year")}
-                  className={`px-2 py-0.5 rounded-full transition-colors ${chartXAxis === "year" ? "bg-blue-600 text-white" : "bg-surface-elevated text-muted hover:bg-surface-strong"}`}
+                  className={`rounded-full px-2 py-0.5 transition-colors ${chartXAxis === "year" ? "bg-blue-600 text-white" : "bg-surface-elevated text-muted hover:bg-surface-strong"}`}
                 >
                   Year
                 </button>
                 <button
                   onClick={() => setChartXAxis("age")}
-                  className={`px-2 py-0.5 rounded-full transition-colors ${chartXAxis === "age" ? "bg-blue-600 text-white" : "bg-surface-elevated text-muted hover:bg-surface-strong"}`}
+                  className={`rounded-full px-2 py-0.5 transition-colors ${chartXAxis === "age" ? "bg-blue-600 text-white" : "bg-surface-elevated text-muted hover:bg-surface-strong"}`}
                 >
                   Age
                 </button>
@@ -347,7 +347,7 @@ export default function NetWorthPage() {
 
           {/* Pie Charts: Net Worth Location + Tax Location */}
           <CardBoundary title="Net Worth Allocation">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2">
               <NetWorthLocationPie
                 portfolioTotal={portfolioTotal}
                 houseValue={displayHomeValue}
@@ -441,7 +441,7 @@ export default function NetWorthPage() {
       )}
 
       {result.warnings.length > 0 && (
-        <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+        <div className="mt-4 rounded-lg border border-yellow-200 bg-yellow-50 p-3">
           {result.warnings.map((w) => (
             <p key={w} className="text-sm text-yellow-800">
               {w}

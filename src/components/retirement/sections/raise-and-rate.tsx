@@ -40,7 +40,7 @@ export function RaiseAndRateSection({
   const s = (settings?.withdrawalStrategy ?? "fixed") as WithdrawalStrategyType;
   const meta = getStrategyMeta(s);
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm mt-2">
+    <div className="mt-2 grid grid-cols-1 gap-x-4 gap-y-2 text-sm sm:grid-cols-2">
       <div className={!meta.usesPostRetirementRaise ? "opacity-40" : ""}>
         <span className="text-muted">
           Post-Retirement Raise

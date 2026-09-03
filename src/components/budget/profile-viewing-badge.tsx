@@ -31,7 +31,7 @@ export function ProfileViewingBadge({
     return (
       <span className="flex items-center gap-2">
         <Badge color="gray">Viewing</Badge>
-        <span className="text-xs text-muted">{profileName}</span>
+        <span className="text-muted text-xs">{profileName}</span>
         {activeProfileName && (
           <span className="text-caption text-faint">
             (active: {activeProfileName})
@@ -41,7 +41,7 @@ export function ProfileViewingBadge({
           <button
             type="button"
             onClick={onActivate}
-            className="text-micro px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-semibold hover:bg-green-200 transition-colors"
+            className="text-micro rounded bg-green-100 px-1.5 py-0.5 font-semibold text-green-700 transition-colors hover:bg-green-200"
           >
             Activate
           </button>
@@ -52,7 +52,7 @@ export function ProfileViewingBadge({
   return (
     <span className="flex items-center gap-2">
       <Badge color="green">Active</Badge>
-      <span className="text-xs text-muted">{profileName}</span>
+      <span className="text-muted text-xs">{profileName}</span>
     </span>
   );
 }

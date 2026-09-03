@@ -99,7 +99,7 @@ export function ProjectionTable({
       )}
       {result && (
         <>
-          <div className="print:hidden flex items-center gap-2 flex-wrap mb-2">
+          <div className="mb-2 flex flex-wrap items-center gap-2 print:hidden">
             <LabeledPillGroup label="Contributions">
               <PillBtn
                 active={contribView === "account"}
@@ -133,7 +133,7 @@ export function ProjectionTable({
               size="xs"
             />
           </div>
-          <div className="projection-table-scroll overflow-x-auto max-h-[28rem] overflow-y-auto print:max-h-none print:overflow-visible">
+          <div className="projection-table-scroll max-h-[28rem] overflow-x-auto overflow-y-auto print:max-h-none print:overflow-visible">
             <table
               className="projection-table text-xs print:text-[7px]"
               aria-label="Year-by-year retirement projection table with contributions, balances by tax bucket, and withdrawals"
@@ -150,12 +150,12 @@ export function ProjectionTable({
                 rate, and withdrawal amounts in retirement years. Use Tab to
                 navigate; column headers indicate sort order via aria-sort.
               </caption>
-              <thead className="sticky top-0 bg-surface-primary z-10">
+              <thead className="bg-surface-primary sticky top-0 z-10">
                 {/* Column group headers */}
-                <tr className="border-b border-subtle">
+                <tr className="border-subtle border-b">
                   <th
                     colSpan={3}
-                    className="text-center py-1 text-caption text-faint font-semibold uppercase tracking-wider"
+                    className="text-caption text-faint py-1 text-center font-semibold tracking-wider uppercase"
                   >
                     Timeline
                   </th>
@@ -171,7 +171,7 @@ export function ProjectionTable({
                           ).filter((t) => visibleColumns.contribTaxTypes.has(t))
                             .length)
                     }
-                    className="text-center py-1 text-caption text-faint font-semibold uppercase tracking-wider border-l border-subtle"
+                    className="text-caption text-faint border-subtle border-l py-1 text-center font-semibold tracking-wider uppercase"
                   >
                     Contributions{" "}
                     {contribView === "taxType" ? "(by Tax Type)" : ""}
@@ -189,7 +189,7 @@ export function ProjectionTable({
                             .filter((a) => visibleColumns.balanceAccts.has(a))
                             .length)
                     }
-                    className="text-center py-1 text-caption text-faint font-semibold uppercase tracking-wider border-l border-subtle"
+                    className="text-caption text-faint border-subtle border-l py-1 text-center font-semibold tracking-wider uppercase"
                   >
                     Balances{" "}
                     {hasIndividualAccountData
@@ -199,32 +199,32 @@ export function ProjectionTable({
                       : ""}
                   </th>
                   {mcBandsByYear && (
-                    <th className="text-center py-1 text-caption text-faint font-semibold uppercase tracking-wider border-l border-subtle">
+                    <th className="text-caption text-faint border-subtle border-l py-1 text-center font-semibold tracking-wider uppercase">
                       Simulation
                     </th>
                   )}
-                  <th className="text-center py-1 text-caption text-faint font-semibold uppercase tracking-wider border-l border-subtle">
+                  <th className="text-caption text-faint border-subtle border-l py-1 text-center font-semibold tracking-wider uppercase">
                     Notes
                   </th>
                 </tr>
                 <tr className="border-b">
-                  <th className="text-left py-1.5 pr-2 text-muted font-medium">
+                  <th className="text-muted py-1.5 pr-2 text-left font-medium">
                     Year
                     <HelpTip text="Calendar year of the projection" />
                   </th>
-                  <th className="text-left py-1.5 px-2 text-muted font-medium whitespace-nowrap">
+                  <th className="text-muted px-2 py-1.5 text-left font-medium whitespace-nowrap">
                     Avg Age
                     <HelpTip text="Average age across all people in the plan — used to determine retirement eligibility and phase transitions" />
                   </th>
-                  <th className="text-left py-1.5 px-2 text-muted font-medium">
+                  <th className="text-muted px-2 py-1.5 text-left font-medium">
                     Phase
                     <HelpTip text="Accumulation (saving/investing) or Decumulation (withdrawing in retirement)" />
                   </th>
-                  <th className="text-right py-1.5 px-2 text-muted font-medium border-l border-subtle">
+                  <th className="text-muted border-subtle border-l px-2 py-1.5 text-right font-medium">
                     Salary
                     <HelpTip text="Gross annual salary before deductions, growing by the configured raise rate" />
                   </th>
-                  <th className="text-right py-1.5 px-2 text-faint font-medium">
+                  <th className="text-faint px-2 py-1.5 text-right font-medium">
                     Rate
                     <HelpTip text="Contribution rate as % of salary — total employee contributions divided by gross salary" />
                   </th>
@@ -234,7 +234,7 @@ export function ProjectionTable({
                         .map((cat) => (
                           <th
                             key={cat}
-                            className={`text-right py-1.5 px-2 ${accountTextColor(cat)} font-medium`}
+                            className={`px-2 py-1.5 text-right ${accountTextColor(cat)} font-medium`}
                           >
                             {catDisplayLabel[cat] ?? cat}
                             <HelpTip
@@ -250,7 +250,7 @@ export function ProjectionTable({
                         .map((bucket) => (
                           <th
                             key={bucket}
-                            className={`text-right py-1.5 px-2 ${taxTypeTextColor(bucket)} font-medium`}
+                            className={`px-2 py-1.5 text-right ${taxTypeTextColor(bucket)} font-medium`}
                           >
                             {taxTypeLabel(bucket)}
                             <HelpTip
@@ -258,7 +258,7 @@ export function ProjectionTable({
                             />
                           </th>
                         ))}
-                  <th className="text-right py-1.5 px-2 text-muted font-medium">
+                  <th className="text-muted px-2 py-1.5 text-right font-medium">
                     In / Out
                     <HelpTip text="Saving phase: total contributions + employer match flowing in. Withdrawal phase: total amount withdrawn across all accounts" />
                   </th>
@@ -269,7 +269,7 @@ export function ProjectionTable({
                         .map((bucket, i) => (
                           <th
                             key={bucket}
-                            className={`text-right py-1.5 px-2 ${taxTypeTextColor(bucket)} font-medium${i === 0 ? " border-l border-subtle" : ""}`}
+                            className={`px-2 py-1.5 text-right ${taxTypeTextColor(bucket)} font-medium${i === 0 ? "border-subtle border-l" : ""}`}
                           >
                             {taxTypeLabel(bucket)}
                             <HelpTip
@@ -292,7 +292,7 @@ export function ProjectionTable({
                           return (
                             <th
                               key={acctKey}
-                              className={`text-right py-1.5 px-2 ${accountTextColor(catKey)} font-medium whitespace-nowrap${i === 0 ? " border-l border-subtle" : ""}`}
+                              className={`px-2 py-1.5 text-right ${accountTextColor(catKey)} font-medium whitespace-nowrap${i === 0 ? "border-subtle border-l" : ""}`}
                             >
                               {columnLabel[acctKey] ?? getColumnLabel(acctKey)}
                               <HelpTip
@@ -307,17 +307,17 @@ export function ProjectionTable({
                         })}
                     </>
                   )}
-                  <th className="text-right py-1.5 px-2 text-muted font-semibold">
+                  <th className="text-muted px-2 py-1.5 text-right font-semibold">
                     Balance
                     <HelpTip text="Total portfolio balance across all accounts and tax types at year end" />
                   </th>
                   {mcBandsByYear && (
-                    <th className="text-right py-1.5 px-2 text-muted font-medium whitespace-nowrap border-l border-subtle">
+                    <th className="text-muted border-subtle border-l px-2 py-1.5 text-right font-medium whitespace-nowrap">
                       Sim. Median
                       <HelpTip text="Simulation median (50th percentile) — half of simulated outcomes are above, half below. Hover for p5–p95 range." />
                     </th>
                   )}
-                  <th className="text-left py-1.5 pl-2 text-faint font-medium whitespace-nowrap border-l border-subtle">
+                  <th className="text-faint border-subtle border-l py-1.5 pl-2 text-left font-medium whitespace-nowrap">
                     Info
                     <HelpTip text="Year-specific events: phase transitions, brokerage goal withdrawals, overrides, and milestone markers" />
                   </th>
@@ -400,7 +400,7 @@ export function ProjectionTable({
       {/* Lifetime tax summary — below the table, above the methodology
           blurb. Decumulation only, see the card's own docblock. */}
       {result && (
-        <div className="print:hidden mt-2">
+        <div className="mt-2 print:hidden">
           <TaxSummaryCard state={state} />
         </div>
       )}

@@ -70,7 +70,7 @@ export function RefinanceImpact({
       }
       className="mb-6"
     >
-      <p className="text-xs text-faint mb-3">
+      <p className="text-faint mb-3 text-xs">
         Compares the full refinance chain (
         {chainLoans.map((l) => l.name).join(" → ")}) against staying on the
         original loan ({originalLoan?.name ?? "original"}) through its full
@@ -79,15 +79,15 @@ export function RefinanceImpact({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b-2 border-strong text-muted text-xs">
-              <th className="text-left py-2 pr-4 font-medium">Loan</th>
-              <th className="text-right py-2 px-3 font-medium">
+            <tr className="border-strong text-muted border-b-2 text-xs">
+              <th className="py-2 pr-4 text-left font-medium">Loan</th>
+              <th className="px-3 py-2 text-right font-medium">
                 Interest Paid
               </th>
-              <th className="text-right py-2 px-3 font-medium">
+              <th className="px-3 py-2 text-right font-medium">
                 Projected Remaining
               </th>
-              <th className="text-right py-2 px-3 font-medium">Status</th>
+              <th className="px-3 py-2 text-right font-medium">Status</th>
             </tr>
           </thead>
           <tbody>
@@ -98,11 +98,11 @@ export function RefinanceImpact({
                 ? 0
                 : loan.totalInterestLife - loan.totalInterestPaid;
               return (
-                <tr key={loan.name} className="border-b border-subtle">
+                <tr key={loan.name} className="border-subtle border-b">
                   <td className="py-2 pr-4">
                     <div className="flex items-center gap-2">
                       <span
-                        className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                        className={`h-2 w-2 flex-shrink-0 rounded-full ${
                           loan.remainingMonths > 0
                             ? "bg-green-500"
                             : "bg-surface-divider"
@@ -111,15 +111,15 @@ export function RefinanceImpact({
                       <span className="font-medium">{loan.name}</span>
                     </div>
                   </td>
-                  <td className="text-right py-2 px-3">
+                  <td className="px-3 py-2 text-right">
                     {formatCurrency(loan.totalInterestPaid)}
                   </td>
-                  <td className="text-right py-2 px-3 text-muted">
+                  <td className="text-muted px-3 py-2 text-right">
                     {remainingInterest > 0
                       ? formatCurrency(remainingInterest)
                       : "\u2014"}
                   </td>
-                  <td className="text-right py-2 px-3 text-xs">
+                  <td className="px-3 py-2 text-right text-xs">
                     {hist?.refinancedInto ? (
                       <span className="text-faint">
                         Refinanced &rarr; {hist.refinancedInto}
@@ -134,8 +134,8 @@ export function RefinanceImpact({
               );
             })}
             {/* Summary rows — from refinance date forward */}
-            <tr className="border-t-2 border-strong">
-              <td className="py-2 pr-4 text-xs text-muted" colSpan={4}>
+            <tr className="border-strong border-t-2">
+              <td className="text-muted py-2 pr-4 text-xs" colSpan={4}>
                 From refinance date forward:
               </td>
             </tr>
@@ -145,7 +145,7 @@ export function RefinanceImpact({
                 through full term
               </td>
               <td />
-              <td className="text-right py-1.5 px-3">
+              <td className="px-3 py-1.5 text-right">
                 {formatCurrency(remainingOldInterest)}
               </td>
               <td />
@@ -156,7 +156,7 @@ export function RefinanceImpact({
                 refinance{chainLoans.length - 1 !== 1 ? "s" : ""}
               </td>
               <td />
-              <td className="text-right py-1.5 px-3">
+              <td className="px-3 py-1.5 text-right">
                 {formatCurrency(newPathTotalInterest)}
               </td>
               <td />
@@ -170,7 +170,7 @@ export function RefinanceImpact({
                   : "Additional Interest from Refinancing"}
               </td>
               <td />
-              <td className="text-right py-2 px-3">
+              <td className="px-3 py-2 text-right">
                 {formatCurrency(Math.abs(netSavings))}
               </td>
               <td />
@@ -184,7 +184,7 @@ export function RefinanceImpact({
                   />
                 </td>
                 <td />
-                <td className="text-right py-2 px-3">
+                <td className="px-3 py-2 text-right">
                   {formatDuration(totalMonthsSaved)}
                 </td>
                 <td />

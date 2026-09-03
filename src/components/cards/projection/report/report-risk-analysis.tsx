@@ -18,22 +18,22 @@ export function ReportRiskAnalysisSection({
 }) {
   return (
     <section className="mb-6" style={{ breakInside: "avoid" }}>
-      <h2 className="text-lg font-semibold mb-2">Risk Analysis</h2>
-      <p className="text-sm leading-relaxed mb-3">
+      <h2 className="mb-2 text-lg font-semibold">Risk Analysis</h2>
+      <p className="mb-3 text-sm leading-relaxed">
         {narrative.successRateNarrative}
       </p>
-      <p className="text-sm leading-relaxed mb-3">
+      <p className="mb-3 text-sm leading-relaxed">
         {narrative.worstCaseNarrative}
       </p>
       {narrative.spendingStabilityNarrative && (
-        <p className="text-sm leading-relaxed mb-3">
+        <p className="mb-3 text-sm leading-relaxed">
           {narrative.spendingStabilityNarrative}
         </p>
       )}
       <div className="mb-1">
         <ReportRiskBandChart points={bandPoints} deflate={deflate} />
       </div>
-      <p className="text-xs text-muted">
+      <p className="text-muted text-xs">
         Shaded range: 10th to 90th percentile portfolio balance across simulated
         market conditions (today&apos;s dollars). Line: median.
       </p>

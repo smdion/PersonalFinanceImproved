@@ -70,7 +70,7 @@ function FundingBar({
 
   if (!showMatchBeyond) {
     return (
-      <div className="w-full bg-surface-strong rounded-full h-2 relative">
+      <div className="bg-surface-strong relative h-2 w-full rounded-full">
         <div
           className={`${color} h-2 rounded-full transition-all`}
           style={{ width: `${employeeClamped * 100}%` }}
@@ -78,7 +78,7 @@ function FundingBar({
         />
         {/* IRS limit marker at 100% */}
         <div
-          className="absolute top-[-2px] h-[12px] w-[2px] bg-surface-emphasis"
+          className="bg-surface-emphasis absolute top-[-2px] h-[12px] w-[2px]"
           style={{ left: "100%" }}
           title="100% IRS annual limit"
         />
@@ -92,19 +92,19 @@ function FundingBar({
   const limitPosition = 1 * scale * 100;
 
   return (
-    <div className="w-full bg-surface-strong rounded-full h-2 relative">
+    <div className="bg-surface-strong relative h-2 w-full rounded-full">
       <div
-        className={`${color} h-2 rounded-l-full transition-all absolute left-0 top-0`}
+        className={`${color} absolute top-0 left-0 h-2 rounded-l-full transition-all`}
         style={{ width: `${employeeWidth}%` }}
         title={`Employee contribution: ${formatPercent(percent)} of IRS limit`}
       />
       <div
-        className={`${matchBarColor} h-2 rounded-r-full transition-all absolute top-0`}
+        className={`${matchBarColor} absolute top-0 h-2 rounded-r-full transition-all`}
         style={{ left: `${employeeWidth}%`, width: `${matchWidth}%` }}
         title={`Employer match (does not count toward IRS limit)`}
       />
       <div
-        className="absolute top-[-2px] h-[12px] w-[2px] bg-surface-emphasis"
+        className="bg-surface-emphasis absolute top-[-2px] h-[12px] w-[2px]"
         style={{ left: `${limitPosition}%` }}
         title="100% IRS annual limit"
       />
@@ -190,9 +190,9 @@ function ContributionsCardImpl() {
           return (
             <div
               key={p.person.id}
-              className={personIndex > 0 ? "pt-3 border-t border-subtle" : ""}
+              className={personIndex > 0 ? "border-subtle border-t pt-3" : ""}
             >
-              <p className="text-xs font-medium text-muted uppercase mb-1">
+              <p className="text-muted mb-1 text-xs font-medium uppercase">
                 {p.person.name}
               </p>
               <div className="space-y-2.5">
@@ -217,7 +217,7 @@ function ContributionsCardImpl() {
                         <span className="text-muted font-medium">
                           {at.accountType}
                           {at.isJoint && (
-                            <span className="text-faint text-caption font-normal ml-1">
+                            <span className="text-faint text-caption ml-1 font-normal">
                               (Joint)
                             </span>
                           )}
@@ -246,14 +246,14 @@ function ContributionsCardImpl() {
                             matchCountsTowardLimit={matchCountsTowardLimit}
                             accountType={at.categoryKey}
                           />
-                          <div className="flex justify-between text-caption mt-0.5">
+                          <div className="text-caption mt-0.5 flex justify-between">
                             <span
                               className={
                                 at.views[viewMode].fundingPct >
                                 OVER_LIMIT_THRESHOLD
-                                  ? "text-red-600 font-medium"
+                                  ? "font-medium text-red-600"
                                   : at.views[viewMode].fundingPct >= 1
-                                    ? "text-green-600 font-medium"
+                                    ? "font-medium text-green-600"
                                     : "text-muted"
                               }
                             >
@@ -277,7 +277,7 @@ function ContributionsCardImpl() {
                           </div>
                           {/* Employer match IRS context */}
                           {at.employerMatch > 0 && (
-                            <p className="text-caption text-blue-500 mt-0.5">
+                            <p className="text-caption mt-0.5 text-blue-500">
                               Match
                               {matchCountsTowardLimit
                                 ? " counts toward IRS limit"
@@ -290,7 +290,7 @@ function ContributionsCardImpl() {
                             at.views[viewMode].pctOfSalaryToMax !== null &&
                             Math.floor(at.views[viewMode].pctOfSalaryToMax) >
                               0 && (
-                              <p className="text-caption text-amber-600 mt-0.5">
+                              <p className="text-caption mt-0.5 text-amber-600">
                                 Need +
                                 {Math.floor(
                                   at.views[viewMode].pctOfSalaryToMax,
@@ -303,13 +303,13 @@ function ContributionsCardImpl() {
                             at.views[viewMode].pctOfSalaryToMax !== null &&
                             Math.floor(at.views[viewMode].pctOfSalaryToMax) ===
                               0 && (
-                              <p className="text-caption text-green-600 mt-0.5">
+                              <p className="text-caption mt-0.5 text-green-600">
                                 Maxed out
                               </p>
                             )}
                           {/* Bonus contrib note */}
                           {at.bonusContrib > 0 && (
-                            <p className="text-caption text-amber-600 mt-0.5">
+                            <p className="text-caption mt-0.5 text-amber-600">
                               * Incl. ~{formatCurrency(at.bonusContrib * mult)}
                               {suffix} from bonus
                             </p>
@@ -318,7 +318,7 @@ function ContributionsCardImpl() {
                           {(at.tradContrib > 0 || at.taxFreeContrib > 0) &&
                             at.tradContrib !== at.employeeContrib &&
                             at.taxFreeContrib !== at.employeeContrib && (
-                              <div className="flex gap-2 text-caption text-faint mt-0.5">
+                              <div className="text-caption text-faint mt-0.5 flex gap-2">
                                 {at.tradContrib > 0 && (
                                   <span>
                                     {taxTypeLabel("preTax")}:{" "}
@@ -341,16 +341,16 @@ function ContributionsCardImpl() {
                         at.hasDiscountBar &&
                         at.employerMatch > 0 && (
                           <div className="mt-1">
-                            <div className="w-full bg-surface-strong rounded-full h-2 relative">
+                            <div className="bg-surface-strong relative h-2 w-full rounded-full">
                               <div
-                                className={`${accountColor(at.categoryKey)} h-2 rounded-l-full transition-all absolute left-0 top-0`}
+                                className={`${accountColor(at.categoryKey)} absolute top-0 left-0 h-2 rounded-l-full transition-all`}
                                 style={{
                                   width: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                 }}
                                 title={`Your cost: ${formatCurrency(at.views[viewMode].employeeContrib * mult)}${suffix}`}
                               />
                               <div
-                                className={`${accountMatchColor(at.categoryKey)} h-2 rounded-r-full transition-all absolute top-0`}
+                                className={`${accountMatchColor(at.categoryKey)} absolute top-0 h-2 rounded-r-full transition-all`}
                                 style={{
                                   left: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                   width: `${(at.employerMatch / (at.employeeContrib + at.employerMatch)) * 100}%`,
@@ -358,7 +358,7 @@ function ContributionsCardImpl() {
                                 title={`${at.employerMatchLabel}: ${formatCurrency(at.views[viewMode].employerMatch * mult)}${suffix}`}
                               />
                             </div>
-                            <div className="flex justify-between text-caption mt-0.5">
+                            <div className="text-caption mt-0.5 flex justify-between">
                               <span
                                 className={accountTextColor(at.categoryKey)}
                               >
@@ -390,18 +390,18 @@ function ContributionsCardImpl() {
                       {/* Non-discount non-limited accounts: solid bar + match info */}
                       {!hasLimit && !at.hasDiscountBar && (
                         <div className="mt-1">
-                          <div className="w-full bg-surface-strong rounded-full h-2 relative">
+                          <div className="bg-surface-strong relative h-2 w-full rounded-full">
                             {at.employerMatch > 0 ? (
                               <>
                                 <div
-                                  className={`${accountColor(at.categoryKey)} h-2 rounded-l-full absolute left-0 top-0`}
+                                  className={`${accountColor(at.categoryKey)} absolute top-0 left-0 h-2 rounded-l-full`}
                                   style={{
                                     width: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                   }}
                                   title={`You: ${formatCurrency(at.views[viewMode].employeeContrib * mult)}${suffix}`}
                                 />
                                 <div
-                                  className={`${accountMatchColor(at.categoryKey)} h-2 rounded-r-full absolute top-0`}
+                                  className={`${accountMatchColor(at.categoryKey)} absolute top-0 h-2 rounded-r-full`}
                                   style={{
                                     left: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                     width: `${(at.employerMatch / (at.employeeContrib + at.employerMatch)) * 100}%`,
@@ -417,7 +417,7 @@ function ContributionsCardImpl() {
                               />
                             )}
                           </div>
-                          <div className="flex justify-between text-caption mt-0.5">
+                          <div className="text-caption mt-0.5 flex justify-between">
                             <span className="text-faint">No IRS limit</span>
                             {at.employerMatch > 0 && (
                               <span
@@ -442,8 +442,8 @@ function ContributionsCardImpl() {
         })}
         {/* Joint household accounts */}
         {jointAts.length > 0 && (
-          <div className="pt-3 border-t border-subtle">
-            <p className="text-xs font-medium text-muted uppercase mb-1">
+          <div className="border-subtle border-t pt-3">
+            <p className="text-muted mb-1 text-xs font-medium uppercase">
               Joint
             </p>
             <div className="space-y-2.5">
@@ -461,16 +461,16 @@ function ContributionsCardImpl() {
                   {/* Bar for joint accounts */}
                   {at.hasDiscountBar && at.employerMatch > 0 ? (
                     <div className="mt-1">
-                      <div className="w-full bg-surface-strong rounded-full h-2 relative">
+                      <div className="bg-surface-strong relative h-2 w-full rounded-full">
                         <div
-                          className={`${accountColor(at.categoryKey)} h-2 rounded-l-full absolute left-0 top-0`}
+                          className={`${accountColor(at.categoryKey)} absolute top-0 left-0 h-2 rounded-l-full`}
                           style={{
                             width: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                           }}
                           title={`You: ${formatCurrency(at.employeeContrib * householdMult)}${suffix}`}
                         />
                         <div
-                          className={`${accountMatchColor(at.categoryKey)} h-2 rounded-r-full absolute top-0`}
+                          className={`${accountMatchColor(at.categoryKey)} absolute top-0 h-2 rounded-r-full`}
                           style={{
                             left: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                             width: `${(at.employerMatch / (at.employeeContrib + at.employerMatch)) * 100}%`,
@@ -478,7 +478,7 @@ function ContributionsCardImpl() {
                           title={`${at.employerMatchLabel}: ${formatCurrency(at.employerMatch * householdMult)}${suffix}`}
                         />
                       </div>
-                      <div className="flex justify-between text-caption mt-0.5">
+                      <div className="text-caption mt-0.5 flex justify-between">
                         <span className={accountTextColor(at.categoryKey)}>
                           Value:{" "}
                           {formatCurrency(
@@ -504,18 +504,18 @@ function ContributionsCardImpl() {
                     </div>
                   ) : (
                     <div className="mt-1">
-                      <div className="w-full bg-surface-strong rounded-full h-2 relative">
+                      <div className="bg-surface-strong relative h-2 w-full rounded-full">
                         {at.employerMatch > 0 ? (
                           <>
                             <div
-                              className={`${accountColor(at.categoryKey)} h-2 rounded-l-full absolute left-0 top-0`}
+                              className={`${accountColor(at.categoryKey)} absolute top-0 left-0 h-2 rounded-l-full`}
                               style={{
                                 width: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                               }}
                               title={`You: ${formatCurrency(at.employeeContrib * householdMult)}${suffix}`}
                             />
                             <div
-                              className={`${accountMatchColor(at.categoryKey)} h-2 rounded-r-full absolute top-0`}
+                              className={`${accountMatchColor(at.categoryKey)} absolute top-0 h-2 rounded-r-full`}
                               style={{
                                 left: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                 width: `${(at.employerMatch / (at.employeeContrib + at.employerMatch)) * 100}%`,
@@ -531,7 +531,7 @@ function ContributionsCardImpl() {
                           />
                         )}
                       </div>
-                      <div className="flex justify-between text-caption mt-0.5">
+                      <div className="text-caption mt-0.5 flex justify-between">
                         <span className="text-faint">No IRS limit</span>
                         {at.employerMatch > 0 && (
                           <span
@@ -550,14 +550,14 @@ function ContributionsCardImpl() {
           </div>
         )}
       </div>
-      <div className="mt-3 pt-3 border-t border-subtle space-y-2">
+      <div className="border-subtle mt-3 space-y-2 border-t pt-3">
         <div className="grid grid-cols-3 gap-3">
           <div>
-            <p className="text-caption text-faint uppercase tracking-wide mb-0.5">
+            <p className="text-caption text-faint mb-0.5 tracking-wide uppercase">
               {PERF_CATEGORY_RETIREMENT}
             </p>
             <div className="text-xs">
-              <span className="font-semibold text-primary">
+              <span className="text-primary font-semibold">
                 {formatCurrency(householdRetNoMatch * householdMult)}
               </span>
               {householdRetWithMatch > householdRetNoMatch && (
@@ -569,11 +569,11 @@ function ContributionsCardImpl() {
             </div>
           </div>
           <div>
-            <p className="text-caption text-faint uppercase tracking-wide mb-0.5">
+            <p className="text-caption text-faint mb-0.5 tracking-wide uppercase">
               {PERF_CATEGORY_BROKERAGE}
             </p>
             <div className="text-xs">
-              <span className="font-semibold text-primary">
+              <span className="text-primary font-semibold">
                 {formatCurrency(householdPortNoMatch * householdMult)}
               </span>
               {householdPortWithMatch > householdPortNoMatch && (
@@ -585,7 +585,7 @@ function ContributionsCardImpl() {
             </div>
           </div>
           <div>
-            <p className="text-caption text-faint uppercase tracking-wide mb-0.5">
+            <p className="text-caption text-faint mb-0.5 tracking-wide uppercase">
               Total Portfolio
               {viewMode === "ytd"
                 ? " (YTD)"
@@ -594,7 +594,7 @@ function ContributionsCardImpl() {
                   : ""}
             </p>
             <div className="text-xs">
-              <span className="font-semibold text-primary">
+              <span className="text-primary font-semibold">
                 {formatCurrency(householdTotalNoMatch * householdMult)}
               </span>
               {householdTotalWithMatch > householdTotalNoMatch && (

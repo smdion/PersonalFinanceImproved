@@ -7,6 +7,10 @@ import { PAY_PERIOD_CONFIG } from "@/lib/config/pay-periods";
 /** Shared database type alias. */
 export type Db = typeof _db;
 
+/** `Db` or an open transaction handle — for helpers that must be able to run
+ *  inside a caller's `db.transaction(async (tx) => …)` as well as standalone. */
+export type DbOrTx = Db | Parameters<Parameters<Db["transaction"]>[0]>[0];
+
 /** Parse Drizzle decimal string to number. */
 export function toNumber(v: string | null | undefined): number {
   if (v === null || v === undefined) return 0;

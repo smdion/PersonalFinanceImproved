@@ -26,7 +26,7 @@ import type {
   MatchTaxTreatment,
 } from "@/lib/config/enum-values";
 import { toNumber, getPeriodsPerYear } from "./transforms";
-import type { Db } from "./transforms";
+import type { Db, DbOrTx } from "./transforms";
 import {
   filterActiveJobs,
   resolveContribFieldDisplayState,
@@ -149,7 +149,7 @@ export function computeContributionValueFromMonthly(
  * routers/budget.ts).
  */
 export async function applyContributionAccountEdit(
-  db: Db,
+  db: DbOrTx,
   contributionAccountId: number,
   monthlyAmount: number,
   contributionProfileId: number,

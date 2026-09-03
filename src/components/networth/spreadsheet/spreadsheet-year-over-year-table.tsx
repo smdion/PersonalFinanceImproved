@@ -228,8 +228,8 @@ export function SpreadsheetYearOverYearTable({
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b">
-              <th className="text-left py-1.5 pr-2 text-muted font-medium" />
-              <th className="text-right py-1.5 px-2 text-muted font-medium w-28">
+              <th className="text-muted py-1.5 pr-2 text-left font-medium" />
+              <th className="text-muted w-28 px-2 py-1.5 text-right font-medium">
                 <div>{yearA.year}</div>
                 {showOutdated && yearAOutdated && yearA.isCurrent && (
                   <div className="text-caption font-normal text-amber-500">
@@ -237,7 +237,7 @@ export function SpreadsheetYearOverYearTable({
                   </div>
                 )}
               </th>
-              <th className="text-right py-1.5 px-2 text-muted font-medium w-28">
+              <th className="text-muted w-28 px-2 py-1.5 text-right font-medium">
                 <div>{yearB.year}</div>
                 {showOutdated && yearBOutdated && yearB.isCurrent && (
                   <div className="text-caption font-normal text-amber-500">
@@ -245,10 +245,10 @@ export function SpreadsheetYearOverYearTable({
                   </div>
                 )}
               </th>
-              <th className="text-right py-1.5 px-2 text-muted font-medium w-20">
+              <th className="text-muted w-20 px-2 py-1.5 text-right font-medium">
                 % Chg
               </th>
-              <th className="text-right py-1.5 pl-2 text-muted font-medium w-24">
+              <th className="text-muted w-24 py-1.5 pl-2 text-right font-medium">
                 $ Chg
               </th>
             </tr>
@@ -336,17 +336,17 @@ export function SpreadsheetYearOverYearTable({
               return (
                 <tr
                   key={config.label}
-                  className={`border-b border-subtle ${index % 2 === 0 ? "bg-surface-sunken/50" : ""}`}
+                  className={`border-subtle border-b ${index % 2 === 0 ? "bg-surface-sunken/50" : ""}`}
                 >
-                  <td className="py-1.5 pr-2 font-medium text-secondary">
+                  <td className="text-secondary py-1.5 pr-2 font-medium">
                     {config.label}
                     {(yearA.isCurrent || yearB.isCurrent) && (
                       <span className="text-faint font-normal"> - YTD</span>
                     )}
                   </td>
-                  <td className="text-right py-1.5 px-2 whitespace-nowrap">
+                  <td className="px-2 py-1.5 text-right whitespace-nowrap">
                     {showOutdatedA ? (
-                      <span className="text-amber-500 text-caption">
+                      <span className="text-caption text-amber-500">
                         Outdated
                       </span>
                     ) : valueA !== null ? (
@@ -372,9 +372,9 @@ export function SpreadsheetYearOverYearTable({
                       <span className="text-faint">&mdash;</span>
                     )}
                   </td>
-                  <td className="text-right py-1.5 px-2 whitespace-nowrap">
+                  <td className="px-2 py-1.5 text-right whitespace-nowrap">
                     {showOutdatedB ? (
-                      <span className="text-amber-500 text-caption">
+                      <span className="text-caption text-amber-500">
                         Outdated
                       </span>
                     ) : valueB !== null ? (
@@ -400,9 +400,9 @@ export function SpreadsheetYearOverYearTable({
                       <span className="text-faint">&mdash;</span>
                     )}
                   </td>
-                  <td className="text-right py-1.5 px-2">
+                  <td className="px-2 py-1.5 text-right">
                     {showInProgress ? (
-                      <span className="text-blue-500 text-caption">
+                      <span className="text-caption text-blue-500">
                         In Progress
                       </span>
                     ) : percentChange !== null ? (
@@ -419,9 +419,9 @@ export function SpreadsheetYearOverYearTable({
                       <span className="text-faint">&mdash;</span>
                     )}
                   </td>
-                  <td className="text-right py-1.5 pl-2">
+                  <td className="py-1.5 pl-2 text-right">
                     {showInProgress ? (
-                      <span className="text-blue-500 text-caption">
+                      <span className="text-caption text-blue-500">
                         In Progress
                       </span>
                     ) : dollarChange !== null ? (

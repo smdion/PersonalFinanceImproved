@@ -159,7 +159,7 @@ function LivingCostsCardImpl() {
   if (!budget || incomeBase <= 0) {
     return (
       <Card title="Living Costs" href={!budget ? "/budget" : "/paycheck"}>
-        <p className="text-sm text-faint">
+        <p className="text-faint text-sm">
           {!budget
             ? "Create a budget profile to compare spending against recommended ranges."
             : "Add a job on the Paycheck page to calculate living cost ratios."}
@@ -450,20 +450,20 @@ function LivingCostsCardImpl() {
     >
       {/* Gross / Net toggle */}
       <div
-        className="flex items-center gap-2 mb-2"
+        className="mb-2 flex items-center gap-2"
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
         }}
       >
-        <span className="text-xs text-muted">% of:</span>
+        <span className="text-muted text-xs">% of:</span>
         <button
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
             setUseGross(false);
           }}
-          className={`text-xs px-2 py-0.5 rounded ${!useGross ? "bg-blue-100 text-blue-700 font-medium" : "text-muted hover:bg-surface-elevated"}`}
+          className={`rounded px-2 py-0.5 text-xs ${!useGross ? "bg-blue-100 font-medium text-blue-700" : "text-muted hover:bg-surface-elevated"}`}
         >
           Net ({formatCurrency(netIncome)})
         </button>
@@ -473,7 +473,7 @@ function LivingCostsCardImpl() {
             e.stopPropagation();
             setUseGross(true);
           }}
-          className={`text-xs px-2 py-0.5 rounded ${useGross ? "bg-blue-100 text-blue-700 font-medium" : "text-muted hover:bg-surface-elevated"}`}
+          className={`rounded px-2 py-0.5 text-xs ${useGross ? "bg-blue-100 font-medium text-blue-700" : "text-muted hover:bg-surface-elevated"}`}
         >
           Gross ({formatCurrency(grossIncome)})
         </button>
@@ -481,7 +481,7 @@ function LivingCostsCardImpl() {
       <div className="space-y-2">
         {rows.map((r) => (
           <div key={r.name} className="text-xs">
-            <div className="flex items-center justify-between mb-0.5">
+            <div className="mb-0.5 flex items-center justify-between">
               <span className="text-muted">{r.name}</span>
               <span className="text-faint">
                 <span
@@ -500,10 +500,10 @@ function LivingCostsCardImpl() {
                 </span>
               </span>
             </div>
-            <div className="relative h-2 bg-surface-elevated rounded-full overflow-hidden">
+            <div className="bg-surface-elevated relative h-2 overflow-hidden rounded-full">
               {/* Recommended range bracket (bottom layer) */}
               <div
-                className="absolute h-full bg-green-100 border-l border-r border-green-300"
+                className="absolute h-full border-r border-l border-green-300 bg-green-100"
                 style={{
                   left: `${r.low * 100}%`,
                   width: `${(r.high - r.low) * 100}%`,
@@ -524,13 +524,13 @@ function LivingCostsCardImpl() {
           </div>
         ))}
         {extraGrossRows.length > 0 && (
-          <div className="pt-2 mt-1 border-t border-subtle space-y-2">
+          <div className="border-subtle mt-1 space-y-2 border-t pt-2">
             {extraGrossRows.map((r) => (
               <div key={r.name} className="text-xs">
-                <div className="flex items-center justify-between mb-0.5">
+                <div className="mb-0.5 flex items-center justify-between">
                   <span className="text-muted">{r.name}</span>
                   <span className="text-faint">
-                    <span className="font-medium text-primary">
+                    <span className="text-primary font-medium">
                       {formatPercent(r.pct, 0)}
                     </span>{" "}
                     <span className="text-faint">
@@ -538,7 +538,7 @@ function LivingCostsCardImpl() {
                     </span>
                   </span>
                 </div>
-                <div className="h-2 bg-surface-elevated rounded-full overflow-hidden">
+                <div className="bg-surface-elevated h-2 overflow-hidden rounded-full">
                   <div
                     className={`h-full rounded-full ${r.color}`}
                     style={{ width: `${Math.min(r.pct * 100, 100)}%` }}
@@ -550,26 +550,26 @@ function LivingCostsCardImpl() {
         )}
       </div>
       {extraGrossRows.length > 0 && (
-        <p className="mt-1 text-right text-micro text-faint">
+        <p className="text-micro text-faint mt-1 text-right">
           Total: {formatPercent(totalPct, 0)} of {incomeLabel}
         </p>
       )}
-      <div className="mt-2 flex gap-3 text-caption text-faint">
+      <div className="text-caption text-faint mt-2 flex gap-3">
         <span className="flex items-center gap-1">
           <StatusDot color="green" /> On target
         </span>
         <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-blue-400" /> Below
+          <span className="h-2 w-2 rounded-full bg-blue-400" /> Below
         </span>
         <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-red-400" /> Above
+          <span className="h-2 w-2 rounded-full bg-red-400" /> Above
         </span>
         <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-green-100 border border-green-200" />{" "}
+          <span className="h-2 w-2 rounded-full border border-green-200 bg-green-100" />{" "}
           Target
         </span>
         {extraGrossRows.length > 0 && (
-          <span className="flex items-center gap-1 ml-auto">
+          <span className="ml-auto flex items-center gap-1">
             <HelpTip
               text={`Retirement/Portfolio/Savings/Extra Paycheck/Unallocated${useGross ? "/Taxes/Other Paycheck Deductions" : ""} (below the Target legend) have no recommended range — they're shown so ${incomeLabel} income is fully accounted for, not just Ramsey-mapped budget spending. Employer match is excluded since it isn't part of your own income.`}
             />

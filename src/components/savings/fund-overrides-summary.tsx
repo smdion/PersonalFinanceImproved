@@ -162,11 +162,11 @@ function OverrideRangeRow({
   canEdit?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between text-xs py-1 px-2 bg-surface-elevated rounded">
+    <div className="bg-surface-elevated flex items-center justify-between rounded px-2 py-1 text-xs">
       <div className="flex items-center gap-3">
         <button
           onClick={() => onEditMonth(new Date(range.startMonth + "T00:00:00"))}
-          className="text-blue-600 font-medium hover:text-blue-700 underline underline-offset-2"
+          className="font-medium text-blue-600 underline underline-offset-2 hover:text-blue-700"
         >
           {formatRangeLabel(range)}
         </button>
@@ -174,7 +174,7 @@ function OverrideRangeRow({
           {formatCurrency(range.amount)}/mo
         </span>
         {range.amount === 0 && (
-          <span className="text-yellow-500 text-caption">(paused)</span>
+          <span className="text-caption text-yellow-500">(paused)</span>
         )}
         <span className="text-muted text-caption">
           default: {formatCurrency(defaultAllocation)}
@@ -183,7 +183,7 @@ function OverrideRangeRow({
       {canEdit !== false && (
         <button
           onClick={onClear}
-          className="text-muted hover:text-red-600 text-caption"
+          className="text-muted text-caption hover:text-red-600"
           title="Reset to default"
         >
           clear
@@ -238,11 +238,11 @@ export function FundOverridesSummary({
       <div className="flex items-center justify-between">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-1.5 text-xs text-muted hover:text-primary"
+          className="text-muted hover:text-primary flex items-center gap-1.5 text-xs"
         >
           <svg
             aria-hidden="true"
-            className={`w-3 h-3 transition-transform ${isOpen ? "rotate-90" : ""}`}
+            className={`h-3 w-3 transition-transform ${isOpen ? "rotate-90" : ""}`}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -272,12 +272,12 @@ export function FundOverridesSummary({
       {isOpen && (
         <div className="mt-2 space-y-1.5">
           {currentRanges.length === 0 && pastRanges.length === 0 && (
-            <p className="text-xs text-muted py-1">
+            <p className="text-muted py-1 text-xs">
               No overrides. Default: {formatCurrency(defaultAllocation)}/mo
             </p>
           )}
           {currentRanges.length === 0 && pastRanges.length > 0 && (
-            <p className="text-xs text-muted py-1">
+            <p className="text-muted py-1 text-xs">
               No upcoming overrides. Default:{" "}
               {formatCurrency(defaultAllocation)}/mo
             </p>

@@ -73,8 +73,8 @@ export function BudgetModeManager({
     }, 0) ?? 0;
 
   return (
-    <div className="mb-4 p-3 bg-surface-sunken border rounded-lg">
-      <h3 className="text-sm font-semibold text-secondary mb-2">
+    <div className="bg-surface-sunken mb-4 rounded-lg border p-3">
+      <h3 className="text-secondary mb-2 text-sm font-semibold">
         Budget Modes
         <HelpTip text="Each mode is a separate set of budget amounts. Use modes to compare scenarios like 'Lean' vs 'Comfortable' spending." />
       </h3>
@@ -104,7 +104,7 @@ export function BudgetModeManager({
                     next[idx] = e.target.value ? Number(e.target.value) : null;
                     onUpdateContributionProfiles(next);
                   }}
-                  className="text-caption border rounded px-1.5 py-0.5 bg-surface-primary text-muted focus:border-blue-400 focus:outline-none"
+                  className="text-caption bg-surface-primary text-muted rounded border px-1.5 py-0.5 focus:border-blue-400 focus:outline-none"
                   title="Contribution profile for this mode's income calculations"
                 >
                   {/* Empty = this column pins nothing and follows whichever
@@ -127,7 +127,7 @@ export function BudgetModeManager({
                     next[idx] = e.target.value ? Number(e.target.value) : null;
                     onUpdateSalaryProfiles(next);
                   }}
-                  className="text-caption border rounded px-1.5 py-0.5 bg-surface-primary text-muted focus:border-blue-400 focus:outline-none"
+                  className="text-caption bg-surface-primary text-muted rounded border px-1.5 py-0.5 focus:border-blue-400 focus:outline-none"
                   title="Salary profile for this mode's income calculations — independent of the contribution profile"
                 >
                   {/* Empty = this column pins nothing and follows whichever
@@ -154,7 +154,7 @@ export function BudgetModeManager({
                       }))
                     }
                     onBlur={(e) => commitMonths(idx, e.target.value)}
-                    className="w-14 text-caption border rounded px-1.5 py-0.5 bg-surface-primary text-muted focus:border-blue-400 focus:outline-none"
+                    className="text-caption bg-surface-primary text-muted w-14 rounded border px-1.5 py-0.5 focus:border-blue-400 focus:outline-none"
                     title="Months per year this mode applies — must sum to 12 across all modes"
                   />
                   <span className="text-caption text-faint">mo</span>
@@ -171,7 +171,7 @@ export function BudgetModeManager({
                       onRemoveColumn(idx);
                     }
                   }}
-                  className="text-red-400 hover:text-red-600 text-xs"
+                  className="text-xs text-red-400 hover:text-red-600"
                   title="Remove mode"
                 >
                   ×
@@ -182,8 +182,8 @@ export function BudgetModeManager({
         })}
       </div>
       {canWeight && (
-        <div className="flex items-center gap-2 mt-3 text-caption">
-          <label className="flex items-center gap-1.5 text-muted">
+        <div className="text-caption mt-3 flex items-center gap-2">
+          <label className="text-muted flex items-center gap-1.5">
             <input
               type="checkbox"
               checked={isWeighted}
@@ -211,7 +211,7 @@ export function BudgetModeManager({
               className={
                 monthsSum === 12
                   ? "text-emerald-600"
-                  : "text-red-600 font-medium"
+                  : "font-medium text-red-600"
               }
             >
               {monthsSum}/12 months
@@ -220,13 +220,13 @@ export function BudgetModeManager({
           )}
         </div>
       )}
-      <div className="flex items-center gap-2 mt-3">
+      <div className="mt-3 flex items-center gap-2">
         <input
           type="text"
           value={newModeName}
           onChange={(e) => setNewModeName(e.target.value)}
           placeholder="New mode name..."
-          className="border rounded px-2 py-1 text-sm flex-1"
+          className="flex-1 rounded border px-2 py-1 text-sm"
           onKeyDown={(e) => {
             if (e.key === "Enter" && newModeName.trim()) {
               onAddColumn(newModeName.trim());
@@ -242,7 +242,7 @@ export function BudgetModeManager({
             }
           }}
           disabled={!newModeName.trim() || addColumnPending}
-          className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
+          className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
         >
           Add
         </button>

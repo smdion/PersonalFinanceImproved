@@ -18,14 +18,14 @@ export function SummaryTable({
 }) {
   return (
     <div>
-      <h4 className="text-xs font-semibold text-muted uppercase tracking-wide mb-2">
+      <h4 className="text-muted mb-2 text-xs font-semibold tracking-wide uppercase">
         {title}
       </h4>
       <div className="space-y-1">
         {rows.map((r) => (
           <div key={r.label} className="flex items-baseline justify-between">
-            <span className="text-xs text-muted">{r.label}</span>
-            <span className="text-xs font-medium text-primary tabular-nums">
+            <span className="text-muted text-xs">{r.label}</span>
+            <span className="text-primary text-xs font-medium tabular-nums">
               {formatCurrency(r.amount)}
               {showPct && total > 0 && (
                 <span className="text-faint ml-1">
@@ -37,9 +37,9 @@ export function SummaryTable({
           </div>
         ))}
       </div>
-      <div className="flex items-baseline justify-between mt-1.5 pt-1.5 border-t">
-        <span className="text-xs font-semibold text-secondary">Total</span>
-        <span className="text-xs font-bold text-primary tabular-nums">
+      <div className="mt-1.5 flex items-baseline justify-between border-t pt-1.5">
+        <span className="text-secondary text-xs font-semibold">Total</span>
+        <span className="text-primary text-xs font-bold tabular-nums">
           {formatCurrency(total)}
         </span>
       </div>

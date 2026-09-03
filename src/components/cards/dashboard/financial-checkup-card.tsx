@@ -38,7 +38,7 @@ function CheckupIcon({ status }: { status: CheckupStep["status"] }) {
   if (status === "green")
     return (
       <svg
-        className="w-4 h-4 text-green-500 flex-shrink-0"
+        className="h-4 w-4 flex-shrink-0 text-green-500"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -51,7 +51,7 @@ function CheckupIcon({ status }: { status: CheckupStep["status"] }) {
   if (status === "yellow")
     return (
       <svg
-        className="w-4 h-4 text-amber-500 flex-shrink-0"
+        className="h-4 w-4 flex-shrink-0 text-amber-500"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -68,7 +68,7 @@ function CheckupIcon({ status }: { status: CheckupStep["status"] }) {
   if (status === "red")
     return (
       <svg
-        className="w-4 h-4 text-red-500 flex-shrink-0"
+        className="h-4 w-4 flex-shrink-0 text-red-500"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -84,7 +84,7 @@ function CheckupIcon({ status }: { status: CheckupStep["status"] }) {
     );
   return (
     <svg
-      className="w-4 h-4 text-faint flex-shrink-0"
+      className="text-faint h-4 w-4 flex-shrink-0"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -107,16 +107,16 @@ function CheckupRow({ step }: { step: CheckupStep }) {
   return (
     <a
       href={step.href}
-      className="flex items-center gap-2 py-1.5 group hover:bg-surface-sunken -mx-1 px-1 rounded transition-colors"
+      className="group hover:bg-surface-sunken -mx-1 flex items-center gap-2 rounded px-1 py-1.5 transition-colors"
     >
       <CheckupIcon status={step.status} />
-      <span className="text-sm text-secondary flex-1 group-hover:text-primary">
+      <span className="text-secondary group-hover:text-primary flex-1 text-sm">
         {step.label}
         {step.helpTip && <HelpTip text={step.helpTip} />}
       </span>
       <div className="text-right">
         <span
-          className={`text-caption font-medium px-1.5 py-0.5 rounded-full whitespace-nowrap ${badgeColor}`}
+          className={`text-caption rounded-full px-1.5 py-0.5 font-medium whitespace-nowrap ${badgeColor}`}
         >
           {step.text}
         </span>

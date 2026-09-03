@@ -361,7 +361,7 @@ describe("historical router — update", () => {
         year: 1900,
         fields: { grossIncome: 50000 },
       }),
-    ).rejects.toThrow(/No net_worth_annual row found/);
+    ).rejects.toThrow(/No year-end history found/);
   });
 });
 

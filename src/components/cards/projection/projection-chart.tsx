@@ -6,7 +6,9 @@ import {
   categoryChartHex,
   TAX_PIE_COLORS,
   CHART_COLORS,
+  chartLinePalette,
 } from "@/lib/utils/colors";
+import { useTheme } from "@/lib/hooks/use-theme";
 import { formatCurrency, compactCurrency } from "@/lib/utils/format";
 import {
   buildStrategyEventStyle,
@@ -54,6 +56,10 @@ const STRATEGY_EVENT_KEYS = [
 ] as const;
 
 export function ProjectionChart({ state }: { state: ProjectionState }) {
+  const c = {
+    ...CHART_COLORS,
+    ...chartLinePalette(useTheme().resolvedTheme === "dark"),
+  };
   // Check via `state.result` before destructuring — result truthy always
   // implies engineSettings defined (see use-projection-derived.ts), but that
   // pairing only survives TS narrowing through the object, not through
@@ -324,25 +330,25 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
     .map((y) => ({ age: y.age, amount: y.unmetNeed ?? 0 }));
 
   return (
-    <div className="bg-surface-sunken rounded-lg p-3 chart-fade-in">
-      <div className="flex items-start justify-between mb-2 gap-2">
-        <h5 className="text-xs font-medium text-muted uppercase">
+    <div className="bg-surface-sunken chart-fade-in rounded-lg p-3">
+      <div className="mb-2 flex items-start justify-between gap-2">
+        <h5 className="text-muted text-xs font-medium uppercase">
           <Badge color="blue" case="normal" className="mr-1.5">
             $
           </Badge>
           Balance Projection
           {isPersonFiltered && (
-            <span className="text-caption text-faint font-normal normal-case ml-2">
+            <span className="text-caption text-faint ml-2 font-normal normal-case">
               {personFilterName}
             </span>
           )}
           {!mcBandsByYear && mcPrefetchQuery.isFetching && (
-            <span className="text-micro text-purple-600 animate-pulse ml-2 normal-case font-normal">
+            <span className="text-micro ml-2 animate-pulse font-normal text-purple-600 normal-case">
               Simulating...
             </span>
           )}
           {hasMc && mcIsPrefetch && (
-            <span className="text-micro text-purple-600 ml-2 normal-case font-normal">
+            <span className="text-micro ml-2 font-normal text-purple-600 normal-case">
               Sim. preview
             </span>
           )}
@@ -354,7 +360,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
           1000-trial aggregate; this is the single deterministic path
           actually shown in this chart, a different kind of number). */}
       {shortfallEvents.length > 0 && (
-        <div className="text-micro text-red-600 bg-red-50 rounded px-2 py-1 mb-2">
+        <div className="text-micro mb-2 rounded bg-red-50 px-2 py-1 text-red-600">
           ⚠ {shortfallEvents.length} year
           {shortfallEvents.length === 1 ? "" : "s"} in this deterministic
           projection couldn&apos;t fund the actual spending need — see the
@@ -417,9 +423,9 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                 const rmdSatisfiedNotably = !rmdShortfall;
                 return (
                   <div
-                    className={`${TOOLTIP_SURFACE_CLASSES} text-xs max-w-xs`}
+                    className={`${TOOLTIP_SURFACE_CLASSES} max-w-xs text-xs`}
                   >
-                    <div className="font-medium mb-1">
+                    <div className="mb-1 font-medium">
                       Age {d.age} · {d.year}
                     </div>
                     {segmentKeys
@@ -428,7 +434,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                         <div key={k.key} className="flex justify-between gap-4">
                           <span className="flex items-center gap-1">
                             <span
-                              className="w-2 h-2 rounded"
+                              className="h-2 w-2 rounded"
                               style={{ backgroundColor: k.hex }}
                             />
                             {k.label}
@@ -438,14 +444,14 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                           </span>
                         </div>
                       ))}
-                    <div className="border-t border-white/10 mt-1 pt-1 flex justify-between font-medium">
+                    <div className="mt-1 flex justify-between border-t border-white/10 pt-1 font-medium">
                       <span>Total</span>
                       <span className="tabular-nums">
                         {formatCurrency(totalBal)}
                       </span>
                     </div>
                     {hasMc && d.mc_p50 != null && (
-                      <div className="border-t border-white/10 mt-1 pt-1">
+                      <div className="mt-1 border-t border-white/10 pt-1">
                         <div
                           className={`flex justify-between ${tipColorClass.purple}`}
                         >
@@ -474,7 +480,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                       Number(d._totalWithdrawal) > 0 ||
                       Number(d._unmetNeedMaterial) === 1 ||
                       rmdShortfall) && (
-                      <div className="border-t border-white/10 mt-1 pt-1 space-y-0.5">
+                      <div className="mt-1 space-y-0.5 border-t border-white/10 pt-1">
                         {Number(d._totalWithdrawal) > 0 && (
                           <div
                             className={`flex justify-between gap-4 ${tipColorClass.blue}`}
@@ -502,7 +508,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                               </span>
                             </div>
                             {Number(d._unmetNeedNonRetirement) > 0 && (
-                              <div className="flex justify-between gap-4 text-red-400/70 text-caption">
+                              <div className="text-caption flex justify-between gap-4 text-red-400/70">
                                 <span>
                                   · excluding non-retirement (Portfolio)
                                   accounts
@@ -516,7 +522,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                               </div>
                             )}
                             {Number(d._unmetNeedPenaltyAvoided) > 0 && (
-                              <div className="flex justify-between gap-4 text-red-400/70 text-caption">
+                              <div className="text-caption flex justify-between gap-4 text-red-400/70">
                                 <span>· excluding penalty-exposed money</span>
                                 <span className="tabular-nums">
                                   -
@@ -578,7 +584,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                                   : `${tipColorClass.amber}/70`
                               }
                             >
-                              <div className="flex justify-between gap-4 text-caption">
+                              <div className="text-caption flex justify-between gap-4">
                                 <span>RMD (required withdrawal)</span>
                                 <span className="tabular-nums">
                                   {formatCurrency(Number(d._rmdAmount))}
@@ -598,7 +604,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                             RMD/QCD color family above (red, not amber) to
                             read as an alarm rather than routine detail. */}
                         {rmdShortfall && (
-                          <div className="text-red-400/70 text-caption">
+                          <div className="text-caption text-red-400/70">
                             Only{" "}
                             {formatCurrency(
                               Number(d._rmdAmount) -
@@ -660,7 +666,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                       if (!eventStyle) return null;
                       return (
                         <div
-                          className="border-t border-white/10 mt-1 pt-1 flex justify-between gap-4 font-medium"
+                          className="mt-1 flex justify-between gap-4 border-t border-white/10 pt-1 font-medium"
                           style={{ color: eventStyle.color }}
                         >
                           <span>Strategy</span>
@@ -779,7 +785,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                   yAxisId="income"
                   dataKey="_totalWithdrawal"
                   name="Portfolio withdrawal"
-                  stroke={CHART_COLORS.withdrawalFlow}
+                  stroke={c.withdrawalFlow}
                   strokeWidth={2}
                   dot={false}
                   isAnimationActive={false}
@@ -805,7 +811,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                 type="monotone"
                 yAxisId="balance"
                 dataKey="mc_p50"
-                stroke={CHART_COLORS.mcMedian}
+                stroke={c.mcMedian}
                 strokeWidth={2}
                 strokeDasharray="6 3"
                 dot={false}
@@ -919,11 +925,11 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
         </ResponsiveContainer>
       </div>
       {/* Legend */}
-      <div className="flex items-center gap-3 mt-2 text-caption text-faint flex-wrap">
+      <div className="text-caption text-faint mt-2 flex flex-wrap items-center gap-3">
         {segmentKeys.map((seg) => (
           <span key={seg.key} className="flex items-center gap-1">
             <span
-              className="w-2 h-2 rounded"
+              className="h-2 w-2 rounded"
               style={{ backgroundColor: seg.hex }}
             />{" "}
             {seg.label}
@@ -933,14 +939,14 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
           <>
             <span className="flex items-center gap-1">
               <span
-                className="w-3 h-0.5 rounded"
-                style={{ backgroundColor: CHART_COLORS.withdrawalFlow }}
+                className="h-0.5 w-3 rounded"
+                style={{ backgroundColor: c.withdrawalFlow }}
               />{" "}
               Withdrawal
             </span>
             <span className="flex items-center gap-1">
               <span
-                className="w-3 h-0.5 rounded"
+                className="h-0.5 w-3 rounded"
                 style={{ backgroundColor: CHART_COLORS.ssMarker }}
               />{" "}
               SS Income
@@ -951,8 +957,8 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
           <>
             <span className="flex items-center gap-1">
               <span
-                className="w-3 h-0.5 rounded"
-                style={{ backgroundColor: CHART_COLORS.mcMedian }}
+                className="h-0.5 w-3 rounded"
+                style={{ backgroundColor: c.mcMedian }}
               />{" "}
               Sim. median
               {mcIsPrefetch && (
@@ -961,7 +967,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
             </span>
             <span className="flex items-center gap-1">
               <span
-                className="w-3 h-1.5 rounded"
+                className="h-1.5 w-3 rounded"
                 style={{
                   backgroundColor: CHART_COLORS.mcBandMiddle,
                   opacity: 0.3,
@@ -972,7 +978,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
             {fanBandRange !== "p25-p75" && (
               <span className="flex items-center gap-1">
                 <span
-                  className="w-3 h-1.5 rounded"
+                  className="h-1.5 w-3 rounded"
                   style={{
                     backgroundColor:
                       fanBandRange === "p5-p95"
@@ -989,7 +995,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
         {chartData.some((d) => Number(d._ssIncome) > 0) && (
           <span className="flex items-center gap-1">
             <span
-              className="w-3 h-0.5 rounded"
+              className="h-0.5 w-3 rounded"
               style={{ backgroundColor: CHART_COLORS.ssMarker }}
             />
             SS Start
@@ -999,7 +1005,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
           chartData.some((d) => Number(d._rmdAmount) > 0) && (
             <span className="flex items-center gap-1">
               <span
-                className="w-3 h-0.5 rounded"
+                className="h-0.5 w-3 rounded"
                 style={{ backgroundColor: CHART_COLORS.rmdMarker }}
               />
               RMD Start
@@ -1008,7 +1014,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
         {shortfallEvents.length > 0 && (
           <span className="flex items-center gap-1">
             <span
-              className="w-3 h-0.5 rounded"
+              className="h-0.5 w-3 rounded"
               style={{ backgroundColor: CHART_COLORS.shortfallMarker }}
             />
             Unmet Need

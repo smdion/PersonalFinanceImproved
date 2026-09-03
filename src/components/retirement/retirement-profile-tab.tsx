@@ -345,7 +345,7 @@ export function RetirementProfileTab({
     return (
       <div className="space-y-4">
         <Skeleton className="h-8 w-1/3" />
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <SkeletonChart height={128} />
           <SkeletonChart height={128} />
           <SkeletonChart height={128} />
@@ -356,7 +356,7 @@ export function RetirementProfileTab({
 
   if (error) {
     return (
-      <p className="text-red-600 text-sm">
+      <p className="text-sm text-red-600">
         Failed to load retirement profile: {error.message}
       </p>
     );
@@ -379,9 +379,9 @@ export function RetirementProfileTab({
       <Card title="Projection Assumptions" className="mb-6">
         <div className="space-y-4">
           {/* Two-column layout: Timeline+Income (left) | Decumulation Plan (right) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {/* Left column: Timeline + Income */}
-            <div className="bg-surface-sunken rounded-lg p-3 space-y-4">
+            <div className="bg-surface-sunken space-y-4 rounded-lg p-3">
               <TimelineSection
                 settings={settings}
                 currentYear={currentYear}
@@ -418,8 +418,8 @@ export function RetirementProfileTab({
 
             {/* Right column: Decumulation Plan */}
             <div className="bg-surface-sunken rounded-lg p-3">
-              <div className="flex items-center gap-2 mb-2">
-                <h4 className="text-label font-semibold text-muted uppercase tracking-wider">
+              <div className="mb-2 flex items-center gap-2">
+                <h4 className="text-label text-muted font-semibold tracking-wider uppercase">
                   Decumulation Plan
                 </h4>
                 <Badge color="indigo">Baseline + Simulation</Badge>
@@ -427,7 +427,7 @@ export function RetirementProfileTab({
                 <StrategyGuideButton />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 text-sm">
+              <div className="grid grid-cols-1 gap-x-4 text-sm sm:grid-cols-3">
                 <div className="col-span-2">
                   <span className="text-muted">
                     Strategy
@@ -446,7 +446,7 @@ export function RetirementProfileTab({
                         );
                       }}
                       disabled={!admin}
-                      className="text-sm border rounded px-1.5 py-0.5 w-full disabled:cursor-not-allowed disabled:opacity-50"
+                      className="w-full rounded border px-1.5 py-0.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {(() => {
                         const rec = recommendWithdrawalStrategy({
@@ -512,14 +512,14 @@ export function RetirementProfileTab({
 
           {/* Plan Assumptions */}
           <div className="bg-surface-sunken rounded-lg p-3">
-            <div className="flex items-center gap-2 mb-2">
-              <h4 className="text-label font-semibold text-muted uppercase tracking-wider">
+            <div className="mb-2 flex items-center gap-2">
+              <h4 className="text-label text-muted font-semibold tracking-wider uppercase">
                 Plan Assumptions
               </h4>
               <Badge color="indigo">Baseline</Badge>
               <div className="flex-1 border-t" />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
+            <div className="grid grid-cols-1 gap-x-4 gap-y-2 text-sm sm:grid-cols-2">
               <div>
                 <span className="text-muted">
                   Inflation
@@ -544,7 +544,7 @@ export function RetirementProfileTab({
                   IRS Limit Growth
                   <HelpTip text="Annual increase in 401k/IRA/HSA contribution limits. Historically ~2%/yr." />
                 </span>
-                <div className="font-medium text-muted">~2%/yr</div>
+                <div className="text-muted font-medium">~2%/yr</div>
               </div>
             </div>
           </div>

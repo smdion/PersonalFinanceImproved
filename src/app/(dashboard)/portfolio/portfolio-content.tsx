@@ -17,7 +17,7 @@ import {
 } from "@/lib/utils/format";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
-import { taxTypeLabel } from "@/lib/utils/colors";
+import { taxTypeLabel, gainLossTextColor } from "@/lib/utils/colors";
 import { getDisplayConfig } from "@/lib/config/account-types";
 import dynamic from "next/dynamic";
 import { confirm } from "@/components/ui/confirm-dialog";
@@ -251,7 +251,7 @@ export function PortfolioContent() {
 
   if (error) {
     return (
-      <p className="text-red-600 text-sm">
+      <p className="text-sm text-red-600">
         Failed to load portfolio data: {error.message}
       </p>
     );
@@ -280,7 +280,7 @@ export function PortfolioContent() {
           <button
             type="button"
             onClick={() => setShowQuickLook(!showQuickLook)}
-            className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+            className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
               showQuickLook
                 ? "bg-indigo-600 text-white hover:bg-indigo-700"
                 : "bg-surface-strong text-secondary hover:bg-surface-strong"
@@ -291,7 +291,7 @@ export function PortfolioContent() {
           <button
             type="button"
             onClick={() => setShowChart(!showChart)}
-            className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+            className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
               showChart
                 ? "bg-indigo-600 text-white hover:bg-indigo-700"
                 : "bg-surface-strong text-secondary hover:bg-surface-strong"
@@ -303,7 +303,7 @@ export function PortfolioContent() {
             <button
               type="button"
               onClick={() => setShowNewSnapshot(true)}
-              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm"
+              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
             >
               New Snapshot
             </button>
@@ -352,23 +352,23 @@ export function PortfolioContent() {
             <button
               type="button"
               onClick={() => setShowHistory(!showHistory)}
-              className="w-full flex items-center justify-between px-5 py-3 bg-surface-primary border rounded-lg shadow-sm hover:bg-surface-sunken transition-colors"
+              className="bg-surface-primary hover:bg-surface-sunken flex w-full items-center justify-between rounded-lg border px-5 py-3 shadow-sm transition-colors"
             >
               <div className="flex items-center gap-2">
                 <span
-                  className={`text-xs text-faint transition-transform ${showHistory ? "rotate-90" : ""}`}
+                  className={`text-faint text-xs transition-transform ${showHistory ? "rotate-90" : ""}`}
                 >
                   &#9654;
                 </span>
-                <span className="font-semibold text-primary">
+                <span className="text-primary font-semibold">
                   Snapshot History
                 </span>
-                <span className="text-xs text-faint">
+                <span className="text-faint text-xs">
                   ({paginatedSnapshots.totalCount} snapshot
                   {paginatedSnapshots.totalCount !== 1 ? "s" : ""})
                 </span>
               </div>
-              <span className="text-xs text-faint">
+              <span className="text-faint text-xs">
                 {showHistory ? "Click to collapse" : "Click to expand"}
               </span>
             </button>
@@ -376,9 +376,9 @@ export function PortfolioContent() {
             {showHistory && (
               <Card className="mt-0 rounded-t-none border-t-0">
                 {/* Date range filter + Show All toggle */}
-                <div className="flex flex-wrap items-end gap-3 mb-4">
+                <div className="mb-4 flex flex-wrap items-end gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-muted mb-1">
+                    <label className="text-muted mb-1 block text-xs font-medium">
                       From
                     </label>
                     <input
@@ -388,11 +388,11 @@ export function PortfolioContent() {
                         setSnapshotDateFrom(e.target.value);
                         setSnapshotPage(1);
                       }}
-                      className="border border-strong rounded px-2 py-1 text-sm"
+                      className="border-strong rounded border px-2 py-1 text-sm"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-muted mb-1">
+                    <label className="text-muted mb-1 block text-xs font-medium">
                       To
                     </label>
                     <input
@@ -402,7 +402,7 @@ export function PortfolioContent() {
                         setSnapshotDateTo(e.target.value);
                         setSnapshotPage(1);
                       }}
-                      className="border border-strong rounded px-2 py-1 text-sm"
+                      className="border-strong rounded border px-2 py-1 text-sm"
                     />
                   </div>
                   {(snapshotDateFrom || snapshotDateTo) && (
@@ -413,7 +413,7 @@ export function PortfolioContent() {
                         setSnapshotDateTo("");
                         setSnapshotPage(1);
                       }}
-                      className="text-xs text-indigo-600 hover:text-indigo-800 font-medium pb-1"
+                      className="pb-1 text-xs font-medium text-indigo-600 hover:text-indigo-800"
                     >
                       Clear filters
                     </button>
@@ -425,11 +425,11 @@ export function PortfolioContent() {
                       setShowAll(!showAll);
                       setSnapshotPage(1);
                     }}
-                    className={`text-xs font-medium pb-1 ${showAll ? "text-indigo-600 hover:text-indigo-800" : "text-muted hover:text-secondary"}`}
+                    className={`pb-1 text-xs font-medium ${showAll ? "text-indigo-600 hover:text-indigo-800" : "text-muted hover:text-secondary"}`}
                   >
                     {showAll ? "Paginate (52/page)" : "Show all"}
                   </button>
-                  <span className="text-xs text-faint pb-1">
+                  <span className="text-faint pb-1 text-xs">
                     {paginatedSnapshots.totalCount} snapshot
                     {paginatedSnapshots.totalCount !== 1 ? "s" : ""}
                   </span>
@@ -440,39 +440,39 @@ export function PortfolioContent() {
                     <thead>
                       <tr className="border-b">
                         <th
-                          className="text-left py-2 pr-4 text-muted font-medium cursor-pointer select-none hover:text-primary"
+                          className="text-muted hover:text-primary cursor-pointer py-2 pr-4 text-left font-medium select-none"
                           onClick={() => toggleSort("date")}
                         >
                           Date{sortIndicator("date")}
                         </th>
                         <th
-                          className="text-right py-2 px-4 text-muted font-medium cursor-pointer select-none hover:text-primary"
+                          className="text-muted hover:text-primary cursor-pointer px-4 py-2 text-right font-medium select-none"
                           onClick={() => toggleSort("total")}
                         >
                           Total{sortIndicator("total")}
                         </th>
                         <th
-                          className="text-right py-2 px-4 text-muted font-medium cursor-pointer select-none hover:text-primary"
+                          className="text-muted hover:text-primary cursor-pointer px-4 py-2 text-right font-medium select-none"
                           onClick={() => toggleSort("accounts")}
                         >
                           Accounts{sortIndicator("accounts")}
                         </th>
                         <th
-                          className="text-right py-2 px-4 text-muted font-medium cursor-pointer select-none hover:text-primary"
+                          className="text-muted hover:text-primary cursor-pointer px-4 py-2 text-right font-medium select-none"
                           onClick={() => toggleSort("change")}
                         >
                           Change{sortIndicator("change")}
                         </th>
                         <th
-                          className="text-right py-2 px-4 text-muted font-medium cursor-pointer select-none hover:text-primary"
+                          className="text-muted hover:text-primary cursor-pointer px-4 py-2 text-right font-medium select-none"
                           onClick={() => toggleSort("changePct")}
                         >
                           Change %{sortIndicator("changePct")}
                         </th>
-                        <th className="text-right py-2 px-4 text-muted font-medium">
+                        <th className="text-muted px-4 py-2 text-right font-medium">
                           Gap
                         </th>
-                        <th className="text-left py-2 px-4 text-muted font-medium">
+                        <th className="text-muted px-4 py-2 text-left font-medium">
                           Notes
                         </th>
                         <th className="py-2 pl-4" />
@@ -491,7 +491,7 @@ export function PortfolioContent() {
                         return (
                           <React.Fragment key={snap.id}>
                             <tr
-                              className={`border-b border-subtle cursor-pointer hover:bg-surface-sunken ${isExpanded ? "bg-surface-sunken" : ""}`}
+                              className={`border-subtle hover:bg-surface-sunken cursor-pointer border-b ${isExpanded ? "bg-surface-sunken" : ""}`}
                               onClick={() =>
                                 setExpandedSnapshot(isExpanded ? null : snap.id)
                               }
@@ -506,39 +506,57 @@ export function PortfolioContent() {
                                   {formatDate(snap.snapshotDate, "medium")}
                                 </span>
                               </td>
-                              <td className="text-right py-2 px-4 font-medium">
+                              <td className="px-4 py-2 text-right font-medium">
                                 {formatCurrency(snap.total)}
                               </td>
-                              <td className="text-right py-2 px-4 text-muted">
+                              <td className="text-muted px-4 py-2 text-right">
                                 {snap.accountCount}
                               </td>
                               <td
-                                className={`text-right py-2 px-4 text-xs ${delta !== null ? (delta >= 0 ? "text-green-600" : "text-red-600") : "text-faint"}`}
+                                className={`px-4 py-2 text-right text-xs ${delta !== null ? gainLossTextColor(delta) : "text-faint"}`}
                               >
-                                {delta !== null
-                                  ? `${delta >= 0 ? "+" : ""}${formatCurrency(delta)}`
-                                  : "\u2014"}
+                                {delta !== null ? (
+                                  <>
+                                    <span aria-hidden="true">
+                                      {delta > 0
+                                        ? "\u25b2 "
+                                        : delta < 0
+                                          ? "\u25bc "
+                                          : ""}
+                                    </span>
+                                    {`${delta >= 0 ? "+" : ""}${formatCurrency(delta)}`}
+                                    <span className="sr-only">
+                                      {delta > 0
+                                        ? " increase from previous snapshot"
+                                        : delta < 0
+                                          ? " decrease from previous snapshot"
+                                          : " no change from previous snapshot"}
+                                    </span>
+                                  </>
+                                ) : (
+                                  "\u2014"
+                                )}
                               </td>
                               <td
-                                className={`text-right py-2 px-4 text-xs ${snap.deltaPct !== null ? (snap.deltaPct >= 0 ? "text-green-600" : "text-red-600") : "text-faint"}`}
+                                className={`px-4 py-2 text-right text-xs ${snap.deltaPct !== null ? gainLossTextColor(snap.deltaPct) : "text-faint"}`}
                               >
                                 {snap.deltaPct !== null
                                   ? `${snap.deltaPct >= 0 ? "+" : ""}${formatPercent(snap.deltaPct / 100, 2)}`
                                   : "\u2014"}
                               </td>
-                              <td className="text-right py-2 px-4 text-xs text-faint">
+                              <td className="text-faint px-4 py-2 text-right text-xs">
                                 {snap.daysSincePrev != null
                                   ? `${snap.daysSincePrev}d`
                                   : "\u2014"}
                               </td>
-                              <td className="py-2 px-4 text-muted text-xs truncate max-w-[200px]">
+                              <td className="text-muted max-w-[200px] truncate px-4 py-2 text-xs">
                                 {snap.notes ?? ""}
                               </td>
                               <td
                                 className="py-2 pl-4"
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                <div className="flex items-center gap-3 justify-end">
+                                <div className="flex items-center justify-end gap-3">
                                   {canEdit && (
                                     <button
                                       disabled={resyncPush.isPending}
@@ -564,7 +582,7 @@ export function PortfolioContent() {
                                           );
                                         }
                                       }}
-                                      className="text-xs text-muted hover:text-primary disabled:opacity-50"
+                                      className="text-muted hover:text-primary text-xs disabled:opacity-50"
                                     >
                                       {resyncPush.isPending &&
                                       resyncPush.variables?.snapshotId ===
@@ -596,7 +614,7 @@ export function PortfolioContent() {
                             </tr>
                             {isExpanded && snap.accounts && (
                               <tr>
-                                <td colSpan={6} className="py-0 px-0">
+                                <td colSpan={6} className="px-0 py-0">
                                   <div className="bg-surface-sunken px-8 py-2">
                                     {groupByPerformanceAccount(
                                       snap.accounts,
@@ -606,11 +624,11 @@ export function PortfolioContent() {
                                         className="mb-2 last:mb-0"
                                       >
                                         {/* Group header — performance account name + subtotal */}
-                                        <div className="flex justify-between items-baseline py-1 border-b">
-                                          <span className="text-xs font-semibold text-primary">
+                                        <div className="flex items-baseline justify-between border-b py-1">
+                                          <span className="text-primary text-xs font-semibold">
                                             {group.perfName}
                                           </span>
-                                          <span className="text-xs font-semibold text-primary">
+                                          <span className="text-primary text-xs font-semibold">
                                             {formatCurrency(group.total)}
                                           </span>
                                         </div>
@@ -624,12 +642,12 @@ export function PortfolioContent() {
                                             <div
                                               // eslint-disable-next-line react/no-array-index-key -- SnapshotAccountWithPerf has no ID; index breaks ties when accountType/ownerPersonId/subType collide within a group
                                               key={`${a.accountType}-${a.ownerPersonId}-${a.subType}-${ai}`}
-                                              className="flex justify-between items-baseline py-0.5 pl-4 border-b border-subtle"
+                                              className="border-subtle flex items-baseline justify-between border-b py-0.5 pl-4"
                                             >
-                                              <span className="text-xs text-muted">
+                                              <span className="text-muted text-xs">
                                                 {subLabel}
                                               </span>
-                                              <span className="text-xs text-secondary">
+                                              <span className="text-secondary text-xs">
                                                 {formatCurrency(a.amount)}
                                               </span>
                                             </div>
@@ -650,16 +668,16 @@ export function PortfolioContent() {
 
                 {/* Pagination controls (hidden when showing all) */}
                 {!showAll && paginatedSnapshots.totalPages > 1 && (
-                  <div className="flex items-center justify-between mt-4 pt-3 border-t">
+                  <div className="mt-4 flex items-center justify-between border-t pt-3">
                     <button
                       type="button"
                       onClick={() => setSnapshotPage((p) => Math.max(1, p - 1))}
                       disabled={snapshotPage <= 1}
-                      className="px-3 py-1 text-sm text-muted hover:text-primary border border-strong rounded disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="text-muted hover:text-primary border-strong rounded border px-3 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       Prev
                     </button>
-                    <span className="text-sm text-muted">
+                    <span className="text-muted text-sm">
                       Page {paginatedSnapshots.page} of{" "}
                       {paginatedSnapshots.totalPages}
                     </span>
@@ -671,7 +689,7 @@ export function PortfolioContent() {
                         )
                       }
                       disabled={snapshotPage >= paginatedSnapshots.totalPages}
-                      className="px-3 py-1 text-sm text-muted hover:text-primary border border-strong rounded disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="text-muted hover:text-primary border-strong rounded border px-3 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       Next
                     </button>

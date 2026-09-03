@@ -62,9 +62,9 @@ export function RelocationScenariosControls({
   return (
     <>
       {/* Scenario save/load controls */}
-      <div className="flex items-center gap-2 mb-4 text-sm">
+      <div className="mb-4 flex items-center gap-2 text-sm">
         <select
-          className="border rounded px-2 py-1 text-sm min-w-[180px]"
+          className="min-w-[180px] rounded border px-2 py-1 text-sm"
           value={selectedScenarioId ?? ""}
           onChange={(e) => {
             const id = e.target.value ? Number(e.target.value) : null;
@@ -90,13 +90,13 @@ export function RelocationScenariosControls({
             {selectedScenarioId && (
               <>
                 <button
-                  className="px-3 py-1 bg-surface-strong text-secondary rounded text-sm hover:bg-surface-strong"
+                  className="bg-surface-strong text-secondary hover:bg-surface-strong rounded px-3 py-1 text-sm"
                   onClick={onSaveAsClick}
                 >
                   Save As
                 </button>
                 <button
-                  className="px-3 py-1 bg-red-100 text-red-700 rounded text-sm hover:bg-red-200 disabled:opacity-50"
+                  className="rounded bg-red-100 px-3 py-1 text-sm text-red-700 hover:bg-red-200 disabled:opacity-50"
                   disabled={deleteIsPending}
                   onClick={onDeleteClick}
                 >
@@ -109,11 +109,11 @@ export function RelocationScenariosControls({
       </div>
       {/* Save dialog */}
       {showSaveDialog && (
-        <div className="mb-4 flex items-center gap-2 p-3 border rounded bg-surface-sunken text-sm">
+        <div className="bg-surface-sunken mb-4 flex items-center gap-2 rounded border p-3 text-sm">
           <label className="text-muted">Name:</label>
           <input
             type="text"
-            className="border rounded px-2 py-1 text-sm flex-1"
+            className="flex-1 rounded border px-2 py-1 text-sm"
             placeholder="Scenario name"
             value={saveScenarioName}
             onChange={(e) => setSaveScenarioName(e.target.value)}
@@ -137,7 +137,7 @@ export function RelocationScenariosControls({
             {saveIsPending ? "Saving..." : "Save"}
           </Button>
           <button
-            className="px-2 py-1 text-muted hover:text-secondary text-sm"
+            className="text-muted hover:text-secondary px-2 py-1 text-sm"
             onClick={() => setShowSaveDialog(false)}
           >
             Cancel

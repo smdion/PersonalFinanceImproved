@@ -87,7 +87,7 @@ export function UpdateBasisForm({
 
   if (basisEligible.length === 0) {
     return (
-      <div className="p-4 text-sm text-muted">
+      <div className="text-muted p-4 text-sm">
         No Roth-basis-tracking accounts (401k/403b/IRA) are active for{" "}
         {currentYear}.
       </div>
@@ -95,8 +95,8 @@ export function UpdateBasisForm({
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+    <div className="flex h-full flex-col">
+      <div className="flex-1 space-y-4 overflow-y-auto p-4">
         <p className="text-caption text-muted">
           Contribution and conversion basis for {currentYear} — the tax-free,
           penalty-free portion of each Roth account. Also editable inline on
@@ -105,18 +105,18 @@ export function UpdateBasisForm({
         {rows.map((row, idx) => (
           <div
             key={row.performanceAccountId}
-            className="border border-default rounded-lg p-3 space-y-2"
+            className="border-default space-y-2 rounded-lg border p-3"
           >
-            <div className="text-sm font-medium text-primary">
+            <div className="text-primary text-sm font-medium">
               {row.displayName}
             </div>
             <div className="grid grid-cols-3 gap-2">
               <div>
-                <label className="block text-caption font-medium text-muted mb-0.5">
+                <label className="text-caption text-muted mb-0.5 block font-medium">
                   Contribution basis
                 </label>
-                <div className="flex items-center border border-default rounded focus-within:ring-1 focus-within:ring-blue-500">
-                  <span className="pl-1.5 text-xs text-muted select-none">
+                <div className="border-default flex items-center rounded border focus-within:ring-1 focus-within:ring-blue-500">
+                  <span className="text-muted pl-1.5 text-xs select-none">
                     $
                   </span>
                   <input
@@ -126,16 +126,16 @@ export function UpdateBasisForm({
                     onChange={(e) =>
                       updateRow(idx, "contributionBasis", e.target.value)
                     }
-                    className="flex-1 min-w-0 bg-transparent px-1 py-1 text-xs text-right text-primary focus:outline-none"
+                    className="text-primary focus-visible:ring-offset-surface-primary min-w-0 flex-1 rounded bg-transparent px-1 py-1 text-right text-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-caption font-medium text-muted mb-0.5">
+                <label className="text-caption text-muted mb-0.5 block font-medium">
                   Conversion basis
                 </label>
-                <div className="flex items-center border border-default rounded focus-within:ring-1 focus-within:ring-blue-500">
-                  <span className="pl-1.5 text-xs text-muted select-none">
+                <div className="border-default flex items-center rounded border focus-within:ring-1 focus-within:ring-blue-500">
+                  <span className="text-muted pl-1.5 text-xs select-none">
                     $
                   </span>
                   <input
@@ -145,12 +145,12 @@ export function UpdateBasisForm({
                     onChange={(e) =>
                       updateRow(idx, "conversionBasis", e.target.value)
                     }
-                    className="flex-1 min-w-0 bg-transparent px-1 py-1 text-xs text-right text-primary focus:outline-none"
+                    className="text-primary focus-visible:ring-offset-surface-primary min-w-0 flex-1 rounded bg-transparent px-1 py-1 text-right text-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-caption font-medium text-muted mb-0.5">
+                <label className="text-caption text-muted mb-0.5 block font-medium">
                   Latest conversion year
                 </label>
                 <input
@@ -161,29 +161,29 @@ export function UpdateBasisForm({
                     updateRow(idx, "latestConversionYear", e.target.value)
                   }
                   placeholder="none"
-                  className="w-full border border-default rounded px-1.5 py-1 text-xs text-right text-primary bg-transparent focus:outline-none focus-within:ring-1 focus-within:ring-blue-500"
+                  className="border-default text-primary w-full rounded border bg-transparent px-1.5 py-1 text-right text-xs focus-within:ring-1 focus-within:ring-blue-500 focus:outline-none"
                 />
               </div>
             </div>
           </div>
         ))}
       </div>
-      <div className="flex items-center justify-end gap-2 p-4 border-t border-default">
+      <div className="border-default flex items-center justify-end gap-2 border-t p-4">
         {batchMutation.isError && (
-          <span className="text-caption text-red-600 mr-auto">
+          <span className="text-caption mr-auto text-red-600">
             Save failed — try again.
           </span>
         )}
         <button
           onClick={onClose}
-          className="px-3 py-1.5 text-sm text-muted hover:text-primary transition-colors"
+          className="text-muted hover:text-primary px-3 py-1.5 text-sm transition-colors"
         >
           Cancel
         </button>
         <button
           onClick={handleSave}
           disabled={batchMutation.isPending}
-          className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-colors disabled:opacity-50"
+          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:opacity-50"
         >
           {batchMutation.isPending ? "Saving..." : "Save Basis"}
         </button>

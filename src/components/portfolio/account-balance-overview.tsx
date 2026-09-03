@@ -168,17 +168,17 @@ export function AccountBalanceOverview() {
 
   return (
     <Card className="mt-6">
-      <div className="flex items-baseline justify-between mb-4">
-        <h3 className="text-sm font-semibold text-secondary">
+      <div className="mb-4 flex items-baseline justify-between">
+        <h3 className="text-secondary text-sm font-semibold">
           Account Balances
         </h3>
-        <span className="text-sm font-bold text-primary">
+        <span className="text-primary text-sm font-bold">
           {formatCurrency(portfolioTotal)}
         </span>
       </div>
 
       {/* Summary panels grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+      <div className="mb-6 grid grid-cols-2 gap-6 lg:grid-cols-4">
         <SummaryTable
           title="By Account Type"
           rows={accountTypeRows}
@@ -206,8 +206,8 @@ export function AccountBalanceOverview() {
       </div>
 
       {/* Row 2: Per-person detail + per-account bar chart side by side */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-1 min-w-0">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+        <div className="min-w-0 lg:col-span-1">
           <SummaryTable
             title="Per Person Detail"
             rows={personDetailRows}
@@ -217,7 +217,7 @@ export function AccountBalanceOverview() {
         </div>
 
         <div className="lg:col-span-3">
-          <h4 className="text-xs font-semibold text-muted uppercase tracking-wide mb-2">
+          <h4 className="text-muted mb-2 text-xs font-semibold tracking-wide uppercase">
             By Account
           </h4>
           <div className="space-y-2">
@@ -226,16 +226,16 @@ export function AccountBalanceOverview() {
               const pct = (balance / maxBalance) * 100;
               return (
                 <div key={pa.id} className="flex items-center gap-3">
-                  <div className="w-28 md:w-[260px] min-w-0 shrink text-xs text-muted truncate">
+                  <div className="text-muted w-28 min-w-0 shrink truncate text-xs md:w-[260px]">
                     {accountDisplayName(pa)}
                   </div>
-                  <div className="flex-1 h-4 bg-surface-elevated rounded-full overflow-hidden">
+                  <div className="bg-surface-elevated h-4 flex-1 overflow-hidden rounded-full">
                     <div
                       className={`h-full rounded-full ${accountColor(pa.accountType)}`}
                       style={{ width: `${pct}%` }}
                     />
                   </div>
-                  <div className="w-[70px] md:w-[90px] shrink-0 text-right text-xs font-medium text-secondary">
+                  <div className="text-secondary w-[70px] shrink-0 text-right text-xs font-medium md:w-[90px]">
                     {formatCurrency(balance)}
                   </div>
                 </div>

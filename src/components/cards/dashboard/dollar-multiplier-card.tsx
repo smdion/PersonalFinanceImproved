@@ -28,7 +28,7 @@ function DollarMultiplierCardImpl() {
   if (!data?.result)
     return (
       <Card title="Growth Factor" href="/retirement">
-        <p className="text-sm text-faint">
+        <p className="text-faint text-sm">
           Configure retirement settings to see how your investments grow over
           time.
         </p>
@@ -63,11 +63,11 @@ function DollarMultiplierCardImpl() {
       }
       href="/retirement"
     >
-      <div className="flex items-baseline gap-2 mb-1">
+      <div className="mb-1 flex items-baseline gap-2">
         <span className="text-2xl font-bold text-green-600">
           ${formatNumber(multiplier, 2)}
         </span>
-        <span className="text-sm text-muted flex items-center gap-1">
+        <span className="text-muted flex items-center gap-1 text-sm">
           per $1 at age
           <input
             type="number"
@@ -75,7 +75,7 @@ function DollarMultiplierCardImpl() {
             value={ageOverride}
             onChange={(e) => setAgeOverride(e.target.value)}
             onClick={(e) => e.preventDefault()}
-            className="w-14 px-1.5 py-0.5 border rounded bg-surface-primary text-sm"
+            className="bg-surface-primary w-14 rounded border px-1.5 py-0.5 text-sm"
           />
           {ageOverride && (
             <button
@@ -84,14 +84,14 @@ function DollarMultiplierCardImpl() {
                 e.preventDefault();
                 setAgeOverride("");
               }}
-              className="text-xs text-faint hover:text-muted underline"
+              className="text-faint hover:text-muted text-xs underline"
             >
               reset
             </button>
           )}
         </span>
       </div>
-      <p className="text-xs text-faint mb-3">
+      <p className="text-faint mb-3 text-xs">
         {yearsToRetirement} yrs to age {targetAge} at{" "}
         {formatPercent(avgReturn, 1)} avg return
         {ageOverride && (
@@ -116,7 +116,7 @@ function DollarMultiplierCardImpl() {
             value={calcAmount}
             onChange={(e) => setCalcAmount(e.target.value)}
             onClick={(e) => e.preventDefault()}
-            className="w-24 px-2 py-1 border rounded bg-surface-primary text-sm"
+            className="bg-surface-primary w-24 rounded border px-2 py-1 text-sm"
           />
           <span className="text-muted shrink-0">in</span>
           <input
@@ -125,7 +125,7 @@ function DollarMultiplierCardImpl() {
             value={calcYears}
             onChange={(e) => setCalcYears(e.target.value)}
             onClick={(e) => e.preventDefault()}
-            className="w-16 px-2 py-1 border rounded bg-surface-primary text-sm"
+            className="bg-surface-primary w-16 rounded border px-2 py-1 text-sm"
           />
           <span className="text-muted shrink-0">yrs</span>
         </div>
@@ -134,13 +134,13 @@ function DollarMultiplierCardImpl() {
             <span className="text-muted">
               {formatCurrency(calcAmt)} → {calcYrs} yrs
             </span>
-            <span className="text-green-600 font-semibold">
+            <span className="font-semibold text-green-600">
               {formatCurrency(calcResult)}
             </span>
           </div>
         )}
       </div>
-      <div className="mt-3 pt-2 border-t border-subtle space-y-1 text-xs text-muted">
+      <div className="border-subtle text-muted mt-3 space-y-1 border-t pt-2 text-xs">
         {yearsToRetirement > 5 && (
           <div className="flex justify-between">
             <span>In 5 years</span>

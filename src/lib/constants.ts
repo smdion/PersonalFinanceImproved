@@ -92,8 +92,13 @@ export const PERFORMANCE_STALE_DAYS = 14;
 // IRS Limit Growth
 // ---------------------------------------------------------------------------
 
-/** Assumed annual growth rate for IRS contribution limits. */
+/** Assumed annual growth rate for IRS contribution limits (fraction). Used
+ *  when the `irs_limit_growth_rate` app-setting is unset. */
 export const IRS_LIMIT_GROWTH_RATE = 0.02;
+
+/** Sanity ceiling for a user-set `irs_limit_growth_rate` — enforced in the
+ *  settings UI and clamped server-side on read (build-engine-payload.ts). */
+export const IRS_LIMIT_GROWTH_RATE_MAX = 0.1;
 
 // ---------------------------------------------------------------------------
 // RMD / Excise Tax

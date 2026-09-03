@@ -22,6 +22,7 @@ import {
   EXPENSE_PIE_COLORS,
   essentialColor,
   discretionaryColor,
+  overUnderTextColor,
 } from "@/lib/utils/colors";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
@@ -364,7 +365,7 @@ export function ExpensesContent() {
     return (
       <div>
         <PageHeader title="Expenses" />
-        <p className="text-sm text-muted mt-4">
+        <p className="text-muted mt-4 text-sm">
           Connect and sync a budget API to view expense data.
         </p>
       </div>
@@ -379,7 +380,7 @@ export function ExpensesContent() {
 
       {/* ── Summary Bar ── */}
       <CardBoundary title="Expense Summary">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <SummaryCard
             label="Monthly Net Income"
             value={formatCurrency(monthlyNetIncome)}
@@ -396,9 +397,7 @@ export function ExpensesContent() {
             label="Actual Spending"
             value={formatCurrency(totalActual)}
             sub={totalActual > totalBudgeted ? "over budget" : "under budget"}
-            color={
-              totalActual > totalBudgeted ? "text-red-600" : "text-green-600"
-            }
+            color={overUnderTextColor(totalActual - totalBudgeted)}
           />
           <SummaryCard
             label="Savings Rate"
@@ -421,10 +420,10 @@ export function ExpensesContent() {
       {/* ── Charts Row ── */}
       <CardBoundary title="Budget vs Actual Charts">
         {groupSummary.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+          <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
             {/* Budget vs Actual Bar Chart */}
-            <div className="lg:col-span-2 bg-surface-primary rounded-lg border p-4">
-              <h3 className="text-xs font-semibold text-muted uppercase tracking-wider mb-3">
+            <div className="bg-surface-primary rounded-lg border p-4 lg:col-span-2">
+              <h3 className="text-muted mb-3 text-xs font-semibold tracking-wider uppercase">
                 Budget vs Actual — This Month
               </h3>
               <BudgetVsActualBar data={groupSummary} />
@@ -432,13 +431,13 @@ export function ExpensesContent() {
 
             {/* Spending Breakdown Pie */}
             <div className="bg-surface-primary rounded-lg border p-4">
-              <h3 className="text-xs font-semibold text-muted uppercase tracking-wider mb-3">
+              <h3 className="text-muted mb-3 text-xs font-semibold tracking-wider uppercase">
                 Spending Breakdown
               </h3>
               {spendingPie.length > 0 ? (
                 <SpendingPie data={spendingPie} />
               ) : (
-                <p className="text-xs text-faint text-center py-8">
+                <p className="text-faint py-8 text-center text-xs">
                   No spending data
                 </p>
               )}
@@ -446,7 +445,7 @@ export function ExpensesContent() {
               {/* Essential vs Discretionary mini-bar */}
               {totalActual > 0 && (
                 <div className="mt-3 space-y-1">
-                  <div className="flex justify-between text-caption text-muted">
+                  <div className="text-caption text-muted flex justify-between">
                     <span>
                       Essential {formatSafePercent(essentialTotal, totalActual)}
                     </span>
@@ -455,7 +454,7 @@ export function ExpensesContent() {
                       {formatSafePercent(discretionaryTotal, totalActual)}
                     </span>
                   </div>
-                  <div className="flex h-2 rounded-full overflow-hidden bg-surface-elevated">
+                  <div className="bg-surface-elevated flex h-2 overflow-hidden rounded-full">
                     <div
                       className={`${essentialColor()} transition-all`}
                       style={{
@@ -479,27 +478,27 @@ export function ExpensesContent() {
       {/* ── Category Detail Table ── */}
       <CardBoundary title="Category Detail">
         {budgetVsActual.length > 0 && (
-          <div className="bg-surface-primary rounded-lg border p-4 mb-6">
-            <h3 className="text-xs font-semibold text-muted uppercase tracking-wider mb-3">
+          <div className="bg-surface-primary mb-6 rounded-lg border p-4">
+            <h3 className="text-muted mb-3 text-xs font-semibold tracking-wider uppercase">
               Category Detail — This Month
             </h3>
             <div className="overflow-x-auto">
-              <table className="w-full text-xs border-collapse">
+              <table className="w-full border-collapse text-xs">
                 <thead>
-                  <tr className="border-b-2 border-strong">
-                    <th className="text-left py-2 pr-3 text-muted font-medium">
+                  <tr className="border-strong border-b-2">
+                    <th className="text-muted py-2 pr-3 text-left font-medium">
                       Category
                     </th>
-                    <th className="text-right py-2 px-3 text-muted font-medium">
+                    <th className="text-muted px-3 py-2 text-right font-medium">
                       Budgeted
                     </th>
-                    <th className="text-right py-2 px-3 text-muted font-medium">
+                    <th className="text-muted px-3 py-2 text-right font-medium">
                       Actual
                     </th>
-                    <th className="text-right py-2 px-3 text-muted font-medium">
+                    <th className="text-muted px-3 py-2 text-right font-medium">
                       Diff
                     </th>
-                    <th className="text-right py-2 px-3 text-muted font-medium w-32">
+                    <th className="text-muted w-32 px-3 py-2 text-right font-medium">
                       % Used
                     </th>
                   </tr>
@@ -529,21 +528,21 @@ export function ExpensesContent() {
                   })}
                 </tbody>
                 <tfoot>
-                  <tr className="border-t-2 border-strong font-semibold">
-                    <td className="py-2 pr-3 text-primary">Total</td>
-                    <td className="text-right py-2 px-3 tabular-nums">
+                  <tr className="border-strong border-t-2 font-semibold">
+                    <td className="text-primary py-2 pr-3">Total</td>
+                    <td className="px-3 py-2 text-right tabular-nums">
                       {formatCurrency(totalBudgeted)}
                     </td>
-                    <td className="text-right py-2 px-3 tabular-nums">
+                    <td className="px-3 py-2 text-right tabular-nums">
                       {formatCurrency(totalActual)}
                     </td>
                     <td
-                      className={`text-right py-2 px-3 tabular-nums ${totalActual - totalBudgeted > 0 ? "text-red-600" : "text-green-600"}`}
+                      className={`px-3 py-2 text-right tabular-nums ${overUnderTextColor(totalActual - totalBudgeted)}`}
                     >
                       {formatCurrency(Math.abs(totalActual - totalBudgeted))}
                       {totalActual > totalBudgeted ? " over" : " under"}
                     </td>
-                    <td className="text-right py-2 px-3">
+                    <td className="px-3 py-2 text-right">
                       <ProgressBar
                         value={safeDivide(totalActual, totalBudgeted, 0)}
                       />
@@ -559,8 +558,8 @@ export function ExpensesContent() {
       {/* ── Year-over-Year Comparison ── */}
       <CardBoundary title="Year-over-Year Comparison">
         <div className="bg-surface-primary rounded-lg border p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-xs font-semibold text-muted uppercase tracking-wider">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-muted text-xs font-semibold tracking-wider uppercase">
               Year-over-Year Comparison
             </h3>
             <div className="flex items-center gap-2">
@@ -568,7 +567,7 @@ export function ExpensesContent() {
                 <button
                   key={p}
                   onClick={() => setPeriodType(p)}
-                  className={`px-3 py-1 text-xs font-medium rounded ${
+                  className={`rounded px-3 py-1 text-xs font-medium ${
                     periodType === p
                       ? "bg-blue-600 text-white"
                       : "bg-surface-elevated text-muted hover:bg-surface-strong"
@@ -577,7 +576,7 @@ export function ExpensesContent() {
                   {p === "ytd" ? "YTD" : p.charAt(0).toUpperCase() + p.slice(1)}
                 </button>
               ))}
-              <span className="text-xs text-muted ml-2">
+              <span className="text-muted ml-2 text-xs">
                 {periodLabel} vs {currentYear - 1}
               </span>
             </div>
@@ -587,22 +586,22 @@ export function ExpensesContent() {
             <SkeletonChart height={128} />
           ) : yoyData?.categories && yoyData.categories.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="w-full text-xs border-collapse">
+              <table className="w-full border-collapse text-xs">
                 <thead>
-                  <tr className="border-b-2 border-strong">
-                    <th className="text-left py-2 pr-3 text-muted font-medium">
+                  <tr className="border-strong border-b-2">
+                    <th className="text-muted py-2 pr-3 text-left font-medium">
                       Category
                     </th>
-                    <th className="text-right py-2 px-3 text-muted font-medium">
+                    <th className="text-muted px-3 py-2 text-right font-medium">
                       {currentYear}
                     </th>
-                    <th className="text-right py-2 px-3 text-muted font-medium">
+                    <th className="text-muted px-3 py-2 text-right font-medium">
                       {currentYear - 1}
                     </th>
-                    <th className="text-right py-2 px-3 text-muted font-medium">
+                    <th className="text-muted px-3 py-2 text-right font-medium">
                       Diff
                     </th>
-                    <th className="text-right py-2 px-3 text-muted font-medium">
+                    <th className="text-muted px-3 py-2 text-right font-medium">
                       % Change
                     </th>
                   </tr>
@@ -611,17 +610,17 @@ export function ExpensesContent() {
                   {yoyData.categories.map((cat) => (
                     <tr
                       key={cat.name}
-                      className="border-b border-subtle hover:bg-blue-50/60"
+                      className="border-subtle border-b hover:bg-blue-50/60"
                     >
-                      <td className="py-1.5 pr-3 text-secondary">{cat.name}</td>
-                      <td className="text-right py-1.5 px-3 tabular-nums">
+                      <td className="text-secondary py-1.5 pr-3">{cat.name}</td>
+                      <td className="px-3 py-1.5 text-right tabular-nums">
                         {formatCurrency(Math.abs(cat.current))}
                       </td>
-                      <td className="text-right py-1.5 px-3 tabular-nums text-muted">
+                      <td className="text-muted px-3 py-1.5 text-right tabular-nums">
                         {formatCurrency(Math.abs(cat.prior))}
                       </td>
                       <td
-                        className={`text-right py-1.5 px-3 tabular-nums ${cat.diff < 0 ? "text-green-600" : cat.diff > 0 ? "text-red-600" : ""}`}
+                        className={`px-3 py-1.5 text-right tabular-nums ${overUnderTextColor(cat.diff)}`}
                       >
                         {cat.diff !== 0
                           ? formatCurrency(Math.abs(cat.diff))
@@ -629,7 +628,7 @@ export function ExpensesContent() {
                         {cat.diff < 0 ? " less" : cat.diff > 0 ? " more" : ""}
                       </td>
                       <td
-                        className={`text-right py-1.5 px-3 tabular-nums ${(cat.percentChange ?? 0) < 0 ? "text-green-600" : (cat.percentChange ?? 0) > 0 ? "text-red-600" : ""}`}
+                        className={`px-3 py-1.5 text-right tabular-nums ${overUnderTextColor(cat.percentChange ?? 0)}`}
                       >
                         {cat.percentChange !== null
                           ? `${cat.percentChange > 0 ? "+" : ""}${formatPercent(cat.percentChange / 100, 1)}`
@@ -639,16 +638,16 @@ export function ExpensesContent() {
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr className="border-t-2 border-strong font-semibold">
+                  <tr className="border-strong border-t-2 font-semibold">
                     <td className="py-2 pr-3">Total</td>
-                    <td className="text-right py-2 px-3 tabular-nums">
+                    <td className="px-3 py-2 text-right tabular-nums">
                       {formatCurrency(
                         Math.abs(
                           yoyData.categories.reduce((s, c) => s + c.current, 0),
                         ),
                       )}
                     </td>
-                    <td className="text-right py-2 px-3 tabular-nums text-muted">
+                    <td className="text-muted px-3 py-2 text-right tabular-nums">
                       {formatCurrency(
                         Math.abs(
                           yoyData.categories.reduce((s, c) => s + c.prior, 0),
@@ -661,7 +660,7 @@ export function ExpensesContent() {
               </table>
             </div>
           ) : (
-            <p className="text-xs text-faint text-center py-4">
+            <p className="text-faint py-4 text-center text-xs">
               No comparison data available for this period.
             </p>
           )}
@@ -686,7 +685,7 @@ function SummaryCard({
 }) {
   return (
     <div className="bg-surface-primary rounded-lg border p-3">
-      <div className="text-caption font-medium text-muted uppercase tracking-wider">
+      <div className="text-caption text-muted font-medium tracking-wider uppercase">
         {label}
       </div>
       <div className={`text-lg font-bold tabular-nums ${color}`}>{value}</div>
@@ -723,14 +722,14 @@ function GroupRows({
   return (
     <>
       <tr
-        className="border-b bg-surface-sunken cursor-pointer hover:bg-surface-elevated"
+        className="bg-surface-sunken hover:bg-surface-elevated cursor-pointer border-b"
         onClick={onToggle}
       >
-        <td className="py-1.5 pr-3 font-semibold text-primary">
+        <td className="text-primary py-1.5 pr-3 font-semibold">
           <span className="flex items-center gap-1.5">
             <svg
               aria-hidden="true"
-              className={`w-2.5 h-2.5 text-faint transition-transform ${isExpanded ? "rotate-90" : ""}`}
+              className={`text-faint h-2.5 w-2.5 transition-transform ${isExpanded ? "rotate-90" : ""}`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -743,27 +742,27 @@ function GroupRows({
               />
             </svg>
             <span
-              className={`w-2 h-2 rounded-full flex-shrink-0 ${group.isEssential ? essentialColor() : discretionaryColor()}`}
+              className={`h-2 w-2 flex-shrink-0 rounded-full ${group.isEssential ? essentialColor() : discretionaryColor()}`}
             />
             {group.name}
-            <span className="text-caption font-normal text-faint">
+            <span className="text-caption text-faint font-normal">
               ({items.length})
             </span>
           </span>
         </td>
-        <td className="text-right py-1.5 px-3 tabular-nums font-semibold">
+        <td className="px-3 py-1.5 text-right font-semibold tabular-nums">
           {formatCurrency(group.budgeted)}
         </td>
-        <td className="text-right py-1.5 px-3 tabular-nums font-semibold">
+        <td className="px-3 py-1.5 text-right font-semibold tabular-nums">
           {formatCurrency(group.actual)}
         </td>
         <td
-          className={`text-right py-1.5 px-3 tabular-nums font-semibold ${group.diff > 0 ? "text-red-600" : "text-green-600"}`}
+          className={`px-3 py-1.5 text-right font-semibold tabular-nums ${overUnderTextColor(group.diff)}`}
         >
           {formatCurrency(Math.abs(group.diff))}
           {group.diff > 0 ? " over" : " under"}
         </td>
-        <td className="text-right py-1.5 px-3">
+        <td className="px-3 py-1.5 text-right">
           <ProgressBar value={percentUsed} />
         </td>
       </tr>
@@ -780,24 +779,24 @@ function GroupRows({
             return (
               <tr
                 key={item.category}
-                className="border-b border-subtle hover:bg-blue-50/60"
+                className="border-subtle border-b hover:bg-blue-50/60"
               >
-                <td className="py-1 pr-3 pl-8 text-muted">
+                <td className="text-muted py-1 pr-3 pl-8">
                   <span className="flex items-center gap-1.5">
                     <span
-                      className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${item.isEssential ? "bg-blue-400" : "bg-purple-300"}`}
+                      className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${item.isEssential ? "bg-blue-400" : "bg-purple-300"}`}
                     />
                     {item.category}
                   </span>
                 </td>
-                <td className="text-right py-1 px-3 tabular-nums text-muted">
+                <td className="text-muted px-3 py-1 text-right tabular-nums">
                   {item.budgeted > 0 ? formatCurrency(item.budgeted) : "—"}
                 </td>
-                <td className="text-right py-1 px-3 tabular-nums text-secondary">
+                <td className="text-secondary px-3 py-1 text-right tabular-nums">
                   {formatCurrency(item.actual)}
                 </td>
                 <td
-                  className={`text-right py-1 px-3 tabular-nums text-xs ${item.diff > 0 ? "text-red-600" : "text-green-500"}`}
+                  className={`px-3 py-1 text-right text-xs tabular-nums ${overUnderTextColor(item.diff)}`}
                 >
                   {item.budgeted > 0 ? (
                     <>
@@ -808,7 +807,7 @@ function GroupRows({
                     "—"
                   )}
                 </td>
-                <td className="text-right py-1 px-3">
+                <td className="px-3 py-1 text-right">
                   {item.budgeted > 0 ? (
                     <ProgressBar value={itemPct} small />
                   ) : null}
@@ -825,19 +824,29 @@ function ProgressBar({ value, small }: { value: number; small?: boolean }) {
   const width = Math.min(clamped * 100, 100);
   const isOver = value > 1;
   const h = small ? "h-1.5" : "h-2";
+  const name = `${formatPercent(value)} of budget${isOver ? " — over budget" : ""}`;
 
   return (
     <div className="flex items-center gap-1.5">
       <div
-        className={`flex-1 ${h} rounded-full overflow-hidden bg-surface-elevated min-w-[40px]`}
+        className={`flex-1 ${h} bg-surface-elevated min-w-[40px] overflow-hidden rounded-full`}
       >
         <div
           className={`${h} rounded-full transition-all ${isOver ? "bg-red-400" : "bg-green-400"}`}
           style={{ width: `${width}%` }}
+          role="progressbar"
+          aria-label={name}
+          aria-valuenow={Math.round(Math.min(value, 1) * 100)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          // valuenow is clamped to 100 (ARIA requires it in range); the
+          // real over-budget figure lives here.
+          aria-valuetext={formatPercent(value)}
         />
       </div>
       <span
-        className={`text-caption tabular-nums w-8 text-right ${isOver ? "text-red-600 font-semibold" : "text-muted"}`}
+        aria-hidden="true"
+        className={`text-caption w-8 text-right tabular-nums ${isOver ? "font-semibold text-red-600" : "text-muted"}`}
       >
         {value >= 9.99 ? "—" : formatPercent(value)}
       </span>

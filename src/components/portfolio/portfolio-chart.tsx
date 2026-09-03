@@ -19,7 +19,8 @@ import {
   formatPercent,
   compactCurrency,
 } from "@/lib/utils/format";
-import { CHART_COLORS } from "@/lib/utils/colors";
+import { CHART_COLORS, chartLinePalette } from "@/lib/utils/colors";
+import { useTheme } from "@/lib/hooks/use-theme";
 import { safeDivide } from "@/lib/utils/math";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
 
@@ -48,6 +49,10 @@ function getTimeFrameCutoff(tf: TimeFrame): string | null {
 }
 
 export function PortfolioChart({ snapshots }: { snapshots: SnapshotPoint[] }) {
+  const c = {
+    ...CHART_COLORS,
+    ...chartLinePalette(useTheme().resolvedTheme === "dark"),
+  };
   const [timeFrame, setTimeFrame] = useState<TimeFrame>("1Y");
   const [hoverValue, setHoverValue] = useState<number | null>(null);
   const hoverRef = useRef<number | null>(null);
@@ -84,7 +89,7 @@ export function PortfolioChart({ snapshots }: { snapshots: SnapshotPoint[] }) {
   if (chartData.length === 0) {
     return (
       <Card title="Portfolio Value">
-        <p className="text-sm text-faint">
+        <p className="text-faint text-sm">
           No snapshot data for the selected time frame.
         </p>
       </Card>
@@ -107,19 +112,19 @@ export function PortfolioChart({ snapshots }: { snapshots: SnapshotPoint[] }) {
           >
             {isPositive ? "+" : ""}
             {formatCurrency(totalChange)}
-            <span className="text-xs ml-1">
+            <span className="ml-1 text-xs">
               ({isPositive ? "+" : ""}
               {formatPercent(totalChangePct / 100, 1)})
             </span>
           </span>
-          <div className="flex gap-0.5 bg-surface-elevated rounded-md p-0.5">
+          <div className="bg-surface-elevated flex gap-0.5 rounded-md p-0.5">
             {TIME_FRAMES.map((tf) => (
               <button
                 key={tf}
                 onClick={() => setTimeFrame(tf)}
-                className={`px-2 py-0.5 text-label rounded transition-colors ${
+                className={`text-label rounded px-2 py-0.5 transition-colors ${
                   timeFrame === tf
-                    ? "bg-surface-primary text-primary shadow-sm font-medium"
+                    ? "bg-surface-primary text-primary font-medium shadow-sm"
                     : "text-muted hover:text-secondary"
                 }`}
               >
@@ -138,16 +143,8 @@ export function PortfolioChart({ snapshots }: { snapshots: SnapshotPoint[] }) {
         >
           <defs>
             <linearGradient id="portfolioGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop
-                offset="5%"
-                stopColor={CHART_COLORS.perfBalance}
-                stopOpacity={0.3}
-              />
-              <stop
-                offset="95%"
-                stopColor={CHART_COLORS.perfBalance}
-                stopOpacity={0.05}
-              />
+              <stop offset="5%" stopColor={c.perfBalance} stopOpacity={0.3} />
+              <stop offset="95%" stopColor={c.perfBalance} stopOpacity={0.05} />
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.mcGrid} />
@@ -177,8 +174,8 @@ export function PortfolioChart({ snapshots }: { snapshots: SnapshotPoint[] }) {
               if (!active || !payload?.length) return null;
               const p = payload[0]!.payload as ChartPoint;
               return (
-                <div className="bg-surface-primary border rounded-lg shadow-lg p-2.5 text-xs">
-                  <div className="font-medium text-primary mb-1">{p.date}</div>
+                <div className="bg-surface-primary rounded-lg border p-2.5 text-xs shadow-lg">
+                  <div className="text-primary mb-1 font-medium">{p.date}</div>
                   <div className="text-secondary">
                     {formatCurrency(p.total)}
                   </div>
@@ -217,15 +214,14 @@ export function PortfolioChart({ snapshots }: { snapshots: SnapshotPoint[] }) {
             />
           )}
           <Area
+            isAnimationActive={false}
             type="monotone"
             dataKey="total"
-            stroke={CHART_COLORS.perfBalance}
+            stroke={c.perfBalance}
             strokeWidth={2}
             fill="url(#portfolioGradient)"
             dot={
-              chartData.length <= 52
-                ? { r: 2.5, fill: CHART_COLORS.perfBalance }
-                : false
+              chartData.length <= 52 ? { r: 2.5, fill: c.perfBalance } : false
             }
             activeDot={{ r: 4 }}
           />

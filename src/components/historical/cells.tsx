@@ -39,9 +39,9 @@ export function changeColor(value: number | null): string {
 
 export function NoteIndicator({ note }: { note: string }) {
   return (
-    <span className="relative group/note inline-block ml-0.5">
-      <span className="inline-block w-0 h-0 border-l-[5px] border-l-amber-400 border-b-[5px] border-b-transparent cursor-help" />
-      <span className="absolute bottom-full left-0 mb-1 hidden group-hover/note:block bg-slate-900 text-slate-100 text-caption px-2 py-1 rounded shadow-lg max-w-[200px] whitespace-normal z-50">
+    <span className="group/note relative ml-0.5 inline-block">
+      <span className="inline-block h-0 w-0 cursor-help border-b-[5px] border-l-[5px] border-b-transparent border-l-amber-400" />
+      <span className="text-caption absolute bottom-full left-0 z-50 mb-1 hidden max-w-[200px] rounded bg-slate-900 px-2 py-1 whitespace-normal text-slate-100 shadow-lg group-hover/note:block">
         {note}
       </span>
     </span>
@@ -67,7 +67,7 @@ export function NoteableValue({
   const existingNote = notes[noteKey];
 
   return (
-    <span className="relative group/cell inline-flex items-center gap-0.5">
+    <span className="group/cell relative inline-flex items-center gap-0.5">
       {children}
       {existingNote && <NoteIndicator note={existingNote} />}
       {!isCurrent && (
@@ -115,7 +115,7 @@ export function NoteButton({
   if (editing) {
     return (
       <span
-        className="absolute top-full right-0 mt-1 z-[9999] bg-surface-primary border border-strong rounded-lg shadow-xl p-2"
+        className="bg-surface-primary border-strong absolute top-full right-0 z-[9999] mt-1 rounded-lg border p-2 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <textarea
@@ -132,10 +132,10 @@ export function NoteButton({
             }
             if (e.key === "Escape") cancel();
           }}
-          className="w-48 h-14 text-xs p-1.5 border rounded resize-none focus:outline-none focus:ring-1 focus:ring-blue-400"
+          className="h-14 w-48 resize-none rounded border p-1.5 text-xs focus:ring-1 focus:ring-blue-400 focus:outline-none"
           placeholder="Add note..."
         />
-        <div className="flex justify-end gap-1.5 mt-1.5">
+        <div className="mt-1.5 flex justify-end gap-1.5">
           <button
             onClick={cancel}
             className="text-caption text-faint hover:text-muted"
@@ -144,7 +144,7 @@ export function NoteButton({
           </button>
           <button
             onClick={commit}
-            className="text-caption text-blue-600 font-medium hover:text-blue-800"
+            className="text-caption font-medium text-blue-600 hover:text-blue-800"
           >
             Save
           </button>
@@ -159,7 +159,7 @@ export function NoteButton({
         e.stopPropagation();
         open();
       }}
-      className="hidden group-hover/cell:inline-block text-micro text-faint hover:text-amber-500 ml-0.5"
+      className="text-micro text-faint ml-0.5 hidden group-hover/cell:inline-block hover:text-amber-500"
       title={existingNote ? "Edit note" : "Add note"}
     >
       {existingNote ? "\u270E" : "\u2710"}
@@ -180,7 +180,7 @@ export function ColHeader({
 }) {
   return (
     <th
-      className={`text-right py-1.5 px-1.5 text-muted font-medium ${
+      className={`text-muted px-1.5 py-1.5 text-right font-medium ${
         border ? "border-l" : ""
       }`}
     >
@@ -200,7 +200,7 @@ export function StickyLeftHeader({
 }) {
   return (
     <th
-      className={`sticky z-20 bg-surface-primary text-right py-1.5 px-1.5 text-muted font-medium ${borderRight ? "border-r border-strong" : ""}`}
+      className={`bg-surface-primary text-muted sticky z-20 px-1.5 py-1.5 text-right font-medium ${borderRight ? "border-strong border-r" : ""}`}
       style={{ left: offset * STICKY_COL_W }}
     >
       {children}
@@ -223,9 +223,9 @@ export function StickyLeftCell({
 }) {
   return (
     <td
-      className={`sticky z-10 bg-surface-primary text-right py-1.5 px-1.5 ${
+      className={`bg-surface-primary sticky z-10 px-1.5 py-1.5 text-right ${
         bold ? "font-semibold" : ""
-      } ${borderRight ? "border-r border-strong" : ""} ${extraClass ?? ""}`}
+      } ${borderRight ? "border-strong border-r" : ""} ${extraClass ?? ""}`}
       style={{ left: offset * STICKY_COL_W }}
     >
       {children}
@@ -246,7 +246,7 @@ export function NumCell({
 }) {
   return (
     <td
-      className={`text-right py-1.5 px-1.5 ${bold ? "font-semibold" : ""} ${
+      className={`px-1.5 py-1.5 text-right ${bold ? "font-semibold" : ""} ${
         border ? "border-l" : ""
       } ${red && value ? "text-red-600" : ""}`}
     >
@@ -309,13 +309,13 @@ export function PerfDetailCell({
 
   return (
     <td
-      className={`text-right py-1.5 px-1.5 ${colorClass} ${
+      className={`px-1.5 py-1.5 text-right ${colorClass} ${
         border ? "border-l" : ""
       }`}
     >
       {lines && lines.length > 0 ? (
         <Tooltip lines={lines} side="bottom" maxWidth={400}>
-          <span className="cursor-help border-b border-dotted border-strong">
+          <span className="border-strong cursor-help border-b border-dotted">
             {display}
           </span>
         </Tooltip>
@@ -347,11 +347,11 @@ export function PerfEndBalCell({
   };
 
   return (
-    <td className="text-right py-1.5 px-1.5">
+    <td className="px-1.5 py-1.5 text-right">
       <span className="inline-flex items-center gap-0.5">
         <span>{value !== null ? formatCurrency(value) : "\u2014"}</span>
         <span
-          className="inline-block w-3 h-3 text-micro leading-3 text-center rounded-full bg-blue-100 text-blue-600 font-bold cursor-help"
+          className="text-micro inline-block h-3 w-3 cursor-help rounded-full bg-blue-100 text-center leading-3 font-bold text-blue-600"
           onMouseEnter={() => setShowTip(true)}
           onMouseLeave={() => setShowTip(false)}
         >
@@ -359,14 +359,14 @@ export function PerfEndBalCell({
         </span>
         {showTip && (
           <span
-            className="fixed z-[100] bg-slate-900 text-slate-100 text-caption px-2.5 py-1.5 rounded shadow-lg w-[260px] whitespace-normal leading-relaxed pointer-events-none"
+            className="text-caption pointer-events-none fixed z-[100] w-[260px] rounded bg-slate-900 px-2.5 py-1.5 leading-relaxed whitespace-normal text-slate-100 shadow-lg"
             style={{
               transform: "translate(-100%, -100%)",
               marginLeft: "-8px",
               marginTop: "-4px",
             }}
           >
-            <span className="font-semibold block mb-0.5">
+            <span className="mb-0.5 block font-semibold">
               End Bal uses latest snapshot
             </span>
             This value comes from the portfolio snapshot (
@@ -439,14 +439,14 @@ export function EditableCell({
 
   if (editingKey) {
     return (
-      <td className={`py-0.5 px-0.5 ${border ? "border-l" : ""}`}>
+      <td className={`px-0.5 py-0.5 ${border ? "border-l" : ""}`}>
         <input
           type="number"
           value={editValue}
           onChange={(e) => setEditValue(e.target.value)}
           onBlur={commit}
           onKeyDown={handleKeyDown}
-          className="w-20 text-right text-xs px-1 py-0.5 border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="w-20 rounded border border-blue-300 px-1 py-0.5 text-right text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
           autoFocus
           disabled={isSaving}
         />
@@ -458,16 +458,16 @@ export function EditableCell({
     !isCurrent && (editableFields ? editableFields.has(field) : true);
   return (
     <td
-      className={`text-right py-1.5 px-1.5 ${border ? "border-l" : ""} ${
+      className={`px-1.5 py-1.5 text-right ${border ? "border-l" : ""} ${
         red && value ? "text-red-600" : ""
-      } ${isEditable ? "cursor-pointer hover:bg-blue-50 transition-colors" : ""}`}
+      } ${isEditable ? "cursor-pointer transition-colors hover:bg-blue-50" : ""}`}
       onDoubleClick={isEditable ? startEdit : undefined}
       title={isEditable ? "Double-click to edit" : undefined}
     >
-      <span className="relative group/cell inline-flex items-center gap-0.5">
+      <span className="group/cell relative inline-flex items-center gap-0.5">
         {tooltipLines && tooltipLines.length > 0 ? (
           <Tooltip lines={tooltipLines} side="bottom" maxWidth={400}>
-            <span className="cursor-help border-b border-dotted border-strong">
+            <span className="border-strong cursor-help border-b border-dotted">
               {value !== null && value !== undefined
                 ? formatCurrency(value)
                 : "\u2014"}
@@ -541,7 +541,7 @@ export function EditableRateCell({
 
   if (editingKey) {
     return (
-      <td className="py-0.5 px-0.5">
+      <td className="px-0.5 py-0.5">
         <input
           type="number"
           step="0.1"
@@ -549,7 +549,7 @@ export function EditableRateCell({
           onChange={(e) => setEditValue(e.target.value)}
           onBlur={commit}
           onKeyDown={handleKeyDown}
-          className="w-14 text-right text-xs px-1 py-0.5 border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="w-14 rounded border border-blue-300 px-1 py-0.5 text-right text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
           autoFocus
           disabled={isSaving}
         />
@@ -560,13 +560,13 @@ export function EditableRateCell({
   const isEditable = !isCurrent;
   return (
     <td
-      className={`text-right py-1.5 px-1.5 ${
-        isEditable ? "cursor-pointer hover:bg-blue-50 transition-colors" : ""
+      className={`px-1.5 py-1.5 text-right ${
+        isEditable ? "cursor-pointer transition-colors hover:bg-blue-50" : ""
       }`}
       onDoubleClick={isEditable ? startEdit : undefined}
       title={isEditable ? "Double-click to edit" : undefined}
     >
-      <span className="relative group/cell inline-flex items-center gap-0.5">
+      <span className="group/cell relative inline-flex items-center gap-0.5">
         <span>{value !== null ? formatPercent(value, 1) : "\u2014"}</span>
         {existingNote && <NoteIndicator note={existingNote} />}
         {!isCurrent && (
@@ -627,10 +627,10 @@ export function ReadOnlyLineItemCell({
   const hasItems = items.length > 0;
 
   return (
-    <td className="text-right py-1.5 px-1.5 relative">
-      <span className="relative group/cell inline-flex items-center gap-0.5">
+    <td className="relative px-1.5 py-1.5 text-right">
+      <span className="group/cell relative inline-flex items-center gap-0.5">
         <span
-          className={`${hasItems ? "cursor-pointer hover:text-blue-600 underline decoration-dotted decoration-gray-400" : ""}`}
+          className={`${hasItems ? "cursor-pointer underline decoration-gray-400 decoration-dotted hover:text-blue-600" : ""}`}
           onClick={hasItems ? () => setExpanded(!expanded) : undefined}
           title={
             hasItems
@@ -653,9 +653,9 @@ export function ReadOnlyLineItemCell({
       {expanded && (
         <div
           ref={popoverRef}
-          className="absolute top-full right-0 mt-1 z-[9999] bg-surface-primary border rounded-lg shadow-xl p-3 min-w-[240px] text-left"
+          className="bg-surface-primary absolute top-full right-0 z-[9999] mt-1 min-w-[240px] rounded-lg border p-3 text-left shadow-xl"
         >
-          <div className="text-xs font-semibold text-muted mb-1.5">
+          <div className="text-muted mb-1.5 text-xs font-semibold">
             {type === "homeImprovement"
               ? `Home Improvements (through ${year})`
               : `Other Assets (${year})`}
@@ -663,10 +663,10 @@ export function ReadOnlyLineItemCell({
           {items.map((item) => (
             <div
               key={`${item.description}-${item.id}`}
-              className="flex items-center justify-between text-xs py-0.5"
+              className="flex items-center justify-between py-0.5 text-xs"
             >
               <span
-                className="flex-1 truncate text-secondary"
+                className="text-secondary flex-1 truncate"
                 title={item.note ?? undefined}
               >
                 {item.description}
@@ -674,13 +674,13 @@ export function ReadOnlyLineItemCell({
                   <span className="text-faint ml-1">({item.note})</span>
                 )}
               </span>
-              <span className="font-medium ml-3 tabular-nums">
+              <span className="ml-3 font-medium tabular-nums">
                 {formatCurrency(item.cost)}
               </span>
             </div>
           ))}
           {items.length > 0 && (
-            <div className="flex justify-between text-xs font-semibold border-t pt-1 mt-1">
+            <div className="mt-1 flex justify-between border-t pt-1 text-xs font-semibold">
               <span>Total</span>
               <span className="tabular-nums">{formatCurrency(value)}</span>
             </div>

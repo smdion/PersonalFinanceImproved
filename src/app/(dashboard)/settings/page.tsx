@@ -68,16 +68,16 @@ export default function SettingsPage() {
           </>
         }
       />
-      <div className="border-b mb-6">
+      <div className="mb-6 border-b">
         <nav className="flex gap-1 overflow-x-auto">
           {tabs.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+              className={`border-b-2 px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
                 activeTab === tab.key
                   ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-muted hover:text-secondary hover:border-strong"
+                  : "text-muted hover:text-secondary hover:border-strong border-transparent"
               }`}
             >
               {tab.label}

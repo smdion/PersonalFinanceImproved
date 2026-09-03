@@ -14,7 +14,8 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { CHART_COLORS } from "@/lib/utils/colors";
+import { CHART_COLORS, chartLinePalette } from "@/lib/utils/colors";
+import { useTheme } from "@/lib/hooks/use-theme";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
 import {
   WEALTH_FORMULA_AGE_CUTOFF,
@@ -34,6 +35,10 @@ export function JourneyToAbundanceChart({
   primaryBirthYear: number;
   xAxisMode?: ChartXAxisMode;
 }) {
+  const c = {
+    ...CHART_COLORS,
+    ...chartLinePalette(useTheme().resolvedTheme === "dark"),
+  };
   const chartData = useMemo(() => {
     // Compute benchmark per year using the same formula as AAW score
     // (single computation path — age-adjusted denominator, per-year effectiveIncome)
@@ -152,7 +157,7 @@ export function JourneyToAbundanceChart({
             type="monotone"
             dataKey="netWorth"
             name="Net Worth"
-            stroke={CHART_COLORS.netWorth}
+            stroke={c.netWorth}
             strokeWidth={3}
             dot={{ r: 4 }}
             activeDot={{ r: 6 }}
@@ -160,7 +165,7 @@ export function JourneyToAbundanceChart({
         </LineChart>
       </ResponsiveContainer>
       {!hasIncome && (
-        <p className="text-xs text-faint mt-2">
+        <p className="text-faint mt-2 text-xs">
           Add gross income to annual net worth records to see wealth benchmark
           lines.
         </p>

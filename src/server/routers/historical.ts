@@ -1,5 +1,6 @@
 /** Historical data router providing year-end balance history, per-person salary/bonus records, home improvements, other assets, and historical notes management. */
 import { and, asc, eq } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
@@ -221,7 +222,10 @@ export const historicalRouter = createTRPCRouter({
         (r) => new Date(r.yearEndDate).getFullYear() === year,
       );
       if (!row) {
-        throw new Error(`No net_worth_annual row found for year ${year}`);
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `No year-end history found for ${year}.`,
+        });
       }
 
       // Build update object — only include fields that were provided

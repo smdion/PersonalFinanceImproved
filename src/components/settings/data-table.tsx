@@ -38,7 +38,7 @@ export function DataTable<T extends { id: number }>({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
+      <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold">{title}</h2>
         {renderForm && (
           <button
@@ -46,7 +46,7 @@ export function DataTable<T extends { id: number }>({
               setEditing(null);
               setShowForm(true);
             }}
-            className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+            className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"
           >
             Add
           </button>
@@ -54,7 +54,7 @@ export function DataTable<T extends { id: number }>({
       </div>
 
       {showForm && renderForm && (
-        <div className="mb-4 p-4 bg-surface-sunken rounded border">
+        <div className="bg-surface-sunken mb-4 rounded border p-4">
           {renderForm(editing, () => {
             setShowForm(false);
             setEditing(null);
@@ -68,19 +68,19 @@ export function DataTable<T extends { id: number }>({
         </p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm border-collapse">
+          <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b bg-surface-sunken">
+              <tr className="bg-surface-sunken border-b">
                 {columns.map((col) => (
                   <th
                     key={col.key}
-                    className="text-left px-3 py-2 font-medium text-secondary"
+                    className="text-secondary px-3 py-2 text-left font-medium"
                   >
                     {col.label}
                   </th>
                 ))}
                 {(onDelete || renderForm) && (
-                  <th className="text-right px-3 py-2 font-medium text-secondary w-24">
+                  <th className="text-secondary w-24 px-3 py-2 text-right font-medium">
                     Actions
                   </th>
                 )}
@@ -88,7 +88,7 @@ export function DataTable<T extends { id: number }>({
             </thead>
             <tbody>
               {data.map((row) => (
-                <tr key={row.id} className="border-b hover:bg-surface-sunken">
+                <tr key={row.id} className="hover:bg-surface-sunken border-b">
                   {columns.map((col) => (
                     <td key={col.key} className="px-3 py-2">
                       {col.render
@@ -99,14 +99,14 @@ export function DataTable<T extends { id: number }>({
                     </td>
                   ))}
                   {(onDelete || renderForm) && (
-                    <td className="px-3 py-2 text-right space-x-2">
+                    <td className="space-x-2 px-3 py-2 text-right">
                       {renderForm && (
                         <button
                           onClick={() => {
                             setEditing(row);
                             setShowForm(true);
                           }}
-                          className="text-blue-600 hover:text-blue-800 text-xs"
+                          className="text-xs text-blue-600 hover:text-blue-800"
                         >
                           Edit
                         </button>
@@ -118,7 +118,7 @@ export function DataTable<T extends { id: number }>({
                               onDelete(row.id);
                           }}
                           disabled={isDeleting}
-                          className="text-red-600 hover:text-red-800 text-xs"
+                          className="text-xs text-red-600 hover:text-red-800"
                         >
                           Delete
                         </button>

@@ -60,7 +60,7 @@ export function FundMiniChart({
   const hasNegative = minBalance < 0;
 
   return (
-    <div className="w-full h-[120px]">
+    <div className="h-[120px] w-full">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart
           data={data}
@@ -129,7 +129,7 @@ export function FundMiniChart({
               const labelStr = String(label);
               const [y, m] = labelStr.split("-");
               return (
-                <div className="bg-surface-primary border rounded-md px-2.5 py-1.5 text-xs shadow-lg">
+                <div className="bg-surface-primary rounded-md border px-2.5 py-1.5 text-xs shadow-lg">
                   <p className="text-secondary font-medium">
                     {MONTH_NAMES_SHORT[parseInt(m!) - 1]} {y}
                   </p>
@@ -177,6 +177,7 @@ export function FundMiniChart({
 
           {/* Positive balance area */}
           <Area
+            isAnimationActive={false}
             type="monotone"
             dataKey="balance"
             stroke={fundColor}

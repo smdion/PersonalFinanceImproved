@@ -103,16 +103,16 @@ export function BrokerageGoalsSection() {
 
   return (
     <>
-      <h2 className="text-lg font-semibold text-primary mb-3 mt-8">
+      <h2 className="text-primary mt-8 mb-3 text-lg font-semibold">
         Long-Term Goals
         <HelpTip text="Goals funded by your brokerage (after-tax) investment account. Unlike sinking funds held in cash, these grow with the market and withdrawals are subject to capital gains tax on the gains portion." />
       </h2>
 
       {/* Summary KPIs */}
-      <div className="grid grid-cols-2 gap-4 mb-4">
+      <div className="mb-4 grid grid-cols-2 gap-4">
         <Card>
           <Metric value={formatCurrency(totalCommitment)} />
-          <p className="text-sm text-muted mt-1">
+          <p className="text-muted mt-1 text-sm">
             Total Commitments
             <HelpTip text="Sum of all active goal target amounts — total brokerage funds earmarked for future withdrawals" />
           </p>
@@ -125,21 +125,21 @@ export function BrokerageGoalsSection() {
       {/* Goal cards */}
       {(goals ?? []).length === 0 && !showCreate && (
         <Card className="mb-4">
-          <p className="text-sm text-muted">
+          <p className="text-muted text-sm">
             No long-term goals yet. Add a goal to start tracking
             brokerage-funded purchases.
           </p>
         </Card>
       )}
 
-      <div className="space-y-3 mb-4">
+      <div className="mb-4 space-y-3">
         {(goals ?? []).map((goal) => (
           <Card key={goal.id} className="relative">
             {editingId === goal.id ? (
               <div className="space-y-2">
                 <div className="grid grid-cols-2 gap-2">
                   <input
-                    className="border rounded px-2 py-1 text-sm"
+                    className="rounded border px-2 py-1 text-sm"
                     placeholder="Name"
                     value={editForm.name}
                     onChange={(e) =>
@@ -147,7 +147,7 @@ export function BrokerageGoalsSection() {
                     }
                   />
                   <input
-                    className="border rounded px-2 py-1 text-sm"
+                    className="rounded border px-2 py-1 text-sm"
                     placeholder="Amount"
                     value={editForm.targetAmount}
                     onChange={(e) =>
@@ -155,7 +155,7 @@ export function BrokerageGoalsSection() {
                     }
                   />
                   <input
-                    className="border rounded px-2 py-1 text-sm"
+                    className="rounded border px-2 py-1 text-sm"
                     placeholder="Target Year"
                     type="number"
                     value={editForm.targetYear}
@@ -164,7 +164,7 @@ export function BrokerageGoalsSection() {
                     }
                   />
                   <input
-                    className="border rounded px-2 py-1 text-sm"
+                    className="rounded border px-2 py-1 text-sm"
                     placeholder="Priority"
                     type="number"
                     value={editForm.priority}
@@ -174,7 +174,7 @@ export function BrokerageGoalsSection() {
                   />
                 </div>
                 <input
-                  className="border rounded px-2 py-1 text-sm w-full"
+                  className="w-full rounded border px-2 py-1 text-sm"
                   placeholder="Notes"
                   value={editForm.notes}
                   onChange={(e) =>
@@ -183,13 +183,13 @@ export function BrokerageGoalsSection() {
                 />
                 <div className="flex gap-2">
                   <button
-                    className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+                    className="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700"
                     onClick={() => handleUpdate(goal.id)}
                   >
                     Save
                   </button>
                   <button
-                    className="text-xs text-muted hover:text-secondary"
+                    className="text-muted hover:text-secondary text-xs"
                     onClick={() => setEditingId(null)}
                   >
                     Cancel
@@ -199,12 +199,12 @@ export function BrokerageGoalsSection() {
             ) : (
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="font-medium text-sm">{goal.name}</span>
-                  <span className="text-xs text-muted ml-2">
+                  <span className="text-sm font-medium">{goal.name}</span>
+                  <span className="text-muted ml-2 text-xs">
                     Target: {goal.targetYear}
                   </span>
                   {goal.notes && (
-                    <span className="text-xs text-faint ml-2">
+                    <span className="text-faint ml-2 text-xs">
                       — {goal.notes}
                     </span>
                   )}
@@ -246,13 +246,13 @@ export function BrokerageGoalsSection() {
           <div className="space-y-2">
             <div className="grid grid-cols-2 gap-2">
               <input
-                className="border rounded px-2 py-1 text-sm"
+                className="rounded border px-2 py-1 text-sm"
                 placeholder="Goal name (e.g., New Car)"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
               />
               <input
-                className="border rounded px-2 py-1 text-sm"
+                className="rounded border px-2 py-1 text-sm"
                 placeholder="Target amount"
                 value={form.targetAmount}
                 onChange={(e) =>
@@ -260,7 +260,7 @@ export function BrokerageGoalsSection() {
                 }
               />
               <input
-                className="border rounded px-2 py-1 text-sm"
+                className="rounded border px-2 py-1 text-sm"
                 placeholder="Target year"
                 type="number"
                 value={form.targetYear}
@@ -269,7 +269,7 @@ export function BrokerageGoalsSection() {
                 }
               />
               <input
-                className="border rounded px-2 py-1 text-sm"
+                className="rounded border px-2 py-1 text-sm"
                 placeholder="Priority (0 = highest)"
                 type="number"
                 value={form.priority}
@@ -277,21 +277,21 @@ export function BrokerageGoalsSection() {
               />
             </div>
             <input
-              className="border rounded px-2 py-1 text-sm w-full"
+              className="w-full rounded border px-2 py-1 text-sm"
               placeholder="Notes (optional)"
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
             />
             <div className="flex gap-2">
               <button
-                className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+                className="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700"
                 onClick={handleCreate}
                 disabled={createGoal.isPending}
               >
                 {createGoal.isPending ? "Creating..." : "Create Goal"}
               </button>
               <button
-                className="text-xs text-muted hover:text-secondary"
+                className="text-muted hover:text-secondary text-xs"
                 onClick={() => {
                   setShowCreate(false);
                   setForm(emptyGoalForm);
@@ -304,7 +304,7 @@ export function BrokerageGoalsSection() {
         </Card>
       ) : canEdit ? (
         <button
-          className="text-sm text-blue-600 hover:text-blue-800 mb-4"
+          className="mb-4 text-sm text-blue-600 hover:text-blue-800"
           onClick={() => setShowCreate(true)}
         >
           + Add Long-Term Goal

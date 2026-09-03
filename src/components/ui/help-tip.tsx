@@ -43,7 +43,7 @@ export function HelpTip({
     >
       <TooltipPrimitive.Trigger asChild>
         <span
-          className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-surface-strong text-muted text-caption font-bold cursor-help ml-1"
+          className="bg-surface-strong text-muted text-caption ml-1 inline-flex h-4 w-4 cursor-help items-center justify-center rounded-full font-bold"
           aria-label={label}
           onClick={(e) => {
             e.preventDefault();
@@ -61,7 +61,7 @@ export function HelpTip({
           sideOffset={5}
           avoidCollisions
           collisionPadding={12}
-          className="z-[9999] rounded-lg bg-slate-900 dark:bg-slate-700 px-3.5 py-2.5 text-label leading-relaxed text-slate-100 shadow-xl animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95"
+          className="text-label animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 z-[9999] rounded-lg bg-slate-900 px-3.5 py-2.5 leading-relaxed text-slate-100 shadow-xl dark:bg-slate-700"
           style={{ maxWidth: resolvedMaxWidth }}
           onPointerDownOutside={() => setOpen(false)}
         >
@@ -69,7 +69,7 @@ export function HelpTip({
           {learnMoreHref && (
             <Link
               href={learnMoreHref}
-              className="block mt-1.5 text-label text-sky-400 hover:text-sky-300"
+              className="text-label mt-1.5 block text-sky-400 hover:text-sky-300"
               onClick={() => setOpen(false)}
             >
               Learn more →

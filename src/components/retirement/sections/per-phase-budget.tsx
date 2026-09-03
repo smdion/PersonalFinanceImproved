@@ -82,7 +82,7 @@ export function PerPhaseBudgetSection({
   return (
     <div>
       {(budgetNotUsed || !usesPostRetirementRaise) && (
-        <div className="text-xs text-amber-600 bg-amber-50 rounded px-2 py-1.5 mb-2">
+        <div className="mb-2 rounded bg-amber-50 px-2 py-1.5 text-xs text-amber-600">
           {`${strategyMeta.label} computes spending from ${
             incomeSource === "formula"
               ? "your portfolio balance using IRS/endowment formulas"
@@ -102,7 +102,7 @@ export function PerPhaseBudgetSection({
         </div>
       )}
       <div
-        className={`grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm ${budgetNotUsed ? "opacity-40" : ""}`}
+        className={`grid grid-cols-1 gap-x-4 gap-y-2 text-sm sm:grid-cols-2 ${budgetNotUsed ? "opacity-40" : ""}`}
       >
         {/* Retirement Budget source */}
         <div>
@@ -110,7 +110,7 @@ export function PerPhaseBudgetSection({
             Budget Source
             <HelpTip text="Your starting retirement 'salary' — what you pay yourself from your portfolio each year. Grows by the Post-Retirement Raise rate. Set a manual override or use a budget profile." />
           </span>
-          <div className="font-medium flex flex-col gap-1">
+          <div className="flex flex-col gap-1 font-medium">
             {decExpenseOverride ? (
               <span className="text-faint text-xs italic">
                 Using manual override
@@ -118,7 +118,7 @@ export function PerPhaseBudgetSection({
             ) : (
               <>
                 <select
-                  className="text-sm border rounded px-2 py-1 bg-surface-primary disabled:cursor-not-allowed disabled:opacity-50"
+                  className="bg-surface-primary rounded border px-2 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50"
                   value={decumulationBudgetProfileId ?? ""}
                   disabled={!isEditable || budgetNotUsed}
                   onChange={(e) => {
@@ -149,7 +149,7 @@ export function PerPhaseBudgetSection({
                   </Badge>
                 ) : decLabels.length >= 2 ? (
                   <select
-                    className="text-sm border rounded px-2 py-1 bg-surface-primary disabled:cursor-not-allowed disabled:opacity-50"
+                    className="bg-surface-primary rounded border px-2 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50"
                     value={decumulationBudgetColumn}
                     disabled={!isEditable || budgetNotUsed}
                     onChange={(e) => setDecBudgetCol(Number(e.target.value))}
@@ -172,7 +172,7 @@ export function PerPhaseBudgetSection({
             Salary Override
             <HelpTip text="Set a flat annual amount as your starting retirement salary. Overrides the budget profile. Grows by the Post-Retirement Raise rate each year." />
           </span>
-          <div className="font-medium flex items-center gap-1">
+          <div className="flex items-center gap-1 font-medium">
             <InlineEdit
               value={decExpenseOverride ?? ""}
               onSave={(v) => {

@@ -37,14 +37,14 @@ export function TaxWithholdingSection({
   return (
     <div className="space-y-2">
       <SectionHeader>Tax Withholding</SectionHeader>
-      <div className="bg-surface-sunken border border-subtle rounded-lg p-4 space-y-1.5 text-sm">
-        <div className="flex justify-between items-center">
+      <div className="bg-surface-sunken border-subtle space-y-1.5 rounded-lg border p-4 text-sm">
+        <div className="flex items-center justify-between">
           <span>Filing Status</span>
           <select
             value={job.w4FilingStatus}
             onChange={(e) => onUpdateJob("w4FilingStatus", e.target.value)}
             disabled={!editable}
-            className="text-sm border rounded px-2 py-0.5 bg-surface-primary font-medium disabled:opacity-60"
+            className="bg-surface-primary rounded border px-2 py-0.5 text-sm font-medium disabled:opacity-60"
           >
             <option value="MFJ">MFJ</option>
             <option value="Single">Single</option>
@@ -61,7 +61,7 @@ export function TaxWithholdingSection({
           />
           <HelpTip text="Matches the W-4 filing status/checkbox combination used to look up federal withholding brackets." />
         </div>
-        <div className="flex justify-between items-center">
+        <div className="flex items-center justify-between">
           <span>
             Extra withholding
             <HelpTip text="W-4 Line 4c — a flat extra amount added to federal withholding each paycheck, on top of the bracket calculation." />

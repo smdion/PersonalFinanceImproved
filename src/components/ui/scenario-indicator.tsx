@@ -33,7 +33,7 @@ export function ScenarioValue({
   return (
     <span className={`relative inline-flex items-center gap-0.5 ${className}`}>
       <span
-        className="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0 cursor-pointer"
+        className="h-1.5 w-1.5 flex-shrink-0 cursor-pointer rounded-full bg-amber-500"
         title="Overridden in this scenario — click to reset to main plan value"
         onClick={async (e) => {
           e.stopPropagation();
@@ -57,10 +57,10 @@ export function ScenarioBanner() {
 
   return (
     <div
-      className={`flex items-center gap-2 px-3 py-1.5 mb-4 rounded-md border text-xs ${STATUS_COLORS.amber.bg} ${STATUS_COLORS.amber.border} ${STATUS_COLORS.amber.text}`}
+      className={`mb-4 flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs ${STATUS_COLORS.amber.bg} ${STATUS_COLORS.amber.border} ${STATUS_COLORS.amber.text}`}
     >
       <svg
-        className="w-3.5 h-3.5 text-amber-600 flex-shrink-0"
+        className="h-3.5 w-3.5 flex-shrink-0 text-amber-600"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"

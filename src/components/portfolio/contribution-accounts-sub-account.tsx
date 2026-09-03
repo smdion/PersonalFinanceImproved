@@ -47,11 +47,11 @@ export function SubAccountRow({
 
   return (
     <div
-      className={`px-3 py-2 bg-surface-primary border border-subtle rounded text-xs ${!sub.isActive ? "opacity-50" : ""}`}
+      className={`bg-surface-primary border-subtle rounded border px-3 py-2 text-xs ${!sub.isActive ? "opacity-50" : ""}`}
     >
       {/* Line 1: label + amount */}
       <div className="flex items-center justify-between gap-2">
-        <span className="text-secondary font-medium truncate flex items-center gap-1 min-w-0">
+        <span className="text-secondary flex min-w-0 items-center gap-1 truncate font-medium">
           {editingLabel ? (
             <input
               autoFocus
@@ -60,13 +60,13 @@ export function SubAccountRow({
               onBlur={commitLabel}
               onKeyDown={handleLabelKeyDown}
               placeholder={sub.subType || taxLabel}
-              className="border-b border-blue-400 bg-transparent outline-none text-xs w-full min-w-0"
+              className="w-full min-w-0 border-b border-blue-400 bg-transparent text-xs outline-none"
             />
           ) : (
             <>
               <span className="truncate">{subLabel}</span>
               {subLabel !== taxLabel && (
-                <span className="text-faint font-normal shrink-0">
+                <span className="text-faint shrink-0 font-normal">
                   ({taxLabel})
                 </span>
               )}
@@ -74,7 +74,7 @@ export function SubAccountRow({
                 <button
                   onClick={() => startEditLabel(true, sub.label ?? "")}
                   title="Edit label"
-                  className="text-faint hover:text-secondary shrink-0 ml-0.5"
+                  className="text-faint hover:text-secondary ml-0.5 shrink-0"
                 >
                   ✎
                 </button>
@@ -82,13 +82,13 @@ export function SubAccountRow({
             </>
           )}
         </span>
-        <span className="font-mono text-secondary shrink-0">
+        <span className="text-secondary shrink-0 font-mono">
           {formatCurrency(parseFloat(sub.amount))}
         </span>
       </div>
       {/* Line 2: owner · tax type · action */}
-      <div className="flex items-center justify-between gap-2 mt-1">
-        <div className="flex items-center gap-2 min-w-0">
+      <div className="mt-1 flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
           <select
             value={sub.ownerPersonId ?? ""}
             onChange={(e) =>
@@ -99,7 +99,7 @@ export function SubAccountRow({
               })
             }
             disabled={!onUpdate}
-            className={`text-caption text-faint bg-transparent border-none p-0 focus:ring-0${onUpdate ? "cursor-pointer hover:text-secondary" : "cursor-default"}`}
+            className={`text-caption text-faint border-none bg-transparent p-0 focus:ring-0${onUpdate ? "hover:text-secondary cursor-pointer" : "cursor-default"}`}
             title={`Owner: ${ownerName}`}
           >
             <option value="">Joint</option>
@@ -114,7 +114,7 @@ export function SubAccountRow({
             value={sub.taxType}
             onChange={(e) => onUpdate?.(sub.id, { taxType: e.target.value })}
             disabled={!onUpdate}
-            className={`text-caption text-faint bg-transparent border-none p-0 focus:ring-0${onUpdate ? "cursor-pointer hover:text-secondary" : "cursor-default"}`}
+            className={`text-caption text-faint border-none bg-transparent p-0 focus:ring-0${onUpdate ? "hover:text-secondary cursor-pointer" : "cursor-default"}`}
             title="Tax type"
           >
             {Object.entries(TAX_TYPE_COLORS).map(([value, { label }]) => (
@@ -166,7 +166,7 @@ export function SubAccountInactiveSection({
         {subs.length > 1 ? "s" : ""}
       </button>
       {show && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-1.5 mt-2">
+        <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2 md:grid-cols-3">
           {subs.map((sub) => (
             <SubAccountRow
               key={sub.id}
@@ -218,17 +218,17 @@ export function AddSubAccountForm({
   const [owner, setOwner] = useState<number | null>(ownerPersonId);
 
   return (
-    <div className="border border-blue-200 rounded-lg p-3 bg-blue-50/30 space-y-2">
-      <div className="text-caption font-semibold text-muted uppercase tracking-wider">
+    <div className="space-y-2 rounded-lg border border-blue-200 bg-blue-50/30 p-3">
+      <div className="text-caption text-muted font-semibold tracking-wider uppercase">
         New Sub-Account
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
         <div>
           <label className="text-caption text-muted">Tax Type</label>
           <select
             value={taxType}
             onChange={(e) => setTaxType(e.target.value)}
-            className="w-full border rounded px-1.5 py-1 text-xs bg-surface-primary"
+            className="bg-surface-primary w-full rounded border px-1.5 py-1 text-xs"
           >
             {Object.entries(TAX_TYPE_COLORS).map(([value, { label }]) => (
               <option key={value} value={value}>
@@ -244,7 +244,7 @@ export function AddSubAccountForm({
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="0.00"
-            className="w-full border rounded px-1.5 py-1 text-xs bg-surface-primary"
+            className="bg-surface-primary w-full rounded border px-1.5 py-1 text-xs"
           />
         </div>
         <div>
@@ -254,7 +254,7 @@ export function AddSubAccountForm({
             value={subType}
             onChange={(e) => setSubType(e.target.value)}
             placeholder="e.g. ESPP, Rollover"
-            className="w-full border rounded px-1.5 py-1 text-xs bg-surface-primary"
+            className="bg-surface-primary w-full rounded border px-1.5 py-1 text-xs"
           />
         </div>
         <div>
@@ -264,7 +264,7 @@ export function AddSubAccountForm({
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             placeholder="e.g. Employer Match"
-            className="w-full border rounded px-1.5 py-1 text-xs bg-surface-primary"
+            className="bg-surface-primary w-full rounded border px-1.5 py-1 text-xs"
           />
         </div>
         <div>
@@ -274,7 +274,7 @@ export function AddSubAccountForm({
             onChange={(e) =>
               setOwner(e.target.value ? parseInt(e.target.value, 10) : null)
             }
-            className="w-full border rounded px-1.5 py-1 text-xs bg-surface-primary"
+            className="bg-surface-primary w-full rounded border px-1.5 py-1 text-xs"
           >
             <option value="">Joint</option>
             {people.map((p) => (
@@ -299,13 +299,13 @@ export function AddSubAccountForm({
               ownerPersonId: owner,
             })
           }
-          className="text-xs px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+          className="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700 disabled:opacity-50"
         >
           Create
         </button>
         <button
           onClick={onCancel}
-          className="text-xs px-3 py-1 rounded text-muted hover:bg-surface-elevated"
+          className="text-muted hover:bg-surface-elevated rounded px-3 py-1 text-xs"
         >
           Cancel
         </button>

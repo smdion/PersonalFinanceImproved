@@ -184,16 +184,16 @@ export function ContributionAccountsSettings() {
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between px-5 py-3 bg-surface-primary border rounded-lg shadow-sm hover:bg-surface-sunken transition-colors"
+        className="bg-surface-primary hover:bg-surface-sunken flex w-full items-center justify-between rounded-lg border px-5 py-3 shadow-sm transition-colors"
       >
         <div className="flex items-center gap-2">
           {" "}
           <span
-            className={`text-xs text-faint transition-transform ${expanded ? "rotate-90" : ""}`}
+            className={`text-faint text-xs transition-transform ${expanded ? "rotate-90" : ""}`}
           >
             &#9654;
           </span>
-          <span className="font-semibold text-primary">
+          <span className="text-primary font-semibold">
             Account &amp; Contribution Settings
           </span>
           <HelpTip
@@ -221,12 +221,12 @@ export function ContributionAccountsSettings() {
               </>,
             ]}
           />
-          <span className="text-xs text-faint">
+          <span className="text-faint text-xs">
             ({activeAccounts.length} account
             {activeAccounts.length !== 1 ? "s" : ""})
           </span>
         </div>
-        <span className="text-xs text-faint">
+        <span className="text-faint text-xs">
           {expanded ? "Click to collapse" : "Click to expand"}
         </span>
       </button>
@@ -249,7 +249,7 @@ export function ContributionAccountsSettings() {
 
           <Card className="mt-0 rounded-t-none border-t-0 p-4">
             {admin && (
-              <div className="flex justify-end items-center gap-1 mb-3">
+              <div className="mb-3 flex items-center justify-end gap-1">
                 <HelpTip
                   maxWidth={360}
                   lines={[
@@ -273,7 +273,7 @@ export function ContributionAccountsSettings() {
                 />
                 <button
                   onClick={() => setCreatingAccount(true)}
-                  className="text-xs font-medium px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700"
+                  className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
                 >
                   + Add Account
                 </button>
@@ -281,7 +281,7 @@ export function ContributionAccountsSettings() {
             )}
 
             {creatingAccount && (
-              <div className="mb-4 border border-blue-200 rounded-lg p-4 bg-blue-50/50">
+              <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50/50 p-4">
                 <CreateAccountForm
                   people={peopleList}
                   onSubmit={(vals) =>
@@ -386,10 +386,10 @@ export function ContributionAccountsSettings() {
             </div>
 
             {closedAccounts.length > 0 && (
-              <div className="border-t mt-3 pt-2">
+              <div className="mt-3 border-t pt-2">
                 <button
                   onClick={() => setShowClosed(!showClosed)}
-                  className="text-xs text-muted hover:text-secondary"
+                  className="text-muted hover:text-secondary text-xs"
                 >
                   {showClosed ? "Hide" : "Show"} {closedAccounts.length} closed
                   account

@@ -10,10 +10,10 @@ export function ReportExecutiveSummarySection({
 }) {
   return (
     <section className="mb-6" style={{ breakInside: "avoid" }}>
-      <h2 className="text-lg font-semibold mb-2">Executive Summary</h2>
-      <p className="text-sm leading-relaxed mb-3">{summary.narrative}</p>
+      <h2 className="mb-2 text-lg font-semibold">Executive Summary</h2>
+      <p className="mb-3 text-sm leading-relaxed">{summary.narrative}</p>
       {summary.coastFireLine && (
-        <p className="text-sm text-muted mb-3">{summary.coastFireLine}</p>
+        <p className="text-muted mb-3 text-sm">{summary.coastFireLine}</p>
       )}
       <dl className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
         {summary.keyNumbers.map((kn) => (

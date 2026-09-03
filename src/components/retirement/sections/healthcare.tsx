@@ -23,14 +23,14 @@ export function HealthcareSection({
 }: Props) {
   return (
     <div className="bg-surface-sunken rounded-lg p-3">
-      <div className="flex items-center gap-2 mb-2">
-        <h4 className="text-label font-semibold text-muted uppercase tracking-wider">
+      <div className="mb-2 flex items-center gap-2">
+        <h4 className="text-label text-muted font-semibold tracking-wider uppercase">
           Healthcare
         </h4>
         <Badge color="indigo">Baseline + Simulation</Badge>
         <div className="flex-1 border-t" />
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 text-sm">
+      <div className="grid grid-cols-1 gap-x-4 text-sm sm:grid-cols-3">
         <div>
           <span className="text-muted">
             IRMAA (65+)
@@ -49,7 +49,7 @@ export function HealthcareSection({
                 );
               }}
               disabled={!isEditable}
-              className={`text-sm px-2 py-0.5 rounded disabled:cursor-not-allowed disabled:opacity-50 ${
+              className={`rounded px-2 py-0.5 text-sm disabled:cursor-not-allowed disabled:opacity-50 ${
                 (settings?.enableIrmaaAwareness ?? false)
                   ? "bg-green-100 text-green-700"
                   : "bg-surface-elevated text-muted"
@@ -75,7 +75,7 @@ export function HealthcareSection({
                 );
               }}
               disabled={!isEditable}
-              className={`text-sm px-2 py-0.5 rounded disabled:cursor-not-allowed disabled:opacity-50 ${
+              className={`rounded px-2 py-0.5 text-sm disabled:cursor-not-allowed disabled:opacity-50 ${
                 (settings?.enableAcaAwareness ?? false)
                   ? "bg-green-100 text-green-700"
                   : "bg-surface-elevated text-muted"
@@ -100,7 +100,7 @@ export function HealthcareSection({
                   );
                 }}
                 disabled={!isEditable}
-                className="text-sm border rounded px-1.5 py-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded border px-1.5 py-0.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <option value="1">1</option>
                 <option value="2">2</option>

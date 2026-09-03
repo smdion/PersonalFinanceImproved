@@ -129,37 +129,37 @@ export function SavingsTrajectoryTable({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between gap-4 text-label text-faint border border-subtle rounded-lg px-3 py-2 bg-surface-sunken">
+      <div className="text-label text-faint border-subtle bg-surface-sunken flex items-center justify-between gap-4 rounded-lg border px-3 py-2">
         {hasAnyFixedTarget || hasAnyRevolving || hasAnyEvents ? (
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
             {hasAnyFixedTarget && (
               <span className="flex items-center gap-1">
-                <span className="text-green-500 font-bold">✓</span>
-                <span className="text-green-600 font-semibold">$0,000</span>
+                <span className="font-bold text-green-500">✓</span>
+                <span className="font-semibold text-green-600">$0,000</span>
                 <span>= target reached</span>
               </span>
             )}
             {hasAnyRevolving && (
               <>
                 <span className="flex items-center gap-1">
-                  <span className="text-green-600 font-semibold">$0,000</span>
+                  <span className="font-semibold text-green-600">$0,000</span>
                   <span>= withdrawal covered</span>
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="text-amber-500 font-semibold">$0,000</span>
+                  <span className="font-semibold text-amber-500">$0,000</span>
                   <span>= upcoming withdrawal won&apos;t be covered</span>
                 </span>
               </>
             )}
             <span className="flex items-center gap-1">
-              <span className="text-red-500 font-semibold">-$0,000</span>
+              <span className="font-semibold text-red-500">-$0,000</span>
               <span>= balance negative</span>
             </span>
           </div>
         ) : (
           <span />
         )}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex shrink-0 items-center gap-2">
           <select
             aria-label="History range"
             value={String(historyWindow)}
@@ -169,7 +169,7 @@ export function SavingsTrajectoryTable({
                 v === "all" ? "all" : (Number(v) as HistoryWindow),
               );
             }}
-            className="text-label border border-surface-strong rounded px-1.5 py-0.5 bg-surface-primary text-faint hover:text-primary"
+            className="text-label border-surface-strong bg-surface-primary text-faint hover:text-primary rounded border px-1.5 py-0.5"
           >
             <option value="0">No history</option>
             <option value="3">3 months history</option>
@@ -179,7 +179,7 @@ export function SavingsTrajectoryTable({
           </select>
           <button
             onClick={() => setShowAllocations(!showAllocations)}
-            className="flex items-center gap-1 px-2 py-0.5 rounded border border-surface-strong text-faint hover:text-primary hover:border-primary transition-colors text-label"
+            className="border-surface-strong text-faint hover:text-primary hover:border-primary text-label flex items-center gap-1 rounded border px-2 py-0.5 transition-colors"
           >
             <span>{showAllocations ? "▾" : "▸"}</span>
             <span>{showAllocations ? "Hide" : "Show"} allocations</span>
@@ -187,7 +187,7 @@ export function SavingsTrajectoryTable({
           {hasAnyEvents && (
             <button
               onClick={() => setShowEvents(!showEvents)}
-              className="flex items-center gap-1 px-2 py-0.5 rounded border border-surface-strong text-faint hover:text-primary hover:border-primary transition-colors text-label"
+              className="border-surface-strong text-faint hover:text-primary hover:border-primary text-label flex items-center gap-1 rounded border px-2 py-0.5 transition-colors"
             >
               <span>{showEvents ? "▾" : "▸"}</span>
               <span>{showEvents ? "Hide" : "Show"} transactions</span>
@@ -195,11 +195,11 @@ export function SavingsTrajectoryTable({
           )}
         </div>
       </div>
-      <div className="overflow-auto max-h-[480px] rounded-lg border">
-        <table className="table-fixed w-full text-sm border-separate border-spacing-0">
+      <div className="max-h-[480px] overflow-auto rounded-lg border">
+        <table className="w-full table-fixed border-separate border-spacing-0 text-sm">
           <thead>
             <tr className="bg-surface-sunken border-b">
-              <th className="sticky top-0 left-0 z-20 w-48 bg-surface-sunken text-left px-3 py-2 font-medium text-muted text-xs whitespace-nowrap border-r">
+              <th className="bg-surface-sunken text-muted sticky top-0 left-0 z-20 w-48 border-r px-3 py-2 text-left text-xs font-medium whitespace-nowrap">
                 Month
               </th>
               {visibleProjections.map((gp) => {
@@ -207,11 +207,11 @@ export function SavingsTrajectoryTable({
                 return (
                   <th
                     key={gp.goalId}
-                    className="sticky top-0 z-10 bg-surface-sunken text-right px-3 py-2 font-medium text-xs whitespace-nowrap align-top"
+                    className="bg-surface-sunken sticky top-0 z-10 px-3 py-2 text-right align-top text-xs font-medium whitespace-nowrap"
                   >
-                    <span className="inline-flex items-center gap-1.5 justify-end">
+                    <span className="inline-flex items-center justify-end gap-1.5">
                       <span
-                        className="inline-block w-2 h-2 rounded-full shrink-0"
+                        className="inline-block h-2 w-2 shrink-0 rounded-full"
                         style={{
                           backgroundColor:
                             FUND_COLORS[colorIdx % FUND_COLORS.length],
@@ -236,7 +236,7 @@ export function SavingsTrajectoryTable({
                 );
               })}
               {hiddenProjections.length > 0 && (
-                <th className="sticky top-0 z-10 bg-surface-sunken text-right px-3 py-2 font-medium text-xs whitespace-nowrap align-top text-faint/60">
+                <th className="bg-surface-sunken text-faint/60 sticky top-0 z-10 px-3 py-2 text-right align-top text-xs font-medium whitespace-nowrap">
                   {hiddenProjections.length} hidden
                 </th>
               )}
@@ -251,11 +251,11 @@ export function SavingsTrajectoryTable({
               return (
                 <tr
                   key={`hist-${key}`}
-                  className="border-b bg-surface-elevated/20"
+                  className="bg-surface-elevated/20 border-b"
                 >
-                  <td className="sticky left-0 z-10 bg-surface-elevated/20 px-3 py-1.5 text-xs text-faint whitespace-nowrap border-r">
+                  <td className="bg-surface-elevated/20 text-faint sticky left-0 z-10 border-r px-3 py-1.5 text-xs whitespace-nowrap">
                     {monthLabel(displayDate)}
-                    <span className="ml-1.5 text-micro text-faint/60 uppercase tracking-wide">
+                    <span className="text-micro text-faint/60 ml-1.5 tracking-wide uppercase">
                       actual
                     </span>
                   </td>
@@ -264,14 +264,14 @@ export function SavingsTrajectoryTable({
                     return (
                       <td
                         key={gp.goalId}
-                        className="text-right px-3 py-1.5 text-xs tabular-nums text-muted"
+                        className="text-muted px-3 py-1.5 text-right text-xs tabular-nums"
                       >
                         {val !== undefined ? formatCurrency(val) : "—"}
                       </td>
                     );
                   })}
                   {hiddenProjections.length > 0 && (
-                    <td className="text-right px-3 py-1.5 text-xs tabular-nums text-faint/50">
+                    <td className="text-faint/50 px-3 py-1.5 text-right text-xs tabular-nums">
                       {formatCurrency(
                         hiddenProjections.reduce(
                           (s, gp) => s + (balMap.get(gp.goalId) ?? 0),
@@ -289,7 +289,7 @@ export function SavingsTrajectoryTable({
               <tr aria-hidden="true">
                 <td
                   colSpan={visibleProjections.length + 1}
-                  className="px-3 py-1 text-caption text-faint/50 text-center bg-surface-sunken border-b border-t tracking-widest"
+                  className="text-caption text-faint/50 bg-surface-sunken border-t border-b px-3 py-1 text-center tracking-widest"
                 >
                   ─── Projected ───
                 </td>
@@ -332,9 +332,9 @@ export function SavingsTrajectoryTable({
                     );
                     return (
                       <tr
-                        className={`border-b hover:bg-surface-elevated/40 transition-colors${anyNegative ? " bg-red-500/5" : ""}`}
+                        className={`hover:bg-surface-elevated/40 border-b transition-colors${anyNegative ? "bg-red-500/5" : ""}`}
                       >
-                        <td className="sticky left-0 z-10 bg-surface-primary px-3 py-1.5 text-xs text-muted whitespace-nowrap border-r">
+                        <td className="bg-surface-primary text-muted sticky left-0 z-10 border-r px-3 py-1.5 text-xs whitespace-nowrap">
                           {monthLabel(date)}
                         </td>
                         {visibleProjections.map((gp) => {
@@ -346,7 +346,7 @@ export function SavingsTrajectoryTable({
                           const showInlineAlloc =
                             showAllocations && !fundHasEvents && allocation > 0;
                           const inlineAlloc = showInlineAlloc ? (
-                            <span className="text-micro text-green-500/60 tabular-nums ml-1">
+                            <span className="text-micro ml-1 text-green-500/60 tabular-nums">
                               +{formatCurrency(allocation)}
                             </span>
                           ) : null;
@@ -368,7 +368,7 @@ export function SavingsTrajectoryTable({
                             return (
                               <td key={gp.goalId} className={cls + bg}>
                                 {isFirstFunded && !isNegative && (
-                                  <span className="mr-1 text-green-500 text-caption">
+                                  <span className="text-caption mr-1 text-green-500">
                                     ✓
                                   </span>
                                 )}
@@ -388,7 +388,7 @@ export function SavingsTrajectoryTable({
                               return (
                                 <td
                                   key={gp.goalId}
-                                  className="text-right px-3 py-1.5 text-xs tabular-nums text-red-500"
+                                  className="px-3 py-1.5 text-right text-xs text-red-500 tabular-nums"
                                 >
                                   {formatCurrency(balance)}
                                   {inlineAlloc}
@@ -408,7 +408,7 @@ export function SavingsTrajectoryTable({
                               return (
                                 <td
                                   key={gp.goalId}
-                                  className="text-right px-3 py-1.5 text-xs tabular-nums text-amber-500"
+                                  className="px-3 py-1.5 text-right text-xs text-amber-500 tabular-nums"
                                 >
                                   {formatCurrency(balance)}
                                   {inlineAlloc}
@@ -433,7 +433,7 @@ export function SavingsTrajectoryTable({
                           return (
                             <td
                               key={gp.goalId}
-                              className={`text-right px-3 py-1.5 text-xs tabular-nums ${
+                              className={`px-3 py-1.5 text-right text-xs tabular-nums ${
                                 isNegative ? "text-red-500" : "text-primary"
                               }`}
                             >
@@ -443,7 +443,7 @@ export function SavingsTrajectoryTable({
                           );
                         })}
                         {hiddenProjections.length > 0 && (
-                          <td className="text-right px-3 py-1.5 text-xs tabular-nums text-faint/50 bg-surface-sunken/40">
+                          <td className="text-faint/50 bg-surface-sunken/40 px-3 py-1.5 text-right text-xs tabular-nums">
                             {formatCurrency(
                               hiddenProjections.reduce(
                                 (s, gp) => s + (gp.balances[rowIdx] ?? 0),
@@ -458,13 +458,13 @@ export function SavingsTrajectoryTable({
 
                   {/* Allocation sub-row — only when at least one visible fund has events this month */}
                   {showAllocations && rowEvents.length > 0 && (
-                    <tr className="border-b bg-surface-elevated/20">
+                    <tr className="bg-surface-elevated/20 border-b">
                       <td
-                        className="sticky left-0 z-10 bg-surface-elevated/20 py-1 border-r"
+                        className="bg-surface-elevated/20 sticky left-0 z-10 border-r py-1"
                         style={{ borderLeft: "3px solid #22c55e66" }}
                       >
                         <span className="text-micro text-faint/50 pl-3">└</span>
-                        <span className="text-micro text-green-500/50 pl-1">
+                        <span className="text-micro pl-1 text-green-500/50">
                           contrib
                         </span>
                       </td>
@@ -473,9 +473,9 @@ export function SavingsTrajectoryTable({
                         const fundHasEvents =
                           (gp.monthEvents[rowIdx] ?? []).length > 0;
                         return (
-                          <td key={gp.goalId} className="text-right px-3 py-1">
+                          <td key={gp.goalId} className="px-3 py-1 text-right">
                             {allocation > 0 && fundHasEvents && (
-                              <span className="text-micro text-green-500/70 tabular-nums font-medium">
+                              <span className="text-micro font-medium text-green-500/70 tabular-nums">
                                 +{formatCurrency(allocation)}
                               </span>
                             )}
@@ -492,10 +492,10 @@ export function SavingsTrajectoryTable({
                       return (
                         <tr
                           key={`ev-${ev.goalId}-${ev.id}`}
-                          className="border-b last:border-0 bg-surface-elevated/20"
+                          className="bg-surface-elevated/20 border-b last:border-0"
                         >
                           <td
-                            className="sticky left-0 z-10 bg-surface-elevated/20 py-1 border-r overflow-hidden"
+                            className="bg-surface-elevated/20 sticky left-0 z-10 overflow-hidden border-r py-1"
                             style={{
                               borderLeft: "3px solid rgba(120,120,120,0.35)",
                             }}
@@ -504,7 +504,7 @@ export function SavingsTrajectoryTable({
                               └
                             </span>
                             <span
-                              className="text-micro text-faint/70 pl-1 truncate"
+                              className="text-micro text-faint/70 truncate pl-1"
                               title={ev.description}
                             >
                               {ev.description}
@@ -513,11 +513,11 @@ export function SavingsTrajectoryTable({
                           {visibleProjections.map((gp) => (
                             <td
                               key={gp.goalId}
-                              className="text-right px-3 py-1"
+                              className="px-3 py-1 text-right"
                             >
                               {gp.goalId === ev.goalId && (
                                 <span
-                                  className={`text-micro tabular-nums font-medium ${
+                                  className={`text-micro font-medium tabular-nums ${
                                     ev.amount < 0
                                       ? "text-red-500/70"
                                       : "text-green-500/70"

@@ -13,7 +13,8 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { CHART_COLORS } from "@/lib/utils/colors";
+import { CHART_COLORS, chartLinePalette } from "@/lib/utils/colors";
+import { useTheme } from "@/lib/hooks/use-theme";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
 import { compactCurrency, type HistoryRow } from "./types";
 
@@ -28,6 +29,10 @@ export function NetWorthLineChart({
   xAxisMode?: ChartXAxisMode;
   primaryBirthYear?: number | null;
 }) {
+  const c = {
+    ...CHART_COLORS,
+    ...chartLinePalette(useTheme().resolvedTheme === "dark"),
+  };
   const useAge = xAxisMode === "age";
   // Add displayAge for X-axis when in age mode
   const chartData = useAge
@@ -98,15 +103,17 @@ export function NetWorthLineChart({
             }}
           />
           <Line
+            isAnimationActive={false}
             type="monotone"
             dataKey="netWorth"
             name="Net Worth"
-            stroke={CHART_COLORS.netWorth}
+            stroke={c.netWorth}
             strokeWidth={3}
             dot={{ r: 4 }}
             activeDot={{ r: 6 }}
           />
           <Line
+            isAnimationActive={false}
             type="monotone"
             dataKey="portfolioTotal"
             name="Portfolio"
@@ -115,6 +122,7 @@ export function NetWorthLineChart({
             dot={{ r: 3 }}
           />
           <Line
+            isAnimationActive={false}
             type="monotone"
             dataKey="houseValue"
             name="House"
@@ -123,6 +131,7 @@ export function NetWorthLineChart({
             dot={{ r: 3 }}
           />
           <Line
+            isAnimationActive={false}
             type="monotone"
             dataKey="cash"
             name="Cash"
@@ -131,6 +140,7 @@ export function NetWorthLineChart({
             dot={{ r: 3 }}
           />
           <Line
+            isAnimationActive={false}
             type="monotone"
             dataKey="totalLiabilities"
             name="Liabilities"

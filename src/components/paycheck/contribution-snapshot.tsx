@@ -50,11 +50,11 @@ export function ContributionSnapshot() {
 
   if (isLoading)
     return (
-      <div className="animate-pulse h-48 bg-surface-elevated rounded-lg" />
+      <div className="bg-surface-elevated h-48 animate-pulse rounded-lg" />
     );
   if (error)
     return (
-      <p className="text-red-500 text-sm">
+      <p className="text-sm text-red-500">
         Failed to load contribution snapshot
       </p>
     );
@@ -136,11 +136,11 @@ export function ContributionSnapshot() {
   const periodSuffix = getPeriodSuffix(contribPeriod);
 
   return (
-    <div className="mt-10 pt-8 border-t-2">
-      <div className="flex items-center justify-between mb-6">
+    <div className="mt-10 border-t-2 pt-8">
+      <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-1.5 h-7 bg-indigo-500 rounded-full" />
-          <h2 className="text-xl font-bold text-primary">
+          <div className="h-7 w-1.5 rounded-full bg-indigo-500" />
+          <h2 className="text-primary text-xl font-bold">
             Household Contribution Snapshot
           </h2>
         </div>
@@ -151,32 +151,32 @@ export function ContributionSnapshot() {
       </div>
 
       {/* Color legend */}
-      <div className="flex flex-wrap items-center gap-3 mb-4 text-caption text-muted">
-        <span className="font-medium text-muted">Account types:</span>
+      <div className="text-caption text-muted mb-4 flex flex-wrap items-center gap-3">
+        <span className="text-muted font-medium">Account types:</span>
         <span className="flex items-center gap-1">
-          <span className={`w-2 h-2 rounded ${accountColor("401k")}`} />
+          <span className={`h-2 w-2 rounded ${accountColor("401k")}`} />
           401k — employer-sponsored retirement
         </span>
         <span className="flex items-center gap-1">
-          <span className={`w-2 h-2 rounded ${accountColor("ira")}`} />
+          <span className={`h-2 w-2 rounded ${accountColor("ira")}`} />
           IRA — individual retirement
         </span>
         <span className="flex items-center gap-1">
-          <span className={`w-2 h-2 rounded ${accountColor("hsa")}`} />
+          <span className={`h-2 w-2 rounded ${accountColor("hsa")}`} />
           HSA — health savings (tax-free)
         </span>
         <span className="flex items-center gap-1">
-          <span className={`w-2 h-2 rounded ${accountColor("brokerage")}`} />
+          <span className={`h-2 w-2 rounded ${accountColor("brokerage")}`} />
           Brokerage — taxable investment
         </span>
         <span className="flex items-center gap-1">
-          <span className={`w-2 h-2 rounded ${accountColor("espp")}`} />
+          <span className={`h-2 w-2 rounded ${accountColor("espp")}`} />
           ESPP — employee stock purchase
         </span>
       </div>
 
       {/* Account type cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {allTypes.map((type) => {
           // Look up config-driven display properties from the first matching account
           const firstAt =
@@ -205,13 +205,13 @@ export function ContributionSnapshot() {
           return (
             <div
               key={type}
-              className={`bg-surface-primary border rounded-xl p-4 shadow-sm border-l-4 ${accountBorderColor(categoryKey)}`}
+              className={`bg-surface-primary rounded-xl border border-l-4 p-4 shadow-sm ${accountBorderColor(categoryKey)}`}
             >
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-primary">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-primary font-semibold">
                   {type}
                   {isJoint && (
-                    <span className="text-xs text-faint font-normal ml-1">
+                    <span className="text-faint ml-1 text-xs font-normal">
                       (Joint)
                     </span>
                   )}
@@ -226,7 +226,7 @@ export function ContributionSnapshot() {
                           p.accountTypes.find((a) => a.accountType === type)
                             ?.limit === data.limits[famKey],
                       ) ? (
-                      <span className="text-xs text-faint font-normal ml-1">
+                      <span className="text-faint ml-1 text-xs font-normal">
                         (Family)
                       </span>
                     ) : null;
@@ -252,9 +252,9 @@ export function ContributionSnapshot() {
                           {periodSuffix}
                         </span>
                         {totalMatch > 0 && (
-                          <span className="text-sm text-muted">
+                          <span className="text-muted text-sm">
                             +{formatCurrency(totalMatch)}{" "}
-                            <span className="text-xs text-faint">
+                            <span className="text-faint text-xs">
                               {employerMatchLabel}
                             </span>
                           </span>
@@ -265,16 +265,16 @@ export function ContributionSnapshot() {
                       jat.employerMatch > 0 &&
                       jat.employeeContrib > 0 ? (
                         <div className="mt-1.5">
-                          <div className="w-full bg-surface-strong rounded-full h-2 relative">
+                          <div className="bg-surface-strong relative h-2 w-full rounded-full">
                             <div
-                              className={`${accountColor(categoryKey)} h-2 rounded-l-full transition-all absolute left-0 top-0`}
+                              className={`${accountColor(categoryKey)} absolute top-0 left-0 h-2 rounded-l-full transition-all`}
                               style={{
                                 width: `${(jat.employeeContrib / (jat.employeeContrib + jat.employerMatch)) * 100}%`,
                               }}
                               title={`Your cost: ${formatCurrency(totalEmployee)}${periodSuffix}`}
                             />
                             <div
-                              className={`${accountMatchColor(categoryKey)} h-2 rounded-r-full transition-all absolute top-0`}
+                              className={`${accountMatchColor(categoryKey)} absolute top-0 h-2 rounded-r-full transition-all`}
                               style={{
                                 left: `${(jat.employeeContrib / (jat.employeeContrib + jat.employerMatch)) * 100}%`,
                                 width: `${(jat.employerMatch / (jat.employeeContrib + jat.employerMatch)) * 100}%`,
@@ -282,7 +282,7 @@ export function ContributionSnapshot() {
                               title={`${employerMatchLabel}: ${formatCurrency(totalMatch)}${periodSuffix}`}
                             />
                           </div>
-                          <div className="flex justify-between text-caption mt-0.5">
+                          <div className="text-caption mt-0.5 flex justify-between">
                             <span className={accountTextColor(categoryKey)}>
                               Total value:{" "}
                               {formatCurrency(
@@ -304,18 +304,18 @@ export function ContributionSnapshot() {
                         </div>
                       ) : (
                         <div className="mt-1.5">
-                          <div className="w-full bg-surface-strong rounded-full h-2 relative">
+                          <div className="bg-surface-strong relative h-2 w-full rounded-full">
                             {jat.employerMatch > 0 ? (
                               <>
                                 <div
-                                  className={`${accountColor(categoryKey)} h-2 rounded-l-full absolute left-0 top-0`}
+                                  className={`${accountColor(categoryKey)} absolute top-0 left-0 h-2 rounded-l-full`}
                                   style={{
                                     width: `${(jat.employeeContrib / (jat.employeeContrib + jat.employerMatch)) * 100}%`,
                                   }}
                                   title={`You: ${formatCurrency(totalEmployee)}${periodSuffix}`}
                                 />
                                 <div
-                                  className={`${accountMatchColor(categoryKey)} h-2 rounded-r-full absolute top-0`}
+                                  className={`${accountMatchColor(categoryKey)} absolute top-0 h-2 rounded-r-full`}
                                   style={{
                                     left: `${(jat.employeeContrib / (jat.employeeContrib + jat.employerMatch)) * 100}%`,
                                     width: `${(jat.employerMatch / (jat.employeeContrib + jat.employerMatch)) * 100}%`,
@@ -331,7 +331,7 @@ export function ContributionSnapshot() {
                               />
                             )}
                           </div>
-                          <div className="flex justify-between text-caption mt-0.5">
+                          <div className="text-caption mt-0.5 flex justify-between">
                             <span className="text-faint">No IRS limit</span>
                             {jat.employerMatch > 0 && (
                               <span
@@ -368,11 +368,11 @@ export function ContributionSnapshot() {
                         return (
                           <div key={p.person.id} className="mb-3 last:mb-0">
                             {activePeople.length > 1 && (
-                              <p className="text-xs text-faint uppercase tracking-wide mb-1">
+                              <p className="text-faint mb-1 text-xs tracking-wide uppercase">
                                 {p.person.name}
                               </p>
                             )}
-                            <p className="text-xs text-faint italic">
+                            <p className="text-faint text-xs italic">
                               Covered via {hsaContributor.person.name}
                             </p>
                           </div>
@@ -393,7 +393,7 @@ export function ContributionSnapshot() {
                   return (
                     <div key={p.person.id} className="mb-3 last:mb-0">
                       {activePeople.length > 1 && (
-                        <p className="text-xs text-faint uppercase tracking-wide mb-1">
+                        <p className="text-faint mb-1 text-xs tracking-wide uppercase">
                           {p.person.name}
                         </p>
                       )}
@@ -408,13 +408,13 @@ export function ContributionSnapshot() {
                           </span>
                           {at.currentPctOfSalary !== null &&
                             contribPeriod === "annual" && (
-                              <span className="text-xs text-faint ml-1">
+                              <span className="text-faint ml-1 text-xs">
                                 ({Math.round(at.currentPctOfSalary)}%)
                               </span>
                             )}
                           {at.bonusContrib > 0 && (
                             <span
-                              className="text-xs text-amber-600 ml-0.5"
+                              className="ml-0.5 text-xs text-amber-600"
                               title="Incl. bonus"
                             >
                               *
@@ -422,12 +422,12 @@ export function ContributionSnapshot() {
                           )}
                         </div>
                         {at.employerMatch > 0 && (
-                          <span className="text-sm text-muted">
+                          <span className="text-muted text-sm">
                             +
                             {formatCurrency(
                               at.views[viewMode].employerMatch * mult,
                             )}
-                            <span className="text-xs text-faint ml-0.5">
+                            <span className="text-faint ml-0.5 text-xs">
                               {employerMatchLabel}
                             </span>
                           </span>
@@ -443,14 +443,14 @@ export function ContributionSnapshot() {
                             matchCountsTowardLimit={matchCountsTowardLimit}
                             accountType={categoryKey}
                           />
-                          <div className="flex justify-between text-xs mt-0.5">
+                          <div className="mt-0.5 flex justify-between text-xs">
                             <span
                               className={
                                 at.views[viewMode].fundingPct >
                                 OVER_LIMIT_THRESHOLD
-                                  ? "text-red-600 font-medium"
+                                  ? "font-medium text-red-600"
                                   : at.views[viewMode].fundingPct >= 1
-                                    ? "text-green-600 font-medium"
+                                    ? "font-medium text-green-600"
                                     : "text-muted"
                               }
                             >
@@ -474,7 +474,7 @@ export function ContributionSnapshot() {
                           </div>
                           {/* Employer match IRS context */}
                           {at.employerMatch > 0 && (
-                            <p className="text-caption text-blue-500 mt-0.5">
+                            <p className="text-caption mt-0.5 text-blue-500">
                               Match
                               {matchCountsTowardLimit
                                 ? " counts toward IRS limit"
@@ -483,7 +483,7 @@ export function ContributionSnapshot() {
                           )}
                           {at.views[viewMode].fundingPct >
                             OVER_LIMIT_THRESHOLD && (
-                            <p className="text-caption text-red-600 mt-0.5">
+                            <p className="text-caption mt-0.5 text-red-600">
                               Over by{" "}
                               {formatCurrency(
                                 ((matchCountsTowardLimit
@@ -501,7 +501,7 @@ export function ContributionSnapshot() {
                             at.views[viewMode].pctOfSalaryToMax !== null &&
                             Math.floor(at.views[viewMode].pctOfSalaryToMax) >
                               0 && (
-                              <p className="text-caption text-amber-600 mt-0.5">
+                              <p className="text-caption mt-0.5 text-amber-600">
                                 Need +
                                 {Math.floor(
                                   at.views[viewMode].pctOfSalaryToMax,
@@ -514,13 +514,13 @@ export function ContributionSnapshot() {
                             at.views[viewMode].pctOfSalaryToMax !== null &&
                             Math.floor(at.views[viewMode].pctOfSalaryToMax) ===
                               0 && (
-                              <p className="text-caption text-green-600 mt-0.5">
+                              <p className="text-caption mt-0.5 text-green-600">
                                 Maxed out
                               </p>
                             )}
                           {/* Bonus 401k note */}
                           {at.bonusContrib > 0 && (
-                            <p className="text-caption text-amber-600 mt-0.5">
+                            <p className="text-caption mt-0.5 text-amber-600">
                               * Includes ~
                               {formatCurrency(at.bonusContrib * mult)}
                               {periodSuffix} estimated 401k from bonus
@@ -530,7 +530,7 @@ export function ContributionSnapshot() {
                           {(at.tradContrib > 0 || at.taxFreeContrib > 0) &&
                             at.tradContrib !== at.employeeContrib &&
                             at.taxFreeContrib !== at.employeeContrib && (
-                              <div className="flex gap-2 text-caption text-faint mt-0.5">
+                              <div className="text-caption text-faint mt-0.5 flex gap-2">
                                 {at.tradContrib > 0 && (
                                   <span>
                                     Pre-Tax:{" "}
@@ -556,16 +556,16 @@ export function ContributionSnapshot() {
                             at.employerMatch > 0 &&
                             at.employeeContrib > 0 && (
                               <>
-                                <div className="w-full bg-surface-strong rounded-full h-2 relative">
+                                <div className="bg-surface-strong relative h-2 w-full rounded-full">
                                   <div
-                                    className={`${accountColor(categoryKey)} h-2 rounded-l-full transition-all absolute left-0 top-0`}
+                                    className={`${accountColor(categoryKey)} absolute top-0 left-0 h-2 rounded-l-full transition-all`}
                                     style={{
                                       width: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                     }}
                                     title={`Your cost: ${formatCurrency(at.views[viewMode].employeeContrib * mult)}${periodSuffix}`}
                                   />
                                   <div
-                                    className={`${accountMatchColor(categoryKey)} h-2 rounded-r-full transition-all absolute top-0`}
+                                    className={`${accountMatchColor(categoryKey)} absolute top-0 h-2 rounded-r-full transition-all`}
                                     style={{
                                       left: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                       width: `${(at.employerMatch / (at.employeeContrib + at.employerMatch)) * 100}%`,
@@ -573,7 +573,7 @@ export function ContributionSnapshot() {
                                     title={`${employerMatchLabel}: ${formatCurrency(at.views[viewMode].employerMatch * mult)}${periodSuffix}`}
                                   />
                                 </div>
-                                <div className="flex justify-between text-caption mt-0.5">
+                                <div className="text-caption mt-0.5 flex justify-between">
                                   <span
                                     className={accountTextColor(categoryKey)}
                                   >
@@ -599,18 +599,18 @@ export function ContributionSnapshot() {
                             )}
                           {/* Solid bar for non-discount accounts */}
                           {!hasDiscountBar && (
-                            <div className="w-full bg-surface-strong rounded-full h-2 relative">
+                            <div className="bg-surface-strong relative h-2 w-full rounded-full">
                               {at.employerMatch > 0 ? (
                                 <>
                                   <div
-                                    className={`${accountColor(categoryKey)} h-2 rounded-l-full absolute left-0 top-0`}
+                                    className={`${accountColor(categoryKey)} absolute top-0 left-0 h-2 rounded-l-full`}
                                     style={{
                                       width: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                     }}
                                     title={`You: ${formatCurrency(at.views[viewMode].employeeContrib * mult)}${periodSuffix}`}
                                   />
                                   <div
-                                    className={`${accountMatchColor(categoryKey)} h-2 rounded-r-full absolute top-0`}
+                                    className={`${accountMatchColor(categoryKey)} absolute top-0 h-2 rounded-r-full`}
                                     style={{
                                       left: `${(at.employeeContrib / (at.employeeContrib + at.employerMatch)) * 100}%`,
                                       width: `${(at.employerMatch / (at.employeeContrib + at.employerMatch)) * 100}%`,
@@ -628,7 +628,7 @@ export function ContributionSnapshot() {
                             </div>
                           )}
                           {/* No limit note + match info */}
-                          <div className="flex justify-between text-caption mt-0.5">
+                          <div className="text-caption mt-0.5 flex justify-between">
                             <span className="text-faint">No IRS limit</span>
                             {at.employerMatch > 0 && (
                               <span
@@ -654,18 +654,18 @@ export function ContributionSnapshot() {
 
       {/* Household totals */}
       {viewMode === "blended" && (
-        <p className="text-xs text-amber-600 mb-2">
+        <p className="mb-2 text-xs text-amber-600">
           Year-End Estimate: actual YTD from performance + projected remaining
         </p>
       )}
-      <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100 rounded-xl p-5 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+      <div className="grid grid-cols-1 gap-4 rounded-xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-blue-50 p-5 text-sm md:grid-cols-3">
         <div>
-          <p className="text-xs text-faint uppercase tracking-wide mb-1">
+          <p className="text-faint mb-1 text-xs tracking-wide uppercase">
             Retirement
             <HelpTip text="Accounts with parentCategory 'Retirement': 401k, IRA, HSA, and retirement-tagged brokerage." />
           </p>
           <div className="flex items-baseline gap-2">
-            <span className="text-lg font-bold text-primary">
+            <span className="text-primary text-lg font-bold">
               {formatCurrency(householdRetNoMatch)}
             </span>
             <span className="text-muted">
@@ -674,12 +674,12 @@ export function ContributionSnapshot() {
           </div>
         </div>
         <div>
-          <p className="text-xs text-faint uppercase tracking-wide mb-1">
+          <p className="text-faint mb-1 text-xs tracking-wide uppercase">
             Brokerage
             <HelpTip text="Non-retirement investment accounts: brokerage, ESPP, and other taxable accounts outside the retirement nest egg." />
           </p>
           <div className="flex items-baseline gap-2">
-            <span className="text-lg font-bold text-primary">
+            <span className="text-primary text-lg font-bold">
               {formatCurrency(householdPortNoMatch)}
             </span>
             <span className="text-muted">
@@ -688,12 +688,12 @@ export function ContributionSnapshot() {
           </div>
         </div>
         <div>
-          <p className="text-xs text-faint uppercase tracking-wide mb-1">
+          <p className="text-faint mb-1 text-xs tracking-wide uppercase">
             Total Portfolio
             <HelpTip text="All contributions combined: Retirement + Brokerage." />
           </p>
           <div className="flex items-baseline gap-2">
-            <span className="text-lg font-bold text-primary">
+            <span className="text-primary text-lg font-bold">
               {formatCurrency(householdTotalNoMatch)}
             </span>
             <span className="text-muted">

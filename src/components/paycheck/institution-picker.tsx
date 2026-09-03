@@ -56,7 +56,7 @@ export function InstitutionPicker({
 
   if (creating) {
     return (
-      <div className="col-span-2 md:col-span-3 border border-blue-200 rounded-lg p-3 bg-blue-50/30">
+      <div className="col-span-2 rounded-lg border border-blue-200 bg-blue-50/30 p-3 md:col-span-3">
         <CreateAccountForm
           people={people ?? []}
           defaultAccountType={accountType}
@@ -81,7 +81,7 @@ export function InstitutionPicker({
           onChange={(e) =>
             onChange(e.target.value ? parseInt(e.target.value, 10) : null)
           }
-          className="flex-1 min-w-0"
+          className="min-w-0 flex-1"
         >
           <option value="">No linked institution</option>
           {compatible.map((pa) => (
@@ -94,7 +94,7 @@ export function InstitutionPicker({
         <button
           type="button"
           onClick={() => setCreating(true)}
-          className="text-xs text-blue-600 hover:text-blue-700 whitespace-nowrap shrink-0"
+          className="shrink-0 text-xs whitespace-nowrap text-blue-600 hover:text-blue-700"
         >
           + New
         </button>

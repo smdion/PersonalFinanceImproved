@@ -107,6 +107,9 @@ function resolveOwnerName(
   if (ownerPersonId == null) return null;
   const name = peopleMap.get(ownerPersonId);
   if (name == null) {
+    // Data-integrity invariant, not a user error — left as a plain Error so
+    // it lands as INTERNAL_SERVER_ERROR (logged, generic toast). Same for
+    // the two resolveMaster() throws below.
     throw new Error(`people.id=${ownerPersonId} not found (orphan FK)`);
   }
   return name;
@@ -999,9 +1002,10 @@ export const performanceRouter = createTRPCRouter({
         .from(schema.performanceAccounts)
         .where(eq(schema.performanceAccounts.id, input.performanceAccountId));
       if (!master)
-        throw new Error(
-          `Performance account ${input.performanceAccountId} not found`,
-        );
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Performance account ${input.performanceAccountId} not found`,
+        });
 
       const [row] = await ctx.db
         .insert(schema.accountPerformance)

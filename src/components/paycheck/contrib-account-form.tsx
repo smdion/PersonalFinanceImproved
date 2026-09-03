@@ -258,10 +258,10 @@ export function ContribAccountForm({
           only when scrolled into view; this stays pinned at the top so the
           create-vs-reuse distinction can't be missed. */}
       <div
-        className={`rounded-lg px-3 py-2 text-sm font-medium flex items-center justify-between gap-2 ${
+        className={`flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm font-medium ${
           linkedExistingId != null
-            ? "bg-blue-50 text-blue-700 border border-blue-200"
-            : "bg-surface-sunken text-muted border border-subtle"
+            ? "border border-blue-200 bg-blue-50 text-blue-700"
+            : "bg-surface-sunken text-muted border-subtle border"
         }`}
       >
         <span>
@@ -283,14 +283,14 @@ export function ContribAccountForm({
           <button
             type="button"
             onClick={() => setLinkedExistingId(null)}
-            className="text-caption text-blue-700 underline hover:no-underline shrink-0"
+            className="text-caption shrink-0 text-blue-700 underline hover:no-underline"
           >
             Create new instead
           </button>
         )}
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
         <FormField label="Owner">
           <FormSelect
             value={
@@ -523,11 +523,11 @@ export function ContribAccountForm({
             id="contrib-account-form-payroll"
             checked={v.isPayrollDeducted ?? v.jobId !== null}
             onChange={(e) => set("isPayrollDeducted", e.target.checked)}
-            className="rounded border-strong"
+            className="border-strong rounded"
           />
           <label
             htmlFor="contrib-account-form-payroll"
-            className="text-xs text-muted"
+            className="text-muted text-xs"
           >
             Payroll Deduction
           </label>
@@ -539,11 +539,11 @@ export function ContribAccountForm({
             id="contrib-account-form-automax"
             checked={v.autoMaximize}
             onChange={(e) => set("autoMaximize", e.target.checked)}
-            className="rounded border-strong"
+            className="border-strong rounded"
           />
           <label
             htmlFor="contrib-account-form-automax"
-            className="text-xs text-muted"
+            className="text-muted text-xs"
           >
             Auto Maximize
           </label>
@@ -560,8 +560,8 @@ export function ContribAccountForm({
       </div>
 
       {matchingExisting.length > 0 && (
-        <div className="border border-amber-300 bg-amber-50 rounded-lg p-3 text-sm space-y-2">
-          <p className="text-amber-800 font-medium">
+        <div className="space-y-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm">
+          <p className="font-medium text-amber-800">
             {matchingExisting.length} existing {cfg.displayLabel} account
             {matchingExisting.length > 1 ? "s" : ""} already{" "}
             {matchingExisting.length > 1 ? "exist" : "exists"} at this
@@ -578,12 +578,12 @@ export function ContribAccountForm({
                   <span>
                     {TAX_LABELS[m.taxTreatment] ?? m.taxTreatment}
                     {!m.isActive && (
-                      <span className="ml-1 text-micro text-amber-600 font-semibold italic">
+                      <span className="text-micro ml-1 font-semibold text-amber-600 italic">
                         not a funding target
                       </span>
                     )}
                     {profileNames.length > 0 && (
-                      <span className="block text-micro text-amber-700/80">
+                      <span className="text-micro block text-amber-700/80">
                         Has a value in: {profileNames.join(", ")}
                       </span>
                     )}
@@ -591,7 +591,7 @@ export function ContribAccountForm({
                   <button
                     type="button"
                     onClick={() => linkToExisting(m)}
-                    className="text-blue-600 hover:text-blue-700 font-medium shrink-0"
+                    className="shrink-0 font-medium text-blue-600 hover:text-blue-700"
                   >
                     Use this account
                   </button>
@@ -607,7 +607,7 @@ export function ContribAccountForm({
           type="button"
           onClick={handleSubmit}
           disabled={!canSubmit || isPending}
-          className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+          className="rounded-md bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
         >
           {isPending
             ? "Saving..."
@@ -618,7 +618,7 @@ export function ContribAccountForm({
         <button
           type="button"
           onClick={onCancel}
-          className="px-3 py-1.5 text-sm text-muted hover:text-primary"
+          className="text-muted hover:text-primary px-3 py-1.5 text-sm"
         >
           Cancel
         </button>

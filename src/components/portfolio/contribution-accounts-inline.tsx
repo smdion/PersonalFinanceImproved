@@ -18,10 +18,10 @@ export function InlineText({
   return (
     <div>
       {label && (
-        <label className="block text-caption text-muted mb-0.5">{label}</label>
+        <label className="text-caption text-muted mb-0.5 block">{label}</label>
       )}
       {disabled ? (
-        <div className="border border-subtle bg-surface-sunken rounded px-2 py-1 text-xs text-muted">
+        <div className="border-subtle bg-surface-sunken text-muted rounded border px-2 py-1 text-xs">
           {value || placeholder || "—"}
         </div>
       ) : (
@@ -36,7 +36,7 @@ export function InlineText({
           onKeyDown={(e) => {
             if (e.key === "Enter") (e.target as HTMLInputElement).blur();
           }}
-          className="border rounded px-2 py-1 text-xs w-full"
+          className="w-full rounded border px-2 py-1 text-xs"
         />
       )}
     </div>
@@ -58,16 +58,16 @@ export function InlineSelect({
 }) {
   return (
     <div>
-      <label className="block text-caption text-muted mb-0.5">{label}</label>
+      <label className="text-caption text-muted mb-0.5 block">{label}</label>
       {disabled ? (
-        <div className="border border-subtle bg-surface-sunken rounded px-2 py-1 text-xs text-muted">
+        <div className="border-subtle bg-surface-sunken text-muted rounded border px-2 py-1 text-xs">
           {options.find((o) => o.value === value)?.label ?? value}
         </div>
       ) : (
         <select
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="border rounded px-2 py-1 text-xs w-full"
+          className="w-full rounded border px-2 py-1 text-xs"
         >
           {options.map((o) => (
             <option key={o.value} value={o.value}>

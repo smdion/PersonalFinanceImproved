@@ -1,10 +1,12 @@
 /** Admin data browser router for inspecting database tables, columns, and row data with raw SQL queries against a whitelisted table set. */
 import { z } from "zod/v4";
+import { TRPCError } from "@trpc/server";
 import { sql } from "drizzle-orm";
 import { createTRPCRouter, adminProcedure } from "../trpc";
 import { VERSION_TABLE_NAMES, EXCLUDED_TABLES } from "@/lib/db/version-tables";
 import { isPostgres } from "@/lib/db/dialect";
 import { queryRaw } from "@/lib/db/compat";
+import { log } from "@/lib/logger";
 
 /** All known table names (version tables + excluded tables like change_log). */
 const KNOWN_TABLE_LIST = [...VERSION_TABLE_NAMES, ...EXCLUDED_TABLES];
@@ -13,7 +15,13 @@ const KNOWN_TABLES = new Set(KNOWN_TABLE_LIST);
 /** Validate table name against whitelist to prevent SQL injection. */
 function assertKnownTable(name: string): void {
   if (!KNOWN_TABLES.has(name)) {
-    throw new Error(`Unknown table: "${name}"`);
+    // BAD_REQUEST is skipped by errorLoggingMiddleware — log the rejected
+    // name here since this is the SQL-injection whitelist gate.
+    log("warn", "unknown_table_rejected", { name });
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: `Unknown table: "${name}"`,
+    });
   }
 }
 

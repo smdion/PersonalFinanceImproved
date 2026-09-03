@@ -25,7 +25,7 @@ function ToastIcon({ variant }: { variant: ToastVariant }) {
   if (variant === "loading") {
     return (
       <svg
-        className="w-3.5 h-3.5 animate-spin"
+        className="h-3.5 w-3.5 animate-spin"
         viewBox="0 0 24 24"
         fill="none"
         aria-hidden="true"
@@ -47,7 +47,7 @@ function ToastIcon({ variant }: { variant: ToastVariant }) {
     );
   }
   return (
-    <span className="font-semibold text-base leading-none" aria-hidden="true">
+    <span className="text-base leading-none font-semibold" aria-hidden="true">
       {variantIcons[variant]}
     </span>
   );
@@ -76,8 +76,8 @@ function ToastItem({
   return (
     <div
       role="alert"
-      className={`flex items-center gap-2 px-3 py-2 rounded-lg border shadow-md text-sm transition-all duration-200 ${
-        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+      className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm shadow-md transition-all duration-200 ${
+        visible ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
       } ${variantStyles[variant]}`}
     >
       <ToastIcon variant={variant} />
@@ -100,11 +100,11 @@ function ToastItem({
         <button
           type="button"
           onClick={() => onDismiss(id)}
-          className="ml-2 opacity-60 hover:opacity-100 transition-opacity p-1 min-w-[44px] min-h-[44px] flex items-center justify-center"
+          className="ml-2 flex min-h-[44px] min-w-[44px] items-center justify-center p-1 opacity-60 transition-opacity hover:opacity-100"
           aria-label="Dismiss notification"
         >
           <svg
-            className="w-3 h-3"
+            className="h-3 w-3"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -135,7 +135,7 @@ export function ToastContainer() {
     <div
       aria-live="polite"
       aria-label="Notifications"
-      className="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 max-w-sm print:hidden"
+      className="fixed right-4 bottom-4 z-[100] flex max-w-sm flex-col gap-2 print:hidden"
     >
       {toasts.map((t) => (
         <ToastItem

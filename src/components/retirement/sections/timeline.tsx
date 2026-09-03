@@ -38,14 +38,14 @@ export function TimelineSection({
 }: Props) {
   return (
     <div>
-      <div className="flex items-center gap-2 mb-2">
-        <h4 className="text-label font-semibold text-muted uppercase tracking-wider">
+      <div className="mb-2 flex items-center gap-2">
+        <h4 className="text-label text-muted font-semibold tracking-wider uppercase">
           Timeline
         </h4>
         <Badge color="indigo">Baseline + Simulation</Badge>
         <div className="flex-1 border-t" />
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2 text-sm">
+      <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm md:grid-cols-4">
         {perPersonSettings && perPersonSettings.length > 1 ? (
           <>
             {perPersonSettings.map((ps) => (
@@ -53,7 +53,7 @@ export function TimelineSection({
                 <span className="text-muted">
                   {ps.name}&apos;s Retirement Age
                 </span>
-                <div className="font-medium flex items-baseline gap-1">
+                <div className="flex items-baseline gap-1 font-medium">
                   <InlineEdit
                     value={String(ps.retirementAge)}
                     onSave={(v) =>
@@ -85,7 +85,7 @@ export function TimelineSection({
               <span className="text-muted">Household Retirement</span>
               <div className="font-medium text-blue-600">
                 {Math.max(...perPersonSettings.map((p) => p.retirementAge))}
-                <span className="text-caption text-faint font-normal ml-1">
+                <span className="text-caption text-faint ml-1 font-normal">
                   when last person retires
                 </span>
               </div>
@@ -115,7 +115,7 @@ export function TimelineSection({
             Plan Through
             <HelpTip text="How long your money needs to last. Higher = more safety margin." />
           </span>
-          <div className="font-medium flex items-baseline gap-1">
+          <div className="flex items-baseline gap-1 font-medium">
             <InlineEdit
               value={String(settings.endAge)}
               onSave={(v) => handleRetirementSettingUpdate("endAge", v)}

@@ -140,6 +140,32 @@ export const STATUS_COLORS: Record<
   blue: { bg: "bg-blue-100", text: "text-blue-700", border: "border-blue-300" },
 };
 
+// ── Signed-value text colors (gain/loss, over/under budget) ──
+// One place for the red/green a value cell uses to signal its sign, so cells
+// don't each re-inline `n >= 0 ? "text-green-600" : "text-red-600"`. Callers
+// must still pair this with a NON-COLOR cue (a +/- sign, a "▲"/"▼" glyph, or
+// a trailing "over"/"under" word) — color alone fails WCAG 1.4.1.
+
+const GAIN = "text-green-600";
+const LOSS = "text-red-600";
+const NEUTRAL_VALUE = "text-muted";
+
+/** Gain/loss framing: positive is green, negative is red (portfolio delta,
+ *  investment growth, contribution-vs-plan delta). Zero → neutral. */
+export function gainLossTextColor(value: number): string {
+  if (value > 0) return GAIN;
+  if (value < 0) return LOSS;
+  return NEUTRAL_VALUE;
+}
+
+/** Budget framing: over (positive delta) is red, under is green — the
+ *  opposite polarity from gainLossTextColor. Zero → neutral. */
+export function overUnderTextColor(delta: number): string {
+  if (delta > 0) return LOSS;
+  if (delta < 0) return GAIN;
+  return NEUTRAL_VALUE;
+}
+
 // ── Badge background colors ──
 // Derived from text color → matching light bg. Used by AccountBadge.
 // Explicitly listed so Tailwind JIT can detect the class names.
@@ -250,6 +276,25 @@ export const CHART_COLORS = {
   trajectoryEventNegative: "#f87171", // red-400
   trajectoryEventPositive: "#4ade80", // green-400
 };
+
+/**
+ * Theme-aware overrides for data-carrying LINE colors whose single
+ * `CHART_COLORS` value fails WCAG 1.4.11 (≥3:1 vs the card / adjacent
+ * fill) in dark mode. Spread over `CHART_COLORS` in the chart component:
+ *   const c = { ...CHART_COLORS, ...chartLinePalette(dark) };
+ * Light values are the originals; dark values step 600→400 to clear 3:1
+ * against `#1e293b` (and, for mcMedian, against the ~`#343360`
+ * mcBandMiddle@0.2 fill it's drawn over). Non-line series stay in
+ * CHART_COLORS.
+ */
+export function chartLinePalette(dark: boolean) {
+  return {
+    netWorth: dark ? "#818cf8" : "#4f46e5", // indigo-400 / indigo-600
+    perfBalance: dark ? "#818cf8" : "#4f46e5",
+    withdrawalFlow: dark ? "#94a3b8" : "#475569", // slate-400 / slate-600
+    mcMedian: dark ? "#a78bfa" : "#7c3aed", // violet-400 / violet-600
+  };
+}
 
 /**
  * Theme-aware hex palette for the savings trajectory chart (grid/axis/

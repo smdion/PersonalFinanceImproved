@@ -20,9 +20,9 @@ export function ConnectionStatusLine({
 }) {
   const colors = connected ? STATUS_COLORS.green : STATUS_COLORS.red;
   return (
-    <div className="flex items-center gap-2 flex-wrap">
+    <div className="flex flex-wrap items-center gap-2">
       <span
-        className={`inline-block w-2 h-2 rounded-full ${connected ? "bg-green-500" : "bg-red-400"}`}
+        className={`inline-block h-2 w-2 rounded-full ${connected ? "bg-green-500" : "bg-red-400"}`}
       />
       <span className={`text-sm ${colors.text}`}>
         {connected ? "Connected" : "Not connected"}

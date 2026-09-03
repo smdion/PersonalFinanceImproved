@@ -13,15 +13,15 @@ function Section({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border rounded-lg overflow-hidden">
+    <div className="overflow-hidden rounded-lg border">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-surface-sunken text-sm font-medium text-secondary hover:bg-surface-elevated transition-colors"
+        className="bg-surface-sunken text-secondary hover:bg-surface-elevated flex w-full items-center justify-between px-4 py-3 text-sm font-medium transition-colors"
       >
         {title}
         <svg
           aria-hidden="true"
-          className={`w-4 h-4 transition-transform ${open ? "rotate-180" : ""}`}
+          className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -35,7 +35,7 @@ function Section({
         </svg>
       </button>
       {open && (
-        <div className="px-4 py-4 space-y-4 text-sm text-muted leading-relaxed">
+        <div className="text-muted space-y-4 px-4 py-4 text-sm leading-relaxed">
           {children}
         </div>
       )}
@@ -46,14 +46,14 @@ function Section({
 export function ValidationContent() {
   return (
     <div className="space-y-6">
-      <p className="text-sm text-muted">
+      <p className="text-muted text-sm">
         Why we&apos;re confident the retirement engine produces trustworthy
         projections &mdash; backed by published research, IRS tax law,
         mathematical invariants, and statistical validation.
       </p>
 
       <Section title="Validated Against Published Research">
-        <h4 className="font-semibold text-secondary">
+        <h4 className="text-secondary font-semibold">
           Trinity Study (Cooley et al. 1998)
         </h4>
         <p>
@@ -63,7 +63,7 @@ export function ValidationContent() {
           reproduces these results:
         </p>
         <div className="overflow-x-auto">
-          <table className="text-xs w-full border-collapse">
+          <table className="w-full border-collapse text-xs">
             <thead>
               <tr className="border-b text-left">
                 <th className="py-1.5 pr-3">Scenario</th>
@@ -72,7 +72,7 @@ export function ValidationContent() {
                 <th className="py-1.5">Tolerance</th>
               </tr>
             </thead>
-            <tbody className="divide-y ">
+            <tbody className="divide-y">
               <tr>
                 <td className="py-1.5 pr-3">4% SWR, 50/50, 30yr</td>
                 <td className="pr-3">~95%</td>
@@ -94,13 +94,13 @@ export function ValidationContent() {
             </tbody>
           </table>
         </div>
-        <p className="text-xs text-faint mt-1">
+        <p className="text-faint mt-1 text-xs">
           *At high SWRs, log-normal simulation produces a fatter left tail than
           historical sequences &mdash; this is an expected methodological
           difference, not a bug.
         </p>
 
-        <h4 className="font-semibold text-secondary mt-4">
+        <h4 className="text-secondary mt-4 font-semibold">
           cFIREsim cross-reference
         </h4>
         <p>
@@ -109,7 +109,7 @@ export function ValidationContent() {
           for apples-to-apples comparison:
         </p>
         <div className="overflow-x-auto">
-          <table className="text-xs w-full border-collapse">
+          <table className="w-full border-collapse text-xs">
             <thead>
               <tr className="border-b text-left">
                 <th className="py-1.5 pr-3">Scenario</th>
@@ -118,7 +118,7 @@ export function ValidationContent() {
                 <th className="py-1.5">Trials</th>
               </tr>
             </thead>
-            <tbody className="divide-y ">
+            <tbody className="divide-y">
               <tr>
                 <td className="py-1.5 pr-3">4% SWR, 75/25, 30yr</td>
                 <td className="pr-3">~95&ndash;96%</td>
@@ -142,7 +142,7 @@ export function ValidationContent() {
           the methods converge closely.
         </p>
 
-        <h4 className="font-semibold text-secondary mt-4">
+        <h4 className="text-secondary mt-4 font-semibold">
           SWR sweep validation
         </h4>
         <p>
@@ -150,7 +150,7 @@ export function ValidationContent() {
           point-by-point against cFIREsim benchmarks:
         </p>
         <div className="overflow-x-auto">
-          <table className="text-xs w-full border-collapse">
+          <table className="w-full border-collapse text-xs">
             <thead>
               <tr className="border-b text-left">
                 <th className="py-1.5 pr-3">SWR</th>
@@ -158,7 +158,7 @@ export function ValidationContent() {
                 <th className="py-1.5">Engine Range</th>
               </tr>
             </thead>
-            <tbody className="divide-y ">
+            <tbody className="divide-y">
               <tr>
                 <td className="py-1.5 pr-3">3.0%</td>
                 <td className="pr-3">~100%</td>
@@ -191,7 +191,7 @@ export function ValidationContent() {
           matching &mdash; no tolerance needed.
         </p>
 
-        <h4 className="font-semibold text-secondary mt-4">
+        <h4 className="text-secondary mt-4 font-semibold">
           Federal bracket math
         </h4>
         <p>
@@ -199,7 +199,7 @@ export function ValidationContent() {
           are validated line by line. Example: $200k gross income, $0
           deductions, MFJ filing:
         </p>
-        <ul className="list-disc pl-5 space-y-1 text-xs">
+        <ul className="list-disc space-y-1 pl-5 text-xs">
           <li>Taxable = $200k &minus; $30k standard deduction = $170k</li>
           <li>$0&ndash;$23,850 @ 10% = $2,385</li>
           <li>$23,850&ndash;$96,950 @ 12% = $8,772</li>
@@ -209,8 +209,8 @@ export function ValidationContent() {
           </li>
         </ul>
 
-        <h4 className="font-semibold text-secondary mt-4">FICA</h4>
-        <ul className="list-disc pl-5 space-y-1">
+        <h4 className="text-secondary mt-4 font-semibold">FICA</h4>
+        <ul className="list-disc space-y-1 pl-5">
           <li>
             <strong>Social Security:</strong> 6.2% up to $176,100 wage base
             &mdash; exact match
@@ -221,7 +221,7 @@ export function ValidationContent() {
           </li>
         </ul>
 
-        <h4 className="font-semibold text-secondary mt-4">
+        <h4 className="text-secondary mt-4 font-semibold">
           RMD factors (SECURE 2.0)
         </h4>
         <p>
@@ -238,7 +238,7 @@ export function ValidationContent() {
           against hand-calculable formulas:
         </p>
         <div className="overflow-x-auto">
-          <table className="text-xs w-full border-collapse">
+          <table className="w-full border-collapse text-xs">
             <thead>
               <tr className="border-b text-left">
                 <th className="py-1.5 pr-3">Formula</th>
@@ -248,7 +248,7 @@ export function ValidationContent() {
                 <th className="py-1.5">Tolerance</th>
               </tr>
             </thead>
-            <tbody className="divide-y ">
+            <tbody className="divide-y">
               <tr>
                 <td className="py-1.5 pr-3">Compound growth</td>
                 <td className="pr-3">$100k @ 7%, 10yr</td>
@@ -295,7 +295,7 @@ export function ValidationContent() {
           sources to ensure they fall within published ranges:
         </p>
         <div className="overflow-x-auto">
-          <table className="text-xs w-full border-collapse">
+          <table className="w-full border-collapse text-xs">
             <thead>
               <tr className="border-b text-left">
                 <th className="py-1.5 pr-3">Asset Class</th>
@@ -304,7 +304,7 @@ export function ValidationContent() {
                 <th className="py-1.5">Sources</th>
               </tr>
             </thead>
-            <tbody className="divide-y ">
+            <tbody className="divide-y">
               <tr>
                 <td className="py-1.5 pr-3">US Equities</td>
                 <td className="pr-3">4&ndash;11% / 12&ndash;20% vol</td>
@@ -355,8 +355,8 @@ export function ValidationContent() {
           fixtures:
         </p>
 
-        <h4 className="font-semibold text-secondary mt-2">Balance integrity</h4>
-        <ul className="list-disc pl-5 space-y-1">
+        <h4 className="text-secondary mt-2 font-semibold">Balance integrity</h4>
+        <ul className="list-disc space-y-1 pl-5">
           <li>
             No account balance (by tax bucket or individual account) ever goes
             negative
@@ -367,8 +367,8 @@ export function ValidationContent() {
           <li>Individual account balances sum to category total (within $1)</li>
         </ul>
 
-        <h4 className="font-semibold text-secondary mt-4">Phase ordering</h4>
-        <ul className="list-disc pl-5 space-y-1">
+        <h4 className="text-secondary mt-4 font-semibold">Phase ordering</h4>
+        <ul className="list-disc space-y-1 pl-5">
           <li>
             Accumulation years always precede decumulation &mdash; no phase
             reversals
@@ -376,18 +376,18 @@ export function ValidationContent() {
           <li>Social Security income = $0 before claiming age</li>
         </ul>
 
-        <h4 className="font-semibold text-secondary mt-4">
+        <h4 className="text-secondary mt-4 font-semibold">
           Contribution &amp; withdrawal limits
         </h4>
-        <ul className="list-disc pl-5 space-y-1">
+        <ul className="list-disc space-y-1 pl-5">
           <li>Per-account contributions never exceed IRS limits</li>
           <li>Total withdrawals never exceed total balances</li>
           <li>RMDs enforced when balance is sufficient</li>
           <li>HSA employee + employer match &le; household annual max</li>
         </ul>
 
-        <h4 className="font-semibold text-secondary mt-4">Tax bounds</h4>
-        <ul className="list-disc pl-5 space-y-1">
+        <h4 className="text-secondary mt-4 font-semibold">Tax bounds</h4>
+        <ul className="list-disc space-y-1 pl-5">
           <li>0 &le; tax paid &le; total withdrawal</li>
           <li>Taxable Social Security: 0&ndash;85% of SS income (IRS cap)</li>
           <li>
@@ -396,10 +396,10 @@ export function ValidationContent() {
           <li>Roth conversion tax cost &le; 50% of conversion amount</li>
         </ul>
 
-        <h4 className="font-semibold text-secondary mt-4">
+        <h4 className="text-secondary mt-4 font-semibold">
           Determinism &amp; immutability
         </h4>
-        <ul className="list-disc pl-5 space-y-1">
+        <ul className="list-disc space-y-1 pl-5">
           <li>Same input always produces identical output</li>
           <li>Engine never mutates its input object</li>
         </ul>
@@ -411,7 +411,7 @@ export function ValidationContent() {
           statistical behavior:
         </p>
         <div className="overflow-x-auto">
-          <table className="text-xs w-full border-collapse">
+          <table className="w-full border-collapse text-xs">
             <thead>
               <tr className="border-b text-left">
                 <th className="py-1.5 pr-3">Property</th>
@@ -419,7 +419,7 @@ export function ValidationContent() {
                 <th className="py-1.5">Why It Matters</th>
               </tr>
             </thead>
-            <tbody className="divide-y ">
+            <tbody className="divide-y">
               <tr>
                 <td className="py-1.5 pr-3">Right skew</td>
                 <td className="pr-3">Mean &gt; Median</td>
@@ -457,7 +457,7 @@ export function ValidationContent() {
           would indicate a bug.
         </p>
 
-        <h4 className="font-semibold text-secondary mt-2">
+        <h4 className="text-secondary mt-2 font-semibold">
           Withdrawal rate vs success
         </h4>
         <p>
@@ -466,7 +466,7 @@ export function ValidationContent() {
           6% &lt; 90%. Validated with 3,000 trials per rate.
         </p>
 
-        <h4 className="font-semibold text-secondary mt-4">
+        <h4 className="text-secondary mt-4 font-semibold">
           Time horizon vs success
         </h4>
         <p>
@@ -475,14 +475,14 @@ export function ValidationContent() {
           matches the intuition that a longer retirement is harder to sustain.
         </p>
 
-        <h4 className="font-semibold text-secondary mt-4">
+        <h4 className="text-secondary mt-4 font-semibold">
           Complexity layer isolation
         </h4>
         <p>
           We measure the success rate impact of each complexity layer to ensure
           no single layer introduces unreasonable drag:
         </p>
-        <ol className="list-decimal pl-5 space-y-1">
+        <ol className="list-decimal space-y-1 pl-5">
           <li>
             <strong>Baseline:</strong> Single account, no tax &mdash; highest
             success rate
@@ -508,7 +508,7 @@ export function ValidationContent() {
           test files:
         </p>
         <div className="overflow-x-auto">
-          <table className="text-xs w-full border-collapse">
+          <table className="w-full border-collapse text-xs">
             <thead>
               <tr className="border-b text-left">
                 <th className="py-1.5 pr-3">Suite</th>
@@ -516,7 +516,7 @@ export function ValidationContent() {
                 <th className="py-1.5">Purpose</th>
               </tr>
             </thead>
-            <tbody className="divide-y ">
+            <tbody className="divide-y">
               <tr>
                 <td className="py-1.5 pr-3">Calculator unit tests</td>
                 <td className="pr-3">~100</td>
@@ -562,9 +562,9 @@ export function ValidationContent() {
           </table>
         </div>
 
-        <h4 className="font-semibold text-secondary mt-4">Evidence layers</h4>
+        <h4 className="text-secondary mt-4 font-semibold">Evidence layers</h4>
         <div className="overflow-x-auto">
-          <table className="text-xs w-full border-collapse">
+          <table className="w-full border-collapse text-xs">
             <thead>
               <tr className="border-b text-left">
                 <th className="py-1.5 pr-3">What It Proves</th>
@@ -572,7 +572,7 @@ export function ValidationContent() {
                 <th className="py-1.5">Precision</th>
               </tr>
             </thead>
-            <tbody className="divide-y ">
+            <tbody className="divide-y">
               <tr>
                 <td className="py-1.5 pr-3">Success rates match research</td>
                 <td className="pr-3">Trinity Study, cFIREsim</td>
@@ -606,7 +606,7 @@ export function ValidationContent() {
             </tbody>
           </table>
         </div>
-        <p className="mt-3 text-xs text-faint">
+        <p className="text-faint mt-3 text-xs">
           The engine is not just tested &mdash; it is{" "}
           <strong>calibrated</strong> against the same published data that
           financial advisors and FIRE researchers use, then stress-tested with

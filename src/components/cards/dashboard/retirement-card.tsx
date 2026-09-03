@@ -152,7 +152,7 @@ function RetirementCardImpl() {
   if (!data?.result)
     return (
       <Card title="Retirement" href="/retirement">
-        <p className="text-sm text-faint">
+        <p className="text-faint text-sm">
           Add a person and configure retirement settings to see projections.
         </p>
       </Card>
@@ -244,7 +244,7 @@ function RetirementCardImpl() {
           <span className="text-primary">{formatCurrency(portfolioTotal)}</span>
         </div>
         {retPortfolio && portfolioTotal > 0 && (
-          <div className="ml-3 space-y-0.5 text-xs text-faint">
+          <div className="text-faint ml-3 space-y-0.5 text-xs">
             {retPortfolio.preTax > 0 && (
               <div className="flex justify-between">
                 <span>Pre-tax</span>
@@ -295,7 +295,7 @@ function RetirementCardImpl() {
           <span className="text-muted">Avg return</span>
           <span className="text-primary">{formatPercent(avgReturn, 1)}</span>
         </div>
-        <div className="border-t border-subtle my-1" />
+        <div className="border-subtle my-1 border-t" />
         {retirementBudget > 0 && (
           <div className="flex justify-between">
             <span className="text-muted">Retirement budget</span>
@@ -418,8 +418,8 @@ function RetirementCardImpl() {
           <span
             className={
               runsOutYear
-                ? "text-red-600 font-medium"
-                : "text-green-600 font-medium"
+                ? "font-medium text-red-600"
+                : "font-medium text-green-600"
             }
           >
             {runsOutYear

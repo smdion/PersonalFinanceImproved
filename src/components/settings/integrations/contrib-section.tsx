@@ -50,9 +50,9 @@ export function ContribSection({ budget, contribAccounts, mutations }: Props) {
   if (linkedItems.length === 0 && unlinkedContribs.length === 0) return null;
 
   return (
-    <details className="border border-subtle rounded-lg">
-      <summary className="px-3 py-2.5 cursor-pointer select-none flex items-center justify-between">
-        <span className="text-xs font-medium text-muted">
+    <details className="border-subtle rounded-lg border">
+      <summary className="flex cursor-pointer items-center justify-between px-3 py-2.5 select-none">
+        <span className="text-muted text-xs font-medium">
           Contribution Account Linking
         </span>
         <SectionSummaryRow>
@@ -68,7 +68,7 @@ export function ContribSection({ budget, contribAccounts, mutations }: Props) {
           />
         </SectionSummaryRow>
       </summary>
-      <div className="px-3 pb-3 space-y-2">
+      <div className="space-y-2 px-3 pb-3">
         {/* Already linked items */}
         {linkedItems.length > 0 && (
           <div className="space-y-0.5">
@@ -79,7 +79,7 @@ export function ContribSection({ budget, contribAccounts, mutations }: Props) {
               return (
                 <div
                   key={m.budgetItemId}
-                  className="flex items-center gap-1.5 text-xs min-h-[24px]"
+                  className="flex min-h-[24px] items-center gap-1.5 text-xs"
                 >
                   <Badge
                     color="green"
@@ -90,14 +90,14 @@ export function ContribSection({ budget, contribAccounts, mutations }: Props) {
                     Linked
                   </Badge>
                   <span
-                    className="text-secondary truncate min-w-[80px] max-w-[140px]"
+                    className="text-secondary max-w-[140px] min-w-[80px] truncate"
                     title={`${m.ledgrCategory} > ${m.ledgrName}`}
                   >
                     {m.ledgrName}
                   </span>
                   <span className="text-faint">&rarr;</span>
                   <span
-                    className="text-green-700 truncate flex-1"
+                    className="flex-1 truncate text-green-700"
                     title={
                       ca?.displayLabel ?? `Account #${m.contributionAccountId}`
                     }
@@ -111,7 +111,7 @@ export function ContribSection({ budget, contribAccounts, mutations }: Props) {
                       })
                     }
                     disabled={unlinkContribMut.isPending}
-                    className="text-red-400 hover:text-red-600 text-caption whitespace-nowrap"
+                    className="text-caption whitespace-nowrap text-red-400 hover:text-red-600"
                     title="Unlink contribution account"
                   >
                     &times;
@@ -124,7 +124,7 @@ export function ContribSection({ budget, contribAccounts, mutations }: Props) {
 
         {/* Unlinked contribution accounts — pick a budget item to link */}
         {unlinkedContribs.length > 0 && (
-          <div className="space-y-0.5 border-t border-subtle pt-2">
+          <div className="border-subtle space-y-0.5 border-t pt-2">
             <p className="text-caption text-faint mb-1">
               {unlinkedContribs.length} unlinked contribution{" "}
               {unlinkedContribs.length === 1 ? "account" : "accounts"}
@@ -132,13 +132,13 @@ export function ContribSection({ budget, contribAccounts, mutations }: Props) {
             {unlinkedContribs.map((ca) => (
               <div
                 key={ca.id}
-                className="flex items-center gap-1.5 text-xs min-h-[24px]"
+                className="flex min-h-[24px] items-center gap-1.5 text-xs"
               >
-                <span className="text-caption px-1.5 py-0.5 rounded bg-surface-elevated text-faint whitespace-nowrap">
+                <span className="text-caption bg-surface-elevated text-faint rounded px-1.5 py-0.5 whitespace-nowrap">
                   Unlinked
                 </span>
                 <span
-                  className="text-secondary truncate min-w-[80px] max-w-[220px]"
+                  className="text-secondary max-w-[220px] min-w-[80px] truncate"
                   title={ca.displayLabel}
                 >
                   {ca.displayLabel}
@@ -154,7 +154,7 @@ export function ContribSection({ budget, contribAccounts, mutations }: Props) {
                       });
                     }
                   }}
-                  className="flex-1 px-1 py-0.5 text-label border border-strong rounded bg-surface-primary"
+                  className="text-label border-strong bg-surface-primary flex-1 rounded border px-1 py-0.5"
                 >
                   <option value="">Select budget item...</option>
                   {unlinkedBudgetItems.map((m) => (

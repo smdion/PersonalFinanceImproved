@@ -259,24 +259,24 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
 
   return (
     <div>
-      <h2 className="text-lg font-semibold mb-4">Contribution & Tax Limits</h2>
+      <h2 className="mb-4 text-lg font-semibold">Contribution & Tax Limits</h2>
 
       {/* Copy-from-year shortcut — only offered when the active year has no
           rows at all yet; once any row exists, each group's own "+ Set"
           fallback (below) covers filling in the rest one at a time. */}
       {admin && yearData.length === 0 && years.length > 0 && (
-        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-3">
-          <span className="text-sm text-secondary">
+        <div className="mb-4 flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3">
+          <span className="text-secondary text-sm">
             No limits configured for {activeYear} yet.
           </span>
-          <label className="text-sm text-secondary">
+          <label className="text-secondary text-sm">
             Copy from:
             <select
               value={copyFrom ?? years[0] ?? ""}
               onChange={(e) =>
                 setCopyFrom(e.target.value ? Number(e.target.value) : null)
               }
-              className="ml-2 px-2 py-1 text-sm border rounded"
+              className="ml-2 rounded border px-2 py-1 text-sm"
             >
               {years.map((yr) => (
                 <option key={yr} value={yr}>
@@ -288,7 +288,7 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
           <button
             onClick={handleCopyYear}
             disabled={createMut.isPending}
-            className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+            className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
           >
             Copy
           </button>
@@ -297,20 +297,20 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
 
       {/* Delete year confirmation */}
       {confirmDeleteYear === activeYear && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
+        <div className="mb-4 flex items-center justify-between rounded-lg border border-red-200 bg-red-50 p-3">
           <span className="text-sm text-red-800">
             Delete all {activeYear} limits? This cannot be undone.
           </span>
           <div className="flex gap-2">
             <button
               onClick={() => handleDeleteYear(activeYear)}
-              className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+              className="rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700"
             >
               Delete
             </button>
             <button
               onClick={() => setConfirmDeleteYear(null)}
-              className="px-3 py-1 text-sm text-muted hover:text-primary"
+              className="text-muted hover:text-primary px-3 py-1 text-sm"
             >
               Cancel
             </button>
@@ -318,11 +318,11 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {limitGroups.map((group) => (
-          <div key={group.label} className="border rounded-lg overflow-hidden">
-            <div className="bg-surface-sunken px-4 py-2 border-b">
-              <h3 className="font-medium text-primary">{group.label}</h3>
+          <div key={group.label} className="overflow-hidden rounded-lg border">
+            <div className="bg-surface-sunken border-b px-4 py-2">
+              <h3 className="text-primary font-medium">{group.label}</h3>
             </div>
             <div className="p-3">
               {group.types.map((type, idx) => {
@@ -337,7 +337,7 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
                 return (
                   <div
                     key={type.key}
-                    className={`flex justify-between items-center text-sm py-1 ${idx > 0 ? "border-t border-subtle" : ""}`}
+                    className={`flex items-center justify-between py-1 text-sm ${idx > 0 ? "border-subtle border-t" : ""}`}
                   >
                     <span className="text-muted">{type.label}</span>
                     <div className="flex items-center gap-1.5">
@@ -382,7 +382,7 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
                           + Set
                         </button>
                       ) : (
-                        <span className="text-xs text-faint">—</span>
+                        <span className="text-faint text-xs">—</span>
                       )}
                     </div>
                   </div>
@@ -394,9 +394,9 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
       </div>
 
       {customLimits.length > 0 && (
-        <div className="mt-4 border rounded-lg overflow-hidden">
-          <div className="bg-surface-sunken px-4 py-2 border-b">
-            <h3 className="font-medium text-primary">Custom</h3>
+        <div className="mt-4 overflow-hidden rounded-lg border">
+          <div className="bg-surface-sunken border-b px-4 py-2">
+            <h3 className="text-primary font-medium">Custom</h3>
           </div>
           <div className="p-3">
             {customLimits.map((l, idx) => {
@@ -404,7 +404,7 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
               return (
                 <div
                   key={l.id}
-                  className={`flex justify-between items-center text-sm py-1 ${idx > 0 ? "border-t border-subtle" : ""}`}
+                  className={`flex items-center justify-between py-1 text-sm ${idx > 0 ? "border-subtle border-t" : ""}`}
                 >
                   <span className="text-muted">{l.limitType}</span>
                   <InlineEdit
@@ -434,8 +434,8 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
         </div>
       )}
 
-      <div className="flex items-center justify-between mt-4">
-        <p className="text-xs text-faint">
+      <div className="mt-4 flex items-center justify-between">
+        <p className="text-faint text-xs">
           Source: IRS annual limits. Click any value to edit.
         </p>
         {admin && years.length > 1 && confirmDeleteYear !== activeYear && (

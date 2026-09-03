@@ -222,7 +222,7 @@ export default function VersionsPage() {
               <p className="mt-1 text-sm text-blue-800 dark:text-blue-300">
                 Your data was migrated automatically. A pre-upgrade backup was
                 saved to{" "}
-                <code className="rounded bg-blue-100 px-1 py-0.5 text-xs font-mono dark:bg-blue-900/50">
+                <code className="rounded bg-blue-100 px-1 py-0.5 font-mono text-xs dark:bg-blue-900/50">
                   {upgradeBanner.backupPath}
                 </code>
               </p>
@@ -245,13 +245,13 @@ export default function VersionsPage() {
       {/* Create form modal */}
       {showCreateForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-surface-primary rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-semibold text-primary mb-4">
+          <div className="bg-surface-primary mx-4 w-full max-w-md rounded-lg p-6 shadow-xl">
+            <h3 className="text-primary mb-4 text-lg font-semibold">
               Create Version
             </h3>
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-secondary mb-1">
+                <label className="text-secondary mb-1 block text-sm font-medium">
                   Name
                 </label>
                 <input
@@ -259,12 +259,12 @@ export default function VersionsPage() {
                   value={createName}
                   onChange={(e) => setCreateName(e.target.value)}
                   placeholder="e.g. Before budget restructure"
-                  className="w-full text-sm border border-strong rounded px-3 py-2 bg-surface-primary text-primary focus:ring-1 focus:ring-blue-500"
+                  className="border-strong bg-surface-primary text-primary w-full rounded border px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500"
                   autoFocus
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-secondary mb-1">
+                <label className="text-secondary mb-1 block text-sm font-medium">
                   Description{" "}
                   <span className="text-faint font-normal">(optional)</span>
                 </label>
@@ -273,11 +273,11 @@ export default function VersionsPage() {
                   onChange={(e) => setCreateDescription(e.target.value)}
                   placeholder="What changes are you about to make?"
                   rows={2}
-                  className="w-full text-sm border border-strong rounded px-3 py-2 bg-surface-primary text-primary focus:ring-1 focus:ring-blue-500"
+                  className="border-strong bg-surface-primary text-primary w-full rounded border px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500"
                 />
               </div>
             </div>
-            <div className="flex gap-2 mt-4 pt-3 border-t border-subtle">
+            <div className="border-subtle mt-4 flex gap-2 border-t pt-3">
               <Button
                 size="xs"
                 onClick={handleCreate}
@@ -291,13 +291,13 @@ export default function VersionsPage() {
                   setCreateName("");
                   setCreateDescription("");
                 }}
-                className="px-3 py-1.5 text-xs font-medium text-muted bg-surface-elevated rounded hover:bg-surface-strong"
+                className="text-muted bg-surface-elevated hover:bg-surface-strong rounded px-3 py-1.5 text-xs font-medium"
               >
                 Cancel
               </button>
             </div>
             {createMutation.isError && (
-              <p className="text-xs text-red-600 mt-2">
+              <p className="mt-2 text-xs text-red-600">
                 {createMutation.error.message}
               </p>
             )}
@@ -306,7 +306,7 @@ export default function VersionsPage() {
       )}
 
       {/* Settings row: schedule + retention + backup/restore */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <Card title="Auto Schedule">
           <div className="flex items-center gap-2">
             <select
@@ -327,7 +327,7 @@ export default function VersionsPage() {
                   });
                 }
               }}
-              className="text-sm border border-strong rounded px-2 py-1 bg-surface-primary text-primary"
+              className="border-strong bg-surface-primary text-primary rounded border px-2 py-1 text-sm"
             >
               <option value="off">Off</option>
               <option value="daily">Daily</option>
@@ -336,7 +336,7 @@ export default function VersionsPage() {
               <option value="custom">Custom (cron)</option>
             </select>
             {setScheduleMutation.isPending && (
-              <span className="text-xs text-faint animate-pulse">
+              <span className="text-faint animate-pulse text-xs">
                 Saving...
               </span>
             )}
@@ -353,7 +353,7 @@ export default function VersionsPage() {
                   }
                   onChange={(e) => setCronExpression(e.target.value)}
                   placeholder="0 2 * * *"
-                  className="flex-1 text-sm font-mono border border-strong rounded px-2 py-1 bg-surface-primary text-primary"
+                  className="border-strong bg-surface-primary text-primary flex-1 rounded border px-2 py-1 font-mono text-sm"
                 />
                 <button
                   onClick={() => {
@@ -363,13 +363,13 @@ export default function VersionsPage() {
                       cronExpression: expr,
                     });
                   }}
-                  className="text-xs text-blue-600 hover:text-blue-700 px-2 py-1"
+                  className="px-2 py-1 text-xs text-blue-600 hover:text-blue-700"
                 >
                   Save
                 </button>
               </div>
             )}
-          <p className="text-xs text-faint mt-2">
+          <p className="text-faint mt-2 text-xs">
             {scheduleData?.schedule === "custom"
               ? "Configure the external cron job to call the version API endpoint on this schedule."
               : "Automatic versions are created by a cron job on the configured schedule."}
@@ -385,7 +385,7 @@ export default function VersionsPage() {
                 max={365}
                 value={retentionValue}
                 onChange={(e) => setRetentionValue(Number(e.target.value))}
-                className="w-20 text-sm border border-strong rounded px-2 py-1 bg-surface-primary text-primary"
+                className="border-strong bg-surface-primary text-primary w-20 rounded border px-2 py-1 text-sm"
               />
               <button
                 onClick={() => {
@@ -398,29 +398,29 @@ export default function VersionsPage() {
               </button>
               <button
                 onClick={() => setEditingRetention(false)}
-                className="text-xs text-faint hover:text-secondary"
+                className="text-faint hover:text-secondary text-xs"
               >
                 Cancel
               </button>
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-semibold text-primary font-mono">
+              <span className="text-primary font-mono text-2xl font-semibold">
                 {retentionData?.retentionCount ?? 30}
               </span>
-              <span className="text-sm text-muted">auto versions kept</span>
+              <span className="text-muted text-sm">auto versions kept</span>
               <button
                 onClick={() => {
                   setRetentionValue(retentionData?.retentionCount ?? 30);
                   setEditingRetention(true);
                 }}
-                className="text-xs text-blue-600 hover:text-blue-700 ml-auto"
+                className="ml-auto text-xs text-blue-600 hover:text-blue-700"
               >
                 Edit
               </button>
             </div>
           )}
-          <p className="text-xs text-faint mt-2">
+          <p className="text-faint mt-2 text-xs">
             Manual versions are never auto-deleted.
           </p>
         </Card>
@@ -429,13 +429,13 @@ export default function VersionsPage() {
           <div className="flex flex-col gap-2">
             <button
               onClick={handleExport}
-              className="px-3 py-1.5 text-xs font-medium text-white bg-emerald-600 rounded hover:bg-emerald-700 w-full"
+              className="w-full rounded bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700"
             >
               Download Backup
             </button>
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="px-3 py-1.5 text-xs font-medium text-secondary bg-surface-elevated rounded hover:bg-surface-strong w-full"
+              className="text-secondary bg-surface-elevated hover:bg-surface-strong w-full rounded px-3 py-1.5 text-xs font-medium"
             >
               Import Backup
             </button>
@@ -447,7 +447,7 @@ export default function VersionsPage() {
               className="hidden"
             />
           </div>
-          <p className="text-xs text-faint mt-2">
+          <p className="text-faint mt-2 text-xs">
             Export all data as JSON for disaster recovery or environment
             migration.
           </p>
@@ -460,7 +460,7 @@ export default function VersionsPage() {
                 This will permanently delete all your financial data. Versions
                 and app settings will be preserved. This cannot be undone.
               </p>
-              <p className="text-xs text-muted">
+              <p className="text-muted text-xs">
                 Type <span className="font-mono font-bold">delete</span> to
                 confirm:
               </p>
@@ -469,7 +469,7 @@ export default function VersionsPage() {
                 value={resetConfirmText}
                 onChange={(e) => setResetConfirmText(e.target.value)}
                 placeholder="delete"
-                className="w-full px-2 py-1.5 text-sm border border-red-300 rounded bg-surface-primary focus:outline-none focus:ring-1 focus:ring-red-400"
+                className="bg-surface-primary w-full rounded border border-red-300 px-2 py-1.5 text-sm focus:ring-1 focus:ring-red-400 focus:outline-none"
                 autoFocus
               />
               <div className="flex gap-2">
@@ -491,7 +491,7 @@ export default function VersionsPage() {
                     setShowResetConfirm(false);
                     setResetConfirmText("");
                   }}
-                  className="px-3 py-1.5 text-xs font-medium text-secondary bg-surface-elevated rounded hover:bg-surface-strong transition-colors"
+                  className="text-secondary bg-surface-elevated hover:bg-surface-strong rounded px-3 py-1.5 text-xs font-medium transition-colors"
                 >
                   Cancel
                 </button>
@@ -506,11 +506,11 @@ export default function VersionsPage() {
             <div>
               <button
                 onClick={() => setShowResetConfirm(true)}
-                className="px-3 py-1.5 text-xs font-medium text-red-600 border border-red-300 rounded hover:bg-red-50 w-full transition-colors"
+                className="w-full rounded border border-red-300 px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50"
               >
                 Reset App — Clear All Data
               </button>
-              <p className="text-xs text-faint mt-2">
+              <p className="text-faint mt-2 text-xs">
                 Removes all financial data. Download a backup first.
               </p>
             </div>
@@ -521,7 +521,7 @@ export default function VersionsPage() {
       {/* Version list */}
       <Card title="All Versions">
         {isLoading ? (
-          <div className="text-sm text-muted animate-pulse py-8 text-center">
+          <div className="text-muted animate-pulse py-8 text-center text-sm">
             Loading versions...
           </div>
         ) : !versions || versions.length === 0 ? (
@@ -530,24 +530,24 @@ export default function VersionsPage() {
             hint="Create a manual version or wait for the next automatic version."
           />
         ) : (
-          <div className="overflow-x-auto -mx-3 sm:-mx-4">
+          <div className="-mx-3 overflow-x-auto sm:-mx-4">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-left">
-                  <th className="px-3 py-2 font-medium text-muted">Name</th>
-                  <th className="px-3 py-2 font-medium text-muted">Type</th>
-                  <th className="px-3 py-2 font-medium text-muted text-right">
+                  <th className="text-muted px-3 py-2 font-medium">Name</th>
+                  <th className="text-muted px-3 py-2 font-medium">Type</th>
+                  <th className="text-muted px-3 py-2 text-right font-medium">
                     Tables
                   </th>
-                  <th className="px-3 py-2 font-medium text-muted text-right">
+                  <th className="text-muted px-3 py-2 text-right font-medium">
                     Rows
                   </th>
-                  <th className="px-3 py-2 font-medium text-muted text-right">
+                  <th className="text-muted px-3 py-2 text-right font-medium">
                     Size
                   </th>
-                  <th className="px-3 py-2 font-medium text-muted">Created</th>
-                  <th className="px-3 py-2 font-medium text-muted">By</th>
-                  <th className="px-3 py-2 font-medium text-muted text-right">
+                  <th className="text-muted px-3 py-2 font-medium">Created</th>
+                  <th className="text-muted px-3 py-2 font-medium">By</th>
+                  <th className="text-muted px-3 py-2 text-right font-medium">
                     Actions
                   </th>
                 </tr>
@@ -556,19 +556,19 @@ export default function VersionsPage() {
                 {versions.map((v) => (
                   <tr
                     key={v.id}
-                    className="border-b border-subtle hover:bg-surface-sunken"
+                    className="border-subtle hover:bg-surface-sunken border-b"
                   >
-                    <td className="px-3 py-2 text-primary">
+                    <td className="text-primary px-3 py-2">
                       <div className="font-medium">{v.name}</div>
                       {v.description && (
-                        <div className="text-xs text-faint mt-0.5 truncate max-w-[200px]">
+                        <div className="text-faint mt-0.5 max-w-[200px] truncate text-xs">
                           {v.description}
                         </div>
                       )}
                     </td>
                     <td className="px-3 py-2">
                       <span
-                        className={`inline-block text-caption font-medium px-1.5 py-0.5 rounded ${
+                        className={`text-caption inline-block rounded px-1.5 py-0.5 font-medium ${
                           v.versionType === "auto"
                             ? "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300"
                             : "bg-purple-100 text-purple-700"
@@ -577,19 +577,19 @@ export default function VersionsPage() {
                         {v.versionType}
                       </span>
                     </td>
-                    <td className="px-3 py-2 text-right font-mono text-muted">
+                    <td className="text-muted px-3 py-2 text-right font-mono">
                       {v.tableCount}
                     </td>
-                    <td className="px-3 py-2 text-right font-mono text-muted">
+                    <td className="text-muted px-3 py-2 text-right font-mono">
                       {v.totalRows.toLocaleString()}
                     </td>
-                    <td className="px-3 py-2 text-right font-mono text-muted">
+                    <td className="text-muted px-3 py-2 text-right font-mono">
                       {formatBytes(v.sizeEstimateBytes)}
                     </td>
-                    <td className="px-3 py-2 text-muted whitespace-nowrap">
+                    <td className="text-muted px-3 py-2 whitespace-nowrap">
                       {formatDate(v.createdAt)}
                     </td>
-                    <td className="px-3 py-2 text-muted">{v.createdBy}</td>
+                    <td className="text-muted px-3 py-2">{v.createdBy}</td>
                     <td className="px-3 py-2 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <button
@@ -599,7 +599,7 @@ export default function VersionsPage() {
                             );
                             setPreviewTable("");
                           }}
-                          className="text-xs text-blue-600 hover:text-blue-700 px-1.5 py-0.5 rounded hover:bg-blue-50"
+                          className="rounded px-1.5 py-0.5 text-xs text-blue-600 hover:bg-blue-50 hover:text-blue-700"
                         >
                           {previewVersionId === v.id ? "Close" : "Preview"}
                         </button>
@@ -607,13 +607,13 @@ export default function VersionsPage() {
                           onClick={() =>
                             setRestoreTarget({ id: v.id, name: v.name })
                           }
-                          className="text-xs text-amber-600 hover:text-amber-700 px-1.5 py-0.5 rounded hover:bg-amber-50"
+                          className="rounded px-1.5 py-0.5 text-xs text-amber-600 hover:bg-amber-50 hover:text-amber-700"
                         >
                           Restore
                         </button>
                         <button
                           onClick={() => setDeleteTarget(v.id)}
-                          className="text-xs text-red-600 hover:text-red-700 px-1.5 py-0.5 rounded hover:bg-red-50"
+                          className="rounded px-1.5 py-0.5 text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
                         >
                           Delete
                         </button>
@@ -632,11 +632,11 @@ export default function VersionsPage() {
         <Card title={`Preview: ${versionDetail.name}`} className="mt-4">
           <div className="space-y-3">
             <div className="flex items-center gap-3">
-              <label className="text-xs font-medium text-muted">Table:</label>
+              <label className="text-muted text-xs font-medium">Table:</label>
               <select
                 value={previewTable}
                 onChange={(e) => setPreviewTable(e.target.value)}
-                className="text-sm border border-strong rounded px-2 py-1 bg-surface-primary text-primary"
+                className="border-strong bg-surface-primary text-primary rounded border px-2 py-1 text-sm"
               >
                 <option value="">Select a table...</option>
                 {versionDetail.tables?.map((t) => (
@@ -648,11 +648,11 @@ export default function VersionsPage() {
             </div>
 
             {/* Per-table row count summary */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1.5">
+            <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 md:grid-cols-4">
               {versionDetail.tables?.map((t) => (
                 <div
                   key={t.tableName}
-                  className={`text-xs px-2 py-1 rounded cursor-pointer transition-colors ${
+                  className={`cursor-pointer rounded px-2 py-1 text-xs transition-colors ${
                     previewTable === t.tableName
                       ? "bg-blue-100 text-blue-800"
                       : "bg-surface-sunken text-muted hover:bg-surface-elevated"
@@ -668,12 +668,12 @@ export default function VersionsPage() {
             {/* Preview rows */}
             {previewTable && previewData && (
               <div className="overflow-x-auto">
-                <div className="text-xs text-faint mb-1">
+                <div className="text-faint mb-1 text-xs">
                   Showing {Math.min(previewData.rows.length, 50)} of{" "}
                   {previewData.rowCount} rows
                 </div>
                 {previewData.rows.length > 0 ? (
-                  <table className="w-full text-xs border">
+                  <table className="w-full border text-xs">
                     <thead>
                       <tr className="bg-surface-sunken">
                         {Object.keys(
@@ -681,7 +681,7 @@ export default function VersionsPage() {
                         ).map((col) => (
                           <th
                             key={col}
-                            className="px-2 py-1 text-left font-medium text-muted border-b"
+                            className="text-muted border-b px-2 py-1 text-left font-medium"
                           >
                             {col}
                           </th>
@@ -692,13 +692,13 @@ export default function VersionsPage() {
                       {previewData.rows.map((row, i) => (
                         <tr
                           key={String((row as Record<string, unknown>).id ?? i)}
-                          className="border-b border-subtle hover:bg-surface-sunken"
+                          className="border-subtle hover:bg-surface-sunken border-b"
                         >
                           {Object.entries(row as Record<string, unknown>).map(
                             ([col, val]) => (
                               <td
                                 key={col}
-                                className="px-2 py-1 text-secondary font-mono max-w-[200px] truncate"
+                                className="text-secondary max-w-[200px] truncate px-2 py-1 font-mono"
                               >
                                 {val === null ? (
                                   <span className="text-faint">null</span>
@@ -715,7 +715,7 @@ export default function VersionsPage() {
                     </tbody>
                   </table>
                 ) : (
-                  <div className="text-xs text-faint text-center py-4">
+                  <div className="text-faint py-4 text-center text-xs">
                     Table is empty in this version.
                   </div>
                 )}
@@ -728,30 +728,30 @@ export default function VersionsPage() {
       {/* Restore confirmation modal */}
       {restoreTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-surface-primary rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-semibold text-primary mb-2">
+          <div className="bg-surface-primary mx-4 w-full max-w-md rounded-lg p-6 shadow-xl">
+            <h3 className="text-primary mb-2 text-lg font-semibold">
               Restore Version
             </h3>
-            <p className="text-sm text-muted mb-3">
+            <p className="text-muted mb-3 text-sm">
               This will replace <strong>all current data</strong> with the data
               from <strong>&ldquo;{restoreTarget.name}&rdquo;</strong>. This
               action cannot be undone unless you create a backup first.
             </p>
 
-            <label className="flex items-center gap-2 mb-3">
+            <label className="mb-3 flex items-center gap-2">
               <input
                 type="checkbox"
                 checked={restoreCreateBackup}
                 onChange={(e) => setRestoreCreateBackup(e.target.checked)}
-                className="rounded border-strong"
+                className="border-strong rounded"
               />
-              <span className="text-sm text-secondary">
+              <span className="text-secondary text-sm">
                 Create backup of current state before restoring
               </span>
             </label>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-secondary mb-1">
+              <label className="text-secondary mb-1 block text-sm font-medium">
                 Type the version name to confirm:
               </label>
               <input
@@ -759,11 +759,11 @@ export default function VersionsPage() {
                 value={restoreConfirmText}
                 onChange={(e) => setRestoreConfirmText(e.target.value)}
                 placeholder={restoreTarget.name}
-                className="w-full text-sm border border-strong rounded px-3 py-2 bg-surface-primary text-primary"
+                className="border-strong bg-surface-primary text-primary w-full rounded border px-3 py-2 text-sm"
               />
             </div>
 
-            <div className="flex gap-2 pt-3 border-t border-subtle">
+            <div className="border-subtle flex gap-2 border-t pt-3">
               <button
                 onClick={handleRestore}
                 disabled={
@@ -771,7 +771,7 @@ export default function VersionsPage() {
                   restoreMutation.isPending ||
                   createMutation.isPending
                 }
-                className="px-3 py-1.5 text-xs font-medium text-white bg-amber-600 rounded hover:bg-amber-700 disabled:opacity-50"
+                className="rounded bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700 disabled:opacity-50"
               >
                 {restoreMutation.isPending || createMutation.isPending
                   ? "Restoring..."
@@ -782,13 +782,13 @@ export default function VersionsPage() {
                   setRestoreTarget(null);
                   setRestoreConfirmText("");
                 }}
-                className="px-3 py-1.5 text-xs font-medium text-muted bg-surface-elevated rounded hover:bg-surface-strong"
+                className="text-muted bg-surface-elevated hover:bg-surface-strong rounded px-3 py-1.5 text-xs font-medium"
               >
                 Cancel
               </button>
             </div>
             {restoreMutation.isError && (
-              <p className="text-xs text-red-600 mt-2">
+              <p className="mt-2 text-xs text-red-600">
                 {restoreMutation.error.message}
               </p>
             )}
@@ -799,11 +799,11 @@ export default function VersionsPage() {
       {/* Delete confirmation modal */}
       {deleteTarget !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-surface-primary rounded-lg shadow-xl p-6 w-full max-w-sm mx-4">
-            <h3 className="text-lg font-semibold text-primary mb-2">
+          <div className="bg-surface-primary mx-4 w-full max-w-sm rounded-lg p-6 shadow-xl">
+            <h3 className="text-primary mb-2 text-lg font-semibold">
               Delete Version
             </h3>
-            <p className="text-sm text-muted mb-4">
+            <p className="text-muted mb-4 text-sm">
               Are you sure you want to permanently delete this version? This
               cannot be undone.
             </p>
@@ -818,7 +818,7 @@ export default function VersionsPage() {
               </Button>
               <button
                 onClick={() => setDeleteTarget(null)}
-                className="px-3 py-1.5 text-xs font-medium text-muted bg-surface-elevated rounded hover:bg-surface-strong"
+                className="text-muted bg-surface-elevated hover:bg-surface-strong rounded px-3 py-1.5 text-xs font-medium"
               >
                 Cancel
               </button>
@@ -830,20 +830,20 @@ export default function VersionsPage() {
       {/* Import confirmation modal */}
       {showImportConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-surface-primary rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-semibold text-primary mb-2">
+          <div className="bg-surface-primary mx-4 w-full max-w-md rounded-lg p-6 shadow-xl">
+            <h3 className="text-primary mb-2 text-lg font-semibold">
               Import Backup
             </h3>
-            <p className="text-sm text-muted mb-1">
+            <p className="text-muted mb-1 text-sm">
               This will replace <strong>all current data</strong> with the
               contents of:
             </p>
-            <p className="text-sm font-medium text-primary mb-3 font-mono">
+            <p className="text-primary mb-3 font-mono text-sm font-medium">
               {importFile?.name}
             </p>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-secondary mb-1">
+              <label className="text-secondary mb-1 block text-sm font-medium">
                 Type IMPORT to confirm:
               </label>
               <input
@@ -851,19 +851,19 @@ export default function VersionsPage() {
                 value={importConfirmText}
                 onChange={(e) => setImportConfirmText(e.target.value)}
                 placeholder="IMPORT"
-                className="w-full text-sm border border-strong rounded px-3 py-2 bg-surface-primary text-primary"
+                className="border-strong bg-surface-primary text-primary w-full rounded border px-3 py-2 text-sm"
               />
             </div>
 
             {importError && (
-              <p className="text-xs text-red-600 mb-3">{importError}</p>
+              <p className="mb-3 text-xs text-red-600">{importError}</p>
             )}
 
-            <div className="flex gap-2 pt-3 border-t border-subtle">
+            <div className="border-subtle flex gap-2 border-t pt-3">
               <button
                 onClick={handleImport}
                 disabled={importConfirmText !== "IMPORT" || importLoading}
-                className="px-3 py-1.5 text-xs font-medium text-white bg-amber-600 rounded hover:bg-amber-700 disabled:opacity-50"
+                className="rounded bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700 disabled:opacity-50"
               >
                 {importLoading ? "Importing..." : "Import"}
               </button>
@@ -874,7 +874,7 @@ export default function VersionsPage() {
                   setImportConfirmText("");
                   setImportError(null);
                 }}
-                className="px-3 py-1.5 text-xs font-medium text-muted bg-surface-elevated rounded hover:bg-surface-strong"
+                className="text-muted bg-surface-elevated hover:bg-surface-strong rounded px-3 py-1.5 text-xs font-medium"
               >
                 Cancel
               </button>

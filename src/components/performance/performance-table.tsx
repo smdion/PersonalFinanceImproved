@@ -68,41 +68,41 @@ export function PerformanceTable({
   );
 
   return (
-    <div className="bg-surface-primary rounded-lg border shadow-sm overflow-x-auto">
+    <div className="bg-surface-primary overflow-x-auto rounded-lg border shadow-sm">
       <table className="w-full text-sm">
         <thead>
           <tr className="bg-surface-sunken border-b">
-            <th className="text-left px-4 py-3 text-muted font-medium whitespace-nowrap">
+            <th className="text-muted px-4 py-3 text-left font-medium whitespace-nowrap">
               Year
             </th>
             {!onlyBasis && (
               <>
-                <th className="text-right px-4 py-3 text-muted font-medium whitespace-nowrap">
+                <th className="text-muted px-4 py-3 text-right font-medium whitespace-nowrap">
                   Beginning
                 </th>
-                <th className="text-right px-4 py-3 text-muted font-medium whitespace-nowrap">
+                <th className="text-muted px-4 py-3 text-right font-medium whitespace-nowrap">
                   Total Contributions
                 </th>
-                <th className="text-right px-4 py-3 text-muted font-medium whitespace-nowrap">
+                <th className="text-muted px-4 py-3 text-right font-medium whitespace-nowrap">
                   Employer Match
                   <HelpTip text="Employer contributions matched during the year. For ESPP accounts this is the purchase discount — not a cash contribution, but tracked here for consistency." />
                 </th>
-                <th className="text-right px-4 py-3 text-muted font-medium whitespace-nowrap">
+                <th className="text-muted px-4 py-3 text-right font-medium whitespace-nowrap">
                   Distributions
                   <HelpTip text="Withdrawals or money taken out of accounts during the year. For ESPP this includes dividends kept in the ESPP account rather than wired out." />
                 </th>
-                <th className="text-right px-4 py-3 text-muted font-medium whitespace-nowrap">
+                <th className="text-muted px-4 py-3 text-right font-medium whitespace-nowrap">
                   Rollovers
                   <HelpTip text="Internal transfers between accounts. Positive = money rolled in, negative = money rolled out. For ESPP, negative rollovers are share sale proceeds wired to the brokerage. Should net to zero at Portfolio level." />
                 </th>
-                <th className="text-right px-4 py-3 text-muted font-medium whitespace-nowrap">
+                <th className="text-muted px-4 py-3 text-right font-medium whitespace-nowrap">
                   Fees
                 </th>
-                <th className="text-right px-4 py-3 text-muted font-medium whitespace-nowrap">
+                <th className="text-muted px-4 py-3 text-right font-medium whitespace-nowrap">
                   Gain/Loss
                   <HelpTip text="Change in value after contributions, distributions, and fees. For ESPP accounts, this measures against the full market value at purchase — since shares are bought at a discount, your loss relative to what you actually paid is smaller than this figure alone shows." />
                 </th>
-                <th className="text-right px-4 py-3 text-muted font-medium whitespace-nowrap">
+                <th className="text-muted px-4 py-3 text-right font-medium whitespace-nowrap">
                   Ending
                   <HelpTip text="Balance based on tracked performance data. For in-progress years this may lag behind the Portfolio Value (which uses the latest snapshot)." />
                 </th>
@@ -110,28 +110,28 @@ export function PerformanceTable({
             )}
             {showBasis && (
               <>
-                <th className="text-right px-4 py-3 text-muted font-medium whitespace-nowrap">
+                <th className="text-muted px-4 py-3 text-right font-medium whitespace-nowrap">
                   Cost Basis
                   <HelpTip text="Cumulative contributions — your original invested dollars. Only gains above basis are taxable on withdrawal. Blank for accounts that don't track cost basis (Retirement, HSA)." />
                 </th>
-                <th className="text-right px-4 py-3 text-muted font-medium whitespace-nowrap">
+                <th className="text-muted px-4 py-3 text-right font-medium whitespace-nowrap">
                   Contribution Basis
                   <HelpTip text="Roth contribution/rollover basis, per (account, owner, year) — always penalty-free and tax-free. Blank for accounts that don't track Roth basis (HSA, brokerage). Edit on the current year to update Tax Buckets too — same underlying figure." />
                 </th>
-                <th className="text-right px-4 py-3 text-muted font-medium whitespace-nowrap">
+                <th className="text-muted px-4 py-3 text-right font-medium whitespace-nowrap">
                   Conversion Basis
                   <HelpTip text="Roth conversion basis — tax-free, but penalty-free only once its own 5-year clock has passed. See Tax Buckets for the accessible-now/locked split." />
                 </th>
               </>
             )}
             {showUnrealized && (
-              <th className="text-right px-4 py-3 text-muted font-medium whitespace-nowrap">
+              <th className="text-muted px-4 py-3 text-right font-medium whitespace-nowrap">
                 Unrealized
                 <HelpTip text="Ending balance minus cost basis — the portion subject to capital gains tax if sold." />
               </th>
             )}
-            <th className="text-right px-4 py-3 text-muted font-medium whitespace-nowrap">
-              <span className="inline-flex items-center gap-1 justify-end">
+            <th className="text-muted px-4 py-3 text-right font-medium whitespace-nowrap">
+              <span className="inline-flex items-center justify-end gap-1">
                 {!onlyBasis && (
                   <>
                     Return
@@ -141,13 +141,13 @@ export function PerformanceTable({
                 {onToggleLock && (
                   <button
                     onClick={onToggleLock}
-                    className="ml-1 text-faint hover:text-primary transition-colors"
+                    className="text-faint hover:text-primary ml-1 transition-colors"
                     title={locked ? "Unlock to edit" : "Lock editing"}
                   >
                     {locked ? (
-                      <Lock className="w-3.5 h-3.5" />
+                      <Lock className="h-3.5 w-3.5" />
                     ) : (
-                      <LockOpen className="w-3.5 h-3.5" />
+                      <LockOpen className="h-3.5 w-3.5" />
                     )}
                   </button>
                 )}

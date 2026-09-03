@@ -126,8 +126,8 @@ export function ContributionProfileManager({
   if (isLoading) {
     return (
       <div className="space-y-3">
-        <div className="animate-pulse h-16 bg-surface-elevated rounded-lg" />
-        <div className="animate-pulse h-40 bg-surface-elevated rounded-lg" />
+        <div className="bg-surface-elevated h-16 animate-pulse rounded-lg" />
+        <div className="bg-surface-elevated h-40 animate-pulse rounded-lg" />
       </div>
     );
   }
@@ -172,15 +172,15 @@ export function ContributionProfileManager({
       {/* A standing audit view — accounts × profiles, not just this one
           profile's editor — kept as an internal toggle rather than a new
           top-level Budget-page tab (see contribution-profile-compare.tsx). */}
-      <div className="flex items-center justify-between mb-4 border-b">
+      <div className="mb-4 flex items-center justify-between border-b">
         <div className="flex gap-1">
           <button
             type="button"
             onClick={() => setViewMode("profiles")}
-            className={`px-3 py-1.5 text-xs font-medium border-b-2 transition-colors ${
+            className={`border-b-2 px-3 py-1.5 text-xs font-medium transition-colors ${
               viewMode === "profiles"
                 ? "border-blue-600 text-blue-600"
-                : "border-transparent text-muted hover:text-secondary"
+                : "text-muted hover:text-secondary border-transparent"
             }`}
           >
             Profiles
@@ -188,10 +188,10 @@ export function ContributionProfileManager({
           <button
             type="button"
             onClick={() => setViewMode("compare")}
-            className={`px-3 py-1.5 text-xs font-medium border-b-2 transition-colors ${
+            className={`border-b-2 px-3 py-1.5 text-xs font-medium transition-colors ${
               viewMode === "compare"
                 ? "border-blue-600 text-blue-600"
-                : "border-transparent text-muted hover:text-secondary"
+                : "text-muted hover:text-secondary border-transparent"
             }`}
           >
             Compare
@@ -201,7 +201,7 @@ export function ContributionProfileManager({
           <button
             type="button"
             onClick={() => setAddingAccount(true)}
-            className="text-caption font-medium text-blue-600 hover:text-blue-700 mb-1.5"
+            className="text-caption mb-1.5 font-medium text-blue-600 hover:text-blue-700"
           >
             + Add Account
           </button>
@@ -235,7 +235,7 @@ export function ContributionProfileManager({
         <>
           {/* Viewing/Active/Pinned summary bar — same visual language as Budget/Savings Profiles */}
           {displayedProfile && (
-            <div className="flex items-center justify-between bg-surface-sunken rounded-lg px-4 py-3 mb-4">
+            <div className="bg-surface-sunken mb-4 flex items-center justify-between rounded-lg px-4 py-3">
               <div className="flex items-center gap-6">
                 <ProfileViewingBadge
                   profileName={displayedProfile.name}
@@ -253,7 +253,7 @@ export function ContributionProfileManager({
                 <div className="flex items-center gap-5 text-xs">
                   <div>
                     <span className="text-faint">Contributions </span>
-                    <span className="font-semibold text-secondary">
+                    <span className="text-secondary font-semibold">
                       {formatCurrency(
                         displayedProfile.summary.annualContributions,
                       )}
@@ -262,7 +262,7 @@ export function ContributionProfileManager({
                   </div>
                   <div>
                     <span className="text-faint">Employer Match </span>
-                    <span className="font-semibold text-secondary">
+                    <span className="text-secondary font-semibold">
                       {formatCurrency(
                         displayedProfile.summary.annualEmployerMatch,
                       )}
@@ -276,7 +276,7 @@ export function ContributionProfileManager({
           )}
 
           {/* Master-detail layout */}
-          <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-[240px_1fr]">
             {/* Left: profile list */}
             <div className="space-y-1.5">
               <ProfileSidebarHeader
@@ -361,7 +361,7 @@ export function ContributionProfileManager({
               ))}
 
               {profiles.length <= 1 && (
-                <p className="text-caption text-faint italic px-2 py-3">
+                <p className="text-caption text-faint px-2 py-3 italic">
                   Only one profile so far. Create another to model a different
                   contribution strategy.
                 </p>
@@ -399,7 +399,7 @@ export function ContributionProfileManager({
                   />
                 )
               ) : (
-                <div className="flex items-center justify-center h-40 text-xs text-faint">
+                <div className="text-faint flex h-40 items-center justify-center text-xs">
                   Select a profile to view details
                 </div>
               )}
@@ -475,8 +475,8 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
   if (isLoading) {
     return (
       <div className="space-y-3">
-        <div className="animate-pulse h-6 bg-surface-elevated rounded w-48" />
-        <div className="animate-pulse h-32 bg-surface-elevated rounded" />
+        <div className="bg-surface-elevated h-6 w-48 animate-pulse rounded" />
+        <div className="bg-surface-elevated h-32 animate-pulse rounded" />
       </div>
     );
   }
@@ -487,8 +487,8 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
     <div>
       {/* Profile header — Viewing/Active/Pinned state is already shown in the
           summary bar above; this just names which profile's detail this is. */}
-      <div className="flex items-center gap-2 mb-4">
-        <h3 className="text-sm font-semibold text-primary">{profile.name}</h3>
+      <div className="mb-4 flex items-center gap-2">
+        <h3 className="text-primary text-sm font-semibold">{profile.name}</h3>
         {profile.description && (
           <span className="text-caption text-faint">
             — {profile.description}
@@ -499,22 +499,22 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
       {/* Contributions section — salary is entirely the Salary Profiles
           tab's domain now, so it is deliberately not shown here. */}
       <div>
-        <h4 className="text-label font-semibold text-muted uppercase tracking-wide mb-2">
+        <h4 className="text-label text-muted mb-2 font-semibold tracking-wide uppercase">
           Contribution Accounts
         </h4>
-        <table className="w-full text-xs border-collapse">
+        <table className="w-full border-collapse text-xs">
           <thead>
-            <tr className="border-b-2 border-strong">
-              <th className="text-left py-2 pl-4 pr-3 text-muted font-medium">
+            <tr className="border-strong border-b-2">
+              <th className="text-muted py-2 pr-3 pl-4 text-left font-medium">
                 Account
               </th>
-              <th className="text-left py-2 px-3 text-muted font-medium w-20 whitespace-nowrap">
+              <th className="text-muted w-20 px-3 py-2 text-left font-medium whitespace-nowrap">
                 Method
               </th>
-              <th className="text-right py-2 px-3 text-muted font-medium w-24">
+              <th className="text-muted w-24 px-3 py-2 text-right font-medium">
                 Value
               </th>
-              <th className="text-right py-2 px-3 text-muted font-medium w-28">
+              <th className="text-muted w-28 px-3 py-2 text-right font-medium">
                 Match
               </th>
             </tr>
@@ -554,13 +554,13 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
                 return (
                   <tr
                     key={ad.id}
-                    className={`border-b border-subtle hover:bg-blue-50/60 transition-colors ${
+                    className={`border-subtle border-b transition-colors hover:bg-blue-50/60 ${
                       rowIdx % 2 === 1
                         ? "bg-surface-sunken/60"
                         : "bg-surface-primary"
                     } ${isProfileDisabled ? "opacity-40" : ""}`}
                   >
-                    <td className="py-1.5 pl-4 pr-3 text-secondary">
+                    <td className="text-secondary py-1.5 pr-3 pl-4">
                       <span className="flex items-center gap-1.5">
                         <span
                           className={`${isProfileDisabled ? "line-through" : ""} ${hasActiveName ? "text-amber-600" : ""}`}
@@ -568,13 +568,13 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
                           {ad.accountName}
                         </span>
                         {isProfileDisabled && (
-                          <span className="text-micro px-1 py-0.5 rounded border border-strong text-muted font-semibold shrink-0">
+                          <span className="text-micro border-strong text-muted shrink-0 rounded border px-1 py-0.5 font-semibold">
                             OFF HERE
                           </span>
                         )}
                         {!ad.liveIsActive && (
                           <span
-                            className="text-micro text-amber-500 font-medium shrink-0"
+                            className="text-micro shrink-0 font-medium text-amber-500"
                             title="This account isn't a funding target — any value set for it here has no effect. Restore it from the profile editor."
                           >
                             not a funding target
@@ -582,7 +582,7 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
                         )}
                       </span>
                     </td>
-                    <td className="py-1.5 px-3 text-muted whitespace-nowrap">
+                    <td className="text-muted px-3 py-1.5 whitespace-nowrap">
                       {activeMethod
                         ? activeMethod === "percent_of_salary"
                           ? "% salary"
@@ -590,9 +590,9 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
                         : "—"}
                     </td>
                     <td
-                      className={`py-1.5 px-3 text-right font-mono ${
+                      className={`px-3 py-1.5 text-right font-mono ${
                         hasValue && !isProfileDisabled
-                          ? "text-amber-600 font-medium"
+                          ? "font-medium text-amber-600"
                           : "text-secondary"
                       }`}
                     >
@@ -603,10 +603,10 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
                           formatCurrency(parseFloat(String(activeValue)))
                         )
                       ) : (
-                        <span className="italic text-faint">Not set</span>
+                        <span className="text-faint italic">Not set</span>
                       )}
                     </td>
-                    <td className="py-1.5 px-3 text-right text-faint whitespace-nowrap">
+                    <td className="text-faint px-3 py-1.5 text-right whitespace-nowrap">
                       {(() => {
                         const matchText = formatEmployerMatch(
                           matchSource.liveMatchType,
@@ -646,19 +646,19 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
           deductionActiveFieldsSchema / applyDeductionActiveFields). */}
       {deductionRows && deductionRows.length > 0 && (
         <div className="mt-5">
-          <h4 className="text-label font-semibold text-muted uppercase tracking-wide mb-2">
+          <h4 className="text-label text-muted mb-2 font-semibold tracking-wide uppercase">
             Deductions
           </h4>
-          <table className="w-full text-xs border-collapse">
+          <table className="w-full border-collapse text-xs">
             <thead>
-              <tr className="border-b-2 border-strong">
-                <th className="text-left py-2 pl-4 pr-3 text-muted font-medium">
+              <tr className="border-strong border-b-2">
+                <th className="text-muted py-2 pr-3 pl-4 text-left font-medium">
                   Deduction
                 </th>
-                <th className="text-left py-2 px-3 text-muted font-medium w-24">
+                <th className="text-muted w-24 px-3 py-2 text-left font-medium">
                   Pretax
                 </th>
-                <th className="text-right py-2 px-3 text-muted font-medium w-28">
+                <th className="text-muted w-28 px-3 py-2 text-right font-medium">
                   Amount / Period
                 </th>
               </tr>
@@ -677,30 +677,30 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
                 return (
                   <tr
                     key={d.id}
-                    className={`border-b border-subtle hover:bg-blue-50/60 transition-colors ${
+                    className={`border-subtle border-b transition-colors hover:bg-blue-50/60 ${
                       rowIdx % 2 === 1
                         ? "bg-surface-sunken/60"
                         : "bg-surface-primary"
                     }`}
                   >
-                    <td className="py-1.5 pl-4 pr-3 text-secondary">
+                    <td className="text-secondary py-1.5 pr-3 pl-4">
                       {d.deductionName}
                       <span className="text-faint"> — {personName}</span>
                     </td>
-                    <td className="py-1.5 px-3 text-muted">
+                    <td className="text-muted px-3 py-1.5">
                       {d.isPretax ? "Pretax" : "Post-tax"}
                     </td>
                     <td
-                      className={`py-1.5 px-3 text-right font-mono ${
+                      className={`px-3 py-1.5 text-right font-mono ${
                         activeAmount !== undefined
-                          ? "text-amber-600 font-medium"
+                          ? "font-medium text-amber-600"
                           : "text-secondary"
                       }`}
                     >
                       {activeAmount !== undefined ? (
                         formatCurrency(parseFloat(String(activeAmount)))
                       ) : (
-                        <span className="italic text-faint">Not set</span>
+                        <span className="text-faint italic">Not set</span>
                       )}
                     </td>
                   </tr>
@@ -875,7 +875,7 @@ function ProfileEditor({
       <div className="space-y-5">
         <div className="flex items-start justify-between gap-3">
           {/* Name & Description */}
-          <div className="grid grid-cols-2 gap-3 flex-1">
+          <div className="grid flex-1 grid-cols-2 gap-3">
             <FormField label="Name">
               <FormInput
                 type="text"
@@ -893,11 +893,11 @@ function ProfileEditor({
               />
             </FormField>
           </div>
-          <div className="flex items-center gap-2 shrink-0 pt-4">
+          <div className="flex shrink-0 items-center gap-2 pt-4">
             <button
               type="button"
               onClick={onCancel}
-              className="px-2 py-1.5 text-xs font-medium text-muted hover:text-secondary"
+              className="text-muted hover:text-secondary px-2 py-1.5 text-xs font-medium"
             >
               Cancel
             </button>
@@ -905,7 +905,7 @@ function ProfileEditor({
               type="button"
               onClick={handleSave}
               disabled={!name.trim() || isPending}
-              className="px-3 py-1.5 text-xs font-medium rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+              className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
             >
               {isPending ? "Saving…" : "Create"}
             </button>
@@ -915,7 +915,7 @@ function ProfileEditor({
         {/* Contribution accounts */}
         {baseData?.accountDetails && baseData.accountDetails.length > 0 && (
           <div>
-            <h4 className="text-label font-semibold text-muted uppercase tracking-wide mb-2">
+            <h4 className="text-label text-muted mb-2 font-semibold tracking-wide uppercase">
               Contributions
             </h4>
             <p className="text-caption text-faint mb-2">
@@ -932,16 +932,16 @@ function ProfileEditor({
                   >
                     On
                   </th>
-                  <th className="text-left py-1.5 font-medium">Account</th>
-                  <th className="text-left py-1.5 font-medium w-28">Method</th>
-                  <th className="text-right py-1.5 font-medium w-24">Value</th>
-                  <th className="text-left py-1.5 font-medium w-28">
+                  <th className="py-1.5 text-left font-medium">Account</th>
+                  <th className="w-28 py-1.5 text-left font-medium">Method</th>
+                  <th className="w-24 py-1.5 text-right font-medium">Value</th>
+                  <th className="w-28 py-1.5 text-left font-medium">
                     Match Type
                   </th>
-                  <th className="text-right py-1.5 font-medium w-24">
+                  <th className="w-24 py-1.5 text-right font-medium">
                     Employer Match
                   </th>
-                  <th className="text-right py-1.5 font-medium w-24">
+                  <th className="w-24 py-1.5 text-right font-medium">
                     Match Cap
                   </th>
                 </tr>
@@ -962,7 +962,7 @@ function ProfileEditor({
                   return (
                     <tr
                       key={ad.id}
-                      className={`border-b border-subtle ${isDisabled ? "opacity-40" : ""}`}
+                      className={`border-subtle border-b ${isDisabled ? "opacity-40" : ""}`}
                     >
                       <td className="py-1.5 align-top">
                         <input
@@ -977,7 +977,7 @@ function ProfileEditor({
                               return next;
                             })
                           }
-                          className="rounded border-strong mt-0.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                          className="border-strong mt-0.5 rounded disabled:cursor-not-allowed disabled:opacity-40"
                           title={
                             !ad.liveIsActive
                               ? "This account isn't a funding target — this checkbox has no effect until it's restored"
@@ -994,13 +994,13 @@ function ProfileEditor({
                           }
                         />
                       </td>
-                      <td className="py-1.5 text-secondary">
+                      <td className="text-secondary py-1.5">
                         <div className={isDisabled ? "line-through" : ""}>
                           {ad.liveAccountName ?? ad.accountName}
                         </div>
                         {!ad.liveIsActive && (
                           <div
-                            className="text-micro text-amber-500 font-medium"
+                            className="text-micro font-medium text-amber-500"
                             title="This account isn't a funding target — any value set for it here has no effect. Restore it from the profile editor once this profile is created."
                           >
                             Not a funding target
@@ -1020,11 +1020,11 @@ function ProfileEditor({
                               })
                             }
                             placeholder="Custom name..."
-                            className="w-full mt-0.5 px-1.5 py-0.5 text-caption border rounded bg-surface-primary text-primary"
+                            className="text-caption bg-surface-primary text-primary mt-0.5 w-full rounded border px-1.5 py-0.5"
                           />
                         )}
                       </td>
-                      <td className="py-1.5 px-1.5">
+                      <td className="px-1.5 py-1.5">
                         {!isDisabled && (
                           <select
                             value={effectiveMethod}
@@ -1037,7 +1037,7 @@ function ProfileEditor({
                                 },
                               }))
                             }
-                            className="w-full px-1.5 py-0.5 text-xs border rounded bg-surface-primary text-primary"
+                            className="bg-surface-primary text-primary w-full rounded border px-1.5 py-0.5 text-xs"
                           >
                             {Object.entries(CONTRIBUTION_METHOD_LABELS).map(
                               ([k, label]) => (
@@ -1052,7 +1052,7 @@ function ProfileEditor({
                       <td className="py-1.5 text-right">
                         {!isDisabled && (
                           <div className="flex items-center justify-end gap-0.5">
-                            <span className="text-caption text-faint w-3 text-right shrink-0">
+                            <span className="text-caption text-faint w-3 shrink-0 text-right">
                               {isPercent ? "" : "$"}
                             </span>
                             <input
@@ -1068,15 +1068,15 @@ function ProfileEditor({
                                 }))
                               }
                               placeholder="Not set"
-                              className="w-16 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
+                              className="bg-surface-primary text-primary w-16 rounded border px-1.5 py-0.5 text-right text-xs"
                             />
-                            <span className="text-caption text-faint w-3 text-left shrink-0">
+                            <span className="text-caption text-faint w-3 shrink-0 text-left">
                               {isPercent ? "%" : ""}
                             </span>
                           </div>
                         )}
                       </td>
-                      <td className="py-1.5 px-1.5">
+                      <td className="px-1.5 py-1.5">
                         <select
                           value={effectiveMatchType}
                           onChange={(e) =>
@@ -1088,7 +1088,7 @@ function ProfileEditor({
                               },
                             }))
                           }
-                          className="w-full px-1.5 py-0.5 text-xs border rounded bg-surface-primary text-primary"
+                          className="bg-surface-primary text-primary w-full rounded border px-1.5 py-0.5 text-xs"
                         >
                           {Object.entries(EMPLOYER_MATCH_LABELS).map(
                             ([k, label]) => (
@@ -1104,7 +1104,7 @@ function ProfileEditor({
                           <div className="flex items-center justify-end gap-0.5">
                             {EMPLOYER_MATCH_VALUE_UNIT[effectiveMatchType] ===
                               "$" && (
-                              <span className="text-caption text-faint w-3 text-right shrink-0">
+                              <span className="text-caption text-faint w-3 shrink-0 text-right">
                                 $
                               </span>
                             )}
@@ -1121,7 +1121,7 @@ function ProfileEditor({
                                 }))
                               }
                               placeholder="—"
-                              className="w-14 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
+                              className="bg-surface-primary text-primary w-14 rounded border px-1.5 py-0.5 text-right text-xs"
                             />
                             {EMPLOYER_MATCH_VALUE_UNIT[effectiveMatchType] ===
                               "%" && (
@@ -1148,7 +1148,7 @@ function ProfileEditor({
                                 }))
                               }
                               placeholder="—"
-                              className="w-14 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
+                              className="bg-surface-primary text-primary w-14 rounded border px-1.5 py-0.5 text-right text-xs"
                             />
                             <span className="text-caption text-faint">%</span>
                           </div>
@@ -1168,19 +1168,19 @@ function ProfileEditor({
             unless entered here. */}
         {deductionRows && deductionRows.length > 0 && (
           <div>
-            <h4 className="text-label font-semibold text-muted uppercase tracking-wide mb-2">
+            <h4 className="text-label text-muted mb-2 font-semibold tracking-wide uppercase">
               Deductions
             </h4>
-            <table className="w-full text-xs border-collapse">
+            <table className="w-full border-collapse text-xs">
               <thead>
-                <tr className="border-b-2 border-strong">
-                  <th className="text-left py-2 pl-4 pr-3 text-muted font-medium">
+                <tr className="border-strong border-b-2">
+                  <th className="text-muted py-2 pr-3 pl-4 text-left font-medium">
                     Deduction
                   </th>
-                  <th className="text-left py-2 px-3 text-muted font-medium w-24">
+                  <th className="text-muted w-24 px-3 py-2 text-left font-medium">
                     Pretax
                   </th>
-                  <th className="text-right py-2 px-3 text-muted font-medium w-28">
+                  <th className="text-muted w-28 px-3 py-2 text-right font-medium">
                     Amount / Period
                   </th>
                 </tr>
@@ -1193,22 +1193,22 @@ function ProfileEditor({
                   return (
                     <tr
                       key={d.id}
-                      className={`border-b border-subtle hover:bg-blue-50/60 transition-colors ${
+                      className={`border-subtle border-b transition-colors hover:bg-blue-50/60 ${
                         rowIdx % 2 === 1
                           ? "bg-surface-sunken/60"
                           : "bg-surface-primary"
                       }`}
                     >
-                      <td className="py-1.5 pl-4 pr-3 text-secondary">
+                      <td className="text-secondary py-1.5 pr-3 pl-4">
                         {d.deductionName}
                         <span className="text-faint"> — {personName}</span>
                       </td>
-                      <td className="py-1.5 px-3 text-muted">
+                      <td className="text-muted px-3 py-1.5">
                         {d.isPretax ? "Pretax" : "Post-tax"}
                       </td>
-                      <td className="py-1.5 px-3 text-right">
+                      <td className="px-3 py-1.5 text-right">
                         <div className="flex items-center justify-end gap-0.5">
-                          <span className="text-caption text-faint w-3 text-right shrink-0">
+                          <span className="text-caption text-faint w-3 shrink-0 text-right">
                             $
                           </span>
                           <input
@@ -1221,7 +1221,7 @@ function ProfileEditor({
                               }))
                             }
                             placeholder="Not set"
-                            className="w-16 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
+                            className="bg-surface-primary text-primary w-16 rounded border px-1.5 py-0.5 text-right text-xs"
                           />
                         </div>
                       </td>
@@ -1456,7 +1456,7 @@ function ProfileInlineEditor({
         className="mb-3"
       />
 
-      <div className="grid grid-cols-2 gap-3 mb-5">
+      <div className="mb-5 grid grid-cols-2 gap-3">
         <FormField label="Name">
           <FormInput
             type="text"
@@ -1478,34 +1478,34 @@ function ProfileInlineEditor({
 
       {profile.accountDetails.length > 0 && (
         <div className="mb-5">
-          <h4 className="text-label font-semibold text-muted uppercase tracking-wide mb-2">
+          <h4 className="text-label text-muted mb-2 font-semibold tracking-wide uppercase">
             Contribution Accounts
           </h4>
-          <table className="w-full text-xs border-collapse">
+          <table className="w-full border-collapse text-xs">
             <thead>
-              <tr className="border-b-2 border-strong">
+              <tr className="border-strong border-b-2">
                 <th
-                  className="w-6 py-2 pl-4 text-left text-muted font-medium"
+                  className="text-muted w-6 py-2 pl-4 text-left font-medium"
                   title="Enabled in this profile"
                 >
                   On
                 </th>
-                <th className="text-left py-2 px-3 text-muted font-medium">
+                <th className="text-muted px-3 py-2 text-left font-medium">
                   Account
                 </th>
-                <th className="text-left py-2 px-3 text-muted font-medium w-28">
+                <th className="text-muted w-28 px-3 py-2 text-left font-medium">
                   Method
                 </th>
-                <th className="text-right py-2 px-3 text-muted font-medium w-24">
+                <th className="text-muted w-24 px-3 py-2 text-right font-medium">
                   Value
                 </th>
-                <th className="text-left py-2 px-3 text-muted font-medium w-28">
+                <th className="text-muted w-28 px-3 py-2 text-left font-medium">
                   Match Type
                 </th>
-                <th className="text-right py-2 px-3 text-muted font-medium w-24">
+                <th className="text-muted w-24 px-3 py-2 text-right font-medium">
                   Employer Match
                 </th>
-                <th className="text-right py-2 px-3 text-muted font-medium w-24">
+                <th className="text-muted w-24 px-3 py-2 text-right font-medium">
                   Match Cap
                 </th>
               </tr>
@@ -1588,11 +1588,11 @@ function ProfileInlineEditor({
                     <tr
                       key={ad.id}
                       aria-busy={isSaving}
-                      className={`border-b border-subtle hover:bg-blue-50/60 transition-colors ${
+                      className={`border-subtle border-b transition-colors hover:bg-blue-50/60 ${
                         rowIdx % 2 === 1
                           ? "bg-surface-sunken/60"
                           : "bg-surface-primary"
-                      } ${isDisabled ? "opacity-40" : ""} ${isSaving ? "opacity-60 pointer-events-none" : ""}`}
+                      } ${isDisabled ? "opacity-40" : ""} ${isSaving ? "pointer-events-none opacity-60" : ""}`}
                     >
                       <td className="py-1.5 pl-4 align-top">
                         <input
@@ -1604,7 +1604,7 @@ function ProfileInlineEditor({
                               isActive: e.target.checked ? undefined : false,
                             })
                           }
-                          className="rounded border-strong mt-0.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                          className="border-strong mt-0.5 rounded disabled:cursor-not-allowed disabled:opacity-40"
                           title={
                             !ad.liveIsActive
                               ? "This account isn't a funding target — this checkbox has no effect until it's restored"
@@ -1621,14 +1621,14 @@ function ProfileInlineEditor({
                           }
                         />
                       </td>
-                      <td className="py-1.5 px-3 text-secondary">
+                      <td className="text-secondary px-3 py-1.5">
                         <div className={isDisabled ? "line-through" : ""}>
                           {ad.liveAccountName ?? ad.accountName}
                         </div>
                         {!ad.liveIsActive && (
                           <div className="flex items-center gap-1.5">
                             <span
-                              className="text-micro text-amber-500 font-medium"
+                              className="text-micro font-medium text-amber-500"
                               title="This account isn't a funding target — any value set for it here has no effect."
                             >
                               Not a funding target
@@ -1665,11 +1665,11 @@ function ProfileInlineEditor({
                               )
                             }
                             placeholder="Custom name..."
-                            className="w-full mt-0.5 px-1.5 py-0.5 text-caption border rounded bg-surface-primary text-primary"
+                            className="text-caption bg-surface-primary text-primary mt-0.5 w-full rounded border px-1.5 py-0.5"
                           />
                         )}
                       </td>
-                      <td className="py-1.5 px-3">
+                      <td className="px-3 py-1.5">
                         <select
                           value={effectiveMethod}
                           onChange={(e) => {
@@ -1686,7 +1686,7 @@ function ProfileInlineEditor({
                               setDraft(`a${ad.id}:method`, val);
                             }
                           }}
-                          className="w-full px-1.5 py-0.5 text-xs border rounded bg-surface-primary text-primary"
+                          className="bg-surface-primary text-primary w-full rounded border px-1.5 py-0.5 text-xs"
                         >
                           {Object.entries(CONTRIBUTION_METHOD_LABELS).map(
                             ([k, label]) => (
@@ -1697,9 +1697,9 @@ function ProfileInlineEditor({
                           )}
                         </select>
                       </td>
-                      <td className="py-1.5 px-3 text-right">
+                      <td className="px-3 py-1.5 text-right">
                         <div className="flex items-center justify-end gap-0.5">
-                          <span className="text-caption text-faint w-3 text-right shrink-0">
+                          <span className="text-caption text-faint w-3 shrink-0 text-right">
                             {isPercent ? "" : "$"}
                           </span>
                           <input
@@ -1739,14 +1739,14 @@ function ProfileInlineEditor({
                               )
                             }
                             placeholder="Not set"
-                            className="w-16 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
+                            className="bg-surface-primary text-primary w-16 rounded border px-1.5 py-0.5 text-right text-xs"
                           />
-                          <span className="text-caption text-faint w-3 text-left shrink-0">
+                          <span className="text-caption text-faint w-3 shrink-0 text-left">
                             {isPercent ? "%" : ""}
                           </span>
                         </div>
                       </td>
-                      <td className="py-1.5 px-3">
+                      <td className="px-3 py-1.5">
                         <select
                           value={effectiveMatchType}
                           onChange={(e) =>
@@ -1754,7 +1754,7 @@ function ProfileInlineEditor({
                               employerMatchType: e.target.value,
                             })
                           }
-                          className="w-full px-1.5 py-0.5 text-xs border rounded bg-surface-primary text-primary"
+                          className="bg-surface-primary text-primary w-full rounded border px-1.5 py-0.5 text-xs"
                         >
                           {Object.entries(EMPLOYER_MATCH_LABELS).map(
                             ([k, label]) => (
@@ -1765,12 +1765,12 @@ function ProfileInlineEditor({
                           )}
                         </select>
                       </td>
-                      <td className="py-1.5 px-3 text-right">
+                      <td className="px-3 py-1.5 text-right">
                         {hasMatch ? (
                           <div className="flex items-center justify-end gap-0.5">
                             {EMPLOYER_MATCH_VALUE_UNIT[effectiveMatchType] ===
                               "$" && (
-                              <span className="text-caption text-faint w-3 text-right shrink-0">
+                              <span className="text-caption text-faint w-3 shrink-0 text-right">
                                 $
                               </span>
                             )}
@@ -1798,7 +1798,7 @@ function ProfileInlineEditor({
                                   : undefined
                               }
                               placeholder="—"
-                              className={`w-14 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary ${
+                              className={`bg-surface-primary w-14 rounded border px-1.5 py-0.5 text-right text-xs ${
                                 af.employerMatchValue === undefined &&
                                 storedMatch !== ""
                                   ? "text-faint italic"
@@ -1821,7 +1821,7 @@ function ProfileInlineEditor({
                           <span className="text-faint">—</span>
                         )}
                       </td>
-                      <td className="py-1.5 px-3 text-right">
+                      <td className="px-3 py-1.5 text-right">
                         {hasMatch && isPercentMatch ? (
                           <div className="flex items-center justify-end gap-0.5">
                             <input
@@ -1849,7 +1849,7 @@ function ProfileInlineEditor({
                                   : undefined
                               }
                               placeholder="—"
-                              className={`w-14 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary ${
+                              className={`bg-surface-primary w-14 rounded border px-1.5 py-0.5 text-right text-xs ${
                                 af.employerMaxMatchPct === undefined &&
                                 storedCap !== ""
                                   ? "text-faint italic"
@@ -1876,8 +1876,8 @@ function ProfileInlineEditor({
           it has none at all (same "not set" state as an unset contribution
           value, no live fallback). */}
       <div className="mb-5">
-        <div className="flex items-center justify-between mb-2">
-          <h4 className="text-label font-semibold text-muted uppercase tracking-wide">
+        <div className="mb-2 flex items-center justify-between">
+          <h4 className="text-label text-muted font-semibold tracking-wide uppercase">
             Deductions
           </h4>
           <button
@@ -1902,16 +1902,16 @@ function ProfileInlineEditor({
         </SlidePanel>
 
         {deductionRows && deductionRows.length > 0 && (
-          <table className="w-full text-xs border-collapse">
+          <table className="w-full border-collapse text-xs">
             <thead>
-              <tr className="border-b-2 border-strong">
-                <th className="text-left py-2 pl-4 pr-3 text-muted font-medium">
+              <tr className="border-strong border-b-2">
+                <th className="text-muted py-2 pr-3 pl-4 text-left font-medium">
                   Deduction
                 </th>
-                <th className="text-left py-2 px-3 text-muted font-medium w-24">
+                <th className="text-muted w-24 px-3 py-2 text-left font-medium">
                   Pretax
                 </th>
-                <th className="text-right py-2 px-3 text-muted font-medium w-28">
+                <th className="text-muted w-28 px-3 py-2 text-right font-medium">
                   Amount / Period
                 </th>
                 <th className="w-16"></th>
@@ -1935,13 +1935,13 @@ function ProfileInlineEditor({
                   <tr
                     key={d.id}
                     aria-busy={isSaving}
-                    className={`border-b border-subtle hover:bg-blue-50/60 transition-colors ${
+                    className={`border-subtle border-b transition-colors hover:bg-blue-50/60 ${
                       rowIdx % 2 === 1
                         ? "bg-surface-sunken/60"
                         : "bg-surface-primary"
-                    } ${isSaving ? "opacity-60 pointer-events-none" : ""}`}
+                    } ${isSaving ? "pointer-events-none opacity-60" : ""}`}
                   >
-                    <td className="py-1.5 pl-4 pr-3 text-secondary">
+                    <td className="text-secondary py-1.5 pr-3 pl-4">
                       <input
                         type="text"
                         value={drafts[`d${d.id}:name`] ?? storedName}
@@ -1964,11 +1964,11 @@ function ProfileInlineEditor({
                           if (!trimmed || trimmed === storedName) return;
                           patchDeductionRecord(d, { deductionName: trimmed });
                         }}
-                        className="w-full px-1 py-0.5 border rounded bg-surface-primary text-primary"
+                        className="bg-surface-primary text-primary w-full rounded border px-1 py-0.5"
                       />
                       <span className="text-faint"> — {personName}</span>
                     </td>
-                    <td className="py-1.5 px-3 text-muted">
+                    <td className="text-muted px-3 py-1.5">
                       <select
                         value={d.isPretax ? "pretax" : "posttax"}
                         onChange={(e) =>
@@ -1976,15 +1976,15 @@ function ProfileInlineEditor({
                             isPretax: e.target.value === "pretax",
                           })
                         }
-                        className="px-1 py-0.5 border rounded bg-surface-primary text-primary"
+                        className="bg-surface-primary text-primary rounded border px-1 py-0.5"
                       >
                         <option value="pretax">Pretax</option>
                         <option value="posttax">Post-tax</option>
                       </select>
                     </td>
-                    <td className="py-1.5 px-3 text-right">
+                    <td className="px-3 py-1.5 text-right">
                       <div className="flex items-center justify-end gap-0.5">
-                        <span className="text-caption text-faint w-3 text-right shrink-0">
+                        <span className="text-caption text-faint w-3 shrink-0 text-right">
                           $
                         </span>
                         <input
@@ -2005,7 +2005,7 @@ function ProfileInlineEditor({
                             )
                           }
                           placeholder="Not set"
-                          className="w-16 px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary text-primary"
+                          className="bg-surface-primary text-primary w-16 rounded border px-1.5 py-0.5 text-right text-xs"
                         />
                       </div>
                     </td>

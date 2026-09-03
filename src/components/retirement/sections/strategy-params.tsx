@@ -121,7 +121,7 @@ export function StrategyParamsSection({
                 );
               }}
               disabled={!isEditable}
-              className={`text-sm px-2 py-0.5 rounded disabled:cursor-not-allowed disabled:opacity-50 ${
+              className={`rounded px-2 py-0.5 text-sm disabled:cursor-not-allowed disabled:opacity-50 ${
                 boolVal
                   ? "bg-green-100 text-green-700"
                   : "bg-surface-elevated text-muted"
@@ -154,7 +154,7 @@ export function StrategyParamsSection({
                 );
               }}
               disabled={!isEditable}
-              className="text-sm border rounded px-1.5 py-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded border px-1.5 py-0.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
             >
               {Array.from(
                 {
@@ -197,7 +197,7 @@ export function StrategyParamsSection({
                 );
               }}
               disabled={!isEditable}
-              className="text-sm border rounded px-1.5 py-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded border px-1.5 py-0.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
             >
               {Array.from(
                 {
@@ -243,7 +243,7 @@ export function StrategyParamsSection({
               );
             }}
             disabled={!isEditable}
-            className="text-sm border rounded px-1.5 py-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded border px-1.5 py-0.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
           >
             {Array.from(
               {
@@ -270,7 +270,7 @@ export function StrategyParamsSection({
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm mt-2">
+    <div className="mt-2 grid grid-cols-1 gap-x-4 gap-y-2 text-sm sm:grid-cols-2">
       {layoutItems.map((item) => {
         if (item.kind === "group") {
           return item.fields.map((f) => renderField(f));

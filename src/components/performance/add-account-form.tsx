@@ -24,14 +24,14 @@ export function AddAccountForm({
   const [endingBalance, setEndingBalance] = useState("0");
 
   return (
-    <div className="bg-surface-primary border rounded p-3 mt-1">
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+    <div className="bg-surface-primary mt-1 rounded border p-3">
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
         <label className="block">
-          <span className="text-xs text-muted">Account</span>
+          <span className="text-muted text-xs">Account</span>
           <select
             value={selectedId}
             onChange={(e) => setSelectedId(e.target.value)}
-            className="mt-1 block w-full text-sm border border-strong rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="border-strong mt-1 block w-full rounded border px-2 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 focus:outline-none"
           >
             <option value="">Select account...</option>
             {available.map((ma) => (
@@ -42,25 +42,25 @@ export function AddAccountForm({
           </select>
         </label>
         <label className="block">
-          <span className="text-xs text-muted">Beginning Balance</span>
+          <span className="text-muted text-xs">Beginning Balance</span>
           <input
             type="text"
             value={beginningBalance}
             onChange={(e) => setBeginningBalance(e.target.value)}
-            className="mt-1 block w-full text-sm border border-strong rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="border-strong mt-1 block w-full rounded border px-2 py-1 text-sm focus:ring-1 focus:ring-blue-500 focus:outline-none"
           />
         </label>
         <label className="block">
-          <span className="text-xs text-muted">Ending Balance</span>
+          <span className="text-muted text-xs">Ending Balance</span>
           <input
             type="text"
             value={endingBalance}
             onChange={(e) => setEndingBalance(e.target.value)}
-            className="mt-1 block w-full text-sm border border-strong rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="border-strong mt-1 block w-full rounded border px-2 py-1 text-sm focus:ring-1 focus:ring-blue-500 focus:outline-none"
           />
         </label>
       </div>
-      <div className="flex gap-2 mt-2">
+      <div className="mt-2 flex gap-2">
         <button
           onClick={() => {
             if (!selectedId) return;
@@ -78,13 +78,13 @@ export function AddAccountForm({
             });
           }}
           disabled={isSaving || !selectedId}
-          className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
+          className="rounded bg-blue-600 px-3 py-1 text-xs text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
         >
           {isSaving ? "Saving..." : "Add"}
         </button>
         <button
           onClick={onCancel}
-          className="px-3 py-1 text-xs text-muted hover:text-primary transition-colors"
+          className="text-muted hover:text-primary px-3 py-1 text-xs transition-colors"
         >
           Cancel
         </button>

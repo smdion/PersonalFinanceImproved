@@ -116,13 +116,13 @@ export function FinalizeYearModal({
         role="dialog"
         aria-modal="true"
         aria-label={`Finalize ${year}`}
-        className="bg-surface-primary rounded-lg shadow-xl border max-w-4xl w-full mx-4 max-h-[85vh] overflow-auto"
+        className="bg-surface-primary mx-4 max-h-[85vh] w-full max-w-4xl overflow-auto rounded-lg border shadow-xl"
       >
-        <div className="sticky top-0 bg-surface-primary border-b px-6 py-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-primary">
+        <div className="bg-surface-primary sticky top-0 flex items-center justify-between border-b px-6 py-4">
+          <h2 className="text-primary text-lg font-semibold">
             Finalize {year}
           </h2>
-          <p className="text-sm text-muted">
+          <p className="text-muted text-sm">
             Review and adjust values before locking
           </p>
         </div>
@@ -131,13 +131,13 @@ export function FinalizeYearModal({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b">
-                <th className="text-left py-2 pr-4 text-muted font-medium w-40">
+                <th className="text-muted w-40 py-2 pr-4 text-left font-medium">
                   Field
                 </th>
                 {categories.map((cat) => (
                   <th
                     key={cat}
-                    className="text-right py-2 px-3 text-muted font-medium"
+                    className="text-muted px-3 py-2 text-right font-medium"
                   >
                     {cat}
                   </th>
@@ -148,9 +148,9 @@ export function FinalizeYearModal({
               {FIELDS.map(({ key, label }) => (
                 <tr
                   key={key}
-                  className={`border-b border-subtle ${key.startsWith("lifetime") ? "bg-surface-sunken" : ""}`}
+                  className={`border-subtle border-b ${key.startsWith("lifetime") ? "bg-surface-sunken" : ""}`}
                 >
-                  <td className="py-2 pr-4 text-muted font-medium">{label}</td>
+                  <td className="text-muted py-2 pr-4 font-medium">{label}</td>
                   {categories.map((cat) => {
                     const val = values[cat]?.[key] ?? "0";
                     const isEditing =
@@ -158,7 +158,7 @@ export function FinalizeYearModal({
                     const numVal = parseFloat(val) || 0;
 
                     return (
-                      <td key={cat} className="text-right py-1 px-3">
+                      <td key={cat} className="px-3 py-1 text-right">
                         {isEditing ? (
                           <input
                             type="text"
@@ -172,12 +172,12 @@ export function FinalizeYearModal({
                               if (e.key === "Enter" || e.key === "Escape")
                                 setEditingCell(null);
                             }}
-                            className="w-full text-right px-2 py-1 border border-blue-400 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            className="w-full rounded border border-blue-400 px-2 py-1 text-right text-sm focus:ring-1 focus:ring-blue-500 focus:outline-none"
                           />
                         ) : (
                           <button
                             onClick={() => setEditingCell({ cat, field: key })}
-                            className={`w-full text-right px-2 py-1 rounded hover:bg-blue-50 transition-colors ${
+                            className={`w-full rounded px-2 py-1 text-right transition-colors hover:bg-blue-50 ${
                               numVal < 0 ? "text-red-600" : "text-primary"
                             }`}
                           >
@@ -193,17 +193,17 @@ export function FinalizeYearModal({
           </table>
         </div>
 
-        <div className="sticky bottom-0 bg-surface-primary border-t px-6 py-4 flex justify-end gap-3">
+        <div className="bg-surface-primary sticky bottom-0 flex justify-end gap-3 border-t px-6 py-4">
           <button
             onClick={onCancel}
-            className="px-4 py-2 text-sm text-muted hover:bg-surface-elevated rounded-md transition-colors"
+            className="text-muted hover:bg-surface-elevated rounded-md px-4 py-2 text-sm transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleConfirm}
             disabled={isPending}
-            className="px-4 py-2 text-sm bg-amber-600 text-white rounded-md hover:bg-amber-700 disabled:opacity-50 transition-colors"
+            className="rounded-md bg-amber-600 px-4 py-2 text-sm text-white transition-colors hover:bg-amber-700 disabled:opacity-50"
           >
             {isPending ? "Finalizing..." : `Finalize ${year}`}
           </button>

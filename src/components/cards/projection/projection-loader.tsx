@@ -75,13 +75,13 @@ export function ProjectionLoader({
   // Autoload is off — render a full card at the chart position with a prompt.
   if (showActionState) {
     return (
-      <div className="rounded-lg border border-subtle overflow-hidden">
-        <div className="relative h-40 bg-surface-sunken px-6 pt-4 pb-0">
+      <div className="border-subtle overflow-hidden rounded-lg border">
+        <div className="bg-surface-sunken relative h-40 px-6 pt-4 pb-0">
           <div className="absolute inset-0 flex items-end gap-1 px-6 pb-0">
             {BARS.map(({ id, h, delay }) => (
               <div
                 key={id}
-                className="flex-1 rounded-t bg-surface-strong animate-pulse"
+                className="bg-surface-strong flex-1 animate-pulse rounded-t"
                 style={{
                   height: `${h}%`,
                   animationDelay: `${delay}ms`,
@@ -90,21 +90,21 @@ export function ProjectionLoader({
               />
             ))}
           </div>
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-surface-sunken/60 backdrop-blur-[1px]">
-            <p className="text-sm text-muted text-center px-4">
+          <div className="bg-surface-sunken/60 absolute inset-0 flex flex-col items-center justify-center gap-2 backdrop-blur-[1px]">
+            <p className="text-muted px-4 text-center text-sm">
               Auto-load is disabled. Run the simulation when ready.
             </p>
-            <div className="flex items-center gap-3 mt-1">
+            <div className="mt-1 flex items-center gap-3">
               <button
                 onClick={onRunSimulation}
-                className="px-4 py-1.5 text-sm font-medium rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                className="rounded bg-blue-600 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700"
               >
                 Run Simulation
               </button>
             </div>
           </div>
         </div>
-        <div className="bg-surface-primary border-t border-subtle px-4 py-2.5 flex items-center justify-between gap-4">
+        <div className="bg-surface-primary border-subtle flex items-center justify-between gap-4 border-t px-4 py-2.5">
           <div className="flex items-center gap-4">
             <PhaseChip
               phase={enginePhase}
@@ -120,7 +120,7 @@ export function ProjectionLoader({
             ) : (
               <button
                 onClick={onRunMonteCarlo}
-                className="text-xs text-purple-600 hover:text-purple-500 font-medium"
+                className="text-xs font-medium text-purple-600 hover:text-purple-500"
               >
                 + Run simulations
               </button>
@@ -134,7 +134,7 @@ export function ProjectionLoader({
             ) : (
               <button
                 onClick={onRunCoastFireMc}
-                className="text-xs text-amber-400 hover:text-amber-300 font-medium"
+                className="text-xs font-medium text-amber-400 hover:text-amber-300"
               >
                 + Run Coast FIRE simulations
               </button>
@@ -150,7 +150,7 @@ export function ProjectionLoader({
   // Engine is done; show a lightweight strip while MC / Coast FIRE runs.
   if (mcLoading || coastLoading) {
     return (
-      <div className="rounded-lg border border-subtle bg-surface-primary px-4 py-2.5 flex items-center justify-between gap-4">
+      <div className="border-subtle bg-surface-primary flex items-center justify-between gap-4 rounded-lg border px-4 py-2.5">
         <div className="flex items-center gap-4">
           <PhaseChip
             phase={enginePhase}
@@ -220,7 +220,7 @@ function PhaseIcon({
     return (
       <svg
         aria-hidden="true"
-        className={`shrink-0 animate-spin h-3 w-3 ${activeColor}`}
+        className={`h-3 w-3 shrink-0 animate-spin ${activeColor}`}
         viewBox="0 0 24 24"
         fill="none"
       >
@@ -244,7 +244,7 @@ function PhaseIcon({
     return (
       <svg
         aria-hidden="true"
-        className="shrink-0 h-3 w-3 text-green-500"
+        className="h-3 w-3 shrink-0 text-green-500"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -255,14 +255,14 @@ function PhaseIcon({
     );
   }
   return (
-    <span className="shrink-0 h-3 w-3 rounded-full border border-surface-strong" />
+    <span className="border-surface-strong h-3 w-3 shrink-0 rounded-full border" />
   );
 }
 
 function SettingsTip() {
   return (
     <p className="text-caption text-faint whitespace-nowrap">
-      <a href="/settings" className="underline hover:text-muted">
+      <a href="/settings" className="hover:text-muted underline">
         Settings → General
       </a>{" "}
       to configure

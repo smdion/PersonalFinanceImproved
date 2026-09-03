@@ -38,13 +38,13 @@ export function GeneralSettings() {
   );
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-6">
-      <nav className="flex md:flex-col gap-1 overflow-x-auto">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-[200px_1fr]">
+      <nav className="flex gap-1 overflow-x-auto md:flex-col">
         {GENERAL_SECTIONS.map((s) => (
           <button
             key={s.key}
             onClick={() => setSection(s.key)}
-            className={`px-3 py-2 text-sm text-left rounded-md whitespace-nowrap transition-colors ${
+            className={`rounded-md px-3 py-2 text-left text-sm whitespace-nowrap transition-colors ${
               section === s.key
                 ? "bg-blue-600 text-white"
                 : "text-secondary hover:bg-surface-elevated"
@@ -97,17 +97,17 @@ function RetirementSettings() {
 
   return (
     <div>
-      <h3 className="text-sm font-semibold text-primary mb-1">Retirement</h3>
-      <p className="text-xs text-muted mb-3">
+      <h3 className="text-primary mb-1 text-sm font-semibold">Retirement</h3>
+      <p className="text-muted mb-3 text-xs">
         Controls for the retirement projection page.
       </p>
-      <div className="border rounded-lg divide-y divide-subtle">
+      <div className="divide-subtle divide-y rounded-lg border">
         <div className="flex items-center justify-between px-3 py-3">
           <div>
-            <div className="text-sm font-medium text-primary">
+            <div className="text-primary text-sm font-medium">
               Auto-load simulation
             </div>
-            <div className="text-xs text-muted mt-0.5">
+            <div className="text-muted mt-0.5 text-xs">
               Runs the projection engine automatically on page load and whenever
               inputs change. Disable to trigger manually.
             </div>
@@ -120,10 +120,10 @@ function RetirementSettings() {
         </div>
         <div className="flex items-center justify-between px-3 py-3">
           <div>
-            <div className="text-sm font-medium text-primary">
+            <div className="text-primary text-sm font-medium">
               Auto-load simulations
             </div>
-            <div className="text-xs text-muted mt-0.5">
+            <div className="text-muted mt-0.5 text-xs">
               Prefetches 1,000 simulation trials in the background after the
               engine completes. Disable on slow connections or to run manually.
             </div>
@@ -136,10 +136,10 @@ function RetirementSettings() {
         </div>
         <div className="flex items-center justify-between px-3 py-3">
           <div>
-            <div className="text-sm font-medium text-primary">
+            <div className="text-primary text-sm font-medium">
               Always prefetch Coast FIRE simulations
             </div>
-            <div className="text-xs text-muted mt-0.5">
+            <div className="text-muted mt-0.5 text-xs">
               Runs the Coast FIRE simulation after the engine completes, even
               before you select that scenario. Takes 4–6s. Off by default — it
               already runs automatically the moment you pick a Coast FIRE
@@ -207,7 +207,7 @@ function LivingCostMappingEditor() {
   const [customInput, setCustomInput] = useState("");
 
   if (settingsLoading || budgetLoading) {
-    return <div className="animate-pulse h-32 bg-surface-elevated rounded" />;
+    return <div className="bg-surface-elevated h-32 animate-pulse rounded" />;
   }
 
   const isDirty = draft !== null;
@@ -242,12 +242,12 @@ function LivingCostMappingEditor() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-3">
+      <div className="mb-3 flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-primary">
+          <h3 className="text-primary text-sm font-semibold">
             Living Costs Mapping
           </h3>
-          <p className="text-xs text-muted mt-0.5">
+          <p className="text-muted mt-0.5 text-xs">
             Map your budget categories to Dave Ramsey&apos;s recommended
             spending ranges. The dashboard Living Costs card uses this mapping.
           </p>
@@ -284,10 +284,10 @@ function LivingCostMappingEditor() {
         {RAMSEY_RANGES.map((range) => {
           const cats = mapping[range.name] ?? [];
           return (
-            <div key={range.name} className="border rounded-lg px-3 py-2">
-              <div className="flex items-center justify-between mb-1.5">
+            <div key={range.name} className="rounded-lg border px-3 py-2">
+              <div className="mb-1.5 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-primary">
+                  <span className="text-primary text-xs font-semibold">
                     {range.name}
                   </span>
                   <span className="text-caption text-faint">
@@ -303,7 +303,7 @@ function LivingCostMappingEditor() {
                   onClick={() =>
                     setAddingTo(addingTo === range.name ? null : range.name)
                   }
-                  className="text-caption text-blue-600 hover:text-blue-800 font-medium"
+                  className="text-caption font-medium text-blue-600 hover:text-blue-800"
                 >
                   + Add
                 </button>
@@ -318,12 +318,12 @@ function LivingCostMappingEditor() {
                 {cats.map((cat) => (
                   <span
                     key={cat}
-                    className="inline-flex items-center gap-1 text-caption px-1.5 py-0.5 rounded bg-surface-elevated text-secondary"
+                    className="text-caption bg-surface-elevated text-secondary inline-flex items-center gap-1 rounded px-1.5 py-0.5"
                   >
                     {cat}
                     <button
                       onClick={() => removeCategory(range.name, cat)}
-                      className="text-faint hover:text-red-500 font-bold"
+                      className="text-faint font-bold hover:text-red-500"
                       title={`Remove ${cat}`}
                     >
                       &times;
@@ -333,13 +333,13 @@ function LivingCostMappingEditor() {
               </div>
 
               {addingTo === range.name && (
-                <div className="mt-2 flex flex-wrap gap-1.5 items-center border-t border-subtle pt-2">
+                <div className="border-subtle mt-2 flex flex-wrap items-center gap-1.5 border-t pt-2">
                   {/* Quick-add from unassigned budget categories */}
                   {unassigned.map((cat: string) => (
                     <button
                       key={cat}
                       onClick={() => addCategory(range.name, cat)}
-                      className="text-caption px-1.5 py-0.5 rounded border border-dashed border-blue-300 text-blue-600 hover:bg-blue-50"
+                      className="text-caption rounded border border-dashed border-blue-300 px-1.5 py-0.5 text-blue-600 hover:bg-blue-50"
                     >
                       + {cat}
                     </button>
@@ -360,14 +360,14 @@ function LivingCostMappingEditor() {
                         }
                       }}
                       placeholder="Custom..."
-                      className="text-caption px-1.5 py-0.5 border border-strong rounded w-24 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                      className="text-caption border-strong w-24 rounded border px-1.5 py-0.5 focus:ring-1 focus:ring-blue-400 focus:outline-none"
                     />
                     {customInput.trim() && (
                       <button
                         onClick={() =>
                           addCategory(range.name, customInput.trim())
                         }
-                        className="text-caption text-blue-600 font-medium"
+                        className="text-caption font-medium text-blue-600"
                       >
                         Add
                       </button>
@@ -382,7 +382,7 @@ function LivingCostMappingEditor() {
 
       {unassigned.length > 0 && (
         <div
-          className={`mt-3 p-2 rounded text-xs border ${STATUS_COLORS.amber.bg} ${STATUS_COLORS.amber.border} ${STATUS_COLORS.amber.text}`}
+          className={`mt-3 rounded border p-2 text-xs ${STATUS_COLORS.amber.bg} ${STATUS_COLORS.amber.border} ${STATUS_COLORS.amber.text}`}
         >
           <span className="font-medium">Unmapped categories:</span>{" "}
           {unassigned.join(", ")}

@@ -82,7 +82,7 @@ function CalloutLine({
         : STATUS_COLORS.blue;
   const cls = `${colors.bg} ${colors.text} border ${colors.border}`;
   return (
-    <div className={`text-sm rounded px-3 py-2 ${cls}`} role="note">
+    <div className={`rounded px-3 py-2 text-sm ${cls}`} role="note">
       {children}
     </div>
   );
@@ -176,7 +176,7 @@ export function PlanHealthCard(props: PlanHealthCardProps) {
   return (
     <Card title="Plan health">
       {band && (
-        <div className="mb-3 text-sm text-secondary">
+        <div className="text-secondary mb-3 text-sm">
           <strong>Nest egg estimate:</strong> {band.label}
         </div>
       )}
@@ -233,23 +233,23 @@ function StressTestPanel({
             baseline, and optimistic stress-test scenarios.
           </caption>
           <thead>
-            <tr className="text-left text-faint border-b">
+            <tr className="text-faint border-b text-left">
               <th scope="col" className="py-2 pr-2 font-medium">
                 Scenario
               </th>
-              <th scope="col" className="py-2 px-2 font-medium">
+              <th scope="col" className="px-2 py-2 font-medium">
                 Return
               </th>
-              <th scope="col" className="py-2 px-2 font-medium">
+              <th scope="col" className="px-2 py-2 font-medium">
                 Inflation
               </th>
-              <th scope="col" className="py-2 px-2 font-medium">
+              <th scope="col" className="px-2 py-2 font-medium">
                 Salary growth
               </th>
-              <th scope="col" className="py-2 px-2 font-medium">
+              <th scope="col" className="px-2 py-2 font-medium">
                 Withdrawal
               </th>
-              <th scope="col" className="py-2 px-2 font-medium">
+              <th scope="col" className="px-2 py-2 font-medium">
                 Nest egg
               </th>
             </tr>
@@ -258,44 +258,44 @@ function StressTestPanel({
             {typeof userReturnRate === "number" &&
               typeof userInflationRate === "number" &&
               typeof userSalaryGrowth === "number" && (
-                <tr className="border-b border-subtle bg-blue-50">
+                <tr className="border-subtle border-b bg-blue-50">
                   <td className="py-2 pr-2 font-semibold">Your plan</td>
-                  <td className="py-2 px-2">
+                  <td className="px-2 py-2">
                     {formatPercent(userReturnRate, 1)}
                   </td>
-                  <td className="py-2 px-2">
+                  <td className="px-2 py-2">
                     {formatPercent(userInflationRate, 1)}
                   </td>
-                  <td className="py-2 px-2">
+                  <td className="px-2 py-2">
                     {formatPercent(userSalaryGrowth, 1)}
                   </td>
-                  <td className="py-2 px-2">—</td>
-                  <td className="py-2 px-2">—</td>
+                  <td className="px-2 py-2">—</td>
+                  <td className="px-2 py-2">—</td>
                 </tr>
               )}
             {scenarios.map((s) => {
               const result = resultByLabel.get(s.label);
               return (
-                <tr key={s.label} className="border-b border-subtle">
+                <tr key={s.label} className="border-subtle border-b">
                   <td className="py-2 pr-2">
                     <div className="font-medium">{s.label}</div>
                     <div className="text-faint text-caption">
                       {s.description}
                     </div>
                   </td>
-                  <td className="py-2 px-2">
+                  <td className="px-2 py-2">
                     {formatPercent(s.returnRate, 1)}
                   </td>
-                  <td className="py-2 px-2">
+                  <td className="px-2 py-2">
                     {formatPercent(s.inflationRate, 1)}
                   </td>
-                  <td className="py-2 px-2">
+                  <td className="px-2 py-2">
                     {formatPercent(s.salaryGrowthRate, 1)}
                   </td>
-                  <td className="py-2 px-2">
+                  <td className="px-2 py-2">
                     {formatPercent(s.withdrawalRate, 1)}
                   </td>
-                  <td className="py-2 px-2 font-medium">
+                  <td className="px-2 py-2 font-medium">
                     {stressLoading
                       ? "…"
                       : stressError
@@ -309,7 +309,7 @@ function StressTestPanel({
             })}
           </tbody>
         </table>
-        <p className="mt-2 text-label text-faint italic">
+        <p className="text-label text-faint mt-2 italic">
           Conservative ≈ bottom-decile of historical 30-year outcomes. If your
           plan only works in the baseline or optimistic case, consider lowering
           your return rate or raising your withdrawal buffer.

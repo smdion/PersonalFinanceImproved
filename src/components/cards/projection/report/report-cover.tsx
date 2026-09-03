@@ -20,8 +20,8 @@ export function ReportCover({
       <div
         className={`inline-block rounded px-3 py-1.5 text-sm font-medium ${
           verdict.onTrack
-            ? "bg-green-50 text-green-700 border border-green-200"
-            : "bg-amber-50 text-amber-700 border border-amber-200"
+            ? "border border-green-200 bg-green-50 text-green-700"
+            : "border border-amber-200 bg-amber-50 text-amber-700"
         }`}
       >
         {verdict.headline}

@@ -26,7 +26,7 @@ export function NewFundFormCard({
 
   return (
     <Card title="Create New Sinking Fund" className="mb-4">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <FormField label="Fund Name">
           <FormInput
             type="text"
@@ -36,14 +36,14 @@ export function NewFundFormCard({
           />
         </FormField>
         <div>
-          <label className="block text-xs text-muted mb-1">Goal Type</label>
-          <div className="flex bg-surface-elevated rounded p-0.5">
+          <label className="text-muted mb-1 block text-xs">Goal Type</label>
+          <div className="bg-surface-elevated flex rounded p-0.5">
             <button
               type="button"
               onClick={() => setNewFund({ ...newFund, targetMode: "fixed" })}
-              className={`flex-1 px-2 py-1 text-xs rounded transition-colors ${
+              className={`flex-1 rounded px-2 py-1 text-xs transition-colors ${
                 isFixed
-                  ? "bg-surface-primary text-primary shadow-sm font-medium"
+                  ? "bg-surface-primary text-primary font-medium shadow-sm"
                   : "text-muted hover:text-secondary"
               }`}
             >
@@ -58,9 +58,9 @@ export function NewFundFormCard({
                   targetDate: "",
                 })
               }
-              className={`flex-1 px-2 py-1 text-xs rounded transition-colors ${
+              className={`flex-1 rounded px-2 py-1 text-xs transition-colors ${
                 isOngoing
-                  ? "bg-surface-primary text-primary shadow-sm font-medium"
+                  ? "bg-surface-primary text-primary font-medium shadow-sm"
                   : "text-muted hover:text-secondary"
               }`}
             >
@@ -76,9 +76,9 @@ export function NewFundFormCard({
                   targetAmount: "",
                 })
               }
-              className={`flex-1 px-2 py-1 text-xs rounded transition-colors ${
+              className={`flex-1 rounded px-2 py-1 text-xs transition-colors ${
                 isBucket
-                  ? "bg-surface-primary text-primary shadow-sm font-medium"
+                  ? "bg-surface-primary text-primary font-medium shadow-sm"
                   : "text-muted hover:text-secondary"
               }`}
             >
@@ -87,7 +87,7 @@ export function NewFundFormCard({
           </div>
         </div>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
         {!isBucket && (
           <FormField
             label={`Target Amount${isOngoing ? " (maintain level)" : ""}`}
@@ -135,17 +135,17 @@ export function NewFundFormCard({
           </FormField>
         )}
       </div>
-      <div className="flex gap-2 mt-3">
+      <div className="mt-3 flex gap-2">
         <button
           onClick={onSubmit}
           disabled={isPending || !newFund.name}
-          className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
+          className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
         >
           {isPending ? "Creating..." : "Create"}
         </button>
         <button
           onClick={onCancel}
-          className="px-3 py-1 border rounded text-sm hover:bg-surface-sunken"
+          className="hover:bg-surface-sunken rounded border px-3 py-1 text-sm"
         >
           Cancel
         </button>

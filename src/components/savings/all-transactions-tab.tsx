@@ -370,12 +370,12 @@ export function AllTransactionsTab({
     <div className="space-y-3">
       {/* Add form */}
       {canEdit !== false && adding && (
-        <div className="rounded-lg border bg-surface-elevated p-3 space-y-3">
+        <div className="bg-surface-elevated space-y-3 rounded-lg border p-3">
           {/* Mode toggle */}
-          <div className="flex items-center gap-1 bg-surface-sunken rounded p-0.5 w-fit">
+          <div className="bg-surface-sunken flex w-fit items-center gap-1 rounded p-0.5">
             <button
               onClick={() => setAddMode("transaction")}
-              className={`px-2.5 py-1 text-xs rounded transition-colors ${
+              className={`rounded px-2.5 py-1 text-xs transition-colors ${
                 addMode === "transaction"
                   ? "bg-surface-primary text-primary font-medium shadow-sm"
                   : "text-faint hover:text-muted"
@@ -385,7 +385,7 @@ export function AllTransactionsTab({
             </button>
             <button
               onClick={() => setAddMode("transfer")}
-              className={`px-2.5 py-1 text-xs rounded transition-colors ${
+              className={`rounded px-2.5 py-1 text-xs transition-colors ${
                 addMode === "transfer"
                   ? "bg-surface-primary text-primary font-medium shadow-sm"
                   : "text-faint hover:text-muted"
@@ -397,10 +397,10 @@ export function AllTransactionsTab({
 
           {addMode === "transaction" ? (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {/* Fund */}
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="text-caption text-faint block mb-0.5">
+                  <label className="text-caption text-faint mb-0.5 block">
                     Fund
                   </label>
                   <select
@@ -411,7 +411,7 @@ export function AllTransactionsTab({
                         goalId: Number(e.target.value),
                       })
                     }
-                    className="w-full border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="border-default bg-surface-primary text-primary w-full rounded border px-2 py-1 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
                   >
                     {goalProjections.map((gp) => (
                       <option key={gp.goalId} value={gp.goalId}>
@@ -423,7 +423,7 @@ export function AllTransactionsTab({
 
                 {/* Date */}
                 <div>
-                  <label className="text-caption text-faint block mb-0.5">
+                  <label className="text-caption text-faint mb-0.5 block">
                     Date
                   </label>
                   <input
@@ -435,13 +435,13 @@ export function AllTransactionsTab({
                         transactionDate: e.target.value,
                       })
                     }
-                    className="w-full border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="border-default bg-surface-primary text-primary w-full rounded border px-2 py-1 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
 
                 {/* Amount */}
                 <div>
-                  <label className="text-caption text-faint block mb-0.5">
+                  <label className="text-caption text-faint mb-0.5 block">
                     Amount
                   </label>
                   <div className="flex items-center gap-1">
@@ -452,7 +452,7 @@ export function AllTransactionsTab({
                           isNegative: !addForm.isNegative,
                         })
                       }
-                      className={`text-xs font-bold w-6 h-6 rounded shrink-0 ${
+                      className={`h-6 w-6 shrink-0 rounded text-xs font-bold ${
                         addForm.isNegative
                           ? "bg-red-100 text-red-600"
                           : "bg-green-100 text-green-600"
@@ -469,14 +469,14 @@ export function AllTransactionsTab({
                       onChange={(e) =>
                         setAddForm({ ...addForm, amount: e.target.value })
                       }
-                      className="flex-1 border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="border-default bg-surface-primary text-primary flex-1 rounded border px-2 py-1 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
                     />
                   </div>
                 </div>
 
                 {/* Description */}
                 <div className="col-span-2 sm:col-span-3">
-                  <label className="text-caption text-faint block mb-0.5">
+                  <label className="text-caption text-faint mb-0.5 block">
                     Description
                   </label>
                   <input
@@ -493,13 +493,13 @@ export function AllTransactionsTab({
                       if (e.key === "Enter") commitAdd();
                       if (e.key === "Escape") cancelAdd();
                     }}
-                    className="w-full border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="border-default bg-surface-primary text-primary w-full rounded border px-2 py-1 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
 
                 {/* Recurring */}
-                <div className="col-span-2 sm:col-span-3 flex items-center gap-3">
-                  <label className="flex items-center gap-1.5 text-xs text-muted cursor-pointer">
+                <div className="col-span-2 flex items-center gap-3 sm:col-span-3">
+                  <label className="text-muted flex cursor-pointer items-center gap-1.5 text-xs">
                     <input
                       type="checkbox"
                       checked={addForm.isRecurring}
@@ -513,7 +513,7 @@ export function AllTransactionsTab({
                     Recurring
                   </label>
                   {addForm.isRecurring && (
-                    <div className="flex items-center gap-1 text-xs text-muted">
+                    <div className="text-muted flex items-center gap-1 text-xs">
                       <span>every</span>
                       <input
                         type="number"
@@ -529,7 +529,7 @@ export function AllTransactionsTab({
                                 : 1,
                           });
                         }}
-                        className="w-12 border border-default rounded px-1.5 py-0.5 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500 text-center"
+                        className="border-default bg-surface-primary text-primary w-12 rounded border px-1.5 py-0.5 text-center text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
                       />
                       <span>months</span>
                     </div>
@@ -553,10 +553,10 @@ export function AllTransactionsTab({
             </>
           ) : (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {/* From */}
                 <div>
-                  <label className="text-caption text-faint block mb-0.5">
+                  <label className="text-caption text-faint mb-0.5 block">
                     From
                   </label>
                   <select
@@ -571,7 +571,7 @@ export function AllTransactionsTab({
                             : transferForm.toGoalId,
                       })
                     }
-                    className="w-full border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="border-default bg-surface-primary text-primary w-full rounded border px-2 py-1 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
                   >
                     <option value={0}>Select fund…</option>
                     {goalProjections.map((gp) => (
@@ -584,7 +584,7 @@ export function AllTransactionsTab({
 
                 {/* To */}
                 <div>
-                  <label className="text-caption text-faint block mb-0.5">
+                  <label className="text-caption text-faint mb-0.5 block">
                     To
                   </label>
                   <select
@@ -595,7 +595,7 @@ export function AllTransactionsTab({
                         toGoalId: Number(e.target.value),
                       })
                     }
-                    className="w-full border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="border-default bg-surface-primary text-primary w-full rounded border px-2 py-1 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
                   >
                     <option value={0}>Select fund…</option>
                     {toGoalOptions.map((gp) => (
@@ -608,7 +608,7 @@ export function AllTransactionsTab({
 
                 {/* Amount */}
                 <div>
-                  <label className="text-caption text-faint block mb-0.5">
+                  <label className="text-caption text-faint mb-0.5 block">
                     Amount
                   </label>
                   <input
@@ -623,13 +623,13 @@ export function AllTransactionsTab({
                         amount: e.target.value,
                       })
                     }
-                    className="w-full border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="border-default bg-surface-primary text-primary w-full rounded border px-2 py-1 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
 
                 {/* Date */}
                 <div>
-                  <label className="text-caption text-faint block mb-0.5">
+                  <label className="text-caption text-faint mb-0.5 block">
                     Date
                   </label>
                   <input
@@ -641,13 +641,13 @@ export function AllTransactionsTab({
                         transactionDate: e.target.value,
                       })
                     }
-                    className="w-full border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="border-default bg-surface-primary text-primary w-full rounded border px-2 py-1 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
 
                 {/* Description */}
                 <div className="col-span-2">
-                  <label className="text-caption text-faint block mb-0.5">
+                  <label className="text-caption text-faint mb-0.5 block">
                     Description
                   </label>
                   <input
@@ -664,13 +664,13 @@ export function AllTransactionsTab({
                       if (e.key === "Enter") commitTransfer();
                       if (e.key === "Escape") cancelAdd();
                     }}
-                    className="w-full border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="border-default bg-surface-primary text-primary w-full rounded border px-2 py-1 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
 
                 {/* Recurring */}
-                <div className="col-span-2 sm:col-span-3 flex items-center gap-3">
-                  <label className="flex items-center gap-1.5 text-xs text-muted cursor-pointer">
+                <div className="col-span-2 flex items-center gap-3 sm:col-span-3">
+                  <label className="text-muted flex cursor-pointer items-center gap-1.5 text-xs">
                     <input
                       type="checkbox"
                       checked={transferForm.isRecurring}
@@ -684,7 +684,7 @@ export function AllTransactionsTab({
                     Recurring
                   </label>
                   {transferForm.isRecurring && (
-                    <div className="flex items-center gap-1 text-xs text-muted">
+                    <div className="text-muted flex items-center gap-1 text-xs">
                       <span>every</span>
                       <input
                         type="number"
@@ -700,7 +700,7 @@ export function AllTransactionsTab({
                                 : 1,
                           });
                         }}
-                        className="w-12 border border-default rounded px-1.5 py-0.5 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500 text-center"
+                        className="border-default bg-surface-primary text-primary w-12 rounded border px-1.5 py-0.5 text-center text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
                       />
                       <span>months</span>
                     </div>
@@ -747,16 +747,16 @@ export function AllTransactionsTab({
           forecasting job is done. Dismissing just hides it for this session;
           it reappears next load until settled or the underlying data changes. */}
       {canEdit !== false && suggestions.length > 0 && (
-        <div className="rounded-lg border border-blue-200 dark:border-blue-900 bg-blue-50/60 dark:bg-blue-950/20 p-3 space-y-2">
+        <div className="space-y-2 rounded-lg border border-blue-200 bg-blue-50/60 p-3 dark:border-blue-900 dark:bg-blue-950/20">
           <div className="flex items-center justify-between gap-2">
             <p className="text-xs text-blue-700 dark:text-blue-300">
-              <CheckCircle2 className="w-3.5 h-3.5 inline-block mr-1 -mt-0.5" />
+              <CheckCircle2 className="-mt-0.5 mr-1 inline-block h-3.5 w-3.5" />
               {suggestions.length} planned transaction
               {suggestions.length === 1 ? "" : "s"} look{" "}
               {suggestions.length === 1 ? "s" : ""} settled — real activity was
               found in the linked category.
             </p>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex shrink-0 items-center gap-2">
               <Button
                 variant="primary"
                 size="sm"
@@ -784,7 +784,7 @@ export function AllTransactionsTab({
                       ]),
                   )
                 }
-                className="text-xs text-faint hover:text-primary"
+                className="text-faint hover:text-primary text-xs"
               >
                 Dismiss
               </button>
@@ -798,13 +798,13 @@ export function AllTransactionsTab({
               return (
                 <li
                   key={key}
-                  className="flex items-center justify-between gap-2 text-xs text-blue-800 dark:text-blue-200 bg-surface-primary/50 rounded px-2 py-1"
+                  className="bg-surface-primary/50 flex items-center justify-between gap-2 rounded px-2 py-1 text-xs text-blue-800 dark:text-blue-200"
                 >
                   <span>
                     {fundNameMap.get(tx.goalId) ?? "Unknown"} — {tx.description}{" "}
                     ({s.occurrenceMonth})
                   </span>
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex shrink-0 items-center gap-2">
                     <button
                       onClick={() =>
                         settleTx.mutate({
@@ -813,7 +813,7 @@ export function AllTransactionsTab({
                         })
                       }
                       disabled={settleTx.isPending}
-                      className="text-blue-600 hover:text-blue-800 font-medium"
+                      className="font-medium text-blue-600 hover:text-blue-800"
                     >
                       Settle
                     </button>
@@ -836,12 +836,12 @@ export function AllTransactionsTab({
       )}
 
       {/* Toolbar: add button + history selector + lock */}
-      <div className="flex items-center justify-between gap-4 text-label text-faint px-1">
+      <div className="text-label text-faint flex items-center justify-between gap-4 px-1">
         <div className="flex items-center gap-2">
           {canEdit !== false && !adding && (
             <button
               onClick={() => setAdding(true)}
-              className="px-2.5 py-1 text-label bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong rounded border"
+              className="text-label bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong rounded border px-2.5 py-1"
             >
               + Add transaction
             </button>
@@ -849,9 +849,9 @@ export function AllTransactionsTab({
           {plannedTransactions.some((tx) => tx.source === "rule") && (
             <button
               onClick={() => setShowRuleTx(!showRuleTx)}
-              className={`px-2 py-0.5 text-label rounded border transition-colors ${
+              className={`text-label rounded border px-2 py-0.5 transition-colors ${
                 showRuleTx
-                  ? "border-blue-400 text-blue-600 bg-blue-50 dark:bg-blue-950/20"
+                  ? "border-blue-400 bg-blue-50 text-blue-600 dark:bg-blue-950/20"
                   : "border-surface-strong text-faint hover:text-primary"
               }`}
               title={
@@ -874,7 +874,7 @@ export function AllTransactionsTab({
               );
             }}
             aria-label="History window"
-            className="text-label border border-surface-strong rounded px-1.5 py-0.5 bg-surface-primary text-faint hover:text-primary"
+            className="text-label border-surface-strong bg-surface-primary text-faint hover:text-primary rounded border px-1.5 py-0.5"
           >
             <option value="0">No history</option>
             <option value="3">3 months history</option>
@@ -892,37 +892,37 @@ export function AllTransactionsTab({
 
       {/* Transaction table */}
       {past.length === 0 && upcoming.length === 0 ? (
-        <p className="text-sm text-faint text-center py-8">
+        <p className="text-faint py-8 text-center text-sm">
           No transactions across any fund.
         </p>
       ) : (
         <div className="overflow-auto rounded-lg border">
-          <table className="w-full text-xs border-collapse">
+          <table className="w-full border-collapse text-xs">
             <thead className="sticky top-0 z-10">
               <tr className="bg-surface-sunken border-b">
-                <th className="text-left px-3 py-2 font-medium text-muted whitespace-nowrap">
+                <th className="text-muted px-3 py-2 text-left font-medium whitespace-nowrap">
                   Fund
                 </th>
-                <th className="text-left px-3 py-2 font-medium text-muted whitespace-nowrap">
+                <th className="text-muted px-3 py-2 text-left font-medium whitespace-nowrap">
                   Date
                 </th>
-                <th className="text-left px-3 py-2 font-medium text-muted">
+                <th className="text-muted px-3 py-2 text-left font-medium">
                   Description
                 </th>
-                <th className="text-right px-3 py-2 font-medium text-muted whitespace-nowrap">
+                <th className="text-muted px-3 py-2 text-right font-medium whitespace-nowrap">
                   Amount
                 </th>
                 <th
-                  className="text-right px-3 py-2 font-medium text-muted whitespace-nowrap"
+                  className="text-muted px-3 py-2 text-right font-medium whitespace-nowrap"
                   title="Projected end-of-month balance for this fund — includes contributions, recurring expenses, and overrides (matches the Plan table)"
                 >
                   After
                 </th>
-                <th className="text-center px-3 py-2 font-medium text-muted whitespace-nowrap">
+                <th className="text-muted px-3 py-2 text-center font-medium whitespace-nowrap">
                   Recurring
                 </th>
                 {canEdit !== false && (
-                  <th className="text-right px-3 py-2 font-medium text-muted whitespace-nowrap">
+                  <th className="text-muted px-3 py-2 text-right font-medium whitespace-nowrap">
                     <span className="inline-flex items-center">
                       Settled
                       <HelpTip
@@ -964,13 +964,13 @@ export function AllTransactionsTab({
                 return (
                   <tr
                     key={`hist-${tx.id}`}
-                    className="border-b bg-surface-elevated/20"
+                    className="bg-surface-elevated/20 border-b"
                   >
                     <td className="px-3 py-2 whitespace-nowrap">
                       {isTransfer ? (
-                        <span className="inline-flex items-center gap-1 text-caption">
+                        <span className="text-caption inline-flex items-center gap-1">
                           <span
-                            className="w-2 h-2 rounded-full shrink-0"
+                            className="h-2 w-2 shrink-0 rounded-full"
                             style={{
                               backgroundColor: fundColorMap.get(
                                 fromLeg?.goalId ?? 0,
@@ -982,7 +982,7 @@ export function AllTransactionsTab({
                           </span>
                           <span className="text-faint/50">→</span>
                           <span
-                            className="w-2 h-2 rounded-full shrink-0"
+                            className="h-2 w-2 shrink-0 rounded-full"
                             style={{
                               backgroundColor: fundColorMap.get(
                                 toLeg?.goalId ?? 0,
@@ -996,20 +996,20 @@ export function AllTransactionsTab({
                       ) : (
                         <span className="inline-flex items-center gap-1.5">
                           <span
-                            className="w-2 h-2 rounded-full shrink-0"
+                            className="h-2 w-2 shrink-0 rounded-full"
                             style={{ backgroundColor: color }}
                           />
                           <span className="text-faint font-medium">{name}</span>
                         </span>
                       )}
                     </td>
-                    <td className="px-3 py-2 text-faint whitespace-nowrap tabular-nums">
+                    <td className="text-faint px-3 py-2 whitespace-nowrap tabular-nums">
                       {formatDate(
                         new Date(tx.transactionDate + "T00:00:00"),
                         "short",
                       )}
                     </td>
-                    <td className="px-3 py-2 text-faint">
+                    <td className="text-faint px-3 py-2">
                       {isTransfer && (
                         <Badge color="blue" case="normal" className="mr-1.5">
                           transfer
@@ -1018,7 +1018,7 @@ export function AllTransactionsTab({
                       {tx.description}
                     </td>
                     <td
-                      className={`px-3 py-2 text-right tabular-nums font-medium whitespace-nowrap ${
+                      className={`px-3 py-2 text-right font-medium whitespace-nowrap tabular-nums ${
                         isTransfer
                           ? "text-blue-400/70"
                           : tx.amount < 0
@@ -1030,10 +1030,10 @@ export function AllTransactionsTab({
                         ? formatCurrency(Math.abs(tx.amount))
                         : `${tx.amount < 0 ? "−" : "+"}${formatCurrency(Math.abs(tx.amount))}`}
                     </td>
-                    <td className="px-3 py-2 text-right text-faint/40 tabular-nums">
+                    <td className="text-faint/40 px-3 py-2 text-right tabular-nums">
                       <span className="text-caption">—</span>
                     </td>
-                    <td className="px-3 py-2 text-center text-faint/40">
+                    <td className="text-faint/40 px-3 py-2 text-center">
                       <span className="text-caption">—</span>
                     </td>
                     {canEdit !== false && (
@@ -1047,9 +1047,9 @@ export function AllTransactionsTab({
                           ) ? (
                             <span
                               title="Settled — excluded from projections"
-                              className="text-green-600 inline-block"
+                              className="inline-block text-green-600"
                             >
-                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <CheckCircle2 className="h-3.5 w-3.5" />
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1.5">
@@ -1075,7 +1075,7 @@ export function AllTransactionsTab({
                                 }
                                 disabled={settleTx.isPending}
                                 title="Mark settled — this happened, exclude it from future projections"
-                                className="text-xs text-faint hover:text-green-600 transition-colors disabled:opacity-50"
+                                className="text-faint text-xs transition-colors hover:text-green-600 disabled:opacity-50"
                               >
                                 Settle
                               </button>
@@ -1092,7 +1092,7 @@ export function AllTransactionsTab({
                 <tr aria-hidden="true">
                   <td
                     colSpan={canEdit !== false ? 7 : 6}
-                    className="px-3 py-1 text-caption text-faint/50 text-center bg-surface-sunken border-b border-t tracking-widest"
+                    className="text-caption text-faint/50 bg-surface-sunken border-t border-b px-3 py-1 text-center tracking-widest"
                   >
                     ─── Upcoming ───
                   </td>
@@ -1133,11 +1133,11 @@ export function AllTransactionsTab({
                 return (
                   <tr
                     key={tx.id}
-                    className="border-b last:border-0 hover:bg-surface-elevated/40 transition-colors"
+                    className="hover:bg-surface-elevated/40 border-b transition-colors last:border-0"
                   >
                     {/* Fund */}
                     <td
-                      className={`px-3 py-2 whitespace-nowrap${editable ? " cursor-pointer" : ""}`}
+                      className={`px-3 py-2 whitespace-nowrap${editable ? "cursor-pointer" : ""}`}
                       onClick={
                         editable ? () => activateCell(tx, "goalId") : undefined
                       }
@@ -1145,7 +1145,7 @@ export function AllTransactionsTab({
                       {isCellActive(tx.id, "goalId") && editForm ? (
                         <div className="inline-flex items-center gap-1.5">
                           <span
-                            className="w-2 h-2 rounded-full shrink-0"
+                            className="h-2 w-2 shrink-0 rounded-full"
                             style={{
                               backgroundColor: fundColorMap.get(
                                 editForm.goalId,
@@ -1163,7 +1163,7 @@ export function AllTransactionsTab({
                             }
                             onBlur={handlers.onBlur}
                             onKeyDown={handlers.onKeyDown}
-                            className="border border-default bg-surface-primary text-primary rounded px-1.5 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            className="border-default bg-surface-primary text-primary rounded border px-1.5 py-0.5 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
                           >
                             {goalProjections.map((gp) => (
                               <option key={gp.goalId} value={gp.goalId}>
@@ -1173,9 +1173,9 @@ export function AllTransactionsTab({
                           </select>
                         </div>
                       ) : isTransfer ? (
-                        <span className="inline-flex items-center gap-1 text-caption">
+                        <span className="text-caption inline-flex items-center gap-1">
                           <span
-                            className="w-2 h-2 rounded-full shrink-0"
+                            className="h-2 w-2 shrink-0 rounded-full"
                             style={{
                               backgroundColor: fundColorMap.get(
                                 fromLeg?.goalId ?? 0,
@@ -1187,7 +1187,7 @@ export function AllTransactionsTab({
                           </span>
                           <span className="text-faint">→</span>
                           <span
-                            className="w-2 h-2 rounded-full shrink-0"
+                            className="h-2 w-2 shrink-0 rounded-full"
                             style={{
                               backgroundColor: fundColorMap.get(
                                 toLeg?.goalId ?? 0,
@@ -1201,7 +1201,7 @@ export function AllTransactionsTab({
                       ) : (
                         <span className="inline-flex items-center gap-1.5">
                           <span
-                            className="w-2 h-2 rounded-full shrink-0"
+                            className="h-2 w-2 shrink-0 rounded-full"
                             style={{ backgroundColor: color }}
                           />
                           <span className="text-secondary font-medium">
@@ -1213,7 +1213,7 @@ export function AllTransactionsTab({
 
                     {/* Date */}
                     <td
-                      className={`px-3 py-2 text-muted whitespace-nowrap tabular-nums${editable ? " cursor-pointer" : ""}`}
+                      className={`text-muted px-3 py-2 whitespace-nowrap tabular-nums${editable ? "cursor-pointer" : ""}`}
                       onClick={
                         editable
                           ? () => activateCell(tx, "transactionDate")
@@ -1233,7 +1233,7 @@ export function AllTransactionsTab({
                           }
                           onBlur={handlers.onBlur}
                           onKeyDown={handlers.onKeyDown}
-                          className="border border-default bg-surface-primary text-primary rounded px-1.5 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="border-default bg-surface-primary text-primary rounded border px-1.5 py-0.5 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
                         />
                       ) : (
                         formatDate(
@@ -1245,7 +1245,7 @@ export function AllTransactionsTab({
 
                     {/* Description */}
                     <td
-                      className={`px-3 py-2 text-muted${editable ? " cursor-pointer" : ""}`}
+                      className={`px-3 py-2 text-muted${editable ? "cursor-pointer" : ""}`}
                       onClick={
                         editable
                           ? () => activateCell(tx, "description")
@@ -1265,7 +1265,7 @@ export function AllTransactionsTab({
                           }
                           onBlur={handlers.onBlur}
                           onKeyDown={handlers.onKeyDown}
-                          className="w-full border border-default bg-surface-primary text-primary rounded px-1.5 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="border-default bg-surface-primary text-primary w-full rounded border px-1.5 py-0.5 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
                         />
                       ) : (
                         <>
@@ -1294,7 +1294,7 @@ export function AllTransactionsTab({
 
                     {/* Amount */}
                     <td
-                      className={`px-3 py-2 text-right tabular-nums font-medium whitespace-nowrap${editable ? " cursor-pointer" : ""} ${
+                      className={`px-3 py-2 text-right font-medium tabular-nums whitespace-nowrap${editable ? "cursor-pointer" : ""} ${
                         isTransfer
                           ? "text-blue-500"
                           : tx.amount < 0
@@ -1317,7 +1317,7 @@ export function AllTransactionsTab({
                           }
                           onBlur={handlers.onBlur}
                           onKeyDown={handlers.onKeyDown}
-                          className="w-24 border border-default bg-surface-primary text-primary rounded px-1.5 py-0.5 text-xs text-right tabular-nums focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="border-default bg-surface-primary text-primary w-24 rounded border px-1.5 py-0.5 text-right text-xs tabular-nums focus:ring-1 focus:ring-blue-500 focus:outline-none"
                         />
                       ) : isTransfer ? (
                         formatCurrency(Math.abs(tx.amount))
@@ -1334,7 +1334,7 @@ export function AllTransactionsTab({
                       // an ambiguous balance for a two-fund movement.
                       if (isTransfer)
                         return (
-                          <td className="px-3 py-2 text-right text-faint/40 tabular-nums text-xs">
+                          <td className="text-faint/40 px-3 py-2 text-right text-xs tabular-nums">
                             —
                           </td>
                         );
@@ -1344,13 +1344,13 @@ export function AllTransactionsTab({
                       );
                       if (bal === undefined)
                         return (
-                          <td className="px-3 py-2 text-right text-faint/40 tabular-nums text-xs">
+                          <td className="text-faint/40 px-3 py-2 text-right text-xs tabular-nums">
                             —
                           </td>
                         );
                       return (
                         <td
-                          className={`px-3 py-2 text-right tabular-nums text-xs font-medium whitespace-nowrap ${
+                          className={`px-3 py-2 text-right text-xs font-medium whitespace-nowrap tabular-nums ${
                             bal < 0 ? "text-red-500" : "text-muted"
                           }`}
                         >
@@ -1360,7 +1360,7 @@ export function AllTransactionsTab({
                     })()}
 
                     {/* Recurring */}
-                    <td className="px-3 py-2 text-center text-faint">
+                    <td className="text-faint px-3 py-2 text-center">
                       {tx.isRecurring ? (
                         <span className="text-caption">
                           every {tx.recurrenceMonths}mo
@@ -1373,7 +1373,7 @@ export function AllTransactionsTab({
                     {/* Actions */}
                     {canEdit !== false && (
                       <td className="px-3 py-2">
-                        <div className="flex items-center gap-2 justify-end">
+                        <div className="flex items-center justify-end gap-2">
                           {!tx.isRecurring &&
                             (settledOccurrences.has(
                               occurrenceKey(
@@ -1385,7 +1385,7 @@ export function AllTransactionsTab({
                                 title="Settled — excluded from projections"
                                 className="text-green-600"
                               >
-                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <CheckCircle2 className="h-3.5 w-3.5" />
                               </span>
                             ) : (
                               <button
@@ -1400,7 +1400,7 @@ export function AllTransactionsTab({
                                 }
                                 disabled={settleTx.isPending}
                                 title="Mark settled — this happened, exclude it from future projections"
-                                className="text-xs text-faint hover:text-green-600 transition-colors disabled:opacity-50"
+                                className="text-faint text-xs transition-colors hover:text-green-600 disabled:opacity-50"
                               >
                                 Settle
                               </button>
@@ -1417,7 +1417,7 @@ export function AllTransactionsTab({
                               disabled={
                                 deleteTx.isPending || deleteTransfer.isPending
                               }
-                              className="text-xs text-faint hover:text-red-600 transition-colors disabled:opacity-50"
+                              className="text-faint text-xs transition-colors hover:text-red-600 disabled:opacity-50"
                             >
                               ×
                             </button>

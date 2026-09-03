@@ -8,18 +8,18 @@ export function SSCapIndicator({ paycheck }: { paycheck: PaycheckResult }) {
   if (capPeriod === -1) return null;
 
   return (
-    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
+    <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm">
       <p className="text-blue-800">
         SS wage base cap hit at period {capPeriod + 1} of{" "}
         {paycheck.periodsPerYear}
         {paycheck.bonusPeriod != null &&
           paycheck.bonusPeriod <= capPeriod + 1 && (
-            <span className="text-blue-600 text-xs ml-1">
+            <span className="ml-1 text-xs text-blue-600">
               (bonus in period {paycheck.bonusPeriod} accelerates this)
             </span>
           )}
       </p>
-      <p className="text-blue-600 text-xs mt-1">
+      <p className="mt-1 text-xs text-blue-600">
         Take-home increases by{" "}
         {formatCurrency(paycheck.yearSchedule[0]?.ficaSS ?? 0)}/period after
       </p>

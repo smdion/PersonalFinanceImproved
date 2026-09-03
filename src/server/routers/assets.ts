@@ -1,5 +1,6 @@
 /** Asset management router covering home improvements, other assets, year-end history, and historical notes with API sync status. */
 import { and, asc, desc, eq } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
@@ -281,7 +282,10 @@ export const assetsRouter = createTRPCRouter({
         (r) => new Date(r.yearEndDate).getFullYear() === year,
       );
       if (!row) {
-        throw new Error(`No net_worth_annual row found for year ${year}`);
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `No year-end history found for ${year}.`,
+        });
       }
 
       const updates: Record<string, string> = {};

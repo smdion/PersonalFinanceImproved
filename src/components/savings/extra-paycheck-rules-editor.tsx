@@ -97,9 +97,9 @@ function PaycheckGrowthEditor({
   };
 
   return (
-    <div className="rounded border bg-surface-elevated/40 p-3 space-y-1.5 text-xs">
+    <div className="bg-surface-elevated/40 space-y-1.5 rounded border p-3 text-xs">
       <div className="flex items-center justify-between">
-        <span className="text-caption text-faint font-medium uppercase tracking-wide">
+        <span className="text-caption text-faint font-medium tracking-wide uppercase">
           Net Pay Annual Growth
         </span>
         {Object.keys(yearlyGrowth).length === 0 && (
@@ -123,16 +123,16 @@ function PaycheckGrowthEditor({
         return (
           <div key={yr} className="flex items-center gap-2">
             <span className="text-faint w-10 shrink-0">{yr}</span>
-            <div className="flex bg-surface-elevated rounded p-0.5">
+            <div className="bg-surface-elevated flex rounded p-0.5">
               <button
                 onClick={() => updateEntry(yr, { type: "pct" })}
-                className={`px-1.5 py-0.5 rounded text-caption ${!entry || entry.type === "pct" ? "bg-surface-strong text-primary" : "text-faint hover:text-primary"}`}
+                className={`text-caption rounded px-1.5 py-0.5 ${!entry || entry.type === "pct" ? "bg-surface-strong text-primary" : "text-faint hover:text-primary"}`}
               >
                 %
               </button>
               <button
                 onClick={() => updateEntry(yr, { type: "dollar" })}
-                className={`px-1.5 py-0.5 rounded text-caption ${entry?.type === "dollar" ? "bg-surface-strong text-primary" : "text-faint hover:text-primary"}`}
+                className={`text-caption rounded px-1.5 py-0.5 ${entry?.type === "dollar" ? "bg-surface-strong text-primary" : "text-faint hover:text-primary"}`}
               >
                 $
               </button>
@@ -152,7 +152,7 @@ function PaycheckGrowthEditor({
                     e.target.value === "" ? 0 : Number(e.target.value);
                   updateEntry(yr, { value: val });
                 }}
-                className="w-16 border bg-surface-primary text-primary rounded px-1.5 py-0.5 text-xs text-right tabular-nums"
+                className="bg-surface-primary text-primary w-16 rounded border px-1.5 py-0.5 text-right text-xs tabular-nums"
               />
               {(!entry || entry.type === "pct") && (
                 <span className="text-caption text-muted">%</span>
@@ -243,8 +243,8 @@ function SimpleGrowthEditor({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-2.5 flex-wrap">
-        <span className="text-xs text-faint">Annual raise</span>
+      <div className="flex flex-wrap items-center gap-2.5">
+        <span className="text-faint text-xs">Annual raise</span>
         {!isUniform ? (
           <span className="text-caption text-muted italic">custom by year</span>
         ) : (
@@ -259,7 +259,7 @@ function SimpleGrowthEditor({
                 const val = e.target.value === "" ? 0 : Number(e.target.value);
                 applyUniform({ type: "pct", value: val });
               }}
-              className="w-14 border bg-surface-primary text-primary rounded px-1.5 py-0.5 text-xs text-right tabular-nums"
+              className="bg-surface-primary text-primary w-14 rounded border px-1.5 py-0.5 text-right text-xs tabular-nums"
             />
             <span className="text-caption text-muted">% / yr</span>
           </div>
@@ -593,14 +593,14 @@ export function ExtraPaycheckJobPanel({
 
   if (job.payPeriod !== "biweekly") {
     return (
-      <div className="text-xs text-muted py-2">
+      <div className="text-muted py-2 text-xs">
         Extra paycheck routing only applies to biweekly pay schedules.
       </div>
     );
   }
   if (!job.anchorPayDate) {
     return (
-      <div className="text-xs text-amber-600 py-2">
+      <div className="py-2 text-xs text-amber-600">
         Set an anchor pay date on this job to enable extra paycheck routing.
       </div>
     );
@@ -610,7 +610,7 @@ export function ExtraPaycheckJobPanel({
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <span className="text-caption text-muted">Extra paycheck goes to:</span>
-        <div className="inline-flex rounded border border-default overflow-hidden text-caption">
+        <div className="border-default text-caption inline-flex overflow-hidden rounded border">
           <button
             onClick={() =>
               rules.length > 0
@@ -645,7 +645,7 @@ export function ExtraPaycheckJobPanel({
       </div>
 
       {budgetMode && rules.length > 0 ? (
-        <p className="text-xs text-muted">
+        <p className="text-muted text-xs">
           Routing is paused — the extra paycheck stays as regular income instead
           of going to a savings goal. Your configured rules are kept; switch
           back to Savings to resume them. See the Budget page for which months
@@ -655,7 +655,7 @@ export function ExtraPaycheckJobPanel({
         <>
           {/* Growth editor — per-person, persisted */}
           {projectionYears > 0 && netPayPerCheck > 0 && (
-            <div className="rounded border border-subtle bg-surface-sunken/30 p-3 space-y-2.5">
+            <div className="border-subtle bg-surface-sunken/30 space-y-2.5 rounded border p-3">
               <SimpleGrowthEditor
                 projectionYears={projectionYears}
                 baseNetPay={baseNetPayDisplay}
@@ -663,7 +663,7 @@ export function ExtraPaycheckJobPanel({
                 yearlyGrowth={yearlyGrowth}
                 setYearlyGrowth={setYearlyGrowth}
               />
-              <div className="flex items-center gap-3 flex-wrap border-t border-subtle/50 pt-2">
+              <div className="border-subtle/50 flex flex-wrap items-center gap-3 border-t pt-2">
                 <span className="text-caption text-faint">
                   Base {formatCurrency(baseNetPayDisplay)}/check
                   {routing?.baseYear
@@ -694,13 +694,13 @@ export function ExtraPaycheckJobPanel({
 
           {/* Rule list */}
           {rules.length > 0 && (
-            <table className="w-full text-xs border-collapse">
+            <table className="w-full border-collapse text-xs">
               <thead>
-                <tr className="border-b border-subtle text-faint">
-                  <th className="text-left py-1 pr-2 font-medium">From</th>
-                  <th className="text-left py-1 pr-2 font-medium">To</th>
-                  <th className="text-left py-1 pr-2 font-medium">Routing</th>
-                  <th className="text-left py-1 pr-2 font-medium">
+                <tr className="border-subtle text-faint border-b">
+                  <th className="py-1 pr-2 text-left font-medium">From</th>
+                  <th className="py-1 pr-2 text-left font-medium">To</th>
+                  <th className="py-1 pr-2 text-left font-medium">Routing</th>
+                  <th className="py-1 pr-2 text-left font-medium">
                     Net / check
                   </th>
                   <th />
@@ -718,12 +718,12 @@ export function ExtraPaycheckJobPanel({
                   return (
                     <tr
                       key={`${rule.from}-${rule.to ?? "open"}`}
-                      className="border-b border-subtle/50"
+                      className="border-subtle/50 border-b"
                     >
                       <td className="py-1 pr-2 tabular-nums">
                         {fmt(rule.from)}
                       </td>
-                      <td className="py-1 pr-2 tabular-nums text-muted">
+                      <td className="text-muted py-1 pr-2 tabular-nums">
                         {rule.to ? fmt(rule.to) : "∞"}
                       </td>
                       <td className="py-1 pr-2">
@@ -737,19 +737,19 @@ export function ExtraPaycheckJobPanel({
                           );
                         })}
                       </td>
-                      <td className="py-1 pr-2 tabular-nums text-muted">
+                      <td className="text-muted py-1 pr-2 tabular-nums">
                         {formatCurrency(netPerCheck)}
                       </td>
                       <td className="py-1 text-right">
                         <button
                           onClick={() => openEdit(idx)}
-                          className="text-xs text-blue-600 hover:text-blue-700 mr-2"
+                          className="mr-2 text-xs text-blue-600 hover:text-blue-700"
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => deleteRule(idx)}
-                          className="text-xs text-faint hover:text-red-600 transition-colors"
+                          className="text-faint text-xs transition-colors hover:text-red-600"
                         >
                           ×
                         </button>
@@ -762,20 +762,20 @@ export function ExtraPaycheckJobPanel({
           )}
 
           {rules.length === 0 && !addForm && (
-            <p className="text-xs text-muted">No routing rules yet.</p>
+            <p className="text-muted text-xs">No routing rules yet.</p>
           )}
 
           {/* Month overrides */}
-          <div className="border-t border-subtle/50 pt-3 space-y-2">
+          <div className="border-subtle/50 space-y-2 border-t pt-3">
             <div className="flex items-center justify-between">
-              <span className="text-caption text-faint font-medium uppercase tracking-wide">
+              <span className="text-caption text-faint font-medium tracking-wide uppercase">
                 Month overrides
               </span>
               {overrideMonth === null &&
                 extraPaycheckMonthOptions.length > 0 && (
                   <button
                     onClick={openAddOverride}
-                    className="px-2.5 py-1 text-label rounded border border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong transition-colors"
+                    className="text-label border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong rounded border px-2.5 py-1 transition-colors"
                   >
                     + Add override
                   </button>
@@ -788,7 +788,7 @@ export function ExtraPaycheckJobPanel({
                     key={o.month}
                     className="flex items-center gap-2 text-xs"
                   >
-                    <span className="text-faint tabular-nums w-16 shrink-0">
+                    <span className="text-faint w-16 shrink-0 tabular-nums">
                       {fmt(o.month)}
                     </span>
                     <span className="text-muted flex-1">
@@ -808,7 +808,7 @@ export function ExtraPaycheckJobPanel({
                     <button
                       onClick={() => deleteOverride(o.month)}
                       disabled={saveOverrideMutation.isPending}
-                      className="text-xs text-faint hover:text-red-600 transition-colors"
+                      className="text-faint text-xs transition-colors hover:text-red-600"
                     >
                       ×
                     </button>
@@ -820,14 +820,14 @@ export function ExtraPaycheckJobPanel({
               <p className="text-caption text-faint/50">None set.</p>
             )}
             {overrideMonth !== null && overrideForm && (
-              <div className="border border-subtle rounded-md p-3 space-y-2 bg-surface-sunken/50 text-xs">
+              <div className="border-subtle bg-surface-sunken/50 space-y-2 rounded-md border p-3 text-xs">
                 {isNewOverride ? (
-                  <label className="space-y-0.5 block">
+                  <label className="block space-y-0.5">
                     <span className="text-caption text-muted">Month</span>
                     <select
                       value={overrideMonth ?? ""}
                       onChange={(e) => setOverrideMonth(e.target.value)}
-                      className="w-full border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="border-default bg-surface-primary text-primary w-full rounded border px-2 py-1 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
                     >
                       <option value="">— pick a month —</option>
                       {extraPaycheckMonthOptions.map((mk) => {
@@ -844,7 +844,7 @@ export function ExtraPaycheckJobPanel({
                     </select>
                   </label>
                 ) : (
-                  <p className="font-medium text-primary">
+                  <p className="text-primary font-medium">
                     Override — {fmt(overrideMonth!)}
                   </p>
                 )}
@@ -854,7 +854,7 @@ export function ExtraPaycheckJobPanel({
                   </span>
                   {overrideForm.map((sp, si) => (
                     // eslint-disable-next-line react/no-array-index-key
-                    <div key={si} className="flex gap-2 items-center">
+                    <div key={si} className="flex items-center gap-2">
                       <select
                         value={sp.goalId}
                         onChange={(e) => {
@@ -865,7 +865,7 @@ export function ExtraPaycheckJobPanel({
                           );
                           setOverrideForm(next);
                         }}
-                        className="flex-1 border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="border-default bg-surface-primary text-primary flex-1 rounded border px-2 py-1 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
                       >
                         <option value={0}>— choose fund —</option>
                         {goals.map((g) => (
@@ -886,7 +886,7 @@ export function ExtraPaycheckJobPanel({
                           );
                           setOverrideForm(next);
                         }}
-                        className="w-16 border border-default rounded px-1.5 py-0.5 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500 text-right tabular-nums"
+                        className="border-default bg-surface-primary text-primary w-16 rounded border px-1.5 py-0.5 text-right text-xs tabular-nums focus:ring-1 focus:ring-blue-500 focus:outline-none"
                       />
                       <span className="text-caption text-muted">%</span>
                       {overrideForm.length > 1 && (
@@ -896,7 +896,7 @@ export function ExtraPaycheckJobPanel({
                               overrideForm.filter((_, i) => i !== si),
                             )
                           }
-                          className="text-xs text-faint hover:text-red-600 transition-colors"
+                          className="text-faint text-xs transition-colors hover:text-red-600"
                         >
                           ×
                         </button>
@@ -965,8 +965,8 @@ export function ExtraPaycheckJobPanel({
 
           {/* Add/edit form */}
           {addForm && (
-            <div className="border border-subtle rounded-md p-3 space-y-3 bg-surface-sunken/50">
-              <p className="text-xs font-medium text-primary">
+            <div className="border-subtle bg-surface-sunken/50 space-y-3 rounded-md border p-3">
+              <p className="text-primary text-xs font-medium">
                 {editingIdx !== null ? "Edit rule" : "New rule"}
               </p>
 
@@ -977,7 +977,7 @@ export function ExtraPaycheckJobPanel({
                     type="month"
                     value={addForm.from}
                     onChange={(e) => setFormField("from", e.target.value)}
-                    className="w-full border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="border-default bg-surface-primary text-primary w-full rounded border px-2 py-1 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
                   />
                 </label>
                 <label className="space-y-0.5">
@@ -988,7 +988,7 @@ export function ExtraPaycheckJobPanel({
                     type="month"
                     value={addForm.to}
                     onChange={(e) => setFormField("to", e.target.value)}
-                    className="w-full border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="border-default bg-surface-primary text-primary w-full rounded border px-2 py-1 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
                   />
                 </label>
               </div>
@@ -999,11 +999,11 @@ export function ExtraPaycheckJobPanel({
                 </span>
                 {addForm.splits.map((sp, si) => (
                   // eslint-disable-next-line react/no-array-index-key -- splits are order-dependent form state with no stable ID
-                  <div key={si} className="flex gap-2 items-center">
+                  <div key={si} className="flex items-center gap-2">
                     <select
                       value={sp.goalId}
                       onChange={(e) => setSplitGoal(si, Number(e.target.value))}
-                      className="flex-1 border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="border-default bg-surface-primary text-primary flex-1 rounded border px-2 py-1 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
                     >
                       <option value={0}>— choose fund —</option>
                       {goals.map((g) => (
@@ -1019,13 +1019,13 @@ export function ExtraPaycheckJobPanel({
                       step={1}
                       value={sp.pct}
                       onChange={(e) => setSplitPct(si, e.target.value)}
-                      className="w-16 border border-default rounded px-1.5 py-0.5 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500 text-right tabular-nums"
+                      className="border-default bg-surface-primary text-primary w-16 rounded border px-1.5 py-0.5 text-right text-xs tabular-nums focus:ring-1 focus:ring-blue-500 focus:outline-none"
                     />
                     <span className="text-caption text-muted">%</span>
                     {addForm.splits.length > 1 && (
                       <button
                         onClick={() => removeSplit(si)}
-                        className="text-xs text-faint hover:text-red-600 transition-colors"
+                        className="text-faint text-xs transition-colors hover:text-red-600"
                       >
                         ×
                       </button>
@@ -1085,7 +1085,7 @@ export function ExtraPaycheckJobPanel({
           {!addForm && (
             <button
               onClick={openAdd}
-              className="px-2.5 py-1 text-label rounded border border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong transition-colors"
+              className="text-label border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong rounded border px-2.5 py-1 transition-colors"
             >
               + Add rule
             </button>
@@ -1130,9 +1130,9 @@ export function ExtraPaycheckRulesEditor({
     [monthDates],
   );
 
-  if (isLoading) return <p className="text-xs text-muted">Loading…</p>;
+  if (isLoading) return <p className="text-muted text-xs">Loading…</p>;
   if (!jobs?.length)
-    return <p className="text-xs text-muted">No jobs found.</p>;
+    return <p className="text-muted text-xs">No jobs found.</p>;
 
   const byPerson = new Map<number, { name: string; jobs: JobEntry[] }>();
   for (const job of jobs) {
@@ -1153,11 +1153,11 @@ export function ExtraPaycheckRulesEditor({
             key={personId}
             className={
               layout === "columns"
-                ? "rounded-lg border border-subtle/40 p-4 space-y-3"
+                ? "border-subtle/40 space-y-3 rounded-lg border p-4"
                 : undefined
             }
           >
-            <h3 className="text-sm font-semibold text-primary">{name}</h3>
+            <h3 className="text-primary text-sm font-semibold">{name}</h3>
             {personJobs.map((job) => (
               <div key={job.id}>
                 {personJobs.length > 1 && (
@@ -1222,13 +1222,13 @@ export function ExtraPaycheckDestinationToggle({
     setEnabledMutation.mutate({ jobId, enabled: toSavings });
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
+    <div className="flex flex-wrap items-center gap-2">
       <span className="text-caption text-muted">Extra paycheck goes to:</span>
-      <div className="inline-flex rounded border border-default overflow-hidden text-caption">
+      <div className="border-default text-caption inline-flex overflow-hidden rounded border">
         <button
           onClick={() => setMode(true)}
           disabled={disabled}
-          className={`px-2 py-1 disabled:opacity-50 disabled:cursor-not-allowed ${
+          className={`px-2 py-1 disabled:cursor-not-allowed disabled:opacity-50 ${
             !budgetMode
               ? "bg-blue-600 text-white"
               : "bg-surface-primary text-muted hover:text-primary"
@@ -1239,7 +1239,7 @@ export function ExtraPaycheckDestinationToggle({
         <button
           onClick={() => setMode(false)}
           disabled={disabled}
-          className={`px-2 py-1 disabled:opacity-50 disabled:cursor-not-allowed ${
+          className={`px-2 py-1 disabled:cursor-not-allowed disabled:opacity-50 ${
             budgetMode
               ? "bg-blue-600 text-white"
               : "bg-surface-primary text-muted hover:text-primary"

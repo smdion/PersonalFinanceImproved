@@ -23,8 +23,8 @@ export function GlidePathSection({ returnRateSummary }: Props) {
   if (!returnRateSummary) return null;
   return (
     <div className="bg-surface-sunken rounded-lg p-3">
-      <div className="flex items-center gap-2 mb-2">
-        <h4 className="text-label font-semibold text-muted uppercase tracking-wider">
+      <div className="mb-2 flex items-center gap-2">
+        <h4 className="text-label text-muted font-semibold tracking-wider uppercase">
           Returns
         </h4>
         <span className="text-caption text-faint">age-based glide path</span>
@@ -32,7 +32,7 @@ export function GlidePathSection({ returnRateSummary }: Props) {
         <Badge color="indigo">Baseline + Simulation</Badge>
         <div className="flex-1 border-t" />
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 text-sm mb-2">
+      <div className="mb-2 grid grid-cols-2 gap-x-4 text-sm sm:grid-cols-4">
         <div>
           <span className="text-muted">Now</span>
           <div className="font-medium text-blue-600">
@@ -65,9 +65,9 @@ export function GlidePathSection({ returnRateSummary }: Props) {
         </div>
       </div>
       {/* Glide path bar */}
-      <div className="flex items-center gap-2 text-caption text-faint">
+      <div className="text-caption text-faint flex items-center gap-2">
         <span>{returnRateSummary.schedule[0]?.age ?? "—"}</span>
-        <div className="flex-1 flex h-2.5 rounded-full overflow-hidden bg-surface-strong">
+        <div className="bg-surface-strong flex h-2.5 flex-1 overflow-hidden rounded-full">
           {(() => {
             const sched = returnRateSummary.schedule;
             if (sched.length === 0) return null;
@@ -97,7 +97,7 @@ export function GlidePathSection({ returnRateSummary }: Props) {
             ?.age ?? "—"}
         </span>
       </div>
-      <div className="flex justify-between text-caption text-faint mt-0.5 px-6">
+      <div className="text-caption text-faint mt-0.5 flex justify-between px-6">
         <span>
           {returnRateSummary.currentRate != null
             ? formatPercent(returnRateSummary.currentRate, 1)

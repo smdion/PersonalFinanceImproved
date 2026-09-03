@@ -341,7 +341,7 @@ export default function SavingsPage() {
 
   if (error)
     return (
-      <p className="text-red-600 text-sm">
+      <p className="text-sm text-red-600">
         Failed to load savings data: {error.message}
       </p>
     );
@@ -590,7 +590,7 @@ export default function SavingsPage() {
 
       {/* Warnings */}
       {savings.warnings.length > 0 && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+        <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3">
           {savings.warnings.map((w) => (
             <p key={w} className="text-sm text-yellow-800">
               {w}
@@ -602,7 +602,7 @@ export default function SavingsPage() {
       {/* ── At a Glance ── */}
       <CardBoundary title="Overview">
         <section className="space-y-4">
-          <h2 className="text-base font-semibold text-primary">Overview</h2>
+          <h2 className="text-primary text-base font-semibold">Overview</h2>
           <SummaryCards
             savings={savings}
             efund={efund}
@@ -623,7 +623,7 @@ export default function SavingsPage() {
       </CardBoundary>
 
       {/* ── Master tabs ── */}
-      <div className="flex border-b border-subtle">
+      <div className="border-subtle flex border-b">
         {(
           [
             { key: "plan", label: "Plan" },
@@ -633,10 +633,10 @@ export default function SavingsPage() {
           <button
             key={key}
             onClick={() => setMasterTab(key)}
-            className={`px-5 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+            className={`-mb-px border-b-2 px-5 py-2.5 text-sm font-medium transition-colors ${
               masterTab === key
                 ? "border-blue-600 text-blue-600"
-                : "border-transparent text-muted hover:text-primary"
+                : "text-muted hover:text-primary border-transparent"
             }`}
           >
             {label}
@@ -647,11 +647,11 @@ export default function SavingsPage() {
       {/* ── Plan tab ── */}
       {masterTab === "plan" && (
         <CardBoundary title="Plan">
-          <section className="bg-surface-primary rounded-lg border border-default p-4 sm:p-5 space-y-4">
+          <section className="bg-surface-primary border-default space-y-4 rounded-lg border p-4 sm:p-5">
             {/* Controls row */}
             <div className="flex flex-wrap items-center justify-between gap-3">
               {goalProjections.length > 0 && (
-                <div className="flex rounded border border-subtle overflow-hidden text-xs">
+                <div className="border-subtle flex overflow-hidden rounded border text-xs">
                   <button
                     onClick={() => setProjectionView("table")}
                     className={`px-2.5 py-1 transition-colors ${
@@ -713,8 +713,8 @@ export default function SavingsPage() {
 
             {/* Edit tabs */}
             {goalProjections.length > 0 && (
-              <div className="border-t border-subtle/60 pt-4 space-y-4">
-                <div className="flex border-b items-center">
+              <div className="border-subtle/60 space-y-4 border-t pt-4">
+                <div className="flex items-center border-b">
                   {(
                     [
                       { key: "allocations", label: "Allocations" },
@@ -725,10 +725,10 @@ export default function SavingsPage() {
                     <button
                       key={key}
                       onClick={() => setEditTab(key)}
-                      className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                      className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
                         editTab === key
                           ? "border-blue-600 text-blue-600"
-                          : "border-transparent text-muted hover:text-primary"
+                          : "text-muted hover:text-primary border-transparent"
                       }`}
                     >
                       {label}
@@ -751,7 +751,7 @@ export default function SavingsPage() {
                       rawGoals.some((g) => g.allocationPercent != null) &&
                       budgetProfilesList &&
                       budgetProfilesList.length > 1 && (
-                        <div className="flex items-center justify-end gap-2 text-label text-faint">
+                        <div className="text-label text-faint flex items-center justify-end gap-2">
                           <label htmlFor="recalc-profile-select">
                             Budget for Pull In / Update %:
                           </label>
@@ -765,7 +765,7 @@ export default function SavingsPage() {
                                   : Number(e.target.value),
                               )
                             }
-                            className="px-1.5 py-0.5 rounded border border-surface-strong bg-surface-elevated text-secondary"
+                            className="border-surface-strong bg-surface-elevated text-secondary rounded border px-1.5 py-0.5"
                           >
                             <option value="">
                               Active
@@ -810,7 +810,7 @@ export default function SavingsPage() {
                                 disabled={
                                   apiSync.lockInAllocationPercent.isPending
                                 }
-                                className="px-2.5 py-1 text-label rounded border border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong transition-colors disabled:opacity-50"
+                                className="text-label border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong rounded border px-2.5 py-1 transition-colors disabled:opacity-50"
                                 title="Keep every percentage-based goal's dollar amount as-is; just update its % to reflect current income"
                               >
                                 {apiSync.lockInAllocationPercent.isPending
@@ -830,7 +830,7 @@ export default function SavingsPage() {
                                 disabled={
                                   apiSync.recalculateAllocation.isPending
                                 }
-                                className="px-2.5 py-1 text-label rounded border border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong transition-colors disabled:opacity-50"
+                                className="text-label border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong rounded border px-2.5 py-1 transition-colors disabled:opacity-50"
                                 title="Preview and recompute every percentage-based goal's dollar amount from current income"
                               >
                                 {apiSync.recalculateAllocation.isPending
@@ -850,7 +850,7 @@ export default function SavingsPage() {
                                 )
                               }
                               disabled={apiSync.pushToApiPending}
-                              className="px-2.5 py-1 text-label rounded border border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong transition-colors disabled:opacity-50"
+                              className="text-label border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong rounded border px-2.5 py-1 transition-colors disabled:opacity-50"
                               title="Push monthly allocation amounts as budget API goal targets"
                             >
                               {apiSync.pushToApiPending
@@ -896,19 +896,19 @@ export default function SavingsPage() {
                 {editTab === "extraPaychecks" && (
                   <div className="space-y-4">
                     {/* Pool Growth — full-width compact bar */}
-                    <div className="flex items-center gap-6 rounded-lg border border-subtle/40 px-4 py-3">
+                    <div className="border-subtle/40 flex items-center gap-6 rounded-lg border px-4 py-3">
                       <div>
-                        <h3 className="text-sm font-semibold text-primary">
+                        <h3 className="text-primary text-sm font-semibold">
                           Pool Growth
                         </h3>
-                        <p className="text-xs text-faint mt-0.5">
+                        <p className="text-faint mt-0.5 text-xs">
                           Derived from raise rates &middot; flat budget assumed
                         </p>
                       </div>
                       {(() => {
                         if (maxMonthlyFunding === null)
                           return (
-                            <p className="text-xs text-faint">
+                            <p className="text-faint text-xs">
                               Requires paycheck and budget data.
                             </p>
                           );
@@ -923,7 +923,7 @@ export default function SavingsPage() {
                             : 0;
                         const hasGrowth = Math.abs(totalGrowthPct) >= 0.01;
                         return (
-                          <p className="text-xs text-faint tabular-nums">
+                          <p className="text-faint text-xs tabular-nums">
                             {hasGrowth ? (
                               <>
                                 <span className="text-primary font-medium">
@@ -935,7 +935,7 @@ export default function SavingsPage() {
                                 </span>
                                 {" by "}
                                 {endYear}
-                                <span className="text-green-600 ml-1">
+                                <span className="ml-1 text-green-600">
                                   (+{totalGrowthPct.toFixed(1)}%)
                                 </span>
                               </>
@@ -979,7 +979,7 @@ export default function SavingsPage() {
       {/* ── Manage tab ── */}
       {masterTab === "manage" && (
         <CardBoundary title="Manage">
-          <section className="bg-surface-primary rounded-lg border border-default p-4 sm:p-5 space-y-3">
+          <section className="bg-surface-primary border-default space-y-3 rounded-lg border p-4 sm:p-5">
             {canEdit && showNewFund && (
               <NewFundFormCard
                 newFund={newFund}

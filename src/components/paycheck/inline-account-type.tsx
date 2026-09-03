@@ -18,7 +18,7 @@ export function InlineAccountType({
     return (
       <button
         onClick={() => setEditing(true)}
-        className="cursor-pointer hover:ring-2 hover:ring-blue-300 rounded transition-all"
+        className="cursor-pointer rounded transition-all hover:ring-2 hover:ring-blue-300"
         title="Click to change account type"
       >
         <AccountBadge type={value} />
@@ -35,7 +35,7 @@ export function InlineAccountType({
         setEditing(false);
       }}
       onBlur={() => setEditing(false)}
-      className="text-caption font-semibold uppercase tracking-wide rounded border border-blue-400 px-1 py-0.5 bg-surface-primary"
+      className="text-caption bg-surface-primary rounded border border-blue-400 px-1 py-0.5 font-semibold tracking-wide uppercase"
     >
       {WATERFALL_CATEGORIES.map((t) => (
         <option key={t} value={t}>

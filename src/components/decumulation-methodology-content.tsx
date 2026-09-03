@@ -13,15 +13,15 @@ function Section({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border rounded-lg overflow-hidden">
+    <div className="overflow-hidden rounded-lg border">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-surface-sunken text-sm font-medium text-secondary hover:bg-surface-elevated transition-colors"
+        className="bg-surface-sunken text-secondary hover:bg-surface-elevated flex w-full items-center justify-between px-4 py-3 text-sm font-medium transition-colors"
       >
         {title}
         <svg
           aria-hidden="true"
-          className={`w-4 h-4 transition-transform ${open ? "rotate-180" : ""}`}
+          className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -35,7 +35,7 @@ function Section({
         </svg>
       </button>
       {open && (
-        <div className="px-4 py-4 space-y-4 text-sm text-muted leading-relaxed">
+        <div className="text-muted space-y-4 px-4 py-4 text-sm leading-relaxed">
           {children}
         </div>
       )}
@@ -46,7 +46,7 @@ function Section({
 export function DecumulationMethodologyContent() {
   return (
     <div className="space-y-6">
-      <p className="text-sm text-muted">
+      <p className="text-muted text-sm">
         How the decumulation engine handles withdrawals, taxes, RMDs, Roth
         conversions, and dynamic spending during retirement years.
       </p>
@@ -62,7 +62,7 @@ export function DecumulationMethodologyContent() {
           withdrawals from account balances.
         </p>
 
-        <h4 className="font-semibold text-secondary mt-4">
+        <h4 className="text-secondary mt-4 font-semibold">
           What it computes each year
         </h4>
         <p className="text-caption text-faint">
@@ -74,7 +74,7 @@ export function DecumulationMethodologyContent() {
           the budget figure at all. See the per-strategy descriptions further
           down this page for exactly how each one works.
         </p>
-        <ol className="list-decimal pl-5 space-y-1.5">
+        <ol className="list-decimal space-y-1.5 pl-5">
           <li>
             <strong>Annual expense need (budget-seeded strategies)</strong> —
             for Fixed, Forgo Inflation After Loss, Spending Decline, and
@@ -134,10 +134,10 @@ export function DecumulationMethodologyContent() {
           </li>
         </ol>
 
-        <h4 className="font-semibold text-secondary mt-4">
+        <h4 className="text-secondary mt-4 font-semibold">
           Withdrawal routing modes
         </h4>
-        <ul className="list-disc pl-5 space-y-2">
+        <ul className="list-disc space-y-2 pl-5">
           <li>
             <strong>Bracket filling (default)</strong> — the tax-optimal
             approach. Draws from Traditional accounts up to a target tax bracket
@@ -170,17 +170,17 @@ export function DecumulationMethodologyContent() {
           </li>
         </ul>
 
-        <h4 className="font-semibold text-secondary mt-4">
+        <h4 className="text-secondary mt-4 font-semibold">
           Spending strategies
         </h4>
-        <p className="text-xs text-faint mb-2">
+        <p className="text-faint mb-2 text-xs">
           Based on Morningstar&apos;s &ldquo;State of Retirement Income:
           2025&rdquo; research. The SWR (starting safe withdrawal rate) shown is
           the maximum starting rate each strategy can support at 90% historical
           success over 30 years with a 40/60 portfolio.
         </p>
 
-        <div className="bg-blue-50 border border-blue-200 rounded-md px-3 py-2 text-xs text-blue-800 mb-3">
+        <div className="mb-3 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800">
           <strong>Why do dynamic strategies have higher success rates?</strong>{" "}
           Fixed Real has no feedback loop — if your portfolio drops 40%, you
           still withdraw the same dollar amount, which can deplete it. Dynamic
@@ -191,7 +191,7 @@ export function DecumulationMethodologyContent() {
           rate — but the less stable your income.
         </div>
 
-        <ul className="list-disc pl-5 space-y-3">
+        <ul className="list-disc space-y-3 pl-5">
           <li>
             <strong>Fixed Real (SWR ~3.9%)</strong> — your initial withdrawal
             amount is set by your configured withdrawal rate applied to your
@@ -313,7 +313,7 @@ export function DecumulationMethodologyContent() {
         </p>
 
         <div className="overflow-x-auto">
-          <table className="text-xs w-full border-collapse">
+          <table className="w-full border-collapse text-xs">
             <thead>
               <tr className="border-b text-left">
                 <th className="py-1.5 pr-3">Setting</th>
@@ -321,9 +321,9 @@ export function DecumulationMethodologyContent() {
                 <th className="py-1.5">Description</th>
               </tr>
             </thead>
-            <tbody className="divide-y ">
+            <tbody className="divide-y">
               <tr>
-                <td className="py-1.5 pr-3 font-mono text-label">
+                <td className="text-label py-1.5 pr-3 font-mono">
                   withdrawalRate
                 </td>
                 <td className="pr-3">Decimal</td>
@@ -337,7 +337,7 @@ export function DecumulationMethodologyContent() {
                 </td>
               </tr>
               <tr>
-                <td className="py-1.5 pr-3 font-mono text-label">
+                <td className="text-label py-1.5 pr-3 font-mono">
                   withdrawalRoutingMode
                 </td>
                 <td className="pr-3">Enum</td>
@@ -347,7 +347,7 @@ export function DecumulationMethodologyContent() {
                 </td>
               </tr>
               <tr>
-                <td className="py-1.5 pr-3 font-mono text-label">
+                <td className="text-label py-1.5 pr-3 font-mono">
                   withdrawalOrder
                 </td>
                 <td className="pr-3">Array</td>
@@ -357,7 +357,7 @@ export function DecumulationMethodologyContent() {
                 </td>
               </tr>
               <tr>
-                <td className="py-1.5 pr-3 font-mono text-label">
+                <td className="text-label py-1.5 pr-3 font-mono">
                   withdrawalSplits
                 </td>
                 <td className="pr-3">Record</td>
@@ -366,7 +366,7 @@ export function DecumulationMethodologyContent() {
                 </td>
               </tr>
               <tr>
-                <td className="py-1.5 pr-3 font-mono text-label">
+                <td className="text-label py-1.5 pr-3 font-mono">
                   withdrawalTaxPreference
                 </td>
                 <td className="pr-3">Record</td>
@@ -375,7 +375,7 @@ export function DecumulationMethodologyContent() {
                 </td>
               </tr>
               <tr>
-                <td className="py-1.5 pr-3 font-mono text-label">
+                <td className="text-label py-1.5 pr-3 font-mono">
                   withdrawalStrategy
                 </td>
                 <td className="pr-3">Enum</td>
@@ -390,18 +390,18 @@ export function DecumulationMethodologyContent() {
           </table>
         </div>
 
-        <h4 className="font-semibold text-secondary mt-4">Tax configuration</h4>
+        <h4 className="text-secondary mt-4 font-semibold">Tax configuration</h4>
         <div className="overflow-x-auto">
-          <table className="text-xs w-full border-collapse">
+          <table className="w-full border-collapse text-xs">
             <thead>
               <tr className="border-b text-left">
                 <th className="py-1.5 pr-3">Setting</th>
                 <th className="py-1.5">Description</th>
               </tr>
             </thead>
-            <tbody className="divide-y ">
+            <tbody className="divide-y">
               <tr>
-                <td className="py-1.5 pr-3 font-mono text-label">
+                <td className="text-label py-1.5 pr-3 font-mono">
                   traditionalFallbackRate
                 </td>
                 <td>
@@ -410,7 +410,7 @@ export function DecumulationMethodologyContent() {
                 </td>
               </tr>
               <tr>
-                <td className="py-1.5 pr-3 font-mono text-label">
+                <td className="text-label py-1.5 pr-3 font-mono">
                   taxBrackets
                 </td>
                 <td>
@@ -419,7 +419,7 @@ export function DecumulationMethodologyContent() {
                 </td>
               </tr>
               <tr>
-                <td className="py-1.5 pr-3 font-mono text-label">
+                <td className="text-label py-1.5 pr-3 font-mono">
                   taxMultiplier
                 </td>
                 <td>
@@ -428,7 +428,7 @@ export function DecumulationMethodologyContent() {
                 </td>
               </tr>
               <tr>
-                <td className="py-1.5 pr-3 font-mono text-label">
+                <td className="text-label py-1.5 pr-3 font-mono">
                   grossUpForTaxes
                 </td>
                 <td>
@@ -437,7 +437,7 @@ export function DecumulationMethodologyContent() {
                 </td>
               </tr>
               <tr>
-                <td className="py-1.5 pr-3 font-mono text-label">
+                <td className="text-label py-1.5 pr-3 font-mono">
                   rothBracketTarget
                 </td>
                 <td>
@@ -446,7 +446,7 @@ export function DecumulationMethodologyContent() {
                 </td>
               </tr>
               <tr>
-                <td className="py-1.5 pr-3 font-mono text-label">
+                <td className="text-label py-1.5 pr-3 font-mono">
                   enableRothConversions
                 </td>
                 <td>
@@ -458,16 +458,16 @@ export function DecumulationMethodologyContent() {
           </table>
         </div>
 
-        <h4 className="font-semibold text-secondary mt-4">
+        <h4 className="text-secondary mt-4 font-semibold">
           Strategy parameters
         </h4>
-        <p className="text-xs text-faint mb-2">
+        <p className="text-faint mb-2 text-xs">
           Each strategy has its own tunable parameters. Select a strategy to see
           its controls. All parameters have sensible defaults from
           Morningstar&apos;s research.
         </p>
         <div className="overflow-x-auto">
-          <table className="text-xs w-full border-collapse">
+          <table className="w-full border-collapse text-xs">
             <thead>
               <tr className="border-b text-left">
                 <th className="py-1.5 pr-3">Strategy</th>
@@ -476,7 +476,7 @@ export function DecumulationMethodologyContent() {
                 <th className="py-1.5">Description</th>
               </tr>
             </thead>
-            <tbody className="divide-y ">
+            <tbody className="divide-y">
               <tr>
                 <td className="py-1 pr-3 font-medium" colSpan={4}>
                   Guyton-Klinger
@@ -484,7 +484,7 @@ export function DecumulationMethodologyContent() {
               </tr>
               <tr>
                 <td className="py-1 pr-3"></td>
-                <td className="pr-3 font-mono text-label">upperGuardrail</td>
+                <td className="text-label pr-3 font-mono">upperGuardrail</td>
                 <td className="pr-3">0.80</td>
                 <td>
                   If current rate &lt; initial rate × 0.80 (portfolio grew),
@@ -493,7 +493,7 @@ export function DecumulationMethodologyContent() {
               </tr>
               <tr>
                 <td className="py-1 pr-3"></td>
-                <td className="pr-3 font-mono text-label">lowerGuardrail</td>
+                <td className="text-label pr-3 font-mono">lowerGuardrail</td>
                 <td className="pr-3">1.20</td>
                 <td>
                   If current rate &gt; initial rate × 1.20 (portfolio shrank),
@@ -502,19 +502,19 @@ export function DecumulationMethodologyContent() {
               </tr>
               <tr>
                 <td className="py-1 pr-3"></td>
-                <td className="pr-3 font-mono text-label">increasePercent</td>
+                <td className="text-label pr-3 font-mono">increasePercent</td>
                 <td className="pr-3">0.10</td>
                 <td>Spending increase when upper guardrail triggers (10%)</td>
               </tr>
               <tr>
                 <td className="py-1 pr-3"></td>
-                <td className="pr-3 font-mono text-label">decreasePercent</td>
+                <td className="text-label pr-3 font-mono">decreasePercent</td>
                 <td className="pr-3">0.10</td>
                 <td>Spending decrease when lower guardrail triggers (10%)</td>
               </tr>
               <tr>
                 <td className="py-1 pr-3"></td>
-                <td className="pr-3 font-mono text-label">
+                <td className="text-label pr-3 font-mono">
                   skipInflationAfterLoss
                 </td>
                 <td className="pr-3">true</td>
@@ -527,7 +527,7 @@ export function DecumulationMethodologyContent() {
               </tr>
               <tr>
                 <td className="py-1 pr-3"></td>
-                <td className="pr-3 font-mono text-label">annualDeclineRate</td>
+                <td className="text-label pr-3 font-mono">annualDeclineRate</td>
                 <td className="pr-3">0.02</td>
                 <td>
                   Annual real spending decline rate (2% matches EBRI data)
@@ -540,13 +540,13 @@ export function DecumulationMethodologyContent() {
               </tr>
               <tr>
                 <td className="py-1 pr-3"></td>
-                <td className="pr-3 font-mono text-label">withdrawalPercent</td>
+                <td className="text-label pr-3 font-mono">withdrawalPercent</td>
                 <td className="pr-3">0.05</td>
                 <td>Percentage of current balance withdrawn each year</td>
               </tr>
               <tr>
                 <td className="py-1 pr-3"></td>
-                <td className="pr-3 font-mono text-label">floorPercent</td>
+                <td className="text-label pr-3 font-mono">floorPercent</td>
                 <td className="pr-3">0.90</td>
                 <td>
                   Minimum withdrawal as % of initial amount (prevents severe
@@ -560,7 +560,7 @@ export function DecumulationMethodologyContent() {
               </tr>
               <tr>
                 <td className="py-1 pr-3"></td>
-                <td className="pr-3 font-mono text-label">withdrawalPercent</td>
+                <td className="text-label pr-3 font-mono">withdrawalPercent</td>
                 <td className="pr-3">0.05</td>
                 <td>
                   Percentage of rolling average balance withdrawn each year
@@ -568,13 +568,13 @@ export function DecumulationMethodologyContent() {
               </tr>
               <tr>
                 <td className="py-1 pr-3"></td>
-                <td className="pr-3 font-mono text-label">rollingYears</td>
+                <td className="text-label pr-3 font-mono">rollingYears</td>
                 <td className="pr-3">10</td>
                 <td>Number of years for the rolling average window</td>
               </tr>
               <tr>
                 <td className="py-1 pr-3"></td>
-                <td className="pr-3 font-mono text-label">floorPercent</td>
+                <td className="text-label pr-3 font-mono">floorPercent</td>
                 <td className="pr-3">0.90</td>
                 <td>Minimum withdrawal as % of initial amount</td>
               </tr>
@@ -585,19 +585,19 @@ export function DecumulationMethodologyContent() {
               </tr>
               <tr>
                 <td className="py-1 pr-3"></td>
-                <td className="pr-3 font-mono text-label">basePercent</td>
+                <td className="text-label pr-3 font-mono">basePercent</td>
                 <td className="pr-3">0.05</td>
                 <td>Base percentage of current portfolio balance</td>
               </tr>
               <tr>
                 <td className="py-1 pr-3"></td>
-                <td className="pr-3 font-mono text-label">ceilingPercent</td>
+                <td className="text-label pr-3 font-mono">ceilingPercent</td>
                 <td className="pr-3">0.05</td>
                 <td>Max year-over-year spending increase (5%)</td>
               </tr>
               <tr>
                 <td className="py-1 pr-3"></td>
-                <td className="pr-3 font-mono text-label">floorPercent</td>
+                <td className="text-label pr-3 font-mono">floorPercent</td>
                 <td className="pr-3">0.025</td>
                 <td>Max year-over-year spending decrease (2.5%)</td>
               </tr>
@@ -608,7 +608,7 @@ export function DecumulationMethodologyContent() {
               </tr>
               <tr>
                 <td className="py-1 pr-3"></td>
-                <td className="pr-3 font-mono text-label">rmdMultiplier</td>
+                <td className="text-label pr-3 font-mono">rmdMultiplier</td>
                 <td className="pr-3">1.0</td>
                 <td>Multiplier on IRS RMD amount (1.0 = standard RMD)</td>
               </tr>
@@ -626,24 +626,24 @@ export function DecumulationMethodologyContent() {
           again.
         </p>
 
-        <h4 className="font-semibold text-secondary mt-4">Override fields</h4>
+        <h4 className="text-secondary mt-4 font-semibold">Override fields</h4>
         <div className="overflow-x-auto">
-          <table className="text-xs w-full border-collapse">
+          <table className="w-full border-collapse text-xs">
             <thead>
               <tr className="border-b text-left">
                 <th className="py-1.5 pr-3">Field</th>
                 <th className="py-1.5">Effect</th>
               </tr>
             </thead>
-            <tbody className="divide-y ">
+            <tbody className="divide-y">
               <tr>
-                <td className="py-1.5 pr-3 font-mono text-label">
+                <td className="text-label py-1.5 pr-3 font-mono">
                   withdrawalRate
                 </td>
                 <td>New withdrawal rate from this year onward</td>
               </tr>
               <tr>
-                <td className="py-1.5 pr-3 font-mono text-label">
+                <td className="text-label py-1.5 pr-3 font-mono">
                   withdrawalRoutingMode
                 </td>
                 <td>
@@ -651,19 +651,19 @@ export function DecumulationMethodologyContent() {
                 </td>
               </tr>
               <tr>
-                <td className="py-1.5 pr-3 font-mono text-label">
+                <td className="text-label py-1.5 pr-3 font-mono">
                   withdrawalOrder
                 </td>
                 <td>New waterfall priority order</td>
               </tr>
               <tr>
-                <td className="py-1.5 pr-3 font-mono text-label">
+                <td className="text-label py-1.5 pr-3 font-mono">
                   withdrawalSplits
                 </td>
                 <td>New percentage splits (merged with existing)</td>
               </tr>
               <tr>
-                <td className="py-1.5 pr-3 font-mono text-label">
+                <td className="text-label py-1.5 pr-3 font-mono">
                   withdrawalTaxPreference
                 </td>
                 <td>
@@ -671,13 +671,13 @@ export function DecumulationMethodologyContent() {
                 </td>
               </tr>
               <tr>
-                <td className="py-1.5 pr-3 font-mono text-label">
+                <td className="text-label py-1.5 pr-3 font-mono">
                   withdrawalAccountCaps
                 </td>
                 <td>Dollar limit on withdrawals per account per year</td>
               </tr>
               <tr>
-                <td className="py-1.5 pr-3 font-mono text-label">
+                <td className="text-label py-1.5 pr-3 font-mono">
                   withdrawalTaxTypeCaps
                 </td>
                 <td>
@@ -685,7 +685,7 @@ export function DecumulationMethodologyContent() {
                 </td>
               </tr>
               <tr>
-                <td className="py-1.5 pr-3 font-mono text-label">
+                <td className="text-label py-1.5 pr-3 font-mono">
                   rothConversionTarget
                 </td>
                 <td>
@@ -694,7 +694,7 @@ export function DecumulationMethodologyContent() {
                 </td>
               </tr>
               <tr>
-                <td className="py-1.5 pr-3 font-mono text-label">reset</td>
+                <td className="text-label py-1.5 pr-3 font-mono">reset</td>
                 <td>
                   When true, ALL fields revert to page-level defaults from this
                   year onward
@@ -704,8 +704,8 @@ export function DecumulationMethodologyContent() {
           </table>
         </div>
 
-        <h4 className="font-semibold text-secondary mt-4">Example</h4>
-        <p className="text-xs bg-surface-sunken border rounded p-3 font-mono leading-relaxed">
+        <h4 className="text-secondary mt-4 font-semibold">Example</h4>
+        <p className="bg-surface-sunken rounded border p-3 font-mono text-xs leading-relaxed">
           Year 2045: withdrawalRate → 0.035 (reduce to 3.5% after downturn)
           <br />
           Year 2048: withdrawalAccountCaps → {"{"}401k: 50000{"}"} (limit 401k
@@ -719,10 +719,10 @@ export function DecumulationMethodologyContent() {
       </Section>
 
       <Section title="Technical Details" defaultOpen={false}>
-        <h4 className="font-semibold text-secondary">Tax gross-up</h4>
+        <h4 className="text-secondary font-semibold">Tax gross-up</h4>
         <p>
           When{" "}
-          <code className="text-label bg-surface-elevated px-1 rounded">
+          <code className="text-label bg-surface-elevated rounded px-1">
             grossUpForTaxes
           </code>{" "}
           is enabled (default), the engine increases withdrawal amounts so that
@@ -744,7 +744,7 @@ export function DecumulationMethodologyContent() {
           $11,282 tax cost.
         </p>
 
-        <h4 className="font-semibold text-secondary mt-4">
+        <h4 className="text-secondary mt-4 font-semibold">
           Cost-aware source selection (bracket filling mode)
         </h4>
         <p>
@@ -764,7 +764,7 @@ export function DecumulationMethodologyContent() {
           to future tax years — those are handled by the separate checks below.
         </p>
 
-        <h4 className="font-semibold text-secondary mt-4">
+        <h4 className="text-secondary mt-4 font-semibold">
           Required Minimum Distributions
         </h4>
         <p>
@@ -778,7 +778,7 @@ export function DecumulationMethodologyContent() {
           Traditional accounts.
         </p>
 
-        <h4 className="font-semibold text-secondary mt-4">Roth conversions</h4>
+        <h4 className="text-secondary mt-4 font-semibold">Roth conversions</h4>
         <p>
           When enabled, the engine performs bracket-filling Roth conversions
           each year. After withdrawals and RMDs determine your taxable income,
@@ -791,7 +791,7 @@ export function DecumulationMethodologyContent() {
           cap conversions; it only reports how close you are to the cliff.
         </p>
 
-        <h4 className="font-semibold text-secondary mt-4">
+        <h4 className="text-secondary mt-4 font-semibold">
           Social Security integration
         </h4>
         <p>
@@ -804,7 +804,7 @@ export function DecumulationMethodologyContent() {
           start age (default 67) as a flat monthly amount.
         </p>
 
-        <h4 className="font-semibold text-secondary mt-4">
+        <h4 className="text-secondary mt-4 font-semibold">
           IRMAA and ACA awareness
         </h4>
         <p>
@@ -825,14 +825,14 @@ export function DecumulationMethodologyContent() {
           it&apos;s reporting-only. Use the warning to manually adjust via
           overrides.
         </p>
-        <p className="text-xs text-faint mt-1">
+        <p className="text-faint mt-1 text-xs">
           IRMAA&apos;s cliff is looked up two years ahead of the income that
           triggers it (its real 2-year MAGI lookback), so the conversion cap
           compares this year&apos;s income against the threshold that will apply
           two years from now, not this year&apos;s.
         </p>
 
-        <h4 className="font-semibold text-secondary mt-4">Threshold growth</h4>
+        <h4 className="text-secondary mt-4 font-semibold">Threshold growth</h4>
         <p>
           Your W-4 tax brackets, standard deduction, LTCG brackets, IRMAA
           brackets, and the ACA subsidy cliff are all legally inflation-indexed
@@ -846,7 +846,7 @@ export function DecumulationMethodologyContent() {
           and 2013 respectively.)
         </p>
 
-        <h4 className="font-semibold text-secondary mt-4">Account depletion</h4>
+        <h4 className="text-secondary mt-4 font-semibold">Account depletion</h4>
         <p>
           When an account balance reaches zero, it&apos;s recorded with the
           depletion year and the remaining withdrawal need shifts to other

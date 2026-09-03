@@ -51,8 +51,10 @@ import {
 import { roundToCents, sumBy, safeDivide } from "@/lib/utils/math";
 import {
   IRS_LIMIT_GROWTH_RATE,
+  IRS_LIMIT_GROWTH_RATE_MAX,
   FALLBACK_CONTRIBUTION_RATE,
 } from "@/lib/constants";
+import { log } from "@/lib/logger";
 import { estimateEffectiveTaxRate } from "@/lib/calculators/engine";
 import { getLtcgRate } from "@/lib/config/tax-tables";
 import { resolveTaxParams } from "@/lib/config/tax-params";
@@ -765,11 +767,29 @@ export async function buildEnginePayload(
     rampRaw != null && rampRaw !== "null" && rampRaw !== '"0"'
       ? toNumber(String(rampRaw).replace(/"/g, ""))
       : 0;
+  // Settable in Settings → Reference Data → Return Rates; falls back to the
+  // constant when unset. This is the single read point, so bound it here
+  // rather than special-casing the generic appSettings.upsert: a NaN/garbage
+  // value (empty string, bad manual edit) or an out-of-range one (an admin
+  // writing `5` via the data browser) would otherwise compound through
+  // Math.pow(1 + rate, year) and silently wreck every projection.
   const limitGrowthRaw = settingsMap.get("irs_limit_growth_rate");
-  const irsLimitGrowthRate =
-    limitGrowthRaw != null
-      ? toNumber(String(limitGrowthRaw))
-      : IRS_LIMIT_GROWTH_RATE;
+  const limitGrowthParsed = toNumber(String(limitGrowthRaw));
+  let irsLimitGrowthRate = IRS_LIMIT_GROWTH_RATE;
+  if (limitGrowthRaw != null && Number.isFinite(limitGrowthParsed)) {
+    irsLimitGrowthRate = Math.min(
+      Math.max(limitGrowthParsed, 0),
+      IRS_LIMIT_GROWTH_RATE_MAX,
+    );
+    if (irsLimitGrowthRate !== limitGrowthParsed) {
+      // A stored value outside [0, MAX] is used clamped — record it so the
+      // stored-vs-used divergence is findable rather than silent.
+      log("warn", "irs_limit_growth_rate_clamped", {
+        stored: limitGrowthParsed,
+        used: irsLimitGrowthRate,
+      });
+    }
+  }
 
   // IRS limits — the `contribution_limits` rows for the resolved tax year
   // (resolveTaxParams already filtered + coerced to numbers). Same

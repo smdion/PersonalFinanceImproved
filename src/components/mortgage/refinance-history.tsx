@@ -15,16 +15,16 @@ export function RefinanceHistory({
         {loanHistory.map((h) => (
           <div key={h.name} className="flex items-center gap-3 text-sm">
             <span
-              className={`w-2 h-2 rounded-full ${h.isActive ? "bg-green-500" : "bg-surface-divider"}`}
+              className={`h-2 w-2 rounded-full ${h.isActive ? "bg-green-500" : "bg-surface-divider"}`}
             />
             <span className={h.isActive ? "font-medium" : "text-muted"}>
               {h.name}
             </span>
-            <span className="text-xs text-faint">
+            <span className="text-faint text-xs">
               {formatPercent(h.interestRate, 3)}
             </span>
             {h.paidOffDate && (
-              <span className="text-xs text-faint">
+              <span className="text-faint text-xs">
                 ended {formatDate(h.paidOffDate, "short")}
               </span>
             )}

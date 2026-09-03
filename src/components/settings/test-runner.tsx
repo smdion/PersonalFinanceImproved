@@ -28,14 +28,14 @@ export function TestRunner() {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-medium text-primary">Tests</h3>
+      <h3 className="text-primary text-sm font-medium">Tests</h3>
 
       {/* Run All */}
       <div className="flex items-center gap-3">
         <button
           onClick={handleRunAll}
           disabled={runTests.isPending}
-          className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {runTests.isPending ? "Running..." : "Run All Tests"}
         </button>
@@ -48,13 +48,13 @@ export function TestRunner() {
           value={fileFilter}
           onChange={(e) => setFileFilter(e.target.value)}
           placeholder="tests/calculators/tax.test.ts"
-          className="flex-1 block rounded border border-strong px-2 py-1.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          className="border-strong block flex-1 rounded border px-2 py-1.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           onKeyDown={(e) => e.key === "Enter" && handleRunCustom()}
         />
         <button
           onClick={handleRunCustom}
           disabled={runTests.isPending || !fileFilter.trim()}
-          className="px-3 py-1.5 text-xs font-medium text-blue-600 border border-blue-300 rounded hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="rounded border border-blue-300 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Run
         </button>
@@ -67,7 +67,7 @@ export function TestRunner() {
             key={dir}
             onClick={() => handleRunFile(dir)}
             disabled={runTests.isPending}
-            className="px-2 py-1 text-caption font-medium text-muted border border-subtle rounded hover:bg-surface-elevated disabled:opacity-50"
+            className="text-caption text-muted border-subtle hover:bg-surface-elevated rounded border px-2 py-1 font-medium disabled:opacity-50"
           >
             {dir.replace("tests/", "")}
           </button>
@@ -76,7 +76,7 @@ export function TestRunner() {
 
       {/* Results */}
       {runTests.isPending && (
-        <div className="text-sm text-muted animate-pulse">Running tests...</div>
+        <div className="text-muted animate-pulse text-sm">Running tests...</div>
       )}
 
       {runTests.isError && (
@@ -89,7 +89,7 @@ export function TestRunner() {
         <div className="space-y-3">
           {/* Summary bar */}
           <div
-            className={`px-3 py-2 rounded text-sm font-medium ${
+            className={`rounded px-3 py-2 text-sm font-medium ${
               result.success
                 ? "bg-green-50 text-green-700"
                 : "bg-red-50 text-red-700"
@@ -117,7 +117,7 @@ export function TestRunner() {
           </div>
 
           {/* Per-file results */}
-          <div className="space-y-2 max-h-96 overflow-y-auto">
+          <div className="max-h-96 space-y-2 overflow-y-auto">
             {result.testFiles.map((file) => (
               <TestFileBlock key={file.file} file={file} />
             ))}
@@ -143,23 +143,23 @@ function TestFileBlock({
   const failed = file.tests.filter((t) => t.status === "fail").length;
 
   return (
-    <div className="border border-subtle rounded">
+    <div className="border-subtle rounded border">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between px-3 py-1.5 text-xs hover:bg-surface-elevated"
+        className="hover:bg-surface-elevated flex w-full items-center justify-between px-3 py-1.5 text-xs"
       >
-        <span className="font-mono text-muted truncate">{file.file}</span>
-        <span className="flex items-center gap-2 shrink-0 ml-2">
+        <span className="text-muted truncate font-mono">{file.file}</span>
+        <span className="ml-2 flex shrink-0 items-center gap-2">
           {passed > 0 && <span className="text-green-600">{passed} pass</span>}
           {failed > 0 && <span className="text-red-600">{failed} fail</span>}
           <span className="text-faint">{expanded ? "▼" : "▶"}</span>
         </span>
       </button>
       {expanded && (
-        <div className="border-t border-subtle px-3 py-1.5 space-y-1">
+        <div className="border-subtle space-y-1 border-t px-3 py-1.5">
           {file.tests.map((t) => (
             <div key={t.name}>
-              <div className="flex items-center gap-2 text-label">
+              <div className="text-label flex items-center gap-2">
                 <span
                   className={
                     t.status === "pass"
@@ -177,7 +177,7 @@ function TestFileBlock({
                 </span>
               </div>
               {t.error && (
-                <pre className="mt-1 p-2 bg-red-50 text-red-700 text-caption rounded overflow-x-auto max-h-40 overflow-y-auto whitespace-pre-wrap">
+                <pre className="text-caption mt-1 max-h-40 overflow-x-auto overflow-y-auto rounded bg-red-50 p-2 whitespace-pre-wrap text-red-700">
                   {t.error}
                 </pre>
               )}

@@ -469,14 +469,14 @@ export function FundManagementSection({
       {/* ── Fund Details ── */}
       <section className="space-y-4">
         <div className="flex items-center gap-3">
-          <h2 className="text-xs font-semibold text-muted uppercase tracking-wider">
+          <h2 className="text-muted text-xs font-semibold tracking-wider uppercase">
             Fund Details
           </h2>
-          <div className="flex-1 border-t border-subtle/50" />
+          <div className="border-subtle/50 flex-1 border-t" />
           {canEdit && (
             <button
               onClick={() => _setShowNewFund(true)}
-              className="text-xs text-blue-600 hover:text-blue-700 font-medium shrink-0"
+              className="shrink-0 text-xs font-medium text-blue-600 hover:text-blue-700"
             >
               + New Fund
             </button>

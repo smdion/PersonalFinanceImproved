@@ -73,7 +73,7 @@ function MortgageCardImpl() {
         </span>
       </div>
       {(data?.result.totalMonthsSaved ?? 0) > 0 && (
-        <p className="text-xs text-green-600 mt-1">
+        <p className="mt-1 text-xs text-green-600">
           {formatDuration(data!.result.totalMonthsSaved)} ahead of original
           timeline
         </p>

@@ -39,13 +39,13 @@ export function DebugSettings() {
   );
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-6">
-      <nav className="flex md:flex-col gap-1 overflow-x-auto">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-[200px_1fr]">
+      <nav className="flex gap-1 overflow-x-auto md:flex-col">
         {DEBUG_SECTIONS.map((s) => (
           <button
             key={s.key}
             onClick={() => setSection(s.key)}
-            className={`px-3 py-2 text-sm text-left rounded-md whitespace-nowrap transition-colors ${
+            className={`rounded-md px-3 py-2 text-left text-sm whitespace-nowrap transition-colors ${
               section === s.key
                 ? s.key === "danger"
                   ? "bg-red-600 text-white"
@@ -86,20 +86,20 @@ function DiagnosticsSection() {
 
   return (
     <div>
-      <h3 className="text-sm font-medium text-primary mb-3">Diagnostics</h3>
-      <label className="flex items-center gap-3 cursor-pointer">
+      <h3 className="text-primary mb-3 text-sm font-medium">Diagnostics</h3>
+      <label className="flex cursor-pointer items-center gap-3">
         <input
           type="checkbox"
           checked={diagMode}
           onChange={(e) => setDiagMode(e.target.checked)}
           disabled={!admin}
-          className="h-4 w-4 rounded border-strong text-blue-600 focus:ring-blue-500"
+          className="border-strong h-4 w-4 rounded text-blue-600 focus:ring-blue-500"
         />
         <div>
-          <span className="text-sm font-medium text-secondary">
+          <span className="text-secondary text-sm font-medium">
             Diagnostics mode
           </span>
-          <p className="text-xs text-muted">
+          <p className="text-muted text-xs">
             Show diagnostic tooltips and debug data on projection tables
             (withdrawal routing, MC proof notes, etc.)
           </p>
@@ -107,7 +107,7 @@ function DiagnosticsSection() {
       </label>
 
       {diagMode && admin && (
-        <div className="border-t border-subtle pt-4 mt-4">
+        <div className="border-subtle mt-4 border-t pt-4">
           <TestRunner />
         </div>
       )}
@@ -155,18 +155,18 @@ function DataFreshnessSection() {
 
   return (
     <div>
-      <h3 className="text-sm font-medium text-primary mb-3">
+      <h3 className="text-primary mb-3 text-sm font-medium">
         Data Freshness Dates
       </h3>
-      <p className="text-xs text-muted mb-4">
+      <p className="text-muted mb-4 text-xs">
         Override the &ldquo;last updated&rdquo; dates shown in the sidebar
         &ldquo;Data Updated&rdquo; tooltip. Leave a field blank to keep its
         current value.
       </p>
-      <div className="space-y-3 max-w-sm">
+      <div className="max-w-sm space-y-3">
         {fields.map((f) => (
           <div key={f.label}>
-            <label className="block text-xs font-medium text-muted mb-1">
+            <label className="text-muted mb-1 block text-xs font-medium">
               {f.label}
             </label>
             <div className="flex items-center gap-2">
@@ -174,7 +174,7 @@ function DataFreshnessSection() {
                 type="date"
                 value={f.value}
                 onChange={(e) => f.set(e.target.value)}
-                className="block w-full rounded border border-strong px-2 py-1.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="border-strong block w-full rounded border px-2 py-1.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
               <span className="text-caption text-faint whitespace-nowrap">
                 {/* Same formatDate the sidebar tooltip uses, so the two
@@ -233,14 +233,14 @@ function DangerZoneSection() {
 
   return (
     <div>
-      <h3 className="text-sm font-semibold text-red-600 mb-2">Danger Zone</h3>
+      <h3 className="mb-2 text-sm font-semibold text-red-600">Danger Zone</h3>
       {showReset ? (
         <div className="space-y-2">
           <p className={`text-xs ${STATUS_COLORS.red.text}`}>
             This will permanently delete all financial data. Versions and app
             settings are preserved. This cannot be undone.
           </p>
-          <p className="text-xs text-muted">
+          <p className="text-muted text-xs">
             Type <span className="font-mono font-bold">delete</span> to confirm:
           </p>
           <input
@@ -248,7 +248,7 @@ function DangerZoneSection() {
             value={resetText}
             onChange={(e) => setResetText(e.target.value)}
             placeholder="delete"
-            className="w-full px-2 py-1.5 text-sm border border-red-300 rounded bg-surface-primary focus:outline-none focus:ring-1 focus:ring-red-400"
+            className="bg-surface-primary w-full rounded border border-red-300 px-2 py-1.5 text-sm focus:ring-1 focus:ring-red-400 focus:outline-none"
             autoFocus
           />
           <div className="flex gap-2">

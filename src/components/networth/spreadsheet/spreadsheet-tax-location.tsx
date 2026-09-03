@@ -47,15 +47,15 @@ function TaxLocationMiniTable({
 
   return (
     <div>
-      <h4 className="text-xs font-semibold text-muted mb-1">{title}</h4>
+      <h4 className="text-muted mb-1 text-xs font-semibold">{title}</h4>
       <table className="w-full text-xs">
         <thead>
           <tr className="border-b">
-            <th className="text-left py-1 pr-2 text-muted font-medium" />
-            <th className="text-right py-1 px-2 text-muted font-medium">
+            <th className="text-muted py-1 pr-2 text-left font-medium" />
+            <th className="text-muted px-2 py-1 text-right font-medium">
               {yearALabel}
             </th>
-            <th className="text-right py-1 pl-2 text-muted font-medium">
+            <th className="text-muted py-1 pl-2 text-right font-medium">
               {yearBLabel}
             </th>
           </tr>
@@ -72,13 +72,13 @@ function TaxLocationMiniTable({
             return (
               <tr
                 key={taxType}
-                className={`border-b border-subtle ${index % 2 === 0 ? "bg-surface-sunken/50" : ""}`}
+                className={`border-subtle border-b ${index % 2 === 0 ? "bg-surface-sunken/50" : ""}`}
               >
-                <td className="py-1 pr-2 text-secondary">{label}</td>
-                <td className="text-right py-1 px-2">
+                <td className="text-secondary py-1 pr-2">{label}</td>
+                <td className="px-2 py-1 text-right">
                   {formatPercent(pctA, 1)}
                 </td>
-                <td className="text-right py-1 pl-2">
+                <td className="py-1 pl-2 text-right">
                   {formatPercent(pctB, 1)}
                 </td>
               </tr>
@@ -119,7 +119,7 @@ export function SpreadsheetTaxLocation({
 
   return (
     <Card title="Tax Location - YTD" className="mb-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {hasRetirementData && (
           <TaxLocationMiniTable
             title="Retirement"

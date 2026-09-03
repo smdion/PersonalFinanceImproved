@@ -15,12 +15,12 @@ export function SyncBehaviorSettings() {
   const staleHours = syncStatus?.autoSync.staleHours ?? 4;
 
   return (
-    <Card className="p-4 space-y-3">
+    <Card className="space-y-3 p-4">
       <div className="text-sm font-medium">Sync Behavior</div>
-      <label className="flex items-center justify-between gap-4 cursor-pointer">
+      <label className="flex cursor-pointer items-center justify-between gap-4">
         <div>
-          <div className="text-sm text-primary">Auto-sync on page load</div>
-          <div className="text-xs text-muted">
+          <div className="text-primary text-sm">Auto-sync on page load</div>
+          <div className="text-muted text-xs">
             Automatically sync when data is stale
           </div>
         </div>
@@ -34,11 +34,11 @@ export function SyncBehaviorSettings() {
               value: e.target.checked ? "true" : "false",
             })
           }
-          className="w-4 h-4 accent-blue-600"
+          className="h-4 w-4 accent-blue-600"
         />
       </label>
       <label className="flex items-center justify-between gap-4">
-        <div className="text-sm text-muted">Consider stale after</div>
+        <div className="text-muted text-sm">Consider stale after</div>
         <select
           value={String(staleHours)}
           disabled={!autoEnabled || upsertSetting.isPending}
@@ -48,7 +48,7 @@ export function SyncBehaviorSettings() {
               value: e.target.value,
             })
           }
-          className="text-xs border border-surface-strong rounded px-2 py-1 bg-surface-primary text-primary disabled:opacity-40"
+          className="border-surface-strong bg-surface-primary text-primary rounded border px-2 py-1 text-xs disabled:opacity-40"
         >
           <option value="1">1 hour</option>
           <option value="2">2 hours</option>

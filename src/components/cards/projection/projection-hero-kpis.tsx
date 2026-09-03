@@ -30,13 +30,13 @@ export function KpiCard({
 }) {
   return (
     <div
-      className={`rounded-lg border border-subtle bg-surface-primary/40 px-3 py-2.5 flex flex-col ${className}`}
+      className={`border-subtle bg-surface-primary/40 flex flex-col rounded-lg border px-3 py-2.5 ${className}`}
     >
-      <div className="text-caption font-semibold uppercase tracking-wider text-faint flex items-center gap-1">
+      <div className="text-caption text-faint flex items-center gap-1 font-semibold tracking-wider uppercase">
         {label}
         {tooltip && <HelpTip maxWidth={420} lines={tooltip} />}
       </div>
-      <div className="flex-1 flex flex-col mt-2">{children}</div>
+      <div className="mt-2 flex flex-1 flex-col">{children}</div>
     </div>
   );
 }
@@ -191,15 +191,15 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
   // MC loading — show skeleton instead of flashing deterministic cards
   if (!mc && mcLoading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         {[0, 1, 2, 3, 4].map((i) => (
           <div
             key={i}
-            className="rounded-lg border border-subtle bg-surface-primary/40 p-3 min-h-[128px] animate-pulse"
+            className="border-subtle bg-surface-primary/40 min-h-[128px] animate-pulse rounded-lg border p-3"
           >
-            <div className="h-2.5 w-20 bg-surface-strong/20 rounded" />
-            <div className="h-8 w-24 bg-surface-strong/20 rounded mt-4" />
-            <div className="h-2 w-16 bg-surface-strong/20 rounded mt-2" />
+            <div className="bg-surface-strong/20 h-2.5 w-20 rounded" />
+            <div className="bg-surface-strong/20 mt-4 h-8 w-24 rounded" />
+            <div className="bg-surface-strong/20 mt-2 h-2 w-16 rounded" />
           </div>
         ))}
       </div>
@@ -229,7 +229,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
           : `Your plan spans ${retSpan} years — longer than the classic 30-year 4% rule. For ${strategyMeta.label}, the knob to lower is ${strategyMeta.paramFields.find((f) => typeof f.default === "number")?.label ?? "your Strategy Params rate"}, not this Initial Withdrawal Rate field.`;
 
     return (
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         {/* Card 1: Portfolio Survival */}
         <KpiCard
           label="Portfolio Survival"
@@ -247,7 +247,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
               : []),
           ]}
         >
-          <div className="flex flex-col items-center justify-center flex-1 gap-1">
+          <div className="flex flex-1 flex-col items-center justify-center gap-1">
             <CompactRing rate={mc.successRate} size={68} />
             <div className="text-micro text-faint">
               {mc.distributions.depletionAge
@@ -284,11 +284,11 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
                   : []),
               ]}
             >
-              <div className="flex items-center gap-4 justify-center flex-1">
+              <div className="flex flex-1 items-center justify-center gap-4">
                 <div className="flex flex-col items-center gap-1">
                   <CompactRing rate={mc.spendingStabilityRate} size={56} />
                   <div
-                    className={`text-micro flex items-center gap-0.5 ${strategyGapUrgent ? "text-red-500 font-medium" : "text-faint"}`}
+                    className={`text-micro flex items-center gap-0.5 ${strategyGapUrgent ? "font-medium text-red-500" : "text-faint"}`}
                   >
                     {strategyGapUrgent && <span>⚠</span>}
                     vs strategy
@@ -320,7 +320,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
                 : "Nest Egg at Retirement"
           }
         >
-          <div className="text-xl font-bold tabular-nums text-primary">
+          <div className="text-primary text-xl font-bold tabular-nums">
             {mcRetBand
               ? formatCurrency(deflate(mcRetBand.p50, mcRetBand.year))
               : formatCurrency(nestEgg)}
@@ -338,7 +338,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
 
         {/* Card 4: End Balance */}
         <KpiCard label="End Balance">
-          <div className="text-xl font-bold tabular-nums text-primary">
+          <div className="text-primary text-xl font-bold tabular-nums">
             {formatCurrency(deflate(mc.medianEndBalance, terminalYear))}
           </div>
           <div className="text-caption text-faint mt-1 leading-tight">
@@ -375,7 +375,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
 
   // Deterministic hero (no MC) — 4 cards including Coast FIRE
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
       <KpiCard
         label={
           isPersonFiltered
@@ -385,7 +385,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
               : "Nest Egg at Retirement"
         }
       >
-        <div className="text-xl font-bold tabular-nums text-primary">
+        <div className="text-primary text-xl font-bold tabular-nums">
           {formatCurrency(nestEgg)}
         </div>
         <div className="text-caption text-faint mt-1">
@@ -398,7 +398,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
       <KpiCard
         label={isPersonFiltered ? `${personFilterName}'s Peak` : "Peak Balance"}
       >
-        <div className="text-xl font-bold tabular-nums text-primary">
+        <div className="text-primary text-xl font-bold tabular-nums">
           {formatCurrency(peakBalance)}
         </div>
         <div className="text-caption text-faint mt-1">

@@ -16,7 +16,7 @@ export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
     return (
       <input
         ref={ref}
-        className={`w-full px-2 py-1 border border-default rounded bg-input-bg text-input-text placeholder:text-input-placeholder text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 disabled:opacity-50 ${className}`}
+        className={`border-default bg-input-bg text-input-text placeholder:text-input-placeholder w-full rounded border px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500/50 focus:outline-none disabled:opacity-50 ${className}`}
         {...props}
       />
     );

@@ -840,7 +840,7 @@ describe("budget router", () => {
     it("throws when columnMonths length does not match column count", async () => {
       await expect(
         caller.budget.updateColumnMonths({ columnMonths: [12] }),
-      ).rejects.toThrow("columnMonths length must match columnLabels length");
+      ).rejects.toThrow(/columns changed/);
     });
 
     it("accepts null to clear column months", async () => {

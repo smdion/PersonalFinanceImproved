@@ -63,12 +63,12 @@ export function NetWorthComposition({
     >
       <div className="space-y-4">
         <div>
-          <div className="flex justify-between text-sm mb-1">
-            <span className="font-medium text-secondary">Assets</span>
+          <div className="mb-1 flex justify-between text-sm">
+            <span className="text-secondary font-medium">Assets</span>
             <span className="font-semibold">{formatCurrency(totalAssets)}</span>
           </div>
           <div
-            className="h-6 bg-surface-elevated rounded-full overflow-hidden flex"
+            className="bg-surface-elevated flex h-6 overflow-hidden rounded-full"
             style={{ width: `${(totalAssets / maxBar) * 100}%` }}
           >
             {segments.map((seg) => (
@@ -83,14 +83,14 @@ export function NetWorthComposition({
               />
             ))}
           </div>
-          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1.5">
+          <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
             {segments.map((seg) => (
               <div
                 key={seg.label}
-                className="flex items-center gap-1 text-xs text-muted"
+                className="text-muted flex items-center gap-1 text-xs"
               >
                 <span
-                  className="w-2 h-2 rounded-full"
+                  className="h-2 w-2 rounded-full"
                   style={{ backgroundColor: seg.color }}
                 />
                 <span>{seg.label}</span>
@@ -102,30 +102,30 @@ export function NetWorthComposition({
           </div>
         </div>
         <div>
-          <div className="flex justify-between text-sm mb-1">
-            <span className="font-medium text-secondary">Liabilities</span>
+          <div className="mb-1 flex justify-between text-sm">
+            <span className="text-secondary font-medium">Liabilities</span>
             <span className="font-semibold text-red-600">
               {formatCurrency(totalLiab)}
             </span>
           </div>
           <div
-            className="h-6 bg-surface-elevated rounded-full overflow-hidden"
+            className="bg-surface-elevated h-6 overflow-hidden rounded-full"
             style={{ width: `${(totalLiab / maxBar) * 100}%` }}
           >
             <div
-              className="bg-red-400 h-full rounded-full"
+              className="h-full rounded-full bg-red-400"
               style={{ width: "100%" }}
             />
           </div>
         </div>
-        <div className="pt-2 border-t">
-          <div className="flex justify-between text-sm mb-1">
-            <span className="font-semibold text-primary">Net Worth</span>
-            <span className="font-bold text-lg">
+        <div className="border-t pt-2">
+          <div className="mb-1 flex justify-between text-sm">
+            <span className="text-primary font-semibold">Net Worth</span>
+            <span className="text-lg font-bold">
               {formatCurrency(displayNetWorth)}
             </span>
           </div>
-          <div className="h-3 bg-surface-elevated rounded-full overflow-hidden">
+          <div className="bg-surface-elevated h-3 overflow-hidden rounded-full">
             <div
               className={`h-full rounded-full transition-all ${displayNetWorth >= 0 ? "bg-green-500" : "bg-red-500"}`}
               style={{

@@ -96,7 +96,6 @@ export function useItemMutations({ selectedColumnRef }: UseItemMutationsOpts) {
         }
       },
       onSettled: () => invalidateSummaryAndContributions(),
-      showErrorToast: false,
     },
   );
 
@@ -124,7 +123,6 @@ export function useItemMutations({ selectedColumnRef }: UseItemMutationsOpts) {
         }
       },
       onSettled: () => invalidateSummary(),
-      showErrorToast: false,
     },
   );
 
@@ -154,7 +152,6 @@ export function useItemMutations({ selectedColumnRef }: UseItemMutationsOpts) {
         }
       },
       onSettled: () => invalidateSummary(),
-      showErrorToast: false,
     },
   );
 
@@ -184,7 +181,6 @@ export function useItemMutations({ selectedColumnRef }: UseItemMutationsOpts) {
         }
       },
       onSettled: () => invalidateSummary(),
-      showErrorToast: false,
     },
   );
 

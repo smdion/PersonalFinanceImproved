@@ -61,11 +61,12 @@ export function NetWorthLocationPie({
       }
       subtitle={yearLabel != null ? `${yearLabel} data` : undefined}
     >
-      <div className="flex flex-col sm:flex-row items-center gap-4">
+      <div className="flex flex-col items-center gap-4 sm:flex-row">
         <div className="w-full sm:w-1/2">
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>
               <Pie
+                isAnimationActive={false}
                 data={data}
                 cx="50%"
                 cy="50%"
@@ -90,11 +91,11 @@ export function NetWorthLocationPie({
           {data.map((d) => (
             <div
               key={d.name}
-              className="flex justify-between items-center text-sm"
+              className="flex items-center justify-between text-sm"
             >
               <span className="flex items-center gap-2">
                 <span
-                  className="w-2.5 h-2.5 rounded-full"
+                  className="h-2.5 w-2.5 rounded-full"
                   style={{ backgroundColor: d.color }}
                 />
                 <span className="text-muted">{d.name}</span>
@@ -103,7 +104,7 @@ export function NetWorthLocationPie({
                 <span className="font-medium">
                   {formatPercent(safeDivide(d.value, total, 0))}
                 </span>
-                <span className="text-xs text-faint ml-2">
+                <span className="text-faint ml-2 text-xs">
                   {formatCurrency(d.value)}
                 </span>
               </div>

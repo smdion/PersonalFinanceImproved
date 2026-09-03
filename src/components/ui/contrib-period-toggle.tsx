@@ -52,7 +52,7 @@ export function ContribPeriodToggle({
   return (
     <div
       role="tablist"
-      className={`flex bg-surface-elevated rounded-lg p-1 ${className ?? ""}`}
+      className={`bg-surface-elevated flex rounded-lg p-1 ${className ?? ""}`}
     >
       {(["paycheck", "monthly", "annual"] as ContribPeriod[]).map((period) => (
         <button
@@ -60,9 +60,9 @@ export function ContribPeriodToggle({
           role="tab"
           aria-selected={value === period}
           onClick={() => onChange(period)}
-          className={`px-3 py-1 text-xs rounded-md transition-colors ${
+          className={`rounded-md px-3 py-1 text-xs transition-colors ${
             value === period
-              ? "bg-surface-primary text-primary shadow-sm font-medium"
+              ? "bg-surface-primary text-primary font-medium shadow-sm"
               : "text-muted hover:text-primary"
           }`}
         >

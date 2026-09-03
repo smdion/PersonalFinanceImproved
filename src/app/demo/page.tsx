@@ -23,9 +23,9 @@ export default function DemoPage() {
   const [activating, setActivating] = useState<string | null>(null);
 
   return (
-    <div className="min-h-screen bg-surface-primary text-primary p-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold mb-2">
+    <div className="bg-surface-primary text-primary min-h-screen p-8">
+      <div className="mx-auto max-w-4xl">
+        <h1 className="mb-2 text-2xl font-bold">
           {isDemoOnly ? "Welcome to Ledgr" : "Demo Mode"}
         </h1>
         <p className="text-faint mb-8">
@@ -34,17 +34,17 @@ export default function DemoPage() {
             : "Explore the app with preset financial profiles. Your real data is never touched — each profile runs in an isolated environment."}
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {(profiles ?? []).map((p) => (
             <div
               key={p.slug}
-              className="bg-surface-primary border rounded-lg p-5 hover:border-blue-500 transition-colors"
+              className="bg-surface-primary rounded-lg border p-5 transition-colors hover:border-blue-500"
             >
-              <h2 className="text-lg font-semibold text-primary mb-1">
+              <h2 className="text-primary mb-1 text-lg font-semibold">
                 {p.name}
               </h2>
-              <p className="text-sm text-faint mb-3">{p.description}</p>
-              <div className="flex gap-4 text-xs text-muted mb-4">
+              <p className="text-faint mb-3 text-sm">{p.description}</p>
+              <div className="text-muted mb-4 flex gap-4 text-xs">
                 <span>
                   Income:{" "}
                   <span className="text-faint">{p.keyStats.income}</span>
@@ -64,7 +64,7 @@ export default function DemoPage() {
                   activateMut.mutate({ slug: p.slug });
                 }}
                 disabled={activateMut.isPending}
-                className="w-full px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                className="w-full rounded bg-blue-600 px-3 py-2 text-sm text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
               >
                 {activating === p.slug && activateMut.isPending
                   ? "Setting up..."
@@ -83,7 +83,7 @@ export default function DemoPage() {
                 await utils.invalidate();
                 router.push("/");
               }}
-              className="text-sm text-muted hover:text-faint"
+              className="text-muted hover:text-faint text-sm"
             >
               Exit demo mode and return to real data
             </button>

@@ -49,9 +49,9 @@ export function RelocationLargePurchases({
     <>
       {/* Large purchase summary KPIs (only when purchases exist) */}
       {relocLargePurchases.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <div className="bg-orange-50 rounded-lg p-3">
-            <div className="text-xs text-muted uppercase">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+          <div className="rounded-lg bg-orange-50 p-3">
+            <div className="text-muted text-xs uppercase">
               Portfolio Hit from Purchases
               <HelpTip text="Total one-time cash withdrawn from portfolio for down payments, minus any sale proceeds" />
             </div>
@@ -60,8 +60,8 @@ export function RelocationLargePurchases({
               {formatCurrency(Math.abs(r.totalLargePurchasePortfolioHit))}
             </div>
           </div>
-          <div className="bg-orange-50 rounded-lg p-3">
-            <div className="text-xs text-muted uppercase">
+          <div className="rounded-lg bg-orange-50 p-3">
+            <div className="text-muted text-xs uppercase">
               Monthly Cost from Purchases
               <HelpTip text="Steady-state monthly loan payments + ongoing costs from all purchases" />
             </div>
@@ -69,15 +69,15 @@ export function RelocationLargePurchases({
               +{formatCurrency(r.steadyStateMonthlyFromPurchases)}/mo
             </div>
           </div>
-          <div className="bg-orange-50 rounded-lg p-3">
-            <div className="text-xs text-muted uppercase">
+          <div className="rounded-lg bg-orange-50 p-3">
+            <div className="text-muted text-xs uppercase">
               Annual from Purchases
               <HelpTip text="Total annualized cost from loan payments + ongoing costs, added to relocation expenses" />
             </div>
             <div className="text-lg font-bold text-orange-700">
               +{formatCurrency(r.steadyStateMonthlyFromPurchases * 12)}/yr
             </div>
-            <div className="text-xs text-faint">
+            <div className="text-faint text-xs">
               added to relocation expenses
             </div>
           </div>
@@ -86,8 +86,8 @@ export function RelocationLargePurchases({
 
       {/* Large purchases list + add form */}
       <div className="border-t pt-3">
-        <div className="flex items-center justify-between mb-2">
-          <h4 className="text-sm font-medium text-secondary">
+        <div className="mb-2 flex items-center justify-between">
+          <h4 className="text-secondary text-sm font-medium">
             Large Purchases
             <HelpTip text="One-time purchases tied to the relocation — home, car, furniture, etc. Cash portion is withdrawn from portfolio; financed portions add monthly payments to expenses." />
           </h4>
@@ -100,14 +100,14 @@ export function RelocationLargePurchases({
         </div>
 
         {relocLargePurchases.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-2">
+          <div className="mb-2 flex flex-wrap gap-2">
             {relocLargePurchases.map((p) => {
               const isFinanced =
                 p.downPaymentPercent !== undefined && p.downPaymentPercent < 1;
               return (
                 <div
                   key={p.id}
-                  className="flex items-center gap-1 bg-orange-50 text-orange-700 rounded px-2 py-1 text-xs"
+                  className="flex items-center gap-1 rounded bg-orange-50 px-2 py-1 text-xs text-orange-700"
                 >
                   <span className="font-medium">{p.name}</span>
                   <span>
@@ -147,13 +147,13 @@ export function RelocationLargePurchases({
         )}
 
         {showPurchaseForm && (
-          <div className="bg-surface-sunken rounded-lg p-3 mb-2 space-y-2">
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <div className="bg-surface-sunken mb-2 space-y-2 rounded-lg p-3">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               <div>
-                <label className="block text-xs text-muted">Name</label>
+                <label className="text-muted block text-xs">Name</label>
                 <input
                   type="text"
-                  className="border rounded px-2 py-1 w-full text-sm"
+                  className="w-full rounded border px-2 py-1 text-sm"
                   placeholder="e.g. New Home"
                   value={purchaseForm.name}
                   onChange={(e) =>
@@ -162,12 +162,12 @@ export function RelocationLargePurchases({
                 />
               </div>
               <div>
-                <label className="block text-xs text-muted">
+                <label className="text-muted block text-xs">
                   Purchase Price ($)
                 </label>
                 <input
                   type="number"
-                  className="border rounded px-2 py-1 w-full text-sm"
+                  className="w-full rounded border px-2 py-1 text-sm"
                   placeholder="e.g. 500000"
                   value={purchaseForm.purchasePrice}
                   onChange={(e) =>
@@ -179,12 +179,12 @@ export function RelocationLargePurchases({
                 />
               </div>
               <div>
-                <label className="block text-xs text-muted">
+                <label className="text-muted block text-xs">
                   Purchase Year
                 </label>
                 <input
                   type="number"
-                  className="border rounded px-2 py-1 w-full text-sm"
+                  className="w-full rounded border px-2 py-1 text-sm"
                   value={purchaseForm.purchaseYear}
                   onChange={(e) =>
                     setPurchaseForm((f) => ({
@@ -197,7 +197,7 @@ export function RelocationLargePurchases({
             </div>
 
             <div className="flex items-center gap-2">
-              <label className="flex items-center gap-1 text-xs text-muted cursor-pointer">
+              <label className="text-muted flex cursor-pointer items-center gap-1 text-xs">
                 <input
                   type="checkbox"
                   checked={purchaseForm.financed}
@@ -213,14 +213,14 @@ export function RelocationLargePurchases({
             </div>
 
             {purchaseForm.financed && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 <div>
-                  <label className="block text-xs text-muted">
+                  <label className="text-muted block text-xs">
                     Down Payment %
                   </label>
                   <input
                     type="number"
-                    className="border rounded px-2 py-1 w-full text-sm"
+                    className="w-full rounded border px-2 py-1 text-sm"
                     value={purchaseForm.downPaymentPercent}
                     onChange={(e) =>
                       setPurchaseForm((f) => ({
@@ -231,13 +231,13 @@ export function RelocationLargePurchases({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-muted">
+                  <label className="text-muted block text-xs">
                     Loan Rate %
                   </label>
                   <input
                     type="number"
                     step="0.1"
-                    className="border rounded px-2 py-1 w-full text-sm"
+                    className="w-full rounded border px-2 py-1 text-sm"
                     value={purchaseForm.loanRate}
                     onChange={(e) =>
                       setPurchaseForm((f) => ({
@@ -248,12 +248,12 @@ export function RelocationLargePurchases({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-muted">
+                  <label className="text-muted block text-xs">
                     Loan Term (years)
                   </label>
                   <input
                     type="number"
-                    className="border rounded px-2 py-1 w-full text-sm"
+                    className="w-full rounded border px-2 py-1 text-sm"
                     value={purchaseForm.loanTermYears}
                     onChange={(e) =>
                       setPurchaseForm((f) => ({
@@ -266,15 +266,15 @@ export function RelocationLargePurchases({
               </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <div>
-                <label className="block text-xs text-muted">
+                <label className="text-muted block text-xs">
                   Ongoing Monthly Cost ($)
                   <HelpTip text="Property tax, HOA, insurance, maintenance — any recurring monthly cost from this purchase" />
                 </label>
                 <input
                   type="number"
-                  className="border rounded px-2 py-1 w-full text-sm"
+                  className="w-full rounded border px-2 py-1 text-sm"
                   placeholder="0"
                   value={purchaseForm.ongoingMonthlyCost}
                   onChange={(e) =>
@@ -286,13 +286,13 @@ export function RelocationLargePurchases({
                 />
               </div>
               <div>
-                <label className="block text-xs text-muted">
+                <label className="text-muted block text-xs">
                   Sale Proceeds ($)
                   <HelpTip text="Net proceeds from selling an existing asset (e.g. current home equity minus closing costs). Offsets the cash outlay." />
                 </label>
                 <input
                   type="number"
-                  className="border rounded px-2 py-1 w-full text-sm"
+                  className="w-full rounded border px-2 py-1 text-sm"
                   placeholder="0"
                   value={purchaseForm.saleProceeds}
                   onChange={(e) =>

@@ -10,13 +10,13 @@ export function ReportStrategyNarrativeSection({
 }) {
   return (
     <section className="mb-6" style={{ breakInside: "avoid" }}>
-      <h2 className="text-lg font-semibold mb-2">Your Withdrawal Strategy</h2>
-      <p className="text-sm leading-relaxed mb-3">{strategy.narrative}</p>
+      <h2 className="mb-2 text-lg font-semibold">Your Withdrawal Strategy</h2>
+      <p className="mb-3 text-sm leading-relaxed">{strategy.narrative}</p>
       {strategy.highlights.length > 0 && (
-        <ul className="text-sm space-y-1">
+        <ul className="space-y-1 text-sm">
           {strategy.highlights.map((h) => (
             <li key={h.year} className="flex gap-2">
-              <span className="text-muted tabular-nums shrink-0">{h.year}</span>
+              <span className="text-muted shrink-0 tabular-nums">{h.year}</span>
               <span>{h.detail}</span>
             </li>
           ))}

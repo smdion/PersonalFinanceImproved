@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import {
   protectedProcedure,
@@ -69,18 +70,22 @@ export const onboardingProcedures = {
     .mutation(async ({ ctx, input }) => {
       const admin = await ctx.db.transaction(async (tx) => {
         if (await checkOnboardingComplete(tx)) {
-          throw new Error(
-            "Onboarding has already been completed. Use Settings to manage accounts.",
-          );
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message:
+              "Onboarding has already been completed. Use Settings to manage accounts.",
+          });
         }
         const existing = await tx
           .select({ id: schema.localAdmins.id })
           .from(schema.localAdmins)
           .limit(1);
         if (existing.length > 0) {
-          throw new Error(
-            "A local admin account already exists. Use Settings to manage accounts.",
-          );
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message:
+              "A local admin account already exists. Use Settings to manage accounts.",
+          });
         }
 
         const passwordHash = await hashPassword(input.password);

@@ -19,7 +19,7 @@ function NetWorthCardImpl() {
   if (!data)
     return (
       <Card title="Net Worth" href="/networth">
-        <p className="text-sm text-faint">
+        <p className="text-faint text-sm">
           Add a portfolio snapshot to start tracking net worth.
         </p>
       </Card>
@@ -61,14 +61,14 @@ function NetWorthCardImpl() {
       }
       href="/networth"
     >
-      <div className="flex items-center justify-between mb-1">
+      <div className="mb-1 flex items-center justify-between">
         <Metric value={formatCurrency(displayNW)} />
         <button
           onClick={(e) => {
             e.preventDefault();
             setUseMarket(!useMarket);
           }}
-          className="text-xs bg-surface-elevated hover:bg-surface-strong rounded-full px-2 py-0.5 text-muted transition-colors"
+          className="bg-surface-elevated hover:bg-surface-strong text-muted rounded-full px-2 py-0.5 text-xs transition-colors"
         >
           {useMarket ? "Market" : "Cost Basis"}
         </button>

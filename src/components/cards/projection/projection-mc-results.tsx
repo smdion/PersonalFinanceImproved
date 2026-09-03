@@ -35,7 +35,7 @@ export function McDepletionCallout({ state }: { state: ProjectionState }) {
     <div
       className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs ${isLowRisk ? "bg-surface-elevated text-muted" : "bg-red-50 text-red-700"}`}
     >
-      <span className="font-medium shrink-0">
+      <span className="shrink-0 font-medium">
         {isLowRisk ? "\u2139\uFE0F" : "\u26A0"}{" "}
         {isLowRisk
           ? `In rare scenarios (${deplPct}%), money runs out around age ${Math.round(mc.distributions.depletionAge!.median)}.`
@@ -125,7 +125,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
     <div className="space-y-3">
       {/* MC loading state is handled by the unified ProjectionLoader slim strip */}
       {mcQuery.error && (
-        <div className="text-sm text-red-500 py-4">
+        <div className="py-4 text-sm text-red-500">
           Simulation failed: {mcQuery.error.message}
         </div>
       )}
@@ -133,7 +133,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
         <>
           {/* MC warnings */}
           {mcQuery.data.result.warnings.length > 0 && (
-            <div className="text-xs text-amber-600 bg-amber-50 rounded px-3 py-2">
+            <div className="rounded bg-amber-50 px-3 py-2 text-xs text-amber-600">
               {mcQuery.data.result.warnings.map((w) => (
                 <div key={w}>{w}</div>
               ))}
@@ -236,7 +236,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
                     <div className="flex items-center gap-2">
                       <span
-                        className={`px-2 py-0.5 rounded-md font-bold uppercase tracking-wider text-caption shadow-sm ${ps.pill}`}
+                        className={`text-caption rounded-md px-2 py-0.5 font-bold tracking-wider uppercase shadow-sm ${ps.pill}`}
                       >
                         {si.presetLabel}
                       </span>
@@ -245,7 +245,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                         text={`${si.presetDescription} Every trial in this simulation draws from these same return/volatility/inflation assumptions — the withdrawal strategy below (${si.withdrawalStrategy.replace(/_/g, " ")}) only decides how much gets spent each year, not what the market does.`}
                       />
                       {si.taxMode === "advanced" && (
-                        <span className="px-1.5 py-0.5 rounded text-caption bg-orange-100 text-orange-700 font-medium inline-flex items-center">
+                        <span className="text-caption inline-flex items-center rounded bg-orange-100 px-1.5 py-0.5 font-medium text-orange-700">
                           Tax-aware
                           <HelpTip
                             maxWidth={260}
@@ -263,9 +263,9 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                         </Badge>
                       )}
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-muted">
+                    <div className="text-muted flex items-center gap-3 text-xs">
                       <div className="text-center">
-                        <div className="font-semibold tabular-nums flex items-center justify-center gap-0.5">
+                        <div className="flex items-center justify-center gap-0.5 font-semibold tabular-nums">
                           {formatPercent(si.blendedReturn, 2)}
                           <HelpTip
                             maxWidth={280}
@@ -282,7 +282,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                         <div className="text-micro text-faint">5–10%</div>
                       </div>
                       <div className="text-center">
-                        <div className="font-semibold tabular-nums flex items-center justify-center gap-0.5">
+                        <div className="flex items-center justify-center gap-0.5 font-semibold tabular-nums">
                           {formatPercent(si.blendedVol, 2)}
                           <HelpTip
                             maxWidth={280}
@@ -299,7 +299,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                         <div className="text-micro text-faint">8–16%</div>
                       </div>
                       <div className="text-center">
-                        <div className="font-semibold tabular-nums flex items-center justify-center gap-0.5">
+                        <div className="flex items-center justify-center gap-0.5 font-semibold tabular-nums">
                           {gkImpliedRate != null
                             ? formatPercent(gkImpliedRate, 2)
                             : formatPercent(si.withdrawalRate, 2)}
@@ -348,7 +348,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                       </div>
                       {firstDecumYear && (
                         <div className="text-center">
-                          <div className="font-semibold tabular-nums flex items-center justify-center gap-0.5">
+                          <div className="flex items-center justify-center gap-0.5 font-semibold tabular-nums">
                             {formatCurrency(
                               deflate(
                                 firstDecumYear.projectedExpenses,
@@ -371,7 +371,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                         </div>
                       )}
                       <div className="text-center">
-                        <div className="font-semibold tabular-nums flex items-center justify-center gap-0.5">
+                        <div className="flex items-center justify-center gap-0.5 font-semibold tabular-nums">
                           {formatPercent(si.inflationRisk.meanRate, 2)}
                           <HelpTip
                             maxWidth={280}
@@ -382,7 +382,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                         <div className="text-micro text-faint">2–3%</div>
                       </div>
                       <div className="text-center">
-                        <div className="font-semibold tabular-nums flex items-center justify-center gap-0.5">
+                        <div className="flex items-center justify-center gap-0.5 font-semibold tabular-nums">
                           {mcr.numTrials.toLocaleString()}
                           <HelpTip
                             maxWidth={280}
@@ -399,10 +399,10 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                       it, this cluster squeezes between the stat blocks
                       instead of dropping to its own clean row (live-user
                       finding, 2026-08-29). */}
-                    <div className="basis-full ml-auto lg:basis-auto flex items-center justify-end gap-3">
+                    <div className="ml-auto flex basis-full items-center justify-end gap-3 lg:basis-auto">
                       {si.computedAt && (
                         <div className="text-center">
-                          <div className="font-semibold tabular-nums text-xs whitespace-nowrap">
+                          <div className="text-xs font-semibold whitespace-nowrap tabular-nums">
                             {formatRelativeTime(si.computedAt)}
                           </div>
                           <div className="text-micro text-faint">last run</div>
@@ -412,7 +412,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                         type="button"
                         onClick={handleRerun}
                         disabled={isRerunning}
-                        className="px-3 py-1.5 rounded-md text-label font-semibold border border-subtle text-muted shadow-sm transition-colors hover:bg-surface-primary/80 disabled:opacity-50"
+                        className="text-label border-subtle text-muted hover:bg-surface-primary/80 rounded-md border px-3 py-1.5 font-semibold shadow-sm transition-colors disabled:opacity-50"
                       >
                         {isRerunning ? "Running…" : "Re-run"}
                       </button>
@@ -420,7 +420,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                         type="button"
                         onClick={handleClearCache}
                         disabled={clearProjectionCacheMutation.isPending}
-                        className="px-3 py-1.5 rounded-md text-label font-semibold border border-subtle text-muted shadow-sm transition-colors hover:bg-surface-primary/80 disabled:opacity-50"
+                        className="text-label border-subtle text-muted hover:bg-surface-primary/80 rounded-md border px-3 py-1.5 font-semibold shadow-sm transition-colors disabled:opacity-50"
                       >
                         {clearProjectionCacheMutation.isPending
                           ? "Clearing…"
@@ -429,7 +429,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                       <button
                         type="button"
                         onClick={() => setShowAssumptions(true)}
-                        className={`px-3 py-1.5 rounded-md text-label font-semibold border shadow-sm transition-colors ${ps.border} ${ps.accent} hover:bg-surface-primary/80`}
+                        className={`text-label rounded-md border px-3 py-1.5 font-semibold shadow-sm transition-colors ${ps.border} ${ps.accent} hover:bg-surface-primary/80`}
                       >
                         View Assumptions &rarr;
                       </button>
@@ -441,7 +441,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
         </>
       )}
       {!mcQuery.data?.result && !mcLoading && !mcQuery.error && (
-        <div className="text-sm text-muted py-4">
+        <div className="text-muted py-4 text-sm">
           No simulation data available. Ensure asset classes and glide path are
           configured.
         </div>

@@ -121,8 +121,8 @@ export function PoolDistributionEditor({
   return (
     <div className="space-y-4">
       {/* Pool total */}
-      <div className="flex items-center justify-between bg-surface-elevated rounded-lg px-4 py-3">
-        <span className="text-sm text-secondary font-medium">Monthly Pool</span>
+      <div className="bg-surface-elevated flex items-center justify-between rounded-lg px-4 py-3">
+        <span className="text-secondary text-sm font-medium">Monthly Pool</span>
         {poolEditable && isEditing({ kind: "pool" }) ? (
           <div className="flex items-center gap-1.5">
             <span className="text-muted">$</span>
@@ -133,7 +133,7 @@ export function PoolDistributionEditor({
               onChange={(e) => setEditValue(e.target.value)}
               onBlur={commit}
               onKeyDown={handleKeyDown}
-              className="w-28 text-right text-sm border border-blue-400 bg-surface-primary text-primary rounded px-2 py-1 tabular-nums"
+              className="bg-surface-primary text-primary w-28 rounded border border-blue-400 px-2 py-1 text-right text-sm tabular-nums"
             />
           </div>
         ) : (
@@ -143,7 +143,7 @@ export function PoolDistributionEditor({
                 ? () => startEdit({ kind: "pool" }, Math.round(pool))
                 : undefined
             }
-            className={`text-lg font-semibold tabular-nums text-primary ${
+            className={`text-primary text-lg font-semibold tabular-nums ${
               poolEditable ? "cursor-pointer hover:text-blue-500" : ""
             }`}
           >
@@ -162,24 +162,24 @@ export function PoolDistributionEditor({
           return (
             <div
               key={fund.goalId}
-              className={`rounded-lg px-4 py-3 border ${
+              className={`rounded-lg border px-4 py-3 ${
                 isDefault
-                  ? "border bg-surface-sunken"
+                  ? "bg-surface-sunken border"
                   : "border-blue-300 bg-blue-50"
               }`}
             >
               {/* Fund name + indicator */}
-              <div className="flex items-center justify-between mb-2">
+              <div className="mb-2 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div
-                    className="w-3 h-3 rounded-full shrink-0"
+                    className="h-3 w-3 shrink-0 rounded-full"
                     style={{ backgroundColor: color }}
                   />
-                  <span className="text-sm font-medium text-primary">
+                  <span className="text-primary text-sm font-medium">
                     {fund.name}
                   </span>
                   {!isDefault && (
-                    <span className="text-caption text-blue-600 font-medium">
+                    <span className="text-caption font-medium text-blue-600">
                       OVERRIDE
                     </span>
                   )}
@@ -207,7 +207,7 @@ export function PoolDistributionEditor({
                   onChange={(e) =>
                     updateFundPercent(fund.goalId, parseFloat(e.target.value))
                   }
-                  className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
+                  className="h-1.5 w-full cursor-pointer appearance-none rounded-full"
                   style={{
                     background: `linear-gradient(to right, ${color} ${pct}%, var(--slider-track, #d1d5db) ${pct}%)`,
                   }}
@@ -227,9 +227,9 @@ export function PoolDistributionEditor({
                       onBlur={commit}
                       onKeyDown={handleKeyDown}
                       step="0.1"
-                      className="w-16 text-right text-sm border border-blue-400 bg-surface-primary text-primary rounded px-2 py-1 tabular-nums"
+                      className="bg-surface-primary text-primary w-16 rounded border border-blue-400 px-2 py-1 text-right text-sm tabular-nums"
                     />
-                    <span className="text-xs text-muted">%</span>
+                    <span className="text-muted text-xs">%</span>
                   </div>
                 ) : (
                   <button
@@ -239,7 +239,7 @@ export function PoolDistributionEditor({
                         pct.toFixed(1),
                       )
                     }
-                    className="text-sm tabular-nums text-muted hover:text-secondary cursor-pointer"
+                    className="text-muted hover:text-secondary cursor-pointer text-sm tabular-nums"
                   >
                     {formatPercent(pct / 100, 1)}
                   </button>
@@ -248,7 +248,7 @@ export function PoolDistributionEditor({
                 {/* Dollar amount */}
                 {isEditing({ kind: "amount", goalId: fund.goalId }) ? (
                   <div className="flex items-center gap-1">
-                    <span className="text-xs text-muted">$</span>
+                    <span className="text-muted text-xs">$</span>
                     <input
                       type="number"
                       autoFocus
@@ -256,7 +256,7 @@ export function PoolDistributionEditor({
                       onChange={(e) => setEditValue(e.target.value)}
                       onBlur={commit}
                       onKeyDown={handleKeyDown}
-                      className="w-24 text-right text-sm border border-blue-400 bg-surface-primary text-primary rounded px-2 py-1 tabular-nums"
+                      className="bg-surface-primary text-primary w-24 rounded border border-blue-400 px-2 py-1 text-right text-sm tabular-nums"
                     />
                   </div>
                 ) : (
@@ -267,7 +267,7 @@ export function PoolDistributionEditor({
                         Math.round(fund.amount * 100) / 100,
                       )
                     }
-                    className="text-sm tabular-nums font-semibold text-primary hover:text-blue-500 cursor-pointer"
+                    className="text-primary cursor-pointer text-sm font-semibold tabular-nums hover:text-blue-500"
                   >
                     {formatCurrency(fund.amount)}
                   </button>
@@ -279,7 +279,7 @@ export function PoolDistributionEditor({
       </div>
 
       {/* Constraint bar */}
-      <div className="flex items-center justify-between bg-surface-elevated rounded-lg px-4 py-2.5">
+      <div className="bg-surface-elevated flex items-center justify-between rounded-lg px-4 py-2.5">
         <div className="flex items-center gap-2">
           <span
             className={`text-sm font-medium tabular-nums ${
@@ -295,7 +295,7 @@ export function PoolDistributionEditor({
           {isBalanced ? (
             <svg
               aria-hidden="true"
-              className="w-4 h-4 text-green-600"
+              className="h-4 w-4 text-green-600"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -320,7 +320,7 @@ export function PoolDistributionEditor({
         {(isUnderAllocated || isOverAllocated) && (
           <button
             onClick={distributeRemaining}
-            className="px-2.5 py-1 text-xs bg-surface-strong text-secondary rounded hover:bg-surface-strong"
+            className="bg-surface-strong text-secondary hover:bg-surface-strong rounded px-2.5 py-1 text-xs"
           >
             Distribute
           </button>

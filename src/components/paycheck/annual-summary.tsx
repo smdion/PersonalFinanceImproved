@@ -20,7 +20,7 @@ export function AnnualSummary({
     return (
       <div className="space-y-2">
         <SectionHeader>Year-End Estimate</SectionHeader>
-        <div className="bg-surface-sunken rounded-lg p-4 space-y-2 text-sm">
+        <div className="bg-surface-sunken space-y-2 rounded-lg p-4 text-sm">
           <div className="flex justify-between">
             <span className="text-muted">Gross</span>
             <span className="font-medium">
@@ -50,13 +50,13 @@ export function AnnualSummary({
             <span className="text-muted">Post-tax deductions</span>
             <span>{formatCurrency(blendedAnnual.postTaxDeductions)}</span>
           </div>
-          <div className="border-t pt-2 flex justify-between font-semibold">
+          <div className="flex justify-between border-t pt-2 font-semibold">
             <span>Net</span>
             <span className="text-green-700">
               {formatCurrency(blendedAnnual.netPay)}
             </span>
           </div>
-          <p className="text-xs text-faint">
+          <p className="text-faint text-xs">
             {blendedAnnual.segments
               .map(
                 (seg) =>
@@ -82,7 +82,7 @@ export function AnnualSummary({
   return (
     <div className="space-y-2">
       <SectionHeader>{label}</SectionHeader>
-      <div className="bg-surface-sunken rounded-lg p-4 space-y-2 text-sm">
+      <div className="bg-surface-sunken space-y-2 rounded-lg p-4 text-sm">
         <div className="flex justify-between">
           <span className="text-muted">Gross</span>
           <span className="font-medium">
@@ -124,13 +124,13 @@ export function AnnualSummary({
             )}
           </span>
         </div>
-        <div className="border-t pt-2 flex justify-between font-semibold">
+        <div className="flex justify-between border-t pt-2 font-semibold">
           <span>Net</span>
           <span className="text-green-700">
             {formatCurrency(paycheck.netPay * multiplier)}
           </span>
         </div>
-        <p className="text-xs text-faint">
+        <p className="text-faint text-xs">
           {multiplier} of {paycheck.periodsPerYear} periods
         </p>
       </div>

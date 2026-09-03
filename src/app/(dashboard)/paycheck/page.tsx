@@ -304,7 +304,7 @@ export default function PaycheckPage() {
     return (
       <div className="space-y-4">
         <Skeleton className="h-8 w-1/3" />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <SkeletonChart height={384} />
           <SkeletonChart height={384} />
         </div>
@@ -314,7 +314,7 @@ export default function PaycheckPage() {
 
   if (error) {
     return (
-      <p className="text-red-600 text-sm">
+      <p className="text-sm text-red-600">
         Failed to load paycheck data: {error.message}
       </p>
     );
@@ -328,7 +328,7 @@ export default function PaycheckPage() {
         subtitle={
           availableYears.length > 1 ? (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-muted">Tax Year:</span>
+              <span className="text-muted text-xs">Tax Year:</span>
               <div className="flex gap-1">
                 {availableYears.map((year) => (
                   <button
@@ -338,7 +338,7 @@ export default function PaycheckPage() {
                         year === currentYear ? undefined : year,
                       )
                     }
-                    className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
+                    className={`rounded-full px-2 py-0.5 text-xs transition-colors ${
                       (taxYearOverride ?? currentYear) === year
                         ? "bg-blue-600 text-white"
                         : "bg-surface-elevated text-muted hover:bg-surface-strong"
@@ -349,7 +349,7 @@ export default function PaycheckPage() {
                 ))}
               </div>
               {taxYearOverride && taxYearOverride !== currentYear && (
-                <span className="text-xs text-amber-600 font-medium">
+                <span className="text-xs font-medium text-amber-600">
                   Comparing {taxYearOverride} tables
                 </span>
               )}
@@ -359,9 +359,9 @@ export default function PaycheckPage() {
       >
         {salaryProfiles.length > 0 && (
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted">Salary:</span>
+            <span className="text-muted text-xs">Salary:</span>
             <select
-              className="text-xs border rounded px-2 py-1 bg-surface-primary"
+              className="bg-surface-primary rounded border px-2 py-1 text-xs"
               value={displaySalaryId ?? ""}
               onChange={(e) => setViewingSalaryId(Number(e.target.value))}
               aria-label="Salary profile"
@@ -381,9 +381,9 @@ export default function PaycheckPage() {
         )}
         {contribProfiles.length > 0 && (
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted">Contribution:</span>
+            <span className="text-muted text-xs">Contribution:</span>
             <select
-              className="text-xs border rounded px-2 py-1 bg-surface-primary"
+              className="bg-surface-primary rounded border px-2 py-1 text-xs"
               value={displayContribId ?? ""}
               onChange={(e) =>
                 setViewingContribId(
@@ -420,7 +420,7 @@ export default function PaycheckPage() {
         />
       ) : (
         <div
-          className={`grid grid-cols-1 ${views.length > 1 ? "lg:grid-cols-2" : ""} gap-6 grid-rows-[auto_auto_auto]`}
+          className={`grid grid-cols-1 ${views.length > 1 ? "lg:grid-cols-2" : ""} grid-rows-[auto_auto_auto] gap-6`}
         >
           {views.map((d) => (
             <PersonPaycheck

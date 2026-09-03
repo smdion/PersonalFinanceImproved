@@ -124,8 +124,8 @@ export function SalaryProfileManager({
   if (isLoading) {
     return (
       <div className="space-y-3">
-        <div className="animate-pulse h-16 bg-surface-elevated rounded-lg" />
-        <div className="animate-pulse h-40 bg-surface-elevated rounded-lg" />
+        <div className="bg-surface-elevated h-16 animate-pulse rounded-lg" />
+        <div className="bg-surface-elevated h-40 animate-pulse rounded-lg" />
       </div>
     );
   }
@@ -152,7 +152,7 @@ export function SalaryProfileManager({
   return (
     <div>
       {displayedProfile && !creatingNew && (
-        <div className="flex items-center justify-between bg-surface-sunken rounded-lg px-4 py-3 mb-4">
+        <div className="bg-surface-sunken mb-4 flex items-center justify-between rounded-lg px-4 py-3">
           <div className="flex items-center gap-6">
             <ProfileViewingBadge
               profileName={displayedProfile.name}
@@ -166,7 +166,7 @@ export function SalaryProfileManager({
               {displayedProfile.pinnedSalaryTotal > 0 && (
                 <div>
                   <span className="text-faint">Salary total </span>
-                  <span className="font-semibold text-secondary">
+                  <span className="text-secondary font-semibold">
                     {formatCurrency(displayedProfile.pinnedSalaryTotal)}
                     <span className="text-faint font-normal">/yr</span>
                   </span>
@@ -180,7 +180,7 @@ export function SalaryProfileManager({
 
       {deleteError && <FormError message={deleteError} />}
 
-      <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-[240px_1fr]">
         {/* Left: profile list */}
         <div className="space-y-1.5">
           <ProfileSidebarHeader
@@ -245,7 +245,7 @@ export function SalaryProfileManager({
               />
             )
           ) : (
-            <div className="text-xs text-faint">Select a profile.</div>
+            <div className="text-faint text-xs">Select a profile.</div>
           )}
         </div>
       </div>
@@ -499,16 +499,16 @@ function EntryNumberCell({
   const value = draft ?? fmt(entryDisplay(sd, field));
   return (
     <div className="flex items-center justify-end gap-1">
-      {prefix && <span className="text-xs text-faint">{prefix}</span>}
+      {prefix && <span className="text-faint text-xs">{prefix}</span>}
       <input
         type="number"
         value={value}
         onChange={(e) => onDraft(e.target.value)}
         onBlur={onCommit}
         step={FIELDS[field].step}
-        className={`${width} px-2 py-1 text-xs text-right border rounded bg-surface-primary text-primary`}
+        className={`${width} bg-surface-primary text-primary rounded border px-2 py-1 text-right text-xs`}
       />
-      {suffix && <span className="text-xs text-faint">{suffix}</span>}
+      {suffix && <span className="text-faint text-xs">{suffix}</span>}
     </div>
   );
 }
@@ -531,7 +531,7 @@ function BonusOverrideCell({
     draft ?? (sd.bonusOverride !== null ? fmt(sd.bonusOverride) : "");
   return (
     <div className="flex items-center justify-end gap-1">
-      <span className="text-xs text-faint">$</span>
+      <span className="text-faint text-xs">$</span>
       <input
         type="number"
         value={value}
@@ -539,7 +539,7 @@ function BonusOverrideCell({
         onBlur={onCommit}
         placeholder="—"
         step="1"
-        className="w-24 px-2 py-1 text-xs text-right border rounded bg-surface-primary text-primary"
+        className="bg-surface-primary text-primary w-24 rounded border px-2 py-1 text-right text-xs"
       />
     </div>
   );
@@ -549,33 +549,33 @@ function BonusOverrideCell({
 function SalaryTableHead({ editable }: { editable: boolean }) {
   return (
     <thead>
-      <tr className="border-b-2 border-strong">
-        <th className="text-left py-2 pl-4 pr-3 text-muted font-medium">
+      <tr className="border-strong border-b-2">
+        <th className="text-muted py-2 pr-3 pl-4 text-left font-medium">
           Person
         </th>
-        <th className="text-left py-2 px-3 text-muted font-medium">Employer</th>
+        <th className="text-muted px-3 py-2 text-left font-medium">Employer</th>
         <th
-          className={`text-right py-2 px-3 text-muted font-medium ${editable ? "w-32" : "w-32"}`}
+          className={`text-muted px-3 py-2 text-right font-medium ${editable ? "w-32" : "w-32"}`}
         >
           Salary
         </th>
         <th
-          className={`text-right py-2 px-3 text-muted font-medium ${editable ? "w-24" : "w-24"}`}
+          className={`text-muted px-3 py-2 text-right font-medium ${editable ? "w-24" : "w-24"}`}
         >
           Bonus %
         </th>
         <th
-          className={`text-right py-2 px-3 text-muted font-medium ${editable ? "w-24" : "w-24"}`}
+          className={`text-muted px-3 py-2 text-right font-medium ${editable ? "w-24" : "w-24"}`}
         >
           Multiplier
         </th>
-        <th className="text-right py-2 px-3 text-muted font-medium w-24">
+        <th className="text-muted w-24 px-3 py-2 text-right font-medium">
           Actual
         </th>
-        <th className="text-right py-2 px-3 text-muted font-medium w-28">
+        <th className="text-muted w-28 px-3 py-2 text-right font-medium">
           Bonus
         </th>
-        <th className="text-right py-2 pr-4 pl-3 text-muted font-medium w-32">
+        <th className="text-muted w-32 py-2 pr-4 pl-3 text-right font-medium">
           Total
         </th>
       </tr>
@@ -593,14 +593,14 @@ function rowClass(rowIdx: number) {
 function TotalsFooter({ combinedIncome }: { combinedIncome: number }) {
   return (
     <tfoot>
-      <tr className="border-t-2 border-strong">
+      <tr className="border-strong border-t-2">
         <td
           colSpan={7}
-          className="py-2 pl-4 pr-3 text-right text-muted font-medium"
+          className="text-muted py-2 pr-3 pl-4 text-right font-medium"
         >
           Household income under this profile
         </td>
-        <td className="py-2 pr-4 pl-3 text-right tabular-nums font-semibold text-primary">
+        <td className="text-primary py-2 pr-4 pl-3 text-right font-semibold tabular-nums">
           {formatCurrency(combinedIncome)}
         </td>
       </tr>
@@ -625,7 +625,7 @@ function JobPicker({
     <select
       value={sd.jobId ?? ""}
       onChange={(e) => onChange(Number(e.target.value))}
-      className="text-xs border rounded bg-surface-primary text-primary px-1 py-0.5 max-w-[10rem]"
+      className="bg-surface-primary text-primary max-w-[10rem] rounded border px-1 py-0.5 text-xs"
     >
       {rawSd.jobOptions.map((jo) => (
         <option key={jo.id} value={jo.id}>
@@ -641,10 +641,10 @@ function JobPicker({
 function DetailStat({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div className="text-micro text-faint uppercase tracking-wide">
+      <div className="text-micro text-faint tracking-wide uppercase">
         {label}
       </div>
-      <div className="text-xs text-secondary">{value}</div>
+      <div className="text-secondary text-xs">{value}</div>
     </div>
   );
 }
@@ -658,7 +658,7 @@ function DetailStat({ label, value }: { label: string; value: string }) {
  */
 function PayTaxDetailsView({ sd }: { sd: Detail }) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2">
+    <div className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4">
       <DetailStat
         label="Pay period"
         value={PAY_PERIOD_LABELS[sd.payPeriod] ?? sd.payPeriod}
@@ -741,7 +741,7 @@ function PayTaxDetailsEdit({
   onCommitBonusDayOfMonth: (sd: Detail) => void;
 }) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3">
+    <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
       <FormField label="Pay period">
         <FormSelect
           value={sd.payPeriod}
@@ -816,7 +816,7 @@ function PayTaxDetailsEdit({
           ))}
         </FormSelect>
       </FormField>
-      <label className="flex items-center gap-1.5 text-xs text-secondary self-end pb-1.5">
+      <label className="text-secondary flex items-center gap-1.5 self-end pb-1.5 text-xs">
         <input
           type="checkbox"
           checked={sd.w4Box2cChecked}
@@ -873,7 +873,7 @@ function PayTaxDetailsEdit({
           placeholder="—"
         />
       </FormField>
-      <label className="flex items-center gap-1.5 text-xs text-secondary self-end pb-1.5">
+      <label className="text-secondary flex items-center gap-1.5 self-end pb-1.5 text-xs">
         <input
           type="checkbox"
           checked={sd.include401kInBonus}
@@ -883,7 +883,7 @@ function PayTaxDetailsEdit({
         />
         401(k) on bonus
       </label>
-      <label className="flex items-center gap-1.5 text-xs text-secondary self-end pb-1.5">
+      <label className="text-secondary flex items-center gap-1.5 self-end pb-1.5 text-xs">
         <input
           type="checkbox"
           checked={sd.includeBonusInContributions}
@@ -917,7 +917,7 @@ function ProfileDetail({
 
   const cell = (sd: Detail, field: FieldKey, suffix?: string) => (
     <td
-      className={`py-1.5 px-3 text-right tabular-nums ${
+      className={`px-3 py-1.5 text-right tabular-nums ${
         sd.hasEntry ? "text-secondary" : "text-faint"
       }`}
     >
@@ -931,8 +931,8 @@ function ProfileDetail({
 
   return (
     <div className="bg-surface-sunken rounded-lg p-4">
-      <div className="flex items-center gap-2 mb-4">
-        <h3 className="text-sm font-semibold text-primary">{profile.name}</h3>
+      <div className="mb-4 flex items-center gap-2">
+        <h3 className="text-primary text-sm font-semibold">{profile.name}</h3>
         {profile.description && (
           <span className="text-caption text-faint">
             — {profile.description}
@@ -940,20 +940,20 @@ function ProfileDetail({
         )}
       </div>
 
-      <h4 className="text-label font-semibold text-muted uppercase tracking-wide mb-2">
+      <h4 className="text-label text-muted mb-2 font-semibold tracking-wide uppercase">
         Salary &amp; Bonus
       </h4>
-      <table className="w-full text-xs border-collapse">
+      <table className="w-full border-collapse text-xs">
         <SalaryTableHead editable={false} />
         <tbody>
           {profile.salaryDetails.map((sd, rowIdx) => {
             return (
               <React.Fragment key={sd.personId}>
                 <tr className={rowClass(rowIdx)}>
-                  <td className="py-1.5 pl-4 pr-3 font-medium text-secondary">
+                  <td className="text-secondary py-1.5 pr-3 pl-4 font-medium">
                     {sd.personName}
                   </td>
-                  <td className="py-1.5 px-3 text-muted">
+                  <td className="text-muted px-3 py-1.5">
                     {sd.employerName ?? "No active job"}
                     {!sd.hasEntry && sd.jobId !== null && (
                       <span className="text-caption text-faint ml-1">
@@ -965,7 +965,7 @@ function ProfileDetail({
                   {cell(sd, "bonusPercent", "%")}
                   {cell(sd, "bonusMultiplier", "×")}
                   <td
-                    className={`py-1.5 px-3 text-right tabular-nums ${
+                    className={`px-3 py-1.5 text-right tabular-nums ${
                       sd.hasEntry && sd.bonusOverride !== null
                         ? "text-amber-700"
                         : "text-faint"
@@ -976,34 +976,34 @@ function ProfileDetail({
                       : "—"}
                   </td>
                   <td
-                    className={`py-1.5 px-3 text-right tabular-nums ${
+                    className={`px-3 py-1.5 text-right tabular-nums ${
                       sd.hasEntry ? "text-secondary" : "text-faint"
                     }`}
                   >
                     {sd.hasEntry ? formatCurrency(sd.estimatedBonus) : "—"}
                   </td>
                   <td className="py-1.5 pr-4 pl-3 text-right">
-                    <span className="tabular-nums font-medium text-secondary">
+                    <span className="text-secondary font-medium tabular-nums">
                       {formatCurrency(sd.effectiveSalary + sd.estimatedBonus)}
                     </span>
                   </td>
                 </tr>
                 {sd.hasEntry && (
                   <tr className={rowClass(rowIdx)}>
-                    <td colSpan={8} className="py-3 px-4 bg-surface-sunken/60">
+                    <td colSpan={8} className="bg-surface-sunken/60 px-4 py-3">
                       <PayTaxDetailsView sd={sd} />
-                      <div className="mt-4 pt-3 border-t border-subtle/50">
-                        <h5 className="text-caption text-faint font-medium uppercase tracking-wide mb-2">
+                      <div className="border-subtle/50 mt-4 border-t pt-3">
+                        <h5 className="text-caption text-faint mb-2 font-medium tracking-wide uppercase">
                           Extra Paycheck Routing
                         </h5>
                         {!isActiveProfile ? (
-                          <p className="text-xs text-muted">
+                          <p className="text-muted text-xs">
                             Extra-paycheck routing always applies to the
                             globally-active Salary Profile. Activate this
                             profile to edit routing here.
                           </p>
                         ) : sd.jobId === null ? (
-                          <p className="text-xs text-muted">
+                          <p className="text-muted text-xs">
                             No job selected for this row.
                           </p>
                         ) : (
@@ -1062,7 +1062,7 @@ function ProfileCreatePanel({
       {error && <FormError message={error} className="mb-3" />}
 
       <div className="flex items-start justify-between gap-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1">
+        <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
           <FormField label="Name">
             <FormInput
               type="text"
@@ -1080,11 +1080,11 @@ function ProfileCreatePanel({
             />
           </FormField>
         </div>
-        <div className="flex items-center gap-2 shrink-0 pt-4">
+        <div className="flex shrink-0 items-center gap-2 pt-4">
           <button
             type="button"
             onClick={onCancel}
-            className="px-2 py-1.5 text-xs font-medium text-muted hover:text-secondary"
+            className="text-muted hover:text-secondary px-2 py-1.5 text-xs font-medium"
           >
             Cancel
           </button>
@@ -1092,7 +1092,7 @@ function ProfileCreatePanel({
             type="button"
             onClick={handleCreate}
             disabled={createMutation.isPending || !name.trim()}
-            className="px-3 py-1.5 text-xs font-medium rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+            className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
           >
             {createMutation.isPending ? "Creating…" : "Create"}
           </button>
@@ -1335,7 +1335,7 @@ function ProfileEditPanel({
     <div className="bg-surface-sunken rounded-lg p-4">
       {error && <FormError message={error} className="mb-3" />}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <FormField label="Name">
           <FormInput
             type="text"
@@ -1357,7 +1357,7 @@ function ProfileEditPanel({
 
       {details.length > 0 && (
         <div>
-          <h4 className="text-label font-semibold text-muted uppercase tracking-wide mb-2">
+          <h4 className="text-label text-muted mb-2 font-semibold tracking-wide uppercase">
             Salary &amp; Bonus
           </h4>
           <p className="text-caption text-faint mb-2">
@@ -1365,7 +1365,7 @@ function ProfileEditPanel({
             (shown as &ldquo;—&rdquo;, contributing $0) — use + Add to give it
             real numbers.
           </p>
-          <table className="w-full text-xs border-collapse">
+          <table className="w-full border-collapse text-xs">
             <SalaryTableHead editable />
             <tbody>
               {details.map((rawSd, rowIdx) => {
@@ -1404,12 +1404,12 @@ function ProfileEditPanel({
                   <React.Fragment key={rawSd.personId}>
                     <tr
                       aria-busy={isSaving}
-                      className={`${rowClass(rowIdx)} ${isSaving ? "opacity-60 pointer-events-none" : ""}`}
+                      className={`${rowClass(rowIdx)} ${isSaving ? "pointer-events-none opacity-60" : ""}`}
                     >
-                      <td className="py-1.5 pl-4 pr-3 font-medium text-secondary">
+                      <td className="text-secondary py-1.5 pr-3 pl-4 font-medium">
                         {sd.personName}
                       </td>
-                      <td className="py-1.5 px-3 text-muted">
+                      <td className="text-muted px-3 py-1.5">
                         <JobPicker
                           sd={sd}
                           rawSd={rawSd}
@@ -1423,16 +1423,16 @@ function ProfileEditPanel({
                       </td>
                       {sd.hasEntry ? (
                         <>
-                          <td className="py-1.5 px-3">
+                          <td className="px-3 py-1.5">
                             {cellFor("salary", "$")}
                           </td>
-                          <td className="py-1.5 px-3">
+                          <td className="px-3 py-1.5">
                             {cellFor("bonusPercent", undefined, "%")}
                           </td>
-                          <td className="py-1.5 px-3">
+                          <td className="px-3 py-1.5">
                             {cellFor("bonusMultiplier", undefined, "×")}
                           </td>
-                          <td className="py-1.5 px-3">
+                          <td className="px-3 py-1.5">
                             <BonusOverrideCell
                               sd={sd}
                               draft={drafts[`${sd.personId}:bonusOverride`]}
@@ -1442,12 +1442,12 @@ function ProfileEditPanel({
                               onCommit={() => commitBonusOverride(sd)}
                             />
                           </td>
-                          <td className="py-1.5 px-3 text-right tabular-nums text-secondary">
+                          <td className="text-secondary px-3 py-1.5 text-right tabular-nums">
                             {formatCurrency(sd.estimatedBonus)}
                           </td>
                           <td className="py-1.5 pr-4 pl-3 text-right">
                             <div className="flex items-center justify-end gap-2">
-                              <span className="tabular-nums font-medium text-secondary">
+                              <span className="text-secondary font-medium tabular-nums">
                                 {formatCurrency(
                                   sd.effectiveSalary + sd.estimatedBonus,
                                 )}
@@ -1456,7 +1456,7 @@ function ProfileEditPanel({
                                 type="button"
                                 onClick={() => removeEntry(sd.jobId)}
                                 title="Remove this job from the profile"
-                                className="text-caption text-faint hover:text-red-500 shrink-0"
+                                className="text-caption text-faint shrink-0 hover:text-red-500"
                               >
                                 ×
                               </button>
@@ -1466,7 +1466,7 @@ function ProfileEditPanel({
                       ) : (
                         <td
                           colSpan={6}
-                          className="py-1.5 px-3 text-right text-faint"
+                          className="text-faint px-3 py-1.5 text-right"
                         >
                           <div className="flex items-center justify-end gap-2">
                             <span>Not in this profile</span>
@@ -1486,7 +1486,7 @@ function ProfileEditPanel({
                       <tr className={rowClass(rowIdx)}>
                         <td
                           colSpan={8}
-                          className="py-3 px-4 bg-surface-sunken/60"
+                          className="bg-surface-sunken/60 px-4 py-3"
                         >
                           <PayTaxDetailsEdit
                             sd={sd}
@@ -1503,18 +1503,18 @@ function ProfileEditPanel({
                             onCommitBonusMonth={commitBonusMonth}
                             onCommitBonusDayOfMonth={commitBonusDayOfMonth}
                           />
-                          <div className="mt-4 pt-3 border-t border-subtle/50">
-                            <h5 className="text-caption text-faint font-medium uppercase tracking-wide mb-2">
+                          <div className="border-subtle/50 mt-4 border-t pt-3">
+                            <h5 className="text-caption text-faint mb-2 font-medium tracking-wide uppercase">
                               Extra Paycheck Routing
                             </h5>
                             {!isActiveProfile ? (
-                              <p className="text-xs text-muted">
+                              <p className="text-muted text-xs">
                                 Extra-paycheck routing always applies to the
                                 globally-active Salary Profile. Activate this
                                 profile to edit routing here.
                               </p>
                             ) : sd.jobId === null ? (
-                              <p className="text-xs text-muted">
+                              <p className="text-muted text-xs">
                                 No job selected for this row.
                               </p>
                             ) : (

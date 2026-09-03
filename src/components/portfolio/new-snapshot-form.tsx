@@ -275,27 +275,27 @@ export function NewSnapshotForm({
 
   if (loadingLatest || loadingPeople || loadingPerfAccounts) {
     return (
-      <p className="text-sm text-muted">Loading latest snapshot data...</p>
+      <p className="text-muted text-sm">Loading latest snapshot data...</p>
     );
   }
 
   return (
     <div className="space-y-4">
       {/* Date + notes */}
-      <div className="flex gap-4 items-end">
+      <div className="flex items-end gap-4">
         <div>
-          <label className="block text-xs font-medium text-muted mb-1">
+          <label className="text-muted mb-1 block text-xs font-medium">
             Snapshot Date
           </label>
           <input
             type="date"
             value={snapshotDate}
             onChange={(e) => setSnapshotDate(e.target.value)}
-            className="border border-strong rounded px-2 py-1 text-sm"
+            className="border-strong rounded border px-2 py-1 text-sm"
           />
         </div>
         <div className="flex-1">
-          <label className="block text-xs font-medium text-muted mb-1">
+          <label className="text-muted mb-1 block text-xs font-medium">
             Notes (optional)
           </label>
           <input
@@ -303,7 +303,7 @@ export function NewSnapshotForm({
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="e.g. Monthly snapshot"
-            className="border border-strong rounded px-2 py-1 text-sm w-full"
+            className="border-strong w-full rounded border px-2 py-1 text-sm"
           />
         </div>
       </div>
@@ -340,11 +340,11 @@ export function NewSnapshotForm({
               return (
                 <div key={institution} className="mb-4 last:mb-0">
                   {/* Institution header */}
-                  <div className="flex items-center gap-3 py-1.5 border-b-2 border-strong">
-                    <span className="flex-1 text-sm font-bold text-primary">
+                  <div className="border-strong flex items-center gap-3 border-b-2 py-1.5">
+                    <span className="text-primary flex-1 text-sm font-bold">
                       {institution}
                     </span>
-                    <span className="text-sm font-bold text-primary tabular-nums">
+                    <span className="text-primary text-sm font-bold tabular-nums">
                       {formatCurrency(instTotal)}
                     </span>
                     {instPrev > 0 && instDelta !== 0 && (
@@ -354,9 +354,9 @@ export function NewSnapshotForm({
                         }`}
                       >
                         {instDelta > 0 ? (
-                          <TrendingUp className="w-3 h-3 flex-shrink-0" />
+                          <TrendingUp className="h-3 w-3 flex-shrink-0" />
                         ) : (
-                          <TrendingDown className="w-3 h-3 flex-shrink-0" />
+                          <TrendingDown className="h-3 w-3 flex-shrink-0" />
                         )}
                         {formatCurrency(Math.abs(instDelta))}
                       </span>
@@ -375,25 +375,25 @@ export function NewSnapshotForm({
                     return (
                       <div key={group.key} className="mb-2 last:mb-0">
                         {/* Account sub-header */}
-                        <div className="flex items-center gap-3 py-1 pl-3 border-b border-strong">
-                          <span className="flex-1 text-xs font-semibold text-primary">
+                        <div className="border-strong flex items-center gap-3 border-b py-1 pl-3">
+                          <span className="text-primary flex-1 text-xs font-semibold">
                             {group.perfName}
                           </span>
-                          <span className="text-xs font-semibold text-primary tabular-nums">
+                          <span className="text-primary text-xs font-semibold tabular-nums">
                             {formatCurrency(groupTotal)}
                           </span>
                           {groupPrev > 0 && groupDelta !== 0 && (
                             <span
-                              className={`inline-flex items-center gap-0.5 text-caption font-medium tabular-nums ${
+                              className={`text-caption inline-flex items-center gap-0.5 font-medium tabular-nums ${
                                 groupDelta > 0
                                   ? "text-green-600"
                                   : "text-red-600"
                               }`}
                             >
                               {groupDelta > 0 ? (
-                                <TrendingUp className="w-3 h-3 flex-shrink-0" />
+                                <TrendingUp className="h-3 w-3 flex-shrink-0" />
                               ) : (
-                                <TrendingDown className="w-3 h-3 flex-shrink-0" />
+                                <TrendingDown className="h-3 w-3 flex-shrink-0" />
                               )}
                               {formatCurrency(Math.abs(groupDelta))}
                             </span>
@@ -408,26 +408,26 @@ export function NewSnapshotForm({
                           return (
                             <div
                               key={row.key}
-                              className="flex items-center gap-3 py-1.5 pl-6 border-b border-subtle"
+                              className="border-subtle flex items-center gap-3 border-b py-1.5 pl-6"
                             >
-                              <span className="flex-1 text-xs text-muted">
+                              <span className="text-muted flex-1 text-xs">
                                 {row.subLabel}
                                 {row.isClosedAccount && (
-                                  <span className="ml-1.5 text-micro px-1 py-0.5 rounded bg-surface-strong text-muted font-semibold">
+                                  <span className="text-micro bg-surface-strong text-muted ml-1.5 rounded px-1 py-0.5 font-semibold">
                                     CLOSED
                                   </span>
                                 )}
                               </span>
                               <div className="flex flex-col items-end gap-0.5">
                                 <div
-                                  className={`flex items-center border border-default rounded focus-within:ring-1 focus-within:ring-blue-500 ${row.isClosedAccount ? "opacity-50" : ""}`}
+                                  className={`border-default flex items-center rounded border focus-within:ring-1 focus-within:ring-blue-500 ${row.isClosedAccount ? "opacity-50" : ""}`}
                                   title={
                                     row.isClosedAccount
                                       ? "This account is closed — its balance is always recorded as $0"
                                       : undefined
                                   }
                                 >
-                                  <span className="pl-1.5 text-xs text-muted select-none">
+                                  <span className="text-muted pl-1.5 text-xs select-none">
                                     $
                                   </span>
                                   <input
@@ -442,12 +442,12 @@ export function NewSnapshotForm({
                                         e.target.value,
                                       )
                                     }
-                                    className="w-28 bg-transparent px-1 py-0.5 text-xs text-right text-primary focus:outline-none disabled:cursor-not-allowed"
+                                    className="text-primary focus-visible:ring-offset-surface-primary w-28 rounded bg-transparent px-1 py-0.5 text-right text-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1 disabled:cursor-not-allowed"
                                   />
                                 </div>
                                 {row.isClosedAccount ? null : row.previousAmount ===
                                   0 ? (
-                                  <span className="text-caption px-1 py-0.5 rounded bg-surface-sunken text-faint font-medium">
+                                  <span className="text-caption bg-surface-sunken text-faint rounded px-1 py-0.5 font-medium">
                                     new
                                   </span>
                                 ) : changed ? (
@@ -468,7 +468,7 @@ export function NewSnapshotForm({
           );
         })()}
         {/* Total */}
-        <div className="flex items-center gap-3 py-2 border-t-2 border-strong mt-2">
+        <div className="border-strong mt-2 flex items-center gap-3 border-t-2 py-2">
           <span className="flex-1 text-sm font-semibold">Total</span>
           <span className="text-sm font-bold tabular-nums">
             {formatCurrency(newTotal)}
@@ -480,9 +480,9 @@ export function NewSnapshotForm({
               }`}
             >
               {totalDelta > 0 ? (
-                <TrendingUp className="w-3 h-3 flex-shrink-0" />
+                <TrendingUp className="h-3 w-3 flex-shrink-0" />
               ) : (
-                <TrendingDown className="w-3 h-3 flex-shrink-0" />
+                <TrendingDown className="h-3 w-3 flex-shrink-0" />
               )}
               {formatCurrency(Math.abs(totalDelta))}
             </span>
@@ -496,7 +496,7 @@ export function NewSnapshotForm({
         <button
           type="button"
           onClick={onClose}
-          className="px-3 py-1.5 text-sm text-muted hover:text-primary border border-strong rounded"
+          className="text-muted hover:text-primary border-strong rounded border px-3 py-1.5 text-sm"
         >
           Cancel
         </button>
@@ -504,7 +504,7 @@ export function NewSnapshotForm({
           type="button"
           onClick={handleSave}
           disabled={createMutation.isPending || currentRows.length === 0}
-          className="px-4 py-1.5 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded disabled:opacity-50"
+          className="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
         >
           {createMutation.isPending ? "Saving..." : "Save Snapshot"}
         </button>

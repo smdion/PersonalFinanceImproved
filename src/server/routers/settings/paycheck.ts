@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { TRPCError } from "@trpc/server";
 import { eq, asc, and } from "drizzle-orm";
 import {
   createTRPCRouter,
@@ -304,9 +305,11 @@ export const paycheckProcedures = {
           .from(schema.jobs)
           .where(eq(schema.jobs.id, input.id));
         if (existing[0]?.isSpeculative) {
-          throw new Error(
-            "Cannot delete the speculative job — it's a permanent peg for Salary Profile what-if scenarios.",
-          );
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message:
+              "Cannot delete the speculative job — it's a permanent peg for Salary Profile what-if scenarios.",
+          });
         }
         await ctx.db.delete(schema.jobs).where(eq(schema.jobs.id, input.id));
         await materializeExtraPaycheckSavings(ctx.db);
@@ -409,9 +412,10 @@ export const paycheckProcedures = {
         ) {
           const cfg = getAccountTypeConfig(data.accountType as AccountCategory);
           if (!cfg.supportsPriorYearContrib) {
-            throw new Error(
-              `Prior-year contributions are not supported for ${data.accountType} accounts`,
-            );
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Prior-year contributions are not supported for ${data.accountType} accounts`,
+            });
           }
         }
 
@@ -483,12 +487,17 @@ export const paycheckProcedures = {
           .select({ accountType: schema.contributionAccounts.accountType })
           .from(schema.contributionAccounts)
           .where(eq(schema.contributionAccounts.id, input.id));
-        if (!row) throw new Error("Contribution account not found");
+        if (!row)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Contribution account not found",
+          });
         const cfg = getAccountTypeConfig(row.accountType as AccountCategory);
         if (!cfg.supportsPriorYearContrib) {
-          throw new Error(
-            `Prior-year contributions are not supported for ${row.accountType} accounts`,
-          );
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Prior-year contributions are not supported for ${row.accountType} accounts`,
+          });
         }
         const priorYear = new Date().getFullYear() - 1;
         return ctx.db

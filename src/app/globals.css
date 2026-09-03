@@ -692,6 +692,18 @@ th {
   .projection-table thead {
     display: table-header-group; /* repeat column headers on every printed page */
   }
+
+  /* Force a light color scheme for print regardless of the user's theme.
+     A dark-mode user otherwise prints a dark page — heavy on toner and
+     usually illegible on paper. */
+  :root {
+    color-scheme: light;
+  }
+  html,
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
 }
 
 /* WCAG 2.3.3 — Respect user's reduced-motion preference (v0.5 expert-review M11).

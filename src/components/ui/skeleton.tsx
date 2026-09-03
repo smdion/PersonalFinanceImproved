@@ -13,7 +13,7 @@ type SkeletonProps = {
 export function Skeleton({ className = "h-4 w-full" }: SkeletonProps) {
   return (
     <div
-      className={`animate-pulse bg-surface-strong rounded ${className}`}
+      className={`bg-surface-strong animate-pulse rounded ${className}`}
       aria-hidden="true"
     />
   );
@@ -23,8 +23,8 @@ export function Skeleton({ className = "h-4 w-full" }: SkeletonProps) {
 export function SkeletonMetric({ className = "" }: SkeletonProps) {
   return (
     <div className={`space-y-2 ${className}`} aria-hidden="true">
-      <div className="animate-pulse h-8 bg-surface-strong rounded w-1/2" />
-      <div className="animate-pulse h-4 bg-surface-elevated rounded w-3/4" />
+      <div className="bg-surface-strong h-8 w-1/2 animate-pulse rounded" />
+      <div className="bg-surface-elevated h-4 w-3/4 animate-pulse rounded" />
     </div>
   );
 }
@@ -47,7 +47,7 @@ export function SkeletonTable({
           <div
             // eslint-disable-next-line react/no-array-index-key -- skeleton placeholders
             key={i}
-            className="animate-pulse h-6 bg-surface-strong rounded flex-1"
+            className="bg-surface-strong h-6 flex-1 animate-pulse rounded"
           />
         ))}
       </div>
@@ -59,7 +59,7 @@ export function SkeletonTable({
             <div
               // eslint-disable-next-line react/no-array-index-key -- skeleton placeholders
               key={j}
-              className="animate-pulse h-8 bg-surface-elevated rounded flex-1"
+              className="bg-surface-elevated h-8 flex-1 animate-pulse rounded"
             />
           ))}
         </div>
@@ -78,7 +78,7 @@ export function SkeletonChart({
 }) {
   return (
     <div
-      className={`animate-pulse bg-surface-elevated rounded ${className}`}
+      className={`bg-surface-elevated animate-pulse rounded ${className}`}
       style={{ height }}
       aria-hidden="true"
     />

@@ -94,10 +94,10 @@ export function PushPreviewModal({
       <div
         role="alertdialog"
         aria-modal="true"
-        className="bg-surface-primary rounded-lg shadow-xl border p-5 max-w-lg w-full mx-4 max-h-[80vh] flex flex-col"
+        className="bg-surface-primary mx-4 flex max-h-[80vh] w-full max-w-lg flex-col rounded-lg border p-5 shadow-xl"
       >
-        <h3 className="text-sm font-semibold text-primary mb-1">{title}</h3>
-        <p className="text-xs text-muted mb-3">
+        <h3 className="text-primary mb-1 text-sm font-semibold">{title}</h3>
+        <p className="text-muted mb-3 text-xs">
           {changed.length === 0
             ? isRecalculate
               ? "No changes — all goals already match the live calculation."
@@ -118,7 +118,7 @@ export function PushPreviewModal({
         </p>
 
         {direction === "push" && staleItems.length > 0 && (
-          <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-2 py-1.5 mb-3">
+          <p className="mb-3 rounded border border-amber-200 bg-amber-50 px-2 py-1.5 text-xs text-amber-600">
             ⚠ {staleItems.length} percentage-based goal
             {staleItems.length !== 1 ? "s" : ""} below{" "}
             {staleItems.length !== 1 ? "don't" : "doesn't"} match current income
@@ -127,20 +127,20 @@ export function PushPreviewModal({
           </p>
         )}
 
-        <div className="overflow-auto flex-1 mb-4">
+        <div className="mb-4 flex-1 overflow-auto">
           {changed.length > 0 && (
             <table className="w-full text-xs">
               <thead>
-                <tr className="text-left text-muted border-b">
+                <tr className="text-muted border-b text-left">
                   <th className="py-1.5 pr-2 font-medium">Item</th>
                   <th className="py-1.5 pr-2 font-medium">Field</th>
-                  <th className="py-1.5 pr-2 font-medium text-right">
+                  <th className="py-1.5 pr-2 text-right font-medium">
                     {beforeColumnLabel}
                   </th>
-                  <th className="py-1.5 pr-2 font-medium text-right">
+                  <th className="py-1.5 pr-2 text-right font-medium">
                     New Value
                   </th>
-                  <th className="py-1.5 font-medium text-right">Change</th>
+                  <th className="py-1.5 text-right font-medium">Change</th>
                 </tr>
               </thead>
               <tbody>
@@ -149,10 +149,10 @@ export function PushPreviewModal({
                   return (
                     <tr
                       key={`${item.name}-${item.field}`}
-                      className="border-b border-subtle"
+                      className="border-subtle border-b"
                     >
                       <td
-                        className="py-1.5 pr-2 text-secondary truncate max-w-[140px]"
+                        className="text-secondary max-w-[140px] truncate py-1.5 pr-2"
                         title={item.name}
                       >
                         {item.name}
@@ -165,15 +165,15 @@ export function PushPreviewModal({
                           </span>
                         )}
                       </td>
-                      <td className="py-1.5 pr-2 text-muted">{item.field}</td>
-                      <td className="py-1.5 pr-2 text-right tabular-nums text-muted">
+                      <td className="text-muted py-1.5 pr-2">{item.field}</td>
+                      <td className="text-muted py-1.5 pr-2 text-right tabular-nums">
                         {formatValue(item.currentYnab)}
                       </td>
-                      <td className="py-1.5 pr-2 text-right tabular-nums font-medium text-primary">
+                      <td className="text-primary py-1.5 pr-2 text-right font-medium tabular-nums">
                         {formatValue(item.newValue)}
                       </td>
                       <td
-                        className={`py-1.5 text-right tabular-nums font-medium ${delta >= 0 ? "text-green-600" : "text-red-600"}`}
+                        className={`py-1.5 text-right font-medium tabular-nums ${delta >= 0 ? "text-green-600" : "text-red-600"}`}
                       >
                         {delta >= 0 ? "+" : ""}
                         {formatValue(delta)}

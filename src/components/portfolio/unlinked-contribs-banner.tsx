@@ -63,13 +63,13 @@ export function UnlinkedContribsBanner({
   if (unlinkedContribs.length === 0) return null;
 
   return (
-    <div className="bg-amber-50 border border-amber-300 rounded-lg p-3 mt-3 text-sm">
+    <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm">
       <p className="font-medium text-amber-800">
         {unlinkedContribs.length} contribution
         {unlinkedContribs.length > 1 ? "s" : ""} not linked to a portfolio
         account
       </p>
-      <p className="text-amber-700 text-xs mt-1">
+      <p className="mt-1 text-xs text-amber-700">
         Unlinked contributions are excluded from retirement projections.
       </p>
       <div className="mt-2 space-y-1.5">
@@ -88,7 +88,7 @@ export function UnlinkedContribsBanner({
               pa.ownerPersonId === c.personId || pa.ownerPersonId === null,
           );
           return (
-            <div key={c.id} className="flex items-center gap-2 flex-wrap">
+            <div key={c.id} className="flex flex-wrap items-center gap-2">
               <select
                 value={c.ownership === "joint" ? "joint" : String(c.personId)}
                 onChange={(e) => {
@@ -106,7 +106,7 @@ export function UnlinkedContribsBanner({
                   }
                 }}
                 disabled={!admin}
-                className="border border-amber-300 rounded px-1 py-0.5 text-xs bg-surface-primary text-amber-800"
+                className="bg-surface-primary rounded border border-amber-300 px-1 py-0.5 text-xs text-amber-800"
               >
                 {personOptions.map((po) => (
                   <option key={po.value} value={po.value}>
@@ -114,7 +114,7 @@ export function UnlinkedContribsBanner({
                   </option>
                 ))}
               </select>
-              <span className="text-amber-800 text-xs">
+              <span className="text-xs text-amber-800">
                 {taxLabel} {acctType}
                 {matchDetail} ({employer})
               </span>
@@ -125,7 +125,7 @@ export function UnlinkedContribsBanner({
                   if (val) onLinkContrib(c.id, parseInt(val, 10));
                 }}
                 disabled={!admin}
-                className="border border-amber-300 rounded px-1.5 py-0.5 text-xs bg-surface-primary"
+                className="bg-surface-primary rounded border border-amber-300 px-1.5 py-0.5 text-xs"
               >
                 <option value="">Link to...</option>
                 {compatibleAccounts.map((pa) => {

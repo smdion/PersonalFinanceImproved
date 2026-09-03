@@ -89,7 +89,7 @@ export default function HousePage() {
     return (
       <div className="space-y-4">
         <Skeleton className="h-8 w-1/3" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {[1, 2, 3].map((i) => (
             <SkeletonChart key={i} height={112} />
           ))}
@@ -130,9 +130,9 @@ export default function HousePage() {
           subtitle="Home value, mortgage summary, property taxes, and improvements"
         />
         <Card>
-          <div className="text-center py-12">
+          <div className="py-12 text-center">
             <p className="text-muted">No house data yet</p>
-            <p className="text-sm text-faint mt-2">
+            <p className="text-faint mt-2 text-sm">
               Add a mortgage on the{" "}
               <Link
                 href="/liabilities"
@@ -156,7 +156,7 @@ export default function HousePage() {
       />
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card
           title={
             <>
@@ -227,7 +227,7 @@ export default function HousePage() {
             </Link>
           }
         >
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+          <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
             <div>
               <div className="text-muted">Loan</div>
               <div className="font-medium">{activeLoan.name}</div>
@@ -284,7 +284,7 @@ export default function HousePage() {
           </div>
           {loanResult.apiBalance != null &&
             loanResult.calculatedBalance != null && (
-              <div className="mt-3 p-2 bg-blue-50 rounded text-xs text-blue-700">
+              <div className="mt-3 rounded bg-blue-50 p-2 text-xs text-blue-700">
                 YNAB balance: {formatCurrency(loanResult.apiBalance)} |
                 Calculated: {formatCurrency(loanResult.calculatedBalance)} |
                 Diff:{" "}
@@ -305,19 +305,19 @@ export default function HousePage() {
           <span className="inline-flex items-center gap-2">
             <button
               onClick={() => setTaxLocked((l) => !l)}
-              className="p-1 text-faint hover:text-primary transition-colors"
+              className="text-faint hover:text-primary p-1 transition-colors"
               title={taxLocked ? "Unlock to edit" : "Lock editing"}
             >
               {taxLocked ? (
-                <Lock className="w-3.5 h-3.5" />
+                <Lock className="h-3.5 w-3.5" />
               ) : (
-                <LockOpen className="w-3.5 h-3.5" />
+                <LockOpen className="h-3.5 w-3.5" />
               )}
             </button>
             {loanId && !taxLocked && (
               <button
                 onClick={() => setAddingTax((p) => !p)}
-                className="px-2 py-1 text-caption font-medium rounded bg-surface-elevated text-muted hover:bg-surface-strong transition-colors"
+                className="text-caption bg-surface-elevated text-muted hover:bg-surface-strong rounded px-2 py-1 font-medium transition-colors"
               >
                 {addingTax ? "Cancel" : "+ Add"}
               </button>
@@ -326,12 +326,12 @@ export default function HousePage() {
         }
       >
         {addingTax && loanId && (
-          <div className="flex items-center gap-2 py-2 border-b mb-2">
+          <div className="mb-2 flex items-center gap-2 border-b py-2">
             <input
               type="number"
               value={taxYear}
               onChange={(e) => setTaxYear(e.target.value)}
-              className="w-16 px-2 py-1 text-xs border border-strong rounded bg-surface-primary focus:outline-none focus:ring-1 focus:ring-blue-300"
+              className="border-strong bg-surface-primary w-16 rounded border px-2 py-1 text-xs focus:ring-1 focus:ring-blue-300 focus:outline-none"
               placeholder="Year"
             />
             <input
@@ -339,14 +339,14 @@ export default function HousePage() {
               value={taxAssessed}
               onChange={(e) => setTaxAssessed(e.target.value)}
               placeholder="Assessed Value"
-              className="w-28 px-2 py-1 text-xs border border-strong rounded bg-surface-primary focus:outline-none focus:ring-1 focus:ring-blue-300"
+              className="border-strong bg-surface-primary w-28 rounded border px-2 py-1 text-xs focus:ring-1 focus:ring-blue-300 focus:outline-none"
             />
             <input
               type="number"
               value={taxAmount}
               onChange={(e) => setTaxAmount(e.target.value)}
               placeholder="Tax Amount"
-              className="w-24 px-2 py-1 text-xs border border-strong rounded bg-surface-primary focus:outline-none focus:ring-1 focus:ring-blue-300"
+              className="border-strong bg-surface-primary w-24 rounded border px-2 py-1 text-xs focus:ring-1 focus:ring-blue-300 focus:outline-none"
               autoFocus
             />
             <input
@@ -354,7 +354,7 @@ export default function HousePage() {
               value={taxNote}
               onChange={(e) => setTaxNote(e.target.value)}
               placeholder="Note"
-              className="flex-1 px-2 py-1 text-xs border border-strong rounded bg-surface-primary focus:outline-none focus:ring-1 focus:ring-blue-300"
+              className="border-strong bg-surface-primary flex-1 rounded border px-2 py-1 text-xs focus:ring-1 focus:ring-blue-300 focus:outline-none"
             />
             <Button
               size="xs"
@@ -377,7 +377,7 @@ export default function HousePage() {
         )}
 
         {!propTaxes || propTaxes.length === 0 ? (
-          <p className="text-sm text-faint">
+          <p className="text-faint text-sm">
             {loanId
               ? "No property tax records yet."
               : "No active mortgage loan."}
@@ -385,13 +385,13 @@ export default function HousePage() {
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-muted border-b">
+              <tr className="text-muted border-b text-left">
                 <th className="py-1 font-medium">Year</th>
-                <th className="py-1 font-medium text-right">Assessed Value</th>
-                <th className="py-1 font-medium text-right">Tax Amount</th>
-                <th className="py-1 font-medium text-right">Eff. Rate</th>
+                <th className="py-1 text-right font-medium">Assessed Value</th>
+                <th className="py-1 text-right font-medium">Tax Amount</th>
+                <th className="py-1 text-right font-medium">Eff. Rate</th>
                 <th className="py-1 font-medium">Note</th>
-                <th className="py-1 w-8" />
+                <th className="w-8 py-1" />
               </tr>
             </thead>
             <tbody>
@@ -399,7 +399,7 @@ export default function HousePage() {
                 editingTax === pt.id ? (
                   <tr
                     key={pt.id}
-                    className="border-b border-subtle bg-blue-50/30"
+                    className="border-subtle border-b bg-blue-50/30"
                   >
                     <td className="py-1.5 font-medium">{pt.year}</td>
                     <td className="py-1.5 text-right">
@@ -409,7 +409,7 @@ export default function HousePage() {
                         onChange={(e) =>
                           setTaxDraft("assessed", e.target.value)
                         }
-                        className="w-28 px-2 py-0.5 text-xs text-right border border-strong rounded bg-surface-primary focus:outline-none focus:ring-1 focus:ring-blue-300"
+                        className="border-strong bg-surface-primary w-28 rounded border px-2 py-0.5 text-right text-xs focus:ring-1 focus:ring-blue-300 focus:outline-none"
                         placeholder="Assessed Value"
                       />
                     </td>
@@ -418,7 +418,7 @@ export default function HousePage() {
                         type="number"
                         value={taxDraft.amount ?? ""}
                         onChange={(e) => setTaxDraft("amount", e.target.value)}
-                        className="w-24 px-2 py-0.5 text-xs text-right border border-strong rounded bg-surface-primary focus:outline-none focus:ring-1 focus:ring-blue-300"
+                        className="border-strong bg-surface-primary w-24 rounded border px-2 py-0.5 text-right text-xs focus:ring-1 focus:ring-blue-300 focus:outline-none"
                         autoFocus
                       />
                     </td>
@@ -428,7 +428,7 @@ export default function HousePage() {
                         type="text"
                         value={taxDraft.note ?? ""}
                         onChange={(e) => setTaxDraft("note", e.target.value)}
-                        className="w-full px-2 py-0.5 text-xs border border-strong rounded bg-surface-primary focus:outline-none focus:ring-1 focus:ring-blue-300"
+                        className="border-strong bg-surface-primary w-full rounded border px-2 py-0.5 text-xs focus:ring-1 focus:ring-blue-300 focus:outline-none"
                         placeholder="Note"
                       />
                     </td>
@@ -455,7 +455,7 @@ export default function HousePage() {
                       </Button>
                       <button
                         onClick={() => setEditingTax(null)}
-                        className="ml-1 px-1.5 py-0.5 text-caption font-medium rounded bg-surface-elevated text-muted hover:bg-surface-strong transition-colors"
+                        className="text-caption bg-surface-elevated text-muted hover:bg-surface-strong ml-1 rounded px-1.5 py-0.5 font-medium transition-colors"
                       >
                         Cancel
                       </button>
@@ -464,7 +464,7 @@ export default function HousePage() {
                 ) : (
                   <tr
                     key={pt.id}
-                    className={`group border-b border-subtle hover:bg-surface-sunken ${taxLocked ? "" : "cursor-pointer"}`}
+                    className={`group border-subtle hover:bg-surface-sunken border-b ${taxLocked ? "" : "cursor-pointer"}`}
                     onClick={() => {
                       if (taxLocked) return;
                       setEditingTax(pt.id);
@@ -484,10 +484,10 @@ export default function HousePage() {
                         ? formatCurrency(pt.assessedValue)
                         : "—"}
                     </td>
-                    <td className="py-1.5 text-right tabular-nums font-medium">
+                    <td className="py-1.5 text-right font-medium tabular-nums">
                       {formatCurrency(pt.taxAmount)}
                     </td>
-                    <td className="py-1.5 text-right tabular-nums text-muted">
+                    <td className="text-muted py-1.5 text-right tabular-nums">
                       {pt.assessedValue != null && pt.assessedValue > 0
                         ? formatPercent(
                             safeDivide(pt.taxAmount, pt.assessedValue, 0)!,
@@ -495,7 +495,7 @@ export default function HousePage() {
                           )
                         : "—"}
                     </td>
-                    <td className="py-1.5 text-muted text-xs truncate max-w-[120px]">
+                    <td className="text-muted max-w-[120px] truncate py-1.5 text-xs">
                       {pt.note ?? ""}
                     </td>
                     <td className="py-1.5">
@@ -505,12 +505,12 @@ export default function HousePage() {
                             e.stopPropagation();
                             deleteTaxMutation.mutate({ id: pt.id });
                           }}
-                          className="md:opacity-0 md:group-hover:opacity-100 p-0.5 text-faint hover:text-red-600 transition-all"
+                          className="text-faint p-0.5 transition-all hover:text-red-600 md:opacity-0 md:group-hover:opacity-100"
                           title="Delete"
                         >
                           <svg
                             aria-hidden="true"
-                            className="w-3.5 h-3.5"
+                            className="h-3.5 w-3.5"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -539,7 +539,7 @@ export default function HousePage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium">Utilities</p>
-              <p className="text-sm text-faint">
+              <p className="text-faint text-sm">
                 Gas, water &amp; electric cost and usage history
               </p>
             </div>
@@ -555,7 +555,7 @@ export default function HousePage() {
         title={
           <>
             Home Improvements{" "}
-            <span className="text-xs font-normal text-faint ml-1">
+            <span className="text-faint ml-1 text-xs font-normal">
               ({formatCurrency(hiTotal)} total)
             </span>
           </>
@@ -563,19 +563,19 @@ export default function HousePage() {
         headerRight={
           <button
             onClick={() => setAddingHI((p) => !p)}
-            className="px-2 py-1 text-caption font-medium rounded bg-surface-elevated text-muted hover:bg-surface-strong transition-colors"
+            className="text-caption bg-surface-elevated text-muted hover:bg-surface-strong rounded px-2 py-1 font-medium transition-colors"
           >
             {addingHI ? "Cancel" : "+ Add"}
           </button>
         }
       >
         {addingHI && (
-          <div className="flex items-center gap-2 py-2 border-b mb-2">
+          <div className="mb-2 flex items-center gap-2 border-b py-2">
             <input
               type="number"
               value={newHIYear}
               onChange={(e) => setNewHIYear(e.target.value)}
-              className="w-16 px-2 py-1 text-xs border border-strong rounded bg-surface-primary focus:outline-none focus:ring-1 focus:ring-blue-300"
+              className="border-strong bg-surface-primary w-16 rounded border px-2 py-1 text-xs focus:ring-1 focus:ring-blue-300 focus:outline-none"
               placeholder="Year"
             />
             <input
@@ -583,7 +583,7 @@ export default function HousePage() {
               value={newHIDesc}
               onChange={(e) => setNewHIDesc(e.target.value)}
               placeholder="Description"
-              className="flex-1 px-2 py-1 text-xs border border-strong rounded bg-surface-primary focus:outline-none focus:ring-1 focus:ring-blue-300"
+              className="border-strong bg-surface-primary flex-1 rounded border px-2 py-1 text-xs focus:ring-1 focus:ring-blue-300 focus:outline-none"
               autoFocus
             />
             <input
@@ -591,7 +591,7 @@ export default function HousePage() {
               value={newHICost}
               onChange={(e) => setNewHICost(e.target.value)}
               placeholder="Cost"
-              className="w-24 px-2 py-1 text-xs border border-strong rounded bg-surface-primary focus:outline-none focus:ring-1 focus:ring-blue-300"
+              className="border-strong bg-surface-primary w-24 rounded border px-2 py-1 text-xs focus:ring-1 focus:ring-blue-300 focus:outline-none"
             />
             <Button
               size="xs"
@@ -612,33 +612,33 @@ export default function HousePage() {
         )}
 
         {hiYears.length === 0 ? (
-          <p className="text-sm text-faint">No home improvements recorded.</p>
+          <p className="text-faint text-sm">No home improvements recorded.</p>
         ) : (
           hiYears.map((year) => {
             const items = hiByYear.get(year) ?? [];
             return (
               <div key={year}>
-                <div className="text-xs font-medium text-faint mt-3 mb-1 first:mt-0">
+                <div className="text-faint mt-3 mb-1 text-xs font-medium first:mt-0">
                   {year}
                 </div>
                 {items.map((hi) =>
                   editingHI === hi.id ? (
                     <div
                       key={hi.id}
-                      className="flex items-center gap-2 py-1 border-b border-subtle pl-3 bg-blue-50/30"
+                      className="border-subtle flex items-center gap-2 border-b bg-blue-50/30 py-1 pl-3"
                     >
                       <input
                         type="text"
                         value={hiDraft.desc ?? ""}
                         onChange={(e) => setHIDraft("desc", e.target.value)}
-                        className="flex-1 px-2 py-0.5 text-xs border border-strong rounded bg-surface-primary focus:outline-none focus:ring-1 focus:ring-blue-300"
+                        className="border-strong bg-surface-primary flex-1 rounded border px-2 py-0.5 text-xs focus:ring-1 focus:ring-blue-300 focus:outline-none"
                         autoFocus
                       />
                       <input
                         type="number"
                         value={hiDraft.cost ?? ""}
                         onChange={(e) => setHIDraft("cost", e.target.value)}
-                        className="w-24 px-2 py-0.5 text-xs text-right border border-strong rounded bg-surface-primary focus:outline-none focus:ring-1 focus:ring-blue-300"
+                        className="border-strong bg-surface-primary w-24 rounded border px-2 py-0.5 text-right text-xs focus:ring-1 focus:ring-blue-300 focus:outline-none"
                       />
                       <Button
                         size="xs"
@@ -659,7 +659,7 @@ export default function HousePage() {
                       </Button>
                       <button
                         onClick={() => setEditingHI(null)}
-                        className="px-1.5 py-0.5 text-caption font-medium rounded bg-surface-elevated text-muted hover:bg-surface-strong transition-colors"
+                        className="text-caption bg-surface-elevated text-muted hover:bg-surface-strong rounded px-1.5 py-0.5 font-medium transition-colors"
                       >
                         Cancel
                       </button>
@@ -667,14 +667,14 @@ export default function HousePage() {
                   ) : (
                     <div
                       key={hi.id}
-                      className="group flex justify-between items-center py-1 border-b border-subtle pl-3 cursor-pointer"
+                      className="group border-subtle flex cursor-pointer items-center justify-between border-b py-1 pl-3"
                       onClick={() => {
                         setEditingHI(hi.id);
                         setHIDraft("desc", hi.description);
                         setHIDraft("cost", String(hi.cost));
                       }}
                     >
-                      <div className="flex-1 min-w-0">
+                      <div className="min-w-0 flex-1">
                         <span className="text-muted">{hi.description}</span>
                         {hi.note && (
                           <p className="text-caption text-faint truncate">
@@ -691,12 +691,12 @@ export default function HousePage() {
                             e.stopPropagation();
                             deleteHIMutation.mutate({ id: hi.id });
                           }}
-                          className="md:opacity-0 md:group-hover:opacity-100 p-0.5 text-faint hover:text-red-600 transition-all"
+                          className="text-faint p-0.5 transition-all hover:text-red-600 md:opacity-0 md:group-hover:opacity-100"
                           title="Delete"
                         >
                           <svg
                             aria-hidden="true"
-                            className="w-3.5 h-3.5"
+                            className="h-3.5 w-3.5"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"

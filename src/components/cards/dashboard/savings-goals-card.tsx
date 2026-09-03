@@ -217,12 +217,12 @@ function SavingsGoalsCardImpl() {
   return (
     <Card title="Savings Goals" href="/savings">
       {efund && efund.monthsCovered !== null && (
-        <div className="mb-3 pb-3 border-b border-subtle">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-medium text-muted uppercase tracking-wide">
+        <div className="border-subtle mb-3 border-b pb-3">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-muted text-xs font-medium tracking-wide uppercase">
               Income Replacement
             </p>
-            <div className="flex bg-surface-elevated rounded p-0.5">
+            <div className="bg-surface-elevated flex rounded p-0.5">
               {budgetTierLabels.map((label: string, idx: number) => (
                 <button
                   key={label}
@@ -230,9 +230,9 @@ function SavingsGoalsCardImpl() {
                     e.preventDefault();
                     setEfundBudgetColumn(idx);
                   }}
-                  className={`px-2 py-0.5 text-caption rounded transition-colors ${
+                  className={`text-caption rounded px-2 py-0.5 transition-colors ${
                     efundTierIndex === idx
-                      ? "bg-surface-primary text-primary shadow-sm font-medium"
+                      ? "bg-surface-primary text-primary font-medium shadow-sm"
                       : "text-muted hover:text-secondary"
                   }`}
                 >
@@ -345,10 +345,10 @@ function SavingsGoalsCardImpl() {
                   : "bg-red-500";
             return (
               <div key={g.goalId}>
-                <div className="flex justify-between text-sm items-center">
+                <div className="flex items-center justify-between text-sm">
                   <span className="text-muted flex items-center gap-1.5">
                     <span
-                      className={`inline-block w-2 h-2 rounded-full ${dotColor}`}
+                      className={`inline-block h-2 w-2 rounded-full ${dotColor}`}
                     />
                     {g.name}
                   </span>
@@ -356,20 +356,20 @@ function SavingsGoalsCardImpl() {
                     {formatCurrency(g.current)}
                   </span>
                 </div>
-                <div className="flex justify-between items-start">
+                <div className="flex items-start justify-between">
                   {status?.kind === "on-track" ? (
                     <span className="text-caption text-green-600">
                       {formatCurrency(status.totalPlanned!)} planned
                     </span>
                   ) : status?.kind === "shortfall" && status.shortfalls ? (
-                    <div className="text-caption text-red-600 space-y-0.5">
+                    <div className="text-caption space-y-0.5 text-red-600">
                       {status.shortfalls.slice(0, 3).map((s) => (
                         <div key={s.month}>
                           <span>
                             -{formatCurrency(s.amount)} in {s.month}
                           </span>
                           {s.descriptions.length > 0 && (
-                            <span className="text-red-400 ml-1">
+                            <span className="ml-1 text-red-400">
                               ({s.descriptions.join(", ")})
                             </span>
                           )}
@@ -406,7 +406,7 @@ function SavingsGoalsCardImpl() {
             );
           })}
       </div>
-      <div className="mt-3 pt-3 border-t border-subtle flex justify-between text-sm">
+      <div className="border-subtle mt-3 flex justify-between border-t pt-3 text-sm">
         <span className="text-muted">Monthly pool</span>
         <span className="text-primary font-medium">
           {formatCurrency(sumBy(savings.goals, (g) => g.monthlyAllocation))}

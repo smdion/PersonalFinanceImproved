@@ -195,7 +195,7 @@ export function UpdatePerformanceForm({
   const snapshotDate = latestSnap?.snapshot?.snapshotDate ?? null;
 
   if (loadingSnap) {
-    return <p className="text-sm text-muted">Loading snapshot data...</p>;
+    return <p className="text-muted text-sm">Loading snapshot data...</p>;
   }
 
   return (
@@ -203,7 +203,7 @@ export function UpdatePerformanceForm({
       {/* Ending balance source toggle */}
       <div className="flex items-center gap-4 text-sm">
         <span className="text-muted font-medium">Ending Balance Source:</span>
-        <label className="flex items-center gap-1.5 cursor-pointer">
+        <label className="flex cursor-pointer items-center gap-1.5">
           <input
             type="radio"
             name="endingBalanceSource"
@@ -218,7 +218,7 @@ export function UpdatePerformanceForm({
             )}
           </span>
         </label>
-        <label className="flex items-center gap-1.5 cursor-pointer">
+        <label className="flex cursor-pointer items-center gap-1.5">
           <input
             type="radio"
             name="endingBalanceSource"
@@ -242,8 +242,8 @@ export function UpdatePerformanceForm({
         return (
           <div key={institution} className="mb-2">
             {/* Institution header */}
-            <div className="flex items-baseline justify-between border-b-2 border-strong pb-1.5 mb-3">
-              <span className="text-sm font-semibold text-primary">
+            <div className="border-strong mb-3 flex items-baseline justify-between border-b-2 pb-1.5">
+              <span className="text-primary text-sm font-semibold">
                 {institution}
               </span>
               <span
@@ -270,7 +270,7 @@ export function UpdatePerformanceForm({
       })}
 
       {/* Total */}
-      <div className="flex items-baseline justify-between border-t-2 border-strong pt-2">
+      <div className="border-strong flex items-baseline justify-between border-t-2 pt-2">
         <span className="font-semibold">Total Gain/Loss</span>
         <span
           className={`font-bold ${totalGainLoss >= 0 ? "text-green-600" : "text-red-600"}`}
@@ -285,7 +285,7 @@ export function UpdatePerformanceForm({
         <button
           type="button"
           onClick={onClose}
-          className="px-3 py-1.5 text-sm text-muted hover:text-primary border border-strong rounded"
+          className="text-muted hover:text-primary border-strong rounded border px-3 py-1.5 text-sm"
         >
           Cancel
         </button>
@@ -293,7 +293,7 @@ export function UpdatePerformanceForm({
           type="button"
           onClick={handleSave}
           disabled={batchMutation.isPending || currentRows.length === 0}
-          className="px-4 py-1.5 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded disabled:opacity-50"
+          className="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
         >
           {batchMutation.isPending ? "Saving..." : "Save Update"}
         </button>
@@ -358,18 +358,18 @@ function AccountFormRow({
   );
 
   return (
-    <div className="mb-3 last:mb-0 pb-3 last:pb-0 border-b border-subtle last:border-b-0">
+    <div className="border-subtle mb-3 border-b pb-3 last:mb-0 last:border-b-0 last:pb-0">
       {/* Account name */}
-      <div className="flex items-center gap-2 mb-2">
-        <span className="w-0.5 h-4 rounded-full bg-blue-500 flex-shrink-0" />
-        <span className="text-sm font-semibold text-primary">
+      <div className="mb-2 flex items-center gap-2">
+        <span className="h-4 w-0.5 flex-shrink-0 rounded-full bg-blue-500" />
+        <span className="text-primary text-sm font-semibold">
           {row.displayName}
         </span>
         {displayCfg.hasPurchasePeriodCalculator && !showCalculator && (
           <button
             type="button"
             onClick={() => setShowCalculator(true)}
-            className="text-caption text-teal-600 hover:text-teal-800 ml-auto"
+            className="text-caption ml-auto text-teal-600 hover:text-teal-800"
           >
             ESPP Calculator
           </button>
@@ -385,7 +385,7 @@ function AccountFormRow({
       )}
 
       {/* Flow fields — one row */}
-      <div className="grid grid-cols-5 gap-2 mb-1">
+      <div className="mb-1 grid grid-cols-5 gap-2">
         <CompactCurrencyField
           label="Employee Contrib"
           value={row.employeeContrib}
@@ -420,7 +420,7 @@ function AccountFormRow({
       {/* Total contributions read-only display */}
       <div className="text-caption text-muted mb-2">
         Total Contributions:{" "}
-        <span className="font-medium text-primary">
+        <span className="text-primary font-medium">
           {formatCurrency(
             (parseFloat(row.employeeContrib) || 0) +
               (parseFloat(row.employerContributions) || 0),
@@ -432,7 +432,7 @@ function AccountFormRow({
       <div className="flex items-center gap-4 text-sm">
         {/* Ending balance */}
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-muted">Ending Bal:</span>
+          <span className="text-muted text-xs">Ending Bal:</span>
           {endingBalanceSource === "snapshot" &&
           row.snapshotEndingBalance !== null ? (
             <span className="text-xs font-medium">
@@ -446,8 +446,8 @@ function AccountFormRow({
           ) : endingBalanceSource === "snapshot" &&
             row.snapshotEndingBalance === null ? (
             <span className="flex items-center gap-1.5">
-              <div className="flex items-center border border-default rounded focus-within:ring-1 focus-within:ring-blue-500">
-                <span className="pl-1.5 text-xs text-muted select-none">$</span>
+              <div className="border-default flex items-center rounded border focus-within:ring-1 focus-within:ring-blue-500">
+                <span className="text-muted pl-1.5 text-xs select-none">$</span>
                 <input
                   type="number"
                   step="0.01"
@@ -455,14 +455,14 @@ function AccountFormRow({
                   onChange={(e) =>
                     onFieldChange(id, "endingBalance", e.target.value)
                   }
-                  className="w-24 bg-transparent px-1 py-0.5 text-xs text-right text-primary focus:outline-none"
+                  className="text-primary focus-visible:ring-offset-surface-primary w-24 rounded bg-transparent px-1 py-0.5 text-right text-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1"
                 />
               </div>
               <span className="text-caption text-amber-600">(no snapshot)</span>
             </span>
           ) : (
-            <div className="flex items-center border border-default rounded focus-within:ring-1 focus-within:ring-blue-500">
-              <span className="pl-1.5 text-xs text-muted select-none">$</span>
+            <div className="border-default flex items-center rounded border focus-within:ring-1 focus-within:ring-blue-500">
+              <span className="text-muted pl-1.5 text-xs select-none">$</span>
               <input
                 type="number"
                 step="0.01"
@@ -470,7 +470,7 @@ function AccountFormRow({
                 onChange={(e) =>
                   onFieldChange(id, "endingBalance", e.target.value)
                 }
-                className="w-24 bg-transparent px-1 py-0.5 text-xs text-right text-primary focus:outline-none"
+                className="text-primary focus-visible:ring-offset-surface-primary w-24 rounded bg-transparent px-1 py-0.5 text-right text-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1"
               />
             </div>
           )}
@@ -483,11 +483,11 @@ function AccountFormRow({
 
         {/* Gain/loss */}
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-muted">Gain/Loss:</span>
+          <span className="text-muted text-xs">Gain/Loss:</span>
           {row.gainLossOverride ? (
             <>
-              <div className="flex items-center border border-default rounded focus-within:ring-1 focus-within:ring-blue-500">
-                <span className="pl-1.5 text-xs text-muted select-none">$</span>
+              <div className="border-default flex items-center rounded border focus-within:ring-1 focus-within:ring-blue-500">
+                <span className="text-muted pl-1.5 text-xs select-none">$</span>
                 <input
                   type="number"
                   step="0.01"
@@ -495,7 +495,7 @@ function AccountFormRow({
                   onChange={(e) =>
                     onFieldChange(id, "yearlyGainLoss", e.target.value)
                   }
-                  className="w-24 bg-transparent px-1 py-0.5 text-xs text-right text-primary focus:outline-none"
+                  className="text-primary focus-visible:ring-offset-surface-primary w-24 rounded bg-transparent px-1 py-0.5 text-right text-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1"
                 />
               </div>
               <span className="text-caption text-amber-600 italic">manual</span>
@@ -529,7 +529,7 @@ function AccountFormRow({
               >
                 <svg
                   aria-hidden="true"
-                  className="w-3.5 h-3.5"
+                  className="h-3.5 w-3.5"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -578,19 +578,19 @@ function CompactCurrencyField({
 
   return (
     <div>
-      <label className="block text-caption font-medium text-muted mb-0.5">
+      <label className="text-caption text-muted mb-0.5 block font-medium">
         {label}
       </label>
       <div
-        className={`flex items-center border border-default rounded focus-within:ring-1 focus-within:ring-blue-500 transition-opacity${isZero ? " opacity-40 focus-within:opacity-100" : ""}`}
+        className={`border-default flex items-center rounded border focus-within:ring-1 focus-within:ring-blue-500 transition-opacity${isZero ? "opacity-40 focus-within:opacity-100" : ""}`}
       >
-        <span className="pl-1.5 text-xs text-muted select-none">$</span>
+        <span className="text-muted pl-1.5 text-xs select-none">$</span>
         <input
           type="number"
           step="0.01"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="flex-1 min-w-0 bg-transparent px-1 py-0.5 text-xs text-right text-primary focus:outline-none"
+          className="text-primary focus-visible:ring-offset-surface-primary min-w-0 flex-1 rounded bg-transparent px-1 py-0.5 text-right text-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1"
         />
       </div>
       {changed && originalValue !== 0 && (

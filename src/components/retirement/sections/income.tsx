@@ -85,13 +85,13 @@ export function IncomeSection({
 }: Props) {
   return (
     <div>
-      <div className="flex items-center gap-2 mb-2">
-        <h4 className="text-label font-semibold text-muted uppercase tracking-wider">
+      <div className="mb-2 flex items-center gap-2">
+        <h4 className="text-label text-muted font-semibold tracking-wider uppercase">
           Income
         </h4>
         <div className="flex-1 border-t" />
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
+      <div className="grid grid-cols-1 gap-x-4 gap-y-2 text-sm sm:grid-cols-2">
         <div>
           <span className="text-muted">
             Household Salary
@@ -113,13 +113,13 @@ export function IncomeSection({
                     </span>
                   ))}
                 >
-                  <span className="cursor-help underline decoration-dotted decoration-faint underline-offset-2">
+                  <span className="decoration-faint cursor-help underline decoration-dotted underline-offset-2">
                     {value}
                   </span>
                 </Tooltip>
               );
             })()}
-            <span className="text-caption text-faint font-normal ml-1">
+            <span className="text-caption text-faint ml-1 font-normal">
               from jobs
             </span>
           </div>
@@ -203,7 +203,7 @@ export function IncomeSection({
           </span>
           <div className="font-medium">
             <select
-              className="text-sm border rounded px-2 py-1 bg-surface-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-surface-primary w-full rounded border px-2 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50"
               value={salaryProfileId ?? ""}
               disabled={isSalaryPinned}
               onChange={(e) =>
@@ -219,7 +219,7 @@ export function IncomeSection({
               ))}
             </select>
             {isSalaryPinned && (
-              <div className="text-caption text-amber-600 mt-0.5">
+              <div className="text-caption mt-0.5 text-amber-600">
                 Active via Plan{pinnedPlanName ? ` "${pinnedPlanName}"` : ""} —
                 clear the Plan to change this here.
               </div>
@@ -233,7 +233,7 @@ export function IncomeSection({
           </span>
           <div className="font-medium">
             <select
-              className="text-sm border rounded px-2 py-1 bg-surface-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-surface-primary w-full rounded border px-2 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50"
               value={contribProfileId ?? ""}
               disabled={isContribPinned}
               onChange={(e) =>
@@ -249,7 +249,7 @@ export function IncomeSection({
               ))}
             </select>
             {isContribPinned && (
-              <div className="text-caption text-amber-600 mt-0.5">
+              <div className="text-caption mt-0.5 text-amber-600">
                 Active via Plan{pinnedPlanName ? ` "${pinnedPlanName}"` : ""} —
                 clear the Plan to change this here.
               </div>

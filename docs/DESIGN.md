@@ -171,6 +171,7 @@ Helpers: `taxTypeColor()`, `taxTypeTextColor()`, `taxTypeLabel()`
 
 - Account types and tax treatments use distinct hue families — no overlap
 - Generic UI badges (BG, PC, etc.) use indigo or gray to avoid collision
+- **Contrast floor (WCAG 1.4.11):** a data-carrying chart stroke or its legend swatch must clear 3:1 against the card background (and against any fill it's drawn over) in **both** themes. A single `CHART_COLORS` hex often can't — see `chartLinePalette(dark)` in `colors.ts` for the theme-aware escape hatch (mirrors `trajectoryChartPalette`). Decorative reference/zero lines are exempt.
 - Account type colors are derived from `ACCOUNT_TYPE_CONFIG` — adding a new account type with a `colors` block automatically wires it up in `colors.ts`
 - **Portfolio scope:** "All accounts" = every account from the latest balance snapshot. "Retirement accounts" = only accounts with `parentCategory = 'Retirement'`. Retirement ⊂ Portfolio.
 - **Data freshness:** A global sidebar indicator shows when balance and performance data were last updated. Individual pages do not duplicate this information.
@@ -601,7 +602,7 @@ if (isLoading)
   );
 if (error)
   return (
-    <p className="text-red-600 text-sm">Failed to load: {error.message}</p>
+    <p className="text-sm text-red-600">Failed to load: {error.message}</p>
   );
 ```
 

@@ -18,7 +18,7 @@ const FundMiniChart = dynamic(
   {
     loading: () => (
       <div
-        className="h-20 w-full bg-surface-sunken/40 rounded animate-pulse"
+        className="bg-surface-sunken/40 h-20 w-full animate-pulse rounded"
         aria-hidden="true"
       />
     ),
@@ -315,7 +315,7 @@ export function FundCard({
           e.stopPropagation();
           setShowMenu(!showMenu);
         }}
-        className="text-faint hover:text-secondary text-sm px-1.5 py-0.5 rounded transition-colors"
+        className="text-faint hover:text-secondary rounded px-1.5 py-0.5 text-sm transition-colors"
         title="Actions"
       >
         &#8943;
@@ -329,7 +329,7 @@ export function FundCard({
               setShowMenu(false);
             }}
           />
-          <div className="absolute right-0 top-full mt-1 z-20 bg-surface-primary border rounded-md shadow-lg py-1 min-w-[130px]">
+          <div className="bg-surface-primary absolute top-full right-0 z-20 mt-1 min-w-[130px] rounded-md border py-1 shadow-lg">
             {onLinkToApi && !rawGoal.isApiSyncEnabled && (
               <button
                 onClick={(e) => {
@@ -337,7 +337,7 @@ export function FundCard({
                   setShowMenu(false);
                   onLinkToApi(rawGoal.id);
                 }}
-                className="block w-full text-left px-3 py-1 text-xs text-blue-600 hover:bg-surface-elevated transition-colors"
+                className="hover:bg-surface-elevated block w-full px-3 py-1 text-left text-xs text-blue-600 transition-colors"
               >
                 Link to API
               </button>
@@ -349,7 +349,7 @@ export function FundCard({
                   setShowMenu(false);
                   onUnlinkFromApi(rawGoal.id);
                 }}
-                className="block w-full text-left px-3 py-1 text-xs text-faint hover:bg-surface-elevated transition-colors"
+                className="text-faint hover:bg-surface-elevated block w-full px-3 py-1 text-left text-xs transition-colors"
               >
                 Unlink API
               </button>
@@ -361,7 +361,7 @@ export function FundCard({
                   setShowMenu(false);
                   onGoalUpdate(projection.goalId, "targetMode", "fixed");
                 }}
-                className="block w-full text-left px-3 py-1 text-xs text-secondary hover:bg-surface-elevated transition-colors"
+                className="text-secondary hover:bg-surface-elevated block w-full px-3 py-1 text-left text-xs transition-colors"
               >
                 Set Fixed Target
               </button>
@@ -381,7 +381,7 @@ export function FundCard({
                     onGoalUpdate(projection.goalId, "targetMode", "ongoing");
                   }
                 }}
-                className="block w-full text-left px-3 py-1 text-xs text-secondary hover:bg-surface-elevated transition-colors"
+                className="text-secondary hover:bg-surface-elevated block w-full px-3 py-1 text-left text-xs transition-colors"
               >
                 Set Ongoing
               </button>
@@ -401,7 +401,7 @@ export function FundCard({
                       allocationPercent: null,
                     });
                   }}
-                  className="block w-full text-left px-3 py-1 text-xs text-secondary hover:bg-surface-elevated transition-colors"
+                  className="text-secondary hover:bg-surface-elevated block w-full px-3 py-1 text-left text-xs transition-colors"
                 >
                   Set as Bucket
                 </button>
@@ -418,7 +418,7 @@ export function FundCard({
                   )
                     onConvertToBudgetItem(rawGoal.id, projection.name);
                 }}
-                className="block w-full text-left px-3 py-1 text-xs text-amber-600 hover:bg-surface-elevated transition-colors"
+                className="hover:bg-surface-elevated block w-full px-3 py-1 text-left text-xs text-amber-600 transition-colors"
               >
                 → Budget Item
               </button>
@@ -430,7 +430,7 @@ export function FundCard({
                 if (await confirm(`Delete "${projection.name}"?`))
                   onDeleteGoal({ id: rawGoal.id });
               }}
-              className="block w-full text-left px-3 py-1 text-xs text-red-600 hover:bg-surface-elevated transition-colors"
+              className="hover:bg-surface-elevated block w-full px-3 py-1 text-left text-xs text-red-600 transition-colors"
             >
               Delete Fund
             </button>
@@ -443,11 +443,11 @@ export function FundCard({
   return (
     <div
       id={`fund-card-${projection.goalId}`}
-      className="bg-surface-elevated rounded-lg border shadow-sm hover:shadow-md transition-shadow"
+      className="bg-surface-elevated rounded-lg border shadow-sm transition-shadow hover:shadow-md"
     >
       {/* ── Compact summary row (always visible) ── */}
       <div
-        className="w-full flex items-center gap-3 px-3 py-2.5 cursor-pointer select-none"
+        className="flex w-full cursor-pointer items-center gap-3 px-3 py-2.5 select-none"
         onClick={() => setCollapsed(!collapsed)}
         role="button"
         tabIndex={0}
@@ -458,30 +458,30 @@ export function FundCard({
         {/* Chevron + color dot */}
         <span className="text-faint shrink-0">
           {collapsed ? (
-            <ChevronRight className="w-3.5 h-3.5" />
+            <ChevronRight className="h-3.5 w-3.5" />
           ) : (
-            <ChevronDown className="w-3.5 h-3.5" />
+            <ChevronDown className="h-3.5 w-3.5" />
           )}
         </span>
         <span
-          className="w-2.5 h-2.5 rounded-full shrink-0"
+          className="h-2.5 w-2.5 shrink-0 rounded-full"
           style={{ backgroundColor: fundColor }}
         />
 
         {/* Name — left zone, takes available space */}
-        <span className="font-semibold text-sm text-primary truncate flex-1 min-w-0">
+        <span className="text-primary min-w-0 flex-1 truncate text-sm font-semibold">
           {projection.name}
         </span>
 
         {/* Status — fixed width column, colored text only */}
         <span
-          className={`text-label font-medium w-[110px] text-right shrink-0 ${status.color}`}
+          className={`text-label w-[110px] shrink-0 text-right font-medium ${status.color}`}
         >
           {status.label}
         </span>
 
         {/* Balance — fixed width column; e-fund shows still-needed instead of raw balance */}
-        <span className="text-sm font-bold tabular-nums w-[108px] text-right shrink-0 text-primary">
+        <span className="text-primary w-[108px] shrink-0 text-right text-sm font-bold tabular-nums">
           {rawGoal.isEmergencyFund && efundResult
             ? efundResult.neededAfterRepay <= 0
               ? "Fully funded"
@@ -491,7 +491,7 @@ export function FundCard({
 
         {/* Monthly — fixed width column, muted when $0 */}
         <span
-          className={`text-xs font-semibold tabular-nums w-[80px] text-right shrink-0 ${
+          className={`w-[80px] shrink-0 text-right text-xs font-semibold tabular-nums ${
             projection.monthlyAllocation > 0 ? "text-green-600" : "text-muted"
           }`}
         >
@@ -499,26 +499,26 @@ export function FundCard({
         </span>
 
         {/* Menu — fixed-width slot so all rows have identical right padding */}
-        <div className="w-6 shrink-0 flex justify-center">{menuDropdown}</div>
+        <div className="flex w-6 shrink-0 justify-center">{menuDropdown}</div>
       </div>
 
       {/* ── Expanded body ── */}
       {!collapsed && (
-        <div className="px-4 pb-4 pt-1 border-t">
+        <div className="border-t px-4 pt-1 pb-4">
           {/* ── API sync panel (when linked) ── */}
           {apiBalance && rawGoal.isApiSyncEnabled && (
-            <div className="mb-2 mt-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-blue-600 font-medium">
+            <div className="mt-2 mb-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2">
+              <div className="mb-1 flex items-center justify-between text-xs">
+                <span className="font-medium text-blue-600">
                   {rawGoal.apiCategoryName}
                 </span>
               </div>
-              <div className="space-y-0.5 text-label">
+              <div className="text-label space-y-0.5">
                 <div className="flex items-center justify-between">
                   <span className="text-blue-500/70">
                     ↓ Balance from {serviceLabel}
                   </span>
-                  <span className="text-blue-300 font-semibold tabular-nums">
+                  <span className="font-semibold text-blue-300 tabular-nums">
                     {formatCurrency(apiBalance.balance)}
                   </span>
                 </div>
@@ -543,9 +543,9 @@ export function FundCard({
           )}
 
           {/* ── Goal progress: the main story ── */}
-          <div className="mb-3 mt-3 bg-surface-sunken rounded-lg p-3 border border-subtle/50">
+          <div className="bg-surface-sunken border-subtle/50 mt-3 mb-3 rounded-lg border p-3">
             {/* Balance + upcoming info */}
-            <div className="flex items-baseline justify-between mb-2">
+            <div className="mb-2 flex items-baseline justify-between">
               <div className="flex items-baseline gap-2">
                 {rawGoal.isEmergencyFund && efundResult ? (
                   <>
@@ -553,7 +553,7 @@ export function FundCard({
                       <div className="text-caption text-faint mb-0.5">
                         still needed
                       </div>
-                      <span className="text-3xl font-extrabold text-primary tabular-nums">
+                      <span className="text-primary text-3xl font-extrabold tabular-nums">
                         {efundResult.neededAfterRepay <= 0
                           ? "Fully funded"
                           : formatCurrency(efundResult.neededAfterRepay)}
@@ -571,7 +571,7 @@ export function FundCard({
                   </>
                 ) : (
                   <>
-                    <span className="text-3xl font-extrabold text-primary tabular-nums">
+                    <span className="text-primary text-3xl font-extrabold tabular-nums">
                       {formatCurrency(savingsGoal.current)}
                     </span>
                     {rawGoal.targetMode === "fixed" && (
@@ -625,7 +625,7 @@ export function FundCard({
                   if (upcomingExpenses > 0) {
                     return (
                       <div>
-                        <div className="text-xs text-muted tabular-nums">
+                        <div className="text-muted text-xs tabular-nums">
                           {formatCurrency(upcomingExpenses)} planned
                         </div>
                         <div className="text-caption text-muted">
@@ -643,7 +643,7 @@ export function FundCard({
             {savingsGoal.target > 0 &&
               (rawGoal.targetMode === "fixed" || rawGoal.isEmergencyFund) && (
                 <div className="relative">
-                  <div className="h-3 bg-surface-strong rounded-full overflow-hidden">
+                  <div className="bg-surface-strong h-3 overflow-hidden rounded-full">
                     <div
                       className={`h-full rounded-full transition-all ${
                         progress >= 1 ? "bg-green-500" : "bg-blue-500"
@@ -651,11 +651,11 @@ export function FundCard({
                       style={{ width: `${Math.min(100, progress * 100)}%` }}
                     />
                   </div>
-                  <div className="flex items-center justify-between mt-1">
-                    <span className="text-xs font-semibold text-muted tabular-nums">
+                  <div className="mt-1 flex items-center justify-between">
+                    <span className="text-muted text-xs font-semibold tabular-nums">
                       {progressPct}%
                     </span>
-                    <span className="text-xs text-muted">
+                    <span className="text-muted text-xs">
                       {rawGoal.isEmergencyFund && efundResult
                         ? efundResult.neededAfterRepay <= 0
                           ? "Fully funded"
@@ -668,8 +668,8 @@ export function FundCard({
 
             {/* Target date — fixed goals only */}
             {rawGoal.targetMode === "fixed" && !rawGoal.isEmergencyFund && (
-              <div className="flex items-center gap-2 mt-2">
-                <span className="text-xs text-muted">Target date</span>
+              <div className="mt-2 flex items-center gap-2">
+                <span className="text-muted text-xs">Target date</span>
                 {canEdit !== false ? (
                   <input
                     type="date"
@@ -681,11 +681,11 @@ export function FundCard({
                         e.target.value || "",
                       )
                     }
-                    className="bg-transparent border-b border-strong text-xs text-secondary px-1 py-0.5 focus:border-blue-500 focus:outline-none"
+                    className="border-strong text-secondary border-b bg-transparent px-1 py-0.5 text-xs focus:border-blue-500 focus:outline-none"
                   />
                 ) : (
                   rawGoal.targetDate && (
-                    <span className="text-xs text-secondary">
+                    <span className="text-secondary text-xs">
                       {formatDate(
                         new Date(rawGoal.targetDate + "T00:00:00"),
                         "short",
@@ -694,14 +694,14 @@ export function FundCard({
                   )
                 )}
                 {!rawGoal.targetDate && canEdit === false && (
-                  <span className="text-xs text-muted italic">not set</span>
+                  <span className="text-muted text-xs italic">not set</span>
                 )}
               </div>
             )}
 
             {/* Monthly contribution — inline editable */}
-            <div className="flex items-center gap-2 mt-2.5 pt-2 border-t border-subtle/50">
-              <span className="text-xs text-muted">Saving</span>
+            <div className="border-subtle/50 mt-2.5 flex items-center gap-2 border-t pt-2">
+              <span className="text-muted text-xs">Saving</span>
               {canEdit !== false ? (
                 <InlineEdit
                   value={String(projection.monthlyAllocation)}
@@ -743,7 +743,7 @@ export function FundCard({
                     <button
                       onClick={onLockInAllocationPercent}
                       disabled={lockInAllocationPercentPending}
-                      className="text-caption text-blue-600 hover:text-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="text-caption text-blue-600 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                       title="Keep this goal's dollar amount as-is; just update its % to reflect current income"
                     >
                       {lockInAllocationPercentPending
@@ -755,7 +755,7 @@ export function FundCard({
                     <button
                       onClick={onRecalculateAllocation}
                       disabled={recalculateAllocationPending}
-                      className="text-caption text-blue-600 hover:text-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="text-caption text-blue-600 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                       title={`Recompute this goal's dollar amount from its ${rawGoal.allocationPercent}% allocation and current income`}
                     >
                       {recalculateAllocationPending
@@ -822,7 +822,7 @@ export function FundCard({
           {/* ── Sub-Goals ── */}
           {childGoals.length > 0 && (
             <div className="mt-3 border-t pt-2">
-              <p className="text-caption text-muted uppercase tracking-wide mb-1.5">
+              <p className="text-caption text-muted mb-1.5 tracking-wide uppercase">
                 Goals in this fund
               </p>
               <div className="space-y-2">
@@ -838,9 +838,9 @@ export function FundCard({
                   );
                   return (
                     <div key={child.id} className="flex items-center gap-2">
-                      <div className="flex-1 min-w-0">
+                      <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between text-xs">
-                          <span className="font-medium text-secondary truncate">
+                          <span className="text-secondary truncate font-medium">
                             {child.name}
                           </span>
                           <div className="flex items-center gap-1.5">
@@ -859,7 +859,7 @@ export function FundCard({
                                         : child.id,
                                     )
                                   }
-                                  className="text-xs text-blue-600 hover:text-blue-700 transition-colors"
+                                  className="text-xs text-blue-600 transition-colors hover:text-blue-700"
                                   title="Move to another fund"
                                 >
                                   &#8596;
@@ -871,7 +871,7 @@ export function FundCard({
                                   if (await confirm(`Delete "${child.name}"?`))
                                     onDeleteGoal({ id: child.id });
                                 }}
-                                className="text-xs text-faint hover:text-red-600 transition-colors"
+                                className="text-faint text-xs transition-colors hover:text-red-600"
                                 title="Delete goal"
                               >
                                 &times;
@@ -879,7 +879,7 @@ export function FundCard({
                             )}
                           </div>
                         </div>
-                        <div className="w-full bg-surface-strong rounded-full h-1.5 mt-0.5">
+                        <div className="bg-surface-strong mt-0.5 h-1.5 w-full rounded-full">
                           <div
                             className={`h-1.5 rounded-full ${childProgress >= 1 ? "bg-green-500" : "bg-indigo-400"}`}
                             style={{ width: `${childProgress * 100}%` }}
@@ -888,9 +888,9 @@ export function FundCard({
                         {reassigningChildId === child.id &&
                           onUpdateParent &&
                           availableParents && (
-                            <div className="flex items-center gap-1 mt-1">
+                            <div className="mt-1 flex items-center gap-1">
                               <select
-                                className="border border-default bg-surface-primary text-primary rounded px-1.5 py-0.5 text-xs flex-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                className="border-default bg-surface-primary text-primary flex-1 rounded border px-1.5 py-0.5 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
                                 defaultValue=""
                                 onChange={(e) => {
                                   const val = e.target.value;
@@ -918,7 +918,7 @@ export function FundCard({
                               </select>
                               <button
                                 onClick={() => setReassigningChildId(null)}
-                                className="text-xs text-blue-600 hover:text-blue-700 transition-colors"
+                                className="text-xs text-blue-600 transition-colors hover:text-blue-700"
                               >
                                 Cancel
                               </button>
@@ -936,7 +936,7 @@ export function FundCard({
           {canEdit !== false && !rawGoal.isEmergencyFund && (
             <div className="mt-2">
               {addingSubGoalForFund === rawGoal.id ? (
-                <div className="flex items-center gap-2 mt-1">
+                <div className="mt-1 flex items-center gap-2">
                   <input
                     type="text"
                     value={newFund.name}
@@ -948,7 +948,7 @@ export function FundCard({
                       })
                     }
                     placeholder="Goal name..."
-                    className="w-full border border-default rounded px-2 py-1 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500 flex-1"
+                    className="border-default bg-surface-primary text-primary w-full flex-1 rounded border px-2 py-1 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
                     autoFocus
                     onKeyDown={(e) => {
                       if (e.key === "Enter") onCreateFund();
@@ -966,7 +966,7 @@ export function FundCard({
                       })
                     }
                     placeholder="Target $"
-                    className="border border-default rounded px-1.5 py-0.5 text-xs bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500 text-right tabular-nums w-24"
+                    className="border-default bg-surface-primary text-primary w-24 rounded border px-1.5 py-0.5 text-right text-xs tabular-nums focus:ring-1 focus:ring-blue-500 focus:outline-none"
                   />
                   <Button
                     variant="primary"
@@ -1005,7 +1005,7 @@ export function FundCard({
                       parentGoalId: rawGoal.id,
                     });
                   }}
-                  className="text-xs text-blue-600 hover:text-blue-700 transition-colors"
+                  className="text-xs text-blue-600 transition-colors hover:text-blue-700"
                 >
                   + Add goal
                 </button>

@@ -25,7 +25,7 @@ export function RefinanceCalculator({
       <Card title="Refinance Calculator" className="mb-6">
         <button
           onClick={() => setShowRefi(true)}
-          className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+          className="text-sm font-medium text-blue-600 hover:text-blue-800"
         >
           Compare a refinance scenario...
         </button>
@@ -64,9 +64,9 @@ export function RefinanceCalculator({
 
   return (
     <Card title="Refinance Calculator" className="mb-6">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div>
-          <label className="block text-xs text-muted mb-1">
+          <label className="text-muted mb-1 block text-xs">
             New Interest Rate (%)
           </label>
           <input
@@ -75,17 +75,17 @@ export function RefinanceCalculator({
             value={refiRate}
             onChange={(e) => setRefiRate(e.target.value)}
             placeholder="5.5"
-            className="w-full border rounded px-2 py-1 text-sm"
+            className="w-full rounded border px-2 py-1 text-sm"
           />
         </div>
         <div>
-          <label className="block text-xs text-muted mb-1">
+          <label className="text-muted mb-1 block text-xs">
             New Term (years)
           </label>
           <select
             value={refiTerm}
             onChange={(e) => setRefiTerm(e.target.value)}
-            className="w-full border rounded px-2 py-1 text-sm"
+            className="w-full rounded border px-2 py-1 text-sm"
           >
             <option value="15">15 years</option>
             <option value="20">20 years</option>
@@ -94,21 +94,21 @@ export function RefinanceCalculator({
           </select>
         </div>
         <div>
-          <label className="block text-xs text-muted mb-1">
+          <label className="text-muted mb-1 block text-xs">
             Closing Costs ($)
           </label>
           <input
             type="number"
             value={refiClosingCosts}
             onChange={(e) => setRefiClosingCosts(e.target.value)}
-            className="w-full border rounded px-2 py-1 text-sm"
+            className="w-full rounded border px-2 py-1 text-sm"
           />
         </div>
       </div>
 
       {refiRate && (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+          <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-5">
             <div>
               <p className="text-muted">Current Payment</p>
               <p className="text-lg font-semibold">
@@ -152,7 +152,7 @@ export function RefinanceCalculator({
                 className={`text-lg font-semibold ${netSavings > 0 ? "text-green-700" : "text-red-600"}`}
               >
                 {formatCurrency(Math.abs(netSavings))}
-                <span className="text-xs font-normal ml-1">
+                <span className="ml-1 text-xs font-normal">
                   {netSavings > 0 ? "saved" : "more"}
                 </span>
               </p>
@@ -176,7 +176,7 @@ export function RefinanceCalculator({
 
       <button
         onClick={() => setShowRefi(false)}
-        className="mt-3 text-xs text-faint hover:text-muted"
+        className="text-faint hover:text-muted mt-3 text-xs"
       >
         Hide refinance calculator
       </button>

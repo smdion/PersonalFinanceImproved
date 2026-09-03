@@ -94,6 +94,16 @@ describe("Accessibility — axe-core", () => {
     expect(violations, formatViolations(violations)).toHaveLength(0);
   });
 
+  it("ProgressBar exposes an accessible progressbar with a name and value", async () => {
+    const { getByRole } = render(
+      <ProgressBar value={0.65} label="Savings Goal" />,
+    );
+    const bar = getByRole("progressbar", { name: "Savings Goal" });
+    expect(bar).toHaveAttribute("aria-valuenow", "65");
+    expect(bar).toHaveAttribute("aria-valuemin", "0");
+    expect(bar).toHaveAttribute("aria-valuemax", "100");
+  });
+
   it("EmptyState renders without violations", async () => {
     const { container } = render(
       <EmptyState

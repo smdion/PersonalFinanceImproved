@@ -255,7 +255,7 @@ export function ScenarioBar() {
   return (
     <div
       data-scenario-bar
-      className={`flex flex-wrap items-center justify-end px-3 sm:px-4 py-1.5 gap-x-3 gap-y-1.5 border-b text-xs ${isInScenario ? "bg-amber-50 border-amber-200" : "bg-surface-primary border-default"}`}
+      className={`flex flex-wrap items-center justify-end gap-x-3 gap-y-1.5 border-b px-3 py-1.5 text-xs sm:px-4 ${isInScenario ? "border-amber-200 bg-amber-50" : "bg-surface-primary border-default"}`}
     >
       {/* Scenario selector — pill style matching view toggle */}
       <div className="flex items-center gap-2" ref={dropdownRef}>
@@ -268,7 +268,7 @@ export function ScenarioBar() {
             aria-haspopup="listbox"
             aria-expanded={dropdownOpen}
             aria-labelledby="plan-label"
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-label transition-colors ${
+            className={`text-label flex items-center gap-1.5 rounded px-3 py-1.5 transition-colors ${
               isInScenario
                 ? "bg-amber-100 text-amber-800 shadow-sm"
                 : "bg-surface-primary text-primary shadow-sm"
@@ -276,7 +276,7 @@ export function ScenarioBar() {
           >
             {isInScenario && (
               <svg
-                className="w-3 h-3 text-amber-600"
+                className="h-3 w-3 text-amber-600"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -295,7 +295,7 @@ export function ScenarioBar() {
               <Badge color="amber">{overrideCount}</Badge>
             )}
             <svg
-              className="w-3 h-3 text-faint"
+              className="text-faint h-3 w-3"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -312,7 +312,7 @@ export function ScenarioBar() {
 
           {dropdownOpen && (
             <div
-              className="absolute top-full right-0 mt-1 w-64 max-w-[calc(100vw-2rem)] bg-surface-primary border rounded-lg shadow-lg z-50"
+              className="bg-surface-primary absolute top-full right-0 z-50 mt-1 w-64 max-w-[calc(100vw-2rem)] rounded-lg border shadow-lg"
               role="listbox"
               aria-label="Scenario selection"
             >
@@ -324,7 +324,7 @@ export function ScenarioBar() {
                   setActive({ type: "main" });
                   setDropdownOpen(false);
                 }}
-                className={`w-full text-left px-3 py-2 hover:bg-surface-sunken flex items-center gap-2 rounded-t-lg ${
+                className={`hover:bg-surface-sunken flex w-full items-center gap-2 rounded-t-lg px-3 py-2 text-left ${
                   activeSelection.type === "main"
                     ? "bg-blue-50 text-blue-700"
                     : "text-secondary"
@@ -341,14 +341,14 @@ export function ScenarioBar() {
 
               {/* Persisted scenarios */}
               {persistedScenarios.length > 0 && (
-                <div className="border-t border-subtle">
-                  <div className="px-3 py-1 text-caption text-faint uppercase tracking-wider">
+                <div className="border-subtle border-t">
+                  <div className="text-caption text-faint px-3 py-1 tracking-wider uppercase">
                     Saved Scenarios
                   </div>
                   {persistedScenarios.map((s) => (
                     <div
                       key={s.id}
-                      className={`flex items-center gap-2 px-3 py-1.5 hover:bg-surface-sunken group ${
+                      className={`hover:bg-surface-sunken group flex items-center gap-2 px-3 py-1.5 ${
                         activeSelection.type === "persisted" &&
                         activeSelection.id === s.id
                           ? "bg-blue-50 text-blue-700"
@@ -365,7 +365,7 @@ export function ScenarioBar() {
                           setActive({ type: "persisted", id: s.id });
                           setDropdownOpen(false);
                         }}
-                        className="flex-1 text-left flex items-center gap-2"
+                        className="flex flex-1 items-center gap-2 text-left"
                       >
                         <StatusDot color="blue" size="xs" />
                         {s.name}
@@ -376,12 +376,12 @@ export function ScenarioBar() {
                             e.stopPropagation();
                             handleDelete("persisted", s.id);
                           }}
-                          className="sm:opacity-0 sm:group-hover:opacity-100 text-faint hover:text-red-500 transition-opacity"
+                          className="text-faint transition-opacity hover:text-red-500 sm:opacity-0 sm:group-hover:opacity-100"
                           title="Delete scenario"
                           aria-label="Delete scenario"
                         >
                           <svg
-                            className="w-3 h-3"
+                            className="h-3 w-3"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -403,14 +403,14 @@ export function ScenarioBar() {
 
               {/* Session scenarios */}
               {sessionScenarios.length > 0 && (
-                <div className="border-t border-subtle">
-                  <div className="px-3 py-1 text-caption text-faint uppercase tracking-wider">
+                <div className="border-subtle border-t">
+                  <div className="text-caption text-faint px-3 py-1 tracking-wider uppercase">
                     Session Only (not saved)
                   </div>
                   {sessionScenarios.map((s) => (
                     <div
                       key={s.id}
-                      className={`flex items-center gap-2 px-3 py-1.5 hover:bg-surface-sunken group ${
+                      className={`hover:bg-surface-sunken group flex items-center gap-2 px-3 py-1.5 ${
                         activeSelection.type === "session" &&
                         activeSelection.id === s.id
                           ? "bg-blue-50 text-blue-700"
@@ -427,9 +427,9 @@ export function ScenarioBar() {
                           setActive({ type: "session", id: s.id });
                           setDropdownOpen(false);
                         }}
-                        className="flex-1 text-left flex items-center gap-2"
+                        className="flex flex-1 items-center gap-2 text-left"
                       >
-                        <span className="w-1.5 h-1.5 rounded-full bg-surface-divider" />
+                        <span className="bg-surface-divider h-1.5 w-1.5 rounded-full" />
                         {s.name}
                         <span className="text-caption text-faint">
                           (session)
@@ -441,12 +441,12 @@ export function ScenarioBar() {
                             e.stopPropagation();
                             handleDelete("session", s.id);
                           }}
-                          className="sm:opacity-0 sm:group-hover:opacity-100 text-faint hover:text-red-500 transition-opacity"
+                          className="text-faint transition-opacity hover:text-red-500 sm:opacity-0 sm:group-hover:opacity-100"
                           title="Delete scenario"
                           aria-label="Delete scenario"
                         >
                           <svg
-                            className="w-3 h-3"
+                            className="h-3 w-3"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -467,7 +467,7 @@ export function ScenarioBar() {
               )}
 
               {/* Create new */}
-              <div className="border-t border-subtle p-2">
+              <div className="border-subtle border-t p-2">
                 {creating ? (
                   <div className="space-y-1.5">
                     <input
@@ -480,13 +480,13 @@ export function ScenarioBar() {
                         if (e.key === "Escape") setCreating(null);
                       }}
                       placeholder="Scenario name..."
-                      className="w-full border border-strong rounded px-2 py-1 text-xs bg-surface-primary text-primary"
+                      className="border-strong bg-surface-primary text-primary w-full rounded border px-2 py-1 text-xs"
                     />
                     <div className="flex gap-1">
                       <Button
                         onClick={handleCreate}
                         size="sm"
-                        className="flex-1 !text-caption"
+                        className="!text-caption flex-1"
                       >
                         {creating === "persisted" ? "Save" : "Create Temp"}
                       </Button>
@@ -506,7 +506,7 @@ export function ScenarioBar() {
                       <>
                         <button
                           onClick={() => setCreating("persisted")}
-                          className="flex-1 text-center py-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                          className="flex-1 rounded py-2 text-center text-blue-600 transition-colors hover:bg-blue-50"
                           title="Create a scenario that persists across sessions"
                         >
                           + Saved
@@ -530,7 +530,7 @@ export function ScenarioBar() {
       </div>
 
       {/* Divider */}
-      <div className="hidden sm:block w-px h-4 bg-surface-strong" />
+      <div className="bg-surface-strong hidden h-4 w-px sm:block" />
 
       {/* Profile switchers */}
       <ProfilePill
@@ -539,13 +539,13 @@ export function ScenarioBar() {
         onActivate={(id) => handleActivateBudget(Number(id))}
         isPending={activateBudget.isPending}
       />
-      <div className="hidden sm:block w-px h-4 bg-surface-strong" />
+      <div className="bg-surface-strong hidden h-4 w-px sm:block" />
       <ProfilePill
         label={contribIsPinned ? "Contributions (active)" : "Contributions"}
         options={contribOptions}
         onActivate={(id) => handleActivateContrib(Number(id))}
       />
-      <div className="hidden sm:block w-px h-4 bg-surface-strong" />
+      <div className="bg-surface-strong hidden h-4 w-px sm:block" />
       <ProfilePill
         label={salaryIsPinned ? "Salary (active)" : "Salary"}
         options={salaryOptions}
@@ -553,7 +553,7 @@ export function ScenarioBar() {
       />
 
       {/* Divider */}
-      <div className="hidden sm:block w-px h-4 bg-surface-strong" />
+      <div className="bg-surface-strong hidden h-4 w-px sm:block" />
 
       {/* View mode toggle */}
       <div className="flex items-center gap-2">
@@ -561,7 +561,7 @@ export function ScenarioBar() {
           View:
         </span>
         <div
-          className="flex bg-surface-elevated rounded-md p-0.5"
+          className="bg-surface-elevated flex rounded-md p-0.5"
           role="tablist"
           aria-labelledby="view-mode-label"
         >
@@ -570,10 +570,10 @@ export function ScenarioBar() {
             aria-selected={viewMode === "projected"}
             onClick={() => setViewMode("projected")}
             title="Current rate applied to all pay periods"
-            className={`px-3 py-1.5 rounded text-label transition-colors ${
+            className={`text-label rounded px-3 py-1.5 transition-colors ${
               viewMode === "projected"
                 ? "bg-surface-primary text-primary shadow-sm"
-                : "text-muted hover:text-secondary "
+                : "text-muted hover:text-secondary"
             }`}
           >
             <span className="sm:hidden">Current</span>
@@ -584,10 +584,10 @@ export function ScenarioBar() {
             aria-selected={viewMode === "blended"}
             onClick={() => setViewMode("blended")}
             title="Year-end estimate using actual salary changes throughout the year"
-            className={`px-3 py-1.5 rounded text-label transition-colors ${
+            className={`text-label rounded px-3 py-1.5 transition-colors ${
               viewMode === "blended"
                 ? "bg-surface-primary text-primary shadow-sm"
-                : "text-muted hover:text-secondary "
+                : "text-muted hover:text-secondary"
             }`}
           >
             <span className="sm:hidden">Year-End</span>
@@ -598,10 +598,10 @@ export function ScenarioBar() {
             aria-selected={viewMode === "ytd"}
             onClick={() => setViewMode("ytd")}
             title="Amounts earned so far based on elapsed pay periods"
-            className={`px-3 py-1.5 rounded text-label transition-colors ${
+            className={`text-label rounded px-3 py-1.5 transition-colors ${
               viewMode === "ytd"
                 ? "bg-surface-primary text-primary shadow-sm"
-                : "text-muted hover:text-secondary "
+                : "text-muted hover:text-secondary"
             }`}
           >
             <span className="sm:hidden">YTD</span>

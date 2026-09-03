@@ -10,16 +10,16 @@ export function ReportRiskWatchlistSection({
 }) {
   return (
     <section className="mb-6" style={{ breakInside: "avoid" }}>
-      <h2 className="text-lg font-semibold mb-2">Watch List</h2>
-      <p className="text-sm leading-relaxed mb-3">{watchlist.narrative}</p>
+      <h2 className="mb-2 text-lg font-semibold">Watch List</h2>
+      <p className="mb-3 text-sm leading-relaxed">{watchlist.narrative}</p>
       {watchlist.items.length > 0 && (
-        <ul className="text-sm space-y-1">
+        <ul className="space-y-1 text-sm">
           {watchlist.items.map((item) => (
             <li
               key={`${item.startYear}-${item.endYear}-${item.detail.slice(0, 24)}`}
               className="flex gap-2"
             >
-              <span className="text-muted tabular-nums shrink-0 whitespace-nowrap">
+              <span className="text-muted shrink-0 whitespace-nowrap tabular-nums">
                 {item.startYear === item.endYear
                   ? item.startYear
                   : `${item.startYear}–${item.endYear}`}

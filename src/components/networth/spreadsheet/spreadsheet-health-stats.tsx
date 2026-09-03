@@ -137,8 +137,8 @@ export function SpreadsheetHealthStats({
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b">
-              <th className="text-left py-1.5 pr-2 text-muted font-medium" />
-              <th className="text-right py-1.5 px-2 text-muted font-medium w-24">
+              <th className="text-muted py-1.5 pr-2 text-left font-medium" />
+              <th className="text-muted w-24 px-2 py-1.5 text-right font-medium">
                 <div>{yearA.year}</div>
                 {showOutdated && isStaleA && (
                   <div className="text-caption font-normal text-amber-500">
@@ -146,7 +146,7 @@ export function SpreadsheetHealthStats({
                   </div>
                 )}
               </th>
-              <th className="text-right py-1.5 pl-2 text-muted font-medium w-24">
+              <th className="text-muted w-24 py-1.5 pl-2 text-right font-medium">
                 <div>{yearB.year}</div>
                 {showOutdated && isStaleB && (
                   <div className="text-caption font-normal text-amber-500">
@@ -171,17 +171,17 @@ export function SpreadsheetHealthStats({
               return (
                 <tr
                   key={row.label}
-                  className={`border-b border-subtle ${index % 2 === 0 ? "bg-surface-sunken/50" : ""}`}
+                  className={`border-subtle border-b ${index % 2 === 0 ? "bg-surface-sunken/50" : ""}`}
                 >
-                  <td className="py-1.5 pr-2 font-medium text-secondary">
+                  <td className="text-secondary py-1.5 pr-2 font-medium">
                     {row.label}
                     {hasCurrentYear && (
                       <span className="text-faint font-normal"> - YTD</span>
                     )}
                   </td>
-                  <td className="text-right py-1.5 px-2">
+                  <td className="px-2 py-1.5 text-right">
                     {row.isFlowMetric && isOutdatedA ? (
-                      <span className="text-amber-500 text-caption">
+                      <span className="text-caption text-amber-500">
                         Outdated
                       </span>
                     ) : (
@@ -196,9 +196,9 @@ export function SpreadsheetHealthStats({
                       </div>
                     )}
                   </td>
-                  <td className="text-right py-1.5 pl-2">
+                  <td className="py-1.5 pl-2 text-right">
                     {row.isFlowMetric && isOutdatedB ? (
-                      <span className="text-amber-500 text-caption">
+                      <span className="text-caption text-amber-500">
                         Outdated
                       </span>
                     ) : (
@@ -218,22 +218,22 @@ export function SpreadsheetHealthStats({
             })}
             {/* FI Progress row */}
             <tr
-              className={`border-b border-subtle ${STAT_ROWS.length % 2 === 0 ? "bg-surface-sunken/50" : ""}`}
+              className={`border-subtle border-b ${STAT_ROWS.length % 2 === 0 ? "bg-surface-sunken/50" : ""}`}
             >
-              <td className="py-1.5 pr-2 font-medium text-secondary">
+              <td className="text-secondary py-1.5 pr-2 font-medium">
                 FI Progress (Budget)
                 {hasCurrentYear && (
                   <span className="text-faint font-normal"> - YTD</span>
                 )}
               </td>
-              <td className="text-right py-1.5 px-2">
+              <td className="px-2 py-1.5 text-right">
                 <div>{formatPercent(yearA.fiProgress, 1)}</div>
                 <div className="text-caption text-faint">
                   {formatCurrency(yearA.portfolioTotal + yearA.cash)} /{" "}
                   {formatCurrency(yearA.fiTarget)}
                 </div>
               </td>
-              <td className="text-right py-1.5 pl-2">
+              <td className="py-1.5 pl-2 text-right">
                 <div>{formatPercent(yearB.fiProgress, 1)}</div>
                 <div className="text-caption text-faint">
                   {formatCurrency(yearB.portfolioTotal + yearB.cash)} /{" "}
