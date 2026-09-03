@@ -455,7 +455,8 @@ CREATE TABLE `mortgage_loans` (
 	`property_value_estimated` text,
 	`use_purchase_or_estimated` text DEFAULT 'purchase' NOT NULL,
 	`api_balance` text,
-	`api_balance_date` text
+	`api_balance_date` text,
+	FOREIGN KEY (`refinanced_from_id`) REFERENCES `mortgage_loans`(`id`) ON UPDATE no action ON DELETE set null
 );
 --> statement-breakpoint
 CREATE INDEX `mortgage_loans_is_active_idx` ON `mortgage_loans` (`is_active`);--> statement-breakpoint
@@ -1009,3 +1010,66 @@ CREATE TABLE `utility_service` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `utility_service_kind_idx` ON `utility_service` (`kind`);
+--> statement-breakpoint
+-- ─────────────────────────────────────────────────────────────────────────────
+-- HAND-EDITED — do not regenerate this file blindly. Everything above is
+-- `drizzle-kit generate` output; everything below is carried forward by hand
+-- through the v0.8.0 squash and must be re-applied after any regenerate.
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Baseline profile seed — SQLite twin of the block appended to
+-- drizzle/0000_v8_initial_schema.sql. Same idempotency guards.
+INSERT INTO `salary_profiles` (`name`, `description`, `salaries`)
+SELECT
+	(
+		SELECT c.candidate FROM (
+			          SELECT 'Current' AS candidate, 1 AS ord
+			UNION ALL SELECT 'Current (2)', 2
+			UNION ALL SELECT 'Current (3)', 3
+			UNION ALL SELECT 'Current (4)', 4
+			UNION ALL SELECT 'Current (5)', 5
+		) c
+		WHERE NOT EXISTS (
+			SELECT 1 FROM `salary_profiles` existing WHERE existing.`name` = c.candidate
+		)
+		ORDER BY c.ord
+		LIMIT 1
+	),
+	'Every salary follows its job record',
+	COALESCE(
+		(SELECT json_group_object(CAST(p.`id` AS TEXT), json_object('mode', 'job')) FROM `people` p),
+		'{}'
+	)
+WHERE NOT EXISTS (
+	SELECT 1 FROM `app_settings` a
+	WHERE a.`key` = 'active_salary_profile_id'
+		AND a.`value` IS NOT NULL
+		AND a.`value` != 'null'
+		AND a.`value` != '0'
+);
+--> statement-breakpoint
+INSERT INTO `app_settings` (`key`, `value`)
+VALUES ('active_salary_profile_id', CAST((SELECT MAX(`id`) FROM `salary_profiles`) AS TEXT))
+ON CONFLICT(`key`) DO UPDATE
+	SET `value` = excluded.`value`
+	WHERE `app_settings`.`value` IS NULL
+		OR `app_settings`.`value` = 'null'
+		OR `app_settings`.`value` = '0';
+--> statement-breakpoint
+INSERT INTO `contribution_profiles` (`name`, `description`, `contribution_active_fields`)
+SELECT 'Current', 'Contribution settings as they stand', '{}'
+WHERE NOT EXISTS (SELECT 1 FROM `contribution_profiles`);
+--> statement-breakpoint
+INSERT INTO `app_settings` (`key`, `value`)
+VALUES (
+	'active_contrib_profile_id',
+	CAST((
+		SELECT `id` FROM `contribution_profiles`
+		ORDER BY `created_at` ASC, `id` ASC
+		LIMIT 1
+	) AS TEXT)
+)
+ON CONFLICT(`key`) DO UPDATE
+	SET `value` = excluded.`value`
+	WHERE `app_settings`.`value` IS NULL
+		OR `app_settings`.`value` = 'null'
+		OR `app_settings`.`value` = '0';

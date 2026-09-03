@@ -864,6 +864,7 @@ ALTER TABLE "mc_preset_glide_paths" ADD CONSTRAINT "mc_preset_glide_paths_asset_
 ALTER TABLE "mc_preset_return_overrides" ADD CONSTRAINT "mc_preset_return_overrides_preset_id_mc_presets_id_fk" FOREIGN KEY ("preset_id") REFERENCES "public"."mc_presets"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "mc_preset_return_overrides" ADD CONSTRAINT "mc_preset_return_overrides_asset_class_id_asset_class_params_id_fk" FOREIGN KEY ("asset_class_id") REFERENCES "public"."asset_class_params"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "mortgage_extra_payments" ADD CONSTRAINT "mortgage_extra_payments_loan_id_mortgage_loans_id_fk" FOREIGN KEY ("loan_id") REFERENCES "public"."mortgage_loans"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "mortgage_loans" ADD CONSTRAINT "mortgage_loans_refinanced_from_id_mortgage_loans_id_fk" FOREIGN KEY ("refinanced_from_id") REFERENCES "public"."mortgage_loans"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "mortgage_what_if_scenarios" ADD CONSTRAINT "mortgage_what_if_scenarios_loan_id_mortgage_loans_id_fk" FOREIGN KEY ("loan_id") REFERENCES "public"."mortgage_loans"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "paycheck_deductions" ADD CONSTRAINT "paycheck_deductions_job_id_jobs_id_fk" FOREIGN KEY ("job_id") REFERENCES "public"."jobs"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "pending_rollovers" ADD CONSTRAINT "pending_rollovers_source_account_performance_id_account_performance_id_fk" FOREIGN KEY ("source_account_performance_id") REFERENCES "public"."account_performance"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
@@ -1016,3 +1017,68 @@ CREATE UNIQUE INDEX "tax_brackets_year_status_checkbox_idx" ON "tax_brackets" US
 CREATE UNIQUE INDEX "tax_params_year_idx" ON "tax_params" USING btree ("tax_year");--> statement-breakpoint
 CREATE UNIQUE INDEX "utility_reading_service_year_month_idx" ON "utility_reading" USING btree ("service_id","year","month");--> statement-breakpoint
 CREATE UNIQUE INDEX "utility_service_kind_idx" ON "utility_service" USING btree ("kind");
+--> statement-breakpoint
+-- ─────────────────────────────────────────────────────────────────────────────
+-- HAND-EDITED — do not regenerate this file blindly. Everything above is
+-- `drizzle-kit generate` output; everything below is carried forward by hand
+-- through the v0.8.0 squash and must be re-applied after any regenerate.
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Baseline profile seed (from 0008_kill_live_sentinel steps 3-6; the column
+-- reshapes that migration also did are baked into the CREATE TABLEs above).
+-- Idempotent: on a fresh install this seeds the "Current" Salary and
+-- Contribution profiles and points the active-profile settings at them; on a
+-- squash-recovery replay against an existing v0.7.x database every statement
+-- guards to a no-op (app_settings.active_*_profile_id already holds a real id
+-- / the profile tables are already populated).
+WITH seeded AS (
+	INSERT INTO "salary_profiles" ("name", "description", "salaries")
+	SELECT
+		(
+			SELECT c.candidate FROM (
+				          SELECT 'Current' AS candidate, 1 AS ord
+				UNION ALL SELECT 'Current (2)', 2
+				UNION ALL SELECT 'Current (3)', 3
+				UNION ALL SELECT 'Current (4)', 4
+				UNION ALL SELECT 'Current (5)', 5
+			) c
+			WHERE NOT EXISTS (
+				SELECT 1 FROM "salary_profiles" existing WHERE existing."name" = c.candidate
+			)
+			ORDER BY c.ord
+			LIMIT 1
+		),
+		'Every salary follows its job record',
+		COALESCE(
+			(SELECT jsonb_object_agg(p."id"::text, jsonb_build_object('mode', 'job')) FROM "people" p),
+			'{}'::jsonb
+		)
+	WHERE NOT EXISTS (
+		SELECT 1 FROM "app_settings" a
+		WHERE a."key" = 'active_salary_profile_id'
+			AND jsonb_typeof(a."value") != 'null'
+			AND a."value" != '0'::jsonb
+	)
+	RETURNING "id"
+)
+INSERT INTO "app_settings" ("key", "value")
+SELECT 'active_salary_profile_id', to_jsonb(seeded."id") FROM seeded
+ON CONFLICT ("key") DO UPDATE
+	SET "value" = EXCLUDED."value"
+	WHERE jsonb_typeof("app_settings"."value") = 'null'
+		OR "app_settings"."value" = to_jsonb(0);
+--> statement-breakpoint
+INSERT INTO "contribution_profiles" ("name", "description", "contribution_active_fields")
+SELECT 'Current', 'Contribution settings as they stand', '{}'::jsonb
+WHERE NOT EXISTS (SELECT 1 FROM "contribution_profiles");
+--> statement-breakpoint
+INSERT INTO "app_settings" ("key", "value")
+SELECT 'active_contrib_profile_id', to_jsonb(cp."id")
+FROM (
+	SELECT "id" FROM "contribution_profiles"
+	ORDER BY "created_at" ASC, "id" ASC
+	LIMIT 1
+) cp
+ON CONFLICT ("key") DO UPDATE
+	SET "value" = EXCLUDED."value"
+	WHERE jsonb_typeof("app_settings"."value") = 'null'
+		OR "app_settings"."value" = to_jsonb(0);

@@ -90,6 +90,9 @@ export const VERSION_TABLES: VersionTableEntry[] = [
   { name: "account_holdings", tier: 2 },
   { name: "savings_planned_tx_settlements", tier: 2 },
   { name: "budget_income_adjustments", tier: 2 },
+  { name: "account_basis", tier: 2 }, // FKs into performance_accounts (tier 1) + people (tier 0)
+  { name: "budget_item_category_links", tier: 2 }, // FK into budget_items (tier 1)
+  { name: "savings_goal_category_links", tier: 2 }, // FK into savings_goals (tier 0)
 
   // Tier 3 — depends on tier 2
   { name: "pending_rollovers", tier: 3 }, // FKs into account_performance (tier 2, ON DELETE restrict) + performance_accounts (tier 1)
@@ -119,4 +122,5 @@ export const EXCLUDED_TABLES = [
   "state_versions",
   "state_version_tables",
   "budget_api_cache",
+  "projection_cache", // derived-from-inputs cache; rebuilt on demand, never user data
 ];

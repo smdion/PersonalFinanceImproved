@@ -234,8 +234,23 @@ function renameValue(
 // Schema version ordering (for "at least version X" checks)
 // ---------------------------------------------------------------------------
 
-/** PG tags in canonical order — used for cumulative "at least version X" checks. */
-const PG_TAGS = KNOWN_SCHEMA_VERSIONS.slice(0, 9); // First 9 entries are v0.1.x PG
+/**
+ * v0.1.x PG tags in canonical order — used for cumulative "at least version
+ * X" checks. Spelled out explicitly (not a positional slice of
+ * KNOWN_SCHEMA_VERSIONS) so appending an entry to that list can never
+ * silently shift this ordering.
+ */
+const PG_TAGS = [
+  "0000_initial_schema",
+  "0001_drop_pg_enums",
+  "0002_rename_retirement_category",
+  "0003_add_rollovers_column",
+  "0004_ambiguous_wraith",
+  "0005_cold_random",
+  "0006_goofy_rawhide_kid",
+  "0007_melted_swordsman",
+  "0008_prior_year_contrib",
+] as const;
 const VERSION_ORDER: Map<string, number> = new Map(
   PG_TAGS.map((tag, index) => [tag, index]),
 );
@@ -829,25 +844,38 @@ export function transformBackupToCurrentSchema(
 
   const era = schemaEra(schemaVersion);
 
-  if (era === "v0.7") {
-    // v0.7.x → current: backfill tables added within the v0.7 line
-    transformV07xToCurrent(cloned);
-  } else if (era === "v0.6") {
-    // v0.6.x → current: backfill v0.6-line tables/columns + utilities tables
-    transformV06xToCurrent(cloned);
-  } else if (era === "v0.5") {
-    // v0.5.x → v0.6.0: no column renames, only pending_rollovers table added
-    transformV05xToV060(cloned);
-  } else {
-    // v0.1.x → apply v0.1 → v0.2 transforms first, then v0.2/v0.3 → v0.4
-    if (era === "v0.1") {
-      transformV01xToV020(cloned, schemaVersion);
-    }
+  // CUMULATIVE ladder — a backup N eras behind must run EVERY transform
+  // between its era and current, oldest first, not just the one keyed to
+  // its own era. Each transform is idempotent (fills only missing
+  // tables/columns, guards backfills on empty), so an over-conservative
+  // era guess degrades to extra no-op passes rather than a truncated
+  // restore. The previous `if / else if` ran exactly one transform, which
+  // left, e.g., a v0.6 backup missing every v0.7-line table
+  // (retirement_profiles, fpl_by_household, …) on restore.
+  const ERA_ORDER = ["v0.1", "v0.2", "v0.3", "v0.5", "v0.6", "v0.7"] as const;
+  const rank = (e: string) =>
+    ERA_ORDER.indexOf(e as (typeof ERA_ORDER)[number]);
+  const eraRank = rank(era);
 
-    // v0.1.x and v0.2.x both need the v0.2/v0.3 → v0.4 transforms
-    // v0.3.x also needs it (idempotent — fills in any missing columns)
+  if (eraRank <= rank("v0.1")) {
+    transformV01xToV020(cloned, schemaVersion);
+  }
+  if (eraRank <= rank("v0.3")) {
+    // v0.1.x / v0.2.x / v0.3.x → v0.4 (idempotent; fills any missing columns)
     transformV02xV03xToV040(cloned);
   }
+  if (eraRank <= rank("v0.5")) {
+    // → v0.6.0: adds an empty pending_rollovers table when absent
+    transformV05xToV060(cloned);
+  }
+  if (eraRank <= rank("v0.6")) {
+    // v0.6-line tables/columns + utilities tables
+    transformV06xToCurrent(cloned);
+  }
+  // v0.7-line tables (retirement_profiles, fpl_by_household, tax_params, …)
+  // + the salary_overrides → salaries reshape + is_default drop. Runs for
+  // every era, including a fully-current v0.7.x export (a no-op then).
+  transformV07xToCurrent(cloned);
 
   log("info", "backup_transform_complete", {
     from: schemaVersion,

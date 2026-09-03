@@ -8,6 +8,7 @@ import {
   integer,
   uniqueIndex,
   index,
+  type AnySQLiteColumn,
 } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 import { DEFAULT_WITHDRAWAL_RATE } from "@/lib/constants";
@@ -1181,13 +1182,14 @@ export const mortgageLoans = sqliteTable(
       .notNull()
       .default(false),
     // Self-reference to this table's own id (the loan this one replaced via
-    // refinance). FK constraint (ON DELETE SET NULL, matching
-    // savings_goals.parent_goal_id's precedent) added in
-    // 0019_mortgage_refinanced_from_fk.sql after a data audit confirmed no
-    // orphaned/dangling values — Drizzle can't express a self-reference
-    // inline, so the constraint lives in the hand-written migration, not
-    // here (same pattern as parent_goal_id).
-    refinancedFromId: integer("refinanced_from_id"),
+    // refinance). ON DELETE SET NULL: deleting an old, refinanced-away loan
+    // shouldn't be blocked by a newer loan's pointer to it; the pointer just
+    // clears. Expressed as a lazy self-reference so the FK lives in the
+    // generated schema rather than a hand-written migration.
+    refinancedFromId: integer("refinanced_from_id").references(
+      (): AnySQLiteColumn => mortgageLoans.id,
+      { onDelete: "set null" },
+    ),
     paidOffDate: text("paid_off_date"),
     principalAndInterest: text("principal_and_interest").notNull(),
     pmi: text("pmi").notNull().default("0"),

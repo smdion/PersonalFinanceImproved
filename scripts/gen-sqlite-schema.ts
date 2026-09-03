@@ -23,6 +23,20 @@
  * when copying data into a table whose new NOT NULL columns don't exist in
  * the source table. Stripping CHECK at the schema level lets drizzle-kit
  * emit clean ALTER TABLE ADD COLUMN migrations.
+ *
+ * Known SQLite-only divergence between a *fresh* migrate and an *upgraded*
+ * one, accepted because SQLite is dev/test only and prod is PostgreSQL:
+ *   - FK ON DELETE actions (scenarios.*_profile_id → SET NULL,
+ *     retirement_settings.profile_id → CASCADE, etc.): a fresh v0.8.0
+ *     baseline emits the declared action inline; SQLite installs upgraded
+ *     from pre-v0.8 had those FKs added by table-recreate migrations that
+ *     landed them as NO ACTION. A fresh dev DB therefore enforces cascade/
+ *     set-null where a CI-upgraded dev DB does not.
+ *   - account_holdings.weight_bps range CHECK: present on installs upgraded
+ *     through the v0.7.0 in-memory replay, absent on a fresh v0.8 baseline
+ *     (stripped, per above).
+ * Neither affects PostgreSQL, where schema-pg.ts is authoritative and both
+ * are enforced.
  */
 
 import * as fs from "fs";
@@ -45,9 +59,12 @@ out = out.replace(
 // Note: `check` is intentionally NOT imported in the SQLite output — see
 // header comment about CHECK constraint stripping.
 out = out.replace(
-  /import \{\n\s+pgTable,\n\s+serial,\n\s+text,\n\s+integer,\n\s+boolean,\n\s+date,\n\s+timestamp,\n\s+decimal,\n\s+varchar,\n\s+jsonb,\n\s+uniqueIndex,\n\s+index,\n\s+check,\n\} from "drizzle-orm\/pg-core";/,
-  `import {\n  sqliteTable,\n  text,\n  integer,\n  uniqueIndex,\n  index,\n} from "drizzle-orm/sqlite-core";`,
+  /import \{\n\s+pgTable,\n\s+serial,\n\s+text,\n\s+integer,\n\s+boolean,\n\s+date,\n\s+timestamp,\n\s+decimal,\n\s+varchar,\n\s+jsonb,\n\s+uniqueIndex,\n\s+index,\n\s+check,\n\s+type AnyPgColumn,\n\} from "drizzle-orm\/pg-core";/,
+  `import {\n  sqliteTable,\n  text,\n  integer,\n  uniqueIndex,\n  index,\n  type AnySQLiteColumn,\n} from "drizzle-orm/sqlite-core";`,
 );
+
+// --- Lazy self-reference callbacks: AnyPgColumn → AnySQLiteColumn ---
+out = out.replace(/\(\): AnyPgColumn =>/g, "(): AnySQLiteColumn =>");
 
 // --- pgTable → sqliteTable ---
 out = out.replace(/pgTable\(/g, "sqliteTable(");

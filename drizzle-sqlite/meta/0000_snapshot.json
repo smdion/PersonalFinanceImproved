@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "87d067e1-2b63-4f3b-93a1-d83c22a3ad6d",
+  "id": "83deb0a2-61b6-4a8b-8ea5-a28fe6c7fe5a",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "account_basis": {
@@ -2899,7 +2899,17 @@
           "isUnique": false
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "mortgage_loans_refinanced_from_id_mortgage_loans_id_fk": {
+          "name": "mortgage_loans_refinanced_from_id_mortgage_loans_id_fk",
+          "tableFrom": "mortgage_loans",
+          "tableTo": "mortgage_loans",
+          "columnsFrom": ["refinanced_from_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}

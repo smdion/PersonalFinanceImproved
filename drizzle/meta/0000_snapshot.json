@@ -1,5 +1,5 @@
 {
-  "id": "da94d523-07f8-47c1-81b0-864c65993573",
+  "id": "c149b295-e7f2-4c82-9632-05f5bc956055",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -3485,7 +3485,17 @@
           "with": {}
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "mortgage_loans_refinanced_from_id_mortgage_loans_id_fk": {
+          "name": "mortgage_loans_refinanced_from_id_mortgage_loans_id_fk",
+          "tableFrom": "mortgage_loans",
+          "tableTo": "mortgage_loans",
+          "columnsFrom": ["refinanced_from_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},

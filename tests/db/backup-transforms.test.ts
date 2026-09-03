@@ -698,6 +698,58 @@ describe("transformBackupToCurrentSchema — v0.7.x Retirement Profiles backfill
 });
 
 // ---------------------------------------------------------------------------
+// v0.7_final / v0.8.0 baseline — already current shape, transform is a no-op
+// ---------------------------------------------------------------------------
+
+describe("transformBackupToCurrentSchema — v0.7_final / v0.8.0 baseline", () => {
+  // A fully-current v0.7.11 export: every v0.7-line table present, populated,
+  // in final shape. The v0.8.0 squash changed no schema, so the transform
+  // must return it byte-identical.
+  const currentShapeBackup = () => ({
+    ...makeBackup({
+      retirement_profiles: [
+        { id: 1, name: "Current Plan", tax_params_year: null },
+      ],
+      retirement_profile_people: [
+        { id: 1, profile_id: 1, person_id: 1, retirement_age: 65 },
+      ],
+      fpl_by_household: [{ id: 1, tax_year: 2026, amounts: {} }],
+      tax_params: [{ id: 1, tax_year: 2026, version: 1 }],
+      savings_planned_tx_settlements: [{ id: 1, planned_tx_id: 1 }],
+      budget_item_category_links: [
+        { id: 1, budget_item_id: 1, service: "ynab" },
+      ],
+      savings_goal_category_links: [
+        { id: 1, savings_goal_id: 1, service: "ynab" },
+      ],
+      account_basis: [{ id: 1, performance_account_id: 1, owner_person_id: 1 }],
+      salary_profiles: [{ id: 1, name: "Current", salaries: {} }],
+      contribution_profiles: [{ id: 1, name: "Current" }],
+    }),
+  });
+
+  for (const tag of ["v0.7_final", "0000_v8_initial_schema"]) {
+    it(`round-trips a fully-current export unchanged (${tag})`, () => {
+      const tables = currentShapeBackup();
+      const before = JSON.stringify(tables);
+      const result = transformBackupToCurrentSchema(
+        tables,
+        tag,
+        CURRENT_VERSION,
+      );
+      // No table added or dropped, no row changed.
+      expect(JSON.stringify(result.tables)).toBe(before);
+    });
+
+    it(`is importable (${tag})`, () => {
+      expect(() =>
+        transformBackupToCurrentSchema(makeBackup(), tag, CURRENT_VERSION),
+      ).not.toThrow();
+    });
+  }
+});
+
+// ---------------------------------------------------------------------------
 // Data isolation — transform doesn't mutate original
 // ---------------------------------------------------------------------------
 
@@ -776,8 +828,11 @@ describe("edge cases", () => {
  * version" for any backup taken between v0.7.0 and v0.7.10 — restore was
  * broken across nearly the whole v0.7 line, silently, until someone tried it.
  *
- * This reads the real drizzle journals, so adding a migration without
- * registering its tag fails here instead of at someone's restore.
+ * Post the v0.8.0 squash the journals hold a single tag each, so the
+ * journal-vs-registry check below is thin. The historical v0.7 tag list
+ * (V07_SCHEMA_TAGS, spread into KNOWN_SCHEMA_VERSIONS) is now frozen — no
+ * journal validates it any more — so the count/endpoint assertions guard it
+ * from being edited away.
  */
 describe("schema-version registry tracks the drizzle journals", () => {
   const journalTags = (dir: string): string[] => {
@@ -787,8 +842,6 @@ describe("schema-version registry tracks the drizzle journals", () => {
     return journal.entries.map((e) => e.tag);
   };
 
-  // Both journals were squashed at v0.7.0, so every tag they still contain
-  // is a v0.7-line tag and must be registered — no era filtering needed.
   it.each([
     ["drizzle", "PostgreSQL"],
     ["drizzle-sqlite", "SQLite"],
@@ -798,9 +851,27 @@ describe("schema-version registry tracks the drizzle journals", () => {
     expect(missing).toEqual([]);
   });
 
-  it("routes every registered v0.7 tag to the v0.7 transform, not a throw", () => {
-    const v07 = journalTags("drizzle").concat(journalTags("drizzle-sqlite"));
-    for (const tag of v07) {
+  it("keeps the frozen historical v0.7 tag range registered", () => {
+    const known = KNOWN_SCHEMA_VERSIONS as readonly string[];
+    // Endpoints of the v0.7 line.
+    expect(known).toContain("0000_v7_initial_schema");
+    expect(known).toContain("0039_rich_prodigy"); // last v0.7.x PG migration
+    expect(known).toContain("0038_broken_guardian"); // last v0.7.x SQLite migration
+    // The v0.7 line ran 0000 + 0001-0039 (PG) / 0001-0038 (SQLite), with
+    // several dialect-divergent names in 0001-0006 and 0025-0031. The
+    // registry must still carry them all — a v0.7.x backup names one of
+    // these and must not fall through to "Unknown schema version".
+    const v07ish = known.filter((t) => /^00[0-3]\d_/.test(t));
+    expect(v07ish.length).toBeGreaterThanOrEqual(50);
+  });
+
+  it("routes the current baseline and the v0.7_final tag to the v0.7 transform, not a throw", () => {
+    for (const tag of [
+      "0000_v8_initial_schema",
+      "v0.7_final",
+      "0000_v7_initial_schema",
+      "0039_rich_prodigy",
+    ]) {
       expect(() =>
         transformBackupToCurrentSchema(
           makeBackup(),
