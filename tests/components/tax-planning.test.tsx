@@ -6,6 +6,7 @@ import {
   type TaxYearRow,
 } from "@/components/tax-planning/year-projection-table";
 import { IrmaaCliffAlert } from "@/components/tax-planning/irmaa-cliff-alert";
+import { ReportAssumptionsSummary } from "@/components/cards/projection/report/report-assumptions-summary";
 
 // --- trpc mock (RothExplorer / WithdrawalComparison use useQuery) ---
 const rothWhatIfQuery = vi.fn();
@@ -78,6 +79,41 @@ describe("YearProjectionTable", () => {
     expect(screen.getByText("2054")).toBeInTheDocument();
     expect(screen.getByText("2055")).toBeInTheDocument();
     expect(screen.getAllByText("Roth conversion")).toHaveLength(2);
+  });
+
+  it("shows the 'Roth capped (IRMAA)' flag when a row carries it", () => {
+    render(
+      <YearProjectionTable
+        rows={[
+          row({
+            year: 2060,
+            age: 71,
+            flags: ["Roth conversion", "Roth capped (IRMAA)"],
+          }),
+        ]}
+      />,
+    );
+    expect(screen.getByText("Roth capped (IRMAA)")).toBeInTheDocument();
+  });
+});
+
+describe("ReportAssumptionsSummary — IRMAA-capped note (R48a)", () => {
+  it("shows the note when irmaaCappedRothYears > 0 and hides it at 0", () => {
+    const { rerender } = render(
+      <ReportAssumptionsSummary settings={{}} irmaaCappedRothYears={3} />,
+    );
+    expect(
+      screen.getByText(
+        /3 years in this projection had Roth conversions capped/i,
+      ),
+    ).toBeInTheDocument();
+
+    rerender(
+      <ReportAssumptionsSummary settings={{}} irmaaCappedRothYears={0} />,
+    );
+    expect(
+      screen.queryByText(/Roth conversions? capped/i),
+    ).not.toBeInTheDocument();
   });
 });
 

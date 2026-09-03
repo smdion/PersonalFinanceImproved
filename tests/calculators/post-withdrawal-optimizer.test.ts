@@ -207,6 +207,40 @@ describe("performRothConversion", () => {
     expect(result.rothConversionAmount).toBeLessThanOrEqual(6000);
   });
 
+  it("flags rothConversionIrmaaCapped when the IRMAA clamp actually bites", () => {
+    const result = performRothConversion(
+      makeRothInput({
+        irmaaAwareRothConversions: true,
+        totalTraditionalWithdrawal: 150000,
+        taxableSS: 10000,
+        brokerageGainsPortion: 40000, // MAGI w/o conversion = 200000
+        rothBracketTarget: 0.35, // bracket cap far above the next cliff (206000)
+      }),
+    );
+    // The conversion was clamped to the ~6000 of cliff headroom, and the
+    // engine records that it did so.
+    expect(result.rothConversionIrmaaCapped).toBe(true);
+    expect(result.rothConversionAmount).toBeLessThanOrEqual(6000);
+    expect(result.rothConversionAmount).toBeGreaterThan(0);
+  });
+
+  it("leaves rothConversionIrmaaCapped unset when IRMAA awareness is off", () => {
+    // Same capping-scale inputs as the test above, but the
+    // irmaaAwareRothConversions clamp is disabled — the flag must not
+    // appear (and the conversion is free to fill the bracket).
+    const result = performRothConversion(
+      makeRothInput({
+        irmaaAwareRothConversions: false,
+        totalTraditionalWithdrawal: 150000,
+        taxableSS: 10000,
+        brokerageGainsPortion: 40000,
+        rothBracketTarget: 0.35,
+      }),
+    );
+    expect(result.rothConversionAmount).toBeGreaterThan(6000);
+    expect(result.rothConversionIrmaaCapped).toBeUndefined();
+  });
+
   it("applies tax multiplier to tax cost calculation", () => {
     const balances1 = makeTaxBuckets();
     const acctBal1 = makeAccountBalances();
