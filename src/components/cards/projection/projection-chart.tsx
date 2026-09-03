@@ -6,7 +6,9 @@ import {
   categoryChartHex,
   TAX_PIE_COLORS,
   CHART_COLORS,
+  chartLinePalette,
 } from "@/lib/utils/colors";
+import { useTheme } from "@/lib/hooks/use-theme";
 import { formatCurrency, compactCurrency } from "@/lib/utils/format";
 import {
   buildStrategyEventStyle,
@@ -54,6 +56,10 @@ const STRATEGY_EVENT_KEYS = [
 ] as const;
 
 export function ProjectionChart({ state }: { state: ProjectionState }) {
+  const c = {
+    ...CHART_COLORS,
+    ...chartLinePalette(useTheme().resolvedTheme === "dark"),
+  };
   // Check via `state.result` before destructuring — result truthy always
   // implies engineSettings defined (see use-projection-derived.ts), but that
   // pairing only survives TS narrowing through the object, not through
@@ -779,7 +785,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                   yAxisId="income"
                   dataKey="_totalWithdrawal"
                   name="Portfolio withdrawal"
-                  stroke={CHART_COLORS.withdrawalFlow}
+                  stroke={c.withdrawalFlow}
                   strokeWidth={2}
                   dot={false}
                   isAnimationActive={false}
@@ -805,7 +811,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                 type="monotone"
                 yAxisId="balance"
                 dataKey="mc_p50"
-                stroke={CHART_COLORS.mcMedian}
+                stroke={c.mcMedian}
                 strokeWidth={2}
                 strokeDasharray="6 3"
                 dot={false}
@@ -934,7 +940,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
             <span className="flex items-center gap-1">
               <span
                 className="h-0.5 w-3 rounded"
-                style={{ backgroundColor: CHART_COLORS.withdrawalFlow }}
+                style={{ backgroundColor: c.withdrawalFlow }}
               />{" "}
               Withdrawal
             </span>
@@ -952,7 +958,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
             <span className="flex items-center gap-1">
               <span
                 className="h-0.5 w-3 rounded"
-                style={{ backgroundColor: CHART_COLORS.mcMedian }}
+                style={{ backgroundColor: c.mcMedian }}
               />{" "}
               Sim. median
               {mcIsPrefetch && (

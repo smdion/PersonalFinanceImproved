@@ -19,7 +19,8 @@ import {
   formatPercent,
   compactCurrency,
 } from "@/lib/utils/format";
-import { CHART_COLORS } from "@/lib/utils/colors";
+import { CHART_COLORS, chartLinePalette } from "@/lib/utils/colors";
+import { useTheme } from "@/lib/hooks/use-theme";
 import { safeDivide } from "@/lib/utils/math";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
 
@@ -48,6 +49,10 @@ function getTimeFrameCutoff(tf: TimeFrame): string | null {
 }
 
 export function PortfolioChart({ snapshots }: { snapshots: SnapshotPoint[] }) {
+  const c = {
+    ...CHART_COLORS,
+    ...chartLinePalette(useTheme().resolvedTheme === "dark"),
+  };
   const [timeFrame, setTimeFrame] = useState<TimeFrame>("1Y");
   const [hoverValue, setHoverValue] = useState<number | null>(null);
   const hoverRef = useRef<number | null>(null);
@@ -138,16 +143,8 @@ export function PortfolioChart({ snapshots }: { snapshots: SnapshotPoint[] }) {
         >
           <defs>
             <linearGradient id="portfolioGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop
-                offset="5%"
-                stopColor={CHART_COLORS.perfBalance}
-                stopOpacity={0.3}
-              />
-              <stop
-                offset="95%"
-                stopColor={CHART_COLORS.perfBalance}
-                stopOpacity={0.05}
-              />
+              <stop offset="5%" stopColor={c.perfBalance} stopOpacity={0.3} />
+              <stop offset="95%" stopColor={c.perfBalance} stopOpacity={0.05} />
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.mcGrid} />
@@ -220,13 +217,11 @@ export function PortfolioChart({ snapshots }: { snapshots: SnapshotPoint[] }) {
             isAnimationActive={false}
             type="monotone"
             dataKey="total"
-            stroke={CHART_COLORS.perfBalance}
+            stroke={c.perfBalance}
             strokeWidth={2}
             fill="url(#portfolioGradient)"
             dot={
-              chartData.length <= 52
-                ? { r: 2.5, fill: CHART_COLORS.perfBalance }
-                : false
+              chartData.length <= 52 ? { r: 2.5, fill: c.perfBalance } : false
             }
             activeDot={{ r: 4 }}
           />

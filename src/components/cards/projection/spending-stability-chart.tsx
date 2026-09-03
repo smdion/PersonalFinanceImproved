@@ -36,7 +36,8 @@ import {
   Legend,
 } from "recharts";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
-import { CHART_COLORS } from "@/lib/utils/colors";
+import { CHART_COLORS, chartLinePalette } from "@/lib/utils/colors";
+import { useTheme } from "@/lib/hooks/use-theme";
 import type { ProjectionState } from "./projection-table-types";
 
 export function SpendingStabilityChart({
@@ -46,6 +47,10 @@ export function SpendingStabilityChart({
   state: ProjectionState;
   view: "strategy" | "budget";
 }) {
+  const c = {
+    ...CHART_COLORS,
+    ...chartLinePalette(useTheme().resolvedTheme === "dark"),
+  };
   const {
     result,
     engineSettings,
@@ -501,7 +506,7 @@ export function SpendingStabilityChart({
               type="monotone"
               dataKey="mc_p50"
               name="Sim. median"
-              stroke={CHART_COLORS.mcMedian}
+              stroke={c.mcMedian}
               strokeWidth={2}
               strokeDasharray="6 3"
               dot={false}

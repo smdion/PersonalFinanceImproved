@@ -13,7 +13,8 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { CHART_COLORS } from "@/lib/utils/colors";
+import { CHART_COLORS, chartLinePalette } from "@/lib/utils/colors";
+import { useTheme } from "@/lib/hooks/use-theme";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
 import { compactCurrency, type HistoryRow } from "./types";
 
@@ -28,6 +29,10 @@ export function NetWorthLineChart({
   xAxisMode?: ChartXAxisMode;
   primaryBirthYear?: number | null;
 }) {
+  const c = {
+    ...CHART_COLORS,
+    ...chartLinePalette(useTheme().resolvedTheme === "dark"),
+  };
   const useAge = xAxisMode === "age";
   // Add displayAge for X-axis when in age mode
   const chartData = useAge
@@ -102,7 +107,7 @@ export function NetWorthLineChart({
             type="monotone"
             dataKey="netWorth"
             name="Net Worth"
-            stroke={CHART_COLORS.netWorth}
+            stroke={c.netWorth}
             strokeWidth={3}
             dot={{ r: 4 }}
             activeDot={{ r: 6 }}

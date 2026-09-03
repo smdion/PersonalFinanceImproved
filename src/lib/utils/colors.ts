@@ -283,6 +283,25 @@ export const CHART_COLORS = {
  * inline in the component so the file's hex literals stay centralized —
  * see the no-restricted-syntax hardcoded-hex-color lint rule.
  */
+/**
+ * Theme-aware overrides for data-carrying LINE colors whose single
+ * `CHART_COLORS` value fails WCAG 1.4.11 (≥3:1 vs the card / adjacent
+ * fill) in dark mode. Spread over `CHART_COLORS` in the chart component:
+ *   const c = { ...CHART_COLORS, ...chartLinePalette(dark) };
+ * Light values are the originals; dark values step 600→400 to clear 3:1
+ * against `#1e293b` (and, for mcMedian, against the ~`#343360`
+ * mcBandMiddle@0.2 fill it's drawn over). Non-line series stay in
+ * CHART_COLORS.
+ */
+export function chartLinePalette(dark: boolean) {
+  return {
+    netWorth: dark ? "#818cf8" : "#4f46e5", // indigo-400 / indigo-600
+    perfBalance: dark ? "#818cf8" : "#4f46e5",
+    withdrawalFlow: dark ? "#94a3b8" : "#475569", // slate-400 / slate-600
+    mcMedian: dark ? "#a78bfa" : "#7c3aed", // violet-400 / violet-600
+  };
+}
+
 export function trajectoryChartPalette(dark: boolean) {
   return {
     grid: dark ? "#374151" : "#e5e7eb",

@@ -74,6 +74,7 @@ vi.mock("@/lib/utils/colors", () => ({
     mcBandMiddle: "#8b5cf6",
     mcMedian: "#7c3aed",
   },
+  chartLinePalette: () => ({}),
 }));
 
 const mockAccountConfig = {
