@@ -15,6 +15,7 @@ No schema changes, no migration.
 ### Added
 
 - **Tax Planning page** (Analysis → Tax Planning). A year-by-year tax projection through retirement — income sources, federal / NIIT / IRMAA tax, effective rate, balances, running lifetime tax, and flags for the notable years — read straight off the deterministic retirement projection (same engine, no separate tax model). Plus a **Roth conversion explorer** (the engine's own lifetime-tax-minimizing search, or an explicit target-rate schedule with a before/after break-even), a **withdrawal-strategy comparison** (traditional-first vs. brokerage-first vs. tax-optimized, side by side on lifetime tax), and an **IRMAA cliff alert**. Assumptions are edited via the same Retirement Profile controls the Retirement page uses — a change there saves to the profile and the tax view recomputes.
+- **IRMAA-capped Roth conversions are now visible.** When IRMAA awareness is on, the engine caps a year's Roth conversion at the next Medicare-premium threshold; that used to leave no trace. The Tax Planning year table now flags those years, the IRMAA alert counts them, and the advisor report adds a note ("N years had Roth conversions capped for IRMAA"). No change to any projected figure.
 
 ### Fixed
 
