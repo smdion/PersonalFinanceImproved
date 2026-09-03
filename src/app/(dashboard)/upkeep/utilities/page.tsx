@@ -3,29 +3,31 @@
 /** Utilities tracker — gas/water/electric cost & usage history with annual trend charts and a collapsible per-year drill-down. */
 
 import { useState } from "react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  ResponsiveContainer,
-  Tooltip as RechartsTooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
-import {
-  formatCurrency,
-  formatPercent,
-  compactCurrency,
-} from "@/lib/utils/format";
+import dynamic from "next/dynamic";
+import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { CHART_COLORS } from "@/lib/utils/colors";
-import { gridProps, axisProps } from "@/components/charts";
 import { ChevronDown, ChevronRight, Lock, LockOpen } from "lucide-react";
+
+// Code-split Recharts — keep its payload out of the utilities page chunk (R31).
+const CostTrendChart = dynamic(
+  () =>
+    import("@/components/upkeep/cost-trend-chart").then((m) => ({
+      default: m.CostTrendChart,
+    })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[140px] w-full">
+        <SkeletonChart />
+      </div>
+    ),
+  },
+);
 
 const MONTH_NAMES = [
   "Jan",
@@ -101,63 +103,6 @@ function YoYTag({ pct }: { pct: number | null }) {
     <span className={good ? "text-green-600" : "text-red-600"}>
       {pct >= 0 ? "↑" : "↓"} {formatPercent(Math.abs(pct), 1)}
     </span>
-  );
-}
-
-/** Annual cost trend (one bar per year). */
-function CostTrend({
-  years,
-  color,
-  unit,
-}: {
-  years: UtilityYearRow[];
-  color: string;
-  unit: string;
-}) {
-  const data = years
-    .slice()
-    .sort((a, b) => a.year - b.year)
-    .map((y) => ({
-      year: y.year,
-      cost: Math.round(y.totalCost),
-      usage: y.totalUsage,
-      costPerUnit: y.costPerUnit,
-    }));
-
-  return (
-    <div className="h-[140px] w-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
-          <CartesianGrid {...gridProps} vertical={false} />
-          <XAxis dataKey="year" {...axisProps} />
-          <YAxis
-            {...axisProps}
-            width={48}
-            tickFormatter={(v: number) => compactCurrency(v)}
-          />
-          <RechartsTooltip
-            cursor={{ fill: "rgba(148,163,184,0.12)" }}
-            formatter={(value, _name, item) => {
-              const p = item?.payload as {
-                usage: number | null;
-                costPerUnit: number | null;
-              };
-              const parts = [formatCurrency(Number(value))];
-              if (p?.usage != null)
-                parts.push(`${p.usage.toLocaleString()} ${unit}`);
-              if (p?.costPerUnit != null)
-                parts.push(`${formatCurrency(p.costPerUnit)}/${unit}`);
-              return [parts.join("  ·  "), "Year total"];
-            }}
-          />
-          <Bar dataKey="cost" radius={[3, 3, 0, 0]} maxBarSize={48}>
-            {data.map((d) => (
-              <Cell key={d.year} fill={color} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
   );
 }
 
@@ -240,7 +185,7 @@ function UtilityCard({
       }
     >
       {svc.years.length > 1 && (
-        <CostTrend
+        <CostTrendChart
           years={svc.years}
           color={KIND_COLOR[svc.kind] ?? CHART_COLORS.house}
           unit={unit}
