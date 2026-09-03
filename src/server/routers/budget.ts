@@ -50,6 +50,7 @@ import {
   setBudgetItemLink,
   deleteBudgetItemLink,
 } from "@/server/helpers";
+import type { DbOrTx } from "@/server/helpers/transforms";
 import { budgetApiServiceSchema } from "@/lib/config/enum-values";
 import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
 import { TAX_TREATMENT_LABELS } from "@/lib/config/display-labels";
@@ -95,7 +96,7 @@ function groupItemsByCategory(
  * effect (self-healing) instead of accumulating drift over time.
  */
 async function renumberItems(
-  db: typeof import("@/lib/db").db,
+  db: DbOrTx,
   blocks: { category: string; items: BudgetItemRow[] }[],
 ): Promise<void> {
   let sortOrder = 0;
@@ -139,7 +140,7 @@ export type ProfileResolutionTiers = z.infer<
  * edit with no resolvable profile has nowhere correct to go.
  */
 async function resolveEffectiveContribProfileIdForItem(
-  db: typeof import("@/lib/db").db,
+  db: DbOrTx,
   item: { profileId: number },
   colIndex: number,
   tiers: ProfileResolutionTiers,
@@ -1085,48 +1086,98 @@ export const budgetRouter = createTRPCRouter({
         list.push({ colIndex: u.colIndex, amount: u.amount });
         byId.set(u.id, list);
       }
-      for (const [id, changes] of Array.from(byId)) {
-        const item = await ctx.db
-          .select()
-          .from(schema.budgetItems)
-          .where(eq(schema.budgetItems.id, id))
-          .then((r) => r[0]);
-        if (!item) continue;
+      if (byId.size === 0) return { ok: true, updated: 0, skipped: [] };
 
-        // Linked items: write through to the contribution account instead
-        // of the dead budget_items.amounts field (see updateItemAmount for
-        // the permission-scope rationale). If a batch somehow carries more
-        // than one distinct amount for the same linked item, last one wins.
-        if (item.contributionAccountId) {
-          const lastChange = changes[changes.length - 1]!;
-          const contribProfileId =
-            await resolveEffectiveContribProfileIdForItem(
-              ctx.db,
-              item,
-              lastChange.colIndex,
-              input.contributionProfile ?? NO_PROFILE_TIERS,
-            );
-          await applyContributionAccountEdit(
-            ctx.db,
-            item.contributionAccountId,
-            lastChange.amount,
-            contribProfileId,
-          );
+      // One fetch, not one-per-item.
+      const ids = Array.from(byId.keys());
+      const items = await ctx.db
+        .select()
+        .from(schema.budgetItems)
+        .where(inArray(schema.budgetItems.id, ids));
+      const itemById = new Map(items.map((it) => [it.id, it]));
+
+      // Sort the batch into "apply" and "skip". A since-deleted item or an
+      // out-of-range colIndex (stale client whose column count no longer
+      // matches the server) is skipped, not fatal — but it's now reported
+      // back in `skipped` instead of vanishing silently, so a caller can
+      // surface "3 of 50 cells couldn't be saved". A non-finite amount is a
+      // client bug (not stale state) and still throws.
+      const skipped: { id: number; colIndex: number; reason: string }[] = [];
+      const toApply: {
+        id: number;
+        changes: { colIndex: number; amount: number }[];
+      }[] = [];
+      for (const [id, changes] of byId) {
+        const item = itemById.get(id);
+        if (!item) {
+          for (const c of changes)
+            skipped.push({
+              id,
+              colIndex: c.colIndex,
+              reason: "item no longer exists",
+            });
           continue;
         }
-
-        const amounts = budgetAmountsSchema.parse(item.amounts);
-        for (const c of changes) {
-          if (c.colIndex >= 0 && c.colIndex < amounts.length) {
-            amounts[c.colIndex] = c.amount;
+        const len = item.contributionAccountId
+          ? Infinity // linked items resolve the column via the profile tier
+          : budgetAmountsSchema.parse(item.amounts).length;
+        const valid = changes.filter((c) => {
+          if (!Number.isFinite(c.amount)) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Budget item ${id}: amount for column ${c.colIndex} is not a finite number`,
+            });
           }
-        }
-        await ctx.db
-          .update(schema.budgetItems)
-          .set({ amounts })
-          .where(eq(schema.budgetItems.id, id));
+          if (c.colIndex < 0 || c.colIndex >= len) {
+            skipped.push({
+              id,
+              colIndex: c.colIndex,
+              reason: `column ${c.colIndex} out of range`,
+            });
+            return false;
+          }
+          return true;
+        });
+        if (valid.length > 0) toApply.push({ id, changes: valid });
       }
-      return { ok: true };
+
+      // Apply atomically — either the whole applicable paste lands or none
+      // of it does (a mid-loop failure must not leave half a paste saved).
+      await ctx.db.transaction(async (tx) => {
+        for (const { id, changes } of toApply) {
+          const item = itemById.get(id)!;
+
+          // Linked items: write through to the contribution account instead
+          // of the dead budget_items.amounts field (see updateItemAmount for
+          // the permission-scope rationale). If a batch carries more than
+          // one distinct amount for the same linked item, last one wins.
+          if (item.contributionAccountId) {
+            const lastChange = changes[changes.length - 1]!;
+            const contribProfileId =
+              await resolveEffectiveContribProfileIdForItem(
+                tx,
+                item,
+                lastChange.colIndex,
+                input.contributionProfile ?? NO_PROFILE_TIERS,
+              );
+            await applyContributionAccountEdit(
+              tx,
+              item.contributionAccountId,
+              lastChange.amount,
+              contribProfileId,
+            );
+            continue;
+          }
+
+          const amounts = budgetAmountsSchema.parse(item.amounts);
+          for (const c of changes) amounts[c.colIndex] = c.amount;
+          await tx
+            .update(schema.budgetItems)
+            .set({ amounts })
+            .where(eq(schema.budgetItems.id, id));
+        }
+      });
+      return { ok: true, updated: toApply.length, skipped };
     }),
 
   /** Add a new column (budget mode) to the target profile (active if not given). */
@@ -1157,31 +1208,35 @@ export const budgetRouter = createTRPCRouter({
             null,
           ])
         : null;
-      await ctx.db
-        .update(schema.budgetProfiles)
-        .set({
-          columnLabels: newLabels,
-          columnMonths: newMonths,
-          columnContributionProfileIds: newContribIds,
-          columnSalaryProfileIds: newSalaryIds,
-        })
-        .where(eq(schema.budgetProfiles.id, profile.id));
+      // Atomic: the new column must land on the profile AND on every item's
+      // amounts array together, or the budget is left ragged.
+      await ctx.db.transaction(async (tx) => {
+        await tx
+          .update(schema.budgetProfiles)
+          .set({
+            columnLabels: newLabels,
+            columnMonths: newMonths,
+            columnContributionProfileIds: newContribIds,
+            columnSalaryProfileIds: newSalaryIds,
+          })
+          .where(eq(schema.budgetProfiles.id, profile.id));
 
-      // Add a 0 to each item's amounts array
-      const items = await ctx.db
-        .select()
-        .from(schema.budgetItems)
-        .where(eq(schema.budgetItems.profileId, profile.id));
-      for (const item of items) {
-        const amounts = budgetAmountsSchema.parse([
-          ...(item.amounts as number[]),
-          0,
-        ]);
-        await ctx.db
-          .update(schema.budgetItems)
-          .set({ amounts })
-          .where(eq(schema.budgetItems.id, item.id));
-      }
+        // Add a 0 to each item's amounts array
+        const items = await tx
+          .select()
+          .from(schema.budgetItems)
+          .where(eq(schema.budgetItems.profileId, profile.id));
+        for (const item of items) {
+          const amounts = budgetAmountsSchema.parse([
+            ...(item.amounts as number[]),
+            0,
+          ]);
+          await tx
+            .update(schema.budgetItems)
+            .set({ amounts })
+            .where(eq(schema.budgetItems.id, item.id));
+        }
+      });
       return { ok: true };
     }),
 
@@ -1228,32 +1283,36 @@ export const budgetRouter = createTRPCRouter({
             ),
           )
         : null;
-      await ctx.db
-        .update(schema.budgetProfiles)
-        .set({
-          columnLabels: newLabels,
-          columnMonths: newMonths,
-          columnContributionProfileIds: newContribIds,
-          columnSalaryProfileIds: newSalaryIds,
-        })
-        .where(eq(schema.budgetProfiles.id, profile.id));
+      // Atomic: drop the column from the profile AND from every item's
+      // amounts array together (see addColumn).
+      await ctx.db.transaction(async (tx) => {
+        await tx
+          .update(schema.budgetProfiles)
+          .set({
+            columnLabels: newLabels,
+            columnMonths: newMonths,
+            columnContributionProfileIds: newContribIds,
+            columnSalaryProfileIds: newSalaryIds,
+          })
+          .where(eq(schema.budgetProfiles.id, profile.id));
 
-      // Remove the column from each item's amounts array
-      const items = await ctx.db
-        .select()
-        .from(schema.budgetItems)
-        .where(eq(schema.budgetItems.profileId, profile.id));
-      for (const item of items) {
-        const amounts = budgetAmountsSchema.parse(
-          (item.amounts as number[]).filter(
-            (_: number, i: number) => i !== input.colIndex,
-          ),
-        );
-        await ctx.db
-          .update(schema.budgetItems)
-          .set({ amounts })
-          .where(eq(schema.budgetItems.id, item.id));
-      }
+        // Remove the column from each item's amounts array
+        const items = await tx
+          .select()
+          .from(schema.budgetItems)
+          .where(eq(schema.budgetItems.profileId, profile.id));
+        for (const item of items) {
+          const amounts = budgetAmountsSchema.parse(
+            (item.amounts as number[]).filter(
+              (_: number, i: number) => i !== input.colIndex,
+            ),
+          );
+          await tx
+            .update(schema.budgetItems)
+            .set({ amounts })
+            .where(eq(schema.budgetItems.id, item.id));
+        }
+      });
       return { ok: true };
     }),
 
@@ -1356,7 +1415,7 @@ export const budgetRouter = createTRPCRouter({
       if (swapWith < 0 || swapWith >= blocks.length) return { ok: true };
 
       [blocks[idx], blocks[swapWith]] = [blocks[swapWith]!, blocks[idx]!];
-      await renumberItems(ctx.db, blocks);
+      await ctx.db.transaction((tx) => renumberItems(tx, blocks));
       return { ok: true };
     }),
 
@@ -1398,7 +1457,7 @@ export const budgetRouter = createTRPCRouter({
         block.items[swapWith]!,
         block.items[idx]!,
       ];
-      await renumberItems(ctx.db, blocks);
+      await ctx.db.transaction((tx) => renumberItems(tx, blocks));
       return { ok: true };
     }),
 
