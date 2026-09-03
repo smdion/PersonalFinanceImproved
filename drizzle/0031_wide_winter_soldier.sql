@@ -1,1 +1,0 @@
-ALTER TABLE "retirement_settings" ADD COLUMN "rmd_smoothing_max_bracket_target" numeric(8, 6);

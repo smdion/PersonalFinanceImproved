@@ -379,6 +379,7 @@ describe("KNOWN_SCHEMA_VERSIONS completeness", () => {
     expect(KNOWN_SCHEMA_VERSIONS).toContain("v0.3_final");
     expect(KNOWN_SCHEMA_VERSIONS).toContain("v0.5_final");
     expect(KNOWN_SCHEMA_VERSIONS).toContain("v0.6_final");
+    expect(KNOWN_SCHEMA_VERSIONS).toContain("v0.7_final");
     // v0.6.x tags
     expect(KNOWN_SCHEMA_VERSIONS).toContain("0001_melodic_thaddeus_ross");
     expect(KNOWN_SCHEMA_VERSIONS).toContain("0002_blue_moon_knight");
@@ -389,6 +390,8 @@ describe("KNOWN_SCHEMA_VERSIONS completeness", () => {
     expect(KNOWN_SCHEMA_VERSIONS).toContain("0000_v7_initial_schema");
     expect(KNOWN_SCHEMA_VERSIONS).toContain("0001_parched_karma");
     expect(KNOWN_SCHEMA_VERSIONS).toContain("0001_fresh_masque");
+    // v0.8.0 squash baseline
+    expect(KNOWN_SCHEMA_VERSIONS).toContain("0000_v8_initial_schema");
     // Deliberately NOT a hardcoded length. That assertion had to be bumped
     // by hand on every migration, which is friction pushing in exactly the
     // wrong direction — the failure mode here is a tag being *missing*, and

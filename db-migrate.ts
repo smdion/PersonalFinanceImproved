@@ -172,6 +172,16 @@ type SquashResult = {
 async function detectSchemaEra(
   client: import("pg").PoolClient,
 ): Promise<string> {
+  // v0.7.x has savings_planned_tx_settlements (added in 0001_parched_karma, the
+  // earliest post-v7-baseline migration, so present in every deployed v0.7.x install)
+  const { rows: probeV07 } = await client.query(
+    `SELECT EXISTS (
+      SELECT 1 FROM information_schema.tables
+      WHERE table_name = 'savings_planned_tx_settlements'
+    ) AS exists`,
+  );
+  if (probeV07[0]?.exists) return "v0.7_final";
+
   // v0.6.x has account_holdings (added in 0001_melodic_thaddeus_ross, the
   // earliest post-v6-baseline migration, so present in every deployed v0.6.x install)
   const { rows: probeV06 } = await client.query(
@@ -1315,6 +1325,11 @@ function handleSQLiteSquashUpgrade(
     if (appliedCount === 0) {
       // Check if any application tables exist (partial squash recovery).
       // Use the era probes so we can skip the second probe pass below if positive.
+      const v07Check = sqlite
+        .prepare(
+          "SELECT count(*) AS n FROM sqlite_master WHERE type='table' AND name='savings_planned_tx_settlements'",
+        )
+        .get() as { n: number };
       const v06Check = sqlite
         .prepare(
           "SELECT count(*) AS n FROM sqlite_master WHERE type='table' AND name='account_holdings'",
@@ -1330,7 +1345,12 @@ function handleSQLiteSquashUpgrade(
           "SELECT count(*) AS n FROM sqlite_master WHERE type='table' AND name='projection_overrides'",
         )
         .get() as { n: number };
-      if (v06Check.n > 0 || v05Check.n > 0 || v03Check.n > 0) {
+      if (
+        v07Check.n > 0 ||
+        v06Check.n > 0 ||
+        v05Check.n > 0 ||
+        v03Check.n > 0
+      ) {
         needsSquashRecovery = true;
         log("info", "partial_squash_recovery_detected", {
           reason:
@@ -1369,6 +1389,11 @@ function handleSQLiteSquashUpgrade(
 
   // --- Squash detected ---
   // Detect schema era. Check newest first to correctly classify older installs.
+  const probeV07Sqlite = sqlite
+    .prepare(
+      "SELECT count(*) AS n FROM sqlite_master WHERE type='table' AND name='savings_planned_tx_settlements'",
+    )
+    .get() as { n: number };
   const probeV06Sqlite = sqlite
     .prepare(
       "SELECT count(*) AS n FROM sqlite_master WHERE type='table' AND name='account_holdings'",
@@ -1385,13 +1410,15 @@ function handleSQLiteSquashUpgrade(
     )
     .get() as { n: number };
   const schemaVersion =
-    probeV06Sqlite.n > 0
-      ? "v0.6_final"
-      : probeV05Sqlite.n > 0
-        ? "v0.5_final"
-        : probeV03Sqlite.n > 0
-          ? "v0.3_final"
-          : "v0.2_final";
+    probeV07Sqlite.n > 0
+      ? "v0.7_final"
+      : probeV06Sqlite.n > 0
+        ? "v0.6_final"
+        : probeV05Sqlite.n > 0
+          ? "v0.5_final"
+          : probeV03Sqlite.n > 0
+            ? "v0.3_final"
+            : "v0.2_final";
 
   log("info", "sqlite_squash_upgrade_start", {
     appliedMigrations: appliedCount,

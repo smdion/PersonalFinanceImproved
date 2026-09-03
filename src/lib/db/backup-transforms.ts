@@ -132,6 +132,7 @@ export const KNOWN_SCHEMA_VERSIONS = [
   "v0.3_final",
   "v0.5_final",
   "v0.6_final",
+  "v0.7_final",
   // v0.6.x series — squashed v6 baseline + incremental migrations
   "0000_v6_initial_schema",
   "0001_melodic_thaddeus_ross", // PG: account_holdings/pending_rollovers + extra_paycheck_routing reshape
@@ -149,6 +150,12 @@ export const KNOWN_SCHEMA_VERSIONS = [
   // v0.7.x series — squashed v7 baseline + every incremental migration,
   // from the single V07_SCHEMA_TAGS list above (shared with schemaEra()).
   ...V07_SCHEMA_TAGS,
+  // v0.8.0 — pure migration squash, zero schema change vs the v0.7.11 tip.
+  // A backup exported at any v0.8.x patch carries this single baseline tag;
+  // it is already current-shape, so schemaEra() routes it through the same
+  // (idempotent) v0.7 → current transform until the v0.8 line accrues its
+  // own migrations and the next squash gives it a dedicated era.
+  "0000_v8_initial_schema",
 ] as const;
 
 export type KnownSchemaVersion = (typeof KNOWN_SCHEMA_VERSIONS)[number];
@@ -251,6 +258,13 @@ function schemaEra(
   if (tag === "v0.5_final") return "v0.5";
   if (tag === "v0.3_final") return "v0.3";
   if (tag === "v0.2_final") return "v0.2";
+
+  // v0.7_final (pre-upgrade backup tag) and the v0.8.0 squash baseline are
+  // both already current-shape (the v0.8.0 squash changed no schema), so
+  // they route through the same v0.7 → current transform, which is
+  // idempotent for a backup that is already current.
+  if (tag === "v0.7_final") return "v0.7";
+  if (tag === "0000_v8_initial_schema") return "v0.7";
 
   // v0.7.x tags (squashed v7 baseline + every incremental migration).
   // Same single source as KNOWN_SCHEMA_VERSIONS — see V07_SCHEMA_TAGS.
