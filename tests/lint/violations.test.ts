@@ -30,6 +30,7 @@
  *   22. API route under src/app/api/ that writes to the DB with no DEMO_ONLY guard (M5 class)
  *   23. { MFJ: <figure> Single: <figure> HOH: <figure> } object literal outside src/lib/config/ (R43 audit F4 class)
  *   24. Local const re-declaring an ALL_CAPS name already exported from constants.ts / config/ (R43 audit F1 class)
+ *   25. Review-history citation in a comment — finding-ID tag (H10)/(M42)/(C2), review-findings.md, expert-review, CodeRabbit
  *
  * Intentionally NOT checked (needs semantic analysis, not string matching):
  *   - "Router computing budget expenses with different column index" (#1)
@@ -796,6 +797,46 @@ function findRedeclaredConfigExportViolations(): Violation[] {
   return violations;
 }
 
+// Rule 25 (R17): review-history citations in comments — docs/RULES.md's
+// "Comments explain the code, not its history" rule. Deliberately scoped to
+// the highest-confidence, lowest-false-positive shapes only (same reasoning
+// as R43f's narrow lint guard): a finding-ID tag in parens (H10)/(M42)/
+// (L130)/(T24)/(C2), and literal references to the two dead-doc/tool names
+// that were the actual recurring offenders (review-findings.md, an
+// "expert-review" citation, CodeRabbit). Broader shapes — bare R## roadmap
+// tags, date-stamps, PLAN-*.md filenames — are real but too free-text/
+// context-dependent for a reliable regex (an R## could be a real
+// identifier; a date could be a legitimate incident narrative per RULES.md's
+// own exception) and are left to code review, not a lint gate.
+const REVIEW_CITATION_PATTERN =
+  /\((?:H|M|L|T|C)[0-9]{1,3}\)|review-findings\.md|expert-review|CodeRabbit/;
+function findReviewCitationViolations(): Violation[] {
+  const violations: Violation[] = [];
+  for (const file of walkTsFiles(SRC_DIR)) {
+    const rel = relPath(file);
+    if (isExempt(rel)) continue;
+    const lines = readFileLines(file);
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i]!;
+      if (line.includes("lint-violation-ok")) continue;
+      // Only inside a comment — a string literal or identifier that happens
+      // to contain e.g. "(C2)" is not this rule's concern.
+      const commentStart = Math.max(line.indexOf("//"), line.indexOf("*"));
+      if (commentStart === -1) continue;
+      const commentText = line.slice(commentStart);
+      const m = REVIEW_CITATION_PATTERN.exec(commentText);
+      if (!m) continue;
+      violations.push({
+        file: rel,
+        line: i + 1,
+        rule: "no-review-history-citation",
+        snippet: line.trim().slice(0, 100),
+      });
+    }
+  }
+  return violations;
+}
+
 // ── Tests ───────────────────────────────────────────────────────────
 
 function formatViolations(label: string, violations: Violation[]): string {
@@ -1108,6 +1149,20 @@ describe("RULES.md violations sweep", () => {
           `This name is already exported from src/lib/constants.ts or a ` +
           `src/lib/config/ module — import it instead of re-declaring a ` +
           `local copy that can silently drift from the original.\n` +
+          formatViolations("Violations", violations),
+      );
+    }
+  });
+
+  it("no review-history citation in comments (finding-ID tags, review-findings.md, expert-review, CodeRabbit)", () => {
+    const violations = findReviewCitationViolations();
+    if (violations.length > 0) {
+      expect.fail(
+        `Found ${violations.length} review-history-citation violations. ` +
+          `Comments explain the code to a cold reader, not which review ` +
+          `session/finding produced the line (docs/RULES.md "Comments ` +
+          `explain the code, not its history"). Keep the technical reasoning, ` +
+          `drop the citation — it belongs in the commit message.\n` +
           formatViolations("Violations", violations),
       );
     }

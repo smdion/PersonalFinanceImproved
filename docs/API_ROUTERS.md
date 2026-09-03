@@ -300,7 +300,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `upsert`                    | mutation | `adminProcedure`     | household with zero profiles yet) — that is NOT the same as "use the active profile," and must NOT silently retarget the write there; it scopes to the (rare, legitimate) null-profile rows via `isNull` |
 | `upsert`                    | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
 | `upsertHouseholdFields`     | mutation | `adminProcedure`     | engine's real per-person read source for both (`retirement_profile_people`) is per-person storage. Fan whichever field the caller sends to every person's row in the profile — same shape as `retirement |
-| `upsertPerson`              | mutation | `adminProcedure`     | from once step B (2026-08-30) switched those reads to `retirement_profile_people`. The edits saved, the UI showed the new number optimistically, and the projection never moved — same failure shape as  |
+| `upsertPerson`              | mutation | `adminProcedure`     | from once those reads were switched to `retirement_profile_people`. The edits saved, the UI showed the new number optimistically, and the projection never moved — same failure shape as the pre-0b5d5fe |
 | `upsertPersonRaiseRate`     | mutation | `adminProcedure`     | `upsert` (which requires a full anchor payload the per-person UI doesn't have, runs the endAge fan-out, and resolves+writes a default filing status — all wrong for a one-field raise-rate edit). UPDATE |
 
 ## `salary-profiles`
