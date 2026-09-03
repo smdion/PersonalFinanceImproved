@@ -1,6 +1,6 @@
 import { formatDate } from "@/lib/utils/format";
 
-/** Print-only cover header for the retirement advisor report (R42).
+/** Print-only cover header for the retirement advisor report.
  *  Mounted only when reportMode === "advisor" (see index.tsx) — hidden on
  *  screen, visible when printing, via the `hidden print:block` wrapper the
  *  caller applies. Presentational only, no data fetching of its own. */

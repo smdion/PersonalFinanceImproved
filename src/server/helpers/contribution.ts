@@ -981,7 +981,7 @@ export type ContribRowWithActiveFields =
     contributionValue: string | number;
     contributionMethod: string;
     displayNameCustom?: string;
-    /** @deprecated R22 legacy key. */
+    /** @deprecated legacy key. */
     displayNameActive?: string;
   };
 
@@ -1170,9 +1170,9 @@ export function getIncompleteDeductionIds(
  * contributionActiveFields are empty is simply a profile with nothing
  * customized, and applying it is a no-op by content rather than by flag.
  * Was duplicated between this file's loadAndApplyContribProfile and
- * retirement.ts's own scenario-comparison resolver (M26,
- * .scratch/docs/review-findings.md) — retirement.ts applies salary overrides
- * with different layering semantics (no existing-override priority), so it
+ * retirement.ts's own scenario-comparison resolver — retirement.ts applies
+ * salary overrides with different layering semantics (no existing-override
+ * priority), so it
  * keeps its own override-application logic and only shares this fetch.
  */
 export async function fetchContributionProfile(
@@ -1236,7 +1236,7 @@ export async function loadAndApplyContribProfile(
  * pre-fetched profile row without issuing any DB queries.
  *
  * Used by `buildEnginePayload` when the profile row was already fetched
- * in the `fetchRetirementData` parallel batch (C6 perf improvement).
+ * in the `fetchRetirementData` parallel batch.
  */
 export function applyContribProfileRow(
   profile: typeof schema.contributionProfiles.$inferSelect | null | undefined,
@@ -1327,10 +1327,9 @@ export type BreakdownAccount = {
  * criterion of `undefined` on the spec, or `undefined` on the account row,
  * is treated as "matches anything" (see `parentCatMatches`).
  *
- * Extracted from `buildProfileContribData`'s inline `.map()` (R35) — the
- * cascade had no name, no doc, and no isolated test coverage in a file that
- * was the site of the v0.7.6 employer-match grouping bug. Behavior is
- * byte-identical to the pre-extraction inline chain; `tests/server/
+ * Split out of `buildProfileContribData`'s inline `.map()` so the
+ * cascade has a name, a doc, and isolated test coverage in a file that
+ * was the site of an employer-match grouping bug; `tests/server/
  * match-account-for-contribution.test.ts` pins each tier.
  */
 export function matchAccountForContribution(

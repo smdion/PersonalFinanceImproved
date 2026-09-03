@@ -1,7 +1,6 @@
 /**
- * Healthcare Cost Awareness panel — extracted from retirement-content.tsx in
- * PR 7/3 of the v0.5.2 file-split refactor. Pure relocation — no behavior
- * changes. Holds the IRMAA awareness toggle, ACA subsidy awareness toggle,
+ * Healthcare Cost Awareness panel. Holds the IRMAA awareness toggle, ACA
+ * subsidy awareness toggle,
  * and conditional household-size selector.
  */
 "use client";

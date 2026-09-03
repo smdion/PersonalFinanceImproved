@@ -9,10 +9,6 @@
  * per-person retirement ages, filing status, IRMAA/ACA, and the engine's starting
  * balances. Callers (projection router endpoints) consume the result and add
  * their own accumulation/decumulation overrides and decumulation defaults.
- *
- * Extracted from `src/server/routers/retirement.ts` in the v0.5.2 file-split
- * refactor (see `.scratch/docs/V052-REFACTOR-PLAN.md` PR 1). Pure relocation —
- * no logic changes.
  */
 import { eq, asc, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
@@ -87,7 +83,7 @@ export async function fetchRetirementData(
      *  own date isn't known until this same Promise.all resolves (it's one
      *  of the parallel fetches), so it can't retroactively affect this
      *  query — this only helps callers that already know their target date
-     *  up front (M23, .scratch/docs/review-findings.md). */
+     *  up front. */
     asOfDate?: Date;
   },
 ) {
@@ -136,10 +132,10 @@ export async function fetchRetirementData(
       .select()
       .from(schema.contributionAccounts)
       .where(eq(schema.contributionAccounts.isActive, true)),
-    // Unfiltered (R43): resolveTaxParams picks the year. Was previously
+    // Unfiltered: resolveTaxParams picks the year. Was previously
     // filtered to asOfDate.getFullYear() here, which — combined with
     // tax_brackets being taken at MAX(tax_year) — was the split-vintage
-    // gap (F2-4). The resolver now anchors every slice on one year.
+    // gap. The resolver now anchors every slice on one year.
     db.select().from(schema.contributionLimits),
     getLatestSnapshot(db, opts?.snapshotId),
     db
@@ -167,7 +163,7 @@ export async function fetchRetirementData(
       .where(eq(schema.brokerageGoals.isActive, true))
       .orderBy(asc(schema.brokerageGoals.targetYear)),
     db.select().from(schema.appSettings),
-    // Batch contribution profile fetch when profileId is known at fetch time (C6).
+    // Batch contribution profile fetch when profileId is known at fetch time.
     // Returns the row (or null = not found) when profileId is provided; undefined when
     // profileId is absent. buildEnginePayload checks for undefined to decide whether to
     // fall back to the async fetch (backward compat for callers that don't pass profileId here).
@@ -178,7 +174,7 @@ export async function fetchRetirementData(
           .where(eq(schema.contributionProfiles.id, opts.contributionProfileId))
           .then((r) => r[0] ?? null)
       : Promise.resolve(undefined as undefined),
-    // Same C6 batching for the independent Salary Profile axis.
+    // Same batching for the independent Salary Profile axis.
     opts?.salaryProfileId
       ? db
           .select()
@@ -186,7 +182,7 @@ export async function fetchRetirementData(
           .where(eq(schema.salaryProfiles.id, opts.salaryProfileId))
           .then((r) => r[0] ?? null)
       : Promise.resolve(undefined as undefined),
-    // Withdrawal-ordering eligibility (v0.7.8, PLAN-v0.7.8-v4 Group 1.1):
+    // Withdrawal-ordering eligibility:
     // which job funds which performance account. Deliberately unfiltered —
     // no isActive filter — a separated employer's contribution-account link
     // is exactly the one likely to be inactive, and it's exactly the
@@ -292,7 +288,7 @@ export async function buildEnginePayload(
   // All active contribution accounts feed the engine (both Retirement and Portfolio).
   // Pages filter output by parentCategory on individualAccountBalances.
   // When a contribution profile is selected, apply its overrides to the raw rows.
-  // C6: if the caller passed contributionProfileId to fetchRetirementData, the profile
+  // If the caller passed contributionProfileId to fetchRetirementData, the profile
   // row is already batched in data.contribProfileRow (undefined = not fetched; use async
   // fallback for backward-compat). When pre-fetched, the sync path avoids a serial round-trip.
   // Salary Profile resolved up front — both the Contribution Profile
@@ -353,15 +349,15 @@ export async function buildEnginePayload(
   // until that backfill landed.
   const filingStatus = settings.filingStatus;
 
-  // R43: every per-year tax slice (withholding brackets, contribution
+  // Every per-year tax slice (withholding brackets, contribution
   // limits + standard/senior deductions, LTCG brackets, IRMAA brackets,
   // FPL) is resolved through ONE call, anchored on ONE year — instead of
   // the old mix of `Math.max(tax_brackets.taxYear)` for brackets and
   // `WHERE tax_year = asOfDate.getFullYear()` for limits, which could
-  // silently split across two vintages in the Oct-Jan window (F2-4).
+  // silently split across two vintages in the Oct-Jan window.
   //
   // requestedYear: the active retirement profile's pin
-  // (`tax_params_year`, null ⇒ undefined ⇒ newest enacted — the pre-R43
+  // (`tax_params_year`, null ⇒ undefined ⇒ newest enacted — the earlier
   // default, since no production caller ever passed the latent `asOfDate`
   // opt and the old `contribution_limits` filter was therefore always the
   // current calendar year, which equals the newest seeded year). Historical
@@ -419,7 +415,7 @@ export async function buildEnginePayload(
   // when their own `retirement_settings` row carries no distinct rate (a
   // stored 0 or unparseable value counts as "no distinct rate", matching the
   // engine's long-standing `|| primaryRaiseRate` semantics). Computed here so
-  // BOTH `perPersonSettings` (below, for the per-person UI control — R53) and
+  // BOTH `perPersonSettings` (below, for the per-person UI control) and
   // `raiseRateByPerson` (further down, for salary-override growth) resolve
   // the effective rate the same way — one decision, one code path.
   const primaryRaiseRate = toNumber(settings.salaryAnnualIncrease);
@@ -442,7 +438,7 @@ export async function buildEnginePayload(
       birthYear: new Date(p.dateOfBirth).getFullYear(),
       retirementAge: ps?.retirementAge ?? settings.retirementAge,
       endAge: ps?.endAge ?? settings.endAge,
-      // Effective pre-retirement raise rate for THIS person (R53). A person
+      // Effective pre-retirement raise rate for THIS person. A person
       // whose row has no distinct rate shows the primary's rate here rather
       // than a misleading 0 — the per-person control edits the effective
       // value, and writing a nonzero value through it stores a real rate.
@@ -542,7 +538,7 @@ export async function buildEnginePayload(
   // tier, always wins per field).
   const asOfDate = referenceDate;
   const activeJobs = filterActiveJobs(patchedJobs);
-  // C7: use getSalariesForJobs helper (deduplicates the parallel-fetch pattern).
+  // Uses getSalariesForJobs helper (deduplicates the parallel-fetch pattern).
   // Post-process to apply the Plan/session salary override and compute
   // totalComp. A Salary Profile entry is now a complete, all-or-nothing
   // number (see resolveCompensation's docblock) — there is no more
@@ -599,9 +595,8 @@ export async function buildEnginePayload(
   } = taxBucketBreakdown;
   const personNameById = new Map(people.map((p) => [p.id, p.name]));
 
-  // Per-account withdrawal-ordering eligibility (v0.7.8, PLAN-v0.7.8-v4
-  // Group 1.1) — reuses computeTaxBucketAnalysis verbatim (RULES.md § Single
-  // Computation Path) rather than re-deriving Rule of 55 / Roth-ordering
+  // Per-account withdrawal-ordering eligibility — reuses computeTaxBucketAnalysis
+  // verbatim (RULES.md § Single Computation Path) rather than re-deriving Rule of 55 / Roth-ordering
   // resolution a third time. Keyed with the same indKey format the engine's
   // individual-account-tracking module uses, so Group 2's eligibility gate
   // can look a given `IndividualAccountInput` up directly. Retirement-only
@@ -704,7 +699,7 @@ export async function buildEnginePayload(
       { ruleOf55: entry.ruleOf55, rothBasisMeta: entry.rothBasisMeta },
     );
   }
-  // Per-account penalty-allowance override (R41) — account-level, not
+  // Per-account penalty-allowance override — account-level, not
   // person-level, so (unlike ruleOf55/rothBasisMeta above) joint accounts
   // are included, not skipped. Only ever records `true`: same omit-when-
   // false cache-hash-stability convention as `ruleOf55ForceIneligible`.
@@ -767,7 +762,7 @@ export async function buildEnginePayload(
       : IRS_LIMIT_GROWTH_RATE;
 
   // IRS limits — the `contribution_limits` rows for the resolved tax year
-  // (R43: resolveTaxParams already filtered + coerced to numbers). Same
+  // (resolveTaxParams already filtered + coerced to numbers). Same
   // map shape as the old `for (const l of allLimits)` loop.
   const limitsMap: Record<string, number> = resolvedTax.limits;
 
@@ -802,7 +797,7 @@ export async function buildEnginePayload(
   // superCatchupByGroup hold the flat per-person IRS catchup dollar figure
   // (not summed across people) — groupParticipants records WHO participates
   // in each group so the engine can gate that figure by each participant's
-  // own projected age each year (see catchupGroupParticipants below / H10).
+  // own projected age each year (see catchupGroupParticipants below).
   const limitByGroup: Record<string, number> = {};
   const catchupByGroup: Record<string, number> = {};
   const superCatchupByGroup: Record<string, number> = {};
@@ -810,7 +805,7 @@ export async function buildEnginePayload(
   const birthYearByPersonId = new Map(
     perPersonSettings.map((p) => [p.personId, p.birthYear]),
   );
-  // Rule of 55 forecasting override (v0.7.8) -- see
+  // Rule of 55 forecasting override -- see
   // IndividualAccountInput.ruleOf55ForceIneligible's docblock for the full
   // contract. Only ever set true (never false) below, so a household not
   // using this feature gets a byte-identical engine input.
@@ -1125,7 +1120,7 @@ export async function buildEnginePayload(
    *  carries no distinct rate. Reading it back here (instead of re-deriving
    *  from `retSettings`) is what keeps this map and the per-person UI control
    *  in exact agreement about a person's raise rate — the divergence an
-   *  earlier version of R53 would have introduced. retirementSettings is
+   *  earlier version of this feature would have introduced. retirementSettings is
    *  per-person, so growing person B's future salary by person A's rate
    *  (what a naive fan-out would do) silently produces the wrong number. */
   const raiseRateByPerson = new Map(
@@ -1427,14 +1422,14 @@ export async function buildEnginePayload(
   let effectiveTraditionalRate = dbTraditionalRate;
   let effectiveBrokerageRate = dbBrokerageRate;
 
-  // R43 (C7): the standard deduction and the §63(f) senior deduction are
+  // The standard deduction and the §63(f) senior deduction are
   // permanent, evergreen figures — the IRS publishes a value for them
   // every year, so a resolved tax year with no row for one is a genuine
   // seed-completeness bug, not a legitimate state. `requireLimit` throws
   // rather than silently computing on gross income with no deduction
-  // (the year-boundary F2-4 class of bug this whole mechanism exists to
+  // (the year-boundary class of bug this whole mechanism exists to
   // close). Hoisted above its other use (distributionTaxRates.standardDeduction
-  // below) so the R56 fallback-rate estimate uses the same value —
+  // below) so the fallback-rate estimate uses the same value —
   // computing it twice would risk the two silently drifting.
   const standardDeductionForFilingStatus = filingStatus
     ? requireLimit(
@@ -1443,7 +1438,7 @@ export async function buildEnginePayload(
       )
     : undefined;
 
-  // IRC §63(f)(1) additional standard deduction for filers 65+ (R59). One
+  // IRC §63(f)(1) additional standard deduction for filers 65+. One
   // amount for married filers (per qualifying spouse), a larger one for
   // unmarried (Single/HoH). The decumulation-year handler multiplies this by
   // how many household members are 65+ in each projection year — nearly
@@ -1493,7 +1488,7 @@ export async function buildEnginePayload(
       decumulationExpenses !== accumulationExpenses
         ? decumulationExpenses
         : annualExpensesVal;
-    // NOTE (R59): deliberately the FLAT filing-status deduction, not the
+    // NOTE: deliberately the FLAT filing-status deduction, not the
     // age-65+ senior-adjusted figure. This is a single scalar fallback rate
     // used only when no tax brackets are seeded; it can't be per-projection-
     // year age-aware. The real per-year LTCG/tax path applies the §63(f)
@@ -1514,7 +1509,7 @@ export async function buildEnginePayload(
     // uses — replaces a prior heuristic that checked retirement income
     // against the *ordinary* 12%-bracket threshold as a proxy for the LTCG
     // 0% zone, which silently overstated 0%-LTCG headroom (the two bracket
-    // tables have different thresholds; code review + advisor, v0.7.9 R40).
+    // tables have different thresholds).
     // This value is only ever the FALLBACK used when filingStatus is
     // unavailable to a caller — the primary pricing path always uses
     // computeLtcgTax with the real bracket table directly.
@@ -1556,7 +1551,7 @@ export async function buildEnginePayload(
     // behavior rather than throwing.
     standardDeduction: standardDeductionForFilingStatus,
     // IRC §63(f) age-65+ additional standard deduction, per qualifying
-    // senior, filing-status-resolved (R59). decumulation-year.ts scales it
+    // senior, filing-status-resolved. decumulation-year.ts scales it
     // by the 65+ headcount for each projection year and folds it into the
     // deduction before growth.
     additionalStdDeduction65PerSenior,
@@ -1573,7 +1568,7 @@ export async function buildEnginePayload(
     // these values reads as flat-nominal forever in the engine, which is
     // wrong once real inflation-indexed brackets are grown forward off it.
     taxDataYear: latestTaxYear,
-    // R43: the `tax_params` vintage revision for `taxDataYear`. Informational
+    // The `tax_params` vintage revision for `taxDataYear`. Informational
     // (a "Tax data: 2026, rev N" label) — but threaded into the engine input
     // so a vintage bump is explicit in `hashEngineInput`'s digest rather than
     // only implicit via the resolved values.

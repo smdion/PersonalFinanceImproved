@@ -1,6 +1,6 @@
 /** Loading skeleton for ProjectionChart — extracted into its own module so
  *  it can serve as the next/dynamic loading fallback without dragging
- *  recharts into the parent bundle (v0.5 expert-review M8).
+ *  recharts into the parent bundle.
  *
  *  The optional `phase` prop controls the overlay label:
  *    "engine"     → "Running projection engine..."  (blue, initial load)

@@ -57,7 +57,7 @@ export function RetirementProfileManager({
     useActiveRetirementProfile();
   const { data: profiles, isLoading } =
     trpc.retirement.retirementProfiles.list.useQuery();
-  // R43 follow-up: available tax-law years for the "Tax law year" pin
+  // Available tax-law years for the "Tax law year" pin
   // select below, derived from the broadest-coverage existing reference
   // table (tax_brackets) instead of a new endpoint — resolveTaxParams
   // itself already answers "which years have data" internally; a second,
@@ -132,7 +132,7 @@ export function RetirementProfileManager({
     },
     onError: (e) => setError(e.message),
   });
-  // R43 follow-up: taxParamsYear is profile IDENTITY (which tax law this
+  // taxParamsYear is profile IDENTITY (which tax law this
   // plan is priced under), the same category as name/description — not a
   // household assumption like the ones retirementSettings.upsert owns —
   // so it uses the same retirementProfiles.update mutation shape as

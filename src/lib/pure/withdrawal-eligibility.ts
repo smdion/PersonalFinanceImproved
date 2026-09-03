@@ -1,18 +1,14 @@
 /**
- * Withdrawal-ordering penalty exposure (v0.7.8, PLAN-v0.7.8-v4 Group 2.1;
- * extended by the v0.7.8 penalty-hard-exclusion follow-up) — the
+ * Withdrawal-ordering penalty exposure — the
  * per-projected-year computation that tells the decumulation engine's
  * withdrawal routing exactly which dollars, in each individual account,
  * would incur the 10% early-withdrawal penalty this year (Rule of 55, 59½,
  * HSA 65, Roth ordering) — the same rules the Tax Buckets analysis tool
  * already displays, now wired into actual withdrawal routing.
  *
- * Locked designs:
- * `.scratch/docs/plans/DESIGN-DECISION-v0.7.8-withdrawal-ordering-group0.md`
- * (advisor session, 2026-08-26) and
- * `.scratch/docs/plans/DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md`
- * (advisor session, 2026-08-26, supersedes Group 0 § Q0). Key decisions this
- * module implements:
+ * Key decisions this
+ * module implements (supersedes an earlier "soft/penalized-but-available"
+ * design, Group 0 § Q0):
  *
  * - Group 0 § Q0 ("soft/penalized-but-available") is SUPERSEDED. A
  *   penalty-exposed dollar is no longer treated as reachable-but-
@@ -88,16 +84,16 @@ export type EligibilityAccountInput = {
    *  `IndividualAccountInput.ownerBirthYear`'s docblock for why this isn't
    *  a separate `birthYearByPersonId` lookup. */
   ownerBirthYear?: number;
-  /** Rule of 55 forecasting override (v0.7.8) — see
+  /** Rule of 55 forecasting override — see
    *  `projectRuleOf55`'s `opts.forceIneligible` docblock
    *  (`tax-bucket-projection.ts`) for the full contract. Passed straight
    *  through to that function; this module never inspects or short-circuits
-   *  on it directly — doing so was a real bug caught in advisor review,
-   *  since Rule-of-55-ineligible is not the same as locked (the pro_rata
+   *  on it directly — doing so was a real bug, since Rule-of-55-ineligible is
+   *  not the same as locked (the pro_rata
    *  branch below is "Rule of 55 OR 59½"). */
   ruleOf55ForceIneligible?: boolean;
   /** Household is fine paying the penalty on THIS account if it avoids an
-   *  otherwise-real shortfall (R41). Only ever `true` when set — see
+   *  otherwise-real shortfall. Only ever `true` when set — see
    *  `IndividualAccountInput.allowPenalizedWithdrawals`'s docblock
    *  (`lib/calculators/types/shared.ts`) for the full contract. This
    *  module doesn't gate on it directly (same "compute the partition,
@@ -112,7 +108,7 @@ export type EligibilityAccountInput = {
    *  `a.parentCategory ?? "Retirement"`). Not used by this module's own
    *  age/penalty logic — carried through so the aggregation step below can
    *  exclude a Portfolio-parented account's penalty exposure from the
-   *  category-level totals (R49 — see `computeNonRetirementExclusion`,
+   *  category-level totals (see `computeNonRetirementExclusion`,
    *  which handles Portfolio-parented accounts as a wholly separate,
    *  unconditional exclusion; this field's only job here is to keep the
    *  two exclusion sources from double-counting the same dollar). */
@@ -133,9 +129,9 @@ export type IndKeyFn = (ia: {
 }) => string;
 
 /** Dollars of one individual account that are penalty-free this projected
- *  year, and dollars that are not (v0.7.8 penalty-hard-exclusion follow-up
- *  — see module docblock). `penaltyFreeAmount + penaltyExposedAmount ===`
- *  the account's balance, always (acceptance criterion 9). */
+ *  year, and dollars that are not (see module docblock).
+ *  `penaltyFreeAmount + penaltyExposedAmount ===`
+ *  the account's balance, always. */
 export type AccountEligibility = {
   indKey: string;
   category: AccountCategory;
@@ -164,7 +160,7 @@ export type AccountEligibility = {
    *  basis; never overstates it. */
   basisUncertain?: boolean;
   /** Copied straight from `EligibilityAccountInput.allowPenalizedWithdrawals`
-   *  (R41) — always present (defaults `false`), unlike the input's own
+   *  — always present (defaults `false`), unlike the input's own
    *  omit-when-false convention, since this is an internal record read by
    *  the engine rather than a cache-hashed payload field. */
   allowPenalizedWithdrawals: boolean;
@@ -180,7 +176,7 @@ export type EligibilityRecord = {
   penaltyExposedRoth: Record<AccountCategory, number>;
   penaltyExposedTotal: Record<AccountCategory, number>;
   /** Same three aggregates, but excluding any account with
-   *  `allowPenalizedWithdrawals: true` (R41) — the narrower total that
+   *  `allowPenalizedWithdrawals: true` — the narrower total that
    *  `subtractPenaltyExposed` actually excludes from the routable pool, so
    *  an allowed account's exposed dollars stay reachable while every other
    *  account's stay excluded. Identical to the aggregates above whenever no
@@ -189,7 +185,7 @@ export type EligibilityRecord = {
   penaltyExposedRothStillExcluded: Record<AccountCategory, number>;
   penaltyExposedTotalStillExcluded: Record<AccountCategory, number>;
   /** Scalar sum of `penaltyExposedTotalStillExcluded` across every category
-   *  — the R41 counterpart to `totalPenaltyExposed`. `routeForMode` MUST
+   *  — the counterpart to `totalPenaltyExposed`. `routeForMode` MUST
    *  gate its early-out and price `penaltyAvoidedShortfall` off THIS value,
    *  not `totalPenaltyExposed`: once any account opts in, the two diverge,
    *  and using the blind total would attribute a real household shortfall
@@ -236,12 +232,11 @@ function allSlicesLocked(slices: EarlyAccessSlice[]): boolean {
  * tracked balance — see `@/lib/pure/roth-basis-tracking`) instead of each
  * account's static `ia.rothBasisMeta` snapshot. When omitted, behavior is
  * byte-identical to before tracked basis existed — this keeps every
- * non-engine caller and existing test unchanged. Locked design:
- * `.scratch/docs/plans/DESIGN-DECISION-v0.7.8-tracked-basis.md` § Q6 —
- * the gate and the UI number MUST read the same figure (reading the
+ * non-engine caller and existing test unchanged. The gate and the UI
+ * number MUST read the same figure (reading the
  * snapshot for the gate while showing tracked basis in the UI would be
  * two numbers for one quantity, the exact Single Computation Path failure
- * this locked design avoids).
+ * this avoids).
  */
 export function computeWithdrawalEligibility(input: {
   year: number;
@@ -333,7 +328,7 @@ export function computeWithdrawalEligibility(input: {
         // "is IRC §72(t)(2)(A)(v) even applicable to this account type"
         // fact), not the coincidentally-equivalent
         // `rothOrderingRules === "pro_rata"` (a Roth-distribution-ordering
-        // concept, legally distinct — code review, 2026-08-27).
+        // concept, legally distinct).
         const projected = projectRuleOf55(
           ia.ruleOf55 ?? null,
           year,
@@ -408,7 +403,7 @@ export function computeWithdrawalEligibility(input: {
       allowPenalizedWithdrawals: ia.allowPenalizedWithdrawals ?? false,
     });
 
-    // R49: a Portfolio-parented account's penalty exposure is never added
+    // A Portfolio-parented account's penalty exposure is never added
     // to these category-level aggregates — it's excluded from routing
     // wholesale via computeNonRetirementExclusion instead (see
     // parentCategory's docblock above). Without this gate, a hypothetical
@@ -455,8 +450,7 @@ export function computeWithdrawalEligibility(input: {
 }
 
 /**
- * Per-category totals of Portfolio-parented account balances (R49 — see
- * `.scratch/docs/plans/PLAN-retirement-only-withdrawal-scope.md`). A
+ * Per-category totals of Portfolio-parented account balances. A
  * Portfolio-parented account (e.g. a taxable brokerage the household
  * doesn't consider part of the retirement plan) is excluded from
  * retirement withdrawal routing WHOLESALE and unconditionally — no age

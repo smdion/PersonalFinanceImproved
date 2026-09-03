@@ -39,7 +39,7 @@ export type RawContrib = {
   allocationPriority: number;
   notes: string | null;
   displayNameCustom?: string;
-  /** @deprecated R22 legacy key — see json-schemas.ts. */
+  /** @deprecated legacy key — see json-schemas.ts. */
   displayNameActive?: string;
   performanceAccountId: number | null;
 };

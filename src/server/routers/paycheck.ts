@@ -97,7 +97,7 @@ export function buildBracketInput(
 /**
  * Annual-liability variant of buildBracketInput: same limits, but brackets
  * reshaped into real Form 1040 taxable-income space via
- * toTaxableIncomeBrackets (R57 — calculateTax's own standardDeduction
+ * toTaxableIncomeBrackets (calculateTax's own standardDeduction
  * subtraction was double-counting against the un-reshaped Pub 15-T
  * withholding brackets). Requires the standard (non-2c) row — the 2(c)
  * half-tables have no 1040 analogue.
@@ -173,7 +173,7 @@ export const paycheckRouter = createTRPCRouter({
         ctx.db.select().from(schema.taxParams),
       ]);
 
-      // R43: one resolver, same as the retirement engine — but "null" on a
+      // One resolver, same as the retirement engine — but "null" on a
       // missing year (not "throw"/"nearest"): the paycheck year selector
       // lets a user pick a year with no seeded tables, and the contract is
       // "show empty, never another year's figures" (a person entry still
@@ -601,7 +601,7 @@ export const paycheckRouter = createTRPCRouter({
         people: results,
         jointContribs,
         householdTax,
-        // R43: the tax-data vintage this summary was priced under — for a
+        // The tax-data vintage this summary was priced under — for a
         // "Tax data: YYYY" indicator, matching the retirement projection side.
         taxYear,
         taxParamsVersion: resolvedTax?.version ?? 0,

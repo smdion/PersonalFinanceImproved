@@ -84,14 +84,14 @@ const V07_SCHEMA_TAGS = [
   "0032_demonic_firelord", // SQLite counterpart of 0032
   "0033_stormy_shiver_man", // PG: retirement_settings unique(person_id) -> unique(profile_id, person_id)
   "0033_far_hellfire_club", // SQLite counterpart of 0033
-  "0034_nice_omega_red", // PG: retirement_settings.discretionary_withdrawal_order (R55 follow-up)
+  "0034_nice_omega_red", // PG: retirement_settings.discretionary_withdrawal_order
   "0034_even_cassandra_nova", // SQLite counterpart of 0034
   "0035_harsh_gabe_jones", // PG: budget_item_category_links + savings_goal_category_links tables
   "0035_salty_warbird", // SQLite counterpart of 0035
   "0036_category_links_backfill", // PG + SQLite (identical tag) — backfill only, no schema shape change
-  "0037_sad_thanos", // PG: budget_income_adjustments table (R32 Budget-mode extra paycheck)
+  "0037_sad_thanos", // PG: budget_income_adjustments table (Budget-mode extra paycheck)
   "0037_majestic_caretaker", // SQLite counterpart of 0037
-  "0038_pink_crusher_hogan", // PG: fpl_by_household + tax_params tables + retirement_profiles.tax_params_year (R43)
+  "0038_pink_crusher_hogan", // PG: fpl_by_household + tax_params tables + retirement_profiles.tax_params_year
   "0038_broken_guardian", // SQLite counterpart of 0038
   "0039_rich_prodigy", // PG only: tax_params.version CHECK(version > 0) — no SQLite counterpart (check() constraints are PG-only by design, stripped from schema-sqlite.ts's generation; drizzle-kit generate against the SQLite schema produced "No schema changes, nothing to migrate")
 ] as const;
@@ -752,11 +752,11 @@ function transformV07xToCurrent(tables: TableData): TableData {
     row.salaries = salaries;
   }
 
-  // 0038 (R43): fpl_by_household + tax_params tables, and
+  // 0038: fpl_by_household + tax_params tables, and
   // retirement_profiles.tax_params_year. A pre-0038 backup has none of
   // these. The two new tables restore empty — the tax-params resolver
   // falls back to the value tables' own MAX(tax_year) when tax_params is
-  // empty, i.e. exactly the pre-R43 behaviour. The new column is nullable
+  // empty, i.e. exactly the earlier behaviour. The new column is nullable
   // (NULL = track latest), so every restored profile keeps its numbers.
   if (!tables["fpl_by_household"]) tables["fpl_by_household"] = [];
   if (!tables["tax_params"]) tables["tax_params"] = [];

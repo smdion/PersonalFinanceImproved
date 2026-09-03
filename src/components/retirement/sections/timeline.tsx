@@ -1,6 +1,5 @@
 /**
- * Timeline section — extracted from retirement-content.tsx in PR 8/1 of the
- * v0.5.2 file-split refactor. Pure relocation — no behavior changes. Shows
+ * Timeline section. Shows
  * per-person retirement ages (multi-person households) or a single retirement
  * age plus the shared Plan-Through end age. Lives in the left column of the
  * Timeline+Income sunken box; this component only renders the Timeline inner

@@ -156,7 +156,7 @@ export function ScenarioBar() {
       activateBudget.mutate({ id });
     }
   };
-  // R20: warn before a swap silently drops an account's active value — same
+  // Warn before a swap silently drops an account's active value — same
   // treatment as contribution-profile-manager.tsx's handleActivate, compared
   // against whichever profile is currently in effect (Plan pin, if any,
   // else the global active one).

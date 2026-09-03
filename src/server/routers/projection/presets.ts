@@ -3,11 +3,7 @@
  *
  * Pure CRUD — no engine payload, no `fetchRetirementData`. This sub-router has
  * zero overlap with the compute endpoints (monte-carlo / scenarios / strategy /
- * stress-test), which is why the advisor called it out as naturally its own
- * file in the v0.5.2 family split.
- *
- * Extracted from the old monolith `projection.ts` in PR 2b of the refactor.
- * Pure relocation — no logic changes.
+ * stress-test), which is why it is naturally its own file.
  */
 import { eq, asc } from "drizzle-orm";
 import { z } from "zod/v4";

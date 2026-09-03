@@ -240,7 +240,7 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
   const federalTaxableGross = gross - totalPreTax;
 
   // Annualize for bracket lookup, then divide result back to per-period.
-  // Pub 15-T Worksheet 1A line 1h: subtract the line 1g adjustment (R56) —
+  // Pub 15-T Worksheet 1A line 1h: subtract the line 1g adjustment —
   // previously missing, meaning a w4Checkbox=false employee was over-
   // withheld by w4Adjustment * marginalRate every year.
   const adjustedAnnualWage = Math.max(

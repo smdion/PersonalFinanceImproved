@@ -19,15 +19,13 @@
  *
  * Shared Zod schemas + helper builders live in `_shared.ts`.
  *
- * This final shape landed in PR 2b of the v0.5.2 file-split refactor
- * (see `.scratch/docs/V052-REFACTOR-PLAN.md`). `coast-fire.ts` was split
- * from `scenarios.ts` in v0.5.3 to bring files under ~500 lines.
- * `withdrawal-bracket-optimizer.ts` added 2026-08-29 (multi-year
- * withdrawal-policy optimizer, Phase 3) as its own file for the same
- * reason, not appended to the already-521-line `coast-fire.ts`.
- * `coast-fire-probe.ts` added 2026-08-30 (Coast FIRE custom-age picker)
- * for the same reason again, AND because its result shape genuinely
- * differs from `computeCoastFireMC`'s (see that file's own docblock).
+ * `coast-fire.ts` is split from `scenarios.ts` to keep files under ~500
+ * lines. `withdrawal-bracket-optimizer.ts` (multi-year withdrawal-policy
+ * optimizer) is its own file for the same reason, not appended to the
+ * already-large `coast-fire.ts`. `coast-fire-probe.ts` (Coast FIRE
+ * custom-age picker) is separate for the same reason again, AND because
+ * its result shape genuinely differs from `computeCoastFireMC`'s (see
+ * that file's own docblock).
  */
 import { mergeRouters } from "../../trpc";
 import { coastFireRouter } from "./coast-fire";

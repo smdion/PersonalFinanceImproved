@@ -8,8 +8,7 @@
  * IMPORTANT: All state versions live in the same database. Database-level
  * corruption (disk failure, unrecoverable WAL) would lose both live data and all
  * versions. For disaster recovery, pair this with external backups (pg_dump cron,
- * WAL archiving, volume-level snapshots, or SQLite file copies). See homelab-docs
- * backup-definitions for the container's backup schedule. (Review item H15)
+ * WAL archiving, volume-level snapshots, or SQLite file copies).
  */
 
 import { readFileSync } from "fs";

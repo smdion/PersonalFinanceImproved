@@ -1,8 +1,5 @@
 /**
- * Social Security settings panel — extracted from retirement-content.tsx in
- * PR 7 of the v0.5.2 file-split refactor (leaves-first, advisor-mandated).
- *
- * Pure relocation — no behavior changes. The upsertSettings mutation passes
+ * Social Security settings panel. The upsertSettings mutation passes
  * through as a prop so the parent keeps owning the optimistic-update glue.
  */
 "use client";

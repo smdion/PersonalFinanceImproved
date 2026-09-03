@@ -7,7 +7,7 @@
  * own "which profile" indicator.
  *
  * "Active" covers both the globally-active profile and one a Plan has made
- * active (R52 — a Plan making a profile effective is just that profile being
+ * active (a Plan making a profile effective is just that profile being
  * active, so there's no separate "pinned" state). "Viewing" is neither — the
  * page is just looking at a profile without it being in effect anywhere else.
  */

@@ -4,7 +4,7 @@
  * useOptimisticMutation — wraps a tRPC mutation with optimistic update +
  * automatic rollback on error.
  *
- * Closes the v0.5 expert-review M27 finding: scenario overrides + retirement
+ * Without it, scenario overrides + retirement
  * settings round-trip to DB before the UI updates. This hook gives mutation
  * call sites a one-line upgrade path:
  *
@@ -33,7 +33,7 @@
  * return value, manual fetch wrappers, etc.
  *
  * Undo-toast support is a separate feature (requires extending the Toast
- * API with action buttons). Tracked as a v0.5.x follow-up.
+ * API with action buttons).
  */
 
 import { useState, useCallback, useRef } from "react";
@@ -66,7 +66,7 @@ interface OptimisticMutationOptions<TInput, TPrevious> {
    * Optional undo affordance shown as a toast.undo() after a successful
    * mutation. undoFn receives the original input and should issue the
    * inverse mutation (e.g., re-create what was deleted, restore previous
-   * value). v0.5 expert-review M27.
+   * value).
    */
   undo?: {
     /** Toast body, e.g., "Removed item" or "Deleted scenario". */

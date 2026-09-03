@@ -2,7 +2,7 @@
 
 /** Portfolio overview page (client content). The default-export Page in
  *  portfolio/page.tsx is a thin server component that prefetches the most
- *  expensive query before rendering this — see v0.5 expert-review M7. */
+ *  expensive query before rendering this. */
 
 import React, { useState, useCallback, useMemo } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
@@ -30,7 +30,7 @@ import { PortfolioQuickLook } from "@/components/portfolio/portfolio-quick-look"
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import { usePortfolioSnapshotMutations } from "@/components/portfolio/hooks/use-portfolio-snapshot-mutations";
 
-// v0.5 expert-review M8: code-split Recharts. PortfolioChart pulls in
+// Code-split Recharts. PortfolioChart pulls in
 // ~250KB of recharts code; lazy-loading moves it to a dedicated chunk.
 const PortfolioChart = dynamic(
   () =>
@@ -87,7 +87,7 @@ function groupByPerformanceAccount(
         // null (not a hand-built fallback string) when there's no real
         // linked label — lets accountDisplayName fall through to its
         // casing-aware Priority-3 construction instead of returning a raw
-        // lowercase DB key like "ira (Vanguard)" verbatim (M40).
+        // lowercase DB key like "ira (Vanguard)" verbatim.
         accountLabel: a.perfAccountLabel ?? null,
         accountType: a.accountType,
         institution: a.institution,
@@ -138,7 +138,7 @@ function buildSubRowLabel(
   const taxLabel = taxTypeLabel(a.taxType);
   // DESIGN.md's sub-account-type rule only names subType, but `label` is a
   // real, separate free-text override column on portfolio_accounts — it
-  // takes precedence when set (see DESIGN.md follow-up, Batch 25 F3).
+  // takes precedence when set (see DESIGN.md).
   const displayName = a.label || a.subType;
 
   let typeLabel: string;
@@ -161,8 +161,8 @@ function buildSubRowLabel(
   if (owner) {
     // Owner prefix uses an em dash (DESIGN.md "Snapshot Display" — WHO owns
     // it), distinct from the parens used below for WHAT kind of sub-account
-    // it is (e.g. "Employer Match (Traditional)"). Decision confirmed
-    // 2026-08-19: code was the one out of sync with the documented example.
+    // it is (e.g. "Employer Match (Traditional)"). The code was the one
+    // out of sync with the documented example.
     const qualifier =
       typeLabel !== taxLabel ? `${typeLabel} · ${taxLabel}` : typeLabel;
     return `${owner} — ${qualifier}`;

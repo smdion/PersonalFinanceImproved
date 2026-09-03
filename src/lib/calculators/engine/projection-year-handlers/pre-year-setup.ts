@@ -2,9 +2,6 @@
  * runPreYearSetup — shared per-year preparation before the accumulation /
  * decumulation branch. Computes return rate, applies profile switches,
  * projects salary and expenses, dispatches the spending strategy.
- *
- * Extracted from the old single-file `projection-year-handlers.ts` in the
- * v0.5.2 refactor. Pure relocation — no logic changes.
  */
 import { ageInYear } from "../../../utils/date";
 import { roundToCents } from "../../../utils/math";
@@ -68,7 +65,7 @@ export function runPreYearSetup(
       ctx.firstYearFraction < 1);
 
   // Get return rate for this age (fall back to closest configured age at
-  // or below it, floored at MIN_RETURN_RATE) -- shared with R47's
+  // or below it, floored at MIN_RETURN_RATE) -- shared with the
   // RMD-smoothing forward projection via resolveReturnRateForAge.
   const returnRate = resolveReturnRateForAge(returnRateMap, age);
 

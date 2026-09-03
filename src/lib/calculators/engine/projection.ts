@@ -141,8 +141,8 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
   }
 
   // Sustainable withdrawal at retirement — the strategy's own actual first
-  // decumulation year withdrawal (R45 Step 2, Job (i) "make it strategy-real":
-  // reads the already-recorded first decumulation year, rather than a
+  // decumulation year withdrawal (strategy-real: reads the already-recorded
+  // first decumulation year, rather than a
   // `balance × withdrawalRate` figure only 4 of 8 strategies' spending math
   // actually reads).
   //

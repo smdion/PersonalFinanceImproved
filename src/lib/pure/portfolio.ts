@@ -1,6 +1,6 @@
 /**
  * Pure business logic for portfolio snapshot operations.
- * Extracted from admin.ts createPortfolioSnapshot — no DB or I/O dependency.
+ * No DB or I/O dependency.
  */
 import { toNumber } from "@/server/helpers/transforms";
 

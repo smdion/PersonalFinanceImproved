@@ -10,8 +10,6 @@
  *
  * Usage:
  *   upsertSettings.mutate(buildSettingsPatch(settings, { withdrawalRate: '0.04' }))
- *
- * Created in v0.5.3 (Group E refactor). Pure extraction — no logic changes.
  */
 import type { Settings, UpsertSettingsInput } from "./types";
 

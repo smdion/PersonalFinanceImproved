@@ -5,9 +5,7 @@
  * distributions), from the per-account `BasisDraw`s `roth-basis-tracking.ts`
  * already computed.
  *
- * v0.7.8 follow-up to the tracked-basis pass — see
- * `.scratch/docs/plans/DESIGN-DECISION-v0.7.8-roth-tax-basis.md` (locked
- * design, advisor-reviewed). Scope is deliberately narrow: this module
+ * Scope is deliberately narrow: this module
  * decides ONLY whether an account's already-computed `growthDrawn` is
  * taxable. It never re-slices a withdrawal — `drawFromBasis` in
  * `roth-basis-tracking.ts` remains the one place that happens.

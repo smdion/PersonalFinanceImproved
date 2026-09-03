@@ -200,7 +200,7 @@ export function calculateRelocation(input: RelocationInput): RelocationResult {
     relocationMonthlyExpenses - currentMonthlyExpenses,
   );
   // Decimal fraction (0.40 = 40%), consistent with every other *Percent/*Rate
-  // field in the engine — the display site uses formatPercent() (M32).
+  // field in the engine — the display site uses formatPercent().
   const pctIncrease = safeDivide(annualDelta, currentAnnual, 0);
 
   // Pre-compute large purchase data

@@ -70,8 +70,7 @@ export function cloneAccountBalances(a: AccountBalances): AccountBalances {
 
 /**
  * Subtract a withdrawal-eligibility record's penalty-exposed dollars from
- * balances, per category (v0.7.8 penalty-hard-exclusion follow-up,
- * DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md § Q2 — supersedes the
+ * balances, per category (supersedes the
  * Tier B two-pass model this function was originally written for; renamed
  * from `subtractLocked`). Floors at 0 —
  * `penaltyExposedTrad`/`penaltyExposedRoth`/`penaltyExposedTotal` are sums
@@ -122,7 +121,7 @@ export function subtractPenaltyExposed(
 
 /**
  * Subtract BOTH still-excluded penalty exposure and Portfolio-parented
- * ("non-retirement") balances from `balances`, per category (R49). Sums
+ * ("non-retirement") balances from `balances`, per category. Sums
  * the two sources before a single floor-at-0 per bucket — mathematically
  * equivalent to two sequential `subtractPenaltyExposed`-style clamps
  * (`max(0, max(0, x-a)-b) === max(0, x-a-b)` for non-negative `a`/`b`), so
@@ -177,7 +176,7 @@ export function subtractExcluded(
  * available balance), but flooring costs nothing and guards against any
  * future divergence.
  *
- * R44 (v0.7.11): the one piece of new balance-mutation arithmetic
+ * The one piece of new balance-mutation arithmetic
  * `routeWithLastResortAllowance`'s two-dispatch merge needs and that didn't
  * exist anywhere in the engine before — `dispatchOnce`/`routeWithdrawals`
  * never mutate the `AccountBalances` they're given, they only compute

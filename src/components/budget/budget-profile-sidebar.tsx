@@ -2,8 +2,6 @@
 
 /**
  * Left-rail profile picker for the budget page master-detail layout.
- * Extracted from `src/app/(dashboard)/budget/page.tsx` during the v0.5.2
- * file-split refactor. Pure relocation — no behavior changes.
  *
  * Parent owns: profile list query, rename state (for the inline input),
  * tRPC mutations (set-active, create, rename, delete), and permission

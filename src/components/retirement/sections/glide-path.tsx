@@ -1,7 +1,6 @@
 /**
- * Investment Returns Glide Path panel — extracted from retirement-content.tsx
- * in PR 7/4 of the v0.5.2 file-split refactor. Pure relocation — no behavior
- * changes. Shows Now/At-Retirement/Post-Retirement/Avg rates plus a
+ * Investment Returns Glide Path panel. Shows
+ * Now/At-Retirement/Post-Retirement/Avg rates plus a
  * darker-is-higher gradient bar summarising the age-based glide path.
  *
  * The entire panel is guarded on `returnRateSummary` being truthy (same guard

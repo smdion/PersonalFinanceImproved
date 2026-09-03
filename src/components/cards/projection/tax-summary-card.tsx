@@ -9,9 +9,8 @@
  * withholding, never tracked as a projected per-year bill. Extending this
  * card to accumulation needs real new calculator work (projecting income
  * tax against inflation-grown salary/brackets for every future working
- * year), not just wiring up existing numbers — see
- * .scratch/docs/plans/TODO.md's "Accumulation-phase tax data doesn't exist
- * in the engine" entry. Ship what's real now rather than fake the rest.
+ * year), not just wiring up existing numbers. Ship what's real now rather
+ * than fake the rest.
  */
 import { useState } from "react";
 import { HelpTip } from "@/components/ui/help-tip";

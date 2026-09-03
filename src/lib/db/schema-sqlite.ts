@@ -393,7 +393,7 @@ export const budgetItems = sqliteTable(
 // budgetItems, which could only hold ONE service's link at a time and
 // silently clobbered it when a household linked the same item to a second
 // service (YNAB + Actual both connected). Those columns stay on budgetItems,
-// dead-but-present, through v0.7.x; cleanup deferred to a future v0.8.0
+// dead-but-present for now; cleanup deferred to a future schema
 // squash (see retirement_settings.person_id's precedent).
 export const budgetItemCategoryLinks = sqliteTable(
   "budget_item_category_links",
@@ -455,7 +455,7 @@ export const savingsGoals = sqliteTable(
 // columns on savingsGoals, which could only hold ONE service's link (plus
 // one reimbursement link) at a time. See budgetItemCategoryLinks above for
 // the same fix applied to budget items; those raw columns stay dead-but-
-// present through v0.7.x, cleanup deferred to a future v0.8.0 squash.
+// present for now, cleanup deferred to a future schema squash.
 export const savingsGoalCategoryLinks = sqliteTable(
   "savings_goal_category_links",
   {
@@ -738,8 +738,8 @@ export const performanceAccounts = sqliteTable(
      *  "only as a true last resort, after every other account is
      *  exhausted" guarantee — that would require reordering withdrawal
      *  routing across account categories, a larger change tracked
-     *  separately (FEATURE-ROADMAP.md R41 follow-up). One-way opt-in per
-     *  account, set by the user — never inferred. See R41. */
+     *  separately. One-way opt-in per
+     *  account, set by the user — never inferred. */
     allowPenalizedWithdrawals: integer("allow_penalized_withdrawals", {
       mode: "boolean",
     })
@@ -1320,8 +1320,7 @@ export const retirementSettings = sqliteTable(
   "retirement_settings",
   {
     id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
-    // NOT bare .unique() any more (Retirement Profiles step C — advisor
-    // reviewed 2026-08-30). One row per person, PER PROFILE, not one row
+    // NOT bare .unique() any more. One row per person, PER PROFILE, not one row
     // per person system-wide — see the composite unique index below. This
     // is what makes a second retirement profile able to hold genuinely
     // different household settings; without it there was nowhere to put a
@@ -1341,7 +1340,7 @@ export const retirementSettings = sqliteTable(
     })
       .notNull()
       .default(false),
-    /** Per-person Rule of 55 forecasting override (v0.7.8). True (default)
+    /** Per-person Rule of 55 forecasting override. True (default)
      *  ⇒ no override — the engine's computed Rule of 55 status (from real
      *  job separation data) is used unchanged. False ⇒ force this person's
      *  employer-plan accounts ineligible for Rule of 55, regardless of what
@@ -1378,7 +1377,7 @@ export const retirementSettings = sqliteTable(
     rothConversionTarget: text("roth_conversion_target"),
     /** Withdrawal/spending strategy (see withdrawal-strategies.ts registry). */
     withdrawalStrategy: text("withdrawal_strategy").notNull().default("fixed"),
-    /** R55 follow-up: within the cost-ranked tier (beyond the Traditional
+    /** Within the cost-ranked tier (beyond the Traditional
      *  bracket-fill target), which of Roth basis / brokerage's 0%-LTCG room
      *  drains first. "roth_first" (default) matches all pre-existing
      *  behavior. "brokerage_first" is an explicit household opt-in — a
@@ -1424,33 +1423,31 @@ export const retirementSettings = sqliteTable(
     vdFloorPercent: text("vd_floor_percent").default("0.025"),
     /** RMD Spending: multiplier on IRS RMD amount. */
     rmdMultiplier: text("rmd_multiplier").default("1.0"),
-    /** R46: what to do with RMD-forced withdrawal beyond stated spending
+    /** What to do with RMD-forced withdrawal beyond stated spending
      *  need (after any QCD reduces the taxable RMD first) — "reinvest"
-     *  into brokerage (default, matches all pre-R46 behavior) or "spend"
+     *  into brokerage (default, matches prior behavior) or "spend"
      *  (household consumes it; net worth ends up lower, by design). */
     rmdExcessHandling: text("rmd_excess_handling")
       .notNull()
       .default("reinvest"),
-    /** R46: automatically apply the largest Qualified Charitable
+    /** Automatically apply the largest Qualified Charitable
      *  Distribution the household's RMD situation allows each year
      *  (capped by QCD_ANNUAL_CAP_PER_PERSON and the person's IRA-only
-     *  Traditional balance — see constants.ts and
-     *  PLAN-rmd-excess-handling.md for the approximation this uses).
+     *  Traditional balance — see constants.ts for the approximation this uses).
      *  Excludes that portion of RMD from taxable income entirely. */
     qcdMaximize: integer("qcd_maximize", { mode: "boolean" })
       .notNull()
       .default(false),
-    /** R47: proactively size Roth conversions to shrink a FUTURE RMD
+    /** Proactively size Roth conversions to shrink a FUTURE RMD
      *  toward projected spending need, not just fill this year's bracket
      *  room opportunistically — default false, byte-identical for every
      *  existing household until explicitly turned on (converting more
      *  Traditional-to-Roth earlier is a real pay-tax-now-vs-later
-     *  tradeoff). Per-person, requires individual-account tracking — see
-     *  PLAN-r47-rmd-aware-roth-smoothing.md. */
+     *  tradeoff). Per-person, requires individual-account tracking. */
     rmdSmoothingEnabled: integer("rmd_smoothing_enabled", { mode: "boolean" })
       .notNull()
       .default(false),
-    /** R47: how far smoothing may raise the EFFECTIVE conversion target
+    /** How far smoothing may raise the EFFECTIVE conversion target
      *  rate above the household's own `rothBracketTarget`/
      *  `rothConversionTarget` when it needs more room than those provide
      *  — can only RAISE the effective ceiling, never lower it (a
@@ -1479,11 +1476,10 @@ export const retirementSettings = sqliteTable(
 
     // --- Retirement Profiles migration, step A (expand) ---------------------
     // Added additively; nothing reads them yet (step B switches the reads).
-    // See .scratch/docs/plans — "Making Retirement a First-Class Profile".
 
     /** The profile this row belongs to. Together with `person_id` this is
      *  now the row's real key (see the composite unique index below,
-     *  replacing the old bare unique(person_id) — step C, 2026-08-30): one
+     *  replacing the old bare unique(person_id)): one
      *  row per person PER PROFILE, which is what lets two profiles hold
      *  genuinely different household settings.
      *
@@ -1493,9 +1489,9 @@ export const retirementSettings = sqliteTable(
      *  personId match, when no profile resolves), and a null value can't
      *  weaken the unique index (Postgres/SQLite both treat NULL as
      *  non-equal there), so there is no correctness gap. Made NOT NULL
-     *  ONLY as part of the v0.8.0 squash: SQLite has no ALTER COLUMN SET NOT
-     *  NULL, so tightening this now would force the exact table-recreate
-     *  path this schema has otherwise avoided since step A. */
+     *  ONLY as part of the next schema squash: SQLite has no ALTER COLUMN SET
+     *  NOT NULL, so tightening this now would force the exact table-recreate
+     *  path this schema has otherwise avoided. */
     profileId: integer("profile_id").references(() => retirementProfiles.id, {
       onDelete: "cascade",
     }),
@@ -1538,7 +1534,7 @@ export const retirementSettings = sqliteTable(
     // this can't be weakened by a null profile_id — every write path sets
     // one) rather than made NOT NULL now, which would force SQLite's
     // recreate-table path for no benefit; that tightening folds into the
-    // v0.8.0 squash alongside the rest of the deferred contract step.
+    // next schema squash alongside the rest of the deferred contract step.
     uniqueIndex("retirement_settings_profile_person_unq").on(
       table.profileId,
       table.personId,
@@ -1566,9 +1562,9 @@ export const retirementProfiles = sqliteTable("retirement_profiles", {
   name: text("name").notNull().unique(),
   description: text("description"),
   /**
-   * Tax-law year this profile's projections are priced under (R43).
+   * Tax-law year this profile's projections are priced under.
    * NULL = track the latest enacted tax data — the historical behaviour, so
-   * every pre-R43 profile is byte-identical after the migration adds this
+   * every profile predating this column is byte-identical after the migration adds this
    * column. A non-null value pins the `resolveTaxParams` base year (with
    * `onMissing: "nearest"`); "Latest = current law" in the profile
    * assumptions UI.
@@ -1820,7 +1816,7 @@ export const irmaaBrackets = sqliteTable(
 
 // ── ACA Federal Poverty Level ──────────────────────────────────
 //
-// R43: FPL was the one annually-indexed federal figure set with no DB home
+// FPL was the one annually-indexed federal figure set with no DB home
 // (it lived only in `aca-tables.ts`'s `FPL_BY_HOUSEHOLD`). One row per ACA
 // COVERAGE year (not the HHS publication year, which is one calendar year
 // earlier — see aca-tables.ts). `amounts` maps household size "1".."8" to
@@ -1840,7 +1836,7 @@ export const fplByHousehold = sqliteTable(
 
 // ── Tax-parameter vintage rows ─────────────────────────────────
 //
-// R43: a thin per-year vintage marker. It carries NO figure values — the
+// A thin per-year vintage marker. It carries NO figure values — the
 // existing `contribution_limits` / `tax_brackets` / `ltcg_brackets` /
 // `irmaa_brackets` / `fpl_by_household` tables remain the one and only value
 // store. `resolveTaxParams` maps a requested year to a resolved year via
@@ -1864,7 +1860,7 @@ export const taxParams = sqliteTable(
   },
   (table) => [
     uniqueIndex("tax_params_year_idx").on(table.taxYear),
-    // R43 follow-up (schema-reviewer suggestion): version is a monotonic
+    // version is a monotonic
     // "Tax data: 2026, rev N" revision counter — never meaningfully zero
     // or negative. Cheap to enforce now, before any admin-facing mutation
     // of this column ships.

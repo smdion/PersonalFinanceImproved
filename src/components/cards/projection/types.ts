@@ -35,9 +35,8 @@ export type TooltipLineItem = {
   associatedMatch?: number;
   color?: TipColor;
   sub?: TooltipLineItem[];
-  /** Section eyebrow key for a money tooltip's `items` list (v0.7.8
-   *  tooltip-readability pass, DESIGN-DECISION-v0.7.8-tooltip-readability.md
-   *  Option C). Items sharing a `group` render together under one uppercase
+  /** Section eyebrow key for a money tooltip's `items` list. Items
+   *  sharing a `group` render together under one uppercase
    *  header instead of as an undifferentiated flat list — e.g. grouping a
    *  household withdrawal breakdown by account category. Items without a
    *  group render first, ungrouped. */
@@ -60,7 +59,7 @@ export type TooltipData =
       meta?: string;
       meta2?: string;
       /** RMD-satisfaction status — mirrors the chart tooltip's "was the RMD
-       *  satisfied" treatment (R47 follow-up, table/chart parity). Silent
+       *  satisfied" treatment (table/chart parity). Silent
        *  in the ordinary case; `satisfiedNotably` adds a checkmark when met
        *  via excess/QCD; `shortfallAmount > 0` earns its own red line with
        *  real IRS excise-tax framing. `excessAmount`'s wording follows the
@@ -73,10 +72,9 @@ export type TooltipData =
         excessAmount: number;
         excessMode: "reinvest" | "spend";
         /** Money sent directly to charity, satisfying part of the RMD
-         *  tax-free (R46 QCD) — already shown in the chart tooltip and in
+         *  tax-free — already shown in the chart tooltip and in
          *  this same table's per-category/bucket tooltips, but was missing
-         *  from this specific "Total Withdrawals" rmd block (UI/UX review,
-         *  2026-08-28). */
+         *  from this specific "Total Withdrawals" rmd block. */
         qcdAmount?: number;
         /** "Why is my RMD this amount" — per-person divisor × balance
          *  breakdown (2026-08-31, user follow-up), e.g. "Sean: $45,231
@@ -100,7 +98,7 @@ export type TooltipData =
          *  (avoidPenalizedWithdrawals) — see RouteResult's docblock. */
         penaltyAvoidedAmount?: number;
         /** Portion attributable to excluding Portfolio-parented
-         *  ("non-retirement") money (R49) — see RouteResult's docblock. */
+         *  ("non-retirement") money — see RouteResult's docblock. */
         nonRetirementAmount?: number;
       };
       /** Guardrail/spending-strategy event explanation for this year (e.g.
@@ -161,7 +159,7 @@ export type LumpSumFormEntry = {
   targetAccount: AccountCategory;
   /** Specific individual account name. When set, overrides targetAccount for routing. */
   targetAccountName: string;
-  /** Owner of the targeted individual account (R4, v0.7.11) — disambiguates
+  /** Owner of the targeted individual account — disambiguates
    *  two household members' identically-named accounts. "" = not set (name
    *  matches uniquely, or no specific account targeted). */
   targetOwnerName: string;

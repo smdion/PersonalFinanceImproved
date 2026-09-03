@@ -13,7 +13,7 @@ type AccountOption = {
   name: string;
   category: string;
   taxType?: string;
-  /** Owner of this account (R4, v0.7.11) — shown + stored so two household
+  /** Owner of this account — shown + stored so two household
    *  members' identically-named accounts don't collide when targeted. */
   ownerName?: string;
 };

@@ -137,7 +137,7 @@ export function ContributionProfileManager({
   const displayedProfile = profiles.find((p) => p.id === effectiveSelectedId);
   const canDeleteAny = profiles.length > 1;
 
-  // R20: warn before a swap silently drops an account's active value —
+  // Warn before a swap silently drops an account's active value —
   // compare against whichever profile is CURRENTLY in effect for this
   // viewing context (Plan pin, if any, else the global active one), same
   // resolution useEffectiveProfileId already does for display.

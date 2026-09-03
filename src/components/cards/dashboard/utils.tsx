@@ -17,8 +17,8 @@ export function LoadingCard({ title }: { title: string }) {
 }
 
 /**
- * Categorize a tRPC error for the user-facing message + retry decision
- * (v0.5 expert-review M28). Distinguishes:
+ * Categorize a tRPC error for the user-facing message + retry decision.
+ * Distinguishes:
  *   - 401 / UNAUTHORIZED → re-auth needed (retry won't help)
  *   - 403 / FORBIDDEN → permission issue (retry won't help)
  *   - 5xx / INTERNAL_SERVER_ERROR → server problem (retry might)

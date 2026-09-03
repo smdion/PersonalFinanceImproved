@@ -473,7 +473,7 @@ export function categoriesWithTaxPreference(): AccountCategory[] {
 
 /** `getEngineCategories() ∩ categoriesWithTaxPreference()` — the
  *  Traditional-preference categories that actually participate in engine
- *  routing (advisor review, 2026-08-29, v0.7.10 R51 Gap A finding N3):
+ *  routing:
  *  the two source filters are independently maintained and coincide
  *  today by coincidence, not by construction (every category currently
  *  has `participatesInEngine: true, engineParent: null`), so a future
@@ -576,8 +576,8 @@ export function tracksRothBasis(category: string): boolean {
  *  literal category strings (it's where they're defined as dictionary
  *  keys) — a direct `category === "hsa"` check here, not a check against
  *  balanceStructure/rothOrderingRules or another incidental structural
- *  property that HAPPENS to be unique to HSA today (advisor review,
- *  2026-08-27: those checks are fragile to a future account type that
+ *  property that HAPPENS to be unique to HSA today (those checks are
+ *  fragile to a future account type that
  *  legitimately reuses the same structural value for unrelated reasons). */
 export function isHsaCategory(category: string): boolean {
   return category === "hsa";
@@ -591,8 +591,7 @@ export function isIraCategory(category: string): boolean {
 
 /** Check if a category is eligible for the Rule of 55 exception (401k/403b
  *  — IRC §72(t)(2)(A)(v)). Reads `ruleOf55Eligible` directly rather than
- *  the coincidentally-equivalent `rothOrderingRules === "pro_rata"` (found
- *  duplicated across 3 call sites in code review, 2026-08-27) — Roth
+ *  the coincidentally-equivalent `rothOrderingRules === "pro_rata"` — Roth
  *  distribution ordering and Rule-of-55 eligibility are legally distinct
  *  concepts (IRC §72(t)(2)(A)(v) vs. IRS Notice 2009-68) that happen to
  *  coincide for today's 5 categories; a future account type where they

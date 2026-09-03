@@ -1,6 +1,6 @@
 /**
  * Auto-backfill contribution_accounts.person_id → NULL for joint-ownership
- * rows (F4). Runs on startup (via instrumentation.ts). Idempotent — only
+ * rows. Runs on startup (via instrumentation.ts). Idempotent — only
  * touches rows where ownership is "joint" and personId is still set.
  *
  * Rows with no jobId that ANY Contribution Profile sets to "percent_of_salary"

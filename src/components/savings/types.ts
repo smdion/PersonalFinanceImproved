@@ -2,7 +2,7 @@ import { formatDate } from "@/lib/utils/format";
 import type { TargetMode } from "@/lib/config/enum-values";
 
 /** Canonical savings-goal row shape — was independently redeclared (as
- *  narrower subsets) across ~4 files (M13, .scratch/docs/review-findings.md).
+ *  narrower subsets) across ~4 files.
  *  Import this instead of re-declaring a local `RawGoal`. */
 export interface RawGoal {
   id: number;
@@ -28,7 +28,7 @@ export interface RawGoal {
 }
 
 /** Canonical planned-transaction row shape — was independently redeclared
- *  across ~7 files (M13). One redeclaration (fund-details-tab.tsx) was
+ *  across ~7 files. One redeclaration (fund-details-tab.tsx) was
  *  missing isRecurring/recurrenceMonths/transferPairId, a real display gap
  *  now closed by importing this instead. */
 export interface PlannedTransaction {

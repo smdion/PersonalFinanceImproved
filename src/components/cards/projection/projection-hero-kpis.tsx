@@ -212,7 +212,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
     const retSpan =
       (engineSettings?.endAge ?? 95) - (engineSettings?.retirementAge ?? 65);
 
-    // R45 Step 3, Finding 5: the long-horizon tip used to blanket-suggest
+    // The long-horizon tip used to blanket-suggest
     // "a lower withdrawal rate (3-3.5%)" — accurate advice for the budget-
     // continuation strategies, but there's no user-set rate to lower for
     // RMD-Based Spending (IRS-formula-driven), and the real knob for

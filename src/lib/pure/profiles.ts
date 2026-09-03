@@ -1,6 +1,6 @@
 /**
  * Pure business logic for profile management, active job detection, and profile linking.
- * Extracted from multiple routers — no DB or I/O dependency.
+ * No DB or I/O dependency.
  */
 
 // --- Profile deletion guards ---

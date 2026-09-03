@@ -1,7 +1,7 @@
 /**
- * Confidence-band derivation for retirement projections (v0.5 expert-review M3).
+ * Confidence-band derivation for retirement projections.
  *
- * The audit's concern: ledgr's retirement card defaults to a single point
+ * The concern: ledgr's retirement card defaults to a single point
  * estimate ("$2.4M at age 65") in non-MC mode, creating anchoring bias.
  * Even without running a full Monte Carlo, we can derive a reasonable
  * range by applying a historical-volatility scalar to the deterministic

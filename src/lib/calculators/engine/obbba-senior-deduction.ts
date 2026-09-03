@@ -6,9 +6,7 @@
  * additional standard deduction (`ADDITIONAL_STANDARD_DEDUCTION_AGE`,
  * folded in directly by `decumulation-year.ts`).
  *
- * Design note (advisor-reviewed, first plan rejected as a no-op — see
- * `.scratch/docs/plans/DESIGN-NOTE-v0.7.11-obbba-senior-deduction.md`):
- * this MUST be folded into the standard deduction BEFORE withdrawal
+ * This MUST be folded into the standard deduction BEFORE withdrawal
  * routing/tax estimation runs, same injection point as §63(f) — by the time
  * `decumulation-year.ts`'s post-withdrawal tax recompute runs,
  * `actualTraditionalRate` is already fixed by `computeTaxFromSlots` and

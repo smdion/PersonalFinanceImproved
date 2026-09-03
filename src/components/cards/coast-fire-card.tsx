@@ -33,7 +33,7 @@ type CoastFireMcResult = {
    *  "found at later age," stopNowSuccessRate is the rate at today. */
   stopNowSuccessRate: number;
   /** % of stop-now trials that failed specifically because penalty-exposed
-   *  money was excluded (v0.7.8 penalty-hard-exclusion) rather than the
+   *  money was excluded rather than the
    *  household genuinely running out — surfaced so a low stopNowSuccessRate
    *  isn't read as "you'll be broke" when it actually means "your money is
    *  there but locked until 59½." */

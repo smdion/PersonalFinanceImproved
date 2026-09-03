@@ -913,8 +913,8 @@ export async function buildYearEndHistory(
       // Calendar-day difference, not a raw ms/86400000 divide — the old
       // version parsed the date-only snapshotDate as UTC midnight against
       // Date.now() (a real instant), which reads a same-day snapshot as
-      // already 1 day old for part of every day (found 2026-09-01, TODO.md
-      // date-parsing audit). Compare local calendar dates instead.
+      // already 1 day old for part of every day. Compare local calendar
+      // dates instead.
       snapshotAgeDays: snapshotData
         ? Math.round(
             (localMidnight(new Date()).getTime() -

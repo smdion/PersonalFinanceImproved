@@ -1,5 +1,5 @@
 /**
- * Retirement server page (v0.5 expert-review M7).
+ * Retirement server page.
  *
  * Server-side prefetches projection.computeProjection so the projection
  * card hydrates with data on first paint instead of waterfalling through
@@ -10,8 +10,8 @@
  * The prefetch uses an *empty* input (no overrides) which matches what a
  * fresh page load sends on initial render. Users with persisted UI state
  * (debounced overrides, snapshot pin, contribution profile selection) will
- * miss the cache and fall back to client fetch — that's the same behavior
- * v0.4 had everywhere, so it's a strict win for the common case.
+ * miss the cache and fall back to client fetch — that's the fallback
+ * behavior everywhere else, so it's a strict win for the common case.
  *
  * Prefetch failures don't block rendering — wrapped in try/catch so the
  * client falls back to its own fetch on error.

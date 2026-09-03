@@ -3,10 +3,10 @@
 /** Tax Location YTD — two side-by-side mini tables showing Retirement and Portfolio
  *  tax-type distribution. Labels from taxTypeLabel() (lib/utils/colors.ts) —
  *  the same source tax-location-pie.tsx uses, so the pie chart and this
- *  table agree on tax-type display text for identical data (Batch 26 F8:
- *  previously used display-labels.ts's TAX_TYPE_LABELS, a second label
+ *  table agree on tax-type display text for identical data. A prior
+ *  version used display-labels.ts's TAX_TYPE_LABELS, a second label
  *  source that had genuinely drifted — "Tax-Deferred"/"Tax-Free" here vs
- *  "Traditional"/"Roth" everywhere else). */
+ *  "Traditional"/"Roth" everywhere else. */
 
 import { Card } from "@/components/ui/card";
 import { formatPercent } from "@/lib/utils/format";

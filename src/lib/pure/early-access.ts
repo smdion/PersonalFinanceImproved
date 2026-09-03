@@ -86,8 +86,7 @@ export type EarlyAccessSlice = {
 /**
  * Penalty-free capacity = the sum of the LEADING, CONTIGUOUSLY penalty-free
  * PREFIX of an account's slices, in the order its own distribution
- * ordering rules release them (DESIGN-DECISION-v0.7.8-
- * penalty-hard-exclusion.md § Q1). NOT the sum of every penalty-free slice
+ * ordering rules release them. NOT the sum of every penalty-free slice
  * regardless of position: a Roth IRA's ordering forces dollars out
  * contribution → conversion → growth, and an unseasoned conversion slice
  * (`penaltyFree: false`) blocks access to any penalty-free slice behind it

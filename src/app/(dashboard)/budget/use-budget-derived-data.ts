@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * useBudgetDerivedData — extracted from budget-content.tsx (F4, v0.5.3).
+ * useBudgetDerivedData — extracted from budget-content.tsx.
  *
  * Owns: per-column contribution resolution, payroll breakdowns,
  * category/item derivation, sinking-fund list, API-actuals map,

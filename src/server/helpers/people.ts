@@ -7,7 +7,7 @@ import type { Db } from "./transforms";
  *
  * Replaces ~11 verbatim
  * `db.select().from(people).orderBy(asc(people.id))` copies scattered
- * across the routers and payload builders (R36). Returns the query
+ * across the routers and payload builders. Returns the query
  * builder (thenable), so it drops into a `Promise.all([...])` array
  * exactly where the inline expression used to sit.
  */

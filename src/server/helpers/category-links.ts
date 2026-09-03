@@ -8,11 +8,10 @@
  * the second service silently clobbered the first. budget_item_category_
  * links and savings_goal_category_links (schema-pg.ts) hold one row per
  * (item/goal, service[, role]) instead. These helpers are the only place
- * that should read or write those two tables — see docs/RULES.md and
- * CHANGELOG.md [0.7.11].
+ * that should read or write those two tables — see docs/RULES.md.
  *
- * The old raw columns stay on budget_items/savings_goals, dead-but-present,
- * through v0.7.x (cleanup deferred to a future v0.8.0 squash).
+ * The old raw columns stay on budget_items/savings_goals, dead-but-present
+ * for now (cleanup deferred to a future schema squash).
  */
 import { and, eq, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";

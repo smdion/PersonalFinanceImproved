@@ -1,5 +1,5 @@
 /**
- * Budget server page (v0.5.2 file-split refactor).
+ * Budget server page.
  *
  * Server-side prefetches the two heavy queries the budget client needs
  * on first paint:

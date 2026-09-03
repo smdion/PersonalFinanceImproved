@@ -5,7 +5,7 @@ import { useSyncExternalStore, useCallback } from "react";
 export type ToastVariant = "success" | "error" | "info" | "loading";
 
 /**
- * Optional action button on a toast (v0.5 expert-review M27).
+ * Optional action button on a toast.
  * Used for "Undo" affordances after destructive operations + as a
  * general action escape hatch.
  */

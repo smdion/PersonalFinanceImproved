@@ -1,13 +1,12 @@
 /**
  * Cost-aware source ranking for withdrawal dollars beyond the Traditional
- * bracket cap (v0.7.9 R40 follow-up — see
- * `.scratch/docs/plans/DESIGN-DECISION-v0.7.9-cost-aware-routing.md`).
+ * bracket cap.
  *
  * `routeWithdrawalsBracketFilling`'s Phase 1 fills Traditional up to a
  * target ordinary-income bracket. Historically Phases 2-4 then drained
  * Roth, then brokerage, then HSA in a FIXED order regardless of actual
- * cost. That was harmless while Roth withdrawals were flat-0% tax; as of
- * v0.7.8, a non-qualified Roth growth withdrawal is real ordinary-rate
+ * cost. That was harmless while Roth withdrawals were flat-0% tax; now a
+ * non-qualified Roth growth withdrawal is real ordinary-rate
  * income, so the fixed order can pick the more expensive of two sources
  * purely because of sequencing — e.g. draining Roth growth at 22% in a
  * year brokerage sits in the real, bracket-based 0% LTCG zone.
@@ -57,10 +56,10 @@ export type WithdrawalSourceKind = "roth" | "brokerage" | "hsa";
 export function deriveBasisRankingInputs(params: {
   balances: Pick<TaxBuckets, "afterTax" | "afterTaxBasis">;
   indBasis?: Map<string, RothBasisState>;
-  /** Advisor review, 2026-08-29 (finding #7): `indBasis`'s basis totals are
+  /** `indBasis`'s basis totals are
    *  tracked per Roth ACCOUNT, but a Portfolio-parented account is
-   *  unconditionally excluded from the routable pool (R49 --
-   *  `computeNonRetirementExclusion`, no config lever, no opt-out). Without
+   *  unconditionally excluded from the routable pool
+   *  (`computeNonRetirementExclusion`, no config lever, no opt-out). Without
    *  `indAccts`/`indKey` here, a household whose Roth basis happens to sit
    *  in a Portfolio-parented account would still count it as "free"
    *  capacity in a pool that structurally can never draw from that

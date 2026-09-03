@@ -134,34 +134,34 @@ export function clampBalances(
 // ---------------------------------------------------------------------------
 
 /**
- * Handle RMD-forced withdrawal beyond spending need (#39, mode-aware R46).
+ * Handle RMD-forced withdrawal beyond spending need (mode-aware).
  * When RMD forces withdrawal above spending need + tax cost, the excess is
  * real after-tax cash the household didn't ask for. What happens to it
  * depends on `mode`:
- * - "reinvest" (default, matches all pre-R46 behavior): credited to
+ * - "reinvest" (default, matches prior behavior): credited to
  *   brokerage as basis.
  * - "spend": NOT credited anywhere — the household is modeled as consuming
  *   it. Net worth ends up genuinely lower than "reinvest", by design.
  *
- * Either way, returns the excess amount for reporting (R46 Phase 1
- * visibility) — the UI is responsible for wording it correctly per mode
+ * Either way, returns the excess amount for reporting — the UI is
+ * responsible for wording it correctly per mode
  * (`rmdExcessHandling` on the resolved config), since "reinvested" isn't
  * an accurate description of what happened under "spend".
  *
  * Mutates `balances` and `acctBal` in place only under "reinvest". When
- * `indAccts`/`indBal`/`indKey` are also supplied (R49), the reinvestment
+ * `indAccts`/`indBal`/`indKey` are also supplied, the reinvestment
  * additionally credits Retirement-parented overflow-target accounts'
  * `indBal` directly, proportional to their own balance — this money is
- * forced out of a Traditional account by the RMD floor (which, per R49,
- * only ever forces Retirement-parented money), so it must land back in a
+ * forced out of a Traditional account by the RMD floor (which only ever
+ * forces Retirement-parented money), so it must land back in a
  * Retirement-parented account too. Without this, the credit only touches
  * the blended aggregate, and `reconcileIndividualToAggregate`'s
  * parentCategory-blind proportional redistribution can hand most of it to
- * a much-larger Portfolio-parented account instead — the same leak R49
- * already closed for Roth-conversion tax funding and QCD, found here via
- * a live `[DIAG] indBal/acctBal reconciliation` drift report on a real
+ * a much-larger Portfolio-parented account instead — the same leak
+ * already closed for Roth-conversion tax funding and QCD, surfaced here by
+ * a `[DIAG] indBal/acctBal reconciliation` drift report on a real
  * household. Falls back to crediting proportionally across every
- * overflow-target account (pre-R49 behavior) only if the household has NO
+ * overflow-target account (the earlier behavior) only if the household has NO
  * Retirement-parented overflow-target account at all — an edge case, but
  * inventing a Retirement-parented destination that doesn't exist would be
  * a second allocation policy.

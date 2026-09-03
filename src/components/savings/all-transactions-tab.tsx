@@ -204,7 +204,7 @@ export function AllTransactionsTab({
   // src/app/(dashboard)/savings/page.tsx's monthDates construction exactly (that
   // file previously skipped the current month once the 1st had passed, which
   // silently dropped current-month planned transactions from the trajectory —
-  // fixed in v0.7.1; this index math has to stay in lockstep with it).
+  // this index math has to stay in lockstep with it).
   const projectionStart = new Date(today.getFullYear(), today.getMonth(), 1);
   const getBalanceAfter = (
     goalId: number,

@@ -170,7 +170,7 @@ export async function computeJobNetPayPerCheck(
     db.select().from(schema.taxParams),
   ]);
 
-  // R43: one resolver, same as the retirement engine + paycheck. This path
+  // One resolver, same as the retirement engine + paycheck. This path
   // is always "current year" (no override), so requestedYear is undefined
   // => newest enacted; `onMissing: "nearest"` is moot but keeps it robust
   // if the current calendar year has no rows yet (Jan before the seed lands).

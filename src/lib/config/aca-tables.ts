@@ -12,8 +12,7 @@
 // Roth and HSA withdrawals do NOT count toward MAGI.
 
 /**
- * Which coverage year these guidelines apply to (advisor-caught,
- * 2026-08-31, Phase 4 concept review): 26 CFR §1.36B-1(h) sets ACA
+ * Which coverage year these guidelines apply to: 26 CFR §1.36B-1(h) sets ACA
  * premium tax credit eligibility for a coverage year using the HHS
  * poverty guidelines PUBLISHED IN THE PRIOR calendar year (guidelines
  * are released each January and apply to marketplace open enrollment
@@ -49,7 +48,7 @@ export const FPL_BY_HOUSEHOLD: Record<number, number> = {
  * Get the ACA subsidy cliff (400% of FPL) for a given household size.
  * Above this MAGI, all premium tax credits are lost.
  *
- * @param fplOverride DB-resolved FPL map from `fpl_by_household` (R43).
+ * @param fplOverride DB-resolved FPL map from `fpl_by_household`.
  *   Same override-else-default pattern as LTCG/IRMAA brackets — undefined
  *   ⇒ the hardcoded `FPL_BY_HOUSEHOLD` fallback. The seed row is
  *   byte-identical to the fallback, so passing it is a no-op today; it
@@ -67,8 +66,8 @@ export function getAcaSubsidyCliff(
 
 /**
  * ACA MAGI (§36B(d)(2)(B)) for a decumulation year — single computation
- * path shared by `checkAca` and any future consumer (R55 advisor review,
- * 2026-08-30). Adds back the FULL gross SS benefit, unlike IRMAA MAGI
+ * path shared by `checkAca` and any future consumer. Adds back the
+ * FULL gross SS benefit, unlike IRMAA MAGI
  * (which uses the 0-85% taxable slice) — this is the one real difference
  * between the two MAGI definitions, so it lives here rather than being
  * re-derived at each call site.
@@ -78,7 +77,7 @@ export function acaMagi(input: {
   rothConversionAmount: number;
   brokerageGainsPortion: number;
   /** Non-qualified Roth growth income — ordinary income, belongs in AGI/MAGI
-   *  like any other (advisor-caught 2026-09-01: previously omitted here
+   *  like any other (previously omitted here
    *  while currentYearMagi/NIIT/the IRMAA lookback already included it —
    *  see decumulation-year.ts's own comment on this exact field, which
    *  named "the ACA subsidy check below" as needing it too). */
@@ -94,11 +93,11 @@ export function acaMagi(input: {
   );
 }
 
-// `estimateAcaSubsidyValue` was removed in R43 (C5). It had no production
+// `estimateAcaSubsidyValue` was removed. It had no production
 // caller (the audit and a prior advisor pass both confirmed it dead), and
 // it carried the last of the inline ACA rate ladders — the applicable-
 // percentage sliding scale (2/4/6/7.5/8.5 %) and the age-band benchmark
 // premiums (7200/9600/12000/15600) — as bare `if/else` literals with no
-// year anchor (R43 audit F4-2). If ACA subsidy *value* estimation is ever
+// year anchor. If ACA subsidy *value* estimation is ever
 // wanted, rebuild it as a year-keyed table wired through resolveTaxParams,
 // not as inline constants.

@@ -3,8 +3,8 @@
 /**
  * The one derivation of "what the Paycheck view shows for each person".
  *
- * Extracted from paycheck/page.tsx so the real page and the Budget page's
- * What-If tab share a single computation path: query-input assembly (session
+ * The real Paycheck page and the Budget page's
+ * What-If tab share this single computation path: query-input assembly (session
  * -scenario salary overrides included), the two-person aligned deduction
  * rows, the shared contribution group order, and the per-contribution
  * annual/limit data that the contribution cards render.

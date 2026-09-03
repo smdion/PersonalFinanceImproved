@@ -2,11 +2,11 @@
 
 /**
  * BudgetPageContext — stable, server-derived values shared across the budget
- * page subtree. Introduced in F1 (v0.5.3) to collapse the large prop
- * signatures of BudgetTable and BudgetSummaryBar.
+ * page subtree. Collapses the large prop signatures of BudgetTable and
+ * BudgetSummaryBar.
  *
  * Provider: BudgetContent
- * Consumers: BudgetTable (F2), BudgetSummaryBar (F3)
+ * Consumers: BudgetTable, BudgetSummaryBar
  */
 
 import { createContext, useContext } from "react";

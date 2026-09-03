@@ -1,8 +1,8 @@
 /**
- * Withdrawal strategy recommendation (v0.5 expert-review M4).
+ * Withdrawal strategy recommendation.
  *
  * Ledgr offers 6+ withdrawal strategies side-by-side without flagging
- * which one fits the user's plan. The audit calls this "analysis paralysis"
+ * which one fits the user's plan. This is "analysis paralysis"
  * — without guidance, users either stick with a default (status quo bias)
  * or pick randomly. This module returns a single recommendation with a
  * rationale string the UI can render as a "Recommended for your plan"
@@ -12,12 +12,12 @@
  * freely. The goal is to give first-time users a defensible starting
  * point, not to lock anyone in.
  *
- * R45 Step 6: previously declared its own hyphenated `WithdrawalStrategy`
+ * This previously declared its own hyphenated `WithdrawalStrategy`
  * union, parallel to (and misspelled relative to) the canonical
- * underscored `WithdrawalStrategyType` in `withdrawal-strategies.ts` —
- * exactly the "looks like one canonical value, isn't" gap this review was
- * built to catch. The one call site that read `.strategy` bridged the two
- * spellings with a manual translation map (`RECOMMENDED_KEY_MAP` in
+ * underscored `WithdrawalStrategyType` in `withdrawal-strategies.ts` — a
+ * "looks like one canonical value, isn't" gap. The one call site that read
+ * `.strategy` bridged the two spellings with a manual translation map
+ * (`RECOMMENDED_KEY_MAP` in
  * `retirement-profile-tab.tsx`); not a live bug (the map was complete and
  * correct), but a maintainability trap the next new strategy could fall
  * into. Now imports and reuses the canonical type directly.

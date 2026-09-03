@@ -299,8 +299,7 @@ export interface PoolGrowthEarner {
  * earner's stored raise rates to their current net pay, holding budget
  * expenses flat. Was implemented inline in savings/page.tsx, right next to
  * projectGoalBalances — the one calculation on this page that hadn't
- * followed the same "pure function, not page-local" pattern (audit Batch 31
- * Finding 1).
+ * followed the same "pure function, not page-local" pattern.
  *
  * Year `startYear` is seeded directly from `maxMonthlyFunding` (today's
  * actual computed pool, not a projection); each subsequent year compounds

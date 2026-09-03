@@ -1,8 +1,7 @@
 /**
  * Shared helpers for retirement section components.
  *
- * Extracted in v0.5.3 (Group E refactor) — previously duplicated in
- * income.tsx and raise-and-rate.tsx with a comment noting the dupe.
+ * Previously duplicated in income.tsx and raise-and-rate.tsx.
  */
 
 /** Convert a decimal string (e.g. '0.04') to a whole-number string for display ('4'). */

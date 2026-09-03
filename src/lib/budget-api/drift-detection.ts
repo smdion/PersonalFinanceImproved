@@ -1,7 +1,7 @@
 /**
- * Account drift detection for budget API mappings (v0.5 expert-review M21).
+ * Account drift detection for budget API mappings.
  *
- * The audit's concern: when a YNAB or Actual account is renamed or deleted,
+ * The concern: when a YNAB or Actual account is renamed or deleted,
  * the local mapping silently breaks (lookup returns undefined, sync skips
  * the row, user sees nothing). This module detects drift by diffing the
  * cached account list against the freshly-fetched one and produces a

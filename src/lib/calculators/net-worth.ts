@@ -37,7 +37,7 @@ import {
 
 /**
  * FI Target = Annual Expenses ÷ Withdrawal Rate — the accumulation-phase
- * "how big does my portfolio need to be" figure (Findings 8/13, R45 Step 4).
+ * "how big does my portfolio need to be" figure.
  * Single computation path: this is the only place the formula is written;
  * `deriveFI` (lib/hooks/use-fi-cache.ts, client-side) calls this instead of
  * reimplementing raw division with no divide-by-zero guard — the two used

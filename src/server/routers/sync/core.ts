@@ -60,7 +60,7 @@ export const syncCoreRouter = createTRPCRouter({
 
       try {
         // Read previous cached account list BEFORE the new fetch so we
-        // can diff for drift detection (v0.5 expert-review M21).
+        // can diff for drift detection.
         const cachedBefore = await cacheGet<BudgetAccount[]>(
           ctx.db,
           service,
@@ -95,7 +95,7 @@ export const syncCoreRouter = createTRPCRouter({
         const apiBalanceMap = getApiAccountBalanceMapFromAccounts(accounts);
         const currentYear = new Date().getFullYear();
 
-        // ── Drift detection (v0.5 expert-review M21) ──
+        // ── Drift detection ──
         // Diff cached account list against new fetch. Surfaces broken
         // mappings (deleted remote accounts), renames, and newly-added
         // remote accounts. Result is attached to the sync response so
@@ -106,7 +106,7 @@ export const syncCoreRouter = createTRPCRouter({
           mappings,
         );
 
-        // ── Phase 2: Single-transaction commit (v0.5 expert-review C3) ──
+        // ── Phase 2: Single-transaction commit ──
         // Cache writes + lastSyncedAt + asset-pull loop now share one
         // transaction. If ANY asset write fails (unmapped type, DB
         // constraint, missing row), the entire sync rolls back and the
@@ -271,7 +271,7 @@ export const syncCoreRouter = createTRPCRouter({
             transactions: transactions.length,
             assetsPulled,
           },
-          // v0.5 M21: drift report — UI renders broken mappings as
+          // Drift report — UI renders broken mappings as
           // actionable callouts so users can fix them rather than
           // silently losing sync coverage.
           drift: hasDrift(driftReport) ? driftReport : null,

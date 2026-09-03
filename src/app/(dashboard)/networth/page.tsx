@@ -19,8 +19,8 @@ import {
   FinancialIndependenceCard,
 } from "@/components/networth";
 
-// Code-split Recharts-heavy chart components into separate chunks (v0.5
-// expert-review M8). Each chart is ~250KB of bundle when bundled into the
+// Code-split Recharts-heavy chart components into separate chunks. Each
+// chart is ~250KB of bundle when bundled into the
 // page bundle; lazy-loading them via next/dynamic moves them to dedicated
 // chunks that load only when the page mounts. ssr:false because Recharts
 // isn't SSR-friendly.

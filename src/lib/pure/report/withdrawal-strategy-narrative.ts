@@ -30,7 +30,7 @@ const TIER_SOURCE_LABEL: Record<"roth" | "brokerage" | "hsa", string> = {
  *  itself (`ltcgRate` or `ltcgRate + NIIT_RATE`); this only pattern-matches
  *  the result against the small, fixed set of values it could legitimately
  *  be, to describe it in words. See that module for the real rate logic.
- *  R43 (C9): derived from the config module instead of a re-declared
+ *  Derived from the config module instead of a re-declared
  *  literal, so a rate-ladder change (legislative only — these are
  *  statutory percentages, not annually-indexed) can't drift between the
  *  two copies. */
@@ -42,7 +42,7 @@ function approxEquals(a: number, b: number): boolean {
 }
 
 /** Explains WHAT KIND of rate a tier's `costRate` is and WHY, not just the
- *  number — found live, 2026-08-31: a household asked "why is Roth cheaper
+ *  number — a household may ask "why is Roth cheaper
  *  than Brokerage" and the honest answer is tier-dependent (Roth BASIS is
  *  always free — already-taxed principal; Roth GROWTH is taxed at your
  *  ordinary rate; Brokerage's own 0%-capital-gains room is free, but real
@@ -166,7 +166,7 @@ export function formatRmdDivisorDetail(
  * in order; this picks a small representative sample (first RMD year,
  * first discretionary-withdrawal year with real detail, and up to 3 more
  * spread across retirement) rather than every year — the full year-by-year
- * table is a separate report section (Phase 4).
+ * table is a separate report section.
  */
 export function buildWithdrawalStrategyNarrative(
   decumulationYears: EngineDecumulationYear[],
@@ -193,7 +193,7 @@ export function buildWithdrawalStrategyNarrative(
   );
   if (firstDiscretionaryYear) {
     const fdy = firstDiscretionaryYear;
-    // Deflated (advisor review, 2026-08-31) — describeDiscretionaryCapacityMath's
+    // Deflated — describeDiscretionaryCapacityMath's
     // new capacity figures sit right next to this breakdown in one
     // sentence, so both need the same dollar mode or "you had $X of room"
     // and "$Y came from Roth" silently mix real/nominal dollars.
@@ -203,7 +203,7 @@ export function buildWithdrawalStrategyNarrative(
     }));
     const breakdownDetail =
       formatDiscretionaryTierBreakdown(deflatedBreakdown)!;
-    // "Why isn't brokerage draining before Roth" (found live, 2026-08-31)
+    // "Why isn't brokerage draining before Roth"
     // — shares describeDiscretionaryCapacityMath with the table tooltip so
     // the two can never disagree.
     const capacityDetail = describeDiscretionaryCapacityMath(
@@ -235,7 +235,7 @@ export function buildWithdrawalStrategyNarrative(
     (y) => (y.discretionaryTierBreakdown?.length ?? 0) > 0,
   );
 
-  // "Why THIS bracket, not a lower or higher one" — found live, 2026-08-31:
+  // "Why THIS bracket, not a lower or higher one":
   // the prior version of this narrative (and the matching table tooltip)
   // said "fills your target tax bracket" without ever naming the actual
   // rate. Reads the target off the resolved config's `rothBracketTarget`
@@ -257,7 +257,7 @@ export function buildWithdrawalStrategyNarrative(
           bracketTarget,
           bracketTargetYear?.bracketTraditionalCap != null
             ? {
-                // Deflated to today's dollars — advisor-caught 2026-09-01:
+                // Deflated to today's dollars:
                 // every other figure in this narrative goes through
                 // `deflate` (see the discretionary-tier detail above), but
                 // these three were passed raw/nominal. bracketTargetYear
@@ -275,7 +275,7 @@ export function buildWithdrawalStrategyNarrative(
                   bracketTargetYear.year,
                 ),
                 // The GROWN per-year deduction (`bracket-growth.ts`), not
-                // the ungrown plan-level echo — advisor-caught (2026-08-31):
+                // the ungrown plan-level echo:
                 // pairing a grown bracketTraditionalCap with an ungrown
                 // deduction in the same sentence was internally
                 // inconsistent for any year beyond the tax data's vintage.

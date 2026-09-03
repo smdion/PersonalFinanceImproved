@@ -1,13 +1,12 @@
 /**
- * RMD-aware Roth conversion smoothing (R47).
+ * RMD-aware Roth conversion smoothing.
  *
  * Proactively sizes Roth conversions to shrink a FUTURE Required Minimum
  * Distribution toward projected spending need, instead of the existing
  * `performRothConversion` mechanism's opportunistic same-year bracket
  * filling, which only shrinks the future RMD base as a side effect.
  *
- * Design history: `.scratch/docs/plans/PLAN-r47-rmd-aware-roth-smoothing.md`
- * — two advisor rounds. Round 1 caught that a growth-only forward
+ * A growth-only forward
  * projection systematically overstates a person's future Traditional
  * balance for anyone actively drawing it down for spending before RMD
  * age (the NORMAL case this feature targets, not an edge case) — fixed
@@ -38,9 +37,10 @@ export interface RmdSmoothingPersonInput {
   rmdStartAge: number;
   /** This person's current Traditional balance across all their
    *  pre-tax accounts — same `priorYearEndTradByPerson`-derived figure
-   *  R46/R49 already track. Deliberately BLENDED Retirement+Portfolio,
+   *  the per-person RMD/QCD path already tracks. Deliberately BLENDED Retirement+Portfolio,
    *  not Retirement-only-scoped (matches how the RMD requirement itself
-   *  is computed — a real IRS obligation on the full balance; R49 only
+   *  is computed — a real IRS obligation on the full balance; the
+   *  Portfolio-parented exclusion only
    *  scopes withdrawal DISTRIBUTION CAPACITY, never the balance the
    *  requirement is measured against). */
   personTraditionalBalance: number;

@@ -2,9 +2,9 @@
 
 /**
  * Retirement Profile tab panel — the "Projection Assumptions" card, moved
- * off the Retirement page onto the Budget page in v0.7.8 (PLAN-v0.7.8-v4
- * Group A). Straight relocation of a singleton settings editor, not a new
- * profile type: `retirement_settings` still has no name/multi-row shape,
+ * off the Retirement page onto the Budget page. Straight relocation of a
+ * singleton settings editor, not a new profile type: `retirement_settings`
+ * still has no name/multi-row shape,
  * still reads/writes through `retirementSettings.upsert` and
  * `computeProjection`'s `metadataOnly` response exactly as it did on the
  * Retirement page. This component owns that data-fetching independently
@@ -168,7 +168,7 @@ export function RetirementProfileTab({
   // change mid-session, matching plan-health.tsx's stress-test query
   // precedent — explicit, not left to the query library's default (which
   // would otherwise silently serve a possibly-very-stale cached response
-  // on remount). See PLAN-v0.7.10-multi-year-withdrawal-optimizer.md.
+  // on remount).
   const bracketOptimizerQuery =
     trpc.projection.computeWithdrawalBracketOptimizer.useQuery(
       {},
@@ -219,7 +219,7 @@ export function RetirementProfileTab({
       },
     });
 
-  // R53 — per-person "Pre-Retirement Raise". Writes only
+  // Per-person "Pre-Retirement Raise". Writes only
   // retirement_settings.salary_annual_increase for one (profile, person).
   const upsertPersonRaiseRate =
     trpc.retirement.retirementSettings.upsertPersonRaiseRate.useMutation({

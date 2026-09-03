@@ -1,6 +1,5 @@
 /**
- * Income section — extracted from retirement-content.tsx in PR 8/2 of the
- * v0.5.2 file-split refactor. Pure relocation — no behavior changes. Sits in
+ * Income section. Sits in
  * the left column of the Projection Assumptions card alongside Timeline,
  * covering Household Salary (read-only), Pre-Retirement Raise, Salary Cap,
  * and the Contribution Profile picker.
@@ -38,7 +37,7 @@ type Props = {
   salaryByPerson?: Record<number, number>;
   /** Per-person settings — present when the household has more than one
    *  person. When set (length > 1), "Pre-Retirement Raise" renders one
-   *  control per person instead of a single household control (R53). */
+   *  control per person instead of a single household control. */
   perPersonSettings?: PerPersonSettings;
   upsertSettings: UpsertSettingsMutation;
   handleSettingPercentUpdate: (field: string, wholePercent: string) => void;

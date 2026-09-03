@@ -31,7 +31,7 @@ export interface RmdEnforcementInput {
   acctBal: AccountBalances;
   /** When provided, overrides the internal RMD calculation (used for per-person RMD). */
   overrideRmdRequired?: number;
-  /** Portfolio-parented ("non-retirement") exclusion for this year (R49).
+  /** Portfolio-parented ("non-retirement") exclusion for this year.
    *  The RMD REQUIREMENT itself (`rmdRequired`, derived from
    *  `priorYearEndTradBalance` upstream of this module) stays computed off
    *  the full blended balance — RMDs are a real IRS obligation on real
@@ -53,7 +53,8 @@ export interface RmdEnforcementResult {
    *  exposure, not a display nicety: the same shortfall this function
    *  already prices into the `RMD SHORTFALL` warning string's 25% excise
    *  tax estimate, just also exposed as a number so the UI can show it
-   *  without parsing a warning string. Possible now that R49 can leave
+   *  without parsing a warning string. Possible now that the Portfolio-parented
+   *  exclusion can leave
    *  Retirement-only Traditional capacity genuinely insufficient to cover
    *  a real RMD requirement. */
   rmdShortfallAmount: number;
@@ -163,7 +164,7 @@ export function enforceRmd(input: RmdEnforcementInput): RmdEnforcementResult {
             lastCat = cat;
           }
           // Assign rounding residual to last category -- capped at that
-          // category's own remaining capacity (R49: `residual` here used
+          // category's own remaining capacity (`residual` here used
           // to always be rounding-cents-scale, since totalTradBal covered
           // the full blended balance and could always absorb the whole
           // shortfall; now that capacity can be genuinely, non-trivially

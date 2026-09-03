@@ -1,6 +1,6 @@
 /**
  * Pure business logic for historical data temporal resolution.
- * Extracted from historical router — no DB or I/O dependency.
+ * No DB or I/O dependency.
  */
 import { toNumber } from "@/server/helpers/transforms";
 import { sumBy } from "@/lib/utils/math";

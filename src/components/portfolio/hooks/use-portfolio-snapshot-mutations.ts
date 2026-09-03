@@ -1,8 +1,7 @@
 "use client";
 
 /**
- * Snapshot-level mutations for the Portfolio page (R15 — the last content
- * component still inlining its mutations in the parent instead of a hook).
+ * Snapshot-level mutations for the Portfolio page.
  *
  * Also the single source of the "a snapshot changed" invalidation set — it
  * was duplicated inline before, and had already drifted: the delete path

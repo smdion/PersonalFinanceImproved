@@ -384,8 +384,7 @@ export function useProjectionQueries(
     await Promise.all([runMonteCarlo(), runCoastFireMc()]);
   };
 
-  // Coast FIRE "Custom Age" probe (advisor-reviewed 2026-08-30, see
-  // .scratch/docs/plans/PLAN-coast-fire-custom-age.md) — deliberately
+  // Coast FIRE "Custom Age" probe — deliberately
   // EXPLICIT-run, not a `useQuery` with a debounced `enabled`. Every
   // check is a real, rate-limited MC run; auto-firing on every
   // stepper/debounce tick would let deliberate exploration (checking 6+

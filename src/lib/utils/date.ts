@@ -49,12 +49,11 @@ export function isPriorYearContribWindow(date: Date = new Date()): boolean {
  *
  * `date.toISOString().slice(0, 10)` — the pattern this replaces — reads the
  * date in UTC, which silently returns tomorrow's date once local time passes
- * midnight UTC (e.g. after ~7pm Eastern, ~4pm Pacific). Real bug class found
- * 2026-09-01 in a codebase audit (CodeRabbit sweep, TODO.md): every "today"
+ * midnight UTC (e.g. after ~7pm Eastern, ~4pm Pacific). Every "today"
  * default (a new snapshot's date, a new transaction's date, a backup
  * filename) computed this way is silently wrong for part of every day.
  *
- * Moved here from `lib/simplefin/sync.ts` (2026-09-01) — that module already
+ * Moved here from `lib/simplefin/sync.ts` — that module already
  * had this exact helper for exactly this reason ("matching the version-cron
  * convention"); centralizing it is what lets every other "today" call site
  * share the same fix instead of re-deriving it.

@@ -102,15 +102,14 @@ function buildEligibilityNote(
     ia.eligibilityReason?.includes("age 59½ or older") ?? false;
   const basisDrawn = ia.rothBasisDrawn ?? 0;
   const totalWithdrawn = ia.withdrawal ?? 0;
-  // Basis-first ordering draws basis before growth. Under the v0.7.8
-  // penalty-hard-exclusion model growth this account hasn't earned
-  // penalty-free access to should never be drawn at all by default
-  // (DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md) — this is only
+  // Basis-first ordering draws basis before growth. Under the
+  // penalty-hard-exclusion model, growth this account hasn't earned
+  // penalty-free access to should never be drawn at all by default —
+  // this is only
   // nonzero when the household has explicitly opted out of that
   // exclusion. Surfaced explicitly, and NEVER worded as plain "Eligible",
   // so it's never read as a free lunch: growth drawn while not yet
-  // age-59½-qualified is flagged taxable (v0.7.8 Roth-tax-basis
-  // follow-up) and penalty-exposed (FEATURE-ROADMAP.md R39).
+  // age-59½-qualified is flagged taxable and penalty-exposed.
   const growthDrawn = Math.max(0, roundToCents(totalWithdrawn - basisDrawn));
   if (isBasisRemainingReason) {
     const startBasis = (ia.rothBasisRemaining ?? 0) + basisDrawn;
@@ -219,8 +218,7 @@ function buildRoutingReasonClause(
     // "Why this account over another" (cross-category order, e.g. 401k
     // before IRA) — your configured Traditional Account Order, restricted
     // to the Traditional-preference categories Phase 1 actually consults
-    // (same restriction the order editor itself uses — decumulation-
-    // config.tsx's R51 Gap A note).
+    // (same restriction the order editor itself uses).
     const tradOrder = yr.config.withdrawalOrder.filter((c) =>
       tradPreferenceEngineCategories().includes(c),
     );
@@ -483,9 +481,7 @@ export function DecumulationRow({
                     const dSlot = dSlotMap.get(cat);
                     const items: TooltipLineItem[] = [];
                     const catCfg = getAccountTypeConfig(cat);
-                    // Per-account note (v0.7.8 tooltip-readability pass,
-                    // DESIGN-DECISION-v0.7.8-tooltip-readability.md Option
-                    // C): merges this account's withdrawal-ordering
+                    // Per-account note: merges this account's withdrawal-ordering
                     // eligibility verdict and tracked Roth basis draw-down
                     // into ONE dim line under its amount, instead of
                     // repeating the account name on separate lines for each
@@ -563,7 +559,7 @@ export function DecumulationRow({
                         color: "emerald",
                       });
                     }
-                    // R46: RMD-forced excess (beyond stated spending need)
+                    // RMD-forced excess (beyond stated spending need)
                     // — real money, forced out of Traditional by the RMD
                     // floor regardless of what the strategy needed,
                     // previously invisible anywhere in the UI. What
@@ -595,7 +591,7 @@ export function DecumulationRow({
                         });
                       }
                     }
-                    // R46: Qualified Charitable Distribution — money sent
+                    // Qualified Charitable Distribution — money sent
                     // directly from this account to charity, satisfying
                     // part of the RMD without counting as taxable income.
                     // Real money leaving the account (a "-" like any other
@@ -865,8 +861,7 @@ export function DecumulationRow({
             : iabs;
           const items: TooltipLineItem[] = [];
           if (dyr.totalWithdrawal > 0) {
-            // Per-account breakdown (v0.7.8 tracked-basis follow-up — "no
-            // magic money"): every account that was actually drawn from
+            // Per-account breakdown ("no magic money"): every account that was actually drawn from
             // this year gets its own line, so the total isn't just an
             // aggregate Trad/Roth split — the user can see exactly which
             // account(s), whose, funded it. Ordered by category (accum
@@ -889,8 +884,7 @@ export function DecumulationRow({
             if (withdrawingAccts.length > 0) {
               for (const ia of withdrawingAccts) {
                 // Merge this account's eligibility verdict + tracked Roth
-                // basis draw-down onto its own line (v0.7.8
-                // tooltip-readability pass) instead of a separate
+                // basis draw-down onto its own line instead of a separate
                 // household-wide text block — see `buildEligibilityNote`'s
                 // docblock above (and the fix note there) for why the
                 // basis-remaining dollar figure is reconstructed rather
@@ -988,7 +982,7 @@ export function DecumulationRow({
             : hasSs
               ? `Incl. SS income — ${formatCurrency(deflate(dyr.ssIncome, yr.year))}/yr${ssDetail ? ` (${ssDetail})` : ""}`
               : undefined;
-          // R47 follow-up: full satisfaction status (checkmark/shortfall/
+          // Full satisfaction status (checkmark/shortfall/
           // excess wording), not just the bare amount — parity with the
           // chart tooltip's rmd block (see tooltip-renderer.tsx). Checkmark
           // shows whenever the RMD was actually met, not just the notable
@@ -1179,8 +1173,8 @@ export function DecumulationRow({
                       color: "emerald",
                     });
                   }
-                  // R46: same RMD-excess / QCD visibility as the
-                  // contribution-view tooltips (per user follow-up — the
+                  // Same RMD-excess / QCD visibility as the
+                  // contribution-view tooltips (the
                   // BALANCE tooltip needs to explain its own number too,
                   // not just the contribution/withdrawal column). afterTax
                   // is where reinvested excess actually lands (or would
@@ -1324,7 +1318,7 @@ export function DecumulationRow({
                   });
                 }
               }
-              // R46: same RMD-excess / QCD visibility as the taxType-view
+              // Same RMD-excess / QCD visibility as the taxType-view
               // balance tooltips and the contribution-view tooltips —
               // gated on the account-view column's own category rather
               // than a fixed bucket, so this fires no matter which

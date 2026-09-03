@@ -1,7 +1,6 @@
 "use client";
 
 /** Year-by-year expense adjustments panel for the Relocation calculator.
- *  Extracted from tools/page.tsx during the v0.5.2 file-split refactor.
  *  Stateless — all state flows via props.
  */
 

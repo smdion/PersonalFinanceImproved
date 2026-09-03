@@ -59,7 +59,7 @@ export function calculateTax(input: TaxInput): TaxResult {
   // dashboard tile) — Ledgr doesn't track the usual MAGI add-backs (tax-exempt
   // interest, foreign earned income exclusion) or non-payroll above-the-line
   // deductions (e.g. a traditional IRA contribution made outside payroll), so
-  // this is AGI proper, not a purpose-specific MAGI (see docs/GLOSSARY.md).
+  // this is AGI proper, not a purpose-specific MAGI.
   // Close enough for a working household with no muni bonds/foreign income.
   const agi = annualGross - preTaxDeductionsAnnual;
   const taxableIncome = Math.max(0, agi - taxBrackets.standardDeduction);

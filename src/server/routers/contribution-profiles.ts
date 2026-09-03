@@ -223,7 +223,7 @@ export const contributionProfileRouter = createTRPCRouter({
   }),
 
   /**
-   * Lightweight data for the Compare view (R20) and the swap-time diff:
+   * Lightweight data for the Compare view and the swap-time diff:
    * every account's live values plus every profile's raw active-fields
    * map, keyed by account id. Deliberately skips what `getById` does per
    * profile — perf-account fuzzy matching and full display-name

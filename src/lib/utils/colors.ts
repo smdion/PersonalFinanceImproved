@@ -111,10 +111,10 @@ export function taxTypeLabel(taxType: string): string {
 // Single source of truth for the filled-box shape (bg + text + border) used
 // by Badge, toast.tsx, scenario-indicator.tsx, and plan-health.tsx — these
 // had independently drifted to 4 different shade combinations for the same
-// 4 semantic colors before being consolidated here (Phase 4a). Shades are
+// 4 semantic colors before being consolidated here. Shades are
 // Badge's original values, which carry a deliberate accessibility fix:
 // text-amber-700 fails WCAG AA 4.5:1 contrast on bg-amber-100, so amber
-// uses text-amber-800 (v0.5 expert-review M14). A consumer that doesn't
+// uses text-amber-800. A consumer that doesn't
 // render a border (Badge) simply ignores that key.
 //
 // This is a different token than a plain inline status TEXT color with no
@@ -183,7 +183,7 @@ export const CHART_COLORS = {
   // mcBandOuter/mcBandInner/mcBandMiddle/mcMedian are the fan-band palette
   // shared by projection-chart.tsx and spending-stability-chart.tsx, which
   // had each independently hardcoded this exact violet set locally before
-  // being consolidated here (Phase 4b).
+  // being consolidated here.
   mcGrid: "#e5e7eb", // gray-200
   mcAxis: "#6b7280", // gray-500
   mcBandOuter: "#ede9fe", // violet-100 — 5-10 / 90-95 percentile fan
@@ -228,11 +228,11 @@ export const CHART_COLORS = {
   // rule — this is an aggregate flow across all tax types, not a specific
   // account or bucket.
   withdrawalFlow: "#475569", // slate-600 — total portfolio withdrawal
-  // Guyton-Klinger guardrail event markers (R45 Step 5)
+  // Guyton-Klinger guardrail event markers
   guardrailIncreaseMarker: "#22c55e", // green-500 — spending raised
   guardrailDecreaseMarker: "#ef4444", // red-500 — spending cut
   guardrailSkipInflationMarker: "#f59e0b", // amber-500 — inflation raise skipped
-  // Real, material unmet spending need (advisor review, 2026-08-28) —
+  // Real, material unmet spending need —
   // darker than guardrailDecreaseMarker so a genuine "couldn't fund the
   // need" year reads as distinct from (and worse than) a voluntary
   // guardrail cut, even when both happen the same year.

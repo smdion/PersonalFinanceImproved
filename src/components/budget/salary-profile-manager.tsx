@@ -450,9 +450,9 @@ type FieldKey = keyof typeof FIELDS;
 /** Display labels for the two remaining enum selects — the raw stored
  *  values (payWeek/w4FilingStatus) are already short and mostly
  *  self-explanatory, but a couple ("na", "HOH") read better spelled out.
- *  `PAY_PERIOD_LABELS` used to be redeclared here too (R43 lint sweep
- *  caught it drifting from config's own copy — "Semimonthly" vs
- *  config's "Semi-Monthly") — now imported from display-labels.ts, per
+ *  `PAY_PERIOD_LABELS` used to be redeclared here too (drifted from
+ *  config's own copy — "Semimonthly" vs config's "Semi-Monthly") — now
+ *  imported from display-labels.ts, per
  *  RULES.md: "components import — never define local label maps." */
 const PAY_WEEK_LABELS: Record<PayWeek, string> = {
   even: "Even week",

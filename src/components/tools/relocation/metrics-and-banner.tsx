@@ -1,8 +1,7 @@
 "use client";
 
 /** Key metrics cards + recommendation banner + warnings for the Relocation
- *  calculator. Extracted from tools/page.tsx during the v0.5.2 file-split
- *  refactor. Stateless — reads only from the `result` and `engineResult` props.
+ *  calculator. Stateless — reads only from the `result` and `engineResult` props.
  */
 
 import { HelpTip } from "@/components/ui/help-tip";

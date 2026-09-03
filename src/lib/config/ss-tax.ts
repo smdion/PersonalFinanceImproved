@@ -5,7 +5,7 @@
 // inflation, which is why an increasing share of retirees pay tax on SS
 // over time (bracket creep by design, not oversight — see IRC §86(c)).
 //
-// R43 (C9): moved out of engine/tax-estimation.ts into a config module so
+// Moved out of engine/tax-estimation.ts into a config module so
 // the "no {MFJ|Single|HOH} object literal outside src/lib/config/" lint
 // guard (tests/lint/violations.test.ts) covers it, and so it has the same
 // home every other tax figure in the app has.

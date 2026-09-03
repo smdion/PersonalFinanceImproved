@@ -1,5 +1,5 @@
 /**
- * Portfolio server page (v0.5 expert-review M7).
+ * Portfolio server page.
  *
  * Server-side prefetches the heavy networth.computeSummary query (the
  * source of truth for portfolio holdings, allocations, and category

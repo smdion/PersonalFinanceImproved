@@ -95,8 +95,8 @@ export type MonteCarloResult = {
   budgetStabilityRate: number | null;
   /** % of trials that failed `successRate`'s bar specifically because a
    *  year's spending need went unfunded due to `avoidPenalizedWithdrawals`
-   *  excluding penalty-exposed money (v0.7.8 penalty-hard-exclusion follow-up,
-   *  C3) — as opposed to genuinely running out of money. Distinguishes "this
+   *  excluding penalty-exposed money — as opposed to genuinely running out
+   *  of money. Distinguishes "this
    *  household can't legally reach its own savings before 59½" from "this
    *  household is broke," which look identical in `successRate` alone. */
   penaltyAvoidedShortfallRate: number;

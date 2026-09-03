@@ -1,9 +1,6 @@
 /**
  * runDecumulationYear — single-year decumulation-phase logic. Mutates state in
  * place and pushes a year projection to `state.projectionByYear`.
- *
- * Extracted from the old single-file `projection-year-handlers.ts` in the
- * v0.5.2 refactor. Pure relocation — no logic changes, behavior byte-identical.
  */
 import type {
   EngineDecumulationYear,
@@ -147,7 +144,7 @@ export function runDecumulationYear(
     sortedDecOverrides,
   );
 
-  // Withdrawal-ordering eligibility (v0.7.8, PLAN-v0.7.8-v4 Group 2.2) --
+  // Withdrawal-ordering eligibility --
   // per-account penalty-free/locked split for this projected year. Computed
   // once, here, BEFORE either routeForMode call site (this function's real
   // execution below and tax-gross-up.ts's independent estimate) -- both
@@ -165,18 +162,16 @@ export function runDecumulationYear(
   // through so the gate reads the SAME running basis figure the UI shows
   // -- reading a stale snapshot for the gate while showing tracked basis
   // in the tooltip would be two numbers for one quantity (see
-  // withdrawal-eligibility.ts's docblock and
-  // DESIGN-DECISION-v0.7.8-tracked-basis.md § Q6).
+  // withdrawal-eligibility.ts's docblock).
   const eligibility = hasIndividualAccounts
     ? computeWithdrawalEligibility({ year, indAccts, indBal, indKey, indBasis })
     : undefined;
-  // R49: Portfolio-parented accounts (e.g. a taxable brokerage the
+  // Portfolio-parented accounts (e.g. a taxable brokerage the
   // household doesn't consider part of the retirement plan) never fund
   // retirement spending need — computed once per year here, threaded to
   // every consumer that decides how much money is "available"
   // (routeForMode's two call sites, performRothConversion, enforceRmd, and
   // QCD's capacity/debit below) so they can't disagree with each other.
-  // See .scratch/docs/plans/PLAN-retirement-only-withdrawal-scope.md.
   const nonRetirement = hasIndividualAccounts
     ? computeNonRetirementExclusion(indAccts, indBal, indKey)
     : undefined;
@@ -213,10 +208,10 @@ export function runDecumulationYear(
     Math.max(0, state.projectedExpenses - ssIncome),
   );
 
-  // --- Per-person RMD (moved ahead of routing/tax gross-up, R46) ---
+  // --- Per-person RMD (moved ahead of routing/tax gross-up) ---
   // Compute each person's RMD from their own Traditional balance and age.
   // Previously computed AFTER routing (only needed for enforceRmd's
-  // override), but R46's QCD step needs the RMD amount BEFORE tax
+  // override), but the QCD step needs the RMD amount BEFORE tax
   // gross-up runs -- a QCD reduces taxable income for the year, so it has
   // to be known (and deducted) before estimateWithdrawalTaxCost, not
   // after. Pure computation, no dependency on routing -- safe to hoist.
@@ -263,7 +258,7 @@ export function runDecumulationYear(
     if (total > 0) perPersonRmdTotal = roundToCents(total);
   }
 
-  // --- Qualified Charitable Distribution (R46) ---
+  // --- Qualified Charitable Distribution ---
   // A QCD is a direct IRA-to-charity transfer that satisfies part of the
   // RMD without counting as taxable income -- a proactive election on the
   // RMD itself, not a rule for leftover money (see reinvestRmdExcess for
@@ -275,7 +270,7 @@ export function runDecumulationYear(
   // per-person RMD itself already has).
   //
   // Eligibility is QCD_MIN_ELIGIBILITY_AGE (70), NOT rmdByPerson's
-  // RMD-start-age gate (advisor review, 2026-08-29) -- QCD eligibility
+  // RMD-start-age gate -- QCD eligibility
   // predates SECURE 2.0's RMD-age delay, so someone with startAge 75 is
   // still QCD-eligible for years before any RMD is even required. Built
   // straight from rmdStartAgeByPerson (has every tracked person's
@@ -299,7 +294,7 @@ export function runDecumulationYear(
         isIraCategory(ia.category) &&
         ia.ownerPersonId != null &&
         isPreTaxType(ia.taxType) &&
-        // R49: a Portfolio-parented IRA (nothing prevents one existing)
+        // A Portfolio-parented IRA (nothing prevents one existing)
         // isn't retirement money -- must not inflate QCD-eligible capacity.
         !isPortfolioParent(ia.parentCategory)
       ) {
@@ -324,7 +319,7 @@ export function runDecumulationYear(
       // debit below).
       balances.preTax = roundToCents(balances.preTax - totalQcd);
       addTraditional(acctBal.ira, -totalQcd);
-      // R49: the aggregate deduction above is correctly SIZED (totalQcd
+      // The aggregate deduction above is correctly SIZED (totalQcd
       // only ever reflects Retirement-parented IRA capacity, per the
       // filter above), but leaving the individual side to
       // reconcileIndividualToAggregate would spread it proportionally
@@ -378,7 +373,7 @@ export function runDecumulationYear(
     totalBalance > 0 ? balances.preTax / totalBalance : 0;
 
   // Grow the ordinary tax brackets + standard deduction forward from their
-  // own DB vintage (found live, 2026-08-31 — "outside the box" review):
+  // own DB vintage:
   // both are legally inflation-indexed but were being held flat in NOMINAL
   // dollars for the whole projection while nominal income/spending
   // correctly grows, silently overstating tax burden in later years. See
@@ -400,7 +395,7 @@ export function runDecumulationYear(
   const grownTaxBrackets = taxRates.taxBrackets
     ? growWithholdingBrackets(taxRates.taxBrackets, taxGrowth)
     : undefined;
-  // R59: fold the IRC §63(f)(1) age-65+ additional standard deduction into
+  // Fold the IRC §63(f)(1) age-65+ additional standard deduction into
   // the base deduction BEFORE growth, so the senior amount is grown on the
   // same tax-data vintage as the base (both are CPI-indexed). `seniorCount`
   // is the number of household members who are 65+ in THIS projection year —
@@ -431,8 +426,8 @@ export function runDecumulationYear(
   // point in the function) as the phaseout basis, the same 1-year-lag
   // circularity-breaking pattern IRMAA's 2-year lookback uses further below.
   // Decumulation year 1 has no MAGI history yet ⇒ $0 that year only, a
-  // deliberate, understood, self-healing gap (advisor-reviewed decision, not
-  // a silent omission) — real accuracy resumes from year 2 on.
+  // deliberate, understood, self-healing gap (not a silent omission) —
+  // real accuracy resumes from year 2 on.
   const obbbaAddon = computeObbbaSeniorDeduction({
     seniorCount,
     magi:
@@ -449,7 +444,7 @@ export function runDecumulationYear(
       : taxRates.standardDeduction,
     taxGrowth,
   );
-  // Phase 2 (2026-08-31): LTCG brackets, same growth factor as ordinary
+  // Phase 2: LTCG brackets, same growth factor as ordinary
   // brackets/standard deduction above — always returns a real, grown
   // table (falls back to the hardcoded LTCG_BRACKETS default when the
   // household has no `ltcg_brackets` DB row, which is the common case;
@@ -458,7 +453,7 @@ export function runDecumulationYear(
   // households).
   const grownLtcgBrackets = growLtcgBrackets(taxRates.ltcgBrackets, taxGrowth);
 
-  // Phase 3 (2026-08-31): IRMAA brackets. Anchored on IRMAA_BRACKETS' OWN
+  // Phase 3: IRMAA brackets. Anchored on IRMAA_BRACKETS' OWN
   // vintage (IRMAA_DATA_YEAR, irmaa-tables.ts) rather than taxGrowth's
   // taxDataYear above -- the ordinary-bracket/LTCG tables share one
   // vintage because they come from the same DB query and (for ordinary
@@ -477,7 +472,7 @@ export function runDecumulationYear(
   //    cap must compare this year's MAGI against the N+2 vintage of the
   //    threshold, not N's -- anchored on `year + 2`. Using the same
   //    factor for both would silently UNDER-cap every conversion by two
-  //    years of real threshold growth (advisor-caught, 2026-08-31).
+  //    years of real threshold growth.
   const irmaaGrowthCheck = taxGrowthFactor(
     year,
     IRMAA_DATA_YEAR,
@@ -489,7 +484,7 @@ export function runDecumulationYear(
     ctx.inflationRate,
   );
   const grownIrmaaBracketsForCheck = growIrmaaBrackets(
-    taxRates.irmaaBrackets, // DB-loaded irmaa_brackets (R43); undefined => IRMAA_BRACKETS default
+    taxRates.irmaaBrackets, // DB-loaded irmaa_brackets; undefined => IRMAA_BRACKETS default
     irmaaGrowthCheck,
   );
   const grownIrmaaBracketsForCap = growIrmaaBrackets(
@@ -497,7 +492,7 @@ export function runDecumulationYear(
     irmaaGrowthCap,
   );
 
-  // Phase 4 (2026-08-31): ACA subsidy cliff (400% FPL). Own vintage
+  // Phase 4: ACA subsidy cliff (400% FPL). Own vintage
   // anchor (FPL_COVERAGE_YEAR, aca-tables.ts) for the same reason as
   // IRMAA above -- no coupling to taxDataYear. Single vintage (unlike
   // IRMAA's two): ACA premium tax credits are computed on the coverage
@@ -559,13 +554,13 @@ export function runDecumulationYear(
   //
   // For waterfall/percentage, Roth bracket optimization can still overlay
   // via rothBracketTarget (sets a traditional tax-type cap).
-  // v0.7.9 R40 follow-up: cost-aware post-bracket-cap ranking inputs
+  // Cost-aware post-bracket-cap ranking inputs
   // (bracket_filling mode only; ignored by waterfall/percentage). See
   // deriveBasisRankingInputs's docblock for why the basis-derived fields
   // are shared with tax-gross-up.ts's estimate.
   //
-  // magiBeforeThisDraw is intentionally OMITTED here (advisor review,
-  // 2026-08-29 -- was previously magiHistory's prior-YEAR MAGI, a real
+  // magiBeforeThisDraw is intentionally OMITTED here. Was previously
+  // magiHistory's prior-YEAR MAGI, a real
   // bug: NIIT's MAGI test has no lookback, unlike IRMAA's genuine 2-year
   // lookback that magiHistory exists for; RouteBracketInfo's own docblock
   // says "MAGI before THIS YEAR'S gains/growth," which prior-year data
@@ -585,7 +580,7 @@ export function runDecumulationYear(
   // Resolved ONCE, here, and reused both for the routing reservation below
   // AND for performRothConversion's own target further down (replacing
   // that call's separate re-derivation of the identical fallback chain) —
-  // advisor-caught 2026-09-01: conversionReservedRoom used to reserve
+  // conversionReservedRoom used to reserve
   // room up to `traditionalCap` (derived from bracketInfo.rothBracketTarget,
   // the WITHDRAWAL target) even though the conversion that actually runs
   // later this same year targets this resolved value instead, which can
@@ -606,7 +601,7 @@ export function runDecumulationYear(
     acctBalances,
     {
       taxBrackets: grownTaxBrackets,
-      // Added 2026-08-29: read the resolved (possibly per-year-overridden)
+      // Read the resolved (possibly per-year-overridden)
       // value first, falling back to the plan's fixed default — was
       // previously always the fixed default, with no override path at all.
       // rothBracketTarget is a RATE (e.g. 0.12), not a dollar figure —
@@ -647,7 +642,7 @@ export function runDecumulationYear(
   );
 
   // --- RMD enforcement (Phase 1) ---
-  // perPersonRmdTotal/rmdByPerson computed earlier now (R46, see above --
+  // perPersonRmdTotal/rmdByPerson computed earlier now (see above --
   // QCD needed them before tax gross-up). The override passed here is
   // reduced by whatever QCD already satisfied directly, so enforceRmd only
   // tops up routing to cover the REMAINING (non-QCD) RMD requirement --
@@ -696,7 +691,7 @@ export function runDecumulationYear(
     perPersonRmdTotal != null ? perPersonRmdTotal : rmdResult.rmdAmount;
 
   // Recompute taxableSS with actual Traditional withdrawal (post-RMD) for final tax cost.
-  // TODO(F2): If muni bond income tracking is added, pass taxExemptInterest as 4th arg.
+  // TODO: If muni bond income tracking is added, pass taxExemptInterest as 4th arg.
   if (filingStatus && ssIncome > 0) {
     taxableSS = computeTaxableSS(
       ssIncome,
@@ -706,8 +701,7 @@ export function runDecumulationYear(
   }
 
   // Distribute withdrawals to individual accounts -- extracted to individual-account-tracking.ts
-  // Moved ABOVE computeTaxFromSlots (v0.7.8 Roth-tax-basis follow-up,
-  // DESIGN-DECISION-v0.7.8-roth-tax-basis.md § Q3): tax computation needs
+  // Moved ABOVE computeTaxFromSlots: tax computation needs
   // this year's BasisDraws to know how much of each Roth withdrawal was
   // growth (taxable, if non-qualified) vs. basis (always tax-free). Safe
   // to hoist: distributeWithdrawals/depleteIndividualBasis mutate only
@@ -733,8 +727,7 @@ export function runDecumulationYear(
       })
     : new Map<string, BasisDraw>();
 
-  // Roth growth-vs-basis taxability (v0.7.8 Roth-tax-basis follow-up,
-  // DESIGN-DECISION-v0.7.8-roth-tax-basis.md) -- consumes this year's
+  // Roth growth-vs-basis taxability -- consumes this year's
   // BasisDraws (never re-slices), decides per-account whether the
   // already-sliced growth portion is taxable (non-qualified distribution:
   // owner under 59 1/2). Undefined ownerBirthYear (joint accounts) is
@@ -750,8 +743,7 @@ export function runDecumulationYear(
       })
     : { taxableGrowth: 0, taxFreeAmount: 0, byKey: new Map() };
 
-  // Early-withdrawal penalty cost (v0.7.8 penalty-hard-exclusion follow-up,
-  // DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md § Q5) -- consumes this
+  // Early-withdrawal penalty cost -- consumes this
   // year's real per-account withdrawal map (never re-slices). Under the
   // default avoidPenalizedWithdrawals: true, routeForMode already excluded
   // penalty-exposed money from routing, so this should compute exactly 0 in
@@ -766,7 +758,7 @@ export function runDecumulationYear(
       : { penaltyCost: 0, penalizedAmount: 0, byKey: new Map() };
 
   // Calculate tax cost per withdrawal type -- single source of truth shared
-  // with tax-gross-up.ts's estimate (Phase 5 item 5.3).
+  // with tax-gross-up.ts's estimate.
   const taxFromSlots = computeTaxFromSlots({
     slots,
     taxableSS,
@@ -793,7 +785,7 @@ export function runDecumulationYear(
   const brokerageGainsPortion = taxFromSlots.brokerageGainsPortion;
   const hsaWithdrawal = taxFromSlots.hsaWithdrawal;
   const actualTraditionalRate = taxFromSlots.actualTraditionalRate;
-  // v0.7.8 advisor review (2026-08-27): this used to be re-derived locally
+  // This used to be re-derived locally
   // as `totalTraditionalWithdrawal + taxableSS`, silently dropping
   // non-qualified Roth growth income (rothTaxSplit.taxableGrowth) from
   // everything downstream (LTCG bracket selection, MAGI). Read the single
@@ -819,8 +811,7 @@ export function runDecumulationYear(
 
   // Recompute grossUpFactor post-RMD for accurate diagnostics (#45).
   // Pre-RMD estimate may understate tax when RMD forces additional Traditional withdrawals.
-  // Includes penaltyCost in the cost scalar alongside taxCost (v0.7.8
-  // penalty-hard-exclusion follow-up § Q5) -- RMD dollars are never
+  // Includes penaltyCost in the cost scalar alongside taxCost -- RMD dollars are never
   // penalty-exposed by construction (see this module's RMD-exempt note),
   // so RMD enforcement itself never changes penaltyCost, but this recompute
   // must still reflect whatever penaltyCost already was (nonzero only when
@@ -828,7 +819,7 @@ export function runDecumulationYear(
   if (rmdOverrodeRouting && afterTaxNeed > 0) {
     const postRmdTotalCost = roundToCents(taxCost + penaltyCost);
     const postRmdEffRate = postRmdTotalCost / (afterTaxNeed + postRmdTotalCost);
-    // Not a safeDivide candidate (advisor-reviewed, 2026-08-19): the guard
+    // Not a safeDivide candidate: the guard
     // is `< 1`, not a zero-denominator check — postRmdEffRate exceeding 1 is
     // a real, semantically distinct case (over-withheld/clawback) from it
     // being exactly 1, and safeDivide only special-cases denominator === 0.
@@ -845,12 +836,12 @@ export function runDecumulationYear(
   // Apply decumulation lump sums (one-time injections/windfalls, NOT subject to limits)
   applyLumpSums(config.lumpSums, ctx, state);
 
-  // Handle RMD-forced excess (#39, mode-aware R46) -- extracted to balance-deduction.ts
+  // Handle RMD-forced excess (mode-aware) -- extracted to balance-deduction.ts
   const shouldHandleRmdExcess = input.reinvestRmdExcess !== false; // default: true
-  // R46 Phase 1: capture the excess amount (previously discarded) so it can
+  // Capture the excess amount (previously discarded) so it can
   // be surfaced in the UI — this money is real, forced out of Traditional
   // by the RMD floor regardless of what the strategy needed, with no prior
-  // UI trace. R46 Phase 2: what happens to it depends on the household's
+  // UI trace. What happens to it depends on the household's
   // rmdExcessHandling setting (reinvest into brokerage, or spend it).
   const rmdExcessAmount = reinvestRmdExcess(
     config.rmdExcessHandling,
@@ -874,14 +865,13 @@ export function runDecumulationYear(
   // Track per-account depletions -- extracted to balance-deduction.ts
   trackDepletions(acctBal, depletionTracked, accountDepletions, year, age);
 
-  // --- R47: RMD-aware Roth conversion smoothing ---
+  // --- RMD-aware Roth conversion smoothing ---
   // Computed fresh every year (adaptive, not a one-time plan) from each
   // person's CURRENT Traditional balance (post this year's withdrawal/
   // RMD/QCD, via indBal -- more accurate than the stale
-  // priorYearEndTradByPerson snapshot). See rmd-smoothing.ts and
-  // .scratch/docs/plans/PLAN-r47-rmd-aware-roth-smoothing.md. Requires
+  // priorYearEndTradByPerson snapshot). See rmd-smoothing.ts. Requires
   // individual-account tracking -- entirely per-person by design, same
-  // precondition R46/R49's per-person RMD/QCD already have.
+  // precondition the per-person RMD/QCD path already has.
   let rmdSmoothingTarget: number | undefined;
   if (
     config.rmdSmoothingEnabled &&
@@ -934,7 +924,7 @@ export function runDecumulationYear(
     //      from (and possibly more conservative than) their withdrawal
     //      bracket target.
     //   2. config.rothBracketTarget -- a per-year WITHDRAWAL-routing
-    //      override. Advisor-caught 2026-09-01: an earlier version put
+    //      override. An earlier version put
     //      this FIRST, ahead of taxRates.rothConversionTarget -- a
     //      household with an explicit plan-level rothConversionTarget
     //      (say 12%, deliberately below their rothBracketTarget) whose
@@ -958,7 +948,7 @@ export function runDecumulationYear(
     // routeForMode) instead of re-deriving the identical chain a second
     // time here -- the routing reservation and the conversion that
     // actually runs must agree on this value, or the two silently drift
-    // (advisor-caught 2026-09-01, see resolvedConversionTarget's own
+    // (see resolvedConversionTarget's own
     // comment).
     rothBracketTarget: resolvedConversionTarget,
     totalTraditionalWithdrawal,
@@ -972,7 +962,7 @@ export function runDecumulationYear(
     filingStatus,
     balances,
     acctBal,
-    // R49 — advisor round 4: without this, performRothConversion's own
+    // Without this, performRothConversion's own
     // fixes above are fully implemented and fully unit-tested but never
     // execute in production, since "params omitted" is deliberately the
     // unchanged-behavior fallback.
@@ -1014,8 +1004,8 @@ export function runDecumulationYear(
       filingStatus,
       grownLtcgBrackets,
     );
-    // Recompute taxCost with revised brokerage tax. v0.7.8 advisor review
-    // (2026-08-27): this used to tax the WHOLE Roth withdrawal at
+    // Recompute taxCost with revised brokerage tax. This used to tax the
+    // WHOLE Roth withdrawal at
     // taxRates.roth (0 by default) — the pre-Roth-tax-basis formula,
     // silently un-updated when that feature split Roth withdrawals into a
     // taxable-growth portion (taxed at actualTraditionalRate, same as
@@ -1051,7 +1041,7 @@ export function runDecumulationYear(
   // --- NIIT (Net Investment Income Tax, 3.8% surtax) ---
   // Applies to lesser of net investment income or MAGI exceeding threshold.
   // Roth conversions raise MAGI but are NOT net investment income.
-  // v0.7.8 advisor review (2026-08-27): non-qualified Roth growth income
+  // Non-qualified Roth growth income
   // (taxFromSlots.rothTaxableGrowth) was missing here too, understating
   // MAGI fed into NIIT, the 2-year IRMAA lookback, and the ACA subsidy
   // check below — same root cause as the taxCost recompute fix above.
@@ -1068,7 +1058,7 @@ export function runDecumulationYear(
     taxCost = roundToCents(taxCost + niitAmount);
   }
 
-  // Funding-shortfall reconciliation (advisor review, 2026-08-26, alongside
+  // Funding-shortfall reconciliation (alongside
   // the tax-gross-up.ts secant-convergence fix). routedUnmetNeed only fires
   // when the ROUTER itself couldn't deliver the requested targetWithdrawal
   // (account caps, exclusion, genuine balance exhaustion) -- it structurally
@@ -1089,8 +1079,8 @@ export function runDecumulationYear(
   const fundingShortfall = roundToCents(
     Math.max(0, afterTaxNeed - deliveredAfterTax),
   );
-  // Materiality floor, not a correctness tolerance (advisor review,
-  // 2026-08-27): NIIT and the conversion-year LTCG recompute both run
+  // Materiality floor, not a correctness tolerance. NIIT and the
+  // conversion-year LTCG recompute both run
   // AFTER routing and are accepted, documented residual-gap sources (the
   // gross-up estimate can't have grossed up for a cost that didn't exist
   // yet when it ran) -- a $0.01 floor here flagged UNMET NEED on every
@@ -1105,7 +1095,7 @@ export function runDecumulationYear(
       ? Math.max(routedUnmetNeed ?? 0, fundingShortfall)
       : routedUnmetNeed;
   // Single canonical "is this a REAL shortfall worth alerting on" verdict
-  // (advisor review, 2026-08-28) -- `finalUnmetNeed` above intentionally
+  // `finalUnmetNeed` above intentionally
   // preserves its existing byte-identical value/undefined-ness for
   // existing consumers (no cache-version bump needed for an additive
   // field), but its own two branches apply the materiality floor
@@ -1118,7 +1108,7 @@ export function runDecumulationYear(
   //
   // grossUpForTaxes:false households net out the tax+penalty portion of
   // fundingShortfall before checking materiality (live-user finding,
-  // 2026-08-28): with that setting off, the household has deliberately
+  // With that setting off, the household has deliberately
   // chosen to withdraw the raw need and let tax/penalty come out of it
   // uncompensated -- fundingShortfall then equals ~taxCost+penaltyCost
   // EVERY single year, by design, forever. That's not a real/unexpected
@@ -1171,7 +1161,7 @@ export function runDecumulationYear(
   // Under-65 is the ACA marketplace-subsidy eligibility criterion this
   // checks — it's the same real-world Medicare-eligibility event the IRMAA
   // block above tests, not an independent regulatory threshold, so it
-  // shares MEDICARE_START_AGE (advisor-approved 2026-08-19).
+  // shares MEDICARE_START_AGE.
   const allPersonsUnder65 =
     perPersonBirthYears && perPersonBirthYears.length > 0
       ? perPersonBirthYears.every((by) => year - by < MEDICARE_START_AGE)
@@ -1186,7 +1176,7 @@ export function runDecumulationYear(
     rothTaxableGrowth: taxFromSlots.rothTaxableGrowth,
     ssIncome,
     fplGrowthFactor,
-    fplByHousehold: taxRates.fplByHousehold, // DB-resolved FPL (R43); undefined => hardcoded fallback
+    fplByHousehold: taxRates.fplByHousehold, // DB-resolved FPL; undefined => hardcoded fallback
   });
   const { acaSubsidyPreserved, acaMagiHeadroom } = acaResult;
   routeWarnings.push(...acaResult.warnings);
@@ -1212,7 +1202,7 @@ export function runDecumulationYear(
       if (amount <= 0) continue;
       decumBrokerageContrib += amount;
       if (spec.accountName) {
-        // R4 (advisor-reviewed 2026-09-01): this used to match by
+        // This used to match by
         // `ia.name === spec.accountName` alone — two household members with
         // identically-named accounts (e.g. both "Traditional 401(k)") would
         // silently collide, with whichever account `indAccts` happened to
@@ -1290,7 +1280,7 @@ export function runDecumulationYear(
   const decIndContribs =
     decumContribByAccount.size > 0 ? decumContribByAccount : undefined;
 
-  // Tracked Roth basis (v0.7.8 follow-up): clamp to this year's balance
+  // Tracked Roth basis: clamp to this year's balance
   // before building output -- market losses (or a shrunk-to-near-zero
   // account) could otherwise leave tracked basis exceeding what the
   // account actually holds. Mirrors early-access.ts's own balance clamp
@@ -1322,10 +1312,9 @@ export function runDecumulationYear(
   // Zero out rounding dust -- extracted to balance-deduction.ts
   cleanupDust(balances, acctBal, indAccts, indKey, indBal);
 
-  // Reconcile indBal to acctBal once per year (v0.7.8 follow-up,
-  // DESIGN-DECISION-v0.7.8-indbal-reconciliation.md) -- the two tracks are
-  // "known to drift" (see withdrawal-eligibility.ts's module docblock, Q3
-  // of the original Group 0 design); left unreconciled, next year's
+  // Reconcile indBal to acctBal once per year -- the two tracks are
+  // "known to drift" (see withdrawal-eligibility.ts's module docblock);
+  // left unreconciled, next year's
   // eligibility gate can see a nonzero "eligible" balance for a category
   // that's actually 100% locked. Runs AFTER cleanupDust so it reads final
   // aggregate state for the year, and BEFORE the basis re-clamp below so

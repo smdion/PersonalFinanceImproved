@@ -1,9 +1,8 @@
 /**
- * Tracked (not snapshot) Roth basis draw-down — v0.7.8 follow-up to
- * PLAN-v0.7.8-v4's engine-aware withdrawal ordering.
+ * Tracked (not snapshot) Roth basis draw-down — a follow-up to
+ * the engine-aware withdrawal ordering.
  *
- * Locked design: `.scratch/docs/plans/DESIGN-DECISION-v0.7.8-tracked-basis.md`
- * (advisor session, 2026-08-26). Replaces the one-time `rothBasisMeta`
+ * Replaces the one-time `rothBasisMeta`
  * snapshot `withdrawal-eligibility.ts` previously read with a running,
  * per-account, per-projected-year balance that GROWS with modeled
  * contributions (accumulation phase) and SHRINKS as withdrawals actually

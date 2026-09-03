@@ -14,7 +14,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Tooltip } from "@/components/ui/tooltip";
-// Code-split the recharts-heavy jobs settings panel (v0.5 expert-review M8).
+// Code-split the recharts-heavy jobs settings panel.
 // JobsSettings renders salary trend charts so it carries the recharts payload;
 // loads on historical page mount instead of bundling into the page chunk.
 const JobsSettings = dynamic(

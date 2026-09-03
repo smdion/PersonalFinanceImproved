@@ -2,7 +2,7 @@
 
 /**
  * Generic year + filing-status bracket editor shared by the IRMAA and LTCG
- * settings tabs (R33 — the two were ~85% identical copies that had already
+ * settings tabs (the two were ~85% identical copies that had already
  * drifted). Owns the year picker / copy-from-year / empty state / delete
  * confirmation / 3-column card+table shell; each consumer supplies its
  * column definitions, default brackets, and thin CRUD callbacks (so this

@@ -3,8 +3,8 @@
  *  own tax section, so the two can never disagree (RULES.md single
  *  computation path). Decumulation only: EngineDecumulationYear.taxCost is
  *  computed per year and ready to sum; EngineAccumulationYear has no
- *  equivalent field — see tax-summary-card.tsx's docblock and
- *  .scratch/docs/plans/TODO.md for why accumulation isn't included. */
+ *  equivalent field — see tax-summary-card.tsx's docblock for why
+ *  accumulation isn't included. */
 import type { EngineDecumulationYear } from "@/lib/calculators/types/engine-projection";
 
 export type LifetimeTaxDecade = {

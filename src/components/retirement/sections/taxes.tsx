@@ -1,14 +1,13 @@
 /**
- * Taxes in Retirement panel — extracted from retirement-content.tsx in PR 7/2
- * of the v0.5.2 file-split refactor. Pure relocation — no behavior changes.
+ * Taxes in Retirement panel.
  *
  * The `filingStatus` placeholder in the "Auto" option is derived locally from
  * `settings.filingStatus` (identical to the old `const filingStatus =
  * settings.filingStatus` in the parent). `selectedScenario` is plumbed through
  * so the brokerage LTCG rate still reads off the active scenario.
  *
- * `bracketOptimizerResult` (multi-year withdrawal-policy optimizer, Phase 4,
- * 2026-08-29): deliberately a plain prop, not a tRPC query owned by this
+ * `bracketOptimizerResult` (multi-year withdrawal-policy optimizer):
+ * deliberately a plain prop, not a tRPC query owned by this
  * component. This file is documented (retirement-sections-smoke.test.tsx) as
  * a pure presentational leaf — "Settings + callback props in, JSX out" — and
  * the parent (retirement-profile-tab.tsx) already owns every other query

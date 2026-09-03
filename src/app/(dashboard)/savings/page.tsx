@@ -34,8 +34,8 @@ import { formatCurrency } from "@/lib/utils/format";
 import { BudgetCapacityBar } from "@/components/savings/budget-capacity-bar";
 import { ExtraPaycheckRulesEditor } from "@/components/savings/extra-paycheck-rules-editor";
 
-// Code-split Recharts-heavy children (v0.5 expert-review M8). Loads on
-// page mount instead of bundling into the savings page chunk. ssr:false
+// Code-split Recharts-heavy children. Loads on page mount instead of
+// bundling into the savings page chunk. ssr:false
 // because Recharts isn't SSR-friendly.
 const SavingsTrajectoryChart = dynamic(
   () =>
@@ -263,7 +263,7 @@ export default function SavingsPage() {
   // recalcMaxMonthlyFunding/maxMonthlyFunding) was computed from — threaded
   // into recalculateAllocation/lockInAllocationPercent's mutation calls so
   // the server-side live-pool recompute can't silently diverge from what
-  // this same preview just showed (found live, 2026-08-31 — the mutation
+  // this same preview just showed (the mutation
   // previously always used the household's globally-active Contribution/
   // Salary Profile regardless of what was actually selected here, so a
   // household with any non-default selection saw "Pull in new pay" report
@@ -282,7 +282,7 @@ export default function SavingsPage() {
     // Threaded through so budget.computeActiveSummary's OWN per-column
     // resolution (inside computeLiveMaxMonthlyFunding, savings.ts) matches
     // exactly what this page's own maxMonthlyFunding query above used —
-    // not just a single resolved id (found live, 2026-08-31, round two).
+    // not just a single resolved id (round two).
     contributionProfileTiers: contributionProfileTiers,
     salaryProfileTiers: salaryProfileTiers,
   };

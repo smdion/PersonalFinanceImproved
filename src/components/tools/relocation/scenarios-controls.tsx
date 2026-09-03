@@ -1,7 +1,6 @@
 "use client";
 
 /** Scenario save/load controls + save dialog for the Relocation calculator.
- *  Extracted from tools/page.tsx during the v0.5.2 file-split refactor.
  *  The parent owns the tRPC queries/mutations; this component only renders
  *  the UI and invokes prop callbacks.
  */

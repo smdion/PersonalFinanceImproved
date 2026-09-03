@@ -1,14 +1,13 @@
 /**
- * Tax-parameter resolver (R43).
+ * Tax-parameter resolver.
  *
  * ONE function every tax consumer calls the same way — the retirement
  * projection payload builder, the paycheck router, `savings.ts`, the annual
- * tax-liability path. Before R43 each of those had its own `WHERE tax_year =
+ * tax-liability path. Previously each of those had its own `WHERE tax_year =
  * X` / `MAX(tax_year)` logic (three-plus independent copies), and the
  * `irmaa_brackets` / FPL data was not consulted at all.
  *
- * Design (see `.scratch/docs/reviews/R43-REVIEW.md` §5-Rec-1 and the
- * follow-up advisor pass): this is a THIN resolver. It does not hold figure
+ * Design: this is a THIN resolver. It does not hold figure
  * values. The existing `contribution_limits` / `tax_brackets` /
  * `ltcg_brackets` / `irmaa_brackets` / `fpl_by_household` tables remain the
  * one and only value store, keyed by `tax_year` exactly as today. The
@@ -30,7 +29,7 @@
  *
  * The `tax_params` rows are NOT required for resolution — a DB with none
  * (e.g. an old-backup restore) resolves purely off the value tables' own
- * `tax_year` values, i.e. exactly the pre-R43 behaviour.
+ * `tax_year` values, i.e. exactly the behaviour before this resolver existed.
  */
 
 import type { W4FilingStatus } from "./enum-values";

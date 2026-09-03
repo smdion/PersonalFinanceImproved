@@ -51,7 +51,7 @@ export function sumBracketTax(
 /**
  * Convert Pub 15-T percentage-method withholding brackets (thresholds in
  * ADJUSTED-ANNUAL-WAGE space — Worksheet 1A's deduction already folded in,
- * per R56/R58) into Form 1040 rate-schedule brackets (real TAXABLE-INCOME
+ * already) into Form 1040 rate-schedule brackets (real TAXABLE-INCOME
  * space, i.e. post-standard-deduction). The two tables share identical
  * widths — Pub 15-T's standard percentage-method table is the 1040 rate
  * schedule shifted by exactly `standardDeduction - worksheet1AAdjustment`

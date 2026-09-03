@@ -1,20 +1,20 @@
 /**
- * RMD Handling panel (R46) — what happens to Required Minimum Distribution
+ * RMD Handling panel — what happens to Required Minimum Distribution
  * money beyond stated spending need. Two independent settings:
  * - rmdExcessHandling: reinvest into brokerage (default) or spend it.
  * - qcdMaximize: automatically apply Qualified Charitable Distributions
  *   against the RMD each year (a proactive election on the RMD itself,
- *   not a rule for leftover money — see PLAN-rmd-excess-handling.md).
+ *   not a rule for leftover money).
  *
- * R47 adds a third, independent setting: rmdSmoothingEnabled — proactively
- * size Roth conversions BEFORE RMD age to shrink the future RMD toward
+ * A third, independent setting, rmdSmoothingEnabled, proactively
+ * sizes Roth conversions BEFORE RMD age to shrink the future RMD toward
  * projected spending need, instead of reacting to an already-forced
  * excess. Requires individual-account tracking. Its own bracket-ceiling
  * dropdown (rmdSmoothingMaxBracketTarget) only renders once enabled, and
  * is seeded from the household's current rothBracketTarget the first time
  * they turn smoothing on — never a hardcoded default — so opting in can
  * never look like it silently lowered a Roth-conversion rate they already
- * configured. See PLAN-r47-rmd-aware-roth-smoothing.md.
+ * configured.
  */
 "use client";
 

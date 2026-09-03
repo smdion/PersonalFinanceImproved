@@ -1,7 +1,7 @@
 /**
- * Idempotency key generation for transaction creation (v0.5 expert-review M20).
+ * Idempotency key generation for transaction creation.
  *
- * The audit's concern: a sync that succeeds server-side but loses the
+ * The concern: a sync that succeeds server-side but loses the
  * response (network glitch, container restart) gets retried, creating a
  * duplicate transaction. Both YNAB and Actual support idempotency keys
  * via header or body field, but the existing clients don't pass one.

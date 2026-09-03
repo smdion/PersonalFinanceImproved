@@ -1,7 +1,7 @@
 /**
- * Typed errors for budget API integrations (v0.5 expert-review M19/M22).
+ * Typed errors for budget API integrations.
  *
- * The audit's concern: ynab-client and actual-client both threw generic
+ * The concern: ynab-client and actual-client both threw generic
  * Error on 401, 403, 429, 500, etc. Sync code couldn't distinguish auth
  * errors (re-auth needed) from rate limits (back off + retry) from server
  * errors (might be transient). This module gives every error a typed
@@ -181,8 +181,8 @@ export async function retryWithBackoff<T>(
 /**
  * Shared fetch wrapper for budget API clients (YNAB, Actual Budget).
  * Was structurally duplicated between YnabClient.request() and
- * ActualClient.request() (M45, .scratch/docs/review-findings.md) — same
- * timeout/AbortController/retry wiring, so a future fix to either had to
+ * ActualClient.request() — same timeout/AbortController/retry wiring, so a
+ * future fix to either had to
  * be applied twice and could silently drift.
  *
  * - Throws typed BudgetApiError instead of generic Error so call sites

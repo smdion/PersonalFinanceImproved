@@ -48,7 +48,7 @@ export function useFICache(): [FICache, (v: FICache) => void] {
  * call this instead of each re-deriving the same scan independently, or the
  * two WILL diverge (docs/RULES.md — single computation path).
  *
- * R45 Step 4 (Findings 8/13): the FI target itself is computed by
+ * The FI target itself is computed by
  * `computeFiTarget` (lib/calculators/net-worth.ts) — the same function
  * `calculateNetWorth` uses server-side — instead of reimplementing
  * `annualExpenses / withdrawalRate` here with no divide-by-zero guard. The
@@ -75,7 +75,7 @@ export function deriveFI(
  * live-plan query — a what-if scenario, historical snapshot, or any of
  * these overrides producing a *different projection* than what the rest of
  * the dashboard shows would otherwise get cached and rendered elsewhere as
- * "the real plan" (H12, .scratch/docs/review-findings.md).
+ * "the real plan".
  *
  * contributionProfileId/salaryProfileId are NOT checked for null here. Both
  * current callers (this dashboard's retirement card and the Plan Health
@@ -85,7 +85,7 @@ export function deriveFI(
  * *different* profile — requires an active Scenario, already excluded
  * below). Treating a non-null id as inherently non-live would mean this
  * cache is never written for any household with a Contribution/Salary
- * Profile configured (M27, .scratch/docs/review-findings.md) — the engine
+ * Profile configured — the engine
  * input still needs an explicit id since "no profile" means $0
  * contributions, not "use the active one".
  */

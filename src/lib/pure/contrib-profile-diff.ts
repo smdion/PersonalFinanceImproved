@@ -1,5 +1,5 @@
 /**
- * Contribution Profile swap-safety diff (R20).
+ * Contribution Profile swap-safety diff.
  *
  * A Contribution Profile only marks an account ACTIVE (its own value) when
  * that value genuinely differs from the account's own live row; an account
@@ -19,7 +19,7 @@ export type ContribFieldSet = {
   isActive?: boolean | null;
   /** Cosmetic only — deliberately excluded from the comparison below. */
   displayNameCustom?: string | null;
-  /** @deprecated R22 legacy key. */
+  /** @deprecated legacy key. */
   displayNameActive?: string | null;
 };
 

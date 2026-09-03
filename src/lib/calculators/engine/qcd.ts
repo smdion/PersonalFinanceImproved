@@ -1,5 +1,5 @@
 /**
- * Qualified Charitable Distributions (QCD) — R46.
+ * Qualified Charitable Distributions (QCD).
  *
  * A QCD is a direct transfer from a Traditional IRA to a qualified charity
  * that satisfies part of the owner's RMD without counting as taxable
@@ -24,7 +24,7 @@
  * Since QCDs are IRA-only, this module caps the QCD-eligible amount at
  * `min(cap, personIraTraditionalBalance)` rather than attempting a full
  * per-account-type RMD split, which this engine doesn't do anywhere
- * today. See PLAN-rmd-excess-handling.md for the full rationale.
+ * today.
  *
  * Only meaningful when individual accounts are tracked — same limitation
  * per-person RMD tracking itself already has (there's no person-level
@@ -42,7 +42,7 @@ export interface QcdPersonInput {
   /** This person's Traditional balance held specifically in IRA-category
    *  accounts — the only portion eligible for QCD.
    *
-   *  Timing note (advisor review, R46): the caller reads this balance
+   *  Timing note: the caller reads this balance
    *  live from `indBal` at QCD-computation time, before this year's
    *  growth runs (QCD runs first) — time-equivalent to the RMD
    *  snapshot's own timing for a fresh projection year. Pre-existing

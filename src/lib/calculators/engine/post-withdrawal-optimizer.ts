@@ -4,7 +4,7 @@
  * Runs after withdrawal routing and RMD enforcement, before growth.
  * These three features share MAGI calculations and form a feedback chain
  * (Roth conversions affect MAGI → IRMAA/ACA cliff checks), so they're
- * co-located in a single module per the refactor plan.
+ * co-located in a single module.
  *
  * Roth conversions: moves Traditional → Roth to fill remaining bracket room.
  *   Tax on the conversion is paid from brokerage (after-tax).
@@ -50,9 +50,9 @@ export interface RothConversionInput {
   taxBrackets: WithholdingBracket[] | null | undefined;
   taxMultiplier?: number;
   /** Filing status's standard deduction — Pub 15-T Worksheet 1A residual
-   *  (R56), threaded into `incomeCapForMarginalRate`/`estimateEffectiveTaxRate`
+   *  threaded into `incomeCapForMarginalRate`/`estimateEffectiveTaxRate`
    *  so bracket-filling room and conversion tax cost are computed against
-   *  the correct base. Undefined keeps pre-R56 (overstating) behavior. */
+   *  the correct base. Undefined keeps the prior (overstating) behavior. */
   standardDeduction?: number;
   rothConversionTarget: number | undefined;
   rothBracketTarget: number | undefined;
@@ -64,7 +64,7 @@ export interface RothConversionInput {
   brokerageGainsPortion: number;
   /** Non-qualified Roth growth income (taxFromSlots.rothTaxableGrowth) —
    *  ordinary income, so it belongs in this year's real taxable income
-   *  like any other (advisor-flagged 2026-09-01: `actualTaxableIncome`'s
+   *  like any other (`actualTaxableIncome`'s
    *  own docblock, tax-estimation.ts, names
    *  "totalTraditionalWithdrawal + taxableSS alone" as the EXACT bug this
    *  field exists to prevent — this function's yearTaxableIncome/
@@ -89,7 +89,7 @@ export interface RothConversionInput {
   balances: TaxBuckets;
   /** Per-account balances (mutated in place). */
   acctBal: AccountBalances;
-  /** Portfolio-parented ("non-retirement") exclusion for this year (R49) —
+  /** Portfolio-parented ("non-retirement") exclusion for this year —
    *  when supplied, both the conversion SOURCE amount and the tax-payment
    *  capacity gate are capped to Retirement-only money (this half needs
    *  only the pre-aggregated exclusion record, not the raw account list).
@@ -100,9 +100,8 @@ export interface RothConversionInput {
    *  redistribution. `decumulation-year.ts`'s real call site always
    *  computes and passes all four together (or none), gated on the same
    *  `hasIndividualAccounts` check — omitting all four ⇒ byte-identical to
-   *  pre-R49 aggregate-only behavior, since there's no Portfolio/Retirement
-   *  distinction possible without per-account data anyway. See
-   *  `.scratch/docs/plans/PLAN-retirement-only-withdrawal-scope.md` § 7. */
+   *  the earlier aggregate-only behavior, since there's no Portfolio/Retirement
+   *  distinction possible without per-account data anyway. */
   nonRetirement?: NonRetirementExclusion;
   /** Individual accounts, current per-account balances, and the engine's
    *  key function — same triple every other individual-tracking-aware
@@ -111,7 +110,7 @@ export interface RothConversionInput {
   indAccts?: IndividualAccountInput[];
   indBal?: Map<string, number>;
   indKey?: IndKeyFn;
-  /** R47: this year's combined household RMD-smoothing minimum (sum of
+  /** This year's combined household RMD-smoothing minimum (sum of
    *  every person's own target — see `rmd-smoothing.ts`'s
    *  `computeRmdSmoothingTargets`), 0/undefined when smoothing is off or
    *  has nothing to convert this year. When present and positive, this
@@ -121,10 +120,9 @@ export interface RothConversionInput {
    *  `rmdSmoothingMaxBracketTarget` if the household's own
    *  `rothBracketTarget`/`rothConversionTarget` doesn't provide enough
    *  room. `rothConversionTarget === 0` (an explicit "never convert"
-   *  opt-out) still wins regardless — see
-   *  `.scratch/docs/plans/PLAN-r47-rmd-aware-roth-smoothing.md` Part 2. */
+   *  opt-out) still wins regardless. */
   rmdSmoothingTarget?: number;
-  /** R47: ceiling on how far smoothing may elevate the effective target
+  /** Ceiling on how far smoothing may elevate the effective target
    *  rate — see `rmdSmoothingTarget`'s docblock. Always resolved by the
    *  caller (never undefined when `rmdSmoothingTarget` is supplied) —
    *  `ResolvedDecumulationConfig.rmdSmoothingMaxBracketTarget` is never
@@ -135,7 +133,7 @@ export interface RothConversionInput {
 export interface RothConversionResult {
   rothConversionAmount: number;
   rothConversionTaxCost: number;
-  /** R47: portion of `rmdSmoothingTarget` that did NOT end up converted
+  /** Portion of `rmdSmoothingTarget` that did NOT end up converted
    *  this year (0 in the common case) — a real, expected shortfall when
    *  even the elevated ceiling, IRMAA-cliff cap, or available balance
    *  isn't enough to hit the target, not silently dropped. Only ever
@@ -181,8 +179,8 @@ export interface AcaInput {
   rothConversionAmount: number;
   brokerageGainsPortion: number;
   /** Non-qualified Roth growth income (taxFromSlots.rothTaxableGrowth) —
-   *  ordinary income, so it belongs in AGI/MAGI like any other. Advisor-
-   *  caught 2026-09-01: this docblock right here already documents that
+   *  ordinary income, so it belongs in AGI/MAGI like any other. This
+   *  docblock right here already documents that
    *  the same omission was fixed for currentYearMagi/NIIT/the IRMAA
    *  lookback (decumulation-year.ts) "and the ACA subsidy check below" —
    *  but checkAca's own call site never actually passed it, so a pre-65
@@ -205,7 +203,7 @@ export interface AcaInput {
    * — mathematically identical to growing each FPL cell first
    * (fpl*4*k === (fpl*k)*4). */
   fplGrowthFactor: number;
-  /** DB-resolved FPL map from `fpl_by_household` (R43). Same
+  /** DB-resolved FPL map from `fpl_by_household`. Same
    *  override-else-default pattern as `ltcgBrackets`/`irmaaBrackets`:
    *  undefined ⇒ the hardcoded `FPL_BY_HOUSEHOLD` fallback. */
   fplByHousehold?: Record<number, number>;
@@ -256,7 +254,7 @@ export function performRothConversion(
   // the tax-payment capacity gate and the later per-account debit loop can
   // use it without duplicating the search.
   const overflowCat = getAllCategories().find((c) => isOverflowTarget(c));
-  // R47: smoothing is a self-contained reason to proceed -- it must not
+  // Smoothing is a self-contained reason to proceed -- it must not
   // require the household to separately flip the unrelated
   // enableRothConversions toggle (same "own complete toggle" pattern
   // rmdExcessHandling/qcdMaximize already use). `zero()` below carries
@@ -283,7 +281,7 @@ export function performRothConversion(
   // Override can disable conversions with target=0 -- an EXPLICIT
   // household opt-out, stronger and more deliberate than the default-off
   // enableRothConversions toggle. Smoothing must not silently override
-  // this even when active (R47 Part 2).
+  // this even when active.
   const configTarget = input.rothConversionTarget;
   if (configTarget === 0) {
     return zero();
@@ -292,14 +290,14 @@ export function performRothConversion(
   // Total taxable income this year (Traditional withdrawals + taxable SS +
   // non-qualified Roth growth) -- needed before target resolution now,
   // since smoothing's elevated target (if any) is sized against it.
-  // Advisor-flagged 2026-09-01: previously omitted rothTaxableGrowth,
+  // Previously omitted rothTaxableGrowth,
   // understating real income and overstating conversionRoom below.
   const yearTaxableIncome =
     totalTraditionalWithdrawal + taxableSS + rothTaxableGrowth;
 
   let conversionTarget = configTarget ?? input.rothBracketTarget;
   if (smoothingActive) {
-    // R47 Part 2: find the MINIMUM marginal rate whose cap accommodates
+    // Find the MINIMUM marginal rate whose cap accommodates
     // this year's income plus the smoothing target, by reusing the
     // already-tested incomeCapForMarginalRate over each bracket's own
     // rate (ascending, ordinary array order) -- not a new reverse
@@ -349,7 +347,7 @@ export function performRothConversion(
     return zero();
   }
 
-  // Cap at available Traditional balance -- Retirement-only when R49
+  // Cap at available Traditional balance -- Retirement-only when
   // exclusion data is available (a Portfolio-parented pretax account isn't
   // retirement money and can't fund a Roth conversion's source amount).
   const retirementOnlyPreTax = nonRetirement
@@ -418,7 +416,7 @@ export function performRothConversion(
   );
 
   // Pay tax from brokerage (after-tax) if available, otherwise skip --
-  // Retirement-only capacity when R49 exclusion data is available (a hard
+  // Retirement-only capacity when exclusion data is available (a hard
   // "don't even start the conversion" gate, matching this whole feature's
   // hard-exclusion philosophy, not a soft preference).
   const retirementOnlyAfterTax =
@@ -449,7 +447,7 @@ export function performRothConversion(
   }
 
   // Update per-account balances: distribute proportionally across Traditional
-  // accounts. R49: the WEIGHT used to size each category's share must also
+  // accounts. The WEIGHT used to size each category's share must also
   // be Retirement-only (`bal.traditional - nonRetirement.trad[cat]`), not
   // the raw blended `bal.traditional` — otherwise a category whose blended
   // balance is inflated by a Portfolio-parented account gets an oversized
@@ -500,7 +498,7 @@ export function performRothConversion(
     }
   }
 
-  // R49: with the category weight above already Retirement-only-scoped,
+  // With the category weight above already Retirement-only-scoped,
   // each category's captured `categoryShare` is guaranteed <= what
   // Retirement-parented accounts in it actually hold — so debiting them
   // directly here, instead of leaving it to
@@ -553,7 +551,7 @@ export function performRothConversion(
           roundToCents(Math.min(currentBasis, currentBalance)),
         );
       }
-      // R49: same direct-debit approach as the Traditional→Roth move above
+      // Same direct-debit approach as the Traditional→Roth move above
       // — the aggregate mutation stays full-category-sized (unchanged), but
       // when individual tracking is available, distribute the ACTUAL tax
       // payment across Retirement-parented accounts in this category only,
@@ -694,7 +692,7 @@ export function checkAca(input: AcaInput): AcaResult {
   // Grow the 400%-FPL cliff forward instead of holding it flat nominal —
   // mathematically identical to growing each FPL cell first and
   // multiplying by 4 after (fpl*4*k === (fpl*k)*4). `fplByHousehold` is
-  // the DB-resolved FPL map (R43); undefined ⇒ hardcoded fallback.
+  // the DB-resolved FPL map; undefined ⇒ hardcoded fallback.
   const acaCliff =
     getAcaSubsidyCliff(householdSize, fplByHousehold) * fplGrowthFactor;
   const projectedMagi = acaMagi({
@@ -709,7 +707,7 @@ export function checkAca(input: AcaInput): AcaResult {
 
   if (!acaSubsidyPreserved) {
     const overage = roundToCents(projectedMagi - acaCliff);
-    // R55 (advisor review, 2026-08-30): a ranking change to avoid this was
+    // A ranking change to avoid this was
     // considered and rejected — brokerage gains aren't actually "free" MAGI
     // below the cliff either (the premium tax credit phases out
     // continuously as MAGI rises toward 400% FPL), so preferring brokerage
@@ -726,7 +724,7 @@ export function checkAca(input: AcaInput): AcaResult {
       // Phase 4: acaCliff is now a grown (non-integer) float -- round
       // before formatting so this sentence doesn't mix cents (from a
       // grown cliff) with the whole-dollar MAGI/overage figures either
-      // side of it (advisor-caught, 2026-08-31).
+      // side of it.
       `ACA: MAGI $${projectedMagi.toFixed(0)} exceeds $${Math.round(acaCliff).toLocaleString()} cliff by $${overage.toFixed(0)} — subsidy lost${attribution}`,
     );
   }

@@ -1,6 +1,6 @@
 /**
  * Pure business logic for Monte Carlo projection calculations.
- * Extracted from projection router — no DB or I/O dependency.
+ * No DB or I/O dependency.
  */
 import { geometricMean } from "@/lib/calculators/random";
 import type { GlidePathEntry } from "@/lib/calculators/random";

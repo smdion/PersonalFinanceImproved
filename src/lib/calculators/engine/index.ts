@@ -14,7 +14,7 @@
  *                            withdrawal-routing.ts's routeForMode)
  *   withdrawal-routing.ts  — bracket-filling / waterfall / percentage
  *   withdrawal-cost-ranking.ts — cost-tier ordering for post-bracket-cap
- *                            sources (v0.7.9 R40 follow-up)
+ *                            sources
  *   balance-utils.ts       — cloning, conversion helpers
  *
  *   rmd-enforcement.ts    — RMD factor lookup + shortfall distribution

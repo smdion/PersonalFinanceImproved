@@ -1,8 +1,5 @@
 /**
  * buildProjectionState — initializes mutable projection state.
- *
- * Extracted from the old single-file `projection-year-handlers.ts` in the
- * v0.5.2 refactor. Pure relocation — no logic changes.
  */
 import type { ProjectionInput, AccountBalances, TaxBuckets } from "../../types";
 import { isPreTaxType, isTaxFreeBucket } from "../../../config/account-types";
@@ -74,7 +71,7 @@ export function buildProjectionState(
   const indBal = new Map<string, number>();
   for (const ia of ctx.indAccts) indBal.set(ctx.indKey(ia), ia.startingBalance);
 
-  // Tracked Roth basis (v0.7.8 follow-up) — one entry per taxFree-bucket
+  // Tracked Roth basis — one entry per taxFree-bucket
   // account, seeded from its "now" rothBasisMeta snapshot. Non-Roth
   // accounts get no entry at all (absent, not zero — a missing key is
   // unambiguous, see roth-basis-tracking.ts).

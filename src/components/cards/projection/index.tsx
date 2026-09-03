@@ -31,7 +31,7 @@ import { checkReportGate } from "@/lib/pure/report/mc-freshness";
 import type { ReportGateFailure } from "@/lib/pure/report/mc-freshness";
 import { ReportGateModal } from "./report/report-gate-modal";
 
-// Code-split Recharts-heavy children (v0.5 expert-review M8). Each chart is
+// Code-split Recharts-heavy children. Each chart is
 // ~250KB of recharts payload that loads only when the projection card mounts.
 // ssr:false because Recharts isn't SSR-friendly.
 const ProjectionChart = dynamic(
@@ -278,7 +278,7 @@ export function ProjectionCard(props: {
     decumulationExpenseOverride,
   } = props;
 
-  // R42 — print/export report. "none" = normal screen view (default print
+  // Print/export report. "none" = normal screen view (default print
   // behavior, unchanged). "basic" prints just the chart+table with page
   // chrome hidden. "advisor" (was "fancy") mounts the purpose-built
   // advisor-report document instead — ReportRoot, not the interactive

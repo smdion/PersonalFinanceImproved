@@ -2,7 +2,7 @@
  * URL safety validation for outbound HTTP requests to user-supplied
  * destinations (e.g., self-hosted Actual Budget server URL).
  *
- * Closes the v0.5 expert-review C2 finding: a `z.string().url()` validator
+ * A bare `z.string().url()` validator
  * accepts http://127.0.0.1, http://10.0.0.1, etc., letting an admin (or
  * anyone who reaches the admin form) trigger SSRF requests against internal
  * homelab services from inside the container.
@@ -20,7 +20,7 @@
  * allowlist is the right tradeoff (admins explicitly opt in to specific
  * hostnames).
  *
- * Note (L130, 2026-08-06): `http://` is intentionally permitted above (not
+ * Note: `http://` is intentionally permitted above (not
  * just `https://`) for LAN-friendly self-hosted use — most homelab Actual
  * Budget instances aren't behind TLS. The tradeoff: a server configured with
  * `http://` transmits its `x-api-key` (see actual-client.ts) in cleartext

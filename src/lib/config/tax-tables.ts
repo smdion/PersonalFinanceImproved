@@ -33,11 +33,11 @@ type LtcgBracket = { threshold: number; rate: number };
  * in `tax-estimation.ts`) — those already embed a (different, smaller) Pub
  * 15-T Worksheet 1A offset in their own threshold scale, so subtracting the
  * FULL standard deduction there would double-count. They have their own,
- * separate correction (`toOrdinaryBracketIncome`, R56) that subtracts only
+ * separate correction (`toOrdinaryBracketIncome`) that subtracts only
  * the residual between the two — do not "consolidate" the two helpers, the
  * bracket shapes they operate on (`TaxBracket{min,max,rate}` here vs.
  * `WithholdingBracket{threshold,baseWithholding,rate}` there) aren't
- * interchangeable (advisor review, 2026-08-30).
+ * interchangeable.
  *
  * `standardDeduction` omitted/undefined ⇒ subtracts 0, reproducing the
  * pre-fix (bugged) behavior exactly — every caller must pass a real
@@ -46,9 +46,9 @@ type LtcgBracket = { threshold: number; rate: number };
  * default keeps the fix additive rather than a forced behavior change for
  * any caller that hasn't been updated to supply it.
  *
- * Both the IRC §63(f)(1) age-65+ additional standard deduction (R59,
- * v0.7.11) and the temporary OBBBA senior deduction (2025-2028, v0.7.11
- * follow-on) ARE modeled as of this version: `decumulation-year.ts` folds
+ * Both the IRC §63(f)(1) age-65+ additional standard deduction and the
+ * temporary OBBBA senior deduction (2025-2028) ARE modeled as of this
+ * version: `decumulation-year.ts` folds
  * both into the deduction before growth, so the `standardDeduction` this
  * helper receives from a decumulation year is already senior-adjusted for
  * both. See `obbba-senior-deduction.ts`'s docblock for the OBBBA mechanism

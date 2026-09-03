@@ -1,8 +1,5 @@
 /**
  * buildProjectionContext — builds the immutable context for a projection run.
- *
- * Extracted from the old single-file `projection-year-handlers.ts` in the
- * v0.5.2 refactor. Pure relocation — no logic changes.
  */
 import type { ProjectionInput, AccountCategory } from "../../types";
 import {

@@ -329,8 +329,7 @@ export type DecumulationDefaults = {
    *   conversion basis, and growth once the owner is 59½+). Growth withdrawn
    *   from a NON-qualified distribution is taxed as ordinary income instead —
    *   see `computeTaxFromSlots`'s `rothTaxableGrowth` parameter and
-   *   `roth-distribution-tax.ts` (v0.7.8 Roth-tax-basis follow-up,
-   *   DESIGN-DECISION-v0.7.8-roth-tax-basis.md). This rate is NOT a lever
+   *   `roth-distribution-tax.ts`. This rate is NOT a lever
    *   for non-qualified growth — that portion is always ordinary income by
    *   law, computed automatically, never configurable here.
    * - hsa: 0% — qualified HSA withdrawals are tax-free
@@ -372,36 +371,36 @@ export type DecumulationDefaults = {
     /** Target marginal rate for Roth conversions (null/undefined = use rothBracketTarget). */
     rothConversionTarget?: number;
     /** DB-loaded LTCG brackets by filing status, from the `ltcg_brackets`
-     *  table (v0.7.9 R40 follow-up). Overrides `LTCG_BRACKETS`' hardcoded
+     *  table. Overrides `LTCG_BRACKETS`' hardcoded
      *  defaults in `tax-tables.ts` when present — mirrors how `taxBrackets`
      *  above overrides the ordinary W-4 defaults. Threshold `null` = the top
      *  (Infinity) bracket. Undefined = fall back to the hardcoded table. */
     ltcgBrackets?: Record<string, { threshold: number | null; rate: number }[]>;
     /** DB-loaded IRMAA brackets by filing status, from the `irmaa_brackets`
-     *  table (R43). Overrides `IRMAA_BRACKETS`' hardcoded defaults in
+     *  table. Overrides `IRMAA_BRACKETS`' hardcoded defaults in
      *  `irmaa-tables.ts` when present — same pattern as `ltcgBrackets` above.
-     *  Undefined = fall back to the hardcoded table. Before R43 this channel
+     *  Undefined = fall back to the hardcoded table. This channel previously
      *  did not exist: the `irmaa_brackets` table + its Settings editor were
      *  live but no engine path read them, so edits changed no projection
-     *  output (the F2 that prompted R43). */
+     *  output). */
     irmaaBrackets?: Record<
       string,
       { magiThreshold: number; annualSurcharge: number }[]
     >;
-    /** DB-resolved FPL map from `fpl_by_household` (R43), keyed by household
+    /** DB-resolved FPL map from `fpl_by_household`, keyed by household
      *  size. Overrides `FPL_BY_HOUSEHOLD` when present — same pattern as
      *  `ltcgBrackets`/`irmaaBrackets`. Undefined ⇒ hardcoded fallback. */
     fplByHousehold?: Record<number, number>;
     /** Household's annual standard deduction (from `contribution_limits`,
      *  filing-status-keyed), for converting GROSS ordinary income into the
-     *  TAXABLE income LTCG brackets are actually denominated in (found
-     *  2026-08-30 — `LTCG_BRACKETS`/`ltcgBrackets` use real IRS
+     *  TAXABLE income LTCG brackets are actually denominated in
+     *  (`LTCG_BRACKETS`/`ltcgBrackets` use real IRS
      *  taxable-income thresholds, but every LTCG-stacking call site fed
      *  them a gross figure with nothing subtracted, systematically
      *  overstating how much of the 0%/15% room ordinary income had
      *  already consumed and overcharging real LTCG tax as a result).
      *  This same value ALSO feeds `taxBrackets`/`incomeCapForMarginalRate`
-     *  above (R56) — but via `toOrdinaryBracketIncome` in
+     *  above — but via `toOrdinaryBracketIncome` in
      *  `tax-estimation.ts`, which subtracts only the smaller residual
      *  between this figure and the Pub 15-T table's own embedded offset,
      *  not this full figure directly (that WOULD double-count). Undefined
@@ -419,7 +418,7 @@ export type DecumulationDefaults = {
      *  result into `standardDeduction` BEFORE the per-year inflation growth,
      *  so it grows on the same `taxDataYear` vintage as the base deduction
      *  (both are CPI-indexed). Undefined ⇒ 0 additional deduction,
-     *  reproducing pre-R59 behavior (which understated 0%-LTCG room for the
+     *  reproducing the prior behavior (which understated 0%-LTCG room for the
      *  ~always-65+ decumulation population). The temporary OBBBA senior
      *  deduction (2025–2028, MAGI-phased) is a SEPARATE lever — see the four
      *  `obbbaSenior*` fields below — folded in alongside this one but
@@ -455,14 +454,14 @@ export type DecumulationDefaults = {
      *  `yearIndex`/start year — those happen to coincide only because the
      *  plan starts in the same calendar year this tax data was seeded for.
      *  Used to grow these otherwise-flat figures forward for years beyond
-     *  this one (found live, 2026-08-31 — every one of these values was
+     *  this one (every one of these values was
      *  held flat in NOMINAL dollars for the entire projection despite
      *  being legally inflation-indexed in reality, silently overstating
      *  tax burden decades out). Undefined ⇒ no growth applied (treat as
      *  already-current), matching pre-fix behavior for any caller that
      *  doesn't thread this through.
      *
-     *  Advisor-caught nuance (2026-08-31): this is sourced from
+     *  Nuance: this is sourced from
      *  `tax_brackets`' own `MAX(taxYear)` — `standardDeduction`'s actual
      *  source (`contribution_limits`, queried by `asOfDate`'s calendar
      *  year, `build-engine-payload.ts` ~line 139) is a SEPARATE query with
@@ -478,13 +477,13 @@ export type DecumulationDefaults = {
      *  thread a second, `standardDeduction`-specific vintage year instead
      *  of assuming they match.
      *
-     *  R43: the split-vintage risk this docblock describes is now closed —
+     *  The split-vintage risk this docblock describes is now closed —
      *  `build-engine-payload.ts` resolves `taxBrackets`, `standardDeduction`
      *  and the LTCG/IRMAA slices through one `resolveTaxParams` call anchored
      *  on a single year, so `taxDataYear` = that resolved year for all of
      *  them. */
     taxDataYear?: number;
-    /** R43: `tax_params.version` for `taxDataYear` — a human-legible
+    /** `tax_params.version` for `taxDataYear` — a human-legible
      *  "Tax data: 2026, rev N" revision counter. Informational; cache
      *  coherence comes from the resolved values themselves. Undefined for
      *  callers that don't thread it (calculator-level fixtures). */
@@ -494,7 +493,7 @@ export type DecumulationDefaults = {
   /** Withdrawal/spending strategy. Defaults to 'fixed'. */
   withdrawalStrategy?: WithdrawalStrategyType;
 
-  /** R55 follow-up (2026-08-30): within `bracket_filling` mode's cost-
+  /** Within `bracket_filling` mode's cost-
    *  ranked tier beyond the Traditional bracket-fill target, which of Roth
    *  basis / brokerage's 0%-LTCG room drains first — see
    *  `RankWithdrawalTiersInput.discretionaryWithdrawalOrder`
@@ -517,10 +516,9 @@ export type DecumulationDefaults = {
 
   /**
    * Whether the engine may EVER draw a dollar that would incur the 10%
-   * early-withdrawal penalty — v0.7.8 penalty-hard-exclusion follow-up
-   * (DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md § Q4). Default `true`
-   * (explicit user decision, 2026-08-26): "default to not taking it if a
-   * penalty exists." When on and a household's penalty-free money runs
+   * early-withdrawal penalty. Default `true`
+   * ("default to not taking it if a penalty exists"). When on and a
+   * household's penalty-free money runs
    * out, the shortfall is left unfunded and surfaced as
    * `penaltyAvoidedShortfall` rather than silently drawing penalized money
    * — see `RouteResult`'s docblock (`withdrawal-routing.ts`). Penalty
@@ -531,7 +529,7 @@ export type DecumulationDefaults = {
    * An earlier `preferPenaltyFreeSources` flag existed alongside this one
    * (intended to control ORDERING among penalty-free money, independent
    * of whether penalty-exposed money was reachable at all) but was never
-   * actually wired into routing — deleted 2026-08-27 (advisor review)
+   * actually wired into routing — deleted
    * rather than left as documented-but-dead config. If ordering
    * preferences among penalty-free sources need their own lever in the
    * future, design it fresh rather than resurrecting this name.
@@ -539,10 +537,10 @@ export type DecumulationDefaults = {
   avoidPenalizedWithdrawals?: boolean;
 
   /**
-   * R46: what to do with RMD-forced withdrawal beyond stated spending need,
+   * What to do with RMD-forced withdrawal beyond stated spending need,
    * after any QCD (`qcdMaximize`) already reduced the taxable RMD.
    * - "reinvest" (default): excess reinvested into brokerage — matches
-   *   every pre-R46 projection (this field defaults to `"reinvest"` when
+   *   prior projections (this field defaults to `"reinvest"` when
    *   unset, so an old saved plan is byte-identical).
    * - "spend": excess is NOT reinvested anywhere — recorded as consumed.
    *   A real behavior change: net worth ends up lower than "reinvest",
@@ -551,11 +549,11 @@ export type DecumulationDefaults = {
   rmdExcessHandling?: "reinvest" | "spend";
 
   /**
-   * R46: when true, every year with an active RMD automatically applies
+   * When true, every year with an active RMD automatically applies
    * the largest Qualified Charitable Distribution the approximation in
    * `qcd.ts` allows (capped by `QCD_ANNUAL_CAP_PER_PERSON` and each
    * person's own IRA-only Traditional balance — NOT full IRS per-account-
-   * type RMD accuracy, see `PLAN-rmd-excess-handling.md`). The QCD'd
+   * type RMD accuracy). The QCD'd
    * amount satisfies that much of the RMD directly and is excluded from
    * taxable income; it does not fund spending need. Only takes effect
    * when individual accounts are tracked (`hasIndividualAccounts`) — same
@@ -566,11 +564,11 @@ export type DecumulationDefaults = {
   qcdMaximize?: boolean;
 
   /**
-   * R47: proactively size Roth conversions to shrink a FUTURE RMD toward
+   * Proactively size Roth conversions to shrink a FUTURE RMD toward
    * projected spending need, not just fill this year's bracket room
    * opportunistically. Per-person forward projection nets out both
    * growth and estimated future Traditional withdrawal (see
-   * `rmd-smoothing.ts` and `PLAN-r47-rmd-aware-roth-smoothing.md`) —
+   * `rmd-smoothing.ts`) —
    * never pushes a conversion above the household's own
    * `rothBracketTarget` ceiling. Only takes effect when individual
    * accounts are tracked (`hasIndividualAccounts`) — RMD smoothing is
@@ -580,7 +578,7 @@ export type DecumulationDefaults = {
   rmdSmoothingEnabled?: boolean;
 
   /**
-   * R47: how far smoothing may raise the EFFECTIVE conversion target rate
+   * How far smoothing may raise the EFFECTIVE conversion target rate
    * above `rothBracketTarget`/`rothConversionTarget` when it needs more
    * room than those provide — can only RAISE the effective ceiling, never
    * lower a value the household already configured through those other
@@ -658,18 +656,17 @@ export type DecumulationOverride = {
   /**
    * Override the bracket_filling target marginal rate (see
    * `DistributionTaxRates.rothBracketTarget`) for this year onward.
-   * Omit to keep the plan's configured target. Added 2026-08-29 so a
-   * multi-year withdrawal-policy search can express "try this bracket
+   * Omit to keep the plan's configured target. Lets a
+   * multi-year withdrawal-policy search express "try this bracket
    * target for this candidate" the same way `accumulationOverrides`
-   * already lets Coast FIRE express a candidate contribution rate — see
-   * `.scratch/docs/plans/PLAN-v0.7.10-multi-year-withdrawal-optimizer.md`.
+   * already lets Coast FIRE express a candidate contribution rate.
    */
   rothBracketTarget?: number;
 
   /**
-   * Override R47's RMD-smoothing ceiling (see
+   * Override the RMD-smoothing ceiling (see
    * `DecumulationDefaults.rmdSmoothingMaxBracketTarget`) for this year
-   * onward. Omit to keep the plan's configured ceiling. Added 2026-08-29
+   * onward. Omit to keep the plan's configured ceiling. Provided
    * alongside `rothBracketTarget` so a search that varies the bracket
    * target can keep this ceiling consistent with whatever target it's
    * evaluating, instead of scoring a candidate against a stale ceiling
@@ -713,7 +710,7 @@ export type ResolvedDecumulationConfig = {
   rothConversionTarget?: number;
   /** Resolved bracket_filling target marginal rate (sticky-forward from
    *  overrides). undefined = use `decumulationDefaults.distributionTaxRates.rothBracketTarget`.
-   *  Added 2026-08-29 — see `rothBracketTarget` on `DecumulationOverride`. */
+   *  See `rothBracketTarget` on `DecumulationOverride`. */
   rothBracketTarget?: number;
   /** Lump sums for this year only (NOT sticky-forward). Empty if none. */
   lumpSums: LumpSum[];

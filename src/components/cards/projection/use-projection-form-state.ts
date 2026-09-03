@@ -119,8 +119,7 @@ export function useProjectionFormState() {
     | "coastFireCustom"
     | "rateSeeded"
   >("baseline");
-  // Coast FIRE "Custom Age" picker (advisor-reviewed 2026-08-30, see
-  // .scratch/docs/plans/PLAN-coast-fire-custom-age.md). `null` until the
+  // Coast FIRE "Custom Age" picker. `null` until the
   // household has typed/stepped a value OR `currentAge` becomes known
   // (derived layer defaults the DISPLAYED value to currentAge when this
   // is null — kept null here, not seeded to currentAge directly, since

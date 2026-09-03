@@ -1,12 +1,10 @@
 /**
- * Multi-year withdrawal-policy optimizer, Phase 2 — `rothBracketTarget`
- * search ("Version B").
+ * Multi-year withdrawal-policy optimizer — `rothBracketTarget`
+ * search.
  *
  * Pure calculator — no DB, no tRPC, no React. Sits *above* the engine, same
  * architectural position as `coast-fire.ts`: never imports engine internals,
  * only calls `calculateProjection()` as a black box and compares results.
- * See `.scratch/docs/plans/PLAN-v0.7.10-multi-year-withdrawal-optimizer.md`
- * for the full design history (4 advisor rounds) this module implements.
  *
  * What this solves: bracket_filling (and Roth conversions/RMD smoothing
  * layered on top of it) all read a single, fixed `rothBracketTarget` for

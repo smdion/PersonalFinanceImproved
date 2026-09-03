@@ -229,7 +229,7 @@ export function FundManagementSection({
   const { onUpdateTx: updateTxFn, isPending: updateTxPendingFlag } =
     useUpdatePlannedTx();
 
-  // v0.5 expert-review M27: undoable delete for planned transactions.
+  // Undoable delete for planned transactions.
   // PlannedTransactions are single-row, no cascade — safe to re-create on
   // undo. We capture the full row (looked up by id from the in-memory list)
   // before firing the delete, and stash it in the undo callback so the toast

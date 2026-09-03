@@ -1,8 +1,7 @@
 "use client";
 
 /** Profile/column/override selectors for current + relocation budgets, plus
- *  contribution profile selectors. Extracted from tools/page.tsx during the
- *  v0.5.2 file-split refactor. Stateless — all state flows via props.
+ *  contribution profile selectors. Stateless — all state flows via props.
  */
 
 import { HelpTip } from "@/components/ui/help-tip";

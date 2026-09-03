@@ -140,7 +140,7 @@ const returnRateInput = z.object({
 });
 
 // `fetchRetirementData` and `buildEnginePayload` were moved to
-// `src/server/retirement/build-engine-payload.ts` in the v0.5.2 refactor.
+// `src/server/retirement/build-engine-payload.ts`.
 // Projection router imports them directly from the new path; nothing else
 // imports from here, so no re-export shim is needed.
 
@@ -872,7 +872,7 @@ export const retirementRouter = createTRPCRouter({
         });
       }),
 
-    // R53: `salary_annual_increase` is stored per (profile, person) on
+    // `salary_annual_increase` is stored per (profile, person) on
     // `retirement_settings` and read per-person by the engine
     // (`build-engine-payload.ts`'s `raiseRateByPerson`), but the "Pre-
     // Retirement Raise" UI control was a single household control that only
@@ -1118,7 +1118,7 @@ export const retirementRouter = createTRPCRouter({
      *
      * Household-grain columns on retirement_settings are still duplicated
      * onto every person's row (the contract step that collapses this to one
-     * row per profile is deferred to v0.8.0) and can legitimately have
+     * row per profile is deferred to a future schema squash) and can legitimately have
      * drifted between people — pickProfileSettingsRow's own docblock records
      * a real household whose withdrawal_rate/rmd_excess_handling disagreed
      * across person rows. Cloning from the PRIMARY person's source row into
@@ -1219,7 +1219,7 @@ export const retirementRouter = createTRPCRouter({
     /** Rename / re-describe a profile, or pin its tax-law year. Household/
      *  per-person assumptions themselves are edited through
      *  retirementSettings.upsert, scoped to whichever profile is active —
-     *  not here. taxParamsYear lives on retirement_profiles itself (R43):
+     *  not here. taxParamsYear lives on retirement_profiles itself:
      *  null (default) tracks the latest enacted tax data; a real year pins
      *  resolveTaxParams's base year so re-opening this profile reproduces
      *  its numbers instead of re-pricing under whatever year is newest. */

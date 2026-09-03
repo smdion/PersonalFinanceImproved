@@ -427,7 +427,7 @@ export function SimulationAssumptions({
                   "fixed") as WithdrawalStrategyType;
                 const cfg = WITHDRAWAL_STRATEGY_CONFIG[strategy];
                 const isDynamic = strategy !== "fixed";
-                // R45 Step 3, Finding 9: none of the 8 strategies actually
+                // None of the 8 strategies actually
                 // read this rate to compute spending (Finding 0) — the old
                 // copy here claimed Fixed uses it directly (`isDynamic`
                 // false branch) and every dynamic strategy "adjusts this

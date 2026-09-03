@@ -1,6 +1,6 @@
 /**
  * Pure calculator for savings capacity (budget leftover available for savings goals).
- * Extracted from the savings page to enable per-column cross-mode comparison.
+ * Enables per-column cross-mode comparison.
  */
 
 /** Minimal person shape needed for capacity calculation. */

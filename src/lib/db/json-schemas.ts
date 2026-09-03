@@ -93,8 +93,8 @@ export const irmaaBracketsSchema = z.array(irmaaBracketEntrySchema);
 
 /**
  * fpl_by_household.amounts — Federal Poverty Level dollar figure by
- * household size, ALL 8 keys required (not a partial z.record). R43
- * follow-up: getAcaSubsidyCliff (aca-tables.ts) does
+ * household size, ALL 8 keys required (not a partial z.record).
+ * getAcaSubsidyCliff (aca-tables.ts) does
  * `table[size] ?? table[2] ?? FPL_BY_HOUSEHOLD[2]!` when reading this —
  * a missing size would silently fall back to size-2's dollar figure at
  * READ time instead of failing at WRITE time. Requiring all 8 keys here
@@ -332,14 +332,14 @@ export const contribAccountActiveFieldsPatchSchema = z
     autoMaximize: z.boolean().optional(),
     isActive: z.boolean().optional(),
     /** A custom display label for this account within this profile —
-     *  cosmetic, not financial (R22: was `displayNameActive`, whose `Active`
+     *  cosmetic, not financial (was `displayNameActive`, whose `Active`
      *  suffix falsely implied it behaves like `isActive` for swap-safety —
      *  it doesn't, see contrib-profile-diff.ts). */
     displayNameCustom: z.string().optional(),
-    /** @deprecated R22 legacy key. Still accepted so profiles saved before
+    /** @deprecated legacy key. Still accepted so profiles saved before
      *  the rename pass `.strict()` validation; readers fall back to it
      *  (`displayNameCustom ?? displayNameActive`) and writers only emit the
-     *  new key, so it decays to dead weight. Drop in the v0.8.0 squash. */
+     *  new key, so it decays to dead weight. Drop in the next schema squash. */
     displayNameActive: z.string().optional(),
   })
   .strict();
