@@ -9,8 +9,8 @@ export function LoadingCard({ title }: { title: string }) {
   return (
     <Card title={title}>
       <div className="animate-pulse space-y-2">
-        <div className="h-8 bg-surface-strong rounded w-1/2" />
-        <div className="h-4 bg-surface-elevated rounded w-3/4" />
+        <div className="bg-surface-strong h-8 w-1/2 rounded" />
+        <div className="bg-surface-elevated h-4 w-3/4 rounded" />
       </div>
     </Card>
   );
@@ -84,7 +84,7 @@ export function ErrorCard({
         <button
           type="button"
           onClick={onRetry}
-          className="mt-2 text-xs text-blue-600 hover:text-blue-700 underline"
+          className="mt-2 text-xs text-blue-600 underline hover:text-blue-700"
         >
           Try again
         </button>

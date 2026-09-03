@@ -110,7 +110,7 @@ export function ReturnRatesSettings() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
+      <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold">Return Rate Table</h2>
         {admin && (
           <button
@@ -119,7 +119,7 @@ export function ReturnRatesSettings() {
               setNewAge("");
               setNewRate("");
             }}
-            className="px-2 py-1 text-sm text-blue-600 hover:text-blue-800 border border-blue-200 rounded-full hover:bg-blue-50 transition-colors"
+            className="rounded-full border border-blue-200 px-2 py-1 text-sm text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-800"
           >
             + Age
           </button>
@@ -128,26 +128,26 @@ export function ReturnRatesSettings() {
 
       {/* Add row dialog */}
       {showAddRow && (
-        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+        <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-3">
           <div className="flex items-center gap-3">
-            <label className="text-sm text-secondary">
+            <label className="text-secondary text-sm">
               Age:
               <input
                 type="number"
                 value={newAge}
                 onChange={(e) => setNewAge(e.target.value)}
-                className="ml-2 w-20 px-2 py-1 text-sm border rounded"
+                className="ml-2 w-20 rounded border px-2 py-1 text-sm"
                 min={0}
                 max={120}
               />
             </label>
-            <label className="text-sm text-secondary">
+            <label className="text-secondary text-sm">
               Rate (%):
               <input
                 type="number"
                 value={newRate}
                 onChange={(e) => setNewRate(e.target.value)}
-                className="ml-2 w-24 px-2 py-1 text-sm border rounded"
+                className="ml-2 w-24 rounded border px-2 py-1 text-sm"
                 step="0.1"
               />
             </label>
@@ -181,7 +181,7 @@ export function ReturnRatesSettings() {
           {/* Glide-path bar — one proportionally-sized segment per
               breakpoint, so the whole age->rate shape is visible at a
               glance instead of implied by a bare list. */}
-          <div className="mb-4 border rounded-lg overflow-hidden">
+          <div className="mb-4 overflow-hidden rounded-lg border">
             <div className="flex h-8 w-full">
               {ranges.map((r) => {
                 const span = (r.endAge ?? DISPLAY_AGE_CAP) - r.age + 1;
@@ -189,7 +189,7 @@ export function ReturnRatesSettings() {
                 return (
                   <div
                     key={r.id}
-                    className={`flex items-center justify-center text-caption font-medium text-white ${barColorForRate(r.rate, minRate, maxRate)}`}
+                    className={`text-caption flex items-center justify-center font-medium text-white ${barColorForRate(r.rate, minRate, maxRate)}`}
                     style={{ width: `${widthPct}%` }}
                     title={`Age ${r.age}${r.endAge ? `–${r.endAge}` : "+"}: ${formatPercent(r.rate, 1)}`}
                   >
@@ -198,24 +198,24 @@ export function ReturnRatesSettings() {
                 );
               })}
             </div>
-            <div className="flex justify-between px-2 py-1 text-caption text-faint bg-surface-sunken">
+            <div className="text-caption text-faint bg-surface-sunken flex justify-between px-2 py-1">
               <span>Age {barStartAge}</span>
               <span>Age {DISPLAY_AGE_CAP}+</span>
             </div>
           </div>
 
-          <div className="border rounded-lg overflow-hidden">
-            <table className="w-full text-sm border-collapse">
+          <div className="overflow-hidden rounded-lg border">
+            <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="bg-surface-sunken border-b">
-                  <th className="text-left px-4 py-2 font-medium text-secondary">
+                  <th className="text-secondary px-4 py-2 text-left font-medium">
                     Age Range
                   </th>
-                  <th className="text-right px-4 py-2 font-medium text-secondary">
+                  <th className="text-secondary px-4 py-2 text-right font-medium">
                     Return Rate (%)
                   </th>
                   {admin && (
-                    <th className="text-right px-4 py-2 font-medium text-secondary w-20">
+                    <th className="text-secondary w-20 px-4 py-2 text-right font-medium">
                       Actions
                     </th>
                   )}
@@ -223,8 +223,8 @@ export function ReturnRatesSettings() {
               </thead>
               <tbody>
                 {ranges.map((row) => (
-                  <tr key={row.id} className="border-t border-subtle">
-                    <td className="px-4 py-1.5 text-primary">
+                  <tr key={row.id} className="border-subtle border-t">
+                    <td className="text-primary px-4 py-1.5">
                       {row.endAge ? `${row.age}–${row.endAge}` : `${row.age}+`}
                     </td>
                     <td className="px-4 py-1.5 text-right">
@@ -244,13 +244,13 @@ export function ReturnRatesSettings() {
                           <span className="flex items-center justify-end gap-1">
                             <button
                               onClick={() => handleDelete(row.id)}
-                              className="text-xs text-red-600 hover:text-red-800 font-medium"
+                              className="text-xs font-medium text-red-600 hover:text-red-800"
                             >
                               Confirm
                             </button>
                             <button
                               onClick={() => setConfirmDeleteId(null)}
-                              className="text-xs text-muted hover:text-secondary"
+                              className="text-muted hover:text-secondary text-xs"
                             >
                               Cancel
                             </button>
@@ -273,7 +273,7 @@ export function ReturnRatesSettings() {
         </>
       )}
 
-      <p className="text-xs text-faint mt-4">
+      <p className="text-faint mt-4 text-xs">
         Each row is a breakpoint, not a fixed single-age rate — its rate applies
         to every age from there up until the next breakpoint (the Age Range
         column). Click any rate to edit. Rates are stored as decimals (e.g.,

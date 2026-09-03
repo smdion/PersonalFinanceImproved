@@ -31,19 +31,19 @@ export function ReportGateModal({
       <div
         role="alertdialog"
         aria-modal="true"
-        className="bg-surface-primary rounded-lg shadow-xl border p-5 max-w-md w-full mx-4"
+        className="bg-surface-primary mx-4 w-full max-w-md rounded-lg border p-5 shadow-xl"
       >
-        <h3 className="text-sm font-semibold text-primary mb-1">
+        <h3 className="text-primary mb-1 text-sm font-semibold">
           Advisor report not ready
         </h3>
-        <p className="text-xs text-muted mb-4">
+        <p className="text-muted mb-4 text-xs">
           {reportGateFailureMessage(failure)}
         </p>
         <div className="flex justify-end gap-2">
           <button
             type="button"
             onClick={onCancel}
-            className="px-3 py-1.5 text-xs text-secondary hover:text-primary"
+            className="text-secondary hover:text-primary px-3 py-1.5 text-xs"
           >
             Close
           </button>
@@ -52,7 +52,7 @@ export function ReportGateModal({
               type="button"
               onClick={onRunSimulation}
               disabled={isRunning}
-              className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+              className="rounded bg-blue-600 px-3 py-1.5 text-xs text-white hover:bg-blue-700 disabled:opacity-50"
             >
               {isRunning ? "Running…" : "Run the simulation"}
             </button>

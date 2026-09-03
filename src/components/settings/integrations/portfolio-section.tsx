@@ -56,9 +56,9 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
   const mappedCount = totalTracking - unmappedCount;
 
   return (
-    <details className="border border-subtle rounded-lg">
-      <summary className="px-3 py-2.5 cursor-pointer select-none flex items-center justify-between">
-        <span className="text-xs font-medium text-muted">
+    <details className="border-subtle rounded-lg border">
+      <summary className="flex cursor-pointer items-center justify-between px-3 py-2.5 select-none">
+        <span className="text-muted text-xs font-medium">
           Tracking Account Mappings
         </span>
         <SectionSummaryRow>
@@ -76,7 +76,7 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
           )}
         </SectionSummaryRow>
       </summary>
-      <div className="px-3 pb-3 space-y-2">
+      <div className="space-y-2 px-3 pb-3">
         {/* Existing mappings */}
         {portfolio.existingMappings.length > 0 && (
           <div className="space-y-0.5">
@@ -96,7 +96,7 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                   // legitimately share the same localId+localName, so that
                   // pair alone isn't a unique key here.
                   key={`${m.localId ?? ""}|${m.localName}|${m.remoteAccountId}`}
-                  className="flex items-center gap-1.5 text-xs bg-green-50 rounded px-2 py-1"
+                  className="flex items-center gap-1.5 rounded bg-green-50 px-2 py-1 text-xs"
                 >
                   <Badge
                     color="green"
@@ -106,7 +106,7 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                   >
                     Mapped
                   </Badge>
-                  <span className="text-secondary truncate flex-1">
+                  <span className="text-secondary flex-1 truncate">
                     {(() => {
                       const lid = m.localId ?? m.localName;
                       const mm = lid.match(/^mortgage:(\d+):(\w+)$/);
@@ -122,7 +122,7 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                     })()}
                   </span>
                   <span className="text-faint">&rarr;</span>
-                  <span className="text-muted truncate flex-1">
+                  <span className="text-muted flex-1 truncate">
                     {tracking?.name ?? m.remoteAccountId.slice(0, 12) + "..."}
                   </span>
                   {/* Cash/Credit Card are pull-only — Ledgr has no single
@@ -163,7 +163,7 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                         });
                       }}
                       disabled={updateMappingsMut.isPending}
-                      className={`text-caption px-1 py-0.5 rounded disabled:opacity-50 ${
+                      className={`text-caption rounded px-1 py-0.5 disabled:opacity-50 ${
                         m.syncDirection === "push"
                           ? "bg-green-100 text-green-600 hover:bg-green-200"
                           : m.syncDirection === "pull"
@@ -180,7 +180,7 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                     </button>
                   )}
                   {tracking && (
-                    <span className="text-faint tabular-nums text-caption whitespace-nowrap">
+                    <span className="text-faint text-caption whitespace-nowrap tabular-nums">
                       {formatCurrency(tracking.balance)}
                     </span>
                   )}
@@ -194,7 +194,7 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                         mappings: mappingsWithTypedIds(updated),
                       });
                     }}
-                    className="text-red-400 hover:text-red-600 text-xs"
+                    className="text-xs text-red-400 hover:text-red-600"
                   >
                     &times;
                   </button>
@@ -283,8 +283,8 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
           );
 
           return (
-            <div className="border-t border-subtle pt-2 space-y-1">
-              <p className="text-caption font-medium text-muted">
+            <div className="border-subtle space-y-1 border-t pt-2">
+              <p className="text-caption text-muted font-medium">
                 Unmapped tracking accounts ({unmappedTracking.length})
               </p>
               <div className="space-y-1">
@@ -299,10 +299,10 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                       >
                         API only
                       </Badge>
-                      <span className="text-muted truncate flex-1">
+                      <span className="text-muted flex-1 truncate">
                         {t.name}
                       </span>
-                      <span className="text-faint tabular-nums text-caption whitespace-nowrap">
+                      <span className="text-faint text-caption whitespace-nowrap tabular-nums">
                         {formatCurrency(t.balance)}
                       </span>
                       <button
@@ -316,7 +316,7 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                           })
                         }
                         disabled={createAssetAndMapMut.isPending}
-                        className="text-caption px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 whitespace-nowrap disabled:opacity-50"
+                        className="text-caption rounded bg-blue-50 px-1.5 py-0.5 whitespace-nowrap text-blue-600 hover:bg-blue-100 disabled:opacity-50"
                       >
                         + Create Asset
                       </button>
@@ -352,7 +352,7 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                               mappings: mappingsWithTypedIds(updated),
                             });
                           }}
-                          className="flex-1 px-1 py-0.5 text-caption border rounded bg-surface-primary"
+                          className="text-caption bg-surface-primary flex-1 rounded border px-1 py-0.5"
                         >
                           <option value="">Link to existing...</option>
                           {availableLocal.map((l) => (
@@ -374,15 +374,15 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
         })()}
 
         {/* Add new mapping */}
-        <div className="flex gap-1 items-end flex-wrap border-t border-subtle pt-2">
-          <div className="flex-1 min-w-[100px]">
-            <label className="block text-caption font-medium text-muted mb-0.5">
+        <div className="border-subtle flex flex-wrap items-end gap-1 border-t pt-2">
+          <div className="min-w-[100px] flex-1">
+            <label className="text-caption text-muted mb-0.5 block font-medium">
               Ledgr Account
             </label>
             <select
               value={newPortfolioLocal}
               onChange={(e) => setNewPortfolioLocal(e.target.value)}
-              className="w-full px-1 py-1 text-label border border-strong rounded bg-surface-primary"
+              className="text-label border-strong bg-surface-primary w-full rounded border px-1 py-1"
             >
               <option value="">Select...</option>
               {(() => {
@@ -484,14 +484,14 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
               })()}
             </select>
           </div>
-          <div className="flex-1 min-w-[100px]">
-            <label className="block text-caption font-medium text-muted mb-0.5">
+          <div className="min-w-[100px] flex-1">
+            <label className="text-caption text-muted mb-0.5 block font-medium">
               {newPortfolioIsCashOrCredit ? "Account" : "Tracking Account"}
             </label>
             <select
               value={newPortfolioRemote}
               onChange={(e) => setNewPortfolioRemote(e.target.value)}
-              className="w-full px-1 py-1 text-label border border-strong rounded bg-surface-primary"
+              className="text-label border-strong bg-surface-primary w-full rounded border px-1 py-1"
             >
               <option value="">Select...</option>
               {(() => {
@@ -523,13 +523,13 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
             </select>
           </div>
           <div className="w-16">
-            <label className="block text-caption font-medium text-muted mb-0.5">
+            <label className="text-caption text-muted mb-0.5 block font-medium">
               Dir
             </label>
             {newPortfolioIsCashOrCredit ? (
               // Pull-only — see the fixed-direction note on existing
               // Cash/Credit Card rows above.
-              <div className="w-full px-1 py-1 text-label border border-strong rounded bg-surface-sunken text-faint">
+              <div className="text-label border-strong bg-surface-sunken text-faint w-full rounded border px-1 py-1">
                 Pull
               </div>
             ) : (
@@ -540,7 +540,7 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                     e.target.value as "push" | "pull" | "both",
                   )
                 }
-                className="w-full px-1 py-1 text-label border border-strong rounded bg-surface-primary"
+                className="text-label border-strong bg-surface-primary w-full rounded border px-1 py-1"
               >
                 <option value="push">Push</option>
                 <option value="pull">Pull</option>
@@ -585,7 +585,7 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
               !newPortfolioRemote ||
               updateMappingsMut.isPending
             }
-            className="px-2 py-1 text-label bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+            className="text-label rounded bg-blue-600 px-2 py-1 text-white hover:bg-blue-700 disabled:opacity-50"
           >
             Add
           </button>

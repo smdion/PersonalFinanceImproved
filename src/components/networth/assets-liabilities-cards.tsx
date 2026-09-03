@@ -41,13 +41,13 @@ export function AssetsLiabilitiesCards({
   onSettingUpdate: (key: string, value: string) => void;
 }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+    <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2">
       <Card title="Assets">
         <div className="space-y-2 text-sm">
-          <div className="group relative flex justify-between py-1 border-b border-subtle cursor-default">
+          <div className="group border-subtle relative flex cursor-default justify-between border-b py-1">
             <span className="text-muted">
               Investment Portfolio
-              <span className="text-faint text-xs ml-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <span className="text-faint ml-1 text-xs opacity-0 transition-opacity group-hover:opacity-100">
                 &#9432;
               </span>
             </span>
@@ -55,8 +55,8 @@ export function AssetsLiabilitiesCards({
               {formatCurrency(portfolioTotal)}
             </span>
             {byTaxType.size > 0 && (
-              <div className="absolute left-0 top-full mt-1 z-10 bg-surface-primary border rounded-lg shadow-lg p-3 min-w-[220px] hidden group-hover:block">
-                <p className="text-xs font-medium text-muted mb-2">
+              <div className="bg-surface-primary absolute top-full left-0 z-10 mt-1 hidden min-w-[220px] rounded-lg border p-3 shadow-lg group-hover:block">
+                <p className="text-muted mb-2 text-xs font-medium">
                   By Tax Type
                 </p>
                 {Array.from(byTaxType.entries())
@@ -64,7 +64,7 @@ export function AssetsLiabilitiesCards({
                   .map(([type, amount]) => (
                     <div
                       key={type}
-                      className="flex justify-between text-xs py-0.5"
+                      className="flex justify-between py-0.5 text-xs"
                     >
                       <span className="text-muted">{taxTypeLabel(type)}</span>
                       <span className="font-medium">
@@ -72,7 +72,7 @@ export function AssetsLiabilitiesCards({
                       </span>
                     </div>
                   ))}
-                <div className="border-t border-subtle mt-1 pt-1 flex justify-between text-xs font-semibold">
+                <div className="border-subtle mt-1 flex justify-between border-t pt-1 text-xs font-semibold">
                   <span>Total</span>
                   <span>{formatCurrency(portfolioTotal)}</span>
                 </div>
@@ -82,7 +82,7 @@ export function AssetsLiabilitiesCards({
               </div>
             )}
           </div>
-          <div className="flex justify-between items-center py-1 border-b border-subtle">
+          <div className="border-subtle flex items-center justify-between border-b py-1">
             <span className="text-muted">
               Cash
               {cashSource !== "manual" && <SyncBadge source={cashSource} />}
@@ -101,7 +101,7 @@ export function AssetsLiabilitiesCards({
             )}
           </div>
           {hasHouse && (
-            <div className="flex justify-between py-1 border-b border-subtle">
+            <div className="border-subtle flex justify-between border-b py-1">
               <span className="text-muted">
                 Home {useMarketValue ? "(Market)" : "(Cost Basis)"}
               </span>
@@ -114,7 +114,7 @@ export function AssetsLiabilitiesCards({
             otherAssetItems.map((item) => (
               <div
                 key={item.name}
-                className="flex justify-between items-center py-1 border-b border-subtle"
+                className="border-subtle flex items-center justify-between border-b py-1"
               >
                 <span className="text-muted">
                   {item.name}
@@ -128,7 +128,7 @@ export function AssetsLiabilitiesCards({
               </div>
             ))
           ) : otherAssets > 0 ? (
-            <div className="flex justify-between items-center py-1 border-b border-subtle">
+            <div className="border-subtle flex items-center justify-between border-b py-1">
               <span className="text-muted">Other Assets</span>
               <InlineEdit
                 value={String(otherAssets)}
@@ -154,7 +154,7 @@ export function AssetsLiabilitiesCards({
       <Card title="Liabilities">
         <div className="space-y-2 text-sm">
           {hasHouse && (
-            <div className="flex justify-between py-1 border-b border-subtle">
+            <div className="border-subtle flex justify-between border-b py-1">
               <span className="text-muted">Mortgage Balance</span>
               <span className="font-medium">
                 {formatCurrency(mortgageBalance)}
@@ -162,7 +162,7 @@ export function AssetsLiabilitiesCards({
             </div>
           )}
           {otherLiabilities > 0 && (
-            <div className="flex justify-between items-center py-1 border-b border-subtle">
+            <div className="border-subtle flex items-center justify-between border-b py-1">
               <span className="text-muted">Other Liabilities</span>
               <InlineEdit
                 value={String(otherLiabilities)}
@@ -180,7 +180,7 @@ export function AssetsLiabilitiesCards({
           </div>
         </div>
         {hasHouse && (
-          <div className="mt-3 pt-3 border-t border-subtle">
+          <div className="border-subtle mt-3 border-t pt-3">
             <div className="flex justify-between text-sm">
               <span className="text-muted">
                 Home Equity{" "}

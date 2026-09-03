@@ -124,7 +124,7 @@ export default function HistoricalPage() {
 
   if (error) {
     return (
-      <p className="text-red-600 text-sm">
+      <p className="text-sm text-red-600">
         Failed to load historical data: {error.message}
       </p>
     );
@@ -156,10 +156,10 @@ export default function HistoricalPage() {
       <PageHeader title="Historical">
         <button
           onClick={() => setShowJobHistory(!showJobHistory)}
-          className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+          className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
             showJobHistory
-              ? "bg-blue-100 text-blue-800 border border-blue-300"
-              : "bg-surface-elevated text-muted border hover:bg-surface-strong"
+              ? "border border-blue-300 bg-blue-100 text-blue-800"
+              : "bg-surface-elevated text-muted hover:bg-surface-strong border"
           }`}
         >
           {showJobHistory ? "Hide" : "Show"} Job History
@@ -173,7 +173,7 @@ export default function HistoricalPage() {
       )}
 
       {/* Summary cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
         <Card
           title={
             <>
@@ -221,16 +221,16 @@ export default function HistoricalPage() {
         title="Year-End History"
         className="mb-6"
         headerRight={
-          <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex flex-wrap items-center gap-1.5">
             {(Object.entries(COLUMN_GROUPS) as [ColumnGroup, string][]).map(
               ([key, label]) => (
                 <button
                   key={key}
                   onClick={() => toggleGroup(key)}
-                  className={`px-2 py-0.5 text-caption font-medium rounded transition-colors ${
+                  className={`text-caption rounded px-2 py-0.5 font-medium transition-colors ${
                     hiddenGroups.has(key)
-                      ? "bg-surface-elevated text-faint border border-default"
-                      : "bg-surface-elevated text-blue-600 border border-blue-500/30"
+                      ? "bg-surface-elevated text-faint border-default border"
+                      : "bg-surface-elevated border border-blue-500/30 text-blue-600"
                   }`}
                 >
                   {label}
@@ -359,14 +359,14 @@ function HistoricalTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-xs whitespace-nowrap border-collapse">
+      <table className="w-full border-collapse text-xs whitespace-nowrap">
         <thead>
           {/* Group headers — sticky Year, then scrollable groups */}
-          <tr className="border-b border-strong">
-            <th className="sticky left-0 z-20 bg-surface-primary py-1 px-1 border-r border-strong" />
+          <tr className="border-strong border-b">
+            <th className="bg-surface-primary border-strong sticky left-0 z-20 border-r px-1 py-1" />
             {showNW && (
               <th
-                className="text-center px-1 py-1 text-faint font-medium border-l"
+                className="text-faint border-l px-1 py-1 text-center font-medium"
                 colSpan={3}
               >
                 <span className="inline-flex items-center gap-1">
@@ -378,7 +378,7 @@ function HistoricalTable({
                   >
                     <svg
                       aria-hidden="true"
-                      className="w-3 h-3"
+                      className="h-3 w-3"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -396,13 +396,13 @@ function HistoricalTable({
             )}
             {showPerf && (
               <th
-                className="text-center px-1 py-1 text-faint font-medium border-l"
+                className="text-faint border-l px-1 py-1 text-center font-medium"
                 colSpan={6}
               >
                 <span className="inline-flex items-center gap-1">
                   Performance
                   {perfLastUpdatedDisplay && (
-                    <span className="ml-1 text-micro text-faint font-normal">
+                    <span className="text-micro text-faint ml-1 font-normal">
                       (updated {perfLastUpdatedDisplay})
                     </span>
                   )}
@@ -413,7 +413,7 @@ function HistoricalTable({
                   >
                     <svg
                       aria-hidden="true"
-                      className="w-3 h-3"
+                      className="h-3 w-3"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -431,7 +431,7 @@ function HistoricalTable({
             )}
             {showPortfolio && (
               <th
-                className="text-center px-1 py-1 text-faint font-medium border-l"
+                className="text-faint border-l px-1 py-1 text-center font-medium"
                 colSpan={1 + portfolioBreakdownCols.length}
               >
                 <span className="inline-flex items-center gap-1">
@@ -443,7 +443,7 @@ function HistoricalTable({
                   >
                     <svg
                       aria-hidden="true"
-                      className="w-3 h-3"
+                      className="h-3 w-3"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -461,7 +461,7 @@ function HistoricalTable({
             )}
             {showAssets && (
               <th
-                className="text-center px-1 py-1 text-faint font-medium border-l"
+                className="text-faint border-l px-1 py-1 text-center font-medium"
                 colSpan={4}
               >
                 <span className="inline-flex items-center gap-1">
@@ -473,7 +473,7 @@ function HistoricalTable({
                   >
                     <svg
                       aria-hidden="true"
-                      className="w-3 h-3"
+                      className="h-3 w-3"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -491,7 +491,7 @@ function HistoricalTable({
             )}
             {showLiab && (
               <th
-                className="text-center px-1 py-1 text-faint font-medium border-l"
+                className="text-faint border-l px-1 py-1 text-center font-medium"
                 colSpan={2}
               >
                 <span className="inline-flex items-center gap-1">
@@ -503,7 +503,7 @@ function HistoricalTable({
                   >
                     <svg
                       aria-hidden="true"
-                      className="w-3 h-3"
+                      className="h-3 w-3"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -521,7 +521,7 @@ function HistoricalTable({
             )}
             {showIncome && (
               <th
-                className="text-center px-1 py-1 text-faint font-medium border-l"
+                className="text-faint border-l px-1 py-1 text-center font-medium"
                 colSpan={6}
               >
                 <span className="inline-flex items-center gap-1">
@@ -533,7 +533,7 @@ function HistoricalTable({
                   >
                     <svg
                       aria-hidden="true"
-                      className="w-3 h-3"
+                      className="h-3 w-3"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -551,7 +551,7 @@ function HistoricalTable({
             )}
             {showSalary && (
               <th
-                className="text-center px-1 py-1 text-faint font-medium border-l"
+                className="text-faint border-l px-1 py-1 text-center font-medium"
                 colSpan={peopleNames.length}
               >
                 <span className="inline-flex items-center gap-1">
@@ -563,7 +563,7 @@ function HistoricalTable({
                   >
                     <svg
                       aria-hidden="true"
-                      className="w-3 h-3"
+                      className="h-3 w-3"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -581,7 +581,7 @@ function HistoricalTable({
             )}
             {showSalary && (
               <th
-                className="text-center px-1 py-1 text-faint font-medium border-l"
+                className="text-faint border-l px-1 py-1 text-center font-medium"
                 colSpan={peopleNames.length}
               >
                 Gross Bonus
@@ -668,7 +668,7 @@ function HistoricalTable({
             return (
               <tr
                 key={row.year}
-                className={`border-b border-subtle hover:bg-surface-sunken/50 print:break-inside-avoid ${
+                className={`border-subtle hover:bg-surface-sunken/50 border-b print:break-inside-avoid ${
                   row.isCurrent ? "bg-blue-50/30" : ""
                 }`}
               >
@@ -684,7 +684,7 @@ function HistoricalTable({
                 {/* Net Worth group — scrollable, toggleable */}
                 {showNW && (
                   <>
-                    <td className="text-right py-1.5 px-1.5 font-semibold border-l">
+                    <td className="border-l px-1.5 py-1.5 text-right font-semibold">
                       <NoteableValue
                         year={row.year}
                         field="netWorth"
@@ -712,21 +712,21 @@ function HistoricalTable({
                               : []),
                           ]}
                         >
-                          <span className="cursor-help border-b border-dotted border-strong">
+                          <span className="border-strong cursor-help border-b border-dotted">
                             {formatCurrency(row.netWorth)}
                           </span>
                         </Tooltip>
                       </NoteableValue>
                     </td>
                     <td
-                      className={`text-right py-1.5 px-1.5 ${changeColor(dollarChange)}`}
+                      className={`px-1.5 py-1.5 text-right ${changeColor(dollarChange)}`}
                     >
                       {dollarChange !== null
                         ? `${dollarChange >= 0 ? "+" : ""}${formatCurrency(dollarChange)}`
                         : "\u2014"}
                     </td>
                     <td
-                      className={`text-right py-1.5 px-1.5 ${changeColor(pctChange)}`}
+                      className={`px-1.5 py-1.5 text-right ${changeColor(pctChange)}`}
                     >
                       {pctChange !== null
                         ? `${pctChange >= 0 ? "+" : ""}${formatPercent(pctChange, 1)}`
@@ -774,7 +774,7 @@ function HistoricalTable({
                         field="endingBalance"
                       />
                     )}
-                    <td className="text-right py-1.5 px-1.5">
+                    <td className="px-1.5 py-1.5 text-right">
                       {row.perfReturnPct !== null
                         ? formatPercent(row.perfReturnPct, 1)
                         : "\u2014"}
@@ -784,7 +784,7 @@ function HistoricalTable({
                 {/* Portfolio Breakdown */}
                 {showPortfolio && (
                   <>
-                    <td className="text-right py-1.5 px-1.5 font-semibold border-l">
+                    <td className="border-l px-1.5 py-1.5 text-right font-semibold">
                       {row.perfByAccount.length > 0 ? (
                         <Tooltip
                           side="bottom"
@@ -797,7 +797,7 @@ function HistoricalTable({
                                 `${a.label}: ${formatCurrency(a.endingBalance)}`,
                             )}
                         >
-                          <span className="cursor-help border-b border-dotted border-strong">
+                          <span className="border-strong cursor-help border-b border-dotted">
                             {formatCurrency(row.portfolioTotal)}
                           </span>
                         </Tooltip>
@@ -821,10 +821,10 @@ function HistoricalTable({
                         return (
                           <td
                             key={col.key}
-                            className="text-right py-1.5 px-1.5"
+                            className="px-1.5 py-1.5 text-right"
                           >
                             <Tooltip lines={lines} side="bottom" maxWidth={400}>
-                              <span className="cursor-help border-b border-dotted border-strong">
+                              <span className="border-strong cursor-help border-b border-dotted">
                                 {formatCurrency(val)}
                               </span>
                             </Tooltip>

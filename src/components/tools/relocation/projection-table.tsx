@@ -61,9 +61,9 @@ export function RelocationProjectionTable({
 
   return (
     <div className="border-t pt-3">
-      <div className="flex items-center justify-between mb-2">
+      <div className="mb-2 flex items-center justify-between">
         <span className="flex items-center gap-1.5">
-          <h4 className="text-sm font-medium text-secondary">
+          <h4 className="text-secondary text-sm font-medium">
             Portfolio Projection Comparison
           </h4>
           <HelpTip
@@ -156,28 +156,28 @@ function ComparisonTable({
     return (
       <table className="w-full text-xs">
         <thead>
-          <tr className="border-b text-muted">
-            <th className="text-left py-1 pr-3">Year</th>
-            <th className="text-left py-1 pr-3">
+          <tr className="text-muted border-b">
+            <th className="py-1 pr-3 text-left">Year</th>
+            <th className="py-1 pr-3 text-left">
               Age{peopleLookup && peopleLookup.length > 1 ? " (avg)" : ""}
             </th>
-            <th className="text-right py-1 pr-3">
+            <th className="py-1 pr-3 text-right">
               Contributions{dollarMode === "real" ? " (today's $)" : ""}
             </th>
-            <th className="text-right py-1 pr-3">
+            <th className="py-1 pr-3 text-right">
               Current Balance{dollarMode === "real" ? " (today's $)" : ""}
             </th>
-            <th className="text-right py-1 pr-3">
+            <th className="py-1 pr-3 text-right">
               {moveYear != null ? `Move ${moveYear}` : "Move Path"}{" "}
               Contributions
               {dollarMode === "real" ? " (today's $)" : ""}
             </th>
-            <th className="text-right py-1 pr-3">
+            <th className="py-1 pr-3 text-right">
               {moveYear != null ? `Move ${moveYear}` : "Move Path"} Balance
               {dollarMode === "real" ? " (today's $)" : ""}
             </th>
-            <th className="text-right py-1 pr-3">Gap</th>
-            <th className="text-right py-1">Reloc Expenses</th>
+            <th className="py-1 pr-3 text-right">Gap</th>
+            <th className="py-1 text-right">Reloc Expenses</th>
           </tr>
         </thead>
         <tbody />
@@ -215,27 +215,27 @@ function ComparisonTable({
   return (
     <table className="w-full text-xs">
       <thead>
-        <tr className="border-b text-muted">
-          <th className="text-left py-1 pr-3">Year</th>
-          <th className="text-left py-1 pr-3">
+        <tr className="text-muted border-b">
+          <th className="py-1 pr-3 text-left">Year</th>
+          <th className="py-1 pr-3 text-left">
             Age{peopleLookup && peopleLookup.length > 1 ? " (avg)" : ""}
           </th>
-          <th className="text-right py-1 pr-3">
+          <th className="py-1 pr-3 text-right">
             Contributions{dollarMode === "real" ? " (today's $)" : ""}
           </th>
-          <th className="text-right py-1 pr-3">
+          <th className="py-1 pr-3 text-right">
             Current Balance{dollarMode === "real" ? " (today's $)" : ""}
           </th>
-          <th className="text-right py-1 pr-3">
+          <th className="py-1 pr-3 text-right">
             {moveYear != null ? `Move ${moveYear}` : "Move Path"} Contributions
             {dollarMode === "real" ? " (today's $)" : ""}
           </th>
-          <th className="text-right py-1 pr-3">
+          <th className="py-1 pr-3 text-right">
             {moveYear != null ? `Move ${moveYear}` : "Move Path"} Balance
             {dollarMode === "real" ? " (today's $)" : ""}
           </th>
-          <th className="text-right py-1 pr-3">Gap</th>
-          <th className="text-right py-1">Reloc Expenses</th>
+          <th className="py-1 pr-3 text-right">Gap</th>
+          <th className="py-1 text-right">Reloc Expenses</th>
         </tr>
       </thead>
       <tbody>
@@ -264,7 +264,7 @@ function ComparisonTable({
           return (
             <tr
               key={row.year}
-              className={`border-b border-subtle ${
+              className={`border-subtle border-b ${
                 row.hasAdjustment ? "bg-blue-50 dark:bg-blue-900/20" : ""
               } ${row.age === r.currentFiAge ? "bg-green-50 dark:bg-green-900/20" : ""} ${
                 row.age === r.relocationFiAge
@@ -280,43 +280,43 @@ function ComparisonTable({
               <td className="py-1 pr-3" title={ageTooltip(row.year)}>
                 {displayAge(row.year) ?? row.age}
                 {row.age === r.currentFiAge && (
-                  <span className="ml-1 text-green-600 text-caption">
+                  <span className="text-caption ml-1 text-green-600">
                     Retire
                   </span>
                 )}
                 {row.age === r.relocationFiAge && (
-                  <span className="ml-1 text-purple-600 text-caption">
+                  <span className="text-caption ml-1 text-purple-600">
                     Retire (reloc)
                   </span>
                 )}
                 {(isPlannedMoveYear || isEarliestMoveYear) && (
-                  <span className="ml-1 text-cyan-600 text-caption">MOVE</span>
+                  <span className="text-caption ml-1 text-cyan-600">MOVE</span>
                 )}
                 {isLastRow && r.currentFiAge === null && (
-                  <span className="ml-1 text-red-500 text-caption">
+                  <span className="text-caption ml-1 text-red-500">
                     No retire date
                   </span>
                 )}
               </td>
-              <td className="text-right py-1 pr-3 font-mono">
+              <td className="py-1 pr-3 text-right font-mono">
                 {formatCurrency(deflate(row.currentContribution, row.year))}
               </td>
-              <td className="text-right py-1 pr-3 font-mono">
+              <td className="py-1 pr-3 text-right font-mono">
                 {formatCurrency(deflate(row.currentBalance, row.year))}
               </td>
-              <td className="text-right py-1 pr-3 font-mono">
+              <td className="py-1 pr-3 text-right font-mono">
                 {formatCurrency(deflate(moveContrib, row.year))}
               </td>
-              <td className="text-right py-1 pr-3 font-mono">
+              <td className="py-1 pr-3 text-right font-mono">
                 {formatCurrency(deflate(moveBalance, row.year))}
               </td>
               <td
-                className={`text-right py-1 pr-3 font-mono ${gap < 0 ? "text-red-600" : gap > 0 ? "text-green-600" : "text-muted"}`}
+                className={`py-1 pr-3 text-right font-mono ${gap < 0 ? "text-red-600" : gap > 0 ? "text-green-600" : "text-muted"}`}
               >
                 {gap > 0 ? "+" : gap === 0 ? "" : ""}
                 {formatCurrency(deflate(gap, row.year))}
               </td>
-              <td className="text-right py-1 font-mono">
+              <td className="py-1 text-right font-mono">
                 {formatCurrency(moveExpenses / 12)}/mo
                 {row.hasAdjustment && blended?.phase === "relocation" && (
                   <span className="ml-1 text-blue-500">*</span>
@@ -344,12 +344,12 @@ function ComparisonTable({
 
 function Legend({ isBlended }: { isBlended: boolean }) {
   return (
-    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 text-caption text-faint">
+    <div className="text-caption text-faint mt-2 flex flex-wrap gap-x-4 gap-y-1.5">
       {!isBlended && (
         <>
           <span className="flex items-center gap-1">
-            <span className="inline-block w-2 h-2 bg-green-200 dark:bg-green-800/60 rounded shrink-0" />
-            <span className="text-green-600 font-medium">Retire</span>
+            <span className="inline-block h-2 w-2 shrink-0 rounded bg-green-200 dark:bg-green-800/60" />
+            <span className="font-medium text-green-600">Retire</span>
             <span>Portfolio meets current expense target</span>
             <HelpTip
               lines={[
@@ -359,8 +359,8 @@ function Legend({ isBlended }: { isBlended: boolean }) {
             />
           </span>
           <span className="flex items-center gap-1">
-            <span className="inline-block w-2 h-2 bg-purple-200 dark:bg-purple-800/60 rounded shrink-0" />
-            <span className="text-purple-600 font-medium">Retire (reloc)</span>
+            <span className="inline-block h-2 w-2 shrink-0 rounded bg-purple-200 dark:bg-purple-800/60" />
+            <span className="font-medium text-purple-600">Retire (reloc)</span>
             <span>Portfolio meets relocation expense target</span>
             <HelpTip
               lines={[
@@ -372,8 +372,8 @@ function Legend({ isBlended }: { isBlended: boolean }) {
         </>
       )}
       <span className="flex items-center gap-1">
-        <span className="inline-block w-2 h-2 bg-cyan-200 dark:bg-cyan-800/60 rounded shrink-0" />
-        <span className="text-cyan-600 font-medium">
+        <span className="inline-block h-2 w-2 shrink-0 rounded bg-cyan-200 dark:bg-cyan-800/60" />
+        <span className="font-medium text-cyan-600">
           {isBlended ? "MOVE" : "MOVE"}
         </span>
         <span>
@@ -396,14 +396,14 @@ function Legend({ isBlended }: { isBlended: boolean }) {
         />
       </span>
       <span className="flex items-center gap-1">
-        <span className="inline-block w-2 h-2 bg-blue-200 dark:bg-blue-800/60 rounded shrink-0" />
-        <span className="text-blue-500 font-medium">*</span>
+        <span className="inline-block h-2 w-2 shrink-0 rounded bg-blue-200 dark:bg-blue-800/60" />
+        <span className="font-medium text-blue-500">*</span>
         <span>Custom expense amount applies this year</span>
         <HelpTip text="A Year Adjustment overrides the baseline relocation monthly expense for this year only. Use it to model a phased move, a cost-cut year, or a temporary spike." />
       </span>
       <span className="flex items-center gap-1">
-        <span className="inline-block w-2 h-2 bg-orange-200 dark:bg-orange-800/60 rounded shrink-0" />
-        <span className="text-orange-500 font-medium">$</span>
+        <span className="inline-block h-2 w-2 shrink-0 rounded bg-orange-200 dark:bg-orange-800/60" />
+        <span className="font-medium text-orange-500">$</span>
         <span>A large purchase hits this year</span>
         <HelpTip
           lines={[

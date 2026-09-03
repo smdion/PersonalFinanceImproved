@@ -17,7 +17,7 @@ function YearRangeSelector({
         <button
           key={y}
           onClick={() => setProjectionYears(y)}
-          className={`px-2 py-0.5 text-xs rounded ${
+          className={`rounded px-2 py-0.5 text-xs ${
             projectionYears === y
               ? "bg-blue-600 text-white"
               : "bg-surface-elevated text-faint hover:bg-surface-strong"
@@ -65,7 +65,7 @@ export function BudgetCapacityBar({
 
         {/* Capacity signal */}
         {maxMonthlyFunding !== null && (
-          <div className="flex items-center gap-1.5 text-faint">
+          <div className="text-faint flex items-center gap-1.5">
             <HelpTip
               text={`Based on regular monthly pay (${budgetNote ?? "2 paychecks/month for biweekly"}). Extra paycheck months not included.`}
             />

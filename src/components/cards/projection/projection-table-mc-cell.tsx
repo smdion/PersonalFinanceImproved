@@ -40,7 +40,7 @@ export function renderMcCell(
   } = opts;
   if (!mcBandsByYear) return null;
   const band = mcBandsByYear.get(yr.year);
-  if (!band) return <td className="text-right py-1.5 px-2 text-faint">---</td>;
+  if (!band) return <td className="text-faint px-2 py-1.5 text-right">---</td>;
   const mcP50 = deflate(band.p50, yr.year);
   const showDelta = !isPersonFiltered && !parentCategoryFilter;
   const delta = mcP50 - detBal;
@@ -113,7 +113,7 @@ export function renderMcCell(
       })}
       side="top"
     >
-      <td className="text-right py-1.5 px-2 text-purple-700 tabular-nums border-l border-subtle">
+      <td className="border-subtle border-l px-2 py-1.5 text-right text-purple-700 tabular-nums">
         {formatCurrency(Math.max(0, mcP50))}
         {showDelta && Math.abs(delta) > 1 && (
           <div className={`text-micro ${deltaColor}`}>

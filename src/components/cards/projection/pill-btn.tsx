@@ -65,7 +65,7 @@ export function PillGroup({
 }) {
   return (
     <div
-      className={`inline-flex rounded-md border bg-surface-primary/60 ${size === "lg" ? "p-1 gap-0.5" : "p-0.5"}`}
+      className={`bg-surface-primary/60 inline-flex rounded-md border ${size === "lg" ? "gap-0.5 p-1" : "p-0.5"}`}
     >
       {children}
     </div>
@@ -87,7 +87,7 @@ export function LabeledPillGroup({
   return (
     <div className="flex items-center gap-1.5">
       <span
-        className={`font-medium uppercase whitespace-nowrap ${size === "lg" ? "text-caption text-secondary" : "text-caption text-faint"}`}
+        className={`font-medium whitespace-nowrap uppercase ${size === "lg" ? "text-caption text-secondary" : "text-caption text-faint"}`}
       >
         {label}
         {helpTip}
@@ -118,7 +118,7 @@ export function LabeledSelect({
 }) {
   return (
     <div className="flex items-center gap-1.5">
-      <span className="text-caption text-faint font-medium uppercase whitespace-nowrap">
+      <span className="text-caption text-faint font-medium whitespace-nowrap uppercase">
         {label}
         {helpTip}
       </span>
@@ -126,7 +126,7 @@ export function LabeledSelect({
         value={value}
         onChange={onChange}
         title={title}
-        className="text-caption h-6 px-1.5 rounded border bg-surface-primary/60 text-muted cursor-pointer"
+        className="text-caption bg-surface-primary/60 text-muted h-6 cursor-pointer rounded border px-1.5"
       >
         {children}
       </select>
@@ -176,10 +176,10 @@ export function ControlZone({
         ? "text-amber-700 dark:text-amber-300"
         : "text-violet-700 dark:text-violet-300";
   return (
-    <div className={`rounded-lg border px-3 py-2.5 space-y-2 ${toneClasses}`}>
-      <div className="flex items-baseline gap-1.5 flex-wrap">
+    <div className={`space-y-2 rounded-lg border px-3 py-2.5 ${toneClasses}`}>
+      <div className="flex flex-wrap items-baseline gap-1.5">
         <span
-          className={`text-caption font-bold uppercase tracking-wide ${titleClasses}`}
+          className={`text-caption font-bold tracking-wide uppercase ${titleClasses}`}
         >
           {title}
         </span>
@@ -195,7 +195,7 @@ export function ControlZone({
  *  detail available" rather than competing for the same attention. */
 export function ZoneSecondaryRow({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-2 border-t border-dashed border-current/15">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-dashed border-current/15 pt-2">
       {children}
     </div>
   );

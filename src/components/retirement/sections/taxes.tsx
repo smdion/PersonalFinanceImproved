@@ -92,12 +92,12 @@ export function TaxesSection({
 
   return (
     <div className="bg-surface-sunken rounded-lg p-3">
-      <div className="flex items-center gap-2 mb-2">
-        <h4 className="text-label font-semibold text-muted uppercase tracking-wider">
+      <div className="mb-2 flex items-center gap-2">
+        <h4 className="text-label text-muted font-semibold tracking-wider uppercase">
           Taxes in Retirement
         </h4>
         <select
-          className="text-caption text-faint bg-transparent border border-transparent hover:border-border rounded px-1 py-0.5 cursor-pointer focus:outline-none focus:border-accent disabled:cursor-not-allowed disabled:opacity-50"
+          className="text-caption text-faint hover:border-border focus:border-accent cursor-pointer rounded border border-transparent bg-transparent px-1 py-0.5 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
           value={settings.filingStatusExplicit ?? ""}
           disabled={!isEditable}
           onChange={(e) => {
@@ -120,7 +120,7 @@ export function TaxesSection({
         <div className="flex-1 border-t" />
       </div>
       {/* Tax rates by account type — compact row */}
-      <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm mb-3">
+      <div className="mb-3 flex flex-wrap gap-x-6 gap-y-1 text-sm">
         <div className="flex items-baseline gap-1.5">
           <span className="text-muted">Pre-Tax</span>
           <span className="font-medium text-blue-600">Varies</span>
@@ -137,7 +137,7 @@ export function TaxesSection({
         </div>
         <div className="flex items-baseline gap-1.5">
           <span className="text-muted">Brokerage</span>
-          <span className="font-medium text-muted">
+          <span className="text-muted font-medium">
             {selectedScenario
               ? formatPercent(
                   parseFloat(selectedScenario.distributionTaxRateBrokerage),
@@ -149,13 +149,13 @@ export function TaxesSection({
         </div>
       </div>
       {/* Tax controls */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-2 text-sm">
+      <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm md:grid-cols-3">
         <div>
           <span className="text-muted">
             Tax Multiplier
             <HelpTip text="Scales the estimated tax bill. <1 = expect lower rates, >1 = expect higher. 1.0 uses today's brackets as-is." />
           </span>
-          <div className="font-medium flex items-baseline gap-1.5">
+          <div className="flex items-baseline gap-1.5 font-medium">
             <InlineEdit
               value={settings.taxMultiplier}
               onSave={(v) => {
@@ -199,7 +199,7 @@ export function TaxesSection({
                 );
               }}
               disabled={!isEditable}
-              className={`text-sm px-2 py-0.5 rounded disabled:cursor-not-allowed disabled:opacity-50 ${
+              className={`rounded px-2 py-0.5 text-sm disabled:cursor-not-allowed disabled:opacity-50 ${
                 (settings?.grossUpForTaxes ?? true)
                   ? "bg-green-100 text-green-700"
                   : "bg-surface-elevated text-muted"
@@ -226,7 +226,7 @@ export function TaxesSection({
                 );
               }}
               disabled={!isEditable}
-              className="text-sm border rounded px-1.5 py-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded border px-1.5 py-0.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
             >
               <option value="0.1">10% (~$30k MFJ)</option>
               <option value="0.12">12% (~$116k MFJ)</option>
@@ -235,10 +235,10 @@ export function TaxesSection({
               <option value="0.32">32% (~$526k MFJ)</option>
             </select>
             {recommendedTarget != null && (
-              <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-caption">
+              <div className="text-caption mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1">
                 <span className="text-faint">
                   Currently recommended:{" "}
-                  <span className="font-medium text-foreground">
+                  <span className="text-foreground font-medium">
                     {formatPercent(recommendedTarget)}
                   </span>
                 </span>
@@ -246,13 +246,13 @@ export function TaxesSection({
                 {isEditable && (
                   <button
                     onClick={applyRecommendedTarget}
-                    className="text-caption px-1.5 py-0.5 rounded bg-accent/10 text-accent hover:bg-accent/20"
+                    className="text-caption bg-accent/10 text-accent hover:bg-accent/20 rounded px-1.5 py-0.5"
                   >
                     Apply
                   </button>
                 )}
                 {willChangeSmoothingCeiling && (
-                  <span className="w-full text-micro text-faint">
+                  <span className="text-micro text-faint w-full">
                     Will also update your RMD Smoothing ceiling (below) to{" "}
                     {formatPercent(recommendedTarget)}.
                   </span>
@@ -279,7 +279,7 @@ export function TaxesSection({
                 );
               }}
               disabled={!isEditable}
-              className={`text-sm px-2 py-0.5 rounded disabled:cursor-not-allowed disabled:opacity-50 ${
+              className={`rounded px-2 py-0.5 text-sm disabled:cursor-not-allowed disabled:opacity-50 ${
                 (settings?.enableRothConversions ?? false)
                   ? "bg-green-100 text-green-700"
                   : "bg-surface-elevated text-muted"
@@ -305,7 +305,7 @@ export function TaxesSection({
                   );
                 }}
                 disabled={!isEditable}
-                className="text-sm border rounded px-1.5 py-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded border px-1.5 py-0.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <option value="0.1">10%</option>
                 <option value="0.12">12%</option>
@@ -332,7 +332,7 @@ export function TaxesSection({
                 );
               }}
               disabled={!isEditable}
-              className="text-sm border rounded px-1.5 py-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded border px-1.5 py-0.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
             >
               <option value="roth_first">Roth basis first (default)</option>
               <option value="brokerage_first">Brokerage 0% room first</option>
@@ -340,7 +340,7 @@ export function TaxesSection({
             {settings?.discretionaryWithdrawalOrder === "brokerage_first" &&
               ((settings?.enableAcaAwareness ?? false) ||
                 (settings?.enableIrmaaAwareness ?? false)) && (
-                <div className="mt-1.5 text-caption text-amber-700">
+                <div className="text-caption mt-1.5 text-amber-700">
                   ACA/IRMAA awareness is on — brokerage-first will realize
                   MAGI-counted gains sooner each year, which can reduce ACA
                   subsidy or bring you closer to an IRMAA surcharge tier even

@@ -54,7 +54,7 @@ export function LtcgBracketsSettings({ year }: { year: number }) {
           header: "Up To",
           cell: (entry, { onSave, isEditable }) =>
             entry.threshold === null ? (
-              <span className="text-sm text-muted">Above</span>
+              <span className="text-muted text-sm">Above</span>
             ) : (
               <InlineEdit
                 value={entry.threshold.toString()}

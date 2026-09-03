@@ -14,7 +14,7 @@ export function DemoBanner({
   const utils = trpc.useUtils();
 
   return (
-    <div className="bg-amber-600 text-white text-center py-1.5 px-4 text-sm flex items-center justify-center gap-3">
+    <div className="flex items-center justify-center gap-3 bg-amber-600 px-4 py-1.5 text-center text-sm text-white">
       <span className="font-medium">
         {isDemoOnly ? profileName : `Demo Mode — ${profileName}`}
       </span>
@@ -32,7 +32,7 @@ export function DemoBanner({
             router.refresh();
           }
         }}
-        className="px-2 py-0.5 text-xs bg-amber-800 hover:bg-amber-900 rounded transition-colors"
+        className="rounded bg-amber-800 px-2 py-0.5 text-xs transition-colors hover:bg-amber-900"
       >
         {isDemoOnly ? "Switch Profile" : "Exit Demo"}
       </button>

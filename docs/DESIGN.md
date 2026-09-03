@@ -601,7 +601,7 @@ if (isLoading)
   );
 if (error)
   return (
-    <p className="text-red-600 text-sm">Failed to load: {error.message}</p>
+    <p className="text-sm text-red-600">Failed to load: {error.message}</p>
   );
 ```
 

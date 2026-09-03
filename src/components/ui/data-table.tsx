@@ -103,13 +103,13 @@ export function DataTable<T extends { id: number | string }>({
   if (isLoading) {
     return (
       <div className={className}>
-        {title && <h2 className="text-lg font-semibold mb-4">{title}</h2>}
+        {title && <h2 className="mb-4 text-lg font-semibold">{title}</h2>}
         <div className="space-y-2">
           {[...Array(3)].map((_, i) => (
             <div
               // eslint-disable-next-line react/no-array-index-key -- skeleton placeholders have no identity
               key={i}
-              className="h-8 bg-surface-sunken rounded animate-pulse"
+              className="bg-surface-sunken h-8 animate-pulse rounded"
             />
           ))}
         </div>
@@ -122,7 +122,7 @@ export function DataTable<T extends { id: number | string }>({
     <div className={className}>
       {/* Header */}
       {(title || renderForm) && (
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4 flex items-center justify-between">
           {title && <h2 className="text-lg font-semibold">{title}</h2>}
           {renderForm && (
             <Button
@@ -140,7 +140,7 @@ export function DataTable<T extends { id: number | string }>({
 
       {/* Inline form */}
       {showForm && renderForm && (
-        <div className="mb-4 p-4 bg-surface-sunken rounded border border-default">
+        <div className="bg-surface-sunken border-default mb-4 rounded border p-4">
           {renderForm(editing, () => {
             setShowForm(false);
             setEditing(null);
@@ -158,9 +158,9 @@ export function DataTable<T extends { id: number | string }>({
       {/* Table */}
       {sortedData && sortedData.length > 0 && (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm border-collapse">
+          <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-default bg-surface-sunken">
+              <tr className="border-default bg-surface-sunken border-b">
                 {columns.map((col) => {
                   const isSortable = !!col.sortable;
                   const isActive = sortKey === col.key;
@@ -194,15 +194,15 @@ export function DataTable<T extends { id: number | string }>({
                       key={col.key}
                       scope="col"
                       aria-sort={ariaSort}
-                      className={`text-left ${cellPad} font-medium text-secondary ${
-                        col.sticky ? "sticky left-0 z-10 bg-surface-sunken" : ""
+                      className={`text-left ${cellPad} text-secondary font-medium ${
+                        col.sticky ? "bg-surface-sunken sticky left-0 z-10" : ""
                       } ${col.className ?? ""}`}
                     >
                       {isSortable ? (
                         <button
                           type="button"
                           onClick={() => handleSort(col.key)}
-                          className="cursor-pointer select-none hover:text-primary w-full text-left"
+                          className="hover:text-primary w-full cursor-pointer text-left select-none"
                         >
                           {headerContent}
                         </button>
@@ -215,7 +215,7 @@ export function DataTable<T extends { id: number | string }>({
                 {hasActions && (
                   <th
                     scope="col"
-                    className={`text-right ${cellPad} font-medium text-secondary w-24`}
+                    className={`text-right ${cellPad} text-secondary w-24 font-medium`}
                   >
                     Actions
                   </th>
@@ -228,14 +228,14 @@ export function DataTable<T extends { id: number | string }>({
                 return (
                   <tr
                     key={key}
-                    className="border-b border-default hover:bg-surface-sunken"
+                    className="border-default hover:bg-surface-sunken border-b"
                   >
                     {columns.map((col) => (
                       <td
                         key={col.key}
                         className={`${cellPad} ${
                           col.sticky
-                            ? "sticky left-0 z-10 bg-surface-primary"
+                            ? "bg-surface-primary sticky left-0 z-10"
                             : ""
                         } ${col.className ?? ""}`}
                       >
@@ -247,7 +247,7 @@ export function DataTable<T extends { id: number | string }>({
                       </td>
                     ))}
                     {hasActions && (
-                      <td className={`${cellPad} text-right space-x-2`}>
+                      <td className={`${cellPad} space-x-2 text-right`}>
                         {renderForm && (
                           <Button
                             variant="ghost"

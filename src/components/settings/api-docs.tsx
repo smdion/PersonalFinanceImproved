@@ -38,7 +38,7 @@ const UNKNOWN_BADGE = {
 function Badge({ label, className }: { label: string; className: string }) {
   return (
     <span
-      className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${className}`}
+      className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${className}`}
     >
       {label}
     </span>
@@ -50,13 +50,13 @@ function Badge({ label, className }: { label: string; className: string }) {
 function SchemaTable({ fields }: { fields: SchemaField[] }) {
   if (fields.length === 0) {
     return (
-      <p className="text-xs text-faint italic px-4 py-2">No input parameters</p>
+      <p className="text-faint px-4 py-2 text-xs italic">No input parameters</p>
     );
   }
   return (
     <table className="w-full text-xs">
       <thead>
-        <tr className="text-left text-muted border-b border-subtle">
+        <tr className="text-muted border-subtle border-b text-left">
           <th className="px-4 py-1.5 font-medium">Field</th>
           <th className="px-4 py-1.5 font-medium">Type</th>
           <th className="px-4 py-1.5 font-medium">Required</th>
@@ -65,9 +65,9 @@ function SchemaTable({ fields }: { fields: SchemaField[] }) {
       </thead>
       <tbody>
         {fields.map((f: SchemaField) => (
-          <tr key={f.name} className="border-b border-subtle">
-            <td className="px-4 py-1.5 font-mono text-primary">{f.name}</td>
-            <td className="px-4 py-1.5 font-mono text-muted">{f.type}</td>
+          <tr key={f.name} className="border-subtle border-b">
+            <td className="text-primary px-4 py-1.5 font-mono">{f.name}</td>
+            <td className="text-muted px-4 py-1.5 font-mono">{f.type}</td>
             <td className="px-4 py-1.5">
               {f.required ? (
                 <span className="text-red-500">required</span>
@@ -75,7 +75,7 @@ function SchemaTable({ fields }: { fields: SchemaField[] }) {
                 <span className="text-faint">optional</span>
               )}
             </td>
-            <td className="px-4 py-1.5 font-mono text-muted">
+            <td className="text-muted px-4 py-1.5 font-mono">
               {f.defaultValue !== undefined ? String(f.defaultValue) : "—"}
             </td>
           </tr>
@@ -94,26 +94,26 @@ function EndpointRow({ endpoint }: { endpoint: ApiEndpoint }) {
   const hasInput = endpoint.input.length > 0;
 
   return (
-    <div className="border rounded-lg overflow-hidden">
+    <div className="overflow-hidden rounded-lg border">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-surface-sunken transition-colors"
+        className="hover:bg-surface-sunken flex w-full items-center gap-3 px-4 py-3 text-left transition-colors"
       >
-        <span className="text-faint text-xs w-4">{expanded ? "▾" : "▸"}</span>
-        <code className="text-sm font-mono text-primary flex-1 truncate">
+        <span className="text-faint w-4 text-xs">{expanded ? "▾" : "▸"}</span>
+        <code className="text-primary flex-1 truncate font-mono text-sm">
           {endpoint.path}
         </code>
         <Badge {...typeBadge} />
         <Badge {...authBadge} />
         {hasInput && (
-          <span className="text-xs text-faint">
+          <span className="text-faint text-xs">
             {endpoint.input.length} field
             {endpoint.input.length !== 1 ? "s" : ""}
           </span>
         )}
       </button>
       {expanded && (
-        <div className="border-t border-subtle bg-surface-sunken/50">
+        <div className="border-subtle bg-surface-sunken/50 border-t">
           <SchemaTable fields={endpoint.input} />
         </div>
       )}
@@ -166,16 +166,16 @@ export function ApiDocsSettings() {
   if (isLoading) {
     return (
       <div className="animate-pulse space-y-3">
-        <div className="h-10 bg-surface-elevated rounded" />
-        <div className="h-10 bg-surface-elevated rounded" />
-        <div className="h-10 bg-surface-elevated rounded" />
+        <div className="bg-surface-elevated h-10 rounded" />
+        <div className="bg-surface-elevated h-10 rounded" />
+        <div className="bg-surface-elevated h-10 rounded" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-red-600 text-sm">
+      <div className="text-sm text-red-600">
         Failed to load API docs: {error.message}
       </div>
     );
@@ -192,12 +192,12 @@ export function ApiDocsSettings() {
           placeholder="Search endpoints..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 min-w-[200px] px-3 py-2 text-sm border border-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="border-strong min-w-[200px] flex-1 rounded-lg border px-3 py-2 text-sm focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none"
         />
         <select
           value={routerFilter}
           onChange={(e) => setRouterFilter(e.target.value)}
-          className="px-3 py-2 text-sm border border-strong rounded-lg bg-surface-primary"
+          className="border-strong bg-surface-primary rounded-lg border px-3 py-2 text-sm"
         >
           <option value="all">All routers</option>
           {routers.map((r: string) => (
@@ -209,7 +209,7 @@ export function ApiDocsSettings() {
         <select
           value={authFilter}
           onChange={(e) => setAuthFilter(e.target.value)}
-          className="px-3 py-2 text-sm border border-strong rounded-lg bg-surface-primary"
+          className="border-strong bg-surface-primary rounded-lg border px-3 py-2 text-sm"
         >
           <option value="all">All auth</option>
           {authLevels.map((a: string) => (
@@ -218,7 +218,7 @@ export function ApiDocsSettings() {
             </option>
           ))}
         </select>
-        <div className="flex rounded-lg border border-strong overflow-hidden">
+        <div className="border-strong flex overflow-hidden rounded-lg border">
           {(["all", "query", "mutation"] as const).map((val) => (
             <button
               key={val}
@@ -238,7 +238,7 @@ export function ApiDocsSettings() {
       </div>
 
       {/* Count */}
-      <p className="text-sm text-muted">
+      <p className="text-muted text-sm">
         Showing {filtered.length} of {endpoints.length} endpoints
       </p>
 
@@ -248,7 +248,7 @@ export function ApiDocsSettings() {
           <EndpointRow key={endpoint.path} endpoint={endpoint} />
         ))}
         {filtered.length === 0 && (
-          <p className="text-sm text-faint text-center py-8">
+          <p className="text-faint py-8 text-center text-sm">
             No endpoints match your filters.
           </p>
         )}

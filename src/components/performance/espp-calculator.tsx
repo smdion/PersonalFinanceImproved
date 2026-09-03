@@ -45,12 +45,12 @@ export function EsppCalculator({ onApply, onDismiss }: EsppCalculatorProps) {
   const hasSales = periods.some((p) => p.grossProceeds > 0);
 
   return (
-    <div className="rounded-md border border-teal-500/40 bg-teal-50/30 dark:bg-teal-950/20 p-3 mb-3 space-y-3">
+    <div className="mb-3 space-y-3 rounded-md border border-teal-500/40 bg-teal-50/30 p-3 dark:bg-teal-950/20">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="w-1.5 h-4 rounded-full bg-teal-500 flex-shrink-0" />
-          <span className="text-xs font-semibold text-teal-700 dark:text-teal-400 uppercase tracking-wide">
+          <span className="h-4 w-1.5 flex-shrink-0 rounded-full bg-teal-500" />
+          <span className="text-xs font-semibold tracking-wide text-teal-700 uppercase dark:text-teal-400">
             ESPP Calculator
           </span>
         </div>
@@ -66,19 +66,19 @@ export function EsppCalculator({ onApply, onDismiss }: EsppCalculatorProps) {
       {/* Field source guide */}
       <div className="text-caption text-faint grid grid-cols-2 gap-x-4 gap-y-0.5 border-t border-teal-500/20 pt-2">
         <span>
-          <span className="font-medium text-muted">Amount Withheld</span> —
+          <span className="text-muted font-medium">Amount Withheld</span> —
           purchase confirmation
         </span>
         <span>
-          <span className="font-medium text-muted">Market Value</span> —
+          <span className="text-muted font-medium">Market Value</span> —
           purchase confirmation
         </span>
         <span>
-          <span className="font-medium text-muted">Gross Proceeds</span> — sale
+          <span className="text-muted font-medium">Gross Proceeds</span> — sale
           trade confirmation
         </span>
         <span>
-          <span className="font-medium text-muted">Commission</span> — sale
+          <span className="text-muted font-medium">Commission</span> — sale
           trade confirmation
         </span>
       </div>
@@ -100,14 +100,14 @@ export function EsppCalculator({ onApply, onDismiss }: EsppCalculatorProps) {
       <button
         type="button"
         onClick={addPeriod}
-        className="text-xs text-teal-600 hover:text-teal-800 font-medium"
+        className="text-xs font-medium text-teal-600 hover:text-teal-800"
       >
         + Add purchase period
       </button>
 
       {/* YTD Summary */}
-      <div className="border-t border-teal-500/20 pt-2 space-y-1">
-        <p className="text-caption font-semibold text-muted uppercase tracking-wide">
+      <div className="space-y-1 border-t border-teal-500/20 pt-2">
+        <p className="text-caption text-muted font-semibold tracking-wide uppercase">
           YTD Summary
         </p>
         <div className="grid grid-cols-3 gap-x-4 gap-y-1 text-xs">
@@ -145,7 +145,7 @@ export function EsppCalculator({ onApply, onDismiss }: EsppCalculatorProps) {
         <button
           type="button"
           onClick={() => onApply(summary)}
-          className="px-3 py-1 text-xs font-medium text-white bg-teal-600 hover:bg-teal-700 rounded"
+          className="rounded bg-teal-600 px-3 py-1 text-xs font-medium text-white hover:bg-teal-700"
         >
           Apply to form
         </button>
@@ -170,7 +170,7 @@ function PeriodInputRow({
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between">
-        <span className="text-caption font-semibold text-muted">{label}</span>
+        <span className="text-caption text-muted font-semibold">{label}</span>
         {canRemove && (
           <button
             type="button"
@@ -230,20 +230,20 @@ function EsppField({
 }) {
   return (
     <div>
-      <label className="block text-caption text-muted mb-0.5">{label}</label>
-      <div className="flex items-center border border-default rounded focus-within:ring-1 focus-within:ring-teal-500">
-        <span className="pl-1.5 text-caption text-muted select-none">$</span>
+      <label className="text-caption text-muted mb-0.5 block">{label}</label>
+      <div className="border-default flex items-center rounded border focus-within:ring-1 focus-within:ring-teal-500">
+        <span className="text-caption text-muted pl-1.5 select-none">$</span>
         <input
           type="number"
           step="0.01"
           min="0"
           defaultValue={value === 0 ? "" : value}
           onChange={(e) => onChange(e.target.value)}
-          className="flex-1 min-w-0 bg-transparent px-1 py-0.5 text-label text-right text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1 focus-visible:ring-offset-surface-primary rounded"
+          className="text-label text-primary focus-visible:ring-offset-surface-primary min-w-0 flex-1 rounded bg-transparent px-1 py-0.5 text-right focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1"
         />
       </div>
       {hint && (
-        <div className="text-micro text-teal-600 text-right mt-0.5">{hint}</div>
+        <div className="text-micro mt-0.5 text-right text-teal-600">{hint}</div>
       )}
     </div>
   );

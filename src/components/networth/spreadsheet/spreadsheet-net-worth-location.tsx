@@ -71,11 +71,11 @@ export function SpreadsheetNetWorthLocation({
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b">
-              <th className="text-left py-1.5 pr-2 text-muted font-medium" />
-              <th className="text-right py-1.5 px-2 text-muted font-medium w-20">
+              <th className="text-muted py-1.5 pr-2 text-left font-medium" />
+              <th className="text-muted w-20 px-2 py-1.5 text-right font-medium">
                 {yearA.year}
               </th>
-              <th className="text-right py-1.5 pl-2 text-muted font-medium w-20">
+              <th className="text-muted w-20 py-1.5 pl-2 text-right font-medium">
                 {yearB.year}
               </th>
             </tr>
@@ -92,17 +92,17 @@ export function SpreadsheetNetWorthLocation({
               return (
                 <tr
                   key={row.label}
-                  className={`border-b border-subtle ${index % 2 === 0 ? "bg-surface-sunken/50" : ""}`}
+                  className={`border-subtle border-b ${index % 2 === 0 ? "bg-surface-sunken/50" : ""}`}
                 >
-                  <td className="py-1.5 pr-2 text-secondary font-medium">
+                  <td className="text-secondary py-1.5 pr-2 font-medium">
                     {row.label}
                   </td>
-                  <td className="text-right py-1.5 px-2">
+                  <td className="px-2 py-1.5 text-right">
                     {row.format === "currency"
                       ? formatCurrency(valA)
                       : formatPercent(pctA)}
                   </td>
-                  <td className="text-right py-1.5 pl-2">
+                  <td className="py-1.5 pl-2 text-right">
                     {row.format === "currency"
                       ? formatCurrency(valB)
                       : formatPercent(pctB)}

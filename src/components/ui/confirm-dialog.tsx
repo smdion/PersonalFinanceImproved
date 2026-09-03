@@ -238,17 +238,17 @@ export function ConfirmDialog() {
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="confirm-dialog-message"
-        className={`bg-surface-primary rounded-lg shadow-xl border p-5 w-full mx-4 ${
+        className={`bg-surface-primary mx-4 w-full rounded-lg border p-5 shadow-xl ${
           state.mode === "confirmDiff" ? "max-w-md" : "max-w-sm"
         }`}
       >
-        <p id="confirm-dialog-message" className="text-sm text-secondary mb-4">
+        <p id="confirm-dialog-message" className="text-secondary mb-4 text-sm">
           {state.message}
         </p>
 
         {state.mode === "confirmDiff" && (
-          <div className="text-caption text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2 mb-4 max-h-64 overflow-y-auto">
-            <ul className="list-disc list-inside space-y-0.5">
+          <div className="text-caption mb-4 max-h-64 overflow-y-auto rounded border border-amber-200 bg-amber-50 px-3 py-2 text-amber-700">
+            <ul className="list-inside list-disc space-y-0.5">
               {state.lines.map((line) => (
                 <li key={line}>{line}</li>
               ))}
@@ -268,12 +268,12 @@ export function ConfirmDialog() {
                 handleConfirm();
               }
             }}
-            className="w-full mb-4 px-3 py-2 text-sm border border-strong rounded-md bg-surface-primary text-primary focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="border-strong bg-surface-primary text-primary mb-4 w-full rounded-md border px-3 py-2 text-sm focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none"
           />
         )}
 
         {state.mode === "promptWithSelect" && (
-          <div className="space-y-3 mb-4">
+          <div className="mb-4 space-y-3">
             <input
               ref={inputRef}
               type="text"
@@ -284,16 +284,16 @@ export function ConfirmDialog() {
                   handleConfirm();
                 }
               }}
-              className="w-full px-3 py-2 text-sm border border-strong rounded-md bg-surface-primary text-primary focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="border-strong bg-surface-primary text-primary w-full rounded-md border px-3 py-2 text-sm focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none"
             />
             <div>
-              <label className="block text-caption text-muted mb-1">
+              <label className="text-caption text-muted mb-1 block">
                 {state.selectLabel}
               </label>
               <select
                 ref={selectRef}
                 defaultValue={state.defaultSelectValue ?? ""}
-                className="w-full px-3 py-2 text-sm border border-strong rounded-md bg-surface-primary text-primary focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="border-strong bg-surface-primary text-primary w-full rounded-md border px-3 py-2 text-sm focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none"
               >
                 <option value="">None</option>
                 {state.selectOptions.map((opt) => (
@@ -309,14 +309,14 @@ export function ConfirmDialog() {
         <div className="flex justify-end gap-2">
           <button
             onClick={handleCancel}
-            className="px-3 py-1.5 text-sm text-muted hover:bg-surface-elevated rounded transition-colors"
+            className="text-muted hover:bg-surface-elevated rounded px-3 py-1.5 text-sm transition-colors"
           >
             Cancel
           </button>
           <button
             ref={actionRef}
             onClick={handleConfirm}
-            className={`px-3 py-1.5 text-sm rounded transition-colors ${
+            className={`rounded px-3 py-1.5 text-sm transition-colors ${
               state.mode === "confirm"
                 ? "bg-red-600 text-white hover:bg-red-700"
                 : state.mode === "confirmDiff"

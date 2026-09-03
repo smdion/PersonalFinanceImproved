@@ -65,7 +65,7 @@ export function ReportRiskBandChart({
       viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
       role="img"
       aria-label="Portfolio balance range across simulated market conditions, 10th to 90th percentile, with median"
-      className="w-full h-auto"
+      className="h-auto w-full"
     >
       {/* Zero line */}
       <line

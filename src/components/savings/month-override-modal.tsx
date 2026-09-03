@@ -222,18 +222,18 @@ export function MonthOverrideModal({
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/60 z-40" onClick={onClose} />
+      <div className="fixed inset-0 z-40 bg-black/60" onClick={onClose} />
 
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="bg-surface-primary border rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+        <div className="bg-surface-primary flex max-h-[90vh] w-full max-w-lg flex-col rounded-xl border shadow-2xl">
           {/* Header */}
-          <div className="flex items-center justify-between px-5 py-4 border-b">
+          <div className="flex items-center justify-between border-b px-5 py-4">
             <div>
-              <h2 className="text-base font-semibold text-primary">
+              <h2 className="text-primary text-base font-semibold">
                 Edit Month &mdash; {monthLabel}
               </h2>
-              <p className="text-xs text-muted mt-0.5">
+              <p className="text-muted mt-0.5 text-xs">
                 Distribute the savings pool across funds. Allocations can be
                 less than the pool — any unallocated amount is treated as going
                 elsewhere.
@@ -241,7 +241,7 @@ export function MonthOverrideModal({
             </div>
             <button
               onClick={onClose}
-              className="text-faint hover:text-secondary text-xl px-2 -mr-2"
+              className="text-faint hover:text-secondary -mr-2 px-2 text-xl"
               title="Close"
             >
               &times;
@@ -249,7 +249,7 @@ export function MonthOverrideModal({
           </div>
 
           {/* Body — scrollable */}
-          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+          <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
             <PoolDistributionEditor
               pool={localPool}
               funds={visibleFunds}
@@ -263,7 +263,7 @@ export function MonthOverrideModal({
               <div>
                 <button
                   onClick={() => setShowAddFunds((v) => !v)}
-                  className="text-xs text-muted hover:text-secondary transition-colors flex items-center gap-1"
+                  className="text-muted hover:text-secondary flex items-center gap-1 text-xs transition-colors"
                 >
                   <span>{showAddFunds ? "▾" : "▸"}</span>
                   <span>
@@ -277,9 +277,9 @@ export function MonthOverrideModal({
                     {hiddenFunds.map((f) => (
                       <div
                         key={f.goalId}
-                        className="flex items-center justify-between rounded-lg border border-dashed border-strong px-3 py-2"
+                        className="border-strong flex items-center justify-between rounded-lg border border-dashed px-3 py-2"
                       >
-                        <span className="text-sm text-muted">{f.name}</span>
+                        <span className="text-muted text-sm">{f.name}</span>
                         <button
                           onClick={() => {
                             setVisibleFundIds(
@@ -287,7 +287,7 @@ export function MonthOverrideModal({
                             );
                             setShowAddFunds(false);
                           }}
-                          className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                          className="text-xs font-medium text-blue-600 hover:text-blue-700"
                         >
                           + Add
                         </button>
@@ -300,12 +300,12 @@ export function MonthOverrideModal({
           </div>
 
           {/* Footer */}
-          <div className="border-t px-5 py-3 flex flex-col gap-2">
+          <div className="flex flex-col gap-2 border-t px-5 py-3">
             {/* Under-allocation confirmation panel */}
             {(pendingApply || pendingFillForward) && (
-              <div className="rounded-lg bg-surface-elevated border-l-2 border-l-amber-500 border border-strong px-3 py-2.5 flex flex-col gap-2">
-                <p className="text-xs text-secondary">
-                  <span className="text-amber-400 font-semibold">
+              <div className="bg-surface-elevated border-strong flex flex-col gap-2 rounded-lg border border-l-2 border-l-amber-500 px-3 py-2.5">
+                <p className="text-secondary text-xs">
+                  <span className="font-semibold text-amber-400">
                     {formatCurrency(localPool - total)}
                   </span>{" "}
                   of the {formatCurrency(localPool)}/mo pool is unallocated.{" "}
@@ -319,13 +319,13 @@ export function MonthOverrideModal({
                       setPendingApply(false);
                       setPendingFillForward(false);
                     }}
-                    className="px-3 py-1.5 text-xs border border-strong text-muted rounded-lg hover:bg-surface-sunken"
+                    className="border-strong text-muted hover:bg-surface-sunken rounded-lg border px-3 py-1.5 text-xs"
                   >
                     Go back
                   </button>
                   <button
                     onClick={pendingFillForward ? doFillForward : doApply}
-                    className="px-3 py-1.5 text-xs bg-amber-500 text-black font-medium rounded-lg hover:bg-amber-400"
+                    className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-medium text-black hover:bg-amber-400"
                   >
                     {pendingFillForward
                       ? "Fill forward anyway"
@@ -340,7 +340,7 @@ export function MonthOverrideModal({
               <button
                 onClick={handleReset}
                 disabled={!thisMonthHasOverrides}
-                className="text-xs text-muted hover:text-red-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                className="text-muted text-xs transition-colors hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-30"
                 title="Remove all overrides for this month"
               >
                 Reset this month
@@ -348,7 +348,7 @@ export function MonthOverrideModal({
               <button
                 onClick={handleResetForward}
                 disabled={!hasOverridesFromHere}
-                className="text-xs text-muted hover:text-red-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                className="text-muted text-xs transition-colors hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-30"
                 title="Remove all overrides from this month to the end of projections"
               >
                 Reset this month forward
@@ -358,14 +358,14 @@ export function MonthOverrideModal({
             <div className="flex items-center justify-end gap-2">
               <button
                 onClick={onClose}
-                className="px-3 py-1.5 text-xs border border-strong text-muted rounded-lg hover:bg-surface-sunken"
+                className="border-strong text-muted hover:bg-surface-sunken rounded-lg border px-3 py-1.5 text-xs"
               >
                 Cancel
               </button>
               <button
                 onClick={handleFillForward}
                 disabled={isOverAllocated || !hasChanges}
-                className="px-3 py-1.5 text-xs bg-surface-strong text-secondary rounded-lg hover:bg-surface-strong disabled:opacity-40 disabled:cursor-not-allowed"
+                className="bg-surface-strong text-secondary hover:bg-surface-strong rounded-lg px-3 py-1.5 text-xs disabled:cursor-not-allowed disabled:opacity-40"
                 title="Apply this distribution from this month to the end of projections"
               >
                 Fill forward
@@ -373,7 +373,7 @@ export function MonthOverrideModal({
               <button
                 onClick={handleApply}
                 disabled={isOverAllocated || !hasChanges}
-                className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Apply this month
               </button>

@@ -83,9 +83,9 @@ export function SavingsSection({
   if (savings.matches.length === 0) return null;
 
   return (
-    <details className="border border-subtle rounded-lg">
-      <summary className="px-3 py-2.5 cursor-pointer select-none flex items-center justify-between">
-        <span className="text-xs font-medium text-muted">
+    <details className="border-subtle rounded-lg border">
+      <summary className="flex cursor-pointer items-center justify-between px-3 py-2.5 select-none">
+        <span className="text-muted text-xs font-medium">
           Sinking Fund Matching
         </span>
         <SectionSummaryRow>
@@ -113,13 +113,13 @@ export function SavingsSection({
           )}
         </SectionSummaryRow>
       </summary>
-      <div className="px-3 pb-3 space-y-2">
+      <div className="space-y-2 px-3 pb-3">
         {(savings.summary.suggested > 0 ||
           Object.values(savingsOverrides).some(Boolean)) && (
           <button
             onClick={applyAllSavingsMatches}
             disabled={linkSavingsMut.isPending}
-            className="w-full px-2 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+            className="w-full rounded bg-blue-600 px-2 py-1.5 text-xs text-white hover:bg-blue-700 disabled:opacity-50"
           >
             {linkSavingsMut.isPending
               ? "Linking..."
@@ -130,16 +130,16 @@ export function SavingsSection({
         <div className="space-y-0.5">
           {savings.matches.map((m) => (
             <React.Fragment key={m.goalId}>
-              <div className="flex items-center gap-1.5 text-xs min-h-[24px]">
+              <div className="flex min-h-[24px] items-center gap-1.5 text-xs">
                 <StatusBadge status={m.status} />
-                <span className="text-secondary truncate min-w-[80px] max-w-[120px]">
+                <span className="text-secondary max-w-[120px] min-w-[80px] truncate">
                   {m.goalName}
                 </span>
                 <span className="text-faint">&rarr;</span>
 
                 {m.status === "linked" && (
                   <>
-                    <span className="text-muted truncate flex-1">
+                    <span className="text-muted flex-1 truncate">
                       {m.apiCategoryName}
                     </span>
                     <Badge
@@ -159,7 +159,7 @@ export function SavingsSection({
                             })
                           }
                           disabled={renameSavingsToApiMut.isPending}
-                          className="text-caption px-1 py-0.5 bg-amber-50 text-amber-600 rounded hover:bg-amber-100 whitespace-nowrap disabled:opacity-50"
+                          className="text-caption rounded bg-amber-50 px-1 py-0.5 whitespace-nowrap text-amber-600 hover:bg-amber-100 disabled:opacity-50"
                           title={`Rename Ledgr "${m.goalName}" to "${m.apiCategoryName}"`}
                         >
                           Use API
@@ -172,7 +172,7 @@ export function SavingsSection({
                             })
                           }
                           disabled={renameSavingsApiNameMut.isPending}
-                          className="text-caption px-1 py-0.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 whitespace-nowrap disabled:opacity-50"
+                          className="text-caption rounded bg-blue-50 px-1 py-0.5 whitespace-nowrap text-blue-600 hover:bg-blue-100 disabled:opacity-50"
                           title={`Keep Ledgr name "${m.goalName}"`}
                         >
                           Keep
@@ -184,7 +184,7 @@ export function SavingsSection({
                         unlinkSavingsMut.mutate({ goalId: m.goalId, service })
                       }
                       disabled={unlinkSavingsMut.isPending}
-                      className="text-red-400 hover:text-red-600 text-caption whitespace-nowrap"
+                      className="text-caption whitespace-nowrap text-red-400 hover:text-red-600"
                       title="Unlink"
                     >
                       &times;
@@ -194,7 +194,7 @@ export function SavingsSection({
 
                 {m.status === "suggested" && (
                   <>
-                    <span className="text-yellow-700 truncate flex-1">
+                    <span className="flex-1 truncate text-yellow-700">
                       {m.apiCategoryName}
                     </span>
                     <button
@@ -202,7 +202,7 @@ export function SavingsSection({
                         applySavingsLink(m.goalId, m.apiCategoryId!)
                       }
                       disabled={linkSavingsMut.isPending}
-                      className="text-caption text-blue-500 hover:text-blue-700 whitespace-nowrap"
+                      className="text-caption whitespace-nowrap text-blue-500 hover:text-blue-700"
                     >
                       Link
                     </button>
@@ -213,7 +213,7 @@ export function SavingsSection({
                   <div className="flex-1">
                     {m.status === "orphaned" && m.apiCategoryName && (
                       <span
-                        className="text-red-600 text-caption italic mr-1"
+                        className="text-caption mr-1 text-red-600 italic"
                         title={`Was linked to "${m.apiCategoryName}" (id ${m.apiCategoryId}), which no longer exists in ${allApiCats.length > 0 ? "the connected budget" : "the API"}`}
                       >
                         was &ldquo;{m.apiCategoryName}&rdquo; —
@@ -233,18 +233,18 @@ export function SavingsSection({
                 )}
 
                 {m.apiBalance != null && (
-                  <span className="text-faint tabular-nums whitespace-nowrap text-caption">
+                  <span className="text-faint text-caption whitespace-nowrap tabular-nums">
                     {formatCurrency(m.apiBalance)}
                   </span>
                 )}
               </div>
               {/* Reimbursement category link for e-fund goal */}
               {m.isEmergencyFund && m.status === "linked" && (
-                <div className="flex items-center gap-1.5 text-xs ml-4 min-h-[24px]">
+                <div className="ml-4 flex min-h-[24px] items-center gap-1.5 text-xs">
                   <span className="text-faint text-caption">
                     ↳ Reimbursement category:
                   </span>
-                  <div className="flex-1 max-w-[200px]">
+                  <div className="max-w-[200px] flex-1">
                     <ApiCategorySelect
                       value={m.reimbursementApiCategoryId ?? ""}
                       options={allApiCats}
@@ -267,7 +267,7 @@ export function SavingsSection({
                         })
                       }
                       disabled={linkReimbursementMut.isPending}
-                      className="text-red-400 hover:text-red-600 text-caption"
+                      className="text-caption text-red-400 hover:text-red-600"
                       title="Unlink reimbursement category"
                     >
                       &times;

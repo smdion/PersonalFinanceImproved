@@ -100,7 +100,7 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
 
   const tooltipContent = (
     <div className="text-label space-y-1">
-      <div className="font-medium text-slate-300 uppercase tracking-wider text-caption mb-1">
+      <div className="text-caption mb-1 font-medium tracking-wider text-slate-300 uppercase">
         Data Updated
       </div>
       {data.balanceDate && (
@@ -133,7 +133,7 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
             SimpleFIN
             {simplefinHasError && (
               <span
-                className="text-amber-400 ml-1"
+                className="ml-1 text-amber-400"
                 title={simplefinStatus.lastError ?? undefined}
               >
                 ⚠
@@ -144,7 +144,7 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
         </div>
       )}
       {isSyncing && (
-        <div className="pt-1 text-caption text-slate-500 text-center">
+        <div className="text-caption pt-1 text-center text-slate-500">
           Syncing…
         </div>
       )}
@@ -156,17 +156,17 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
       <TooltipPrimitive.Root delayDuration={300}>
         <TooltipPrimitive.Trigger asChild>
           <button
-            className="relative w-full flex items-center justify-center p-2 text-faint hover:text-primary transition-colors disabled:opacity-50"
+            className="text-faint hover:text-primary relative flex w-full items-center justify-center p-2 transition-colors disabled:opacity-50"
             onClick={handleSync}
             disabled={isSyncing}
             title={canSync ? "Sync data" : "Data freshness"}
           >
             <RefreshCw
-              className={`w-4 h-4 ${isSyncing ? "animate-spin" : ""}`}
+              className={`h-4 w-4 ${isSyncing ? "animate-spin" : ""}`}
             />
             {simplefinHasError && (
               <span
-                className="absolute top-1 right-1 text-amber-400 text-caption leading-none"
+                className="text-caption absolute top-1 right-1 leading-none text-amber-400"
                 aria-label="Sync error"
               >
                 ⚠
@@ -179,7 +179,7 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
             side="right"
             align="center"
             sideOffset={8}
-            className="z-[9999] rounded-lg bg-slate-900 dark:bg-slate-700 px-3.5 py-2.5 text-slate-100 shadow-xl animate-in fade-in-0 zoom-in-95"
+            className="animate-in fade-in-0 zoom-in-95 z-[9999] rounded-lg bg-slate-900 px-3.5 py-2.5 text-slate-100 shadow-xl dark:bg-slate-700"
           >
             {tooltipContent}
             <TooltipPrimitive.Arrow className="fill-slate-900 dark:fill-slate-700" />
@@ -193,13 +193,13 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
     <TooltipPrimitive.Root delayDuration={300}>
       <TooltipPrimitive.Trigger asChild>
         <button
-          className="w-full flex items-center gap-3 px-3 py-2 rounded text-sm text-faint hover:text-primary hover:bg-surface-elevated transition-colors min-h-[44px] disabled:opacity-50"
+          className="text-faint hover:text-primary hover:bg-surface-elevated flex min-h-[44px] w-full items-center gap-3 rounded px-3 py-2 text-sm transition-colors disabled:opacity-50"
           onClick={handleSync}
           disabled={isSyncing}
           title={canSync ? "Sync data" : "Data freshness"}
         >
           <RefreshCw
-            className={`w-4 h-4 shrink-0 ${isSyncing ? "animate-spin" : ""}`}
+            className={`h-4 w-4 shrink-0 ${isSyncing ? "animate-spin" : ""}`}
           />
           <span className="text-label">
             Data{oldestLabel ? `: ${oldestLabel}` : ""}
@@ -216,7 +216,7 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
           side="right"
           align="center"
           sideOffset={8}
-          className="z-[9999] rounded-lg bg-slate-900 dark:bg-slate-700 px-3.5 py-2.5 text-slate-100 shadow-xl animate-in fade-in-0 zoom-in-95"
+          className="animate-in fade-in-0 zoom-in-95 z-[9999] rounded-lg bg-slate-900 px-3.5 py-2.5 text-slate-100 shadow-xl dark:bg-slate-700"
         >
           {tooltipContent}
           <TooltipPrimitive.Arrow className="fill-slate-900 dark:fill-slate-700" />

@@ -20,7 +20,7 @@ export function StrategyGuideButton({ className }: { className?: string }) {
         onClick={() => setOpen(true)}
         className={
           className ??
-          "text-label text-sky-400 hover:text-sky-300 border border-sky-400/30 hover:border-sky-400/60 rounded px-2 py-0.5 whitespace-nowrap transition-colors"
+          "text-label rounded border border-sky-400/30 px-2 py-0.5 whitespace-nowrap text-sky-400 transition-colors hover:border-sky-400/60 hover:text-sky-300"
         }
       >
         Strategy Guide →
@@ -52,7 +52,7 @@ export function StrategyGuidePanel({
       onClose={onClose}
       title="Withdrawal Strategy Guide"
     >
-      <p className="text-secondary text-sm mb-6">
+      <p className="text-secondary mb-6 text-sm">
         Each strategy makes a different tradeoff between income stability,
         portfolio preservation, and spending flexibility. There is no single
         best choice — it depends on your priorities.
@@ -70,25 +70,25 @@ export function StrategyGuidePanel({
               key={key}
               className={`rounded-lg border p-4 ${isActive ? "border-blue-500/50 bg-blue-900/10" : "border-default"}`}
             >
-              <div className="flex items-center gap-2 mb-1.5">
-                <h3 className="text-sm font-semibold text-primary">
+              <div className="mb-1.5 flex items-center gap-2">
+                <h3 className="text-primary text-sm font-semibold">
                   {config.label}
                 </h3>
                 {isActive && (
-                  <span className="text-micro text-blue-400 bg-blue-900/40 px-1.5 py-0.5 rounded">
+                  <span className="text-micro rounded bg-blue-900/40 px-1.5 py-0.5 text-blue-400">
                     ACTIVE
                   </span>
                 )}
               </div>
-              <p className="text-xs text-secondary mb-3">
+              <p className="text-secondary mb-3 text-xs">
                 {config.description}
               </p>
 
-              <p className="text-xs text-faint mb-2">{guide.how}</p>
+              <p className="text-faint mb-2 text-xs">{guide.how}</p>
 
-              <div className="grid grid-cols-2 gap-3 mb-3">
+              <div className="mb-3 grid grid-cols-2 gap-3">
                 <div>
-                  <h4 className="text-caption font-semibold text-green-400 uppercase tracking-wider mb-1">
+                  <h4 className="text-caption mb-1 font-semibold tracking-wider text-green-400 uppercase">
                     Strengths
                   </h4>
                   <ul className="space-y-0.5">
@@ -97,14 +97,14 @@ export function StrategyGuidePanel({
                         key={s}
                         className="text-label text-secondary flex gap-1"
                       >
-                        <span className="text-green-500 shrink-0">+</span>
+                        <span className="shrink-0 text-green-500">+</span>
                         {s}
                       </li>
                     ))}
                   </ul>
                 </div>
                 <div>
-                  <h4 className="text-caption font-semibold text-red-400 uppercase tracking-wider mb-1">
+                  <h4 className="text-caption mb-1 font-semibold tracking-wider text-red-400 uppercase">
                     Weaknesses
                   </h4>
                   <ul className="space-y-0.5">
@@ -113,7 +113,7 @@ export function StrategyGuidePanel({
                         key={w}
                         className="text-label text-secondary flex gap-1"
                       >
-                        <span className="text-red-500 shrink-0">-</span>
+                        <span className="shrink-0 text-red-500">-</span>
                         {w}
                       </li>
                     ))}
@@ -122,11 +122,11 @@ export function StrategyGuidePanel({
               </div>
 
               <p className="text-label text-faint">
-                <span className="font-medium text-secondary">Best for:</span>{" "}
+                <span className="text-secondary font-medium">Best for:</span>{" "}
                 {guide.bestFor}
               </p>
               <p className="text-label text-faint mt-1">
-                <span className="font-medium text-secondary">
+                <span className="text-secondary font-medium">
                   Stability note:
                 </span>{" "}
                 {guide.stabilityNote}
@@ -136,8 +136,8 @@ export function StrategyGuidePanel({
         })}
       </div>
 
-      <div className="mt-6 p-3 rounded-lg bg-surface-elevated text-xs text-faint">
-        <p className="font-medium text-secondary mb-1">
+      <div className="bg-surface-elevated text-faint mt-6 rounded-lg p-3 text-xs">
+        <p className="text-secondary mb-1 font-medium">
           About the Stability metric
         </p>
         <p>

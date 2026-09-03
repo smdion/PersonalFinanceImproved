@@ -262,12 +262,12 @@ export function BrokerageContent() {
       />
 
       {hasContextOverrides && (
-        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-subtle bg-surface-secondary px-4 py-2 text-xs text-muted">
-          <span className="font-medium text-secondary">Projection basis:</span>
+        <div className="border-subtle bg-surface-secondary text-muted mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border px-4 py-2 text-xs">
+          <span className="text-secondary font-medium">Projection basis:</span>
           {activeProfileName != null && (
             <span>
               Contribution profile:{" "}
-              <span className="font-medium text-primary">
+              <span className="text-primary font-medium">
                 {activeProfileName}
               </span>
             </span>
@@ -275,7 +275,7 @@ export function BrokerageContent() {
           {salaryActiveFields.length > 0 && (
             <span>
               Salary overrides:{" "}
-              <span className="font-medium text-primary">
+              <span className="text-primary font-medium">
                 {salaryActiveFields.length} active
               </span>
             </span>
@@ -296,7 +296,7 @@ export function BrokerageContent() {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
+      <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Funding Sources */}
         <Card title="Funding Sources" className="lg:col-span-1">
           <FundingSources
@@ -326,7 +326,7 @@ export function BrokerageContent() {
       {/* Goal Funding Status */}
       {brokerageResult.goals.length > 0 && (
         <Card title="Goal Funding Status" className="mt-6">
-          <p className="text-xs text-muted mb-2">
+          <p className="text-muted mb-2 text-xs">
             Set a target amount and year — the engine withdraws from brokerage
             when the target year arrives and shows whether you are on track.
             <HelpTip text="Goals are automatic: the projection engine deducts the target amount from your brokerage balance in the target year. If the balance is insufficient, the shortfall is shown." />
@@ -337,10 +337,10 @@ export function BrokerageContent() {
 
       {/* Manage Goals (collapsible) */}
       {canEdit && (
-        <div className="border rounded-lg p-4 mt-6">
+        <div className="mt-6 rounded-lg border p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <h4 className="text-label font-semibold text-muted uppercase tracking-wider">
+              <h4 className="text-label text-muted font-semibold tracking-wider uppercase">
                 Manage Goals
               </h4>
               <HelpTip text="Create, edit, or delete brokerage goals. Each goal defines a target amount and year — the engine automatically withdraws from your brokerage in that year." />
@@ -348,7 +348,7 @@ export function BrokerageContent() {
             <button
               type="button"
               onClick={() => setIsGoalsOpen(!isGoalsOpen)}
-              className={`text-xs font-medium px-3 py-1 rounded transition-colors ${
+              className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
                 isGoalsOpen
                   ? "bg-surface-strong text-muted hover:text-primary"
                   : "bg-indigo-600 text-white hover:bg-indigo-700"
@@ -368,13 +368,13 @@ export function BrokerageContent() {
       {/* Planned Events */}
       {canEdit && (
         <Card title="Planned Events" className="mt-6">
-          <p className="text-xs text-muted mb-2">
+          <p className="text-muted mb-2 text-xs">
             One-time injections or withdrawals that modify the projection
             (bonus, inheritance, down payment).
             <HelpTip text="Unlike goals (which set a target and let the engine decide if it's funded), planned events directly add or remove dollars in a specific year." />
           </p>
           {brokerageLumpSums.length > 0 && (
-            <div className="space-y-1 mb-3">
+            <div className="mb-3 space-y-1">
               {brokerageLumpSums.map((ls) => (
                 <LumpSumBadge
                   key={ls.id}
@@ -406,8 +406,8 @@ export function BrokerageContent() {
 
       {/* Year-by-Year Projection */}
       <Card title="Year-by-Year Projection" className="mt-6">
-        <div className="flex items-center justify-end mb-3">
-          <div className="inline-flex rounded-md border bg-surface-primary p-0.5">
+        <div className="mb-3 flex items-center justify-end">
+          <div className="bg-surface-primary inline-flex rounded-md border p-0.5">
             {(
               [
                 ["nominal", "Future $"],
@@ -418,7 +418,7 @@ export function BrokerageContent() {
                 key={key}
                 type="button"
                 onClick={() => setDollarMode(key)}
-                className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
                   dollarMode === key
                     ? "bg-indigo-600 text-white shadow-sm"
                     : "text-muted hover:text-secondary"
@@ -438,7 +438,7 @@ export function BrokerageContent() {
 
       {/* Warnings */}
       {brokerageResult.warnings.length > 0 && (
-        <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-3">
+        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
           {brokerageResult.warnings.map((w) => (
             <p key={w} className="text-xs text-amber-700">
               {w}
@@ -488,21 +488,21 @@ function CostBasisEditor({
       {accounts.map((a) => (
         <div
           key={a.id}
-          className="flex items-center justify-between gap-3 border-b border-subtle pb-2 last:border-0 last:pb-0"
+          className="border-subtle flex items-center justify-between gap-3 border-b pb-2 last:border-0 last:pb-0"
         >
           <span className="text-sm font-medium">{accountDisplayName(a)}</span>
           {canEdit ? (
             <div className="flex items-center gap-2">
               <input
                 type="number"
-                className="w-32 rounded border border-subtle bg-surface px-2 py-1 text-sm text-right"
+                className="border-subtle bg-surface w-32 rounded border px-2 py-1 text-right text-sm"
                 value={values[a.id] ?? ""}
                 onChange={(e) =>
                   setValues((prev) => ({ ...prev, [a.id]: e.target.value }))
                 }
               />
               <button
-                className="rounded bg-primary px-3 py-1 text-sm text-white"
+                className="bg-primary rounded px-3 py-1 text-sm text-white"
                 onClick={() => onSave(a.id, values[a.id] || "0")}
               >
                 Save
@@ -554,12 +554,12 @@ function FundingSources({
             {r.label}
             {r.help && <HelpTip text={r.help} />}
           </span>
-          <span className="font-medium text-primary">
+          <span className="text-primary font-medium">
             {formatCurrency(r.amount)}/yr
           </span>
         </div>
       ))}
-      <div className="flex justify-between items-center">
+      <div className="flex items-center justify-between">
         <span className="text-muted">
           Annual increase
           <HelpTip text="Additional fixed-dollar contribution added each year (e.g., $50/yr means year 1 adds $50, year 2 adds $100, etc.)" />
@@ -572,7 +572,7 @@ function FundingSources({
               min={0}
               step={10}
               defaultValue={ramp}
-              className="w-20 text-right border rounded px-1.5 py-0.5 text-sm"
+              className="w-20 rounded border px-1.5 py-0.5 text-right text-sm"
               onBlur={(e) => {
                 const value = parseFloat(e.target.value) || 0;
                 if (value !== ramp) onRampChange(value);
@@ -581,12 +581,12 @@ function FundingSources({
             <span className="text-faint text-xs">/yr</span>
           </span>
         ) : (
-          <span className="font-medium text-primary">
+          <span className="text-primary font-medium">
             {formatCurrency(ramp)}/yr
           </span>
         )}
       </div>
-      <div className="border-t pt-2 flex justify-between font-semibold">
+      <div className="flex justify-between border-t pt-2 font-semibold">
         <span className="text-secondary">Total inflow</span>
         <span className="text-primary">{formatCurrency(total)}/yr</span>
       </div>
@@ -634,7 +634,7 @@ function ByAccountSummary({
 }) {
   if (accounts.length === 0) {
     return (
-      <p className="text-sm text-faint">
+      <p className="text-faint text-sm">
         No portfolio-category contribution accounts configured.
       </p>
     );
@@ -668,21 +668,21 @@ function ByAccountSummary({
               </span>
             </div>
             {budgetLink && (
-              <p className="text-caption text-emerald-600 mt-0.5">
+              <p className="text-caption mt-0.5 text-emerald-600">
                 Linked to budget: {budgetLink.budgetItemName}
               </p>
             )}
             {apiInfo?.source === "api" && (
-              <p className="text-caption text-blue-600 mt-0.5">
+              <p className="text-caption mt-0.5 text-blue-600">
                 Balance from YNAB (snapshot:{" "}
                 {formatCurrency(apiInfo.snapshotBalance)})
               </p>
             )}
             {at.targetAnnual != null && at.targetAnnual > 0 && (
               <div className="mt-1">
-                <div className="w-full bg-surface-strong rounded-full h-2">
+                <div className="bg-surface-strong h-2 w-full rounded-full">
                   <div
-                    className="bg-emerald-500 h-2 rounded-full transition-all"
+                    className="h-2 rounded-full bg-emerald-500 transition-all"
                     style={{
                       width: `${Math.min(100, (at.totalContrib / at.targetAnnual) * 100)}%`,
                     }}
@@ -715,7 +715,7 @@ function GoalStatusTable({ goals }: { goals: BrokerageGoalStatus[] }) {
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="text-left text-xs text-faint uppercase border-b">
+          <tr className="text-faint border-b text-left text-xs uppercase">
             <th className="py-2 pr-4">Goal</th>
             <th className="py-2 pr-4 text-right">Target</th>
             <th className="py-2 pr-4 text-right">Year</th>
@@ -733,21 +733,21 @@ function GoalStatusTable({ goals }: { goals: BrokerageGoalStatus[] }) {
         </thead>
         <tbody>
           {goals.map((g) => (
-            <tr key={g.id} className="border-b border-subtle">
-              <td className="py-2 pr-4 font-medium text-secondary">{g.name}</td>
-              <td className="py-2 pr-4 text-right text-muted">
+            <tr key={g.id} className="border-subtle border-b">
+              <td className="text-secondary py-2 pr-4 font-medium">{g.name}</td>
+              <td className="text-muted py-2 pr-4 text-right">
                 {formatCurrency(g.targetAmount)}
               </td>
-              <td className="py-2 pr-4 text-right text-muted">
+              <td className="text-muted py-2 pr-4 text-right">
                 {g.targetYear}
               </td>
-              <td className="py-2 pr-4 text-right text-muted">
+              <td className="text-muted py-2 pr-4 text-right">
                 {formatCurrency(g.projectedBalance)}
               </td>
-              <td className="py-2 pr-4 text-right text-muted">
+              <td className="text-muted py-2 pr-4 text-right">
                 {formatCurrency(g.actualWithdrawal)}
               </td>
-              <td className="py-2 pr-4 text-right text-muted">
+              <td className="text-muted py-2 pr-4 text-right">
                 {formatCurrency(g.taxCost)}
               </td>
               <td className="py-2 text-center">
@@ -912,7 +912,7 @@ function YearByYearTable({
   deflate: (value: number, year: number) => number;
 }) {
   if (years.length === 0) {
-    return <p className="text-sm text-faint">No projection data.</p>;
+    return <p className="text-faint text-sm">No projection data.</p>;
   }
 
   // Currency formatting with optional deflation
@@ -922,8 +922,8 @@ function YearByYearTable({
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-xs">
-        <thead className="sticky top-0 bg-surface-primary z-10">
-          <tr className="text-left text-caption text-faint uppercase border-b">
+        <thead className="bg-surface-primary sticky top-0 z-10">
+          <tr className="text-caption text-faint border-b text-left uppercase">
             <th className="py-2 pr-3">Year</th>
             <th className="py-2 pr-3 text-right">
               Contribution
@@ -959,19 +959,19 @@ function YearByYearTable({
             return (
               <tr
                 key={yr.year}
-                className={`border-b border-subtle ${
+                className={`border-subtle border-b ${
                   hasWithdrawals ? "bg-amber-50/50" : ""
                 }`}
               >
-                <td className="py-1.5 pr-3 font-medium text-secondary">
+                <td className="text-secondary py-1.5 pr-3 font-medium">
                   {yr.year}
                   {yr.proRateFraction != null && (
-                    <span className="ml-1 text-micro text-faint">
+                    <span className="text-micro text-faint ml-1">
                       ({Math.round(yr.proRateFraction * 12)} months)
                     </span>
                   )}
                 </td>
-                <td className="py-1.5 pr-3 text-right text-muted">
+                <td className="text-muted py-1.5 pr-3 text-right">
                   {yr.contribution > 0 ? (
                     hasAccounts ? (
                       <Tooltip
@@ -1039,12 +1039,12 @@ function YearByYearTable({
                     "\u2014"
                   )}
                 </td>
-                <td className="py-1.5 pr-3 text-right text-muted">
+                <td className="text-muted py-1.5 pr-3 text-right">
                   {yr.totalTaxCost > 0
                     ? fmt(yr.totalTaxCost, yr.year)
                     : "\u2014"}
                 </td>
-                <td className="py-1.5 pr-3 text-right font-medium text-primary">
+                <td className="text-primary py-1.5 pr-3 text-right font-medium">
                   {hasAccounts ? (
                     <Tooltip
                       content={renderTooltip(balanceTooltip(yr, prevBalance))}

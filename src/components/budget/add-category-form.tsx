@@ -17,7 +17,7 @@ export function AddCategoryForm({ onCreateCategory }: AddCategoryFormProps) {
       <div className="mt-3">
         <button
           onClick={() => setShowForm(true)}
-          className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+          className="text-xs font-medium text-blue-600 hover:text-blue-800"
         >
           + New Category
         </button>
@@ -47,7 +47,7 @@ export function AddCategoryForm({ onCreateCategory }: AddCategoryFormProps) {
             setValidationError(null);
           }}
           placeholder="Category name..."
-          className={`border rounded px-2 py-1 text-xs ${validationError ? "border-red-400" : ""}`}
+          className={`rounded border px-2 py-1 text-xs ${validationError ? "border-red-400" : ""}`}
           autoFocus
           onKeyDown={(e) => {
             if (e.key === "Enter") {
@@ -61,7 +61,7 @@ export function AddCategoryForm({ onCreateCategory }: AddCategoryFormProps) {
         />
         <button
           onClick={handleSubmit}
-          className="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
+          className="rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700"
         >
           Create
         </button>

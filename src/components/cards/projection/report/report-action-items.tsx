@@ -15,9 +15,9 @@ export function ReportActionItemsSection({
   }
   return (
     <section className="mb-6" style={{ breakInside: "avoid" }}>
-      <h2 className="text-lg font-semibold mb-2">Recommendations</h2>
+      <h2 className="mb-2 text-lg font-semibold">Recommendations</h2>
       {actionItems.items.length > 0 ? (
-        <ol className="text-sm space-y-2 list-decimal list-inside">
+        <ol className="list-inside list-decimal space-y-2 text-sm">
           {actionItems.items.map((item) => (
             <li key={item.title}>
               <span className="font-medium">{item.title}.</span> {item.detail}
@@ -25,17 +25,17 @@ export function ReportActionItemsSection({
           ))}
         </ol>
       ) : (
-        <p className="text-sm text-muted">
+        <p className="text-muted text-sm">
           No specific recommendations — this plan looks solid based on the
           analysis above.
         </p>
       )}
       {actionItems.disclosures.length > 0 && (
         <div className="mt-3">
-          <p className="text-xs font-medium text-muted mb-1">
+          <p className="text-muted mb-1 text-xs font-medium">
             Additional notes from your projection
           </p>
-          <ul className="text-xs text-muted space-y-0.5 list-disc list-inside">
+          <ul className="text-muted list-inside list-disc space-y-0.5 text-xs">
             {actionItems.disclosures.map((d) => (
               <li key={d}>{d}</li>
             ))}

@@ -14,7 +14,7 @@ export function ReportHeader({
   return (
     <div className="mb-4 border-b pb-3">
       <h1 className="text-2xl font-semibold">Retirement Projection Report</h1>
-      <div className="mt-1 text-sm text-muted">
+      <div className="text-muted mt-1 text-sm">
         {peopleNames.length > 0 && <span>{peopleNames.join(" & ")} — </span>}
         Generated {formatDate(generatedAt, "long")}
       </div>
@@ -29,7 +29,7 @@ export function ReportHeader({
  *  predates that section and only covered the deterministic assumptions. */
 export function ReportFooter({ generatedAt }: { generatedAt: Date }) {
   return (
-    <div className="mt-6 border-t pt-3 text-xs text-faint space-y-1">
+    <div className="text-faint mt-6 space-y-1 border-t pt-3 text-xs">
       <p>
         This report is an estimate based on the assumptions listed above. It is
         not financial, tax, or legal advice.

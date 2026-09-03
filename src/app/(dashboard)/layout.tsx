@@ -86,16 +86,16 @@ export default async function DashboardLayout({
 
   if (dbError) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-surface-primary">
-        <div className="max-w-lg mx-4 p-8 rounded-2xl bg-surface-elevated border border-default shadow-xl text-center">
-          <div className="text-4xl mb-4">&#x26A0;</div>
-          <h1 className="text-2xl font-bold text-primary mb-3">
+      <div className="bg-surface-primary flex min-h-screen items-center justify-center">
+        <div className="bg-surface-elevated border-default mx-4 max-w-lg rounded-2xl border p-8 text-center shadow-xl">
+          <div className="mb-4 text-4xl">&#x26A0;</div>
+          <h1 className="text-primary mb-3 text-2xl font-bold">
             Database Unavailable
           </h1>
           <p className="text-muted mb-6">{dbError}</p>
           <Link
             href="/"
-            className="inline-block px-6 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors"
+            className="inline-block rounded-lg bg-blue-600 px-6 py-2 font-medium text-white transition-colors hover:bg-blue-700"
           >
             Retry
           </Link>
@@ -118,7 +118,7 @@ export default async function DashboardLayout({
     <>
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:z-[200] focus:top-2 focus:left-2 focus:bg-surface-primary focus:text-blue-700 focus:px-4 focus:py-2 focus:rounded focus:shadow-lg"
+        className="focus:bg-surface-primary sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[200] focus:rounded focus:px-4 focus:py-2 focus:text-blue-700 focus:shadow-lg"
       >
         Skip to content
       </a>

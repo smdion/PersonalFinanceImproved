@@ -46,7 +46,7 @@ export function renderLineItem(
           {item.label}
           {taxLabel}
         </span>
-        <span className={`tabular-nums shrink-0 ${colorCls}`}>
+        <span className={`shrink-0 tabular-nums ${colorCls}`}>
           {prefixStr}
           {formatCurrency(item.amount)}
           {item.percent != null && (
@@ -221,7 +221,7 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       {/* 3c. STRATEGY EVENT (UI/UX review, 2026-08-28 — see types.ts docblock) */}
       {d.strategyEvent && (
         <div
-          className="font-medium text-caption"
+          className="text-caption font-medium"
           style={{ color: d.strategyEvent.color }}
         >
           Strategy: {d.strategyEvent.text}
@@ -246,7 +246,7 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
                 <div key={`${ii}-${item.label}`}>
                   {showGroup && (
                     <div
-                      className={`text-caption uppercase tracking-wide ${tipColorClass.gray} mt-1.5 first:mt-0`}
+                      className={`text-caption tracking-wide uppercase ${tipColorClass.gray} mt-1.5 first:mt-0`}
                     >
                       {item.group}
                     </div>
@@ -321,7 +321,7 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
       )}
       {/* 11. YEAR CHANGE */}
       {d.yearChange && (
-        <div className="border-t border-white/10 pt-1 text-label font-medium">
+        <div className="text-label border-t border-white/10 pt-1 font-medium">
           Total: {formatCurrency(d.yearChange.total)} · Change:{" "}
           <span
             className={

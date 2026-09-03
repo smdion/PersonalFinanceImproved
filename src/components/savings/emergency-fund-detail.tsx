@@ -51,32 +51,32 @@ export function EmergencyFundDetail({
 
   return (
     <Card title="Emergency Fund Detail">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+      <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
         <div>
-          <p className="text-faint text-xs mb-1">
+          <p className="text-faint mb-1 text-xs">
             True Balance
             <HelpTip text="Current balance minus outstanding self-loans (money owed back to the fund)" />
           </p>
-          <p className="text-lg font-semibold text-primary">
+          <p className="text-primary text-lg font-semibold">
             {formatCurrency(efund.trueBalance)}
           </p>
         </div>
         <div>
-          <p className="text-faint text-xs mb-1">Months Covered</p>
-          <p className="text-lg font-semibold text-primary">
+          <p className="text-faint mb-1 text-xs">Months Covered</p>
+          <p className="text-primary text-lg font-semibold">
             {efund.monthsCovered !== null
               ? formatNumber(efund.monthsCovered, 1)
               : "N/A"}
           </p>
         </div>
         <div>
-          <p className="text-faint text-xs mb-1">Target Months</p>
+          <p className="text-faint mb-1 text-xs">Target Months</p>
           {onTargetMonthsChange ? (
             <input
               type="number"
               min={1}
               max={24}
-              className="w-16 text-lg font-semibold text-primary bg-transparent border-b focus:border-blue-500 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              className="text-primary w-16 [appearance:textfield] border-b bg-transparent text-lg font-semibold outline-none focus:border-blue-500 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
               value={efund.targetMonths}
               onChange={(e) => {
                 const v = parseInt(e.target.value, 10);
@@ -84,13 +84,13 @@ export function EmergencyFundDetail({
               }}
             />
           ) : (
-            <p className="text-lg font-semibold text-primary">
+            <p className="text-primary text-lg font-semibold">
               {efund.targetMonths}
             </p>
           )}
         </div>
         <div>
-          <p className="text-faint text-xs mb-1">
+          <p className="text-faint mb-1 text-xs">
             Still Needed
             <HelpTip text="How much more you need to save to reach your target months of coverage, after subtracting outstanding self-loan repayment from the target. Pending reimbursements are shown separately below for reference." />
           </p>
@@ -111,14 +111,14 @@ export function EmergencyFundDetail({
       {/* Progress bar */}
       {efund.targetAmount > 0 && (
         <div className="mt-4">
-          <div className="h-2.5 bg-surface-strong rounded-full overflow-hidden">
+          <div className="bg-surface-strong h-2.5 overflow-hidden rounded-full">
             <div
               className={`h-full rounded-full transition-all ${efund.progress >= 1 ? "bg-green-500" : "bg-blue-500"}`}
               style={{ width: `${Math.min(100, efund.progress * 100)}%` }}
             />
           </div>
-          <div className="flex items-center justify-between mt-1 text-xs text-muted">
-            <span className="tabular-nums font-semibold">
+          <div className="text-muted mt-1 flex items-center justify-between text-xs">
+            <span className="font-semibold tabular-nums">
               {formatPercent(efund.progress, 0)}
             </span>
             <span className="tabular-nums">
@@ -132,7 +132,7 @@ export function EmergencyFundDetail({
 
       {/* Monthly saving line */}
       {monthlyAllocation !== undefined && (
-        <div className="mt-3 flex items-center gap-2 text-xs border-t pt-3">
+        <div className="mt-3 flex items-center gap-2 border-t pt-3 text-xs">
           <span className="text-muted">Saving</span>
           <span className="font-bold text-green-600 tabular-nums">
             {formatCurrency(monthlyAllocation)}/mo
@@ -140,7 +140,7 @@ export function EmergencyFundDetail({
           {poolPct && <span className="text-faint">({poolPct}% of pool)</span>}
           {isApiSyncEnabled && (
             <span
-              className="text-blue-600/70 text-caption"
+              className="text-caption text-blue-600/70"
               title="Target balance pushed to YNAB"
             >
               → push
@@ -154,19 +154,19 @@ export function EmergencyFundDetail({
         <div className="mt-3 border-t pt-3">
           <button
             onClick={() => setShowReimbursements(!showReimbursements)}
-            className="flex items-center gap-2 text-xs text-muted hover:text-secondary"
+            className="text-muted hover:text-secondary flex items-center gap-2 text-xs"
           >
             <span className="text-caption">
               {showReimbursements ? "▾" : "▸"}
             </span>
             <span>Pending Reimbursements</span>
-            <span className="text-amber-600 font-medium">
+            <span className="font-medium text-amber-600">
               {formatCurrency(reimbursements.total)}
             </span>
           </button>
 
           {showReimbursements && (
-            <div className="mt-2 space-y-1.5 ml-4">
+            <div className="mt-2 ml-4 space-y-1.5">
               {reimbursements.items.map((item) => (
                 <div
                   key={item.description}
@@ -178,7 +178,7 @@ export function EmergencyFundDetail({
                   </span>
                 </div>
               ))}
-              <div className="border-t pt-1.5 flex justify-between text-xs text-faint">
+              <div className="text-faint flex justify-between border-t pt-1.5 text-xs">
                 <span>
                   Shown for reference — already reflected in balance
                   calculations via the linked {reimbursements.categoryName}{" "}
@@ -192,10 +192,10 @@ export function EmergencyFundDetail({
 
       {/* Budget tier selector for e-fund expenses */}
       {budgetTierLabels.length > 1 && (
-        <div className="mt-3 flex items-center gap-2 text-xs text-faint">
+        <div className="text-faint mt-3 flex items-center gap-2 text-xs">
           <span>Budget tier for essentials:</span>
           <select
-            className="border border-strong bg-surface-primary rounded px-1.5 py-0.5 text-xs text-secondary"
+            className="border-strong bg-surface-primary text-secondary rounded border px-1.5 py-0.5 text-xs"
             value={efundTierIndex}
             onChange={(e) => onTierChange(Number(e.target.value))}
           >

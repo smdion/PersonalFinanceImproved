@@ -129,25 +129,25 @@ export function WhatIfSection({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b">
-              <th className="text-left py-2 pr-4 text-muted font-medium">
+              <th className="text-muted py-2 pr-4 text-left font-medium">
                 Scenario
               </th>
-              <th className="text-right py-2 px-4 text-muted font-medium">
+              <th className="text-muted px-4 py-2 text-right font-medium">
                 Payoff Date
               </th>
-              <th className="text-right py-2 px-4 text-muted font-medium">
+              <th className="text-muted px-4 py-2 text-right font-medium">
                 Total Interest
               </th>
-              <th className="text-right py-2 px-4 text-muted font-medium">
+              <th className="text-muted px-4 py-2 text-right font-medium">
                 Interest Saved
               </th>
-              <th className="text-right py-2 px-4 text-muted font-medium">
+              <th className="text-muted px-4 py-2 text-right font-medium">
                 Months Saved
               </th>
-              <th className="text-center py-2 px-2 text-muted font-medium w-16">
+              <th className="text-muted w-16 px-2 py-2 text-center font-medium">
                 Order
               </th>
-              <th className="text-right py-2 pl-4 text-muted font-medium w-20" />
+              <th className="text-muted w-20 py-2 pl-4 text-right font-medium" />
             </tr>
           </thead>
           <tbody>
@@ -156,32 +156,32 @@ export function WhatIfSection({
                 ? whatIfScenarios.find((sc) => sc.id === s.scenarioId)
                 : whatIfScenarios.find((sc) => s.label.endsWith(sc.label));
               return (
-                <tr key={s.label} className="border-b border-subtle">
+                <tr key={s.label} className="border-subtle border-b">
                   <td className="py-2 pr-4 font-medium">{s.label}</td>
-                  <td className="text-right py-2 px-4">
+                  <td className="px-4 py-2 text-right">
                     {formatDate(s.payoffDate, "short")}
                   </td>
-                  <td className="text-right py-2 px-4">
+                  <td className="px-4 py-2 text-right">
                     {formatCurrency(s.totalInterest)}
                   </td>
-                  <td className="text-right py-2 px-4 text-green-700">
+                  <td className="px-4 py-2 text-right text-green-700">
                     {formatCurrency(s.interestSaved)}
                   </td>
-                  <td className="text-right py-2 px-4 text-green-700">
+                  <td className="px-4 py-2 text-right text-green-700">
                     {formatNumber(s.monthsSaved)}
                   </td>
-                  <td className="text-center py-2 px-2">
+                  <td className="px-2 py-2 text-center">
                     {scenarioRow &&
                       (() => {
                         const idx = whatIfScenarios.findIndex(
                           (sc) => sc.id === scenarioRow.id,
                         );
                         return (
-                          <div className="flex gap-0.5 justify-center">
+                          <div className="flex justify-center gap-0.5">
                             <button
                               onClick={() => handleSwap(idx, idx - 1)}
                               disabled={idx <= 0 || reorderMut.isPending}
-                              className="text-xs text-muted hover:text-secondary disabled:opacity-30 disabled:cursor-not-allowed px-1"
+                              className="text-muted hover:text-secondary px-1 text-xs disabled:cursor-not-allowed disabled:opacity-30"
                               title="Move up"
                             >
                               &#9650;
@@ -192,7 +192,7 @@ export function WhatIfSection({
                                 idx >= whatIfScenarios.length - 1 ||
                                 reorderMut.isPending
                               }
-                              className="text-xs text-muted hover:text-secondary disabled:opacity-30 disabled:cursor-not-allowed px-1"
+                              className="text-muted hover:text-secondary px-1 text-xs disabled:cursor-not-allowed disabled:opacity-30"
                               title="Move down"
                             >
                               &#9660;
@@ -201,9 +201,9 @@ export function WhatIfSection({
                         );
                       })()}
                   </td>
-                  <td className="text-right py-2 pl-4">
+                  <td className="py-2 pl-4 text-right">
                     {scenarioRow && (
-                      <div className="flex gap-1 justify-end">
+                      <div className="flex justify-end gap-1">
                         <button
                           onClick={() => startEdit(scenarioRow)}
                           className="text-xs text-blue-600 hover:text-blue-800"
@@ -235,22 +235,22 @@ export function WhatIfSection({
 
             {/* Inline add / edit form */}
             {(adding || editingId !== null) && (
-              <tr className="border-b border-subtle bg-surface-sunken">
+              <tr className="border-subtle bg-surface-sunken border-b">
                 <td className="py-2 pr-4" colSpan={3}>
-                  <div className="flex gap-2 flex-wrap">
+                  <div className="flex flex-wrap gap-2">
                     <input
                       type="text"
                       value={label}
                       onChange={(e) => setLabel(e.target.value)}
                       placeholder="Label (e.g. +$200/mo)"
-                      className="border rounded px-2 py-1 text-sm w-36"
+                      className="w-36 rounded border px-2 py-1 text-sm"
                     />
                     <input
                       type="number"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
                       placeholder="Extra $/mo"
-                      className="border rounded px-2 py-1 text-sm w-28"
+                      className="w-28 rounded border px-2 py-1 text-sm"
                       step="50"
                       min="0"
                     />
@@ -259,25 +259,25 @@ export function WhatIfSection({
                       value={oneTimeAmount}
                       onChange={(e) => setOneTimeAmount(e.target.value)}
                       placeholder="One-time $ (optional)"
-                      className="border rounded px-2 py-1 text-sm w-36"
+                      className="w-36 rounded border px-2 py-1 text-sm"
                       step="1000"
                       min="0"
                     />
                   </div>
                 </td>
                 <td colSpan={3} />
-                <td className="text-right py-2 pl-4">
-                  <div className="flex gap-1 justify-end">
+                <td className="py-2 pl-4 text-right">
+                  <div className="flex justify-end gap-1">
                     <button
                       onClick={handleSave}
                       disabled={createMut.isPending || updateMut.isPending}
-                      className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 disabled:opacity-50"
+                      className="rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700 disabled:opacity-50"
                     >
                       {editingId !== null ? "Save" : "Add"}
                     </button>
                     <button
                       onClick={cancelEdit}
-                      className="text-xs text-muted hover:text-secondary px-2 py-1"
+                      className="text-muted hover:text-secondary px-2 py-1 text-xs"
                     >
                       Cancel
                     </button>
@@ -295,14 +295,14 @@ export function WhatIfSection({
             setAdding(true);
             resetForm();
           }}
-          className="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium"
+          className="mt-3 text-sm font-medium text-blue-600 hover:text-blue-800"
         >
           + Add scenario
         </button>
       )}
 
       {whatIfResults.length === 0 && !adding && (
-        <p className="text-sm text-faint mt-2">
+        <p className="text-faint mt-2 text-sm">
           No scenarios configured. Add one above.
         </p>
       )}

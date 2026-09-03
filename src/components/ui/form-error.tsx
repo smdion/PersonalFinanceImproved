@@ -35,7 +35,7 @@ export function FormError({
   const display = prefix ? `${prefix}: ${text}` : text;
 
   return (
-    <p role="alert" className={`text-xs text-red-600 mt-1 ${className ?? ""}`}>
+    <p role="alert" className={`mt-1 text-xs text-red-600 ${className ?? ""}`}>
       {display}
     </p>
   );
@@ -59,7 +59,7 @@ export function FormErrorBlock({
   return (
     <div
       role="alert"
-      className={`p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm ${className ?? ""}`}
+      className={`rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 ${className ?? ""}`}
     >
       {display}
     </div>

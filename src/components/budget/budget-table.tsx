@@ -99,15 +99,15 @@ export function BudgetTable({
   const { effectiveNameColWidth, onResizeStart, sentinelRef } = layout;
   const { addingItemToCategory, onSetAddingItemToCategory } = rowHandlers;
   return (
-    <div className="overflow-x-auto relative">
+    <div className="relative overflow-x-auto">
       <table
-        className="w-full text-xs border-collapse"
+        className="w-full border-collapse text-xs"
         style={{ tableLayout: "fixed" }}
       >
         <thead>
-          <tr className="border-b-2 border-strong">
+          <tr className="border-strong border-b-2">
             <th
-              className="text-left py-2 pr-3 text-muted font-medium sticky left-0 bg-surface-sunken z-10 select-none"
+              className="text-muted bg-surface-sunken sticky left-0 z-10 py-2 pr-3 text-left font-medium select-none"
               // No fixed `width` — table-layout:fixed gives every OTHER
               // column (below) a real pixel width, so this is the one
               // column left as "auto" and absorbs 100% of whatever's left
@@ -123,7 +123,7 @@ export function BudgetTable({
                 <span>Category / Item</span>
                 <span
                   onMouseDown={onResizeStart}
-                  className="cursor-col-resize px-1 text-faint hover:text-secondary select-none"
+                  className="text-faint hover:text-secondary cursor-col-resize px-1 select-none"
                   title="Drag to resize"
                 >
                   ⋮
@@ -133,7 +133,7 @@ export function BudgetTable({
             {cols.map((label, colIdx) => (
               <th
                 key={label}
-                className="text-right py-2 px-3 text-muted font-medium"
+                className="text-muted px-3 py-2 text-right font-medium"
                 style={{ width: 130 }}
               >
                 {label}
@@ -152,7 +152,7 @@ export function BudgetTable({
             ))}
             {showApiColumn && (
               <th
-                className="text-right py-2 px-2 text-muted font-medium text-xs"
+                className="text-muted px-2 py-2 text-right text-xs font-medium"
                 style={{ width: 110 }}
               >
                 {apiService?.toUpperCase()}
@@ -201,7 +201,7 @@ export function BudgetTable({
             <tr ref={sentinelRef} aria-hidden="true">
               <td
                 colSpan={numCols + (showApiColumn ? 2 : 1)}
-                className="text-center py-3 text-xs text-muted"
+                className="text-muted py-3 text-center text-xs"
               >
                 Loading more categories...
               </td>

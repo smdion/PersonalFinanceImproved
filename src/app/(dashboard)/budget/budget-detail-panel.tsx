@@ -130,7 +130,7 @@ export function BudgetDetailPanel({
   const { addingItemToCategory, onSetAddingItemToCategory } = rowHandlers;
 
   return (
-    <div className="border-t md:border-t-0 md:border-l pt-4 md:pt-0 md:pl-4">
+    <div className="border-t pt-4 md:border-t-0 md:border-l md:pt-0 md:pl-4">
       {canEdit && showModeManager && (
         <BudgetModeManager
           cols={cols}

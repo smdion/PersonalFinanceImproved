@@ -14,10 +14,10 @@ export function PageHeader({
   children?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+    <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-primary">{title}</h1>
-        {subtitle && <div className="text-sm text-muted mt-1">{subtitle}</div>}
+        <h1 className="text-primary text-xl font-bold sm:text-2xl">{title}</h1>
+        {subtitle && <div className="text-muted mt-1 text-sm">{subtitle}</div>}
       </div>
       {children && <div className="flex items-center gap-2">{children}</div>}
     </div>

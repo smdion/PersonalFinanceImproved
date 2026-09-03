@@ -21,7 +21,7 @@ export function DeductionRow({
 }) {
   if (row.type === "placeholder") {
     return (
-      <div className="flex justify-between items-center text-faint">
+      <div className="text-faint flex items-center justify-between">
         <span>{displayName(row.name)}</span>
         <InlineEdit
           value=""
@@ -49,7 +49,7 @@ export function DeductionRow({
   }
 
   return (
-    <div className="flex justify-between items-center text-muted">
+    <div className="text-muted flex items-center justify-between">
       <span>{displayName(row.name)}</span>
       {row.raw ? (
         <InlineEdit

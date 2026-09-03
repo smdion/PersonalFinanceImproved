@@ -177,7 +177,7 @@ function SavingsRateCardImpl() {
       subtitle="25% target"
       href="/paycheck"
     >
-      <div className="flex items-center justify-between mb-1">
+      <div className="mb-1 flex items-center justify-between">
         <Metric
           value={formatPercent(totalRate, 1)}
           label={`Household savings rate${excludeMatch ? "" : " (incl. match)"}${viewMode === "ytd" ? " — annualized YTD" : ""}`}
@@ -188,12 +188,12 @@ function SavingsRateCardImpl() {
             e.stopPropagation();
             setMatchOverride(excludeMatch ? false : true);
           }}
-          className="text-xs bg-surface-elevated hover:bg-surface-strong rounded-full px-2 py-0.5 text-muted transition-colors"
+          className="bg-surface-elevated hover:bg-surface-strong text-muted rounded-full px-2 py-0.5 text-xs transition-colors"
         >
           {excludeMatch ? "Incl. match" : "Excl. match"}
         </button>
       </div>
-      <p className="text-xs text-faint mt-1">
+      <p className="text-faint mt-1 text-xs">
         {formatCurrency(totalContribs)}
         {viewMode === "ytd"
           ? " YTD"
@@ -203,7 +203,7 @@ function SavingsRateCardImpl() {
         of {formatCurrency(householdTotalComp)} total comp
       </p>
       {excludeMatch && (
-        <p className="text-xs text-amber-600 mt-1">
+        <p className="mt-1 text-xs text-amber-600">
           Excluding employer match
           {highIncome
             ? ` (income \u2265 ${formatCurrency(highIncomeThreshold)})`
@@ -211,7 +211,7 @@ function SavingsRateCardImpl() {
         </p>
       )}
       {!excludeMatch && highIncome && (
-        <p className="text-xs text-amber-600 mt-1">
+        <p className="mt-1 text-xs text-amber-600">
           Including employer match — not meaningful above{" "}
           {formatCurrency(highIncomeThreshold)} income
         </p>
@@ -250,47 +250,47 @@ function SavingsRateCardImpl() {
                   Retirement (401k/IRA); After-tax can apply to either group,
                   since it's an orthogonal axis (see afterTaxByGroup above). */}
               {hasSubLines && (
-                <div className="ml-3 mt-1 space-y-0.5 text-xs">
+                <div className="mt-1 ml-3 space-y-0.5 text-xs">
                   {group === "retirement" && totalTrad > 0 && (
-                    <div className="flex justify-between text-muted">
+                    <div className="text-muted flex justify-between">
                       <span>
                         {taxTypeLabel("preTax")}
                         <HelpTip text="Traditional 401k/IRA contributions. Reduces taxable income now, taxed on withdrawal in retirement." />
                       </span>
-                      <span className="font-medium text-secondary">
+                      <span className="text-secondary font-medium">
                         {formatBreakdownPercent(tradPct)}
                       </span>
                     </div>
                   )}
                   {group === "retirement" && totalTaxFree > 0 && (
-                    <div className="flex justify-between text-muted">
+                    <div className="text-muted flex justify-between">
                       <span>
                         {taxTypeLabel("taxFree")}
                         <HelpTip text="Roth 401k/IRA contributions. No tax break now, but withdrawals in retirement are tax-free." />
                       </span>
-                      <span className="font-medium text-secondary">
+                      <span className="text-secondary font-medium">
                         {formatBreakdownPercent(taxFreePct)}
                       </span>
                     </div>
                   )}
                   {groupAfterTax > 0 && (
-                    <div className="flex justify-between text-muted">
+                    <div className="text-muted flex justify-between">
                       <span>
                         After-tax
                         <HelpTip text="Taxable/brokerage contributions (taxTreatment: after-tax) within this group." />
                       </span>
-                      <span className="font-medium text-secondary">
+                      <span className="text-secondary font-medium">
                         {formatBreakdownPercent(groupAfterTaxPct)}
                       </span>
                     </div>
                   )}
                   {groupHsa > 0 && (
-                    <div className="flex justify-between text-muted">
+                    <div className="text-muted flex justify-between">
                       <span>
                         HSA
                         <HelpTip text="HSA contributions within this group. Triple tax-advantaged — not Traditional or Roth." />
                       </span>
-                      <span className="font-medium text-secondary">
+                      <span className="text-secondary font-medium">
                         {formatBreakdownPercent(groupHsaPct)}
                       </span>
                     </div>

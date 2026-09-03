@@ -30,8 +30,8 @@ function SectionHeader({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between mb-2">
-      <h4 className="text-xs font-medium text-muted uppercase tracking-wide">
+    <div className="mb-2 flex items-center justify-between">
+      <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
         {title}
         {help && <HelpTip text={help} />}
       </h4>
@@ -95,11 +95,11 @@ function OrderEditor({
             <button
               type="button"
               onClick={() => swapWithPrevious(idx)}
-              className="text-faint hover:text-blue-600 p-0.5"
+              className="text-faint p-0.5 hover:text-blue-600"
               title={`Move ${cat} left`}
             >
               <svg
-                className="w-3 h-3"
+                className="h-3 w-3"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -214,11 +214,11 @@ export function DecumulationConfig({
           ).join(", ");
 
   return (
-    <div className="border rounded-lg p-4 space-y-3">
+    <div className="space-y-3 rounded-lg border p-4">
       {/* Header — matches overrides panel style */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h4 className="text-label font-semibold text-muted uppercase tracking-wider">
+          <h4 className="text-label text-muted font-semibold tracking-wider uppercase">
             {isPersonFiltered
               ? `Withdrawal Routing — ${personFilterName}`
               : "Withdrawal Routing"}
@@ -233,7 +233,7 @@ export function DecumulationConfig({
         <button
           type="button"
           onClick={() => setShowDecumConfig(!showDecumConfig)}
-          className={`text-xs font-medium px-3 py-1 rounded transition-colors ${
+          className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
             showDecumConfig
               ? "bg-surface-strong text-muted hover:text-primary"
               : "bg-indigo-600 text-white hover:bg-indigo-700"
@@ -245,7 +245,7 @@ export function DecumulationConfig({
 
       {/* Spending strategy context — always visible when dynamic */}
       {isDynamic && (
-        <div className="text-caption text-indigo-700 bg-indigo-50 rounded px-2.5 py-1.5">
+        <div className="text-caption rounded bg-indigo-50 px-2.5 py-1.5 text-indigo-700">
           <span className="font-medium">{strategyCfg?.label}</span>
           {strategyCfg?.incomeSource === "formula"
             ? " determines HOW MUCH to withdraw. This section determines FROM WHICH accounts."
@@ -256,10 +256,10 @@ export function DecumulationConfig({
       )}
 
       {showDecumConfig && (
-        <div className="bg-surface-sunken rounded-lg p-3 space-y-3">
+        <div className="bg-surface-sunken space-y-3 rounded-lg p-3">
           {/* Mode toggle */}
           <div className="flex items-center gap-2">
-            <div className="inline-flex rounded-md border bg-surface-primary p-0.5">
+            <div className="bg-surface-primary inline-flex rounded-md border p-0.5">
               {(
                 [
                   ["bracket_filling", "Bracket Filling"],
@@ -271,7 +271,7 @@ export function DecumulationConfig({
                   key={key}
                   type="button"
                   onClick={() => setWithdrawalRoutingMode(key)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+                  className={`rounded px-3 py-1.5 text-xs font-medium transition-colors ${
                     withdrawalRoutingMode === key
                       ? "bg-indigo-600 text-white shadow-sm"
                       : "text-muted hover:text-secondary"
@@ -313,13 +313,13 @@ export function DecumulationConfig({
                 onChange={setWithdrawalOrder}
                 filter={tradPreferenceEngineCategories()}
               />
-              <div className="mt-3 pt-3 border-t">
+              <div className="mt-3 border-t pt-3">
                 <SectionHeader
                   title="Discretionary Withdrawal Order"
                   help="Beyond the Traditional bracket target, which free source drains first: Roth basis, or brokerage's 0%-capital-gains room. Brokerage-first uses that room up sooner, but a brokerage gain still counts toward MAGI for ACA/IRMAA even at 0% federal tax — Roth withdrawals never touch MAGI."
                 />
                 <div className="text-caption">
-                  <span className="font-medium text-foreground">
+                  <span className="text-foreground font-medium">
                     {discretionaryWithdrawalOrder === "brokerage_first"
                       ? "Brokerage 0% room first"
                       : "Roth basis first (default)"}
@@ -331,7 +331,7 @@ export function DecumulationConfig({
                 </div>
                 {discretionaryWithdrawalOrder === "brokerage_first" &&
                   (enableAcaAwareness || enableIrmaaAwareness) && (
-                    <p className="mt-1 text-caption text-amber-700">
+                    <p className="text-caption mt-1 text-amber-700">
                       ACA/IRMAA awareness is on — this will realize MAGI-counted
                       gains sooner each year, which can reduce ACA subsidy or
                       bring you closer to an IRMAA surcharge tier.
@@ -368,7 +368,7 @@ export function DecumulationConfig({
                           [cat]: isNaN(v) ? 0 : v,
                         }));
                       }}
-                      className="mt-1 block w-full rounded border border-strong px-2 py-1 text-sm text-right"
+                      className="border-strong mt-1 block w-full rounded border px-2 py-1 text-right text-sm"
                     />
                   </label>
                 ))}
@@ -380,7 +380,7 @@ export function DecumulationConfig({
                 );
                 const off = Math.abs(total - 1) > 0.001;
                 return off ? (
-                  <p className="text-xs text-amber-600 mt-1">
+                  <p className="mt-1 text-xs text-amber-600">
                     Splits total {formatPercent(total)} — should be 100%.
                   </p>
                 ) : null;
@@ -394,7 +394,7 @@ export function DecumulationConfig({
                 title="Tax Preference per Account"
                 help="Within each account that has both Traditional and Roth balances, which to draw first. Drawing Traditional first lets Roth grow tax-free longer."
               />
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                 {categoriesWithTaxPreference().map((cat) => (
                   <label key={cat} className="block">
                     <span
@@ -410,7 +410,7 @@ export function DecumulationConfig({
                           [cat]: e.target.value as "traditional" | "roth",
                         }))
                       }
-                      className="mt-1 block w-full rounded border border-strong px-2 py-1 text-sm"
+                      className="border-strong mt-1 block w-full rounded border px-2 py-1 text-sm"
                     >
                       <option value="traditional">
                         {taxTypeLabel("preTax")} first

@@ -110,14 +110,14 @@ export function YearRow({
   return (
     <>
       <tr
-        className={`border-b border-subtle hover:bg-surface-sunken ${showAccounts && accounts.length > 0 ? "cursor-pointer" : ""}`}
+        className={`border-subtle hover:bg-surface-sunken border-b ${showAccounts && accounts.length > 0 ? "cursor-pointer" : ""}`}
         onClick={showAccounts && accounts.length > 0 ? onToggle : undefined}
       >
         <td className="px-4 py-3 font-medium">
           <span className="flex items-center gap-2">
             {showAccounts && accounts.length > 0 && (
               <svg
-                className={`w-3 h-3 text-faint transition-transform ${isExpanded ? "rotate-90" : ""}`}
+                className={`text-faint h-3 w-3 transition-transform ${isExpanded ? "rotate-90" : ""}`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -141,7 +141,7 @@ export function YearRow({
         </td>
         {!onlyBasis && (
           <>
-            <td className="text-right px-4 py-3">
+            <td className="px-4 py-3 text-right">
               {formatCurrency(row.beginningBalance)}
             </td>
             {isEditable ? (
@@ -163,7 +163,7 @@ export function YearRow({
                 onKeyDown={onKeyDown}
               />
             ) : (
-              <td className="text-right px-4 py-3">
+              <td className="px-4 py-3 text-right">
                 {formatCurrency(row.totalContributions)}
               </td>
             )}
@@ -186,7 +186,7 @@ export function YearRow({
                 onKeyDown={onKeyDown}
               />
             ) : (
-              <td className="text-right px-4 py-3">
+              <td className="px-4 py-3 text-right">
                 {formatCurrency(row.employerContributions)}
               </td>
             )}
@@ -209,7 +209,7 @@ export function YearRow({
                 onKeyDown={onKeyDown}
               />
             ) : (
-              <td className="text-right px-4 py-3">
+              <td className="px-4 py-3 text-right">
                 {formatCurrency(row.distributions)}
               </td>
             )}
@@ -227,7 +227,7 @@ export function YearRow({
                 onKeyDown={onKeyDown}
               />
             ) : (
-              <td className="text-right px-4 py-3">
+              <td className="px-4 py-3 text-right">
                 {formatCurrency(row.rollovers)}
               </td>
             )}
@@ -245,7 +245,7 @@ export function YearRow({
                 onKeyDown={onKeyDown}
               />
             ) : (
-              <td className="text-right px-4 py-3">
+              <td className="px-4 py-3 text-right">
                 {formatCurrency(row.fees)}
               </td>
             )}
@@ -271,7 +271,7 @@ export function YearRow({
               />
             ) : (
               <td
-                className={`text-right px-4 py-3 font-medium whitespace-nowrap ${gainColor}`}
+                className={`px-4 py-3 text-right font-medium whitespace-nowrap ${gainColor}`}
               >
                 {formatCurrency(row.yearlyGainLoss)}
                 {yearCashBasisAnnotation}
@@ -297,7 +297,7 @@ export function YearRow({
                 className="font-medium"
               />
             ) : (
-              <td className="text-right px-4 py-3 font-medium">
+              <td className="px-4 py-3 text-right font-medium">
                 {formatCurrency(row.endingBalance)}
               </td>
             )}
@@ -305,17 +305,17 @@ export function YearRow({
         )}
         {showBasis && (
           <>
-            <td className="text-right px-4 py-3 text-muted">
+            <td className="text-muted px-4 py-3 text-right">
               {costBasisAccountsForYear.length > 0
                 ? formatCurrency(yearCostBasis)
                 : "—"}
             </td>
-            <td className="text-right px-4 py-3 text-muted">
+            <td className="text-muted px-4 py-3 text-right">
               {rothBasisAccountsForYear.length > 0
                 ? formatCurrency(yearContributionBasis)
                 : "—"}
             </td>
-            <td className="text-right px-4 py-3 text-muted">
+            <td className="text-muted px-4 py-3 text-right">
               {rothBasisAccountsForYear.length > 0
                 ? formatCurrency(yearConversionBasis)
                 : "—"}
@@ -324,7 +324,7 @@ export function YearRow({
         )}
         {showUnrealized && (
           <td
-            className={`text-right px-4 py-3 font-medium ${
+            className={`px-4 py-3 text-right font-medium ${
               costBasisAccountsForYear.length === 0
                 ? ""
                 : yearUnrealized >= 0
@@ -338,7 +338,7 @@ export function YearRow({
           </td>
         )}
         <td
-          className={`text-right px-4 py-3 font-medium ${row.annualReturnPct !== null ? (row.annualReturnPct >= 0 ? "text-green-600" : "text-red-600") : ""}`}
+          className={`px-4 py-3 text-right font-medium ${row.annualReturnPct !== null ? (row.annualReturnPct >= 0 ? "text-green-600" : "text-red-600") : ""}`}
         >
           {!onlyBasis &&
             (row.annualReturnPct !== null
@@ -379,16 +379,16 @@ export function YearRow({
                       (showBasis ? 3 : 0) +
                       (showUnrealized ? 1 : 0)
                     }
-                    className="px-8 py-1 text-caption text-faint uppercase tracking-wide font-medium"
+                    className="text-caption text-faint px-8 py-1 font-medium tracking-wide uppercase"
                   >
                     Historical Accounts
                   </td>
                 </tr>
               )}
               <tr
-                className={`border-b border-subtle ${isHistoricalDivider || (activeAccountCount !== undefined && idx >= activeAccountCount) ? "bg-surface-sunken/80 opacity-70" : "bg-surface-sunken/50"}`}
+                className={`border-subtle border-b ${isHistoricalDivider || (activeAccountCount !== undefined && idx >= activeAccountCount) ? "bg-surface-sunken/80 opacity-70" : "bg-surface-sunken/50"}`}
               >
-                <td className="px-4 py-2 pl-10 text-muted">
+                <td className="text-muted px-4 py-2 pl-10">
                   <span className="flex items-center gap-2">
                     <span>
                       {accountDisplayName({
@@ -400,7 +400,7 @@ export function YearRow({
                 </td>
                 {!onlyBasis && (
                   <>
-                    <td className="text-right px-4 py-2 text-muted">
+                    <td className="text-muted px-4 py-2 text-right">
                       {formatCurrency(a.beginningBalance)}
                     </td>
                     {acctEditable ? (
@@ -423,7 +423,7 @@ export function YearRow({
                         className="text-muted"
                       />
                     ) : (
-                      <td className="text-right px-4 py-2 text-muted">
+                      <td className="text-muted px-4 py-2 text-right">
                         {formatCurrency(a.totalContributions)}
                       </td>
                     )}
@@ -450,7 +450,7 @@ export function YearRow({
                         className="text-muted"
                       />
                     ) : (
-                      <td className="text-right px-4 py-2 text-muted">
+                      <td className="text-muted px-4 py-2 text-right">
                         {formatCurrency(a.employerContributions)}
                       </td>
                     )}
@@ -474,7 +474,7 @@ export function YearRow({
                         className="text-muted"
                       />
                     ) : (
-                      <td className="text-right px-4 py-2 text-muted">
+                      <td className="text-muted px-4 py-2 text-right">
                         {formatCurrency(a.distributions)}
                       </td>
                     )}
@@ -493,7 +493,7 @@ export function YearRow({
                         className="text-muted"
                       />
                     ) : (
-                      <td className="text-right px-4 py-2 text-muted">
+                      <td className="text-muted px-4 py-2 text-right">
                         {formatCurrency(a.rollovers)}
                       </td>
                     )}
@@ -512,7 +512,7 @@ export function YearRow({
                         className="text-muted"
                       />
                     ) : (
-                      <td className="text-right px-4 py-2 text-muted">
+                      <td className="text-muted px-4 py-2 text-right">
                         {formatCurrency(a.fees)}
                       </td>
                     )}
@@ -538,7 +538,7 @@ export function YearRow({
                       />
                     ) : (
                       <td
-                        className={`text-right px-4 py-2 whitespace-nowrap ${acctGainColor}`}
+                        className={`px-4 py-2 text-right whitespace-nowrap ${acctGainColor}`}
                       >
                         {formatCurrency(a.yearlyGainLoss)}
                         {cashBasisAnnotation}
@@ -564,7 +564,7 @@ export function YearRow({
                         className="text-muted"
                       />
                     ) : (
-                      <td className="text-right px-4 py-2 text-muted">
+                      <td className="text-muted px-4 py-2 text-right">
                         {formatCurrency(a.endingBalance)}
                       </td>
                     )}
@@ -590,7 +590,7 @@ export function YearRow({
                       {showBasis && (
                         <>
                           {!costTracked ? (
-                            <td className="text-right px-4 py-2 text-faint">
+                            <td className="text-faint px-4 py-2 text-right">
                               —
                             </td>
                           ) : acctEditable && master ? (
@@ -617,12 +617,12 @@ export function YearRow({
                               className="text-muted"
                             />
                           ) : (
-                            <td className="text-right px-4 py-2 text-muted">
+                            <td className="text-muted px-4 py-2 text-right">
                               {formatCurrency(basis)}
                             </td>
                           )}
                           {!rothTracked ? (
-                            <td className="text-right px-4 py-2 text-faint">
+                            <td className="text-faint px-4 py-2 text-right">
                               —
                             </td>
                           ) : acctEditable ? (
@@ -648,12 +648,12 @@ export function YearRow({
                               className="text-muted"
                             />
                           ) : (
-                            <td className="text-right px-4 py-2 text-muted">
+                            <td className="text-muted px-4 py-2 text-right">
                               {formatCurrency(contributionBasis)}
                             </td>
                           )}
                           {!rothTracked ? (
-                            <td className="text-right px-4 py-2 text-faint">
+                            <td className="text-faint px-4 py-2 text-right">
                               —
                             </td>
                           ) : acctEditable ? (
@@ -679,7 +679,7 @@ export function YearRow({
                               className="text-muted"
                             />
                           ) : (
-                            <td className="text-right px-4 py-2 text-muted">
+                            <td className="text-muted px-4 py-2 text-right">
                               {formatCurrency(conversionBasis)}
                             </td>
                           )}
@@ -687,10 +687,10 @@ export function YearRow({
                       )}
                       {showUnrealized &&
                         (!costTracked ? (
-                          <td className="text-right px-4 py-2 text-faint">—</td>
+                          <td className="text-faint px-4 py-2 text-right">—</td>
                         ) : (
                           <td
-                            className={`text-right px-4 py-2 font-medium ${
+                            className={`px-4 py-2 text-right font-medium ${
                               unrealized >= 0
                                 ? "text-green-600"
                                 : "text-red-600"
@@ -703,7 +703,7 @@ export function YearRow({
                   );
                 })()}
                 <td
-                  className={`text-right px-4 py-2 font-medium ${a.annualReturnPct !== null ? (a.annualReturnPct >= 0 ? "text-green-600" : "text-red-600") : "text-muted"}`}
+                  className={`px-4 py-2 text-right font-medium ${a.annualReturnPct !== null ? (a.annualReturnPct >= 0 ? "text-green-600" : "text-red-600") : "text-muted"}`}
                 >
                   {!onlyBasis &&
                     (a.annualReturnPct !== null

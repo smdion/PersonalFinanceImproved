@@ -46,14 +46,14 @@ export function RmdHandlingSection({
   );
   return (
     <div className="bg-surface-sunken rounded-lg p-3">
-      <div className="flex items-center gap-2 mb-2">
-        <h4 className="text-label font-semibold text-muted uppercase tracking-wider">
+      <div className="mb-2 flex items-center gap-2">
+        <h4 className="text-label text-muted font-semibold tracking-wider uppercase">
           RMD Handling
         </h4>
         <Badge color="indigo">Baseline + Simulation</Badge>
         <div className="flex-1 border-t" />
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 text-sm">
+      <div className="grid grid-cols-1 gap-x-4 gap-y-3 text-sm sm:grid-cols-2">
         <div>
           <span className="text-muted">
             Excess RMD money
@@ -81,7 +81,7 @@ export function RmdHandlingSection({
                 );
               }}
               disabled={!isEditable}
-              className="text-sm border rounded px-1.5 py-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded border px-1.5 py-0.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
             >
               <option value="reinvest">Reinvest into brokerage</option>
               <option value="spend">Spend it</option>
@@ -115,7 +115,7 @@ export function RmdHandlingSection({
                 );
               }}
               disabled={!isEditable}
-              className={`text-sm px-2 py-0.5 rounded disabled:cursor-not-allowed disabled:opacity-50 ${
+              className={`rounded px-2 py-0.5 text-sm disabled:cursor-not-allowed disabled:opacity-50 ${
                 qcdMaximize
                   ? "bg-green-100 text-green-700"
                   : "bg-surface-elevated text-muted"
@@ -158,7 +158,7 @@ export function RmdHandlingSection({
                 );
               }}
               disabled={!isEditable}
-              className={`text-sm px-2 py-0.5 rounded disabled:cursor-not-allowed disabled:opacity-50 ${
+              className={`rounded px-2 py-0.5 text-sm disabled:cursor-not-allowed disabled:opacity-50 ${
                 rmdSmoothingEnabled
                   ? "bg-green-100 text-green-700"
                   : "bg-surface-elevated text-muted"
@@ -178,7 +178,7 @@ export function RmdHandlingSection({
                   );
                 }}
                 disabled={!isEditable}
-                className="text-sm border rounded px-1.5 py-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded border px-1.5 py-0.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <option value="0.1">Up to 10%</option>
                 <option value="0.12">Up to 12%</option>

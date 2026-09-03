@@ -32,7 +32,7 @@ export function EditLockToggle({
         aria-label="Only admins can edit"
         className="text-faint"
       >
-        <Lock className="w-3.5 h-3.5" />
+        <Lock className="h-3.5 w-3.5" />
       </span>
     );
   }
@@ -45,9 +45,9 @@ export function EditLockToggle({
       className="text-faint hover:text-primary transition-colors"
     >
       {locked ? (
-        <Lock className="w-3.5 h-3.5" />
+        <Lock className="h-3.5 w-3.5" />
       ) : (
-        <LockOpen className="w-3.5 h-3.5" />
+        <LockOpen className="h-3.5 w-3.5" />
       )}
     </button>
   );

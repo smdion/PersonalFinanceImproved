@@ -26,7 +26,7 @@ export function EditableCell({
 
   if (isEditing) {
     return (
-      <td className={`text-right px-4 py-3 ${className}`}>
+      <td className={`px-4 py-3 text-right ${className}`}>
         <input
           ref={inputRef}
           type="text"
@@ -34,7 +34,7 @@ export function EditableCell({
           onChange={(e) => onEditValueChange(e.target.value)}
           onBlur={onSaveEdit}
           onKeyDown={onKeyDown}
-          className="w-24 text-right text-sm border border-blue-400 rounded px-2 py-0.5 bg-surface-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="bg-surface-primary w-24 rounded border border-blue-400 px-2 py-0.5 text-right text-sm focus:ring-1 focus:ring-blue-500 focus:outline-none"
         />
       </td>
     );
@@ -42,7 +42,7 @@ export function EditableCell({
 
   return (
     <td
-      className={`text-right px-4 py-3 cursor-pointer hover:bg-blue-50 rounded transition-colors whitespace-nowrap ${className}`}
+      className={`cursor-pointer rounded px-4 py-3 text-right whitespace-nowrap transition-colors hover:bg-blue-50 ${className}`}
       onClick={onStartEdit}
       title="Click to edit"
     >

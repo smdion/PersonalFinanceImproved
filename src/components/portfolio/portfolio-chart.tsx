@@ -84,7 +84,7 @@ export function PortfolioChart({ snapshots }: { snapshots: SnapshotPoint[] }) {
   if (chartData.length === 0) {
     return (
       <Card title="Portfolio Value">
-        <p className="text-sm text-faint">
+        <p className="text-faint text-sm">
           No snapshot data for the selected time frame.
         </p>
       </Card>
@@ -107,19 +107,19 @@ export function PortfolioChart({ snapshots }: { snapshots: SnapshotPoint[] }) {
           >
             {isPositive ? "+" : ""}
             {formatCurrency(totalChange)}
-            <span className="text-xs ml-1">
+            <span className="ml-1 text-xs">
               ({isPositive ? "+" : ""}
               {formatPercent(totalChangePct / 100, 1)})
             </span>
           </span>
-          <div className="flex gap-0.5 bg-surface-elevated rounded-md p-0.5">
+          <div className="bg-surface-elevated flex gap-0.5 rounded-md p-0.5">
             {TIME_FRAMES.map((tf) => (
               <button
                 key={tf}
                 onClick={() => setTimeFrame(tf)}
-                className={`px-2 py-0.5 text-label rounded transition-colors ${
+                className={`text-label rounded px-2 py-0.5 transition-colors ${
                   timeFrame === tf
-                    ? "bg-surface-primary text-primary shadow-sm font-medium"
+                    ? "bg-surface-primary text-primary font-medium shadow-sm"
                     : "text-muted hover:text-secondary"
                 }`}
               >
@@ -177,8 +177,8 @@ export function PortfolioChart({ snapshots }: { snapshots: SnapshotPoint[] }) {
               if (!active || !payload?.length) return null;
               const p = payload[0]!.payload as ChartPoint;
               return (
-                <div className="bg-surface-primary border rounded-lg shadow-lg p-2.5 text-xs">
-                  <div className="font-medium text-primary mb-1">{p.date}</div>
+                <div className="bg-surface-primary rounded-lg border p-2.5 text-xs shadow-lg">
+                  <div className="text-primary mb-1 font-medium">{p.date}</div>
                   <div className="text-secondary">
                     {formatCurrency(p.total)}
                   </div>

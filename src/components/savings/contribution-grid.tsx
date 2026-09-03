@@ -106,7 +106,7 @@ function DefaultContributionCell({
   if (editing) {
     return (
       <>
-        <div className="text-green-600/30 text-xs font-semibold tabular-nums text-center select-none">
+        <div className="text-center text-xs font-semibold text-green-600/30 tabular-nums select-none">
           {formatCurrency(gp.monthlyAllocation)}
         </div>
         <div
@@ -114,18 +114,18 @@ function DefaultContributionCell({
           onClick={() => setEditing(null)}
         >
           <div
-            className="bg-surface-primary border border-default rounded-xl shadow-2xl p-5 w-64 space-y-4"
+            className="bg-surface-primary border-default w-64 space-y-4 rounded-xl border p-5 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div>
-              <p className="text-sm font-semibold text-primary">{gp.name}</p>
+              <p className="text-primary text-sm font-semibold">{gp.name}</p>
               <p className="text-caption text-faint mt-0.5">
                 Default monthly contribution
               </p>
             </div>
             <div className="space-y-2">
               <div className="flex items-center gap-3">
-                <span className="text-xs text-muted w-4 shrink-0">$</span>
+                <span className="text-muted w-4 shrink-0 text-xs">$</span>
                 <input
                   type="number"
                   autoFocus={editing === "dollar"}
@@ -140,14 +140,14 @@ function DefaultContributionCell({
               </div>
               <div className="flex items-center gap-3">
                 <span className="w-4 shrink-0" />
-                <div className="flex-1 flex items-center gap-2">
-                  <div className="flex-1 border-t border-subtle/40" />
+                <div className="flex flex-1 items-center gap-2">
+                  <div className="border-subtle/40 flex-1 border-t" />
                   <span className="text-caption text-faint/60">or</span>
-                  <div className="flex-1 border-t border-subtle/40" />
+                  <div className="border-subtle/40 flex-1 border-t" />
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <span className="text-xs text-muted w-4 shrink-0">%</span>
+                <span className="text-muted w-4 shrink-0 text-xs">%</span>
                 <input
                   type="number"
                   autoFocus={editing === "percent"}
@@ -165,13 +165,13 @@ function DefaultContributionCell({
             <div className="flex gap-2">
               <button
                 onClick={() => setEditing(null)}
-                className="flex-1 px-3 py-1.5 text-sm rounded-lg border border-default text-muted hover:text-primary transition-colors"
+                className="border-default text-muted hover:text-primary flex-1 rounded-lg border px-3 py-1.5 text-sm transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={commit}
-                className="flex-1 px-3 py-1.5 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium"
+                className="flex-1 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700"
               >
                 Save
               </button>
@@ -187,9 +187,9 @@ function DefaultContributionCell({
     return (
       <button
         onClick={canEdit !== false ? startEditDollar : undefined}
-        className={`tabular-nums text-faint text-xs rounded transition-colors ${
+        className={`text-faint rounded text-xs tabular-nums transition-colors ${
           canEdit !== false
-            ? "cursor-pointer hover:bg-surface-elevated/60 px-1"
+            ? "hover:bg-surface-elevated/60 cursor-pointer px-1"
             : ""
         }`}
         title="Click to set default monthly contribution"
@@ -204,9 +204,9 @@ function DefaultContributionCell({
     return (
       <button
         onClick={canEdit !== false ? startEditDollar : undefined}
-        className={`text-caption text-green-600/70 rounded transition-colors ${
+        className={`text-caption rounded text-green-600/70 transition-colors ${
           canEdit !== false
-            ? "cursor-pointer hover:bg-surface-elevated/60 px-1"
+            ? "hover:bg-surface-elevated/60 cursor-pointer px-1"
             : ""
         }`}
         title="Funded — click to set a contribution anyway"
@@ -220,9 +220,9 @@ function DefaultContributionCell({
     <div className="flex items-center justify-center gap-1 whitespace-nowrap">
       <button
         onClick={canEdit !== false ? startEditDollar : undefined}
-        className={`tabular-nums font-semibold text-green-600 text-xs rounded transition-colors ${
+        className={`rounded text-xs font-semibold text-green-600 tabular-nums transition-colors ${
           canEdit !== false
-            ? "cursor-pointer hover:bg-surface-elevated/60 px-1"
+            ? "hover:bg-surface-elevated/60 cursor-pointer px-1"
             : ""
         }`}
         title="Click to change default monthly contribution"
@@ -231,9 +231,9 @@ function DefaultContributionCell({
       </button>
       <button
         onClick={canEdit !== false ? startEditPercent : undefined}
-        className={`tabular-nums text-caption text-muted rounded transition-colors ${
+        className={`text-caption text-muted rounded tabular-nums transition-colors ${
           canEdit !== false
-            ? "cursor-pointer hover:bg-surface-elevated/60 px-1"
+            ? "hover:bg-surface-elevated/60 cursor-pointer px-1"
             : ""
         }`}
         title="Click to set by percentage of pool"
@@ -272,12 +272,12 @@ export function ContributionGrid({
 
   return (
     <div className="space-y-2">
-      <div className="overflow-auto max-h-[480px] rounded-lg border">
-        <table className="w-full text-xs border-separate border-spacing-0">
+      <div className="max-h-[480px] overflow-auto rounded-lg border">
+        <table className="w-full border-separate border-spacing-0 text-xs">
           <thead>
             {/* Row 1: column headers — Month | fund names | hidden agg | Allocated */}
             <tr className="bg-surface-sunken border-b">
-              <th className="sticky top-0 left-0 z-20 bg-surface-sunken text-left px-3 py-2 font-medium text-muted whitespace-nowrap border-r text-xs">
+              <th className="bg-surface-sunken text-muted sticky top-0 left-0 z-20 border-r px-3 py-2 text-left text-xs font-medium whitespace-nowrap">
                 Month
               </th>
               {visibleProjections.map((gp) => {
@@ -285,11 +285,11 @@ export function ContributionGrid({
                 return (
                   <th
                     key={gp.goalId}
-                    className="sticky top-0 z-10 bg-surface-sunken text-center px-2 py-2 font-medium text-xs whitespace-nowrap min-w-[110px]"
+                    className="bg-surface-sunken sticky top-0 z-10 min-w-[110px] px-2 py-2 text-center text-xs font-medium whitespace-nowrap"
                   >
-                    <span className="inline-flex items-center gap-1.5 justify-center">
+                    <span className="inline-flex items-center justify-center gap-1.5">
                       <span
-                        className="inline-block w-2 h-2 rounded-full shrink-0"
+                        className="inline-block h-2 w-2 shrink-0 rounded-full"
                         style={{
                           backgroundColor: FUND_COLORS[i % FUND_COLORS.length],
                         }}
@@ -300,24 +300,24 @@ export function ContributionGrid({
                 );
               })}
               {hiddenProjections.length > 0 && (
-                <th className="sticky top-0 z-10 bg-surface-sunken text-center px-2 py-2 font-medium text-caption text-faint/60 whitespace-nowrap min-w-[90px]">
+                <th className="bg-surface-sunken text-caption text-faint/60 sticky top-0 z-10 min-w-[90px] px-2 py-2 text-center font-medium whitespace-nowrap">
                   {hiddenProjections.length} hidden
                 </th>
               )}
-              <th className="sticky top-0 z-10 bg-surface-sunken text-center px-2 py-2 font-medium text-caption text-muted whitespace-nowrap min-w-[80px]">
+              <th className="bg-surface-sunken text-caption text-muted sticky top-0 z-10 min-w-[80px] px-2 py-2 text-center font-medium whitespace-nowrap">
                 Allocated
               </th>
             </tr>
 
             {/* Row 2: Default /mo — editable default contribution per fund */}
             <tr className="bg-surface-elevated border-b">
-              <td className="sticky left-0 z-10 bg-surface-elevated px-3 py-2 text-xs font-semibold text-green-500 border-r whitespace-nowrap">
+              <td className="bg-surface-elevated sticky left-0 z-10 border-r px-3 py-2 text-xs font-semibold whitespace-nowrap text-green-500">
                 Default /mo
               </td>
               {visibleProjections.map((gp) => (
                 <td
                   key={gp.goalId}
-                  className="bg-surface-elevated text-center px-2 py-1.5"
+                  className="bg-surface-elevated px-2 py-1.5 text-center"
                 >
                   <DefaultContributionCell
                     gp={gp}
@@ -329,7 +329,7 @@ export function ContributionGrid({
                 </td>
               ))}
               {hiddenProjections.length > 0 && (
-                <td className="text-center px-2 py-1.5 text-caption text-faint/50 tabular-nums bg-surface-sunken/40">
+                <td className="text-caption text-faint/50 bg-surface-sunken/40 px-2 py-1.5 text-center tabular-nums">
                   {formatCurrency(
                     hiddenProjections.reduce(
                       (s, gp) => s + gp.monthlyAllocation,
@@ -338,7 +338,7 @@ export function ContributionGrid({
                   )}
                 </td>
               )}
-              <td className="bg-surface-elevated text-center px-2 py-1.5 text-caption text-muted tabular-nums">
+              <td className="bg-surface-elevated text-caption text-muted px-2 py-1.5 text-center tabular-nums">
                 {formatCurrency(pool)}
               </td>
             </tr>
@@ -362,19 +362,19 @@ export function ContributionGrid({
               return (
                 <tr
                   key={mk}
-                  className={`border-b last:border-0 hover:bg-surface-elevated/40 transition-colors ${
-                    isYearStart ? "border-t-2 border-strong" : ""
+                  className={`hover:bg-surface-elevated/40 border-b transition-colors last:border-0 ${
+                    isYearStart ? "border-strong border-t-2" : ""
                   }`}
                 >
                   {/* Month label — click to open month override modal */}
-                  <td className="sticky left-0 z-10 bg-surface-primary px-3 py-1.5 border-r whitespace-nowrap">
+                  <td className="bg-surface-primary sticky left-0 z-10 border-r px-3 py-1.5 whitespace-nowrap">
                     <button
                       onClick={
                         canEdit !== false ? () => onEditMonth(date) : undefined
                       }
-                      className={`text-xs text-muted tabular-nums rounded transition-colors ${
+                      className={`text-muted rounded text-xs tabular-nums transition-colors ${
                         canEdit !== false
-                          ? "hover:bg-surface-elevated/60 cursor-pointer px-1 -mx-1"
+                          ? "hover:bg-surface-elevated/60 -mx-1 cursor-pointer px-1"
                           : ""
                       }`}
                       title={
@@ -386,7 +386,7 @@ export function ContributionGrid({
                       {monthLabel(date)}
                     </button>
                     {ruleMonthKeys?.has(mk) && (
-                      <div className="text-micro text-purple-600 font-medium leading-tight mt-0.5">
+                      <div className="text-micro mt-0.5 leading-tight font-medium text-purple-600">
                         ✦ extra check
                       </div>
                     )}
@@ -402,7 +402,7 @@ export function ContributionGrid({
                     return (
                       <td
                         key={gp.goalId}
-                        className={`text-center py-1.5 px-2 ${
+                        className={`px-2 py-1.5 text-center ${
                           isNegative ? "bg-red-50/30 dark:bg-red-950/10" : ""
                         }`}
                       >
@@ -412,13 +412,13 @@ export function ContributionGrid({
                               ? () => onEditMonth(date)
                               : undefined
                           }
-                          className={`tabular-nums text-label rounded transition-colors ${
+                          className={`text-label rounded tabular-nums transition-colors ${
                             canEdit !== false
-                              ? "cursor-pointer hover:bg-surface-elevated/60 px-0.5"
+                              ? "hover:bg-surface-elevated/60 cursor-pointer px-0.5"
                               : ""
                           } ${
                             isOverride
-                              ? "text-blue-600 font-semibold"
+                              ? "font-semibold text-blue-600"
                               : "text-faint"
                           }`}
                           title={`Balance: ${formatCurrency(balance)}${canEdit !== false ? " — Click to edit month" : ""}`}
@@ -431,24 +431,24 @@ export function ContributionGrid({
 
                   {/* Hidden funds aggregate cell */}
                   {hiddenProjections.length > 0 && (
-                    <td className="text-center py-1.5 px-2 bg-surface-sunken/40">
-                      <span className="tabular-nums text-label text-faint/50">
+                    <td className="bg-surface-sunken/40 px-2 py-1.5 text-center">
+                      <span className="text-label text-faint/50 tabular-nums">
                         {formatCurrency(hiddenTotal)}
                       </span>
                     </td>
                   )}
 
                   {/* Allocated column — total allocated this month, clickable to edit */}
-                  <td className="text-center py-1.5 px-2">
+                  <td className="px-2 py-1.5 text-center">
                     <button
                       onClick={
                         canEdit !== false ? () => onEditMonth(date) : undefined
                       }
-                      className={`tabular-nums text-caption rounded transition-colors ${
+                      className={`text-caption rounded tabular-nums transition-colors ${
                         canEdit !== false
-                          ? "cursor-pointer hover:bg-surface-elevated/60 px-0.5"
+                          ? "hover:bg-surface-elevated/60 cursor-pointer px-0.5"
                           : ""
-                      } ${isOverAllocated ? "text-red-600 font-semibold" : "text-faint"}`}
+                      } ${isOverAllocated ? "font-semibold text-red-600" : "text-faint"}`}
                       title={
                         isOverAllocated
                           ? `Allocations don't match pool (${formatCurrency(monthTotal)} vs ${formatCurrency(monthPool)}) — Click to edit month`

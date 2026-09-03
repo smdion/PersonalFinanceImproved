@@ -64,19 +64,19 @@ function LoanFormFields({
   editId?: number;
 }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
+    <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
       <div>
-        <label className="block text-xs text-muted mb-1">Loan Name</label>
+        <label className="text-muted mb-1 block text-xs">Loan Name</label>
         <input
           type="text"
           value={form.name}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
           placeholder="e.g. Primary 30yr"
-          className="w-full border rounded px-2 py-1"
+          className="w-full rounded border px-2 py-1"
         />
       </div>
       <div>
-        <label className="block text-xs text-muted mb-1">
+        <label className="text-muted mb-1 block text-xs">
           Interest Rate (decimal, e.g. 0.065)
         </label>
         <input
@@ -84,20 +84,20 @@ function LoanFormFields({
           value={form.interestRate}
           onChange={(e) => setForm({ ...form, interestRate: e.target.value })}
           placeholder="0.065"
-          className="w-full border rounded px-2 py-1"
+          className="w-full rounded border px-2 py-1"
         />
       </div>
       <div>
-        <label className="block text-xs text-muted mb-1">Term (years)</label>
+        <label className="text-muted mb-1 block text-xs">Term (years)</label>
         <input
           type="number"
           value={form.termYears}
           onChange={(e) => setForm({ ...form, termYears: e.target.value })}
-          className="w-full border rounded px-2 py-1"
+          className="w-full rounded border px-2 py-1"
         />
       </div>
       <div>
-        <label className="block text-xs text-muted mb-1">
+        <label className="text-muted mb-1 block text-xs">
           Original Loan Amount
         </label>
         <input
@@ -107,11 +107,11 @@ function LoanFormFields({
             setForm({ ...form, originalLoanAmount: e.target.value })
           }
           placeholder="280000"
-          className="w-full border rounded px-2 py-1"
+          className="w-full rounded border px-2 py-1"
         />
       </div>
       <div>
-        <label className="block text-xs text-muted mb-1">Monthly P&I</label>
+        <label className="text-muted mb-1 block text-xs">Monthly P&I</label>
         <input
           type="text"
           value={form.principalAndInterest}
@@ -119,11 +119,11 @@ function LoanFormFields({
             setForm({ ...form, principalAndInterest: e.target.value })
           }
           placeholder="1770.09"
-          className="w-full border rounded px-2 py-1"
+          className="w-full rounded border px-2 py-1"
         />
       </div>
       <div>
-        <label className="block text-xs text-muted mb-1">
+        <label className="text-muted mb-1 block text-xs">
           First Payment Date
         </label>
         <input
@@ -132,20 +132,20 @@ function LoanFormFields({
           onChange={(e) =>
             setForm({ ...form, firstPaymentDate: e.target.value })
           }
-          className="w-full border rounded px-2 py-1"
+          className="w-full rounded border px-2 py-1"
         />
       </div>
       <div>
-        <label className="block text-xs text-muted mb-1">PMI</label>
+        <label className="text-muted mb-1 block text-xs">PMI</label>
         <input
           type="text"
           value={form.pmi}
           onChange={(e) => setForm({ ...form, pmi: e.target.value })}
-          className="w-full border rounded px-2 py-1"
+          className="w-full rounded border px-2 py-1"
         />
       </div>
       <div>
-        <label className="block text-xs text-muted mb-1">
+        <label className="text-muted mb-1 block text-xs">
           Insurance & Taxes
         </label>
         <input
@@ -154,42 +154,42 @@ function LoanFormFields({
           onChange={(e) =>
             setForm({ ...form, insuranceAndTaxes: e.target.value })
           }
-          className="w-full border rounded px-2 py-1"
+          className="w-full rounded border px-2 py-1"
         />
       </div>
       <div>
-        <label className="block text-xs text-muted mb-1">Total Escrow</label>
+        <label className="text-muted mb-1 block text-xs">Total Escrow</label>
         <input
           type="text"
           value={form.totalEscrow}
           onChange={(e) => setForm({ ...form, totalEscrow: e.target.value })}
-          className="w-full border rounded px-2 py-1"
+          className="w-full rounded border px-2 py-1"
         />
       </div>
       <div>
-        <label className="block text-xs text-muted mb-1">Purchase Value</label>
+        <label className="text-muted mb-1 block text-xs">Purchase Value</label>
         <input
           type="text"
           value={form.propertyValuePurchase}
           onChange={(e) =>
             setForm({ ...form, propertyValuePurchase: e.target.value })
           }
-          className="w-full border rounded px-2 py-1"
+          className="w-full rounded border px-2 py-1"
         />
       </div>
       <div>
-        <label className="block text-xs text-muted mb-1">Estimated Value</label>
+        <label className="text-muted mb-1 block text-xs">Estimated Value</label>
         <input
           type="text"
           value={form.propertyValueEstimated}
           onChange={(e) =>
             setForm({ ...form, propertyValueEstimated: e.target.value })
           }
-          className="w-full border rounded px-2 py-1"
+          className="w-full rounded border px-2 py-1"
         />
       </div>
       <div>
-        <label className="block text-xs text-muted mb-1">Refinanced From</label>
+        <label className="text-muted mb-1 block text-xs">Refinanced From</label>
         <select
           value={form.refinancedFromId ?? ""}
           onChange={(e) =>
@@ -198,7 +198,7 @@ function LoanFormFields({
               refinancedFromId: e.target.value ? Number(e.target.value) : null,
             })
           }
-          className="w-full border rounded px-2 py-1"
+          className="w-full rounded border px-2 py-1"
         >
           <option value="">None (original loan)</option>
           {allLoans
@@ -346,7 +346,7 @@ export function MortgageSettings() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
+      <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold">Mortgage Loans</h2>
         {admin && (
           <Button
@@ -364,8 +364,8 @@ export function MortgageSettings() {
 
       {/* Refinance chain visualization */}
       {loans.length > 1 && (
-        <div className="mb-4 bg-surface-sunken rounded-lg p-3">
-          <p className="text-xs text-faint uppercase tracking-wide mb-2">
+        <div className="bg-surface-sunken mb-4 rounded-lg p-3">
+          <p className="text-faint mb-2 text-xs tracking-wide uppercase">
             Refinance Chain
           </p>
           <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -374,9 +374,9 @@ export function MortgageSettings() {
               return (
                 <React.Fragment key={l.id}>
                   <span
-                    className={`px-2 py-0.5 rounded ${
+                    className={`rounded px-2 py-0.5 ${
                       l.isActive
-                        ? "bg-green-100 text-green-800 font-medium"
+                        ? "bg-green-100 font-medium text-green-800"
                         : "bg-surface-strong text-muted"
                     }`}
                   >
@@ -396,8 +396,8 @@ export function MortgageSettings() {
 
       {/* Add/Edit form */}
       {(adding || editingId) && (
-        <div className="mb-6 border border-blue-200 bg-blue-50 rounded-lg p-4">
-          <p className="text-sm font-medium text-blue-800 mb-3">
+        <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
+          <p className="mb-3 text-sm font-medium text-blue-800">
             {editingId ? "Edit Loan" : "New Loan"}
           </p>
           <LoanFormFields
@@ -406,7 +406,7 @@ export function MortgageSettings() {
             allLoans={allLoansRef}
             editId={editingId ?? undefined}
           />
-          <div className="flex gap-2 mt-3">
+          <div className="mt-3 flex gap-2">
             <Button
               size="sm"
               onClick={handleSave}
@@ -421,7 +421,7 @@ export function MortgageSettings() {
                 setAdding(false);
                 setEditingId(null);
               }}
-              className="px-3 py-1 border rounded text-sm hover:bg-surface-sunken"
+              className="hover:bg-surface-sunken rounded border px-3 py-1 text-sm"
             >
               Cancel
             </button>
@@ -441,13 +441,13 @@ export function MortgageSettings() {
             return (
               <div
                 key={loan.id}
-                className={`border rounded p-4 ${loan.isActive ? "border-green-300 bg-green-50" : ""}`}
+                className={`rounded border p-4 ${loan.isActive ? "border-green-300 bg-green-50" : ""}`}
               >
-                <div className="flex items-start justify-between mb-2">
+                <div className="mb-2 flex items-start justify-between">
                   <h3 className="font-medium">
                     {loan.name}{" "}
                     {loan.isActive ? (
-                      <span className="text-green-600 text-xs">(Active)</span>
+                      <span className="text-xs text-green-600">(Active)</span>
                     ) : (
                       <span className="text-faint text-xs">(Inactive)</span>
                     )}
@@ -507,7 +507,7 @@ export function MortgageSettings() {
 
       {/* Extra Payments section */}
       <div className="mt-8">
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Extra Payments</h2>
           {admin && (
             <Button
@@ -532,10 +532,10 @@ export function MortgageSettings() {
         </div>
 
         {addingExtra && (
-          <div className="mb-4 border border-blue-200 bg-blue-50 rounded-lg p-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
+          <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4">
+            <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
               <div>
-                <label className="block text-xs text-muted mb-1">Loan</label>
+                <label className="text-muted mb-1 block text-xs">Loan</label>
                 <select
                   value={extraForm.loanId}
                   onChange={(e) =>
@@ -544,7 +544,7 @@ export function MortgageSettings() {
                       loanId: Number(e.target.value),
                     })
                   }
-                  className="w-full border rounded px-2 py-1"
+                  className="w-full rounded border px-2 py-1"
                 >
                   {loans.map((l) => (
                     <option key={l.id} value={l.id}>
@@ -554,7 +554,7 @@ export function MortgageSettings() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-muted mb-1">Amount</label>
+                <label className="text-muted mb-1 block text-xs">Amount</label>
                 <input
                   type="number"
                   value={extraForm.amount}
@@ -562,11 +562,11 @@ export function MortgageSettings() {
                     setExtraForm({ ...extraForm, amount: e.target.value })
                   }
                   placeholder="500"
-                  className="w-full border rounded px-2 py-1"
+                  className="w-full rounded border px-2 py-1"
                 />
               </div>
               <div>
-                <label className="flex items-center gap-2 text-xs text-muted mb-1">
+                <label className="text-muted mb-1 flex items-center gap-2 text-xs">
                   <input
                     type="checkbox"
                     checked={extraForm.isRange}
@@ -588,7 +588,7 @@ export function MortgageSettings() {
                           startDate: e.target.value,
                         })
                       }
-                      className="flex-1 border rounded px-2 py-1 text-xs"
+                      className="flex-1 rounded border px-2 py-1 text-xs"
                     />
                     <input
                       type="date"
@@ -596,7 +596,7 @@ export function MortgageSettings() {
                       onChange={(e) =>
                         setExtraForm({ ...extraForm, endDate: e.target.value })
                       }
-                      className="flex-1 border rounded px-2 py-1 text-xs"
+                      className="flex-1 rounded border px-2 py-1 text-xs"
                     />
                   </div>
                 ) : (
@@ -609,21 +609,21 @@ export function MortgageSettings() {
                         paymentDate: e.target.value,
                       })
                     }
-                    className="w-full border rounded px-2 py-1"
+                    className="w-full rounded border px-2 py-1"
                   />
                 )}
               </div>
               <div>
-                <label className="block text-xs text-muted mb-1">Notes</label>
+                <label className="text-muted mb-1 block text-xs">Notes</label>
                 <input
                   type="text"
                   value={extraForm.notes}
                   onChange={(e) =>
                     setExtraForm({ ...extraForm, notes: e.target.value })
                   }
-                  className="w-full border rounded px-2 py-1"
+                  className="w-full rounded border px-2 py-1"
                 />
-                <label className="flex items-center gap-1.5 mt-1 text-xs text-muted">
+                <label className="text-muted mt-1 flex items-center gap-1.5 text-xs">
                   <input
                     type="checkbox"
                     checked={extraForm.isActual}
@@ -636,7 +636,7 @@ export function MortgageSettings() {
                 </label>
               </div>
             </div>
-            <div className="flex gap-2 mt-3">
+            <div className="mt-3 flex gap-2">
               <Button
                 size="sm"
                 onClick={handleAddExtra}
@@ -646,7 +646,7 @@ export function MortgageSettings() {
               </Button>
               <button
                 onClick={() => setAddingExtra(false)}
-                className="px-3 py-1 border rounded text-sm hover:bg-surface-sunken"
+                className="hover:bg-surface-sunken rounded border px-3 py-1 text-sm"
               >
                 Cancel
               </button>
@@ -655,9 +655,9 @@ export function MortgageSettings() {
         )}
 
         {extraPayments && extraPayments.length > 0 ? (
-          <table className="w-full text-sm border-collapse">
+          <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b text-left text-muted">
+              <tr className="text-muted border-b text-left">
                 <th className="py-1 pr-2">Loan</th>
                 <th className="py-1 pr-2">Date</th>
                 <th className="py-1 pr-2 text-right">Amount</th>
@@ -673,7 +673,7 @@ export function MortgageSettings() {
                   ? ep.paymentDate
                   : `${ep.startDate} → ${ep.endDate}`;
                 return (
-                  <tr key={ep.id} className="border-b border-subtle group">
+                  <tr key={ep.id} className="border-subtle group border-b">
                     <td className="py-1 pr-2">
                       {loan?.name ?? `Loan #${ep.loanId}`}
                     </td>
@@ -683,7 +683,7 @@ export function MortgageSettings() {
                     </td>
                     <td className="py-1 pr-2">
                       <span
-                        className={`text-caption px-1.5 py-0.5 rounded ${
+                        className={`text-caption rounded px-1.5 py-0.5 ${
                           ep.isActual
                             ? "bg-green-100 text-green-700"
                             : "bg-surface-elevated text-muted"
@@ -692,7 +692,7 @@ export function MortgageSettings() {
                         {ep.isActual ? "Historical" : "Planned"}
                       </span>
                     </td>
-                    <td className="py-1 pr-2 text-xs text-muted">
+                    <td className="text-muted py-1 pr-2 text-xs">
                       {ep.notes ?? ""}
                     </td>
                     <td className="py-1">
@@ -702,7 +702,7 @@ export function MortgageSettings() {
                             if (await confirm("Delete this extra payment?"))
                               deleteExtra.mutate({ id: ep.id });
                           }}
-                          className="text-xs text-red-400 hover:text-red-600 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                          className="text-xs text-red-400 transition-opacity hover:text-red-600 md:opacity-0 md:group-hover:opacity-100"
                         >
                           Delete
                         </button>

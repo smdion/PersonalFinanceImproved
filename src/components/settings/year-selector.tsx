@@ -33,7 +33,7 @@ export function YearSelector({
             role="tab"
             aria-selected={yr === activeYear}
             onClick={() => onSelectYear(yr)}
-            className={`px-3 py-1 text-sm rounded-full transition-colors ${
+            className={`rounded-full px-3 py-1 text-sm transition-colors ${
               yr === activeYear
                 ? "bg-blue-600 text-white"
                 : "bg-surface-elevated text-muted hover:bg-surface-strong"
@@ -54,7 +54,7 @@ export function YearSelector({
       {admin && (
         <button
           onClick={onAddYearClick}
-          className="px-2 py-1 text-sm text-blue-600 hover:text-blue-800 border border-blue-200 rounded-full hover:bg-blue-50 transition-colors"
+          className="rounded-full border border-blue-200 px-2 py-1 text-sm text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-800"
         >
           + Year
         </button>

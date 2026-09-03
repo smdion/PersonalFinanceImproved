@@ -86,7 +86,7 @@ export function DeductionForm({
         </FormSelect>
       </FormField>
 
-      <label className="flex items-center gap-2 text-sm text-secondary">
+      <label className="text-secondary flex items-center gap-2 text-sm">
         <input
           type="checkbox"
           checked={ficaExempt}
@@ -100,14 +100,14 @@ export function DeductionForm({
           type="button"
           onClick={handleSubmit}
           disabled={!canSubmit || isPending}
-          className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+          className="rounded-md bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
         >
           {isPending ? "Saving..." : "Create Deduction"}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="px-3 py-1.5 text-sm text-muted hover:text-primary"
+          className="text-muted hover:text-primary px-3 py-1.5 text-sm"
         >
           Cancel
         </button>

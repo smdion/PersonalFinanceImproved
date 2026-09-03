@@ -45,6 +45,6 @@ export function SectionSummaryBadge({
 
 export function SectionSummaryRow({ children }: { children: React.ReactNode }) {
   return (
-    <span className="flex items-center gap-2 text-caption">{children}</span>
+    <span className="text-caption flex items-center gap-2">{children}</span>
   );
 }

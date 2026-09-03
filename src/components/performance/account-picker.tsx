@@ -89,7 +89,7 @@ export function AccountPicker({
           setAnchorRect(e.currentTarget.getBoundingClientRect());
           setOpen(!open);
         }}
-        className="px-2.5 py-1 text-label rounded border border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong transition-colors"
+        className="text-label border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong rounded border px-2.5 py-1 transition-colors"
         title="Choose specific accounts to include"
       >
         {summaryLabel}
@@ -105,14 +105,14 @@ export function AccountPicker({
               role="presentation"
             />
             <div
-              className="fixed z-50 bg-surface-primary border rounded-lg shadow-lg p-3 w-80 max-h-96 overflow-y-auto"
+              className="bg-surface-primary fixed z-50 max-h-96 w-80 overflow-y-auto rounded-lg border p-3 shadow-lg"
               style={{
                 top: anchorRect.bottom + 4,
                 left: Math.min(anchorRect.left, window.innerWidth - 340),
               }}
             >
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-muted">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-muted text-xs font-medium">
                   Select accounts
                 </span>
                 <button
@@ -128,11 +128,11 @@ export function AccountPicker({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search accounts..."
-                className="w-full text-xs border rounded px-2 py-1 mb-2"
+                className="mb-2 w-full rounded border px-2 py-1 text-xs"
                 autoFocus
               />
 
-              <div className="flex items-center justify-between mb-2 text-caption">
+              <div className="text-caption mb-2 flex items-center justify-between">
                 <button
                   onClick={() => onChange(new Set(allIds))}
                   className="text-blue-600 hover:text-blue-700"
@@ -145,7 +145,7 @@ export function AccountPicker({
                 >
                   Select none
                 </button>
-                <label className="inline-flex items-center gap-1 text-faint cursor-pointer">
+                <label className="text-faint inline-flex cursor-pointer items-center gap-1">
                   <input
                     type="checkbox"
                     checked={showInactive}
@@ -156,7 +156,7 @@ export function AccountPicker({
               </div>
 
               {groups.size === 0 && (
-                <p className="text-xs text-faint text-center py-4">
+                <p className="text-faint py-4 text-center text-xs">
                   No accounts match.
                 </p>
               )}
@@ -168,7 +168,7 @@ export function AccountPicker({
                 return (
                   <div key={category} className="mb-1">
                     <div className="flex items-center justify-between px-1 py-0.5">
-                      <span className="text-caption font-semibold text-muted uppercase tracking-wider">
+                      <span className="text-caption text-muted font-semibold tracking-wider uppercase">
                         {category}
                       </span>
                       <button
@@ -181,7 +181,7 @@ export function AccountPicker({
                     {accts.map((m) => (
                       <label
                         key={m.id}
-                        className="flex items-center gap-2 w-full text-left px-2 py-1 text-xs rounded hover:bg-blue-50 transition-colors cursor-pointer text-secondary"
+                        className="text-secondary flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1 text-left text-xs transition-colors hover:bg-blue-50"
                       >
                         <input
                           type="checkbox"

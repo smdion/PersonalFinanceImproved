@@ -59,8 +59,8 @@ export function BonusSection({
   return (
     <div className="space-y-2">
       <SectionHeader>Bonus Estimate</SectionHeader>
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 space-y-1 text-sm">
-        <div className="space-y-1 mb-1">
+      <div className="space-y-1 rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm">
+        <div className="mb-1 space-y-1">
           <div className="flex items-center gap-1">
             <Toggle
               isChecked={job.include401kInBonus}
@@ -84,7 +84,7 @@ export function BonusSection({
             <HelpTip text="When on, percent-of-salary contributions (e.g. 401k at 16%) are calculated against salary + bonus instead of salary alone." />
           </div>
         </div>
-        <div className="flex justify-between items-center">
+        <div className="flex items-center justify-between">
           <span>Bonus %</span>
           <InlineEdit
             value={String(resolvedBonusTerms.bonusPercent * 100)}
@@ -99,7 +99,7 @@ export function BonusSection({
             isEditable={bonusTermsEditable}
           />
         </div>
-        <div className="flex justify-between items-center">
+        <div className="flex items-center justify-between">
           <span>
             Multiplier
             <HelpTip text="Scales your bonus target — 1.0x means on-target, higher means exceeding expectations" />
@@ -116,7 +116,7 @@ export function BonusSection({
             isEditable={bonusTermsEditable}
           />
         </div>
-        <div className="flex justify-between items-center">
+        <div className="flex items-center justify-between">
           <span className="flex items-center gap-1">
             {new Date().getFullYear()} Actual
             <HelpTip text="Lock in this year's actual bonus once it's paid out, instead of the calculated salary x percent x multiplier. Only affects this calendar year — next year's projections still use the full formula." />
@@ -145,7 +145,7 @@ export function BonusSection({
             isEditable={bonusTermsEditable}
           />
         </div>
-        <div className="flex justify-between items-center">
+        <div className="flex items-center justify-between">
           <span>
             Paid in
             <HelpTip text="Date when bonus is typically paid. Helps model contribution timing and cash flow." />
@@ -170,7 +170,7 @@ export function BonusSection({
                 }
               }}
               disabled={!bonusTermsEditable}
-              className="text-sm border rounded px-2 py-0.5 bg-surface-primary font-medium"
+              className="bg-surface-primary rounded border px-2 py-0.5 text-sm font-medium"
             />
             {bonusTermsEditable && job.bonusMonth != null && (
               <button
@@ -179,7 +179,7 @@ export function BonusSection({
                   onUpdateJob("bonusMonth", "");
                   onUpdateJob("bonusDayOfMonth", "");
                 }}
-                className="text-xs text-faint hover:text-secondary"
+                className="text-faint hover:text-secondary text-xs"
                 title="Clear date"
               >
                 ✕
@@ -188,7 +188,7 @@ export function BonusSection({
           </div>
         </div>
         {paycheck.bonusPeriod != null && (
-          <div className="flex justify-between text-muted text-xs">
+          <div className="text-muted flex justify-between text-xs">
             <span>Falls in pay period</span>
             <span className="font-medium">
               {paycheck.bonusPeriod} of {paycheck.periodsPerYear}
@@ -217,11 +217,11 @@ export function BonusSection({
                     {formatCurrency(bonusEstimate.bonusGross)}
                   </span>
                 </div>
-                <div className="flex justify-between text-muted">
+                <div className="text-muted flex justify-between">
                   <span>
                     Federal (supplemental)
                     <HelpTip text="Bonuses use the flat supplemental withholding rate instead of your regular bracket" />
-                    <span className="text-xs text-faint ml-1">
+                    <span className="text-faint ml-1 text-xs">
                       @ {formatPercent(fedRate, 0)}
                     </span>
                   </span>
@@ -229,22 +229,22 @@ export function BonusSection({
                     -{formatCurrency(bonusEstimate.bonusFederalWithholding)}
                   </span>
                 </div>
-                <div className="flex justify-between text-muted">
+                <div className="text-muted flex justify-between">
                   <span>FICA</span>
                   <span>-{formatCurrency(bonusEstimate.bonusFica)}</span>
                 </div>
                 {bonusEstimate.bonusContributions > 0 && (
-                  <div className="flex justify-between text-muted">
+                  <div className="text-muted flex justify-between">
                     <span>401k / contributions</span>
                     <span>
                       -{formatCurrency(bonusEstimate.bonusContributions)}
                     </span>
                   </div>
                 )}
-                <div className="border-t border-yellow-200 pt-1 flex justify-between font-medium">
+                <div className="flex justify-between border-t border-yellow-200 pt-1 font-medium">
                   <span>
                     Net
-                    <span className="text-xs text-faint font-normal ml-1">
+                    <span className="text-faint ml-1 text-xs font-normal">
                       ({formatPercent(1 - totalTaxRate, 1)} take-home)
                     </span>
                   </span>

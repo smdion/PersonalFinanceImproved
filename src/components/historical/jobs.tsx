@@ -90,15 +90,15 @@ export function JobsSettings() {
       {/* Job Timeline by Person */}
       {jobsByPerson.length > 0 && (
         <div>
-          <h3 className="text-xs font-semibold text-muted uppercase tracking-wider mb-3">
+          <h3 className="text-muted mb-3 text-xs font-semibold tracking-wider uppercase">
             Employment Timeline
           </h3>
           <div className="space-y-4">
             {jobsByPerson.map(({ personId, name, jobs }, pi) => (
               <div key={personId}>
-                <div className="text-xs font-semibold text-secondary mb-2 flex items-center gap-2">
+                <div className="text-secondary mb-2 flex items-center gap-2 text-xs font-semibold">
                   <span
-                    className="w-2.5 h-2.5 rounded-full"
+                    className="h-2.5 w-2.5 rounded-full"
                     style={{
                       backgroundColor: PERSON_COLORS[pi % PERSON_COLORS.length],
                     }}
@@ -111,7 +111,7 @@ export function JobsSettings() {
                     return (
                       <div
                         key={job.id}
-                        className={`flex items-start gap-3 p-2.5 rounded-lg border text-xs ${
+                        className={`flex items-start gap-3 rounded-lg border p-2.5 text-xs ${
                           isCurrent
                             ? "border-blue-200 bg-blue-50/50"
                             : "bg-surface-sunken/50"
@@ -120,19 +120,19 @@ export function JobsSettings() {
                         {/* Timeline dot */}
                         <div className="flex flex-col items-center pt-0.5">
                           <div
-                            className={`w-2 h-2 rounded-full${isCurrent ? "bg-blue-500 ring-2 ring-blue-200" : "bg-surface-strong"}`}
+                            className={`h-2 w-2 rounded-full${isCurrent ? "bg-blue-500 ring-2 ring-blue-200" : "bg-surface-strong"}`}
                           />
                           {isCurrent && (
-                            <div className="text-micro text-blue-600 font-semibold mt-0.5">
+                            <div className="text-micro mt-0.5 font-semibold text-blue-600">
                               NOW
                             </div>
                           )}
                         </div>
 
                         {/* Content */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-semibold text-primary">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-primary font-semibold">
                               {job.employerName}
                             </span>
                             {job.title && (
@@ -142,7 +142,7 @@ export function JobsSettings() {
                               </>
                             )}
                           </div>
-                          <div className="flex items-center gap-3 mt-1 text-muted">
+                          <div className="text-muted mt-1 flex items-center gap-3">
                             <span>
                               {formatDate(job.startDate, "short")} —{" "}
                               {isCurrent
@@ -256,14 +256,14 @@ function JobForm({
           endDate: endDate || null,
         });
       }}
-      className="grid grid-cols-2 md:grid-cols-4 gap-3"
+      className="grid grid-cols-2 gap-3 md:grid-cols-4"
     >
       <label className="flex flex-col text-sm">
         Person
         <select
           value={personId}
           onChange={(e) => setPersonId(Number(e.target.value))}
-          className="mt-1 px-2 py-1 border rounded"
+          className="mt-1 rounded border px-2 py-1"
         >
           {people.map((p) => (
             <option key={p.id} value={p.id}>
@@ -278,7 +278,7 @@ function JobForm({
           value={employer}
           onChange={(e) => setEmployer(e.target.value)}
           required
-          className="mt-1 px-2 py-1 border rounded"
+          className="mt-1 rounded border px-2 py-1"
         />
       </label>
       <label className="flex flex-col text-sm">
@@ -286,7 +286,7 @@ function JobForm({
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="mt-1 px-2 py-1 border rounded"
+          className="mt-1 rounded border px-2 py-1"
         />
       </label>
       <label className="flex flex-col text-sm">
@@ -296,7 +296,7 @@ function JobForm({
           value={startDate}
           onChange={(e) => setStartDate(e.target.value)}
           required
-          className="mt-1 px-2 py-1 border rounded"
+          className="mt-1 rounded border px-2 py-1"
         />
       </label>
       <label className="flex flex-col text-sm">
@@ -305,21 +305,21 @@ function JobForm({
           type="date"
           value={endDate}
           onChange={(e) => setEndDate(e.target.value)}
-          className="mt-1 px-2 py-1 border rounded"
+          className="mt-1 rounded border px-2 py-1"
         />
       </label>
       <div className="col-span-full flex gap-2">
         <button
           type="submit"
           disabled={isPending}
-          className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+          className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
         >
           {initial ? "Update" : "Create"}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="px-3 py-1.5 text-sm border rounded hover:bg-surface-elevated"
+          className="hover:bg-surface-elevated rounded border px-3 py-1.5 text-sm"
         >
           Cancel
         </button>

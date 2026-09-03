@@ -164,15 +164,15 @@ export function BracketTableEditor<TEntry>({
   if (yearData.length === 0) {
     return (
       <div>
-        <h2 className="text-lg font-semibold mb-4">{title}</h2>
-        <div className="p-4 border border-dashed rounded-lg text-center">
-          <p className="text-muted text-sm mb-3">
+        <h2 className="mb-4 text-lg font-semibold">{title}</h2>
+        <div className="rounded-lg border border-dashed p-4 text-center">
+          <p className="text-muted mb-3 text-sm">
             No {noun} brackets configured for {year}.
           </p>
           {admin && (
             <div className="flex items-center justify-center gap-3">
               {years.length > 0 && (
-                <label className="text-sm text-secondary">
+                <label className="text-secondary text-sm">
                   Copy from:
                   <select
                     value={effectiveCopyFrom ?? ""}
@@ -182,7 +182,7 @@ export function BracketTableEditor<TEntry>({
                       );
                       setCopyFromTouched(true);
                     }}
-                    className="ml-2 px-2 py-1 text-sm border rounded"
+                    className="ml-2 rounded border px-2 py-1 text-sm"
                   >
                     <option value="">Empty brackets</option>
                     {years.map((yr) => (
@@ -195,7 +195,7 @@ export function BracketTableEditor<TEntry>({
               )}
               <button
                 onClick={handleAddYear}
-                className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
               >
                 Add {year}
               </button>
@@ -208,24 +208,24 @@ export function BracketTableEditor<TEntry>({
 
   return (
     <div>
-      <h2 className="text-lg font-semibold mb-4">{title}</h2>
-      {intro && <div className="text-xs text-muted mb-4">{intro}</div>}
+      <h2 className="mb-4 text-lg font-semibold">{title}</h2>
+      {intro && <div className="text-muted mb-4 text-xs">{intro}</div>}
 
       {confirmDelete === year && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
+        <div className="mb-4 flex items-center justify-between rounded-lg border border-red-200 bg-red-50 p-3">
           <span className="text-sm text-red-800">
             Delete all {year} {noun} brackets? This cannot be undone.
           </span>
           <div className="flex gap-2">
             <button
               onClick={handleDeleteYear}
-              className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+              className="rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700"
             >
               Delete
             </button>
             <button
               onClick={() => setConfirmDelete(null)}
-              className="px-3 py-1 text-sm text-muted hover:text-primary"
+              className="text-muted hover:text-primary px-3 py-1 text-sm"
             >
               Cancel
             </button>
@@ -233,21 +233,21 @@ export function BracketTableEditor<TEntry>({
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {FILING_STATUSES.map((status) => {
           const row = yearData.find((r) => r.filingStatus === status);
           if (!row) return null;
           return (
-            <div key={status} className="border rounded-lg overflow-hidden">
-              <div className="bg-surface-sunken px-4 py-2 border-b">
-                <h3 className="font-medium text-primary">
+            <div key={status} className="overflow-hidden rounded-lg border">
+              <div className="bg-surface-sunken border-b px-4 py-2">
+                <h3 className="text-primary font-medium">
                   {STATUS_LABELS[status]}
                 </h3>
               </div>
               <div className="p-3">
-                <table className="w-full text-sm border-collapse">
+                <table className="w-full border-collapse text-sm">
                   <thead>
-                    <tr className="text-xs text-muted">
+                    <tr className="text-muted text-xs">
                       {columns.map((col) => (
                         <th
                           key={col.header}
@@ -264,7 +264,7 @@ export function BracketTableEditor<TEntry>({
                     {row.brackets.map((entry, i) => (
                       <tr
                         key={entryKey(entry, i)}
-                        className="border-t border-subtle"
+                        className="border-subtle border-t"
                       >
                         {columns.map((col) => (
                           <td
@@ -294,8 +294,8 @@ export function BracketTableEditor<TEntry>({
         })}
       </div>
 
-      <div className="flex items-center justify-between mt-4">
-        <p className="text-xs text-faint">{sourceNote}</p>
+      <div className="mt-4 flex items-center justify-between">
+        <p className="text-faint text-xs">{sourceNote}</p>
         {admin && years.length > 1 && confirmDelete !== year && (
           <button
             onClick={() => setConfirmDelete(year)}

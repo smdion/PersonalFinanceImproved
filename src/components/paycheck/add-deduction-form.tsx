@@ -34,7 +34,7 @@ export function AddDeductionForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2 text-sm"
+      className="space-y-2 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm"
     >
       <p className="text-xs font-medium text-blue-700 uppercase">
         New {isPretax ? "Pre-Tax" : "Post-Tax"} Deduction
@@ -45,7 +45,7 @@ export function AddDeductionForm({
           placeholder="Name (e.g. Dental)"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="flex-1 border border-strong rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+          className="border-strong flex-1 rounded border px-2 py-1 text-sm focus:ring-2 focus:ring-blue-300 focus:outline-none"
           autoFocus
         />
         <input
@@ -55,16 +55,16 @@ export function AddDeductionForm({
           onChange={(e) => setAmount(e.target.value)}
           step="0.01"
           min="0"
-          className="w-24 border border-strong rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+          className="border-strong w-24 rounded border px-2 py-1 text-sm focus:ring-2 focus:ring-blue-300 focus:outline-none"
         />
       </div>
       {isPretax && (
-        <label className="flex items-center gap-1.5 text-xs text-muted">
+        <label className="text-muted flex items-center gap-1.5 text-xs">
           <input
             type="checkbox"
             checked={ficaExempt}
             onChange={(e) => setFicaExempt(e.target.checked)}
-            className="rounded border-strong"
+            className="border-strong rounded"
           />
           FICA exempt (Section 125)
           <HelpTip text="If checked, this deduction also reduces Social Security and Medicare taxes — common for health/dental premiums" />
@@ -73,14 +73,14 @@ export function AddDeductionForm({
       <div className="flex gap-2">
         <button
           type="submit"
-          className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
+          className="rounded bg-blue-600 px-3 py-1 text-xs text-white transition-colors hover:bg-blue-700"
         >
           Add
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="px-3 py-1 bg-surface-strong text-secondary rounded text-xs hover:bg-surface-strong transition-colors"
+          className="bg-surface-strong text-secondary hover:bg-surface-strong rounded px-3 py-1 text-xs transition-colors"
         >
           Cancel
         </button>

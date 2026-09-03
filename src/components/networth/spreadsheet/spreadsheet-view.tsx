@@ -130,7 +130,7 @@ export function SpreadsheetView({
 
   if (!detailedData || availableYears.length < 2 || !yearARow || !yearBRow) {
     return (
-      <p className="text-sm text-muted py-8 text-center">
+      <p className="text-muted py-8 text-center text-sm">
         Need at least two years of data for the spreadsheet view.
       </p>
     );
@@ -152,7 +152,7 @@ export function SpreadsheetView({
         onToggleShowOutdated={() => setShowOutdated((v) => !v)}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Left column: tables */}
         <div className="space-y-0">
           <SpreadsheetYearOverYearTable
@@ -193,13 +193,13 @@ export function SpreadsheetView({
               <span className="text-muted">X-Axis:</span>
               <button
                 onClick={() => onChartXAxisChange("year")}
-                className={`px-2 py-0.5 rounded-full transition-colors ${chartXAxis === "year" ? "bg-blue-600 text-white" : "bg-surface-elevated text-muted hover:bg-surface-strong"}`}
+                className={`rounded-full px-2 py-0.5 transition-colors ${chartXAxis === "year" ? "bg-blue-600 text-white" : "bg-surface-elevated text-muted hover:bg-surface-strong"}`}
               >
                 Year
               </button>
               <button
                 onClick={() => onChartXAxisChange("age")}
-                className={`px-2 py-0.5 rounded-full transition-colors ${chartXAxis === "age" ? "bg-blue-600 text-white" : "bg-surface-elevated text-muted hover:bg-surface-strong"}`}
+                className={`rounded-full px-2 py-0.5 transition-colors ${chartXAxis === "age" ? "bg-blue-600 text-white" : "bg-surface-elevated text-muted hover:bg-surface-strong"}`}
               >
                 Age
               </button>

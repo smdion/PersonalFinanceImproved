@@ -102,9 +102,9 @@ function ProfilePicker({
   if (options.length === 0) return null;
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs text-muted">{label}:</span>
+      <span className="text-muted text-xs">{label}:</span>
       <select
-        className="text-xs border rounded px-2 py-1 bg-surface-primary"
+        className="bg-surface-primary rounded border px-2 py-1 text-xs"
         value={value ?? ""}
         onChange={(e) => onChange(Number(e.target.value))}
         aria-label={`${label} profile`}
@@ -116,7 +116,7 @@ function ProfilePicker({
         ))}
       </select>
       {note && (
-        <span className="text-caption text-amber-600 font-medium">{note}</span>
+        <span className="text-caption font-medium text-amber-600">{note}</span>
       )}
     </div>
   );
@@ -155,24 +155,24 @@ function WhatIfStep({
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   return (
-    <section className="rounded-lg border border-default bg-surface-sunken/40 p-4">
-      <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
+    <section className="border-default bg-surface-sunken/40 rounded-lg border p-4">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <button
           type="button"
           onClick={() => setExpanded((e) => !e)}
           className="flex items-start gap-2.5 text-left"
           aria-expanded={expanded}
         >
-          <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-600 text-white text-micro font-semibold flex items-center justify-center mt-0.5">
+          <span className="text-micro mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 font-semibold text-white">
             {number}
           </span>
           <div>
-            <h3 className="text-sm font-semibold text-primary leading-tight flex items-center gap-1">
+            <h3 className="text-primary flex items-center gap-1 text-sm leading-tight font-semibold">
               {title}
               {expanded ? (
-                <ChevronDown className="w-3.5 h-3.5 text-faint" />
+                <ChevronDown className="text-faint h-3.5 w-3.5" />
               ) : (
-                <ChevronRight className="w-3.5 h-3.5 text-faint" />
+                <ChevronRight className="text-faint h-3.5 w-3.5" />
               )}
             </h3>
             {description && (
@@ -495,9 +495,9 @@ function WhatIfPinnedCell({
             ? `Fixed for this preview. Live value: ${liveValue}`
             : "Follows the picked Salary Profile / job record"
         }
-        className={`${width} px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary tabular-nums ${
+        className={`${width} bg-surface-primary rounded border px-1.5 py-0.5 text-right text-xs tabular-nums ${
           isPinned
-            ? "text-amber-600 font-medium border-amber-400"
+            ? "border-amber-400 font-medium text-amber-600"
             : "text-secondary"
         }`}
       />
@@ -506,7 +506,7 @@ function WhatIfPinnedCell({
         onClick={onReset}
         disabled={!isPinned}
         title={isPinned ? "Reset to the live value" : "Already live"}
-        className="text-caption text-faint hover:text-blue-600 disabled:opacity-0 disabled:cursor-default w-3.5 shrink-0"
+        className="text-caption text-faint w-3.5 shrink-0 hover:text-blue-600 disabled:cursor-default disabled:opacity-0"
       >
         ↺
       </button>
@@ -536,19 +536,19 @@ function WhatIfSalaryEditor({
   if (views.length === 0) return null;
 
   return (
-    <table className="w-full text-xs border-collapse">
+    <table className="w-full border-collapse text-xs">
       <thead>
-        <tr className="border-b-2 border-strong">
-          <th className="text-left py-2 pl-4 pr-3 text-muted font-medium">
+        <tr className="border-strong border-b-2">
+          <th className="text-muted py-2 pr-3 pl-4 text-left font-medium">
             Person
           </th>
-          <th className="text-right py-2 px-3 text-muted font-medium w-32">
+          <th className="text-muted w-32 px-3 py-2 text-right font-medium">
             Salary
           </th>
-          <th className="text-right py-2 px-3 text-muted font-medium w-24">
+          <th className="text-muted w-24 px-3 py-2 text-right font-medium">
             Bonus %
           </th>
-          <th className="text-right py-2 px-3 text-muted font-medium w-24">
+          <th className="text-muted w-24 px-3 py-2 text-right font-medium">
             Bonus ×
           </th>
         </tr>
@@ -559,14 +559,14 @@ function WhatIfSalaryEditor({
           return (
             <tr
               key={v.person.id}
-              className={`border-b border-subtle hover:bg-blue-50/60 transition-colors ${
+              className={`border-subtle border-b transition-colors hover:bg-blue-50/60 ${
                 rowIdx % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"
               }`}
             >
-              <td className="py-1.5 pl-4 pr-3 text-secondary">
+              <td className="text-secondary py-1.5 pr-3 pl-4">
                 {v.person.name}
               </td>
-              <td className="py-1.5 px-3 text-right">
+              <td className="px-3 py-1.5 text-right">
                 <WhatIfPinnedCell
                   liveValue={v.salary}
                   pinnedValue={entry.salary}
@@ -576,7 +576,7 @@ function WhatIfSalaryEditor({
                   width="w-28"
                 />
               </td>
-              <td className="py-1.5 px-3 text-right">
+              <td className="px-3 py-1.5 text-right">
                 <WhatIfPinnedCell
                   liveValue={v.resolvedBonusTerms.bonusPercent * 100}
                   pinnedValue={
@@ -594,7 +594,7 @@ function WhatIfSalaryEditor({
                   width="w-16"
                 />
               </td>
-              <td className="py-1.5 px-3 text-right">
+              <td className="px-3 py-1.5 text-right">
                 <WhatIfPinnedCell
                   liveValue={v.resolvedBonusTerms.bonusMultiplier}
                   pinnedValue={entry.bonusMultiplier}
@@ -664,7 +664,7 @@ function WhatIfDeductionsEditor({
       <button
         type="button"
         onClick={() => setExpanded(true)}
-        className="text-caption text-blue-500 hover:text-blue-700 font-medium"
+        className="text-caption font-medium text-blue-500 hover:text-blue-700"
       >
         Edit deductions ({totalDeductions} total) ▸
       </button>
@@ -676,7 +676,7 @@ function WhatIfDeductionsEditor({
       <button
         type="button"
         onClick={() => setExpanded(false)}
-        className="text-caption text-blue-500 hover:text-blue-700 font-medium"
+        className="text-caption font-medium text-blue-500 hover:text-blue-700"
       >
         ▾ Deductions
       </button>
@@ -686,31 +686,31 @@ function WhatIfDeductionsEditor({
         );
         return (
           <div key={v.person.id}>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-caption font-semibold text-muted">
+            <div className="mb-1 flex items-center gap-2">
+              <span className="text-caption text-muted font-semibold">
                 {v.person.name}&rsquo;s deductions
               </span>
               <button
                 type="button"
                 onClick={() => onAddDeduction(v.person.id)}
-                className="text-caption text-blue-500 hover:text-blue-700 font-medium"
+                className="text-caption font-medium text-blue-500 hover:text-blue-700"
               >
                 + Add deduction
               </button>
             </div>
             {v.rawDeductions.length === 0 && personAdditions.length === 0 ? (
-              <p className="text-caption text-faint italic pl-2">None</p>
+              <p className="text-caption text-faint pl-2 italic">None</p>
             ) : (
-              <table className="w-full text-xs border-collapse">
+              <table className="w-full border-collapse text-xs">
                 <thead>
-                  <tr className="border-b border-subtle">
-                    <th className="text-left py-1 pl-4 pr-3 text-muted font-medium">
+                  <tr className="border-subtle border-b">
+                    <th className="text-muted py-1 pr-3 pl-4 text-left font-medium">
                       Name
                     </th>
-                    <th className="text-right py-1 px-3 text-muted font-medium w-32">
+                    <th className="text-muted w-32 px-3 py-1 text-right font-medium">
                       $/period
                     </th>
-                    <th className="text-left py-1 px-3 text-muted font-medium w-24">
+                    <th className="text-muted w-24 px-3 py-1 text-left font-medium">
                       Treatment
                     </th>
                     <th className="w-8" />
@@ -720,12 +720,12 @@ function WhatIfDeductionsEditor({
                   {v.rawDeductions.map((d, rowIdx) => (
                     <tr
                       key={d.id}
-                      className={`border-b border-subtle ${rowIdx % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"}`}
+                      className={`border-subtle border-b ${rowIdx % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"}`}
                     >
-                      <td className="py-1 pl-4 pr-3 text-secondary">
+                      <td className="text-secondary py-1 pr-3 pl-4">
                         {d.deductionName}
                       </td>
-                      <td className="py-1 px-3 text-right">
+                      <td className="px-3 py-1 text-right">
                         <WhatIfPinnedCell
                           liveValue={parseFloat(d.amountPerPeriod)}
                           pinnedValue={deductionEdits.get(d.id)}
@@ -735,7 +735,7 @@ function WhatIfDeductionsEditor({
                           width="w-24"
                         />
                       </td>
-                      <td className="py-1 px-3 text-faint">
+                      <td className="text-faint px-3 py-1">
                         {d.isPretax ? "Pre-tax" : "Post-tax"}
                       </td>
                       <td />
@@ -744,9 +744,9 @@ function WhatIfDeductionsEditor({
                   {personAdditions.map((a, rowIdx) => (
                     <tr
                       key={a.localId}
-                      className={`border-b border-subtle ${(v.rawDeductions.length + rowIdx) % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"}`}
+                      className={`border-subtle border-b ${(v.rawDeductions.length + rowIdx) % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"}`}
                     >
-                      <td className="py-1 pl-4 pr-3">
+                      <td className="py-1 pr-3 pl-4">
                         <input
                           type="text"
                           value={a.name}
@@ -755,10 +755,10 @@ function WhatIfDeductionsEditor({
                               name: e.target.value,
                             })
                           }
-                          className="w-full text-xs border rounded px-1.5 py-0.5 bg-surface-primary text-amber-600 font-medium border-amber-400"
+                          className="bg-surface-primary w-full rounded border border-amber-400 px-1.5 py-0.5 text-xs font-medium text-amber-600"
                         />
                       </td>
-                      <td className="py-1 px-3 text-right">
+                      <td className="px-3 py-1 text-right">
                         <input
                           type="number"
                           step="10"
@@ -768,10 +768,10 @@ function WhatIfDeductionsEditor({
                               amountPerPeriod: parseFloat(e.target.value) || 0,
                             })
                           }
-                          className="w-24 text-xs text-right border rounded px-1.5 py-0.5 bg-surface-primary text-amber-600 font-medium border-amber-400 tabular-nums"
+                          className="bg-surface-primary w-24 rounded border border-amber-400 px-1.5 py-0.5 text-right text-xs font-medium text-amber-600 tabular-nums"
                         />
                       </td>
-                      <td className="py-1 px-3">
+                      <td className="px-3 py-1">
                         <select
                           value={a.isPretax ? "pre" : "post"}
                           onChange={(e) =>
@@ -779,20 +779,20 @@ function WhatIfDeductionsEditor({
                               isPretax: e.target.value === "pre",
                             })
                           }
-                          className="text-xs border rounded px-1 py-0.5 bg-surface-primary"
+                          className="bg-surface-primary rounded border px-1 py-0.5 text-xs"
                         >
                           <option value="pre">Pre-tax</option>
                           <option value="post">Post-tax</option>
                         </select>
                       </td>
-                      <td className="py-1 px-1">
+                      <td className="px-1 py-1">
                         <div className="flex items-center gap-2 whitespace-nowrap">
                           {canManagePaycheck && v.job && (
                             <button
                               type="button"
                               disabled={makeRealPendingId === a.localId}
                               onClick={() => onMakeReal(a, v.job.id)}
-                              className="text-caption text-blue-500 hover:text-blue-700 font-medium disabled:opacity-50"
+                              className="text-caption font-medium text-blue-500 hover:text-blue-700 disabled:opacity-50"
                               title="Add this as a real paycheck deduction"
                             >
                               {makeRealPendingId === a.localId
@@ -803,7 +803,7 @@ function WhatIfDeductionsEditor({
                           <button
                             type="button"
                             onClick={() => onRemoveAddition(a.localId)}
-                            className="text-red-400 hover:text-red-600 text-caption"
+                            className="text-caption text-red-400 hover:text-red-600"
                             title="Remove"
                           >
                             ×
@@ -873,7 +873,7 @@ function WhatIfContributionsEditor({
       <button
         type="button"
         onClick={() => setExpanded(true)}
-        className="text-caption text-blue-500 hover:text-blue-700 font-medium"
+        className="text-caption font-medium text-blue-500 hover:text-blue-700"
       >
         Edit contribution accounts ({totalAccounts} total) ▸
       </button>
@@ -885,7 +885,7 @@ function WhatIfContributionsEditor({
       <button
         type="button"
         onClick={() => setExpanded(false)}
-        className="text-caption text-blue-500 hover:text-blue-700 font-medium"
+        className="text-caption font-medium text-blue-500 hover:text-blue-700"
       >
         ▾ Contribution accounts
       </button>
@@ -895,28 +895,28 @@ function WhatIfContributionsEditor({
         );
         return (
           <div key={v.person.id}>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-caption font-semibold text-muted">
+            <div className="mb-1 flex items-center gap-2">
+              <span className="text-caption text-muted font-semibold">
                 {v.person.name}&rsquo;s accounts
               </span>
               <button
                 type="button"
                 onClick={() => onAddAccount(v.person.id)}
-                className="text-caption text-blue-500 hover:text-blue-700 font-medium"
+                className="text-caption font-medium text-blue-500 hover:text-blue-700"
               >
                 + Add account
               </button>
             </div>
             {v.rawContribs.length === 0 && personAdditions.length === 0 ? (
-              <p className="text-caption text-faint italic pl-2">None</p>
+              <p className="text-caption text-faint pl-2 italic">None</p>
             ) : (
-              <table className="w-full text-xs border-collapse">
+              <table className="w-full border-collapse text-xs">
                 <thead>
-                  <tr className="border-b border-subtle">
-                    <th className="text-left py-1 pl-4 pr-3 text-muted font-medium">
+                  <tr className="border-subtle border-b">
+                    <th className="text-muted py-1 pr-3 pl-4 text-left font-medium">
                       Account
                     </th>
-                    <th className="text-right py-1 px-3 text-muted font-medium w-32">
+                    <th className="text-muted w-32 px-3 py-1 text-right font-medium">
                       Value
                     </th>
                     <th className="w-24" />
@@ -931,17 +931,17 @@ function WhatIfContributionsEditor({
                     return (
                       <tr
                         key={c.id}
-                        className={`border-b border-subtle ${rowIdx % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"}`}
+                        className={`border-subtle border-b ${rowIdx % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"}`}
                       >
-                        <td className="py-1 pl-4 pr-3 text-secondary">
+                        <td className="text-secondary py-1 pr-3 pl-4">
                           {accountDisplayName(
                             { ...c, ownershipType: c.ownership },
                             v.person.name,
                           )}
                         </td>
-                        <td className="py-1 px-3 text-right">
+                        <td className="px-3 py-1 text-right">
                           <div className="flex items-center justify-end gap-1">
-                            <span className="text-faint w-3 text-right shrink-0">
+                            <span className="text-faint w-3 shrink-0 text-right">
                               {isPercent ? "" : "$"}
                             </span>
                             <WhatIfPinnedCell
@@ -956,7 +956,7 @@ function WhatIfContributionsEditor({
                               step={isPercent ? "0.5" : "10"}
                               width="w-20"
                             />
-                            <span className="text-faint w-3 text-left shrink-0">
+                            <span className="text-faint w-3 shrink-0 text-left">
                               {isPercent ? "%" : ""}
                             </span>
                           </div>
@@ -971,9 +971,9 @@ function WhatIfContributionsEditor({
                     return (
                       <tr
                         key={a.localId}
-                        className={`border-b border-subtle ${(v.rawContribs.length + rowIdx) % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"}`}
+                        className={`border-subtle border-b ${(v.rawContribs.length + rowIdx) % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"}`}
                       >
-                        <td className="py-1 pl-4 pr-3">
+                        <td className="py-1 pr-3 pl-4">
                           <div className="flex items-center gap-1">
                             <select
                               value={a.accountType}
@@ -983,7 +983,7 @@ function WhatIfContributionsEditor({
                                     .value as AccountCategory,
                                 })
                               }
-                              className="text-xs border rounded px-1 py-0.5 bg-surface-primary text-amber-600 font-medium border-amber-400"
+                              className="bg-surface-primary rounded border border-amber-400 px-1 py-0.5 text-xs font-medium text-amber-600"
                             >
                               {SANDBOX_ACCOUNT_TYPES.map((t) => (
                                 <option key={t} value={t}>
@@ -999,16 +999,16 @@ function WhatIfContributionsEditor({
                                     "percent_of_salary" | "fixed_annual",
                                 })
                               }
-                              className="text-xs border rounded px-1 py-0.5 bg-surface-primary"
+                              className="bg-surface-primary rounded border px-1 py-0.5 text-xs"
                             >
                               <option value="percent_of_salary">%</option>
                               <option value="fixed_annual">$/yr</option>
                             </select>
                           </div>
                         </td>
-                        <td className="py-1 px-3 text-right">
+                        <td className="px-3 py-1 text-right">
                           <div className="flex items-center justify-end gap-1">
-                            <span className="text-faint w-3 text-right shrink-0">
+                            <span className="text-faint w-3 shrink-0 text-right">
                               {isPercent ? "" : "$"}
                             </span>
                             <input
@@ -1020,21 +1020,21 @@ function WhatIfContributionsEditor({
                                   contributionValue: e.target.value,
                                 })
                               }
-                              className="w-20 text-xs text-right border rounded px-1.5 py-0.5 bg-surface-primary text-amber-600 font-medium border-amber-400 tabular-nums"
+                              className="bg-surface-primary w-20 rounded border border-amber-400 px-1.5 py-0.5 text-right text-xs font-medium text-amber-600 tabular-nums"
                             />
-                            <span className="text-faint w-3 text-left shrink-0">
+                            <span className="text-faint w-3 shrink-0 text-left">
                               {isPercent ? "%" : ""}
                             </span>
                           </div>
                         </td>
-                        <td className="py-1 px-1">
-                          <div className="flex items-center gap-2 whitespace-nowrap justify-end">
+                        <td className="px-1 py-1">
+                          <div className="flex items-center justify-end gap-2 whitespace-nowrap">
                             {canManagePaycheck && (
                               <button
                                 type="button"
                                 disabled={makeRealPendingId === a.localId}
                                 onClick={() => onMakeReal(a)}
-                                className="text-caption text-blue-500 hover:text-blue-700 font-medium disabled:opacity-50"
+                                className="text-caption font-medium text-blue-500 hover:text-blue-700 disabled:opacity-50"
                                 title="Add this as a real contribution account"
                               >
                                 {makeRealPendingId === a.localId
@@ -1045,7 +1045,7 @@ function WhatIfContributionsEditor({
                             <button
                               type="button"
                               onClick={() => onRemoveAddition(a.localId)}
-                              className="text-red-400 hover:text-red-600 text-caption"
+                              className="text-caption text-red-400 hover:text-red-600"
                               title="Remove"
                             >
                               ×
@@ -1538,9 +1538,9 @@ export function WhatIfTab({
   return (
     <div className="space-y-5">
       {/* ── Pickers ── */}
-      <div className="rounded-lg border border-default bg-surface-sunken/40 px-4 py-3">
+      <div className="border-default bg-surface-sunken/40 rounded-lg border px-4 py-3">
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-          <span className="text-xs font-semibold text-muted uppercase tracking-wide">
+          <span className="text-muted text-xs font-semibold tracking-wide uppercase">
             Starting point
             <HelpTip text="Nothing on this tab changes what's active for your household. Pick any combination of profiles, edit salary/bonus and budget amounts to preview them, then use Duplicate Profile or Save as Plan below if you want to keep it." />
           </span>
@@ -1564,14 +1564,14 @@ export function WhatIfTab({
           />
           {availableYears.length > 1 && (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-muted">Tax Year:</span>
+              <span className="text-muted text-xs">Tax Year:</span>
               <div className="flex gap-1">
                 {availableYears.map((year) => (
                   <button
                     key={year}
                     type="button"
                     onClick={() => setTaxYear(year)}
-                    className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
+                    className={`rounded-full px-2 py-0.5 text-xs transition-colors ${
                       taxYear === year
                         ? "bg-blue-600 text-white"
                         : "bg-surface-elevated text-muted hover:bg-surface-strong"
@@ -1587,19 +1587,19 @@ export function WhatIfTab({
             <button
               type="button"
               onClick={sandbox.resetSandbox}
-              className="ml-auto text-caption text-faint hover:text-red-600"
+              className="text-caption text-faint ml-auto hover:text-red-600"
             >
               Reset sandbox
             </button>
           )}
         </div>
         {overriddenColumns.length > 0 && (
-          <div className="text-caption text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2 mt-2">
+          <div className="text-caption mt-2 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-amber-700">
             <span className="font-semibold">Resolved elsewhere: </span>
             some budget modes resolve to a different profile than the picks
             above, because an active Plan or the mode&rsquo;s own selection
             outranks a page-level preview.
-            <ul className="mt-1 list-disc list-inside">
+            <ul className="mt-1 list-inside list-disc">
               {overriddenColumns.map((line) => (
                 <li key={line}>{line}</li>
               ))}
@@ -1701,17 +1701,17 @@ export function WhatIfTab({
         title={`Budget${budgetProfileName ? ` — ${budgetProfileName}` : ""}`}
         description="Edit any amount to see whether take-home pay covers it."
         headerExtra={
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex flex-wrap items-center gap-3">
             {cols.length > 1 && (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-muted">Mode:</span>
+                <span className="text-muted text-xs">Mode:</span>
                 <div className="flex gap-1">
                   {cols.map((label, idx) => (
                     <button
                       key={label}
                       type="button"
                       onClick={() => setActiveColumn(idx)}
-                      className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
+                      className={`rounded-full px-2 py-0.5 text-xs transition-colors ${
                         activeColumn === idx
                           ? "bg-blue-600 text-white"
                           : "bg-surface-elevated text-muted hover:bg-surface-strong"
@@ -1728,7 +1728,7 @@ export function WhatIfTab({
       >
         {leftover != null && (
           <div
-            className={`flex items-center justify-between text-xs font-semibold rounded-md px-3 py-2 mb-3 ${
+            className={`mb-3 flex items-center justify-between rounded-md px-3 py-2 text-xs font-semibold ${
               leftover >= 0
                 ? "bg-green-50 text-green-700"
                 : "bg-red-50 text-red-600"
@@ -1746,14 +1746,14 @@ export function WhatIfTab({
         )}
         {budgetIncomeAdjustmentThisMonth != null &&
           budgetIncomeAdjustmentThisMonth !== 0 && (
-            <p className="text-xs text-muted mb-3 -mt-2">
+            <p className="text-muted -mt-2 mb-3 text-xs">
               +{formatCurrency(budgetIncomeAdjustmentThisMonth)} extra paycheck
               already included in this month&rsquo;s income (not part of Net
               above).
             </p>
           )}
         {allColumnResults && allColumnResults.length > 0 ? (
-          <div className="max-h-[520px] w-full overflow-y-auto rounded-md border border-subtle">
+          <div className="border-subtle max-h-[520px] w-full overflow-y-auto rounded-md border">
             <BudgetPageContext.Provider value={budgetPageContextValue}>
               <BudgetTable
                 visibleCategories={visibleCategories}
@@ -1822,8 +1822,8 @@ export function WhatIfTab({
 
       {/* ── Save actions ── */}
       {(canDuplicateProfile || canCreatePlan) && (
-        <section className="rounded-lg border border-default bg-surface-sunken/40 p-4 space-y-3">
-          <h3 className="text-sm font-semibold text-primary">Keep this</h3>
+        <section className="border-default bg-surface-sunken/40 space-y-3 rounded-lg border p-4">
+          <h3 className="text-primary text-sm font-semibold">Keep this</h3>
           {canDuplicateProfile && (
             <div className="flex flex-wrap items-center gap-2">
               <input
@@ -1835,7 +1835,7 @@ export function WhatIfTab({
                     ? `Copy of ${budgetProfileName}`
                     : "New profile name"
                 }
-                className="text-xs border rounded px-2 py-1 bg-surface-primary w-56"
+                className="bg-surface-primary w-56 rounded border px-2 py-1 text-xs"
                 aria-label="New budget profile name"
               />
               <button
@@ -1857,7 +1857,7 @@ export function WhatIfTab({
                       : {}),
                   })
                 }
-                className="px-2.5 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+                className="rounded bg-blue-600 px-2.5 py-1 text-xs text-white hover:bg-blue-700 disabled:opacity-50"
               >
                 {duplicateLabel}
               </button>
@@ -1875,7 +1875,7 @@ export function WhatIfTab({
                 value={planName}
                 onChange={(e) => setPlanName(e.target.value)}
                 placeholder="New Plan name"
-                className="text-xs border rounded px-2 py-1 bg-surface-primary w-56"
+                className="bg-surface-primary w-56 rounded border px-2 py-1 text-xs"
                 aria-label="New Plan name"
               />
               <button
@@ -1905,7 +1905,7 @@ export function WhatIfTab({
                     salaryProfileId: salaryId,
                   });
                 }}
-                className="px-2.5 py-1 text-xs rounded border hover:bg-surface-sunken"
+                className="hover:bg-surface-sunken rounded border px-2.5 py-1 text-xs"
               >
                 {planLabel}
               </button>

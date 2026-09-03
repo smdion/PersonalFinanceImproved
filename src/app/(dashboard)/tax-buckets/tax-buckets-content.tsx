@@ -292,7 +292,7 @@ export function TaxBucketsContent() {
     buildBuckets(activeEntries ?? []);
 
   return (
-    <div className="p-4 sm:p-6 space-y-6">
+    <div className="space-y-6 p-4 sm:p-6">
       <PageHeader
         title="Tax Buckets"
         subtitle={
@@ -307,7 +307,7 @@ export function TaxBucketsContent() {
           <button
             type="button"
             onClick={() => setShowBulkBasis(true)}
-            className="px-3 py-1.5 text-sm text-white bg-primary rounded"
+            className="bg-primary rounded px-3 py-1.5 text-sm text-white"
           >
             Update all basis
           </button>
@@ -317,7 +317,7 @@ export function TaxBucketsContent() {
       {/* "Now" / "At Retirement" toggle — two clearly-labeled tabs, never a
           silent switch. Default "now"; "at retirement" only fetches the
           (heavier, cache-backed) projection once selected. */}
-      <div className="flex items-center justify-between border-b border-subtle">
+      <div className="border-subtle flex items-center justify-between border-b">
         <div className="flex gap-1">
           {[
             { key: "now" as const, label: "Now" },
@@ -327,10 +327,10 @@ export function TaxBucketsContent() {
               key={tab.key}
               type="button"
               onClick={() => setView(tab.key)}
-              className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px ${
+              className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium ${
                 view === tab.key
                   ? "border-primary text-primary"
-                  : "border-transparent text-muted hover:text-primary"
+                  : "text-muted hover:text-primary border-transparent"
               }`}
             >
               {tab.label}
@@ -340,7 +340,7 @@ export function TaxBucketsContent() {
         {/* Only meaningful for "At Retirement" — "Now" figures are already
             today's dollars, so deflating them is a no-op there. */}
         {view === "atRetirement" && (
-          <div className="mb-1 inline-flex rounded-md border border-subtle bg-surface p-0.5">
+          <div className="border-subtle bg-surface mb-1 inline-flex rounded-md border p-0.5">
             {[
               { key: "real" as const, label: "Today's $" },
               { key: "nominal" as const, label: "Future $" },
@@ -380,7 +380,7 @@ export function TaxBucketsContent() {
         projection.transitionYear != null &&
         (projection.unmatchedAccountNames.length > 0 ||
           projection.staleBasisAccountNames.length > 0) && (
-          <div className="rounded border border-amber-300 bg-amber-50 dark:bg-amber-950/30 px-3 py-2 text-caption text-amber-800 dark:text-amber-300 space-y-1">
+          <div className="text-caption space-y-1 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
             {projection.unmatchedAccountNames.length > 0 && (
               <p>
                 No projected data found for:{" "}
@@ -403,9 +403,9 @@ export function TaxBucketsContent() {
           retirement" that means the projection actually resolved, so a
           zeroed placeholder KPI never appears while it's loading. */}
       {activeEntries !== null && (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
           <KpiCard label="Total across these buckets">
-            <div className="text-xl font-bold tabular-nums text-primary">
+            <div className="text-primary text-xl font-bold tabular-nums">
               {fmt(householdTotal)}
             </div>
           </KpiCard>
@@ -419,7 +419,7 @@ export function TaxBucketsContent() {
                 : "Sum of every slice that's projected to be penalty-free at your household's retirement transition — not necessarily tax-free, just not subject to the 10% early-withdrawal penalty.",
             ]}
           >
-            <div className="text-xl font-bold tabular-nums text-green-600">
+            <div className="text-xl font-bold text-green-600 tabular-nums">
               {fmt(householdAccessible)}
             </div>
           </KpiCard>
@@ -431,7 +431,7 @@ export function TaxBucketsContent() {
                 : "Sum of every slice that would still incur the 10% early-withdrawal penalty at your household's retirement transition.",
             ]}
           >
-            <div className="text-xl font-bold tabular-nums text-amber-600">
+            <div className="text-xl font-bold text-amber-600 tabular-nums">
               {fmt(householdLocked)}
             </div>
           </KpiCard>
@@ -462,7 +462,7 @@ export function TaxBucketsContent() {
               }
             >
               {hasSplit && (
-                <div className="flex flex-wrap gap-4 text-caption">
+                <div className="text-caption flex flex-wrap gap-4">
                   <span className="flex items-center gap-1">
                     <Badge color="green">
                       {view === "now"
@@ -484,8 +484,8 @@ export function TaxBucketsContent() {
                 </div>
               )}
 
-              <details className="mt-3 group">
-                <summary className="cursor-pointer text-caption text-muted select-none">
+              <details className="group mt-3">
+                <summary className="text-caption text-muted cursor-pointer select-none">
                   Per-account detail ({b.entries.length})
                 </summary>
                 <div className="mt-3 space-y-4">
@@ -567,16 +567,16 @@ function AccountDetailRow({
     entry.performanceAccountId != null;
 
   return (
-    <div className="border-b border-subtle pb-4 last:border-0 last:pb-0">
+    <div className="border-subtle border-b pb-4 last:border-0 last:pb-0">
       <div className="flex items-center justify-between">
         <div>
           <span className="font-medium">{entry.displayName}</span>
           {entry.ownerName && (
-            <span className="ml-2 text-caption text-faint">
+            <span className="text-caption text-faint ml-2">
               {entry.ownerName}
             </span>
           )}
-          <span className="ml-2 text-caption text-faint">
+          <span className="text-caption text-faint ml-2">
             {bucketTaxTypeLabel(entry.category, entry.taxType)}
           </span>
         </div>
@@ -584,7 +584,7 @@ function AccountDetailRow({
       </div>
 
       {entry.ruleOf55 && (
-        <div className="mt-1 flex items-center gap-2 text-caption">
+        <div className="text-caption mt-1 flex items-center gap-2">
           <Badge
             color={
               entry.ruleOf55.eligible
@@ -612,7 +612,7 @@ function AccountDetailRow({
       )}
 
       {entry.ageThresholdStatus && (
-        <div className="mt-1 flex items-center gap-2 text-caption">
+        <div className="text-caption mt-1 flex items-center gap-2">
           <Badge color={entry.ageThresholdStatus.eligible ? "green" : "amber"}>
             Age {entry.ageThresholdStatus.thresholdAge}:{" "}
             {entry.ageThresholdStatus.eligible ? "eligible" : "not yet"}
@@ -632,7 +632,7 @@ function AccountDetailRow({
           {entry.slices.map((slice) => (
             <div
               key={slice.label}
-              className="flex items-center justify-between text-caption"
+              className="text-caption flex items-center justify-between"
             >
               <span className="text-muted">{slice.label}</span>
               <span className="flex items-center gap-2">
@@ -647,7 +647,7 @@ function AccountDetailRow({
             </div>
           ))}
           {isHsaCategory(entry.category) && (
-            <div className="flex items-center justify-between text-caption">
+            <div className="text-caption flex items-center justify-between">
               <span className="text-muted">Qualified medical expenses</span>
               <span className="flex items-center gap-2">
                 <span className="tabular-nums">{fmt(entry.balance)}</span>
@@ -660,8 +660,8 @@ function AccountDetailRow({
       )}
 
       {isRothEditable && canEdit && (
-        <details className="mt-2 group">
-          <summary className="cursor-pointer text-caption text-muted select-none">
+        <details className="group mt-2">
+          <summary className="text-caption text-muted cursor-pointer select-none">
             Edit basis
           </summary>
           <RothBasisForm
@@ -679,7 +679,7 @@ function AccountDetailRow({
         />
       )}
       {entry.ruleOf55?.source === "active" && (
-        <p className="mt-1 text-caption text-faint">
+        <p className="text-caption text-faint mt-1">
           {view === "now"
             ? "Still employed there — a separation date becomes available once you actually leave."
             : "Assumes you separate from this employer at your household's retirement transition — not yet a real date, since you're still employed there today."}
@@ -713,7 +713,7 @@ function RothBasisForm({
   );
 
   return (
-    <div className="mt-2 flex flex-wrap items-end gap-2 text-caption">
+    <div className="text-caption mt-2 flex flex-wrap items-end gap-2">
       <label className="flex flex-col">
         <span className="text-faint">
           Basis (contributions — what you can pull out anytime, tax and
@@ -721,7 +721,7 @@ function RothBasisForm({
         </span>
         <input
           type="number"
-          className="w-28 rounded border border-subtle bg-surface px-2 py-1"
+          className="border-subtle bg-surface w-28 rounded border px-2 py-1"
           value={contributionBasis}
           onChange={(e) => setContributionBasis(e.target.value)}
         />
@@ -733,7 +733,7 @@ function RothBasisForm({
         </span>
         <input
           type="number"
-          className="w-28 rounded border border-subtle bg-surface px-2 py-1"
+          className="border-subtle bg-surface w-28 rounded border px-2 py-1"
           value={conversionBasis}
           onChange={(e) => setConversionBasis(e.target.value)}
         />
@@ -742,13 +742,13 @@ function RothBasisForm({
         <span className="text-faint">Most recent conversion year</span>
         <input
           type="number"
-          className="w-24 rounded border border-subtle bg-surface px-2 py-1"
+          className="border-subtle bg-surface w-24 rounded border px-2 py-1"
           value={latestConversionYear}
           onChange={(e) => setLatestConversionYear(e.target.value)}
         />
       </label>
       <button
-        className="rounded bg-primary px-3 py-1 text-white"
+        className="bg-primary rounded px-3 py-1 text-white"
         onClick={() =>
           onSave({
             contributionBasis: contributionBasis || "0",
@@ -784,7 +784,7 @@ function SeparationDateForm({
   const [date, setDate] = useState(current ? `${current}-01-01` : "");
 
   return (
-    <div className="mt-2 flex items-end gap-2 text-caption">
+    <div className="text-caption mt-2 flex items-end gap-2">
       <label className="flex flex-col">
         <span className="text-faint">
           Separation date{" "}
@@ -793,13 +793,13 @@ function SeparationDateForm({
         </span>
         <input
           type="date"
-          className="rounded border border-subtle bg-surface px-2 py-1"
+          className="border-subtle bg-surface rounded border px-2 py-1"
           value={date}
           onChange={(e) => setDate(e.target.value)}
         />
       </label>
       <button
-        className="rounded bg-primary px-3 py-1 text-white"
+        className="bg-primary rounded px-3 py-1 text-white"
         onClick={() => onSave(date || null)}
       >
         Save
@@ -912,7 +912,7 @@ function BulkRothBasisForm({
 
   if (rows.length === 0) {
     return (
-      <p className="text-sm text-muted">
+      <p className="text-muted text-sm">
         No Roth accounts to update yet — link a Roth IRA or 401k/403b Roth
         sub-account first.
       </p>
@@ -923,7 +923,7 @@ function BulkRothBasisForm({
     <div className="space-y-4">
       {Array.from(groups.entries()).map(([owner, groupRows]) => (
         <div key={owner}>
-          <div className="border-b-2 border-strong pb-1.5 mb-3 text-sm font-semibold text-primary">
+          <div className="border-strong text-primary mb-3 border-b-2 pb-1.5 text-sm font-semibold">
             {owner}
           </div>
           <div className="space-y-3">
@@ -932,9 +932,9 @@ function BulkRothBasisForm({
               return (
                 <div
                   key={key}
-                  className="pb-3 border-b border-subtle last:border-0 last:pb-0"
+                  className="border-subtle border-b pb-3 last:border-0 last:pb-0"
                 >
-                  <div className="text-sm font-medium mb-1.5">
+                  <div className="mb-1.5 text-sm font-medium">
                     {row.displayName}{" "}
                     <span className="text-caption text-faint">
                       {row.taxTypeLabel} · {row.year}
@@ -942,12 +942,12 @@ function BulkRothBasisForm({
                   </div>
                   <div className="flex flex-wrap gap-3">
                     <label className="block w-40">
-                      <span className="block text-caption text-muted mb-0.5">
+                      <span className="text-caption text-muted mb-0.5 block">
                         Basis (contributions)
                       </span>
                       <input
                         type="number"
-                        className="w-full rounded border border-default px-1.5 py-1 text-sm"
+                        className="border-default w-full rounded border px-1.5 py-1 text-sm"
                         value={row.contributionBasis}
                         onChange={(e) =>
                           updateRow(key, "contributionBasis", e.target.value)
@@ -955,12 +955,12 @@ function BulkRothBasisForm({
                       />
                     </label>
                     <label className="block w-40">
-                      <span className="block text-caption text-muted mb-0.5">
+                      <span className="text-caption text-muted mb-0.5 block">
                         Conversion basis
                       </span>
                       <input
                         type="number"
-                        className="w-full rounded border border-default px-1.5 py-1 text-sm"
+                        className="border-default w-full rounded border px-1.5 py-1 text-sm"
                         value={row.conversionBasis}
                         onChange={(e) =>
                           updateRow(key, "conversionBasis", e.target.value)
@@ -968,12 +968,12 @@ function BulkRothBasisForm({
                       />
                     </label>
                     <label className="block w-32">
-                      <span className="block text-caption text-muted mb-0.5">
+                      <span className="text-caption text-muted mb-0.5 block">
                         Latest conversion yr
                       </span>
                       <input
                         type="number"
-                        className="w-full rounded border border-default px-1.5 py-1 text-sm"
+                        className="border-default w-full rounded border px-1.5 py-1 text-sm"
                         value={row.latestConversionYear}
                         onChange={(e) =>
                           updateRow(key, "latestConversionYear", e.target.value)
@@ -994,7 +994,7 @@ function BulkRothBasisForm({
           type="button"
           onClick={handleSave}
           disabled={isSaving}
-          className="px-4 py-1.5 text-sm text-white bg-primary rounded disabled:opacity-50"
+          className="bg-primary rounded px-4 py-1.5 text-sm text-white disabled:opacity-50"
         >
           {isSaving ? "Saving..." : "Save all"}
         </button>

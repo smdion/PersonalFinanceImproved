@@ -43,11 +43,11 @@ export function ProfilePill({
           aria-haspopup="listbox"
           aria-expanded={open}
           disabled={isPending}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded text-label bg-surface-primary text-primary shadow-sm transition-colors disabled:opacity-50"
+          className="text-label bg-surface-primary text-primary flex items-center gap-1.5 rounded px-3 py-1.5 shadow-sm transition-colors disabled:opacity-50"
         >
           <span className="font-medium">{activeName}</span>
           <svg
-            className="w-3 h-3 text-faint"
+            className="text-faint h-3 w-3"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -64,7 +64,7 @@ export function ProfilePill({
 
         {open && (
           <div
-            className="absolute top-full right-0 mt-1 w-56 max-w-[calc(100vw-2rem)] bg-surface-primary border rounded-lg shadow-lg z-50"
+            className="bg-surface-primary absolute top-full right-0 z-50 mt-1 w-56 max-w-[calc(100vw-2rem)] rounded-lg border shadow-lg"
             role="listbox"
             aria-label={`${label} selection`}
           >
@@ -77,7 +77,7 @@ export function ProfilePill({
                   if (!o.isActive) onActivate(o.id);
                   setOpen(false);
                 }}
-                className={`w-full text-left px-3 py-2 hover:bg-surface-sunken flex items-center gap-2 first:rounded-t-lg last:rounded-b-lg ${
+                className={`hover:bg-surface-sunken flex w-full items-center gap-2 px-3 py-2 text-left first:rounded-t-lg last:rounded-b-lg ${
                   o.isActive ? "bg-blue-50 text-blue-700" : "text-secondary"
                 }`}
               >
@@ -92,7 +92,7 @@ export function ProfilePill({
               </button>
             ))}
             {options.length === 0 && (
-              <div className="px-3 py-2 text-xs text-muted">
+              <div className="text-muted px-3 py-2 text-xs">
                 No profiles found
               </div>
             )}

@@ -169,7 +169,7 @@ export default function PerformancePage() {
 
   if (error) {
     return (
-      <p className="text-red-600 text-sm">
+      <p className="text-sm text-red-600">
         Failed to load performance data: {error.message}
       </p>
     );
@@ -458,13 +458,13 @@ export default function PerformancePage() {
           <span className="inline-flex items-center gap-2">
             <button
               onClick={() => setShowUpdatePerformance(true)}
-              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-colors"
+              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-indigo-700"
             >
               Update Performance
             </button>
             <button
               onClick={() => setShowUpdateBasis(true)}
-              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-colors"
+              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-indigo-700"
             >
               Update Basis
             </button>
@@ -472,7 +472,7 @@ export default function PerformancePage() {
               <button
                 onClick={() => setShowFinalizeModal(true)}
                 disabled={finalizeYear.isPending}
-                className="px-3 py-1.5 text-sm bg-amber-600 text-white rounded-md hover:bg-amber-700 disabled:opacity-50 transition-colors"
+                className="rounded-md bg-amber-600 px-3 py-1.5 text-sm text-white transition-colors hover:bg-amber-700 disabled:opacity-50"
               >
                 {finalizeYear.isPending
                   ? "Finalizing..."
@@ -493,10 +493,10 @@ export default function PerformancePage() {
 
       {/* Ending balance consistency warning */}
       {balanceMismatch && (
-        <div className="mb-3 rounded-md border border-orange-400/60 bg-orange-50/40 dark:bg-orange-950/20 px-3 py-2 text-xs text-orange-800 dark:text-orange-300 flex items-start gap-2">
+        <div className="mb-3 flex items-start gap-2 rounded-md border border-orange-400/60 bg-orange-50/40 px-3 py-2 text-xs text-orange-800 dark:bg-orange-950/20 dark:text-orange-300">
           <svg
             aria-hidden="true"
-            className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5"
+            className="mt-0.5 h-4 w-4 flex-shrink-0 text-orange-500"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -584,7 +584,7 @@ export default function PerformancePage() {
 
       {!useCustomFilter && (
         <>
-          <div className="flex items-start justify-between mb-1 flex-wrap gap-2">
+          <div className="mb-1 flex flex-wrap items-start justify-between gap-2">
             <CategoryTabs
               accountTypeCategories={accountTypeCategories ?? []}
               parentCategories={parentCategories ?? []}
@@ -601,7 +601,7 @@ export default function PerformancePage() {
             />
             <button
               onClick={() => setUseCustomFilter(true)}
-              className="px-2.5 py-1 text-label rounded border border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong transition-colors whitespace-nowrap"
+              className="text-label border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong rounded border px-2.5 py-1 whitespace-nowrap transition-colors"
               title="Switch to picking specific accounts and a custom year range, instead of a preset category"
             >
               Filter by Account &amp; Year →
@@ -640,10 +640,10 @@ export default function PerformancePage() {
 
       {useCustomFilter && (
         <div className="mb-6">
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-2">
-                <span className="text-xs text-muted uppercase tracking-wide font-medium">
+                <span className="text-muted text-xs font-medium tracking-wide uppercase">
                   Accounts
                 </span>
                 <AccountPicker
@@ -653,7 +653,7 @@ export default function PerformancePage() {
                 />
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-muted uppercase tracking-wide font-medium">
+                <span className="text-muted text-xs font-medium tracking-wide uppercase">
                   Years
                 </span>
                 <YearRangePicker
@@ -681,7 +681,7 @@ export default function PerformancePage() {
             </div>
             <button
               onClick={() => setUseCustomFilter(false)}
-              className="px-2.5 py-1 text-label rounded border border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong transition-colors whitespace-nowrap"
+              className="text-label border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong rounded border px-2.5 py-1 whitespace-nowrap transition-colors"
               title="Switch back to the preset category/rollup view (Since Inception, all accounts by type)"
             >
               ← Back to Category View

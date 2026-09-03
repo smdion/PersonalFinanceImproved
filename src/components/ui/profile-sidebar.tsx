@@ -89,14 +89,14 @@ export function ProfileListRow({
           onSelect();
         }
       }}
-      className={`w-full text-left px-3 py-2 rounded-md transition-colors group cursor-pointer ${
+      className={`group w-full cursor-pointer rounded-md px-3 py-2 text-left transition-colors ${
         isSelected
-          ? "bg-blue-50 border border-blue-300"
+          ? "border border-blue-300 bg-blue-50"
           : "hover:bg-surface-sunken border border-transparent"
       }`}
     >
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5 min-w-0">
+        <div className="flex min-w-0 items-center gap-1.5">
           {isRenaming ? (
             <input
               type="text"
@@ -109,10 +109,10 @@ export function ProfileListRow({
               }}
               autoFocus
               onClick={(e) => e.stopPropagation()}
-              className="text-xs font-medium text-primary bg-surface-primary border border-strong rounded px-1 py-0.5 w-full"
+              className="text-primary bg-surface-primary border-strong w-full rounded border px-1 py-0.5 text-xs font-medium"
             />
           ) : (
-            <span className="text-xs font-medium text-primary truncate">
+            <span className="text-primary truncate text-xs font-medium">
               {name}
             </span>
           )}
@@ -125,7 +125,7 @@ export function ProfileListRow({
         </div>
         {hasRowActions && !isRenaming && (
           <div
-            className="flex gap-1 shrink-0 md:max-w-0 md:overflow-hidden md:opacity-0 md:group-hover:max-w-[13rem] md:group-hover:opacity-100 transition-all"
+            className="flex shrink-0 gap-1 transition-all md:max-w-0 md:overflow-hidden md:opacity-0 md:group-hover:max-w-[13rem] md:group-hover:opacity-100"
             onClick={(e) => e.stopPropagation()}
           >
             {onActivate && !isActive && (
@@ -168,7 +168,7 @@ export function ProfileListRow({
         )}
       </div>
       {meta && (
-        <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-1 text-caption text-muted">
+        <div className="text-caption text-muted mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
           {meta}
         </div>
       )}
@@ -188,8 +188,8 @@ export function ProfileSidebarHeader({
   onCreate?: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between mb-2">
-      <h3 className="text-label font-semibold text-muted uppercase tracking-wide">
+    <div className="mb-2 flex items-center justify-between">
+      <h3 className="text-label text-muted font-semibold tracking-wide uppercase">
         {title}
       </h3>
       {onCreate && (

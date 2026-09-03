@@ -129,8 +129,8 @@ function HouseholdIncomeCardImpl() {
               return (
                 <React.Fragment key={d.person.id}>
                   <tr>
-                    <td className="py-0.5 text-muted w-24">{d.person.name}</td>
-                    <td className="py-0.5 text-right text-primary font-medium tabular-nums">
+                    <td className="text-muted w-24 py-0.5">{d.person.name}</td>
+                    <td className="text-primary py-0.5 text-right font-medium tabular-nums">
                       {isYtd
                         ? formatCurrency(d.paycheck!.gross * periods(d))
                         : isBlended && ba
@@ -140,7 +140,7 @@ function HouseholdIncomeCardImpl() {
                   </tr>
                   {bonusEstimateFor(d).bonusGross > 0 && (
                     <tr>
-                      <td className="pb-1 pl-2 text-xs text-faint">
+                      <td className="text-faint pb-1 pl-2 text-xs">
                         Bonus
                         {isYtd && (
                           <span className="ml-1">
@@ -148,7 +148,7 @@ function HouseholdIncomeCardImpl() {
                           </span>
                         )}
                       </td>
-                      <td className="pb-1 text-right text-xs text-faint tabular-nums">
+                      <td className="text-faint pb-1 text-right text-xs tabular-nums">
                         {formatCurrency(bonusEstimateFor(d).bonusGross)} gross /{" "}
                         {formatCurrency(bonusEstimateFor(d).bonusNet)} net
                       </td>
@@ -160,7 +160,7 @@ function HouseholdIncomeCardImpl() {
           </tbody>
         </table>
       </div>
-      <div className="mt-2 pt-2 border-t border-subtle text-xs text-faint space-y-0.5">
+      <div className="border-subtle text-faint mt-2 space-y-0.5 border-t pt-2 text-xs">
         <div className="flex justify-between">
           <span>
             Net {isYtd ? "YTD" : isBlended ? "year-end est." : "annual"} (after

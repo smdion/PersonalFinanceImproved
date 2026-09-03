@@ -52,7 +52,7 @@ export function ContribCard({
   );
 
   return (
-    <div className="bg-surface-primary border rounded-lg p-3 text-sm shadow-sm group/card relative">
+    <div className="bg-surface-primary group/card relative rounded-lg border p-3 text-sm shadow-sm">
       {!readOnly && onDeleteContrib && (
         <button
           onClick={async () => {
@@ -63,14 +63,14 @@ export function ContribCard({
             )
               onDeleteContrib(c.id);
           }}
-          className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-red-100 text-red-500 hover:bg-red-200 text-caption leading-none flex items-center justify-center opacity-0 group-hover/card:opacity-100 transition-opacity"
+          className="text-caption absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-100 leading-none text-red-500 opacity-0 transition-opacity group-hover/card:opacity-100 hover:bg-red-200"
           title="Delete contribution account"
         >
           ×
         </button>
       )}
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex min-w-0 items-center gap-2">
           {(c.displayNameCustom ?? c.displayNameActive) ? (
             <span className="text-xs font-medium text-amber-600">
               {c.displayNameCustom ?? c.displayNameActive}
@@ -82,16 +82,16 @@ export function ContribCard({
                 onSave={(v) => onUpdateContrib(c.id, "accountType", v)}
               />
               {c.ownership === "joint" && (
-                <span className="text-xs text-faint font-medium">(Joint)</span>
+                <span className="text-faint text-xs font-medium">(Joint)</span>
               )}
               {c.hsaCoverageType === "family" && (
-                <span className="text-xs text-blue-600 font-medium">
+                <span className="text-xs font-medium text-blue-600">
                   (Family)
                 </span>
               )}
               {/* Show account name for brokerage sub-types (ESPP, named accounts) */}
               {isOverflowTarget(c.accountType) && (c.subType || c.label) && (
-                <span className="text-xs text-muted font-medium">
+                <span className="text-muted text-xs font-medium">
                   {getDisplayConfig(
                     c.accountType,
                     c.subType,
@@ -107,14 +107,14 @@ export function ContribCard({
           </span>
           {c.jobId === null && (
             <span
-              className="text-caption font-semibold text-indigo-600 bg-indigo-50 rounded px-0.5 leading-tight"
+              className="text-caption rounded bg-indigo-50 px-0.5 leading-tight font-semibold text-indigo-600"
               title="Also tracked as a budget item. Values are independent — editing here won't change the budget."
             >
               BG
             </span>
           )}
         </div>
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex shrink-0 items-center gap-1">
           <InlineEdit
             value={c.contributionValue}
             onSave={(v) => onUpdateContrib(c.id, "contributionValue", v)}
@@ -135,7 +135,7 @@ export function ContribCard({
             onChange={(e) =>
               onUpdateContrib(c.id, "contributionMethod", e.target.value)
             }
-            className="text-caption text-faint bg-transparent border-none cursor-pointer hover:text-secondary focus:outline-none appearance-none pr-3"
+            className="text-caption text-faint hover:text-secondary cursor-pointer appearance-none border-none bg-transparent pr-3 focus:outline-none"
             style={{
               backgroundImage:
                 "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E\")",
@@ -199,7 +199,7 @@ export function ContribCard({
 
       {/* Employer match info — editable */}
       {c.employerMatchType !== "none" && (
-        <div className="text-xs text-muted mt-1 flex flex-wrap items-center gap-1">
+        <div className="text-muted mt-1 flex flex-wrap items-center gap-1 text-xs">
           {getDisplayConfig(c.accountType, c.subType).hasDiscountBar ? (
             <>
               <InlineEdit
@@ -264,7 +264,7 @@ export function ContribCard({
             onChange={(e) =>
               onUpdateContrib(c.id, "employerMatchType", e.target.value)
             }
-            className="text-caption text-faint bg-transparent border-none cursor-pointer hover:text-secondary focus:outline-none ml-1"
+            className="text-caption text-faint hover:text-secondary ml-1 cursor-pointer border-none bg-transparent focus:outline-none"
           >
             <option value="none">No match</option>
             <option value="percent_of_contribution">% of contribution</option>
@@ -287,7 +287,7 @@ export function ContribCard({
             onChange={(e) =>
               onUpdateContrib(c.id, "employerMatchType", e.target.value)
             }
-            className="text-caption text-faint bg-transparent border-none cursor-pointer hover:text-secondary focus:outline-none"
+            className="text-caption text-faint hover:text-secondary cursor-pointer border-none bg-transparent focus:outline-none"
           >
             <option value="none">
               {employerMatchAnnual > 0
@@ -405,7 +405,7 @@ export function ContribCard({
           }
 
           return (
-            <div className="mt-2 pt-2 border-t border-subtle">
+            <div className="border-subtle mt-2 border-t pt-2">
               <div className="flex items-center gap-2">
                 <Toggle
                   isChecked={c.autoMaximize}
@@ -451,7 +451,7 @@ export function ContribCard({
               {!c.autoMaximize &&
                 automaxPreview &&
                 automaxPreview.wouldChange && (
-                  <div className="text-caption mt-1 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+                  <div className="text-caption mt-1 rounded border border-amber-200 bg-amber-50 px-2 py-1">
                     <div className="flex justify-between">
                       <span className="text-muted">Current:</span>
                       <span className="text-secondary">
@@ -459,10 +459,10 @@ export function ContribCard({
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-amber-600 font-medium">
+                      <span className="font-medium text-amber-600">
                         Auto-max:
                       </span>
-                      <span className="text-amber-700 font-medium">
+                      <span className="font-medium text-amber-700">
                         {automaxPreview.target}
                       </span>
                     </div>
@@ -474,13 +474,13 @@ export function ContribCard({
               {!c.autoMaximize &&
                 automaxPreview &&
                 !automaxPreview.wouldChange && (
-                  <p className="text-caption text-green-600 mt-1">
+                  <p className="text-caption mt-1 text-green-600">
                     Already at max — no change needed
                   </p>
                 )}
               {/* Status when enabled */}
               {c.autoMaximize && (
-                <p className="text-caption text-green-600 mt-1">
+                <p className="text-caption mt-1 text-green-600">
                   {c.contributionMethod === "percent_of_salary"
                     ? `Set to ${formatPercent(currentValue / 100)} of salary (${formatCurrency(salary ? salary * (currentValue / 100) : 0)}/yr toward ${formatCurrency(annualLimit!)} limit)`
                     : c.contributionMethod === "fixed_per_period"

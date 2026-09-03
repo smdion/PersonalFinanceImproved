@@ -38,19 +38,19 @@ function Section({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border border-default rounded-lg overflow-hidden">
+    <div className="border-default overflow-hidden rounded-lg border">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center gap-3 px-4 py-3 bg-surface-sunken text-sm font-medium text-secondary hover:bg-surface-elevated transition-colors"
+        className="bg-surface-sunken text-secondary hover:bg-surface-elevated flex w-full items-center gap-3 px-4 py-3 text-sm font-medium transition-colors"
       >
-        {Icon && <Icon className="w-4 h-4 shrink-0 text-blue-500" />}
+        {Icon && <Icon className="h-4 w-4 shrink-0 text-blue-500" />}
         <span className="flex-1 text-left">{title}</span>
         <ChevronRight
-          className={`w-4 h-4 shrink-0 text-faint transition-transform duration-150 ${open ? "rotate-90" : ""}`}
+          className={`text-faint h-4 w-4 shrink-0 transition-transform duration-150 ${open ? "rotate-90" : ""}`}
         />
       </button>
       {open && (
-        <div className="px-4 py-4 space-y-4 text-sm text-muted leading-relaxed">
+        <div className="text-muted space-y-4 px-4 py-4 text-sm leading-relaxed">
           {children}
         </div>
       )}
@@ -60,7 +60,7 @@ function Section({
 
 function Kbd({ children }: { children: React.ReactNode }) {
   return (
-    <kbd className="px-1.5 py-0.5 text-xs font-mono bg-surface-sunken border border-default rounded">
+    <kbd className="bg-surface-sunken border-default rounded border px-1.5 py-0.5 font-mono text-xs">
       {children}
     </kbd>
   );
@@ -74,7 +74,7 @@ function NavLink({
   children: React.ReactNode;
 }) {
   return (
-    <Link href={href} className="text-blue-600 hover:text-blue-700 underline">
+    <Link href={href} className="text-blue-600 underline hover:text-blue-700">
       {children}
     </Link>
   );
@@ -86,7 +86,7 @@ export function HelpContent() {
   return (
     <div className="space-y-3">
       {/* ── Quick overview ── */}
-      <div className="text-sm text-muted space-y-2 pb-2">
+      <div className="text-muted space-y-2 pb-2 text-sm">
         <p>
           Ledgr is a self-hosted personal finance dashboard. It brings together
           your income, budgets, investments, savings, and retirement planning
@@ -102,7 +102,7 @@ export function HelpContent() {
           When you first log in, the <strong>Onboarding Wizard</strong> walks
           you through the essential setup steps:
         </p>
-        <ol className="list-decimal list-inside space-y-1 ml-2">
+        <ol className="ml-2 list-inside list-decimal space-y-1">
           <li>
             <strong>Add people</strong> &mdash; Create household members in{" "}
             <NavLink href="/settings">Settings &gt; People</NavLink>. Each
@@ -143,7 +143,7 @@ export function HelpContent() {
           <em>Upkeep</em>, <em>Analysis</em>, and <em>System</em>, plus the
           Dashboard at the top and Help at the bottom.
         </p>
-        <ul className="list-disc list-inside space-y-1 ml-2">
+        <ul className="ml-2 list-inside list-disc space-y-1">
           <li>
             <strong>Collapse the sidebar</strong> &mdash; Click the{" "}
             <Kbd>Collapse</Kbd> button at the bottom of the sidebar to switch to
@@ -174,7 +174,7 @@ export function HelpContent() {
           overview. It shows up to 13 cards covering the key metrics from every
           area of the app:
         </p>
-        <ul className="list-disc list-inside space-y-1 ml-2">
+        <ul className="ml-2 list-inside list-disc space-y-1">
           <li>
             <strong>Net Worth</strong> &mdash; Current total net worth.
           </li>
@@ -226,7 +226,7 @@ export function HelpContent() {
       </Section>
 
       {/* ━━ CASH FLOW ━━ */}
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-faint pt-2">
+      <h3 className="text-faint pt-2 text-xs font-semibold tracking-wider uppercase">
         Cash Flow
       </h3>
 
@@ -238,8 +238,8 @@ export function HelpContent() {
           (Social Security &amp; Medicare), and all your deductions to show your
           actual take-home pay.
         </p>
-        <h4 className="font-semibold text-secondary">Key features</h4>
-        <ul className="list-disc list-inside space-y-1 ml-2">
+        <h4 className="text-secondary font-semibold">Key features</h4>
+        <ul className="ml-2 list-inside list-disc space-y-1">
           <li>
             <strong>Pay schedule</strong> &mdash; Set weekly, biweekly,
             semi-monthly, or monthly pay periods. The app computes per-period
@@ -279,8 +279,8 @@ export function HelpContent() {
           budgeting workspace. Each column can represent a different time period
           or scenario.
         </p>
-        <h4 className="font-semibold text-secondary">Key features</h4>
-        <ul className="list-disc list-inside space-y-1 ml-2">
+        <h4 className="text-secondary font-semibold">Key features</h4>
+        <ul className="ml-2 list-inside list-disc space-y-1">
           <li>
             <strong>Category-based</strong> &mdash; Organize line items into
             categories (housing, food, transport, etc.). Add, edit, or remove
@@ -317,7 +317,7 @@ export function HelpContent() {
           The <NavLink href="/expenses">Expenses</NavLink> page visualizes where
           your money goes.
         </p>
-        <ul className="list-disc list-inside space-y-1 ml-2">
+        <ul className="ml-2 list-inside list-disc space-y-1">
           <li>
             <strong>Bar chart</strong> &mdash; Spending broken down by category.
           </li>
@@ -337,7 +337,7 @@ export function HelpContent() {
       </Section>
 
       {/* ━━ INVESTMENTS ━━ */}
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-faint pt-2">
+      <h3 className="text-faint pt-2 text-xs font-semibold tracking-wider uppercase">
         Investments
       </h3>
 
@@ -347,8 +347,8 @@ export function HelpContent() {
           The <NavLink href="/savings">Savings</NavLink> page manages your
           savings goals and sinking funds.
         </p>
-        <h4 className="font-semibold text-secondary">Key features</h4>
-        <ul className="list-disc list-inside space-y-1 ml-2">
+        <h4 className="text-secondary font-semibold">Key features</h4>
+        <ul className="ml-2 list-inside list-disc space-y-1">
           <li>
             <strong>Sinking funds</strong> &mdash; Create named funds for
             specific goals (vacation, car repair, new laptop, etc.) with target
@@ -436,7 +436,7 @@ export function HelpContent() {
           The <NavLink href="/portfolio">Portfolio</NavLink> page is your
           investment account hub.
         </p>
-        <ul className="list-disc list-inside space-y-1 ml-2">
+        <ul className="ml-2 list-inside list-disc space-y-1">
           <li>
             <strong>Tax-location grouping</strong> &mdash; Accounts are grouped
             by type: Pre-tax (401k, Traditional IRA), Tax-free (Roth), HSA, and
@@ -467,7 +467,7 @@ export function HelpContent() {
           The <NavLink href="/performance">Performance</NavLink> page tracks
           investment returns over time.
         </p>
-        <ul className="list-disc list-inside space-y-1 ml-2">
+        <ul className="ml-2 list-inside list-disc space-y-1">
           <li>
             <strong>Lifetime summary</strong> &mdash; Total gains, CAGR
             (Compound Annual Growth Rate), and overall return metrics.
@@ -494,7 +494,7 @@ export function HelpContent() {
           The <NavLink href="/brokerage">Brokerage</NavLink> page projects the
           growth of your non-retirement (after-tax) investment accounts.
         </p>
-        <ul className="list-disc list-inside space-y-1 ml-2">
+        <ul className="ml-2 list-inside list-disc space-y-1">
           <li>
             <strong>Goals</strong> &mdash; Set savings targets for your
             brokerage accounts and track progress.
@@ -515,7 +515,7 @@ export function HelpContent() {
       </Section>
 
       {/* ━━ NET WORTH ━━ */}
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-faint pt-2">
+      <h3 className="text-faint pt-2 text-xs font-semibold tracking-wider uppercase">
         Net Worth
       </h3>
 
@@ -525,7 +525,7 @@ export function HelpContent() {
           The <NavLink href="/house">House</NavLink> page tracks your primary
           residence.
         </p>
-        <ul className="list-disc list-inside space-y-1 ml-2">
+        <ul className="ml-2 list-inside list-disc space-y-1">
           <li>
             <strong>Home value</strong> &mdash; Current estimated value,
             optionally synced from your budget API.
@@ -553,7 +553,7 @@ export function HelpContent() {
           The <NavLink href="/assets">Assets</NavLink> page tracks the value of
           everything you own outside of investment accounts.
         </p>
-        <ul className="list-disc list-inside space-y-1 ml-2">
+        <ul className="ml-2 list-inside list-disc space-y-1">
           <li>
             <strong>Real estate</strong> &mdash; Primary home value (linked from
             House page).
@@ -582,8 +582,8 @@ export function HelpContent() {
           The <NavLink href="/liabilities">Liabilities</NavLink> page tracks all
           your debts and loans.
         </p>
-        <h4 className="font-semibold text-secondary">Key features</h4>
-        <ul className="list-disc list-inside space-y-1 ml-2">
+        <h4 className="text-secondary font-semibold">Key features</h4>
+        <ul className="ml-2 list-inside list-disc space-y-1">
           <li>
             <strong>Active loans</strong> &mdash; Cards showing each loan with
             balance, interest rate, and monthly payment.
@@ -620,8 +620,8 @@ export function HelpContent() {
           net worth over time &mdash; the big-picture view of your financial
           journey.
         </p>
-        <h4 className="font-semibold text-secondary">Visualizations</h4>
-        <ul className="list-disc list-inside space-y-1 ml-2">
+        <h4 className="text-secondary font-semibold">Visualizations</h4>
+        <ul className="ml-2 list-inside list-disc space-y-1">
           <li>
             <strong>Net worth line chart</strong> &mdash; Your net worth trend
             over time.
@@ -664,7 +664,7 @@ export function HelpContent() {
           The <NavLink href="/historical">Historical</NavLink> page is a
           year-over-year ledger of your financial history.
         </p>
-        <ul className="list-disc list-inside space-y-1 ml-2">
+        <ul className="ml-2 list-inside list-disc space-y-1">
           <li>
             <strong>Column groups</strong> &mdash; Toggle visibility of data
             categories: Net Worth, Performance, Portfolio, Assets, Liabilities,
@@ -686,7 +686,7 @@ export function HelpContent() {
       </Section>
 
       {/* ━━ UPKEEP ━━ */}
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-faint pt-2">
+      <h3 className="text-faint pt-2 text-xs font-semibold tracking-wider uppercase">
         Upkeep
       </h3>
 
@@ -698,7 +698,7 @@ export function HelpContent() {
           home-management records. It is independent of the budget and
           projection &mdash; purely historical reference.
         </p>
-        <ul className="list-disc list-inside space-y-1 ml-2">
+        <ul className="ml-2 list-inside list-disc space-y-1">
           <li>
             <strong>Annual trend</strong> &mdash; A per-utility chart of yearly
             cost, so spikes and long-term creep are obvious at a glance.
@@ -719,7 +719,7 @@ export function HelpContent() {
       </Section>
 
       {/* ━━ ANALYSIS ━━ */}
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-faint pt-2">
+      <h3 className="text-faint pt-2 text-xs font-semibold tracking-wider uppercase">
         Analysis
       </h3>
 
@@ -729,8 +729,8 @@ export function HelpContent() {
           The <NavLink href="/retirement">Retirement</NavLink> page is a
           full-featured retirement planner powered by simulation.
         </p>
-        <h4 className="font-semibold text-secondary">Key concepts</h4>
-        <ul className="list-disc list-inside space-y-1 ml-2">
+        <h4 className="text-secondary font-semibold">Key concepts</h4>
+        <ul className="ml-2 list-inside list-disc space-y-1">
           <li>
             <strong>Accumulation phase</strong> &mdash; The years where
             you&rsquo;re saving and investing. The projection models portfolio
@@ -779,8 +779,8 @@ export function HelpContent() {
           The <NavLink href="/tools">Tools</NavLink> page is your what-if
           sandbox.
         </p>
-        <h4 className="font-semibold text-secondary">Available tools</h4>
-        <ul className="list-disc list-inside space-y-1 ml-2">
+        <h4 className="text-secondary font-semibold">Available tools</h4>
+        <ul className="ml-2 list-inside list-disc space-y-1">
           <li>
             <strong>Relocation scenario</strong> &mdash; Compare two locations
             side-by-side. Model differences in cost of living, taxes, housing,
@@ -801,7 +801,7 @@ export function HelpContent() {
       </Section>
 
       {/* ━━ SYSTEM ━━ */}
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-faint pt-2">
+      <h3 className="text-faint pt-2 text-xs font-semibold tracking-wider uppercase">
         System
       </h3>
 
@@ -811,7 +811,7 @@ export function HelpContent() {
           The <NavLink href="/versions">Versions</NavLink> page manages database
           versions &mdash; your safety net.
         </p>
-        <ul className="list-disc list-inside space-y-1 ml-2">
+        <ul className="ml-2 list-inside list-disc space-y-1">
           <li>
             <strong>Create version</strong> &mdash; Save the current state of
             your data with a name and description. Useful before making
@@ -842,8 +842,8 @@ export function HelpContent() {
           The <NavLink href="/settings">Settings</NavLink> page is where you
           configure the app. It has multiple tabs:
         </p>
-        <h4 className="font-semibold text-secondary">Tabs</h4>
-        <ul className="list-disc list-inside space-y-1 ml-2">
+        <h4 className="text-secondary font-semibold">Tabs</h4>
+        <ul className="ml-2 list-inside list-disc space-y-1">
           <li>
             <strong>General</strong> &mdash; App-wide preferences, thresholds,
             and display settings. Import/export data.
@@ -872,8 +872,8 @@ export function HelpContent() {
             Enter your API token or server URL, test the connection, and sync.
           </li>
         </ul>
-        <h4 className="font-semibold text-secondary">Admin-only tabs</h4>
-        <ul className="list-disc list-inside space-y-1 ml-2">
+        <h4 className="text-secondary font-semibold">Admin-only tabs</h4>
+        <ul className="ml-2 list-inside list-disc space-y-1">
           <li>
             <strong>Auth</strong> &mdash; Manage user roles and permissions.
           </li>
@@ -891,7 +891,7 @@ export function HelpContent() {
       </Section>
 
       {/* ── Cross-cutting features ── */}
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-faint pt-2">
+      <h3 className="text-faint pt-2 text-xs font-semibold tracking-wider uppercase">
         Features
       </h3>
 
@@ -901,7 +901,7 @@ export function HelpContent() {
           what-if mode). When activated, you can make temporary changes to see
           their impact without affecting your real data.
         </p>
-        <ul className="list-disc list-inside space-y-1 ml-2">
+        <ul className="ml-2 list-inside list-disc space-y-1">
           <li>
             <strong>Salary overrides</strong> &mdash; Temporarily change the
             income used in calculations. Available on Paycheck, Budget, and
@@ -930,7 +930,7 @@ export function HelpContent() {
           elections. They let you quickly switch between different savings
           strategies.
         </p>
-        <ul className="list-disc list-inside space-y-1 ml-2">
+        <ul className="ml-2 list-inside list-disc space-y-1">
           <li>
             <strong>Create profiles</strong> on the Paycheck page &mdash; name
             them descriptively (e.g. &ldquo;Max Retirement&rdquo;, &ldquo;House
@@ -953,7 +953,7 @@ export function HelpContent() {
           Budget) or <strong>Actual Budget</strong> to pull in real spending
           data.
         </p>
-        <ul className="list-disc list-inside space-y-1 ml-2">
+        <ul className="ml-2 list-inside list-disc space-y-1">
           <li>
             <strong>Setup</strong> &mdash; Go to{" "}
             <NavLink href="/settings">Settings &gt; Integrations</NavLink>. For
@@ -987,7 +987,7 @@ export function HelpContent() {
           Demo mode lets you explore Ledgr with sample data without needing to
           set up your own financial information.
         </p>
-        <ul className="list-disc list-inside space-y-1 ml-2">
+        <ul className="ml-2 list-inside list-disc space-y-1">
           <li>
             <strong>Profiles</strong> &mdash; Choose from several pre-built
             financial scenarios (early retirement, single income, debt payoff,
@@ -1007,14 +1007,14 @@ export function HelpContent() {
 
       {/* ── Tips ── */}
       <Section title="Tips & Shortcuts">
-        <ul className="list-disc list-inside space-y-2 ml-2">
+        <ul className="ml-2 list-inside list-disc space-y-2">
           <li>
             <strong>Inline editing</strong> &mdash; On many pages, you can click
             a value to edit it directly without opening a form.
           </li>
           <li>
             <strong>Help tips</strong> &mdash; Look for small{" "}
-            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-surface-sunken border border-default text-caption font-bold text-faint">
+            <span className="bg-surface-sunken border-default text-caption text-faint inline-flex h-4 w-4 items-center justify-center rounded-full border font-bold">
               ?
             </span>{" "}
             icons throughout the app. Hover over them for contextual

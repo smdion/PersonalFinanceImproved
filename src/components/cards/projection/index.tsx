@@ -355,10 +355,10 @@ export function ProjectionCard(props: {
         <div
           role="status"
           aria-live="polite"
-          className="fixed top-0 inset-x-0 z-[100] print:hidden flex items-center justify-center gap-3 bg-blue-600 text-white text-sm font-medium px-4 py-2 shadow-md"
+          className="fixed inset-x-0 top-0 z-[100] flex items-center justify-center gap-3 bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-md print:hidden"
         >
           <span
-            className="h-3.5 w-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin shrink-0"
+            className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-white/40 border-t-white"
             aria-hidden="true"
           />
           {mcProgress && mcProgress.total > 0 ? (
@@ -373,9 +373,9 @@ export function ProjectionCard(props: {
                 )}
                 )
               </span>
-              <span className="w-32 h-1.5 rounded-full bg-white/25 overflow-hidden shrink-0">
+              <span className="h-1.5 w-32 shrink-0 overflow-hidden rounded-full bg-white/25">
                 <span
-                  className="block h-full bg-white rounded-full transition-[width]"
+                  className="block h-full rounded-full bg-white transition-[width]"
                   style={{
                     width: `${Math.min(100, safeDivide(mcProgress.done, mcProgress.total, 0) * 100)}%`,
                   }}
@@ -387,14 +387,14 @@ export function ProjectionCard(props: {
           )}
         </div>
       )}
-      <div className="space-y-6 mb-6">
+      <div className="mb-6 space-y-6">
         <div className="space-y-6">
           {/* ================================================================= */}
           {/* RESULTS */}
           {/* ================================================================= */}
 
           {engineQuery.error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
               Failed to run engine: {engineQuery.error.message}
             </div>
           )}
@@ -402,7 +402,7 @@ export function ProjectionCard(props: {
           {/* Print/export report controls. print:hidden so the
               buttons themselves never appear in the printed output. */}
           {result && (
-            <div className="print:hidden flex items-center gap-3 text-caption">
+            <div className="text-caption flex items-center gap-3 print:hidden">
               <button
                 type="button"
                 onClick={() => handlePrint("basic")}
@@ -488,15 +488,15 @@ export function ProjectionCard(props: {
                     {[0, 1, 2, 3, 4].map((i) => (
                       <div
                         key={i}
-                        className="min-h-[128px] animate-pulse rounded-lg border border-subtle bg-surface-primary/40 p-3"
+                        className="border-subtle bg-surface-primary/40 min-h-[128px] animate-pulse rounded-lg border p-3"
                         style={{
                           animationDelay: `${i * 80}ms`,
                           animationDuration: "1.8s",
                         }}
                       >
-                        <div className="h-2.5 w-20 rounded bg-surface-strong/20" />
-                        <div className="mt-4 h-8 w-24 rounded bg-surface-strong/20" />
-                        <div className="mt-2 h-2 w-16 rounded bg-surface-strong/20" />
+                        <div className="bg-surface-strong/20 h-2.5 w-20 rounded" />
+                        <div className="bg-surface-strong/20 mt-4 h-8 w-24 rounded" />
+                        <div className="bg-surface-strong/20 mt-2 h-2 w-16 rounded" />
                       </div>
                     ))}
                   </div>
@@ -507,13 +507,13 @@ export function ProjectionCard(props: {
 
               {/* MC auto-load disabled notice — only when real data */}
               {result && !mcAutoloadEnabled && !mcPrefetchQuery.data && (
-                <div className="print:hidden flex items-center justify-between rounded-lg border border-subtle bg-surface-sunken px-3 py-2">
-                  <span className="text-xs text-muted">
+                <div className="border-subtle bg-surface-sunken flex items-center justify-between rounded-lg border px-3 py-2 print:hidden">
+                  <span className="text-muted text-xs">
                     Simulation auto-load is off — chart bands unavailable.
                   </span>
                   <button
                     onClick={() => runMonteCarlo()}
-                    className="text-xs text-blue-500 hover:text-blue-400 font-medium"
+                    className="text-xs font-medium text-blue-500 hover:text-blue-400"
                   >
                     Run Simulation
                   </button>
@@ -530,7 +530,7 @@ export function ProjectionCard(props: {
               {/* Toolbar — skeleton during engine load, real controls once data arrives */}
               {engineQuery.isLoading ? (
                 <div
-                  className="h-[70px] animate-pulse rounded-lg bg-surface-sunken"
+                  className="bg-surface-sunken h-[70px] animate-pulse rounded-lg"
                   style={{ animationDuration: "1.8s" }}
                 />
               ) : null}
@@ -602,7 +602,7 @@ export function ProjectionCard(props: {
                     ? "Not available for this scenario — Simple tax mode doesn't track individual accounts, so there's no per-account breakdown to show as bars. Switch to Advanced tax mode to use this."
                     : undefined;
                   return (
-                    <div className="print:hidden space-y-2">
+                    <div className="space-y-2 print:hidden">
                       {/* COMPUTE zone — decisions that change what gets
                           calculated. Scenario is the primary control
                           (bigger, colored active state); everything else
@@ -710,7 +710,7 @@ export function ProjectionCard(props: {
                               return clamped;
                             };
                             return (
-                              <div className="flex items-center gap-2 text-sm bg-surface-sunken rounded-md px-2.5 py-1.5 -mt-1">
+                              <div className="bg-surface-sunken -mt-1 flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm">
                                 <label
                                   htmlFor="coast-fire-custom-age"
                                   className="text-caption text-muted"
@@ -728,7 +728,7 @@ export function ProjectionCard(props: {
                                     setCoastFireCustomAgeDraft(e.target.value)
                                   }
                                   onBlur={commitDraft}
-                                  className="w-16 text-sm border rounded px-1.5 py-0.5 tabular-nums"
+                                  className="w-16 rounded border px-1.5 py-0.5 text-sm tabular-nums"
                                 />
                                 <button
                                   type="button"
@@ -736,7 +736,7 @@ export function ProjectionCard(props: {
                                     checkCoastFireCustomAge(commitDraft())
                                   }
                                   disabled={coastFireProbeLoading}
-                                  className="px-2.5 py-1 rounded-md text-label font-semibold border border-subtle text-muted shadow-sm transition-colors hover:bg-surface-primary/80 disabled:opacity-50"
+                                  className="text-label border-subtle text-muted hover:bg-surface-primary/80 rounded-md border px-2.5 py-1 font-semibold shadow-sm transition-colors disabled:opacity-50"
                                 >
                                   {coastFireProbeLoading
                                     ? "Checking…"
@@ -911,7 +911,7 @@ export function ProjectionCard(props: {
                               <button
                                 type="button"
                                 onClick={() => setShowMethodology(true)}
-                                className="text-caption text-blue-500 hover:text-blue-600 underline whitespace-nowrap"
+                                className="text-caption whitespace-nowrap text-blue-500 underline hover:text-blue-600"
                               >
                                 How does this work?
                               </button>
@@ -982,11 +982,11 @@ export function ProjectionCard(props: {
                                       in 2050 shows what that money actually
                                       buys today.
                                     </div>
-                                    <div className="text-xs text-faint mt-0.5">
+                                    <div className="text-faint mt-0.5 text-xs">
                                       Use when:
                                     </div>
                                     <ul
-                                      className="text-xs text-faint ml-3 space-y-0.5"
+                                      className="text-faint ml-3 space-y-0.5 text-xs"
                                       style={{ listStyleType: "'▸ '" }}
                                     >
                                       <li>
@@ -1009,7 +1009,7 @@ export function ProjectionCard(props: {
                                         Comparing scenarios across decades
                                       </li>
                                     </ul>
-                                    <div className="text-caption text-muted italic mt-0.5">
+                                    <div className="text-caption text-muted mt-0.5 italic">
                                       Salary and withdrawals may appear flat or
                                       declining — that&apos;s not a bug, it
                                       means purchasing power isn&apos;t
@@ -1033,11 +1033,11 @@ export function ProjectionCard(props: {
                                       it&apos;s counted once, not stacked on
                                       top.
                                     </div>
-                                    <div className="text-xs text-faint mt-0.5">
+                                    <div className="text-faint mt-0.5 text-xs">
                                       Use when:
                                     </div>
                                     <ul
-                                      className="text-xs text-faint ml-3 space-y-0.5"
+                                      className="text-faint ml-3 space-y-0.5 text-xs"
                                       style={{ listStyleType: "'▸ '" }}
                                     >
                                       <li>
@@ -1074,7 +1074,7 @@ export function ProjectionCard(props: {
                                   </div>,
                                   <div
                                     key="tip"
-                                    className="border-t pt-1.5 text-xs text-faint italic"
+                                    className="text-faint border-t pt-1.5 text-xs italic"
                                   >
                                     Same projection, different lens.{" "}
                                     <span className="text-blue-300">

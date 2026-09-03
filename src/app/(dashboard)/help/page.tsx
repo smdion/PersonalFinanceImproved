@@ -8,16 +8,16 @@ import { HelpContent } from "@/components/help-content";
 
 export default function HelpPage() {
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-12">
+    <div className="mx-auto max-w-4xl space-y-6 pb-12">
       <PageHeader
         title="Help & Guide"
         subtitle="Everything you need to know to get the most out of Ledgr"
       />
       <HelpContent />
-      <div className="text-center pt-4">
+      <div className="pt-4 text-center">
         <Link
           href="/"
-          className="text-sm text-blue-600 hover:text-blue-700 underline"
+          className="text-sm text-blue-600 underline hover:text-blue-700"
         >
           Back to Dashboard
         </Link>

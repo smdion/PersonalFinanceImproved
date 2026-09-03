@@ -214,7 +214,7 @@ function LinkedBalanceCardImpl() {
   if (!history || history.length === 0) {
     return (
       <Card title="Live Balance" href="/settings">
-        <p className="text-sm text-faint">
+        <p className="text-faint text-sm">
           Connected — the first daily balance will appear after the next sync.
         </p>
       </Card>
@@ -323,7 +323,7 @@ function LinkedBalanceCardImpl() {
       {/* Account-type breakdown is reference detail, not the headline —
           kept small/muted so it doesn't compete with the drift figure above. */}
       {accounts && accountTypeGroups.length > 0 && (
-        <div className="mt-3 pt-3 border-t border-subtle space-y-1">
+        <div className="border-subtle mt-3 space-y-1 border-t pt-3">
           <div className="flex justify-end">
             <button
               type="button"
@@ -334,7 +334,7 @@ function LinkedBalanceCardImpl() {
                   rollupBy === "category" ? "institution" : "category",
                 );
               }}
-              className="text-xs bg-surface-elevated hover:bg-surface-strong rounded-full px-2 py-0.5 text-muted transition-colors"
+              className="bg-surface-elevated hover:bg-surface-strong text-muted rounded-full px-2 py-0.5 text-xs transition-colors"
             >
               By {rollupBy === "category" ? "institution" : "category"}
             </button>
@@ -343,7 +343,7 @@ function LinkedBalanceCardImpl() {
             ({ key, label, balance, drift: groupDrift }) => (
               <div
                 key={key || "unmatched"}
-                className="flex justify-between text-xs text-faint"
+                className="text-faint flex justify-between text-xs"
               >
                 <span>{label}</span>
                 <span className="flex items-center gap-1.5">

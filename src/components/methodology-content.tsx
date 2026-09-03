@@ -13,15 +13,15 @@ function Section({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border rounded-lg overflow-hidden">
+    <div className="overflow-hidden rounded-lg border">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-surface-sunken text-sm font-medium text-secondary hover:bg-surface-elevated transition-colors"
+        className="bg-surface-sunken text-secondary hover:bg-surface-elevated flex w-full items-center justify-between px-4 py-3 text-sm font-medium transition-colors"
       >
         {title}
         <svg
           aria-hidden="true"
-          className={`w-4 h-4 transition-transform ${open ? "rotate-180" : ""}`}
+          className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -35,7 +35,7 @@ function Section({
         </svg>
       </button>
       {open && (
-        <div className="px-4 py-4 space-y-4 text-sm text-muted leading-relaxed">
+        <div className="text-muted space-y-4 px-4 py-4 text-sm leading-relaxed">
           {children}
         </div>
       )}
@@ -46,7 +46,7 @@ function Section({
 export function MethodologyContent() {
   return (
     <div className="space-y-6">
-      <p className="text-sm text-muted">
+      <p className="text-muted text-sm">
         How the retirement projection engine works, what the numbers mean, and
         how it compares to other tools.
       </p>
@@ -62,7 +62,7 @@ export function MethodologyContent() {
           retirement.
         </p>
 
-        <h4 className="font-semibold text-secondary mt-4">
+        <h4 className="text-secondary mt-4 font-semibold">
           What the fan chart shows
         </h4>
         <p>
@@ -73,7 +73,7 @@ export function MethodologyContent() {
           worst-case range.
         </p>
 
-        <h4 className="font-semibold text-secondary mt-4">
+        <h4 className="text-secondary mt-4 font-semibold">
           What success rate measures
         </h4>
         <p>
@@ -85,7 +85,7 @@ export function MethodologyContent() {
           inflation.
         </p>
 
-        <h4 className="font-semibold text-secondary mt-4">
+        <h4 className="text-secondary mt-4 font-semibold">
           Simple vs Advanced mode
         </h4>
         <p>
@@ -106,8 +106,8 @@ export function MethodologyContent() {
           Simple mode.
         </p>
 
-        <h4 className="font-semibold text-secondary mt-4">The three presets</h4>
-        <ul className="list-disc pl-5 space-y-1.5">
+        <h4 className="text-secondary mt-4 font-semibold">The three presets</h4>
+        <ul className="list-disc space-y-1.5 pl-5">
           <li>
             <strong>Aggressive</strong> — Full historical returns (Ibbotson
             SBBI), slightly reduced volatility (0.9x), high equity allocation
@@ -127,7 +127,7 @@ export function MethodologyContent() {
           </li>
         </ul>
 
-        <h4 className="font-semibold text-secondary mt-4">
+        <h4 className="text-secondary mt-4 font-semibold">
           Sequence of returns risk
         </h4>
         <p>
@@ -159,7 +159,7 @@ export function MethodologyContent() {
           specific historical period.
         </p>
 
-        <h4 className="font-semibold text-secondary mt-4">
+        <h4 className="text-secondary mt-4 font-semibold">
           Why our numbers differ from other tools
         </h4>
         <p>
@@ -186,7 +186,7 @@ export function MethodologyContent() {
       </Section>
 
       <Section title="Technical Details" defaultOpen={false}>
-        <h4 className="font-semibold text-secondary">Return sampling</h4>
+        <h4 className="text-secondary font-semibold">Return sampling</h4>
         <p>
           Annual returns are sampled from a multivariate log-normal
           distribution. Each asset class has a calibrated mean return and
@@ -196,7 +196,7 @@ export function MethodologyContent() {
           while bonds may rise, matching real-world behavior.
         </p>
 
-        <h4 className="font-semibold text-secondary mt-4">
+        <h4 className="text-secondary mt-4 font-semibold">
           Glide path interpolation
         </h4>
         <p>
@@ -207,7 +207,7 @@ export function MethodologyContent() {
           100% at every age.
         </p>
 
-        <h4 className="font-semibold text-secondary mt-4">
+        <h4 className="text-secondary mt-4 font-semibold">
           Stochastic inflation
         </h4>
         <p>
@@ -217,11 +217,11 @@ export function MethodologyContent() {
           higher inflation (3% mean, 1.5% std dev) for stress testing.
         </p>
 
-        <h4 className="font-semibold text-secondary mt-4">
+        <h4 className="text-secondary mt-4 font-semibold">
           Asset class parameters
         </h4>
         <div className="overflow-x-auto">
-          <table className="text-xs w-full border-collapse">
+          <table className="w-full border-collapse text-xs">
             <thead>
               <tr className="border-b text-left">
                 <th className="py-1.5 pr-3">Asset Class</th>
@@ -230,7 +230,7 @@ export function MethodologyContent() {
                 <th className="py-1.5">Source</th>
               </tr>
             </thead>
-            <tbody className="divide-y ">
+            <tbody className="divide-y">
               <tr>
                 <td className="py-1.5 pr-3">US Equities</td>
                 <td className="pr-3">~10%</td>
@@ -264,13 +264,13 @@ export function MethodologyContent() {
             </tbody>
           </table>
         </div>
-        <p className="text-xs text-faint mt-1">
+        <p className="text-faint mt-1 text-xs">
           Actual values come from your database (asset_class_params table).
           Presets apply multipliers to these base values. The Conservative
           preset overrides with forward-looking estimates.
         </p>
 
-        <h4 className="font-semibold text-secondary mt-4">
+        <h4 className="text-secondary mt-4 font-semibold">
           Tax gross-up (Advanced mode)
         </h4>
         <p>
@@ -284,7 +284,7 @@ export function MethodologyContent() {
           than your expenses to net the right amount after tax.
         </p>
 
-        <h4 className="font-semibold text-secondary mt-4">
+        <h4 className="text-secondary mt-4 font-semibold">
           Withdrawal routing
         </h4>
         <p>
@@ -305,11 +305,11 @@ export function MethodologyContent() {
           2.0 rules.
         </p>
 
-        <h4 className="font-semibold text-secondary mt-4">
+        <h4 className="text-secondary mt-4 font-semibold">
           Comparison with other tools
         </h4>
         <div className="overflow-x-auto">
-          <table className="text-xs w-full border-collapse">
+          <table className="w-full border-collapse text-xs">
             <thead>
               <tr className="border-b text-left">
                 <th className="py-1.5 pr-2">Feature</th>
@@ -324,7 +324,7 @@ export function MethodologyContent() {
                 <th className="py-1.5">Trinity Study</th>
               </tr>
             </thead>
-            <tbody className="divide-y ">
+            <tbody className="divide-y">
               <tr className="text-caption text-faint italic">
                 <td className="py-1 pr-2">Cost</td>
                 <td className="pr-2">Free (self-hosted)</td>
@@ -514,7 +514,7 @@ export function MethodologyContent() {
             </tbody>
           </table>
         </div>
-        <p className="text-xs text-faint mt-2">
+        <p className="text-faint mt-2 text-xs">
           <strong>Free tools</strong> (cFIREsim, FireCalc, FICalc, Engaging
           Data) are best for quick validation using historical data.{" "}
           <strong>Paid tools</strong> (Boldin, ProjectionLab) offer
@@ -524,10 +524,10 @@ export function MethodologyContent() {
           closest comparison with free historical tools.
         </p>
 
-        <h4 className="font-semibold text-secondary mt-4">
+        <h4 className="text-secondary mt-4 font-semibold">
           Known limitations and future improvements
         </h4>
-        <ul className="list-disc pl-5 space-y-1.5">
+        <ul className="list-disc space-y-1.5 pl-5">
           <li>
             <strong>Roth conversions are automatic, not optimized.</strong> The
             engine fills remaining bracket room with Traditional-to-Roth
@@ -564,8 +564,8 @@ export function MethodologyContent() {
           </li>
         </ul>
 
-        <h4 className="font-semibold text-secondary mt-4">Sources</h4>
-        <ul className="list-disc pl-5 space-y-1">
+        <h4 className="text-secondary mt-4 font-semibold">Sources</h4>
+        <ul className="list-disc space-y-1 pl-5">
           <li>
             Bengen, W. (1994). &ldquo;Determining Withdrawal Rates Using
             Historical Data&rdquo;

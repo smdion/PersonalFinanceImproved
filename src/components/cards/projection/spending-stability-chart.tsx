@@ -86,10 +86,10 @@ export function SpendingStabilityChart({
   if (decYears.length === 0) {
     return (
       <div className="bg-surface-sunken rounded-lg p-3">
-        <h5 className="text-xs font-medium text-muted uppercase mb-2">
+        <h5 className="text-muted mb-2 text-xs font-medium uppercase">
           Yearly Income Stability
         </h5>
-        <div className="h-[320px] flex items-center justify-center text-muted text-sm">
+        <div className="text-muted flex h-[320px] items-center justify-center text-sm">
           No decumulation years to display — retirement hasn&apos;t started yet
           in this projection.
         </div>
@@ -228,13 +228,13 @@ export function SpendingStabilityChart({
 
   return (
     <div className="bg-surface-sunken rounded-lg p-3">
-      <div className="flex items-start justify-between mb-2 gap-2">
-        <h5 className="text-xs font-medium text-muted uppercase">
-          <span className="text-micro font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded mr-1.5 normal-case">
+      <div className="mb-2 flex items-start justify-between gap-2">
+        <h5 className="text-muted text-xs font-medium uppercase">
+          <span className="text-micro mr-1.5 rounded bg-emerald-50 px-1.5 py-0.5 font-semibold text-emerald-600 normal-case">
             %
           </span>
           Yearly Income Stability · vs {baselineLabel}
-          <span className="text-micro text-faint font-normal ml-2 normal-case">
+          <span className="text-micro text-faint ml-2 font-normal normal-case">
             Withdrawal as % of{" "}
             {isStrategy
               ? usesPostRetirementRaise
@@ -318,15 +318,15 @@ export function SpendingStabilityChart({
               >;
               const ratio = d.ratio ?? 0;
               return (
-                <div className="bg-surface-primary border rounded-lg shadow-lg p-2 text-xs">
-                  <div className="font-medium mb-1">Age {d.age}</div>
+                <div className="bg-surface-primary rounded-lg border p-2 text-xs shadow-lg">
+                  <div className="mb-1 font-medium">Age {d.age}</div>
                   <div className="flex justify-between gap-4">
                     <span className="text-muted">vs {baselineLabel}:</span>
                     <span
                       className={
                         ratio >= 75
-                          ? "text-blue-400 font-medium"
-                          : "text-red-500 font-medium"
+                          ? "font-medium text-blue-400"
+                          : "font-medium text-red-500"
                       }
                     >
                       {formatPercent(ratio / 100, 1)}
@@ -362,7 +362,7 @@ export function SpendingStabilityChart({
                   {d.mc_breach !== undefined && d.mc_breach > 0 && (
                     <div className="flex justify-between gap-4">
                       <span className="text-muted">Breached floor:</span>
-                      <span className="text-orange-500 font-medium">
+                      <span className="font-medium text-orange-500">
                         {formatPercent(d.mc_breach / 100, 1)} of sims
                       </span>
                     </div>

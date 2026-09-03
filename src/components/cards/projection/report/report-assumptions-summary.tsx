@@ -100,7 +100,7 @@ function Section({
 }) {
   return (
     <div className="mb-3 break-inside-avoid">
-      <div className="text-xs font-semibold uppercase tracking-wide text-faint mb-1">
+      <div className="text-faint mb-1 text-xs font-semibold tracking-wide uppercase">
         {title}
       </div>
       {children}
@@ -175,9 +175,9 @@ export function ReportAssumptionsSummary({
   const ssStartAge = num(settings.ssStartAge);
 
   return (
-    <div className="mt-6 border-t pt-4 break-before-page">
-      <h2 className="text-lg font-semibold mb-2">Behind the Scenes</h2>
-      <p className="text-xs text-muted mb-3">
+    <div className="mt-6 break-before-page border-t pt-4">
+      <h2 className="mb-2 text-lg font-semibold">Behind the Scenes</h2>
+      <p className="text-muted mb-3 text-xs">
         The assumptions this projection is built on — change any of these on the
         Retirement or Budget pages and the numbers above will change too.
       </p>
@@ -242,7 +242,7 @@ export function ReportAssumptionsSummary({
             withdrawalRate != null ? formatPercent(withdrawalRate, 1) : "—"
           }
         />
-        <p className="text-xs text-faint mt-0.5">
+        <p className="text-faint mt-0.5 text-xs">
           {strategyLabel} doesn&apos;t spend based on this rate — none of the 8
           withdrawal strategies do. It&apos;s a reference figure only (also used
           to size the &ldquo;years to FI&rdquo; estimate elsewhere in the app).
@@ -285,7 +285,7 @@ export function ReportAssumptionsSummary({
       )}
 
       {rmdExcessYears > 0 && (
-        <p className="text-xs text-faint mt-2">
+        <p className="text-faint mt-2 text-xs">
           Note: {rmdExcessYears} year{rmdExcessYears === 1 ? "" : "s"} in this
           projection {rmdExcessYears === 1 ? "has" : "have"} Required Minimum
           Distributions exceeding this plan&apos;s stated spending need —
@@ -297,7 +297,7 @@ export function ReportAssumptionsSummary({
       )}
 
       {qcdYears > 0 && (
-        <p className="text-xs text-faint mt-2">
+        <p className="text-faint mt-2 text-xs">
           Note: {qcdYears} year{qcdYears === 1 ? "" : "s"} in this projection{" "}
           {qcdYears === 1 ? "applies" : "apply"} a Qualified Charitable
           Distribution — money sent directly to charity from an IRA, satisfying

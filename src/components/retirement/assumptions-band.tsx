@@ -169,14 +169,14 @@ export function AssumptionsBand({
   const labelCls = "text-faint";
 
   return (
-    <div className="print:hidden mb-3 rounded-lg border bg-surface-primary/40 px-3 py-2">
-      <div className="flex flex-wrap items-center gap-2 mb-1.5">
-        <span className="text-label font-semibold text-muted uppercase tracking-wider">
+    <div className="bg-surface-primary/40 mb-3 rounded-lg border px-3 py-2 print:hidden">
+      <div className="mb-1.5 flex flex-wrap items-center gap-2">
+        <span className="text-label text-muted font-semibold tracking-wider uppercase">
           Assumptions
         </span>
         {profiles.length > 1 ? (
           <select
-            className="text-xs border rounded px-1.5 py-0.5 bg-surface-primary"
+            className="bg-surface-primary rounded border px-1.5 py-0.5 text-xs"
             value={viewingProfileId ?? ""}
             onChange={(e) => onViewingProfileChange(Number(e.target.value))}
             aria-label="Retirement profile"
@@ -406,7 +406,7 @@ export function AssumptionsBand({
       </div>
 
       {strategyExpanded && (
-        <div className="flex flex-wrap items-center gap-1.5 mt-1.5 pt-1.5 border-t">
+        <div className="mt-1.5 flex flex-wrap items-center gap-1.5 border-t pt-1.5">
           {isMultiPerson ? (
             perPersonSettings!.map((ps) => (
               <span key={ps.personId} className={chipCls}>

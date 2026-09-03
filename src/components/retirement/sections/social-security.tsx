@@ -40,14 +40,14 @@ export function SocialSecuritySection({
   const profileId = settings.profileId;
   return (
     <div className="bg-surface-sunken rounded-lg p-3">
-      <div className="flex items-center gap-2 mb-2">
-        <h4 className="text-label font-semibold text-muted uppercase tracking-wider">
+      <div className="mb-2 flex items-center gap-2">
+        <h4 className="text-label text-muted font-semibold tracking-wider uppercase">
           Social Security
         </h4>
         <Badge color="indigo">Baseline + Simulation</Badge>
         <div className="flex-1 border-t" />
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2 text-sm">
+      <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm md:grid-cols-4">
         {perPersonSettings && perPersonSettings.length > 1 ? (
           perPersonSettings.map((ps) => (
             <div key={ps.personId}>
@@ -135,7 +135,7 @@ export function SocialSecuritySection({
             Taxable Portion
             <HelpTip text="Percentage subject to federal tax. Most retirees with other income hit the 85% threshold." />
           </span>
-          <div className="font-medium text-muted">~85%</div>
+          <div className="text-muted font-medium">~85%</div>
         </div>
       </div>
     </div>

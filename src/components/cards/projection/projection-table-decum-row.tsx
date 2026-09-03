@@ -418,7 +418,7 @@ export function DecumulationRow({
   return (
     <tr
       key={yr.year}
-      className={`border-b border-subtle hover:bg-surface-elevated/60 transition-colors ${
+      className={`border-subtle hover:bg-surface-elevated/60 border-b transition-colors ${
         isPhaseTransition
           ? "bg-blue-50 font-medium"
           : hasOverride
@@ -447,16 +447,16 @@ export function DecumulationRow({
         })()}
         side="top"
       >
-        <td className="py-1.5 px-2">{displayAge(yr.year) ?? yr.age}</td>
+        <td className="px-2 py-1.5">{displayAge(yr.year) ?? yr.age}</td>
       </Tooltip>
-      <td className="py-1.5 px-2">
-        <span className="text-amber-600 text-caption font-medium">DRAW</span>
+      <td className="px-2 py-1.5">
+        <span className="text-caption font-medium text-amber-600">DRAW</span>
       </td>
       <Tooltip content="No salary income during retirement" side="top">
-        <td className="text-right py-1.5 px-2 text-faint">---</td>
+        <td className="text-faint px-2 py-1.5 text-right">---</td>
       </Tooltip>
       <Tooltip content="No contribution rate during retirement" side="top">
-        <td className="text-right py-1.5 px-2 text-faint">---</td>
+        <td className="text-faint px-2 py-1.5 text-right">---</td>
       </Tooltip>
       {contribView === "account"
         ? getAllCategories()
@@ -665,7 +665,7 @@ export function DecumulationRow({
                   maxWidth={420}
                 >
                   <td
-                    className={`text-right py-1.5 px-2 ${(() => {
+                    className={`px-2 py-1.5 text-right ${(() => {
                       const catLumps = lumpSumsForCategory(yearLumpSums, cat);
                       const catLumpTotal = lumpSumTotal(catLumps);
                       if (catLumpTotal > 0 && catLumpTotal > wd)
@@ -820,7 +820,7 @@ export function DecumulationRow({
                   side="top"
                 >
                   <td
-                    className={`text-right py-1.5 px-2 ${(() => {
+                    className={`px-2 py-1.5 text-right ${(() => {
                       const bucketLumps = lumpSumsForBucket(
                         yearLumpSums,
                         bucket,
@@ -1063,7 +1063,7 @@ export function DecumulationRow({
         maxWidth={460}
       >
         <td
-          className={`text-right py-1.5 px-2 font-medium ${
+          className={`px-2 py-1.5 text-right font-medium ${
             totalLumpSum > 0 && totalLumpSum > dyr.totalWithdrawal
               ? "text-green-600"
               : dyr.totalWithdrawal > 0 &&
@@ -1223,7 +1223,7 @@ export function DecumulationRow({
                 side="top"
               >
                 <td
-                  className={`text-right py-1.5 px-2 ${taxTypeTextColor(bucket)}`}
+                  className={`px-2 py-1.5 text-right ${taxTypeTextColor(bucket)}`}
                 >
                   {formatCurrency(deflate(bal, yr.year))}
                 </td>
@@ -1418,7 +1418,7 @@ export function DecumulationRow({
                   })}
                   side="top"
                 >
-                  <td className={`text-right py-1.5 px-2 ${col.color}`}>
+                  <td className={`px-2 py-1.5 text-right ${col.color}`}>
                     {formatCurrency(deflate(bal, yr.year))}
                   </td>
                 </Tooltip>
@@ -1468,7 +1468,7 @@ export function DecumulationRow({
         })()}
         side="top"
       >
-        <td className="text-right py-1.5 px-2 font-semibold">
+        <td className="px-2 py-1.5 text-right font-semibold">
           {formatCurrency(
             Math.max(0, deflate(dpt ? dpt.balance : yr.endBalance, yr.year)),
           )}
@@ -1479,7 +1479,7 @@ export function DecumulationRow({
         deflate(dpt ? dpt.balance : yr.endBalance, yr.year),
         mcCellOpts,
       )}
-      <td className="py-1.5 pl-2 text-caption text-faint whitespace-nowrap border-l border-subtle">
+      <td className="text-caption text-faint border-subtle border-l py-1.5 pl-2 whitespace-nowrap">
         {dyr.taxCost > 0 && (
           <Tooltip
             content="Eff. rate = total tax / total withdrawal. Traditional: marginal rate. Brokerage: LTCG rate. Roth growth beyond basis: ordinary rate. Once at the bracket cap, the engine picks whichever's cheaper that year."
@@ -1583,7 +1583,7 @@ export function DecumulationRow({
                 --c-blue-300 override (globals.css) and correctly tracks
                 page theme here, unlike tipColorClass's shades (used for
                 text INSIDE the dark popup, see cards/projection/utils.ts). */}
-            <span className="text-blue-300 ml-1 cursor-help">diag</span>
+            <span className="ml-1 cursor-help text-blue-300">diag</span>
           </Tooltip>
         )}
         {dyr.warnings.length > 0 && (
@@ -1597,7 +1597,7 @@ export function DecumulationRow({
             })}
             side="left"
           >
-            <span className="text-amber-500 ml-1">
+            <span className="ml-1 text-amber-500">
               {dyr.warnings.length} warning
               {dyr.warnings.length > 1 ? "s" : ""}
             </span>

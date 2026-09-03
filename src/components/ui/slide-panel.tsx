@@ -65,18 +65,18 @@ export function SlidePanel({
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        className="bg-surface-primary w-full max-w-2xl h-full shadow-xl flex flex-col animate-in slide-in-from-right duration-200 outline-none"
+        className="bg-surface-primary animate-in slide-in-from-right flex h-full w-full max-w-2xl flex-col shadow-xl duration-200 outline-none"
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b shrink-0">
-          <h2 className="text-lg font-semibold text-primary">{title}</h2>
+        <div className="flex shrink-0 items-center justify-between border-b px-6 py-4">
+          <h2 className="text-primary text-lg font-semibold">{title}</h2>
           <button
             onClick={handleClose}
-            className="p-1.5 text-faint hover:text-secondary rounded-md hover:bg-surface-elevated transition-colors"
+            className="text-faint hover:text-secondary hover:bg-surface-elevated rounded-md p-1.5 transition-colors"
             aria-label="Close"
           >
             <svg
               aria-hidden="true"
-              className="w-5 h-5"
+              className="h-5 w-5"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"

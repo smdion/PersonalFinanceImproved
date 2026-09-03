@@ -68,21 +68,21 @@ export function CreateAccountForm({
 
   return (
     <div className="space-y-3">
-      <div className="text-xs font-semibold text-muted uppercase tracking-wider">
+      <div className="text-muted text-xs font-semibold tracking-wider uppercase">
         New Account
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <label className="block">
-          <span className="text-xs text-muted">Institution</span>
+          <span className="text-muted text-xs">Institution</span>
           <input
             type="text"
             value={institution}
             onChange={(e) => setInstitution(e.target.value)}
-            className="mt-1 block w-full text-sm border border-strong rounded px-2 py-1.5"
+            className="border-strong mt-1 block w-full rounded border px-2 py-1.5 text-sm"
           />
         </label>
         <label className="block">
-          <span className="text-xs text-muted">Account Type</span>
+          <span className="text-muted text-xs">Account Type</span>
           <select
             value={accountType}
             onChange={(e) => {
@@ -90,7 +90,7 @@ export function CreateAccountForm({
               setAccountType(next);
               if (!categoryTouched) setParentCategory(getParentCategory(next));
             }}
-            className="mt-1 block w-full text-sm border border-strong rounded px-2 py-1.5"
+            className="border-strong mt-1 block w-full rounded border px-2 py-1.5 text-sm"
           >
             {typeOptions.map((o) => (
               <option key={o.value} value={o.value}>
@@ -100,27 +100,27 @@ export function CreateAccountForm({
           </select>
         </label>
         <label className="block">
-          <span className="text-xs text-muted">Sub-Type</span>
+          <span className="text-muted text-xs">Sub-Type</span>
           <input
             type="text"
             value={subType}
             onChange={(e) => setSubType(e.target.value)}
             placeholder="e.g. ESPP, Rollover"
-            className="mt-1 block w-full text-sm border border-strong rounded px-2 py-1.5"
+            className="border-strong mt-1 block w-full rounded border px-2 py-1.5 text-sm"
           />
         </label>
         <label className="block">
-          <span className="text-xs text-muted">Label</span>
+          <span className="text-muted text-xs">Label</span>
           <input
             type="text"
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             placeholder="e.g. Long Term"
-            className="mt-1 block w-full text-sm border border-strong rounded px-2 py-1.5"
+            className="border-strong mt-1 block w-full rounded border px-2 py-1.5 text-sm"
           />
         </label>
         <label className="block">
-          <span className="text-xs text-muted">Ownership</span>
+          <span className="text-muted text-xs">Ownership</span>
           <select
             value={ownershipType}
             onChange={(e) => {
@@ -128,7 +128,7 @@ export function CreateAccountForm({
               setOwnershipType(v);
               if (v === "joint") setOwnerPersonId("");
             }}
-            className="mt-1 block w-full text-sm border border-strong rounded px-2 py-1.5"
+            className="border-strong mt-1 block w-full rounded border px-2 py-1.5 text-sm"
           >
             <option value="individual">Individual</option>
             <option value="joint">Joint</option>
@@ -136,11 +136,11 @@ export function CreateAccountForm({
         </label>
         {ownershipType === "individual" && (
           <label className="block">
-            <span className="text-xs text-muted">Owner</span>
+            <span className="text-muted text-xs">Owner</span>
             <select
               value={ownerPersonId}
               onChange={(e) => setOwnerPersonId(e.target.value)}
-              className="mt-1 block w-full text-sm border border-strong rounded px-2 py-1.5"
+              className="border-strong mt-1 block w-full rounded border px-2 py-1.5 text-sm"
             >
               <option value="">Select...</option>
               {people.map((p) => (
@@ -152,14 +152,14 @@ export function CreateAccountForm({
           </label>
         )}
         <label className="block">
-          <span className="text-xs text-muted">Category</span>
+          <span className="text-muted text-xs">Category</span>
           <select
             value={parentCategory}
             onChange={(e) => {
               setParentCategory(e.target.value as "Retirement" | "Portfolio");
               setCategoryTouched(true);
             }}
-            className="mt-1 block w-full text-sm border border-strong rounded px-2 py-1.5"
+            className="border-strong mt-1 block w-full rounded border px-2 py-1.5 text-sm"
           >
             <option value={PERF_CATEGORY_RETIREMENT}>
               {PERF_CATEGORY_RETIREMENT}
@@ -170,13 +170,13 @@ export function CreateAccountForm({
           </select>
         </label>
         <label className="block">
-          <span className="text-xs text-muted">Display Name</span>
+          <span className="text-muted text-xs">Display Name</span>
           <input
             type="text"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
             placeholder="Optional override"
-            className="mt-1 block w-full text-sm border border-strong rounded px-2 py-1.5"
+            className="border-strong mt-1 block w-full rounded border px-2 py-1.5 text-sm"
           />
         </label>
       </div>
@@ -197,13 +197,13 @@ export function CreateAccountForm({
             })
           }
           disabled={isPending || !institution || !accountType}
-          className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+          className="rounded-md bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
         >
           {isPending ? "Creating..." : "Create Account"}
         </button>
         <button
           onClick={onCancel}
-          className="px-3 py-1.5 text-sm text-muted hover:text-primary"
+          className="text-muted hover:text-primary px-3 py-1.5 text-sm"
         >
           Cancel
         </button>

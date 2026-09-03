@@ -41,8 +41,8 @@ export function ContributionProfileCompare() {
   if (isLoading) {
     return (
       <div className="space-y-2">
-        <div className="animate-pulse h-8 bg-surface-elevated rounded" />
-        <div className="animate-pulse h-64 bg-surface-elevated rounded" />
+        <div className="bg-surface-elevated h-8 animate-pulse rounded" />
+        <div className="bg-surface-elevated h-64 animate-pulse rounded" />
       </div>
     );
   }
@@ -53,16 +53,16 @@ export function ContributionProfileCompare() {
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-xs border-collapse">
+      <table className="w-full border-collapse text-xs">
         <thead>
-          <tr className="border-b-2 border-strong">
-            <th className="text-left py-2 pl-4 pr-3 text-muted font-medium sticky left-0 bg-surface-primary">
+          <tr className="border-strong border-b-2">
+            <th className="text-muted bg-surface-primary sticky left-0 py-2 pr-3 pl-4 text-left font-medium">
               Account
             </th>
             {data.profiles.map((p) => (
               <th
                 key={p.id}
-                className="text-right py-2 px-3 text-muted font-medium whitespace-nowrap"
+                className="text-muted px-3 py-2 text-right font-medium whitespace-nowrap"
               >
                 {p.name}
               </th>
@@ -73,16 +73,16 @@ export function ContributionProfileCompare() {
           {data.accounts.map((account, rowIdx) => (
             <tr
               key={account.id}
-              className={`border-b border-subtle hover:bg-blue-50/60 transition-colors ${
+              className={`border-subtle border-b transition-colors hover:bg-blue-50/60 ${
                 rowIdx % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"
               }`}
             >
-              <td className="py-1.5 pl-4 pr-3 text-secondary sticky left-0 bg-inherit whitespace-nowrap">
+              <td className="text-secondary sticky left-0 bg-inherit py-1.5 pr-3 pl-4 whitespace-nowrap">
                 {account.accountName}
                 {!account.live.isActive && (
                   <>
                     <span
-                      className="ml-1 text-micro text-amber-500 font-medium"
+                      className="text-micro ml-1 font-medium text-amber-500"
                       title="This account isn't a funding target — any value set for it in any profile has no effect."
                     >
                       not a funding target
@@ -95,7 +95,7 @@ export function ContributionProfileCompare() {
                         })
                       }
                       disabled={setAccountActive.isPending}
-                      className="ml-1 text-micro text-green-500 hover:text-green-700 disabled:opacity-50"
+                      className="text-micro ml-1 text-green-500 hover:text-green-700 disabled:opacity-50"
                     >
                       Restore as funding target
                     </button>
@@ -111,14 +111,14 @@ export function ContributionProfileCompare() {
                 return (
                   <td
                     key={p.id}
-                    className={`py-1.5 px-3 text-right font-mono whitespace-nowrap ${
+                    className={`px-3 py-1.5 text-right font-mono whitespace-nowrap ${
                       hasValue && !isDisabled
-                        ? "text-amber-600 font-medium"
+                        ? "font-medium text-amber-600"
                         : "text-faint"
                     }`}
                   >
                     {isDisabled ? (
-                      <span className="text-micro px-1 py-0.5 rounded border border-strong text-muted font-semibold">
+                      <span className="text-micro border-strong text-muted rounded border px-1 py-0.5 font-semibold">
                         OFF HERE
                       </span>
                     ) : hasValue ? (

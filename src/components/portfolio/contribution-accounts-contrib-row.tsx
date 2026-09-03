@@ -120,13 +120,13 @@ export function ContributionRow({
 
   return (
     <div
-      className={`border rounded-lg bg-surface-primary ${!c.isActive ? "opacity-50" : ""}`}
+      className={`bg-surface-primary rounded-lg border ${!c.isActive ? "opacity-50" : ""}`}
     >
       {/* Summary line — hidden when edit is open */}
       {!showAdvanced && (
         <>
           <div className="flex items-center gap-2 px-3 py-2 text-xs">
-            <span className="text-secondary font-medium shrink-0">
+            <span className="text-secondary shrink-0 font-medium">
               {c.ownership === "joint" ? "Joint" : personLabel}
             </span>
             <span className="text-faint">·</span>
@@ -165,7 +165,7 @@ export function ContributionRow({
             )}
             <span className="flex-1" />
             {!c.isActive && (
-              <span className="text-caption text-amber-500 font-medium">
+              <span className="text-caption font-medium text-amber-500">
                 Not a funding target
               </span>
             )}
@@ -183,7 +183,7 @@ export function ContributionRow({
                   e.stopPropagation();
                   onUpdate({ isActive: false });
                 }}
-                className="text-caption shrink-0 text-muted hover:text-secondary"
+                className="text-caption text-muted hover:text-secondary shrink-0"
                 title="Keeps this account's history; stops it appearing as a place to direct contributions"
               >
                 Remove as funding target
@@ -199,7 +199,7 @@ export function ContributionRow({
             )}
           </div>
           {profileStatusText && (
-            <div className="px-3 pb-1.5 -mt-1.5 text-caption text-faint">
+            <div className="text-caption text-faint -mt-1.5 px-3 pb-1.5">
               {profileStatusText}
             </div>
           )}
@@ -209,8 +209,8 @@ export function ContributionRow({
       {/* Editable fields — replaces summary when open */}
       {showAdvanced && (
         <div className="px-3 py-2.5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-caption font-semibold text-muted uppercase tracking-wider">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-caption text-muted font-semibold tracking-wider uppercase">
               Edit Contribution
             </span>
             <button
@@ -224,7 +224,7 @@ export function ContributionRow({
             Contribution amount is set per Contribution Profile — edit it on the
             Paycheck page or the Contribution Profiles tab.
           </p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <InlineSelect
               label="Owner"
               value={c.ownership === "joint" ? "joint" : String(c.personId)}
@@ -288,7 +288,7 @@ export function ContributionRow({
             />
             {(!effectiveMatchType || effectiveMatchType === "none") &&
               sharedMatchFrom && (
-                <p className="col-span-2 md:col-span-4 text-caption text-faint -mt-1">
+                <p className="text-caption text-faint col-span-2 -mt-1 md:col-span-4">
                   This account&apos;s match — {sharedMatchLabel}
                 </p>
               )}
@@ -363,12 +363,12 @@ export function ContributionRow({
                   onUpdate?.({ isPayrollDeducted: e.target.checked })
                 }
                 disabled={!onUpdate}
-                className="rounded border-strong"
+                className="border-strong rounded"
                 id={`payroll-ded-${c.id}`}
               />
               <label
                 htmlFor={`payroll-ded-${c.id}`}
-                className="text-xs text-muted"
+                className="text-muted text-xs"
               >
                 Payroll Deduction
               </label>
@@ -379,12 +379,12 @@ export function ContributionRow({
                 checked={c.autoMaximize}
                 onChange={(e) => onUpdate?.({ autoMaximize: e.target.checked })}
                 disabled={!onUpdate}
-                className="rounded border-strong"
+                className="border-strong rounded"
                 id={`auto-max-${c.id}`}
               />
               <label
                 htmlFor={`auto-max-${c.id}`}
-                className="text-xs text-muted"
+                className="text-muted text-xs"
               >
                 Auto Maximize
               </label>
@@ -400,7 +400,7 @@ export function ContributionRow({
             )}
             {cfg?.isOverflowTarget && (
               <div>
-                <div className="flex items-center gap-1 mb-0.5">
+                <div className="mb-0.5 flex items-center gap-1">
                   <span className="text-caption text-muted">
                     Overflow Priority
                   </span>
@@ -486,8 +486,8 @@ export function AddContribForm({
   };
 
   return (
-    <div className="border border-blue-200 rounded-lg p-3 bg-blue-50/30 space-y-2">
-      <div className="text-caption font-semibold text-muted uppercase tracking-wider">
+    <div className="space-y-2 rounded-lg border border-blue-200 bg-blue-50/30 p-3">
+      <div className="text-caption text-muted font-semibold tracking-wider uppercase">
         New Contribution
       </div>
       <p className="text-caption text-faint">
@@ -495,13 +495,13 @@ export function AddContribForm({
         Contribution Profiles tab — accounts don&apos;t carry a value of their
         own.
       </p>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
         <div>
           <label className="text-caption text-muted">Owner</label>
           <select
             value={personId}
             onChange={(e) => setPersonId(parseInt(e.target.value, 10))}
-            className="w-full border rounded px-1.5 py-1 text-xs bg-surface-primary"
+            className="bg-surface-primary w-full rounded border px-1.5 py-1 text-xs"
           >
             {people.map((p) => (
               <option key={p.id} value={p.id}>
@@ -517,7 +517,7 @@ export function AddContribForm({
             onChange={(e) =>
               setJobId(e.target.value ? parseInt(e.target.value, 10) : null)
             }
-            className="w-full border rounded px-1.5 py-1 text-xs bg-surface-primary"
+            className="bg-surface-primary w-full rounded border px-1.5 py-1 text-xs"
           >
             <option value="">Personal</option>
             {jobs.map((j) => (
@@ -532,7 +532,7 @@ export function AddContribForm({
           <select
             value={taxTreatment}
             onChange={(e) => setTaxTreatment(e.target.value)}
-            className="w-full border rounded px-1.5 py-1 text-xs bg-surface-primary"
+            className="bg-surface-primary w-full rounded border px-1.5 py-1 text-xs"
           >
             {Object.entries(TAX_LABELS).map(([k, v]) => (
               <option key={k} value={k}>
@@ -546,7 +546,7 @@ export function AddContribForm({
           <select
             value={matchType}
             onChange={(e) => setMatchType(e.target.value)}
-            className="w-full border rounded px-1.5 py-1 text-xs bg-surface-primary"
+            className="bg-surface-primary w-full rounded border px-1.5 py-1 text-xs"
           >
             {Object.entries(MATCH_LABELS).map(([k, v]) => (
               <option key={k} value={k}>
@@ -572,7 +572,7 @@ export function AddContribForm({
                     ? "e.g. 400"
                     : "e.g. 50"
                 }
-                className="w-full border rounded px-1.5 py-1 text-xs bg-surface-primary"
+                className="bg-surface-primary w-full rounded border px-1.5 py-1 text-xs"
               />
             </div>
             {matchType === "percent_of_contribution" && (
@@ -583,7 +583,7 @@ export function AddContribForm({
                   value={maxMatchPct}
                   onChange={(e) => setMaxMatchPct(e.target.value)}
                   placeholder="e.g. 7"
-                  className="w-full border rounded px-1.5 py-1 text-xs bg-surface-primary"
+                  className="bg-surface-primary w-full rounded border px-1.5 py-1 text-xs"
                 />
               </div>
             )}
@@ -593,13 +593,13 @@ export function AddContribForm({
       <div className="flex gap-2 pt-1">
         <button
           onClick={handleSubmit}
-          className="text-xs px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+          className="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700 disabled:opacity-50"
         >
           Create
         </button>
         <button
           onClick={onCancel}
-          className="text-xs px-3 py-1 rounded text-muted hover:bg-surface-elevated"
+          className="text-muted hover:bg-surface-elevated rounded px-3 py-1 text-xs"
         >
           Cancel
         </button>

@@ -198,16 +198,16 @@ export function SimulationAssumptions({
   };
 
   return (
-    <div className="bg-surface-sunken border rounded-lg">
+    <div className="bg-surface-sunken rounded-lg border">
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between px-3 py-2 text-xs text-muted hover:bg-surface-elevated rounded-lg transition-colors"
+        className="text-muted hover:bg-surface-elevated flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs transition-colors"
       >
         <span className="font-medium">
           Simulation Assumptions
           {activeOverrides.length > 0 && (
-            <span className="text-amber-600 ml-1">
+            <span className="ml-1 text-amber-600">
               ({activeOverrides.length} override
               {activeOverrides.length > 1 ? "s" : ""} active)
             </span>
@@ -215,7 +215,7 @@ export function SimulationAssumptions({
         </span>
         <svg
           aria-hidden="true"
-          className={`w-3.5 h-3.5 transition-transform ${expanded ? "rotate-180" : ""}`}
+          className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -230,12 +230,12 @@ export function SimulationAssumptions({
       </button>
 
       {expanded && (
-        <div className="px-3 pb-3 space-y-3">
+        <div className="space-y-3 px-3 pb-3">
           {/* Preset badge + description */}
           <div
-            className={`text-label leading-relaxed rounded px-2.5 py-2 border ${presetColors[inputs.preset]}`}
+            className={`text-label rounded border px-2.5 py-2 leading-relaxed ${presetColors[inputs.preset]}`}
           >
-            <span className="font-bold uppercase tracking-wider text-caption">
+            <span className="text-caption font-bold tracking-wider uppercase">
               {inputs.presetLabel}
             </span>
             <span className="mx-1.5">&mdash;</span>
@@ -243,13 +243,13 @@ export function SimulationAssumptions({
           </div>
           {/* Tax mode badge */}
           <div
-            className={`text-label leading-relaxed rounded px-2.5 py-2 border ${
+            className={`text-label rounded border px-2.5 py-2 leading-relaxed ${
               inputs.taxMode === "simple"
-                ? "bg-blue-50 border-blue-200 text-blue-700"
-                : "bg-orange-50 border-orange-200 text-orange-700"
+                ? "border-blue-200 bg-blue-50 text-blue-700"
+                : "border-orange-200 bg-orange-50 text-orange-700"
             }`}
           >
-            <span className="font-bold uppercase tracking-wider text-caption">
+            <span className="text-caption font-bold tracking-wider uppercase">
               {inputs.taxMode === "simple" ? "Simple" : "Advanced"}
             </span>
             <span className="mx-1.5">&mdash;</span>
@@ -259,9 +259,9 @@ export function SimulationAssumptions({
           </div>
 
           {/* ELI5 explanation */}
-          <div className="text-label text-muted leading-relaxed bg-surface-primary rounded px-2.5 py-2 border border-subtle">
+          <div className="text-label text-muted bg-surface-primary border-subtle rounded border px-2.5 py-2 leading-relaxed">
             This runs{" "}
-            <span className="font-semibold text-secondary">
+            <span className="text-secondary font-semibold">
               {numTrials.toLocaleString()}
             </span>{" "}
             simulated futures. Each trial randomizes annual investment returns
@@ -270,11 +270,11 @@ export function SimulationAssumptions({
             {formatPercent(inputs.inflationRisk.stdDev, 1)} std dev). Your
             portfolio follows a glide path that shifts from stocks to bonds as
             you age. At your current allocation, the blended expected return is{" "}
-            <span className="font-semibold text-secondary">
+            <span className="text-secondary font-semibold">
               {formatPercent(inputs.blendedReturn, 1)}
             </span>{" "}
             with{" "}
-            <span className="font-semibold text-secondary">
+            <span className="text-secondary font-semibold">
               {formatPercent(inputs.blendedVol, 1)}
             </span>{" "}
             volatility. The fan chart shows the{" "}
@@ -288,7 +288,7 @@ export function SimulationAssumptions({
 
           {/* Active overrides callout */}
           {activeOverrides.length > 0 && (
-            <div className="text-label text-amber-700 bg-amber-50 rounded px-2.5 py-2 border border-amber-200">
+            <div className="text-label rounded border border-amber-200 bg-amber-50 px-2.5 py-2 text-amber-700">
               <span className="font-semibold">Active customizations:</span>
               <ul className="mt-0.5 ml-3 list-disc space-y-0">
                 {activeOverrides.map((o) => (
@@ -300,10 +300,10 @@ export function SimulationAssumptions({
 
           {/* Key scenario inputs — 2 columns on mobile, 4 on desktop */}
           <div>
-            <div className="text-label font-medium text-muted mb-1">
+            <div className="text-label text-muted mb-1 font-medium">
               Scenario Inputs
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1 text-xs">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs md:grid-cols-4">
               <AssumptionRow
                 label="Current Age"
                 value={String(inputs.currentAge)}
@@ -343,7 +343,7 @@ export function SimulationAssumptions({
                 tip="Fixed annual inflation rate used in the deterministic projection. The Fed targets 2%; historical US average is ~3%."
               />
               {editingInflation ? (
-                <div className="flex items-center gap-1 col-span-1">
+                <div className="col-span-1 flex items-center gap-1">
                   <span className="text-caption text-muted whitespace-nowrap">
                     Stoch. Inflation
                   </span>
@@ -352,7 +352,7 @@ export function SimulationAssumptions({
                     step="0.1"
                     value={draftInflMean}
                     onChange={(e) => setDraftInflMean(e.target.value)}
-                    className="w-12 text-caption text-center border rounded px-0.5 py-0.5 focus:border-blue-400 focus:outline-none"
+                    className="text-caption w-12 rounded border px-0.5 py-0.5 text-center focus:border-blue-400 focus:outline-none"
                   />
                   <span className="text-faint text-caption">±</span>
                   <input
@@ -360,7 +360,7 @@ export function SimulationAssumptions({
                     step="0.1"
                     value={draftInflStdDev}
                     onChange={(e) => setDraftInflStdDev(e.target.value)}
-                    className="w-12 text-caption text-center border rounded px-0.5 py-0.5 focus:border-blue-400 focus:outline-none"
+                    className="text-caption w-12 rounded border px-0.5 py-0.5 text-center focus:border-blue-400 focus:outline-none"
                   />
                   <span className="text-faint text-caption">%</span>
                   <button
@@ -374,7 +374,7 @@ export function SimulationAssumptions({
                       }
                       setEditingInflation(false);
                     }}
-                    className="text-micro text-blue-600 underline ml-0.5"
+                    className="text-micro ml-0.5 text-blue-600 underline"
                   >
                     OK
                   </button>
@@ -405,7 +405,7 @@ export function SimulationAssumptions({
                         );
                         setEditingInflation(true);
                       }}
-                      className="text-micro text-blue-500 hover:text-blue-700 underline"
+                      className="text-micro text-blue-500 underline hover:text-blue-700"
                     >
                       edit
                     </button>
@@ -499,11 +499,11 @@ export function SimulationAssumptions({
 
           {/* Asset classes */}
           <div>
-            <div className="flex items-center justify-between mb-1">
-              <div className="text-label font-medium text-muted">
+            <div className="mb-1 flex items-center justify-between">
+              <div className="text-label text-muted font-medium">
                 Asset Classes (Return / Volatility)
                 {hasOverrides && (
-                  <span className="text-amber-600 ml-1">
+                  <span className="ml-1 text-amber-600">
                     (custom overrides)
                   </span>
                 )}
@@ -514,7 +514,7 @@ export function SimulationAssumptions({
                     <button
                       type="button"
                       onClick={resetOverrides}
-                      className="text-caption text-amber-600 hover:text-amber-800 underline"
+                      className="text-caption text-amber-600 underline hover:text-amber-800"
                     >
                       Reset
                     </button>
@@ -522,7 +522,7 @@ export function SimulationAssumptions({
                   <button
                     type="button"
                     onClick={startEditing}
-                    className="text-caption text-blue-600 hover:text-blue-800 underline"
+                    className="text-caption text-blue-600 underline hover:text-blue-800"
                   >
                     Edit
                   </button>
@@ -540,7 +540,7 @@ export function SimulationAssumptions({
                   <button
                     type="button"
                     onClick={applyEdits}
-                    className="text-caption text-blue-600 hover:text-blue-800 font-medium underline"
+                    className="text-caption font-medium text-blue-600 underline hover:text-blue-800"
                   >
                     Apply
                   </button>
@@ -548,22 +548,22 @@ export function SimulationAssumptions({
               )}
             </div>
             {!editing ? (
-              <table className="w-full text-label border-collapse">
+              <table className="text-label w-full border-collapse">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left text-muted font-medium py-1 pr-2">
+                    <th className="text-muted py-1 pr-2 text-left font-medium">
                       Asset Class
                     </th>
-                    <th className="text-right text-muted font-medium py-1 px-1.5">
+                    <th className="text-muted px-1.5 py-1 text-right font-medium">
                       Return
                     </th>
-                    <th className="text-right text-muted font-medium py-1 px-1.5">
+                    <th className="text-muted px-1.5 py-1 text-right font-medium">
                       Vol
                     </th>
-                    <th className="text-right text-muted font-medium py-1 px-1.5">
+                    <th className="text-muted px-1.5 py-1 text-right font-medium">
                       DB Return
                     </th>
-                    <th className="text-right text-muted font-medium py-1 px-1.5">
+                    <th className="text-muted px-1.5 py-1 text-right font-medium">
                       Alloc
                     </th>
                   </tr>
@@ -585,28 +585,28 @@ export function SimulationAssumptions({
                     const allocPct =
                       (inputs.currentAllocation[ac.id] ?? 0) * 100;
                     return (
-                      <tr key={ac.id} className="border-b border-subtle">
+                      <tr key={ac.id} className="border-subtle border-b">
                         <td
-                          className={`py-0.5 pr-2 ${isOverridden ? "text-amber-700 font-medium" : "text-muted"}`}
+                          className={`py-0.5 pr-2 ${isOverridden ? "font-medium text-amber-700" : "text-muted"}`}
                         >
                           {ac.name}
                         </td>
                         <td
-                          className={`text-right py-0.5 px-1.5 font-medium tabular-nums ${isOverridden ? "text-amber-800" : "text-primary"}`}
+                          className={`px-1.5 py-0.5 text-right font-medium tabular-nums ${isOverridden ? "text-amber-800" : "text-primary"}`}
                         >
                           {formatPercent(ac.meanReturn, 1)}
                         </td>
                         <td
-                          className={`text-right py-0.5 px-1.5 font-medium tabular-nums ${isOverridden ? "text-amber-800" : "text-primary"}`}
+                          className={`px-1.5 py-0.5 text-right font-medium tabular-nums ${isOverridden ? "text-amber-800" : "text-primary"}`}
                         >
                           {formatPercent(ac.stdDev, 1)}
                         </td>
                         <td
-                          className={`text-right py-0.5 px-1.5 tabular-nums ${dbDiff ? "text-faint line-through" : "text-faint"}`}
+                          className={`px-1.5 py-0.5 text-right tabular-nums ${dbDiff ? "text-faint line-through" : "text-faint"}`}
                         >
                           {dbAc ? formatPercent(dbAc.meanReturn, 1) : "—"}
                         </td>
-                        <td className="text-right py-0.5 px-1.5 text-muted tabular-nums">
+                        <td className="text-muted px-1.5 py-0.5 text-right tabular-nums">
                           {allocPct > 0 ? formatPercent(allocPct / 100) : "—"}
                         </td>
                       </tr>
@@ -616,7 +616,7 @@ export function SimulationAssumptions({
               </table>
             ) : (
               <div className="space-y-1">
-                <div className="grid grid-cols-[1fr_80px_80px] gap-1 text-caption text-faint font-medium px-0.5">
+                <div className="text-caption text-faint grid grid-cols-[1fr_80px_80px] gap-1 px-0.5 font-medium">
                   <span>Asset Class</span>
                   <span className="text-center">Return %</span>
                   <span className="text-center">Vol %</span>
@@ -624,9 +624,9 @@ export function SimulationAssumptions({
                 {inputs.assetClasses.map((ac) => (
                   <div
                     key={ac.id}
-                    className="grid grid-cols-[1fr_80px_80px] gap-1 items-center"
+                    className="grid grid-cols-[1fr_80px_80px] items-center gap-1"
                   >
-                    <span className="text-xs text-muted truncate">
+                    <span className="text-muted truncate text-xs">
                       {ac.name}
                     </span>
                     <input
@@ -639,7 +639,7 @@ export function SimulationAssumptions({
                           [ac.id]: e.target.value,
                         }))
                       }
-                      className="w-full text-xs text-center border rounded px-1 py-0.5 focus:border-blue-400 focus:outline-none"
+                      className="w-full rounded border px-1 py-0.5 text-center text-xs focus:border-blue-400 focus:outline-none"
                     />
                     <input
                       type="number"
@@ -651,7 +651,7 @@ export function SimulationAssumptions({
                           [ac.id]: e.target.value,
                         }))
                       }
-                      className="w-full text-xs text-center border rounded px-1 py-0.5 focus:border-blue-400 focus:outline-none"
+                      className="w-full rounded border px-1 py-0.5 text-center text-xs focus:border-blue-400 focus:outline-none"
                     />
                   </div>
                 ))}
@@ -662,8 +662,8 @@ export function SimulationAssumptions({
           {/* Glide path table */}
           {inputs.glidePath.length > 0 && (
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <div className="text-label font-medium text-muted">
+              <div className="mb-1 flex items-center justify-between">
+                <div className="text-label text-muted font-medium">
                   Glide Path (allocation shifts with age)
                 </div>
                 {onGlidePathChange && !editingGlidePath && (
@@ -683,7 +683,7 @@ export function SimulationAssumptions({
                       );
                       setEditingGlidePath(true);
                     }}
-                    className="text-caption text-blue-600 hover:text-blue-800 underline"
+                    className="text-caption text-blue-600 underline hover:text-blue-800"
                   >
                     Edit
                   </button>
@@ -715,7 +715,7 @@ export function SimulationAssumptions({
                         }
                         setEditingGlidePath(false);
                       }}
-                      className="text-caption text-blue-600 hover:text-blue-800 font-medium underline"
+                      className="text-caption font-medium text-blue-600 underline hover:text-blue-800"
                     >
                       Apply
                     </button>
@@ -723,16 +723,16 @@ export function SimulationAssumptions({
                 )}
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-label border-collapse">
+                <table className="text-label w-full border-collapse">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left text-muted font-medium py-1 pr-2">
+                      <th className="text-muted py-1 pr-2 text-left font-medium">
                         Age
                       </th>
                       {inputs.assetClasses.map((ac) => (
                         <th
                           key={ac.id}
-                          className="text-right text-muted font-medium py-1 px-1.5"
+                          className="text-muted px-1.5 py-1 text-right font-medium"
                         >
                           {ac.name}
                         </th>
@@ -742,12 +742,12 @@ export function SimulationAssumptions({
                   <tbody>
                     {editingGlidePath
                       ? draftGlidePath.map((gp, gi) => (
-                          <tr key={gp.age} className="border-b border-subtle">
-                            <td className="py-0.5 pr-2 text-muted font-medium">
+                          <tr key={gp.age} className="border-subtle border-b">
+                            <td className="text-muted py-0.5 pr-2 font-medium">
                               {gp.age}
                             </td>
                             {inputs.assetClasses.map((ac) => (
-                              <td key={ac.id} className="py-0.5 px-0.5">
+                              <td key={ac.id} className="px-0.5 py-0.5">
                                 <input
                                   type="number"
                                   step="1"
@@ -767,7 +767,7 @@ export function SimulationAssumptions({
                                       ),
                                     );
                                   }}
-                                  className="w-full text-caption text-center border rounded px-0.5 py-0.5 focus:border-blue-400 focus:outline-none tabular-nums"
+                                  className="text-caption w-full rounded border px-0.5 py-0.5 text-center tabular-nums focus:border-blue-400 focus:outline-none"
                                 />
                               </td>
                             ))}
@@ -784,12 +784,12 @@ export function SimulationAssumptions({
                           return (
                             <tr
                               key={gp.age}
-                              className={`border-b border-subtle ${isCurrentAge ? "bg-blue-50/50" : ""}`}
+                              className={`border-subtle border-b ${isCurrentAge ? "bg-blue-50/50" : ""}`}
                             >
-                              <td className="py-0.5 pr-2 text-muted font-medium">
+                              <td className="text-muted py-0.5 pr-2 font-medium">
                                 {gp.age}
                                 {isCurrentAge && (
-                                  <span className="text-blue-500 text-micro ml-1">
+                                  <span className="text-micro ml-1 text-blue-500">
                                     now
                                   </span>
                                 )}
@@ -799,7 +799,7 @@ export function SimulationAssumptions({
                                 return (
                                   <td
                                     key={ac.id}
-                                    className="text-right py-0.5 px-1.5 text-secondary tabular-nums"
+                                    className="text-secondary px-1.5 py-0.5 text-right tabular-nums"
                                   >
                                     {pct > 0 ? formatPercent(pct / 100) : "—"}
                                   </td>
@@ -817,11 +817,11 @@ export function SimulationAssumptions({
           {/* Preset multipliers */}
           {inputs.preset !== "custom" && (
             <div>
-              <div className="text-label font-medium text-muted mb-1">
+              <div className="text-label text-muted mb-1 font-medium">
                 Preset Multipliers
                 <HelpTip text="How the selected preset modifies the raw DB asset class values. Return multiplier scales expected returns; vol multiplier scales volatility." />
               </div>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-label">
+              <div className="text-label grid grid-cols-2 gap-x-4 gap-y-0.5">
                 <AssumptionRow
                   label="Return Multiplier"
                   value={`${inputs.returnMultiplier.toFixed(2)}×`}
@@ -836,8 +836,8 @@ export function SimulationAssumptions({
 
           {/* Return clamp bounds */}
           <div>
-            <div className="flex items-center justify-between mb-1">
-              <div className="text-label font-medium text-muted">
+            <div className="mb-1 flex items-center justify-between">
+              <div className="text-label text-muted font-medium">
                 Return Clamp Bounds
                 <HelpTip text="Simulated annual returns are clamped to this range to prevent extreme outliers from dominating results." />
               </div>
@@ -855,7 +855,7 @@ export function SimulationAssumptions({
                       );
                       setEditingClamps(true);
                     }}
-                    className="text-caption text-blue-600 hover:text-blue-800 underline"
+                    className="text-caption text-blue-600 underline hover:text-blue-800"
                   >
                     Edit
                   </button>
@@ -880,7 +880,7 @@ export function SimulationAssumptions({
                       }
                       setEditingClamps(false);
                     }}
-                    className="text-caption text-blue-600 hover:text-blue-800 font-medium underline"
+                    className="text-caption font-medium text-blue-600 underline hover:text-blue-800"
                   >
                     Apply
                   </button>
@@ -888,7 +888,7 @@ export function SimulationAssumptions({
               )}
             </div>
             {editingClamps ? (
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-label">
+              <div className="text-label grid grid-cols-2 gap-x-4 gap-y-1">
                 <div className="flex items-center gap-1">
                   <span className="text-muted">Min (floor)</span>
                   <input
@@ -896,7 +896,7 @@ export function SimulationAssumptions({
                     step="1"
                     value={draftClampMin}
                     onChange={(e) => setDraftClampMin(e.target.value)}
-                    className="w-16 text-caption text-center border rounded px-1 py-0.5 focus:border-blue-400 focus:outline-none"
+                    className="text-caption w-16 rounded border px-1 py-0.5 text-center focus:border-blue-400 focus:outline-none"
                   />
                   <span className="text-faint">%</span>
                 </div>
@@ -907,13 +907,13 @@ export function SimulationAssumptions({
                     step="1"
                     value={draftClampMax}
                     onChange={(e) => setDraftClampMax(e.target.value)}
-                    className="w-16 text-caption text-center border rounded px-1 py-0.5 focus:border-blue-400 focus:outline-none"
+                    className="text-caption w-16 rounded border px-1 py-0.5 text-center focus:border-blue-400 focus:outline-none"
                   />
                   <span className="text-faint">%</span>
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-label">
+              <div className="text-label grid grid-cols-2 gap-x-4 gap-y-0.5">
                 <AssumptionRow
                   label="Min (floor)"
                   value={formatPercent(inputs.returnClampMin, 0)}
@@ -929,7 +929,7 @@ export function SimulationAssumptions({
           {/* Correlation matrix */}
           {inputs.correlations.length > 0 && (
             <div>
-              <div className="text-label font-medium text-muted mb-1">
+              <div className="text-label text-muted mb-1 font-medium">
                 Asset Class Correlations
                 <HelpTip text="Pairwise correlations used to generate correlated random returns across asset classes each simulation year. Values range from -1 (perfectly inverse) to +1 (perfectly correlated)." />
               </div>
@@ -957,11 +957,11 @@ export function SimulationAssumptions({
                     <table className="text-caption border-collapse">
                       <thead>
                         <tr>
-                          <th className="py-0.5 pr-1.5 text-left text-faint font-medium" />
+                          <th className="text-faint py-0.5 pr-1.5 text-left font-medium" />
                           {names.map((n) => (
                             <th
                               key={n}
-                              className="py-0.5 px-1 text-right text-faint font-medium whitespace-nowrap"
+                              className="text-faint px-1 py-0.5 text-right font-medium whitespace-nowrap"
                             >
                               {n.length > 8 ? n.slice(0, 7) + "…" : n}
                             </th>
@@ -970,8 +970,8 @@ export function SimulationAssumptions({
                       </thead>
                       <tbody>
                         {names.map((row) => (
-                          <tr key={row} className="border-t border-subtle">
-                            <td className="py-0.5 pr-1.5 text-muted font-medium whitespace-nowrap">
+                          <tr key={row} className="border-subtle border-t">
+                            <td className="text-muted py-0.5 pr-1.5 font-medium whitespace-nowrap">
                               {row.length > 8 ? row.slice(0, 7) + "…" : row}
                             </td>
                             {names.map((col) => {
@@ -994,7 +994,7 @@ export function SimulationAssumptions({
                               return (
                                 <td
                                   key={col}
-                                  className={`py-0.5 px-1 text-right tabular-nums ${bg}`}
+                                  className={`px-1 py-0.5 text-right tabular-nums ${bg}`}
                                 >
                                   {val.toFixed(2)}
                                 </td>
@@ -1014,11 +1014,11 @@ export function SimulationAssumptions({
 
       {/* Outcome Distribution — detail metrics moved here from inline KPIs */}
       {outcomeDistribution && (
-        <div className="border rounded-lg overflow-hidden">
-          <div className="px-4 py-3 bg-surface-sunken text-sm font-medium text-secondary">
+        <div className="overflow-hidden rounded-lg border">
+          <div className="bg-surface-sunken text-secondary px-4 py-3 text-sm font-medium">
             Outcome Distribution
           </div>
-          <div className="px-4 py-4 space-y-2 text-sm text-muted">
+          <div className="text-muted space-y-2 px-4 py-4 text-sm">
             <AssumptionRow
               label="Median End Balance"
               value={
@@ -1045,11 +1045,11 @@ export function SimulationAssumptions({
               value={`${formatCurrency(outcomeDistribution.sustainableWithdrawalPV.p25)} – ${formatCurrency(outcomeDistribution.sustainableWithdrawalPV.p75)}`}
               tip="25th–75th percentile range of annual withdrawals across all simulation trials, in today's purchasing power. Unlike the deterministic estimate, this accounts for market volatility, sequence-of-returns risk, and tax gross-up."
             />
-            <div className="border-t border-subtle pt-2 mt-2">
-              <div className="text-label font-medium text-muted mb-1.5">
+            <div className="border-subtle mt-2 border-t pt-2">
+              <div className="text-label text-muted mb-1.5 font-medium">
                 Terminal Balance Percentiles
               </div>
-              <div className="grid grid-cols-5 gap-2 text-xs text-center">
+              <div className="grid grid-cols-5 gap-2 text-center text-xs">
                 {(
                   [
                     [

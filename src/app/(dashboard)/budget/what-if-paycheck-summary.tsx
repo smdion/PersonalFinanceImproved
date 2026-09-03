@@ -29,7 +29,7 @@ export function WhatIfPaycheckSummary({
   const household = views.reduce((s, d) => s + netAnnual(d), 0);
 
   return (
-    <div className="flex items-center flex-wrap gap-x-6 gap-y-1 text-xs bg-green-50 text-green-700 rounded-md px-3 py-2">
+    <div className="flex flex-wrap items-center gap-x-6 gap-y-1 rounded-md bg-green-50 px-3 py-2 text-xs text-green-700">
       {views.map((d) => (
         <span key={d.person.id}>
           <span className="text-faint">{d.person.name} net: </span>

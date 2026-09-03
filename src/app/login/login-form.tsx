@@ -98,22 +98,22 @@ export function LoginForm({ hasOidc }: { hasOidc: boolean }) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-surface-primary p-4">
+    <div className="bg-surface-primary flex min-h-screen items-center justify-center p-4">
       <div className="w-full max-w-sm">
         {/* Logo and title */}
-        <div className="flex flex-col items-center gap-3 mb-8">
+        <div className="mb-8 flex flex-col items-center gap-3">
           <LedgrLogo />
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-primary">Ledgr</h1>
-            <p className="text-sm text-muted">Personal Finance Dashboard</p>
+            <h1 className="text-primary text-2xl font-bold">Ledgr</h1>
+            <p className="text-muted text-sm">Personal Finance Dashboard</p>
           </div>
         </div>
 
         {/* Card */}
-        <div className="bg-surface-elevated border border-default rounded-2xl p-6 shadow-xl">
+        <div className="bg-surface-elevated border-default rounded-2xl border p-6 shadow-xl">
           {/* Error display */}
           {(errorMessage || localError) && (
-            <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm">
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
               {localError ?? errorMessage}
             </div>
           )}
@@ -123,7 +123,7 @@ export function LoginForm({ hasOidc }: { hasOidc: boolean }) {
             <>
               <button
                 onClick={handleOidcLogin}
-                className="w-full px-4 py-3 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 font-medium text-white transition-colors hover:bg-blue-700"
               >
                 <svg
                   aria-hidden="true"
@@ -144,10 +144,10 @@ export function LoginForm({ hasOidc }: { hasOidc: boolean }) {
               </button>
 
               {/* Divider */}
-              <div className="flex items-center gap-3 my-5">
-                <div className="flex-1 h-px bg-surface-strong" />
+              <div className="my-5 flex items-center gap-3">
+                <div className="bg-surface-strong h-px flex-1" />
                 <span className="text-muted text-sm">or</span>
-                <div className="flex-1 h-px bg-surface-strong" />
+                <div className="bg-surface-strong h-px flex-1" />
               </div>
             </>
           )}
@@ -157,7 +157,7 @@ export function LoginForm({ hasOidc }: { hasOidc: boolean }) {
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-secondary mb-1"
+                className="text-secondary mb-1 block text-sm font-medium"
               >
                 Email
               </label>
@@ -168,14 +168,14 @@ export function LoginForm({ hasOidc }: { hasOidc: boolean }) {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
-                className="w-full px-3 py-2 rounded-lg border border-default bg-input text-input-text placeholder:text-input-placeholder focus:outline-none focus:ring-2 focus:ring-[rgb(var(--c-focus-ring))]"
+                className="border-default bg-input text-input-text placeholder:text-input-placeholder w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-[rgb(var(--c-focus-ring))] focus:outline-none"
                 placeholder="admin@example.com"
               />
             </div>
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-secondary mb-1"
+                className="text-secondary mb-1 block text-sm font-medium"
               >
                 Password
               </label>
@@ -186,13 +186,13 @@ export function LoginForm({ hasOidc }: { hasOidc: boolean }) {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
-                className="w-full px-3 py-2 rounded-lg border border-default bg-input text-input-text placeholder:text-input-placeholder focus:outline-none focus:ring-2 focus:ring-[rgb(var(--c-focus-ring))]"
+                className="border-default bg-input text-input-text placeholder:text-input-placeholder w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-[rgb(var(--c-focus-ring))] focus:outline-none"
               />
             </div>
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full px-4 py-2.5 rounded-lg border border-default text-primary font-medium hover:bg-surface-secondary transition-colors disabled:opacity-50"
+              className="border-default text-primary hover:bg-surface-secondary w-full rounded-lg border px-4 py-2.5 font-medium transition-colors disabled:opacity-50"
             >
               {isLoading ? "Signing in..." : "Sign in"}
             </button>

@@ -165,7 +165,7 @@ function CombinedStatus({
   if (det.status === "unreachable" || mc.status === "unreachable") {
     return (
       <>
-        <div className="text-xl font-bold tabular-nums text-red-500">
+        <div className="text-xl font-bold text-red-500 tabular-nums">
           Not reachable
         </div>
         <div className="text-caption text-faint mt-1 leading-tight">
@@ -181,7 +181,7 @@ function CombinedStatus({
   if (det.status === "already_coast" && mc.status === "already_coast") {
     return (
       <>
-        <div className="text-xl font-bold tabular-nums text-green-500">
+        <div className="text-xl font-bold text-green-500 tabular-nums">
           Already ✓
         </div>
         <div className="text-caption text-faint mt-1 leading-tight">
@@ -209,7 +209,7 @@ function CombinedStatus({
       : "Stopping today fails on real variance, not baseline's math";
     return (
       <>
-        <div className="text-xl font-bold tabular-nums text-yellow-500">
+        <div className="text-xl font-bold text-yellow-500 tabular-nums">
           Age {mc.coastFireAge}
         </div>
         <div className="text-caption text-faint mt-1 leading-tight">
@@ -226,7 +226,7 @@ function CombinedStatus({
     const headlineAge = Math.max(detAge, mcAge);
     return (
       <>
-        <div className="text-xl font-bold tabular-nums text-primary">
+        <div className="text-primary text-xl font-bold tabular-nums">
           Age {headlineAge}
         </div>
         <div className="text-caption text-faint mt-1 leading-tight">
@@ -243,7 +243,7 @@ function CombinedStatus({
   // deterministic. Show the deterministic age as the conservative answer.
   return (
     <>
-      <div className="text-xl font-bold tabular-nums text-primary">
+      <div className="text-primary text-xl font-bold tabular-nums">
         Age {det.coastFireAge}
       </div>
       <div className="text-caption text-faint mt-1 leading-tight">
@@ -259,7 +259,7 @@ function CombinedStatus({
 function SimulatedOnlyStatus({ mc }: { mc: CoastFireMcResult }) {
   if (mc.status === "unreachable") {
     return (
-      <div className="text-xl font-bold tabular-nums text-red-500">
+      <div className="text-xl font-bold text-red-500 tabular-nums">
         Not reachable
       </div>
     );
@@ -279,13 +279,13 @@ function DeterministicStatus({
   result: DeterministicResult | undefined;
 }) {
   if (!result) {
-    return <div className="text-xl font-bold tabular-nums text-faint">—</div>;
+    return <div className="text-faint text-xl font-bold tabular-nums">—</div>;
   }
 
   if (result.status === "unreachable") {
     return (
       <>
-        <div className="text-xl font-bold tabular-nums text-red-500">
+        <div className="text-xl font-bold text-red-500 tabular-nums">
           Not reachable
         </div>
         <div className="text-caption text-faint mt-1 leading-tight">
@@ -298,7 +298,7 @@ function DeterministicStatus({
   if (result.status === "already_coast") {
     return (
       <>
-        <div className="text-xl font-bold tabular-nums text-green-500">
+        <div className="text-xl font-bold text-green-500 tabular-nums">
           Already ✓
         </div>
         <div className="text-caption text-faint mt-1 leading-tight">
@@ -314,7 +314,7 @@ function DeterministicStatus({
 
   return (
     <>
-      <div className="text-xl font-bold tabular-nums text-primary">
+      <div className="text-primary text-xl font-bold tabular-nums">
         Age {result.coastFireAge}
       </div>
       <div className="text-caption text-faint mt-1 leading-tight">
@@ -373,7 +373,7 @@ function SimulatedDetail({
           explanation above, roughly doubled this card's height relative to
           its 4 siblings in the hero KPI row. */}
       {mc.warning && (
-        <div className="text-yellow-500 mt-0.5">⚠ non-monotone</div>
+        <div className="mt-0.5 text-yellow-500">⚠ non-monotone</div>
       )}
       {computedAt && (
         <div className="text-faint mt-0.5">

@@ -65,8 +65,8 @@ export function ExtraPaycheckBudgetNote() {
   if (entries.length === 0) return null;
 
   return (
-    <div className="rounded border border-subtle bg-surface-sunken/30 px-3 py-2 text-xs text-muted space-y-1">
-      <p className="font-medium text-secondary">
+    <div className="border-subtle bg-surface-sunken/30 text-muted space-y-1 rounded border px-3 py-2 text-xs">
+      <p className="text-secondary font-medium">
         Extra paychecks not routed to savings
       </p>
       {entries.map((e) => (
@@ -80,7 +80,7 @@ export function ExtraPaycheckBudgetNote() {
             not counted in the totals above.
           </p>
           {e.landsThisMonth && e.amount != null && (
-            <p className="font-medium text-secondary">
+            <p className="text-secondary font-medium">
               +{formatCurrency(e.amount)} already included in{" "}
               {fmtMonth(thisMonthKey)}&rsquo;s income.
             </p>

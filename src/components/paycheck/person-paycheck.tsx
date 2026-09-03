@@ -173,23 +173,23 @@ export function PersonPaycheck({
   return (
     <div className="row-span-3 grid grid-rows-subgrid gap-0">
       {/* Unified person card with accent border */}
-      <div className="row-span-3 bg-surface-primary border rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-surface-primary row-span-3 overflow-hidden rounded-xl border shadow-sm">
         {/* Header: person, salary, extra paycheck months */}
-        <div className="p-5 border-b border-subtle bg-gradient-to-r from-surface-sunken/80 to-transparent">
+        <div className="border-subtle from-surface-sunken/80 border-b bg-gradient-to-r to-transparent p-5">
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="text-xl font-bold text-primary flex items-center gap-2">
+              <h2 className="text-primary flex items-center gap-2 text-xl font-bold">
                 {person.name}
                 {incompleteAccountIds && incompleteAccountIds.length > 0 && (
                   <span
-                    className="text-caption font-semibold text-amber-700 bg-amber-50 rounded px-1 leading-tight"
+                    className="text-caption rounded bg-amber-50 px-1 leading-tight font-semibold text-amber-700"
                     title={`${incompleteAccountIds.length} contribution account(s) have no active value under the current Contribution Profile — excluded from totals below.`}
                   >
                     Incomplete
                   </span>
                 )}
               </h2>
-              <p className="text-sm text-muted">
+              <p className="text-muted text-sm">
                 {job.title ? (
                   <>
                     <InlineEdit
@@ -213,7 +213,7 @@ export function PersonPaycheck({
                   Profile Manager, but the computed values below (next
                   payday, periods/year, 3-check months) have no relationship
                   to WHERE the schedule is edited, so they stay here. */}
-              <p className="text-xs text-faint">
+              <p className="text-faint text-xs">
                 {PAY_PERIOD_LABELS[job.payPeriod] ?? job.payPeriod}
                 {" · "}
                 Next: {paycheck.nextPayDate}
@@ -239,13 +239,13 @@ export function PersonPaycheck({
                 className="text-lg font-semibold"
                 isEditable={!readOnly && !salaryReadOnly}
               />
-              <p className="text-xs text-faint">annual salary</p>
+              <p className="text-faint text-xs">annual salary</p>
             </div>
           </div>
         </div>
 
         {/* Two-column layout: Pay stub + Annual summary side by side */}
-        <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 p-5 md:grid-cols-2">
           <div className="space-y-4">
             <PayStub
               paycheck={paycheck}
@@ -264,7 +264,7 @@ export function PersonPaycheck({
             {job.payPeriod === "biweekly" && (
               <div className="space-y-2">
                 <SectionHeader>Extra Paycheck</SectionHeader>
-                <div className="bg-surface-sunken border border-subtle rounded-lg p-4 text-sm">
+                <div className="bg-surface-sunken border-subtle rounded-lg border p-4 text-sm">
                   <ExtraPaycheckDestinationToggle
                     jobId={job.id}
                     routing={job.extraPaycheckRouting ?? null}
@@ -299,7 +299,7 @@ export function PersonPaycheck({
         </div>
 
         {/* Row 3: Contributions + extras */}
-        <div className="px-5 pb-5 pt-1 space-y-4">
+        <div className="space-y-4 px-5 pt-1 pb-5">
           <ContributionsSection
             rawContribs={rawContribs}
             perContribData={perContribData}
@@ -339,7 +339,7 @@ export function PersonPaycheck({
           <SSCapIndicator paycheck={paycheck} />
 
           {paycheck.warnings.length > 0 && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+            <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3">
               {paycheck.warnings.map((w) => (
                 <p key={w} className="text-sm text-yellow-800">
                   {w}

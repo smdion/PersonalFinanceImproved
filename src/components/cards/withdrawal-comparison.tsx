@@ -120,13 +120,13 @@ export function WithdrawalComparisonCard({
       isDefaultOpen={true}
       headerRight={
         <div className="flex items-center gap-2">
-          <div className="inline-flex rounded-md border bg-surface-primary/60 p-0.5">
+          <div className="bg-surface-primary/60 inline-flex rounded-md border p-0.5">
             <button
               type="button"
               onClick={() => onDollarModeChange("real")}
-              className={`px-2 py-0.5 text-caption font-medium rounded transition-colors ${
+              className={`text-caption rounded px-2 py-0.5 font-medium transition-colors ${
                 dollarMode === "real"
-                  ? "bg-surface-primary text-primary shadow-sm border"
+                  ? "bg-surface-primary text-primary border shadow-sm"
                   : "text-muted hover:text-secondary"
               }`}
             >
@@ -135,9 +135,9 @@ export function WithdrawalComparisonCard({
             <button
               type="button"
               onClick={() => onDollarModeChange("nominal")}
-              className={`px-2 py-0.5 text-caption font-medium rounded transition-colors ${
+              className={`text-caption rounded px-2 py-0.5 font-medium transition-colors ${
                 dollarMode === "nominal"
-                  ? "bg-surface-primary text-primary shadow-sm border"
+                  ? "bg-surface-primary text-primary border shadow-sm"
                   : "text-muted hover:text-secondary"
               }`}
             >
@@ -154,30 +154,30 @@ export function WithdrawalComparisonCard({
           <table className="w-full text-xs">
             <thead>
               <tr className="text-faint border-b">
-                <th className="text-left py-1.5 pr-2 font-medium">Strategy</th>
-                <th className="text-right py-1.5 px-2 font-medium">
+                <th className="py-1.5 pr-2 text-left font-medium">Strategy</th>
+                <th className="px-2 py-1.5 text-right font-medium">
                   Depletion Age
                 </th>
-                <th className="text-right py-1.5 px-2 font-medium">
+                <th className="px-2 py-1.5 text-right font-medium">
                   <span title="Portfolio survives to end of plan — balance stays above $0 in every year (200 simulations)">
                     Success
                   </span>
                 </th>
-                <th className="text-right py-1.5 px-2 font-medium">
+                <th className="px-2 py-1.5 text-right font-medium">
                   <span title="% of scenarios where spending never drops below 75% of the strategy's own year-1 withdrawal (inflation-adjusted). Measures self-consistency.">
                     Stab. (Strat)
                   </span>
                 </th>
-                <th className="text-right py-1.5 px-2 font-medium">
+                <th className="px-2 py-1.5 text-right font-medium">
                   <span title="% of scenarios where spending never drops below 75% of your stated retirement budget (inflation-adjusted). Measures whether your actual needs are met.">
                     Stab. (Budget)
                   </span>
                 </th>
-                <th className="text-right py-1.5 px-2 font-medium">Year 1</th>
-                <th className="text-right py-1.5 px-2 font-medium">Avg/yr</th>
-                <th className="text-right py-1.5 px-2 font-medium">Min/yr</th>
-                <th className="text-right py-1.5 px-2 font-medium">Max/yr</th>
-                <th className="text-right py-1.5 pl-2 font-medium">Legacy</th>
+                <th className="px-2 py-1.5 text-right font-medium">Year 1</th>
+                <th className="px-2 py-1.5 text-right font-medium">Avg/yr</th>
+                <th className="px-2 py-1.5 text-right font-medium">Min/yr</th>
+                <th className="px-2 py-1.5 text-right font-medium">Max/yr</th>
+                <th className="py-1.5 pl-2 text-right font-medium">Legacy</th>
               </tr>
             </thead>
             <tbody>
@@ -191,7 +191,7 @@ export function WithdrawalComparisonCard({
                     <td className="py-1.5 pr-2">
                       <div className="flex items-center gap-1.5">
                         <span
-                          className="inline-block w-2 h-2 rounded-full flex-shrink-0"
+                          className="inline-block h-2 w-2 flex-shrink-0 rounded-full"
                           style={{
                             backgroundColor:
                               STRATEGY_COMPARISON_COLORS[
@@ -204,19 +204,19 @@ export function WithdrawalComparisonCard({
                         >
                           {s.shortLabel}
                           {isActive && (
-                            <span className="text-blue-400 text-micro ml-1">
+                            <span className="text-micro ml-1 text-blue-400">
                               (active)
                             </span>
                           )}
                         </span>
                       </div>
                     </td>
-                    <td className="text-right py-1.5 px-2 tabular-nums text-faint">
+                    <td className="text-faint px-2 py-1.5 text-right tabular-nums">
                       {s.portfolioDepletionAge ?? (
                         <span className="text-green-400">Never</span>
                       )}
                     </td>
-                    <td className="text-right py-1.5 px-2 tabular-nums">
+                    <td className="px-2 py-1.5 text-right tabular-nums">
                       {s.successRate !== null ? (
                         <span
                           className={
@@ -233,7 +233,7 @@ export function WithdrawalComparisonCard({
                         <span className="text-faint">—</span>
                       )}
                     </td>
-                    <td className="text-right py-1.5 px-2 tabular-nums">
+                    <td className="px-2 py-1.5 text-right tabular-nums">
                       {s.spendingStabilityRate !== null ? (
                         <span
                           className={
@@ -250,7 +250,7 @@ export function WithdrawalComparisonCard({
                         <span className="text-faint">—</span>
                       )}
                     </td>
-                    <td className="text-right py-1.5 px-2 tabular-nums">
+                    <td className="px-2 py-1.5 text-right tabular-nums">
                       {s.budgetStabilityRate !== null ? (
                         <span
                           className={
@@ -267,19 +267,19 @@ export function WithdrawalComparisonCard({
                         <span className="text-faint">—</span>
                       )}
                     </td>
-                    <td className="text-right py-1.5 px-2 tabular-nums text-faint">
+                    <td className="text-faint px-2 py-1.5 text-right tabular-nums">
                       {formatCurrency(deflateSummary(s.year1Withdrawal))}
                     </td>
-                    <td className="text-right py-1.5 px-2 tabular-nums text-faint">
+                    <td className="text-faint px-2 py-1.5 text-right tabular-nums">
                       {formatCurrency(deflateSummary(s.avgAnnualWithdrawal))}
                     </td>
-                    <td className="text-right py-1.5 px-2 tabular-nums text-faint">
+                    <td className="text-faint px-2 py-1.5 text-right tabular-nums">
                       {formatCurrency(deflateSummary(s.minAnnualWithdrawal))}
                     </td>
-                    <td className="text-right py-1.5 px-2 tabular-nums text-faint">
+                    <td className="text-faint px-2 py-1.5 text-right tabular-nums">
                       {formatCurrency(deflateSummary(s.maxAnnualWithdrawal))}
                     </td>
-                    <td className="text-right py-1.5 pl-2 tabular-nums text-faint">
+                    <td className="text-faint py-1.5 pl-2 text-right tabular-nums">
                       {formatCurrency(deflateSummary(s.legacyAmount))}
                     </td>
                   </tr>
@@ -292,17 +292,17 @@ export function WithdrawalComparisonCard({
 
       {/* Chart */}
       {
-        <div className="mt-6 pt-4 border-t">
-          <div className="flex justify-end gap-1 mb-3">
+        <div className="mt-6 border-t pt-4">
+          <div className="mb-3 flex justify-end gap-1">
             <button
               onClick={() => setChartMetric("endBalance")}
-              className={`px-2 py-0.5 text-caption rounded ${chartMetric === "endBalance" ? "bg-blue-600 text-white" : "bg-surface-elevated text-faint"}`}
+              className={`text-caption rounded px-2 py-0.5 ${chartMetric === "endBalance" ? "bg-blue-600 text-white" : "bg-surface-elevated text-faint"}`}
             >
               Portfolio Balance
             </button>
             <button
               onClick={() => setChartMetric("withdrawal")}
-              className={`px-2 py-0.5 text-caption rounded ${chartMetric === "withdrawal" ? "bg-blue-600 text-white" : "bg-surface-elevated text-faint"}`}
+              className={`text-caption rounded px-2 py-0.5 ${chartMetric === "withdrawal" ? "bg-blue-600 text-white" : "bg-surface-elevated text-faint"}`}
             >
               Annual Withdrawal
             </button>
@@ -367,26 +367,26 @@ export function WithdrawalComparisonCard({
         </div>
       }
       {/* Strategy Analyzer — opt-in */}
-      <div className="mt-4 pt-3 border-t">
+      <div className="mt-4 border-t pt-3">
         {!analyzerEnabled ? (
           <div className="flex justify-end">
             <button
               onClick={() => setAnalyzerEnabled(true)}
-              className="text-label text-sky-400 hover:text-sky-300 border border-sky-400/30 hover:border-sky-400/60 rounded px-2 py-0.5 transition-colors"
+              className="text-label rounded border border-sky-400/30 px-2 py-0.5 text-sky-400 transition-colors hover:border-sky-400/60 hover:text-sky-300"
             >
               Analyze My Strategy →
             </button>
           </div>
         ) : analyzerQuery.isLoading ? (
-          <div className="text-xs text-faint animate-pulse text-center py-3">
+          <div className="text-faint animate-pulse py-3 text-center text-xs">
             Running scenario analysis...
           </div>
         ) : analyzerQuery.data?.recommendations &&
           analyzerQuery.data.recommendations.length > 0 ? (
           <div className="rounded-lg border border-sky-500/20 bg-sky-950/20 p-4">
-            <div className="flex items-center justify-between mb-3">
+            <div className="mb-3 flex items-center justify-between">
               <div>
-                <h4 className="text-sm font-semibold text-primary">
+                <h4 className="text-primary text-sm font-semibold">
                   Strategy Analysis — {analyzerQuery.data.strategyLabel}
                 </h4>
                 <p className="text-label text-faint">
@@ -416,7 +416,7 @@ export function WithdrawalComparisonCard({
                     key={rec.label}
                     className="flex items-start gap-2 text-xs"
                   >
-                    <span className="text-sky-400 font-bold shrink-0">
+                    <span className="shrink-0 font-bold text-sky-400">
                       {i + 1}.
                     </span>
                     <div>
@@ -465,37 +465,37 @@ export function WithdrawalComparisonCard({
             </p>
           </div>
         ) : analyzerQuery.data?.diagnosis === "healthy" ? (
-          <div className="rounded-lg border border-green-500/20 bg-green-950/20 p-3 text-xs text-faint">
+          <div className="text-faint rounded-lg border border-green-500/20 bg-green-950/20 p-3 text-xs">
             Your strategy is well-optimized — no single parameter change
             produces a meaningful improvement (&gt;2pp). Consider broader
             changes like increasing guaranteed income or adjusting your
             timeline.
             <button
               onClick={() => setAnalyzerEnabled(false)}
-              className="ml-2 text-caption text-faint hover:text-secondary"
+              className="text-caption text-faint hover:text-secondary ml-2"
             >
               Dismiss
             </button>
           </div>
         ) : analyzerQuery.isError ? (
-          <div className="rounded-lg border border-red-500/20 bg-red-950/20 p-3 text-xs text-faint">
+          <div className="text-faint rounded-lg border border-red-500/20 bg-red-950/20 p-3 text-xs">
             Analysis failed. Try again or adjust your inputs.
             <button
               onClick={() => setAnalyzerEnabled(false)}
-              className="ml-2 text-caption text-faint hover:text-secondary"
+              className="text-caption text-faint hover:text-secondary ml-2"
             >
               Dismiss
             </button>
           </div>
         ) : analyzerQuery.data ? (
-          <div className="rounded-lg border border-amber-500/20 bg-amber-950/20 p-3 text-xs text-faint">
+          <div className="text-faint rounded-lg border border-amber-500/20 bg-amber-950/20 p-3 text-xs">
             No parameter changes produce a meaningful improvement (&gt;2pp) for
             your current configuration. The biggest gains would come from
             changes outside strategy parameters (saving more, delaying
             retirement, increasing guaranteed income).
             <button
               onClick={() => setAnalyzerEnabled(false)}
-              className="ml-2 text-caption text-faint hover:text-secondary"
+              className="text-caption text-faint hover:text-secondary ml-2"
             >
               Dismiss
             </button>

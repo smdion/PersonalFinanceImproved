@@ -79,16 +79,16 @@ export function RelocationBudgetSelectors({
   return (
     <>
       {/* Profile + Column selectors */}
-      <div className="grid grid-cols-[1fr_auto_1fr] gap-4 items-start text-sm">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-4 text-sm">
         {/* Current Budget */}
         <div>
-          <label className="block text-muted mb-1">
+          <label className="text-muted mb-1 block">
             Current Budget
             <HelpTip text="Budget profile used for your current living expenses. When a profile has month assignments, the weighted average is used automatically." />
           </label>
           <div className="flex flex-col gap-1">
             <select
-              className="border rounded px-2 py-1 text-sm"
+              className="rounded border px-2 py-1 text-sm"
               value={effectiveCurrentProfileId}
               onChange={(e) => {
                 setRelocCurrentProfileId(Number(e.target.value));
@@ -117,7 +117,7 @@ export function RelocationBudgetSelectors({
               </Badge>
             ) : (currentProf?.columnLabels ?? []).length >= 2 ? (
               <select
-                className="border rounded px-2 py-1 text-sm"
+                className="rounded border px-2 py-1 text-sm"
                 value={relocCurrentCol}
                 onChange={(e) => setRelocCurrentCol(Number(e.target.value))}
               >
@@ -135,7 +135,7 @@ export function RelocationBudgetSelectors({
               <span className="text-caption text-faint">Custom:</span>
               <input
                 type="number"
-                className="border rounded px-2 py-0.5 text-xs w-24"
+                className="w-24 rounded border px-2 py-0.5 text-xs"
                 placeholder="$/mo"
                 value={relocCurrentOverride}
                 onChange={(e) => setRelocCurrentOverride(e.target.value)}
@@ -156,13 +156,13 @@ export function RelocationBudgetSelectors({
 
         {/* Relocation Budget */}
         <div>
-          <label className="block text-muted mb-1">
+          <label className="text-muted mb-1 block">
             Relocation Budget
             <HelpTip text="Budget profile for projected expenses after relocating. Use the custom field to enter a monthly amount." />
           </label>
           <div className="flex flex-col gap-1">
             <select
-              className="border rounded px-2 py-1 text-sm"
+              className="rounded border px-2 py-1 text-sm"
               value={effectiveTargetProfileId}
               onChange={(e) => {
                 setRelocTargetProfileId(Number(e.target.value));
@@ -191,7 +191,7 @@ export function RelocationBudgetSelectors({
               </Badge>
             ) : (targetProf?.columnLabels ?? []).length >= 2 ? (
               <select
-                className="border rounded px-2 py-1 text-sm"
+                className="rounded border px-2 py-1 text-sm"
                 value={relocTargetCol}
                 onChange={(e) => setRelocTargetCol(Number(e.target.value))}
               >
@@ -209,7 +209,7 @@ export function RelocationBudgetSelectors({
               <span className="text-caption text-faint">Custom:</span>
               <input
                 type="number"
-                className="border rounded px-2 py-0.5 text-xs w-24"
+                className="w-24 rounded border px-2 py-0.5 text-xs"
                 placeholder="$/mo"
                 value={relocTargetOverride}
                 onChange={(e) => setRelocTargetOverride(e.target.value)}
@@ -229,14 +229,14 @@ export function RelocationBudgetSelectors({
 
       {/* Contribution profile selectors */}
       {contribProfiles.length > 0 && (
-        <div className="grid grid-cols-[1fr_auto_1fr] gap-4 items-start text-sm">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-4 text-sm">
           <div>
-            <label className="block text-muted mb-1">
+            <label className="text-muted mb-1 block">
               Current Contributions
               <HelpTip text="Salary and contribution profile for your current scenario. Managed on the Budget page." />
             </label>
             <select
-              className="border rounded px-2 py-1 text-sm w-full"
+              className="w-full rounded border px-2 py-1 text-sm"
               value={effectiveCurrentContribProfileId ?? ""}
               onChange={(e) =>
                 setRelocCurrentContribProfileId(Number(e.target.value))
@@ -249,7 +249,7 @@ export function RelocationBudgetSelectors({
               ))}
             </select>
             {currentContribProfile && (
-              <div className="mt-1 text-caption text-faint flex gap-3">
+              <div className="text-caption text-faint mt-1 flex gap-3">
                 <span>
                   Salary: {formatCurrency(currentContribProfile.combinedSalary)}
                 </span>
@@ -264,7 +264,7 @@ export function RelocationBudgetSelectors({
                 </span>
                 {currentContribProfile.incompleteAccountIds.length > 0 && (
                   <span
-                    className="font-semibold text-amber-700 bg-amber-50 rounded px-0.5"
+                    className="rounded bg-amber-50 px-0.5 font-semibold text-amber-700"
                     title="Some contribution accounts have no resolvable pay period (missing/ended job) and are excluded from this total."
                   >
                     Incomplete
@@ -275,12 +275,12 @@ export function RelocationBudgetSelectors({
           </div>
           <div className="text-faint self-center pt-6">→</div>
           <div>
-            <label className="block text-muted mb-1">
+            <label className="text-muted mb-1 block">
               Relocation Contributions
               <HelpTip text="Salary and contribution profile for the relocation scenario. Create profiles on the Budget page." />
             </label>
             <select
-              className="border rounded px-2 py-1 text-sm w-full"
+              className="w-full rounded border px-2 py-1 text-sm"
               value={effectiveTargetContribProfileId ?? ""}
               onChange={(e) =>
                 setRelocTargetContribProfileId(Number(e.target.value))
@@ -293,7 +293,7 @@ export function RelocationBudgetSelectors({
               ))}
             </select>
             {relocationContribProfile && (
-              <div className="mt-1 text-caption text-faint flex gap-3">
+              <div className="text-caption text-faint mt-1 flex gap-3">
                 <span>
                   Salary:{" "}
                   {formatCurrency(relocationContribProfile.combinedSalary)}
@@ -310,7 +310,7 @@ export function RelocationBudgetSelectors({
                 </span>
                 {relocationContribProfile.incompleteAccountIds.length > 0 && (
                   <span
-                    className="font-semibold text-amber-700 bg-amber-50 rounded px-0.5"
+                    className="rounded bg-amber-50 px-0.5 font-semibold text-amber-700"
                     title="Some contribution accounts have no resolvable pay period (missing/ended job) and are excluded from this total."
                   >
                     Incomplete

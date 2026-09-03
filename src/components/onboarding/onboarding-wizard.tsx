@@ -45,26 +45,26 @@ function WelcomeStep({
   onRestore: () => void;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center text-center gap-6 py-8">
-      <div className="text-4xl font-bold text-primary">Welcome to Ledgr!</div>
+    <div className="flex flex-col items-center justify-center gap-6 py-8 text-center">
+      <div className="text-primary text-4xl font-bold">Welcome to Ledgr!</div>
       <p className="text-muted max-w-md text-lg">
         Let&apos;s set up your financial dashboard. We&apos;ll walk you through
         a few quick steps to get your household configured.
       </p>
       <button
         onClick={onNext}
-        className="px-6 py-3 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors"
+        className="rounded-lg bg-blue-600 px-6 py-3 font-medium text-white transition-colors hover:bg-blue-700"
       >
         Get Started
       </button>
-      <div className="flex items-center gap-3 w-full max-w-xs">
-        <div className="flex-1 h-px bg-surface-strong" />
+      <div className="flex w-full max-w-xs items-center gap-3">
+        <div className="bg-surface-strong h-px flex-1" />
         <span className="text-muted text-sm">or</span>
-        <div className="flex-1 h-px bg-surface-strong" />
+        <div className="bg-surface-strong h-px flex-1" />
       </div>
       <button
         onClick={onRestore}
-        className="px-6 py-3 rounded-lg border border-default text-muted hover:text-primary hover:bg-surface-elevated transition-colors"
+        className="border-default text-muted hover:text-primary hover:bg-surface-elevated rounded-lg border px-6 py-3 transition-colors"
       >
         Restore from Backup
       </button>
@@ -105,7 +105,7 @@ function AdminStep({
   return (
     <div className="flex flex-col gap-6 py-4">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-primary">
+        <h2 className="text-primary text-2xl font-bold">
           Create Admin Account
         </h2>
         <p className="text-muted mt-1">
@@ -114,9 +114,9 @@ function AdminStep({
         </p>
       </div>
 
-      <div className="flex flex-col gap-4 max-w-sm mx-auto w-full">
+      <div className="mx-auto flex w-full max-w-sm flex-col gap-4">
         <div>
-          <label className="block text-sm font-medium text-secondary mb-1">
+          <label className="text-secondary mb-1 block text-sm font-medium">
             Display Name
           </label>
           <input
@@ -125,12 +125,12 @@ function AdminStep({
             onChange={(e) => update("name", e.target.value)}
             onBlur={(e) => validate("name", e.target.value)}
             placeholder="Admin"
-            className={`w-full px-3 py-2 rounded-lg border bg-surface-primary text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.name ? "border-red-400" : "border-default"}`}
+            className={`bg-surface-primary text-primary placeholder:text-muted w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none ${errors.name ? "border-red-400" : "border-default"}`}
           />
           <FormError message={errors.name ?? null} />
         </div>
         <div>
-          <label className="block text-sm font-medium text-secondary mb-1">
+          <label className="text-secondary mb-1 block text-sm font-medium">
             Email
           </label>
           <input
@@ -139,12 +139,12 @@ function AdminStep({
             onChange={(e) => update("email", e.target.value)}
             onBlur={(e) => validate("email", e.target.value)}
             placeholder="admin@example.com"
-            className={`w-full px-3 py-2 rounded-lg border bg-surface-primary text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.email ? "border-red-400" : "border-default"}`}
+            className={`bg-surface-primary text-primary placeholder:text-muted w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none ${errors.email ? "border-red-400" : "border-default"}`}
           />
           <FormError message={errors.email ?? null} />
         </div>
         <div>
-          <label className="block text-sm font-medium text-secondary mb-1">
+          <label className="text-secondary mb-1 block text-sm font-medium">
             Password
           </label>
           <input
@@ -152,13 +152,13 @@ function AdminStep({
             value={admin.password}
             onChange={(e) => update("password", e.target.value)}
             onBlur={(e) => validate("password", e.target.value)}
-            className={`w-full px-3 py-2 rounded-lg border bg-surface-primary text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.password ? "border-red-400" : "border-default"}`}
+            className={`bg-surface-primary text-primary placeholder:text-muted w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none ${errors.password ? "border-red-400" : "border-default"}`}
           />
           <FormError message={errors.password ?? null} />
-          <p className="text-xs text-muted mt-1">Minimum 12 characters</p>
+          <p className="text-muted mt-1 text-xs">Minimum 12 characters</p>
         </div>
         <div>
-          <label className="block text-sm font-medium text-secondary mb-1">
+          <label className="text-secondary mb-1 block text-sm font-medium">
             Confirm Password
           </label>
           <input
@@ -166,7 +166,7 @@ function AdminStep({
             value={admin.confirmPassword}
             onChange={(e) => update("confirmPassword", e.target.value)}
             onBlur={(e) => validate("confirmPassword", e.target.value)}
-            className={`w-full px-3 py-2 rounded-lg border bg-surface-primary text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.confirmPassword ? "border-red-400" : "border-default"}`}
+            className={`bg-surface-primary text-primary placeholder:text-muted w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none ${errors.confirmPassword ? "border-red-400" : "border-default"}`}
           />
           <FormError message={errors.confirmPassword ?? null} />
         </div>
@@ -214,7 +214,7 @@ function OidcStep() {
   return (
     <div className="flex flex-col gap-6 py-4">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-primary">
+        <h2 className="text-primary text-2xl font-bold">
           Connect to Authentik
         </h2>
         <p className="text-muted mt-1">
@@ -230,10 +230,10 @@ function OidcStep() {
         <div className="space-y-3">
           {envVars.map((v) => (
             <div key={v.name}>
-              <code className="text-blue-600 dark:text-blue-400 font-mono text-xs">
+              <code className="font-mono text-xs text-blue-600 dark:text-blue-400">
                 {v.name}
               </code>
-              <p className="text-muted text-xs mt-0.5">{v.description}</p>
+              <p className="text-muted mt-0.5 text-xs">{v.description}</p>
             </div>
           ))}
         </div>
@@ -244,17 +244,17 @@ function OidcStep() {
         <button
           onClick={handleTest}
           disabled={testing}
-          className="px-4 py-2 rounded-lg border border-default text-primary font-medium hover:bg-surface-elevated transition-colors disabled:opacity-50"
+          className="border-default text-primary hover:bg-surface-elevated rounded-lg border px-4 py-2 font-medium transition-colors disabled:opacity-50"
         >
           {testing ? "Testing..." : "Test Connection"}
         </button>
 
         {testResult && (
           <div
-            className={`p-3 rounded-lg text-sm w-full text-center ${
+            className={`w-full rounded-lg p-3 text-center text-sm ${
               testResult.configured && testResult.reachable
-                ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400"
-                : "bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400"
+                ? "border border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/20 dark:text-green-400"
+                : "border border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
             }`}
           >
             {testResult.configured && testResult.reachable && (
@@ -276,7 +276,7 @@ function OidcStep() {
         )}
       </div>
 
-      <p className="text-xs text-muted text-center">
+      <p className="text-muted text-center text-xs">
         After setting environment variables, restart the container for changes
         to take effect. OIDC can also be configured later from the Settings
         page.
@@ -347,7 +347,7 @@ function PeopleStep({
   return (
     <div className="flex flex-col gap-6 py-4">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-primary">Household Members</h2>
+        <h2 className="text-primary text-2xl font-bold">Household Members</h2>
         <p className="text-muted mt-1">
           Add the people in your household. At least one is required.
         </p>
@@ -359,11 +359,11 @@ function PeopleStep({
           {people.map((person, i) => (
             <div
               key={`${person.name}-${person.dateOfBirth}`}
-              className="flex items-center justify-between bg-surface-primary border border-default rounded-lg px-4 py-3"
+              className="bg-surface-primary border-default flex items-center justify-between rounded-lg border px-4 py-3"
             >
               <div>
                 <span className="text-primary font-medium">{person.name}</span>
-                <span className="text-muted text-sm ml-2">
+                <span className="text-muted ml-2 text-sm">
                   (born {person.dateOfBirth.substring(0, 4)})
                 </span>
                 {person.isPrimaryUser && (
@@ -384,7 +384,7 @@ function PeopleStep({
       )}
 
       {/* Add person form */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row">
         <div className="flex-1">
           <input
             type="text"
@@ -395,7 +395,7 @@ function PeopleStep({
               setNameError(null);
             }}
             onKeyDown={(e) => e.key === "Enter" && addPerson()}
-            className={`w-full px-3 py-2 rounded-lg border bg-surface-primary text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-blue-500 ${nameError ? "border-red-400" : "border-default"}`}
+            className={`bg-surface-primary text-primary placeholder:text-muted w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none ${nameError ? "border-red-400" : "border-default"}`}
           />
           <FormError message={nameError} />
         </div>
@@ -409,13 +409,13 @@ function PeopleStep({
               setBirthYearError(null);
             }}
             onKeyDown={(e) => e.key === "Enter" && addPerson()}
-            className={`w-32 px-3 py-2 rounded-lg border bg-surface-primary text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${birthYearError ? "border-red-400" : "border-default"}`}
+            className={`bg-surface-primary text-primary placeholder:text-muted w-32 [appearance:textfield] rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${birthYearError ? "border-red-400" : "border-default"}`}
           />
           <FormError message={birthYearError} />
         </div>
         <button
           onClick={addPerson}
-          className="px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors self-start"
+          className="self-start rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700"
         >
           Add Person
         </button>
@@ -486,7 +486,7 @@ function IncomeStep({
   return (
     <div className="flex flex-col gap-6 py-4">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-primary">Income</h2>
+        <h2 className="text-primary text-2xl font-bold">Income</h2>
         <p className="text-muted mt-1">
           Add employment information. This step is optional -- you can skip it
           and add jobs later.
@@ -499,13 +499,13 @@ function IncomeStep({
           {jobs.map((job, i) => (
             <div
               key={`${job.personIndex}-${job.employerName}`}
-              className="flex items-center justify-between bg-surface-primary border border-default rounded-lg px-4 py-3"
+              className="bg-surface-primary border-default flex items-center justify-between rounded-lg border px-4 py-3"
             >
               <div>
                 <span className="text-primary font-medium">
                   {job.employerName}
                 </span>
-                <span className="text-muted text-sm ml-2">
+                <span className="text-muted ml-2 text-sm">
                   ({people[job.personIndex]?.name}) -- $
                   {Number(job.annualSalary).toLocaleString()}/{job.payPeriod}
                 </span>
@@ -527,7 +527,7 @@ function IncomeStep({
           <select
             value={personIndex}
             onChange={(e) => setPersonIndex(Number(e.target.value))}
-            className="px-3 py-2 rounded-lg border border-default bg-surface-primary text-primary focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="border-default bg-surface-primary text-primary rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
           >
             {people.map((p, i) => (
               <option key={p.name} value={i}>
@@ -536,7 +536,7 @@ function IncomeStep({
             ))}
           </select>
         )}
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row">
           <div className="flex-1">
             <input
               type="text"
@@ -546,7 +546,7 @@ function IncomeStep({
                 setEmployerName(e.target.value);
                 setEmployerError(null);
               }}
-              className={`w-full px-3 py-2 rounded-lg border bg-surface-primary text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-blue-500 ${employerError ? "border-red-400" : "border-default"}`}
+              className={`bg-surface-primary text-primary placeholder:text-muted w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none ${employerError ? "border-red-400" : "border-default"}`}
             />
             <FormError message={employerError} />
           </div>
@@ -559,7 +559,7 @@ function IncomeStep({
                 setAnnualSalary(e.target.value);
                 setSalaryError(null);
               }}
-              className={`w-40 px-3 py-2 rounded-lg border bg-surface-primary text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${salaryError ? "border-red-400" : "border-default"}`}
+              className={`bg-surface-primary text-primary placeholder:text-muted w-40 [appearance:textfield] rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${salaryError ? "border-red-400" : "border-default"}`}
             />
             <FormError message={salaryError} />
           </div>
@@ -568,7 +568,7 @@ function IncomeStep({
             onChange={(e) =>
               setPayPeriod(e.target.value as JobDraft["payPeriod"])
             }
-            className="w-40 px-3 py-2 rounded-lg border border-default bg-surface-primary text-primary focus:outline-none focus:ring-2 focus:ring-blue-500 self-start"
+            className="border-default bg-surface-primary text-primary w-40 self-start rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
           >
             <option value="weekly">Weekly</option>
             <option value="biweekly">Biweekly</option>
@@ -578,7 +578,7 @@ function IncomeStep({
         </div>
         <button
           onClick={addJob}
-          className="self-start px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors"
+          className="self-start rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700"
         >
           Add Job
         </button>
@@ -589,8 +589,8 @@ function IncomeStep({
 
 function DoneStep({ isSaving }: { isSaving: boolean }) {
   return (
-    <div className="flex flex-col items-center justify-center text-center gap-6 py-8">
-      <div className="text-4xl font-bold text-primary">
+    <div className="flex flex-col items-center justify-center gap-6 py-8 text-center">
+      <div className="text-primary text-4xl font-bold">
         You&apos;re all set!
       </div>
       <p className="text-muted max-w-md text-lg">
@@ -612,12 +612,12 @@ function ProgressBar({
   steps: readonly string[];
 }) {
   return (
-    <div className="flex items-center justify-center gap-2 mb-8">
+    <div className="mb-8 flex items-center justify-center gap-2">
       {steps.map((label, i) => (
         <div key={label} className="flex items-center gap-2">
           <div className="flex flex-col items-center">
             <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
+              className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors ${
                 i < currentStep
                   ? "bg-blue-600 text-white"
                   : i === currentStep
@@ -627,13 +627,13 @@ function ProgressBar({
             >
               {i < currentStep ? "\u2713" : i + 1}
             </div>
-            <span className="text-xs text-muted mt-1 hidden sm:block">
+            <span className="text-muted mt-1 hidden text-xs sm:block">
               {label}
             </span>
           </div>
           {i < steps.length - 1 && (
             <div
-              className={`w-8 sm:w-12 h-0.5 ${
+              className={`h-0.5 w-8 sm:w-12 ${
                 i < currentStep ? "bg-blue-600" : "bg-surface-strong"
               }`}
             />
@@ -895,9 +895,9 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-surface-primary rounded-2xl shadow-2xl border border-default w-full max-w-2xl mx-4 p-6 sm:p-8 max-h-[90vh] overflow-y-auto">
+      <div className="bg-surface-primary border-default mx-4 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border p-6 shadow-2xl sm:p-8">
         <ProgressBar currentStep={step} steps={STEPS} />
-        <div className="flex items-center justify-center gap-2 mb-4 text-sm text-secondary">
+        <div className="text-secondary mb-4 flex items-center justify-center gap-2 text-sm">
           Step {step + 1} of {STEPS.length}
         </div>
 
@@ -928,8 +928,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
         {/* Restoring overlay */}
         {isRestoring && (
-          <div className="flex flex-col items-center justify-center text-center gap-4 py-8">
-            <div className="text-lg font-medium text-primary">
+          <div className="flex flex-col items-center justify-center gap-4 py-8 text-center">
+            <div className="text-primary text-lg font-medium">
               Restoring backup...
             </div>
             <p className="text-muted text-sm">
@@ -940,13 +940,13 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
         {/* Error display */}
         {error && (
-          <div className="mt-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
             {error}
           </div>
         )}
         {stepError && (
           <div
-            className="mt-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-sm"
+            className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700"
             role="alert"
           >
             {stepError}
@@ -955,11 +955,11 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
         {/* Navigation buttons (Welcome has its own CTA) */}
         {currentStep !== "Welcome" && (
-          <div className="flex items-center justify-between mt-8 pt-4 border-t border-default">
+          <div className="border-default mt-8 flex items-center justify-between border-t pt-4">
             <button
               onClick={goBack}
               disabled={step === 0 || isSaving}
-              className="px-4 py-2 rounded-lg text-muted hover:text-primary hover:bg-surface-elevated disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="text-muted hover:text-primary hover:bg-surface-elevated rounded-lg px-4 py-2 transition-colors disabled:cursor-not-allowed disabled:opacity-30"
             >
               Back
             </button>
@@ -967,7 +967,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               {currentStep === "OIDC" && (
                 <button
                   onClick={skipOidc}
-                  className="px-4 py-2 rounded-lg text-muted hover:text-primary hover:bg-surface-elevated transition-colors"
+                  className="text-muted hover:text-primary hover:bg-surface-elevated rounded-lg px-4 py-2 transition-colors"
                 >
                   Configure Later
                 </button>
@@ -975,7 +975,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               {currentStep === "Income" && (
                 <button
                   onClick={skipIncome}
-                  className="px-4 py-2 rounded-lg text-muted hover:text-primary hover:bg-surface-elevated transition-colors"
+                  className="text-muted hover:text-primary hover:bg-surface-elevated rounded-lg px-4 py-2 transition-colors"
                 >
                   Skip
                 </button>
@@ -983,7 +983,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               <button
                 onClick={goNext}
                 disabled={isSaving}
-                className="px-6 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="rounded-lg bg-blue-600 px-6 py-2 font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {currentStep === "Done"
                   ? isSaving

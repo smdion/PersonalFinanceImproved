@@ -19,32 +19,32 @@ export function ActiveLoanCard({
   return (
     <div className="mb-6">
       <Card title={loan.name}>
-        <div className="flex items-center gap-2 mb-3">
+        <div className="mb-3 flex items-center gap-2">
           <Badge color="green" size="sm" shape="pill" case="normal">
             Active
           </Badge>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+        <div className="mb-4 grid grid-cols-2 gap-4 md:grid-cols-4">
           <div>
-            <p className="text-sm text-muted">Current Balance</p>
+            <p className="text-muted text-sm">Current Balance</p>
             <p className="text-lg font-semibold">
               {formatCurrency(loan.currentBalance)}
             </p>
           </div>
           <div>
-            <p className="text-sm text-muted">Payoff Date</p>
+            <p className="text-muted text-sm">Payoff Date</p>
             <p className="text-lg font-semibold">
               {formatDate(loan.payoffDate, "short")}
             </p>
           </div>
           <div>
-            <p className="text-sm text-muted">Remaining</p>
+            <p className="text-muted text-sm">Remaining</p>
             <p className="text-lg font-semibold">
               {formatNumber(loan.remainingMonths)} months
             </p>
           </div>
           <div>
-            <p className="text-sm text-muted">
+            <p className="text-muted text-sm">
               Ahead of Schedule
               <HelpTip text="How many months earlier you'll pay off vs. the original schedule, thanks to extra payments" />
             </p>
@@ -62,7 +62,7 @@ export function ActiveLoanCard({
           variant="success"
         />
 
-        <div className="grid grid-cols-3 gap-4 mt-4 text-sm">
+        <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
           <div>
             <p className="text-muted">Total Interest Paid</p>
             <p className="font-medium">
@@ -101,7 +101,7 @@ export function ActiveLoanCard({
         {/* Amortization toggle */}
         <button
           onClick={onToggleSchedule}
-          className="mt-4 text-sm text-blue-600 hover:text-blue-800 underline"
+          className="mt-4 text-sm text-blue-600 underline hover:text-blue-800"
         >
           {showSchedule ? "Hide" : "Show"} amortization schedule
         </button>

@@ -179,7 +179,7 @@ export function RetirementContent() {
     return (
       <div className="space-y-4">
         <Skeleton className="h-8 w-1/3" />
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <SkeletonChart height={128} />
           <SkeletonChart height={128} />
           <SkeletonChart height={128} />
@@ -190,7 +190,7 @@ export function RetirementContent() {
 
   if (error) {
     return (
-      <p className="text-red-600 text-sm">
+      <p className="text-sm text-red-600">
         Failed to load retirement data: {error.message}
       </p>
     );
@@ -229,13 +229,13 @@ export function RetirementContent() {
       </div>
 
       {/* Page-level tabs */}
-      <div className="print:hidden flex flex-wrap rounded-md border bg-surface-primary/60 p-0.5 mb-4 w-fit max-w-full">
+      <div className="bg-surface-primary/60 mb-4 flex w-fit max-w-full flex-wrap rounded-md border p-0.5 print:hidden">
         <button
           type="button"
           onClick={() => setPageTab("projection")}
-          className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+          className={`rounded px-3 py-1.5 text-xs font-medium transition-colors ${
             pageTab === "projection"
-              ? "bg-surface-primary text-primary shadow-sm border"
+              ? "bg-surface-primary text-primary border shadow-sm"
               : "text-muted hover:text-secondary"
           }`}
         >
@@ -248,9 +248,9 @@ export function RetirementContent() {
             setPageTab("comparison");
             setComparisonExpanded(true);
           }}
-          className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+          className={`rounded px-3 py-1.5 text-xs font-medium transition-colors ${
             pageTab === "comparison"
-              ? "bg-surface-primary text-primary shadow-sm border"
+              ? "bg-surface-primary text-primary border shadow-sm"
               : "text-muted hover:text-secondary"
           }`}
         >
@@ -264,9 +264,9 @@ export function RetirementContent() {
         <button
           type="button"
           onClick={() => setPageTab("planHealth")}
-          className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+          className={`rounded px-3 py-1.5 text-xs font-medium transition-colors ${
             pageTab === "planHealth"
-              ? "bg-surface-primary text-primary shadow-sm border"
+              ? "bg-surface-primary text-primary border shadow-sm"
               : "text-muted hover:text-secondary"
           }`}
         >
@@ -276,10 +276,10 @@ export function RetirementContent() {
 
       {/* Snapshot selector */}
       {snapshotOptions.length > 1 && (
-        <div className="print:hidden flex items-center gap-2 mb-3">
-          <label className="text-xs text-muted">Portfolio Snapshot:</label>
+        <div className="mb-3 flex items-center gap-2 print:hidden">
+          <label className="text-muted text-xs">Portfolio Snapshot:</label>
           <select
-            className="text-xs bg-surface-elevated border rounded px-2 py-1 text-primary"
+            className="bg-surface-elevated text-primary rounded border px-2 py-1 text-xs"
             value={snapshotId ?? ""}
             onChange={(e) =>
               setSnapshotId(e.target.value ? Number(e.target.value) : null)
@@ -304,7 +304,7 @@ export function RetirementContent() {
       )}
 
       {isFetching && !isLoading && (
-        <div className="text-xs text-faint animate-pulse mb-2">
+        <div className="text-faint mb-2 animate-pulse text-xs">
           Updating projection...
         </div>
       )}
@@ -353,7 +353,7 @@ export function RetirementContent() {
             analyzerInput={comparisonInput ?? undefined}
           />
         ) : (
-          <div className="text-xs text-muted p-4 text-center">
+          <div className="text-muted p-4 text-center text-xs">
             Loading strategy comparison...
           </div>
         )

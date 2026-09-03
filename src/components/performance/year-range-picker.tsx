@@ -68,9 +68,9 @@ export function YearRangePicker({
         onClick();
         setOpen(false);
       }}
-      className={`w-full text-left px-2 py-1 text-xs rounded transition-colors ${
+      className={`w-full rounded px-2 py-1 text-left text-xs transition-colors ${
         active
-          ? "bg-blue-50 text-blue-700 font-medium"
+          ? "bg-blue-50 font-medium text-blue-700"
           : "text-secondary hover:bg-blue-50"
       }`}
     >
@@ -85,7 +85,7 @@ export function YearRangePicker({
           setAnchorRect(e.currentTarget.getBoundingClientRect());
           setOpen(!open);
         }}
-        className="px-2.5 py-1 text-label rounded border border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong transition-colors"
+        className="text-label border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong rounded border px-2.5 py-1 transition-colors"
         title="Choose the years to include"
       >
         {summaryLabel}
@@ -101,7 +101,7 @@ export function YearRangePicker({
               role="presentation"
             />
             <div
-              className="fixed z-50 bg-surface-primary border rounded-lg shadow-lg p-2 w-56"
+              className="bg-surface-primary fixed z-50 w-56 rounded-lg border p-2 shadow-lg"
               style={{
                 top: anchorRect.bottom + 4,
                 left: Math.min(anchorRect.left, window.innerWidth - 240),
@@ -125,7 +125,7 @@ export function YearRangePicker({
                 ),
               )}
 
-              <div className="border-t border-subtle mt-1 pt-2">
+              <div className="border-subtle mt-1 border-t pt-2">
                 <span className="text-caption text-muted px-2">
                   Custom range
                 </span>
@@ -133,7 +133,7 @@ export function YearRangePicker({
                   <select
                     value={customStart}
                     onChange={(e) => setCustomStart(Number(e.target.value))}
-                    className="text-xs border rounded px-1 py-0.5 flex-1"
+                    className="flex-1 rounded border px-1 py-0.5 text-xs"
                   >
                     {years.map((y) => (
                       <option key={y} value={y}>
@@ -145,7 +145,7 @@ export function YearRangePicker({
                   <select
                     value={customEnd}
                     onChange={(e) => setCustomEnd(Number(e.target.value))}
-                    className="text-xs border rounded px-1 py-0.5 flex-1"
+                    className="flex-1 rounded border px-1 py-0.5 text-xs"
                   >
                     {years.map((y) => (
                       <option key={y} value={y}>
@@ -161,7 +161,7 @@ export function YearRangePicker({
                     onChange({ start, end });
                     setOpen(false);
                   }}
-                  className="w-full text-center px-2 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors mt-1"
+                  className="mt-1 w-full rounded bg-blue-600 px-2 py-1 text-center text-xs text-white transition-colors hover:bg-blue-700"
                 >
                   Apply
                 </button>

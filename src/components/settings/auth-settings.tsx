@@ -26,10 +26,10 @@ export function AuthSettings() {
     <div className="space-y-8">
       {/* OIDC Status */}
       <section>
-        <h3 className="text-lg font-semibold text-primary mb-1">
+        <h3 className="text-primary mb-1 text-lg font-semibold">
           Authentik (OIDC)
         </h3>
-        <p className="text-sm text-muted mb-4">
+        <p className="text-muted mb-4 text-sm">
           Single sign-on via Authentik allows household members to log in with
           their Authentik credentials. Permissions are mapped from Authentik
           groups &mdash; once this connection is set up, head to{" "}
@@ -40,25 +40,25 @@ export function AuthSettings() {
          *  the Authentik OIDC provider setup walkthrough lives now (was
          *  duplicated across both sections before the Access Control
          *  consolidation made the overlap visible). */}
-        <div className="border bg-surface-sunken rounded-lg p-4 mb-4">
-          <h4 className="text-sm font-semibold text-primary mb-2">
+        <div className="bg-surface-sunken mb-4 rounded-lg border p-4">
+          <h4 className="text-primary mb-2 text-sm font-semibold">
             Authentik OIDC Provider Setup
           </h4>
-          <ol className="text-xs text-secondary space-y-1.5 list-decimal list-inside">
+          <ol className="text-secondary list-inside list-decimal space-y-1.5 text-xs">
             <li>
               In Authentik, go to <strong>Applications &rarr; Providers</strong>{" "}
               and create a new <strong>OAuth2/OpenID Provider</strong>.
             </li>
             <li>
               Set the <strong>Redirect URI</strong> to{" "}
-              <code className="bg-surface-strong px-1 rounded">
+              <code className="bg-surface-strong rounded px-1">
                 https://&lt;your-app-domain&gt;/api/auth/callback/authentik
               </code>
               .
             </li>
             <li>
               Under <strong>Advanced protocol settings</strong>, add{" "}
-              <code className="bg-surface-strong px-1 rounded">groups</code> to
+              <code className="bg-surface-strong rounded px-1">groups</code> to
               the <strong>Scopes</strong> list so group membership is included
               in the OIDC token.
             </li>
@@ -74,23 +74,23 @@ export function AuthSettings() {
               Set three environment variables on the app server:
               <div className="mt-1 ml-4 space-y-0.5 font-mono">
                 <div>
-                  <code className="bg-surface-strong px-1 rounded">
+                  <code className="bg-surface-strong rounded px-1">
                     AUTH_AUTHENTIK_ISSUER
                   </code>{" "}
                   &mdash; Issuer URL (e.g.{" "}
-                  <code className="bg-surface-strong px-1 rounded">
+                  <code className="bg-surface-strong rounded px-1">
                     https://auth.example.com/application/o/ledgr/
                   </code>
                   )
                 </div>
                 <div>
-                  <code className="bg-surface-strong px-1 rounded">
+                  <code className="bg-surface-strong rounded px-1">
                     AUTH_AUTHENTIK_ID
                   </code>{" "}
                   &mdash; Client ID from the provider
                 </div>
                 <div>
-                  <code className="bg-surface-strong px-1 rounded">
+                  <code className="bg-surface-strong rounded px-1">
                     AUTH_AUTHENTIK_SECRET
                   </code>{" "}
                   &mdash; Client Secret from the provider
@@ -102,7 +102,7 @@ export function AuthSettings() {
               instead of using dev auto-login.
             </li>
           </ol>
-          <p className="text-xs text-muted mt-2 italic">
+          <p className="text-muted mt-2 text-xs italic">
             Without these env vars, the app runs in dev mode with automatic
             admin login.
           </p>
@@ -112,7 +112,7 @@ export function AuthSettings() {
           <button
             onClick={handleTest}
             disabled={testing}
-            className="px-4 py-2 rounded-lg border border-default text-primary text-sm font-medium hover:bg-surface-elevated transition-colors disabled:opacity-50"
+            className="border-default text-primary hover:bg-surface-elevated rounded-lg border px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50"
           >
             {testing ? "Testing..." : "Test Connection"}
           </button>
@@ -137,8 +137,8 @@ export function AuthSettings() {
 
       {/* Local Admin Info */}
       <section>
-        <h3 className="text-lg font-semibold text-primary mb-1">Local Admin</h3>
-        <p className="text-sm text-muted">
+        <h3 className="text-primary mb-1 text-lg font-semibold">Local Admin</h3>
+        <p className="text-muted text-sm">
           A local admin account was created during onboarding. This account
           serves as a fallback login method when Authentik is unavailable.
         </p>

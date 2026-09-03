@@ -78,42 +78,42 @@ export function BudgetItemRow({
 
   return (
     <tr
-      className={`group border-b border-subtle hover:bg-blue-50/60 transition-colors ${index % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"}`}
+      className={`group border-subtle border-b transition-colors hover:bg-blue-50/60 ${index % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"}`}
     >
       <td
-        className="py-1.5 pr-3 pl-4 text-muted sticky left-0 z-10 bg-inherit"
+        className="text-muted sticky left-0 z-10 bg-inherit py-1.5 pr-3 pl-4"
         style={
           nameColWidth
             ? { width: nameColWidth, maxWidth: nameColWidth }
             : { maxWidth: "12rem" }
         }
       >
-        <span className="flex flex-wrap items-center gap-1.5 min-w-0">
+        <span className="flex min-w-0 flex-wrap items-center gap-1.5">
           {canEdit && !amountsOnly ? (
             <button
               onClick={() => onToggleEssential(item.id, !item.isEssential)}
-              className="p-3 -m-3 flex-shrink-0 cursor-pointer touch-target flex items-center justify-center"
+              className="touch-target -m-3 flex flex-shrink-0 cursor-pointer items-center justify-center p-3"
               title={`${item.isEssential ? "Essential" : "Discretionary"} — click to toggle`}
             >
               <span
-                className={`w-2 h-2 rounded-full border transition-colors ${
+                className={`h-2 w-2 rounded-full border transition-colors ${
                   item.isEssential
-                    ? "bg-blue-500 border-blue-500"
-                    : "bg-purple-400 border-purple-400"
+                    ? "border-blue-500 bg-blue-500"
+                    : "border-purple-400 bg-purple-400"
                 }`}
               />
             </button>
           ) : (
             <span
-              className={`w-2 h-2 rounded-full flex-shrink-0 border ${
+              className={`h-2 w-2 flex-shrink-0 rounded-full border ${
                 item.isEssential
-                  ? "bg-blue-500 border-blue-500"
-                  : "bg-purple-400 border-purple-400"
+                  ? "border-blue-500 bg-blue-500"
+                  : "border-purple-400 bg-purple-400"
               }`}
             />
           )}
           <span
-            className="truncate max-w-[10rem] flex-shrink-0"
+            className="max-w-[10rem] flex-shrink-0 truncate"
             title={item.subcategory}
           >
             {item.subcategory}
@@ -121,7 +121,7 @@ export function BudgetItemRow({
           {contribMonthly !== null &&
             (item.contributionAccountId == null || contribStatus === "ok" ? (
               <span
-                className="flex-shrink-0 text-caption font-semibold text-indigo-600 bg-indigo-50 rounded px-0.5 leading-tight"
+                className="text-caption flex-shrink-0 rounded bg-indigo-50 px-0.5 leading-tight font-semibold text-indigo-600"
                 title={
                   item.contributionAccountId
                     ? `Linked to paycheck contribution (${formatCurrency(contribMonthly)}/mo) — editing here updates it everywhere.`
@@ -135,7 +135,7 @@ export function BudgetItemRow({
               // than a genuinely-configured zero — name the reason instead
               // of showing a bare "PC" the user would read as a real $0.
               <span
-                className="flex-shrink-0 text-caption font-semibold text-amber-700 bg-amber-50 rounded px-0.5 leading-tight"
+                className="text-caption flex-shrink-0 rounded bg-amber-50 px-0.5 leading-tight font-semibold text-amber-700"
                 title={CONTRIB_RESOLUTION_TOOLTIPS[contribStatus]}
               >
                 {CONTRIB_RESOLUTION_LABELS[contribStatus]}
@@ -143,7 +143,7 @@ export function BudgetItemRow({
             ))}
           {isLinked && (
             <span
-              className={`flex-shrink-0 text-caption font-semibold text-blue-600 bg-blue-50 rounded px-0.5 leading-tight ${amountsOnly ? "" : "cursor-pointer"}`}
+              className={`text-caption flex-shrink-0 rounded bg-blue-50 px-0.5 leading-tight font-semibold text-blue-600 ${amountsOnly ? "" : "cursor-pointer"}`}
               title={`Linked to ${item.apiCategoryName} (${item.apiSyncDirection})`}
               onClick={(e) => {
                 e.stopPropagation();
@@ -158,7 +158,7 @@ export function BudgetItemRow({
           )}
           {canEdit && !amountsOnly && !isLinked && (
             <span
-              className="flex-shrink-0 text-caption text-faint hover:text-blue-500 cursor-pointer hidden group-hover:inline"
+              className="text-caption text-faint hidden flex-shrink-0 cursor-pointer group-hover:inline hover:text-blue-500"
               title="Link to budget API category"
               onClick={(e) => {
                 e.stopPropagation();
@@ -180,11 +180,11 @@ export function BudgetItemRow({
             />
           )}
           {canEdit && !amountsOnly && editMode && (
-            <span className="flex-shrink-0 inline-flex items-center gap-1 whitespace-nowrap ml-1">
+            <span className="ml-1 inline-flex flex-shrink-0 items-center gap-1 whitespace-nowrap">
               <button
                 onClick={() => onReorderItem(item.id, "up")}
                 disabled={index === 0}
-                className="text-faint hover:text-secondary disabled:opacity-30 disabled:cursor-not-allowed"
+                className="text-faint hover:text-secondary disabled:cursor-not-allowed disabled:opacity-30"
                 title="Move up"
               >
                 ↑
@@ -192,7 +192,7 @@ export function BudgetItemRow({
               <button
                 onClick={() => onReorderItem(item.id, "down")}
                 disabled={index === itemsInCategory - 1}
-                className="text-faint hover:text-secondary disabled:opacity-30 disabled:cursor-not-allowed"
+                className="text-faint hover:text-secondary disabled:cursor-not-allowed disabled:opacity-30"
                 title="Move down"
               >
                 ↓
@@ -204,7 +204,7 @@ export function BudgetItemRow({
                     onMoveItem(item.id, e.target.value);
                   }
                 }}
-                className="text-caption text-faint bg-transparent border-none cursor-pointer hover:text-secondary"
+                className="text-caption text-faint hover:text-secondary cursor-pointer border-none bg-transparent"
                 title="Move to category"
               >
                 <option value="">Move...</option>
@@ -227,7 +227,7 @@ export function BudgetItemRow({
                       onConvertToGoal(item.id, item.subcategory);
                     }
                   }}
-                  className="text-blue-400 hover:text-blue-600 text-caption"
+                  className="text-caption text-blue-400 hover:text-blue-600"
                   title="Convert to sinking fund"
                 >
                   → Fund
@@ -239,7 +239,7 @@ export function BudgetItemRow({
                     onDeleteItem(item.id);
                   }
                 }}
-                className="text-red-400 hover:text-red-600 text-caption"
+                className="text-caption text-red-400 hover:text-red-600"
                 title="Delete item"
               >
                 ×
@@ -275,7 +275,7 @@ export function BudgetItemRow({
           return (
             <td
               key={col}
-              className="text-right py-1.5 px-3 tabular-nums text-secondary text-xs"
+              className="text-secondary px-3 py-1.5 text-right text-xs tabular-nums"
             >
               {n > 0 ? formatCurrency(n) : "\u2014"}
             </td>
@@ -283,20 +283,20 @@ export function BudgetItemRow({
         }
         const draftVal = getDraft(item.id, col, amt);
         return (
-          <td key={col} className="text-right py-1 px-2">
+          <td key={col} className="px-2 py-1 text-right">
             <input
               type="number"
               value={draftVal}
               onChange={(e) =>
                 onSetDraft(item.id, col, parseFloat(e.target.value) || 0)
               }
-              className="w-full max-w-[100px] text-right text-xs border border-strong rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-400 tabular-nums ml-auto block"
+              className="border-strong ml-auto block w-full max-w-[100px] rounded border px-1.5 py-0.5 text-right text-xs tabular-nums focus:ring-1 focus:ring-blue-400 focus:outline-none"
             />
           </td>
         );
       })}
       {showApiColumn && (
-        <td className="text-right py-1.5 px-2 tabular-nums text-xs">
+        <td className="px-2 py-1.5 text-right text-xs tabular-nums">
           {apiActual ? (
             <span>
               <span className="text-secondary">
@@ -304,7 +304,7 @@ export function BudgetItemRow({
               </span>
               {apiActual.activity !== 0 && (
                 <span
-                  className={`ml-1.5 text-caption ${
+                  className={`text-caption ml-1.5 ${
                     apiActual.activity < 0 ? "text-red-500" : "text-green-600"
                   }`}
                 >

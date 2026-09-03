@@ -47,11 +47,11 @@ export function PendingRollovers({
   if (pendingRollovers.length === 0) return null;
 
   return (
-    <div className="rounded-md border border-amber-400/50 bg-amber-50/30 dark:bg-amber-950/20 p-3 space-y-2">
+    <div className="space-y-2 rounded-md border border-amber-400/50 bg-amber-50/30 p-3 dark:bg-amber-950/20">
       <div className="flex items-center gap-2">
         <svg
           aria-hidden="true"
-          className="w-4 h-4 text-amber-500 flex-shrink-0"
+          className="h-4 w-4 flex-shrink-0 text-amber-500"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -142,8 +142,8 @@ function PendingRolloverRow({
 
   if (confirming) {
     return (
-      <div className="rounded border border-amber-400/60 bg-white dark:bg-neutral-900 p-2.5 space-y-2">
-        <p className="text-xs font-semibold text-primary">Confirm rollover</p>
+      <div className="space-y-2 rounded border border-amber-400/60 bg-white p-2.5 dark:bg-neutral-900">
+        <p className="text-primary text-xs font-semibold">Confirm rollover</p>
         <div className="text-label text-muted space-y-0.5">
           <div>
             <span className="font-medium">From:</span> {srcLabel}
@@ -160,15 +160,15 @@ function PendingRolloverRow({
           <p>
             Confirm the actual wire amount (edit if it differs from recorded):
           </p>
-          <div className="flex items-center border border-default rounded w-32 focus-within:ring-1 focus-within:ring-amber-500">
-            <span className="pl-2 text-xs text-muted select-none">$</span>
+          <div className="border-default flex w-32 items-center rounded border focus-within:ring-1 focus-within:ring-amber-500">
+            <span className="text-muted pl-2 text-xs select-none">$</span>
             <input
               type="number"
               step="0.01"
               min="0"
               value={actualAmount}
               onChange={(e) => setActualAmount(e.target.value)}
-              className="flex-1 bg-transparent px-1 py-0.5 text-xs text-right text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1 focus-visible:ring-offset-surface-primary rounded"
+              className="text-primary focus-visible:ring-offset-surface-primary flex-1 rounded bg-transparent px-1 py-0.5 text-right text-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1"
             />
           </div>
         </div>
@@ -182,7 +182,7 @@ function PendingRolloverRow({
           <button
             type="button"
             onClick={() => setConfirming(false)}
-            className="px-2 py-1 text-xs text-muted border border-strong rounded hover:text-primary"
+            className="text-muted border-strong hover:text-primary rounded border px-2 py-1 text-xs"
           >
             Cancel
           </button>
@@ -198,7 +198,7 @@ function PendingRolloverRow({
                     : undefined,
               })
             }
-            className="px-3 py-1 text-xs text-white bg-amber-600 hover:bg-amber-700 rounded disabled:opacity-50"
+            className="rounded bg-amber-600 px-3 py-1 text-xs text-white hover:bg-amber-700 disabled:opacity-50"
           >
             {confirmMutation.isPending
               ? "Confirming..."
@@ -215,9 +215,9 @@ function PendingRolloverRow({
   }
 
   return (
-    <div className="flex items-center gap-3 rounded border border-amber-300/40 bg-white/60 dark:bg-neutral-900/40 px-2.5 py-1.5 text-xs">
-      <div className="flex-1 min-w-0">
-        <span className="font-semibold tabular-nums text-amber-700 dark:text-amber-400">
+    <div className="flex items-center gap-3 rounded border border-amber-300/40 bg-white/60 px-2.5 py-1.5 text-xs dark:bg-neutral-900/40">
+      <div className="min-w-0 flex-1">
+        <span className="font-semibold text-amber-700 tabular-nums dark:text-amber-400">
           {formatCurrency(rollover.amount)}
         </span>
         <span className="text-muted mx-1.5">·</span>
@@ -229,11 +229,11 @@ function PendingRolloverRow({
           <span className="text-faint ml-1.5 italic">{rollover.notes}</span>
         )}
       </div>
-      <div className="flex items-center gap-2 flex-shrink-0">
+      <div className="flex flex-shrink-0 items-center gap-2">
         <button
           type="button"
           onClick={() => setConfirming(true)}
-          className="text-caption text-amber-600 hover:text-amber-800 font-medium border border-amber-400/50 rounded px-1.5 py-0.5"
+          className="text-caption rounded border border-amber-400/50 px-1.5 py-0.5 font-medium text-amber-600 hover:text-amber-800"
         >
           Confirm received
         </button>
@@ -246,13 +246,13 @@ function PendingRolloverRow({
             cancel
           </button>
         ) : (
-          <span className="flex items-center gap-1 text-caption">
+          <span className="text-caption flex items-center gap-1">
             <span className="text-red-600">Delete?</span>
             <button
               type="button"
               onClick={() => deleteMutation.mutate({ id: rollover.id })}
               disabled={deleteMutation.isPending}
-              className="text-red-600 hover:text-red-800 font-medium"
+              className="font-medium text-red-600 hover:text-red-800"
             >
               yes
             </button>
@@ -295,7 +295,7 @@ export function PendingRolloverBadge({
 
   const total = relevant.reduce((s, pr) => s + pr.amount, 0);
   return (
-    <span className="inline-flex items-center gap-1 text-micro font-medium text-amber-600 border border-amber-400/50 rounded px-1 py-0.5 ml-1">
+    <span className="text-micro ml-1 inline-flex items-center gap-1 rounded border border-amber-400/50 px-1 py-0.5 font-medium text-amber-600">
       <StatusDot color="amber" size="xs" pulse className="flex-shrink-0" />
       {direction === "out" ? "−" : "+"}
       {formatCurrency(total)} pending

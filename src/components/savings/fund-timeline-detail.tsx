@@ -36,17 +36,17 @@ export function FundTimelineDetail({
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
+      <div className="fixed inset-0 z-40 bg-black/50" onClick={onClose} />
 
       {/* Slide panel */}
-      <div className="fixed right-0 top-0 h-full w-full max-w-md bg-surface-primary border-l z-50 shadow-2xl flex flex-col">
+      <div className="bg-surface-primary fixed top-0 right-0 z-50 flex h-full w-full max-w-md flex-col border-l shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b">
+        <div className="flex items-center justify-between border-b px-4 py-3">
           <div>
-            <h2 className="text-sm font-semibold text-primary">
+            <h2 className="text-primary text-sm font-semibold">
               {projection.name}
             </h2>
-            <p className="text-xs text-muted">
+            <p className="text-muted text-xs">
               {formatCurrency(projection.current)} current
               {projection.target > 0 &&
                 ` \u2022 ${formatCurrency(projection.target)} target`}
@@ -60,7 +60,7 @@ export function FundTimelineDetail({
           </div>
           <button
             onClick={onClose}
-            className="text-faint hover:text-secondary text-lg px-2"
+            className="text-faint hover:text-secondary px-2 text-lg"
             title="Close"
           >
             &times;
@@ -71,7 +71,7 @@ export function FundTimelineDetail({
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3">
           <div className="relative">
             {/* Vertical line */}
-            <div className="absolute left-3 top-0 bottom-0 w-px bg-surface-strong" />
+            <div className="bg-surface-strong absolute top-0 bottom-0 left-3 w-px" />
 
             {monthDates.map((d, i) => {
               const balance = projection.balances[i]!;
@@ -88,29 +88,29 @@ export function FundTimelineDetail({
                 <div
                   key={monthKey(d)}
                   data-month-row
-                  className={`relative pl-8 pb-4 ${isHighlighted ? "bg-blue-50 -mx-2 px-10 rounded-lg" : ""}`}
+                  className={`relative pb-4 pl-8 ${isHighlighted ? "-mx-2 rounded-lg bg-blue-50 px-10" : ""}`}
                 >
                   {/* Timeline dot */}
                   <div
-                    className={`absolute left-1.5 top-1 w-3 h-3 rounded-full border-2 ${
+                    className={`absolute top-1 left-1.5 h-3 w-3 rounded-full border-2 ${
                       events?.some((e) => e.amount < 0)
-                        ? "bg-red-500 border-red-400"
+                        ? "border-red-400 bg-red-500"
                         : events?.some((e) => e.amount > 0)
-                          ? "bg-green-500 border-green-400"
+                          ? "border-green-400 bg-green-500"
                           : "bg-surface-strong border-muted"
                     }`}
                   />
 
                   {/* Year separator */}
                   {isYearBoundary && (
-                    <div className="text-caption text-muted font-semibold uppercase tracking-wider mb-1">
+                    <div className="text-caption text-muted mb-1 font-semibold tracking-wider uppercase">
                       {d.getFullYear()}
                     </div>
                   )}
 
                   {/* Month header */}
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted font-medium">
+                    <span className="text-muted text-xs font-medium">
                       {monthLabel}
                     </span>
                     <span
@@ -123,10 +123,10 @@ export function FundTimelineDetail({
                   </div>
 
                   {/* Allocation — read-only with edit link */}
-                  <div className="flex items-center gap-2 mt-0.5">
+                  <div className="mt-0.5 flex items-center gap-2">
                     <span
                       className={`text-caption tabular-nums ${
-                        isOverride ? "text-blue-600 font-medium" : "text-muted"
+                        isOverride ? "font-medium text-blue-600" : "text-muted"
                       }`}
                     >
                       +{formatCurrency(allocation)}/mo
@@ -135,7 +135,7 @@ export function FundTimelineDetail({
                     {canEdit !== false && (
                       <button
                         onClick={() => onEditMonth(d)}
-                        className="text-caption text-blue-600 hover:text-blue-700 underline underline-offset-2"
+                        className="text-caption text-blue-600 underline underline-offset-2 hover:text-blue-700"
                       >
                         Edit month
                       </button>
@@ -148,7 +148,7 @@ export function FundTimelineDetail({
                       {events.map((ev) => (
                         <div
                           key={ev.id}
-                          className={`text-xs flex items-center gap-2 ${
+                          className={`flex items-center gap-2 text-xs ${
                             ev.amount < 0 ? "text-red-600" : "text-green-600"
                           }`}
                         >

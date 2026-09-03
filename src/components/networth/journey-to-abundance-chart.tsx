@@ -160,7 +160,7 @@ export function JourneyToAbundanceChart({
         </LineChart>
       </ResponsiveContainer>
       {!hasIncome && (
-        <p className="text-xs text-faint mt-2">
+        <p className="text-faint mt-2 text-xs">
           Add gross income to annual net worth records to see wealth benchmark
           lines.
         </p>

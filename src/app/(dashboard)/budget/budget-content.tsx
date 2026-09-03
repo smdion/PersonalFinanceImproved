@@ -353,7 +353,7 @@ export function BudgetContent() {
   }
   if (error) {
     return (
-      <p className="text-red-600 text-sm">
+      <p className="text-sm text-red-600">
         Failed to load budget: {error.message}
       </p>
     );
@@ -447,26 +447,26 @@ export function BudgetContent() {
             these assumptions (age, income, decumulation plan), not a peer
             input in that chain, so it's placed last among the profile
             levers, immediately before What-If. */}
-        <div className="flex items-center justify-between border-b mb-4">
+        <div className="mb-4 flex items-center justify-between border-b">
           <div className="flex gap-1">
             <button
               type="button"
               onClick={() => setActiveTab("salary")}
-              className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === "salary" ? "border-blue-600 text-blue-600" : "border-transparent text-muted hover:text-secondary"}`}
+              className={`border-b-2 px-4 py-2 text-xs font-medium transition-colors ${activeTab === "salary" ? "border-blue-600 text-blue-600" : "text-muted hover:text-secondary border-transparent"}`}
             >
               Salary Profiles
             </button>
             <button
               type="button"
               onClick={() => setActiveTab("contributions")}
-              className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === "contributions" ? "border-blue-600 text-blue-600" : "border-transparent text-muted hover:text-secondary"}`}
+              className={`border-b-2 px-4 py-2 text-xs font-medium transition-colors ${activeTab === "contributions" ? "border-blue-600 text-blue-600" : "text-muted hover:text-secondary border-transparent"}`}
             >
               Contribution Profiles
             </button>
             <button
               type="button"
               onClick={() => setActiveTab("budget")}
-              className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === "budget" ? "border-blue-600 text-blue-600" : "border-transparent text-muted hover:text-secondary"}`}
+              className={`border-b-2 px-4 py-2 text-xs font-medium transition-colors ${activeTab === "budget" ? "border-blue-600 text-blue-600" : "text-muted hover:text-secondary border-transparent"}`}
             >
               Budget Profiles
             </button>
@@ -474,7 +474,7 @@ export function BudgetContent() {
               <button
                 type="button"
                 onClick={() => setActiveTab("savings")}
-                className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === "savings" ? "border-blue-600 text-blue-600" : "border-transparent text-muted hover:text-secondary"}`}
+                className={`border-b-2 px-4 py-2 text-xs font-medium transition-colors ${activeTab === "savings" ? "border-blue-600 text-blue-600" : "text-muted hover:text-secondary border-transparent"}`}
               >
                 Savings Profiles
               </button>
@@ -482,7 +482,7 @@ export function BudgetContent() {
             <button
               type="button"
               onClick={() => setActiveTab("retirement")}
-              className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === "retirement" ? "border-blue-600 text-blue-600" : "border-transparent text-muted hover:text-secondary"}`}
+              className={`border-b-2 px-4 py-2 text-xs font-medium transition-colors ${activeTab === "retirement" ? "border-blue-600 text-blue-600" : "text-muted hover:text-secondary border-transparent"}`}
             >
               Retirement Profiles
             </button>
@@ -491,7 +491,7 @@ export function BudgetContent() {
             <button
               type="button"
               onClick={() => setActiveTab("what-if")}
-              className={`px-4 py-2 text-xs font-medium border-b-2 transition-colors ${activeTab === "what-if" ? "border-blue-600 text-blue-600" : "border-transparent text-muted hover:text-secondary"}`}
+              className={`border-b-2 px-4 py-2 text-xs font-medium transition-colors ${activeTab === "what-if" ? "border-blue-600 text-blue-600" : "text-muted hover:text-secondary border-transparent"}`}
             >
               What-If
             </button>
@@ -578,7 +578,7 @@ export function BudgetContent() {
 
             <ExtraPaycheckBudgetNote />
 
-            <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-[240px_1fr]">
               <BudgetProfileSidebar
                 profiles={(allProfiles ?? []) as BudgetProfileListEntry[]}
                 displayProfileId={displayProfileId}
@@ -720,7 +720,7 @@ export function BudgetContent() {
         )}
 
         {activeTab === "retirement" && (
-          <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-[240px_1fr]">
             <RetirementProfileManager
               viewingProfileId={viewingRetirementProfileId}
               onViewingProfileChange={setViewingRetirementProfileId}

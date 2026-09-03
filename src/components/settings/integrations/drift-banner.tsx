@@ -39,19 +39,19 @@ export function DriftBanner({
   return (
     <>
       {totalDrifted > 0 && (
-        <div className="flex items-center gap-2 text-xs bg-amber-50 border border-amber-200 rounded p-2">
+        <div className="flex items-center gap-2 rounded border border-amber-200 bg-amber-50 p-2 text-xs">
           <span className="text-amber-700">
             {totalDrifted} linked{" "}
             {totalDrifted === 1 ? "item has" : "items have"} different names or
             categories in Ledgr vs API
           </span>
-          <div className="flex gap-1 ml-auto">
+          <div className="ml-auto flex gap-1">
             <button
               onClick={() =>
                 syncAllNamesMut.mutate({ service, direction: "pull" })
               }
               disabled={syncAllNamesMut.isPending}
-              className="px-2 py-0.5 text-caption bg-amber-100 text-amber-700 rounded hover:bg-amber-200 whitespace-nowrap disabled:opacity-50"
+              className="text-caption rounded bg-amber-100 px-2 py-0.5 whitespace-nowrap text-amber-700 hover:bg-amber-200 disabled:opacity-50"
             >
               Use all API names
             </button>
@@ -60,7 +60,7 @@ export function DriftBanner({
                 syncAllNamesMut.mutate({ service, direction: "keepLedgr" })
               }
               disabled={syncAllNamesMut.isPending}
-              className="px-2 py-0.5 text-caption bg-blue-50 text-blue-600 rounded hover:bg-blue-100 whitespace-nowrap disabled:opacity-50"
+              className="text-caption rounded bg-blue-50 px-2 py-0.5 whitespace-nowrap text-blue-600 hover:bg-blue-100 disabled:opacity-50"
             >
               Keep all Ledgr names
             </button>
@@ -69,7 +69,7 @@ export function DriftBanner({
       )}
 
       {profile && profile.availableProfiles.length > 0 && (
-        <div className="flex items-center gap-2 text-xs flex-wrap">
+        <div className="flex flex-wrap items-center gap-2 text-xs">
           <span className="text-muted whitespace-nowrap">Profile:</span>
           <select
             value={profile.linkedProfileId ?? ""}
@@ -80,7 +80,7 @@ export function DriftBanner({
                 profileId: val ? Number(val) : null,
               });
             }}
-            className="px-1 py-1 text-label border border-strong rounded bg-surface-primary min-w-[120px]"
+            className="text-label border-strong bg-surface-primary min-w-[120px] rounded border px-1 py-1"
           >
             <option value="">Select...</option>
             {profile.availableProfiles.map((p) => (
@@ -101,7 +101,7 @@ export function DriftBanner({
                     columnIndex: Number(e.target.value),
                   })
                 }
-                className="px-1 py-1 text-label border border-strong rounded bg-surface-primary min-w-[80px]"
+                className="text-label border-strong bg-surface-primary min-w-[80px] rounded border px-1 py-1"
               >
                 {profile.columnLabels.map((label, i) => (
                   <option key={label} value={i}>

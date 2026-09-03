@@ -75,7 +75,7 @@ export function LumpSumForm({
 
   return (
     <div
-      className={`grid gap-2 items-end text-sm ${
+      className={`grid items-end gap-2 text-sm ${
         allowWithdrawals
           ? "grid-cols-[80px_80px_1fr_1fr_1fr_auto]"
           : "grid-cols-[80px_1fr_1fr_1fr_auto]"
@@ -87,7 +87,7 @@ export function LumpSumForm({
           type="number"
           value={form.year}
           onChange={(e) => setForm((f) => ({ ...f, year: e.target.value }))}
-          className="mt-0.5 block w-full rounded border border-strong px-2 py-1 text-sm"
+          className="border-strong mt-0.5 block w-full rounded border px-2 py-1 text-sm"
         />
       </label>
       {allowWithdrawals && (
@@ -101,7 +101,7 @@ export function LumpSumForm({
                 direction: e.target.value as "in" | "out",
               }))
             }
-            className="mt-0.5 block w-full rounded border border-strong px-2 py-1 text-sm"
+            className="border-strong mt-0.5 block w-full rounded border px-2 py-1 text-sm"
           >
             <option value="in">Inject</option>
             <option value="out">Withdraw</option>
@@ -116,7 +116,7 @@ export function LumpSumForm({
           placeholder="$50,000"
           value={form.amount}
           onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
-          className="mt-0.5 block w-full rounded border border-strong px-2 py-1 text-sm"
+          className="border-strong mt-0.5 block w-full rounded border px-2 py-1 text-sm"
         />
       </label>
       <label className="block">
@@ -143,7 +143,7 @@ export function LumpSumForm({
                 : (val as AccountCategory),
             }));
           }}
-          className="mt-0.5 block w-full rounded border border-strong px-2 py-1 text-sm"
+          className="border-strong mt-0.5 block w-full rounded border px-2 py-1 text-sm"
         >
           {accounts.map((a) => (
             <option key={optionKey(a)} value={optionKey(a)}>
@@ -161,13 +161,13 @@ export function LumpSumForm({
           }
           value={form.label}
           onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
-          className="mt-0.5 block w-full rounded border border-strong px-2 py-1 text-sm"
+          className="border-strong mt-0.5 block w-full rounded border px-2 py-1 text-sm"
         />
       </label>
       <button
         type="button"
         onClick={handleSubmit}
-        className="bg-emerald-600 text-white text-xs rounded px-3 py-1.5 hover:bg-emerald-700"
+        className="rounded bg-emerald-600 px-3 py-1.5 text-xs text-white hover:bg-emerald-700"
       >
         Add
       </button>
@@ -212,7 +212,7 @@ export function LumpSumBadge({
         {event.targetAccountName || event.targetAccount}
         {event.label && <span className={mutedClass}> {event.label}</span>}
       </div>
-      <span className="flex items-center gap-1 ml-2">
+      <span className="ml-2 flex items-center gap-1">
         {onEdit && (
           <button
             type="button"

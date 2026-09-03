@@ -63,7 +63,7 @@ export function YearlyGrowthEditor({
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
-        <span className="text-caption text-faint font-medium uppercase tracking-wide">
+        <span className="text-caption text-faint font-medium tracking-wide uppercase">
           Annual Growth by Year
         </span>
         {years.length > 0 && Object.keys(yearlyGrowth).length === 0 && (
@@ -84,10 +84,10 @@ export function YearlyGrowthEditor({
         return (
           <div key={yr} className="flex items-center gap-2 text-xs">
             <span className="text-faint w-10 shrink-0">{yr}</span>
-            <div className="flex bg-surface-elevated rounded p-0.5">
+            <div className="bg-surface-elevated flex rounded p-0.5">
               <button
                 onClick={() => updateEntry(yr, { type: "pct" })}
-                className={`px-1.5 py-0.5 rounded text-caption ${
+                className={`text-caption rounded px-1.5 py-0.5 ${
                   !entry || entry.type === "pct"
                     ? "bg-surface-strong text-primary"
                     : "text-faint hover:text-primary"
@@ -97,7 +97,7 @@ export function YearlyGrowthEditor({
               </button>
               <button
                 onClick={() => updateEntry(yr, { type: "dollar" })}
-                className={`px-1.5 py-0.5 rounded text-caption ${
+                className={`text-caption rounded px-1.5 py-0.5 ${
                   entry?.type === "dollar"
                     ? "bg-surface-strong text-primary"
                     : "text-faint hover:text-primary"
@@ -121,7 +121,7 @@ export function YearlyGrowthEditor({
                     e.target.value === "" ? 0 : Number(e.target.value);
                   updateEntry(yr, { value: val });
                 }}
-                className="w-16 border border-default bg-surface-primary text-primary rounded px-1.5 py-0.5 text-xs text-right tabular-nums focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="border-default bg-surface-primary text-primary w-16 rounded border px-1.5 py-0.5 text-right text-xs tabular-nums focus:ring-1 focus:ring-blue-500 focus:outline-none"
               />
               {(!entry || entry.type === "pct") && (
                 <span className="text-caption text-muted">%</span>

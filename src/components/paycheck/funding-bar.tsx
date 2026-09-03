@@ -37,7 +37,7 @@ export function FundingBar({
   if (!showMatchBeyond) {
     return (
       <div
-        className="w-full bg-surface-strong rounded-full h-2"
+        className="bg-surface-strong h-2 w-full rounded-full"
         title={`Employee contribution: ${formatPercent(pct)} of IRS limit`}
       >
         <div
@@ -55,22 +55,22 @@ export function FundingBar({
   const limitPosition = 1 * scale * 100; // where 100% IRS limit line falls
 
   return (
-    <div className="w-full bg-surface-strong rounded-full h-2 relative">
+    <div className="bg-surface-strong relative h-2 w-full rounded-full">
       {/* Employee contribution bar */}
       <div
-        className={`${color} h-2 rounded-l-full transition-all absolute left-0 top-0`}
+        className={`${color} absolute top-0 left-0 h-2 rounded-l-full transition-all`}
         style={{ width: `${employeeWidth}%` }}
         title={`Employee contribution: ${formatPercent(pct)} of IRS limit`}
       />
       {/* Employer match bar (shown separately, does not count toward IRS limit) */}
       <div
-        className={`${matchBarColor} h-2 rounded-r-full transition-all absolute top-0`}
+        className={`${matchBarColor} absolute top-0 h-2 rounded-r-full transition-all`}
         style={{ left: `${employeeWidth}%`, width: `${matchWidth}%` }}
         title={`Employer match (does not count toward IRS limit)`}
       />
       {/* IRS limit marker line */}
       <div
-        className="absolute top-[-2px] h-[12px] w-[2px] bg-surface-emphasis"
+        className="bg-surface-emphasis absolute top-[-2px] h-[12px] w-[2px]"
         style={{ left: `${limitPosition}%` }}
         title="Vertical line = 100% IRS annual limit"
       />

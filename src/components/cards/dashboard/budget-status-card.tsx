@@ -70,7 +70,7 @@ function BudgetStatusCardImpl() {
   if (!data?.result)
     return (
       <Card title="Budget" href="/budget">
-        <p className="text-sm text-faint">
+        <p className="text-faint text-sm">
           Create a budget profile on the Budget page to track spending.
         </p>
       </Card>
@@ -107,11 +107,11 @@ function BudgetStatusCardImpl() {
         <span className="text-lg font-semibold">
           {formatCurrency(displayMonthly)}
         </span>
-        <span className="text-xs text-faint">
+        <span className="text-faint text-xs">
           /month{columnMonths ? " avg" : ""}
         </span>
       </div>
-      <div className="mt-2 flex gap-3 text-xs text-muted">
+      <div className="text-muted mt-2 flex gap-3 text-xs">
         <span>Essential: {formatCurrency(result.essentialTotal)}</span>
         <span>Discretionary: {formatCurrency(result.discretionaryTotal)}</span>
       </div>
@@ -128,11 +128,11 @@ function BudgetStatusCardImpl() {
       )}
 
       {topCategories.length > 0 && (
-        <div className="mt-3 pt-3 border-t border-subtle space-y-1">
+        <div className="border-subtle mt-3 space-y-1 border-t pt-3">
           {topCategories.map((c) => (
             <div
               key={c.name}
-              className="flex justify-between text-xs text-faint"
+              className="text-faint flex justify-between text-xs"
             >
               <span>{c.name}</span>
               <span className="flex items-center gap-1.5">

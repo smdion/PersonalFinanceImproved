@@ -40,7 +40,7 @@ export function DashboardContent() {
       <PageHeader title="Dashboard" subtitle="Financial overview" />
 
       {/* Primary metrics row */}
-      <div className="grid gap-3 mb-3 grid-cols-[repeat(auto-fit,minmax(340px,1fr))]">
+      <div className="mb-3 grid grid-cols-[repeat(auto-fit,minmax(340px,1fr))] gap-3">
         <CardBoundary title="Net Worth">
           <NetWorthCard />
         </CardBoundary>
@@ -56,7 +56,7 @@ export function DashboardContent() {
       </div>
 
       {/* Secondary row */}
-      <div className="grid gap-3 mb-3 grid-cols-[repeat(auto-fit,minmax(340px,1fr))]">
+      <div className="mb-3 grid grid-cols-[repeat(auto-fit,minmax(340px,1fr))] gap-3">
         <CardBoundary title="Savings Goals">
           <SavingsGoalsCard />
         </CardBoundary>
@@ -69,7 +69,7 @@ export function DashboardContent() {
       </div>
 
       {/* Retirement & budgeting insights */}
-      <div className="grid gap-3 mb-3 grid-cols-[repeat(auto-fit,minmax(340px,1fr))]">
+      <div className="mb-3 grid grid-cols-[repeat(auto-fit,minmax(340px,1fr))] gap-3">
         <CardBoundary title="Fidelity Multiplier">
           <FidelityMultiplierCard />
         </CardBoundary>
@@ -82,7 +82,7 @@ export function DashboardContent() {
       </div>
 
       {/* Detail row */}
-      <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(260px,1fr))]">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-3">
         <CardBoundary title="Mortgage">
           <MortgageCard />
         </CardBoundary>

@@ -61,7 +61,7 @@ export function Card({
           <div className="flex items-center gap-2">
             {isCollapsible && (
               <svg
-                className={`w-4 h-4 text-faint transition-transform ${isOpen ? "rotate-90" : ""}`}
+                className={`text-faint h-4 w-4 transition-transform ${isOpen ? "rotate-90" : ""}`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -76,11 +76,11 @@ export function Card({
               </svg>
             )}
             <div>
-              <h3 className="text-sm font-medium text-muted tracking-wide">
+              <h3 className="text-muted text-sm font-medium tracking-wide">
                 {title}
               </h3>
               {subtitle && (
-                <p className="text-xs text-faint mt-0.5">{subtitle}</p>
+                <p className="text-faint mt-0.5 text-xs">{subtitle}</p>
               )}
             </div>
           </div>
@@ -119,11 +119,11 @@ type MetricProps = {
 export function Metric({ value, label, trend }: MetricProps) {
   return (
     <div>
-      <p className="text-2xl font-semibold text-primary">{value}</p>
-      {label && <p className="text-sm text-muted mt-1">{label}</p>}
+      <p className="text-primary text-2xl font-semibold">{value}</p>
+      {label && <p className="text-muted mt-1 text-sm">{label}</p>}
       {trend && (
         <p
-          className={`text-sm mt-1 ${trend.isPositive ? "text-green-600" : "text-red-600"}`}
+          className={`mt-1 text-sm ${trend.isPositive ? "text-green-600" : "text-red-600"}`}
         >
           {trend.isPositive ? "↑" : "↓"} {trend.value}
         </p>
@@ -158,13 +158,13 @@ export function ProgressBar({
   const defaultTooltip = `${formatPercent(percent / 100)} progress`;
   return (
     <div title={tooltip ?? defaultTooltip}>
-      <div className="flex justify-between text-sm mb-1">
+      <div className="mb-1 flex justify-between text-sm">
         {label && <span className="text-secondary">{label}</span>}
         <span className="text-muted font-medium">
           {formatPercent(percent / 100)}
         </span>
       </div>
-      <div className="h-2 sm:h-3 bg-surface-sunken rounded-full overflow-hidden">
+      <div className="bg-surface-sunken h-2 overflow-hidden rounded-full sm:h-3">
         <div
           className={`h-full ${color} rounded-full transition-all`}
           style={{ width: `${percent}%` }}

@@ -89,11 +89,11 @@ export function FundTransactionList({
       <div className="flex items-center justify-between">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-1.5 text-xs text-muted hover:text-primary"
+          className="text-muted hover:text-primary flex items-center gap-1.5 text-xs"
         >
           <svg
             aria-hidden="true"
-            className={`w-3 h-3 transition-transform ${isOpen ? "rotate-90" : ""}`}
+            className={`h-3 w-3 transition-transform ${isOpen ? "rotate-90" : ""}`}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -124,7 +124,7 @@ export function FundTransactionList({
       {isOpen && (
         <div className="mt-2 space-y-1">
           {upcoming.length === 0 && past.length === 0 && !addingTx && (
-            <p className="text-xs text-muted py-1">No planned transactions.</p>
+            <p className="text-muted py-1 text-xs">No planned transactions.</p>
           )}
 
           {upcoming.map((tx) => (
@@ -228,22 +228,22 @@ function TransactionRow({
 
   if (editing) {
     return (
-      <div className="mt-1 mb-1 border rounded-lg p-3 bg-surface-primary/50">
-        <p className="text-xs font-medium text-faint mb-2">Edit transaction</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="bg-surface-primary/50 mt-1 mb-1 rounded-lg border p-3">
+        <p className="text-faint mb-2 text-xs font-medium">Edit transaction</p>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div>
-            <label className="block text-xs text-faint mb-1">Date</label>
+            <label className="text-faint mb-1 block text-xs">Date</label>
             <input
               type="date"
               value={editForm.transactionDate}
               onChange={(e) =>
                 setEditForm({ ...editForm, transactionDate: e.target.value })
               }
-              className="w-full border bg-surface-elevated text-primary rounded px-2 py-1 text-sm"
+              className="bg-surface-elevated text-primary w-full rounded border px-2 py-1 text-sm"
             />
           </div>
           <div>
-            <label className="block text-xs text-faint mb-1">
+            <label className="text-faint mb-1 block text-xs">
               Amount (negative = spending)
             </label>
             <input
@@ -253,22 +253,22 @@ function TransactionRow({
               onChange={(e) =>
                 setEditForm({ ...editForm, amount: e.target.value })
               }
-              className="w-full border bg-surface-elevated text-primary rounded px-2 py-1 text-sm"
+              className="bg-surface-elevated text-primary w-full rounded border px-2 py-1 text-sm"
             />
           </div>
           <div>
-            <label className="block text-xs text-faint mb-1">Description</label>
+            <label className="text-faint mb-1 block text-xs">Description</label>
             <input
               type="text"
               value={editForm.description}
               onChange={(e) =>
                 setEditForm({ ...editForm, description: e.target.value })
               }
-              className="w-full border bg-surface-elevated text-primary rounded px-2 py-1 text-sm"
+              className="bg-surface-elevated text-primary w-full rounded border px-2 py-1 text-sm"
             />
           </div>
           <div>
-            <label className="block text-xs text-faint mb-1">Recurring?</label>
+            <label className="text-faint mb-1 block text-xs">Recurring?</label>
             <div className="flex items-center gap-2">
               <input
                 type="checkbox"
@@ -288,13 +288,13 @@ function TransactionRow({
                     })
                   }
                   placeholder="every N months"
-                  className="border bg-surface-elevated text-primary rounded px-2 py-1 text-sm w-24"
+                  className="bg-surface-elevated text-primary w-24 rounded border px-2 py-1 text-sm"
                 />
               )}
             </div>
           </div>
         </div>
-        <div className="flex gap-2 mt-3">
+        <div className="mt-3 flex gap-2">
           <button
             onClick={async () => {
               if (
@@ -315,7 +315,7 @@ function TransactionRow({
             disabled={
               submitting || (editForm.isRecurring && !editForm.recurrenceMonths)
             }
-            className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
+            className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
           >
             {submitting ? "Saving..." : "Save"}
           </button>
@@ -324,7 +324,7 @@ function TransactionRow({
               setEditForm(txToForm(tx));
               setEditing(false);
             }}
-            className="px-3 py-1 border text-faint rounded text-sm hover:bg-surface-elevated"
+            className="text-faint hover:bg-surface-elevated rounded border px-3 py-1 text-sm"
           >
             Cancel
           </button>
@@ -335,9 +335,9 @@ function TransactionRow({
 
   return (
     <div
-      className={`flex items-center justify-between text-xs py-1 ${isPast ? "line-through" : ""}`}
+      className={`flex items-center justify-between py-1 text-xs ${isPast ? "line-through" : ""}`}
     >
-      <div className="flex items-center gap-3 min-w-0 flex-1">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
         <span className="text-muted w-20 shrink-0">
           {formatDate(tx.transactionDate, "short")}
         </span>
@@ -353,7 +353,7 @@ function TransactionRow({
           </span>
         )}
       </div>
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex shrink-0 items-center gap-2">
         <span
           className={`font-medium tabular-nums ${tx.amount < 0 ? "text-red-600" : "text-green-600"}`}
         >
@@ -366,7 +366,7 @@ function TransactionRow({
               setEditForm(txToForm(tx));
               setEditing(true);
             }}
-            className="text-muted/50 hover:text-blue-600 text-xs"
+            className="text-muted/50 text-xs hover:text-blue-600"
             title="Edit"
           >
             ✎
@@ -382,7 +382,7 @@ function TransactionRow({
               title="Settled — excluded from projections"
               className="text-green-600"
             >
-              <CheckCircle2 className="w-3 h-3" />
+              <CheckCircle2 className="h-3 w-3" />
             </span>
           ) : (
             <button
@@ -392,7 +392,7 @@ function TransactionRow({
                   occurrenceMonth: tx.transactionDate.slice(0, 7),
                 })
               }
-              className="text-muted/50 hover:text-green-600 text-xs"
+              className="text-muted/50 text-xs hover:text-green-600"
               title="Mark settled — this happened, exclude it from future projections"
             >
               ✓
@@ -401,7 +401,7 @@ function TransactionRow({
         {canEdit !== false && (
           <button
             onClick={onDelete}
-            className="text-red-600/50 hover:text-red-600 text-xs"
+            className="text-xs text-red-600/50 hover:text-red-600"
             title={isTransfer ? "Delete transfer (both sides)" : "Delete"}
           >
             &times;

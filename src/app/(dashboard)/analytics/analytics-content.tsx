@@ -120,8 +120,8 @@ function CoverageIndicator({ holdings }: { holdings: DraftHolding[] }) {
   const deltaPct = (delta / 100).toFixed(1);
 
   return (
-    <div className="flex items-center gap-1.5 text-xs text-amber-600 mt-1">
-      <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+    <div className="mt-1 flex items-center gap-1.5 text-xs text-amber-600">
+      <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
       {status === "under"
         ? `Weights sum to ${pct}% — enter remaining ${deltaPct}%`
         : `Weights sum to ${pct}% — reduce by ${deltaPct}% to reach 100%`}
@@ -363,11 +363,11 @@ function HoldingsTable({
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div>
-          <span className="text-sm font-medium text-primary">
+          <span className="text-primary text-sm font-medium">
             {accountName}
           </span>
           {accountBalance > 0 && (
-            <span className="ml-2 text-xs text-muted">
+            <span className="text-muted ml-2 text-xs">
               {formatCurrency(accountBalance)}
             </span>
           )}
@@ -375,13 +375,13 @@ function HoldingsTable({
         {onToggleLock && (
           <button
             onClick={onToggleLock}
-            className="p-1.5 text-faint hover:text-primary transition-colors"
+            className="text-faint hover:text-primary p-1.5 transition-colors"
             title={locked ? "Unlock to edit" : "Lock editing"}
           >
             {locked ? (
-              <Lock className="w-4 h-4" />
+              <Lock className="h-4 w-4" />
             ) : (
-              <LockOpen className="w-4 h-4" />
+              <LockOpen className="h-4 w-4" />
             )}
           </button>
         )}
@@ -391,25 +391,25 @@ function HoldingsTable({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-xs text-faint border-b border-default">
-              <th className="text-left pb-1.5 pr-2 w-20">Ticker</th>
-              <th className="text-left pb-1.5 pr-2">Name</th>
-              <th className="text-right pb-1.5 pr-2 w-20">Weight %</th>
-              <th className="text-right pb-1.5 pr-2 w-20">ER %</th>
-              <th className="text-left pb-1.5 pr-2 w-36">Asset Class</th>
-              <th className="text-left pb-1.5 w-12">Src</th>
-              <th className="pb-1.5 w-8" />
+            <tr className="text-faint border-default border-b text-xs">
+              <th className="w-20 pr-2 pb-1.5 text-left">Ticker</th>
+              <th className="pr-2 pb-1.5 text-left">Name</th>
+              <th className="w-20 pr-2 pb-1.5 text-right">Weight %</th>
+              <th className="w-20 pr-2 pb-1.5 text-right">ER %</th>
+              <th className="w-36 pr-2 pb-1.5 text-left">Asset Class</th>
+              <th className="w-12 pb-1.5 text-left">Src</th>
+              <th className="w-8 pb-1.5" />
             </tr>
           </thead>
           <tbody>
             {drafts.map((row) => (
               <tr
                 key={row.key}
-                className="border-b border-subtle last:border-0"
+                className="border-subtle border-b last:border-0"
               >
                 <td className="py-1 pr-2">
                   <input
-                    className="w-full bg-transparent border border-default rounded px-1.5 py-0.5 text-xs font-mono uppercase text-primary focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-default"
+                    className="border-default text-primary w-full rounded border bg-transparent px-1.5 py-0.5 font-mono text-xs uppercase focus:ring-1 focus:ring-blue-500 focus:outline-none disabled:cursor-default disabled:opacity-60"
                     value={row.ticker}
                     placeholder="VTSAX"
                     readOnly={locked}
@@ -423,7 +423,7 @@ function HoldingsTable({
                 <td className="py-1 pr-2">
                   <div className="flex items-center gap-1">
                     <input
-                      className="w-full bg-transparent border border-default rounded px-1.5 py-0.5 text-xs text-primary focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-default"
+                      className="border-default text-primary w-full rounded border bg-transparent px-1.5 py-0.5 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none disabled:cursor-default disabled:opacity-60"
                       value={row.name}
                       placeholder="Fund name"
                       readOnly={locked}
@@ -442,25 +442,25 @@ function HoldingsTable({
                           row.lookupState === "loading" || !row.ticker.trim()
                         }
                         onClick={() => handleLookup(row.key, row.ticker)}
-                        className="flex-shrink-0 p-0.5 text-faint hover:text-blue-600 disabled:opacity-40"
+                        className="text-faint flex-shrink-0 p-0.5 hover:text-blue-600 disabled:opacity-40"
                       >
                         {row.lookupState === "loading" ? (
                           <span className="text-xs">…</span>
                         ) : (
-                          <Search className="w-3.5 h-3.5" />
+                          <Search className="h-3.5 w-3.5" />
                         )}
                       </button>
                     )}
                   </div>
                   {row.lookupError && (
-                    <p className="text-xs text-red-500 mt-0.5">
+                    <p className="mt-0.5 text-xs text-red-500">
                       {row.lookupError}
                     </p>
                   )}
                 </td>
                 <td className="py-1 pr-2">
                   <input
-                    className="w-full bg-transparent border border-default rounded px-1.5 py-0.5 text-xs text-right text-primary focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-default"
+                    className="border-default text-primary w-full rounded border bg-transparent px-1.5 py-0.5 text-right text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none disabled:cursor-default disabled:opacity-60"
                     type="number"
                     min={0}
                     max={100}
@@ -481,7 +481,7 @@ function HoldingsTable({
                 </td>
                 <td className="py-1 pr-2">
                   <input
-                    className="w-full bg-transparent border border-default rounded px-1.5 py-0.5 text-xs text-right text-primary focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-default"
+                    className="border-default text-primary w-full rounded border bg-transparent px-1.5 py-0.5 text-right text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none disabled:cursor-default disabled:opacity-60"
                     type="number"
                     min={0}
                     step={0.001}
@@ -495,7 +495,7 @@ function HoldingsTable({
                 </td>
                 <td className="py-1 pr-2">
                   <select
-                    className="w-full bg-surface-primary border border-default rounded px-1.5 py-0.5 text-xs text-primary focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-default"
+                    className="bg-surface-primary border-default text-primary w-full rounded border px-1.5 py-0.5 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none disabled:cursor-default disabled:opacity-60"
                     disabled={locked}
                     value={row.assetClassId ?? ""}
                     onChange={(e) =>
@@ -517,7 +517,7 @@ function HoldingsTable({
                 </td>
                 <td className="py-1 pr-1">
                   <span
-                    className={`text-xs px-1 py-0.5 rounded ${
+                    className={`rounded px-1 py-0.5 text-xs ${
                       row.assetClassSource === "fmp"
                         ? "bg-blue-100 text-blue-700"
                         : "bg-surface-sunken text-faint"
@@ -533,7 +533,7 @@ function HoldingsTable({
                       className="text-faint hover:text-red-500"
                       title="Remove holding"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   )}
                 </td>
@@ -546,18 +546,18 @@ function HoldingsTable({
       <CoverageIndicator holdings={drafts} />
 
       {!locked && (
-        <div className="flex items-center gap-2 mt-2">
+        <div className="mt-2 flex items-center gap-2">
           <button
             onClick={addRow}
             className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
           >
-            <Plus className="w-3.5 h-3.5" />
+            <Plus className="h-3.5 w-3.5" />
             Add holding
           </button>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="ml-auto px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+            className="ml-auto rounded bg-blue-600 px-3 py-1.5 text-xs text-white hover:bg-blue-700 disabled:opacity-50"
           >
             {saving ? "Saving…" : "Save"}
           </button>
@@ -599,21 +599,21 @@ function DriftTable({
   return (
     <table className="w-full text-sm">
       <thead>
-        <tr className="text-xs text-faint border-b border-default">
-          <th className="text-left pb-1.5 pr-2">Asset Class</th>
-          <th className="text-right pb-1.5 pr-2">Target</th>
-          <th className="text-right pb-1.5 pr-2">Actual</th>
-          <th className="text-right pb-1.5">Drift</th>
+        <tr className="text-faint border-default border-b text-xs">
+          <th className="pr-2 pb-1.5 text-left">Asset Class</th>
+          <th className="pr-2 pb-1.5 text-right">Target</th>
+          <th className="pr-2 pb-1.5 text-right">Actual</th>
+          <th className="pb-1.5 text-right">Drift</th>
         </tr>
       </thead>
       <tbody>
         {rows.map((r) => (
-          <tr key={r.id} className="border-b border-subtle last:border-0">
-            <td className="py-1 pr-2 text-primary">{r.name}</td>
-            <td className="py-1 pr-2 text-right text-muted">
+          <tr key={r.id} className="border-subtle border-b last:border-0">
+            <td className="text-primary py-1 pr-2">{r.name}</td>
+            <td className="text-muted py-1 pr-2 text-right">
               {formatPercent(r.target, 1)}
             </td>
-            <td className="py-1 pr-2 text-right text-muted">
+            <td className="text-muted py-1 pr-2 text-right">
               {formatPercent(r.actual, 1)}
             </td>
             <td
@@ -678,7 +678,7 @@ function HistoricalCharts({
 
   return (
     <Card title="Historical Allocation" isCollapsible isDefaultOpen={false}>
-      <div className="text-xs text-faint mb-2">
+      <div className="text-faint mb-2 text-xs">
         % allocation by asset class across snapshots
       </div>
       <ResponsiveContainer width="100%" height={220}>
@@ -851,7 +851,7 @@ export function AnalyticsContent() {
         {/* Snapshot selector */}
         {snapshots && snapshots.length > 0 && (
           <select
-            className="text-sm border border-default rounded px-2 py-1.5 bg-surface-primary text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="border-default bg-surface-primary text-primary rounded border px-2 py-1.5 text-sm focus:ring-1 focus:ring-blue-500 focus:outline-none"
             value={selectedSnapshotId ?? ""}
             onChange={(e) =>
               setSelectedSnapshotId(
@@ -907,7 +907,7 @@ export function AnalyticsContent() {
 
       {/* Aggregate view */}
       {hasAnyHoldings && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {/* Allocation donut */}
           <Card title="Allocation — All Accounts">
             <AllocationDonut
@@ -920,7 +920,7 @@ export function AnalyticsContent() {
                 ([id, frac], i) => (
                   <div key={id} className="flex items-center gap-2 text-xs">
                     <span
-                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                      className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
                       style={{ backgroundColor: sliceColor(i) }}
                     />
                     <span className="text-muted flex-1">
@@ -939,9 +939,9 @@ export function AnalyticsContent() {
           <Card title="Blended Expense Ratio">
             {blendedER !== null ? (
               <div className="space-y-1">
-                <p className="text-2xl font-semibold text-primary">
+                <p className="text-primary text-2xl font-semibold">
                   {formatPercent(blendedER, 3)}
-                  <span className="text-sm font-normal text-muted ml-1">
+                  <span className="text-muted ml-1 text-sm font-normal">
                     / year
                   </span>
                 </p>
@@ -955,12 +955,12 @@ export function AnalyticsContent() {
                     );
                     const annualCost = totalBalance * blendedER;
                     return (
-                      <p className="text-sm text-muted">
+                      <p className="text-muted text-sm">
                         ≈ {formatCurrency(annualCost)} / year at current balance
                       </p>
                     );
                   })()}
-                <p className="text-xs text-faint mt-2">
+                <p className="text-faint mt-2 text-xs">
                   First-year only — based on holdings with expense ratios
                   entered. Multi-year compound fee drag is not computed here.
                 </p>

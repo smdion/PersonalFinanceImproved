@@ -86,7 +86,7 @@ export function InlineEdit({
         onChange={(e) => setDraft(e.target.value)}
         onBlur={save}
         onKeyDown={handleKeyDown}
-        className={`border border-blue-400 rounded px-1.5 py-0.5 text-sm bg-surface-primary focus:outline-none focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-600 w-full max-w-[120px] ${className}`}
+        className={`bg-surface-primary w-full max-w-[120px] rounded border border-blue-400 px-1.5 py-0.5 text-sm focus:ring-2 focus:ring-blue-300 focus:outline-none dark:focus:ring-blue-600 ${className}`}
       />
     );
   }
@@ -99,12 +99,12 @@ export function InlineEdit({
         setDraft(value);
         setEditing(true);
       }}
-      className={`group inline-flex items-center gap-1 cursor-pointer hover:bg-blue-50 rounded px-1 -mx-1 transition-colors ${className}`}
+      className={`group -mx-1 inline-flex cursor-pointer items-center gap-1 rounded px-1 transition-colors hover:bg-blue-50 ${className}`}
       title="Click to edit"
     >
       <span>{display}</span>
       <svg
-        className="w-3 h-3 text-faint group-hover:text-blue-400 transition-colors"
+        className="text-faint h-3 w-3 transition-colors group-hover:text-blue-400"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -169,7 +169,7 @@ export function InlineSelect({
             setEditing(false);
           }
         }}
-        className={`border border-blue-400 rounded px-1.5 py-0.5 text-sm bg-surface-primary focus:outline-none focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-600 ${className}`}
+        className={`bg-surface-primary rounded border border-blue-400 px-1.5 py-0.5 text-sm focus:ring-2 focus:ring-blue-300 focus:outline-none dark:focus:ring-blue-600 ${className}`}
       >
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>
@@ -185,12 +185,12 @@ export function InlineSelect({
     <button
       type="button"
       onClick={() => setEditing(true)}
-      className={`group inline-flex items-center gap-1 cursor-pointer hover:bg-blue-50 rounded px-1 -mx-1 transition-colors ${className}`}
+      className={`group -mx-1 inline-flex cursor-pointer items-center gap-1 rounded px-1 transition-colors hover:bg-blue-50 ${className}`}
       title="Click to change"
     >
       <span>{label}</span>
       <svg
-        className="w-3 h-3 text-faint group-hover:text-blue-400 transition-colors"
+        className="text-faint h-3 w-3 transition-colors group-hover:text-blue-400"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"

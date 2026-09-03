@@ -28,14 +28,14 @@ export function EmptyState({
   link,
 }: EmptyStateProps) {
   return (
-    <div role="status" className="text-center py-12">
+    <div role="status" className="py-12 text-center">
       {icon && (
-        <div className="flex justify-center mb-3 text-faint [&>svg]:w-10 [&>svg]:h-10">
+        <div className="text-faint mb-3 flex justify-center [&>svg]:h-10 [&>svg]:w-10">
           {icon}
         </div>
       )}
       <p className="text-muted">{message}</p>
-      {hint && <p className="text-sm text-faint mt-2">{hint}</p>}
+      {hint && <p className="text-faint mt-2 text-sm">{hint}</p>}
       {(action || link) && (
         <div className="mt-4 flex items-center justify-center gap-3">
           {action && (

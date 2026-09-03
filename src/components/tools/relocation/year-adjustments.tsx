@@ -42,8 +42,8 @@ export function RelocationYearAdjustments({
   const [showRelocAdjForm, setShowRelocAdjForm] = useState(false);
   return (
     <div className="border-t pt-3">
-      <div className="flex items-center justify-between mb-2">
-        <h4 className="text-sm font-medium text-secondary">
+      <div className="mb-2 flex items-center justify-between">
+        <h4 className="text-secondary text-sm font-medium">
           Year-by-Year Expense Adjustments
         </h4>
         <button
@@ -55,7 +55,7 @@ export function RelocationYearAdjustments({
       </div>
 
       {relocYearAdjustments.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-2">
+        <div className="mb-2 flex flex-wrap gap-2">
           {relocYearAdjustments.map((adj) => {
             const adjProf = adj.profileId
               ? budgetInfo.profiles.find((p) => p.id === adj.profileId)
@@ -66,7 +66,7 @@ export function RelocationYearAdjustments({
             return (
               <div
                 key={adj.id}
-                className="flex items-center gap-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded px-2 py-1 text-xs"
+                className="flex items-center gap-1 rounded bg-blue-50 px-2 py-1 text-xs text-blue-700 dark:bg-blue-900/20 dark:text-blue-300"
               >
                 <span>
                   {adj.year}: {adjLabel}
@@ -91,13 +91,13 @@ export function RelocationYearAdjustments({
       )}
 
       {showRelocAdjForm && (
-        <div className="space-y-2 mb-2 text-sm">
-          <div className="flex gap-2 items-end">
+        <div className="mb-2 space-y-2 text-sm">
+          <div className="flex items-end gap-2">
             <div>
-              <label className="block text-xs text-muted">Year</label>
+              <label className="text-muted block text-xs">Year</label>
               <input
                 type="number"
-                className="border rounded px-2 py-1 w-20 text-sm"
+                className="w-20 rounded border px-2 py-1 text-sm"
                 value={relocAdjForm.year}
                 onChange={(e) =>
                   setRelocAdjForm((f) => ({ ...f, year: e.target.value }))
@@ -105,9 +105,9 @@ export function RelocationYearAdjustments({
               />
             </div>
             <div>
-              <label className="block text-xs text-muted">Source</label>
+              <label className="text-muted block text-xs">Source</label>
               <select
-                className="border rounded px-2 py-1 text-sm"
+                className="rounded border px-2 py-1 text-sm"
                 value={relocAdjMode}
                 onChange={(e) =>
                   setRelocAdjMode(e.target.value as "manual" | "profile")
@@ -119,12 +119,12 @@ export function RelocationYearAdjustments({
             </div>
             {relocAdjMode === "manual" ? (
               <div>
-                <label className="block text-xs text-muted">
+                <label className="text-muted block text-xs">
                   Monthly Expenses
                 </label>
                 <input
                   type="number"
-                  className="border rounded px-2 py-1 w-28 text-sm"
+                  className="w-28 rounded border px-2 py-1 text-sm"
                   placeholder="$"
                   value={relocAdjForm.monthlyExpenses}
                   onChange={(e) =>
@@ -138,9 +138,9 @@ export function RelocationYearAdjustments({
             ) : (
               <>
                 <div>
-                  <label className="block text-xs text-muted">Profile</label>
+                  <label className="text-muted block text-xs">Profile</label>
                   <select
-                    className="border rounded px-2 py-1 text-sm"
+                    className="rounded border px-2 py-1 text-sm"
                     value={relocAdjForm.profileId || ""}
                     onChange={(e) => {
                       setRelocAdjForm((f) => ({
@@ -184,11 +184,11 @@ export function RelocationYearAdjustments({
                   if (labels.length >= 2) {
                     return (
                       <div>
-                        <label className="block text-xs text-muted">
+                        <label className="text-muted block text-xs">
                           Column
                         </label>
                         <select
-                          className="border rounded px-2 py-1 text-sm"
+                          className="rounded border px-2 py-1 text-sm"
                           value={relocAdjForm.budgetColumn}
                           onChange={(e) =>
                             setRelocAdjForm((f) => ({
@@ -211,10 +211,10 @@ export function RelocationYearAdjustments({
               </>
             )}
             <div>
-              <label className="block text-xs text-muted">Notes</label>
+              <label className="text-muted block text-xs">Notes</label>
               <input
                 type="text"
-                className="border rounded px-2 py-1 w-32 text-sm"
+                className="w-32 rounded border px-2 py-1 text-sm"
                 placeholder="e.g. Cut dining"
                 value={relocAdjForm.notes}
                 onChange={(e) =>

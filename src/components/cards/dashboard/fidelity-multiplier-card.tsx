@@ -81,7 +81,7 @@ function FidelityMultiplierCardImpl() {
   if (!data?.result)
     return (
       <Card title="Retirement Readiness" href="/retirement">
-        <p className="text-sm text-faint">
+        <p className="text-faint text-sm">
           Configure retirement settings to track your savings against age-based
           targets.
         </p>
@@ -150,15 +150,15 @@ function FidelityMultiplierCardImpl() {
     >
       {/* Age selector */}
       <div
-        className="flex items-center gap-2 mb-2"
+        className="mb-2 flex items-center gap-2"
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
         }}
       >
-        <label className="text-xs text-muted">Project to:</label>
+        <label className="text-muted text-xs">Project to:</label>
         <select
-          className="text-xs border rounded px-1.5 py-0.5 bg-surface-primary text-secondary"
+          className="bg-surface-primary text-secondary rounded border px-1.5 py-0.5 text-xs"
           value={projectedAge ?? ""}
           onClick={(e) => {
             e.preventDefault();
@@ -184,7 +184,7 @@ function FidelityMultiplierCardImpl() {
           ))}
         </select>
         {projectedAge !== null && (
-          <span className="text-caption text-blue-500 font-medium">
+          <span className="text-caption font-medium text-blue-500">
             Projected
           </span>
         )}
@@ -195,13 +195,13 @@ function FidelityMultiplierCardImpl() {
         </p>
       )}
 
-      <div className="flex items-baseline gap-2 mb-2">
+      <div className="mb-2 flex items-baseline gap-2">
         <span
           className={`text-2xl font-bold ${isOnTrack ? "text-green-600" : "text-amber-600"}`}
         >
           {formatNumber(actualMultiplier, 1)}x
         </span>
-        <span className="text-sm text-muted">
+        <span className="text-muted text-sm">
           of {formatCurrency(salary)} salary
         </span>
       </div>
@@ -230,15 +230,15 @@ function FidelityMultiplierCardImpl() {
           <span
             className={
               isOnTrack
-                ? "text-green-600 font-medium"
-                : "text-amber-600 font-medium"
+                ? "font-medium text-green-600"
+                : "font-medium text-amber-600"
             }
           >
             {formatCurrency(Math.abs(portfolio - salary * target.multiplier))}
           </span>
         </div>
         {target.nextAge && target.nextMultiplier && (
-          <div className="flex justify-between text-xs text-faint">
+          <div className="text-faint flex justify-between text-xs">
             <span>Next milestone (age {target.nextAge})</span>
             <span>
               {formatNumber(target.nextMultiplier, 0)}x ={" "}
@@ -248,11 +248,11 @@ function FidelityMultiplierCardImpl() {
         )}
       </div>
       {/* Fidelity milestone markers */}
-      <div className="mt-3 flex gap-1 flex-wrap">
+      <div className="mt-3 flex flex-wrap gap-1">
         {FIDELITY_TARGETS.map((t) => (
           <span
             key={t.age}
-            className={`text-caption px-1.5 py-0.5 rounded ${
+            className={`text-caption rounded px-1.5 py-0.5 ${
               viewAge >= t.age && actualMultiplier >= t.multiplier
                 ? "bg-green-100 text-green-700"
                 : viewAge >= t.age

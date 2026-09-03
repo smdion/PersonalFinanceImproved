@@ -355,7 +355,7 @@ export function OverridesPanelV2({
         // year, and it no longer feeds any reported figure either.
         return (
           <div className="space-y-2">
-            <p className="text-xs text-amber-600 bg-amber-50 rounded px-2 py-1.5">
+            <p className="rounded bg-amber-50 px-2 py-1.5 text-xs text-amber-600">
               This override type doesn&apos;t change your plan — no
               strategy&apos;s withdrawal math reads it, and it no longer feeds
               any figure shown on this page. Kept here only so you can edit or
@@ -539,7 +539,7 @@ export function OverridesPanelV2({
       case "reset":
         return (
           <div className="space-y-2">
-            <p className="text-xs text-muted">
+            <p className="text-muted text-xs">
               This will revert all{" "}
               {isPostRetirement ? "withdrawal" : "contribution"} settings to
               page defaults starting in {selectedYear}.
@@ -563,14 +563,14 @@ export function OverridesPanelV2({
                   }
                   resetWizard();
                 }}
-                className="px-3 py-1.5 text-xs bg-red-600 text-white rounded hover:bg-red-700"
+                className="rounded bg-red-600 px-3 py-1.5 text-xs text-white hover:bg-red-700"
               >
                 Reset from {selectedYear}
               </button>
               <button
                 type="button"
                 onClick={resetWizard}
-                className="px-3 py-1.5 text-xs text-muted hover:text-primary"
+                className="text-muted hover:text-primary px-3 py-1.5 text-xs"
               >
                 Cancel
               </button>
@@ -592,11 +592,11 @@ export function OverridesPanelV2({
   );
 
   return (
-    <div className="border rounded-lg p-4 space-y-3">
+    <div className="space-y-3 rounded-lg border p-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h4 className="text-label font-semibold text-muted uppercase tracking-wider">
+          <h4 className="text-label text-muted font-semibold tracking-wider uppercase">
             Overrides
           </h4>
           <HelpTip text="Change contributions, withdrawals, salary, budget, or add lump sums at specific future years. Changes carry forward until the next override." />
@@ -614,7 +614,7 @@ export function OverridesPanelV2({
               setWizardStep("year");
             }
           }}
-          className={`text-xs font-medium px-3 py-1 rounded transition-colors ${
+          className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
             showWizard
               ? "bg-surface-strong text-muted hover:text-primary"
               : "bg-indigo-600 text-white hover:bg-indigo-700"
@@ -626,17 +626,17 @@ export function OverridesPanelV2({
 
       {/* Wizard */}
       {showWizard && (
-        <div className="bg-surface-sunken rounded-lg p-3 space-y-3">
+        <div className="bg-surface-sunken space-y-3 rounded-lg p-3">
           {/* Step indicator */}
           {editingOverride && (
-            <div className="text-caption text-indigo-600 font-medium">
+            <div className="text-caption font-medium text-indigo-600">
               Editing override for {selectedYear}
             </div>
           )}
-          <div className="flex items-center gap-2 text-caption text-muted">
+          <div className="text-caption text-muted flex items-center gap-2">
             <span
               className={
-                wizardStep === "year" ? "text-indigo-600 font-semibold" : ""
+                wizardStep === "year" ? "font-semibold text-indigo-600" : ""
               }
             >
               1. Year
@@ -644,7 +644,7 @@ export function OverridesPanelV2({
             <span>→</span>
             <span
               className={
-                wizardStep === "type" ? "text-indigo-600 font-semibold" : ""
+                wizardStep === "type" ? "font-semibold text-indigo-600" : ""
               }
             >
               2. What to change
@@ -652,7 +652,7 @@ export function OverridesPanelV2({
             <span>→</span>
             <span
               className={
-                wizardStep === "fields" ? "text-indigo-600 font-semibold" : ""
+                wizardStep === "fields" ? "font-semibold text-indigo-600" : ""
               }
             >
               3. New value
@@ -663,12 +663,12 @@ export function OverridesPanelV2({
           {wizardStep === "year" && (
             <div className="flex items-end gap-3">
               <label className="block">
-                <span className="text-xs text-muted">Starting Year</span>
+                <span className="text-muted text-xs">Starting Year</span>
                 <input
                   type="number"
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(e.target.value)}
-                  className="mt-0.5 block w-24 rounded border border-strong px-2 py-1.5 text-sm"
+                  className="border-strong mt-0.5 block w-24 rounded border px-2 py-1.5 text-sm"
                 />
               </label>
               {retYear && (
@@ -681,7 +681,7 @@ export function OverridesPanelV2({
               <button
                 type="button"
                 onClick={() => setWizardStep("type")}
-                className="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                className="rounded bg-indigo-600 px-3 py-1.5 text-xs text-white hover:bg-indigo-700"
               >
                 Next
               </button>
@@ -691,7 +691,7 @@ export function OverridesPanelV2({
           {/* Step 2: Pick type */}
           {wizardStep === "type" && (
             <div>
-              <div className="flex items-center gap-2 mb-2">
+              <div className="mb-2 flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setWizardStep("year")}
@@ -699,12 +699,12 @@ export function OverridesPanelV2({
                 >
                   ← Back
                 </button>
-                <span className="text-xs text-muted">
+                <span className="text-muted text-xs">
                   Year {selectedYear} —{" "}
                   {isPostRetirement ? "post-retirement" : "pre-retirement"}
                 </span>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
                 {availableOptions.map((opt) => (
                   <button
                     key={opt.key}
@@ -713,7 +713,7 @@ export function OverridesPanelV2({
                       setSelectedType(opt.key);
                       setWizardStep("fields");
                     }}
-                    className="text-left p-2.5 rounded-lg border border-subtle hover:border-indigo-400 hover:bg-indigo-50 transition-colors"
+                    className="border-subtle rounded-lg border p-2.5 text-left transition-colors hover:border-indigo-400 hover:bg-indigo-50"
                   >
                     <div className="text-sm">
                       {opt.icon} {opt.label}
@@ -730,7 +730,7 @@ export function OverridesPanelV2({
           {/* Step 3: Fields */}
           {wizardStep === "fields" && selectedType && (
             <div>
-              <div className="flex items-center gap-2 mb-2">
+              <div className="mb-2 flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setWizardStep("type")}
@@ -738,7 +738,7 @@ export function OverridesPanelV2({
                 >
                   ← Back
                 </button>
-                <span className="text-xs text-muted">
+                <span className="text-muted text-xs">
                   Year {selectedYear} —{" "}
                   {OVERRIDE_OPTIONS.find((o) => o.key === selectedType)?.label}
                 </span>
@@ -765,10 +765,10 @@ export function OverridesPanelV2({
                       : "bg-indigo-50 text-indigo-800"
               }`}
             >
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="font-semibold shrink-0">{item.year}</span>
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="shrink-0 font-semibold">{item.year}</span>
                 <span
-                  className={`text-micro px-1.5 py-0.5 rounded font-medium shrink-0 ${
+                  className={`text-micro shrink-0 rounded px-1.5 py-0.5 font-medium ${
                     item.color === "emerald"
                       ? "bg-emerald-100 text-emerald-700"
                       : item.color === "amber"
@@ -782,7 +782,7 @@ export function OverridesPanelV2({
                 </span>
                 <span className="truncate">{item.summary}</span>
               </div>
-              <span className="flex items-center gap-1 ml-2 shrink-0">
+              <span className="ml-2 flex shrink-0 items-center gap-1">
                 {item.onEdit && (
                   <button
                     type="button"
@@ -808,7 +808,7 @@ export function OverridesPanelV2({
       )}
 
       {totalCount === 0 && !showWizard && (
-        <p className="text-xs text-faint text-center py-2">
+        <p className="text-faint py-2 text-center text-xs">
           No overrides — projection uses page settings for all years
         </p>
       )}
@@ -836,9 +836,9 @@ function SimpleNumberForm({
   const [notes, setNotes] = useState("");
 
   return (
-    <div className="flex items-end gap-3 flex-wrap">
+    <div className="flex flex-wrap items-end gap-3">
       <label className="block">
-        <span className="text-xs text-muted">{label}</span>
+        <span className="text-muted text-xs">{label}</span>
         <input
           type="number"
           min={0}
@@ -846,17 +846,17 @@ function SimpleNumberForm({
           placeholder={placeholder}
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          className="mt-0.5 block w-40 rounded border border-strong px-2 py-1.5 text-sm"
+          className="border-strong mt-0.5 block w-40 rounded border px-2 py-1.5 text-sm"
         />
       </label>
-      <label className="block flex-1 min-w-[120px]">
-        <span className="text-xs text-muted">Notes (optional)</span>
+      <label className="block min-w-[120px] flex-1">
+        <span className="text-muted text-xs">Notes (optional)</span>
         <input
           type="text"
           placeholder="Reason for change"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          className="mt-0.5 block w-full rounded border border-strong px-2 py-1.5 text-sm"
+          className="border-strong mt-0.5 block w-full rounded border px-2 py-1.5 text-sm"
         />
       </label>
       <button
@@ -866,7 +866,7 @@ function SimpleNumberForm({
           if (isNaN(num) || num <= 0) return;
           onSubmit(num, notes);
         }}
-        className="px-4 py-1.5 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700"
+        className="rounded bg-indigo-600 px-4 py-1.5 text-xs text-white hover:bg-indigo-700"
       >
         Save
       </button>
@@ -888,13 +888,13 @@ function RoutingForm({
   const [notes, setNotes] = useState("");
 
   return (
-    <div className="flex items-end gap-3 flex-wrap">
+    <div className="flex flex-wrap items-end gap-3">
       <label className="block">
-        <span className="text-xs text-muted">Routing Mode</span>
+        <span className="text-muted text-xs">Routing Mode</span>
         <select
           value={mode}
           onChange={(e) => setMode(e.target.value as typeof mode)}
-          className="mt-0.5 block w-48 rounded border border-strong px-2 py-1.5 text-sm"
+          className="border-strong mt-0.5 block w-48 rounded border px-2 py-1.5 text-sm"
         >
           {isPostRetirement && (
             <option value="bracket_filling">
@@ -905,20 +905,20 @@ function RoutingForm({
           <option value="percentage">Percentage (split by %)</option>
         </select>
       </label>
-      <label className="block flex-1 min-w-[120px]">
-        <span className="text-xs text-muted">Notes (optional)</span>
+      <label className="block min-w-[120px] flex-1">
+        <span className="text-muted text-xs">Notes (optional)</span>
         <input
           type="text"
           placeholder="Reason for change"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          className="mt-0.5 block w-full rounded border border-strong px-2 py-1.5 text-sm"
+          className="border-strong mt-0.5 block w-full rounded border px-2 py-1.5 text-sm"
         />
       </label>
       <button
         type="button"
         onClick={() => onSubmit(mode, notes)}
-        className="px-4 py-1.5 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700"
+        className="rounded bg-indigo-600 px-4 py-1.5 text-xs text-white hover:bg-indigo-700"
       >
         Save
       </button>
@@ -957,16 +957,16 @@ function SalaryOverrideForm({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-end gap-3 flex-wrap">
+      <div className="flex flex-wrap items-end gap-3">
         {contribProfiles.length > 0 && (
           <label className="block">
-            <span className="text-xs text-muted">Source</span>
+            <span className="text-muted text-xs">Source</span>
             <select
               value={source}
               onChange={(e) =>
                 setSource(e.target.value as "custom" | "profile")
               }
-              className="mt-0.5 block w-48 rounded border border-strong px-2 py-1.5 text-sm"
+              className="border-strong mt-0.5 block w-48 rounded border px-2 py-1.5 text-sm"
             >
               <option value="profile">From contribution profile</option>
               <option value="custom">Custom salary amount</option>
@@ -974,12 +974,12 @@ function SalaryOverrideForm({
           </label>
         )}
         {source === "profile" ? (
-          <label className="block flex-1 min-w-[200px]">
-            <span className="text-xs text-muted">Contribution Profile</span>
+          <label className="block min-w-[200px] flex-1">
+            <span className="text-muted text-xs">Contribution Profile</span>
             <select
               value={String(profileId)}
               onChange={(e) => setProfileId(Number(e.target.value))}
-              className="mt-0.5 block w-full rounded border border-strong px-2 py-1.5 text-sm"
+              className="border-strong mt-0.5 block w-full rounded border px-2 py-1.5 text-sm"
             >
               {contribProfiles.map((cp) => (
                 <option key={cp.id} value={String(cp.id)}>
@@ -993,25 +993,25 @@ function SalaryOverrideForm({
           </label>
         ) : (
           <label className="block">
-            <span className="text-xs text-muted">Annual Salary ($)</span>
+            <span className="text-muted text-xs">Annual Salary ($)</span>
             <input
               type="number"
               min={0}
               placeholder="150000"
               value={customValue}
               onChange={(e) => setCustomValue(e.target.value)}
-              className="mt-0.5 block w-40 rounded border border-strong px-2 py-1.5 text-sm"
+              className="border-strong mt-0.5 block w-40 rounded border px-2 py-1.5 text-sm"
             />
           </label>
         )}
-        <label className="block flex-1 min-w-[120px]">
-          <span className="text-xs text-muted">Notes (optional)</span>
+        <label className="block min-w-[120px] flex-1">
+          <span className="text-muted text-xs">Notes (optional)</span>
           <input
             type="text"
             placeholder="New job, promotion, etc."
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            className="mt-0.5 block w-full rounded border border-strong px-2 py-1.5 text-sm"
+            className="border-strong mt-0.5 block w-full rounded border px-2 py-1.5 text-sm"
           />
         </label>
         <button
@@ -1028,7 +1028,7 @@ function SalaryOverrideForm({
               profileNote,
             );
           }}
-          className="px-4 py-1.5 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700"
+          className="rounded bg-indigo-600 px-4 py-1.5 text-xs text-white hover:bg-indigo-700"
         >
           Save
         </button>
@@ -1082,16 +1082,16 @@ function BudgetOverrideForm({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-end gap-3 flex-wrap">
+      <div className="flex flex-wrap items-end gap-3">
         {budgetProfiles.length > 0 && (
           <label className="block">
-            <span className="text-xs text-muted">Source</span>
+            <span className="text-muted text-xs">Source</span>
             <select
               value={source}
               onChange={(e) =>
                 setSource(e.target.value as "custom" | "profile")
               }
-              className="mt-0.5 block w-40 rounded border border-strong px-2 py-1.5 text-sm"
+              className="border-strong mt-0.5 block w-40 rounded border px-2 py-1.5 text-sm"
             >
               <option value="profile">From budget profile</option>
               <option value="custom">Custom amount</option>
@@ -1100,15 +1100,15 @@ function BudgetOverrideForm({
         )}
         {source === "profile" ? (
           <>
-            <label className="block flex-1 min-w-[180px]">
-              <span className="text-xs text-muted">Budget Profile</span>
+            <label className="block min-w-[180px] flex-1">
+              <span className="text-muted text-xs">Budget Profile</span>
               <select
                 value={String(profileId)}
                 onChange={(e) => {
                   setProfileId(Number(e.target.value));
                   setColumnIdx(0);
                 }}
-                className="mt-0.5 block w-full rounded border border-strong px-2 py-1.5 text-sm"
+                className="border-strong mt-0.5 block w-full rounded border px-2 py-1.5 text-sm"
               >
                 {budgetProfiles.map((bp) => (
                   <option key={bp.id} value={String(bp.id)}>
@@ -1120,11 +1120,11 @@ function BudgetOverrideForm({
             </label>
             {selectedProfile && selectedProfile.columnLabels.length > 1 && (
               <label className="block">
-                <span className="text-xs text-muted">Column</span>
+                <span className="text-muted text-xs">Column</span>
                 <select
                   value={String(columnIdx)}
                   onChange={(e) => setColumnIdx(Number(e.target.value))}
-                  className="mt-0.5 block w-32 rounded border border-strong px-2 py-1.5 text-sm"
+                  className="border-strong mt-0.5 block w-32 rounded border px-2 py-1.5 text-sm"
                 >
                   {selectedProfile.columnLabels.map((label, colIndex) => (
                     // eslint-disable-next-line react/no-array-index-key -- column labels can repeat; index is the only stable key
@@ -1142,25 +1142,25 @@ function BudgetOverrideForm({
           </>
         ) : (
           <label className="block">
-            <span className="text-xs text-muted">Annual Budget ($)</span>
+            <span className="text-muted text-xs">Annual Budget ($)</span>
             <input
               type="number"
               min={0}
               placeholder="90000"
               value={customValue}
               onChange={(e) => setCustomValue(e.target.value)}
-              className="mt-0.5 block w-40 rounded border border-strong px-2 py-1.5 text-sm"
+              className="border-strong mt-0.5 block w-40 rounded border px-2 py-1.5 text-sm"
             />
           </label>
         )}
-        <label className="block flex-1 min-w-[120px]">
-          <span className="text-xs text-muted">Notes (optional)</span>
+        <label className="block min-w-[120px] flex-1">
+          <span className="text-muted text-xs">Notes (optional)</span>
           <input
             type="text"
             placeholder="Reason for change"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            className="mt-0.5 block w-full rounded border border-strong px-2 py-1.5 text-sm"
+            className="border-strong mt-0.5 block w-full rounded border px-2 py-1.5 text-sm"
           />
         </label>
         <button
@@ -1173,7 +1173,7 @@ function BudgetOverrideForm({
                 : notes;
             onSubmit(annualBudget, profileNote);
           }}
-          className="px-4 py-1.5 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700"
+          className="rounded bg-indigo-600 px-4 py-1.5 text-xs text-white hover:bg-indigo-700"
         >
           Save
         </button>

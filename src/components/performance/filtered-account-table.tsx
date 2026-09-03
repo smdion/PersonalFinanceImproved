@@ -25,7 +25,7 @@ type FilteredYearRow = {
 export function FilteredAccountTable({ rows }: { rows: FilteredYearRow[] }) {
   if (rows.length === 0) {
     return (
-      <p className="text-sm text-muted py-4 text-center">
+      <p className="text-muted py-4 text-center text-sm">
         No performance data for the selected accounts and years.
       </p>
     );
@@ -35,37 +35,37 @@ export function FilteredAccountTable({ rows }: { rows: FilteredYearRow[] }) {
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="text-left text-muted border-b">
+          <tr className="text-muted border-b text-left">
             <th className="py-2 pr-3 font-medium">Year</th>
-            <th className="py-2 pr-3 font-medium text-right">Beginning</th>
-            <th className="py-2 pr-3 font-medium text-right">Contributions</th>
-            <th className="py-2 pr-3 font-medium text-right">Gain/Loss</th>
-            <th className="py-2 pr-3 font-medium text-right">Ending</th>
-            <th className="py-2 font-medium text-right">Return</th>
+            <th className="py-2 pr-3 text-right font-medium">Beginning</th>
+            <th className="py-2 pr-3 text-right font-medium">Contributions</th>
+            <th className="py-2 pr-3 text-right font-medium">Gain/Loss</th>
+            <th className="py-2 pr-3 text-right font-medium">Ending</th>
+            <th className="py-2 text-right font-medium">Return</th>
           </tr>
         </thead>
         <tbody>
           {[...rows].reverse().map((r) => (
-            <tr key={r.year} className="border-b border-subtle">
-              <td className="py-1.5 pr-3 font-medium text-primary">{r.year}</td>
-              <td className="py-1.5 pr-3 text-right tabular-nums text-secondary">
+            <tr key={r.year} className="border-subtle border-b">
+              <td className="text-primary py-1.5 pr-3 font-medium">{r.year}</td>
+              <td className="text-secondary py-1.5 pr-3 text-right tabular-nums">
                 {formatCurrency(r.beginBal)}
               </td>
-              <td className="py-1.5 pr-3 text-right tabular-nums text-secondary">
+              <td className="text-secondary py-1.5 pr-3 text-right tabular-nums">
                 {formatCurrency(r.contribs)}
               </td>
               <td
-                className={`py-1.5 pr-3 text-right tabular-nums font-medium ${
+                className={`py-1.5 pr-3 text-right font-medium tabular-nums ${
                   r.gainLoss >= 0 ? "text-green-600" : "text-red-600"
                 }`}
               >
                 {formatCurrency(r.gainLoss)}
               </td>
-              <td className="py-1.5 pr-3 text-right tabular-nums font-semibold text-primary">
+              <td className="text-primary py-1.5 pr-3 text-right font-semibold tabular-nums">
                 {formatCurrency(r.endBal)}
               </td>
               <td
-                className={`py-1.5 text-right tabular-nums font-medium ${
+                className={`py-1.5 text-right font-medium tabular-nums ${
                   r.returnPct === null
                     ? "text-faint"
                     : r.returnPct >= 0

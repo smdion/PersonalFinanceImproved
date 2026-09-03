@@ -51,13 +51,13 @@ function AccountRow({
   const change = account.change;
   return (
     <div className="text-sm">
-      <label className="flex items-center justify-between gap-2 cursor-pointer">
+      <label className="flex cursor-pointer items-center justify-between gap-2">
         <span className="flex items-center gap-2">
           <input
             type="checkbox"
             checked={account.isIncluded}
             onChange={(e) => onToggleIncluded(e.target.checked)}
-            className="w-4 h-4 accent-blue-600"
+            className="h-4 w-4 accent-blue-600"
           />
           <span
             className={
@@ -71,13 +71,13 @@ function AccountRow({
           {formatCurrency(account.lastBalance)}
         </span>
       </label>
-      <div className="flex items-center justify-between gap-2 mt-1 pl-6">
+      <div className="mt-1 flex items-center justify-between gap-2 pl-6">
         <select
           value={account.linkedPerformanceAccountId ?? ""}
           onChange={(e) =>
             onMatch(e.target.value ? Number(e.target.value) : null)
           }
-          className="text-caption border border-strong rounded px-1.5 py-0.5 bg-surface-primary text-muted"
+          className="text-caption border-strong bg-surface-primary text-muted rounded border px-1.5 py-0.5"
         >
           <option value="">Not linked to a tracked account</option>
           {matchableAccounts.map((m) => (
@@ -161,13 +161,13 @@ export function SimplefinCard() {
   return (
     <Card title="SimpleFIN Bridge">
       <div className="space-y-4">
-        <p className="text-xs text-muted">
+        <p className="text-muted text-xs">
           Links to{" "}
           <a
             href="https://beta-bridge.simplefin.org/"
             target="_blank"
             rel="noopener noreferrer"
-            className="underline hover:text-primary"
+            className="hover:text-primary underline"
           >
             SimpleFIN Bridge
           </a>{" "}
@@ -195,7 +195,7 @@ export function SimplefinCard() {
             <div>
               <label
                 htmlFor="simplefin-setup-token"
-                className="block text-xs font-medium text-muted mb-1"
+                className="text-muted mb-1 block text-xs font-medium"
               >
                 Setup Token
               </label>
@@ -205,7 +205,7 @@ export function SimplefinCard() {
                 value={setupToken}
                 onChange={(e) => setSetupToken(e.target.value)}
                 placeholder="One-time setup token from SimpleFIN Bridge"
-                className="w-full px-3 py-1.5 text-sm border border-strong rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                className="border-strong w-full rounded border px-3 py-1.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               />
             </div>
             <div className="flex items-center gap-2">
@@ -236,7 +236,7 @@ export function SimplefinCard() {
         )}
 
         {isConnected && (
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               variant="secondary"
               size="sm"
@@ -295,7 +295,7 @@ export function SimplefinCard() {
         )}
 
         {isConnected && accounts && accounts.length > 0 && (
-          <div className="space-y-3 border-t border-subtle pt-3">
+          <div className="border-subtle space-y-3 border-t pt-3">
             <p className="text-caption text-faint">
               Unchecking an account removes it from today&apos;s total
               immediately — it doesn&apos;t change any prior day&apos;s history.
@@ -307,7 +307,7 @@ export function SimplefinCard() {
             </p>
             {groupAccountsByOrg(accounts).map(([orgName, orgAccounts]) => (
               <div key={orgName}>
-                <p className="text-xs font-medium text-muted mb-1">
+                <p className="text-muted mb-1 text-xs font-medium">
                   {orgName || "Unknown institution"}
                 </p>
                 <div className="space-y-2">

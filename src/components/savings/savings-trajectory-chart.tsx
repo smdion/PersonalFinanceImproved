@@ -149,7 +149,7 @@ export function SavingsTrajectoryChart({
 
   return (
     <div className={`${p.bg} rounded-lg border p-3 sm:p-4`}>
-      <div className="flex items-center justify-between mb-3">
+      <div className="mb-3 flex items-center justify-between">
         <div>
           <h2 className={`text-sm font-semibold ${p.title}`}>
             Goal Trajectories
@@ -172,7 +172,7 @@ export function SavingsTrajectoryChart({
         </div>
         {negativeInfo.length > 0 && (
           <span
-            className={`text-caption ${p.negBadgeText} ${p.negBadgeBg} px-2 py-0.5 rounded border ${p.negBadgeBorder}`}
+            className={`text-caption ${p.negBadgeText} ${p.negBadgeBg} rounded border px-2 py-0.5 ${p.negBadgeBorder}`}
           >
             {negativeInfo.join(", ")}{" "}
             {negativeInfo.length === 1 ? "goes" : "go"} negative

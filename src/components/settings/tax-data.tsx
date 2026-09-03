@@ -136,13 +136,13 @@ export function TaxDataSettings() {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-6">
-      <nav className="flex md:flex-col gap-1 overflow-x-auto">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-[200px_1fr]">
+      <nav className="flex gap-1 overflow-x-auto md:flex-col">
         {SECTIONS.map((s) => (
           <button
             key={s.key}
             onClick={() => setSection(s.key)}
-            className={`px-3 py-2 text-sm text-left rounded-md whitespace-nowrap transition-colors ${
+            className={`rounded-md px-3 py-2 text-left text-sm whitespace-nowrap transition-colors ${
               section === s.key
                 ? "bg-blue-600 text-white"
                 : "text-secondary hover:bg-surface-elevated"
@@ -157,7 +157,7 @@ export function TaxDataSettings() {
         {/* Return Rates has no year axis — the shared toggle doesn't
             apply there and would just be inert/confusing. */}
         {section !== "returns" && (
-          <div className="flex flex-col items-end gap-2 mb-2">
+          <div className="mb-2 flex flex-col items-end gap-2">
             <YearSelector
               years={unionYears}
               activeYear={activeYear}
@@ -173,25 +173,25 @@ export function TaxDataSettings() {
               coverage={coverage}
             />
             {showAddYear && (
-              <div className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
-                <label className="text-sm text-secondary">
+              <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 p-2">
+                <label className="text-secondary text-sm">
                   Year:
                   <input
                     type="number"
                     value={newYear}
                     onChange={(e) => setNewYear(e.target.value)}
-                    className="ml-2 w-20 px-2 py-1 text-sm border rounded"
+                    className="ml-2 w-20 rounded border px-2 py-1 text-sm"
                   />
                 </label>
                 <button
                   onClick={handleAddYear}
-                  className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                  className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
                 >
                   Add
                 </button>
                 <button
                   onClick={() => setShowAddYear(false)}
-                  className="px-3 py-1 text-sm text-muted hover:text-primary"
+                  className="text-muted hover:text-primary px-3 py-1 text-sm"
                 >
                   Cancel
                 </button>

@@ -36,9 +36,9 @@ export function RelocationMetricsAndBanner({
   return (
     <>
       {/* Key metrics */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <div className="bg-surface-sunken rounded-lg p-3">
-          <div className="text-xs text-muted uppercase">
+          <div className="text-muted text-xs uppercase">
             Monthly Delta
             <HelpTip text="How much more (or less) you'd spend each month after relocating" />
           </div>
@@ -48,7 +48,7 @@ export function RelocationMetricsAndBanner({
             {r.monthlyExpenseDelta > 0 ? "+" : ""}
             {formatCurrency(r.monthlyExpenseDelta)}
           </div>
-          <div className="text-xs text-faint">
+          <div className="text-faint text-xs">
             {r.percentExpenseIncrease > 0 ? "+" : ""}
             {formatPercent(r.percentExpenseIncrease, 1)}{" "}
             {r.percentExpenseIncrease > 0
@@ -60,7 +60,7 @@ export function RelocationMetricsAndBanner({
         </div>
 
         <div className="bg-surface-sunken rounded-lg p-3">
-          <div className="text-xs text-muted uppercase">
+          <div className="text-muted text-xs uppercase">
             Additional Nest Egg Needed
             <HelpTip text="Extra savings required to maintain the same retirement readiness with higher expenses" />
           </div>
@@ -70,14 +70,14 @@ export function RelocationMetricsAndBanner({
             {additionalNestEggNeeded > 0 ? "+" : ""}
             {formatCurrency(additionalNestEggNeeded)}
           </div>
-          <div className="text-xs text-faint">
+          <div className="text-faint text-xs">
             Target: {formatCurrency(currentFiTargetForDelta)} →{" "}
             {formatCurrency(relocFiTarget)}
           </div>
         </div>
 
         <div className="bg-surface-sunken rounded-lg p-3">
-          <div className="text-xs text-muted uppercase">
+          <div className="text-muted text-xs uppercase">
             Savings Rate Impact
             <HelpTip text="How much your monthly savings rate would change after relocating" />
           </div>
@@ -87,7 +87,7 @@ export function RelocationMetricsAndBanner({
             {r.savingsRateDrop > 0 ? "−" : "+"}
             {formatPercent(Math.abs(r.savingsRateDrop))}
           </div>
-          <div className="text-xs text-faint">
+          <div className="text-faint text-xs">
             {formatPercent(r.currentSavingsRate)} →{" "}
             {formatPercent(r.relocationSavingsRate)}
           </div>
@@ -96,14 +96,14 @@ export function RelocationMetricsAndBanner({
         {/* Fourth card: blended balance impact when moveYear is set, otherwise portfolio at retirement */}
         {hasBlended ? (
           <div className="bg-surface-sunken rounded-lg p-3">
-            <div className="text-xs text-muted uppercase">
+            <div className="text-muted text-xs uppercase">
               Balance at Retirement (Move {moveYear})
               <HelpTip text="Projected portfolio balance at your configured retirement age on the blended path: current budget until the move year, then relocation budget." />
             </div>
             {engineResult === undefined ? (
-              <div className="h-7 w-24 bg-surface-elevated rounded animate-pulse mt-1" />
+              <div className="bg-surface-elevated mt-1 h-7 w-24 animate-pulse rounded" />
             ) : engineResult === null ? (
-              <div className="text-lg font-bold text-muted">—</div>
+              <div className="text-muted text-lg font-bold">—</div>
             ) : (
               <>
                 <div
@@ -123,7 +123,7 @@ export function RelocationMetricsAndBanner({
                       engineResult.currentBalanceAtRetirement,
                   )}
                 </div>
-                <div className="text-xs text-faint">
+                <div className="text-faint text-xs">
                   {formatCurrency(engineResult.currentBalanceAtRetirement)} →{" "}
                   {formatCurrency(engineResult.blendedBalanceAtRetirement ?? 0)}
                 </div>
@@ -132,14 +132,14 @@ export function RelocationMetricsAndBanner({
           </div>
         ) : (
           <div className="bg-surface-sunken rounded-lg p-3">
-            <div className="text-xs text-muted uppercase">
+            <div className="text-muted text-xs uppercase">
               Portfolio at Retirement
               <HelpTip text="Projected portfolio balance at your configured retirement age under each budget scenario" />
             </div>
             {engineResult === undefined ? (
-              <div className="h-7 w-24 bg-surface-elevated rounded animate-pulse mt-1" />
+              <div className="bg-surface-elevated mt-1 h-7 w-24 animate-pulse rounded" />
             ) : engineResult === null ? (
-              <div className="text-lg font-bold text-muted">—</div>
+              <div className="text-muted text-lg font-bold">—</div>
             ) : (
               <>
                 <div
@@ -154,7 +154,7 @@ export function RelocationMetricsAndBanner({
                       engineResult.currentBalanceAtRetirement,
                   )}
                 </div>
-                <div className="text-xs text-faint">
+                <div className="text-faint text-xs">
                   {formatCurrency(engineResult.currentBalanceAtRetirement)} →{" "}
                   {formatCurrency(engineResult.relocationBalanceAtRetirement)}
                 </div>
@@ -186,7 +186,7 @@ export function RelocationMetricsAndBanner({
           {r.warnings.map((w) => (
             <div
               key={w}
-              className="text-xs text-amber-600 bg-amber-50 rounded p-2"
+              className="rounded bg-amber-50 p-2 text-xs text-amber-600"
             >
               {w}
             </div>
@@ -215,7 +215,7 @@ function BlendedBanner({
 
   if (isViable) {
     return (
-      <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm">
+      <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm">
         <span className="font-semibold text-green-800">
           Move in {moveYear} works:
         </span>{" "}
@@ -230,7 +230,7 @@ function BlendedBanner({
   }
 
   return (
-    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm">
+    <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
       <span className="font-semibold text-amber-800">
         Move in {moveYear} falls short:
       </span>{" "}
@@ -259,12 +259,12 @@ function RecommendationBanner({
 }) {
   if (engineResult === undefined) {
     return (
-      <div className="bg-surface-sunken border border-subtle rounded-lg p-3 h-12 animate-pulse" />
+      <div className="bg-surface-sunken border-subtle h-12 animate-pulse rounded-lg border p-3" />
     );
   }
   if (engineResult === null) {
     return (
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm">
+      <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
         <span className="font-semibold text-amber-800">Note:</span>{" "}
         <span className="text-amber-700">
           Retirement settings are required to project portfolio outcomes.
@@ -275,7 +275,7 @@ function RecommendationBanner({
   }
   if (engineResult.isViableNow) {
     return (
-      <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm">
+      <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm">
         <span className="font-semibold text-green-800">Ready to relocate:</span>{" "}
         <span className="text-green-700">
           With your current portfolio of{" "}
@@ -290,7 +290,7 @@ function RecommendationBanner({
   }
   if (engineResult.earliestRelocateAge !== null) {
     return (
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
+      <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm">
         <span className="font-semibold text-blue-800">Recommendation:</span>{" "}
         <span className="text-blue-700">
           Save until age <strong>{engineResult.earliestRelocateAge}</strong>{" "}
@@ -306,7 +306,7 @@ function RecommendationBanner({
     );
   }
   return (
-    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm">
+    <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
       <span className="font-semibold text-amber-800">Warning:</span>{" "}
       <span className="text-amber-700">
         With the relocation budget, the portfolio may not sustain retirement by
@@ -328,9 +328,9 @@ function EarliestViableHint({
 }) {
   if (engineResult.earliestRelocateYear === null) return null;
   return (
-    <div className="text-xs text-faint">
+    <div className="text-faint text-xs">
       Earliest viable move year:{" "}
-      <span className="font-medium text-secondary">
+      <span className="text-secondary font-medium">
         {engineResult.earliestRelocateYear} (age{" "}
         {engineResult.earliestRelocateAge})
       </span>{" "}

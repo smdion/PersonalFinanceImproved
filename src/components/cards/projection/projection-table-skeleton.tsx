@@ -90,19 +90,19 @@ export function ProjectionTableSkeleton() {
   return (
     <div className="space-y-2">
       {/* Controls row — mirrors Contributions / Balances / Show All Years pills */}
-      <div className="flex items-center gap-3 flex-wrap">
+      <div className="flex flex-wrap items-center gap-3">
         <div
-          className="h-6 w-36 rounded-md bg-surface-strong animate-pulse"
+          className="bg-surface-strong h-6 w-36 animate-pulse rounded-md"
           style={{ animationDuration: "1.8s" }}
         />
-        <div className="w-px h-4 bg-surface-strong" />
+        <div className="bg-surface-strong h-4 w-px" />
         <div
-          className="h-6 w-36 rounded-md bg-surface-strong animate-pulse"
+          className="bg-surface-strong h-6 w-36 animate-pulse rounded-md"
           style={{ animationDelay: "100ms", animationDuration: "1.8s" }}
         />
-        <div className="w-px h-4 bg-surface-strong" />
+        <div className="bg-surface-strong h-4 w-px" />
         <div
-          className="h-6 w-24 rounded-md bg-surface-strong animate-pulse"
+          className="bg-surface-strong h-6 w-24 animate-pulse rounded-md"
           style={{ animationDelay: "200ms", animationDuration: "1.8s" }}
         />
       </div>
@@ -111,7 +111,7 @@ export function ProjectionTableSkeleton() {
       <div className="overflow-x-auto">
         <div style={{ minWidth: 1100 }}>
           {/* Group header row — py-1 matches real table's group header */}
-          <div className="flex border-b border-subtle/60 py-1">
+          <div className="border-subtle/60 flex border-b py-1">
             {GROUPS.map(({ id, label, span }) => {
               const groupCols = COLS.slice(
                 GROUPS.slice(
@@ -130,7 +130,7 @@ export function ProjectionTableSkeleton() {
                   className="text-center"
                   style={{ flex: totalGrow }}
                 >
-                  <span className="text-caption text-faint/60 font-semibold uppercase tracking-wider">
+                  <span className="text-caption text-faint/60 font-semibold tracking-wider uppercase">
                     {label}
                   </span>
                 </div>
@@ -139,7 +139,7 @@ export function ProjectionTableSkeleton() {
           </div>
 
           {/* Column header shimmer row */}
-          <div className="flex items-center gap-1 py-1.5 border-b border-subtle">
+          <div className="border-subtle flex items-center gap-1 border-b py-1.5">
             {COLS.map(({ id }, ci) => (
               <div
                 key={id}
@@ -147,7 +147,7 @@ export function ProjectionTableSkeleton() {
                 style={{ flex: COLS[ci]?.grow }}
               >
                 <div
-                  className="h-2.5 rounded bg-surface-strong/60 animate-pulse"
+                  className="bg-surface-strong/60 h-2.5 animate-pulse rounded"
                   style={{
                     width: `${HDR_FILLS[ci]}%`,
                     animationDuration: "1.8s",
@@ -161,7 +161,7 @@ export function ProjectionTableSkeleton() {
           {ROWS.map(({ id, delay, fills }) => (
             <div
               key={id}
-              className="flex items-center gap-1 py-1.5 border-b border-subtle/40 last:border-0"
+              className="border-subtle/40 flex items-center gap-1 border-b py-1.5 last:border-0"
             >
               {COLS.map(({ id: cid }, ci) => (
                 <div
@@ -171,7 +171,7 @@ export function ProjectionTableSkeleton() {
                 >
                   {(fills[ci] ?? 0) > 0 && (
                     <div
-                      className="h-3.5 rounded bg-surface-strong animate-pulse"
+                      className="bg-surface-strong h-3.5 animate-pulse rounded"
                       style={{
                         width: `${fills[ci] ?? 0}%`,
                         animationDelay: `${delay}ms`,

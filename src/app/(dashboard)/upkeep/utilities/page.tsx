@@ -125,7 +125,7 @@ function CostTrend({
     }));
 
   return (
-    <div className="w-full h-[140px]">
+    <div className="h-[140px] w-full">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
           <CartesianGrid {...gridProps} vertical={false} />
@@ -219,19 +219,19 @@ function UtilityCard({
         <span className="inline-flex items-center gap-2">
           <button
             onClick={() => setIsUnlocked((l) => !l)}
-            className="p-1 text-faint hover:text-primary transition-colors"
+            className="text-faint hover:text-primary p-1 transition-colors"
             title={isUnlocked ? "Lock editing" : "Unlock to edit"}
           >
             {isUnlocked ? (
-              <LockOpen className="w-3.5 h-3.5" />
+              <LockOpen className="h-3.5 w-3.5" />
             ) : (
-              <Lock className="w-3.5 h-3.5" />
+              <Lock className="h-3.5 w-3.5" />
             )}
           </button>
           {isUnlocked && (
             <button
               onClick={() => setAdding((p) => !p)}
-              className="px-2 py-1 text-caption font-medium rounded bg-surface-elevated text-muted hover:bg-surface-strong transition-colors"
+              className="text-caption bg-surface-elevated text-muted hover:bg-surface-strong rounded px-2 py-1 font-medium transition-colors"
             >
               {adding ? "Cancel" : "+ Add"}
             </button>
@@ -248,18 +248,18 @@ function UtilityCard({
       )}
 
       {adding && (
-        <div className="flex flex-wrap items-center gap-2 py-2 border-b mb-2 mt-2">
+        <div className="mt-2 mb-2 flex flex-wrap items-center gap-2 border-b py-2">
           <input
             type="number"
             value={newYear}
             onChange={(e) => setNewYear(e.target.value)}
             placeholder="Year"
-            className="w-16 px-2 py-1 text-xs border border-strong rounded bg-surface-primary focus:outline-none focus:ring-1 focus:ring-blue-300"
+            className="border-strong bg-surface-primary w-16 rounded border px-2 py-1 text-xs focus:ring-1 focus:ring-blue-300 focus:outline-none"
           />
           <select
             value={newMonth}
             onChange={(e) => setNewMonth(e.target.value)}
-            className="px-2 py-1 text-xs border border-strong rounded bg-surface-primary focus:outline-none focus:ring-1 focus:ring-blue-300"
+            className="border-strong bg-surface-primary rounded border px-2 py-1 text-xs focus:ring-1 focus:ring-blue-300 focus:outline-none"
           >
             {MONTH_NAMES.map((m, i) => (
               <option key={m} value={String(i + 1)}>
@@ -272,21 +272,21 @@ function UtilityCard({
             value={newCost}
             onChange={(e) => setNewCost(e.target.value)}
             placeholder="Cost"
-            className="w-24 px-2 py-1 text-xs border border-strong rounded bg-surface-primary focus:outline-none focus:ring-1 focus:ring-blue-300"
+            className="border-strong bg-surface-primary w-24 rounded border px-2 py-1 text-xs focus:ring-1 focus:ring-blue-300 focus:outline-none"
           />
           <input
             type="number"
             value={newUsage}
             onChange={(e) => setNewUsage(e.target.value)}
             placeholder={`Usage (${unit})`}
-            className="w-28 px-2 py-1 text-xs border border-strong rounded bg-surface-primary focus:outline-none focus:ring-1 focus:ring-blue-300"
+            className="border-strong bg-surface-primary w-28 rounded border px-2 py-1 text-xs focus:ring-1 focus:ring-blue-300 focus:outline-none"
           />
           <input
             type="text"
             value={newNote}
             onChange={(e) => setNewNote(e.target.value)}
             placeholder="Note"
-            className="flex-1 min-w-[8rem] px-2 py-1 text-xs border border-strong rounded bg-surface-primary focus:outline-none focus:ring-1 focus:ring-blue-300"
+            className="border-strong bg-surface-primary min-w-[8rem] flex-1 rounded border px-2 py-1 text-xs focus:ring-1 focus:ring-blue-300 focus:outline-none"
           />
           <Button
             size="xs"
@@ -318,22 +318,22 @@ function UtilityCard({
           return (
             <div
               key={year.year}
-              className="border-b border-subtle last:border-0"
+              className="border-subtle border-b last:border-0"
             >
               <button
                 onClick={() => toggleYear(key)}
-                className="w-full flex items-center gap-2 py-2 text-left hover:bg-surface-sunken transition-colors"
+                className="hover:bg-surface-sunken flex w-full items-center gap-2 py-2 text-left transition-colors"
               >
                 {open ? (
-                  <ChevronDown className="w-3.5 h-3.5 text-faint shrink-0" />
+                  <ChevronDown className="text-faint h-3.5 w-3.5 shrink-0" />
                 ) : (
-                  <ChevronRight className="w-3.5 h-3.5 text-faint shrink-0" />
+                  <ChevronRight className="text-faint h-3.5 w-3.5 shrink-0" />
                 )}
-                <span className="font-medium w-14">{year.year}</span>
-                <span className="flex-1 text-right tabular-nums font-medium">
+                <span className="w-14 font-medium">{year.year}</span>
+                <span className="flex-1 text-right font-medium tabular-nums">
                   {formatCurrency(year.totalCost)}
                 </span>
-                <span className="w-28 text-right tabular-nums text-muted text-xs">
+                <span className="text-muted w-28 text-right text-xs tabular-nums">
                   {year.costPerUnit != null
                     ? `${formatCurrency(year.costPerUnit)}/${unit}`
                     : "—"}
@@ -341,30 +341,30 @@ function UtilityCard({
                 <span className="w-20 text-right text-xs">
                   <YoYTag pct={year.yoyCostPct} />
                 </span>
-                <span className="w-16 text-right text-xs text-faint">
+                <span className="text-faint w-16 text-right text-xs">
                   {year.readingCount} mo
                 </span>
               </button>
 
               {open && (
-                <table className="w-full text-sm mb-2">
+                <table className="mb-2 w-full text-sm">
                   <thead>
-                    <tr className="text-left text-faint text-xs border-b border-subtle">
-                      <th className="py-1 font-medium pl-6">Month</th>
-                      <th className="py-1 font-medium text-right">Cost</th>
-                      <th className="py-1 font-medium text-right">Usage</th>
-                      <th className="py-1 font-medium text-right">
+                    <tr className="text-faint border-subtle border-b text-left text-xs">
+                      <th className="py-1 pl-6 font-medium">Month</th>
+                      <th className="py-1 text-right font-medium">Cost</th>
+                      <th className="py-1 text-right font-medium">Usage</th>
+                      <th className="py-1 text-right font-medium">
                         $ / {unit}
                       </th>
                       <th className="py-1 font-medium">Note</th>
-                      <th className="py-1 w-8" />
+                      <th className="w-8 py-1" />
                     </tr>
                   </thead>
                   <tbody>
                     {year.readings.map((r) =>
                       editingId === r.id ? (
                         <tr key={r.id} className="bg-blue-50/30">
-                          <td className="py-1.5 pl-6 text-muted">
+                          <td className="text-muted py-1.5 pl-6">
                             {MONTH_NAMES[r.month - 1]}
                           </td>
                           <td className="py-1.5 text-right">
@@ -372,7 +372,7 @@ function UtilityCard({
                               type="number"
                               value={editCost}
                               onChange={(e) => setEditCost(e.target.value)}
-                              className="w-20 px-2 py-0.5 text-xs text-right border border-strong rounded bg-surface-primary focus:outline-none focus:ring-1 focus:ring-blue-300"
+                              className="border-strong bg-surface-primary w-20 rounded border px-2 py-0.5 text-right text-xs focus:ring-1 focus:ring-blue-300 focus:outline-none"
                               autoFocus
                             />
                           </td>
@@ -381,7 +381,7 @@ function UtilityCard({
                               type="number"
                               value={editUsage}
                               onChange={(e) => setEditUsage(e.target.value)}
-                              className="w-24 px-2 py-0.5 text-xs text-right border border-strong rounded bg-surface-primary focus:outline-none focus:ring-1 focus:ring-blue-300"
+                              className="border-strong bg-surface-primary w-24 rounded border px-2 py-0.5 text-right text-xs focus:ring-1 focus:ring-blue-300 focus:outline-none"
                               placeholder="—"
                             />
                           </td>
@@ -391,7 +391,7 @@ function UtilityCard({
                               type="text"
                               value={editNote}
                               onChange={(e) => setEditNote(e.target.value)}
-                              className="w-full px-2 py-0.5 text-xs border border-strong rounded bg-surface-primary focus:outline-none focus:ring-1 focus:ring-blue-300"
+                              className="border-strong bg-surface-primary w-full rounded border px-2 py-0.5 text-xs focus:ring-1 focus:ring-blue-300 focus:outline-none"
                               placeholder="Note"
                             />
                           </td>
@@ -414,7 +414,7 @@ function UtilityCard({
                             </Button>
                             <button
                               onClick={() => setEditingId(null)}
-                              className="ml-1 px-1.5 py-0.5 text-caption font-medium rounded bg-surface-elevated text-muted hover:bg-surface-strong transition-colors"
+                              className="text-caption bg-surface-elevated text-muted hover:bg-surface-strong ml-1 rounded px-1.5 py-0.5 font-medium transition-colors"
                             >
                               Cancel
                             </button>
@@ -423,7 +423,7 @@ function UtilityCard({
                       ) : (
                         <tr
                           key={r.id}
-                          className={`group border-b border-subtle/60 hover:bg-surface-sunken ${isUnlocked ? "cursor-pointer" : ""}`}
+                          className={`group border-subtle/60 hover:bg-surface-sunken border-b ${isUnlocked ? "cursor-pointer" : ""}`}
                           onClick={() => {
                             if (!isUnlocked) return;
                             setEditingId(r.id);
@@ -434,21 +434,21 @@ function UtilityCard({
                             setEditNote(r.note ?? "");
                           }}
                         >
-                          <td className="py-1.5 pl-6 text-muted">
+                          <td className="text-muted py-1.5 pl-6">
                             {MONTH_NAMES[r.month - 1]}
                           </td>
-                          <td className="py-1.5 text-right tabular-nums font-medium">
+                          <td className="py-1.5 text-right font-medium tabular-nums">
                             {formatCurrency(r.cost)}
                           </td>
-                          <td className="py-1.5 text-right tabular-nums text-muted">
+                          <td className="text-muted py-1.5 text-right tabular-nums">
                             {r.usage != null ? r.usage.toLocaleString() : "—"}
                           </td>
-                          <td className="py-1.5 text-right tabular-nums text-muted">
+                          <td className="text-muted py-1.5 text-right tabular-nums">
                             {r.costPerUnit != null
                               ? formatCurrency(r.costPerUnit)
                               : "—"}
                           </td>
-                          <td className="py-1.5 text-muted text-xs truncate max-w-[140px]">
+                          <td className="text-muted max-w-[140px] truncate py-1.5 text-xs">
                             {r.note ?? ""}
                           </td>
                           <td className="py-1.5">
@@ -458,12 +458,12 @@ function UtilityCard({
                                   e.stopPropagation();
                                   deleteReading.mutate({ id: r.id });
                                 }}
-                                className="md:opacity-0 md:group-hover:opacity-100 p-0.5 text-faint hover:text-red-600 transition-all"
+                                className="text-faint p-0.5 transition-all hover:text-red-600 md:opacity-0 md:group-hover:opacity-100"
                                 title="Delete"
                               >
                                 <svg
                                   aria-hidden="true"
-                                  className="w-3.5 h-3.5"
+                                  className="h-3.5 w-3.5"
                                   fill="none"
                                   viewBox="0 0 24 24"
                                   stroke="currentColor"
@@ -513,7 +513,7 @@ export default function UtilitiesPage() {
     return (
       <div className="space-y-4">
         <Skeleton className="h-8 w-1/3" />
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           {[1, 2, 3].map((i) => (
             <SkeletonChart key={i} height={112} />
           ))}
@@ -532,9 +532,9 @@ export default function UtilitiesPage() {
 
       {summaries.length === 0 ? (
         <Card>
-          <div className="text-center py-12">
+          <div className="py-12 text-center">
             <p className="text-muted">No utility data yet</p>
-            <p className="text-sm text-faint mt-2">
+            <p className="text-faint mt-2 text-sm">
               Run <code className="text-xs">scripts/import-utilities.ts</code>{" "}
               to import the House Upkeep spreadsheet, or unlock a service to add
               readings.
@@ -544,7 +544,7 @@ export default function UtilitiesPage() {
       ) : (
         <>
           {/* Summary cards — latest year at a glance */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {summaries.map((svc) => {
               const unit = svc.usageUnit ?? "";
               const perUnit =
