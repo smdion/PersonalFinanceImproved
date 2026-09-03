@@ -1,9 +1,136 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "f7e5f0f6-6d02-456f-a616-11306d6a1d5f",
+  "id": "83deb0a2-61b6-4a8b-8ea5-a28fe6c7fe5a",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
+    "account_basis": {
+      "name": "account_basis",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "performance_account_id": {
+          "name": "performance_account_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "owner_person_id": {
+          "name": "owner_person_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "year": {
+          "name": "year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "contribution_basis": {
+          "name": "contribution_basis",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'0'"
+        },
+        "conversion_basis": {
+          "name": "conversion_basis",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'0'"
+        },
+        "latest_conversion_year": {
+          "name": "latest_conversion_year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "is_finalized": {
+          "name": "is_finalized",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "is_seeded": {
+          "name": "is_seeded",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "account_basis_account_owner_year_idx": {
+          "name": "account_basis_account_owner_year_idx",
+          "columns": ["performance_account_id", "owner_person_id", "year"],
+          "isUnique": true
+        },
+        "account_basis_owner_person_id_idx": {
+          "name": "account_basis_owner_person_id_idx",
+          "columns": ["owner_person_id"],
+          "isUnique": false
+        },
+        "account_basis_year_idx": {
+          "name": "account_basis_year_idx",
+          "columns": ["year"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "account_basis_performance_account_id_performance_accounts_id_fk": {
+          "name": "account_basis_performance_account_id_performance_accounts_id_fk",
+          "tableFrom": "account_basis",
+          "tableTo": "performance_accounts",
+          "columnsFrom": ["performance_account_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "account_basis_owner_person_id_people_id_fk": {
+          "name": "account_basis_owner_person_id_people_id_fk",
+          "tableFrom": "account_basis",
+          "tableTo": "people",
+          "columnsFrom": ["owner_person_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "account_holdings": {
       "name": "account_holdings",
       "columns": {
@@ -932,6 +1059,148 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
+    "budget_income_adjustments": {
+      "name": "budget_income_adjustments",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "job_id": {
+          "name": "job_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "month_date": {
+          "name": "month_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "amount": {
+          "name": "amount",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'rule'"
+        }
+      },
+      "indexes": {
+        "budget_income_adjustments_job_month_idx": {
+          "name": "budget_income_adjustments_job_month_idx",
+          "columns": ["job_id", "month_date"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "budget_income_adjustments_job_id_jobs_id_fk": {
+          "name": "budget_income_adjustments_job_id_jobs_id_fk",
+          "tableFrom": "budget_income_adjustments",
+          "tableTo": "jobs",
+          "columnsFrom": ["job_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "budget_item_category_links": {
+      "name": "budget_item_category_links",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "budget_item_id": {
+          "name": "budget_item_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "service": {
+          "name": "service",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "category_id": {
+          "name": "category_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "category_name": {
+          "name": "category_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "last_synced_at": {
+          "name": "last_synced_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "sync_direction": {
+          "name": "sync_direction",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "budget_item_category_links_budget_item_id_idx": {
+          "name": "budget_item_category_links_budget_item_id_idx",
+          "columns": ["budget_item_id"],
+          "isUnique": false
+        },
+        "budget_item_category_links_item_service_idx": {
+          "name": "budget_item_category_links_item_service_idx",
+          "columns": ["budget_item_id", "service"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "budget_item_category_links_budget_item_id_budget_items_id_fk": {
+          "name": "budget_item_category_links_budget_item_id_budget_items_id_fk",
+          "tableFrom": "budget_item_category_links",
+          "tableTo": "budget_items",
+          "columnsFrom": ["budget_item_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "budget_items": {
       "name": "budget_items",
       "columns": {
@@ -1109,6 +1378,13 @@
           "notNull": false,
           "autoincrement": false
         },
+        "column_salary_profile_ids": {
+          "name": "column_salary_profile_ids",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "is_active": {
           "name": "is_active",
           "type": "integer",
@@ -1281,20 +1557,6 @@
           "notNull": true,
           "autoincrement": false
         },
-        "contribution_method": {
-          "name": "contribution_method",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "contribution_value": {
-          "name": "contribution_value",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
         "employer_match_type": {
           "name": "employer_match_type",
           "type": "text",
@@ -1418,6 +1680,11 @@
           "columns": ["person_id"],
           "isUnique": false
         },
+        "contribution_accounts_perf_acct_idx": {
+          "name": "contribution_accounts_perf_acct_idx",
+          "columns": ["performance_account_id"],
+          "isUnique": false
+        },
         "contribution_accounts_acct_type_idx": {
           "name": "contribution_accounts_acct_type_idx",
           "columns": ["account_type"],
@@ -1432,6 +1699,18 @@
           "name": "contribution_accounts_is_active_idx",
           "columns": ["is_active"],
           "isUnique": false
+        },
+        "contribution_accounts_job_match_unq": {
+          "name": "contribution_accounts_job_match_unq",
+          "columns": ["job_id", "account_type", "parent_category"],
+          "isUnique": true,
+          "where": "\"contribution_accounts\".\"employer_match_type\" <> 'none' AND \"contribution_accounts\".\"job_id\" IS NOT NULL AND \"contribution_accounts\".\"is_active\" = true"
+        },
+        "contribution_accounts_person_match_unq": {
+          "name": "contribution_accounts_person_match_unq",
+          "columns": ["person_id", "account_type", "parent_category"],
+          "isUnique": true,
+          "where": "\"contribution_accounts\".\"employer_match_type\" <> 'none' AND \"contribution_accounts\".\"job_id\" IS NULL AND \"contribution_accounts\".\"is_active\" = true"
         }
       },
       "foreignKeys": {
@@ -1542,29 +1821,13 @@
           "notNull": false,
           "autoincrement": false
         },
-        "salary_overrides": {
-          "name": "salary_overrides",
+        "contribution_active_fields": {
+          "name": "contribution_active_fields",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
           "default": "'{}'"
-        },
-        "contribution_overrides": {
-          "name": "contribution_overrides",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'{}'"
-        },
-        "is_default": {
-          "name": "is_default",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": false
         },
         "created_at": {
           "name": "created_at",
@@ -1579,6 +1842,43 @@
         "contribution_profiles_name_unique": {
           "name": "contribution_profiles_name_unique",
           "columns": ["name"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "fpl_by_household": {
+      "name": "fpl_by_household",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "tax_year": {
+          "name": "tax_year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "amounts": {
+          "name": "amounts",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "fpl_by_household_year_idx": {
+          "name": "fpl_by_household_year_idx",
+          "columns": ["tax_year"],
           "isUnique": true
         }
       },
@@ -1686,6 +1986,68 @@
         }
       },
       "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "historical_salaries": {
+      "name": "historical_salaries",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "person_id": {
+          "name": "person_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "year": {
+          "name": "year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "salary": {
+          "name": "salary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "bonus": {
+          "name": "bonus",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'0'"
+        }
+      },
+      "indexes": {
+        "historical_salaries_person_year_idx": {
+          "name": "historical_salaries_person_year_idx",
+          "columns": ["person_id", "year"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "historical_salaries_person_id_people_id_fk": {
+          "name": "historical_salaries_person_id_people_id_fk",
+          "tableFrom": "historical_salaries",
+          "tableTo": "people",
+          "columnsFrom": ["person_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
@@ -1810,39 +2172,11 @@
           "notNull": false,
           "autoincrement": false
         },
-        "annual_salary": {
-          "name": "annual_salary",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "pay_period": {
-          "name": "pay_period",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "pay_week": {
-          "name": "pay_week",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
         "start_date": {
           "name": "start_date",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
-        },
-        "anchor_pay_date": {
-          "name": "anchor_pay_date",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
           "autoincrement": false
         },
         "end_date": {
@@ -1852,103 +2186,13 @@
           "notNull": false,
           "autoincrement": false
         },
-        "bonus_percent": {
-          "name": "bonus_percent",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'0'"
-        },
-        "bonus_multiplier": {
-          "name": "bonus_multiplier",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'1.0'"
-        },
-        "months_in_bonus_year": {
-          "name": "months_in_bonus_year",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 12
-        },
-        "include_401k_in_bonus": {
-          "name": "include_401k_in_bonus",
+        "is_speculative": {
+          "name": "is_speculative",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
           "default": false
-        },
-        "include_bonus_in_contributions": {
-          "name": "include_bonus_in_contributions",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": true
-        },
-        "bonus_override": {
-          "name": "bonus_override",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "bonus_month": {
-          "name": "bonus_month",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "bonus_day_of_month": {
-          "name": "bonus_day_of_month",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "w4_filing_status": {
-          "name": "w4_filing_status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "w4_box2c_checked": {
-          "name": "w4_box2c_checked",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": false
-        },
-        "additional_fed_withholding": {
-          "name": "additional_fed_withholding",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'0'"
-        },
-        "budget_periods_per_month": {
-          "name": "budget_periods_per_month",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "extra_paycheck_routing": {
-          "name": "extra_paycheck_routing",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
         }
       },
       "indexes": {
@@ -1956,6 +2200,17 @@
           "name": "jobs_person_id_idx",
           "columns": ["person_id"],
           "isUnique": false
+        },
+        "jobs_is_speculative_idx": {
+          "name": "jobs_is_speculative_idx",
+          "columns": ["is_speculative"],
+          "isUnique": false
+        },
+        "jobs_one_speculative_per_person_idx": {
+          "name": "jobs_one_speculative_per_person_idx",
+          "columns": ["person_id"],
+          "isUnique": true,
+          "where": "\"jobs\".\"is_speculative\" = true"
         }
       },
       "foreignKeys": {
@@ -2118,6 +2373,11 @@
           "name": "mc_preset_gp_preset_idx",
           "columns": ["preset_id"],
           "isUnique": false
+        },
+        "mc_preset_gp_asset_class_idx": {
+          "name": "mc_preset_gp_asset_class_idx",
+          "columns": ["asset_class_id"],
+          "isUnique": false
         }
       },
       "foreignKeys": {
@@ -2181,6 +2441,11 @@
           "name": "mc_preset_ro_idx",
           "columns": ["preset_id", "asset_class_id"],
           "isUnique": true
+        },
+        "mc_preset_ro_asset_class_idx": {
+          "name": "mc_preset_ro_asset_class_idx",
+          "columns": ["asset_class_id"],
+          "isUnique": false
         }
       },
       "foreignKeys": {
@@ -2627,9 +2892,24 @@
           "name": "mortgage_loans_is_active_idx",
           "columns": ["is_active"],
           "isUnique": false
+        },
+        "mortgage_loans_refinanced_from_id_idx": {
+          "name": "mortgage_loans_refinanced_from_id_idx",
+          "columns": ["refinanced_from_id"],
+          "isUnique": false
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "mortgage_loans_refinanced_from_id_mortgage_loans_id_fk": {
+          "name": "mortgage_loans_refinanced_from_id_mortgage_loans_id_fk",
+          "tableFrom": "mortgage_loans",
+          "tableTo": "mortgage_loans",
+          "columnsFrom": ["refinanced_from_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
@@ -2978,13 +3258,6 @@
           "notNull": true,
           "autoincrement": false
         },
-        "amount_per_period": {
-          "name": "amount_per_period",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
         "is_pretax": {
           "name": "is_pretax",
           "type": "integer",
@@ -3273,6 +3546,21 @@
           "autoincrement": false,
           "default": "'0'"
         },
+        "separation_date": {
+          "name": "separation_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "allow_penalized_withdrawals": {
+          "name": "allow_penalized_withdrawals",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
         "parent_category": {
           "name": "parent_category",
           "type": "text",
@@ -3320,6 +3608,11 @@
         "idx_perf_accounts_inst_label": {
           "name": "idx_perf_accounts_inst_label",
           "columns": ["institution", "account_label"],
+          "isUnique": false
+        },
+        "performance_accounts_owner_id_idx": {
+          "name": "performance_accounts_owner_id_idx",
+          "columns": ["owner_person_id"],
           "isUnique": false
         },
         "performance_accounts_category_idx": {
@@ -3449,11 +3742,6 @@
           "columns": ["owner_person_id"],
           "isUnique": false
         },
-        "idx_portfolio_accounts_owner": {
-          "name": "idx_portfolio_accounts_owner",
-          "columns": ["owner_person_id"],
-          "isUnique": false
-        },
         "portfolio_accounts_perf_acct_idx": {
           "name": "portfolio_accounts_perf_acct_idx",
           "columns": ["performance_account_id"],
@@ -3550,6 +3838,85 @@
         "portfolio_snapshots_date_idx": {
           "name": "portfolio_snapshots_date_idx",
           "columns": ["snapshot_date"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "projection_cache": {
+      "name": "projection_cache",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "input_hash": {
+          "name": "input_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "seed": {
+          "name": "seed",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "result": {
+          "name": "result",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "computed_at": {
+          "name": "computed_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "last_read_at": {
+          "name": "last_read_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        },
+        "engine_version": {
+          "name": "engine_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "projection_cache_hash_version_idx": {
+          "name": "projection_cache_hash_version_idx",
+          "columns": ["input_hash", "engine_version"],
+          "isUnique": true
+        },
+        "projection_cache_expires_at_idx": {
+          "name": "projection_cache_expires_at_idx",
+          "columns": ["expires_at"],
           "isUnique": false
         }
       },
@@ -3804,6 +4171,166 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
+    "retirement_profile_people": {
+      "name": "retirement_profile_people",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "profile_id": {
+          "name": "profile_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "person_id": {
+          "name": "person_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "retirement_age": {
+          "name": "retirement_age",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "end_age": {
+          "name": "end_age",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "social_security_monthly": {
+          "name": "social_security_monthly",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "ss_start_age": {
+          "name": "ss_start_age",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "rule_of_55_override": {
+          "name": "rule_of_55_override",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "salary_annual_increase": {
+          "name": "salary_annual_increase",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "retirement_profile_people_profile_person_unq": {
+          "name": "retirement_profile_people_profile_person_unq",
+          "columns": ["profile_id", "person_id"],
+          "isUnique": true
+        },
+        "retirement_profile_people_profile_id_idx": {
+          "name": "retirement_profile_people_profile_id_idx",
+          "columns": ["profile_id"],
+          "isUnique": false
+        },
+        "retirement_profile_people_person_id_idx": {
+          "name": "retirement_profile_people_person_id_idx",
+          "columns": ["person_id"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "retirement_profile_people_profile_id_retirement_profiles_id_fk": {
+          "name": "retirement_profile_people_profile_id_retirement_profiles_id_fk",
+          "tableFrom": "retirement_profile_people",
+          "tableTo": "retirement_profiles",
+          "columnsFrom": ["profile_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "retirement_profile_people_person_id_people_id_fk": {
+          "name": "retirement_profile_people_person_id_people_id_fk",
+          "tableFrom": "retirement_profile_people",
+          "tableTo": "people",
+          "columnsFrom": ["person_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "retirement_profiles": {
+      "name": "retirement_profiles",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "tax_params_year": {
+          "name": "tax_params_year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        }
+      },
+      "indexes": {
+        "retirement_profiles_name_unique": {
+          "name": "retirement_profiles_name_unique",
+          "columns": ["name"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "retirement_salary_overrides": {
       "name": "retirement_salary_overrides",
       "columns": {
@@ -3842,6 +4369,13 @@
           "notNull": false,
           "autoincrement": false
         },
+        "salary_profile_id": {
+          "name": "salary_profile_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "notes": {
           "name": "notes",
           "type": "text",
@@ -3874,6 +4408,16 @@
           "name": "retirement_salary_overrides_person_id_idx",
           "columns": ["person_id"],
           "isUnique": false
+        },
+        "retirement_salary_overrides_contribution_profile_id_idx": {
+          "name": "retirement_salary_overrides_contribution_profile_id_idx",
+          "columns": ["contribution_profile_id"],
+          "isUnique": false
+        },
+        "retirement_salary_overrides_salary_profile_id_idx": {
+          "name": "retirement_salary_overrides_salary_profile_id_idx",
+          "columns": ["salary_profile_id"],
+          "isUnique": false
         }
       },
       "foreignKeys": {
@@ -3891,6 +4435,15 @@
           "tableFrom": "retirement_salary_overrides",
           "tableTo": "contribution_profiles",
           "columnsFrom": ["contribution_profile_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "retirement_salary_overrides_salary_profile_id_salary_profiles_id_fk": {
+          "name": "retirement_salary_overrides_salary_profile_id_salary_profiles_id_fk",
+          "tableFrom": "retirement_salary_overrides",
+          "tableTo": "salary_profiles",
+          "columnsFrom": ["salary_profile_id"],
           "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
@@ -4082,6 +4635,14 @@
           "autoincrement": false,
           "default": false
         },
+        "rule_of_55_override": {
+          "name": "rule_of_55_override",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": true
+        },
         "withdrawal_rate": {
           "name": "withdrawal_rate",
           "type": "text",
@@ -4152,6 +4713,14 @@
           "notNull": true,
           "autoincrement": false,
           "default": "'fixed'"
+        },
+        "discretionary_withdrawal_order": {
+          "name": "discretionary_withdrawal_order",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'roth_first'"
         },
         "gk_upper_guardrail": {
           "name": "gk_upper_guardrail",
@@ -4273,6 +4842,37 @@
           "autoincrement": false,
           "default": "'1.0'"
         },
+        "rmd_excess_handling": {
+          "name": "rmd_excess_handling",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'reinvest'"
+        },
+        "qcd_maximize": {
+          "name": "qcd_maximize",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "rmd_smoothing_enabled": {
+          "name": "rmd_smoothing_enabled",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "rmd_smoothing_max_bracket_target": {
+          "name": "rmd_smoothing_max_bracket_target",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "enable_irmaa_awareness": {
           "name": "enable_irmaa_awareness",
           "type": "integer",
@@ -4301,20 +4901,60 @@
           "name": "filing_status",
           "type": "text",
           "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "profile_id": {
+          "name": "profile_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "distribution_tax_rate_traditional": {
+          "name": "distribution_tax_rate_traditional",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "distribution_tax_rate_roth": {
+          "name": "distribution_tax_rate_roth",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "distribution_tax_rate_hsa": {
+          "name": "distribution_tax_rate_hsa",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "distribution_tax_rate_brokerage": {
+          "name": "distribution_tax_rate_brokerage",
+          "type": "text",
+          "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         }
       },
       "indexes": {
-        "retirement_settings_person_id_unique": {
-          "name": "retirement_settings_person_id_unique",
-          "columns": ["person_id"],
-          "isUnique": true
-        },
         "retirement_settings_person_id_idx": {
           "name": "retirement_settings_person_id_idx",
           "columns": ["person_id"],
           "isUnique": false
+        },
+        "retirement_settings_profile_id_idx": {
+          "name": "retirement_settings_profile_id_idx",
+          "columns": ["profile_id"],
+          "isUnique": false
+        },
+        "retirement_settings_profile_person_unq": {
+          "name": "retirement_settings_profile_person_unq",
+          "columns": ["profile_id", "person_id"],
+          "isUnique": true
         }
       },
       "foreignKeys": {
@@ -4325,6 +4965,15 @@
           "columnsFrom": ["person_id"],
           "columnsTo": ["id"],
           "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "retirement_settings_profile_id_retirement_profiles_id_fk": {
+          "name": "retirement_settings_profile_id_retirement_profiles_id_fk",
+          "tableFrom": "retirement_settings",
+          "tableTo": "retirement_profiles",
+          "columnsFrom": ["profile_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -4369,8 +5018,8 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "salary_changes": {
-      "name": "salary_changes",
+    "salary_profiles": {
+      "name": "salary_profiles",
       "columns": {
         "id": {
           "name": "id",
@@ -4379,60 +5028,45 @@
           "notNull": true,
           "autoincrement": true
         },
-        "job_id": {
-          "name": "job_id",
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "salaries": {
+          "name": "salaries",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'{}'"
+        },
+        "created_at": {
+          "name": "created_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
-        },
-        "effective_date": {
-          "name": "effective_date",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "new_salary": {
-          "name": "new_salary",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "raise_percent": {
-          "name": "raise_percent",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "notes": {
-          "name": "notes",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": "(unixepoch())"
         }
       },
       "indexes": {
-        "salary_changes_job_id_idx": {
-          "name": "salary_changes_job_id_idx",
-          "columns": ["job_id"],
-          "isUnique": false
+        "salary_profiles_name_unique": {
+          "name": "salary_profiles_name_unique",
+          "columns": ["name"],
+          "isUnique": true
         }
       },
-      "foreignKeys": {
-        "salary_changes_job_id_jobs_id_fk": {
-          "name": "salary_changes_job_id_jobs_id_fk",
-          "tableFrom": "salary_changes",
-          "tableTo": "jobs",
-          "columnsFrom": ["job_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
@@ -4490,6 +5124,162 @@
           "tableFrom": "savings_allocation_overrides",
           "tableTo": "savings_goals",
           "columnsFrom": ["goal_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "savings_goal_category_links": {
+      "name": "savings_goal_category_links",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "savings_goal_id": {
+          "name": "savings_goal_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "service": {
+          "name": "service",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'primary'"
+        },
+        "category_id": {
+          "name": "category_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "category_name": {
+          "name": "category_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "last_synced_at": {
+          "name": "last_synced_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "savings_goal_category_links_savings_goal_id_idx": {
+          "name": "savings_goal_category_links_savings_goal_id_idx",
+          "columns": ["savings_goal_id"],
+          "isUnique": false
+        },
+        "savings_goal_category_links_goal_service_role_idx": {
+          "name": "savings_goal_category_links_goal_service_role_idx",
+          "columns": ["savings_goal_id", "service", "role"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "savings_goal_category_links_savings_goal_id_savings_goals_id_fk": {
+          "name": "savings_goal_category_links_savings_goal_id_savings_goals_id_fk",
+          "tableFrom": "savings_goal_category_links",
+          "tableTo": "savings_goals",
+          "columnsFrom": ["savings_goal_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "savings_goal_profile_allocations": {
+      "name": "savings_goal_profile_allocations",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "goal_id": {
+          "name": "goal_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "budget_profile_id": {
+          "name": "budget_profile_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "allocation_percent": {
+          "name": "allocation_percent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "monthly_contribution": {
+          "name": "monthly_contribution",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "savings_goal_profile_alloc_goal_profile_idx": {
+          "name": "savings_goal_profile_alloc_goal_profile_idx",
+          "columns": ["goal_id", "budget_profile_id"],
+          "isUnique": true
+        },
+        "savings_goal_profile_alloc_profile_idx": {
+          "name": "savings_goal_profile_alloc_profile_idx",
+          "columns": ["budget_profile_id"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "savings_goal_profile_allocations_goal_id_savings_goals_id_fk": {
+          "name": "savings_goal_profile_allocations_goal_id_savings_goals_id_fk",
+          "tableFrom": "savings_goal_profile_allocations",
+          "tableTo": "savings_goals",
+          "columnsFrom": ["goal_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "savings_goal_profile_allocations_budget_profile_id_budget_profiles_id_fk": {
+          "name": "savings_goal_profile_allocations_budget_profile_id_budget_profiles_id_fk",
+          "tableFrom": "savings_goal_profile_allocations",
+          "tableTo": "budget_profiles",
+          "columnsFrom": ["budget_profile_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
@@ -4604,21 +5394,6 @@
           "notNull": true,
           "autoincrement": false,
           "default": "'fixed'"
-        },
-        "monthly_contribution": {
-          "name": "monthly_contribution",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'0'"
-        },
-        "allocation_percent": {
-          "name": "allocation_percent",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
         }
       },
       "indexes": {
@@ -4807,6 +5582,61 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
+    "savings_planned_tx_settlements": {
+      "name": "savings_planned_tx_settlements",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "planned_tx_id": {
+          "name": "planned_tx_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "occurrence_month": {
+          "name": "occurrence_month",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "settled_at": {
+          "name": "settled_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        }
+      },
+      "indexes": {
+        "savings_planned_tx_settlements_occurrence_idx": {
+          "name": "savings_planned_tx_settlements_occurrence_idx",
+          "columns": ["planned_tx_id", "occurrence_month"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "savings_planned_tx_settlements_planned_tx_id_savings_planned_transactions_id_fk": {
+          "name": "savings_planned_tx_settlements_planned_tx_id_savings_planned_transactions_id_fk",
+          "tableFrom": "savings_planned_tx_settlements",
+          "tableTo": "savings_planned_transactions",
+          "columnsFrom": ["planned_tx_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "scenarios": {
       "name": "scenarios",
       "columns": {
@@ -4847,6 +5677,34 @@
           "autoincrement": false,
           "default": false
         },
+        "budget_profile_id": {
+          "name": "budget_profile_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "contribution_profile_id": {
+          "name": "contribution_profile_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "salary_profile_id": {
+          "name": "salary_profile_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "retirement_profile_id": {
+          "name": "retirement_profile_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "integer",
@@ -4864,8 +5722,66 @@
           "default": "(unixepoch())"
         }
       },
-      "indexes": {},
-      "foreignKeys": {},
+      "indexes": {
+        "scenarios_budget_profile_id_idx": {
+          "name": "scenarios_budget_profile_id_idx",
+          "columns": ["budget_profile_id"],
+          "isUnique": false
+        },
+        "scenarios_contribution_profile_id_idx": {
+          "name": "scenarios_contribution_profile_id_idx",
+          "columns": ["contribution_profile_id"],
+          "isUnique": false
+        },
+        "scenarios_salary_profile_id_idx": {
+          "name": "scenarios_salary_profile_id_idx",
+          "columns": ["salary_profile_id"],
+          "isUnique": false
+        },
+        "scenarios_retirement_profile_id_idx": {
+          "name": "scenarios_retirement_profile_id_idx",
+          "columns": ["retirement_profile_id"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "scenarios_budget_profile_id_budget_profiles_id_fk": {
+          "name": "scenarios_budget_profile_id_budget_profiles_id_fk",
+          "tableFrom": "scenarios",
+          "tableTo": "budget_profiles",
+          "columnsFrom": ["budget_profile_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "scenarios_contribution_profile_id_contribution_profiles_id_fk": {
+          "name": "scenarios_contribution_profile_id_contribution_profiles_id_fk",
+          "tableFrom": "scenarios",
+          "tableTo": "contribution_profiles",
+          "columnsFrom": ["contribution_profile_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "scenarios_salary_profile_id_salary_profiles_id_fk": {
+          "name": "scenarios_salary_profile_id_salary_profiles_id_fk",
+          "tableFrom": "scenarios",
+          "tableTo": "salary_profiles",
+          "columnsFrom": ["salary_profile_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "scenarios_retirement_profile_id_retirement_profiles_id_fk": {
+          "name": "scenarios_retirement_profile_id_retirement_profiles_id_fk",
+          "tableFrom": "scenarios",
+          "tableTo": "retirement_profiles",
+          "columnsFrom": ["retirement_profile_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
@@ -5307,6 +6223,66 @@
         "tax_brackets_year_status_checkbox_idx": {
           "name": "tax_brackets_year_status_checkbox_idx",
           "columns": ["tax_year", "filing_status", "w4_checkbox"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "tax_params": {
+      "name": "tax_params",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "tax_year": {
+          "name": "tax_year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 1
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        }
+      },
+      "indexes": {
+        "tax_params_year_idx": {
+          "name": "tax_params_year_idx",
+          "columns": ["tax_year"],
           "isUnique": true
         }
       },

@@ -1,1 +1,0 @@
-ALTER TABLE "tax_params" ADD CONSTRAINT "tax_params_version_positive" CHECK (version > 0);

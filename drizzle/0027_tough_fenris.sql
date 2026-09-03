@@ -1,1 +1,0 @@
-ALTER TABLE "retirement_settings" ADD COLUMN "rule_of_55_override" boolean DEFAULT true NOT NULL;

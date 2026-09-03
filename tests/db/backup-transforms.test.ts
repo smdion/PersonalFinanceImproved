@@ -379,6 +379,7 @@ describe("KNOWN_SCHEMA_VERSIONS completeness", () => {
     expect(KNOWN_SCHEMA_VERSIONS).toContain("v0.3_final");
     expect(KNOWN_SCHEMA_VERSIONS).toContain("v0.5_final");
     expect(KNOWN_SCHEMA_VERSIONS).toContain("v0.6_final");
+    expect(KNOWN_SCHEMA_VERSIONS).toContain("v0.7_final");
     // v0.6.x tags
     expect(KNOWN_SCHEMA_VERSIONS).toContain("0001_melodic_thaddeus_ross");
     expect(KNOWN_SCHEMA_VERSIONS).toContain("0002_blue_moon_knight");
@@ -389,6 +390,8 @@ describe("KNOWN_SCHEMA_VERSIONS completeness", () => {
     expect(KNOWN_SCHEMA_VERSIONS).toContain("0000_v7_initial_schema");
     expect(KNOWN_SCHEMA_VERSIONS).toContain("0001_parched_karma");
     expect(KNOWN_SCHEMA_VERSIONS).toContain("0001_fresh_masque");
+    // v0.8.0 squash baseline
+    expect(KNOWN_SCHEMA_VERSIONS).toContain("0000_v8_initial_schema");
     // Deliberately NOT a hardcoded length. That assertion had to be bumped
     // by hand on every migration, which is friction pushing in exactly the
     // wrong direction — the failure mode here is a tag being *missing*, and
@@ -695,6 +698,107 @@ describe("transformBackupToCurrentSchema — v0.7.x Retirement Profiles backfill
 });
 
 // ---------------------------------------------------------------------------
+// v0.7_final / v0.8.0 baseline — already current shape, transform is a no-op
+// ---------------------------------------------------------------------------
+
+describe("transformBackupToCurrentSchema — v0.7_final / v0.8.0 baseline", () => {
+  // A fully-current v0.7.11 export: every v0.7-line table present, populated,
+  // in final shape. The v0.8.0 squash changed no schema, so the transform
+  // must return it byte-identical.
+  const currentShapeBackup = () => ({
+    ...makeBackup({
+      retirement_profiles: [
+        { id: 1, name: "Current Plan", tax_params_year: null },
+      ],
+      retirement_profile_people: [
+        { id: 1, profile_id: 1, person_id: 1, retirement_age: 65 },
+      ],
+      // Every column transformV07xToCurrent would otherwise backfill:
+      retirement_settings: [
+        {
+          id: 1,
+          person_id: 1,
+          profile_id: 1,
+          retirement_age: 65,
+          distribution_tax_rate_traditional: null,
+          distribution_tax_rate_roth: null,
+          distribution_tax_rate_brokerage: null,
+          distribution_tax_rate_hsa: null,
+        },
+      ],
+      scenarios: [{ id: 1, name: "Base", retirement_profile_id: null }],
+      app_settings: [
+        { id: 1, key: "theme", value: "dark" },
+        { id: 2, key: "active_retirement_profile_id", value: 1 },
+      ],
+      fpl_by_household: [{ id: 1, tax_year: 2026, amounts: {} }],
+      tax_params: [{ id: 1, tax_year: 2026, version: 1 }],
+      savings_planned_tx_settlements: [{ id: 1, planned_tx_id: 1 }],
+      budget_item_category_links: [
+        { id: 1, budget_item_id: 1, service: "ynab" },
+      ],
+      savings_goal_category_links: [
+        { id: 1, savings_goal_id: 1, service: "ynab" },
+      ],
+      account_basis: [{ id: 1, performance_account_id: 1, owner_person_id: 1 }],
+      salary_profiles: [{ id: 1, name: "Current", salaries: {} }],
+      contribution_profiles: [{ id: 1, name: "Current" }],
+    }),
+  });
+
+  for (const tag of ["v0.7_final", "0000_v8_initial_schema"]) {
+    it(`round-trips a fully-current export unchanged (${tag})`, () => {
+      const tables = currentShapeBackup();
+      const before = JSON.stringify(tables);
+      const result = transformBackupToCurrentSchema(
+        tables,
+        tag,
+        CURRENT_VERSION,
+      );
+      // No table added or dropped, no row changed.
+      expect(JSON.stringify(result.tables)).toBe(before);
+    });
+
+    it(`is importable (${tag})`, () => {
+      expect(() =>
+        transformBackupToCurrentSchema(makeBackup(), tag, CURRENT_VERSION),
+      ).not.toThrow();
+    });
+  }
+
+  // Regression: the cumulative era ladder runs transformV07xToCurrent for
+  // every era, including v0.6/v0.5/older. That transform appends an
+  // active-profile pointer row to app_settings — it must carry an `id` so
+  // the row is column-compatible with the table's existing (id-bearing)
+  // rows, or the restore INSERT NULL-fills the NOT NULL serial PK and aborts.
+  it("appends the app_settings pointer with an id when backfilling a pre-0032 backup", () => {
+    const tables = makeBackup({
+      // v0.6_final shape: retirement_settings present, no retirement_profiles.
+      retirement_settings: [{ id: 1, person_id: 1, retirement_age: 65 }],
+      retirement_scenarios: [],
+      app_settings: [{ id: 7, key: "theme", value: "dark" }],
+    });
+    const result = transformBackupToCurrentSchema(
+      tables,
+      "v0.6_final",
+      CURRENT_VERSION,
+    );
+    const appSettings = result.tables["app_settings"] as Record<
+      string,
+      unknown
+    >[];
+    const pointer = appSettings.find(
+      (r) => r["key"] === "active_retirement_profile_id",
+    );
+    expect(pointer).toBeDefined();
+    expect(pointer!["id"]).toBe(8); // max(7) + 1
+    // Every row now has the same key set — no NULL-filled NOT NULL column.
+    const keySets = appSettings.map((r) => Object.keys(r).sort().join(","));
+    expect(new Set(keySets).size).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Data isolation — transform doesn't mutate original
 // ---------------------------------------------------------------------------
 
@@ -773,8 +877,11 @@ describe("edge cases", () => {
  * version" for any backup taken between v0.7.0 and v0.7.10 — restore was
  * broken across nearly the whole v0.7 line, silently, until someone tried it.
  *
- * This reads the real drizzle journals, so adding a migration without
- * registering its tag fails here instead of at someone's restore.
+ * Post the v0.8.0 squash the journals hold a single tag each, so the
+ * journal-vs-registry check below is thin. The historical v0.7 tag list
+ * (V07_SCHEMA_TAGS, spread into KNOWN_SCHEMA_VERSIONS) is now frozen — no
+ * journal validates it any more — so the count/endpoint assertions guard it
+ * from being edited away.
  */
 describe("schema-version registry tracks the drizzle journals", () => {
   const journalTags = (dir: string): string[] => {
@@ -784,8 +891,6 @@ describe("schema-version registry tracks the drizzle journals", () => {
     return journal.entries.map((e) => e.tag);
   };
 
-  // Both journals were squashed at v0.7.0, so every tag they still contain
-  // is a v0.7-line tag and must be registered — no era filtering needed.
   it.each([
     ["drizzle", "PostgreSQL"],
     ["drizzle-sqlite", "SQLite"],
@@ -795,9 +900,27 @@ describe("schema-version registry tracks the drizzle journals", () => {
     expect(missing).toEqual([]);
   });
 
-  it("routes every registered v0.7 tag to the v0.7 transform, not a throw", () => {
-    const v07 = journalTags("drizzle").concat(journalTags("drizzle-sqlite"));
-    for (const tag of v07) {
+  it("keeps the frozen historical v0.7 tag range registered", () => {
+    const known = KNOWN_SCHEMA_VERSIONS as readonly string[];
+    // Endpoints of the v0.7 line.
+    expect(known).toContain("0000_v7_initial_schema");
+    expect(known).toContain("0039_rich_prodigy"); // last v0.7.x PG migration
+    expect(known).toContain("0038_broken_guardian"); // last v0.7.x SQLite migration
+    // The v0.7 line ran 0000 + 0001-0039 (PG) / 0001-0038 (SQLite), with
+    // several dialect-divergent names in 0001-0006 and 0025-0031. The
+    // registry must still carry them all — a v0.7.x backup names one of
+    // these and must not fall through to "Unknown schema version".
+    const v07ish = known.filter((t) => /^00[0-3]\d_/.test(t));
+    expect(v07ish.length).toBeGreaterThanOrEqual(50);
+  });
+
+  it("routes the current baseline and the v0.7_final tag to the v0.7 transform, not a throw", () => {
+    for (const tag of [
+      "0000_v8_initial_schema",
+      "v0.7_final",
+      "0000_v7_initial_schema",
+      "0039_rich_prodigy",
+    ]) {
       expect(() =>
         transformBackupToCurrentSchema(
           makeBackup(),

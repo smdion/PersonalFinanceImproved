@@ -1,1 +1,0 @@
-ALTER TABLE "performance_accounts" ADD COLUMN "allow_penalized_withdrawals" boolean DEFAULT false NOT NULL;

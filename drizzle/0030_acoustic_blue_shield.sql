@@ -1,1 +1,0 @@
-ALTER TABLE "retirement_settings" ADD COLUMN "rmd_smoothing_enabled" boolean DEFAULT false NOT NULL;

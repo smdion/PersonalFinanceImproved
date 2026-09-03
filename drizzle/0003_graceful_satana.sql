@@ -1,1 +1,0 @@
-ALTER TABLE "savings_goal_profile_allocations" ALTER COLUMN "monthly_contribution" SET NOT NULL;

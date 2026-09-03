@@ -6,6 +6,78 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+# v0.8
+
+## [0.8.0] - 2026-09-03
+
+> Rollup of everything since v0.7.0. For patch-level detail, see the v0.7.x entries below.
+
+### Upgrading from v0.7.x
+
+Pull the new image and restart — your database upgrades automatically. v0.8.0 squashes all v0.7.x migrations into a single baseline; the migration runner detects the v0.7 schema, writes a pre-upgrade backup, and re-applies the squashed schema in place with no manual steps and no data loss. There are no schema changes versus v0.7.11 — the squash is purely housekeeping.
+
+### Profiles & Plans
+
+- **Salary Profiles own the full pay picture.** Each profile now controls salary, bonus percentage and multiplier, pay schedule, W-4 withholding, and where a biweekly month's extra paycheck goes — everything that conceptually varies with a job change. Profiles are ordinary renamable, deletable rows (no more synthetic "default"), and salary/bonus history lives on the Historical page's Year-End table rather than on job records. Jobs are now pure employment structure.
+- **Budget Profiles** support weighted modes with a real editor (e.g. 1 month Traveling + 11 months At Home), a Blended "typical month" column in the summary, and an annual total that includes savings. A profile can link to a Contribution Profile at creation.
+- **Savings goal funding is entirely per budget profile** — no shared default a profile silently falls back to. The Savings Profiles sidebar shows Allocated and Unspent per profile, plus a live pool estimate and a "Reset all to zero" action.
+- **Plans** pin which Budget Profile and Contribution Profile are active; every page respects the pinned profile consistently. "Clone to new" on Budget, Salary, and Contribution profiles. One edit-protection padlock now governs every profile editor across the Budget, Savings, and Paycheck pages, and the active / Plan-pinned / just-viewing states share one consistent look everywhere.
+- A **"What-If" tab** on the Budget page — a sandbox to try a different salary, bonus, deductions, contribution accounts, and budget amounts together without disturbing your real data.
+
+### Retirement projection engine
+
+- **Roth-conversion RMD smoothing** — an opt-in setting that sizes conversions before RMD age to shrink future Required Minimum Distributions, with the multi-person household share calculated correctly.
+- **Qualified Charitable Distributions** are modeled against each year's RMD (met / shortfall status in the tooltip) and are no longer capped at the RMD amount — a real QCD can legally exceed it, up to the annual per-person limit.
+- **Age-65+ deductions** — the IRC §63(f) additional standard deduction and the temporary OBBBA senior deduction (2025-2028) are both applied per qualifying spouse per year, with the fixed OBBBA amount correctly left un-inflated.
+- **Every inflation-indexed federal tax threshold now grows forward** in projections — ordinary brackets, standard deduction, LTCG brackets, IRMAA, and the ACA subsidy cliff — instead of being held flat in nominal dollars.
+- **Multi-year Roth-bracket-target optimizer** for Bracket Filling mode — searches for the tax-bracket target with the best lifetime outcome and offers one-click Apply.
+- **Bracket Filling vs. Waterfall** withdrawal routing both honor your configured account order; a "Discretionary withdrawal order" setting (Roth first vs. Brokerage first) with an ACA/IRMAA warning when the choice matters; the bracket-ceiling figure now shows in both modes.
+- **Early-withdrawal-penalty handling** — projections no longer take penalized money even to cover a shortfall, with a per-account setting to explicitly allow the penalty on one account as a genuine last resort. Rule-of-55 and pre-59½ rules are modeled throughout.
+- **Per-person raise rates**, per-person Social Security, and owner-aware account matching so two household members with an identically-named account (e.g. both "Long Term Brokerage") aren't credited to the wrong person.
+- Tracked Roth basis with a bulk "Update Basis" entry screen; a "Rate-Seeded" scenario; a "Simple" tax mode alongside the per-account-aware "Advanced" mode; and simulation results that persist server-side across sessions and devices (standard and Coast FIRE).
+
+### Retirement Profiles
+
+- Save, name, and **duplicate whole sets of retirement assumptions** to compare plans side by side. Each profile can pin itself to a specific tax year's tables so an old projection reproduces exactly. Duplication now copies each household member's own values rather than the primary person's.
+
+### Retirement reporting & UI
+
+- **Print Advisor Report** — a purpose-built multi-page document (executive summary, Monte Carlo risk analysis, withdrawal-strategy narrative, ACA/IRMAA watchlist, action items, condensed year-by-year table), plus a plain "Print Chart & Table" export that no longer clips rows or columns.
+- **"Why was this account used?" explanations** on the projection table and chart, the real lifetime-cost math behind a bracket-target choice, a **Lifetime Tax Paid** card, an editable Bracket Ceiling on the Assumptions band, projection-chart lines for portfolio withdrawal and Social Security income, a "breached floor" line on the Yearly Income Stability chart, Coast FIRE custom-age checks with real dollar shortfalls, and MAGI on the Household Income tile.
+
+### Budget-provider sync
+
+- **Per-service category links** — a household connected to both YNAB and Actual no longer loses one service's link when it links the other.
+- **SimpleFIN Bridge** integration — a read-only daily balance pulse per linked account.
+- Actual Budget: cash balances and API-linked savings-goal balances now populate correctly, the first-sync "Invalid month format" failure is fixed, push previews show the real current amount and the right service name, and goal-target pushes report honestly.
+- Portfolio snapshot pushes post as reconciled; drift detection surfaces links whose underlying category no longer exists; bulk category-name sync no longer resets an item's sync direction or "last synced" time; converting a budget item to a savings goal (or back) carries over every connected service's link.
+
+### Tax engine & data
+
+- **2025/2026 federal withholding brackets corrected** — the two years' tables had drifted into copies of each other (married filers priced against 2026 in both years, single/HoH against 2025 in both), plus two transcription typos. All twelve tables are now transcribed from the IRS Publication 15-T PDFs.
+- Contribution limits, tax brackets, LTCG brackets, IRMAA brackets, and **Federal Poverty Level figures** are all editable from Settings with year and filing-status versioning; a new "Tax law year" control pins a retirement profile to a specific year's tables; projections and paycheck estimates degrade gracefully when next year's data is only partially entered.
+- Fixed LTCG rate selection exactly at a bracket boundary, a W-4-checkbox standard-deduction offset that overstated retirement tax, and an NIIT check that reused IRMAA's two-year-lookback income.
+
+### Sinking funds & savings
+
+- Mark a planned transaction **"settled"** once the real spend happens, per occurrence, instead of deleting it. Extra-paycheck routing no longer destroys savings-transaction history on every save, and savings projections no longer drop planned transactions dated later in the current month or double-count a month funded directly in YNAB/Actual.
+
+### Other fixes
+
+- Date and "today" defaults (new snapshot/transaction dates, backup filenames, "days old" figures) now use your local time instead of UTC.
+- Closed Portfolio accounts zero their balance from the next snapshot rather than carrying the last known value forward; "inactive" is now "closed" (accounts) or "not funding a target" (contributions).
+- Employer match supports a flat dollar amount alongside percent-of-contribution and fixed-annual, is calculated against combined Roth+Traditional contribution for a split account, and no longer renders as a nonsensical percentage on the unlinked-contributions banner.
+- Dozens of profile-resolution consistency fixes so the Budget, Savings, Paycheck, Contributions, Expenses, Net Worth, Historical, Relocation, and dashboard views all agree on which Salary/Contribution/Budget profile and which mortgage loan are in effect.
+
+### Under the hood
+
+- **v0.8.0 migration squash** — 40 incremental v0.7.x migrations collapsed into a single `0000_v8_initial_schema` baseline per dialect, with a `v0.7_final` era probe added to the upgrade path.
+- A central `resolveTaxParams` resolver is now the single code path every tax consumer uses to pick a tax-data vintage.
+- A repo-wide pass replaced review-history citations in code comments with the technical reasoning they carried, backed by a new lint guard.
+- Restoring a v0.7.0-tagged backup no longer fails with "Unknown schema version" — the v0.7 baseline tag and every subsequent v0.7.x tag are now registered, from a single shared list.
+
+---
+
 # v0.7
 
 ## [0.7.11] - 2026-09-02

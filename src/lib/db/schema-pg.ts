@@ -16,6 +16,7 @@ import {
   uniqueIndex,
   index,
   check,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { DEFAULT_WITHDRAWAL_RATE } from "@/lib/constants";
@@ -1274,13 +1275,14 @@ export const mortgageLoans = pgTable(
     name: text("name").notNull(),
     isActive: boolean("is_active").notNull().default(false),
     // Self-reference to this table's own id (the loan this one replaced via
-    // refinance). FK constraint (ON DELETE SET NULL, matching
-    // savings_goals.parent_goal_id's precedent) added in
-    // 0019_mortgage_refinanced_from_fk.sql after a data audit confirmed no
-    // orphaned/dangling values — Drizzle can't express a self-reference
-    // inline, so the constraint lives in the hand-written migration, not
-    // here (same pattern as parent_goal_id).
-    refinancedFromId: integer("refinanced_from_id"),
+    // refinance). ON DELETE SET NULL: deleting an old, refinanced-away loan
+    // shouldn't be blocked by a newer loan's pointer to it; the pointer just
+    // clears. Expressed as a lazy self-reference so the FK lives in the
+    // generated schema rather than a hand-written migration.
+    refinancedFromId: integer("refinanced_from_id").references(
+      (): AnyPgColumn => mortgageLoans.id,
+      { onDelete: "set null" },
+    ),
     paidOffDate: date("paid_off_date"),
     principalAndInterest: decimal("principal_and_interest", {
       precision: 14,

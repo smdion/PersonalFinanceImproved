@@ -132,6 +132,7 @@ export const KNOWN_SCHEMA_VERSIONS = [
   "v0.3_final",
   "v0.5_final",
   "v0.6_final",
+  "v0.7_final",
   // v0.6.x series — squashed v6 baseline + incremental migrations
   "0000_v6_initial_schema",
   "0001_melodic_thaddeus_ross", // PG: account_holdings/pending_rollovers + extra_paycheck_routing reshape
@@ -149,6 +150,12 @@ export const KNOWN_SCHEMA_VERSIONS = [
   // v0.7.x series — squashed v7 baseline + every incremental migration,
   // from the single V07_SCHEMA_TAGS list above (shared with schemaEra()).
   ...V07_SCHEMA_TAGS,
+  // v0.8.0 — pure migration squash, zero schema change vs the v0.7.11 tip.
+  // A backup exported at any v0.8.x patch carries this single baseline tag;
+  // it is already current-shape, so schemaEra() routes it through the same
+  // (idempotent) v0.7 → current transform until the v0.8 line accrues its
+  // own migrations and the next squash gives it a dedicated era.
+  "0000_v8_initial_schema",
 ] as const;
 
 export type KnownSchemaVersion = (typeof KNOWN_SCHEMA_VERSIONS)[number];
@@ -227,8 +234,23 @@ function renameValue(
 // Schema version ordering (for "at least version X" checks)
 // ---------------------------------------------------------------------------
 
-/** PG tags in canonical order — used for cumulative "at least version X" checks. */
-const PG_TAGS = KNOWN_SCHEMA_VERSIONS.slice(0, 9); // First 9 entries are v0.1.x PG
+/**
+ * v0.1.x PG tags in canonical order — used for cumulative "at least version
+ * X" checks. Spelled out explicitly (not a positional slice of
+ * KNOWN_SCHEMA_VERSIONS) so appending an entry to that list can never
+ * silently shift this ordering.
+ */
+const PG_TAGS = [
+  "0000_initial_schema",
+  "0001_drop_pg_enums",
+  "0002_rename_retirement_category",
+  "0003_add_rollovers_column",
+  "0004_ambiguous_wraith",
+  "0005_cold_random",
+  "0006_goofy_rawhide_kid",
+  "0007_melted_swordsman",
+  "0008_prior_year_contrib",
+] as const;
 const VERSION_ORDER: Map<string, number> = new Map(
   PG_TAGS.map((tag, index) => [tag, index]),
 );
@@ -251,6 +273,13 @@ function schemaEra(
   if (tag === "v0.5_final") return "v0.5";
   if (tag === "v0.3_final") return "v0.3";
   if (tag === "v0.2_final") return "v0.2";
+
+  // v0.7_final (pre-upgrade backup tag) and the v0.8.0 squash baseline are
+  // both already current-shape (the v0.8.0 squash changed no schema), so
+  // they route through the same v0.7 → current transform, which is
+  // idempotent for a backup that is already current.
+  if (tag === "v0.7_final") return "v0.7";
+  if (tag === "0000_v8_initial_schema") return "v0.7";
 
   // v0.7.x tags (squashed v7 baseline + every incremental migration).
   // Same single source as KNOWN_SCHEMA_VERSIONS — see V07_SCHEMA_TAGS.
@@ -711,7 +740,18 @@ function transformV07xToCurrent(tables: TableData): TableData {
           (r) => r["key"] === "active_retirement_profile_id",
         )
       ) {
+        // Carry a synthetic id so the appended row is column-compatible
+        // with the table's existing rows. The restore paths build their
+        // INSERT column list from the row set and NULL-fill any key a row
+        // is missing — app_settings.id is a NOT NULL serial PK, so an
+        // id-less row here would abort the whole restore. Sequences are
+        // reset (setval) after restore, so a synthetic max+1 is safe.
+        const maxId = appSettingsRows.reduce(
+          (m, r) => Math.max(m, Number(r["id"]) || 0),
+          0,
+        );
         appSettingsRows.push({
+          id: maxId + 1,
           key: "active_retirement_profile_id",
           value: profileId,
         });
@@ -815,25 +855,38 @@ export function transformBackupToCurrentSchema(
 
   const era = schemaEra(schemaVersion);
 
-  if (era === "v0.7") {
-    // v0.7.x → current: backfill tables added within the v0.7 line
-    transformV07xToCurrent(cloned);
-  } else if (era === "v0.6") {
-    // v0.6.x → current: backfill v0.6-line tables/columns + utilities tables
-    transformV06xToCurrent(cloned);
-  } else if (era === "v0.5") {
-    // v0.5.x → v0.6.0: no column renames, only pending_rollovers table added
-    transformV05xToV060(cloned);
-  } else {
-    // v0.1.x → apply v0.1 → v0.2 transforms first, then v0.2/v0.3 → v0.4
-    if (era === "v0.1") {
-      transformV01xToV020(cloned, schemaVersion);
-    }
+  // CUMULATIVE ladder — a backup N eras behind must run EVERY transform
+  // between its era and current, oldest first, not just the one keyed to
+  // its own era. Each transform is idempotent (fills only missing
+  // tables/columns, guards backfills on empty), so an over-conservative
+  // era guess degrades to extra no-op passes rather than a truncated
+  // restore. The previous `if / else if` ran exactly one transform, which
+  // left, e.g., a v0.6 backup missing every v0.7-line table
+  // (retirement_profiles, fpl_by_household, …) on restore.
+  const ERA_ORDER = ["v0.1", "v0.2", "v0.3", "v0.5", "v0.6", "v0.7"] as const;
+  const rank = (e: string) =>
+    ERA_ORDER.indexOf(e as (typeof ERA_ORDER)[number]);
+  const eraRank = rank(era);
 
-    // v0.1.x and v0.2.x both need the v0.2/v0.3 → v0.4 transforms
-    // v0.3.x also needs it (idempotent — fills in any missing columns)
+  if (eraRank <= rank("v0.1")) {
+    transformV01xToV020(cloned, schemaVersion);
+  }
+  if (eraRank <= rank("v0.3")) {
+    // v0.1.x / v0.2.x / v0.3.x → v0.4 (idempotent; fills any missing columns)
     transformV02xV03xToV040(cloned);
   }
+  if (eraRank <= rank("v0.5")) {
+    // → v0.6.0: adds an empty pending_rollovers table when absent
+    transformV05xToV060(cloned);
+  }
+  if (eraRank <= rank("v0.6")) {
+    // v0.6-line tables/columns + utilities tables
+    transformV06xToCurrent(cloned);
+  }
+  // v0.7-line tables (retirement_profiles, fpl_by_household, tax_params, …)
+  // + the salary_overrides → salaries reshape + is_default drop. Runs for
+  // every era, including a fully-current v0.7.x export (a no-op then).
+  transformV07xToCurrent(cloned);
 
   log("info", "backup_transform_complete", {
     from: schemaVersion,

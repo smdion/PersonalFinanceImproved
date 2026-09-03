@@ -29,6 +29,22 @@ import { log } from "@/lib/logger";
 import { transformBackupToCurrentSchema } from "./backup-transforms";
 
 /**
+ * Column list for an INSERT built from a row set — the UNION of every
+ * row's keys, not just `rows[0]`. A cross-version backup transform can
+ * append a row with a different key set (e.g. the active-profile pointer
+ * added to `app_settings`); keying off `rows[0]` alone would then either
+ * drop that row's extra columns or NULL-fill a NOT NULL column on the
+ * other rows and abort the whole restore.
+ */
+function unionColumns(rows: Record<string, unknown>[]): string[] {
+  const seen = new Set<string>();
+  for (const row of rows) {
+    for (const k of Object.keys(row)) seen.add(k);
+  }
+  return [...seen];
+}
+
+/**
  * Derive CURRENT_SCHEMA_VERSION from the drizzle journal automatically.
  * This reads drizzle/meta/_journal.json and picks the tag of the last entry,
  * so the version stays in sync with migrations without manual updates.
@@ -249,7 +265,7 @@ export async function restoreVersion(
       }
 
       const rows = tableData.data as Record<string, unknown>[];
-      const columns = Object.keys(rows[0]!);
+      const columns = unionColumns(rows);
       validateColumns(tableEntry.name, columns);
       const colList = columns.map((c) => `"${c}"`).join(", ");
       const BATCH_SIZE = 500;
@@ -412,7 +428,7 @@ async function importBackupPg(
       if (!rows || rows.length === 0) continue;
 
       const tableJsonbCols = jsonbCols.get(tableEntry.name) ?? new Set();
-      const columns = Object.keys(rows[0]!);
+      const columns = unionColumns(rows);
       validateColumns(tableEntry.name, columns);
       const colList = columns.map((c) => `"${c}"`).join(", ");
       const BATCH_SIZE = 500;
@@ -495,7 +511,7 @@ async function importBackupSqlite(
       const rows = backup.tables[tableEntry.name] as Record<string, unknown>[];
       if (!rows || rows.length === 0) continue;
 
-      const columns = Object.keys(rows[0]!);
+      const columns = unionColumns(rows);
       validateColumns(tableEntry.name, columns);
       const colList = columns.map((c) => `"${c}"`).join(", ");
       const BATCH_SIZE = 500;
