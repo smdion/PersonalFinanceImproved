@@ -5,7 +5,7 @@ const dashboardPages = [
   { path: "/portfolio", heading: /portfolio/i },
   { path: "/retirement", heading: /retirement/i },
   { path: "/networth", heading: /net\s*worth/i },
-  // Server-prefetch split — these 5 gained a
+  // Server-prefetch split — these 6 gained a
   // page.tsx/xxx-content.tsx split; covered here to catch a Server/Client
   // boundary regression (e.g. a hook accidentally left in the server
   // wrapper) that a production build alone wouldn't necessarily surface.
@@ -13,6 +13,7 @@ const dashboardPages = [
   { path: "/brokerage", heading: /brokerage/i },
   { path: "/contributions", heading: /contributions/i },
   { path: "/expenses", heading: /expenses/i },
+  { path: "/performance", heading: /performance/i },
   { path: "/data-browser", heading: /data\s*browser/i },
 ];
 

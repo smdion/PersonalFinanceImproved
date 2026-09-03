@@ -6,7 +6,7 @@
  * editingKey + editValue pair, click-to-start, Enter/blur-to-commit,
  * Escape-to-cancel. Generic over the key shape (e.g.
  * `{ type: "annual" | "account"; id: number; field: string }` in
- * performance/page.tsx) so callers keep their own "is this cell the one
+ * performance/performance-content.tsx) so callers keep their own "is this cell the one
  * being edited" comparison — deep-equality isn't assumed here.
  *
  *   const edit = useInlineNumberEdit<EditingCell>({
