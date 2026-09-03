@@ -24,13 +24,16 @@ import { InlineEdit } from "@/components/ui/inline-edit";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatPercent } from "@/lib/utils/format";
-import { IRS_LIMIT_GROWTH_RATE } from "@/lib/constants";
+import {
+  IRS_LIMIT_GROWTH_RATE,
+  IRS_LIMIT_GROWTH_RATE_MAX,
+} from "@/lib/constants";
 import { SK_IRS_LIMIT_GROWTH_RATE } from "@/lib/constants/settings-keys";
 
-/** Sanity bounds for the editable IRS-limit growth rate — 0% to 10%/yr.
- *  Also enforced server-side (build-engine-payload.ts clamps on read). */
+/** Sanity bounds for the editable IRS-limit growth rate. Also enforced
+ *  server-side (build-engine-payload.ts clamps on read). */
 const IRS_GROWTH_MIN = 0;
-const IRS_GROWTH_MAX = 0.1;
+const IRS_GROWTH_MAX = IRS_LIMIT_GROWTH_RATE_MAX;
 
 /** Display-only cap for the glide-path bar and the last breakpoint's
  *  open-ended range label — the engine itself has no upper bound, a

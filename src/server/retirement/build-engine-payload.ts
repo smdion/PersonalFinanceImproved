@@ -51,8 +51,10 @@ import {
 import { roundToCents, sumBy, safeDivide } from "@/lib/utils/math";
 import {
   IRS_LIMIT_GROWTH_RATE,
+  IRS_LIMIT_GROWTH_RATE_MAX,
   FALLBACK_CONTRIBUTION_RATE,
 } from "@/lib/constants";
+import { log } from "@/lib/logger";
 import { estimateEffectiveTaxRate } from "@/lib/calculators/engine";
 import { getLtcgRate } from "@/lib/config/tax-tables";
 import { resolveTaxParams } from "@/lib/config/tax-params";
@@ -773,10 +775,21 @@ export async function buildEnginePayload(
   // Math.pow(1 + rate, year) and silently wreck every projection.
   const limitGrowthRaw = settingsMap.get("irs_limit_growth_rate");
   const limitGrowthParsed = toNumber(String(limitGrowthRaw));
-  const irsLimitGrowthRate =
-    limitGrowthRaw != null && Number.isFinite(limitGrowthParsed)
-      ? Math.min(Math.max(limitGrowthParsed, 0), 0.1)
-      : IRS_LIMIT_GROWTH_RATE;
+  let irsLimitGrowthRate = IRS_LIMIT_GROWTH_RATE;
+  if (limitGrowthRaw != null && Number.isFinite(limitGrowthParsed)) {
+    irsLimitGrowthRate = Math.min(
+      Math.max(limitGrowthParsed, 0),
+      IRS_LIMIT_GROWTH_RATE_MAX,
+    );
+    if (irsLimitGrowthRate !== limitGrowthParsed) {
+      // A stored value outside [0, MAX] is used clamped — record it so the
+      // stored-vs-used divergence is findable rather than silent.
+      log("warn", "irs_limit_growth_rate_clamped", {
+        stored: limitGrowthParsed,
+        used: irsLimitGrowthRate,
+      });
+    }
+  }
 
   // IRS limits — the `contribution_limits` rows for the resolved tax year
   // (resolveTaxParams already filtered + coerced to numbers). Same

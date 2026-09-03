@@ -193,6 +193,37 @@ describe("budget router — updateItemAmounts", () => {
       cleanup();
     }
   });
+
+  it("reports skipped cells (deleted item / out-of-range column) and counts applied cells", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const seed = seedStandardDataset(db);
+      const result = await caller.budget.updateItemAmounts({
+        updates: [
+          { id: seed.itemIds[0]!, colIndex: 0, amount: 500 }, // applies
+          { id: seed.itemIds[1]!, colIndex: 0, amount: 600 }, // applies
+          { id: seed.itemIds[0]!, colIndex: 99, amount: 700 }, // out of range
+          { id: 999999, colIndex: 0, amount: 800 }, // deleted / never existed
+        ],
+      });
+      expect(result.ok).toBe(true);
+      expect(result.updated).toBe(2); // applied cells
+      expect(result.updatedItems).toBe(2); // distinct items touched
+      expect(result.skipped).toEqual(
+        expect.arrayContaining([
+          { id: seed.itemIds[0]!, colIndex: 99, reason: "column-out-of-range" },
+          { id: 999999, colIndex: 0, reason: "deleted" },
+        ]),
+      );
+      expect(result.skipped).toHaveLength(2);
+
+      const summary = await caller.budget.computeActiveSummary();
+      const item0 = summary.rawItems!.find((i) => i.id === seed.itemIds[0]!);
+      expect((item0!.amounts as number[])[0]).toBe(500); // valid cell landed
+    } finally {
+      cleanup();
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------
