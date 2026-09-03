@@ -223,7 +223,7 @@ export const historicalRouter = createTRPCRouter({
       );
       if (!row) {
         throw new TRPCError({
-          code: "NOT_FOUND",
+          code: "BAD_REQUEST",
           message: `No year-end history found for ${year}.`,
         });
       }

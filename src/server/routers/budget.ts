@@ -1611,6 +1611,11 @@ export const budgetRouter = createTRPCRouter({
 
       if (input.columnMonths) {
         if (input.columnMonths.length !== profile.columnLabels.length) {
+          log("warn", "budget_column_mismatch", {
+            field: "columnMonths",
+            expected: profile.columnLabels.length,
+            got: input.columnMonths.length,
+          });
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: "This budget's columns changed — reload and try again.",
@@ -1653,6 +1658,11 @@ export const budgetRouter = createTRPCRouter({
           input.columnContributionProfileIds.length !==
           profile.columnLabels.length
         ) {
+          log("warn", "budget_column_mismatch", {
+            field: "columnContributionProfileIds",
+            expected: profile.columnLabels.length,
+            got: input.columnContributionProfileIds.length,
+          });
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: "This budget's columns changed — reload and try again.",
@@ -1695,6 +1705,11 @@ export const budgetRouter = createTRPCRouter({
         input.columnSalaryProfileIds &&
         input.columnSalaryProfileIds.length !== profile.columnLabels.length
       ) {
+        log("warn", "budget_column_mismatch", {
+          field: "columnSalaryProfileIds",
+          expected: profile.columnLabels.length,
+          got: input.columnSalaryProfileIds.length,
+        });
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "This budget's columns changed — reload and try again.",

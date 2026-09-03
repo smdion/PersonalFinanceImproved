@@ -6,6 +6,7 @@ import { createTRPCRouter, adminProcedure } from "../trpc";
 import { VERSION_TABLE_NAMES, EXCLUDED_TABLES } from "@/lib/db/version-tables";
 import { isPostgres } from "@/lib/db/dialect";
 import { queryRaw } from "@/lib/db/compat";
+import { log } from "@/lib/logger";
 
 /** All known table names (version tables + excluded tables like change_log). */
 const KNOWN_TABLE_LIST = [...VERSION_TABLE_NAMES, ...EXCLUDED_TABLES];
@@ -14,6 +15,9 @@ const KNOWN_TABLES = new Set(KNOWN_TABLE_LIST);
 /** Validate table name against whitelist to prevent SQL injection. */
 function assertKnownTable(name: string): void {
   if (!KNOWN_TABLES.has(name)) {
+    // BAD_REQUEST is skipped by errorLoggingMiddleware — log the rejected
+    // name here since this is the SQL-injection whitelist gate.
+    log("warn", "unknown_table_rejected", { name });
     throw new TRPCError({
       code: "BAD_REQUEST",
       message: `Unknown table: "${name}"`,

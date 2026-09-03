@@ -912,10 +912,12 @@ export const retirementRouter = createTRPCRouter({
           )
           .returning();
         if (!row) {
+          // .mutation() — friendlyMutationError only passes a message
+          // through for BAD_REQUEST (NOT_FOUND gets fixed generic copy).
           throw new TRPCError({
-            code: "NOT_FOUND",
+            code: "BAD_REQUEST",
             message:
-              "No retirement settings found for this person — open the Retirement page first.",
+              "No retirement settings for this person yet — open the Retirement page first.",
           });
         }
         return row;
