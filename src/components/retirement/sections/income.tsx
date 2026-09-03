@@ -1,6 +1,5 @@
 /**
- * Income section — extracted from retirement-content.tsx in PR 8/2 of the
- * v0.5.2 file-split refactor. Pure relocation — no behavior changes. Sits in
+ * Income section. Sits in
  * the left column of the Projection Assumptions card alongside Timeline,
  * covering Household Salary (read-only), Pre-Retirement Raise, Salary Cap,
  * and the Contribution Profile picker.
@@ -16,6 +15,7 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import type {
   Settings,
+  PerPersonSettings,
   UpsertSettingsMutation,
   ContribProfileListEntry as ContribProfile,
   IsEditable,
@@ -35,8 +35,17 @@ type Props = {
    *  (totalComp, includes bonus) as combinedSalary itself — the per-person
    *  lines always sum to the displayed total. */
   salaryByPerson?: Record<number, number>;
+  /** Per-person settings — present when the household has more than one
+   *  person. When set (length > 1), "Pre-Retirement Raise" renders one
+   *  control per person instead of a single household control. */
+  perPersonSettings?: PerPersonSettings;
   upsertSettings: UpsertSettingsMutation;
   handleSettingPercentUpdate: (field: string, wholePercent: string) => void;
+  /** Per-person "Pre-Retirement Raise" writer. `wholePercent` is a
+   *  whole-number string ("3"), same shape `handleSettingPercentUpdate`
+   *  receives — the handler converts it to a decimal. Required whenever
+   *  `perPersonSettings` has more than one entry. */
+  handlePerPersonRaiseRate?: (personId: number, wholePercent: string) => void;
   contribProfiles: ContribProfile[];
   contribProfileId: number | null;
   setContribProfileId: (id: number | null) => void;
@@ -56,11 +65,13 @@ type Props = {
 
 export function IncomeSection({
   settings,
+  perPersonSettings,
   combinedSalary,
   people,
   salaryByPerson,
   upsertSettings,
   handleSettingPercentUpdate,
+  handlePerPersonRaiseRate,
   contribProfiles,
   contribProfileId,
   setContribProfileId,
@@ -113,25 +124,49 @@ export function IncomeSection({
             </span>
           </div>
         </div>
-        <div>
-          <span className="text-muted">
-            Pre-Retirement Raise
-            <HelpTip text="Annual salary raise % during working years. Affects future contributions and employer match." />
-          </span>
-          <div className="font-medium">
-            <InlineEdit
-              value={decToWhole(settings.salaryAnnualIncrease)}
-              onSave={(v) =>
-                handleSettingPercentUpdate("salaryAnnualIncrease", v)
-              }
-              formatDisplay={(v) => formatPercent(Number(v) / 100, 2)}
-              parseInput={(v) => v.replace(/[^0-9.]/g, "")}
-              type="number"
-              className="text-sm"
-              isEditable={isEditable}
-            />
+        {perPersonSettings && perPersonSettings.length > 1 ? (
+          perPersonSettings.map((ps) => (
+            <div key={ps.personId}>
+              <span className="text-muted">
+                {ps.name}&apos;s Pre-Retirement Raise
+                {ps.personId === perPersonSettings[0]!.personId && (
+                  <HelpTip text="Annual salary raise % during working years, set per person. Affects future contributions and employer match." />
+                )}
+              </span>
+              <div className="font-medium">
+                <InlineEdit
+                  value={decToWhole(ps.salaryAnnualIncrease)}
+                  onSave={(v) => handlePerPersonRaiseRate?.(ps.personId, v)}
+                  formatDisplay={(v) => formatPercent(Number(v) / 100, 2)}
+                  parseInput={(v) => v.replace(/[^0-9.]/g, "")}
+                  type="number"
+                  className="text-sm"
+                  isEditable={isEditable}
+                />
+              </div>
+            </div>
+          ))
+        ) : (
+          <div>
+            <span className="text-muted">
+              Pre-Retirement Raise
+              <HelpTip text="Annual salary raise % during working years. Affects future contributions and employer match." />
+            </span>
+            <div className="font-medium">
+              <InlineEdit
+                value={decToWhole(settings.salaryAnnualIncrease)}
+                onSave={(v) =>
+                  handleSettingPercentUpdate("salaryAnnualIncrease", v)
+                }
+                formatDisplay={(v) => formatPercent(Number(v) / 100, 2)}
+                parseInput={(v) => v.replace(/[^0-9.]/g, "")}
+                type="number"
+                className="text-sm"
+                isEditable={isEditable}
+              />
+            </div>
           </div>
-        </div>
+        )}
         <div>
           <span className="text-muted">
             Salary Cap
@@ -164,7 +199,7 @@ export function IncomeSection({
         <div>
           <span className="text-muted">
             Salary Profile
-            <HelpTip text="Which Salary Profile the salaries in this projection come from. Each profile sets every person to either follow their job record or a fixed amount. Independent of the Contribution Profile beside it — the two are separate selections. This selection is saved as your active Salary Profile and applies on every page until you change it back; it is not a one-off preview. A Plan pin, if one is set, overrides it." />
+            <HelpTip text="Which Salary Profile the salaries in this projection come from. Each profile sets every person to either follow their job record or a fixed amount. Independent of the Contribution Profile beside it — the two are separate selections. This selection is saved as your active Salary Profile and applies on every page until you change it back; it is not a one-off preview. An active Plan, if one is set, takes precedence." />
           </span>
           <div className="font-medium">
             <select
@@ -185,8 +220,8 @@ export function IncomeSection({
             </select>
             {isSalaryPinned && (
               <div className="text-caption text-amber-600 mt-0.5">
-                Pinned by Plan{pinnedPlanName ? ` "${pinnedPlanName}"` : ""} —
-                clear the pin to change this here.
+                Active via Plan{pinnedPlanName ? ` "${pinnedPlanName}"` : ""} —
+                clear the Plan to change this here.
               </div>
             )}
           </div>
@@ -194,7 +229,7 @@ export function IncomeSection({
         <div>
           <span className="text-muted">
             Contribution Profile
-            <HelpTip text="Which Contribution Profile the contribution assumptions in this projection come from. Salary is a separate selection — see Salary Profile. This selection is saved as your active Contribution Profile and applies on every page until you change it back; it is not a one-off preview. A Plan pin, if one is set, overrides it." />
+            <HelpTip text="Which Contribution Profile the contribution assumptions in this projection come from. Salary is a separate selection — see Salary Profile. This selection is saved as your active Contribution Profile and applies on every page until you change it back; it is not a one-off preview. An active Plan, if one is set, takes precedence." />
           </span>
           <div className="font-medium">
             <select
@@ -215,8 +250,8 @@ export function IncomeSection({
             </select>
             {isContribPinned && (
               <div className="text-caption text-amber-600 mt-0.5">
-                Pinned by Plan{pinnedPlanName ? ` "${pinnedPlanName}"` : ""} —
-                clear the pin to change this here.
+                Active via Plan{pinnedPlanName ? ` "${pinnedPlanName}"` : ""} —
+                clear the Plan to change this here.
               </div>
             )}
           </div>

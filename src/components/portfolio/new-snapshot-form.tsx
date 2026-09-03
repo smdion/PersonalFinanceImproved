@@ -12,6 +12,7 @@ import {
   personDisplayName,
 } from "@/lib/utils/format";
 import { taxTypeLabel } from "@/lib/utils/colors";
+import { localDateStr } from "@/lib/utils/date";
 import { getDisplayConfig } from "@/lib/config/account-types";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
@@ -79,7 +80,7 @@ function groupFormRows(
           displayName: null,
           // null, not a hand-built fallback string — lets accountDisplayName
           // fall through to its casing-aware construction instead of
-          // returning a raw lowercase DB key verbatim (M40).
+          // returning a raw lowercase DB key verbatim.
           accountLabel: null,
           accountType: row.accountType,
           institution: row.institution,
@@ -117,7 +118,7 @@ function groupFormRows(
       const taxLabel = taxTypeLabel(row.taxType);
       // DESIGN.md's sub-account-type rule only names subType, but `label` is
       // a real, separate free-text override column — takes precedence when
-      // set (see DESIGN.md follow-up, Batch 25 F3).
+      // set (see DESIGN.md).
       const displayName = row.label || row.subType;
 
       let typeLabel: string;
@@ -195,7 +196,7 @@ export function NewSnapshotForm({
     },
   });
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateStr();
   const [snapshotDate, setSnapshotDate] = useState(today);
   const [notes, setNotes] = useState("");
   const [rows, setRows] = useState<AccountRow[] | null>(null);

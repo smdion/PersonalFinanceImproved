@@ -11,6 +11,7 @@
  */
 import type { PreviewData } from "../integrations-types";
 import type { ContribMutations } from "./hooks/use-contrib-mutations";
+import { Badge } from "@/components/ui/badge";
 import {
   SectionSummaryBadge,
   SectionSummaryRow,
@@ -80,9 +81,14 @@ export function ContribSection({ budget, contribAccounts, mutations }: Props) {
                   key={m.budgetItemId}
                   className="flex items-center gap-1.5 text-xs min-h-[24px]"
                 >
-                  <span className="text-caption px-1.5 py-0.5 rounded bg-green-50 text-green-700 whitespace-nowrap">
+                  <Badge
+                    color="green"
+                    size="sm"
+                    case="normal"
+                    className="whitespace-nowrap"
+                  >
                     Linked
-                  </span>
+                  </Badge>
                   <span
                     className="text-secondary truncate min-w-[80px] max-w-[140px]"
                     title={`${m.ledgrCategory} > ${m.ledgrName}`}

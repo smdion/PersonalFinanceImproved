@@ -4,6 +4,7 @@ import React, { useState, memo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
+import { StatusDot } from "@/components/ui/badge";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { sumBy, safeDivide } from "@/lib/utils/math";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
@@ -442,7 +443,7 @@ function LivingCostsCardImpl() {
       }
       subtitle={`${onTarget}/${rows.length} within range${
         activeBudgetProfileName
-          ? ` · ${activeBudgetProfileName}${isBudgetPinned ? " (pinned)" : ""}`
+          ? ` · ${activeBudgetProfileName}${isBudgetPinned ? " (active)" : ""}`
           : ""
       } · full-year view`}
       href="/budget"
@@ -555,7 +556,7 @@ function LivingCostsCardImpl() {
       )}
       <div className="mt-2 flex gap-3 text-caption text-faint">
         <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-green-500" /> On target
+          <StatusDot color="green" /> On target
         </span>
         <span className="flex items-center gap-1">
           <span className="w-2 h-2 rounded-full bg-blue-400" /> Below

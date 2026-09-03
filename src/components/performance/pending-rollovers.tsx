@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency, accountDisplayName } from "@/lib/utils/format";
+import { StatusDot } from "@/components/ui/badge";
 
 type PendingRollover = {
   id: number;
@@ -295,7 +296,7 @@ export function PendingRolloverBadge({
   const total = relevant.reduce((s, pr) => s + pr.amount, 0);
   return (
     <span className="inline-flex items-center gap-1 text-micro font-medium text-amber-600 border border-amber-400/50 rounded px-1 py-0.5 ml-1">
-      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
+      <StatusDot color="amber" size="xs" pulse className="flex-shrink-0" />
       {direction === "out" ? "−" : "+"}
       {formatCurrency(total)} pending
     </span>

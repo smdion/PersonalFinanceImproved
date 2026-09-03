@@ -8,7 +8,6 @@ export { ContributionProfileManager } from "./contribution-profile-manager";
 export { SalaryProfileManager } from "./salary-profile-manager";
 export { SavingsAllocationPanel } from "./savings-allocation-panel";
 export { ProfileViewingBadge } from "./profile-viewing-badge";
-// v0.5.2 budget page split — extracted components
 export { BudgetSummaryBar } from "./budget-summary-bar";
 export { BudgetProfileSidebar } from "./budget-profile-sidebar";
 export { BudgetTable } from "./budget-table";

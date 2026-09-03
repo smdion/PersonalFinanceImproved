@@ -2,9 +2,9 @@
 
 /**
  * Retirement Profile tab panel — the "Projection Assumptions" card, moved
- * off the Retirement page onto the Budget page in v0.7.8 (PLAN-v0.7.8-v4
- * Group A). Straight relocation of a singleton settings editor, not a new
- * profile type: `retirement_settings` still has no name/multi-row shape,
+ * off the Retirement page onto the Budget page. Straight relocation of a
+ * singleton settings editor, not a new profile type: `retirement_settings`
+ * still has no name/multi-row shape,
  * still reads/writes through `retirementSettings.upsert` and
  * `computeProjection`'s `metadataOnly` response exactly as it did on the
  * Retirement page. This component owns that data-fetching independently
@@ -31,6 +31,7 @@ import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatPercent } from "@/lib/utils/format";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -156,7 +157,7 @@ export function RetirementProfileTab({
     debouncedEngineInput,
     { placeholderData: (prev) => prev },
   );
-  // Multi-year withdrawal-policy optimizer, Phase 4 (2026-08-29) — queried
+  // Multi-year withdrawal-policy optimizer — queried
   // here (not inside TaxesSection, a documented pure-presentational leaf)
   // so it can be passed down as a plain prop, same pattern as CoastFireCard
   // receiving coastFireMcResult. Queried with `{}` — this tab reflects the
@@ -167,7 +168,7 @@ export function RetirementProfileTab({
   // change mid-session, matching plan-health.tsx's stress-test query
   // precedent — explicit, not left to the query library's default (which
   // would otherwise silently serve a possibly-very-stale cached response
-  // on remount). See PLAN-v0.7.10-multi-year-withdrawal-optimizer.md.
+  // on remount).
   const bracketOptimizerQuery =
     trpc.projection.computeWithdrawalBracketOptimizer.useQuery(
       {},
@@ -211,6 +212,17 @@ export function RetirementProfileTab({
     });
   const upsertProfileHouseholdFields =
     trpc.retirement.retirementProfilePeople.upsertHouseholdFields.useMutation({
+      onSuccess: () => {
+        utils.retirement.invalidate();
+        utils.projection.invalidate();
+        notifyRecalcQueued();
+      },
+    });
+
+  // Per-person "Pre-Retirement Raise". Writes only
+  // retirement_settings.salary_annual_increase for one (profile, person).
+  const upsertPersonRaiseRate =
+    trpc.retirement.retirementSettings.upsertPersonRaiseRate.useMutation({
       onSuccess: () => {
         utils.retirement.invalidate();
         utils.projection.invalidate();
@@ -316,6 +328,19 @@ export function RetirementProfileTab({
     [data, upsertProfilePerson],
   );
 
+  const handlePerPersonRaiseRate = useCallback(
+    (personId: number, wholePercent: string) => {
+      const settings = data && "settings" in data ? data.settings : null;
+      if (!settings || settings.profileId == null) return;
+      upsertPersonRaiseRate.mutate({
+        profileId: settings.profileId,
+        personId,
+        salaryAnnualIncrease: wholeToDec(wholePercent),
+      });
+    },
+    [data, upsertPersonRaiseRate],
+  );
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -371,11 +396,13 @@ export function RetirementProfileTab({
 
               <IncomeSection
                 settings={settings}
+                perPersonSettings={perPersonSettings}
                 combinedSalary={data.combinedSalary}
                 people={data.people}
                 salaryByPerson={data.salaryByPerson}
                 upsertSettings={upsertSettingsMutation}
                 handleSettingPercentUpdate={handleSettingPercentUpdate}
+                handlePerPersonRaiseRate={handlePerPersonRaiseRate}
                 contribProfiles={contribProfiles}
                 contribProfileId={contribProfileId}
                 setContribProfileId={setContribProfileId}
@@ -395,9 +422,7 @@ export function RetirementProfileTab({
                 <h4 className="text-label font-semibold text-muted uppercase tracking-wider">
                   Decumulation Plan
                 </h4>
-                <span className="text-micro text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
-                  Baseline + Simulation
-                </span>
+                <Badge color="indigo">Baseline + Simulation</Badge>
                 <div className="flex-1 border-t" />
                 <StrategyGuideButton />
               </div>
@@ -491,9 +516,7 @@ export function RetirementProfileTab({
               <h4 className="text-label font-semibold text-muted uppercase tracking-wider">
                 Plan Assumptions
               </h4>
-              <span className="text-micro text-purple-400 bg-purple-50 px-1.5 py-0.5 rounded">
-                Baseline
-              </span>
+              <Badge color="indigo">Baseline</Badge>
               <div className="flex-1 border-t" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">

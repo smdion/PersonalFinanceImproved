@@ -38,6 +38,8 @@ export type RawContrib = {
   targetAnnual: string | null;
   allocationPriority: number;
   notes: string | null;
+  displayNameCustom?: string;
+  /** @deprecated legacy key — see json-schemas.ts. */
   displayNameActive?: string;
   performanceAccountId: number | null;
 };

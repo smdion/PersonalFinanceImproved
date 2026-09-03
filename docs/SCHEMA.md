@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**67 tables.**
+**72 tables.**
 
 ## Mermaid diagram
 
@@ -29,7 +29,13 @@ erDiagram
   budget_items {
     int id PK
   }
+  budget_item_category_links {
+    int id PK
+  }
   savings_goals {
+    int id PK
+  }
+  savings_goal_category_links {
     int id PK
   }
   savings_monthly {
@@ -42,6 +48,9 @@ erDiagram
     int id PK
   }
   savings_allocation_overrides {
+    int id PK
+  }
+  budget_income_adjustments {
     int id PK
   }
   savings_goal_profile_allocations {
@@ -146,6 +155,12 @@ erDiagram
   irmaa_brackets {
     int id PK
   }
+  fpl_by_household {
+    int id PK
+  }
+  tax_params {
+    int id PK
+  }
   api_connections {
     int id PK
   }
@@ -214,10 +229,13 @@ erDiagram
   contribution_accounts }o--|| people : references
   paycheck_deductions }o--|| jobs : references
   budget_items }o--|| budget_profiles : references
+  budget_item_category_links }o--|| budget_items : references
+  savings_goal_category_links }o--|| savings_goals : references
   savings_monthly }o--|| savings_goals : references
   savings_planned_transactions }o--|| savings_goals : references
   savings_planned_tx_settlements }o--|| savings_planned_transactions : references
   savings_allocation_overrides }o--|| savings_goals : references
+  budget_income_adjustments }o--|| jobs : references
   savings_goal_profile_allocations }o--|| savings_goals : references
   savings_goal_profile_allocations }o--|| budget_profiles : references
   brokerage_planned_transactions }o--|| brokerage_goals : references
@@ -269,12 +287,15 @@ erDiagram
 - **brokerage_goals**
 - **brokerage_planned_transactions** → brokerage_goals
 - **budget_api_cache**
+- **budget_income_adjustments** → jobs
+- **budget_item_category_links** → budget_items
 - **budget_items** → budget_profiles
 - **budget_profiles**
 - **change_log**
 - **contribution_accounts** → jobs, people
 - **contribution_limits**
 - **contribution_profiles**
+- **fpl_by_household**
 - **glide_path_allocations** → asset_class_params
 - **historical_notes**
 - **historical_salaries** → people
@@ -311,6 +332,7 @@ erDiagram
 - **return_rate_table**
 - **salary_profiles**
 - **savings_allocation_overrides** → savings_goals
+- **savings_goal_category_links** → savings_goals
 - **savings_goal_profile_allocations** → savings_goals, budget_profiles
 - **savings_goals**
 - **savings_monthly** → savings_goals
@@ -323,5 +345,6 @@ erDiagram
 - **state_version_tables** → state_versions
 - **state_versions**
 - **tax_brackets**
+- **tax_params**
 - **utility_reading** → utility_service
 - **utility_service**

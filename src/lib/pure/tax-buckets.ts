@@ -1,8 +1,7 @@
 /**
  * Pure portfolio-snapshot → tax-bucket aggregation.
  *
- * Extracted from `src/server/retirement/build-engine-payload.ts` so the
- * Retirement engine and the Tax Buckets analysis tool share one
+ * The Retirement engine and the Tax Buckets analysis tool share this one
  * implementation of "what do we actually hold, by tax bucket" instead of
  * two that can silently drift apart (RULES.md § Pure Business Logic
  * Boundary / no second computation path).
@@ -195,8 +194,7 @@ export function computeTaxBucketBreakdown(
 
       if (!accountBreakdownByCategory[cat])
         accountBreakdownByCategory[cat] = [];
-      // Owner included in the merge key (v0.7.8 Group 1 prerequisite,
-      // advisor finding S3): two different people's accounts sharing a
+      // Owner included in the merge key: two different people's accounts sharing a
       // display name within the same category/taxType must stay separate
       // rows — merging them silently kept only the first owner's
       // ownerPersonId, which downstream per-owner eligibility gating

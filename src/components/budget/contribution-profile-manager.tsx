@@ -110,15 +110,12 @@ export function ContributionProfileManager({
   // useActiveContribProfile repairs it if that row ever goes missing.
   const globalActiveContribId = activeContribId;
   // Plan pin -> local selection -> globally-active profile (single computation path)
-  const {
-    profileId: effectiveSelectedId,
-    source: effectiveSelectedSource,
-    isPinned: isPinnedProfile,
-  } = useEffectiveProfileId("contribution", {
-    validIds: profiles?.map((p) => p.id),
-    localSelection: selectedProfileId,
-    globalDefaultId: globalActiveContribId,
-  });
+  const { profileId: effectiveSelectedId, source: effectiveSelectedSource } =
+    useEffectiveProfileId("contribution", {
+      validIds: profiles?.map((p) => p.id),
+      localSelection: selectedProfileId,
+      globalDefaultId: globalActiveContribId,
+    });
   const activeProfileName = profiles?.find(
     (p) => p.id === globalActiveContribId,
   )?.name;
@@ -140,7 +137,7 @@ export function ContributionProfileManager({
   const displayedProfile = profiles.find((p) => p.id === effectiveSelectedId);
   const canDeleteAny = profiles.length > 1;
 
-  // R20: warn before a swap silently drops an account's active value —
+  // Warn before a swap silently drops an account's active value —
   // compare against whichever profile is CURRENTLY in effect for this
   // viewing context (Plan pin, if any, else the global active one), same
   // resolution useEffectiveProfileId already does for display.
@@ -172,7 +169,7 @@ export function ContributionProfileManager({
 
   return (
     <div>
-      {/* R20: a standing audit view — accounts × profiles, not just this one
+      {/* A standing audit view — accounts × profiles, not just this one
           profile's editor — kept as an internal toggle rather than a new
           top-level Budget-page tab (see contribution-profile-compare.tsx). */}
       <div className="flex items-center justify-between mb-4 border-b">
@@ -244,7 +241,6 @@ export function ContributionProfileManager({
                   profileName={displayedProfile.name}
                   activeProfileName={activeProfileName}
                   isViewingNonActive={isViewingNonActive}
-                  isPinned={isPinnedProfile}
                   onActivate={
                     canEdit
                       ? () => handleActivate(displayedProfile.id)
@@ -334,7 +330,7 @@ export function ContributionProfileManager({
                             .map((s) => s.name);
                           const pinnedByClause =
                             pinnedBy.length > 0
-                              ? ` The Plan${pinnedBy.length > 1 ? "s" : ""} "${pinnedBy.join('", "')}" pin${pinnedBy.length > 1 ? "" : "s"} this profile, so deleting is blocked until you unpin it there.`
+                              ? ` The Plan${pinnedBy.length > 1 ? "s" : ""} "${pinnedBy.join('", "')}" ${pinnedBy.length > 1 ? "have" : "has"} this profile active, so deleting is blocked until you clear it there.`
                               : "";
                           if (
                             await confirm(
@@ -786,7 +782,7 @@ function ProfileEditor({
       if (nameVal.trim()) {
         contribAccounts[accountId] = {
           ...(contribAccounts[accountId] ?? {}),
-          displayNameActive: nameVal.trim(),
+          displayNameCustom: nameVal.trim(),
         };
       }
     }
@@ -1565,8 +1561,8 @@ function ProfileInlineEditor({
                       ? String(af.contributionValue)
                       : "";
                   const storedName =
-                    af.displayNameActive !== undefined
-                      ? String(af.displayNameActive)
+                    (af.displayNameCustom ?? af.displayNameActive) !== undefined
+                      ? String(af.displayNameCustom ?? af.displayNameActive)
                       : "";
                   // A profile that resolves no value for this account
                   // (hasValue false) contributes nothing to the engine —
@@ -1664,7 +1660,7 @@ function ProfileInlineEditor({
                                 storedName,
                                 (value) =>
                                   patchAccount(ad.id, {
-                                    displayNameActive: value,
+                                    displayNameCustom: value,
                                   }),
                               )
                             }
@@ -1798,7 +1794,7 @@ function ProfileInlineEditor({
                               title={
                                 af.employerMatchValue === undefined &&
                                 storedMatch !== ""
-                                  ? "Inherited from the account's own settings — editing this sets an override for this profile only"
+                                  ? "Inherited from the account's own settings — editing this sets a customization for this profile only"
                                   : undefined
                               }
                               placeholder="—"
@@ -1849,7 +1845,7 @@ function ProfileInlineEditor({
                               title={
                                 af.employerMaxMatchPct === undefined &&
                                 storedCap !== ""
-                                  ? "Inherited from the account's own settings — editing this sets an override for this profile only"
+                                  ? "Inherited from the account's own settings — editing this sets a customization for this profile only"
                                   : undefined
                               }
                               placeholder="—"

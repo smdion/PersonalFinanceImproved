@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * useContributionAccountsMutations — extracted from contribution-accounts.tsx (F5, v0.5.3).
+ * useContributionAccountsMutations — extracted from contribution-accounts.tsx.
  *
  * Owns: the 7 tRPC mutations + the two partial-updater helpers
  * (handlePerfUpdate, handleContribUpdate) + the link-contrib helper.

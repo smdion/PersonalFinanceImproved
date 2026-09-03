@@ -173,6 +173,7 @@ export function useProjectionState(props: UseProjectionStateProps) {
           ...(e.targetAccountName
             ? { targetAccountName: e.targetAccountName }
             : {}),
+          ...(e.targetOwnerName ? { targetOwnerName: e.targetOwnerName } : {}),
           ...(e.taxType !== ""
             ? { taxType: e.taxType as "traditional" | "roth" }
             : {}),
@@ -286,6 +287,7 @@ export function useProjectionState(props: UseProjectionStateProps) {
           ...(e.targetAccountName
             ? { targetAccountName: e.targetAccountName }
             : {}),
+          ...(e.targetOwnerName ? { targetOwnerName: e.targetOwnerName } : {}),
           ...(e.taxType !== ""
             ? { taxType: e.taxType as "traditional" | "roth" }
             : {}),

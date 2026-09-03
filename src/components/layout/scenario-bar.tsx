@@ -12,7 +12,7 @@ import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile"
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
-import { Badge } from "@/components/ui/badge";
+import { Badge, StatusDot } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useClickOutside } from "@/lib/hooks/use-click-outside";
 
@@ -108,9 +108,7 @@ export function ScenarioBar() {
     isActive: p.id === effectiveBudgetId,
     badge:
       p.id === effectiveBudgetId
-        ? budgetIsPinned
-          ? "Pinned"
-          : "Active"
+        ? "Active"
         : p.id === globalActiveBudgetId
           ? "Active (global)"
           : undefined,
@@ -122,9 +120,7 @@ export function ScenarioBar() {
     isActive: p.id === effectiveContribId,
     badge:
       p.id === effectiveContribId
-        ? contribIsPinned
-          ? "Pinned"
-          : "Active"
+        ? "Active"
         : p.id === globalActiveContribId
           ? "Active (global)"
           : undefined,
@@ -144,9 +140,7 @@ export function ScenarioBar() {
     isActive: p.id === effectiveSalaryId,
     badge:
       p.id === effectiveSalaryId
-        ? salaryIsPinned
-          ? "Pinned"
-          : "Active"
+        ? "Active"
         : p.id === globalActiveSalaryId
           ? "Active (global)"
           : undefined,
@@ -162,7 +156,7 @@ export function ScenarioBar() {
       activateBudget.mutate({ id });
     }
   };
-  // R20: warn before a swap silently drops an account's active value — same
+  // Warn before a swap silently drops an account's active value — same
   // treatment as contribution-profile-manager.tsx's handleActivate, compared
   // against whichever profile is currently in effect (Plan pin, if any,
   // else the global active one).
@@ -336,7 +330,7 @@ export function ScenarioBar() {
                     : "text-secondary"
                 }`}
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                <StatusDot color="green" size="xs" />
                 Main Plan
                 {activeSelection.type === "main" && (
                   <span className="ml-auto">
@@ -373,7 +367,7 @@ export function ScenarioBar() {
                         }}
                         className="flex-1 text-left flex items-center gap-2"
                       >
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                        <StatusDot color="blue" size="xs" />
                         {s.name}
                       </button>
                       {canManageScenarios && (
@@ -540,20 +534,20 @@ export function ScenarioBar() {
 
       {/* Profile switchers */}
       <ProfilePill
-        label={budgetIsPinned ? "Budget (pinned)" : "Budget"}
+        label={budgetIsPinned ? "Budget (active)" : "Budget"}
         options={budgetOptions}
         onActivate={(id) => handleActivateBudget(Number(id))}
         isPending={activateBudget.isPending}
       />
       <div className="hidden sm:block w-px h-4 bg-surface-strong" />
       <ProfilePill
-        label={contribIsPinned ? "Contributions (pinned)" : "Contributions"}
+        label={contribIsPinned ? "Contributions (active)" : "Contributions"}
         options={contribOptions}
         onActivate={(id) => handleActivateContrib(Number(id))}
       />
       <div className="hidden sm:block w-px h-4 bg-surface-strong" />
       <ProfilePill
-        label={salaryIsPinned ? "Salary (pinned)" : "Salary"}
+        label={salaryIsPinned ? "Salary (active)" : "Salary"}
         options={salaryOptions}
         onActivate={(id) => handleActivateSalary(Number(id))}
       />

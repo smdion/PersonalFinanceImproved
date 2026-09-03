@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { formatCurrency } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
+import { Badge, StatusDot } from "@/components/ui/badge";
 import type { PayrollBreakdown, ColumnResult, SinkingFundLine } from "./types";
 import { computeTotalSinking, computeUnallocated } from "./helpers";
 
@@ -174,9 +175,13 @@ export function BudgetSummaryTable({
                   </span>
                 )}
                 {apiService && apiLinkedColumnIndex === colIdx && (
-                  <span className="ml-1 text-micro px-1 py-0.5 rounded bg-blue-100 text-blue-600 font-semibold align-middle">
+                  <Badge
+                    color="blue"
+                    case="normal"
+                    className="ml-1 align-middle"
+                  >
                     ⇄ {apiService.toUpperCase()}
-                  </span>
+                  </Badge>
                 )}
               </th>
             ))}
@@ -501,7 +506,7 @@ export function BudgetSummaryTable({
                     {takeHomeDetailLines.length > 1 ? (
                       <ChevronIcon expanded={showTakeHome} />
                     ) : (
-                      <span className="w-2 h-2 rounded-full bg-green-500" />
+                      <StatusDot color="green" />
                     )}
                     Take-Home Pay
                     <HelpTip
@@ -554,7 +559,7 @@ export function BudgetSummaryTable({
               <tr className="border-b border-subtle">
                 <td className="py-1 pr-3 font-medium text-blue-700">
                   <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />
+                    <StatusDot color="blue" className="flex-shrink-0" />
                     Essential
                     <HelpTip text="Bills and expenses you must pay regardless — these are included when calculating your emergency fund target." />
                   </span>

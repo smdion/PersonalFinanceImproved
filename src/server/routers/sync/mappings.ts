@@ -191,7 +191,7 @@ export const syncMappingsRouter = createTRPCRouter({
    * deltas were computed against the old state). Pass `confirmNonLatest`
    * after warning the user.
    */
-  resyncSnapshot: syncProcedure
+  resyncPortfolioPush: syncProcedure
     .input(
       z.object({
         snapshotId: z.number().int().positive(),

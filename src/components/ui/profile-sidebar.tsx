@@ -17,6 +17,8 @@
  * this is additive for the three existing consumers, not a behavior change.
  */
 
+import { Badge } from "@/components/ui/badge";
+
 type ProfileListRowProps = {
   name: string;
   /** Highlighted as the one currently being viewed/edited — not
@@ -115,9 +117,9 @@ export function ProfileListRow({
             </span>
           )}
           {isActive && (
-            <span className="text-micro px-1 py-0.5 rounded bg-green-100 text-green-700 font-semibold shrink-0">
+            <Badge color="green" className="shrink-0">
               {activeLabel}
-            </span>
+            </Badge>
           )}
           {extraBadge}
         </div>

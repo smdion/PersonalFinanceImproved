@@ -244,8 +244,7 @@ export type ProjectionInput = {
   perPersonBirthYears?: number[];
   /** Annual expenses for decumulation phase. When set, projectedExpenses resets to this value at retirement age. */
   decumulationAnnualExpenses?: number;
-  /** Rate-Seeded scenario (advisor review, 2026-08-28 —
-   *  PLAN-shortfall-alerting-and-strategy-scenario.md Feature B): when
+  /** Rate-Seeded scenario: when
    *  true, the FIRST decumulation year's spending is seeded from
    *  `decumulationDefaults.withdrawalRate × portfolio balance` instead of
    *  from `decumulationAnnualExpenses`/any year-1 budget override —
@@ -353,8 +352,8 @@ export type EngineDecumulationYear = {
    *  adjusts spending away from budget. This is what "vs Budget" chart/KPI
    *  comparisons should read — comparing against `projectedExpenses` for
    *  those strategies silently collapses "vs Budget" into being identical
-   *  to "vs Strategy" (live-user finding, 2026-08-28: both KPI rings
-   *  showing the same percentage). See ProjectionLoopState.budgetOnlyExpenses. */
+   *  to "vs Strategy" (both KPI rings showing the same percentage). See
+   *  ProjectionLoopState.budgetOnlyExpenses. */
   budgetOnlyExpenses: number;
   hasBudgetOverride: boolean;
   /** Brokerage (Portfolio-category) contributions that continue post-retirement. */
@@ -393,8 +392,8 @@ export type EngineDecumulationYear = {
   /** This year's standard deduction, grown forward from its DB vintage the
    *  same way `bracketTraditionalCap` above is (`bracket-growth.ts`'s
    *  `growAmount`) — NOT the plan-level `engineSettings.standardDeduction`
-   *  echo, which stays at its ungrown base value. Advisor-caught
-   *  (2026-08-31): before this field existed, the report/tooltip's
+   *  echo, which stays at its ungrown base value. Before this field
+   *  existed, the report/tooltip's
    *  bracket-ceiling-math narrative (`describeBracketCeilingMath`) paired
    *  a grown `bracketTraditionalCap` with the ungrown plan-level
    *  deduction in the same sentence — internally inconsistent for any
@@ -419,21 +418,20 @@ export type EngineDecumulationYear = {
    *  (drawn amounts only), a tier's capacity here is visible even in years
    *  the draw loop never reached it (e.g. Roth basis alone covered the
    *  year's need). See `RankedWithdrawalTiers` (withdrawal-cost-ranking.ts)
-   *  for the full explanation — found live, 2026-08-31, when a household
-   *  couldn't tell why brokerage's 0%-LTCG room wasn't draining before
+   *  for the full explanation (a household couldn't tell why brokerage's
+   *  0%-LTCG room wasn't draining before
    *  Roth. bracket_filling mode only; undefined for waterfall/percentage. */
   rothBasisCapacity?: number;
   brokerageZeroLtcgCapacity?: number;
   /** Unmet withdrawal need after routing (target - actual) — a REAL output
-   *  now, not debug-only (v0.7.8 penalty-hard-exclusion follow-up,
-   *  DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md § Q3/C1): under the
+   *  now, not debug-only. Under the
    *  default `avoidPenalizedWithdrawals: true`, a household whose
    *  penalty-free money runs out shows a real, positive `unmetNeed` here
    *  rather than silently drawing penalized money. Populated by all three
    *  routing modes. */
   unmetNeed?: number;
-  /** Single canonical "is `unmetNeed` a REAL shortfall" verdict (advisor
-   *  review, 2026-08-28) — `unmetNeed` alone isn't reliably floor-filtered
+  /** Single canonical "is `unmetNeed` a REAL shortfall" verdict —
+   *  `unmetNeed` alone isn't reliably floor-filtered
    *  (its `routedUnmetNeed` fallback branch never applies the materiality
    *  floor, so a rounding-scale residual can read as `unmetNeed > 0`
    *  without being material). UI alerting (chart marker, table line, KPI
@@ -442,20 +440,20 @@ export type EngineDecumulationYear = {
    *  `shortfallMaterialityFloor` for why $50-or-1%-of-need is the bar. */
   unmetNeedMaterial?: boolean;
   /** Portion of `unmetNeed` attributable specifically to excluding
-   *  penalty-exposed money, not to the household being broke (§ Q3/C2) —
+   *  penalty-exposed money, not to the household being broke —
    *  see `RouteResult`'s docblock in `withdrawal-routing.ts` for the exact
    *  contract. A household can be short for both reasons, or either alone;
    *  this field isolates the penalty-avoidance portion so the two are
    *  never conflated. */
   penaltyAvoidedShortfall?: number;
   /** Portion of `unmetNeed` attributable specifically to excluding
-   *  Portfolio-parented ("non-retirement") money (R49) — see
+   *  Portfolio-parented ("non-retirement") money — see
    *  `RouteResult`'s docblock in `withdrawal-routing.ts` for the exact
    *  contract. Same isolation principle as `penaltyAvoidedShortfall`: a
    *  household can be short for this reason, the penalty-avoidance reason,
    *  both, or neither. */
   nonRetirementShortfall?: number;
-  /** Early-withdrawal penalty cost actually charged this year (§ Q5) —
+  /** Early-withdrawal penalty cost actually charged this year —
    *  0 in the overwhelming default case, since `avoidPenalizedWithdrawals:
    *  true` already excludes penalty-exposed money from routing. Nonzero
    *  only when the lever is off and a penalized dollar was actually drawn.
@@ -504,7 +502,7 @@ export type EngineDecumulationYear = {
   priorYearEndTradBalance?: number;
   /** True if the RMD forced additional Traditional withdrawals beyond what routing chose. */
   rmdOverrodeRouting: boolean;
-  /** R49: dollars of `rmdAmount` that could NOT be forced through as a real
+  /** Dollars of `rmdAmount` that could NOT be forced through as a real
    *  taxable distribution — 0 in the overwhelmingly common case. Real IRS
    *  exposure (a 25% excise tax applies to the shortfall), not a display
    *  nicety: possible now that Retirement-only Traditional capacity can be
@@ -512,7 +510,7 @@ export type EngineDecumulationYear = {
    *  parented balances no longer count). See `rmd-enforcement.ts`'s
    *  `RmdEnforcementResult.rmdShortfallAmount` docblock. */
   rmdShortfallAmount: number;
-  /** R46: dollars of RMD-forced excess (beyond the strategy's stated need +
+  /** Dollars of RMD-forced excess (beyond the strategy's stated need +
    *  tax cost) this year — 0 in the overwhelmingly common case
    *  (`rmdOverrodeRouting` false, or the RMD didn't exceed need). What
    *  happened to it depends on the household's `rmdExcessHandling`
@@ -523,7 +521,7 @@ export type EngineDecumulationYear = {
    *  floor regardless of what the strategy needed, with no prior UI
    *  trace. */
   rmdExcessAmount: number;
-  /** R47: portion of this year's combined household RMD-smoothing target
+  /** Portion of this year's combined household RMD-smoothing target
    *  (see `rmd-smoothing.ts`) that did NOT end up converted — undefined
    *  when smoothing is off or had nothing to convert, 0 in the common
    *  case when smoothing is on and fully achieved. A real, expected
@@ -531,7 +529,7 @@ export type EngineDecumulationYear = {
    *  still wasn't enough), not silently dropped. See
    *  `RothConversionResult.rmdSmoothingShortfall` docblock. */
   rmdSmoothingShortfall?: number;
-  /** R46 Phase 2: total Qualified Charitable Distribution amount applied
+  /** Total Qualified Charitable Distribution amount applied
    *  this year (0 unless `qcdMaximize` is on and this household has a
    *  QCD-eligible RMD). Satisfies that much of `rmdAmount` directly,
    *  excluded from taxable income — see `qcd.ts` for the approximation

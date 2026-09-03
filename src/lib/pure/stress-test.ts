@@ -1,7 +1,7 @@
 /**
- * Stress test parameter sets for retirement projections (v0.5 expert-review M2).
+ * Stress test parameter sets for retirement projections.
  *
- * The audit's concern: ledgr accepts user-set return / inflation / salary-growth
+ * The concern: ledgr accepts user-set return / inflation / salary-growth
  * assumptions with no historical context. A user with rosy assumptions doesn't
  * see the downside. This module exports canonical "conservative" and "optimistic"
  * parameter sets that any UI can pass into the projection engine to render a

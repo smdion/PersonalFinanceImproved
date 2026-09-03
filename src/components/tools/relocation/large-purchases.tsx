@@ -1,8 +1,7 @@
 "use client";
 
 /** Large purchases panel (KPI summary + list + add form) for the Relocation
- *  calculator. Extracted from tools/page.tsx during the v0.5.2 file-split
- *  refactor. Stateless — all state flows via props.
+ *  calculator. Stateless — all state flows via props.
  */
 
 import { useState } from "react";

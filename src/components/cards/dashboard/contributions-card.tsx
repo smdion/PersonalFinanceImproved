@@ -3,6 +3,7 @@
 import React, { useState, memo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import {
   PERF_CATEGORY_RETIREMENT,
@@ -260,9 +261,9 @@ function ContributionsCardImpl() {
                               {formatCurrency(at.limit)}
                               {at.views[viewMode].fundingPct >
                                 OVER_LIMIT_THRESHOLD && (
-                                <span className="ml-1 bg-red-100 text-red-700 px-1 rounded">
+                                <Badge color="red" className="ml-1">
                                   Over
-                                </span>
+                                </Badge>
                               )}
                             </span>
                             {at.views[viewMode].fundingMissing > 0 && (

@@ -50,6 +50,25 @@ vi.mock("@/lib/budget-api", async (importOriginal) => {
   };
 });
 
+/**
+ * Link a seeded savings goal to a service's category via the real
+ * savings_goal_category_links table — the raw isApiSyncEnabled/
+ * apiCategoryId/apiCategoryName/reimbursementApiCategoryId columns are dead
+ * (see src/server/helpers/category-links.ts).
+ */
+function linkGoal(
+  db: BetterSQLite3Database<typeof sqliteSchema>,
+  savingsGoalId: number,
+  service: "ynab" | "actual",
+  categoryId: string,
+  categoryName: string | null = null,
+  role: "primary" | "reimbursement" = "primary",
+): void {
+  db.insert(sqliteSchemaTables.savingsGoalCategoryLinks)
+    .values({ savingsGoalId, service, role, categoryId, categoryName })
+    .run();
+}
+
 /** Patch rawDb.execute so computeSummary's raw balance query works in SQLite. */
 function patchExecute(
   rawDb: Record<string, unknown>,
@@ -166,11 +185,10 @@ describe("savings.computeSummary", () => {
         name: "API Goal",
         targetAmount: "5000",
         monthlyContribution: "200",
-        isApiSyncEnabled: true,
-        apiCategoryId: "cat-123",
         isActive: true,
         priority: 1,
       });
+      linkGoal(freshCtx.db, _goalId, "ynab", "cat-123");
 
       mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
       // BudgetMonthDetail shape (months/${currentMonthKey} cache entry) —
@@ -248,14 +266,12 @@ describe("savings.listApiBalances", () => {
   it("returns balances for API-linked goals", async () => {
     const ctx = await createTestCaller();
     try {
-      seedSavingsGoal(ctx.db, {
+      const linkedGoalId = seedSavingsGoal(ctx.db, {
         name: "Linked Goal",
         targetAmount: "5000",
         monthlyContribution: "200",
-        isApiSyncEnabled: true,
-        apiCategoryId: "cat-abc",
-        apiCategoryName: "Test Category",
       });
+      linkGoal(ctx.db, linkedGoalId, "ynab", "cat-abc", "Test Category");
 
       mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
       mockCacheGet.mockResolvedValueOnce({
@@ -304,9 +320,8 @@ describe("savings.pushContributionsToApi", () => {
       const goalId = seedSavingsGoal(ctx.db, {
         name: "Push Goal",
         targetAmount: "5000",
-        isApiSyncEnabled: true,
-        apiCategoryId: "cat-push-001",
       });
+      linkGoal(ctx.db, goalId, "ynab", "cat-push-001");
       seedSavingsGoalAllocation(ctx.db, goalId, profileId, {
         monthlyContribution: "200",
       });
@@ -334,9 +349,8 @@ describe("savings.pushContributionsToApi", () => {
       const goalId = seedSavingsGoal(ctx.db, {
         name: "Failing Push Goal",
         targetAmount: "5000",
-        isApiSyncEnabled: true,
-        apiCategoryId: "cat-fail-001",
       });
+      linkGoal(ctx.db, goalId, "ynab", "cat-fail-001");
       seedSavingsGoalAllocation(ctx.db, goalId, profileId, {
         monthlyContribution: "200",
       });
@@ -393,19 +407,13 @@ describe("savings.pushContributionsToApi", () => {
     const ctx = await createTestCaller();
     try {
       const profileId = await seedBudgetProfile(ctx.db);
-      const g1 = seedSavingsGoal(ctx.db, {
-        name: "Goal A",
-        isApiSyncEnabled: true,
-        apiCategoryId: "cat-a",
-      });
+      const g1 = seedSavingsGoal(ctx.db, { name: "Goal A" });
+      linkGoal(ctx.db, g1, "ynab", "cat-a");
       seedSavingsGoalAllocation(ctx.db, g1, profileId, {
         monthlyContribution: "100",
       });
-      const g2 = seedSavingsGoal(ctx.db, {
-        name: "Goal B",
-        isApiSyncEnabled: true,
-        apiCategoryId: "cat-b",
-      });
+      const g2 = seedSavingsGoal(ctx.db, { name: "Goal B" });
+      linkGoal(ctx.db, g2, "ynab", "cat-b");
       seedSavingsGoalAllocation(ctx.db, g2, profileId, {
         monthlyContribution: "200",
       });
@@ -432,11 +440,8 @@ describe("savings.pushContributionsToApi", () => {
     const ctx = await createTestCaller();
     try {
       const profileId = await seedBudgetProfile(ctx.db);
-      const goalId = seedSavingsGoal(ctx.db, {
-        name: "Error Goal",
-        isApiSyncEnabled: true,
-        apiCategoryId: "cat-err",
-      });
+      const goalId = seedSavingsGoal(ctx.db, { name: "Error Goal" });
+      linkGoal(ctx.db, goalId, "ynab", "cat-err");
       seedSavingsGoalAllocation(ctx.db, goalId, profileId, {
         monthlyContribution: "300",
       });
@@ -463,11 +468,8 @@ describe("savings.pushContributionsToApi", () => {
       // pool computation (if push still did one) would very likely differ
       // from this arbitrary stored snapshot.
       const { profileId } = seedStandardDataset(ctx.db);
-      const goalId = seedSavingsGoal(ctx.db, {
-        name: "Percent Goal",
-        isApiSyncEnabled: true,
-        apiCategoryId: "cat-pct",
-      });
+      const goalId = seedSavingsGoal(ctx.db, { name: "Percent Goal" });
+      linkGoal(ctx.db, goalId, "ynab", "cat-pct");
       seedSavingsGoalAllocation(ctx.db, goalId, profileId, {
         monthlyContribution: "150",
         allocationPercent: "10",
@@ -966,13 +968,20 @@ describe("savings.listEfundReimbursements", () => {
   it("parses note field into reimbursement items", async () => {
     const ctx = await createTestCaller();
     try {
-      seedSavingsGoal(ctx.db, {
+      const efundGoalId = seedSavingsGoal(ctx.db, {
         name: "E-Fund",
         isEmergencyFund: true,
         targetAmount: "15000",
         monthlyContribution: "500",
-        reimbursementApiCategoryId: "reimb-cat-001",
       });
+      linkGoal(
+        ctx.db,
+        efundGoalId,
+        "ynab",
+        "reimb-cat-001",
+        null,
+        "reimbursement",
+      );
 
       mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
       mockCacheGet.mockResolvedValueOnce({
@@ -1015,13 +1024,20 @@ describe("savings.listEfundReimbursements", () => {
   it("skips unparseable lines and reports them", async () => {
     const ctx = await createTestCaller();
     try {
-      seedSavingsGoal(ctx.db, {
+      const efundGoalId = seedSavingsGoal(ctx.db, {
         name: "E-Fund",
         isEmergencyFund: true,
         targetAmount: "15000",
         monthlyContribution: "500",
-        reimbursementApiCategoryId: "reimb-cat-002",
       });
+      linkGoal(
+        ctx.db,
+        efundGoalId,
+        "ynab",
+        "reimb-cat-002",
+        null,
+        "reimbursement",
+      );
 
       mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
       mockCacheGet.mockResolvedValueOnce({
@@ -1057,13 +1073,20 @@ describe("savings.listEfundReimbursements", () => {
   it("returns null when reimbursement category not found in cache", async () => {
     const ctx = await createTestCaller();
     try {
-      seedSavingsGoal(ctx.db, {
+      const efundGoalId = seedSavingsGoal(ctx.db, {
         name: "E-Fund",
         isEmergencyFund: true,
         targetAmount: "15000",
         monthlyContribution: "500",
-        reimbursementApiCategoryId: "nonexistent-cat",
       });
+      linkGoal(
+        ctx.db,
+        efundGoalId,
+        "ynab",
+        "nonexistent-cat",
+        null,
+        "reimbursement",
+      );
 
       mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
       mockCacheGet.mockResolvedValueOnce({
@@ -1369,11 +1392,8 @@ describe("savings.plannedTransactions.getSettlementSuggestions", () => {
     caller = ctx.caller;
     db = ctx.db;
     cleanup = ctx.cleanup;
-    linkedGoalId = seedSavingsGoal(db, {
-      name: "Linked Fund",
-      isApiSyncEnabled: true,
-      apiCategoryId: "cat-travel",
-    });
+    linkedGoalId = seedSavingsGoal(db, { name: "Linked Fund" });
+    linkGoal(db, linkedGoalId, "ynab", "cat-travel");
     unlinkedGoalId = seedSavingsGoal(db, { name: "Unlinked Fund" });
   });
 

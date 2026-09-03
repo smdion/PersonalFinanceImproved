@@ -24,6 +24,7 @@ import type {
   Service,
 } from "../integrations-types";
 import { StatusBadge } from "../integrations-status-badge";
+import { Badge } from "@/components/ui/badge";
 import {
   SectionSummaryBadge,
   SectionSummaryRow,
@@ -92,6 +93,7 @@ export function BudgetSection({
     if (!cat) return;
     linkBudgetMut.mutate({
       budgetItemId: itemId,
+      service,
       apiCategoryId: apiId,
       apiCategoryName: cat.name,
       syncDirection: "pull",
@@ -129,6 +131,7 @@ export function BudgetSection({
           if (created) {
             linkBudgetMut.mutate({
               budgetItemId: created.id,
+              service,
               apiCategoryId: apiCat.id,
               apiCategoryName: apiCat.name,
               syncDirection: "pull",
@@ -147,6 +150,7 @@ export function BudgetSection({
   ) => {
     linkBudgetMut.mutate({
       budgetItemId,
+      service,
       apiCategoryId: apiCatId,
       apiCategoryName: apiCatName,
       syncDirection: "pull",
@@ -165,6 +169,7 @@ export function BudgetSection({
     for (const m of linked) {
       setBudgetSyncDirMut.mutate({
         budgetItemId: m.budgetItemId,
+        service,
         syncDirection: dir,
       });
     }
@@ -351,6 +356,7 @@ export function BudgetSection({
                                       : "pull";
                                 setBudgetSyncDirMut.mutate({
                                   budgetItemId: m.budgetItemId,
+                                  service,
                                   syncDirection: next,
                                 });
                               }}
@@ -377,6 +383,7 @@ export function BudgetSection({
                                     onClick={() =>
                                       renameBudgetToApiMut.mutate({
                                         budgetItemId: m.budgetItemId,
+                                        service,
                                       })
                                     }
                                     disabled={renameBudgetToApiMut.isPending}
@@ -392,6 +399,7 @@ export function BudgetSection({
                                       moveBudgetToApiGroupMut.mutate({
                                         budgetItemId: m.budgetItemId,
                                         apiGroupName: m.apiGroupName!,
+                                        service,
                                       })
                                     }
                                     disabled={moveBudgetToApiGroupMut.isPending}
@@ -406,6 +414,7 @@ export function BudgetSection({
                                     if (m.nameDrifted)
                                       renameBudgetApiNameMut.mutate({
                                         budgetItemId: m.budgetItemId,
+                                        service,
                                       });
                                   }}
                                   disabled={renameBudgetApiNameMut.isPending}
@@ -420,6 +429,7 @@ export function BudgetSection({
                               onClick={() =>
                                 unlinkBudgetMut.mutate({
                                   budgetItemId: m.budgetItemId,
+                                  service,
                                 })
                               }
                               disabled={unlinkBudgetMut.isPending}
@@ -519,9 +529,14 @@ export function BudgetSection({
               {budget.unmatchedApiCategories.map((c) => (
                 <div key={c.id} className="space-y-0.5">
                   <div className="flex items-center gap-1.5 text-xs">
-                    <span className="text-caption px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 whitespace-nowrap">
+                    <Badge
+                      color="purple"
+                      size="sm"
+                      case="normal"
+                      className="whitespace-nowrap"
+                    >
                       API only
-                    </span>
+                    </Badge>
                     <span
                       className="text-muted truncate flex-1"
                       title={`${c.groupName} > ${c.name}`}

@@ -4,9 +4,6 @@
  * Contains `computeProjection` (the unified contribution/distribution
  * engine). Coast FIRE endpoints (`computeCoastFire`, `computeCoastFireMC`)
  * live in the sibling `coast-fire.ts` file.
- *
- * Extracted from the old monolith `projection.ts` in PR 2b of the v0.5.2
- * file-split refactor. Pure relocation — no logic changes.
  */
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
@@ -247,7 +244,7 @@ export const scenariosRouter = createTRPCRouter({
         );
       }
 
-      // Plan health inputs (v0.5 expert-review M1 + M6) — derived inputs
+      // Plan health inputs — derived inputs
       // the PlanHealthCard needs for contribution-order and glide-path
       // warnings. Implementation lives in projection-v5-helpers.ts.
       const accumulationOrder = buildAccumulationOrder(activeContribs);

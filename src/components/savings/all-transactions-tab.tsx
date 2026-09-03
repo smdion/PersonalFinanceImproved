@@ -5,6 +5,7 @@ import { CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HelpTip } from "@/components/ui/help-tip";
 import { EditLockToggle } from "@/components/ui/edit-lock-toggle";
+import { Badge } from "@/components/ui/badge";
 import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
@@ -203,7 +204,7 @@ export function AllTransactionsTab({
   // src/app/(dashboard)/savings/page.tsx's monthDates construction exactly (that
   // file previously skipped the current month once the 1st had passed, which
   // silently dropped current-month planned transactions from the trajectory —
-  // fixed in v0.7.1; this index math has to stay in lockstep with it).
+  // this index math has to stay in lockstep with it).
   const projectionStart = new Date(today.getFullYear(), today.getMonth(), 1);
   const getBalanceAfter = (
     goalId: number,
@@ -1010,9 +1011,9 @@ export function AllTransactionsTab({
                     </td>
                     <td className="px-3 py-2 text-faint">
                       {isTransfer && (
-                        <span className="inline-block text-micro font-medium text-blue-400/70 bg-blue-50/50 dark:bg-blue-950/20 rounded px-1 mr-1.5">
+                        <Badge color="blue" case="normal" className="mr-1.5">
                           transfer
-                        </span>
+                        </Badge>
                       )}
                       {tx.description}
                     </td>
@@ -1269,14 +1270,22 @@ export function AllTransactionsTab({
                       ) : (
                         <>
                           {isTransfer && (
-                            <span className="inline-block text-micro font-medium text-blue-500 bg-blue-50 dark:bg-blue-950/30 rounded px-1 mr-1.5">
+                            <Badge
+                              color="blue"
+                              case="normal"
+                              className="mr-1.5"
+                            >
                               transfer
-                            </span>
+                            </Badge>
                           )}
                           {isRuleRow && (
-                            <span className="inline-block text-micro font-medium text-purple-500 bg-purple-50 dark:bg-purple-950/30 rounded px-1 mr-1.5">
+                            <Badge
+                              color="purple"
+                              case="normal"
+                              className="mr-1.5"
+                            >
                               extra paycheck
-                            </span>
+                            </Badge>
                           )}
                           {tx.description}
                         </>

@@ -1,9 +1,7 @@
 /**
  * applyLumpSums — apply one-time lump-sum injections to balances and per-account
- * tracking. Extracted from accumulation-year.ts:411-450 and decumulation-year.ts:401-439,
- * which were byte-identical. Pure relocation — no logic changes.
- *
- * v0.5.3 refactor B2.
+ * tracking. Shared by the accumulation-year and decumulation-year handlers,
+ * which previously carried byte-identical copies.
  */
 import type { LumpSum } from "../../types";
 import {
@@ -57,8 +55,23 @@ export function applyLumpSums(
           : bs === "roth_traditional"
             ? "preTax"
             : "afterTax");
+      // Match by name AND owner when the lump sum was created
+      // after targetOwnerName existed — falls back to name-only for lump
+      // sums saved before that field existed, or when the household has
+      // never had two people share an account name (the common case, where
+      // both match paths agree). Two household members with an
+      // identically-named account (e.g. both "Long Term Brokerage") used to
+      // silently collide here, always landing on whichever account
+      // `indAccts` happened to list first.
       const target = ls.targetAccountName
-        ? indAccts.find((ia) => ia.name === ls.targetAccountName)
+        ? ((ls.targetOwnerName
+            ? indAccts.find(
+                (ia) =>
+                  ia.name === ls.targetAccountName &&
+                  ia.ownerName === ls.targetOwnerName,
+              )
+            : undefined) ??
+          indAccts.find((ia) => ia.name === ls.targetAccountName))
         : (indAccts.find(
             (ia) => ia.category === ls.targetAccount && ia.taxType === taxType,
           ) ?? indAccts.find((ia) => ia.category === ls.targetAccount));

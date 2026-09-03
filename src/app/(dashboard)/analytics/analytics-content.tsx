@@ -722,7 +722,7 @@ export function AnalyticsContent() {
   // permission server-side too (this app has no separate read/write
   // permission tier anywhere), so a non-portfolio user hitting this page
   // would otherwise fire 7 doomed FORBIDDEN requests before the `!canEdit`
-  // early return below ever renders. Decision confirmed 2026-08-19.
+  // early return below ever renders.
   const { data: accounts, isLoading: acctLoading } =
     trpc.analytics.getAccounts.useQuery(undefined, { enabled: canEdit });
   const { data: snapshots, isLoading: snapLoading } =

@@ -1,9 +1,10 @@
 "use client";
 
 /**
- * PlanHealthCard — single point of UI integration for the v0.5
- * expert-review helpers M1, M3, M4, M6, and the M2 rosy-assumption
- * detector. Renders 0-N callouts based on the user's plan state.
+ * PlanHealthCard — single point of UI integration for the plan-health
+ * helpers (account order, confidence band, strategy recommendation,
+ * glide path) and the rosy-assumption detector. Renders 0-N callouts
+ * based on the user's plan state.
  *
  * Each callout uses a distinct severity color and a one-line action.
  * The card is intentionally minimal (no charts, no interactivity)
@@ -46,21 +47,21 @@ import { formatPercent, formatCurrency } from "@/lib/utils/format";
 import { STATUS_COLORS } from "@/lib/utils/colors";
 
 interface PlanHealthCardProps {
-  /** v0.5 M1 — accumulation account order. If absent, M1 callout is hidden. */
+  /** Accumulation account order. If absent, the account-order callout is hidden. */
   accumulationOrder?: readonly string[];
-  /** v0.5 M6 — primary user's current age + stock %. Both required for the glide-path check. */
+  /** Primary user's current age + stock %. Both required for the glide-path check. */
   currentAge?: number;
   stockAllocationPercent?: number;
-  /** v0.5 M2 — user-set assumptions for rosy-detection. */
+  /** User-set assumptions for rosy-detection. */
   returnRate?: number;
   inflationRate?: number;
   salaryGrowthRate?: number;
-  /** v0.5 M4 — retirement horizon for strategy recommendation. */
+  /** Retirement horizon for strategy recommendation. */
   retirementHorizonYears?: number;
   hasBudgetLink?: boolean;
   /** True when the household has a non-zero Social Security benefit configured. */
   hasSocialSecurity?: boolean;
-  /** v0.5 M3 — deterministic nest-egg estimate to derive a band around. */
+  /** Deterministic nest-egg estimate to derive a band around. */
   deterministicNestEgg?: number;
   /** Optional rangeFraction override for the band (default 0.25). */
   bandRangeFraction?: number;
@@ -90,7 +91,7 @@ function CalloutLine({
 export function PlanHealthCard(props: PlanHealthCardProps) {
   const callouts: React.ReactNode[] = [];
 
-  // M1: contribution order
+  // Contribution order
   if (props.accumulationOrder && props.accumulationOrder.length > 0) {
     const orderWarnings = validateContributionOrder(props.accumulationOrder);
     for (const w of orderWarnings) {
@@ -102,7 +103,7 @@ export function PlanHealthCard(props: PlanHealthCardProps) {
     }
   }
 
-  // M6: glide path
+  // Glide path
   if (
     typeof props.currentAge === "number" &&
     typeof props.stockAllocationPercent === "number"
@@ -120,7 +121,7 @@ export function PlanHealthCard(props: PlanHealthCardProps) {
     }
   }
 
-  // M2: rosy assumptions (a nudge — full stress-test view is the side panel)
+  // Rosy assumptions (a nudge — full stress-test view is the side panel)
   if (
     typeof props.returnRate === "number" &&
     typeof props.inflationRate === "number" &&
@@ -140,7 +141,7 @@ export function PlanHealthCard(props: PlanHealthCardProps) {
     }
   }
 
-  // M4: recommended strategy
+  // Recommended strategy
   let strategyRec: WithdrawalStrategyRecommendation | null = null;
   if (typeof props.retirementHorizonYears === "number") {
     strategyRec = recommendWithdrawalStrategy({
@@ -157,7 +158,7 @@ export function PlanHealthCard(props: PlanHealthCardProps) {
     );
   }
 
-  // M3: projection band
+  // Projection band
   let band: ReturnType<typeof deriveProjectionBand> | null = null;
   if (
     typeof props.deterministicNestEgg === "number" &&
@@ -190,7 +191,7 @@ export function PlanHealthCard(props: PlanHealthCardProps) {
 }
 
 /**
- * Stress test panel (v0.5 expert-review M2). Compares the user's
+ * Stress test panel. Compares the user's
  * current assumptions against the canonical conservative / baseline /
  * optimistic scenarios from src/lib/pure/stress-test.ts.
  *

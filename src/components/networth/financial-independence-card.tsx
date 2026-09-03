@@ -77,8 +77,8 @@ export function FinancialIndependenceCard({
             {formatPercent(withdrawalRate)}
             {withdrawalRateIsDefault && (
               <span className="block text-xs text-amber-600 dark:text-amber-400 font-normal">
-                using default {(withdrawalRate * 100).toFixed(1)}% — configure
-                in Retirement settings
+                using default {formatPercent(withdrawalRate, 1)} — configure in
+                Retirement settings
               </span>
             )}
           </span>

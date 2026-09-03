@@ -134,7 +134,7 @@ function projectCostBasis(
  *  genuinely no data) is reused unchanged — the future can't move a real
  *  past separation, and can't manufacture data that doesn't exist.
  *
- *  Exported (v0.7.8, PLAN-v0.7.8-v4 Group 1.2) — the retirement projection
+ *  Exported — the retirement projection
  *  engine's decumulation-year handler reuses this verbatim as its
  *  "will this person have separated by projected year N" resolver, rather
  *  than duplicating the logic. Originally written for this module's own
@@ -147,7 +147,7 @@ export function projectRuleOf55(
   assumedYear: number,
   birthYear: number,
   opts?: {
-    /** Rule of 55 forecasting override (v0.7.8) — forces the PROJECTED
+    /** Rule of 55 forecasting override — forces the PROJECTED
      *  verdict to ineligible, applied AFTER the recompute below so it can
      *  never be silently discarded by it (the bug a first attempt at this
      *  feature hit: mutating `now.eligible` before this function ran did
@@ -187,7 +187,7 @@ export function computeTaxBucketProjection(input: {
   nowEntries: AccountAnalysisEntry[];
   projectionByYear: EngineYearProjection[];
   people: PersonInfo[];
-  /** Rule of 55 forecasting override (v0.7.8), keyed by personId — same
+  /** Rule of 55 forecasting override, keyed by personId — same
    *  contract as `projectRuleOf55`'s `opts.forceIneligible` and
    *  `IndividualAccountInput.ruleOf55ForceIneligible`. Must be populated
    *  from the SAME per-person setting the retirement engine reads

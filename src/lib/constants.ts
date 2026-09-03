@@ -103,8 +103,8 @@ export const IRS_LIMIT_GROWTH_RATE = 0.02;
 export const RMD_EXCISE_TAX_RATE = 0.25;
 
 // ---------------------------------------------------------------------------
-// Early-Access Ages (shared by the Tax Buckets analysis tool and, since
-// v0.7.8, the retirement projection engine's withdrawal-eligibility gate —
+// Early-Access Ages (shared by the Tax Buckets analysis tool and
+// the retirement projection engine's withdrawal-eligibility gate —
 // both consume `src/lib/pure/early-access.ts`'s leaf predicates, which read
 // these constants)
 // ---------------------------------------------------------------------------
@@ -136,6 +136,14 @@ export const ROTH_CONVERSION_SEASONING_YEARS = 5;
  *  tax-free at any age, so this only matters for the non-medical case. */
 export const HSA_NON_MEDICAL_PENALTY_AGE = 65;
 
+/** Age at which a taxpayer qualifies for the additional standard deduction
+ *  under IRC §63(f)(1) ("65 or older"). A person is treated as 65 for the
+ *  whole tax year if they turn 65 by the first day of the following year, but
+ *  the projection works in whole years so a simple `age >= 65` test is used.
+ *  Distinct from the OBBBA senior deduction (2025–2028, MAGI-phased), which
+ *  is deliberately NOT modeled — see `toLtcgTaxableIncome`. */
+export const ADDITIONAL_STANDARD_DEDUCTION_AGE = 65;
+
 /** 10% early-withdrawal penalty rate for Traditional/Roth IRA and 401k/403b
  *  (IRC §72(t)) — every account type this module gates EXCEPT HSA, which
  *  has its own, higher rate (see `HSA_NON_MEDICAL_PENALTY_RATE` immediately
@@ -143,7 +151,7 @@ export const HSA_NON_MEDICAL_PENALTY_AGE = 65;
  *  the age thresholds above are per-account-type but the penalty rate
  *  itself is not: HSA's non-medical penalty is legally 20%, not 10%, and
  *  applying 10% there would understate a real cost for exactly the account
- *  type where this feature (v0.7.8 penalty-hard-exclusion follow-up) is
+ *  type where this feature is
  *  making the biggest behavior change). Used by
  *  `src/lib/pure/early-withdrawal-penalty.ts`. */
 export const EARLY_WITHDRAWAL_PENALTY_RATE = 0.1;
@@ -198,8 +206,7 @@ export const MC_SPENDING_STABILITY_THRESHOLD = 0.75;
  *  forcing real deviations from the strategy's own plan (RMDs, routing/
  *  liquidity constraints, penalty-avoidance) even though the portfolio
  *  itself survives — a real, if narrow, signal worth flagging urgently
- *  rather than letting it sit as a quiet secondary ring (advisor review,
- *  2026-08-28 — see PLAN-shortfall-alerting-and-strategy-scenario.md). */
+ *  rather than letting it sit as a quiet secondary ring. */
 export const MC_STRATEGY_STABILITY_GAP_ALERT_THRESHOLD = 0.1;
 
 /** Default inflation risk assumption for Monte Carlo simulations when no
@@ -274,7 +281,7 @@ export const MIN_INFLATION_RATE = -0.1;
 export const MAX_BROKERAGE_RAMP_YEARS = 40;
 
 // ---------------------------------------------------------------------------
-// RMD / Qualified Charitable Distribution (R46)
+// RMD / Qualified Charitable Distribution
 // ---------------------------------------------------------------------------
 
 /** Annual per-person cap on Qualified Charitable Distributions from an IRA
@@ -282,10 +289,9 @@ export const MAX_BROKERAGE_RAMP_YEARS = 40;
  *  household's own inflation assumption, which is why this is a flat
  *  constant rather than derived from `annualInflation`. $115,000 is the
  *  2026 figure (was $105,000 for 2024, $108,000 for 2025 — this constant
- *  was found stale by two years' worth of indexing during advisor review,
- *  2026-08-29; update it annually when the IRS publishes a new figure,
- *  same discipline `TAX_PARAMETER_RUNBOOK.md` already documents for
- *  bracket/contribution-limit updates). Held flat across the whole
+ *  was found stale by two years' worth of indexing; update it annually
+ *  when the IRS publishes a new figure, the same discipline that applies
+ *  to bracket/contribution-limit updates). Held flat across the whole
  *  projection horizon (no attempt to model future IRS indexing) — same
  *  simplification this engine already applies to IRS contribution limits
  *  via `limitGrowthRate` rather than real published figures. */
@@ -305,7 +311,7 @@ export const QCD_ANNUAL_CAP_PER_PERSON = 115000;
 export const QCD_MIN_ELIGIBILITY_AGE = 70;
 
 // ---------------------------------------------------------------------------
-// RMD-aware Roth conversion smoothing (R47)
+// RMD-aware Roth conversion smoothing
 // ---------------------------------------------------------------------------
 
 /** Fallback ceiling for how far RMD smoothing may elevate a household's

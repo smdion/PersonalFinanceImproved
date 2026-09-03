@@ -7,9 +7,8 @@
  *
  * IMPORTANT: All state versions live in the same database. Database-level
  * corruption (disk failure, unrecoverable WAL) would lose both live data and all
- * snapshots. For disaster recovery, pair this with external backups (pg_dump cron,
- * WAL archiving, volume-level snapshots, or SQLite file copies). See homelab-docs
- * backup-definitions for the container's backup schedule. (Review item H15)
+ * versions. For disaster recovery, pair this with external backups (pg_dump cron,
+ * WAL archiving, volume-level snapshots, or SQLite file copies).
  */
 
 import { readFileSync } from "fs";
@@ -203,7 +202,7 @@ export async function restoreVersion(
     .from(schema.stateVersionTables)
     .where(eq(schema.stateVersionTables.versionId, versionId));
 
-  // Transform snapshot data if it was created at an older schema version
+  // Transform version-row data if it was created at an older schema version
   const rawTableMap: Record<string, unknown[]> = {};
   for (const t of tableDatas) {
     if (Array.isArray(t.data) && t.data.length > 0) {

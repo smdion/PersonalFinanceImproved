@@ -4,7 +4,7 @@
  * withdrawn depends on the tax cost of withdrawing it, and the tax cost
  * depends on the withdrawal amount.
  *
- * Lives in its own file (split out of tax-estimation.ts, Phase 5 item 5.3)
+ * Lives in its own file (split out of tax-estimation.ts)
  * because it needs to call withdrawal-routing.ts's routeForMode — and
  * withdrawal-routing.ts itself imports incomeCapForMarginalRate from
  * tax-estimation.ts, so estimateWithdrawalTaxCost living in tax-estimation.ts
@@ -14,8 +14,7 @@
  *
  * Before this split, the convergence loop hand-simulated bracket-filling and
  * waterfall routing separately from the real router — and had silently
- * drifted from it in three ways (Batch 2 Finding 10 / advisor design review,
- * 2026-08-19):
+ * drifted from it in three ways:
  *   1. Percentage mode estimated tax using portfolio-balance weights; the
  *      real router uses config.withdrawalSplits.
  *   2. Waterfall + a configured rothBracketTarget: the real router applies a
@@ -92,7 +91,7 @@ export interface TaxEstimationInput {
      *  through) so it's a documented contract, not a field the next reader
      *  could "clean up" by destructuring and dropping — this module's own
      *  header docblock is a record of exactly that failure mode happening
-     *  before (2026-08-19 routing-divergence fixes). */
+     *  before (the routing-divergence fixes). */
     standardDeduction?: number;
   };
   /** Current balances by tax bucket */
@@ -101,8 +100,8 @@ export interface TaxEstimationInput {
   acctBal: AccountBalances;
   /** Total portfolio balance */
   totalBalance: number;
-  /** Withdrawal-ordering eligibility for this year (v0.7.8, PLAN-v0.7.8-v4
-   *  Group 2.2) — passed straight through to `routeForMode`. MUST be the
+  /** Withdrawal-ordering eligibility for this year — passed straight
+   *  through to `routeForMode`. MUST be the
    *  same record `decumulation-year.ts`'s real execution passes to its own
    *  `routeForMode` call: the single-dispatch invariant this module's
    *  header docblock documents applies to this parameter too — a mismatch
@@ -110,16 +109,15 @@ export interface TaxEstimationInput {
    *  router's, the same class of bug the routeForMode extraction fixed for
    *  the routing-mode-specific rules. */
   eligibility?: EligibilityRecord;
-  /** Portfolio-parented ("non-retirement") exclusion for this year (R49)
+  /** Portfolio-parented ("non-retirement") exclusion for this year
    *  — passed straight through to `routeForMode`, same single-dispatch
    *  invariant as `eligibility` above: MUST be the same record
    *  `decumulation-year.ts`'s real execution passes to its own
    *  `routeForMode` call, or this estimate and the real router disagree
    *  about how much money is available. */
   nonRetirement?: NonRetirementExclusion;
-  /** Individual-account state for Roth growth-vs-basis taxability (v0.7.8
-   *  Roth-tax-basis follow-up, DESIGN-DECISION-v0.7.8-roth-tax-basis.md §
-   *  Q3) — this estimate must slice the SAME way the real execution does
+  /** Individual-account state for Roth growth-vs-basis taxability —
+   *  this estimate must slice the SAME way the real execution does
    *  (distributeWithdrawals + depleteIndividualBasis), against CLONED
    *  indBal/indBasis so the estimate can never mutate real state. Omitted
    *  ⇒ rothTaxableGrowth stays 0, same as before this pass. */
@@ -146,8 +144,8 @@ export interface TaxEstimationResult {
   grossedUpNeed: number;
   /** Target withdrawal (capped at total balance) */
   targetWithdrawal: number;
-  /** Estimated early-withdrawal penalty cost (v0.7.8 penalty-hard-exclusion
-   *  follow-up) — 0 whenever `hasIndTracking` is false or nothing was
+  /** Estimated early-withdrawal penalty cost — 0 whenever `hasIndTracking`
+   *  is false or nothing was
    *  penalized (the overwhelming default case, since `routeForMode` already
    *  excludes penalty-exposed money when `avoidPenalizedWithdrawals` is
    *  on). Included in the gross-up cost scalar alongside `estTax` — see
@@ -160,10 +158,9 @@ export interface TaxEstimationResult {
  *  will (routeForMode -> distributeWithdrawals -> depleteIndividualBasis ->
  *  splitRothWithdrawalForTax -> computeEarlyWithdrawalPenalty ->
  *  computeTaxFromSlots), against CLONED balances so this never mutates real
- *  state. Extracted to a single closure (advisor review, 2026-08-26,
- *  v0.7.8 penalty-hard-exclusion gross-up fix) so the convergence loop
+ *  state. Extracted to a single closure so the convergence loop
  *  below can call it repeatedly without a second hand-copy of this
- *  pipeline drifting from the first the way the pre-2026-08-19 hand-
+ *  pipeline drifting from the first the way the earlier hand-
  *  simulated router drifted from the real one (see this file's header
  *  docblock) — RULES.md's single-computation-path rule applies within a
  *  function's own retries, not just across files. */
@@ -194,7 +191,7 @@ function evaluateCost(
     year != null;
 
   const clonedAcctBal = cloneAccountBalances(acctBal);
-  // v0.7.9 R40 follow-up: same basis-derived ranking inputs the real
+  // Same basis-derived ranking inputs the real
   // execution passes (deriveBasisRankingInputs's docblock) — no
   // magiBeforeThisDraw here (this file has no magiHistory access; falls
   // back to routeForMode's own ordinary-income-floor proxy, acceptable
@@ -211,15 +208,14 @@ function evaluateCost(
     clonedAcctBal,
     {
       taxBrackets: taxRates.taxBrackets,
-      // Added 2026-08-29: read the resolved (possibly per-year-overridden)
+      // Read the resolved (possibly per-year-overridden)
       // value, same fix as the real router's own call site
       // (decumulation-year.ts) -- this file's own header docblock (Part
       // "2." above) says this estimate and the real router must never
       // diverge on what routing rule applies; leaving this unresolved
       // would violate that for any household using the new override.
       rothBracketTarget: config.rothBracketTarget ?? taxRates.rothBracketTarget,
-      // Same rule, same reason as rothBracketTarget above (advisor-caught
-      // 2026-09-01, alongside the real router's identical fix): the
+      // Same rule, same reason as rothBracketTarget above: the
       // reserved-room estimate must target the rate a conversion will
       // ACTUALLY use, not necessarily the withdrawal target.
       conversionTarget:
@@ -232,7 +228,7 @@ function evaluateCost(
       rothBasisAvailable,
       brokerageBasisRatio,
       conversionsEnabled: taxRates.enableRothConversions,
-      // Fixed alongside R59 (2026-08-30) — this was missing entirely, a
+      // This was missing entirely, a
       // live divergence from the real router's own call site
       // (decumulation-year.ts), which has passed this since the LTCG fix
       // earlier in this same session. Same rule as the rothBracketTarget
@@ -320,13 +316,11 @@ function evaluateCost(
  * fix, and it silently under-withdrew whenever a fixed-dollar-cap cost
  * (the penalty) made the "rate measured at the smaller pre-gross-up
  * trial" an underestimate of the true marginal rate on the larger grossed-
- * up dollars (advisor review, 2026-08-26 — see criterion 7's test in
- * tests/calculators/penalty-hard-exclusion-both-paths-agree.test.ts for
- * the reproduction: a ~7% real shortfall, silent, no unmetNeed flagged).
+ * up dollars (a ~7% real shortfall, silent, no unmetNeed flagged).
  *
  * taxableSS's own circular dependency (taxableSS depends on the
  * Traditional withdrawal, which depends on W) is resolved in the SAME
- * loop rather than nested inside it (advisor review) — every evaluation
+ * loop rather than nested inside it — every evaluation
  * both refines taxableSS (from that evaluation's totalTraditionalWithdrawal)
  * and produces the next trial W, so the returned taxableSS/targetWithdrawal
  * pair is always mutually consistent with a single accepted evaluation,

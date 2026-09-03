@@ -5,6 +5,7 @@
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission } from "@/lib/context/user-context";
+import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -655,9 +656,9 @@ function ByAccountSummary({
               <span className="text-secondary font-medium">
                 {at.accountType}
                 {apiInfo?.source === "api" && (
-                  <span className="ml-1.5 inline-block px-1.5 py-0.5 text-micro font-semibold uppercase rounded bg-blue-100 text-blue-700">
+                  <Badge color="blue" className="ml-1.5">
                     YNAB
-                  </span>
+                  </Badge>
                 )}
               </span>
               <span className="text-primary font-semibold">
@@ -751,13 +752,13 @@ function GoalStatusTable({ goals }: { goals: BrokerageGoalStatus[] }) {
               </td>
               <td className="py-2 text-center">
                 {g.funded ? (
-                  <span className="inline-block px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700">
+                  <Badge color="green" size="sm" shape="pill" case="normal">
                     Funded
-                  </span>
+                  </Badge>
                 ) : (
-                  <span className="inline-block px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-700">
+                  <Badge color="amber" size="sm" shape="pill" case="normal">
                     {formatCurrency(g.shortfall)} short
-                  </span>
+                  </Badge>
                 )}
               </td>
             </tr>

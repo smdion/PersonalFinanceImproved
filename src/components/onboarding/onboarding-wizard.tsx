@@ -3,6 +3,8 @@
 import { useState, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { FormError } from "@/components/ui/form-error";
+import { Badge } from "@/components/ui/badge";
+import { localDateStr } from "@/lib/utils/date";
 
 // --- Types ---
 
@@ -365,9 +367,9 @@ function PeopleStep({
                   (born {person.dateOfBirth.substring(0, 4)})
                 </span>
                 {person.isPrimaryUser && (
-                  <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                  <Badge color="blue" size="sm" shape="pill" className="ml-2">
                     Primary
-                  </span>
+                  </Badge>
                 )}
               </div>
               <button
@@ -766,7 +768,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       // Create all jobs, mapping personIndex to the real person ID. A job
       // carries no salary of its own — each one's annualSalary from the
       // Income step goes into the household's Salary Profile below instead.
-      const today = new Date().toISOString().substring(0, 10);
+      const today = localDateStr();
       const jobEntries: Record<
         string,
         { salary: number; payPeriod: JobDraft["payPeriod"] }

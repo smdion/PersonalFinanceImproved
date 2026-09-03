@@ -27,6 +27,7 @@ import {
   resolveLinkedBudgetItemAmounts,
   resolveContribPeriods,
 } from "@/server/helpers";
+import { getAllPeople } from "@/server/helpers/people";
 import type { Db } from "@/server/helpers";
 import type { W4FilingStatus } from "@/lib/config/enum-values";
 import type { ContribRowWithActiveFields } from "@/server/helpers/contribution";
@@ -139,7 +140,7 @@ const returnRateInput = z.object({
 });
 
 // `fetchRetirementData` and `buildEnginePayload` were moved to
-// `src/server/retirement/build-engine-payload.ts` in the v0.5.2 refactor.
+// `src/server/retirement/build-engine-payload.ts`.
 // Projection router imports them directly from the new path; nothing else
 // imports from here, so no re-export shim is needed.
 
@@ -219,7 +220,7 @@ export const retirementRouter = createTRPCRouter({
         perfAccounts,
         appSettingsRows,
       ] = await Promise.all([
-        ctx.db.select().from(schema.people).orderBy(asc(schema.people.id)),
+        getAllPeople(ctx.db),
         ctx.db.select().from(schema.jobs),
         ctx.db.select().from(schema.retirementSettings),
         ctx.db
@@ -638,8 +639,8 @@ export const retirementRouter = createTRPCRouter({
     // Social Security's per-person benefit) actually called
     // `retirementSettings.upsert`, writing `retirement_settings` — the
     // table `build-engine-payload.ts` stopped reading per-person values
-    // from once step B (2026-08-30) switched those reads to
-    // `retirement_profile_people`. The edits saved, the UI showed the new
+    // from once those reads were switched to `retirement_profile_people`.
+    // The edits saved, the UI showed the new
     // number optimistically, and the projection never moved — same failure
     // shape as the pre-0b5d5fe `end_age` bug, just at this table instead.
     // This is the real write path now; the affected client call sites are
@@ -870,6 +871,50 @@ export const retirementRouter = createTRPCRouter({
           return saved;
         });
       }),
+
+    // `salary_annual_increase` is stored per (profile, person) on
+    // `retirement_settings` and read per-person by the engine
+    // (`build-engine-payload.ts`'s `raiseRateByPerson`), but the "Pre-
+    // Retirement Raise" UI control was a single household control that only
+    // ever wrote the primary person's row via `retirementSettings.upsert` —
+    // so a second household member's raise rate was unreachable after seed
+    // time. This narrow mutation writes ONLY that one column for one
+    // (profile, person); the multi-person Income section calls it per person.
+    // Deliberately NOT a fan-out (that would overwrite each person's distinct
+    // rate with the primary's — the exact bug `raiseRateByPerson`'s docblock
+    // records as already fixed once) and deliberately NOT folded into
+    // `upsert` (which requires a full anchor payload the per-person UI
+    // doesn't have, runs the endAge fan-out, and resolves+writes a default
+    // filing status — all wrong for a one-field raise-rate edit).
+    // UPDATE-only: the step-A completeness invariant guarantees a row per
+    // (profile, person); a missing row is an error, not a silent insert with
+    // guessed NOT NULL anchor values.
+    upsertPersonRaiseRate: adminProcedure
+      .input(
+        z.object({
+          profileId: z.number().int(),
+          personId: z.number().int(),
+          salaryAnnualIncrease: zDecimal,
+        }),
+      )
+      .mutation(async ({ ctx, input }) => {
+        const [row] = await ctx.db
+          .update(schema.retirementSettings)
+          .set({ salaryAnnualIncrease: input.salaryAnnualIncrease })
+          .where(
+            and(
+              eq(schema.retirementSettings.profileId, input.profileId),
+              eq(schema.retirementSettings.personId, input.personId),
+            ),
+          )
+          .returning();
+        if (!row) {
+          throw new Error(
+            `No retirement_settings row for profile ${input.profileId}, person ${input.personId} — cannot set the pre-retirement raise rate`,
+          );
+        }
+        return row;
+      }),
   }),
 
   retirementSalaryOverrides: createTRPCRouter({
@@ -1073,7 +1118,7 @@ export const retirementRouter = createTRPCRouter({
      *
      * Household-grain columns on retirement_settings are still duplicated
      * onto every person's row (the contract step that collapses this to one
-     * row per profile is deferred to v0.8.0) and can legitimately have
+     * row per profile is deferred to a future schema squash) and can legitimately have
      * drifted between people — pickProfileSettingsRow's own docblock records
      * a real household whose withdrawal_rate/rmd_excess_handling disagreed
      * across person rows. Cloning from the PRIMARY person's source row into
@@ -1137,33 +1182,46 @@ export const retirementRouter = createTRPCRouter({
             .returning();
           if (!newProfile) throw new Error("Failed to create profile.");
 
-          const {
-            id: _hhId,
-            personId: _hhPersonId,
-            profileId: _hhProfileId,
-            ...householdFields
-          } = sourceHousehold;
+          // Duplicate each person's OWN source row, not the primary's row
+          // fanned out to everyone — a household with 2+ people previously
+          // had every non-primary person's retirementAge/endAge/
+          // socialSecurityMonthly/ssStartAge/ruleOf55Override/raise-rate
+          // silently overwritten with the primary's values on every
+          // profile duplication. Fall back to the primary's row only for a
+          // person with no source row of their own (matches the
+          // pre-existing behaviour for that edge case).
+          const sourceSettingsByPerson = new Map(
+            sourceSettings.map((s) => [s.personId, s]),
+          );
           await tx.insert(schema.retirementSettings).values(
-            people.map((p) => ({
-              ...householdFields,
-              personId: p.id,
-              profileId: newProfile.id,
-            })),
+            people.map((p) => {
+              const src = sourceSettingsByPerson.get(p.id) ?? sourceHousehold;
+              const {
+                id: _hhId,
+                personId: _hhPersonId,
+                profileId: _hhProfileId,
+                ...fields
+              } = src;
+              return { ...fields, personId: p.id, profileId: newProfile.id };
+            }),
           );
 
           if (sourcePrimaryPeopleRow) {
-            const {
-              id: _ppId,
-              personId: _ppPersonId,
-              profileId: _ppProfileId,
-              ...perPersonFields
-            } = sourcePrimaryPeopleRow;
+            const sourcePeopleByPerson = new Map(
+              sourcePeopleRows.map((r) => [r.personId, r]),
+            );
             await tx.insert(schema.retirementProfilePeople).values(
-              people.map((p) => ({
-                ...perPersonFields,
-                personId: p.id,
-                profileId: newProfile.id,
-              })),
+              people.map((p) => {
+                const src =
+                  sourcePeopleByPerson.get(p.id) ?? sourcePrimaryPeopleRow;
+                const {
+                  id: _ppId,
+                  personId: _ppPersonId,
+                  profileId: _ppProfileId,
+                  ...fields
+                } = src;
+                return { ...fields, personId: p.id, profileId: newProfile.id };
+              }),
             );
           }
 
@@ -1171,15 +1229,20 @@ export const retirementRouter = createTRPCRouter({
         });
       }),
 
-    /** Rename / re-describe a profile. Assumptions themselves are edited
-     *  through retirementSettings.upsert, scoped to whichever profile is
-     *  active — not here. */
+    /** Rename / re-describe a profile, or pin its tax-law year. Household/
+     *  per-person assumptions themselves are edited through
+     *  retirementSettings.upsert, scoped to whichever profile is active —
+     *  not here. taxParamsYear lives on retirement_profiles itself:
+     *  null (default) tracks the latest enacted tax data; a real year pins
+     *  resolveTaxParams's base year so re-opening this profile reproduces
+     *  its numbers instead of re-pricing under whatever year is newest. */
     update: adminProcedure
       .input(
         z.object({
           id: z.number().int(),
           name: z.string().min(1).max(100).optional(),
           description: z.string().max(500).nullish(),
+          taxParamsYear: z.number().int().min(2000).max(2100).nullish(),
         }),
       )
       .mutation(({ ctx, input: { id, ...data } }) =>

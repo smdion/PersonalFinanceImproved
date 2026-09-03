@@ -16,9 +16,13 @@ vi.mock("@/lib/trpc", () => ({
         listBalanceHistory: { invalidate: vi.fn() },
         listAccounts: { invalidate: vi.fn() },
       },
+      settings: {
+        appSettings: { list: { invalidate: vi.fn() } },
+      },
     }),
     settings: {
       appSettings: {
+        list: { useQuery: () => ({ data: [] }) },
         upsert: {
           useMutation: () => ({ mutate: vi.fn(), isPending: false }),
         },
@@ -148,8 +152,12 @@ describe("IntegrationsSettings", () => {
     const { IntegrationsSettings } =
       await import("@/components/settings/integrations");
     render(<IntegrationsSettings />);
-    expect(screen.getByText("YNAB")).toBeInTheDocument();
-    expect(screen.getByText("Actual Budget")).toBeInTheDocument();
+    // "YNAB" appears twice — the left-nav item and the ServiceCard's own
+    // title — both connection cards stay mounted at all times (only
+    // visibility toggles) so their local state survives switching nav
+    // sections; getAllByText confirms both rather than picking one.
+    expect(screen.getAllByText("YNAB").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Actual Budget").length).toBeGreaterThan(0);
   });
 
   it("shows not-admin message for non-admin users", async () => {
@@ -172,12 +180,28 @@ describe("IntegrationsSettings", () => {
             getActiveBudgetApi: { invalidate: vi.fn() },
             getPreview: { invalidate: vi.fn() },
           },
+          simplefin: {
+            getStatus: { invalidate: vi.fn() },
+            listBalanceHistory: { invalidate: vi.fn() },
+            listAccounts: { invalidate: vi.fn() },
+          },
+          settings: {
+            appSettings: { list: { invalidate: vi.fn() } },
+          },
         }),
         settings: {
           appSettings: {
+            list: { useQuery: () => ({ data: [] }) },
             upsert: {
               useMutation: () => ({ mutate: vi.fn(), isPending: false }),
             },
+          },
+        },
+        simplefin: {
+          getStatus: {
+            useQuery: () => ({
+              data: { connected: false, lastSyncedAt: null },
+            }),
           },
         },
         sync: {
@@ -288,9 +312,13 @@ describe("IntegrationsSettings", () => {
             listBalanceHistory: { invalidate: vi.fn() },
             listAccounts: { invalidate: vi.fn() },
           },
+          settings: {
+            appSettings: { list: { invalidate: vi.fn() } },
+          },
         }),
         settings: {
           appSettings: {
+            list: { useQuery: () => ({ data: [] }) },
             upsert: {
               useMutation: () => ({ mutate: vi.fn(), isPending: false }),
             },
@@ -431,5 +459,168 @@ describe("IntegrationsSettings", () => {
     expect(screen.queryByText("Activate")).not.toBeInTheDocument();
     // YNAB is active and synced -- shows Deactivate, no hint.
     expect(screen.getByText("Deactivate")).toBeInTheDocument();
+  });
+
+  it("nav switches the visible section while keeping connection cards mounted, and shows status dots", async () => {
+    vi.resetModules();
+
+    vi.doMock("@/lib/context/user-context", () => ({
+      useUser: () => ({ role: "admin" }),
+      isAdmin: () => true,
+    }));
+
+    vi.doMock("@/lib/trpc", () => ({
+      trpc: {
+        useUtils: () => ({
+          sync: {
+            getConnection: { invalidate: vi.fn() },
+            getSyncStatus: { invalidate: vi.fn() },
+            getActiveBudgetApi: { invalidate: vi.fn() },
+            getPreview: { invalidate: vi.fn() },
+          },
+          simplefin: {
+            getStatus: { invalidate: vi.fn() },
+            listBalanceHistory: { invalidate: vi.fn() },
+            listAccounts: { invalidate: vi.fn() },
+          },
+          settings: { appSettings: { list: { invalidate: vi.fn() } } },
+        }),
+        settings: {
+          appSettings: {
+            list: { useQuery: () => ({ data: [] }) },
+            upsert: {
+              useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+            },
+          },
+        },
+        sync: {
+          getConnection: {
+            useQuery: () => ({
+              data: {
+                activeApi: "ynab",
+                ynab: { connected: true, lastSyncedAt: new Date() },
+                actual: { connected: false, lastSyncedAt: null },
+              },
+            }),
+          },
+          getSyncStatus: { useQuery: () => ({ data: null }) },
+          getPreview: { useQuery: () => ({ data: null }) },
+          getActiveBudgetApi: {
+            useQuery: () => ({ data: { service: "ynab" } }),
+          },
+          saveConnection: {
+            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+          },
+          testConnection: {
+            useMutation: () => ({
+              mutate: vi.fn(),
+              isPending: false,
+              isSuccess: false,
+              data: null,
+            }),
+          },
+          fetchYnabBudgets: {
+            useMutation: () => ({
+              mutate: vi.fn(),
+              isPending: false,
+              isSuccess: false,
+              data: null,
+            }),
+          },
+          deleteConnection: {
+            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+          },
+          syncAll: {
+            useMutation: () => ({
+              mutate: vi.fn(),
+              isPending: false,
+              isSuccess: false,
+              isError: false,
+              data: null,
+            }),
+          },
+          setActiveBudgetApi: {
+            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+          },
+        },
+        simplefin: {
+          getStatus: {
+            useQuery: () => ({ data: { connected: true, lastSyncedAt: null } }),
+          },
+          listAccounts: { useQuery: () => ({ data: undefined }) },
+          listMatchableAccounts: { useQuery: () => ({ data: undefined }) },
+          saveToken: {
+            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+          },
+          testConnection: {
+            useMutation: () => ({
+              mutate: vi.fn(),
+              isPending: false,
+              isSuccess: false,
+              data: null,
+            }),
+          },
+          syncNow: {
+            useMutation: () => ({
+              mutate: vi.fn(),
+              isPending: false,
+              isSuccess: false,
+              isError: false,
+              data: null,
+            }),
+          },
+          removeConnection: {
+            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+          },
+          setAccountIncluded: {
+            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+          },
+          setAccountMapping: {
+            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+          },
+        },
+      },
+    }));
+
+    vi.doMock("@/components/ui/card", () => ({
+      Card: ({
+        children,
+        title,
+      }: {
+        children: React.ReactNode;
+        title?: string;
+      }) => (
+        <div data-testid="card">
+          {title && <h3>{title}</h3>}
+          {children}
+        </div>
+      ),
+    }));
+
+    vi.doMock("@/components/settings/integrations-preview-panel", () => ({
+      PreviewPanel: () => <div data-testid="preview-panel">Preview</div>,
+    }));
+
+    const { fireEvent } = await import("@testing-library/react");
+    const { IntegrationsSettings } =
+      await import("@/components/settings/integrations");
+    render(<IntegrationsSettings />);
+
+    // Default section is YNAB.
+    const ynabCardTitle = screen
+      .getAllByText("YNAB")
+      .find((el) => el.tagName === "H3")!;
+    expect(ynabCardTitle.closest("div")).toBeVisible();
+
+    // Switch to Sync Behavior — it only mounts when active.
+    fireEvent.click(screen.getByText("Sync Behavior"));
+    expect(screen.getByText("Auto-sync on page load")).toBeInTheDocument();
+
+    // YNAB's card content is still in the DOM (mounted, not unmounted) —
+    // just hidden — since its local state must survive nav switches.
+    const ynabCardAfterSwitch = screen
+      .getAllByText("YNAB")
+      .find((el) => el.tagName === "H3")!;
+    expect(ynabCardAfterSwitch).toBeInTheDocument();
   });
 });

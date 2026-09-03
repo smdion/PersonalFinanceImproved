@@ -26,6 +26,8 @@ export const VERSION_TABLES: VersionTableEntry[] = [
   { name: "tax_brackets", tier: 0 },
   { name: "ltcg_brackets", tier: 0 },
   { name: "irmaa_brackets", tier: 0 },
+  { name: "fpl_by_household", tier: 0 },
+  { name: "tax_params", tier: 0 },
   { name: "api_connections", tier: 0 },
   { name: "app_settings", tier: 0 },
   { name: "local_admins", tier: 0 },
@@ -87,6 +89,7 @@ export const VERSION_TABLES: VersionTableEntry[] = [
   { name: "mc_preset_return_overrides", tier: 2 },
   { name: "account_holdings", tier: 2 },
   { name: "savings_planned_tx_settlements", tier: 2 },
+  { name: "budget_income_adjustments", tier: 2 },
 
   // Tier 3 — depends on tier 2
   { name: "pending_rollovers", tier: 3 }, // FKs into account_performance (tier 2, ON DELETE restrict) + performance_accounts (tier 1)

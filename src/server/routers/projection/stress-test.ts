@@ -1,13 +1,10 @@
 /**
- * Stress test endpoint (v0.5 expert-review M2).
+ * Stress test endpoint.
  *
  * Re-runs the deterministic projection three times — once each at the
  * conservative, baseline, and optimistic stress-test parameter sets defined
  * in `src/lib/pure/stress-test.ts`. Used by the PlanHealthCard stress-test
  * panel to render side-by-side outcomes.
- *
- * Extracted from the old monolith `projection.ts` in PR 2b of the v0.5.2
- * file-split refactor. Pure relocation — no logic changes.
  */
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
@@ -21,7 +18,7 @@ import { buildStrategyParams } from "./_shared";
 
 export const stressTestRouter = createTRPCRouter({
   /**
-   * Stress test (v0.5 expert-review M2).
+   * Stress test.
    *
    * Re-runs the deterministic projection three times — once each at the
    * conservative, baseline, and optimistic stress test parameter sets

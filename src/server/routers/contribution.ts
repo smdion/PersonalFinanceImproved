@@ -1,5 +1,5 @@
 /** Contribution router for computing per-account contribution allocations, IRS limits, employer matches, and accumulation order across retirement and brokerage accounts. */
-import { eq, asc } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
@@ -23,6 +23,7 @@ import {
   applyContribActiveFields,
   buildSandboxContribRow,
 } from "@/server/helpers";
+import { getAllPeople } from "@/server/helpers/people";
 import {
   toSalaryActiveMap,
   zSandboxSalaryEntries,
@@ -196,7 +197,7 @@ export const contributionRouter = createTRPCRouter({
         currentYearPerfActuals,
         perfLastUpdatedRows,
       ] = await Promise.all([
-        ctx.db.select().from(schema.people).orderBy(asc(schema.people.id)),
+        getAllPeople(ctx.db),
         ctx.db.select().from(schema.jobs),
         ctx.db
           .select()

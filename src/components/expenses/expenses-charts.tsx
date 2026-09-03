@@ -2,7 +2,7 @@
 
 /** Recharts-heavy chart row for the expenses page. Lives in its own module
  *  so the parent page can next/dynamic-import it and avoid pulling ~250KB
- *  of recharts into the page bundle (v0.5 expert-review M8). */
+ *  of recharts into the page bundle. */
 
 import {
   BarChart,

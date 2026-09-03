@@ -1,10 +1,9 @@
 /**
- * Projection router helpers extracted from projection.ts for v0.5
- * expert-review work (M1/M2/M6). Lives alongside the router so the
- * endpoints stay thin.
+ * Projection router helpers for the Plan Health and stress-test features.
+ * Lives alongside the router so the endpoints stay thin.
  *
- *   - buildPlanHealthInputs: derives accumulationOrder (M1) and
- *     currentStockAllocationPercent (M6) for the PlanHealthCard.
+ *   - buildPlanHealthInputs: derives accumulationOrder and
+ *     currentStockAllocationPercent for the PlanHealthCard.
  *     Called from projection.computeProjection.
  *
  *   - runStressTestScenarios: re-runs calculateProjection at the three
@@ -29,7 +28,7 @@ import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies"
 type DbType = typeof db;
 
 // ---------------------------------------------------------------------------
-// M1 + M6 — PlanHealthCard inputs
+// PlanHealthCard inputs
 // ---------------------------------------------------------------------------
 
 interface ActiveContribLite {
@@ -75,13 +74,13 @@ export interface AssetClassRow {
 }
 
 /**
- * Pure core of the M6 glide-path lookup: given the glide-path table rows
+ * Pure core of the glide-path lookup: given the glide-path table rows
  * and the active asset-class list, bracket-interpolate at currentAge and
  * sum the equity classes. Exported for direct unit testing — the db-bound
  * wrapper below just fetches the two arrays and delegates.
  *
  * Returns null when the inputs are unusable (no glide path, no equity
- * classes) so the PlanHealthCard skips the M6 warning.
+ * classes) so the PlanHealthCard skips the glide-path warning.
  */
 export function computeStockPercentFromGlidePath(
   gpRows: readonly GlidePathRow[],
@@ -164,7 +163,7 @@ export async function computeCurrentStockAllocationPercent(
 }
 
 // ---------------------------------------------------------------------------
-// M2 — Stress test scenarios (re-run projection at canonical parameter sets)
+// Stress test scenarios (re-run projection at canonical parameter sets)
 // ---------------------------------------------------------------------------
 
 type ProjectionInput = Parameters<typeof calculateProjection>[0];

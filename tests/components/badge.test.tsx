@@ -24,8 +24,8 @@ describe("Badge", () => {
     ["green", "bg-green-100"],
     ["red", "bg-red-100"],
     ["amber", "bg-amber-100"],
-    ["purple", "bg-purple-50"],
-    ["indigo", "bg-indigo-50"],
+    ["purple", "bg-purple-100"],
+    ["indigo", "bg-indigo-100"],
   ] as const)("applies the %s color scheme", (color, expectedClass) => {
     render(<Badge color={color}>Label</Badge>);
     expect(screen.getByText("Label").className).toContain(expectedClass);

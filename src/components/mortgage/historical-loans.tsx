@@ -1,6 +1,7 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
 import { AmortizationTable } from "./amortization-table";
 import type { LoanSummary, LoanHistoryEntry } from "./types";
@@ -28,17 +29,17 @@ export function HistoricalLoans({
           <div key={loan.name} className="mb-4 opacity-75">
             <Card title={loan.name}>
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-xs rounded-full px-2 py-0.5 bg-surface-strong text-muted">
+                <Badge color="gray" size="sm" shape="pill" case="normal">
                   Historical
-                </span>
+                </Badge>
                 {isRefinanced ? (
-                  <span className="text-xs rounded-full px-2 py-0.5 bg-blue-100 text-blue-700">
+                  <Badge color="blue" size="sm" shape="pill" case="normal">
                     Refinanced
-                  </span>
+                  </Badge>
                 ) : (
-                  <span className="text-xs rounded-full px-2 py-0.5 bg-emerald-100 text-emerald-700">
+                  <Badge color="green" size="sm" shape="pill" case="normal">
                     Paid Off
-                  </span>
+                  </Badge>
                 )}
                 {histEntry?.refinancedInto && (
                   <span className="text-xs text-muted">

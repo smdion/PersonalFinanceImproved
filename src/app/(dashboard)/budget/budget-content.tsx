@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Multi-profile budget management page (client content). v0.5.3 F4.
+ * Multi-profile budget management page (client content).
  *
  * Owns: queries, mutations, local UI state, pageCtxValue, and the top-level
  * layout. Hook and component extractions:
@@ -546,7 +546,6 @@ export function BudgetContent() {
                 profileName: profile?.name ?? null,
                 activeProfileName: activeProfile?.name ?? null,
                 isViewingNonActive,
-                isPinned: isPinnedProfile,
                 onActivate:
                   profile?.id != null
                     ? () => handleActivateBudgetProfile(profile.id!)

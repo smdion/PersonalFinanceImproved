@@ -5,9 +5,6 @@
  * projection engine) and the three scenario-scoped mutations that edit
  * the MC input tables: `updateReturnRateTable`, `updateGlidePathAllocations`,
  * and `updateClampBounds`.
- *
- * Extracted from the old monolith `projection.ts` in PR 2b of the v0.5.2
- * file-split refactor. Pure relocation — no logic changes.
  */
 import { eq, sql } from "drizzle-orm";
 import { queryRaw } from "@/lib/db/compat";
@@ -144,8 +141,7 @@ export const monteCarloRouter = createTRPCRouter({
           .optional(),
         /** Optional snapshot ID — use a historical portfolio snapshot instead of the latest. */
         snapshotId: z.number().int().optional(),
-        /** Rate-Seeded scenario (advisor review, 2026-08-28 — Feature B,
-         *  PLAN-shortfall-alerting-and-strategy-scenario.md): re-seed year
+        /** Rate-Seeded scenario: re-seed year
          *  1 of decumulation from the Initial Withdrawal Rate × starting
          *  balance instead of the stated budget/override. See
          *  ProjectionInput.rateSeededDecumulationYear1's docblock for the

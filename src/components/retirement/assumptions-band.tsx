@@ -37,6 +37,7 @@ import { useState, type ReactNode } from "react";
 import { trpc } from "@/lib/trpc";
 import { HelpTip } from "@/components/ui/help-tip";
 import { InlineEdit } from "@/components/ui/inline-edit";
+import { Badge } from "@/components/ui/badge";
 import {
   EditLockToggle,
   EDIT_LOCK_KEYS,
@@ -192,9 +193,9 @@ export function AssumptionsBand({
           </span>
         )}
         {effectiveSource === "plan-pin" ? (
-          <span className="text-micro text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded font-medium">
+          <Badge color="blue" case="normal">
             Active in this Plan
-          </span>
+          </Badge>
         ) : profileId !== activeProfileId ? (
           <span className="text-caption text-muted font-medium">
             (viewing — not active)

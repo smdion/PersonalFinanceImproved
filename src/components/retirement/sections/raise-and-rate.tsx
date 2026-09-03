@@ -1,14 +1,12 @@
 /**
- * Post-Retirement Raise + Withdrawal Rate side-by-side row — extracted from
- * the Decumulation Plan block in retirement-content.tsx in PR 8/3c of the
- * v0.5.2 file-split refactor. Pure relocation — no behavior changes.
+ * Post-Retirement Raise + Withdrawal Rate side-by-side row.
  *
  * Each input is dimmed to 40% opacity AND made read-only when the active
  * withdrawal strategy doesn't use it (the strategy registry's
  * `usesPostRetirementRaise` / `usesWithdrawalRate` flags) — editing a value
- * the active strategy ignores used to still work silently (found
- * 2026-08-30: the wrapper dimmed but `isEditable` stayed unconditional, so
- * the field looked like a live input, accepted edits, and did nothing).
+ * the active strategy ignores used to still work silently (the wrapper
+ * dimmed but `isEditable` stayed unconditional, so the field looked like a
+ * live input, accepted edits, and did nothing).
  * The Withdrawal Rate label and help text also flip between "Withdrawal
  * Rate" / "Initial Withdrawal Rate" depending on the strategy's
  * `incomeSource`.

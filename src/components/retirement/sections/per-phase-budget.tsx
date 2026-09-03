@@ -1,7 +1,5 @@
 /**
- * Per-phase budget profile + column selection — extracted from the
- * Decumulation Plan block in retirement-content.tsx in PR 8/3b of the v0.5.2
- * file-split refactor. Pure relocation — no behavior changes.
+ * Per-phase budget profile + column selection.
  *
  * This is the middle child block of Decumulation Plan: it renders the
  * decumulation-phase Budget Source picker (profile dropdown + column picker
@@ -10,7 +8,7 @@
  *
  * The block also shows an amber "strategy X computes spending from ..."
  * banner when the active withdrawal strategy doesn't consume the budget /
- * withdrawal rate / post-retirement raise — and, since 2026-08-30, actually
+ * withdrawal rate / post-retirement raise — and also
  * disables the budget-source select/column select/salary-override edit in
  * that case too (previously only dimmed via opacity, still fully editable
  * underneath — same class of bug as raise-and-rate.tsx's two fields, found
@@ -23,6 +21,7 @@
 
 import { HelpTip } from "@/components/ui/help-tip";
 import { InlineEdit } from "@/components/ui/inline-edit";
+import { Badge } from "@/components/ui/badge";
 import {
   getStrategyMeta,
   type WithdrawalStrategyType,
@@ -137,7 +136,7 @@ export function PerPhaseBudgetSection({
                   ))}
                 </select>
                 {decMonths ? (
-                  <span className="text-xs text-amber-700 bg-amber-50 rounded px-2 py-1">
+                  <Badge color="amber" size="sm" case="normal">
                     Weighted: {formatCurrency(decWeighted ?? 0)}
                     /yr
                     <span className="text-caption text-faint ml-1">
@@ -147,7 +146,7 @@ export function PerPhaseBudgetSection({
                         .join(" +")}
                       )
                     </span>
-                  </span>
+                  </Badge>
                 ) : decLabels.length >= 2 ? (
                   <select
                     className="text-sm border rounded px-2 py-1 bg-surface-primary disabled:cursor-not-allowed disabled:opacity-50"

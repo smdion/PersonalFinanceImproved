@@ -1,7 +1,5 @@
 /**
- * Pure helper functions shared by the budget page. Extracted from
- * `src/app/(dashboard)/budget/page.tsx` during the v0.5.2 file-split
- * refactor — no behavior changes.
+ * Pure helper functions shared by the budget page.
  *
  * These reshape the per-column paycheck data returned by
  * `usePerColumnPaycheck` into the payroll + non-payroll breakdowns the

@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**348 procedures across 40 routers.**
+**353 procedures across 40 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -296,11 +296,12 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `save`                      | mutation | `brokerageProcedure` | (no description)                                                                                                                                                                                         |
 | `update`                    | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
 | `update`                    | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
-| `update`                    | mutation | `adminProcedure`     | through retirementSettings.upsert, scoped to whichever profile is active — not here.                                                                                                                     |
+| `update`                    | mutation | `adminProcedure`     | per-person assumptions themselves are edited through retirementSettings.upsert, scoped to whichever profile is active — not here. taxParamsYear lives on retirement_profiles itself: null (default) trac |
 | `upsert`                    | mutation | `adminProcedure`     | household with zero profiles yet) — that is NOT the same as "use the active profile," and must NOT silently retarget the write there; it scopes to the (rare, legitimate) null-profile rows via `isNull` |
 | `upsert`                    | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
 | `upsertHouseholdFields`     | mutation | `adminProcedure`     | engine's real per-person read source for both (`retirement_profile_people`) is per-person storage. Fan whichever field the caller sends to every person's row in the profile — same shape as `retirement |
-| `upsertPerson`              | mutation | `adminProcedure`     | from once step B (2026-08-30) switched those reads to `retirement_profile_people`. The edits saved, the UI showed the new number optimistically, and the projection never moved — same failure shape as  |
+| `upsertPerson`              | mutation | `adminProcedure`     | from once those reads were switched to `retirement_profile_people`. The edits saved, the UI showed the new number optimistically, and the projection never moved — same failure shape as the pre-0b5d5fe |
+| `upsertPersonRaiseRate`     | mutation | `adminProcedure`     | `upsert` (which requires a full anchor payload the per-person UI doesn't have, runs the endAge fan-out, and resolves+writes a default filing status — all wrong for a one-field raise-rate edit). UPDATE |
 
 ## `salary-profiles`
 
@@ -338,7 +339,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `linkReimbursementCategory` | mutation | `savingsProcedure`   | Link a reimbursement tracking category to the e-fund goal.                                                                                                                                               |
 | `list`                      | query    | `protectedProcedure` | Every active goal's funding for a given profile.                                                                                                                                                         |
 | `list`                      | query    | `protectedProcedure` | Load routing rules for all jobs.                                                                                                                                                                         |
-| `list`                      | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
+| `list`                      | query    | `protectedProcedure` | No live UI consumer reads this today (the Savings page uses computeSummary's goalsForClient instead — see budget-content.tsx's comment), but it's a general-purpose CRUD list endpoint, so its apiCatego |
 | `listApiBalances`           | query    | `protectedProcedure` | Get API category balances for linked savings goals (for display).                                                                                                                                        |
 | `listEfundReimbursements`   | query    | `protectedProcedure` | Get parsed reimbursement items from the linked YNAB category's note field.                                                                                                                               |
 | `listSummaries`             | query    | `protectedProcedure` | nonzero allocation) for every budget profile at once — for the profile-picker sidebar. Routes through the same resolver as `list` above (one call per profile) rather than re-deriving totals independen |
@@ -427,6 +428,8 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `create`  | mutation | `adminProcedure`     | (no description) |
 | `create`  | mutation | `adminProcedure`     | (no description) |
 | `create`  | mutation | `adminProcedure`     | (no description) |
+| `create`  | mutation | `adminProcedure`     | (no description) |
+| `delete`  | mutation | `adminProcedure`     | (no description) |
 | `delete`  | mutation | `adminProcedure`     | (no description) |
 | `delete`  | mutation | `adminProcedure`     | (no description) |
 | `delete`  | mutation | `adminProcedure`     | (no description) |
@@ -435,6 +438,8 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `list`    | query    | `protectedProcedure` | (no description) |
 | `list`    | query    | `protectedProcedure` | (no description) |
 | `list`    | query    | `protectedProcedure` | (no description) |
+| `list`    | query    | `protectedProcedure` | (no description) |
+| `update`  | mutation | `adminProcedure`     | (no description) |
 | `update`  | mutation | `adminProcedure`     | (no description) |
 | `update`  | mutation | `adminProcedure`     | (no description) |
 | `update`  | mutation | `adminProcedure`     | (no description) |
@@ -495,7 +500,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `pullAssetsFromApi`           | mutation | `syncProcedure`      | Pull tracking account balances from budget API into Ledgr asset values.                                                                                                                                  |
 | `pullPortfolioFromApi`        | mutation | `syncProcedure`      | Pull portfolio balances from budget API tracking accounts into the latest snapshot.                                                                                                                      |
 | `pushPortfolioToApi`          | mutation | `syncProcedure`      | Push portfolio snapshot balances to budget API tracking accounts.                                                                                                                                        |
-| `resyncSnapshot`              | mutation | `syncProcedure`      | fresh tagged transactions. Resyncing a non-latest snapshot causes historical drift (later snapshot deltas were computed against the old state). Pass `confirmNonLatest` after warning the user.          |
+| `resyncPortfolioPush`         | mutation | `syncProcedure`      | fresh tagged transactions. Resyncing a non-latest snapshot causes historical drift (later snapshot deltas were computed against the old state). Pass `confirmNonLatest` after warning the user.          |
 | `updateAccountMappings`       | mutation | `syncProcedure`      | Update account mappings for a service (works pre-activation).                                                                                                                                            |
 
 ## `sync/names`

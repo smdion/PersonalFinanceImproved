@@ -5,8 +5,7 @@
  * thread so a running simulation doesn't block every other request on
  * this single-instance server.
  *
- * Design (advisor-reviewed 2026-08-30, see
- * .scratch/docs/plans/PLAN-mc-worker-thread.md): ONE persistent, lazily
+ * Design: ONE persistent, lazily
  * spawned worker with an in-process FIFO queue, NOT a pool and NOT
  * spawn-per-call. The container is resource-limited to cpus: 1.0
  * (docs/ops/OPS.md) so multiple workers buy no real parallelism — the fix

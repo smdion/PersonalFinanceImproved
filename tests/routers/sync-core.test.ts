@@ -480,14 +480,20 @@ describe("sync core — getPreview", () => {
     const profiles = db.select().from(schema.budgetProfiles).all();
     const profileId = profiles[0]!.id;
 
-    seedBudgetItem(db, profileId, {
+    const insuranceItemId = seedBudgetItem(db, profileId, {
       category: "Essentials",
       subcategory: "Insurance",
       amounts: [300],
-      apiCategoryId: "c-insurance",
-      apiCategoryName: "Insurance",
-      apiSyncDirection: "pull",
     });
+    db.insert(schema.budgetItemCategoryLinks)
+      .values({
+        budgetItemId: insuranceItemId,
+        service: "ynab",
+        categoryId: "c-insurance",
+        categoryName: "Insurance",
+        syncDirection: "pull",
+      })
+      .run();
 
     const mockAccounts = [
       {
@@ -554,14 +560,20 @@ describe("sync core — getPreview", () => {
     const profiles = db.select().from(schema.budgetProfiles).all();
     const profileId = profiles[0]!.id;
 
-    seedBudgetItem(db, profileId, {
+    const orphanedItemId = seedBudgetItem(db, profileId, {
       category: "Essentials",
       subcategory: "Orphaned Insurance",
       amounts: [300],
-      apiCategoryId: "c-insurance-old-stale-id",
-      apiCategoryName: "Insurance",
-      apiSyncDirection: "pull",
     });
+    db.insert(schema.budgetItemCategoryLinks)
+      .values({
+        budgetItemId: orphanedItemId,
+        service: "ynab",
+        categoryId: "c-insurance-old-stale-id",
+        categoryName: "Insurance",
+        syncDirection: "pull",
+      })
+      .run();
 
     const mockAccounts = [
       {
@@ -618,12 +630,16 @@ describe("sync core — getPreview", () => {
   });
 
   it("reports a savings goal as orphaned, not linked, when its stored category id no longer resolves", async () => {
-    seedSavingsGoal(db, {
-      name: "Car",
-      isApiSyncEnabled: true,
-      apiCategoryId: "c-car-old-stale-id",
-      apiCategoryName: "Car",
-    });
+    const carGoalId = seedSavingsGoal(db, { name: "Car" });
+    db.insert(schema.savingsGoalCategoryLinks)
+      .values({
+        savingsGoalId: carGoalId,
+        service: "ynab",
+        role: "primary",
+        categoryId: "c-car-old-stale-id",
+        categoryName: "Car",
+      })
+      .run();
 
     const mockAccounts = [
       {

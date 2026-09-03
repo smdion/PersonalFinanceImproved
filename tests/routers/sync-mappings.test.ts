@@ -695,9 +695,9 @@ describe("sync mappings — pushPortfolioToApi", () => {
   });
 });
 
-// ── resyncSnapshot ─────────────────────────────────────────────────────
+// ── resyncPortfolioPush ─────────────────────────────────────────────────────
 
-describe("sync mappings — resyncSnapshot", () => {
+describe("sync mappings — resyncPortfolioPush", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: Awaited<ReturnType<typeof createTestCaller>>["db"];
   let cleanup: () => void;
@@ -747,7 +747,7 @@ describe("sync mappings — resyncSnapshot", () => {
     });
 
     await expect(
-      caller.sync.resyncSnapshot({ snapshotId: olderSnap }),
+      caller.sync.resyncPortfolioPush({ snapshotId: olderSnap }),
     ).rejects.toThrow(/non-latest snapshot causes historical drift/);
   });
 
@@ -795,7 +795,9 @@ describe("sync mappings — resyncSnapshot", () => {
       ],
     });
 
-    const result = await caller.sync.resyncSnapshot({ snapshotId: snapId });
+    const result = await caller.sync.resyncPortfolioPush({
+      snapshotId: snapId,
+    });
     expect(mockDeleteTransaction).toHaveBeenCalledWith("old-tagged-tx");
     expect(result.cleaned).toBe(1);
     expect(result.posted).toBe(1);
@@ -851,7 +853,7 @@ describe("sync mappings — resyncSnapshot", () => {
     });
 
     await expect(
-      caller.sync.resyncSnapshot({ snapshotId: snapId }),
+      caller.sync.resyncPortfolioPush({ snapshotId: snapId }),
     ).rejects.toThrow(/Resync cleanup partially failed/);
     expect(mockCreateTransaction).not.toHaveBeenCalled();
   });
@@ -869,15 +871,17 @@ describe("sync mappings — resyncSnapshot", () => {
       deleteTransaction: vi.fn(),
     });
     mockGetApiConnection.mockResolvedValue({ accountMappings: [] });
-    const result = await caller.sync.resyncSnapshot({ snapshotId: snapId });
+    const result = await caller.sync.resyncPortfolioPush({
+      snapshotId: snapId,
+    });
     expect(result.posted).toBe(0);
     expect(result.cleaned).toBe(0);
   });
 
   it("throws PRECONDITION_FAILED when no API active", async () => {
-    await expect(caller.sync.resyncSnapshot({ snapshotId: 1 })).rejects.toThrow(
-      /No budget API active/,
-    );
+    await expect(
+      caller.sync.resyncPortfolioPush({ snapshotId: 1 }),
+    ).rejects.toThrow(/No budget API active/);
   });
 });
 

@@ -1,6 +1,6 @@
 /**
  * derivePortfolioQuickLookStats — pure stats derivation for the Portfolio
- * Quick Look panel. Extracted from portfolio-quick-look.tsx (F6, v0.5.3) so
+ * Quick Look panel. Split out so
  * the component body shrinks and the stats logic is independently testable.
  *
  * Returns null when there are fewer than 2 snapshots (no change to derive).

@@ -89,6 +89,28 @@ export const irmaaBracketEntrySchema = z.object({
 /** irmaa_brackets.brackets — ordered list of IRMAA bracket entries */
 export const irmaaBracketsSchema = z.array(irmaaBracketEntrySchema);
 
+// ── fpl_by_household ────────────────────────────────────────────
+
+/**
+ * fpl_by_household.amounts — Federal Poverty Level dollar figure by
+ * household size, ALL 8 keys required (not a partial z.record).
+ * getAcaSubsidyCliff (aca-tables.ts) does
+ * `table[size] ?? table[2] ?? FPL_BY_HOUSEHOLD[2]!` when reading this —
+ * a missing size would silently fall back to size-2's dollar figure at
+ * READ time instead of failing at WRITE time. Requiring all 8 keys here
+ * turns that into a rejected write.
+ */
+export const fplByHouseholdAmountsSchema = z.object({
+  "1": z.number(),
+  "2": z.number(),
+  "3": z.number(),
+  "4": z.number(),
+  "5": z.number(),
+  "6": z.number(),
+  "7": z.number(),
+  "8": z.number(),
+});
+
 // ── api_connections ─────────────────────────────────────────────
 
 /** api_connections.config */
@@ -276,7 +298,7 @@ export const salaryEntriesSchema = z.record(z.string(), salaryEntrySchema);
 /**
  * Detailed contribution account active-field set (write-path). An entry
  * existing at all does NOT by itself mean this profile has a value —
- * an entry can legitimately exist to set only `isActive`/`displayNameActive`/
+ * an entry can legitimately exist to set only `isActive`/`displayNameCustom`/
  * a match field. `contributionValue`/`contributionMethod` are the only
  * pair required TOGETHER (both or neither, enforced below) whenever either
  * is present, because the account row itself carries no value to fall back
@@ -309,6 +331,15 @@ export const contribAccountActiveFieldsPatchSchema = z
     employerMaxMatchPct: z.union([z.string(), z.number()]).optional(),
     autoMaximize: z.boolean().optional(),
     isActive: z.boolean().optional(),
+    /** A custom display label for this account within this profile —
+     *  cosmetic, not financial (was `displayNameActive`, whose `Active`
+     *  suffix falsely implied it behaves like `isActive` for swap-safety —
+     *  it doesn't, see contrib-profile-diff.ts). */
+    displayNameCustom: z.string().optional(),
+    /** @deprecated legacy key. Still accepted so profiles saved before
+     *  the rename pass `.strict()` validation; readers fall back to it
+     *  (`displayNameCustom ?? displayNameActive`) and writers only emit the
+     *  new key, so it decays to dead weight. Drop in the next schema squash. */
     displayNameActive: z.string().optional(),
   })
   .strict();

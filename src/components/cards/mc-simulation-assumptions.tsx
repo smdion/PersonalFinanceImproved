@@ -188,7 +188,7 @@ export function SimulationAssumptions({
       `Retirement expense override: ${formatCurrency(inputs.decumulationExpenseOverride)}/yr`,
     );
   if (inputs.hasSalaryActiveFields)
-    activeOverrides.push("Salary overrides active");
+    activeOverrides.push("Salary customizations active");
 
   const presetColors: Record<string, string> = {
     aggressive: "text-red-600 bg-red-50 border-red-200",
@@ -289,7 +289,7 @@ export function SimulationAssumptions({
           {/* Active overrides callout */}
           {activeOverrides.length > 0 && (
             <div className="text-label text-amber-700 bg-amber-50 rounded px-2.5 py-2 border border-amber-200">
-              <span className="font-semibold">Active overrides:</span>
+              <span className="font-semibold">Active customizations:</span>
               <ul className="mt-0.5 ml-3 list-disc space-y-0">
                 {activeOverrides.map((o) => (
                   <li key={o}>{o}</li>
@@ -427,7 +427,7 @@ export function SimulationAssumptions({
                   "fixed") as WithdrawalStrategyType;
                 const cfg = WITHDRAWAL_STRATEGY_CONFIG[strategy];
                 const isDynamic = strategy !== "fixed";
-                // R45 Step 3, Finding 9: none of the 8 strategies actually
+                // None of the 8 strategies actually
                 // read this rate to compute spending (Finding 0) — the old
                 // copy here claimed Fixed uses it directly (`isDynamic`
                 // false branch) and every dynamic strategy "adjusts this

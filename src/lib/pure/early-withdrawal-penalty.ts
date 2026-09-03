@@ -1,6 +1,5 @@
 /**
- * Early-withdrawal penalty cost (v0.7.8 penalty-hard-exclusion follow-up —
- * .scratch/docs/plans/DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md § Q5).
+ * Early-withdrawal penalty cost.
  * Sibling of `roth-distribution-tax.ts`: consumes an already-computed
  * per-account penalty-exposure partition (`withdrawal-eligibility.ts`'s
  * `EligibilityRecord`) and an already-routed per-account withdrawal map —

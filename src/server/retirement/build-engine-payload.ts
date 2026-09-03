@@ -9,10 +9,6 @@
  * per-person retirement ages, filing status, IRMAA/ACA, and the engine's starting
  * balances. Callers (projection router endpoints) consume the result and add
  * their own accumulation/decumulation overrides and decumulation defaults.
- *
- * Extracted from `src/server/routers/retirement.ts` in the v0.5.2 file-split
- * refactor (see `.scratch/docs/V052-REFACTOR-PLAN.md` PR 1). Pure relocation —
- * no logic changes.
  */
 import { eq, asc, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
@@ -37,6 +33,7 @@ import {
   pickActiveBudgetProfile,
   resolveLinkedBudgetItemAmounts,
 } from "@/server/helpers";
+import { getAllPeople } from "@/server/helpers/people";
 import {
   resolveRetirementProfileIdFrom,
   pickProfileSettingsRow,
@@ -58,6 +55,7 @@ import {
 } from "@/lib/constants";
 import { estimateEffectiveTaxRate } from "@/lib/calculators/engine";
 import { getLtcgRate } from "@/lib/config/tax-tables";
+import { resolveTaxParams } from "@/lib/config/tax-params";
 import type { db as _db } from "@/lib/db";
 import { filterActiveJobs } from "@/lib/pure/profiles";
 import { computeTaxBucketBreakdown } from "@/lib/pure/tax-buckets";
@@ -85,7 +83,7 @@ export async function fetchRetirementData(
      *  own date isn't known until this same Promise.all resolves (it's one
      *  of the parallel fetches), so it can't retroactively affect this
      *  query — this only helps callers that already know their target date
-     *  up front (M23, .scratch/docs/review-findings.md). */
+     *  up front. */
     asOfDate?: Date;
   },
 ) {
@@ -107,6 +105,9 @@ export async function fetchRetirementData(
     perfAccounts,
     allTaxBrackets,
     allLtcgBrackets,
+    allIrmaaBrackets,
+    allFplByHousehold,
+    allTaxParams,
     brokerageGoalRows,
     allAppSettings,
     contribProfileRow,
@@ -114,7 +115,7 @@ export async function fetchRetirementData(
     jobLinkRows,
     accountBasisRows,
   ] = await Promise.all([
-    db.select().from(schema.people).orderBy(asc(schema.people.id)),
+    getAllPeople(db),
     db.select().from(schema.jobs),
     db.select().from(schema.retirementSettings),
     db
@@ -131,15 +132,11 @@ export async function fetchRetirementData(
       .select()
       .from(schema.contributionAccounts)
       .where(eq(schema.contributionAccounts.isActive, true)),
-    db
-      .select()
-      .from(schema.contributionLimits)
-      .where(
-        eq(
-          schema.contributionLimits.taxYear,
-          (opts?.asOfDate ?? new Date()).getFullYear(),
-        ),
-      ),
+    // Unfiltered: resolveTaxParams picks the year. Was previously
+    // filtered to asOfDate.getFullYear() here, which — combined with
+    // tax_brackets being taken at MAX(tax_year) — was the split-vintage
+    // gap. The resolver now anchors every slice on one year.
+    db.select().from(schema.contributionLimits),
     getLatestSnapshot(db, opts?.snapshotId),
     db
       .select()
@@ -157,13 +154,16 @@ export async function fetchRetirementData(
     db.select().from(schema.performanceAccounts),
     db.select().from(schema.taxBrackets),
     db.select().from(schema.ltcgBrackets),
+    db.select().from(schema.irmaaBrackets),
+    db.select().from(schema.fplByHousehold),
+    db.select().from(schema.taxParams),
     db
       .select()
       .from(schema.brokerageGoals)
       .where(eq(schema.brokerageGoals.isActive, true))
       .orderBy(asc(schema.brokerageGoals.targetYear)),
     db.select().from(schema.appSettings),
-    // Batch contribution profile fetch when profileId is known at fetch time (C6).
+    // Batch contribution profile fetch when profileId is known at fetch time.
     // Returns the row (or null = not found) when profileId is provided; undefined when
     // profileId is absent. buildEnginePayload checks for undefined to decide whether to
     // fall back to the async fetch (backward compat for callers that don't pass profileId here).
@@ -174,7 +174,7 @@ export async function fetchRetirementData(
           .where(eq(schema.contributionProfiles.id, opts.contributionProfileId))
           .then((r) => r[0] ?? null)
       : Promise.resolve(undefined as undefined),
-    // Same C6 batching for the independent Salary Profile axis.
+    // Same batching for the independent Salary Profile axis.
     opts?.salaryProfileId
       ? db
           .select()
@@ -182,7 +182,7 @@ export async function fetchRetirementData(
           .where(eq(schema.salaryProfiles.id, opts.salaryProfileId))
           .then((r) => r[0] ?? null)
       : Promise.resolve(undefined as undefined),
-    // Withdrawal-ordering eligibility (v0.7.8, PLAN-v0.7.8-v4 Group 1.1):
+    // Withdrawal-ordering eligibility:
     // which job funds which performance account. Deliberately unfiltered —
     // no isActive filter — a separated employer's contribution-account link
     // is exactly the one likely to be inactive, and it's exactly the
@@ -216,6 +216,9 @@ export async function fetchRetirementData(
     perfAccounts,
     allTaxBrackets,
     allLtcgBrackets,
+    allIrmaaBrackets,
+    allFplByHousehold,
+    allTaxParams,
     brokerageGoalRows,
     allAppSettings,
     contribProfileRow,
@@ -273,6 +276,9 @@ export async function buildEnginePayload(
     perfAccounts,
     allTaxBrackets,
     allLtcgBrackets,
+    allIrmaaBrackets,
+    allFplByHousehold,
+    allTaxParams,
     brokerageGoalRows,
     allAppSettings,
     jobLinkRows,
@@ -282,7 +288,7 @@ export async function buildEnginePayload(
   // All active contribution accounts feed the engine (both Retirement and Portfolio).
   // Pages filter output by parentCategory on individualAccountBalances.
   // When a contribution profile is selected, apply its overrides to the raw rows.
-  // C6: if the caller passed contributionProfileId to fetchRetirementData, the profile
+  // If the caller passed contributionProfileId to fetchRetirementData, the profile
   // row is already batched in data.contribProfileRow (undefined = not fetched; use async
   // fallback for backward-compat). When pre-fetched, the sync path avoids a serial round-trip.
   // Salary Profile resolved up front — both the Contribution Profile
@@ -342,47 +348,54 @@ export async function buildEnginePayload(
   // (findActiveJob(...)?.w4FilingStatus ?? "MFJ") is gone; it was only kept
   // until that backfill landed.
   const filingStatus = settings.filingStatus;
-  const latestTaxYear =
-    allTaxBrackets.length > 0
-      ? Math.max(...allTaxBrackets.map((b) => b.taxYear))
-      : new Date().getFullYear();
-  const matchingBrackets = allTaxBrackets.find(
-    (b) =>
-      b.taxYear === latestTaxYear &&
-      b.filingStatus === filingStatus &&
-      !b.w4Checkbox,
+
+  // Every per-year tax slice (withholding brackets, contribution
+  // limits + standard/senior deductions, LTCG brackets, IRMAA brackets,
+  // FPL) is resolved through ONE call, anchored on ONE year — instead of
+  // the old mix of `Math.max(tax_brackets.taxYear)` for brackets and
+  // `WHERE tax_year = asOfDate.getFullYear()` for limits, which could
+  // silently split across two vintages in the Oct-Jan window.
+  //
+  // requestedYear: the active retirement profile's pin
+  // (`tax_params_year`, null ⇒ undefined ⇒ newest enacted — the earlier
+  // default, since no production caller ever passed the latent `asOfDate`
+  // opt and the old `contribution_limits` filter was therefore always the
+  // current calendar year, which equals the newest seeded year). Historical
+  // portfolio snapshots already priced tax off current data, not the
+  // snapshot's year, so there is nothing year-specific to carry over here.
+  // `onMissing: "nearest"` — a projection uses this as a base year then
+  // grows it forward, so an unseeded pin year falls back to the newest
+  // earlier year rather than throwing.
+  const activeProfile = retProfiles.find((p) => p.id === activeProfileId);
+  const requestedTaxYear = activeProfile?.taxParamsYear ?? undefined;
+  const resolvedTax = resolveTaxParams(
+    {
+      vintage: allTaxParams,
+      contributionLimits: allLimits,
+      withholdingBrackets: allTaxBrackets,
+      ltcgBrackets: allLtcgBrackets,
+      irmaaBrackets: allIrmaaBrackets,
+      fpl: allFplByHousehold,
+    },
+    requestedTaxYear,
+    { onMissing: "nearest" },
   );
-  const bracketData = (matchingBrackets?.brackets ?? []) as {
+  const latestTaxYear = resolvedTax.resolvedYear;
+
+  // Same shapes the engine already consumed — the diff is "swap the
+  // source, not the shape". `?? []` / `undefined` fall-backs are
+  // unchanged, so a slice with no rows for `latestTaxYear` still degrades
+  // to the engine's own hardcoded default exactly as before.
+  const bracketData = (resolvedTax.withholdingBrackets?.[filingStatus]?.false ??
+    []) as {
     threshold: number;
     baseWithholding: number;
     rate: number;
   }[];
-
-  // DB-loaded LTCG brackets (v0.7.9 R40 follow-up) — mirrors bracketData
-  // above, but ltcg_brackets is keyed by filing status per row (one row per
-  // (taxYear, filingStatus)), not a single flat table, so build a
-  // Record<filingStatus, brackets[]> covering every filing status found in
-  // the latest tax year rather than filtering to just this household's own
-  // status — `computeLtcgTax`/`getLtcgRate` index into it by filing status
-  // themselves. Undefined (not an empty object) when nothing's seeded, so
-  // `computeLtcgTax`/`getLtcgRate` fall back to their hardcoded defaults
-  // exactly as before this change.
-  // (advisor review, 2026-08-29): the `new Date().getFullYear()` fallback
-  // this used to have was dead code — latestLtcgTaxYear is only ever
-  // needed inside the `allLtcgBrackets.length > 0` branch below, so it's
-  // only computed there now, where Math.max has real data to work with.
-  let ltcgBracketData:
-    Record<string, { threshold: number | null; rate: number }[]> | undefined;
-  if (allLtcgBrackets.length > 0) {
-    const latestLtcgTaxYear = Math.max(
-      ...allLtcgBrackets.map((b) => b.taxYear),
-    );
-    ltcgBracketData = Object.fromEntries(
-      allLtcgBrackets
-        .filter((b) => b.taxYear === latestLtcgTaxYear)
-        .map((b) => [b.filingStatus, b.brackets]),
-    );
-  }
+  const ltcgBracketData: typeof resolvedTax.ltcgByStatus =
+    resolvedTax.ltcgByStatus;
+  const irmaaBracketData: typeof resolvedTax.irmaaByStatus =
+    resolvedTax.irmaaByStatus;
 
   // Per-person retirement settings (for per-person age display + editing)
   // Per-person assumptions come from the active profile's own child rows.
@@ -398,16 +411,48 @@ export async function buildEnginePayload(
   const profilePeople = retProfilePeople.filter(
     (r) => r.profileId === activeProfileId,
   );
+  // Primary person's raise rate — the fallback every other person inherits
+  // when they have no `retirement_settings` row in the active profile at
+  // all (not when their row holds an explicit 0 — 0% is a real, meaningful
+  // rate, e.g. someone at a salary cap or modeling a freeze; treating it as
+  // "unset" silently overwrote it with the primary's rate, defeating the
+  // per-person raise-rate control). Computed here so BOTH
+  // `perPersonSettings` (below, for the per-person UI control) and
+  // `raiseRateByPerson` (further down, for salary-override growth) resolve
+  // the effective rate the same way — one decision, one code path.
+  const primaryRaiseRate = toNumber(settings.salaryAnnualIncrease);
   const perPersonSettings = people.map((p) => {
     const pp = profilePeople.find((r) => r.personId === p.id);
     // Legacy path: no profile resolved at all (see `settings` above).
     const ps = pp ?? retSettings.find((s) => s.personId === p.id);
+    // salary_annual_increase DOES exist as a column on retirement_profile_people
+    // (migration 0032 backfilled it, profile duplication clones it) — but
+    // nothing reads or writes it there; `pp` above is never used for this
+    // field. retirement_settings stays the live source, genuinely per
+    // (profile, person). Scope to the active profile so a household with
+    // 2+ profiles doesn't pick an arbitrary one's rate (same fix the
+    // raiseRateByPerson docblock records).
+    const rsRowForRaise = retSettings.find(
+      (s) => s.personId === p.id && s.profileId === activeProfileId,
+    );
+    const parsedRaiseRate = rsRowForRaise
+      ? toNumber(rsRowForRaise.salaryAnnualIncrease)
+      : NaN;
+    const effectiveRaiseRate = Number.isFinite(parsedRaiseRate)
+      ? parsedRaiseRate
+      : primaryRaiseRate;
     return {
       personId: p.id,
       name: p.name,
       birthYear: new Date(p.dateOfBirth).getFullYear(),
       retirementAge: ps?.retirementAge ?? settings.retirementAge,
       endAge: ps?.endAge ?? settings.endAge,
+      // Effective pre-retirement raise rate for THIS person. A person with
+      // no retirement_settings row in the active profile at all shows the
+      // primary's rate here; a person with a row (including an explicit 0)
+      // shows their own — the per-person control edits this effective
+      // value directly.
+      salaryAnnualIncrease: String(effectiveRaiseRate),
       // Still read from THIS person's own retirement_settings row, not from
       // the profile's. The field is dead (the client's PerPersonSettings type
       // doesn't carry it and nothing writes it back), but rows can disagree
@@ -503,7 +548,7 @@ export async function buildEnginePayload(
   // tier, always wins per field).
   const asOfDate = referenceDate;
   const activeJobs = filterActiveJobs(patchedJobs);
-  // C7: use getSalariesForJobs helper (deduplicates the parallel-fetch pattern).
+  // Uses getSalariesForJobs helper (deduplicates the parallel-fetch pattern).
   // Post-process to apply the Plan/session salary override and compute
   // totalComp. A Salary Profile entry is now a complete, all-or-nothing
   // number (see resolveCompensation's docblock) — there is no more
@@ -560,9 +605,8 @@ export async function buildEnginePayload(
   } = taxBucketBreakdown;
   const personNameById = new Map(people.map((p) => [p.id, p.name]));
 
-  // Per-account withdrawal-ordering eligibility (v0.7.8, PLAN-v0.7.8-v4
-  // Group 1.1) — reuses computeTaxBucketAnalysis verbatim (RULES.md § Single
-  // Computation Path) rather than re-deriving Rule of 55 / Roth-ordering
+  // Per-account withdrawal-ordering eligibility — reuses computeTaxBucketAnalysis
+  // verbatim (RULES.md § Single Computation Path) rather than re-deriving Rule of 55 / Roth-ordering
   // resolution a third time. Keyed with the same indKey format the engine's
   // individual-account-tracking module uses, so Group 2's eligibility gate
   // can look a given `IndividualAccountInput` up directly. Retirement-only
@@ -665,7 +709,7 @@ export async function buildEnginePayload(
       { ruleOf55: entry.ruleOf55, rothBasisMeta: entry.rothBasisMeta },
     );
   }
-  // Per-account penalty-allowance override (R41) — account-level, not
+  // Per-account penalty-allowance override — account-level, not
   // person-level, so (unlike ruleOf55/rothBasisMeta above) joint accounts
   // are included, not skipped. Only ever records `true`: same omit-when-
   // false cache-hash-stability convention as `ruleOf55ForceIneligible`.
@@ -727,9 +771,10 @@ export async function buildEnginePayload(
       ? toNumber(String(limitGrowthRaw))
       : IRS_LIMIT_GROWTH_RATE;
 
-  // IRS limits
-  const limitsMap: Record<string, number> = {};
-  for (const l of allLimits) limitsMap[l.limitType] = toNumber(l.value);
+  // IRS limits — the `contribution_limits` rows for the resolved tax year
+  // (resolveTaxParams already filtered + coerced to numbers). Same
+  // map shape as the old `for (const l of allLimits)` loop.
+  const limitsMap: Record<string, number> = resolvedTax.limits;
 
   // Per-person account types for limit aggregation.
   // A jobless row is "active" if it's tied to a currently-known person, OR
@@ -762,7 +807,7 @@ export async function buildEnginePayload(
   // superCatchupByGroup hold the flat per-person IRS catchup dollar figure
   // (not summed across people) — groupParticipants records WHO participates
   // in each group so the engine can gate that figure by each participant's
-  // own projected age each year (see catchupGroupParticipants below / H10).
+  // own projected age each year (see catchupGroupParticipants below).
   const limitByGroup: Record<string, number> = {};
   const catchupByGroup: Record<string, number> = {};
   const superCatchupByGroup: Record<string, number> = {};
@@ -770,7 +815,7 @@ export async function buildEnginePayload(
   const birthYearByPersonId = new Map(
     perPersonSettings.map((p) => [p.personId, p.birthYear]),
   );
-  // Rule of 55 forecasting override (v0.7.8) -- see
+  // Rule of 55 forecasting override -- see
   // IndividualAccountInput.ruleOf55ForceIneligible's docblock for the full
   // contract. Only ever set true (never false) below, so a household not
   // using this feature gets a byte-identical engine input.
@@ -1078,26 +1123,20 @@ export async function buildEnginePayload(
 
   const profileSwitches: ProfileSwitch[] = [];
 
-  /** Each person's own annual raise rate, falling back to the primary
-   *  person's when they have no retirement_settings row. retirementSettings
-   *  is per-person, so growing person B's future salary by person A's raise
-   *  rate (what this used to do) silently produced the wrong number.
-   *
-   *  Scoped to `activeProfileId` (Retirement Profiles phase 4) — a person
-   *  can now hold one row PER PROFILE, and `retSettings` here is every row
-   *  across every profile. Without this filter, `new Map(...)` keys on
-   *  personId and the last matching row wins, an arbitrary pick once a
-   *  household has 2+ profiles — the same class of bug
-   *  `pickProfileSettingsRow` exists to prevent for the household-grain
-   *  `settings` row above; this is its per-person-map equivalent. */
-  const retSettingsForActiveProfile = retSettings.filter(
-    (rs) => rs.profileId === activeProfileId,
-  );
-  const primaryRaiseRate = toNumber(settings.salaryAnnualIncrease);
+  /** Each person's effective annual raise rate, keyed by personId. Derived
+   *  from `perPersonSettings` (built above), whose `salaryAnnualIncrease`
+   *  already resolves each person's own `retirement_settings` rate —
+   *  active-profile-scoped — falling back to the primary's when that row
+   *  carries no distinct rate. Reading it back here (instead of re-deriving
+   *  from `retSettings`) is what keeps this map and the per-person UI control
+   *  in exact agreement about a person's raise rate — the divergence an
+   *  earlier version of this feature would have introduced. retirementSettings is
+   *  per-person, so growing person B's future salary by person A's rate
+   *  (what a naive fan-out would do) silently produces the wrong number. */
   const raiseRateByPerson = new Map(
-    retSettingsForActiveProfile.map((rs) => [
-      rs.personId,
-      toNumber(rs.salaryAnnualIncrease) || primaryRaiseRate,
+    perPersonSettings.map((ps) => [
+      ps.personId,
+      toNumber(ps.salaryAnnualIncrease),
     ]),
   );
 
@@ -1393,12 +1432,63 @@ export async function buildEnginePayload(
   let effectiveTraditionalRate = dbTraditionalRate;
   let effectiveBrokerageRate = dbBrokerageRate;
 
-  // Hoisted above its other use (distributionTaxRates.standardDeduction
-  // below) so the R56 fallback-rate estimate uses the same value —
+  // The standard deduction and the §63(f) senior deduction are
+  // permanent, evergreen figures — the IRS publishes a value for them
+  // every year, so a resolved tax year with no row for one is a genuine
+  // seed-completeness bug, not a legitimate state. `requireLimit` throws
+  // rather than silently computing on gross income with no deduction
+  // (the year-boundary class of bug this whole mechanism exists to
+  // close). Hoisted above its other use (distributionTaxRates.standardDeduction
+  // below) so the fallback-rate estimate uses the same value —
   // computing it twice would risk the two silently drifting.
   const standardDeductionForFilingStatus = filingStatus
-    ? limitsMap[`standard_deduction_${filingStatus.toLowerCase()}`]
+    ? requireLimit(
+        limitsMap,
+        `standard_deduction_${filingStatus.toLowerCase()}`,
+      )
     : undefined;
+
+  // IRC §63(f)(1) additional standard deduction for filers 65+. One
+  // amount for married filers (per qualifying spouse), a larger one for
+  // unmarried (Single/HoH). The decumulation-year handler multiplies this by
+  // how many household members are 65+ in each projection year — nearly
+  // every decumulation year for a real household — and folds it into the
+  // standard deduction before growth. Also evergreen (IRC §63(f) doesn't
+  // expire) — `requireLimit`, same reasoning as the base deduction above.
+  const additionalStdDeduction65PerSenior = filingStatus
+    ? requireLimit(
+        limitsMap,
+        filingStatus === "MFJ"
+          ? "additional_std_deduction_65_married"
+          : "additional_std_deduction_65_unmarried",
+      )
+    : undefined;
+
+  // OBBBA temporary senior deduction (One Big Beautiful Bill Act, 2025) —
+  // $6,000/person 65+, 2025-2028 only, phased out 6% of MAGI above
+  // $150k MFJ / $75k Single/HoH/MFS. Separate lever from §63(f) above;
+  // folded into the standard deduction alongside it in decumulation-year.ts
+  // using LAST YEAR's MAGI as the phaseout basis (see
+  // obbba-senior-deduction.ts's docblock for why — same circularity IRMAA's
+  // 2-year lookback already breaks).
+  //
+  // Deliberately KEPT undefined-tolerant (bare `limitsMap[key]`, not
+  // `requireLimit`), unlike the two evergreen deductions above: OBBBA is
+  // statutorily self-expiring (obbbaSeniorSunsetYear gates
+  // computeObbbaSeniorDeduction's own `year > sunsetYear ⇒ 0`), so a
+  // future tax year seeded AFTER 2028 that correctly omits these rows
+  // must degrade to "no OBBBA deduction," not throw. Making this strict
+  // would turn a legitimate post-sunset state into a crash.
+  const obbbaSeniorDeductionPerPerson =
+    limitsMap["obbba_senior_deduction_per_person"];
+  const obbbaSeniorPhaseoutStart = filingStatus
+    ? filingStatus === "MFJ"
+      ? limitsMap["obbba_senior_deduction_phaseout_start_mfj"]
+      : limitsMap["obbba_senior_deduction_phaseout_start_unmarried"]
+    : undefined;
+  const obbbaSeniorPhaseoutRate =
+    limitsMap["obbba_senior_deduction_phaseout_rate"];
+  const obbbaSeniorSunsetYear = limitsMap["obbba_senior_deduction_sunset_year"];
 
   if (bracketData.length > 0) {
     // Estimate effective income tax rate at retirement income level.
@@ -1408,6 +1498,11 @@ export async function buildEnginePayload(
       decumulationExpenses !== accumulationExpenses
         ? decumulationExpenses
         : annualExpensesVal;
+    // NOTE: deliberately the FLAT filing-status deduction, not the
+    // age-65+ senior-adjusted figure. This is a single scalar fallback rate
+    // used only when no tax brackets are seeded; it can't be per-projection-
+    // year age-aware. The real per-year LTCG/tax path applies the §63(f)
+    // addition in decumulation-year.ts. Do not "consolidate" the two.
     const estimatedRate = estimateEffectiveTaxRate(
       retirementIncome,
       bracketData,
@@ -1424,7 +1519,7 @@ export async function buildEnginePayload(
     // uses — replaces a prior heuristic that checked retirement income
     // against the *ordinary* 12%-bracket threshold as a proxy for the LTCG
     // 0% zone, which silently overstated 0%-LTCG headroom (the two bracket
-    // tables have different thresholds; code review + advisor, v0.7.9 R40).
+    // tables have different thresholds).
     // This value is only ever the FALLBACK used when filingStatus is
     // unavailable to a caller — the primary pricing path always uses
     // computeLtcgTax with the real bracket table directly.
@@ -1446,6 +1541,8 @@ export async function buildEnginePayload(
     brokerage: effectiveBrokerageRate,
     taxBrackets: bracketData.length > 0 ? bracketData : undefined,
     ltcgBrackets: ltcgBracketData,
+    irmaaBrackets: irmaaBracketData,
+    fplByHousehold: resolvedTax.fplByHousehold,
     taxMultiplier: taxMult,
     grossUpForTaxes: settings.grossUpForTaxes,
     rothBracketTarget: toNumber(settings.rothBracketTarget ?? "0.12"),
@@ -1463,6 +1560,17 @@ export async function buildEnginePayload(
     // filing status ⇒ the LTCG helper subtracts 0, reproducing pre-fix
     // behavior rather than throwing.
     standardDeduction: standardDeductionForFilingStatus,
+    // IRC §63(f) age-65+ additional standard deduction, per qualifying
+    // senior, filing-status-resolved. decumulation-year.ts scales it
+    // by the 65+ headcount for each projection year and folds it into the
+    // deduction before growth.
+    additionalStdDeduction65PerSenior,
+    // OBBBA temporary senior deduction (2025-2028) — see this file's own
+    // resolution above for how each figure is sourced.
+    obbbaSeniorDeductionPerPerson,
+    obbbaSeniorPhaseoutStart,
+    obbbaSeniorPhaseoutRate,
+    obbbaSeniorSunsetYear,
     // The actual calendar year `bracketData`/`standardDeductionForFilingStatus`
     // were seeded for — NOT necessarily "this year." See
     // `DecumulationDefaults.distributionTaxRates.taxDataYear`'s docblock
@@ -1470,6 +1578,11 @@ export async function buildEnginePayload(
     // these values reads as flat-nominal forever in the engine, which is
     // wrong once real inflation-indexed brackets are grown forward off it.
     taxDataYear: latestTaxYear,
+    // The `tax_params` vintage revision for `taxDataYear`. Informational
+    // (a "Tax data: 2026, rev N" label) — but threaded into the engine input
+    // so a vintage bump is explicit in `hashEngineInput`'s digest rather than
+    // only implicit via the resolved values.
+    taxParamsVersion: resolvedTax.version,
   };
 
   // Base engine input (without accumulationOverrides, decumulationOverrides, decumulationDefaults)

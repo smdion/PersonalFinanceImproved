@@ -28,8 +28,7 @@ const ACCOUNT_CATEGORIES: AccountCategory[] = getAllCategories();
 
 /**
  * Guarantee `withdrawalOrder` covers every engine category, appending any
- * that are missing (advisor review, 2026-08-29, v0.7.10 R51 Gap A round 2
- * finding 7). `withdrawalOrder` is validated with no completeness/
+ * that are missing. `withdrawalOrder` is validated with no completeness/
  * uniqueness constraint (`_shared.ts`'s zod schema is a bare
  * `z.array(z.enum(...))`) and replaced wholesale on override
  * (`config.withdrawalOrder = [...o.withdrawalOrder]` below) — a partial

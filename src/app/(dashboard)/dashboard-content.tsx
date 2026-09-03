@@ -23,8 +23,8 @@ import { trpc } from "@/lib/trpc";
 
 /**
  * Dashboard content — extracted from page.tsx so the page can be a
- * server component that pre-fetches the most expensive queries
- * (v0.5 expert-review M7). This file owns the client interactivity:
+ * server component that pre-fetches the most expensive queries. This
+ * file owns the client interactivity:
  * onboarding wizard, scenario context consumption, useQuery hooks
  * inside each Card.
  */

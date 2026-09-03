@@ -550,29 +550,34 @@ describe("retirement.retirementProfiles", () => {
     expect(rows).toHaveLength(2);
   });
 
-  it("duplicate clones household settings from the PRIMARY person's row, not each person's own", async () => {
+  it("duplicate clones EACH person's own retirement_settings row, not the primary's row fanned out to everyone", async () => {
     // personA has retirementAge 65, personB has 62 -- they DISAGREE on this
-    // household-grain field (matching the real-world drift
-    // pickProfileSettingsRow's docblock documents). Neither person is
-    // flagged isPrimaryUser here, so getPrimaryPerson falls back to the
-    // first person in id order -- personA. Both new rows must carry
-    // personA's retirementAge (65), not a per-person mix.
+    // per-person field. `duplicate` used to source every new row from the
+    // primary's (personA's) row alone, silently overwriting personB's 62
+    // with 65 on every profile duplication -- the real cross-person leak
+    // an ultra code review caught (findings that looked similar elsewhere
+    // in build-engine-payload.ts turned out to already be correctly
+    // profile-scoped; this one wasn't). Each person's new row must keep
+    // their OWN values.
     const settings = await caller.retirement.retirementSettings.list();
     const newRows = settings.filter((s) => s.profileId === secondProfileId);
     expect(newRows).toHaveLength(2);
-    expect(newRows.every((r) => r.retirementAge === 65)).toBe(true);
+    expect(newRows.find((r) => r.personId === personA)!.retirementAge).toBe(65);
+    expect(newRows.find((r) => r.personId === personB)!.retirementAge).toBe(62);
   });
 
-  it("duplicate creates a retirement_profile_people row for every person (completeness invariant), sourced from the primary person", async () => {
+  it("duplicate creates a retirement_profile_people row for every person (completeness invariant), each sourced from their own source row", async () => {
     const rows = await caller.retirement.retirementProfilePeople.list();
     const newRows = rows.filter((r) => r.profileId === secondProfileId);
     expect(newRows).toHaveLength(2);
-    // personA (first by id, no isPrimaryUser set on either) is the source
-    // for BOTH new rows -- personB's own distinct retirementAge (62) must
-    // NOT appear on personB's new row, same rule as the household-settings
-    // assertion above.
-    expect(newRows.every((r) => r.retirementAge === 65)).toBe(true);
-    expect(newRows.every((r) => r.ssStartAge === 67)).toBe(true);
+    // personA's row keeps its own retirementAge/ssStartAge; personB's row
+    // keeps ITS own (62/65), not personA's (65/67) fanned out to both.
+    const newA = newRows.find((r) => r.personId === personA)!;
+    const newB = newRows.find((r) => r.personId === personB)!;
+    expect(newA.retirementAge).toBe(65);
+    expect(newA.ssStartAge).toBe(67);
+    expect(newB.retirementAge).toBe(62);
+    expect(newB.ssStartAge).toBe(65);
     expect(new Set(newRows.map((r) => r.personId))).toEqual(
       new Set([personA, personB]),
     );
@@ -682,6 +687,68 @@ describe("retirement.retirementProfiles", () => {
       // secondProfileId's rows are untouched by the fan-out.
       expect(secondProfileRows.some((r) => r.endAge === 92)).toBe(false);
     });
+
+    // R53: before this, the only "Pre-Retirement Raise" control wrote the
+    // primary person's retirement_settings row via `upsert` — a second
+    // household member's `salary_annual_increase` was unreachable from the
+    // UI. `upsertPersonRaiseRate` targets one (profile, person) and writes
+    // ONLY that column.
+    describe("upsertPersonRaiseRate (R53 — per-person Pre-Retirement Raise)", () => {
+      it("sets a second household member's raise rate independently, touching nothing else", async () => {
+        const before = await caller.retirement.retirementSettings.list();
+        const personARow = before.find(
+          (s) => s.personId === personA && s.profileId === firstProfileId,
+        )!;
+        const personBOtherProfile = before.find(
+          (s) => s.personId === personB && s.profileId === secondProfileId,
+        )!;
+
+        await caller.retirement.retirementSettings.upsertPersonRaiseRate({
+          profileId: firstProfileId,
+          personId: personB,
+          salaryAnnualIncrease: "0.045",
+        });
+
+        const after = await caller.retirement.retirementSettings.list();
+        const personBAfter = after.find(
+          (s) => s.personId === personB && s.profileId === firstProfileId,
+        )!;
+        const personAAfter = after.find(
+          (s) => s.personId === personA && s.profileId === firstProfileId,
+        )!;
+        const personBOtherAfter = after.find(
+          (s) => s.personId === personB && s.profileId === secondProfileId,
+        )!;
+
+        // Person B's rate in this profile is now the value we set — and it's
+        // genuinely distinct from person A's (the whole point of R53).
+        expect(personBAfter.salaryAnnualIncrease).toBe("0.045");
+        expect(personAAfter.salaryAnnualIncrease).toBe(
+          personARow.salaryAnnualIncrease,
+        );
+        expect(personAAfter.salaryAnnualIncrease).not.toBe("0.045");
+        // The other profile's row for the same person is untouched.
+        expect(personBOtherAfter.salaryAnnualIncrease).toBe(
+          personBOtherProfile.salaryAnnualIncrease,
+        );
+        // No fan-out: only the one row moved, every other column on it too.
+        expect(personBAfter.retirementAge).toBe(
+          before.find(
+            (s) => s.personId === personB && s.profileId === firstProfileId,
+          )!.retirementAge,
+        );
+      });
+
+      it("throws when no retirement_settings row exists for that (profile, person)", async () => {
+        await expect(
+          caller.retirement.retirementSettings.upsertPersonRaiseRate({
+            profileId: 999999,
+            personId: personA,
+            salaryAnnualIncrease: "0.03",
+          }),
+        ).rejects.toThrow();
+      });
+    });
   });
 
   it("update renames a profile", async () => {
@@ -690,6 +757,32 @@ describe("retirement.retirementProfiles", () => {
       name: "Retire Early (renamed)",
     });
     expect(updated!.name).toBe("Retire Early (renamed)");
+  });
+
+  // R43: taxParamsYear pins the profile's resolveTaxParams base year.
+  // Reachable via this mutation (advisor-caught gap: the column existed
+  // and was read correctly, but nothing could ever set it).
+  it("update sets and clears taxParamsYear", async () => {
+    const pinned = await caller.retirement.retirementProfiles.update({
+      id: secondProfileId,
+      taxParamsYear: 2025,
+    });
+    expect(pinned!.taxParamsYear).toBe(2025);
+
+    const cleared = await caller.retirement.retirementProfiles.update({
+      id: secondProfileId,
+      taxParamsYear: null,
+    });
+    expect(cleared!.taxParamsYear).toBeNull();
+  });
+
+  it("update rejects an out-of-range taxParamsYear", async () => {
+    await expect(
+      caller.retirement.retirementProfiles.update({
+        id: secondProfileId,
+        taxParamsYear: 1900,
+      }),
+    ).rejects.toThrow();
   });
 
   it("delete refuses to remove the only remaining profile", async () => {

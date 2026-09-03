@@ -250,13 +250,16 @@ export default function PaycheckPage() {
       honorSessionScenario: true,
     });
 
-  // Get available tax years for the toggle (union of brackets + limits years)
-  const { data: taxBrackets } = trpc.settings.taxBrackets.list.useQuery();
+  // Get available tax years for the toggle. Sourced from contribution_limits
+  // alone, matching resolveTaxParams' candidateYears() — that's the only
+  // table `requireLimit()` reads, so it's the only one that can make a year
+  // safely selectable. Including tax_brackets here would let an admin's
+  // early bracket-only seed for a future year surface a picker option that
+  // then throws when selected.
   const { data: contribLimitsAll } =
     trpc.settings.contributionLimits.list.useQuery();
   const availableYears = (() => {
     const yrs = new Set<number>();
-    if (taxBrackets) for (const tb of taxBrackets) yrs.add(tb.taxYear);
     if (contribLimitsAll) for (const l of contribLimitsAll) yrs.add(l.taxYear);
     return Array.from(yrs).sort((a, b) => b - a);
   })();

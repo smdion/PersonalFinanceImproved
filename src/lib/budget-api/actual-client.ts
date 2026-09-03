@@ -218,7 +218,7 @@ export class ActualClient implements BudgetAPIClient {
     apiKey: string,
     private readonly budgetSyncId: string,
   ) {
-    // L130 (2026-08-06): serverUrl may be http:// (see url-safety.ts —
+    // serverUrl may be http:// (see url-safety.ts —
     // permitted for LAN-friendly self-hosted use), in which case this
     // x-api-key header is sent in cleartext. Accepted tradeoff, documented
     // in validateOutboundUrl()'s doc comment; not fixed here.
@@ -231,7 +231,7 @@ export class ActualClient implements BudgetAPIClient {
     this.budgetPath = `${base}/v1/budgets/${budgetSyncId}`;
   }
 
-  /** Internal fetch wrapper — see budgetApiRequest in ./errors (M45). */
+  /** Internal fetch wrapper — see budgetApiRequest in ./errors. */
   private async request<T>(path: string, init?: RequestInit): Promise<T> {
     const url = `${this.budgetPath}${path}`;
     return budgetApiRequest<T>(url, this.headers, init);
@@ -547,7 +547,7 @@ export class ActualClient implements BudgetAPIClient {
   }
 
   async createTransaction(tx: NewBudgetTransaction): Promise<string> {
-    // v0.5 expert-review M20: deterministic idempotency key. Actual's
+    // Deterministic idempotency key. Actual's
     // transaction model includes an `imported_id` field that the server
     // uses for dedupe on import. Mirror the YNAB pattern: hash the
     // canonical fingerprint and prefix it so it's recognizable as

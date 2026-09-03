@@ -2,8 +2,7 @@
 
 /**
  * Thin wrapper around PushPreviewModal for the budget page's "Push to YNAB"
- * flow. Extracted from `src/app/(dashboard)/budget/page.tsx` during the v0.5.2
- * file-split refactor — pure relocation, no behavior changes.
+ * flow.
  *
  * The parent owns the pushPreviewItems state + the tRPC syncToApi mutation;
  * this component is a presentational binding that wires the modal's

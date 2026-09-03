@@ -186,9 +186,7 @@ export function calculateMonteCarlo(
 
   // Per-trial outcome tracking
   const terminalBalances: number[] = [];
-  // v0.7.8 penalty-hard-exclusion follow-up
-  // (DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md § Q3/C3, BLOCKING):
-  // a trial whose spending need went unfunded specifically because
+  // A trial whose spending need went unfunded specifically because
   // penalty-exposed money was excluded (not because the household was
   // broke) must NOT count as a success just because it kept a larger
   // terminal balance from money it never spent. Parallel array to
@@ -320,7 +318,7 @@ export function calculateMonteCarlo(
       result.projectionByYear[result.projectionByYear.length - 1];
     terminalBalances.push(roundToCents(lastYear?.endBalance ?? 0));
 
-    // Penalty-avoided shortfall (§ Q3/C3) -- any decumulation year whose
+    // Penalty-avoided shortfall -- any decumulation year whose
     // spending need went unfunded because penalty-exposed money was
     // excluded disqualifies this trial from counting as a success below,
     // regardless of its terminal balance. Materiality floor (advisor
@@ -512,8 +510,7 @@ export function calculateMonteCarlo(
 
   // Success rate: % of trials where portfolio balance stays above $0 AND
   // no year's spending need went unfunded specifically because penalty-
-  // exposed money was excluded (v0.7.8 penalty-hard-exclusion follow-up §
-  // Q3/C3, BLOCKING) -- without the second condition, a trial that
+  // exposed money was excluded -- without the second condition, a trial that
   // under-spent every year (because its only remaining money was
   // penalty-exposed and off-limits) would keep a LARGER terminal balance
   // and score as MORE successful, exactly backwards.

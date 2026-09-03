@@ -40,7 +40,6 @@ import {
   FPL_BY_HOUSEHOLD,
   FPL_COVERAGE_YEAR,
   getAcaSubsidyCliff,
-  estimateAcaSubsidyValue,
 } from "@/lib/config/aca-tables";
 import {
   UNIFORM_LIFETIME_TABLE,
@@ -62,13 +61,14 @@ describe("Tax parameter freshness", () => {
 
   it("registry covers all parameter categories", () => {
     const names = TAX_PARAMETER_REGISTRY.map((e) => e.name);
-    // Ensure we haven't forgotten a category
-    expect(names).toContain("Federal tax brackets (seed)");
-    expect(names).toContain("Contribution limits (seed)");
-    expect(names).toContain("Standard deduction (seed)");
-    expect(names).toContain("LTCG brackets (seed)");
+    // Ensure we haven't forgotten a category. R43 (C10) collapsed the
+    // seed-brackets/limits/deductions/LTCG entries + the LTCG code
+    // fallback into one combined entry — pnpm check:tax-params verifies
+    // each of those individually now, so this registry only needs one.
+    expect(names).toContain(
+      "Seed reference data (brackets, limits, deductions, LTCG) + LTCG fallback",
+    );
     expect(names).toContain("IRMAA brackets (seed)");
-    expect(names).toContain("LTCG bracket fallback (code)");
     expect(names).toContain("IRMAA bracket fallback (code)");
     expect(names).toContain("ACA Federal Poverty Level");
     expect(names).toContain("SS taxation thresholds");
@@ -173,27 +173,12 @@ describe("tax_brackets seed data structural invariants", () => {
     expect(rows.length).toBeGreaterThan(0);
   });
 
-  // KNOWN, TRACKED EXCEPTION (R58, see seed-reference-data.sql comment above
-  // the tax_brackets INSERT): the MFJ rows hold real 2026 data duplicated
-  // onto the 2025 row too, while the Single/HOH rows hold real 2025 data
-  // duplicated onto the 2026 row too. That means each row's nominal
-  // tax_year doesn't match its actual source year for exactly these three
-  // (year, status) pairs — the adjustment-consistency checks below correctly
-  // flag them against their nominal year's standard deduction, so they're
-  // excluded here rather than fixed (fixing requires real, externally
-  // verified 2025 MFJ / 2026 Single/HOH bracket tables not available with
-  // confidence). Excluding a KNOWN mismatch keeps the test able to catch any
-  // NEW/different corruption — this is not a blanket suppression.
-  const KNOWN_MISLABELED: Array<{ taxYear: number; filingStatus: string }> = [
-    { taxYear: 2025, filingStatus: "MFJ" },
-    { taxYear: 2026, filingStatus: "Single" },
-    { taxYear: 2026, filingStatus: "HOH" },
-  ];
-  function isKnownMislabeled(row: SeedBracketRow): boolean {
-    return KNOWN_MISLABELED.some(
-      (k) => k.taxYear === row.taxYear && k.filingStatus === row.filingStatus,
-    );
-  }
+  // R58 RESOLVED (2026-09-01): the 2025/2026 rows were byte-identical twins
+  // (MFJ rows held real 2026 on both years; Single/HOH held real 2025 on
+  // both). All 12 rows are now transcribed from the official IRS Pub 15-T
+  // PDFs (p15t--2025.pdf, p15t--2026.pdf) — see seed-reference-data.sql's
+  // comment above the tax_brackets INSERT. No exclusions any more: every row
+  // must satisfy every invariant below.
 
   it("every row's thresholds strictly increase", () => {
     for (const row of rows) {
@@ -206,10 +191,35 @@ describe("tax_brackets seed data structural invariants", () => {
     }
   });
 
+  it("every row's rates are the 7 statutory brackets in order (0/10/12/22/24/32/35/37)", () => {
+    for (const row of rows) {
+      expect(
+        row.brackets.map((b) => b.rate),
+        `${row.taxYear} ${row.filingStatus} w4_checkbox=${row.w4Checkbox}`,
+      ).toEqual([0, 0.1, 0.12, 0.22, 0.24, 0.32, 0.35, 0.37]);
+    }
+  });
+
+  it("every row's tentative amount is forward-cascade consistent (base[i] = base[i-1] + rate[i-1] * threshold delta)", () => {
+    for (const row of rows) {
+      for (let i = 2; i < row.brackets.length; i++) {
+        const prev = row.brackets[i - 1]!;
+        const cur = row.brackets[i]!;
+        const expected =
+          prev.baseWithholding + prev.rate * (cur.threshold - prev.threshold);
+        // IRS rounds the published tentative amounts to the cent, and the
+        // checkbox schedule halves already-rounded standard figures, so allow
+        // a $1 slack rather than exact equality.
+        expect(
+          Math.abs(cur.baseWithholding - expected),
+          `${row.taxYear} ${row.filingStatus} w4_checkbox=${row.w4Checkbox}: bracket ${i} base ${cur.baseWithholding} vs cascade ${expected.toFixed(2)}`,
+        ).toBeLessThanOrEqual(1);
+      }
+    }
+  });
+
   it("w4_checkbox=true rows: second bracket threshold = standardDeduction / 2", () => {
-    for (const row of rows.filter(
-      (r) => r.w4Checkbox && !isKnownMislabeled(r),
-    )) {
+    for (const row of rows.filter((r) => r.w4Checkbox)) {
       const sd = standardDeductions.get(`${row.taxYear}:${row.filingStatus}`);
       if (sd === undefined) continue;
       expect(
@@ -220,9 +230,7 @@ describe("tax_brackets seed data structural invariants", () => {
   });
 
   it("w4_checkbox=false rows: standardDeduction - second bracket threshold = W-4 Worksheet 1A adjustment", () => {
-    for (const row of rows.filter(
-      (r) => !r.w4Checkbox && !isKnownMislabeled(r),
-    )) {
+    for (const row of rows.filter((r) => !r.w4Checkbox)) {
       const sd = standardDeductions.get(`${row.taxYear}:${row.filingStatus}`);
       if (sd === undefined) continue;
       expect(
@@ -419,6 +427,47 @@ describe("IRMAA bracket values", () => {
     expect(entry).toBeDefined();
     expect(IRMAA_DATA_YEAR).toBe(entry!.validThrough);
   });
+
+  // R43: irmaa_brackets is now READ by the engine payload
+  // (build-engine-payload.ts -> distributionTaxRates.irmaaBrackets ->
+  // decumulation-year.ts's growIrmaaBrackets). Before R43 the table was
+  // live but inert. This asserts the seed rows for the latest seeded year
+  // are byte-identical to the IRMAA_BRACKETS hardcoded fallback, so the
+  // wiring is a pure no-op for any household on seeded data (no
+  // engine-snapshot / golden movement). If a future seed edit diverges
+  // the seed from the fallback, THIS test fails -- update both together,
+  // exactly like the LTCG fallback.
+  it("seed irmaa_brackets (latest year) == IRMAA_BRACKETS fallback", () => {
+    const sql = fs.readFileSync(
+      path.resolve(__dirname, "../../seed-reference-data.sql"),
+      "utf8",
+    );
+    const rowRe = /\((\d{4}), '(MFJ|Single|HOH)', '(\[[^']*\])'\)/g;
+    const seedByYear = new Map<
+      number,
+      Partial<Record<"MFJ" | "Single" | "HOH", unknown>>
+    >();
+    // Only the irmaa_brackets INSERT block uses the
+    // (year, status, json) 3-tuple shape without a w4 flag AND with
+    // magiThreshold keys — scope by the latter to avoid matching LTCG.
+    let m: RegExpExecArray | null;
+    while ((m = rowRe.exec(sql)) !== null) {
+      if (!m[3]!.includes("magiThreshold")) continue;
+      const year = Number(m[1]);
+      if (!seedByYear.has(year)) seedByYear.set(year, {});
+      seedByYear.get(year)![m[2] as "MFJ" | "Single" | "HOH"] = JSON.parse(
+        m[3]!,
+      );
+    }
+    expect(seedByYear.size).toBeGreaterThan(0);
+    const latestYear = Math.max(...seedByYear.keys());
+    const seedLatest = seedByYear.get(latestYear)!;
+    for (const status of ["MFJ", "Single", "HOH"] as const) {
+      expect(seedLatest[status], `seed missing irmaa ${status}`).toEqual(
+        IRMAA_BRACKETS[status],
+      );
+    }
+  });
 });
 
 describe("ACA FPL values", () => {
@@ -441,14 +490,6 @@ describe("ACA FPL values", () => {
 
   it("400% FPL cliff for 2-person household = $84,600", () => {
     expect(getAcaSubsidyCliff(2)).toBe(21150 * 4);
-  });
-
-  it("subsidy is 0 above the cliff", () => {
-    expect(estimateAcaSubsidyValue(90000, 2, 55)).toBe(0);
-  });
-
-  it("subsidy is positive below the cliff", () => {
-    expect(estimateAcaSubsidyValue(40000, 2, 55)).toBeGreaterThan(0);
   });
 
   // Phase 4 drift guard (2026-08-31), same pattern as IRMAA_DATA_YEAR's

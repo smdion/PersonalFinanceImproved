@@ -61,6 +61,13 @@ export const SK_SAVINGS_RATE_THRESHOLDS = "savings_rate_thresholds";
 
 // ── Settings Page ───────────────────────────────────────────────────
 export const SK_SETTINGS_ACTIVE_TAB = "settings_active_tab";
+export const SK_SETTINGS_TAX_DATA_SECTION = "settings_tax_data_section";
+export const SK_SETTINGS_TAX_DATA_YEAR = "settings_tax_data_year";
+export const SK_SETTINGS_ACCESS_CONTROL_SECTION =
+  "settings_access_control_section";
+export const SK_SETTINGS_INTEGRATIONS_SECTION = "settings_integrations_section";
+export const SK_SETTINGS_GENERAL_SECTION = "settings_general_section";
+export const SK_SETTINGS_DEBUG_SECTION = "settings_debug_section";
 
 // ── Debug ───────────────────────────────────────────────────────────
 export const SK_DIAG_MODE = "diag_mode";

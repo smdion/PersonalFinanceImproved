@@ -2,7 +2,7 @@
 
 /** Portfolio overview page (client content). The default-export Page in
  *  portfolio/page.tsx is a thin server component that prefetches the most
- *  expensive query before rendering this — see v0.5 expert-review M7. */
+ *  expensive query before rendering this. */
 
 import React, { useState, useCallback, useMemo } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
@@ -28,8 +28,9 @@ import { SlidePanel } from "@/components/ui/slide-panel";
 import { AccountBalanceOverview } from "@/components/portfolio/account-balance-overview";
 import { PortfolioQuickLook } from "@/components/portfolio/portfolio-quick-look";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
+import { usePortfolioSnapshotMutations } from "@/components/portfolio/hooks/use-portfolio-snapshot-mutations";
 
-// v0.5 expert-review M8: code-split Recharts. PortfolioChart pulls in
+// Code-split Recharts. PortfolioChart pulls in
 // ~250KB of recharts code; lazy-loading moves it to a dedicated chunk.
 const PortfolioChart = dynamic(
   () =>
@@ -86,7 +87,7 @@ function groupByPerformanceAccount(
         // null (not a hand-built fallback string) when there's no real
         // linked label — lets accountDisplayName fall through to its
         // casing-aware Priority-3 construction instead of returning a raw
-        // lowercase DB key like "ira (Vanguard)" verbatim (M40).
+        // lowercase DB key like "ira (Vanguard)" verbatim.
         accountLabel: a.perfAccountLabel ?? null,
         accountType: a.accountType,
         institution: a.institution,
@@ -137,7 +138,7 @@ function buildSubRowLabel(
   const taxLabel = taxTypeLabel(a.taxType);
   // DESIGN.md's sub-account-type rule only names subType, but `label` is a
   // real, separate free-text override column on portfolio_accounts — it
-  // takes precedence when set (see DESIGN.md follow-up, Batch 25 F3).
+  // takes precedence when set (see DESIGN.md).
   const displayName = a.label || a.subType;
 
   let typeLabel: string;
@@ -160,8 +161,8 @@ function buildSubRowLabel(
   if (owner) {
     // Owner prefix uses an em dash (DESIGN.md "Snapshot Display" — WHO owns
     // it), distinct from the parens used below for WHAT kind of sub-account
-    // it is (e.g. "Employer Match (Traditional)"). Decision confirmed
-    // 2026-08-19: code was the one out of sync with the documented example.
+    // it is (e.g. "Employer Match (Traditional)"). The code was the one
+    // out of sync with the documented example.
     const qualifier =
       typeLabel !== taxLabel ? `${typeLabel} · ${taxLabel}` : typeLabel;
     return `${owner} — ${qualifier}`;
@@ -175,7 +176,6 @@ function buildSubRowLabel(
 export function PortfolioContent() {
   const user = useUser();
   const canEdit = hasPermission(user, "portfolio");
-  const utils = trpc.useUtils();
   const targeting = useYearEndTargetingInput();
   const { data, isLoading, error } =
     trpc.networth.computeSummary.useQuery(targeting);
@@ -207,14 +207,8 @@ export function PortfolioContent() {
     sortCol: sortCol ?? undefined,
     sortDir: sortDir,
   });
-  const deleteMutation = trpc.networth.portfolioSnapshots.delete.useMutation({
-    onSuccess: () => {
-      utils.networth.computeSummary.invalidate();
-      utils.networth.listHistory.invalidate();
-      utils.networth.listSnapshots.invalidate();
-    },
-  });
-  const resyncSnapshotMutation = trpc.sync.resyncSnapshot.useMutation();
+  const { deleteSnapshot, resyncPush, invalidateSnapshotQueries } =
+    usePortfolioSnapshotMutations();
 
   const snapshotDate = data?.snapshotDate;
 
@@ -333,10 +327,7 @@ export function PortfolioContent() {
             onClose={() => setShowNewSnapshot(false)}
             onSaved={() => {
               setShowNewSnapshot(false);
-              utils.networth.computeSummary.invalidate();
-              utils.networth.listHistory.invalidate();
-              utils.networth.listSnapshots.invalidate();
-              utils.networth.portfolioSnapshots.getLatest.invalidate();
+              invalidateSnapshotQueries();
             }}
           />
         </SlidePanel>
@@ -550,9 +541,7 @@ export function PortfolioContent() {
                                 <div className="flex items-center gap-3 justify-end">
                                   {canEdit && (
                                     <button
-                                      disabled={
-                                        resyncSnapshotMutation.isPending
-                                      }
+                                      disabled={resyncPush.isPending}
                                       onClick={async () => {
                                         if (!isLatest) {
                                           const confirmed = await confirm(
@@ -562,12 +551,10 @@ export function PortfolioContent() {
                                         }
                                         try {
                                           const result =
-                                            await resyncSnapshotMutation.mutateAsync(
-                                              {
-                                                snapshotId: snap.id,
-                                                confirmNonLatest: !isLatest,
-                                              },
-                                            );
+                                            await resyncPush.mutateAsync({
+                                              snapshotId: snap.id,
+                                              confirmNonLatest: !isLatest,
+                                            });
                                           alert(
                                             `Resync complete: posted ${result.posted}, cleaned ${result.cleaned}.`,
                                           );
@@ -579,9 +566,9 @@ export function PortfolioContent() {
                                       }}
                                       className="text-xs text-muted hover:text-primary disabled:opacity-50"
                                     >
-                                      {resyncSnapshotMutation.isPending &&
-                                      resyncSnapshotMutation.variables
-                                        ?.snapshotId === snap.id
+                                      {resyncPush.isPending &&
+                                      resyncPush.variables?.snapshotId ===
+                                        snap.id
                                         ? "Resyncing…"
                                         : "Resync"}
                                     </button>
@@ -594,7 +581,7 @@ export function PortfolioContent() {
                                             `Delete snapshot from ${snap.snapshotDate}?`,
                                           )
                                         ) {
-                                          deleteMutation.mutate({
+                                          deleteSnapshot.mutate({
                                             id: snap.id,
                                           });
                                         }

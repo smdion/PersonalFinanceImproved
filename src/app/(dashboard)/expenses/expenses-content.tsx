@@ -27,7 +27,7 @@ import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-pr
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
 
-// Code-split the recharts-heavy chart row (v0.5 expert-review M8). Both
+// Code-split the recharts-heavy chart row. Both
 // charts share a single chunk so the recharts payload is fetched once on
 // page mount instead of bundling into the page chunk. ssr:false because
 // Recharts isn't SSR-friendly.

@@ -9,7 +9,7 @@ import { confirm } from "@/components/ui/confirm-dialog";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 import { sumBy, safeDivide } from "@/lib/utils/math";
 
-// Code-split the per-fund Recharts mini chart (v0.5 expert-review M8). All
+// Code-split the per-fund Recharts mini chart. All
 // FundCard instances on the page share a single chunk, so the recharts
 // payload is fetched once when the savings page hydrates instead of being
 // inlined in the page bundle. ssr:false because Recharts isn't SSR-friendly.

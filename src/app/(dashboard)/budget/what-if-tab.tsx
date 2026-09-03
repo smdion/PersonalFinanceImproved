@@ -492,7 +492,7 @@ function WhatIfPinnedCell({
         }}
         title={
           isPinned
-            ? `Pinned for this preview. Live value: ${liveValue}`
+            ? `Fixed for this preview. Live value: ${liveValue}`
             : "Follows the picked Salary Profile / job record"
         }
         className={`${width} px-1.5 py-0.5 text-xs text-right border rounded bg-surface-primary tabular-nums ${
@@ -1290,6 +1290,14 @@ export function WhatIfTab({
     netMonthlyIncome != null && budgetTotal != null
       ? netMonthlyIncome - budgetTotal
       : null;
+  // Budget-mode extra-paycheck adjustment landing in the REAL current
+  // calendar month — independent of activeColumn/selectedColumn (see
+  // budget.computeActiveSummary's docblock). A separate, additively-labeled
+  // annotation only; never folded into netMonthlyIncome or `leftover`.
+  const budgetIncomeAdjustmentThisMonth =
+    budgetData && "budgetIncomeAdjustmentThisMonth" in budgetData
+      ? (budgetData.budgetIncomeAdjustmentThisMonth ?? null)
+      : null;
 
   // ── Sandbox-local Budget table wiring (amounts-only, no live mutation) ──
   const sentinelRef = useRef<HTMLTableRowElement>(null);
@@ -1587,10 +1595,10 @@ export function WhatIfTab({
         </div>
         {overriddenColumns.length > 0 && (
           <div className="text-caption text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2 mt-2">
-            <span className="font-semibold">Pinned elsewhere: </span>
+            <span className="font-semibold">Resolved elsewhere: </span>
             some budget modes resolve to a different profile than the picks
-            above, because an active Plan&rsquo;s pin or the mode&rsquo;s own
-            pin outranks a page-level preview (see Profile Pins in the docs).
+            above, because an active Plan or the mode&rsquo;s own selection
+            outranks a page-level preview.
             <ul className="mt-1 list-disc list-inside">
               {overriddenColumns.map((line) => (
                 <li key={line}>{line}</li>
@@ -1736,6 +1744,14 @@ export function WhatIfTab({
             </span>
           </div>
         )}
+        {budgetIncomeAdjustmentThisMonth != null &&
+          budgetIncomeAdjustmentThisMonth !== 0 && (
+            <p className="text-xs text-muted mb-3 -mt-2">
+              +{formatCurrency(budgetIncomeAdjustmentThisMonth)} extra paycheck
+              already included in this month&rsquo;s income (not part of Net
+              above).
+            </p>
+          )}
         {allColumnResults && allColumnResults.length > 0 ? (
           <div className="max-h-[520px] w-full overflow-y-auto rounded-md border border-subtle">
             <BudgetPageContext.Provider value={budgetPageContextValue}>
@@ -1899,7 +1915,7 @@ export function WhatIfTab({
                 {salaryEditCount > 0 && (
                   <>
                     {" "}
-                    Salary edits carry over; bonus-term edits don&rsquo;t — pin
+                    Salary edits carry over; bonus-term edits don&rsquo;t — set
                     those on a Salary Profile instead.
                   </>
                 )}

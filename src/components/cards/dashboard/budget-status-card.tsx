@@ -100,7 +100,7 @@ function BudgetStatusCardImpl() {
   return (
     <Card
       title="Budget"
-      subtitle={`${data.profile?.name}${isBudgetPinned ? " (pinned)" : ""} — ${modeName}`}
+      subtitle={`${data.profile?.name}${isBudgetPinned ? " (active)" : ""} — ${modeName}`}
       href="/budget"
     >
       <div className="flex items-baseline justify-between">

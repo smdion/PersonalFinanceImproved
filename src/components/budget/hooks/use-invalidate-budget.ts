@@ -29,8 +29,7 @@ export function useInvalidateBudget(): {
   // API-actuals matching view (listApiActuals filters by budgetItems) and
   // the e-fund target on the Savings Goals card (computeSummary sums
   // essential-expense budget items) — both were previously left stale after
-  // a plain item add/delete/essential-toggle (M28,
-  // .scratch/docs/review-findings.md). Every other invalidate* variant below
+  // a plain item add/delete/essential-toggle. Every other invalidate* variant below
   // builds on this one so they can't drift out of sync with it again.
   const invalidateSummary = useCallback(() => {
     utils.budget.computeActiveSummary.invalidate();

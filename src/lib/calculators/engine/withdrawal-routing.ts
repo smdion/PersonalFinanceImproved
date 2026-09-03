@@ -29,7 +29,7 @@ import {
 } from "../../config/account-types";
 import { incomeCapForMarginalRate } from "./tax-estimation";
 import type { WithholdingBracket } from "./tax-estimation";
-import { subtractExcluded } from "./balance-utils";
+import { subtractExcluded, applySlotsToBalances } from "./balance-utils";
 import type {
   EligibilityRecord,
   NonRetirementExclusion,
@@ -47,7 +47,7 @@ export function routeWithdrawals(
   targetWithdrawal: number,
   config: ResolvedDecumulationConfig,
   balances: AccountBalances,
-): { slots: DecumulationSlot[]; warnings: string[]; unmetNeed?: number } {
+): RouteResult {
   const warnings: string[] = [];
   let remaining = targetWithdrawal;
   const slots: DecumulationSlot[] = [];
@@ -332,15 +332,13 @@ export function routeWithdrawalsPercentage(
  * (percentage), this mode optimizes tax efficiency each year:
  *
  * 1. Fill traditional withdrawals (401k/403b/IRA traditional) up to a tax
- *    bracket cap, in the household's own configured account order (v0.7.10
- *    R51 Gap A — previously a hardcoded 401k→403b→IRA order regardless of
+ *    bracket cap, in the household's own configured account order
+ *    (previously a hardcoded 401k→403b→IRA order regardless of
  *    what the user configured; see `phase1Order` below). This uses the
  *    cheap bracket space without overfilling into expensive brackets.
  * 2-4. Rank the remainder (Roth growth, brokerage LTCG, HSA) by real
- *    marginal cost each year instead of a fixed order (v0.7.9 R40 —
- *    `withdrawal-cost-ranking.ts`'s `rankWithdrawalTiers`; corrected this
- *    docblock, which still described the pre-R40 fixed Roth→brokerage→HSA
- *    order months after R40 shipped).
+ *    marginal cost each year instead of a fixed order
+ *    (`withdrawal-cost-ranking.ts`'s `rankWithdrawalTiers`).
  *
  * The bracket cap is determined by `rothBracketTarget` (target marginal rate).
  * If no brackets or target are provided, falls back to waterfall behavior.
@@ -387,7 +385,7 @@ export function routeWithdrawalsBracketFilling(
   const tradTypeCap = config.withdrawalTaxTypeCaps.traditional;
   const rothTypeCap = config.withdrawalTaxTypeCaps.roth;
 
-  // Advisor review, 2026-08-29 (v0.7.10 R51 Gap A): computed ONCE, shared
+  // Computed ONCE, shared
   // by both Phase 1 (below) and `drawRothTierCapped` further down — both
   // loops need "which Traditional-preference account first," and a single
   // local here means the two can't drift the way they would if each
@@ -446,10 +444,10 @@ export function routeWithdrawalsBracketFilling(
     }
   }
 
-  // --- Phases 2-4: cost-ranked sources (v0.7.9 R40 follow-up) ---
+  // --- Phases 2-4: cost-ranked sources ---
   // Roth, brokerage, and HSA no longer drain in a fixed order — a
-  // non-qualified Roth growth withdrawal is real ordinary-rate income
-  // (v0.7.8), so draining it before brokerage sitting in the real 0%/15%
+  // non-qualified Roth growth withdrawal is real ordinary-rate income,
+  // so draining it before brokerage sitting in the real 0%/15%
   // LTCG zone can pick the more expensive source purely from sequencing.
   // rankWithdrawalTiers (withdrawal-cost-ranking.ts) orders the remaining
   // need by actual marginal cost instead; this loop just mechanically
@@ -458,7 +456,7 @@ export function routeWithdrawalsBracketFilling(
 
   function drawRothTierCapped(cap: number): void {
     let tierRemaining = Math.min(remaining, cap);
-    // Same `phase1Order` as Phase 1 above (v0.7.10 R51 Gap A) — Roth
+    // Same `phase1Order` as Phase 1 above — Roth
     // withdrawals draw from the same physical accounts, so using a
     // different order here would let a household's configured order
     // apply to Traditional draws but not Roth draws in the same year.
@@ -657,7 +655,7 @@ export function routeWithdrawalsBracketFilling(
     : 0;
   const baseOrdinaryFloor =
     (bracketInfo.taxableSS ?? 0) + totalTradWithdrawn + conversionReservedRoom;
-  // Hoisted (advisor review, 2026-08-29): this 9-field object used to be
+  // Hoisted: this 9-field object used to be
   // written out twice (seed pass + every refine pass below), differing
   // only in `ordinaryIncomeFloor` — a field added to one copy and not the
   // other would silently change ranking behavior between the seed and
@@ -724,7 +722,7 @@ export function routeWithdrawalsBracketFilling(
   }
 
   // Ensure all 4 categories have slots (brokerage might be missing if not needed)
-  // (advisor review, 2026-08-29: this ACCOUNT_CATEGORIES loop already
+  // (this ACCOUNT_CATEGORIES loop already
   // covers every singleBucketCats entry too, since singleBucketCats is a
   // subset — a separate identical loop over just that subset ran first
   // and was fully dead code, removed here.)
@@ -761,7 +759,7 @@ export function routeWithdrawalsBracketFilling(
 
 // ---------------------------------------------------------------------------
 // Mode dispatch — single entry point so real execution and tax-gross-up.ts's
-// estimate can never route differently for the same inputs (Phase 5 item 5.3).
+// estimate can never route differently for the same inputs.
 // ---------------------------------------------------------------------------
 
 export interface RouteBracketInfo {
@@ -773,16 +771,16 @@ export interface RouteBracketInfo {
    *  decumulation-year.ts's resolvedConversionTarget). Falls back to
    *  rothBracketTarget when omitted, so existing callers that don't pass
    *  this (tax-gross-up.ts's estimate) keep prior behavior exactly.
-   *  Advisor-caught 2026-09-01: conversionReservedRoom below used to
+   *  conversionReservedRoom below used to
    *  reserve room up to rothBracketTarget's cap even when the conversion
    *  that actually runs targets a different, more specific rate — two
    *  names for one quantity, resolved by two different chains. */
   conversionTarget?: number;
   taxableSS: number;
-  /** Below fields power v0.7.9 R40's cost-aware post-bracket-cap ranking
+  /** Below fields power the cost-aware post-bracket-cap ranking
    *  (bracket_filling mode only — see `routeWithdrawalsBracketFilling`,
    *  `withdrawal-cost-ranking.ts`). All optional: omitted ⇒ the ranking
-   *  degrades to the pre-v0.7.9 fixed Roth→brokerage→HSA order (no
+   *  degrades to the fixed Roth→brokerage→HSA order (no
    *  filingStatus at all skips LTCG/NIIT lookups entirely; the others
    *  default to "no basis tracking / no MAGI headroom known"). */
   filingStatus?: FilingStatusType | null;
@@ -817,11 +815,12 @@ export interface RouteBracketInfo {
   conversionsEnabled?: boolean;
   /** Household's annual standard deduction — converts the gross ordinary-
    *  income floor into real taxable income before LTCG bracket lookups.
-   *  Omitted ⇒ 0 (pre-2026-08-30 behavior: LTCG room systematically
+   *  Omitted ⇒ 0 (prior behavior: LTCG room systematically
    *  understated, real LTCG tax overcharged). See `toLtcgTaxableIncome`. */
   standardDeduction?: number;
-  /** R55 follow-up — see `RankWithdrawalTiersInput`'s field of the same
+  /** See `RankWithdrawalTiersInput`'s field of the same
    *  name (`withdrawal-cost-ranking.ts`) for the full explanation.
+
    *  Undefined ⇒ "roth_first", matching all pre-existing behavior. */
   discretionaryWithdrawalOrder?: "roth_first" | "brokerage_first";
 }
@@ -832,7 +831,7 @@ export interface RouteBracketInfo {
  * ceiling for that bracket (after standard deduction) minus SS income
  * already occupying part of that room. Shared by
  * `routeWithdrawalsBracketFilling` and `applyRothBracketOverlay`
- * (advisor-caught 2026-09-01: these computed the byte-identical formula
+ * (these computed the byte-identical formula
  * independently under different variable names — same risk class as any
  * other duplicated computation, RULES.md single-computation-path).
  * Returns Infinity when there's no bracket data or target to compute from —
@@ -864,9 +863,8 @@ export type RouteResult = {
   traditionalCap?: number;
   unmetNeed?: number;
   /** Portion of `unmetNeed` attributable specifically to excluding
-   *  penalty-exposed money, not to the household being broke (v0.7.8
-   *  penalty-hard-exclusion follow-up, DESIGN-DECISION-v0.7.8-
-   *  penalty-hard-exclusion.md § Q3/C2). Distinct from `unmetNeed` itself:
+   *  penalty-exposed money, not to the household being broke. Distinct
+   *  from `unmetNeed` itself:
    *  a household can be short for BOTH reasons, or either alone — conflating
    *  them would destroy the distinction this whole feature exists to
    *  create. `min(unmetNeed, exposure.totalPenaltyExposed)` — never more
@@ -874,7 +872,7 @@ export type RouteResult = {
    *  actually excluded. */
   penaltyAvoidedShortfall?: number;
   /** Portion of `unmetNeed` attributable specifically to excluding
-   *  Portfolio-parented ("non-retirement") money (R49). Same shape and
+   *  Portfolio-parented ("non-retirement") money. Same shape and
    *  same reasoning as `penaltyAvoidedShortfall` — a household can be
    *  short for this reason, the penalty-exclusion reason, both, or neither,
    *  and conflating any of them with plain "the household is broke" would
@@ -956,8 +954,7 @@ export function applyRothBracketOverlay(
       ...config.withdrawalTaxPreference,
       ...tradOverrides,
     },
-    // Advisor review, 2026-08-29 (v0.7.10 R51 Gap A round 2) — confirmed
-    // load-bearing, NOT an oversight: this overlay adds a Traditional
+    // Confirmed load-bearing, NOT an oversight: this overlay adds a Traditional
     // tax-type cap above so the "Roth bracket optimization" this overlay
     // implements means anything in waterfall mode, `routeWithdrawals`'s
     // category loop still runs in the user's OWN configured order. If
@@ -975,7 +972,7 @@ export function applyRothBracketOverlay(
 
 /**
  * One dispatch to whichever mode config.withdrawalRoutingMode selects —
- * extracted verbatim from the pre-v0.7.8 `routeForMode` body. No mode
+ * extracted verbatim from the earlier `routeForMode` body. No mode
  * function mutates `balances`, so `routeForMode`'s two-pass eligibility
  * gate (below) works by substituting which `balances`/`config` object this
  * receives, never by editing any of the three mode functions themselves.
@@ -999,7 +996,176 @@ function dispatchOnce(
   }
   // Waterfall mode — apply Roth bracket optimization overlay if configured.
   const routeConfig = applyRothBracketOverlay(config, bracketInfo);
-  return routeWithdrawals(targetWithdrawal, routeConfig, balances);
+  const result = routeWithdrawals(targetWithdrawal, routeConfig, balances);
+  // Surface the same bracket ceiling `routeWithdrawalsBracketFilling` reports
+  // as `traditionalCap` — previously
+  // only bracket_filling mode populated this field, so waterfall + Roth-
+  // bracket-overlay households never got a `bracketTraditionalCap` even
+  // though the overlay was actively capping their withdrawals at exactly
+  // this figure. `applyRothBracketOverlay` computes the identical
+  // `computeBracketTraditionalCap(bracketInfo)` bracket_filling uses, AND
+  // resets `withdrawalOrder` to force Traditional-first up to that cap
+  // (see its own docblock) — the report narrative / table tooltip that cite
+  // this figure describe the same real mechanism for waterfall as for
+  // bracket_filling, so this is deliberately NOT mode-gated.
+  // `routeConfig !== config` iff the overlay applied, which `applyRothBracketOverlay`
+  // only does when this figure is finite — reusing that as the "did it apply" signal
+  // instead of re-deriving the same null-check here.
+  if (routeConfig !== config) {
+    result.traditionalCap = computeBracketTraditionalCap(bracketInfo);
+  }
+  return result;
+}
+
+/**
+ * True "last resort" semantics for the per-account penalty-allowance
+ * override. Before this, a penalty-allowed
+ * account's exposed dollars were never in the "still excluded" pool at all
+ * — `subtractExcluded` never removed them, so they were ordinary balance,
+ * drawable whenever `withdrawalOrder`/tax-preference ranking happened to
+ * reach them, not held back until the household would otherwise be
+ * genuinely short.
+ *
+ * Two dispatches:
+ *
+ * 1. Against balances with EVERYTHING penalty-exposed excluded — allowed
+ *    accounts included (built by treating the FULL `penaltyExposedTrad/
+ *    Roth/Total` figures as if they were the "still excluded" ones, reusing
+ *    `subtractExcluded` unchanged). If this alone meets the need
+ *    (`unmetNeed <= 0`), we're done — the allowed account is NEVER touched,
+ *    which is the entire point of this pass. This is the important early return,
+ *    not an optimization.
+ * 2. Only when dispatch #1 leaves a real shortfall: the residual, against
+ *    balances already reduced by dispatch #1's withdrawals
+ *    (`applySlotsToBalances`) with JUST the penalty-allowed exposure folded back
+ *    in (via the real `exposure` record's genuine "still excluded" fields —
+ *    non-allowed exposure and non-retirement money stay excluded even
+ *    though the household is short).
+ *
+ * Note this is a DIFFERENT, narrower two-pass model than the Tier B one
+ * `routeForMode`'s docblock below says was deliberately collapsed to one
+ * pass — that collapse was about the DEFAULT (no penalty allowance) case,
+ * where "penalty-
+ * exposed" and "excluded" were the same set and a second pass was pure
+ * dead weight. Here the two sets genuinely differ (allowed vs. not), so a
+ * second pass has real work to do only in the narrow case this function is
+ * reached at all.
+ */
+function routeWithLastResortAllowance(
+  targetWithdrawal: number,
+  config: ResolvedDecumulationConfig,
+  balances: AccountBalances,
+  bracketInfo: RouteBracketInfo,
+  exposure: EligibilityRecord,
+  nonRetirement: NonRetirementExclusion | undefined,
+): RouteResult {
+  const fullExclusion: EligibilityRecord = {
+    ...exposure,
+    penaltyExposedTradStillExcluded: exposure.penaltyExposedTrad,
+    penaltyExposedRothStillExcluded: exposure.penaltyExposedRoth,
+    penaltyExposedTotalStillExcluded: exposure.penaltyExposedTotal,
+    totalPenaltyExposedStillExcluded: exposure.totalPenaltyExposed,
+  };
+  const pass1Balances = subtractExcluded(
+    balances,
+    fullExclusion,
+    nonRetirement,
+  );
+  const pass1 = dispatchOnce(
+    targetWithdrawal,
+    config,
+    pass1Balances,
+    bracketInfo,
+  );
+
+  if (pass1.unmetNeed == null || pass1.unmetNeed <= 0) {
+    return pass1;
+  }
+
+  // Replay pass 1's draws onto the ORIGINAL (unexcluded) balances, not
+  // pass1Balances — pass1Balances had the allowed account zeroed out for
+  // dispatch #1's purposes, and building pass 2 on top of that would leave
+  // it zeroed forever, permanently discarding the exact money this
+  // function exists to make reachable as a last resort. subtractExcluded
+  // below is what re-applies the (narrower, real) exclusion for pass 2 —
+  // still holding back genuinely non-allowed exposure and non-retirement
+  // money, but no longer the allowed account.
+  const pass1ResultBalances = applySlotsToBalances(balances, pass1.slots);
+  const pass2Balances = subtractExcluded(
+    pass1ResultBalances,
+    exposure,
+    nonRetirement,
+  );
+  const pass2 = dispatchOnce(
+    pass1.unmetNeed,
+    config,
+    pass2Balances,
+    bracketInfo,
+  );
+
+  const finalUnmetNeed = pass2.unmetNeed;
+  const penaltyAvoidedShortfall =
+    finalUnmetNeed != null && finalUnmetNeed > 0
+      ? roundToCents(
+          Math.min(finalUnmetNeed, exposure.totalPenaltyExposedStillExcluded),
+        )
+      : undefined;
+  const nonRetirementShortfall =
+    finalUnmetNeed != null && finalUnmetNeed > 0 && nonRetirement
+      ? roundToCents(Math.min(finalUnmetNeed, nonRetirement.grandTotal))
+      : undefined;
+
+  return {
+    slots: mergeDecumulationSlots(pass1.slots, pass2.slots),
+    warnings: [...pass1.warnings, ...pass2.warnings],
+    unmetNeed: finalUnmetNeed,
+    // Dispatch #2's value — it always ran to reach this line, and it's the
+    // one computed against the TRUE final routing (allowed money included).
+    traditionalCap: pass2.traditionalCap,
+    tierBreakdown: pass2.tierBreakdown,
+    rothBasisCapacity: pass2.rothBasisCapacity,
+    brokerageZeroLtcgCapacity: pass2.brokerageZeroLtcgCapacity,
+    ...(penaltyAvoidedShortfall != null ? { penaltyAvoidedShortfall } : {}),
+    ...(nonRetirementShortfall != null ? { nonRetirementShortfall } : {}),
+  };
+}
+
+/**
+ * Sum two dispatches' slots per category — dispatch #2 only ever runs
+ * against the residual `unmetNeed` after dispatch #1, so a category drawn
+ * in both passes had two SEPARATE, non-overlapping withdrawals from it, not
+ * two conflicting answers to the same question. Both dispatches share the
+ * same `config.withdrawalOrder`, so both slot arrays cover the same
+ * categories — a category present in only one array (shouldn't happen, but
+ * not assumed) is carried through unchanged. `remainingNeed` takes
+ * dispatch #2's value — the true final figure, once both passes have run.
+ */
+function mergeDecumulationSlots(
+  pass1: DecumulationSlot[],
+  pass2: DecumulationSlot[],
+): DecumulationSlot[] {
+  const byCategory = new Map<AccountCategory, DecumulationSlot>(
+    pass1.map((s) => [s.category, s]),
+  );
+  for (const s2 of pass2) {
+    const s1 = byCategory.get(s2.category);
+    if (!s1) {
+      byCategory.set(s2.category, s2);
+      continue;
+    }
+    byCategory.set(s2.category, {
+      category: s2.category,
+      withdrawal: roundToCents(s1.withdrawal + s2.withdrawal),
+      rothWithdrawal: roundToCents(s1.rothWithdrawal + s2.rothWithdrawal),
+      traditionalWithdrawal: roundToCents(
+        s1.traditionalWithdrawal + s2.traditionalWithdrawal,
+      ),
+      cappedByAccount: s1.cappedByAccount || s2.cappedByAccount,
+      cappedByTaxType: s1.cappedByTaxType || s2.cappedByTaxType,
+      remainingNeed: s2.remainingNeed,
+    });
+  }
+  return Array.from(byCategory.values());
 }
 
 /**
@@ -1009,13 +1175,11 @@ function dispatchOnce(
  * rule (like the Roth-bracket overlay) can't be applied in one path and
  * forgotten in the other.
  *
- * `exposure` (v0.7.8 penalty-hard-exclusion follow-up,
- * DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md § Q2 — supersedes the
+ * `exposure` (supersedes the
  * Tier B two-pass model this function used to implement) — when provided,
  * `config.avoidPenalizedWithdrawals` is on, and something is actually
  * penalty-exposed, dispatches against balances with every penalty-exposed
- * dollar subtracted out. `nonRetirement` (R49 — see
- * `.scratch/docs/plans/PLAN-retirement-only-withdrawal-scope.md`) is the
+ * dollar subtracted out. `nonRetirement` is the
  * same idea for Portfolio-parented ("not part of the retirement plan")
  * money — always excluded, no config lever, no opt-out. Both sources are
  * subtracted together in ONE dispatch (`subtractExcluded`) whenever either
@@ -1028,9 +1192,9 @@ function dispatchOnce(
  * against the RAW balances whenever NEITHER source has anything to
  * exclude — that fallthrough (not a separately maintained branch) is what
  * keeps a household with nothing penalty-exposed AND nothing
- * Portfolio-parented (every household before R49; every existing test
+ * Portfolio-parented (every household before that exclusion; every existing test
  * fixture), or a household with `avoidPenalizedWithdrawals: false` and no
- * Portfolio-parented accounts, byte-identical to pre-R49 output.
+ * Portfolio-parented accounts, byte-identical to output before that exclusion.
  */
 export function routeForMode(
   targetWithdrawal: number,
@@ -1046,9 +1210,37 @@ export function routeForMode(
     config.avoidPenalizedWithdrawals;
   const nonRetirementExclusionActive =
     nonRetirement != null && nonRetirement.grandTotal !== 0;
+  // Does this household have penalty-exposed money in a penalty-"allowed"
+  // account — i.e. real exposure that ISN'T in the "still excluded" pool
+  // (which only counts non-allowed exposure)? If so, that money needs true
+  // last-resort treatment: available only if the household is genuinely
+  // short even after every OTHER source (including the still-excluded
+  // exposure) is exhausted — see routeWithLastResortAllowance's docblock.
+  // This subsumes penaltyExclusionActive's single-pass path whenever it's
+  // true (dispatch #1 there also fully excludes the still-excluded pool),
+  // so this branch takes priority.
+  const hasLastResortAllowance =
+    exposure != null &&
+    config.avoidPenalizedWithdrawals &&
+    exposure.totalPenaltyExposed !== exposure.totalPenaltyExposedStillExcluded;
 
-  if (!penaltyExclusionActive && !nonRetirementExclusionActive) {
+  if (
+    !penaltyExclusionActive &&
+    !nonRetirementExclusionActive &&
+    !hasLastResortAllowance
+  ) {
     return dispatchOnce(targetWithdrawal, config, balances, bracketInfo);
+  }
+
+  if (hasLastResortAllowance && exposure != null) {
+    return routeWithLastResortAllowance(
+      targetWithdrawal,
+      config,
+      balances,
+      bracketInfo,
+      exposure,
+      nonRetirementExclusionActive ? nonRetirement : undefined,
+    );
   }
 
   const excludedBalances = subtractExcluded(
@@ -1063,8 +1255,8 @@ export function routeForMode(
     bracketInfo,
   );
   if (result.unmetNeed == null || result.unmetNeed <= 0) return result;
-  // R41/R49: cap each against its own STILL-excluded/grand total, not a
-  // blended figure — an allowed account's exposed dollars (R41) were never
+  // Cap each against its own STILL-excluded/grand total, not a
+  // blended figure — an allowed account's exposed dollars were never
   // excluded from this dispatch, and a real shortfall must never be
   // attributed to either source beyond what it actually excluded.
   const penaltyAvoidedShortfall = penaltyExclusionActive

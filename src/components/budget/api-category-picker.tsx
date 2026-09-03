@@ -23,6 +23,12 @@ export function ApiCategoryPicker({
 }: ApiCategoryPickerProps) {
   const utils = trpc.useUtils();
   const { data } = trpc.budget.listApiCategories.useQuery();
+  // The main Budget page always links against the currently active service
+  // (there's no per-service selector here, unlike the Integrations sync
+  // page) — item.apiCategoryId/apiCategoryName are already resolved against
+  // this same active service server-side (see budget.ts's computeActive*
+  // read paths), so this is the correct, non-ambiguous service to write to.
+  const { data: activeService } = trpc.sync.getActiveBudgetApi.useQuery();
   const linkMut = trpc.budget.linkToApi.useMutation({
     onSuccess: () => {
       utils.budget.computeActiveSummary.invalidate();
@@ -80,8 +86,16 @@ export function ApiCategoryPicker({
               Linked: {currentApiCategoryName}
             </span>
             <button
-              onClick={() => unlinkMut.mutate({ budgetItemId })}
-              disabled={unlinkMut.isPending}
+              onClick={() =>
+                activeService &&
+                activeService !== "none" &&
+                unlinkMut.mutate({ budgetItemId, service: activeService })
+              }
+              disabled={
+                unlinkMut.isPending ||
+                !activeService ||
+                activeService === "none"
+              }
               className="text-red-500 hover:text-red-700 text-caption"
             >
               Unlink
@@ -128,14 +142,19 @@ export function ApiCategoryPicker({
             <button
               key={cat.id}
               onClick={() =>
+                activeService &&
+                activeService !== "none" &&
                 linkMut.mutate({
                   budgetItemId,
+                  service: activeService,
                   apiCategoryId: cat.id,
                   apiCategoryName: `${group.name}: ${cat.name}`,
                   syncDirection,
                 })
               }
-              disabled={linkMut.isPending}
+              disabled={
+                linkMut.isPending || !activeService || activeService === "none"
+              }
               className={`w-full text-left px-2 py-1 text-xs rounded hover:bg-blue-50 transition-colors ${
                 cat.id === currentApiCategoryId
                   ? "bg-blue-50 text-blue-700"

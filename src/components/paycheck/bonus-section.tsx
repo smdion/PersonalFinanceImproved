@@ -119,7 +119,7 @@ export function BonusSection({
         <div className="flex justify-between items-center">
           <span className="flex items-center gap-1">
             {new Date().getFullYear()} Actual
-            <HelpTip text="Pin this year's actual bonus once it's paid out, instead of the calculated salary x percent x multiplier. Only affects this calendar year — next year's projections still use the full formula." />
+            <HelpTip text="Lock in this year's actual bonus once it's paid out, instead of the calculated salary x percent x multiplier. Only affects this calendar year — next year's projections still use the full formula." />
             {resolvedBonusTerms.bonusOverride === null && (
               <span className="text-caption text-faint">
                 (calc: {formatCurrency(fullFormulaBonusEstimate.bonusGross)})

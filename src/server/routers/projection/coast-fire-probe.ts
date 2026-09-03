@@ -10,9 +10,6 @@
  * see `CoastFireProbeResult`'s docblock — and because `coast-fire.ts` is
  * already at 521 lines, over RULES.md §8's ~500-line Composed Router
  * guideline.
- *
- * See .scratch/docs/plans/PLAN-coast-fire-custom-age.md for the full
- * design (advisor-reviewed 2026-08-30) this implements.
  */
 import { eq, asc, sql } from "drizzle-orm";
 import { queryRaw } from "@/lib/db/compat";

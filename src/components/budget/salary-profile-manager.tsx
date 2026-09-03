@@ -18,6 +18,7 @@ import { confirm } from "@/components/ui/confirm-dialog";
 import { useCloneProfile } from "@/lib/hooks/use-clone-profile";
 import { useDraftCommit } from "@/lib/hooks/use-draft-commit";
 import { PAY_PERIOD_CONFIG } from "@/lib/config/pay-periods";
+import { PAY_PERIOD_LABELS } from "@/lib/config/display-labels";
 import {
   PAY_PERIOD_VALUES,
   PAY_WEEK_VALUES,
@@ -107,15 +108,12 @@ export function SalaryProfileManager({
   // useActiveSalaryProfile repairs it if the row ever goes missing. There is
   // no sentinel id to fall back to.
   const globalActiveSalaryId = activeSalaryId;
-  const {
-    profileId: effectiveSelectedId,
-    source: effectiveSelectedSource,
-    isPinned: isPinnedProfile,
-  } = useEffectiveProfileId("salary", {
-    validIds: profiles?.map((p) => p.id),
-    localSelection: selectedProfileId,
-    globalDefaultId: globalActiveSalaryId,
-  });
+  const { profileId: effectiveSelectedId, source: effectiveSelectedSource } =
+    useEffectiveProfileId("salary", {
+      validIds: profiles?.map((p) => p.id),
+      localSelection: selectedProfileId,
+      globalDefaultId: globalActiveSalaryId,
+    });
   const activeProfileName = profiles?.find(
     (p) => p.id === globalActiveSalaryId,
   )?.name;
@@ -160,7 +158,6 @@ export function SalaryProfileManager({
               profileName={displayedProfile.name}
               activeProfileName={activeProfileName}
               isViewingNonActive={isViewingNonActive}
-              isPinned={isPinnedProfile}
               onActivate={
                 canEdit ? () => handleActivate(displayedProfile.id) : undefined
               }
@@ -177,7 +174,7 @@ export function SalaryProfileManager({
               )}
             </div>
           </div>
-          <HelpTip text="A Salary Profile sets each person's pay for what-if analysis. Each job either has a complete entry in this profile — salary, bonus %, and multiplier — or it isn't in the profile at all and contributes $0. There's no fallback to a job record: if you want a different number, use a different profile. It is independent of the Contribution Profile — set either, both, or neither. Plan pins and page-level salary overrides always win over a profile." />
+          <HelpTip text="A Salary Profile sets each person's pay for what-if analysis. Each job either has a complete entry in this profile — salary, bonus %, and multiplier — or it isn't in the profile at all and contributes $0. There's no fallback to a job record: if you want a different number, use a different profile. It is independent of the Contribution Profile — set either, both, or neither. An active Plan and page-level salary customizations always win over a profile." />
         </div>
       )}
 
@@ -450,15 +447,13 @@ const FIELDS = {
 
 type FieldKey = keyof typeof FIELDS;
 
-/** Display labels for the three new enum selects — the raw stored values
- *  (payPeriod/payWeek/w4FilingStatus) are already short and mostly
- *  self-explanatory, but a couple ("na", "HOH") read better spelled out. */
-const PAY_PERIOD_LABELS: Record<PayPeriod, string> = {
-  weekly: "Weekly",
-  biweekly: "Biweekly",
-  semimonthly: "Semimonthly",
-  monthly: "Monthly",
-};
+/** Display labels for the two remaining enum selects — the raw stored
+ *  values (payWeek/w4FilingStatus) are already short and mostly
+ *  self-explanatory, but a couple ("na", "HOH") read better spelled out.
+ *  `PAY_PERIOD_LABELS` used to be redeclared here too (drifted from
+ *  config's own copy — "Semimonthly" vs config's "Semi-Monthly") — now
+ *  imported from display-labels.ts, per
+ *  RULES.md: "components import — never define local label maps." */
 const PAY_WEEK_LABELS: Record<PayWeek, string> = {
   even: "Even week",
   odd: "Odd week",
@@ -664,7 +659,10 @@ function DetailStat({ label, value }: { label: string; value: string }) {
 function PayTaxDetailsView({ sd }: { sd: Detail }) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2">
-      <DetailStat label="Pay period" value={PAY_PERIOD_LABELS[sd.payPeriod]} />
+      <DetailStat
+        label="Pay period"
+        value={PAY_PERIOD_LABELS[sd.payPeriod] ?? sd.payPeriod}
+      />
       <DetailStat label="Pay week" value={PAY_WEEK_LABELS[sd.payWeek]} />
       <DetailStat
         label="Anchor pay date"

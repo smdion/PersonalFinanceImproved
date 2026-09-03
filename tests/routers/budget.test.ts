@@ -53,7 +53,7 @@ function seedLinkableContributionAccount(
 }
 
 vi.mock("@/lib/budget-api", () => ({
-  getActiveBudgetApi: vi.fn().mockResolvedValue("none"),
+  getActiveBudgetApi: vi.fn().mockResolvedValue("ynab"),
   cacheGet: vi.fn().mockResolvedValue(null),
   getClientForService: vi.fn().mockResolvedValue(null),
   YNAB_INTERNAL_GROUPS: new Set([
@@ -911,6 +911,7 @@ describe("budget router", () => {
       const itemId = itemIds[0]!;
       const result = await caller.budget.linkToApi({
         budgetItemId: itemId,
+        service: "ynab",
         apiCategoryId: "cat-abc-123",
         apiCategoryName: "Rent & Mortgage",
         syncDirection: "pull",
@@ -930,6 +931,7 @@ describe("budget router", () => {
       const itemId = itemIds[1]!;
       await caller.budget.linkToApi({
         budgetItemId: itemId,
+        service: "ynab",
         apiCategoryId: "cat-xyz-456",
         apiCategoryName: "Groceries",
         syncDirection: "push",
@@ -944,6 +946,7 @@ describe("budget router", () => {
       const itemId = itemIds[2]!;
       await caller.budget.linkToApi({
         budgetItemId: itemId,
+        service: "ynab",
         apiCategoryId: "cat-both-789",
         apiCategoryName: "Dining Out",
         syncDirection: "both",
@@ -961,6 +964,7 @@ describe("budget router", () => {
       });
       await caller.budget.linkToApi({
         budgetItemId: created!.id,
+        service: "ynab",
         apiCategoryId: "cat-default",
         apiCategoryName: "Default Category",
       });
@@ -975,6 +979,7 @@ describe("budget router", () => {
       const itemId = itemIds[0]!;
       const result = await caller.budget.unlinkFromApi({
         budgetItemId: itemId,
+        service: "ynab",
       });
       expect(result).toEqual({ ok: true });
     });
@@ -988,7 +993,10 @@ describe("budget router", () => {
 
     it("resets apiSyncDirection to pull after unlinking", async () => {
       const itemId = itemIds[1]!; // was linked with push
-      await caller.budget.unlinkFromApi({ budgetItemId: itemId });
+      await caller.budget.unlinkFromApi({
+        budgetItemId: itemId,
+        service: "ynab",
+      });
       const summary = await caller.budget.computeActiveSummary();
       const item = summary.rawItems!.find((i) => i.id === itemId);
       expect(item!.apiSyncDirection).toBe("pull");
@@ -998,6 +1006,7 @@ describe("budget router", () => {
       const itemId = itemIds[0]!; // already unlinked above
       const result = await caller.budget.unlinkFromApi({
         budgetItemId: itemId,
+        service: "ynab",
       });
       expect(result).toEqual({ ok: true });
     });
@@ -1012,6 +1021,7 @@ describe("budget router", () => {
       const itemId = itemIds[2]!;
       const result = await caller.budget.setSyncDirection({
         budgetItemId: itemId,
+        service: "ynab",
         syncDirection: "push",
       });
       expect(result).toEqual({ ok: true });
@@ -1026,6 +1036,7 @@ describe("budget router", () => {
       const itemId = itemIds[2]!;
       await caller.budget.setSyncDirection({
         budgetItemId: itemId,
+        service: "ynab",
         syncDirection: "both",
       });
       const summary = await caller.budget.computeActiveSummary();
@@ -1038,6 +1049,7 @@ describe("budget router", () => {
       const itemId = itemIds[2]!;
       await caller.budget.setSyncDirection({
         budgetItemId: itemId,
+        service: "ynab",
         syncDirection: "pull",
       });
       const summary = await caller.budget.computeActiveSummary();
@@ -1051,6 +1063,7 @@ describe("budget router", () => {
         // @ts-expect-error intentionally wrong value
         caller.budget.setSyncDirection({
           budgetItemId: itemIds[0]!,
+          service: "ynab",
           syncDirection: "invalid",
         }),
       ).rejects.toThrow();
@@ -1163,6 +1176,59 @@ describe("budget router", () => {
         if (!item.contributionAccountId) {
           expect(item.contribAmount).toBeNull();
         }
+      }
+    });
+
+    it("budgetIncomeAdjustmentThisMonth sums the current real month only, identically across selectedColumn", async () => {
+      const fresh = await createTestCaller();
+      try {
+        seedStandardDataset(fresh.db);
+        const personId = await seedPerson(fresh.db, "Adj Tester");
+        const jobId = seedJob(fresh.db, personId);
+        const jobId2 = seedJob(fresh.db, personId);
+        // Give the profile a second column so selectedColumn 0 vs 1 is a
+        // real distinction, not a no-op clamp.
+        const prof = await fresh.caller.budget.listProfiles();
+        const activeProf = prof.find((p) => p.isActive)!;
+        await fresh.caller.budget.addColumn({
+          profileId: activeProf.id,
+          label: "Tight",
+        });
+
+        const now = new Date();
+        const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+        const nextMonth = `${now.getMonth() === 11 ? now.getFullYear() + 1 : now.getFullYear()}-${String(now.getMonth() === 11 ? 1 : now.getMonth() + 2).padStart(2, "0")}-01`;
+        fresh.db
+          .insert(sqliteSchema.budgetIncomeAdjustments)
+          .values([
+            { jobId, monthDate: thisMonth, amount: "500.00", source: "rule" },
+            {
+              jobId: jobId2,
+              monthDate: thisMonth,
+              amount: "250.00",
+              source: "rule",
+            },
+            // A different month must be excluded from the sum.
+            { jobId, monthDate: nextMonth, amount: "999.00", source: "rule" },
+          ])
+          .run();
+
+        const col0 = await fresh.caller.budget.computeActiveSummary({
+          selectedColumn: 0,
+        });
+        const col1 = await fresh.caller.budget.computeActiveSummary({
+          selectedColumn: 1,
+        });
+
+        expect(col0.budgetIncomeAdjustmentThisMonth).toBe(750);
+        // The invariant the advisor required: this figure is a pure
+        // function of the real current month, never varies with the
+        // scenario column the caller asked for.
+        expect(col1.budgetIncomeAdjustmentThisMonth).toBe(
+          col0.budgetIncomeAdjustmentThisMonth,
+        );
+      } finally {
+        fresh.cleanup();
       }
     });
   });

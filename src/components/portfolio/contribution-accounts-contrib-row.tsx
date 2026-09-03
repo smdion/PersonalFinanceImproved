@@ -215,7 +215,7 @@ export function ContributionRow({
             </span>
             <button
               onClick={() => setShowAdvanced(false)}
-              className="text-caption text-indigo-500 hover:text-indigo-700"
+              className="text-caption text-indigo-600 hover:text-indigo-800"
             >
               Done
             </button>

@@ -1,5 +1,5 @@
 /** Print-only "behind the scenes" assumptions section for the "fancy"
- *  retirement projection report (R42). Mounted only when
+ *  retirement projection report. Mounted only when
  *  reportMode === "fancy" (see index.tsx). Read-only — plain labeled text,
  *  no InlineEdit, nothing clickable. Sources the same `engineSettings`
  *  object ProjectionCard's own state hook already computes (the settings
@@ -53,9 +53,9 @@ export type ReportEngineSettings = {
    *  (`bracket-target-narrative.ts`'s `describeBracketCeilingMath`), not
    *  currently shown as its own row here. */
   standardDeduction?: NumLike | null;
-  /** R46: what happens to RMD-forced excess beyond stated spending need. */
+  /** What happens to RMD-forced excess beyond stated spending need. */
   rmdExcessHandling?: string | null;
-  // Per-strategy params (R45 Step 3, Finding 3) — one strategy's fields are
+  // Per-strategy params — one strategy's fields are
   // actually read at a time, keyed by WITHDRAWAL_STRATEGY_CONFIG's
   // paramFields for the active withdrawalStrategy, same source
   // strategy-params.tsx uses so this can't drift from the real fields.
@@ -114,13 +114,13 @@ export function ReportAssumptionsSummary({
   qcdYears = 0,
 }: {
   settings: ReportEngineSettings | undefined;
-  /** R46 Phase 1: count of years in this projection where RMD forced more
+  /** Count of years in this projection where RMD forced more
    *  out of Traditional than the strategy needed, with the excess
    *  reinvested into brokerage — a plan-level fact worth disclosing in
    *  summary even though per-year detail belongs on the live page, not a
    *  printed report. 0 = don't show the note. */
   rmdExcessYears?: number;
-  /** R46 Phase 2: count of years with a Qualified Charitable Distribution
+  /** Count of years with a Qualified Charitable Distribution
    *  applied. 0 = don't show the note. */
   qcdYears?: number;
 }) {
@@ -132,7 +132,7 @@ export function ReportAssumptionsSummary({
     : undefined;
   const strategyLabel =
     strategyCfg?.label ?? settings.withdrawalStrategy ?? "—";
-  // The strategy's own real params (R45 Step 3, Finding 3) — same
+  // The strategy's own real params — same
   // paramFields strategy-params.tsx renders for editing, read-only here.
   // Explicit lookup (not a cast off `settings`) so this stays typed to the
   // fields ReportEngineSettings actually declares.

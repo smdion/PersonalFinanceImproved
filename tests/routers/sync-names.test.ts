@@ -30,38 +30,53 @@ describe("sync names router", () => {
     db = ctx.db;
     cleanup = ctx.cleanup;
 
-    // Seed a budget profile + item with apiCategoryName
+    const schema = await import("@/lib/db/schema-sqlite");
+
+    // Seed a budget profile + item, then link it via
+    // budget_item_category_links (the raw apiCategoryId/apiCategoryName
+    // columns are dead — see src/server/helpers/category-links.ts).
     const profileId = await seedBudgetProfile(db);
     const item = db
-      .insert((await import("@/lib/db/schema-sqlite")).budgetItems)
+      .insert(schema.budgetItems)
       .values({
         profileId,
         category: "Groceries",
         subcategory: "Weekly Food",
         amounts: [100],
-        isLinked: false,
-        apiCategoryId: "cat-123",
-        apiCategoryName: "Food & Drink",
       })
       .returning()
       .get();
     budgetItemId = item.id;
+    db.insert(schema.budgetItemCategoryLinks)
+      .values({
+        budgetItemId,
+        service: "ynab",
+        categoryId: "cat-123",
+        categoryName: "Food & Drink",
+      })
+      .run();
 
-    // Seed a savings goal with apiCategoryName
+    // Seed a savings goal, then link it via savings_goal_category_links.
     const goal = db
-      .insert((await import("@/lib/db/schema-sqlite")).savingsGoals)
+      .insert(schema.savingsGoals)
       .values({
         name: "Emergency Fund",
         targetAmount: "10000",
-        monthlyContribution: "500",
         priority: 1,
         isActive: true,
-        apiCategoryId: "cat-456",
-        apiCategoryName: "Rainy Day Fund",
       })
       .returning()
       .get();
     goalId = goal.id;
+    db.insert(schema.savingsGoalCategoryLinks)
+      .values({
+        savingsGoalId: goalId,
+        service: "ynab",
+        role: "primary",
+        categoryId: "cat-456",
+        categoryName: "Rainy Day Fund",
+      })
+      .run();
   });
 
   afterAll(() => cleanup());
@@ -72,12 +87,13 @@ describe("sync names router", () => {
     it("renames subcategory to match API name", async () => {
       const result = await caller.sync.renameBudgetItemToApi({
         budgetItemId,
+        service: "ynab",
       });
       expect(result).toEqual({ ok: true, newName: "Food & Drink" });
     });
 
     it("throws for item without apiCategoryName", async () => {
-      // Create an item without apiCategoryName
+      // Create an item without any link
       const schema = await import("@/lib/db/schema-sqlite");
       const profiles = db.select().from(schema.budgetProfiles).all();
       const noApiItem = db
@@ -87,7 +103,6 @@ describe("sync names router", () => {
           category: "Utils",
           subcategory: "Electric",
           amounts: [50],
-          isLinked: false,
         })
         .returning()
         .get();
@@ -95,8 +110,58 @@ describe("sync names router", () => {
       await expect(
         caller.sync.renameBudgetItemToApi({
           budgetItemId: noApiItem.id,
+          service: "ynab",
         }),
       ).rejects.toThrow("Item not linked to API category");
+    });
+
+    it("keeps YNAB and Actual links on the SAME item isolated — the core fix", async () => {
+      const schema = await import("@/lib/db/schema-sqlite");
+      const profiles = db.select().from(schema.budgetProfiles).all();
+      const dualItem = db
+        .insert(schema.budgetItems)
+        .values({
+          profileId: profiles[0]!.id,
+          category: "Dual",
+          subcategory: "Dual Service Item",
+          amounts: [10],
+        })
+        .returning()
+        .get();
+      db.insert(schema.budgetItemCategoryLinks)
+        .values({
+          budgetItemId: dualItem.id,
+          service: "ynab",
+          categoryId: "ynab-cat",
+          categoryName: "YNAB Name",
+        })
+        .run();
+      db.insert(schema.budgetItemCategoryLinks)
+        .values({
+          budgetItemId: dualItem.id,
+          service: "actual",
+          categoryId: "actual-cat",
+          categoryName: "Actual Name",
+        })
+        .run();
+
+      const result = await caller.sync.renameBudgetItemToApi({
+        budgetItemId: dualItem.id,
+        service: "ynab",
+      });
+      expect(result).toEqual({ ok: true, newName: "YNAB Name" });
+
+      // The Actual link's own category name must be untouched.
+      const { loadBudgetItemLinks } =
+        await import("@/server/helpers/category-links");
+      // eslint-disable-next-line no-restricted-syntax -- test-only cast to the pg Db type the helper expects
+      const rawDb = db as unknown as Parameters<typeof loadBudgetItemLinks>[0];
+      const actualLinks = await loadBudgetItemLinks(
+        rawDb,
+        [dualItem.id],
+        "actual",
+      );
+      expect(actualLinks.get(dualItem.id)?.categoryName).toBe("Actual Name");
     });
   });
 
@@ -104,6 +169,7 @@ describe("sync names router", () => {
     it("updates apiCategoryName to match subcategory", async () => {
       const result = await caller.sync.renameBudgetItemApiName({
         budgetItemId,
+        service: "ynab",
       });
       // After the previous test renamed subcategory to "Food & Drink",
       // this should set apiCategoryName to "Food & Drink"
@@ -113,7 +179,10 @@ describe("sync names router", () => {
 
     it("throws for non-existent budget item", async () => {
       await expect(
-        caller.sync.renameBudgetItemApiName({ budgetItemId: 99999 }),
+        caller.sync.renameBudgetItemApiName({
+          budgetItemId: 99999,
+          service: "ynab",
+        }),
       ).rejects.toThrow("Budget item not found");
     });
   });
@@ -123,6 +192,7 @@ describe("sync names router", () => {
       const result = await caller.sync.moveBudgetItemToApiGroup({
         budgetItemId,
         apiGroupName: "Food",
+        service: "ynab",
       });
       expect(result).toEqual({ ok: true });
     });
@@ -134,6 +204,7 @@ describe("sync names router", () => {
     it("renames goal name to match API name", async () => {
       const result = await caller.sync.renameSavingsGoalToApi({
         goalId,
+        service: "ynab",
       });
       expect(result).toEqual({ ok: true, newName: "Rainy Day Fund" });
     });
@@ -145,7 +216,6 @@ describe("sync names router", () => {
         .values({
           name: "Vacation",
           targetAmount: "5000",
-          monthlyContribution: "200",
           priority: 2,
           isActive: true,
         })
@@ -153,7 +223,10 @@ describe("sync names router", () => {
         .get();
 
       await expect(
-        caller.sync.renameSavingsGoalToApi({ goalId: noApiGoal.id }),
+        caller.sync.renameSavingsGoalToApi({
+          goalId: noApiGoal.id,
+          service: "ynab",
+        }),
       ).rejects.toThrow("Goal not linked to API category");
     });
   });
@@ -162,6 +235,7 @@ describe("sync names router", () => {
     it("updates apiCategoryName to match goal name", async () => {
       const result = await caller.sync.renameSavingsGoalApiName({
         goalId,
+        service: "ynab",
       });
       // After previous test renamed to "Rainy Day Fund"
       expect(result.ok).toBe(true);
@@ -170,7 +244,10 @@ describe("sync names router", () => {
 
     it("throws for non-existent goal", async () => {
       await expect(
-        caller.sync.renameSavingsGoalApiName({ goalId: 99999 }),
+        caller.sync.renameSavingsGoalApiName({
+          goalId: 99999,
+          service: "ynab",
+        }),
       ).rejects.toThrow("Savings goal not found");
     });
   });
@@ -181,6 +258,7 @@ describe("sync names router", () => {
     it("returns zero counts with no drifted items (pull)", async () => {
       const result = await caller.sync.syncAllNames({
         direction: "pull",
+        service: "ynab",
       });
       expect(result.ok).toBe(true);
       expect(typeof result.budgetRenamed).toBe("number");
@@ -191,6 +269,7 @@ describe("sync names router", () => {
     it("returns zero counts with keepLedgr direction", async () => {
       const result = await caller.sync.syncAllNames({
         direction: "keepLedgr",
+        service: "ynab",
       });
       expect(result.ok).toBe(true);
     });

@@ -1,9 +1,6 @@
 /**
  * runAccumulationYear — single-year accumulation-phase logic. Mutates state in
  * place and pushes a year projection to `state.projectionByYear`.
- *
- * Extracted from the old single-file `projection-year-handlers.ts` in the
- * v0.5.2 refactor. Pure relocation — no logic changes, behavior byte-identical.
  */
 import type {
   AccountCategory,
@@ -147,7 +144,7 @@ export function runAccumulationYear(
   // Gated per PERSON: catchupGroupParticipants (built by build-engine-payload.ts)
   // lists who holds an account in each group, with their birth year, so each
   // individual's own projected age this year determines their eligibility —
-  // not one shared household-average age (H10). Without this, a group either
+  // not one shared household-average age. Without this, a group either
   // gets catch-up room for everyone or no one, and the super-catchup AGE
   // WINDOW (60-63) can't be represented for a multi-person household at all.
   // Falls back to the household-average age only when catchupGroupParticipants
@@ -474,7 +471,7 @@ export function runAccumulationYear(
     indIntentional = distResult.indIntentional;
     indOverflow = distResult.indOverflow;
     indRamp = distResult.indRamp;
-    // Tracked Roth basis (v0.7.8 follow-up) -- grows by this year's
+    // Tracked Roth basis -- grows by this year's
     // contribution, which distributeContributions already excludes
     // employer match from (see roth-basis-tracking.ts's docblock for why
     // that's load-bearing, not incidental).
@@ -571,8 +568,7 @@ export function runAccumulationYear(
       )
     : [];
 
-  // Reconcile indBal to acctBal once per year (v0.7.8 follow-up,
-  // DESIGN-DECISION-v0.7.8-indbal-reconciliation.md) -- same mechanism and
+  // Reconcile indBal to acctBal once per year -- same mechanism and
   // rationale as decumulation-year.ts's identical call. Runs after this
   // year's output row is built (matching the existing pattern of "output
   // reflects pre-cleanup figures, carried-forward state reflects

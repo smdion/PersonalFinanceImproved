@@ -39,8 +39,8 @@ export function PreviewPanel({
   const cashDiff = cash.api - cash.manual;
 
   // Per-section mutation hooks — each hook owns a bundle for its section
-  // only so a pending flip in one section does not re-render the other four
-  // once PR 6 section components land with `React.memo`.
+  // only so a pending flip in one section will not re-render the other four
+  // once the section components use `React.memo`.
   const driftMutations = useDriftMutations();
   const budgetMutations = useBudgetIntegrationsMutations();
   const savingsMutations = useSavingsMutations();
@@ -72,6 +72,7 @@ export function PreviewPanel({
     if (!cat) return;
     savingsMutations.linkSavings.mutate({
       goalId,
+      service,
       apiCategoryId: apiId,
       apiCategoryName: cat.name,
     });
@@ -90,6 +91,7 @@ export function PreviewPanel({
       if (created) {
         await savingsMutations.linkSavings.mutateAsync({
           goalId: created.id,
+          service,
           apiCategoryId: apiCat.id,
           apiCategoryName: apiCat.name,
         });
@@ -228,6 +230,7 @@ export function PreviewPanel({
 
       {savings && (
         <SavingsSection
+          service={service}
           savings={savings}
           allApiCats={allApiCats}
           mutations={savingsMutations}

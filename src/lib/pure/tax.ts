@@ -1,6 +1,6 @@
 /**
  * Pure business logic for household-level tax aggregation.
- * Extracted from paycheck router — no DB or I/O dependency.
+ * No DB or I/O dependency.
  */
 import { sumBy, safeDivide } from "@/lib/utils/math";
 

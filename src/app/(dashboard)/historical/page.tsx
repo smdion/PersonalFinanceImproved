@@ -5,14 +5,16 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { parseLocalDateOnly } from "@/lib/utils/date";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Tooltip } from "@/components/ui/tooltip";
-// Code-split the recharts-heavy jobs settings panel (v0.5 expert-review M8).
+// Code-split the recharts-heavy jobs settings panel.
 // JobsSettings renders salary trend charts so it carries the recharts payload;
 // loads on historical page mount instead of bundling into the page chunk.
 const JobsSettings = dynamic(
@@ -349,10 +351,10 @@ function HistoricalTable({
   // Current-year row for performance"last updated" display
   const currentRow = rows.find((r) => r.isCurrent);
   const perfLastUpdatedDisplay = currentRow?.perfLastUpdated
-    ? new Date(currentRow.perfLastUpdated).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      })
+    ? parseLocalDateOnly(currentRow.perfLastUpdated).toLocaleDateString(
+        "en-US",
+        { month: "short", day: "numeric" },
+      )
     : null;
 
   return (
@@ -674,9 +676,9 @@ function HistoricalTable({
                 <StickyLeftCell offset={0} borderRight>
                   <span className="font-medium">{row.year}</span>
                   {row.isCurrent && (
-                    <span className="ml-1 text-caption font-medium text-blue-600 bg-blue-50 px-1 py-0.5 rounded">
+                    <Badge color="blue" size="sm" className="ml-1">
                       YTD
-                    </span>
+                    </Badge>
                   )}
                 </StickyLeftCell>
                 {/* Net Worth group — scrollable, toggleable */}

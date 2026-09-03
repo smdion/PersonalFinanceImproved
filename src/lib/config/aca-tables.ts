@@ -12,8 +12,7 @@
 // Roth and HSA withdrawals do NOT count toward MAGI.
 
 /**
- * Which coverage year these guidelines apply to (advisor-caught,
- * 2026-08-31, Phase 4 concept review): 26 CFR §1.36B-1(h) sets ACA
+ * Which coverage year these guidelines apply to: 26 CFR §1.36B-1(h) sets ACA
  * premium tax credit eligibility for a coverage year using the HHS
  * poverty guidelines PUBLISHED IN THE PRIOR calendar year (guidelines
  * are released each January and apply to marketplace open enrollment
@@ -48,18 +47,27 @@ export const FPL_BY_HOUSEHOLD: Record<number, number> = {
 /**
  * Get the ACA subsidy cliff (400% of FPL) for a given household size.
  * Above this MAGI, all premium tax credits are lost.
+ *
+ * @param fplOverride DB-resolved FPL map from `fpl_by_household`.
+ *   Same override-else-default pattern as LTCG/IRMAA brackets — undefined
+ *   ⇒ the hardcoded `FPL_BY_HOUSEHOLD` fallback. The seed row is
+ *   byte-identical to the fallback, so passing it is a no-op today; it
+ *   exists so a re-seeded / edited FPL year reaches the engine.
  */
-export function getAcaSubsidyCliff(householdSize: number): number {
-  const fpl =
-    FPL_BY_HOUSEHOLD[Math.min(Math.max(1, householdSize), 8)] ??
-    FPL_BY_HOUSEHOLD[2]!;
+export function getAcaSubsidyCliff(
+  householdSize: number,
+  fplOverride?: Record<number, number>,
+): number {
+  const table = fplOverride ?? FPL_BY_HOUSEHOLD;
+  const clamped = Math.min(Math.max(1, householdSize), 8);
+  const fpl = table[clamped] ?? table[2] ?? FPL_BY_HOUSEHOLD[2]!;
   return fpl * 4;
 }
 
 /**
  * ACA MAGI (§36B(d)(2)(B)) for a decumulation year — single computation
- * path shared by `checkAca` and any future consumer (R55 advisor review,
- * 2026-08-30). Adds back the FULL gross SS benefit, unlike IRMAA MAGI
+ * path shared by `checkAca` and any future consumer. Adds back the
+ * FULL gross SS benefit, unlike IRMAA MAGI
  * (which uses the 0-85% taxable slice) — this is the one real difference
  * between the two MAGI definitions, so it lives here rather than being
  * re-derived at each call site.
@@ -69,7 +77,7 @@ export function acaMagi(input: {
   rothConversionAmount: number;
   brokerageGainsPortion: number;
   /** Non-qualified Roth growth income — ordinary income, belongs in AGI/MAGI
-   *  like any other (advisor-caught 2026-09-01: previously omitted here
+   *  like any other (previously omitted here
    *  while currentYearMagi/NIIT/the IRMAA lookback already included it —
    *  see decumulation-year.ts's own comment on this exact field, which
    *  named "the ACA subsidy check below" as needing it too). */
@@ -85,58 +93,11 @@ export function acaMagi(input: {
   );
 }
 
-/**
- * Estimate annual ACA subsidy value for a household.
- * Rough approximation: subsidy depends on age, location, and income.
- * Uses national average benchmark plan costs for ballpark estimates.
- *
- * Returns 0 if MAGI exceeds the subsidy cliff.
- *
- * DEAD CODE as of the Phase 4 flat-nominal-bracket fix (2026-08-31,
- * advisor-caught): the only reference outside this file and its own
- * tests is a comment string in post-withdrawal-optimizer.ts -- nothing
- * in the production engine calls this. It still reads `FPL_BY_HOUSEHOLD`
- * via `getAcaSubsidyCliff` (below) with NO growth applied -- Phase 4
- * deliberately left `getAcaSubsidyCliff`'s own signature untouched and
- * applies `fplGrowthFactor` externally, only at `checkAca`'s call site
- * (post-withdrawal-optimizer.ts), so this function was never in that
- * growth path to begin with and stays exactly as flat-nominal as before
- * this phase. If this is ever revived for production use, give it the
- * same year-aware treatment `checkAca` got (a `fplGrowthFactor`
- * parameter), not a naive re-wire that inherits the flat-nominal bug
- * this whole 4-phase project exists to fix.
- */
-export function estimateAcaSubsidyValue(
-  magi: number,
-  householdSize: number,
-  primaryAge: number,
-): number {
-  const cliff = getAcaSubsidyCliff(householdSize);
-  if (magi >= cliff) return 0;
-
-  // Rough benchmark plan cost by age (national average, 2026 projected)
-  // Actual varies hugely by state/county, but this gives a useful ballpark.
-  let annualPremium: number;
-  if (primaryAge < 50) annualPremium = 7200;
-  else if (primaryAge < 55) annualPremium = 9600;
-  else if (primaryAge < 60) annualPremium = 12000;
-  else annualPremium = 15600;
-
-  // For 2-person households, roughly 1.8x single premium
-  if (householdSize >= 2) annualPremium = Math.round(annualPremium * 1.8);
-
-  // Expected contribution as % of income (ACA sliding scale, simplified)
-  const fpl =
-    FPL_BY_HOUSEHOLD[Math.min(Math.max(1, householdSize), 8)] ??
-    FPL_BY_HOUSEHOLD[2]!;
-  const fplRatio = magi / fpl;
-  let expectedContributionRate: number;
-  if (fplRatio <= 1.5) expectedContributionRate = 0.02;
-  else if (fplRatio <= 2.0) expectedContributionRate = 0.04;
-  else if (fplRatio <= 2.5) expectedContributionRate = 0.06;
-  else if (fplRatio <= 3.0) expectedContributionRate = 0.075;
-  else expectedContributionRate = 0.085;
-
-  const expectedContribution = magi * expectedContributionRate;
-  return Math.max(0, Math.round(annualPremium - expectedContribution));
-}
+// `estimateAcaSubsidyValue` was removed. It had no production
+// caller (the audit and a prior advisor pass both confirmed it dead), and
+// it carried the last of the inline ACA rate ladders — the applicable-
+// percentage sliding scale (2/4/6/7.5/8.5 %) and the age-band benchmark
+// premiums (7200/9600/12000/15600) — as bare `if/else` literals with no
+// year anchor. If ACA subsidy *value* estimation is ever
+// wanted, rebuild it as a year-keyed table wired through resolveTaxParams,
+// not as inline constants.

@@ -1,9 +1,7 @@
 "use client";
 
 /**
- * Full budget table — extracted from `src/app/(dashboard)/budget/page.tsx`
- * during the v0.5.2 file-split refactor. Pure relocation — no behavior
- * changes.
+ * Full budget table.
  *
  * Renders the sticky-left Category/Item column, per-mode columns (with
  * API-link badge on the linked column), an optional YNAB/API actuals
@@ -15,7 +13,7 @@
  *   - all tRPC mutations (passed in as plain callback props)
  *   - the sentinel ref + observer wiring
  *
- * F2 (v0.5.3): stable per-context values (cols, apiService, profileId,
+ * Stable per-context values (cols, apiService, profileId,
  * apiLinkedProfileId, apiLinkedColumnIndex, showApiColumn, canEdit,
  * editMode) are now consumed from BudgetPageContext instead of props.
  * Layout props are bundled into the `layout` prop object. Props: 21 → 7.
@@ -24,6 +22,7 @@
 import React from "react";
 import { BudgetCategoryRow } from "./budget-category-row";
 import { useBudgetPageContext } from "./budget-page-context";
+import { Badge } from "@/components/ui/badge";
 import type { RawItem } from "./types";
 
 type ApiActualsMap = Map<
@@ -141,9 +140,13 @@ export function BudgetTable({
                 {apiService &&
                   apiLinkedProfileId === profileId &&
                   apiLinkedColumnIndex === colIdx && (
-                    <span className="ml-1 text-micro px-1 py-0.5 rounded bg-blue-100 text-blue-600 font-semibold align-middle">
+                    <Badge
+                      color="blue"
+                      case="normal"
+                      className="ml-1 align-middle"
+                    >
                       ⇄ {apiService.toUpperCase()}
-                    </span>
+                    </Badge>
                   )}
               </th>
             ))}

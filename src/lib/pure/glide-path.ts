@@ -2,7 +2,7 @@
  * Glide path warnings — simple "is your stock allocation appropriate
  * for your age" check using the classic "110 - age" rule of thumb.
  *
- * Closes the v0.5 expert-review M6 finding: ledgr's projection engine
+ * ledgr's projection engine
  * doesn't surface allocation/age mismatches. Users can run a 95% stock
  * portfolio at age 60 with no warning. This module provides a pure
  * helper that any UI can call to surface a yellow callout.

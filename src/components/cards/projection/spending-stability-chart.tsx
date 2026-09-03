@@ -345,7 +345,7 @@ export function SpendingStabilityChart({
                   {d.mc_p50 !== undefined && (
                     <div className="flex justify-between gap-4">
                       <span className="text-muted">Sim. median:</span>
-                      <span className="text-purple-400">
+                      <span className="text-purple-600">
                         {formatPercent(d.mc_p50 / 100, 1)}
                       </span>
                     </div>
@@ -379,13 +379,13 @@ export function SpendingStabilityChart({
           <ReferenceLine
             yAxisId="left"
             y={75}
-            stroke="var(--text-red-500, #ef4444)"
+            stroke={CHART_COLORS.stabilityFloorLine}
             strokeDasharray="6 3"
             strokeWidth={1.5}
             label={{
               value: "75% Floor",
               position: "right",
-              fill: "var(--text-red-500, #ef4444)",
+              fill: CHART_COLORS.stabilityFloorLine,
               fontSize: CHART_FONT.tiny,
             }}
           />

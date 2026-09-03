@@ -5,7 +5,7 @@
  * earliest age at which stopping contributions still funds expenses)
  * and `computeCoastFireMC` (Monte Carlo validation variant).
  *
- * Split out of `scenarios.ts` in v0.5.3 to keep individual router files
+ * Split out of `scenarios.ts` to keep individual router files
  * under ~500 lines (Composed Router convention, RULES.md §8). Shared
  * schemas + helpers remain in `_shared.ts`.
  */
@@ -52,8 +52,8 @@ type CoastFireMcResult = {
   successRate: number;
   stopNowSuccessRate: number;
   /** % of stop-now trials that failed specifically because a year's need
-   *  went unfunded due to penalty-exposed money being excluded (v0.7.8
-   *  penalty-hard-exclusion, C3) — distinguishes "can't legally reach the
+   *  went unfunded due to penalty-exposed money being excluded —
+   *  distinguishes "can't legally reach the
    *  money before 59½" from "genuinely ran out" when stopNowSuccessRate is
    *  low, since both look identical in the raw success rate alone. */
   stopNowPenaltyAvoidedShortfallRate: number;

@@ -213,7 +213,7 @@ export function TaxBucketsContent() {
 
   const projection = useMemo(() => {
     if (!data || !projectionQuery.data?.result) return null;
-    // Rule of 55 forecasting override (v0.7.8) -- must read the SAME
+    // Rule of 55 forecasting override -- must read the SAME
     // per-person setting the retirement engine reads, or this page and the
     // retirement projection would disagree about the same account's
     // eligibility. `perPersonSettings` rides on the same query result.

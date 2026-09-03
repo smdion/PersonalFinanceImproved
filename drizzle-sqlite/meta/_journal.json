@@ -246,6 +246,34 @@
       "when": 1788145536264,
       "tag": "0034_even_cassandra_nova",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "6",
+      "when": 1788362426957,
+      "tag": "0035_salty_warbird",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "6",
+      "when": 1788362436423,
+      "tag": "0036_category_links_backfill",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "6",
+      "when": 1788364503678,
+      "tag": "0037_majestic_caretaker",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "6",
+      "when": 1788369798439,
+      "tag": "0038_broken_guardian",
+      "breakpoints": true
     }
   ]
 }

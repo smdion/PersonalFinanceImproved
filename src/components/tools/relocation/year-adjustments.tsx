@@ -1,12 +1,12 @@
 "use client";
 
 /** Year-by-year expense adjustments panel for the Relocation calculator.
- *  Extracted from tools/page.tsx during the v0.5.2 file-split refactor.
  *  Stateless — all state flows via props.
  */
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils/format";
 import type { RelocationBudgetInfo, YearAdjustmentRow } from "./types";
 
@@ -167,13 +167,18 @@ export function RelocationYearAdjustments({
                   const totals = selectedProf?.columnTotals ?? [];
                   if (months) {
                     return (
-                      <span className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded px-2 py-1 self-end">
+                      <Badge
+                        color="amber"
+                        size="sm"
+                        case="normal"
+                        className="self-end"
+                      >
                         Weighted:{" "}
                         {formatCurrency(
                           (selectedProf?.weightedAnnualTotal ?? 0) / 12,
                         )}
                         /mo
-                      </span>
+                      </Badge>
                     );
                   }
                   if (labels.length >= 2) {

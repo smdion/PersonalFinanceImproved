@@ -4,6 +4,7 @@ import {
   routeWithdrawalsPercentage,
   routeWithdrawalsBracketFilling,
   routeForMode,
+  computeBracketTraditionalCap,
 } from "@/lib/calculators/engine/withdrawal-routing";
 import {
   makeDecumulationConfig,
@@ -1268,5 +1269,319 @@ describe("routeForMode (nonRetirement exclusion, R49)", () => {
     );
     expect(withUndefined.slots).toEqual(withAllZero.slots);
     expect(withAllZero.nonRetirementShortfall).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Waterfall + Roth-bracket-overlay: bracketTraditionalCap surfaced (TODO.md,
+// fixed 2026-09-01, advisor-reviewed — deliberately NOT mode-gated).
+// ---------------------------------------------------------------------------
+
+describe("routeForMode (waterfall + Roth-bracket-overlay surfaces bracketTraditionalCap)", () => {
+  const SD = 30000;
+  const bracketInfo = {
+    taxBrackets: TEST_BRACKETS,
+    rothBracketTarget: 0.22,
+    taxableSS: 0,
+    standardDeduction: SD,
+  };
+
+  it("populates traditionalCap for waterfall once the overlay applies, matching computeBracketTraditionalCap directly", () => {
+    const config = makeDecumulationConfig({
+      withdrawalRoutingMode: "waterfall",
+      withdrawalOrder: ["brokerage", "401k", "ira", "403b", "hsa"], // deliberately NOT trad-first
+    });
+    const balances = makeAccountBalances({
+      preTax: 300000,
+      afterTax: 100000,
+      afterTaxBasis: 100000,
+    });
+    const result = routeForMode(80000, config, balances, bracketInfo);
+    expect(result.traditionalCap).toBe(
+      computeBracketTraditionalCap(bracketInfo),
+    );
+    expect(result.traditionalCap).toBeGreaterThan(0);
+  });
+
+  it("stays undefined when no rothBracketTarget is set (overlay never applies — byte-identical to pre-fix)", () => {
+    const config = makeDecumulationConfig({
+      withdrawalRoutingMode: "waterfall",
+    });
+    const balances = makeAccountBalances({ preTax: 300000 });
+    const result = routeForMode(80000, config, balances, {
+      taxableSS: 0,
+    });
+    expect(result.traditionalCap).toBeUndefined();
+  });
+
+  it("stays undefined when there's no tax bracket data (overlay never applies)", () => {
+    const config = makeDecumulationConfig({
+      withdrawalRoutingMode: "waterfall",
+    });
+    const balances = makeAccountBalances({ preTax: 300000 });
+    const result = routeForMode(80000, config, balances, {
+      rothBracketTarget: 0.22,
+      taxableSS: 0,
+    });
+    expect(result.traditionalCap).toBeUndefined();
+  });
+
+  it("reports the SAME cap value as bracket_filling mode for identical bracket inputs (same underlying computeBracketTraditionalCap call)", () => {
+    const balances = makeAccountBalances({
+      preTax: 300000,
+      afterTax: 100000,
+      afterTaxBasis: 100000,
+    });
+    const waterfallResult = routeForMode(
+      80000,
+      makeDecumulationConfig({ withdrawalRoutingMode: "waterfall" }),
+      balances,
+      bracketInfo,
+    );
+    const bracketFillingResult = routeForMode(
+      80000,
+      makeDecumulationConfig({ withdrawalRoutingMode: "bracket_filling" }),
+      balances,
+      bracketInfo,
+    );
+    expect(waterfallResult.traditionalCap).toBe(
+      bracketFillingResult.traditionalCap,
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// routeForMode (R44 — R41 penalty-allowance override as true last resort)
+// ---------------------------------------------------------------------------
+
+/** An eligibility record with 401k penalty-exposed but ALLOWED (R41) —
+ *  `penaltyExposedTrad`/`Total` show the real exposure, but the
+ *  `...StillExcluded` variant is zero, exactly like the real
+ *  `computeWithdrawalEligibility` output for an account with
+ *  `allowPenalizedWithdrawals: true`. */
+function allowedAccountEligibility(): EligibilityRecord {
+  const penaltyExposedTrad = {
+    "401k": 100000,
+    "403b": 0,
+    ira: 0,
+    hsa: 0,
+    brokerage: 0,
+  };
+  const zero = { "401k": 0, "403b": 0, ira: 0, hsa: 0, brokerage: 0 };
+  return {
+    byKey: new Map(),
+    totalPenaltyExposed: 100000,
+    penaltyExposedTrad,
+    penaltyExposedRoth: { ...zero },
+    penaltyExposedTotal: { ...penaltyExposedTrad },
+    // R41 allowance: nothing is "still excluded" — the whole 401k exposure
+    // is allowed, so subtractExcluded (the OLD single-pass path) would
+    // never have held any of it back at all.
+    penaltyExposedTradStillExcluded: { ...zero },
+    penaltyExposedRothStillExcluded: { ...zero },
+    penaltyExposedTotalStillExcluded: { ...zero },
+    totalPenaltyExposedStillExcluded: 0,
+  };
+}
+
+describe("routeForMode (R44 — true last-resort for R41-allowed penalty exposure)", () => {
+  it("never touches the allowed account when the household is genuinely solvent without it", () => {
+    const balances: AccountBalances = {
+      "401k": { structure: "roth_traditional", traditional: 100000, roth: 0 },
+      "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+      ira: { structure: "roth_traditional", traditional: 0, roth: 0 },
+      hsa: { structure: "single_bucket", balance: 0 },
+      brokerage: { structure: "basis_tracking", balance: 60000, basis: 30000 },
+    };
+    const config = makeDecumulationConfig({
+      withdrawalRoutingMode: "waterfall",
+      withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
+    });
+    const result = routeForMode(
+      20000, // well within brokerage's 60000 alone
+      config,
+      balances,
+      { taxableSS: 0 },
+      allowedAccountEligibility(),
+    );
+    expect(slotFor(result.slots, "401k")?.withdrawal ?? 0).toBe(0);
+    expect(slotFor(result.slots, "brokerage")?.withdrawal).toBe(20000);
+    expect(result.unmetNeed ?? 0).toBe(0);
+  });
+
+  it("draws from the allowed account ONLY for the genuine residual once every other source is exhausted", () => {
+    const balances: AccountBalances = {
+      "401k": { structure: "roth_traditional", traditional: 100000, roth: 0 },
+      "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+      ira: { structure: "roth_traditional", traditional: 0, roth: 0 },
+      hsa: { structure: "single_bucket", balance: 0 },
+      brokerage: { structure: "basis_tracking", balance: 60000, basis: 30000 },
+    };
+    const config = makeDecumulationConfig({
+      withdrawalRoutingMode: "waterfall",
+      withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
+    });
+    const result = routeForMode(
+      90000, // exceeds brokerage's 60000 alone by 30000
+      config,
+      balances,
+      { taxableSS: 0 },
+      allowedAccountEligibility(),
+    );
+    // Every non-allowed dollar (brokerage) drawn first...
+    expect(slotFor(result.slots, "brokerage")?.withdrawal).toBe(60000);
+    // ...and the allowed 401k covers exactly the residual, nothing more.
+    expect(slotFor(result.slots, "401k")?.withdrawal).toBe(30000);
+    expect(result.unmetNeed ?? 0).toBe(0);
+  });
+
+  it("leaves a real shortfall (doesn't over-draw the allowed account) when even it can't cover the need", () => {
+    const balances: AccountBalances = {
+      "401k": { structure: "roth_traditional", traditional: 20000, roth: 0 },
+      "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+      ira: { structure: "roth_traditional", traditional: 0, roth: 0 },
+      hsa: { structure: "single_bucket", balance: 0 },
+      brokerage: { structure: "basis_tracking", balance: 60000, basis: 30000 },
+    };
+    const eligibility: EligibilityRecord = {
+      ...allowedAccountEligibility(),
+      totalPenaltyExposed: 20000,
+      penaltyExposedTrad: {
+        "401k": 20000,
+        "403b": 0,
+        ira: 0,
+        hsa: 0,
+        brokerage: 0,
+      },
+      penaltyExposedTotal: {
+        "401k": 20000,
+        "403b": 0,
+        ira: 0,
+        hsa: 0,
+        brokerage: 0,
+      },
+    };
+    const config = makeDecumulationConfig({
+      withdrawalRoutingMode: "waterfall",
+      withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
+    });
+    const result = routeForMode(
+      100000,
+      config,
+      balances,
+      { taxableSS: 0 },
+      eligibility,
+    );
+    expect(slotFor(result.slots, "brokerage")?.withdrawal).toBe(60000);
+    expect(slotFor(result.slots, "401k")?.withdrawal).toBe(20000);
+    // 100000 - 60000 - 20000 = 20000 genuinely unmet.
+    expect(result.unmetNeed).toBeCloseTo(20000, 2);
+    expect(result.penaltyAvoidedShortfall ?? 0).toBe(0); // nothing was STILL excluded (all was allowed)
+  });
+
+  it("conservation: total drawn across both passes equals the target exactly (no dollars invented, lost, or double-counted)", () => {
+    const balances: AccountBalances = {
+      "401k": { structure: "roth_traditional", traditional: 100000, roth: 0 },
+      "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+      ira: { structure: "roth_traditional", traditional: 0, roth: 0 },
+      hsa: { structure: "single_bucket", balance: 0 },
+      brokerage: { structure: "basis_tracking", balance: 60000, basis: 30000 },
+    };
+    const config = makeDecumulationConfig({
+      withdrawalRoutingMode: "waterfall",
+      withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
+    });
+    const twoPass = routeForMode(
+      90000,
+      config,
+      balances,
+      { taxableSS: 0 },
+      allowedAccountEligibility(),
+    );
+    const totalDrawn = twoPass.slots.reduce((s, sl) => s + sl.withdrawal, 0);
+    expect(totalDrawn).toBeCloseTo(90000, 2);
+
+    // NOT the right invariant to test here: comparing against
+    // `routeWithdrawals(90000, config, balances)` (a single dispatch with
+    // the allowed money reachable from the start). That single dispatch
+    // drains 401k FIRST (it's first in withdrawalOrder) before ever
+    // touching brokerage — which is exactly the pre-R44 bug this function
+    // exists to fix, not a correct reference to match. There is no
+    // single-dispatch equivalent of "prefer non-allowed sources, allowed
+    // money only for the true residual" by construction — that preference
+    // is inherently two-tier. The "draws from the allowed account ONLY for
+    // the genuine residual" test above is the real behavioral assertion;
+    // this test only checks that splitting the draw into two dispatches
+    // doesn't itself lose or duplicate money.
+  });
+
+  it("bracket_filling mode: the residual pass can push further into the next bracket", () => {
+    const balances: AccountBalances = {
+      "401k": { structure: "roth_traditional", traditional: 400000, roth: 0 },
+      "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+      ira: { structure: "roth_traditional", traditional: 0, roth: 0 },
+      hsa: { structure: "single_bucket", balance: 0 },
+      brokerage: { structure: "basis_tracking", balance: 20000, basis: 10000 },
+    };
+    const config = makeDecumulationConfig({
+      withdrawalRoutingMode: "bracket_filling",
+      withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
+      withdrawalTaxPreference: {
+        "401k": "traditional",
+        "403b": null,
+        ira: null,
+        hsa: null,
+        brokerage: null,
+      } as Record<AccountCategory, "traditional" | "roth" | null>,
+    });
+    const eligibility: EligibilityRecord = {
+      ...allowedAccountEligibility(),
+      totalPenaltyExposed: 400000,
+      penaltyExposedTrad: {
+        "401k": 400000,
+        "403b": 0,
+        ira: 0,
+        hsa: 0,
+        brokerage: 0,
+      },
+      penaltyExposedTotal: {
+        "401k": 400000,
+        "403b": 0,
+        ira: 0,
+        hsa: 0,
+        brokerage: 0,
+      },
+    };
+    // Need exceeds brokerage entirely -> forces the residual into the
+    // allowed (penalty-exposed) 401k.
+    const result = routeForMode(
+      60000,
+      config,
+      balances,
+      { taxBrackets: TEST_BRACKETS, rothBracketTarget: 0.12, taxableSS: 0 },
+      eligibility,
+    );
+    const total = (result.slots ?? []).reduce((s, sl) => s + sl.withdrawal, 0);
+    expect(total).toBeCloseTo(60000, 2);
+    expect(slotFor(result.slots, "401k")?.withdrawal ?? 0).toBeGreaterThan(0);
+  });
+
+  it("every existing non-allowance fixture stays on the single-pass path (hasLastResortAllowance false)", () => {
+    // lockedBalances() has NO allowance (StillExcluded === full exposure) —
+    // this must behave byte-identically to before R44.
+    const { balances, eligibility } = lockedBalances();
+    const config = makeDecumulationConfig({
+      withdrawalRoutingMode: "waterfall",
+      withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
+    });
+    const result = routeForMode(
+      20000,
+      config,
+      balances,
+      { taxableSS: 0 },
+      eligibility,
+    );
+    expect(slotFor(result.slots, "401k")?.withdrawal ?? 0).toBe(0);
+    expect(slotFor(result.slots, "brokerage")?.withdrawal).toBe(20000);
   });
 });

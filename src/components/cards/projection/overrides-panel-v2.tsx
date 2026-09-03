@@ -44,7 +44,7 @@ const OVERRIDE_OPTIONS: {
     icon: "📈",
     phase: "pre",
   },
-  // "withdrawal_rate" removed from the picker (R45 Step 3, Finding 2):
+  // "withdrawal_rate" removed from the picker:
   // config.withdrawalRate is never read by any of the 8 strategies' real
   // spending math (Finding 0), and after Step 2's fix to
   // ProjectionResult.sustainableWithdrawal, it no longer even feeds that
@@ -348,7 +348,7 @@ export function OverridesPanelV2({
         );
 
       case "withdrawal_rate": {
-        // Legacy edit-only path (R45 Step 3, Finding 2) — no longer
+        // Legacy edit-only path — no longer
         // reachable from the type picker. Kept so a household with a
         // pre-existing saved override can still view/edit/delete it. None
         // of the 8 strategies' real spending reads this value for any
@@ -399,6 +399,9 @@ export function OverridesPanelV2({
                   targetAccount: ls.targetAccount,
                   ...(ls.targetAccountName
                     ? { targetAccountName: ls.targetAccountName }
+                    : {}),
+                  ...(ls.targetOwnerName
+                    ? { targetOwnerName: ls.targetOwnerName }
                     : {}),
                   ...(ls.label ? { label: ls.label } : {}),
                 };

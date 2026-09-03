@@ -682,8 +682,10 @@ describe("transformBackupToCurrentSchema — v0.7.x Retirement Profiles backfill
       PRE_0032_VERSION,
       CURRENT_VERSION,
     );
+    // 0038 (R43) adds the nullable retirement_profiles.tax_params_year
+    // column to every restored row; the profile's identity is untouched.
     expect(result.tables["retirement_profiles"]).toEqual([
-      { id: 42, name: "My Real Plan" },
+      { id: 42, name: "My Real Plan", tax_params_year: null },
     ]);
     const settingsRow = result.tables["retirement_settings"]![0] as Record<
       string,

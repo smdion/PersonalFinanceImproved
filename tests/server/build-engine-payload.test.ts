@@ -339,3 +339,183 @@ describe("buildEnginePayload — two-person household (H10/T24 wiring)", () => {
     expect(payload.portfolioTotal).toBe(650000);
   });
 });
+
+// ---------------------------------------------------------------------------
+// R43 — irmaa_brackets is now wired into the engine payload.
+// Before R43 the table + its Settings editor were live but no engine path
+// read them; distributionTaxRates had no irmaaBrackets field, and
+// decumulation-year.ts passed literal `undefined` to growIrmaaBrackets.
+// These lock in that (a) the seeded rows now reach the payload, and
+// (b) an admin edit to a row moves the resolved value.
+// ---------------------------------------------------------------------------
+describe("buildEnginePayload — irmaa_brackets wiring (R43)", () => {
+  let db: BetterSQLite3Database<typeof sqliteSchema>;
+  let cleanup: () => void;
+
+  beforeAll(async () => {
+    const ctx = await createTestCaller();
+    db = ctx.db;
+    cleanup = ctx.cleanup;
+    const personId = await seedPerson(db, "Sam", "1980-01-10");
+    await markPrimary(db, personId);
+    await seedRetirementSettings(db, personId, { filingStatus: "Single" });
+  });
+
+  afterAll(() => cleanup());
+
+  it("surfaces the seeded irmaa_brackets rows on distributionTaxRates", async () => {
+    const data = await fetchRetirementData(db, {});
+    const payload = await buildEnginePayload(db, data, {});
+    const irmaa = payload!.distributionTaxRates.irmaaBrackets;
+    expect(irmaa).toBeDefined();
+    // Seed Single tier 1 threshold = 103000 (matches IRMAA_BRACKETS default).
+    expect(irmaa!.Single?.[0]?.magiThreshold).toBe(103000);
+  });
+
+  it("an admin edit to an irmaa_brackets row moves the resolved value", async () => {
+    const schema = await getSchema();
+    const { and, eq } = await import("drizzle-orm");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic schema import requires runtime cast
+    const rawDb = db as any;
+    const years = (
+      rawDb
+        .select({ y: schema.irmaaBrackets.taxYear })
+        .from(schema.irmaaBrackets)
+        .all() as { y: number }[]
+    ).map((r) => r.y);
+    const latestYear = Math.max(...years);
+    rawDb
+      .update(schema.irmaaBrackets)
+      .set({
+        brackets: [
+          { magiThreshold: 999000, annualSurcharge: 4321 },
+          { magiThreshold: 1000000, annualSurcharge: 5432 },
+        ],
+      })
+      .where(
+        and(
+          eq(schema.irmaaBrackets.taxYear, latestYear),
+          eq(schema.irmaaBrackets.filingStatus, "Single"),
+        ),
+      )
+      .run();
+
+    const data = await fetchRetirementData(db, {});
+    const payload = await buildEnginePayload(db, data, {});
+    const irmaa = payload!.distributionTaxRates.irmaaBrackets;
+    expect(irmaa!.Single?.[0]?.magiThreshold).toBe(999000);
+    expect(irmaa!.Single?.[0]?.annualSurcharge).toBe(4321);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// R43 C4d — retirement_profiles.tax_params_year pins the resolved year.
+// NULL (default) => newest enacted, byte-identical to pre-R43. A non-null
+// value re-prices the projection under that year's reference data.
+// ---------------------------------------------------------------------------
+describe("buildEnginePayload — tax_params_year profile pin (R43)", () => {
+  let db: BetterSQLite3Database<typeof sqliteSchema>;
+  let cleanup: () => void;
+  let profileId: number;
+
+  beforeAll(async () => {
+    const ctx = await createTestCaller();
+    db = ctx.db;
+    cleanup = ctx.cleanup;
+    const schema = await getSchema();
+    const personId = await seedPerson(db, "Jo", "1975-03-03");
+    await markPrimary(db, personId);
+    await seedRetirementSettings(db, personId, { filingStatus: "MFJ" });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    profileId = (db as any)
+      .insert(schema.retirementProfiles)
+      .values({ name: "Current Plan" })
+      .returning({ id: schema.retirementProfiles.id })
+      .get().id;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (db as any).update(schema.retirementSettings).set({ profileId }).run();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (db as any)
+      .insert(schema.retirementProfilePeople)
+      .values({ profileId, personId, retirementAge: 65, endAge: 95 })
+      .run();
+  });
+
+  afterAll(() => cleanup());
+
+  it("NULL pin => resolved year is the newest seeded year (2026)", async () => {
+    const data = await fetchRetirementData(db, {});
+    const payload = await buildEnginePayload(db, data, {});
+    expect(payload!.distributionTaxRates.taxDataYear).toBe(2026);
+    expect(payload!.distributionTaxRates.standardDeduction).toBe(32200);
+  });
+
+  it("pinning the active profile to 2025 re-prices under 2025 data", async () => {
+    const schema = await getSchema();
+    const { eq } = await import("drizzle-orm");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (db as any)
+      .update(schema.retirementProfiles)
+      .set({ taxParamsYear: 2025 })
+      .where(eq(schema.retirementProfiles.id, profileId))
+      .run();
+
+    const data = await fetchRetirementData(db, {});
+    const payload = await buildEnginePayload(db, data, {});
+    expect(payload!.distributionTaxRates.taxDataYear).toBe(2025);
+    // 2025 MFJ standard deduction is 30000 (seed); 2026 is 32200.
+    expect(payload!.distributionTaxRates.standardDeduction).toBe(30000);
+  });
+
+  // R43 C7 + post-release fix: resolveTaxParams's candidateYears() is
+  // sourced from contribution_limits ALONE (not the union of all five
+  // reference tables) specifically so a year like this — tax_brackets
+  // seeded, contribution_limits not — is never selectable at all, pinned
+  // or not. Pinning taxParamsYear to 2030 here degrades via "nearest" to
+  // the newest year that DOES have complete data (2026), never throws.
+  // requireLimit() still throws for a genuinely incomplete resolved year
+  // (see the contribution-limits-completeness coverage in
+  // tests/config/tax-params.test.ts) — that's the case this test used to
+  // exercise before the fix, but candidateYears() now makes that case
+  // unreachable through normal resolution, closing the outage vector
+  // where an admin seeding one table early could 500 every household's
+  // projections.
+  it("pinning a year with brackets but no contribution_limits row degrades to nearest, never throws (F2-4 hard case)", async () => {
+    const schema = await getSchema();
+    const { eq } = await import("drizzle-orm");
+    // A year with tax_brackets seeded but deliberately NO
+    // contribution_limits row — the drift-window scenario, taken to its
+    // extreme (zero limits rows for the resolved year, not just a partial
+    // set).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (db as any)
+      .insert(schema.taxBrackets)
+      .values({
+        taxYear: 2030,
+        filingStatus: "MFJ",
+        w4Checkbox: false,
+        brackets: [{ threshold: 0, baseWithholding: 0, rate: 0.1 }],
+      })
+      .run();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (db as any)
+      .update(schema.retirementProfiles)
+      .set({ taxParamsYear: 2030 })
+      .where(eq(schema.retirementProfiles.id, profileId))
+      .run();
+
+    const data = await fetchRetirementData(db, {});
+    const payload = await buildEnginePayload(db, data, {});
+    expect(payload!.distributionTaxRates.taxDataYear).toBe(2026);
+    expect(payload!.distributionTaxRates.standardDeduction).toBe(32200);
+
+    // Clean up so later tests in this describe block aren't affected by
+    // vitest's shared beforeAll DB (none currently follow, but be defensive).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (db as any)
+      .update(schema.retirementProfiles)
+      .set({ taxParamsYear: null })
+      .where(eq(schema.retirementProfiles.id, profileId))
+      .run();
+  });
+});

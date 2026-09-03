@@ -13,6 +13,8 @@ import {
   describeBracketTargetChoice,
   describeDiscretionaryCapacityMath,
 } from "./bracket-target-narrative";
+import { LTCG_BRACKETS as CONFIG_LTCG_BRACKETS } from "@/lib/config/tax-tables";
+import { NIIT_RATE } from "@/lib/config/niit";
 
 const TIER_SOURCE_LABEL: Record<"roth" | "brokerage" | "hsa", string> = {
   roth: "Roth",
@@ -20,15 +22,19 @@ const TIER_SOURCE_LABEL: Record<"roth" | "brokerage" | "hsa", string> = {
   hsa: "HSA",
 };
 
-/** Real LTCG brackets (0%, 15%, 20%) and the NIIT surtax rate — used only
+/** The real LTCG rates (0%, 15%, 20% — identical across filing statuses,
+ *  so any one status's ladder works) and the NIIT surtax rate — used only
  *  to LABEL a brokerage tier's rate as "capital-gains" vs "capital-gains +
  *  Medicare surtax" for the explanation text below. Not a second pricing
  *  computation: withdrawal-cost-ranking.ts already computed `costRate`
  *  itself (`ltcgRate` or `ltcgRate + NIIT_RATE`); this only pattern-matches
  *  the result against the small, fixed set of values it could legitimately
- *  be, to describe it in words. See that module for the real rate logic. */
-const LTCG_BRACKETS = [0, 0.15, 0.2];
-const NIIT_RATE = 0.038;
+ *  be, to describe it in words. See that module for the real rate logic.
+ *  Derived from the config module instead of a re-declared
+ *  literal, so a rate-ladder change (legislative only — these are
+ *  statutory percentages, not annually-indexed) can't drift between the
+ *  two copies. */
+const LTCG_RATE_LADDER = CONFIG_LTCG_BRACKETS.MFJ.map((b) => b.rate);
 const RATE_EPSILON = 0.0005;
 
 function approxEquals(a: number, b: number): boolean {
@@ -36,7 +42,7 @@ function approxEquals(a: number, b: number): boolean {
 }
 
 /** Explains WHAT KIND of rate a tier's `costRate` is and WHY, not just the
- *  number — found live, 2026-08-31: a household asked "why is Roth cheaper
+ *  number — a household may ask "why is Roth cheaper
  *  than Brokerage" and the honest answer is tier-dependent (Roth BASIS is
  *  always free — already-taxed principal; Roth GROWTH is taxed at your
  *  ordinary rate; Brokerage's own 0%-capital-gains room is free, but real
@@ -73,10 +79,10 @@ function describeTierRate(
     return `taxed at your ${formatPercent(costRate, 1)} ordinary income rate (a non-medical HSA withdrawal)`;
   }
   // brokerage
-  const withNiit = LTCG_BRACKETS.some((b) =>
+  const withNiit = LTCG_RATE_LADDER.some((b) =>
     approxEquals(costRate, b + NIIT_RATE),
   );
-  const ltcgOnly = LTCG_BRACKETS.some((b) => approxEquals(costRate, b));
+  const ltcgOnly = LTCG_RATE_LADDER.some((b) => approxEquals(costRate, b));
   if (withNiit) {
     return `${formatPercent(costRate, 1)} — your long-term capital-gains rate plus the 3.8% Medicare surtax, since this draw crosses that income threshold`;
   }
@@ -160,7 +166,7 @@ export function formatRmdDivisorDetail(
  * in order; this picks a small representative sample (first RMD year,
  * first discretionary-withdrawal year with real detail, and up to 3 more
  * spread across retirement) rather than every year — the full year-by-year
- * table is a separate report section (Phase 4).
+ * table is a separate report section.
  */
 export function buildWithdrawalStrategyNarrative(
   decumulationYears: EngineDecumulationYear[],
@@ -187,7 +193,7 @@ export function buildWithdrawalStrategyNarrative(
   );
   if (firstDiscretionaryYear) {
     const fdy = firstDiscretionaryYear;
-    // Deflated (advisor review, 2026-08-31) — describeDiscretionaryCapacityMath's
+    // Deflated — describeDiscretionaryCapacityMath's
     // new capacity figures sit right next to this breakdown in one
     // sentence, so both need the same dollar mode or "you had $X of room"
     // and "$Y came from Roth" silently mix real/nominal dollars.
@@ -197,7 +203,7 @@ export function buildWithdrawalStrategyNarrative(
     }));
     const breakdownDetail =
       formatDiscretionaryTierBreakdown(deflatedBreakdown)!;
-    // "Why isn't brokerage draining before Roth" (found live, 2026-08-31)
+    // "Why isn't brokerage draining before Roth"
     // — shares describeDiscretionaryCapacityMath with the table tooltip so
     // the two can never disagree.
     const capacityDetail = describeDiscretionaryCapacityMath(
@@ -229,7 +235,7 @@ export function buildWithdrawalStrategyNarrative(
     (y) => (y.discretionaryTierBreakdown?.length ?? 0) > 0,
   );
 
-  // "Why THIS bracket, not a lower or higher one" — found live, 2026-08-31:
+  // "Why THIS bracket, not a lower or higher one":
   // the prior version of this narrative (and the matching table tooltip)
   // said "fills your target tax bracket" without ever naming the actual
   // rate. Reads the target off the resolved config's `rothBracketTarget`
@@ -251,7 +257,7 @@ export function buildWithdrawalStrategyNarrative(
           bracketTarget,
           bracketTargetYear?.bracketTraditionalCap != null
             ? {
-                // Deflated to today's dollars — advisor-caught 2026-09-01:
+                // Deflated to today's dollars:
                 // every other figure in this narrative goes through
                 // `deflate` (see the discretionary-tier detail above), but
                 // these three were passed raw/nominal. bracketTargetYear
@@ -269,7 +275,7 @@ export function buildWithdrawalStrategyNarrative(
                   bracketTargetYear.year,
                 ),
                 // The GROWN per-year deduction (`bracket-growth.ts`), not
-                // the ungrown plan-level echo — advisor-caught (2026-08-31):
+                // the ungrown plan-level echo:
                 // pairing a grown bracketTraditionalCap with an ungrown
                 // deduction in the same sentence was internally
                 // inconsistent for any year beyond the tax data's vintage.

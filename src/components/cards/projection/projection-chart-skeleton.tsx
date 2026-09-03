@@ -1,6 +1,6 @@
 /** Loading skeleton for ProjectionChart — extracted into its own module so
  *  it can serve as the next/dynamic loading fallback without dragging
- *  recharts into the parent bundle (v0.5 expert-review M8).
+ *  recharts into the parent bundle.
  *
  *  The optional `phase` prop controls the overlay label:
  *    "engine"     → "Running projection engine..."  (blue, initial load)
@@ -23,7 +23,7 @@ export function ProjectionChartSkeleton({
       <h5 className="text-xs font-medium text-muted uppercase mb-2">
         Balance Projection
         {phase === "simulation" && (
-          <span className="text-micro text-purple-400 animate-pulse ml-2 normal-case font-normal">
+          <span className="text-micro text-purple-600 animate-pulse ml-2 normal-case font-normal">
             Running simulation...
           </span>
         )}

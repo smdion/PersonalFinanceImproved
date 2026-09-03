@@ -5,9 +5,14 @@ import { render, screen, fireEvent } from "@testing-library/react";
 // contribution limit / FICA / standard-deduction editor. Part of closing
 // the zero-coverage gap on src/components/settings/ (RBAC/credentials/
 // limits) outside the integrations/ subfolder (covered elsewhere).
-// InlineEdit, YearSelector, and account-types config are used unmocked —
-// they're stable, presentational/data-driven building blocks (matches the
-// leaf-component smoke pattern from tests/components/networth-sections-smoke.test.tsx).
+// InlineEdit and account-types config are used unmocked — they're stable,
+// presentational/data-driven building blocks (matches the leaf-component
+// smoke pattern from tests/components/networth-sections-smoke.test.tsx).
+//
+// `year` is a controlled prop as of the Tax Data consolidation (the
+// shared year toggle now lives in the TaxDataSettings parent shell, see
+// settings-tax-data.test.tsx) — tests pass it directly instead of
+// clicking an in-component year tab.
 
 let currentRole: "admin" | "viewer" = "admin";
 
@@ -116,48 +121,37 @@ describe("ContributionLimitsSettings smoke", () => {
     deleteMutate.mockClear();
   });
 
-  it("renders the FICA/Medicare group and year tabs for the newest year by default", () => {
-    render(<ContributionLimitsSettings />);
+  it("renders the FICA/Medicare group for the given year", () => {
+    render(<ContributionLimitsSettings year={2025} />);
     expect(screen.getByText("Contribution & Tax Limits")).toBeInTheDocument();
     expect(screen.getByText("FICA / Medicare")).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "2025" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
-    expect(screen.getByRole("tab", { name: "2024" })).toBeInTheDocument();
   });
 
   it("shows a change indicator when a value differs from the prior year", () => {
-    render(<ContributionLimitsSettings />);
+    render(<ContributionLimitsSettings year={2025} />);
     // ss_wage_base changed 168600 -> 176100, an increase, so an up arrow
     // with the prior-year value in its title should render.
     expect(screen.getByTitle(/2024: \$168,600/)).toBeInTheDocument();
   });
 
-  it("switches to another year when its tab is clicked", () => {
-    render(<ContributionLimitsSettings />);
-    fireEvent.click(screen.getByRole("tab", { name: "2024" }));
-    expect(screen.getByRole("tab", { name: "2024" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
+  it("renders the prior year's own data when given that year directly", () => {
+    render(<ContributionLimitsSettings year={2024} />);
+    expect(screen.getByText("$168,600.00")).toBeInTheDocument();
   });
 
-  it("shows the Add Year control and Delete-year action for admins", () => {
-    render(<ContributionLimitsSettings />);
-    expect(screen.getByText("+ Year")).toBeInTheDocument();
+  it("shows the Delete-year action for admins", () => {
+    render(<ContributionLimitsSettings year={2025} />);
     expect(screen.getByText("Delete 2025")).toBeInTheDocument();
   });
 
-  it("hides admin-only controls (Add Year, edit affordances) for a viewer", () => {
+  it("hides admin-only controls (Delete year, edit affordances) for a viewer", () => {
     currentRole = "viewer";
-    render(<ContributionLimitsSettings />);
-    expect(screen.queryByText("+ Year")).toBeNull();
+    render(<ContributionLimitsSettings year={2025} />);
     expect(screen.queryByText("Delete 2025")).toBeNull();
   });
 
   it("saves an edited limit via InlineEdit", () => {
-    render(<ContributionLimitsSettings />);
+    render(<ContributionLimitsSettings year={2025} />);
     // ss_wage_base displays as currency; click to enter edit mode.
     const display = screen.getByText("$176,100.00");
     fireEvent.click(display);

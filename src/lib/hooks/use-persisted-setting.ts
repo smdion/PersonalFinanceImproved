@@ -72,8 +72,7 @@ export function usePersistedSetting<T extends string | number | boolean | null>(
   // confirmed by the query yet. Per-write generation counter (not a single
   // shared boolean) — if write A settles after write B has already started,
   // A's onSettled must NOT clear the guard while B is still pending, or a
-  // stale DB-echoed value can briefly clobber the user's latest input (M42,
-  // .scratch/docs/review-findings.md).
+  // stale DB-echoed value can briefly clobber the user's latest input.
   const pendingWrite = useRef(false);
   const writeGeneration = useRef(0);
 

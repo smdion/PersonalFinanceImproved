@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Contribution Profile compare view (R20) — accounts as rows, profiles as
+ * Contribution Profile compare view — accounts as rows, profiles as
  * columns, each cell showing that profile's own active value for the
  * account, or "Not set" when the profile has no value for it at all. A
  * standing audit tool, not just a pre-swap warning: lets you sanity-check
@@ -12,7 +12,7 @@
  * Kept as its own file rather than folded into contribution-profile-manager.tsx
  * (already ~1,457 lines, near the 1,500-line pnpm check:file-size warn
  * threshold) — see that file's `compareData` query, the single shared data
- * source this and the swap-time diff (R20 phase A) both consume.
+ * source this and the swap-time diff both consume.
  *
  * Cell display state (hasActiveFields/value, amber highlight when set,
  * DISABLED badge when isActive:false) is resolved via the same

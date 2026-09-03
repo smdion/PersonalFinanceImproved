@@ -33,11 +33,11 @@ type LtcgBracket = { threshold: number; rate: number };
  * in `tax-estimation.ts`) — those already embed a (different, smaller) Pub
  * 15-T Worksheet 1A offset in their own threshold scale, so subtracting the
  * FULL standard deduction there would double-count. They have their own,
- * separate correction (`toOrdinaryBracketIncome`, R56) that subtracts only
+ * separate correction (`toOrdinaryBracketIncome`) that subtracts only
  * the residual between the two — do not "consolidate" the two helpers, the
  * bracket shapes they operate on (`TaxBracket{min,max,rate}` here vs.
  * `WithholdingBracket{threshold,baseWithholding,rate}` there) aren't
- * interchangeable (advisor review, 2026-08-30).
+ * interchangeable.
  *
  * `standardDeduction` omitted/undefined ⇒ subtracts 0, reproducing the
  * pre-fix (bugged) behavior exactly — every caller must pass a real
@@ -46,14 +46,15 @@ type LtcgBracket = { threshold: number; rate: number };
  * default keeps the fix additive rather than a forced behavior change for
  * any caller that hasn't been updated to supply it.
  *
- * Known limitation, not fixed here: does not model the additional
- * standard deduction for filers 65+ (or the OBBBA senior deduction) —
- * `standardDeduction` is the flat filing-status figure only. For a
- * decumulation-phase household (nearly always 65+ across this engine's
- * projection window) this under-corrects rather than over-corrects —
- * real 0%-LTCG room is understated less than before this fix, but still
- * somewhat understated. Tracked as a separate roadmap item (age-aware
- * standard deduction), not a blocker for this fix.
+ * Both the IRC §63(f)(1) age-65+ additional standard deduction and the
+ * temporary OBBBA senior deduction (2025-2028) ARE modeled as of this
+ * version: `decumulation-year.ts` folds
+ * both into the deduction before growth, so the `standardDeduction` this
+ * helper receives from a decumulation year is already senior-adjusted for
+ * both. See `obbba-senior-deduction.ts`'s docblock for the OBBBA mechanism
+ * (MAGI-phased, sunset-gated, uses last year's MAGI as the phaseout basis —
+ * decumulation year 1 gets $0 OBBBA deduction, no prior-year MAGI exists
+ * yet).
  */
 export function toLtcgTaxableIncome(
   grossOrdinaryIncome: number,
@@ -123,7 +124,7 @@ export function getLtcgRate(
  * answers a different, also-correct question — "what bracket is a real
  * dollar SITTING AT" (income exactly at the 0% ceiling genuinely IS taxed
  * at 0%) — and returning the bracket BELOW for a "what's next" query
- * silently under-prices that entire next tier (found 2026-08-31: this
+ * silently under-prices that entire next tier — this
  * exact substitution mispriced brokerage as 0%/NIIT-only well past its
  * real 15% rate for any household whose ordinary income left room in the
  * 0% zone, causing `rankWithdrawalTiers` to disagree with the real tax

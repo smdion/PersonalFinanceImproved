@@ -1,11 +1,11 @@
 "use client";
 
 /** Profile/column/override selectors for current + relocation budgets, plus
- *  contribution profile selectors. Extracted from tools/page.tsx during the
- *  v0.5.2 file-split refactor. Stateless — all state flows via props.
+ *  contribution profile selectors. Stateless — all state flows via props.
  */
 
 import { HelpTip } from "@/components/ui/help-tip";
+import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils/format";
 import type {
   RelocationBudgetInfo,
@@ -102,7 +102,7 @@ export function RelocationBudgetSelectors({
               ))}
             </select>
             {currentMonths ? (
-              <span className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded px-2 py-1">
+              <Badge color="amber" size="sm" case="normal">
                 Weighted: {formatCurrency((currentWeighted ?? 0) / 12)}/mo
                 <span className="text-caption text-faint ml-1">
                   (
@@ -114,7 +114,7 @@ export function RelocationBudgetSelectors({
                     .join(" +")}
                   )
                 </span>
-              </span>
+              </Badge>
             ) : (currentProf?.columnLabels ?? []).length >= 2 ? (
               <select
                 className="border rounded px-2 py-1 text-sm"
@@ -132,7 +132,7 @@ export function RelocationBudgetSelectors({
             ) : null}
             {/* Override */}
             <div className="flex items-center gap-1">
-              <span className="text-caption text-faint">Override:</span>
+              <span className="text-caption text-faint">Custom:</span>
               <input
                 type="number"
                 className="border rounded px-2 py-0.5 text-xs w-24"
@@ -158,7 +158,7 @@ export function RelocationBudgetSelectors({
         <div>
           <label className="block text-muted mb-1">
             Relocation Budget
-            <HelpTip text="Budget profile for projected expenses after relocating. Use the override to enter a custom monthly amount." />
+            <HelpTip text="Budget profile for projected expenses after relocating. Use the custom field to enter a monthly amount." />
           </label>
           <div className="flex flex-col gap-1">
             <select
@@ -176,7 +176,7 @@ export function RelocationBudgetSelectors({
               ))}
             </select>
             {targetMonths ? (
-              <span className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded px-2 py-1">
+              <Badge color="amber" size="sm" case="normal">
                 Weighted: {formatCurrency((targetWeighted ?? 0) / 12)}/mo
                 <span className="text-caption text-faint ml-1">
                   (
@@ -188,7 +188,7 @@ export function RelocationBudgetSelectors({
                     .join(" +")}
                   )
                 </span>
-              </span>
+              </Badge>
             ) : (targetProf?.columnLabels ?? []).length >= 2 ? (
               <select
                 className="border rounded px-2 py-1 text-sm"
@@ -206,7 +206,7 @@ export function RelocationBudgetSelectors({
             ) : null}
             {/* Override */}
             <div className="flex items-center gap-1">
-              <span className="text-caption text-faint">Override:</span>
+              <span className="text-caption text-faint">Custom:</span>
               <input
                 type="number"
                 className="border rounded px-2 py-0.5 text-xs w-24"

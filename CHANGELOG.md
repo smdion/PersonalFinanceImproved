@@ -8,6 +8,39 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.7
 
+## [0.7.11] - 2026-09-02
+
+### Added
+
+- **A new Settings tab for the Federal Poverty Level (FPL) figures** used in ACA subsidy-cliff calculations, so household-size dollar amounts can be reviewed and updated directly instead of only existing as a background data table.
+- **A "Tax law year" control on the retirement profile list**, letting a profile pin itself to a specific year's tax tables (for reproducing an old projection exactly) instead of always tracking the latest data automatically.
+
+### Changed
+
+- **Retirement-profile language**: a profile "pinned" by a Plan is now called "active," and a per-profile value change is called a "customization" rather than an "override," matching the terms used elsewhere in the app.
+
+### Fixed
+
+- **A handful of "today" defaults (a new snapshot's date, a new transaction's date, backup filenames) and a few date displays (last performance update, a savings goal's last transaction) could be off by one day**, depending on the time of day and your timezone — they were computed in UTC instead of your local time. Corrected across the app; a snapshot's reported "days old" figure is also now a true calendar-day count instead of a raw hour-based estimate that could round differently depending on time of day.
+
+- **Corrected the federal income-tax withholding brackets used for paycheck and retirement tax estimates.** The 2025 and 2026 bracket tables had drifted into being copies of each other — married filers were being estimated against 2026 brackets in both years, single and head-of-household filers against 2025 brackets in both years — plus two smaller transcription errors. All twelve tables are now transcribed from the IRS's published 2025 and 2026 Publication 15-T and cross-checked. Affects the size of estimated federal tax in projections and paycheck previews; the exact impact depends on filing status and income.
+- **Retirement projections now apply the extra standard deduction the IRS gives filers age 65 and older, including the temporary additional senior deduction added by the 2025 tax law.** Because nearly every year of a retirement projection is at 65+, leaving these out was quietly understating how much room you have in the 0% long-term capital-gains bracket and overstating the tax owed in your withdrawal years. Married households get the addition for each spouse who is 65+ in a given year; the temporary deduction phases out at higher incomes and only applies through 2028. Households younger than 65, and the working (accumulation) years, are unaffected. The very first year of retirement doesn't yet get the temporary deduction applied (it depends on the prior year's income, which isn't known yet that first year) — it's included correctly from the second year on.
+- **The "Pre-Retirement Raise" rate can now be set for each household member.** For a two-person household, the single control on the retirement profile only ever saved the first person's rate, leaving the second person's raise rate stuck at whatever it was first seeded to and unreachable from the app. It now shows one control per person (like Retirement Age already does), and each person's projected salary growth uses their own rate.
+- **Households using Waterfall withdrawal mode with the Roth-bracket-optimization setting now see the "bracket ceiling" figure** in the retirement report and the withdrawal table's tooltip, matching what Bracket Filling mode already showed. The optimization itself was already working correctly — this fixes the number simply not being shown.
+- **For a household where two people each have an account with the exact same name (e.g. both named "Long Term Brokerage"), an ongoing contribution continuing into retirement, or a one-time lump-sum deposit/withdrawal targeting a specific account, could be silently credited to the wrong person's account.** Both are now matched by owner as well as name — the one-time lump-sum picker also now shows the owner's name next to the account when more than one account shares a name.
+- **The "allow the early-withdrawal penalty on this account" per-account setting now genuinely holds that account back as a last resort**, drawing from it only once every other account is actually exhausted, instead of treating it as ordinary spendable balance available whenever your configured withdrawal order happened to reach it. Only affects households who have explicitly turned this setting on for a specific account.
+- **Linking a budget item or savings goal to Actual Budget no longer erases its YNAB link (or vice versa).** Each item/goal could previously hold only one budget-API link at a time, so a household with both services connected would silently lose the first service's link the moment they linked the second. Each service's link is now tracked separately, so both stay intact.
+- **Fixed: extra paychecks routed to Budget mode are now reflected in the month they actually land**, instead of being invisible. The Budget page's note and the What-If tab's leftover-income line now show the real dollar amount for the current month when a job's extra paycheck stays as regular income rather than being routed to savings.
+- **A 0% "Pre-Retirement Raise" rate entered for a household member now actually sticks**, instead of silently reverting to the primary person's rate. Affects anyone who set a rate of exactly 0% (e.g. modeling a salary freeze).
+- **Duplicating a retirement profile in a household with more than one person now correctly copies each person's own retirement age, end age, Social Security amount and start age, and raise rate** — it previously copied only the first person's values onto everyone in the new profile.
+- **Corrected the temporary additional senior deduction (2025-2028) so it's no longer inflated by inflation growth in later projection years.** It's a fixed dollar amount by law; the effect was a small overstatement (roughly $150-450/year) in later retirement years within the window.
+- **Retirement projections and paycheck estimates are more resilient to in-progress tax-data updates** — if next year's withholding brackets are entered before the rest of that year's figures are, projections now keep using the most recent complete year instead of any of them potentially failing to load.
+- **Syncing category names in bulk with YNAB or Actual Budget no longer resets an item or goal's sync direction or "last synced" timestamp** if only its name changed.
+- **Converting a budget item to a savings goal (or back) now carries over the category link for every connected budget-API service**, not just whichever one happened to be active — a household connected to both YNAB and Actual Budget could previously lose one service's link on conversion.
+- **Fixed two admin-only bugs in the IRMAA/LTCG bracket-year editor**: choosing "Empty brackets" when adding a new tax year now actually starts it empty instead of always copying the most recent year, and a new LTCG bracket year's default rows no longer risk an edit landing on the wrong bracket.
+
+---
+
 ## [0.7.10] - 2026-08-31
 
 ### Added

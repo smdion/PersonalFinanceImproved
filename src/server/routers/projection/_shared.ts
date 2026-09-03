@@ -4,11 +4,7 @@
  * Every sibling file in this directory (monte-carlo, scenarios, strategy,
  * stress-test, presets) imports its Zod schemas and helper builders from
  * here. This keeps shared pipeline code in exactly one place and removes
- * the duplicate-schema risk the advisor flagged for the v0.5.2 split.
- *
- * Extracted from the old `src/server/routers/projection.ts` monolith in PR 2
- * of the v0.5.2 file-split refactor (see `.scratch/docs/V052-REFACTOR-PLAN.md`).
- * Pure relocation — no logic changes.
+ * the duplicate-schema risk of spreading them across the sibling files.
  */
 import { z } from "zod/v4";
 import { eq, asc } from "drizzle-orm";
@@ -41,6 +37,10 @@ export const lumpSumSchema = z
       targetAccount: z.enum(accountCategoryEnum()),
       taxType: z.enum(["traditional", "roth"]).optional(),
       targetAccountName: z.string().max(200).optional(),
+      // Disambiguates two household members' identically-named
+      // accounts — see LumpSum.targetOwnerName's docblock (calculators/types/shared.ts).
+      // Optional so lump sums saved before this field existed keep parsing.
+      targetOwnerName: z.string().max(200).optional(),
       label: z.string().max(100).optional(),
     }),
   )
@@ -80,8 +80,7 @@ export const accumulationOverrideSchema = z
 /**
  * Top-level `decumulationDefaults` query input — the live withdrawal-strategy
  * settings a client can send to override DB defaults. Was byte-identical
- * across scenarios.ts, monte-carlo.ts, and coast-fire.ts (x2) — M19,
- * .scratch/docs/review-findings.md.
+ * across scenarios.ts, monte-carlo.ts, and coast-fire.ts (x2).
  */
 export const decumulationDefaultsInputSchema = z
   .object({

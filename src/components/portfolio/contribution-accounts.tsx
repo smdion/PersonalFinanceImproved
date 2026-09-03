@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Top-level account and contribution settings panel. v0.5.3 F5.
+ * Top-level account and contribution settings panel.
  *
  * Fetches all portfolio data via tRPC and orchestrates CRUD mutations via
  * useContributionAccountsMutations. Renders the collapsible panel with

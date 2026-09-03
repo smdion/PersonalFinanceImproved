@@ -1,5 +1,5 @@
 /**
- * Contribution Profile swap-safety diff (R20).
+ * Contribution Profile swap-safety diff.
  *
  * A Contribution Profile only marks an account ACTIVE (its own value) when
  * that value genuinely differs from the account's own live row; an account
@@ -18,6 +18,8 @@ export type ContribFieldSet = {
   autoMaximize?: boolean | null;
   isActive?: boolean | null;
   /** Cosmetic only — deliberately excluded from the comparison below. */
+  displayNameCustom?: string | null;
+  /** @deprecated legacy key. */
   displayNameActive?: string | null;
 };
 
@@ -27,7 +29,7 @@ export type DiffAccount = {
   live: ContribFieldSet;
 };
 
-/** Fields that carry financial meaning. displayNameActive is intentionally
+/** Fields that carry financial meaning. displayNameCustom is intentionally
  *  excluded — a custom display name differing between profiles isn't a
  *  value silently changing underneath anyone. */
 const COMPARED_FIELDS = [

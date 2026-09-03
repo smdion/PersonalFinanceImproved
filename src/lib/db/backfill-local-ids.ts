@@ -2,7 +2,7 @@
  * Auto-backfill localId on account mappings that only have localName.
  *
  * Runs on startup (via instrumentation.ts). Idempotent — only touches
- * mappings where localId is missing. Extracted from the manual
+ * mappings where localId is missing. Parallel to the manual
  * migrateAccountMappingsToIds admin mutation in sync.ts.
  */
 

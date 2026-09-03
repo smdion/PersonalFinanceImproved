@@ -35,7 +35,7 @@ import { LoadingCard, ErrorCard } from "./utils";
 function RetirementCardImpl() {
   const salaryActiveFields = useActiveSalaries();
   // Contribution/Salary Profile axes — every other dashboard card resolves
-  // these before querying (M27, .scratch/docs/review-findings.md: this card
+  // these before querying (this card
   // used to omit both, which the engine treats as "no profile" = $0
   // contributions, not "the active profile" — silently zeroing out
   // Contributions/Coast FIRE/nest egg on this card alone). Each also Plan

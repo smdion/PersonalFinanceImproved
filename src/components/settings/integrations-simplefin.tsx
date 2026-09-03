@@ -4,7 +4,12 @@
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils/format";
+import {
+  ConnectionStatusLine,
+  ConnectionResultMessage,
+} from "./integrations/connection-card";
 
 type SimplefinAccountListItem = {
   id: number;
@@ -173,15 +178,16 @@ export function SimplefinCard() {
         </p>
 
         {isConnected && (
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
-            <span className="text-sm text-secondary">Connected</span>
-            {status?.lastSyncedAt && (
-              <span className="text-caption text-faint">
-                Last synced {new Date(status.lastSyncedAt).toLocaleString()}
-              </span>
-            )}
-          </div>
+          <ConnectionStatusLine
+            connected
+            extra={
+              status?.lastSyncedAt && (
+                <span className="text-caption text-faint">
+                  Last synced {new Date(status.lastSyncedAt).toLocaleString()}
+                </span>
+              )
+            }
+          />
         )}
 
         {(!isConnected || showUpdateToken) && (
@@ -203,81 +209,89 @@ export function SimplefinCard() {
               />
             </div>
             <div className="flex items-center gap-2">
-              <button
+              <Button
+                variant="primary"
+                size="sm"
                 onClick={handleConnect}
                 disabled={!setupToken || saveTokenMut.isPending}
-                className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
               >
                 {saveTokenMut.isPending ? "Connecting..." : "Connect"}
-              </button>
+              </Button>
               {showUpdateToken && (
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setShowUpdateToken(false)}
-                  className="px-3 py-1.5 text-sm text-muted hover:text-primary"
                 >
                   Cancel
-                </button>
+                </Button>
               )}
             </div>
             {saveTokenMut.isError && (
-              <p className="text-xs text-red-600">
+              <ConnectionResultMessage tone="error">
                 {saveTokenMut.error.message}
-              </p>
+              </ConnectionResultMessage>
             )}
           </div>
         )}
 
         {isConnected && (
           <div className="flex items-center gap-2 flex-wrap">
-            <button
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={() => testConnectionMut.mutate()}
               disabled={testConnectionMut.isPending}
-              className="px-3 py-1.5 text-sm border border-strong rounded hover:bg-surface-sunken disabled:opacity-50"
             >
               {testConnectionMut.isPending ? "Testing..." : "Test"}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
               onClick={() => syncNowMut.mutate()}
               disabled={syncNowMut.isPending}
-              className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
               title="Pull current balances and update today's snapshot"
             >
               {syncNowMut.isPending ? "Syncing..." : "Sync Now"}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setShowUpdateToken(!showUpdateToken)}
-              className="px-3 py-1.5 text-sm text-muted hover:text-primary underline"
             >
               {showUpdateToken ? "Hide" : "Reconnect"}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
               onClick={handleRemove}
               disabled={removeConnectionMut.isPending}
-              className="px-3 py-1.5 text-sm text-red-600 hover:text-red-800 underline"
             >
               Remove
-            </button>
+            </Button>
           </div>
         )}
 
         {testConnectionMut.isSuccess && testConnectionMut.data && (
-          <p
-            className={`text-xs ${testConnectionMut.data.success ? "text-green-600" : "text-red-600"}`}
+          <ConnectionResultMessage
+            tone={testConnectionMut.data.success ? "success" : "error"}
           >
             {testConnectionMut.data.success
               ? `Connected: ${testConnectionMut.data.accountCount} linked account(s)`
               : testConnectionMut.data.error}
-          </p>
+          </ConnectionResultMessage>
         )}
 
         {syncNowMut.isSuccess && syncNowMut.data && (
-          <p className="text-xs text-green-600">
+          <ConnectionResultMessage tone="success">
             Synced {syncNowMut.data.accountCount} account(s), total{" "}
             {formatCurrency(syncNowMut.data.totalBalance)}
-          </p>
+          </ConnectionResultMessage>
         )}
         {syncNowMut.isError && (
-          <p className="text-xs text-red-600">{syncNowMut.error.message}</p>
+          <ConnectionResultMessage tone="error">
+            {syncNowMut.error.message}
+          </ConnectionResultMessage>
         )}
 
         {isConnected && accounts && accounts.length > 0 && (

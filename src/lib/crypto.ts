@@ -19,7 +19,7 @@
  *     node -e 'console.log(require("crypto").randomBytes(32).toString("base64"))'
  *
  * Threat model:
- *   Defends against PostgreSQL backup leaks (the audit's C1 finding). Does
+ *   Defends against PostgreSQL backup leaks. Does
  *   NOT defend against an attacker with code execution on the running app
  *   (they have ENCRYPTION_KEY and can decrypt). It moves credentials from
  *   "anyone with a backup" to "anyone with the running container" — a
@@ -128,8 +128,8 @@ export function decryptJson<T>(envelope: EncryptedEnvelope): T {
 }
 
 /**
- * Read a config value that may be either plaintext (legacy) or encrypted
- * (post-v0.5). Returns the parsed config object regardless of format.
+ * Read a config value that may be either plaintext (legacy) or encrypted.
+ * Returns the parsed config object regardless of format.
  *
  * On legacy plaintext: returns the value as-is (no decryption).
  * On encrypted envelope: decrypts and returns the parsed object.

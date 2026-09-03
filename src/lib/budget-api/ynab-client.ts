@@ -227,7 +227,7 @@ export class YnabClient implements BudgetAPIClient {
     this.budgetPath = `${YNAB_BASE}/budgets/${budgetId}`;
   }
 
-  /** Internal fetch wrapper — see budgetApiRequest in ./errors (M45). */
+  /** Internal fetch wrapper — see budgetApiRequest in ./errors. */
   private async request<T>(path: string, init?: RequestInit): Promise<T> {
     const url = path.startsWith("http") ? path : `${this.budgetPath}${path}`;
     return budgetApiRequest<T>(url, this.headers, init);
@@ -406,7 +406,7 @@ export class YnabClient implements BudgetAPIClient {
   }
 
   async createTransaction(tx: NewBudgetTransaction): Promise<string> {
-    // v0.5 expert-review M20: deterministic idempotency key. YNAB doesn't
+    // Deterministic idempotency key. YNAB doesn't
     // currently support an Idempotency-Key header officially, but the
     // import_id field on /transactions IS the upstream-side dedupe key —
     // YNAB rejects duplicate import_ids on the same account. We hash the

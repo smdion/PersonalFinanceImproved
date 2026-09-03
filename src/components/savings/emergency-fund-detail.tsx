@@ -2,7 +2,11 @@
 
 import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { formatCurrency, formatNumber } from "@/lib/utils/format";
+import {
+  formatCurrency,
+  formatNumber,
+  formatPercent,
+} from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
 
 interface EfundData {
@@ -115,7 +119,7 @@ export function EmergencyFundDetail({
           </div>
           <div className="flex items-center justify-between mt-1 text-xs text-muted">
             <span className="tabular-nums font-semibold">
-              {(efund.progress * 100).toFixed(0)}%
+              {formatPercent(efund.progress, 0)}
             </span>
             <span className="tabular-nums">
               {efund.neededAfterRepay <= 0.005

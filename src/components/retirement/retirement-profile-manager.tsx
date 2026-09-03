@@ -57,6 +57,16 @@ export function RetirementProfileManager({
     useActiveRetirementProfile();
   const { data: profiles, isLoading } =
     trpc.retirement.retirementProfiles.list.useQuery();
+  // Available tax-law years for the "Tax law year" pin
+  // select below, derived from the broadest-coverage existing reference
+  // table (tax_brackets) instead of a new endpoint — resolveTaxParams
+  // itself already answers "which years have data" internally; a second,
+  // independent answer here would be a second computation path in
+  // miniature (advisor review).
+  const { data: taxBracketRows } = trpc.settings.taxBrackets.list.useQuery();
+  const availableTaxYears = Array.from(
+    new Set((taxBracketRows ?? []).map((r) => r.taxYear)),
+  ).sort((a, b) => b - a);
 
   const validIds = (profiles ?? []).map((p) => p.id);
   // "Active" (global/Plan-pinned) — drives the ACTIVE badge + "Make
@@ -122,6 +132,22 @@ export function RetirementProfileManager({
     },
     onError: (e) => setError(e.message),
   });
+  // taxParamsYear is profile IDENTITY (which tax law this
+  // plan is priced under), the same category as name/description — not a
+  // household assumption like the ones retirementSettings.upsert owns —
+  // so it uses the same retirementProfiles.update mutation shape as
+  // rename, right here, not threaded into TaxesSection (advisor review:
+  // that component is a documented pure presentational leaf owned
+  // entirely by retirement-profile-tab.tsx; a second mutation writing to
+  // a second table there would break that contract).
+  const updateTaxYearMut =
+    trpc.retirement.retirementProfiles.update.useMutation({
+      onSuccess: () => {
+        invalidate();
+        setError(null);
+      },
+      onError: (e) => setError(e.message),
+    });
   const deleteMut = trpc.retirement.retirementProfiles.delete.useMutation({
     onSuccess: () => {
       invalidate();
@@ -228,6 +254,44 @@ export function RetirementProfileManager({
               admin && canDeleteAny
                 ? () => handleDelete(profile.id, profile.name)
                 : undefined
+            }
+            meta={
+              <span
+                className="flex items-center gap-1"
+                // Interactive control inside ProfileListRow's meta slot —
+                // stop propagation so a click doesn't also fire the row's
+                // own onSelect, matching the pattern the row actions use.
+                onClick={(e) => e.stopPropagation()}
+              >
+                Tax law:{" "}
+                <HelpTip
+                  maxWidth={280}
+                  text="Which tax year's figures (brackets, limits, LTCG, IRMAA, FPL) this profile's projections are priced under. Latest (auto) tracks the newest data as it's added each year. Pinning a year keeps this profile's numbers reproducible even after a newer year is seeded."
+                />{" "}
+                {admin ? (
+                  <select
+                    value={profile.taxParamsYear ?? ""}
+                    onChange={(e) =>
+                      updateTaxYearMut.mutate({
+                        id: profile.id,
+                        taxParamsYear: e.target.value
+                          ? Number(e.target.value)
+                          : null,
+                      })
+                    }
+                    className="text-caption bg-transparent border border-transparent hover:border-border rounded px-0.5 cursor-pointer focus:outline-none focus:border-accent"
+                  >
+                    <option value="">Latest (auto)</option>
+                    {availableTaxYears.map((yr) => (
+                      <option key={yr} value={yr}>
+                        {yr}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span>{profile.taxParamsYear ?? "Latest (auto)"}</span>
+                )}
+              </span>
             }
           />
         );

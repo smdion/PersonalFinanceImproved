@@ -395,6 +395,37 @@ export const budgetItems = pgTable(
   ],
 );
 
+// One row per (budget item, service) — replaces the old single-slot
+// apiCategoryId/apiCategoryName/apiLastSyncedAt/apiSyncDirection columns on
+// budgetItems, which could only hold ONE service's link at a time and
+// silently clobbered it when a household linked the same item to a second
+// service (YNAB + Actual both connected). Those columns stay on budgetItems,
+// dead-but-present for now; cleanup deferred to a future schema
+// squash (see retirement_settings.person_id's precedent).
+export const budgetItemCategoryLinks = pgTable(
+  "budget_item_category_links",
+  {
+    id: serial("id").primaryKey(),
+    budgetItemId: integer("budget_item_id")
+      .notNull()
+      .references(() => budgetItems.id, { onDelete: "cascade" }),
+    service: text("service").notNull().$type<BudgetApiService>(),
+    categoryId: text("category_id").notNull(),
+    categoryName: text("category_name"),
+    lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
+    syncDirection: text("sync_direction").$type<ApiSyncDirection>(),
+  },
+  (table) => [
+    index("budget_item_category_links_budget_item_id_idx").on(
+      table.budgetItemId,
+    ),
+    uniqueIndex("budget_item_category_links_item_service_idx").on(
+      table.budgetItemId,
+      table.service,
+    ),
+  ],
+);
+
 // ────────────────────────────────────────────────────────────────────────────
 // 4. Savings (sinking funds)
 // ────────────────────────────────────────────────────────────────────────────
@@ -420,6 +451,37 @@ export const savingsGoals = pgTable(
     targetMode: text("target_mode").notNull().default("fixed"), // 'fixed' | 'ongoing' | 'bucket' — validated by Zod (app-layer, no DB constraint)
   },
   (table) => [index("savings_goals_is_active_idx").on(table.isActive)],
+);
+
+// One row per (savings goal, service, role) — replaces the old single-slot
+// apiCategoryId/apiCategoryName/isApiSyncEnabled/reimbursementApiCategoryId
+// columns on savingsGoals, which could only hold ONE service's link (plus
+// one reimbursement link) at a time. See budgetItemCategoryLinks above for
+// the same fix applied to budget items; those raw columns stay dead-but-
+// present for now, cleanup deferred to a future schema squash.
+export const savingsGoalCategoryLinks = pgTable(
+  "savings_goal_category_links",
+  {
+    id: serial("id").primaryKey(),
+    savingsGoalId: integer("savings_goal_id")
+      .notNull()
+      .references(() => savingsGoals.id, { onDelete: "cascade" }),
+    service: text("service").notNull().$type<BudgetApiService>(),
+    role: text("role").notNull().default("primary"), // 'primary' | 'reimbursement'
+    categoryId: text("category_id").notNull(),
+    categoryName: text("category_name"),
+    lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("savings_goal_category_links_savings_goal_id_idx").on(
+      table.savingsGoalId,
+    ),
+    uniqueIndex("savings_goal_category_links_goal_service_role_idx").on(
+      table.savingsGoalId,
+      table.service,
+      table.role,
+    ),
+  ],
 );
 
 export const savingsMonthly = pgTable(
@@ -510,6 +572,30 @@ export const savingsAllocationOverrides = pgTable(
   (table) => [
     uniqueIndex("savings_alloc_override_goal_month_idx").on(
       table.goalId,
+      table.monthDate,
+    ),
+  ],
+);
+
+// Materialized extra-paycheck amounts for jobs whose routing is in Budget
+// mode (the complement of the Savings-mode materializer, which writes to
+// savings_planned_transactions instead — see extra-paycheck-materializer.ts
+// vs. budget-income-materializer.ts). One row per (job, month); no split/goal
+// fan-out, since Budget mode has no split concept.
+export const budgetIncomeAdjustments = pgTable(
+  "budget_income_adjustments",
+  {
+    id: serial("id").primaryKey(),
+    jobId: integer("job_id")
+      .notNull()
+      .references(() => jobs.id, { onDelete: "cascade" }),
+    monthDate: date("month_date").notNull(), // "YYYY-MM-01"
+    amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+    source: text("source").notNull().default("rule"),
+  },
+  (table) => [
+    uniqueIndex("budget_income_adjustments_job_month_idx").on(
+      table.jobId,
       table.monthDate,
     ),
   ],
@@ -667,8 +753,8 @@ export const performanceAccounts = pgTable(
      *  "only as a true last resort, after every other account is
      *  exhausted" guarantee — that would require reordering withdrawal
      *  routing across account categories, a larger change tracked
-     *  separately (FEATURE-ROADMAP.md R41 follow-up). One-way opt-in per
-     *  account, set by the user — never inferred. See R41. */
+     *  separately. One-way opt-in per
+     *  account, set by the user — never inferred. */
     allowPenalizedWithdrawals: boolean("allow_penalized_withdrawals")
       .notNull()
       .default(false),
@@ -1361,8 +1447,7 @@ export const retirementSettings = pgTable(
   "retirement_settings",
   {
     id: serial("id").primaryKey(),
-    // NOT bare .unique() any more (Retirement Profiles step C — advisor
-    // reviewed 2026-08-30). One row per person, PER PROFILE, not one row
+    // NOT bare .unique() any more. One row per person, PER PROFILE, not one row
     // per person system-wide — see the composite unique index below. This
     // is what makes a second retirement profile able to hold genuinely
     // different household settings; without it there was nowhere to put a
@@ -1392,7 +1477,7 @@ export const retirementSettings = pgTable(
     raisesDuringRetirement: boolean("raises_during_retirement")
       .notNull()
       .default(false),
-    /** Per-person Rule of 55 forecasting override (v0.7.8). True (default)
+    /** Per-person Rule of 55 forecasting override. True (default)
      *  ⇒ no override — the engine's computed Rule of 55 status (from real
      *  job separation data) is used unchanged. False ⇒ force this person's
      *  employer-plan accounts ineligible for Rule of 55, regardless of what
@@ -1436,7 +1521,7 @@ export const retirementSettings = pgTable(
     withdrawalStrategy: varchar("withdrawal_strategy", { length: 30 })
       .notNull()
       .default("fixed"),
-    /** R55 follow-up: within the cost-ranked tier (beyond the Traditional
+    /** Within the cost-ranked tier (beyond the Traditional
      *  bracket-fill target), which of Roth basis / brokerage's 0%-LTCG room
      *  drains first. "roth_first" (default) matches all pre-existing
      *  behavior. "brokerage_first" is an explicit household opt-in — a
@@ -1521,31 +1606,29 @@ export const retirementSettings = pgTable(
       precision: 12,
       scale: 6,
     }).default("1.0"),
-    /** R46: what to do with RMD-forced withdrawal beyond stated spending
+    /** What to do with RMD-forced withdrawal beyond stated spending
      *  need (after any QCD reduces the taxable RMD first) — "reinvest"
-     *  into brokerage (default, matches all pre-R46 behavior) or "spend"
+     *  into brokerage (default, matches prior behavior) or "spend"
      *  (household consumes it; net worth ends up lower, by design). */
     rmdExcessHandling: varchar("rmd_excess_handling", { length: 20 })
       .notNull()
       .default("reinvest"),
-    /** R46: automatically apply the largest Qualified Charitable
+    /** Automatically apply the largest Qualified Charitable
      *  Distribution the household's RMD situation allows each year
      *  (capped by QCD_ANNUAL_CAP_PER_PERSON and the person's IRA-only
-     *  Traditional balance — see constants.ts and
-     *  PLAN-rmd-excess-handling.md for the approximation this uses).
+     *  Traditional balance — see constants.ts for the approximation this uses).
      *  Excludes that portion of RMD from taxable income entirely. */
     qcdMaximize: boolean("qcd_maximize").notNull().default(false),
-    /** R47: proactively size Roth conversions to shrink a FUTURE RMD
+    /** Proactively size Roth conversions to shrink a FUTURE RMD
      *  toward projected spending need, not just fill this year's bracket
      *  room opportunistically — default false, byte-identical for every
      *  existing household until explicitly turned on (converting more
      *  Traditional-to-Roth earlier is a real pay-tax-now-vs-later
-     *  tradeoff). Per-person, requires individual-account tracking — see
-     *  PLAN-r47-rmd-aware-roth-smoothing.md. */
+     *  tradeoff). Per-person, requires individual-account tracking. */
     rmdSmoothingEnabled: boolean("rmd_smoothing_enabled")
       .notNull()
       .default(false),
-    /** R47: how far smoothing may raise the EFFECTIVE conversion target
+    /** How far smoothing may raise the EFFECTIVE conversion target
      *  rate above the household's own `rothBracketTarget`/
      *  `rothConversionTarget` when it needs more room than those provide
      *  — can only RAISE the effective ceiling, never lower it (a
@@ -1577,11 +1660,10 @@ export const retirementSettings = pgTable(
 
     // --- Retirement Profiles migration, step A (expand) ---------------------
     // Added additively; nothing reads them yet (step B switches the reads).
-    // See .scratch/docs/plans — "Making Retirement a First-Class Profile".
 
     /** The profile this row belongs to. Together with `person_id` this is
      *  now the row's real key (see the composite unique index below,
-     *  replacing the old bare unique(person_id) — step C, 2026-08-30): one
+     *  replacing the old bare unique(person_id)): one
      *  row per person PER PROFILE, which is what lets two profiles hold
      *  genuinely different household settings.
      *
@@ -1591,9 +1673,9 @@ export const retirementSettings = pgTable(
      *  personId match, when no profile resolves), and a null value can't
      *  weaken the unique index (Postgres/SQLite both treat NULL as
      *  non-equal there), so there is no correctness gap. Made NOT NULL
-     *  ONLY as part of the v0.8.0 squash: SQLite has no ALTER COLUMN SET NOT
-     *  NULL, so tightening this now would force the exact table-recreate
-     *  path this schema has otherwise avoided since step A. */
+     *  ONLY as part of the next schema squash: SQLite has no ALTER COLUMN SET
+     *  NOT NULL, so tightening this now would force the exact table-recreate
+     *  path this schema has otherwise avoided. */
     profileId: integer("profile_id").references(() => retirementProfiles.id, {
       onDelete: "cascade",
     }),
@@ -1651,7 +1733,7 @@ export const retirementSettings = pgTable(
     // this can't be weakened by a null profile_id — every write path sets
     // one) rather than made NOT NULL now, which would force SQLite's
     // recreate-table path for no benefit; that tightening folds into the
-    // v0.8.0 squash alongside the rest of the deferred contract step.
+    // next schema squash alongside the rest of the deferred contract step.
     uniqueIndex("retirement_settings_profile_person_unq").on(
       table.profileId,
       table.personId,
@@ -1678,6 +1760,15 @@ export const retirementProfiles = pgTable("retirement_profiles", {
   id: serial("id").primaryKey(),
   name: text("name").notNull().unique(),
   description: text("description"),
+  /**
+   * Tax-law year this profile's projections are priced under.
+   * NULL = track the latest enacted tax data — the historical behaviour, so
+   * every profile predating this column is byte-identical after the migration adds this
+   * column. A non-null value pins the `resolveTaxParams` base year (with
+   * `onMissing: "nearest"`); "Latest = current law" in the profile
+   * assumptions UI.
+   */
+  taxParamsYear: integer("tax_params_year"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -1944,6 +2035,62 @@ export const irmaaBrackets = pgTable(
     uniqueIndex("irmaa_brackets_year_status_idx").on(
       table.taxYear,
       table.filingStatus,
+    ),
+  ],
+);
+
+// ── ACA Federal Poverty Level ──────────────────────────────────
+//
+// FPL was the one annually-indexed federal figure set with no DB home
+// (it lived only in `aca-tables.ts`'s `FPL_BY_HOUSEHOLD`). One row per ACA
+// COVERAGE year (not the HHS publication year, which is one calendar year
+// earlier — see aca-tables.ts). `amounts` maps household size "1".."8" to
+// the annual FPL dollar figure.
+
+export const fplByHousehold = pgTable(
+  "fpl_by_household",
+  {
+    id: serial("id").primaryKey(),
+    taxYear: integer("tax_year").notNull(),
+    amounts: jsonb("amounts").$type<Record<string, number>>().notNull(),
+  },
+  (table) => [uniqueIndex("fpl_by_household_year_idx").on(table.taxYear)],
+);
+
+// ── Tax-parameter vintage rows ─────────────────────────────────
+//
+// A thin per-year vintage marker. It carries NO figure values — the
+// existing `contribution_limits` / `tax_brackets` / `ltcg_brackets` /
+// `irmaa_brackets` / `fpl_by_household` tables remain the one and only value
+// store. `resolveTaxParams` maps a requested year to a resolved year via
+// these rows, then reads the value tables for that year. `version` is a
+// human-legible "Tax data: 2026, rev N" counter — cache coherence comes from
+// the resolved values themselves (already in the engine-input hash), not
+// from this column. Absent entirely (old-backup restore) ⇒ the resolver
+// falls back to the value tables' own MAX(tax_year), i.e. today's behaviour.
+
+export const taxParams = pgTable(
+  "tax_params",
+  {
+    id: serial("id").primaryKey(),
+    taxYear: integer("tax_year").notNull(),
+    version: integer("version").notNull().default(1),
+    source: text("source"),
+    notes: text("notes"),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("tax_params_year_idx").on(table.taxYear),
+    // version is a monotonic
+    // "Tax data: 2026, rev N" revision counter — never meaningfully zero
+    // or negative. Cheap to enforce now, before any admin-facing mutation
+    // of this column ships.
+    // prettier-ignore
+    check(
+      "tax_params_version_positive",
+      sql`version > 0`,
     ),
   ],
 );

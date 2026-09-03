@@ -13,7 +13,12 @@
  */
 import React from "react";
 import { formatCurrency } from "@/lib/utils/format";
-import type { ApiCategoryOption, PreviewData } from "../integrations-types";
+import type {
+  ApiCategoryOption,
+  PreviewData,
+  Service,
+} from "../integrations-types";
+import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "../integrations-status-badge";
 import { ApiCategorySelect } from "../integrations-api-category-select";
 import type { SavingsMutations } from "./hooks/use-savings-mutations";
@@ -23,6 +28,7 @@ import {
 } from "./section-summary-badge";
 
 type Props = {
+  service: Service;
   savings: NonNullable<PreviewData["savings"]>;
   allApiCats: ApiCategoryOption[];
   mutations: SavingsMutations;
@@ -33,6 +39,7 @@ type Props = {
 };
 
 export function SavingsSection({
+  service,
   savings,
   allApiCats,
   mutations,
@@ -53,6 +60,7 @@ export function SavingsSection({
     if (!cat) return;
     linkSavingsMut.mutate({
       goalId,
+      service,
       apiCategoryId: apiId,
       apiCategoryName: cat.name,
     });
@@ -134,18 +142,20 @@ export function SavingsSection({
                     <span className="text-muted truncate flex-1">
                       {m.apiCategoryName}
                     </span>
-                    <span
-                      className="text-micro px-1 py-0.5 rounded bg-purple-50 text-purple-600"
+                    <Badge
+                      color="purple"
+                      case="normal"
                       title="Balance pulled from API, monthly contribution pushed to API"
                     >
                       ⇄ pull balance / push contribution
-                    </span>
+                    </Badge>
                     {m.nameDrifted && (
                       <>
                         <button
                           onClick={() =>
                             renameSavingsToApiMut.mutate({
                               goalId: m.goalId,
+                              service,
                             })
                           }
                           disabled={renameSavingsToApiMut.isPending}
@@ -158,6 +168,7 @@ export function SavingsSection({
                           onClick={() =>
                             renameSavingsApiNameMut.mutate({
                               goalId: m.goalId,
+                              service,
                             })
                           }
                           disabled={renameSavingsApiNameMut.isPending}
@@ -170,7 +181,7 @@ export function SavingsSection({
                     )}
                     <button
                       onClick={() =>
-                        unlinkSavingsMut.mutate({ goalId: m.goalId })
+                        unlinkSavingsMut.mutate({ goalId: m.goalId, service })
                       }
                       disabled={unlinkSavingsMut.isPending}
                       className="text-red-400 hover:text-red-600 text-caption whitespace-nowrap"
@@ -240,6 +251,7 @@ export function SavingsSection({
                       onChange={(v) =>
                         linkReimbursementMut.mutate({
                           goalId: m.goalId,
+                          service,
                           apiCategoryId: v || null,
                         })
                       }
@@ -250,6 +262,7 @@ export function SavingsSection({
                       onClick={() =>
                         linkReimbursementMut.mutate({
                           goalId: m.goalId,
+                          service,
                           apiCategoryId: null,
                         })
                       }

@@ -1,24 +1,25 @@
 /**
- * RMD Handling panel (R46) — what happens to Required Minimum Distribution
+ * RMD Handling panel — what happens to Required Minimum Distribution
  * money beyond stated spending need. Two independent settings:
  * - rmdExcessHandling: reinvest into brokerage (default) or spend it.
  * - qcdMaximize: automatically apply Qualified Charitable Distributions
  *   against the RMD each year (a proactive election on the RMD itself,
- *   not a rule for leftover money — see PLAN-rmd-excess-handling.md).
+ *   not a rule for leftover money).
  *
- * R47 adds a third, independent setting: rmdSmoothingEnabled — proactively
- * size Roth conversions BEFORE RMD age to shrink the future RMD toward
+ * A third, independent setting, rmdSmoothingEnabled, proactively
+ * sizes Roth conversions BEFORE RMD age to shrink the future RMD toward
  * projected spending need, instead of reacting to an already-forced
  * excess. Requires individual-account tracking. Its own bracket-ceiling
  * dropdown (rmdSmoothingMaxBracketTarget) only renders once enabled, and
  * is seeded from the household's current rothBracketTarget the first time
  * they turn smoothing on — never a hardcoded default — so opting in can
  * never look like it silently lowered a Roth-conversion rate they already
- * configured. See PLAN-r47-rmd-aware-roth-smoothing.md.
+ * configured.
  */
 "use client";
 
 import { HelpTip } from "@/components/ui/help-tip";
+import { Badge } from "@/components/ui/badge";
 import type { Settings, UpsertSettingsMutation, IsEditable } from "./types";
 import { buildSettingsPatch } from "./settings-patch";
 
@@ -49,9 +50,7 @@ export function RmdHandlingSection({
         <h4 className="text-label font-semibold text-muted uppercase tracking-wider">
           RMD Handling
         </h4>
-        <span className="text-micro text-purple-400 bg-purple-50 px-1.5 py-0.5 rounded">
-          Baseline + Simulation
-        </span>
+        <Badge color="indigo">Baseline + Simulation</Badge>
         <div className="flex-1 border-t" />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 text-sm">

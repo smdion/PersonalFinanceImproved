@@ -1,5 +1,5 @@
 /** Paycheck router for gross-to-net pay calculations including federal/state tax withholding, pre-tax deductions, and per-period contribution breakdowns. */
-import { eq, asc } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
@@ -28,6 +28,7 @@ import {
   fetchContributionProfile,
   getIncompleteContribAccountIds,
 } from "@/server/helpers";
+import { getAllPeople } from "@/server/helpers/people";
 import { applySandboxSalaryEntries } from "@/server/helpers/salary";
 import {
   toSalaryActiveMap,
@@ -45,6 +46,7 @@ import type {
 } from "@/lib/calculators/types";
 import { computeHouseholdTax } from "@/lib/pure/tax";
 import { findActiveJob } from "@/lib/pure/profiles";
+import { resolveTaxParams } from "@/lib/config/tax-params";
 
 /** Build TaxBracketInput from DB bracket row + limits. */
 export function buildBracketInput(
@@ -95,7 +97,7 @@ export function buildBracketInput(
 /**
  * Annual-liability variant of buildBracketInput: same limits, but brackets
  * reshaped into real Form 1040 taxable-income space via
- * toTaxableIncomeBrackets (R57 — calculateTax's own standardDeduction
+ * toTaxableIncomeBrackets (calculateTax's own standardDeduction
  * subtraction was double-counting against the un-reshaped Pub 15-T
  * withholding brackets). Requires the standard (non-2c) row — the 2(c)
  * half-tables have no 1040 analogue.
@@ -121,7 +123,7 @@ export const paycheckRouter = createTRPCRouter({
           salaryActiveFields: z
             .array(z.object({ personId: z.number(), salary: z.number() }))
             .optional(),
-          taxYearOverride: z.number().int().optional(),
+          taxYearOverride: z.number().int().min(2000).max(2100).optional(),
           contributionProfileId: z.number().int().optional(),
           salaryProfileId: z.number().int().optional(),
           /** The What-If tab's hand-edited salary/bonus entries — highest
@@ -150,37 +152,55 @@ export const paycheckRouter = createTRPCRouter({
           e.amountPerPeriod,
         ]),
       );
-      const taxYear = input?.taxYearOverride ?? new Date().getFullYear();
       const [
         people,
         allJobs,
         allDeductions,
         allContribs,
-        allLimits,
-        allBrackets,
+        allLimitRows,
+        allBracketRows,
+        allTaxParams,
       ] = await Promise.all([
-        ctx.db.select().from(schema.people).orderBy(asc(schema.people.id)),
+        getAllPeople(ctx.db),
         ctx.db.select().from(schema.jobs),
         ctx.db.select().from(schema.paycheckDeductions),
         ctx.db
           .select()
           .from(schema.contributionAccounts)
           .where(eq(schema.contributionAccounts.isActive, true)),
-        ctx.db
-          .select()
-          .from(schema.contributionLimits)
-          .where(eq(schema.contributionLimits.taxYear, taxYear)),
-        ctx.db
-          .select()
-          .from(schema.taxBrackets)
-          .where(eq(schema.taxBrackets.taxYear, taxYear)),
+        ctx.db.select().from(schema.contributionLimits),
+        ctx.db.select().from(schema.taxBrackets),
+        ctx.db.select().from(schema.taxParams),
       ]);
 
-      const limitsMap = new Map<string, number>();
-      for (const l of allLimits) limitsMap.set(l.limitType, toNumber(l.value));
+      // One resolver, same as the retirement engine — but "null" on a
+      // missing year (not "throw"/"nearest"): the paycheck year selector
+      // lets a user pick a year with no seeded tables, and the contract is
+      // "show empty, never another year's figures" (a person entry still
+      // renders, with paycheck/tax null). `taxYearOverride` undefined =>
+      // newest enacted year.
+      const resolvedTax = resolveTaxParams(
+        {
+          vintage: allTaxParams,
+          contributionLimits: allLimitRows,
+          withholdingBrackets: allBracketRows,
+          ltcgBrackets: [],
+          irmaaBrackets: [],
+          fpl: [],
+        },
+        input?.taxYearOverride,
+        { onMissing: "null" },
+      );
+      const taxYear =
+        resolvedTax?.resolvedYear ??
+        input?.taxYearOverride ??
+        new Date().getFullYear();
+      const allBrackets = resolvedTax
+        ? allBracketRows.filter((b) => b.taxYear === resolvedTax.resolvedYear)
+        : [];
 
-      const limitsRecord: Record<string, number> = {};
-      for (const l of allLimits) limitsRecord[l.limitType] = toNumber(l.value);
+      const limitsRecord: Record<string, number> = resolvedTax?.limits ?? {};
+      const limitsMap = new Map<string, number>(Object.entries(limitsRecord));
 
       // Salary and contribution overrides are two independent axes.
       // Precedence for salary: Plan/session overrides (already in the map,
@@ -577,6 +597,14 @@ export const paycheckRouter = createTRPCRouter({
         }
       }
 
-      return { people: results, jointContribs, householdTax };
+      return {
+        people: results,
+        jointContribs,
+        householdTax,
+        // The tax-data vintage this summary was priced under — for a
+        // "Tax data: YYYY" indicator, matching the retirement projection side.
+        taxYear,
+        taxParamsVersion: resolvedTax?.version ?? 0,
+      };
     }),
 });

@@ -2,8 +2,6 @@
 
 /**
  * Left-rail profile picker for the budget page master-detail layout.
- * Extracted from `src/app/(dashboard)/budget/page.tsx` during the v0.5.2
- * file-split refactor. Pure relocation — no behavior changes.
  *
  * Parent owns: profile list query, rename state (for the inline input),
  * tRPC mutations (set-active, create, rename, delete), and permission
@@ -18,6 +16,7 @@ import {
   ProfileListRow,
   ProfileSidebarHeader,
 } from "@/components/ui/profile-sidebar";
+import { Badge } from "@/components/ui/badge";
 import type { BudgetProfileListEntry } from "./types";
 
 type Props = {
@@ -146,11 +145,11 @@ export function BudgetProfileSidebar({
             }
             extraBadge={
               apiService && apiLinkedProfileId === p.id ? (
-                <span className="text-micro px-1 py-0.5 rounded bg-blue-100 text-blue-700 font-semibold shrink-0">
+                <Badge color="blue" case="normal" className="shrink-0">
                   ⇄ {apiService.toUpperCase()} →{" "}
                   {(p.columnLabels as string[])?.[apiLinkedColumnIndex] ??
                     "Mode" + apiLinkedColumnIndex}
-                </span>
+                </Badge>
               ) : undefined
             }
             meta={

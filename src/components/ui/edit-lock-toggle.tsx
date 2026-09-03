@@ -5,9 +5,8 @@ import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 
 /**
  * The padlock edit lock — one shared control for every table/panel that is
- * editable in place. Extracted from the Savings page's transaction table so
- * every surface uses the same icon, sizing, wording and default-locked
- * behaviour.
+ * editable in place, so every surface uses the same icon, sizing, wording
+ * and default-locked behaviour.
  *
  * Locked is always the default: an editable panel opens read-only and the
  * user opts in to editing by unlocking it.

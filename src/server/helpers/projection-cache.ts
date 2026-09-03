@@ -143,8 +143,103 @@ import { log } from "@/lib/logger";
  *  `FPL_COVERAGE_YEAR`. Reporting-only (no conversion-cap analog to
  *  IRMAA's `irmaaAwareRothConversions` exists for ACA), but still a
  *  real, user-visible number change, same precedent as v15's bump for
- *  an output-shape addition. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 22;
+ *  an output-shape addition.
+ *
+ *  20–22: (see git history — bumps between v19 and this entry.)
+ *
+ *  23: IRC §63(f)(1) age-65+ additional standard deduction now modeled
+ *  (R59, `decumulation-year.ts` folds `additionalStdDeduction65PerSenior ×
+ *  65+ headcount` into the deduction before growth). A REAL value change
+ *  for any decumulation year in which a household member is 65+ (nearly
+ *  every year for a real household): a larger standard deduction means more
+ *  0%-LTCG room and lower ordinary tax, so `standardDeduction` (output),
+ *  `taxCost`, `bracketTraditionalCap`, `discretionaryTierBreakdown`, and
+ *  sustainable-withdrawal/end-balance figures all shift. Cached rows from
+ *  before this fix understate the household's real tax-bracket room.
+ *
+ *  24: waterfall + Roth-bracket-overlay households now get a real
+ *  `bracketTraditionalCap` on `EngineDecumulationYear` (`dispatchOnce`'s
+ *  waterfall branch, `withdrawal-routing.ts`) — previously only
+ *  `bracket_filling` mode populated this field, even though the overlay was
+ *  actively capping Traditional withdrawals at exactly this figure for
+ *  these households (advisor-reviewed, deliberately not mode-gated: the
+ *  overlay computes the identical cap and forces the identical Traditional-
+ *  first-to-cap behavior, so the report narrative/tooltip that cite it
+ *  describe the same real mechanism as bracket_filling). An output-shape
+ *  addition, not a dollar-figure change (`taxCost`/withdrawal amounts are
+ *  unaffected) — bumped so already-cached rows for these households don't
+ *  keep serving the field as missing under the old engine version.
+ *
+ *  25: R4 — decumulation's "Portfolio contribution continues after
+ *  retirement" spec-to-account matching (`decumulation-year.ts`) now reuses
+ *  `state.specToAccount` (the owner-aware cascade `buildSpecToAccountMapping`
+ *  already builds for the accumulation phase) instead of matching by
+ *  `ia.name === spec.accountName` alone. A REAL value change, but only for
+ *  the narrow household shape this bug required: two people, each with an
+ *  identically-named individual account continuing contributions past
+ *  retirement (e.g. both named "Long Term Brokerage") — for every other
+ *  household the two matching paths agree and nothing moves. Previously
+ *  both people's contributions silently landed on whichever account
+ *  `indAccts` happened to list first.
+ *
+ *  26: OBBBA temporary senior deduction (2025-2028) now modeled —
+ *  `decumulation-year.ts` folds it into the standard deduction alongside
+ *  §63(f) (R59), using last year's MAGI as the phaseout basis. A REAL value
+ *  change for any decumulation year (2 and later) where a household member
+ *  is 65+ and the year is 2025-2028: a larger effective standard deduction
+ *  means more 0%-LTCG room and lower ordinary tax, same shift class as v23.
+ *  Cached rows from before this understate the household's real deduction
+ *  for those years. Year 1 of decumulation and any year outside 2025-2028
+ *  are unaffected (no prior-year MAGI / outside the statutory window).
+ *
+ *  27: R4 (part 2) — a lump sum's individual-account target now matches by
+ *  (name, owner) when `targetOwnerName` is set, not name alone
+ *  (`lump-sum.ts`). Same narrow-household-shape value change as v25's
+ *  decumulation-year.ts fix: only affects a lump sum explicitly targeting a
+ *  specific individual account, on a household where two people share that
+ *  account name. `targetOwnerName` didn't exist before this version, so no
+ *  previously-saved lump sum carries it — this only takes effect for lump
+ *  sums created/edited after this ships, which is also when it's included
+ *  in the engine-input hash for the first time.
+ *
+ *  28: R44 — the R41 per-account penalty-allowance override is now a
+ *  genuine last resort (`routeWithLastResortAllowance`, withdrawal-routing.ts):
+ *  a two-dispatch model excludes the allowed account's exposure too on the
+ *  first pass, only reaching into it on a second pass for the true residual
+ *  if the household would otherwise be short. Previously the allowed
+ *  account's money was ordinary, reachable balance from the start — drawn
+ *  whenever `withdrawalOrder`/tax-preference ranking happened to reach it,
+ *  not held back until genuinely needed. A REAL value change, but narrow:
+ *  only affects a household with `avoidPenalizedWithdrawals: true`
+ *  (default) AND at least one account with the R41
+ *  `allowPenalizedWithdrawals` override AND a year where that account's
+ *  exposed money would previously have been drawn before it was truly
+ *  needed. Every household without an R41 override is unaffected
+ *  (`hasLastResortAllowance` false, byte-identical single-pass path).
+ *
+ *  29: R43 — the `irmaa_brackets` DB table is now read by the engine
+ *  payload (`build-engine-payload.ts` -> `distributionTaxRates.irmaaBrackets`
+ *  -> `decumulation-year.ts`'s `growIrmaaBrackets`). Before this the table +
+ *  its Settings editor were live but no engine path consumed them, so IRMAA
+ *  was always priced off the hardcoded `IRMAA_BRACKETS` fallback. The seed
+ *  rows are byte-identical to that fallback, so for a household on seeded
+ *  data this bump is a no-op; it exists so a household that had *edited*
+ *  IRMAA brackets in Settings stops being served stale pre-R43 cached
+ *  projections for the 36h TTL.
+ *
+ *  30: R43 — every per-year tax slice (withholding brackets, contribution
+ *  limits + standard/senior deductions, LTCG + IRMAA brackets, FPL) is now
+ *  resolved through one `resolveTaxParams` call anchored on one year, driven
+ *  by `retirement_profiles.tax_params_year` (NULL = newest enacted). The
+ *  resolution PATH changed; for a household on current seeded data with an
+ *  unpinned profile the resolved values are byte-identical to the pre-R43
+ *  `Math.max(tax_year)` + `WHERE tax_year = getFullYear()` logic (asserted
+ *  by `tests/config/tax-params.test.ts` and `engine-input-snapshot.test.ts`),
+ *  so this is a no-op there. One-time bump so pre-R43 cached rows don't
+ *  serve for the 36h TTL on deploy day, and so a profile that gets pinned
+ *  (or a `tax_params` revision) invalidates cleanly. Future vintage edits
+ *  invalidate via the resolved values in the input hash — no further bump. */
+export const PROJECTION_CACHE_ENGINE_VERSION = 30;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

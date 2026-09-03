@@ -1,6 +1,6 @@
 /**
  * Pure business logic for IRS contribution limit resolution and view-aware metrics.
- * Extracted from contribution router — no DB or I/O dependency.
+ * No DB or I/O dependency.
  */
 import type { AccountCategory } from "@/lib/config/account-types";
 import {
@@ -167,7 +167,7 @@ export function isEligibleForPriorYear(
 }
 
 // ---------------------------------------------------------------------------
-// Contribution priority order validation (v0.5 expert-review M1)
+// Contribution priority order validation
 // ---------------------------------------------------------------------------
 
 /**

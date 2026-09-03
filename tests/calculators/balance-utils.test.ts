@@ -4,8 +4,13 @@ import {
   cloneAccountBalances,
   subtractPenaltyExposed,
   subtractExcluded,
+  applySlotsToBalances,
 } from "@/lib/calculators/engine/balance-utils";
-import type { AccountBalances, TaxBuckets } from "@/lib/calculators/types";
+import type {
+  AccountBalances,
+  TaxBuckets,
+  DecumulationSlot,
+} from "@/lib/calculators/types";
 import type {
   EligibilityRecord,
   NonRetirementExclusion,
@@ -367,5 +372,113 @@ describe("subtractExcluded (R49)", () => {
         ? result["401k"].roth
         : NaN,
     ).toBe(35000); // 50000 - 10000 - 5000
+  });
+});
+
+// ---------------------------------------------------------------------------
+// applySlotsToBalances (R44, v0.7.11)
+// ---------------------------------------------------------------------------
+
+function makeSlot(
+  category: DecumulationSlot["category"],
+  overrides: Partial<DecumulationSlot> = {},
+): DecumulationSlot {
+  return {
+    category,
+    withdrawal: 0,
+    rothWithdrawal: 0,
+    traditionalWithdrawal: 0,
+    cappedByAccount: false,
+    cappedByTaxType: false,
+    remainingNeed: 0,
+    ...overrides,
+  };
+}
+
+describe("applySlotsToBalances", () => {
+  it("reduces traditional and roth separately for a roth_traditional category", () => {
+    const balances = accountBalancesFromTaxBuckets(makeBuckets());
+    balances["401k"] = {
+      structure: "roth_traditional",
+      traditional: 100000,
+      roth: 50000,
+    };
+    const slots = [
+      makeSlot("401k", {
+        withdrawal: 30000,
+        traditionalWithdrawal: 20000,
+        rothWithdrawal: 10000,
+      }),
+    ];
+    const result = applySlotsToBalances(balances, slots);
+    expect(
+      result["401k"].structure === "roth_traditional"
+        ? result["401k"].traditional
+        : NaN,
+    ).toBe(80000);
+    expect(
+      result["401k"].structure === "roth_traditional"
+        ? result["401k"].roth
+        : NaN,
+    ).toBe(40000);
+  });
+
+  it("reduces total balance for a single_bucket category (HSA)", () => {
+    const balances = accountBalancesFromTaxBuckets(makeBuckets({ hsa: 20000 }));
+    const slots = [makeSlot("hsa", { withdrawal: 5000 })];
+    const result = applySlotsToBalances(balances, slots);
+    expect(getTotalBalance(result.hsa)).toBe(15000);
+  });
+
+  it("reduces total balance for a basis_tracking category (brokerage)", () => {
+    const balances = accountBalancesFromTaxBuckets(
+      makeBuckets({ afterTax: 50000, afterTaxBasis: 30000 }),
+    );
+    const slots = [makeSlot("brokerage", { withdrawal: 20000 })];
+    const result = applySlotsToBalances(balances, slots);
+    expect(getTotalBalance(result.brokerage)).toBe(30000);
+  });
+
+  it("leaves a category untouched when it has no slot entry", () => {
+    const balances = accountBalancesFromTaxBuckets(
+      makeBuckets({ preTax: 100000, hsa: 20000 }),
+    );
+    const slots = [
+      makeSlot("401k", { withdrawal: 10000, traditionalWithdrawal: 10000 }),
+    ];
+    const result = applySlotsToBalances(balances, slots);
+    expect(getTotalBalance(result.hsa)).toBe(20000); // unchanged, no slot for hsa
+  });
+
+  it("leaves a category untouched when its slot has 0 withdrawal", () => {
+    const balances = accountBalancesFromTaxBuckets(makeBuckets({ hsa: 20000 }));
+    const slots = [makeSlot("hsa", { withdrawal: 0 })];
+    const result = applySlotsToBalances(balances, slots);
+    expect(getTotalBalance(result.hsa)).toBe(20000);
+  });
+
+  it("floors at 0 rather than going negative", () => {
+    const balances = accountBalancesFromTaxBuckets(makeBuckets({ hsa: 5000 }));
+    const slots = [makeSlot("hsa", { withdrawal: 8000 })];
+    const result = applySlotsToBalances(balances, slots);
+    expect(getTotalBalance(result.hsa)).toBe(0);
+  });
+
+  it("does not mutate the input balances (returns a clone)", () => {
+    const balances = accountBalancesFromTaxBuckets(makeBuckets({ hsa: 20000 }));
+    const slots = [makeSlot("hsa", { withdrawal: 5000 })];
+    applySlotsToBalances(balances, slots);
+    expect(getTotalBalance(balances.hsa)).toBe(20000);
+  });
+
+  it("chaining two applySlotsToBalances calls (simulating a two-pass dispatch) reduces correctly", () => {
+    const balances = accountBalancesFromTaxBuckets(makeBuckets({ hsa: 20000 }));
+    const pass1 = applySlotsToBalances(balances, [
+      makeSlot("hsa", { withdrawal: 5000 }),
+    ]);
+    const pass2 = applySlotsToBalances(pass1, [
+      makeSlot("hsa", { withdrawal: 3000 }),
+    ]);
+    expect(getTotalBalance(pass2.hsa)).toBe(12000);
   });
 });

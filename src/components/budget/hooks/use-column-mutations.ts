@@ -4,9 +4,6 @@
  * Column-level mutations for the budget page: add, remove, rename,
  * update months, update per-column contribution/salary profile ids.
  *
- * Extracted from `src/app/(dashboard)/budget/page.tsx` during the
- * v0.5.2 file-split refactor. Pure relocation — no behavior changes.
- *
  * All are simple-invalidate; updateColumnMonths and
  * updateColumnContributionProfileIds additionally invalidate
  * listProfiles because their side effect flows into the profile list

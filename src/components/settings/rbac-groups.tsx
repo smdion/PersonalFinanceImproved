@@ -5,6 +5,7 @@ import React, { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 export function RbacGroupsSettings() {
   const utils = trpc.useUtils();
@@ -80,73 +81,11 @@ export function RbacGroupsSettings() {
 
   return (
     <div className="space-y-6">
-      {/* Authentik OIDC provider setup */}
-      <div className="border bg-surface-sunken rounded-lg p-4">
-        <h3 className="text-sm font-semibold text-primary mb-2">
-          Authentik OIDC Provider Setup
-        </h3>
-        <ol className="text-xs text-secondary space-y-1.5 list-decimal list-inside">
-          <li>
-            In Authentik, go to <strong>Applications &rarr; Providers</strong>{" "}
-            and create a new <strong>OAuth2/OpenID Provider</strong>.
-          </li>
-          <li>
-            Set the <strong>Redirect URI</strong> to{" "}
-            <code className="bg-surface-strong px-1 rounded">
-              https://&lt;your-app-domain&gt;/api/auth/callback/authentik
-            </code>
-            .
-          </li>
-          <li>
-            Under <strong>Advanced protocol settings</strong>, add{" "}
-            <code className="bg-surface-strong px-1 rounded">groups</code> to
-            the <strong>Scopes</strong> list so group membership is included in
-            the OIDC token.
-          </li>
-          <li>
-            Create an <strong>Application</strong> linked to this provider.
-          </li>
-          <li>
-            Copy the <strong>Client ID</strong>, <strong>Client Secret</strong>,
-            and <strong>OpenID Configuration Issuer</strong> URL.
-          </li>
-          <li>
-            Set three environment variables on the app server:
-            <div className="mt-1 ml-4 space-y-0.5 font-mono">
-              <div>
-                <code className="bg-surface-strong px-1 rounded">
-                  AUTH_AUTHENTIK_ISSUER
-                </code>{" "}
-                &mdash; Issuer URL (e.g.{" "}
-                <code className="bg-surface-strong px-1 rounded">
-                  https://auth.example.com/application/o/ledgr/
-                </code>
-                )
-              </div>
-              <div>
-                <code className="bg-surface-strong px-1 rounded">
-                  AUTH_AUTHENTIK_ID
-                </code>{" "}
-                &mdash; Client ID from the provider
-              </div>
-              <div>
-                <code className="bg-surface-strong px-1 rounded">
-                  AUTH_AUTHENTIK_SECRET
-                </code>{" "}
-                &mdash; Client Secret from the provider
-              </div>
-            </div>
-          </li>
-          <li>
-            Restart the app. The login page will now redirect to Authentik
-            instead of using dev auto-login.
-          </li>
-        </ol>
-        <p className="text-xs text-muted mt-2 italic">
-          Without these env vars, the app runs in dev mode with automatic admin
-          login.
-        </p>
-      </div>
+      <p className="text-xs text-muted -mt-2">
+        Assumes the Authentik OIDC connection is already set up (see the{" "}
+        <strong>Authentik</strong> section) — this covers mapping its groups to
+        app permissions.
+      </p>
 
       {/* RBAC setup guide */}
       <div className="border border-blue-200 bg-blue-50 rounded-lg p-4">
@@ -255,9 +194,9 @@ export function RbacGroupsSettings() {
                 placeholder={`ledgr-${p.permission}`}
               />
               {p.isCustom && (
-                <span className="text-caption text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
+                <Badge color="amber" size="sm" case="normal">
                   custom
-                </span>
+                </Badge>
               )}
             </div>
           ))}

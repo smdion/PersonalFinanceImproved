@@ -80,8 +80,7 @@ export interface GuytonKlingerResult {
  * `applyGuytonKlingerStrategy`, the only function that conforms to the
  * spending-strategy dispatcher contract. Every other strategy module
  * exposes exactly one public function; importing this one outside a test
- * file creates a second, non-conforming entry point (M17,
- * .scratch/docs/review-findings.md).
+ * file creates a second, non-conforming entry point.
  */
 export function applyGuytonKlinger(
   input: GuytonKlingerInput,

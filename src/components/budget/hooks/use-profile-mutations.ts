@@ -2,8 +2,6 @@
 
 /**
  * Profile-level mutations for the budget page.
- * Extracted from `src/app/(dashboard)/budget/page.tsx` during the v0.5.2
- * file-split refactor. Pure relocation — no behavior changes.
  *
  * Covers: set-active, create, delete, rename. All simple-invalidate
  * mutations (onSuccess → invalidate queries). setActiveProfile busts

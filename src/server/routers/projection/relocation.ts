@@ -139,7 +139,7 @@ export const relocationProjectionRouter = createTRPCRouter({
       const currentYear = asOfDate.getFullYear();
 
       // Fetch all DB tables once — both scenarios share the same base data.
-      // C6 pre-fetch: batches the Salary Profile row alongside everything
+      // Pre-fetch: batches the Salary Profile row alongside everything
       // else when an id is known, same as scenarios.ts/monte-carlo.ts/
       // coast-fire.ts. Contribution Profile is NOT pre-fetched here since
       // each scenario applies its own (see the two buildEnginePayload calls

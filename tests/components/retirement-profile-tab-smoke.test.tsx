@@ -113,6 +113,9 @@ vi.mock("@/lib/trpc", () => ({
     retirement: {
       retirementSettings: {
         upsert: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
+        upsertPersonRaiseRate: {
+          useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+        },
       },
       retirementProfilePeople: {
         upsertPerson: {

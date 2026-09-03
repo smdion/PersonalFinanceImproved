@@ -9,9 +9,9 @@ export type ProfileOption = {
   name: string;
   /** Drives the highlight + the closed pill's label — the effectively-in-effect profile. */
   isActive: boolean;
-  /** Right-aligned status text, e.g. "Active", "Pinned", "Active (global)".
-   *  Lets a Plan-pinned option say so distinctly from the true global default
-   *  when they differ, instead of both silently reading "Active". */
+  /** Right-aligned status text, e.g. "Active" or "Active (global)".
+   *  "Active (global)" marks the household's default profile when a Plan has
+   *  made a different one active, so the two don't both just read "Active". */
   badge?: string;
 };
 
@@ -84,7 +84,7 @@ export function ProfilePill({
                 <span className="truncate">{o.name}</span>
                 {o.badge && (
                   <span className="ml-auto shrink-0">
-                    <Badge color={o.badge === "Pinned" ? "amber" : "blue"}>
+                    <Badge color={o.badge.includes("global") ? "gray" : "blue"}>
                       {o.badge}
                     </Badge>
                   </span>

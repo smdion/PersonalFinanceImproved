@@ -68,6 +68,16 @@ export type LumpSum = {
   /** Specific individual account name (e.g., "Long Term Brokerage (Vanguard)").
    *  When set, the engine adds the lump sum to this exact account in indBal. */
   targetAccountName?: string;
+  /** Owner name of the targeted individual account — two
+   *  household members can independently choose the same account name (e.g.
+   *  both "Long Term Brokerage"), and `targetAccountName` alone can't tell
+   *  them apart. When set, the engine matches on (name, ownerName) before
+   *  falling back to name alone, mirroring how `ContributionSpec.ownerName`
+   *  already disambiguates the same collision for ongoing contributions
+   *  (`individual-account-tracking.ts`'s `buildSpecToAccountMapping`).
+   *  Undefined ⇒ name-only match, unchanged behavior for every lump sum
+   *  saved before this field existed. */
+  targetOwnerName?: string;
   label?: string;
 };
 
@@ -116,8 +126,8 @@ export type IndividualAccountInput = {
   ownerPersonId?: number;
   /** Parent category from contribution account config (e.g. "Retirement", "Portfolio"). */
   parentCategory?: string;
-  /** "Now" Rule of 55 / separation resolution for this account (v0.7.8,
-   *  PLAN-v0.7.8-v4 Group 1.1) — only present for 401k/403b-type accounts
+  /** "Now" Rule of 55 / separation resolution for this account —
+   *  only present for 401k/403b-type accounts
    *  (`accountType` config's `rothOrderingRules === "pro_rata"`) with a
    *  resolvable owner. The engine re-evaluates this for a future projected
    *  year itself via `projectRuleOf55`
@@ -129,7 +139,7 @@ export type IndividualAccountInput = {
   /** Companion to `ruleOf55` — Roth contribution/conversion basis "now",
    *  same scope/caveats. Not yet consumed (see above). */
   rothBasisMeta?: RothBasisMeta | null;
-  /** `ownerPersonId`'s birth year (v0.7.8 Group 1.1) — carried directly on
+  /** `ownerPersonId`'s birth year — carried directly on
    *  the account rather than requiring a separate personId→birthYear
    *  lookup at consumption time. No general "every household member's
    *  birth year, keyed by personId" map exists elsewhere in `EngineInput`:
@@ -139,7 +149,7 @@ export type IndividualAccountInput = {
    *  eligibility gate (Group 2) never depends on which of those partial
    *  sources happened to cover a given owner. */
   ownerBirthYear?: number;
-  /** Rule of 55 forecasting override (v0.7.8) — per-person, forces the
+  /** Rule of 55 forecasting override — per-person, forces the
    *  PROJECTED (future-year) Rule of 55 verdict to ineligible for this
    *  account's owner, regardless of what the real job-separation
    *  computation says. Only ever set `true` (never `false`) — omitted
@@ -156,7 +166,7 @@ export type IndividualAccountInput = {
    *  59½ path must still apply). */
   ruleOf55ForceIneligible?: boolean;
   /** Household is fine paying the 10%/20% early-withdrawal penalty on THIS
-   *  account when the projection needs to draw from it (R41). Makes this
+   *  account when the projection needs to draw from it. Makes this
    *  account's penalty-exposed balance normally withdrawable — NOT a
    *  strict last-resort guarantee; ordinary routing order still decides
    *  when it's drawn (see `performanceAccounts.allowPenalizedWithdrawals`'s
@@ -194,7 +204,7 @@ export type IndividualAccountYearBalance = {
   overflowContribution?: number;
   rampContribution?: number;
   /** Withdrawal-ordering eligibility for this account, this year
-   *  (decumulation only; v0.7.8, PLAN-v0.7.8-v4 follow-up). `true` = the
+   *  (decumulation only). `true` = the
    *  full balance was treated as locked (penalty-preferred-against) when
    *  withdrawal routing ran this year — never "inaccessible", the engine's
    *  soft/penalized-but-available model always allows drawing from a
@@ -207,8 +217,7 @@ export type IndividualAccountYearBalance = {
   eligibilityLocked?: boolean;
   eligibilityReason?: string;
   /** Tracked Roth basis remaining at END of this year, both phases
-   *  (v0.7.8 tracked-basis follow-up — see
-   *  `@/lib/pure/roth-basis-tracking`). Contribution + conversion basis
+   *  (see `@/lib/pure/roth-basis-tracking`). Contribution + conversion basis
    *  combined. Present only for taxFree-bucket accounts; absent (not
    *  zero) for everything else, so "no data" is never confused with
    *  "$0 left". */

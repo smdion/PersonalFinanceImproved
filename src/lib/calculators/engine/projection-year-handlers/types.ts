@@ -1,10 +1,5 @@
 /**
  * Shared types for the projection year-handler functions.
- *
- * Extracted from the old single-file `projection-year-handlers.ts` in the
- * v0.5.2 file-split refactor. Pure relocation — no type changes. The
- * `engine-snapshot.test.ts` parity guard runs before and after the split
- * to catch any accidental drift.
  */
 import type {
   ProjectionInput,
@@ -59,16 +54,16 @@ export type ProjectionLoopState = {
    *  year with its own guardrail-adjusted target, which for a budget-seeded
    *  strategy makes `projectedExpenses` identical to that year's own
    *  `targetWithdrawal` -- collapsing "vs budget" and "vs strategy" into
-   *  the same comparison (live-user finding, 2026-08-28: both KPI rings
-   *  showing the identical percentage). This field is the strategy-blind
+   *  the same comparison (both KPI rings showing the identical
+   *  percentage). This field is the strategy-blind
    *  budget line those two comparisons need to actually differ. */
   budgetOnlyExpenses: number;
   projectedSalaryByPerson: Map<number, number>;
 
   // Individual account tracking
   indBal: Map<string, number>;
-  /** Tracked Roth basis per taxFree-bucket account (v0.7.8 follow-up —
-   *  see `@/lib/pure/roth-basis-tracking`). Present only for accounts
+  /** Tracked Roth basis per taxFree-bucket account (see
+   *  `@/lib/pure/roth-basis-tracking`). Present only for accounts
    *  where `isTaxFreeBucket(ia.taxType)`; absent for everything else. */
   indBasis: Map<string, RothBasisState>;
   specToAccount: Map<string, string>;

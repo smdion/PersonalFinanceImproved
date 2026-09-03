@@ -1,6 +1,5 @@
 /**
- * Timeline section — extracted from retirement-content.tsx in PR 8/1 of the
- * v0.5.2 file-split refactor. Pure relocation — no behavior changes. Shows
+ * Timeline section. Shows
  * per-person retirement ages (multi-person households) or a single retirement
  * age plus the shared Plan-Through end age. Lives in the left column of the
  * Timeline+Income sunken box; this component only renders the Timeline inner
@@ -10,6 +9,7 @@
 "use client";
 
 import { HelpTip } from "@/components/ui/help-tip";
+import { Badge } from "@/components/ui/badge";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { Toggle } from "@/components/ui/toggle";
 import type { Settings, PerPersonSettings, IsEditable } from "./types";
@@ -42,9 +42,7 @@ export function TimelineSection({
         <h4 className="text-label font-semibold text-muted uppercase tracking-wider">
           Timeline
         </h4>
-        <span className="text-micro text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded font-medium">
-          Baseline + Simulation
-        </span>
+        <Badge color="indigo">Baseline + Simulation</Badge>
         <div className="flex-1 border-t" />
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2 text-sm">

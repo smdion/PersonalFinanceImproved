@@ -32,14 +32,15 @@ import {
 } from "@/lib/config/account-types";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
 import { TOOLTIP_SURFACE_CLASSES } from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
 import type { ProjectionState } from "./projection-table-types";
 
 // Skeleton lives in its own file so the parent (cards/projection/index.tsx)
 // can render it without pulling recharts in via this module's import graph.
 export { ProjectionChartSkeleton } from "./projection-chart-skeleton";
 
-// Recognized sporadic per-strategy spending-adjustment events (R45 Step 5 +
-// follow-up) — shared between the early chart-data pinning pass and the
+// Recognized sporadic per-strategy spending-adjustment events — shared
+// between the early chart-data pinning pass and the
 // later marker-style/tooltip build, so the two can't drift on which action
 // strings are "an event worth marking" vs. background noise. RMD-Based and
 // Spending-Decline fire an action every year (not an event) and are
@@ -90,7 +91,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
   const ssIdx = years.findIndex((y) => y.age === ssStartAge);
   const rmdIdx =
     rmdStartAge != null ? years.findIndex((y) => y.age === rmdStartAge) : -1;
-  // R45 Step 5: Guyton-Klinger guardrail events (data already computed and
+  // Guyton-Klinger guardrail events (data already computed and
   // shown in the table-row tooltip — see projection-table-decum-row.tsx —
   // just not previously marked on the chart). Pin every triggering year the
   // same way SS/RMD start ages are pinned, or a guardrail event on an
@@ -202,18 +203,18 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
       // derived/estimated figure.
       datum._totalWithdrawal = deflate(yr.totalWithdrawal, yr.year);
       datum._rmdAmount = deflate(yr.rmdAmount, yr.year);
-      // R46 Phase 1: RMD-forced excess reinvested into brokerage — unlike
+      // RMD-forced excess reinvested into brokerage — unlike
       // `_rmdStart` (which only flags the single year RMDs begin), this can
       // be nonzero in ANY decumulation year, so it's shown on hover
       // whenever it happens, not just at the milestone.
       datum._rmdExcessAmount = deflate(yr.rmdExcessAmount ?? 0, yr.year);
-      // R46: QCD amount — money sent directly to charity, satisfying part
+      // QCD amount — money sent directly to charity, satisfying part
       // of the RMD without counting as taxable income. Same "invisible
       // unless surfaced explicitly" issue as the excess line above; QCD
       // bypasses withdrawal routing entirely, so there's no slot/
       // withdrawal line item that would show it otherwise.
       datum._qcdAmount = deflate(yr.qcdAmount ?? 0, yr.year);
-      // R49: dollars of this year's RMD that could NOT be forced through as
+      // Dollars of this year's RMD that could NOT be forced through as
       // a real taxable distribution — 0 in the overwhelmingly common case.
       // See rmd-enforcement.ts's rmdShortfallAmount docblock for why this
       // is now possible (Retirement-only capacity can be genuinely
@@ -232,7 +233,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
         yr.penaltyAvoidedShortfall ?? 0,
         yr.year,
       );
-      // Guardrail event (R45 Step 5 follow-up) — the ReferenceLine markers
+      // Guardrail event — the ReferenceLine markers
       // added a visual "▲ raise" flag on the chart but the hover tooltip
       // never carried the underlying detail, so hovering that exact year
       // showed nothing about why it was marked. Threaded through the same
@@ -283,7 +284,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
   );
   const showIncomeOverlay = showIncome && hasIncomeData;
 
-  // R45 Step 5 + follow-up: per-strategy spending-adjustment event markers,
+  // Per-strategy spending-adjustment event markers,
   // one per triggering year. Covers every strategy with a real, SPORADIC
   // action worth flagging — Guyton-Klinger's guardrails, and Vanguard
   // Dynamic / Constant % / Endowment's clamp events. RMD-Based and
@@ -326,9 +327,9 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
     <div className="bg-surface-sunken rounded-lg p-3 chart-fade-in">
       <div className="flex items-start justify-between mb-2 gap-2">
         <h5 className="text-xs font-medium text-muted uppercase">
-          <span className="text-micro font-semibold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded mr-1.5 normal-case">
+          <Badge color="blue" case="normal" className="mr-1.5">
             $
-          </span>
+          </Badge>
           Balance Projection
           {isPersonFiltered && (
             <span className="text-caption text-faint font-normal normal-case ml-2">
@@ -336,12 +337,12 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
             </span>
           )}
           {!mcBandsByYear && mcPrefetchQuery.isFetching && (
-            <span className="text-micro text-purple-400 animate-pulse ml-2 normal-case font-normal">
+            <span className="text-micro text-purple-600 animate-pulse ml-2 normal-case font-normal">
               Simulating...
             </span>
           )}
           {hasMc && mcIsPrefetch && (
-            <span className="text-micro text-purple-400 ml-2 normal-case font-normal">
+            <span className="text-micro text-purple-600 ml-2 normal-case font-normal">
               Sim. preview
             </span>
           )}
@@ -404,7 +405,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                   (s, k) => s + (Number(d[k.key]) || 0),
                   0,
                 );
-                // R49 (UI/UX design pass): "was the RMD satisfied" status
+                // "Was the RMD satisfied" status
                 // for the RMD line(s) below. A shortfall breaks the amber
                 // color family entirely since it's the only state with real
                 // IRS excise-tax consequences. Otherwise show a checkmark
@@ -590,7 +591,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                               )}
                             </div>
                           )}
-                        {/* R49: real IRS exposure — the only RMD-related
+                        {/* Real IRS exposure — the only RMD-related
                             state that earns its own extra line, since it's
                             the only one with actual tax-penalty
                             consequences. Deliberately breaks the amber
@@ -607,7 +608,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                             met · 25% excise tax risk
                           </div>
                         )}
-                        {/* R46: RMD-forced excess — real money forced out
+                        {/* RMD-forced excess — real money forced out
                             by the RMD floor beyond what the strategy
                             needed, with no prior UI trace anywhere. Can
                             recur every year once RMDs start, unlike the
@@ -632,7 +633,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                             </span>
                           </div>
                         )}
-                        {/* R46: QCD — money sent directly to charity,
+                        {/* QCD — money sent directly to charity,
                             satisfying part of the RMD tax-free. Shown
                             separately from "RMD" above since it's the
                             portion that never became taxable income. */}
@@ -866,7 +867,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                 />
               )}
 
-            {/* Guyton-Klinger guardrail event markers (R45 Step 5) — a
+            {/* Guyton-Klinger guardrail event markers — a
                 household running Guardrails could previously only see
                 which years triggered a raise/cut via the table-row
                 tooltip; now visible at a glance on the chart too. */}

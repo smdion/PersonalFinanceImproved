@@ -176,7 +176,7 @@ describe("contributionProfiles coverage", () => {
               [String(acctId)]: {
                 contributionValue: "0.20",
                 contributionMethod: "percent_of_salary",
-                displayNameActive: "My Custom Name",
+                displayNameCustom: "My Custom Name",
               },
             },
             jobs: {},
@@ -193,7 +193,7 @@ describe("contributionProfiles coverage", () => {
           (d: { id: number }) => d.id === acctId,
         );
         expect(detail).toBeDefined();
-        // displayNameActive should be used as accountName
+        // displayNameCustom should be used as accountName
         expect(detail!.accountName).toBe("My Custom Name");
         expect(detail!.activeFields).toBeDefined();
         expect(detail!.isIncomplete).toBe(false);

@@ -89,6 +89,14 @@ const IRS_LIMITS: Record<
       value: 176100,
       source: "SSA Fact Sheet 2025",
     },
+    additional_std_deduction_65_married: {
+      value: 1600,
+      source: "IRC §63(f) / IRS Rev. Proc. 2024-40 — per spouse 65+, MFJ",
+    },
+    additional_std_deduction_65_unmarried: {
+      value: 2000,
+      source: "IRC §63(f) / IRS Rev. Proc. 2024-40 — filer 65+, Single/HoH",
+    },
   },
   2026: {
     "401k_employee_limit": {
@@ -126,6 +134,14 @@ const IRS_LIMITS: Record<
     ss_wage_base: {
       value: 184500,
       source: "SSA 2026 wage base",
+    },
+    additional_std_deduction_65_married: {
+      value: 1650,
+      source: "IRC §63(f) / IRS Rev. Proc. 2025-32 — per spouse 65+, MFJ",
+    },
+    additional_std_deduction_65_unmarried: {
+      value: 2050,
+      source: "IRC §63(f) / IRS Rev. Proc. 2025-32 — filer 65+, Single/HoH",
     },
   },
 };

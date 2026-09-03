@@ -1,7 +1,5 @@
 /**
- * Strategy-specific parameter controls — extracted from the Decumulation Plan
- * block in retirement-content.tsx in PR 8/3a of the v0.5.2 file-split
- * refactor. Pure relocation — no behavior changes.
+ * Strategy-specific parameter controls.
  *
  * Data-driven from the withdrawal strategy registry: given the active
  * strategy, we look up its `paramFields` (boolean / number / percent / the

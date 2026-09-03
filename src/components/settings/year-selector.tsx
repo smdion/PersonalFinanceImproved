@@ -9,6 +9,10 @@ type YearSelectorProps = {
   admin: boolean;
   ariaLabel: string;
   onAddYearClick: () => void;
+  /** Optional per-year "N/total" coverage label (e.g. Tax Data's shared
+   *  toggle, where a year may exist in only some of the 5 underlying
+   *  tables) — rendered next to the year when present for that year. */
+  coverage?: Record<number, string>;
 };
 
 export function YearSelector({
@@ -18,6 +22,7 @@ export function YearSelector({
   admin,
   ariaLabel,
   onAddYearClick,
+  coverage,
 }: YearSelectorProps) {
   return (
     <div className="flex items-center gap-2">
@@ -35,6 +40,14 @@ export function YearSelector({
             }`}
           >
             {yr}
+            {coverage?.[yr] && (
+              <span
+                className={yr === activeYear ? "text-blue-100" : "text-faint"}
+              >
+                {" "}
+                · {coverage[yr]}
+              </span>
+            )}
           </button>
         ))}
       </div>

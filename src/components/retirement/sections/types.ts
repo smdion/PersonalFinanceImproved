@@ -6,8 +6,6 @@
  * The parent `retirement-content.tsx` guards on `data.settings` presence
  * before rendering, so we narrow to the "loaded" branch at the prop
  * boundary — sections never see null settings.
- *
- * Extracted during the v0.5.2 file-split refactor (PRs 7-8).
  */
 
 /** Full retirement settings row shape, matching the `settings` field that
@@ -41,7 +39,7 @@ export type Settings = {
   enableRothConversions?: boolean;
   rothConversionTarget?: string | null;
   withdrawalStrategy: string;
-  /** R55 follow-up: within bracket_filling mode's cost-ranked tier, which
+  /** Within bracket_filling mode's cost-ranked tier, which
    *  of Roth basis / brokerage's 0%-LTCG room drains first. "roth_first"
    *  (default) or "brokerage_first" (explicit household opt-in — trades a
    *  real ACA/IRMAA MAGI cost for using the annual 0%-LTCG allowance
@@ -63,17 +61,16 @@ export type Settings = {
   vdCeilingPercent?: string | null;
   vdFloorPercent?: string | null;
   rmdMultiplier?: string | null;
-  /** R46: what to do with RMD-forced withdrawal beyond stated spending
+  /** What to do with RMD-forced withdrawal beyond stated spending
    *  need — "reinvest" (default) or "spend". */
   rmdExcessHandling?: string | null;
-  /** R46: automatically maximize Qualified Charitable Distributions
-   *  against the RMD each year (IRA-only, capped, approximation — see
-   *  PLAN-rmd-excess-handling.md). */
+  /** Automatically maximize Qualified Charitable Distributions
+   *  against the RMD each year (IRA-only, capped, approximation). */
   qcdMaximize?: boolean;
-  /** R47: proactively size Roth conversions to shrink a future RMD toward
+  /** Proactively size Roth conversions to shrink a future RMD toward
    *  projected spending need. Requires individual-account tracking. */
   rmdSmoothingEnabled?: boolean;
-  /** R47: how far smoothing may elevate the effective conversion target
+  /** How far smoothing may elevate the effective conversion target
    *  rate above rothBracketTarget/rothConversionTarget — can only raise,
    *  never lower. Null/unset = UI should seed from rothBracketTarget. */
   rmdSmoothingMaxBracketTarget?: string | null;
@@ -93,9 +90,16 @@ export type PerPersonSettings = ReadonlyArray<{
   birthYear: number;
   retirementAge: number;
   endAge: number | null;
+  /** This person's EFFECTIVE pre-retirement raise rate (decimal string, e.g.
+   *  "0.03"). Resolved server-side: their own `retirement_settings` rate for
+   *  the active profile, or the primary person's rate when they have none.
+   *  Written per-person via `retirementSettings.upsertPersonRaiseRate` —
+   *  the single household "Pre-Retirement Raise" control only ever wrote the
+   *  primary's row, leaving a second household member's rate unreachable. */
+  salaryAnnualIncrease: string;
   socialSecurityMonthly: string;
   ssStartAge?: number | null;
-  /** Rule of 55 forecasting override (v0.7.8) — true (default) = no
+  /** Rule of 55 forecasting override — true (default) = no
    *  override, false = force this person's employer-plan accounts
    *  ineligible for Rule of 55 regardless of computed job-separation
    *  status. See retirementSettings.ruleOf55Override's docblock in
@@ -133,6 +137,19 @@ export type UpsertProfilePersonMutation = {
     socialSecurityMonthly?: string | null;
     ssStartAge?: number | null;
     ruleOf55Override?: boolean | null;
+  }) => void;
+};
+
+/** `retirementSettings.upsertPersonRaiseRate` pass-through — writes ONLY
+ *  `salary_annual_increase` for one (profile, person), used by the per-person
+ *  "Pre-Retirement Raise" control when the household has more than one person.
+ *  `wholePercent` is a decimal string ("0.03"), same convention as
+ *  `buildSettingsPatch`'s other percent fields. */
+export type UpsertPersonRaiseRateMutation = {
+  mutate: (input: {
+    profileId: number;
+    personId: number;
+    salaryAnnualIncrease: string;
   }) => void;
 };
 

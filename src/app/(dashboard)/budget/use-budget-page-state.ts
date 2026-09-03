@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * useBudgetPageState — extracted from budget-content.tsx (F4, v0.5.3).
+ * useBudgetPageState — extracted from budget-content.tsx.
  *
  * Owns: edit mode, draft store, column resize state, lazy-rendering
  * visible-count, IntersectionObserver lifecycle, selectedColumnRef, and

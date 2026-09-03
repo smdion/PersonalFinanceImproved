@@ -12,9 +12,6 @@ import {
   getAccountTypeConfig,
   getLimitGroup,
 } from "@/lib/config/account-types";
-import { TAX_YEAR_MIN, TAX_YEAR_MAX } from "@/lib/constants";
-import { YearSelector } from "@/components/settings/year-selector";
-
 // Build account-type limit groups from config
 type LimitGroupEntry = {
   label: string;
@@ -109,6 +106,41 @@ const limitGroups: LimitGroupEntry[] = [
         format: "dollar",
       },
       {
+        key: "additional_std_deduction_65_married",
+        label: "Additional standard deduction, age 65+ (married, per spouse)",
+        format: "dollar",
+      },
+      {
+        key: "additional_std_deduction_65_unmarried",
+        label: "Additional standard deduction, age 65+ (single / HoH)",
+        format: "dollar",
+      },
+      {
+        key: "obbba_senior_deduction_per_person",
+        label: "OBBBA senior deduction, per person 65+ (2025-2028 only)",
+        format: "dollar",
+      },
+      {
+        key: "obbba_senior_deduction_phaseout_start_mfj",
+        label: "OBBBA senior deduction phaseout start (MFJ)",
+        format: "dollar",
+      },
+      {
+        key: "obbba_senior_deduction_phaseout_start_unmarried",
+        label: "OBBBA senior deduction phaseout start (single / HoH)",
+        format: "dollar",
+      },
+      {
+        key: "obbba_senior_deduction_phaseout_rate",
+        label: "OBBBA senior deduction phaseout rate",
+        format: "percent",
+      },
+      // obbba_senior_deduction_sunset_year deliberately NOT listed here — a
+      // plain year (e.g. "2028"), not a dollar or percent figure, and this
+      // table's format union is dollar|percent only. It still edits fine
+      // via the "custom" fallback section below, which renders unknown
+      // limit types generically.
+      {
         key: "supplemental_tax_rate",
         label: "Supplemental tax rate",
         format: "percent",
@@ -117,7 +149,7 @@ const limitGroups: LimitGroupEntry[] = [
   },
 ];
 
-export function ContributionLimitsSettings() {
+export function ContributionLimitsSettings({ year }: { year: number }) {
   const user = useUser();
   const admin = isAdmin(user);
   const utils = trpc.useUtils();
@@ -132,9 +164,6 @@ export function ContributionLimitsSettings() {
     onSuccess: () => utils.settings.contributionLimits.list.invalidate(),
   });
 
-  const [selectedYear, setSelectedYear] = useState<number | null>(null);
-  const [showAddYear, setShowAddYear] = useState(false);
-  const [newYear, setNewYear] = useState("");
   const [copyFrom, setCopyFrom] = useState<number | null>(null);
   const [confirmDeleteYear, setConfirmDeleteYear] = useState<number | null>(
     null,
@@ -146,7 +175,7 @@ export function ContributionLimitsSettings() {
   const years = Array.from(new Set((data ?? []).map((l) => l.taxYear))).sort(
     (a, b) => b - a,
   );
-  const activeYear = selectedYear ?? years[0] ?? new Date().getFullYear();
+  const activeYear = year;
   const yearData = (data ?? []).filter((l) => l.taxYear === activeYear);
 
   // Build a lookup: type -> record for the active year
@@ -187,37 +216,21 @@ export function ContributionLimitsSettings() {
     }
   };
 
-  const handleAddYear = async () => {
-    const yr = parseInt(newYear);
-    if (isNaN(yr) || yr < TAX_YEAR_MIN || yr > TAX_YEAR_MAX) return;
-    if (years.includes(yr)) return;
-
-    if (copyFrom) {
-      const sourceData = (data ?? []).filter((l) => l.taxYear === copyFrom);
-      for (const l of sourceData) {
-        await createMut.mutateAsync({
-          taxYear: yr,
-          limitType: l.limitType,
-          value: l.value,
-          notes: l.notes,
-        });
-      }
-    } else {
-      // Create empty set — all known limit types with zero values
-      const allTypes = limitGroups.flatMap((g) => g.types);
-      for (const t of allTypes) {
-        await createMut.mutateAsync({
-          taxYear: yr,
-          limitType: t.key,
-          value: "0",
-          notes: null,
-        });
-      }
+  /** Copies every known limit type from `copyFrom` into the (empty) active
+   *  year in one shot — offered next to the group headers below when the
+   *  active year has no rows at all yet, as a faster alternative to the
+   *  per-row "+ Set" fallback each group already supports. */
+  const handleCopyYear = async () => {
+    if (!copyFrom || yearData.length > 0) return;
+    const sourceData = (data ?? []).filter((l) => l.taxYear === copyFrom);
+    for (const l of sourceData) {
+      await createMut.mutateAsync({
+        taxYear: activeYear,
+        limitType: l.limitType,
+        value: l.value,
+        notes: l.notes,
+      });
     }
-
-    setSelectedYear(yr);
-    setShowAddYear(false);
-    setNewYear("");
     setCopyFrom(null);
   };
 
@@ -227,7 +240,6 @@ export function ContributionLimitsSettings() {
       await deleteMut.mutateAsync({ id: l.id });
     }
     setConfirmDeleteYear(null);
-    if (activeYear === yr) setSelectedYear(null);
   };
 
   // Collect any limit types not in our groups
@@ -247,71 +259,39 @@ export function ContributionLimitsSettings() {
 
   return (
     <div>
-      {/* Year tabs + controls */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold">Contribution & Tax Limits</h2>
-        <YearSelector
-          years={years}
-          activeYear={activeYear}
-          onSelectYear={setSelectedYear}
-          admin={admin}
-          ariaLabel="Contribution limits year"
-          onAddYearClick={() => {
-            setShowAddYear(!showAddYear);
-            setNewYear(String((years[0] ?? new Date().getFullYear()) + 1));
-            setCopyFrom(years[0] ?? null);
-          }}
-        />
-      </div>
+      <h2 className="text-lg font-semibold mb-4">Contribution & Tax Limits</h2>
 
-      {/* Add year dialog */}
-      {showAddYear && (
-        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="flex items-center gap-3">
-            <label className="text-sm text-secondary">
-              Year:
-              <input
-                type="number"
-                value={newYear}
-                onChange={(e) => setNewYear(e.target.value)}
-                className="ml-2 w-20 px-2 py-1 text-sm border rounded"
-              />
-            </label>
-            <label className="text-sm text-secondary">
-              Copy from:
-              <select
-                value={copyFrom ?? ""}
-                onChange={(e) =>
-                  setCopyFrom(e.target.value ? Number(e.target.value) : null)
-                }
-                className="ml-2 px-2 py-1 text-sm border rounded"
-              >
-                <option value="">Empty values</option>
-                {years.map((yr) => (
-                  <option key={yr} value={yr}>
-                    {yr}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button
-              onClick={handleAddYear}
-              disabled={createMut.isPending}
-              className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+      {/* Copy-from-year shortcut — only offered when the active year has no
+          rows at all yet; once any row exists, each group's own "+ Set"
+          fallback (below) covers filling in the rest one at a time. */}
+      {admin && yearData.length === 0 && years.length > 0 && (
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-3">
+          <span className="text-sm text-secondary">
+            No limits configured for {activeYear} yet.
+          </span>
+          <label className="text-sm text-secondary">
+            Copy from:
+            <select
+              value={copyFrom ?? years[0] ?? ""}
+              onChange={(e) =>
+                setCopyFrom(e.target.value ? Number(e.target.value) : null)
+              }
+              className="ml-2 px-2 py-1 text-sm border rounded"
             >
-              Add
-            </button>
-            <button
-              onClick={() => {
-                setShowAddYear(false);
-                setNewYear("");
-                setCopyFrom(null);
-              }}
-              className="px-3 py-1 text-sm text-muted hover:text-primary"
-            >
-              Cancel
-            </button>
-          </div>
+              {years.map((yr) => (
+                <option key={yr} value={yr}>
+                  {yr}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            onClick={handleCopyYear}
+            disabled={createMut.isPending}
+            className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+          >
+            Copy
+          </button>
         </div>
       )}
 

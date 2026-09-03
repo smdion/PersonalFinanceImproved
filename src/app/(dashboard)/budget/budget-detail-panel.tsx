@@ -2,7 +2,7 @@
 
 /**
  * BudgetDetailPanel — right side of the master-detail grid in BudgetContent.
- * Extracted from budget-content.tsx (F4, v0.5.3) to meet the ≤400 line target.
+ * Split out of budget-content.tsx to meet the ≤400 line target.
  *
  * The edit padlock lives once, in the tab bar above (budget-content.tsx) —
  * not here — so its position stays fixed across all four profile tabs.

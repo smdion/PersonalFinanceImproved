@@ -13,7 +13,17 @@ type AccountOption = {
   name: string;
   category: string;
   taxType?: string;
+  /** Owner of this account — shown + stored so two household
+   *  members' identically-named accounts don't collide when targeted. */
+  ownerName?: string;
 };
+
+/** Composite key for the account picker's `<option>` — plain `name` alone
+ *  collides (duplicate `key`/`value`) when two owners share an account
+ *  name, silently making the picker unable to distinguish them. */
+function optionKey(a: AccountOption): string {
+  return `${a.name}::${a.ownerName ?? ""}`;
+}
 
 type LumpSumFormProps = {
   /** Individual accounts available for targeting. */
@@ -37,6 +47,7 @@ export function LumpSumForm({
     direction: "in" as "in" | "out",
     amount: "",
     targetAccountName: accounts[0]?.name ?? "",
+    targetOwnerName: accounts[0]?.ownerName ?? "",
     targetAccount: (accounts[0]?.category ?? "brokerage") as AccountCategory,
     taxType: "" as "traditional" | "roth" | "",
     label: "",
@@ -54,6 +65,7 @@ export function LumpSumForm({
       amount: finalAmount,
       targetAccount: form.targetAccount,
       targetAccountName: form.targetAccountName,
+      targetOwnerName: form.targetOwnerName,
       taxType: form.taxType,
       label: form.label,
     });
@@ -110,13 +122,22 @@ export function LumpSumForm({
       <label className="block">
         <span className="text-caption text-muted">Account</span>
         <select
-          value={form.targetAccountName || form.targetAccount}
+          value={
+            accounts.some((a) => a.name === form.targetAccountName)
+              ? optionKey({
+                  name: form.targetAccountName,
+                  category: form.targetAccount,
+                  ownerName: form.targetOwnerName || undefined,
+                })
+              : form.targetAccount
+          }
           onChange={(e) => {
             const val = e.target.value;
-            const acct = accounts.find((a) => a.name === val);
+            const acct = accounts.find((a) => optionKey(a) === val);
             setForm((f) => ({
               ...f,
-              targetAccountName: acct ? val : "",
+              targetAccountName: acct ? acct.name : "",
+              targetOwnerName: acct?.ownerName ?? "",
               targetAccount: acct
                 ? (acct.category as AccountCategory)
                 : (val as AccountCategory),
@@ -125,8 +146,8 @@ export function LumpSumForm({
           className="mt-0.5 block w-full rounded border border-strong px-2 py-1 text-sm"
         >
           {accounts.map((a) => (
-            <option key={a.name} value={a.name}>
-              {a.name}
+            <option key={optionKey(a)} value={optionKey(a)}>
+              {a.ownerName ? `${a.name} (${a.ownerName})` : a.name}
             </option>
           ))}
         </select>

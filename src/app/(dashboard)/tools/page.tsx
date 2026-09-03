@@ -1,9 +1,9 @@
 "use client";
 
 /** Financial analysis tools page — currently hosts the Relocation decision
- *  calculator. Large UI sub-sections were extracted in the v0.5.2 file-split
- *  refactor; this file now owns tRPC queries/mutations + local state and
- *  orchestrates the section components in `src/components/tools/relocation/`.
+ *  calculator. Large UI sub-sections live in
+ *  `src/components/tools/relocation/`; this file owns tRPC queries/mutations +
+ *  local state and orchestrates them.
  */
 
 import { useState, useMemo, useCallback } from "react";

@@ -31,7 +31,7 @@ import { checkReportGate } from "@/lib/pure/report/mc-freshness";
 import type { ReportGateFailure } from "@/lib/pure/report/mc-freshness";
 import { ReportGateModal } from "./report/report-gate-modal";
 
-// Code-split Recharts-heavy children (v0.5 expert-review M8). Each chart is
+// Code-split Recharts-heavy children. Each chart is
 // ~250KB of recharts payload that loads only when the projection card mounts.
 // ssr:false because Recharts isn't SSR-friendly.
 const ProjectionChart = dynamic(
@@ -278,7 +278,7 @@ export function ProjectionCard(props: {
     decumulationExpenseOverride,
   } = props;
 
-  // R42 — print/export report. "none" = normal screen view (default print
+  // Print/export report. "none" = normal screen view (default print
   // behavior, unchanged). "basic" prints just the chart+table with page
   // chrome hidden. "advisor" (was "fancy") mounts the purpose-built
   // advisor-report document instead — ReportRoot, not the interactive
@@ -399,7 +399,7 @@ export function ProjectionCard(props: {
             </div>
           )}
 
-          {/* R42 — print/export report controls. print:hidden so the
+          {/* Print/export report controls. print:hidden so the
               buttons themselves never appear in the printed output. */}
           {result && (
             <div className="print:hidden flex items-center gap-3 text-caption">
@@ -477,7 +477,7 @@ export function ProjectionCard(props: {
             <div className="space-y-4">
               {/* Hero KPIs (headline numbers) — always shown on screen;
                   print-visible only in the "advisor" report tier (basic
-                  tier prints just the chart+table, per R42 scope). */}
+                  tier prints just the chart+table). */}
               <div
                 className={
                   reportMode === "advisor" ? undefined : "print:hidden"

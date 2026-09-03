@@ -55,8 +55,7 @@ export type IndKeyFn = (ia: {
 
 /** Creates the standard composite key function.
  *
- * Includes `ownerPersonId` (v0.7.8, PLAN-v0.7.8-v4 Group 1 prerequisite,
- * advisor finding S3): two different people's accounts that happen to share
+ * Includes `ownerPersonId`: two different people's accounts that happen to share
  * a display name within the same category/taxType previously collided into
  * one `indBal` entry, silently merging their balances and keeping only one
  * owner's ID. Eligibility gating (Rule of 55, 59½, etc.) is per-owner, so
@@ -550,24 +549,21 @@ export function distributeGoalWithdrawal(
  * For roth_traditional categories, routes traditional and roth withdrawals
  * separately to the correct tax-type accounts.
  *
- * `eligibility` (v0.7.8, PLAN-v0.7.8-v4 Group 2.2, Tier A) — when provided,
+ * `eligibility` — when provided,
  * prefers eligible (not-yet-penalty-exposed) accounts within each
  * category/tax-slot before reaching into penalty-exposed ones. Has no
  * config lever, always applies: this is the fan-out-only preference,
  * distinct from and independent of `avoidPenalizedWithdrawals`'s
  * cross-category `routeForMode` behavior (Tier B) — it only ever changes
  * WHICH account inside an already-decided category/slot supplies a given
- * dollar, never the slot totals themselves. Locked design:
- * `.scratch/docs/plans/DESIGN-DECISION-v0.7.8-withdrawal-ordering-group0.md`
- * § Q1 Tier A.
+ * dollar, never the slot totals themselves.
  *
  * Mutates `indBal` in place. Returns per-account withdrawal amounts.
  */
 /**
  * Distributes each slot's withdrawal across the individual accounts in its
  * category/tax-slice. Returns the per-account amounts plus any shortfall
- * warnings (v0.7.8 indBal reconciliation follow-up,
- * DESIGN-DECISION-v0.7.8-indbal-reconciliation.md § Q3) — a warning means
+ * warnings — a warning means
  * `Σ decIndWithdrawal` for that slot came up short of `slot.withdrawal`
  * because the individual-account track's balance was genuinely exhausted,
  * not silently discarded as it was before this pass. With
@@ -592,7 +588,7 @@ export function distributeWithdrawals(
 
   for (const slot of slots) {
     if (slot.withdrawal <= 0) continue;
-    // R49: Portfolio-parented accounts are never a withdrawal fan-out
+    // Portfolio-parented accounts are never a withdrawal fan-out
     // target — defense-in-depth alongside the category-level exclusion
     // routeForMode already applies (subtractExcluded); the category total
     // decided upstream should already fit within Retirement-parented
@@ -665,9 +661,8 @@ export function distributeWithdrawals(
 /**
  * Wraps `distributeProportionally` with a penalty-free-first, penalty-
  * exposed-second two-pass split (Tier A — see `distributeWithdrawals`'s
- * docblock). v0.7.8 penalty-hard-exclusion follow-up
- * (DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md § Q2 point 3):
- * previously partitioned accounts by a whole-account "locked" boolean; now
+ * docblock).
+ * Previously partitioned accounts by a whole-account "locked" boolean; now
  * partitions PER DOLLAR, using each account's own `penaltyFreeAmount` as a
  * draw ceiling rather than sorting whole accounts into two buckets — the
  * exact fix for the reported bug (a Roth IRA with some contribution basis
@@ -742,7 +737,7 @@ function distributeProportionallyPreferringPenaltyFree(
     penaltyFreeCapacity,
   );
   if (shortfall <= 0) return 0;
-  // Second pass (R41): a category pool that includes an allowed account's
+  // Second pass: a category pool that includes an allowed account's
   // penalty-exposed dollars (see `subtractPenaltyExposed`) can leave
   // `routeForMode` deciding to draw more than the penalty-free total — that
   // residual must come from an ALLOWED account's exposed balance before it
@@ -771,7 +766,7 @@ function distributeProportionallyPreferringPenaltyFree(
     // report it (reportShortfall, in the caller) rather than falling
     // through to a disallowed sibling's exposed balance. A disallowed
     // account's penalty-exposed dollars must stay fully unreachable, even
-    // when the allowed pool in this list can't cover the residual (R41) —
+    // when the allowed pool in this list can't cover the residual —
     // `routeForMode`'s category-level total already accounted for only the
     // allowed pool, so this really is a genuine indBal-vs-acctBal drift
     // case, not a place to silently spend a disallowed account's money.
@@ -780,7 +775,7 @@ function distributeProportionallyPreferringPenaltyFree(
   // Residual reaches into penalty-exposed capacity — no capacity ceiling
   // here, whatever balance remains at this point IS the exposed portion.
   // Structurally unreachable when `avoidPenalizedWithdrawals` is on and no
-  // account in this list has the R41 override, mirroring the un-excluded
+  // account in this list has the penalized-withdrawal override, mirroring the un-excluded
   // total when the household has the lever off entirely.
   return distributeProportionally(
     shortfall,
@@ -793,12 +788,10 @@ function distributeProportionallyPreferringPenaltyFree(
 
 /**
  * Distribute an amount proportionally across accounts by balance (or, when
- * `capacity` is supplied, by `min(balance, capacity)` per account — v0.7.8
- * penalty-hard-exclusion follow-up, used by
+ * `capacity` is supplied, by `min(balance, capacity)` per account — used by
  * `distributeProportionallyPreferringPenaltyFree` to draw against only the
  * penalty-free portion of each account's balance). Handles zero-balance
- * safety (#33) and rounding residual (#35 — v0.7.8 indBal reconciliation
- * follow-up, DESIGN-DECISION-v0.7.8-indbal-reconciliation.md § Q3, replaced
+ * safety (#33) and rounding residual (#35 — replaced
  * the old single lastKey-only assignment with a bounded re-routing loop
  * across the whole group, so a residual that the first account can't fully
  * absorb re-routes to the next one with capacity instead of being silently
@@ -883,7 +876,7 @@ export function applyIndividualGrowth(
 }
 
 // ---------------------------------------------------------------------------
-// Tracked Roth Basis (v0.7.8 follow-up)
+// Tracked Roth Basis
 // ---------------------------------------------------------------------------
 //
 // Thin per-account loops — all arithmetic delegates to the pure module
@@ -959,7 +952,7 @@ export function depleteIndividualBasis(input: {
 /**
  * Build individual account year balance records for output.
  *
- * `eligibility` (decumulation only; v0.7.8, PLAN-v0.7.8-v4 follow-up) —
+ * `eligibility` (decumulation only) —
  * when provided, each output record's `eligibilityLocked`/`eligibilityReason`
  * are read straight from the matching `AccountEligibility` entry, so the
  * UI can show why the engine did or didn't prefer an account this year.
@@ -1096,8 +1089,7 @@ export function clampIndividualBalances(
  * Reconciles the per-individual-account track (`indBal`) to the aggregate
  * track (`acctBal`) once per projected year, so `Σ indBal[cat] ===
  * acctBal[cat]` exactly before the NEXT year's withdrawal-eligibility
- * computation runs (v0.7.8 follow-up,
- * DESIGN-DECISION-v0.7.8-indbal-reconciliation.md § Q1(c)/Q2).
+ * computation runs.
  *
  * The two tracks are deliberately separate (different granularity, lifecycle,
  * consumers — see the design doc's Q2) but drift accumulates from per-account

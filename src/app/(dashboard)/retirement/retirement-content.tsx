@@ -2,7 +2,7 @@
 
 /** Retirement readiness page (client content). The default-export Page in
  *  retirement/page.tsx is a thin server component that prefetches the most
- *  expensive query before rendering this — see v0.5 expert-review M7. */
+ *  expensive query before rendering this. */
 
 import { useState, useMemo } from "react";
 import dynamic from "next/dynamic";
@@ -23,8 +23,8 @@ import { useUser, isAdmin } from "@/lib/context/user-context";
 import { ProjectionCard } from "@/components/cards/projection";
 import { AssumptionsBand } from "@/components/retirement/assumptions-band";
 
-// Code-split the recharts-heavy withdrawal comparison card (v0.5
-// expert-review M8). Loads on retirement page mount; ssr:false because
+// Code-split the recharts-heavy withdrawal comparison card. Loads on
+// retirement page mount; ssr:false because
 // Recharts isn't SSR-friendly.
 const WithdrawalComparisonCard = dynamic(
   () =>
@@ -312,7 +312,7 @@ export function RetirementContent() {
       {pageTab === "planHealth" ? (
         /* Plan Health tab — diagnostic callouts derived from plan state.
            Consumes data.planHealth which the projection router builds
-           from contribution accounts (M1) and the active glide path (M6). */
+           from contribution accounts and the active glide path. */
         <PlanHealthCard
           returnRate={parseFloat(settings.returnAfterRetirement)}
           inflationRate={parseFloat(settings.annualInflation)}
@@ -397,7 +397,7 @@ export function RetirementContent() {
           {/* Strategy Comparison moved to page-level tab */}
 
           {/* Projection Assumptions moved to Budget page's Retirement
-              Profile tab (v0.7.8, PLAN-v0.7.8-v4 Group A) — see
+              Profile tab — see
               src/components/retirement/retirement-profile-tab.tsx. */}
         </>
       )}

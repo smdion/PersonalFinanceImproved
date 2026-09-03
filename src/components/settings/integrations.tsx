@@ -4,11 +4,20 @@
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { FormField, FormInput, FormSelect } from "@/components/forms";
 import { useUser, isAdmin } from "@/lib/context/user-context";
+import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
+import { SK_SETTINGS_INTEGRATIONS_SECTION } from "@/lib/constants/settings-keys";
 import type { Service, PreviewData } from "./integrations-types";
 import { PreviewPanel } from "./integrations-preview-panel";
 import { SimplefinCard } from "./integrations-simplefin";
+import {
+  ConnectionStatusLine,
+  ConnectionResultMessage,
+} from "./integrations/connection-card";
+import { SyncBehaviorSettings } from "./integrations/sync-behavior";
 
 /** Credential-form field labels/placeholders per service — the two services'
  *  forms otherwise differ too much (YNAB has a budget-fetch selector, Actual
@@ -130,15 +139,10 @@ function ServiceCard({
       <div className="space-y-4">
         {/* Status line */}
         {isConnected && (
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
-            <span className="text-sm text-secondary">Connected</span>
-            {isActive && (
-              <span className="px-1.5 py-0.5 rounded text-caption font-medium bg-green-50 text-green-700">
-                Active
-              </span>
-            )}
-          </div>
+          <ConnectionStatusLine
+            connected
+            extra={isActive && <Badge color="green">Active</Badge>}
+          />
         )}
 
         {/* Credential form (when not connected, or updating key) */}
@@ -180,16 +184,18 @@ function ServiceCard({
                         className="flex-1"
                       />
                     )}
-                    <button
+                    <Button
                       type="button"
+                      variant="secondary"
+                      size="sm"
                       onClick={() =>
                         fetchBudgetsMut.mutate({ accessToken: ynabToken })
                       }
                       disabled={!ynabToken || fetchBudgetsMut.isPending}
-                      className="px-3 py-1.5 text-sm border border-strong rounded hover:bg-surface-sunken disabled:opacity-50 whitespace-nowrap"
+                      className="whitespace-nowrap"
                     >
                       {fetchBudgetsMut.isPending ? "Loading..." : "Fetch"}
-                    </button>
+                    </Button>
                   </div>
                   {fetchBudgetsMut.isSuccess &&
                     !fetchBudgetsMut.data.success && (
@@ -238,24 +244,26 @@ function ServiceCard({
               </>
             )}
             <div className="flex items-center gap-2">
-              <button
+              <Button
+                variant="primary"
+                size="sm"
                 onClick={handleSave}
                 disabled={saveConnectionMut.isPending}
-                className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
               >
                 {saveConnectionMut.isPending
                   ? "Saving..."
                   : showUpdateKey
                     ? "Update Credentials"
                     : "Save Connection"}
-              </button>
+              </Button>
               {showUpdateKey && (
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setShowUpdateKey(false)}
-                  className="px-3 py-1.5 text-sm text-muted hover:text-primary"
                 >
                   Cancel
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -264,29 +272,32 @@ function ServiceCard({
         {/* Actions (when connected) */}
         {isConnected && (
           <div className="flex items-center gap-2 flex-wrap">
-            <button
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={() => testConnectionMut.mutate({ service })}
               disabled={testConnectionMut.isPending}
-              className="px-3 py-1.5 text-sm border border-strong rounded hover:bg-surface-sunken disabled:opacity-50"
             >
               {testConnectionMut.isPending ? "Testing..." : "Test"}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
               onClick={() => syncAllMut.mutate({ service })}
               disabled={syncAllMut.isPending}
-              className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
               title="Pull accounts, categories, and transactions from the API into Ledgr (read-only — does not write to the API)"
             >
               {syncAllMut.isPending ? "Syncing..." : "Sync Now"}
-            </button>
+            </Button>
             {!isActive && preview?.synced && (
-              <button
+              <Button
+                variant="primary"
+                size="sm"
                 onClick={() => setActiveMut.mutate({ value: service })}
                 disabled={setActiveMut.isPending}
-                className="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
               >
                 {setActiveMut.isPending ? "Activating..." : "Activate"}
-              </button>
+              </Button>
             )}
             {/* Live-user finding, 2026-08-30: a connected-but-never-synced
                 service silently had NO Activate button and no explanation
@@ -301,52 +312,55 @@ function ServiceCard({
               </span>
             )}
             {isActive && (
-              <button
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={() => setActiveMut.mutate({ value: "none" })}
                 disabled={setActiveMut.isPending}
-                className="px-3 py-1.5 text-sm border border-red-300 text-red-600 rounded hover:bg-red-50 disabled:opacity-50"
               >
                 Deactivate
-              </button>
+              </Button>
             )}
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setShowUpdateKey(!showUpdateKey)}
-              className="px-3 py-1.5 text-sm text-muted hover:text-primary underline"
             >
               {showUpdateKey ? "Hide" : "Update Key"}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
               onClick={handleDelete}
               disabled={deleteConnectionMut.isPending}
-              className="px-3 py-1.5 text-sm text-red-600 hover:text-red-800 underline"
             >
               Remove
-            </button>
+            </Button>
           </div>
         )}
 
         {/* Test result */}
         {testConnectionMut.isSuccess && testConnectionMut.data && (
-          <p
-            className={`text-xs ${testConnectionMut.data.success ? "text-green-600" : "text-red-600"}`}
+          <ConnectionResultMessage
+            tone={testConnectionMut.data.success ? "success" : "error"}
           >
             {testConnectionMut.data.success
               ? `Connected: ${"budgetName" in testConnectionMut.data ? testConnectionMut.data.budgetName : "OK"}`
               : "error" in testConnectionMut.data
                 ? testConnectionMut.data.error
                 : "Failed"}
-          </p>
+          </ConnectionResultMessage>
         )}
 
         {/* Sync result */}
         {syncAllMut.isSuccess && syncAllMut.data && (
           <div className="space-y-0.5">
-            <p className="text-xs text-green-600">
+            <ConnectionResultMessage tone="success">
               Pulled {syncAllMut.data.counts.accounts} accounts,{" "}
               {syncAllMut.data.counts.categories} categories,{" "}
               {syncAllMut.data.counts.transactions} transactions from{" "}
               {service.toUpperCase()}
-            </p>
+            </ConnectionResultMessage>
             <p className="text-caption text-faint">
               Data cached locally. To push changes back, use the Budget or
               Savings page.
@@ -354,7 +368,9 @@ function ServiceCard({
           </div>
         )}
         {syncAllMut.isError && (
-          <p className="text-xs text-red-600">{syncAllMut.error.message}</p>
+          <ConnectionResultMessage tone="error">
+            {syncAllMut.error.message}
+          </ConnectionResultMessage>
         )}
 
         {/* Preview panel — shows after sync, before or after activation */}
@@ -370,18 +386,32 @@ function ServiceCard({
   );
 }
 
+const INTEGRATIONS_SECTIONS = [
+  { key: "ynab", label: "YNAB" },
+  { key: "actual", label: "Actual Budget" },
+  { key: "simplefin", label: "SimpleFIN" },
+  { key: "syncBehavior", label: "Sync Behavior" },
+] as const;
+
+type IntegrationsSectionKey = (typeof INTEGRATIONS_SECTIONS)[number]["key"];
+
+function NavStatusDot({ connected }: { connected: boolean }) {
+  return (
+    <span
+      className={`inline-block w-1.5 h-1.5 rounded-full shrink-0 ${connected ? "bg-green-500" : "bg-surface-strong"}`}
+    />
+  );
+}
+
 export function IntegrationsSettings() {
   const user = useUser();
   const admin = isAdmin(user);
   const { data: connection } = trpc.sync.getConnection.useQuery();
-  const { data: syncStatus } = trpc.sync.getSyncStatus.useQuery();
-  const utils = trpc.useUtils();
-  const upsertSetting = trpc.settings.appSettings.upsert.useMutation({
-    onSuccess: () => utils.sync.getSyncStatus.invalidate(),
-  });
-
-  const autoEnabled = syncStatus?.autoSync.enabled ?? true;
-  const staleHours = syncStatus?.autoSync.staleHours ?? 4;
+  const { data: simplefinStatus } = trpc.simplefin.getStatus.useQuery();
+  const [section, setSection] = usePersistedSetting<IntegrationsSectionKey>(
+    SK_SETTINGS_INTEGRATIONS_SECTION,
+    "ynab",
+  );
 
   if (!admin) {
     return (
@@ -464,78 +494,72 @@ export function IntegrationsSettings() {
         )}
       </div>
 
-      <ServiceCard
-        service="ynab"
-        label="YNAB"
-        isActive={activeApi === "ynab"}
-        isConnected={connection?.ynab.connected ?? false}
-        lastSyncedAt={
-          connection?.ynab.lastSyncedAt
-            ? new Date(connection.ynab.lastSyncedAt)
-            : null
-        }
-      />
+      <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-6">
+        <nav className="flex md:flex-col gap-1 overflow-x-auto">
+          {INTEGRATIONS_SECTIONS.map((s) => (
+            <button
+              key={s.key}
+              onClick={() => setSection(s.key)}
+              className={`flex items-center gap-2 px-3 py-2 text-sm text-left rounded-md whitespace-nowrap transition-colors ${
+                section === s.key
+                  ? "bg-blue-600 text-white"
+                  : "text-secondary hover:bg-surface-elevated"
+              }`}
+            >
+              {s.key === "ynab" && (
+                <NavStatusDot connected={connection?.ynab.connected ?? false} />
+              )}
+              {s.key === "actual" && (
+                <NavStatusDot
+                  connected={connection?.actual.connected ?? false}
+                />
+              )}
+              {s.key === "simplefin" && (
+                <NavStatusDot connected={simplefinStatus?.connected ?? false} />
+              )}
+              {s.label}
+            </button>
+          ))}
+        </nav>
 
-      <ServiceCard
-        service="actual"
-        label="Actual Budget"
-        isActive={activeApi === "actual"}
-        isConnected={connection?.actual.connected ?? false}
-        lastSyncedAt={
-          connection?.actual.lastSyncedAt
-            ? new Date(connection.actual.lastSyncedAt)
-            : null
-        }
-      />
-
-      <SimplefinCard />
-
-      {/* Sync Behavior */}
-      <Card className="p-4 space-y-3">
-        <div className="text-sm font-medium">Sync Behavior</div>
-        <label className="flex items-center justify-between gap-4 cursor-pointer">
-          <div>
-            <div className="text-sm text-primary">Auto-sync on page load</div>
-            <div className="text-xs text-muted">
-              Automatically sync when data is stale
-            </div>
+        <div>
+          {/* YNAB/Actual/SimpleFin stay mounted at all times — each holds
+              in-progress local state (credential drafts, fetched budget
+              list, test/sync results) that would silently reset if the nav
+              unmounted them on every switch away and back. Only visibility
+              toggles. */}
+          <div className={section === "ynab" ? "" : "hidden"}>
+            <ServiceCard
+              service="ynab"
+              label="YNAB"
+              isActive={activeApi === "ynab"}
+              isConnected={connection?.ynab.connected ?? false}
+              lastSyncedAt={
+                connection?.ynab.lastSyncedAt
+                  ? new Date(connection.ynab.lastSyncedAt)
+                  : null
+              }
+            />
           </div>
-          <input
-            type="checkbox"
-            checked={autoEnabled}
-            disabled={upsertSetting.isPending}
-            onChange={(e) =>
-              upsertSetting.mutate({
-                key: "sync_auto_enabled",
-                value: e.target.checked ? "true" : "false",
-              })
-            }
-            className="w-4 h-4 accent-blue-600"
-          />
-        </label>
-        <label className="flex items-center justify-between gap-4">
-          <div className="text-sm text-muted">Consider stale after</div>
-          <select
-            value={String(staleHours)}
-            disabled={!autoEnabled || upsertSetting.isPending}
-            onChange={(e) =>
-              upsertSetting.mutate({
-                key: "sync_auto_stale_hours",
-                value: e.target.value,
-              })
-            }
-            className="text-xs border border-surface-strong rounded px-2 py-1 bg-surface-primary text-primary disabled:opacity-40"
-          >
-            <option value="1">1 hour</option>
-            <option value="2">2 hours</option>
-            <option value="4">4 hours</option>
-            <option value="8">8 hours</option>
-            <option value="24">24 hours</option>
-          </select>
-        </label>
-      </Card>
-
-      {/* Account mappings are now managed in the preview panel after syncing */}
+          <div className={section === "actual" ? "" : "hidden"}>
+            <ServiceCard
+              service="actual"
+              label="Actual Budget"
+              isActive={activeApi === "actual"}
+              isConnected={connection?.actual.connected ?? false}
+              lastSyncedAt={
+                connection?.actual.lastSyncedAt
+                  ? new Date(connection.actual.lastSyncedAt)
+                  : null
+              }
+            />
+          </div>
+          <div className={section === "simplefin" ? "" : "hidden"}>
+            <SimplefinCard />
+          </div>
+          {section === "syncBehavior" && <SyncBehaviorSettings />}
+        </div>
+      </div>
     </div>
   );
 }

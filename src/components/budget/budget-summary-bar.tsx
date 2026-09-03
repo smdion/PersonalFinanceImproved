@@ -1,9 +1,7 @@
 "use client";
 
 /**
- * Active budget summary bar — extracted from
- * `src/app/(dashboard)/budget/page.tsx` during the v0.5.2 file-split
- * refactor. Pure relocation of the JSX block above the master-detail grid:
+ * Active budget summary bar. The JSX block above the master-detail grid:
  * displays the active (or viewing-only) profile name, API link badge,
  * current mode / weighted label, total, and the cluster of right-aligned
  * action buttons (Manage Modes, Pull, Push). The edit padlock lives in the
@@ -14,8 +12,8 @@
  * no data-shape narrowing. Prop types are hand-rolled (no `@/server/*`
  * imports) per eslint.config.mjs no-restricted-imports rule.
  *
- * F3 (v0.5.3): stable per-context values consumed from BudgetPageContext.
- * Remaining props grouped into bundles. Props: 27 → 8.
+ * Stable per-context values are consumed from BudgetPageContext, and the
+ * remaining props grouped into bundles.
  */
 
 import { formatCurrency } from "@/lib/utils/format";
@@ -23,6 +21,7 @@ import { FormError } from "@/components/ui/form-error";
 import { useBudgetPageContext } from "./budget-page-context";
 import { computeTotalSinking, computeUnallocated } from "./helpers";
 import { ProfileViewingBadge } from "./profile-viewing-badge";
+import { Badge } from "@/components/ui/badge";
 import type { ColumnResult, PayrollBreakdown, SinkingFundLine } from "./types";
 
 type Props = {
@@ -31,7 +30,6 @@ type Props = {
     profileName: string | null | undefined;
     activeProfileName: string | null | undefined;
     isViewingNonActive: boolean;
-    isPinned?: boolean;
     onActivate?: () => void;
   };
   // Column display data (not in context — derived from server query result)
@@ -79,13 +77,8 @@ export function BudgetSummaryBar({
     canEdit,
     editMode,
   } = useBudgetPageContext();
-  const {
-    profileName,
-    activeProfileName,
-    isViewingNonActive,
-    isPinned,
-    onActivate,
-  } = profileDisplay;
+  const { profileName, activeProfileName, isViewingNonActive, onActivate } =
+    profileDisplay;
   const {
     isWeighted,
     columnMonths,
@@ -114,16 +107,15 @@ export function BudgetSummaryBar({
             profileName={profileName}
             activeProfileName={activeProfileName}
             isViewingNonActive={isViewingNonActive}
-            isPinned={isPinned}
             onActivate={canEdit ? onActivate : undefined}
           />
           {apiService && apiLinkedProfileId === profileId && (
-            <span className="text-micro px-1.5 py-0.5 rounded bg-blue-100 text-blue-600 font-semibold">
+            <Badge color="blue" case="normal">
               ⇄ {apiService.toUpperCase()} →{" "}
               {apiLinkedColumnIndex != null
                 ? (cols[apiLinkedColumnIndex] ?? "Unknown")
                 : "Unknown"}
-            </span>
+            </Badge>
           )}
         </div>
         <div className="flex items-center gap-4 text-xs">

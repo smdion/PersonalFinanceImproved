@@ -22,8 +22,75 @@ function getDialect(): "postgresql" | "sqlite" {
   return "sqlite";
 }
 
+/**
+ * Reference-data reconcile (R43).
+ *
+ * `seed-reference-data.sql` is `INSERT … ON CONFLICT DO NOTHING` only — no
+ * DDL, no UPDATE/DELETE. It is safe to re-run on every migrate, and doing so
+ * is the only way a new tax year added to the seed reaches an existing
+ * install. Previously the seed ran only when `contribution_limits` was empty,
+ * so annual figure updates never propagated to a populated DB (R43 audit,
+ * systemic problem #3).
+ *
+ * Additive only: `ON CONFLICT DO NOTHING` never overwrites an admin's
+ * Settings edit and never corrects an already-seeded wrong value — a
+ * seed-value *correction* still has to go through the UI or a manual
+ * statement (documented in TAX-PARAMETER-RUNBOOK.md).
+ *
+ * Every table the seed writes MUST be a year-keyed reference table with a
+ * `tax_year`-scoped unique constraint. Without one, `ON CONFLICT DO NOTHING`
+ * has nothing to conflict on and every reconcile re-inserts duplicate rows.
+ * Two guards enforce this before the seed runs, both failing the migrate
+ * loudly:
+ *   1. Every `INSERT INTO` target must be in `REFERENCE_SEED_TABLES` — an
+ *      explicit allowlist, so adding a non-year-keyed `INSERT` to the seed
+ *      file surfaces as a clear "this reconcile only handles year-keyed
+ *      reference tables" error rather than a cryptic constraint failure or
+ *      silent row duplication.
+ *   2. Each of those tables is checked for a `tax_year`-scoped unique index
+ *      in the live schema (belt-and-braces against the allowlist drifting
+ *      from reality).
+ * If you need to seed non-year-keyed reference data, do it through a
+ * separate mechanism — not this file.
+ */
+const REFERENCE_SEED_TABLES = new Set([
+  "contribution_limits",
+  "tax_brackets",
+  "ltcg_brackets",
+  "irmaa_brackets",
+  "fpl_by_household",
+  "tax_params",
+]);
+
+function parseSeedTableNames(seedSql: string): string[] {
+  const names = new Set<string>();
+  const re = /INSERT\s+INTO\s+"?([A-Za-z_][A-Za-z0-9_]*)"?/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(seedSql)) !== null) names.add(m[1]!);
+  const unexpected = [...names].filter((n) => !REFERENCE_SEED_TABLES.has(n));
+  if (unexpected.length > 0) {
+    throw new Error(
+      `seed-reference-data.sql inserts into non-reference table(s) [${unexpected.join(
+        ", ",
+      )}]. The migrate reconcile only handles year-keyed reference tables ` +
+        `(${[...REFERENCE_SEED_TABLES].join(", ")}) — add the table to ` +
+        `REFERENCE_SEED_TABLES in db-migrate.ts only if it has a tax_year-scoped ` +
+        `unique index, otherwise seed it through a separate mechanism.`,
+    );
+  }
+  return [...names];
+}
+
 // Table names that are included in versioned backups (must match version-tables.ts).
 // This is a local copy because db-migrate.ts runs in Docker where src/ isn't available.
+// R43 follow-up (schema-reviewer suggestion): "retirement_profiles" and
+// "retirement_profile_people" were missing from this mirror entirely — a
+// pre-existing gap, not introduced by R43, found while reviewing the table
+// R43's own tax_params_year column lives on. Order within this array is not
+// load-bearing (both use sites just dump each table's rows into a JSON
+// snapshot independently, read-only, no FK-insert-order constraint) —
+// unlike version-tables.ts's VERSION_TABLES, which does encode tier order
+// for restore.
 const VERSION_TABLE_NAMES = [
   "people",
   "budget_profiles",
@@ -35,11 +102,14 @@ const VERSION_TABLE_NAMES = [
   "tax_brackets",
   "ltcg_brackets",
   "irmaa_brackets",
+  "fpl_by_household",
+  "tax_params",
   "api_connections",
   "app_settings",
   "local_admins",
   "salary_profiles",
   "contribution_profiles",
+  "retirement_profiles",
   "scenarios",
   "asset_class_params",
   "mc_presets",
@@ -63,6 +133,7 @@ const VERSION_TABLE_NAMES = [
   "mortgage_what_if_scenarios",
   "mortgage_extra_payments",
   "retirement_settings",
+  "retirement_profile_people",
   "retirement_salary_overrides",
   "retirement_budget_overrides",
   "asset_class_correlations",
@@ -79,6 +150,7 @@ const VERSION_TABLE_NAMES = [
   "projection_overrides",
   "mc_user_presets",
   "account_holdings",
+  "budget_income_adjustments",
   "pending_rollovers",
   "simplefin_balance_snapshots",
   "simplefin_accounts",
@@ -142,6 +214,49 @@ async function detectSchemaEra(
 }
 
 /**
+ * First directory that actually accepts a write, from an ordered candidate
+ * list. The pre-upgrade backup is the safety net before a destructive
+ * squash / DROP, so "the directory exists" (the old `fs.existsSync`
+ * heuristic) is not enough — on the hardened homelab stack the container
+ * rootfs is read-only and `/app/data` is present but not a writable mount,
+ * so `writeFileSync` there throws EROFS and the backup silently never
+ * happened (R18).
+ *
+ *  1. `LEDGR_BACKUP_DIR` — point this at a writable volume mount in the
+ *     deployment (the fix for a read-only-rootfs container).
+ *  2. `/app/data` — the historical location; works when it IS a writable
+ *     mount.
+ *  3. `/tmp` — last resort that still beats no backup: it survives the
+ *     migration run (long enough for an operator to copy the file out),
+ *     just not a container restart. Usually a tmpfs even on a read-only
+ *     rootfs.
+ *  4. `.` — local/dev.
+ *
+ * Returns `null` only when every candidate rejects a probe write — a
+ * genuinely unwritable environment, which the callers log at error level.
+ */
+function resolveWritableBackupDir(): string | null {
+  const candidates = [
+    process.env.LEDGR_BACKUP_DIR,
+    "/app/data",
+    "/tmp",
+    ".",
+  ].filter((d): d is string => !!d && d.trim().length > 0);
+  for (const dir of candidates) {
+    try {
+      fs.mkdirSync(dir, { recursive: true });
+      const probe = path.join(dir, `.pre-upgrade-backup-probe-${process.pid}`);
+      fs.writeFileSync(probe, "");
+      fs.unlinkSync(probe);
+      return dir;
+    } catch {
+      // not writable — try the next candidate
+    }
+  }
+  return null;
+}
+
+/**
  * Export a JSON snapshot of every VERSION_TABLE_NAMES table and write it to
  * disk. Shared by handleSquashUpgrade (pre-squash safety net) and the normal
  * idempotent pre-apply loop's pre-0016 backup (see the call site right
@@ -171,8 +286,15 @@ async function writePreMigrationBackupPg(
     tables,
   };
 
+  const backupDir = resolveWritableBackupDir();
+  if (!backupDir) {
+    log("error", "pre_migration_backup_no_writable_dir", {
+      message:
+        "No writable directory for the pre-upgrade backup (tried LEDGR_BACKUP_DIR, /app/data, /tmp, .). Migration is proceeding WITHOUT an on-disk safety net — set LEDGR_BACKUP_DIR to a writable volume mount.",
+    });
+    return null;
+  }
   try {
-    const backupDir = fs.existsSync("/app/data") ? "/app/data" : ".";
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     const backupPath = path.join(
       backupDir,
@@ -189,8 +311,11 @@ async function writePreMigrationBackupPg(
     });
     return backupPath;
   } catch (backupErr) {
-    log("warn", "pre_migration_backup_write_failed", {
+    log("error", "pre_migration_backup_write_failed", {
+      dir: backupDir,
       error: backupErr instanceof Error ? backupErr.message : String(backupErr),
+      message:
+        "Pre-upgrade backup write failed after its directory passed a probe. Migration is proceeding WITHOUT an on-disk safety net.",
     });
     return null;
   }
@@ -356,6 +481,9 @@ async function handleSquashUpgrade(
       // 0016 drops the source tables, wherever that lands in this replay.
       if (entry.tag === "0016_drop_salary_ledger_tables") {
         await backfillHistoricalSalaries(pool);
+      }
+      if (entry.tag === "0036_category_links_backfill") {
+        await backfillCategoryLinks(pool);
       }
 
       const statements = sql
@@ -754,6 +882,85 @@ async function backfillHistoricalSalaries(
   }
 }
 
+/**
+ * One-time, idempotent backfill for migration 0036_category_links_backfill:
+ * copies budget_items.api_category_id (and the matching savings_goals
+ * columns) into the new budget_item_category_links / savings_goal_
+ * category_links tables (see 0035), which — unlike the old single-slot
+ * columns — can hold a separate link per connected service.
+ *
+ * We cannot know which service an existing undisambiguated id actually
+ * belongs to, so every row this writes is a best-effort guess keyed to the
+ * household's CURRENT app_settings.active_budget_api value. Logs the exact
+ * count of guessed rows per table so whoever runs this in prod knows how
+ * many links to go verify by hand for any household with more than one
+ * connected service.
+ */
+async function backfillCategoryLinks(pool: import("pg").Pool): Promise<void> {
+  const client = await pool.connect();
+  try {
+    const { rows: settingRows } = await client.query<{ value: unknown }>(
+      `SELECT value FROM app_settings WHERE key = 'active_budget_api'`,
+    );
+    const activeService = settingRows[0]?.value;
+    if (activeService !== "ynab" && activeService !== "actual") {
+      log("info", "category_links_backfill_skipped", {
+        reason:
+          "no active_budget_api set (or unrecognized value) — nothing to guess",
+        activeService: activeService ?? null,
+      });
+      return;
+    }
+
+    await client.query("BEGIN");
+    try {
+      const { rowCount: budgetItemLinks } = await client.query(
+        `INSERT INTO budget_item_category_links
+           (budget_item_id, service, category_id, category_name, last_synced_at, sync_direction)
+         SELECT id, $1, api_category_id, api_category_name, api_last_synced_at, api_sync_direction
+         FROM budget_items
+         WHERE api_category_id IS NOT NULL
+         ON CONFLICT (budget_item_id, service) DO NOTHING`,
+        [activeService],
+      );
+
+      const { rowCount: savingsPrimaryLinks } = await client.query(
+        `INSERT INTO savings_goal_category_links
+           (savings_goal_id, service, role, category_id, category_name)
+         SELECT id, $1, 'primary', api_category_id, api_category_name
+         FROM savings_goals
+         WHERE api_category_id IS NOT NULL
+         ON CONFLICT (savings_goal_id, service, role) DO NOTHING`,
+        [activeService],
+      );
+
+      const { rowCount: savingsReimbursementLinks } = await client.query(
+        `INSERT INTO savings_goal_category_links
+           (savings_goal_id, service, role, category_id, category_name)
+         SELECT id, $1, 'reimbursement', reimbursement_api_category_id, NULL
+         FROM savings_goals
+         WHERE reimbursement_api_category_id IS NOT NULL
+         ON CONFLICT (savings_goal_id, service, role) DO NOTHING`,
+        [activeService],
+      );
+
+      await client.query("COMMIT");
+      log("info", "category_links_backfill_complete", {
+        guessedService: activeService,
+        budgetItemLinksBackfilled: budgetItemLinks ?? 0,
+        savingsGoalPrimaryLinksBackfilled: savingsPrimaryLinks ?? 0,
+        savingsGoalReimbursementLinksBackfilled: savingsReimbursementLinks ?? 0,
+        note: "every row above is a guess keyed to the current active_budget_api — verify by hand for any household with more than one connected service",
+      });
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    }
+  } finally {
+    client.release();
+  }
+}
+
 async function runPostgres() {
   const { drizzle } = await import("drizzle-orm/node-postgres");
   const { migrate } = await import("drizzle-orm/node-postgres/migrator");
@@ -846,6 +1053,9 @@ async function runPostgres() {
             "pre_0016_drop_salary_ledger_tables",
           );
           await backfillHistoricalSalaries(pool);
+        }
+        if (entry.tag === "0036_category_links_backfill") {
+          await backfillCategoryLinks(pool);
         }
         const statements = sql
           .split("--> statement-breakpoint")
@@ -959,25 +1169,38 @@ async function runPostgres() {
       }
     }
 
-    // Seed reference data if empty
+    // Reference-data reconcile (R43): additive, runs on every migrate so a
+    // new tax year in the seed reaches existing installs. Fails the migrate
+    // loudly on any error — a silently skipped reconcile is the "seed never
+    // reaches prod" bug this replaces.
     const seedClient = await pool.connect();
     try {
-      const { rows } = await seedClient.query(
-        "SELECT count(*)::int AS n FROM contribution_limits",
+      const seedSql = fs.readFileSync(
+        path.resolve("./seed-reference-data.sql"),
+        "utf-8",
       );
-      if (rows[0]?.n === 0) {
-        const seedSql = fs.readFileSync(
-          path.resolve("./seed-reference-data.sql"),
-          "utf-8",
+      const seedTables = parseSeedTableNames(seedSql);
+      for (const table of seedTables) {
+        const { rows } = await seedClient.query(
+          `SELECT 1
+             FROM pg_index i
+             JOIN pg_class c ON c.oid = i.indrelid
+             JOIN pg_attribute a ON a.attrelid = i.indrelid
+                                AND a.attnum = ANY(i.indkey)
+            WHERE c.relname = $1 AND i.indisunique AND a.attname = 'tax_year'
+            LIMIT 1`,
+          [table],
         );
-        await seedClient.query(seedSql);
-        log("info", "reference_data_seeded", {
-          tables: "contribution_limits, tax_brackets",
-        });
+        if (rows.length === 0) {
+          throw new Error(
+            `Reference table "${table}" has no tax_year-scoped unique constraint — ` +
+              `seed reconcile would duplicate rows on every migrate. Add a unique index first.`,
+          );
+        }
       }
-    } catch (seedErr) {
-      log("warn", "reference_data_seed_skipped", {
-        error: (seedErr as Error).message,
+      await seedClient.query(seedSql);
+      log("info", "reference_data_reconciled", {
+        tables: seedTables.join(", "),
       });
     } finally {
       seedClient.release();
@@ -1012,8 +1235,15 @@ function writePreMigrationBackupSQLite(
     tables,
   };
 
+  const backupDir = resolveWritableBackupDir();
+  if (!backupDir) {
+    log("error", "pre_migration_backup_no_writable_dir", {
+      message:
+        "No writable directory for the pre-upgrade backup (tried LEDGR_BACKUP_DIR, /app/data, /tmp, .). Migration is proceeding WITHOUT an on-disk safety net — set LEDGR_BACKUP_DIR to a writable volume mount.",
+    });
+    return null;
+  }
   try {
-    const backupDir = fs.existsSync("/app/data") ? "/app/data" : ".";
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     const backupPath = path.join(
       backupDir,
@@ -1030,8 +1260,11 @@ function writePreMigrationBackupSQLite(
     });
     return backupPath;
   } catch (backupErr) {
-    log("warn", "pre_migration_backup_write_failed", {
+    log("error", "pre_migration_backup_write_failed", {
+      dir: backupDir,
       error: backupErr instanceof Error ? backupErr.message : String(backupErr),
+      message:
+        "Pre-upgrade backup write failed after its directory passed a probe. Migration is proceeding WITHOUT an on-disk safety net.",
     });
     return null;
   }
@@ -1186,6 +1419,9 @@ function handleSQLiteSquashUpgrade(
     // 0016 drops the source tables, wherever that lands in this replay.
     if (entry.tag === "0016_drop_salary_ledger_tables") {
       backfillHistoricalSalariesSQLite(sqlite);
+    }
+    if (entry.tag === "0036_category_links_backfill") {
+      backfillCategoryLinksSQLite(sqlite);
     }
 
     const statements = sql
@@ -1466,6 +1702,79 @@ export function backfillHistoricalSalariesSQLite(
   tx();
 }
 
+/**
+ * SQLite twin of backfillCategoryLinks (see its docblock above) — same
+ * one-time, idempotent, best-effort-guessed backfill of budget_item_
+ * category_links / savings_goal_category_links keyed to the household's
+ * current active_budget_api, with the same per-table counts logged.
+ */
+function backfillCategoryLinksSQLite(
+  sqlite: InstanceType<typeof import("better-sqlite3")>,
+): void {
+  const settingRow = sqlite
+    .prepare("SELECT value FROM app_settings WHERE key = 'active_budget_api'")
+    .get() as { value: string } | undefined;
+  let activeService: string | null = null;
+  if (settingRow) {
+    try {
+      const parsed = JSON.parse(settingRow.value);
+      if (parsed === "ynab" || parsed === "actual") activeService = parsed;
+    } catch {
+      // malformed value — treat as unset
+    }
+  }
+  if (activeService === null) {
+    log("info", "category_links_backfill_skipped", {
+      dialect: "sqlite",
+      reason:
+        "no active_budget_api set (or unrecognized value) — nothing to guess",
+    });
+    return;
+  }
+
+  const tx = sqlite.transaction(() => {
+    const budgetItemLinks = sqlite
+      .prepare(
+        `INSERT OR IGNORE INTO budget_item_category_links
+           (budget_item_id, service, category_id, category_name, last_synced_at, sync_direction)
+         SELECT id, ?, api_category_id, api_category_name, api_last_synced_at, api_sync_direction
+         FROM budget_items
+         WHERE api_category_id IS NOT NULL`,
+      )
+      .run(activeService).changes;
+
+    const savingsPrimaryLinks = sqlite
+      .prepare(
+        `INSERT OR IGNORE INTO savings_goal_category_links
+           (savings_goal_id, service, role, category_id, category_name)
+         SELECT id, ?, 'primary', api_category_id, api_category_name
+         FROM savings_goals
+         WHERE api_category_id IS NOT NULL`,
+      )
+      .run(activeService).changes;
+
+    const savingsReimbursementLinks = sqlite
+      .prepare(
+        `INSERT OR IGNORE INTO savings_goal_category_links
+           (savings_goal_id, service, role, category_id, category_name)
+         SELECT id, ?, 'reimbursement', reimbursement_api_category_id, NULL
+         FROM savings_goals
+         WHERE reimbursement_api_category_id IS NOT NULL`,
+      )
+      .run(activeService).changes;
+
+    log("info", "category_links_backfill_complete", {
+      dialect: "sqlite",
+      guessedService: activeService,
+      budgetItemLinksBackfilled: budgetItemLinks,
+      savingsGoalPrimaryLinksBackfilled: savingsPrimaryLinks,
+      savingsGoalReimbursementLinksBackfilled: savingsReimbursementLinks,
+      note: "every row above is a guess keyed to the current active_budget_api — verify by hand for any household with more than one connected service",
+    });
+  });
+  tx();
+}
+
 function runSQLite() {
   /* eslint-disable @typescript-eslint/no-require-imports -- dynamic require for SQLite dialect */
   const Database = require("better-sqlite3");
@@ -1535,6 +1844,9 @@ function runSQLite() {
         );
         backfillHistoricalSalariesSQLite(sqlite);
       }
+      if (entry.tag === "0036_category_links_backfill") {
+        backfillCategoryLinksSQLite(sqlite);
+      }
       const statements = sql
         .split("--> statement-breakpoint")
         .map((s: string) => s.trim())
@@ -1598,25 +1910,35 @@ function runSQLite() {
     }
   }
 
-  // Seed reference data if empty
+  // Reference-data reconcile (R43): additive, runs on every migrate. Mirrors
+  // the Postgres path above — fails loudly rather than warn-and-continue.
   try {
-    const row = sqlite
-      .prepare("SELECT count(*) AS n FROM contribution_limits")
-      .get() as { n: number };
-    if (row.n === 0) {
-      const seedSql = fs.readFileSync(
-        path.resolve("./seed-reference-data.sql"),
-        "utf-8",
-      );
-      sqlite.exec(seedSql);
-      log("info", "reference_data_seeded", {
-        tables: "contribution_limits, tax_brackets",
+    const seedSql = fs.readFileSync(
+      path.resolve("./seed-reference-data.sql"),
+      "utf-8",
+    );
+    const seedTables = parseSeedTableNames(seedSql);
+    for (const table of seedTables) {
+      const indexes = sqlite.prepare(`PRAGMA index_list("${table}")`).all() as {
+        name: string;
+        unique: number;
+      }[];
+      const hasYearScopedUnique = indexes.some((idx) => {
+        if (idx.unique !== 1) return false;
+        const cols = sqlite
+          .prepare(`PRAGMA index_info("${idx.name}")`)
+          .all() as { name: string }[];
+        return cols.some((c) => c.name === "tax_year");
       });
+      if (!hasYearScopedUnique) {
+        throw new Error(
+          `Reference table "${table}" has no tax_year-scoped unique constraint — ` +
+            `seed reconcile would duplicate rows on every migrate. Add a unique index first.`,
+        );
+      }
     }
-  } catch (seedErr) {
-    log("warn", "reference_data_seed_skipped", {
-      error: (seedErr as Error).message,
-    });
+    sqlite.exec(seedSql);
+    log("info", "reference_data_reconciled", { tables: seedTables.join(", ") });
   } finally {
     sqlite.close();
   }

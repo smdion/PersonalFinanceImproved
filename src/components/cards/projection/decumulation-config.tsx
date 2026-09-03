@@ -17,7 +17,28 @@ import {
   WITHDRAWAL_STRATEGY_CONFIG,
   type WithdrawalStrategyType,
 } from "@/lib/config/withdrawal-strategies";
-import { SectionHeader } from "./overrides-panel";
+/** Shared small heading for the config sub-sections below. (Formerly lived
+ *  in overrides-panel.tsx alongside a since-deleted unified panel; that
+ *  file's only remaining export, so folded in here — its one consumer.) */
+function SectionHeader({
+  title,
+  help,
+  children,
+}: {
+  title: string;
+  help?: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between mb-2">
+      <h4 className="text-xs font-medium text-muted uppercase tracking-wide">
+        {title}
+        {help && <HelpTip text={help} />}
+      </h4>
+      {children}
+    </div>
+  );
+}
 
 function OrderEditor({
   order,
@@ -26,7 +47,7 @@ function OrderEditor({
 }: {
   order: AccountCategory[];
   onChange: (order: AccountCategory[]) => void;
-  /** v0.7.10 R51 (Gap A): when set, only these categories are shown and
+  /** When set, only these categories are shown and
    *  reordered — used by bracket_filling's "Traditional Account Order"
    *  sub-control, which edits the SAME underlying `withdrawalOrder`
    *  waterfall's full editor writes (single source of truth — the
@@ -122,7 +143,7 @@ type DecumulationConfigProps = {
   >;
   /** Active spending strategy key (from retirement settings). */
   activeSpendingStrategy?: string;
-  /** R55 follow-up — household default from retirement settings, displayed
+  /** Household default from retirement settings, displayed
    *  read-only here (edited on the settings page, not this per-session
    *  routing-override panel) so it's visible right next to bracket_filling's
    *  other routing controls. */
@@ -133,7 +154,6 @@ type DecumulationConfigProps = {
 
 /**
  * Withdrawal strategy configuration panel.
- * Extracted from ProjectionCard to reduce file size.
  */
 export function DecumulationConfig({
   isPersonFiltered,
@@ -171,7 +191,7 @@ export function DecumulationConfig({
         ? "Drain accounts in priority order. Customize the order below."
         : "Split withdrawals by fixed percentages across accounts.";
 
-  // v0.7.10 R51 (Gap A): bracket_filling's Phase 1 only ever consults the
+  // bracket_filling's Phase 1 only ever consults the
   // Traditional-preference subset of withdrawalOrder (401k/403b/IRA) —
   // brokerage/HSA's position is decided by cost-ranking regardless of
   // where they sit in the full array, so both the sub-editor and the
@@ -278,8 +298,8 @@ export function DecumulationConfig({
             </div>
           )}
 
-          {/* Traditional account order (bracket_filling) — v0.7.10 R51
-              Gap A: Phase 1 fills Traditional up to the bracket cap from
+          {/* Traditional account order (bracket_filling) — Phase 1 fills
+              Traditional up to the bracket cap from
               401k/403b/IRA in THIS order before anything else; previously
               hardcoded, now user-editable like the other two modes. */}
           {withdrawalRoutingMode === "bracket_filling" && (

@@ -24,9 +24,9 @@ import {
  * age→rate map (populated only at configured breakpoint ages, e.g. "Age
  * 39") — falls back to the closest configured age at or below the
  * requested one, throws if nothing qualifies, then floors at
- * `MIN_RETURN_RATE`. Extracted from `pre-year-setup.ts` (R47) so the real
- * per-year growth application and any forward-looking projection (e.g.
- * R47's RMD-smoothing lookahead) can't quietly diverge on how a sparse
+ * `MIN_RETURN_RATE`. Shared so the real
+ * per-year growth application and any forward-looking projection (e.g. the
+ * RMD-smoothing lookahead) can't quietly diverge on how a sparse
  * map is resolved — Single Computation Path, `docs/RULES.md`. The
  * `MIN_RETURN_RATE` floor travels WITH the lookup, not as a separate step
  * a caller might forget to apply.

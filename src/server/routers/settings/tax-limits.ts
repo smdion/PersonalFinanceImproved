@@ -11,6 +11,7 @@ import {
   taxBracketsSchema,
   ltcgBracketsSchema,
   irmaaBracketsSchema,
+  fplByHouseholdAmountsSchema,
 } from "@/lib/db/json-schemas";
 
 // --- Zod schemas ---
@@ -39,6 +40,11 @@ const irmaaBracketInput = z.object({
   taxYear: z.number().int().min(2000).max(2100),
   filingStatus: z.enum(["MFJ", "Single", "HOH"]),
   brackets: irmaaBracketsSchema,
+});
+
+const fplByHouseholdInput = z.object({
+  taxYear: z.number().int().min(2000).max(2100),
+  amounts: fplByHouseholdAmountsSchema,
 });
 
 // --- Procedures ---
@@ -189,6 +195,43 @@ export const taxLimitsProcedures = {
         ctx.db
           .delete(schema.irmaaBrackets)
           .where(eq(schema.irmaaBrackets.id, input.id)),
+      ),
+  }),
+
+  fplByHousehold: createTRPCRouter({
+    list: protectedProcedure.query(({ ctx }) =>
+      ctx.db
+        .select()
+        .from(schema.fplByHousehold)
+        .orderBy(asc(schema.fplByHousehold.taxYear)),
+    ),
+    create: adminProcedure
+      .input(fplByHouseholdInput)
+      .mutation(({ ctx, input }) =>
+        ctx.db
+          .insert(schema.fplByHousehold)
+          .values(input)
+          .returning()
+          .then((r) => r[0]),
+      ),
+    update: adminProcedure
+      .input(
+        z.object({ id: z.number().int() }).extend(fplByHouseholdInput.shape),
+      )
+      .mutation(({ ctx, input: { id, ...data } }) =>
+        ctx.db
+          .update(schema.fplByHousehold)
+          .set(data)
+          .where(eq(schema.fplByHousehold.id, id))
+          .returning()
+          .then((r) => r[0]),
+      ),
+    delete: adminProcedure
+      .input(z.object({ id: z.number().int() }))
+      .mutation(({ ctx, input }) =>
+        ctx.db
+          .delete(schema.fplByHousehold)
+          .where(eq(schema.fplByHousehold.id, input.id)),
       ),
   }),
 };

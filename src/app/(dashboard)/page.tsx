@@ -1,5 +1,5 @@
 /**
- * Dashboard server page (v0.5 expert-review M7).
+ * Dashboard server page.
  *
  * Server-side prefetches the most expensive dashboard queries so the
  * cards hydrate with data immediately on first paint instead of
@@ -8,7 +8,7 @@
  * read prefetched data from the React Query cache.
  *
  * Prefetch failures don't block the page render — the cards fall
- * back to client-side fetching, which is the previous v0.4 behavior.
+ * back to client-side fetching.
  */
 
 import {

@@ -1,14 +1,13 @@
 /**
- * Taxes in Retirement panel — extracted from retirement-content.tsx in PR 7/2
- * of the v0.5.2 file-split refactor. Pure relocation — no behavior changes.
+ * Taxes in Retirement panel.
  *
  * The `filingStatus` placeholder in the "Auto" option is derived locally from
  * `settings.filingStatus` (identical to the old `const filingStatus =
  * settings.filingStatus` in the parent). `selectedScenario` is plumbed through
  * so the brokerage LTCG rate still reads off the active scenario.
  *
- * `bracketOptimizerResult` (multi-year withdrawal-policy optimizer, Phase 4,
- * 2026-08-29): deliberately a plain prop, not a tRPC query owned by this
+ * `bracketOptimizerResult` (multi-year withdrawal-policy optimizer):
+ * deliberately a plain prop, not a tRPC query owned by this
  * component. This file is documented (retirement-sections-smoke.test.tsx) as
  * a pure presentational leaf — "Settings + callback props in, JSX out" — and
  * the parent (retirement-profile-tab.tsx) already owns every other query
@@ -18,6 +17,7 @@
 "use client";
 
 import { HelpTip } from "@/components/ui/help-tip";
+import { Badge } from "@/components/ui/badge";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatPercent } from "@/lib/utils/format";
 import { taxTypeTextColor } from "@/lib/utils/colors";
@@ -116,9 +116,7 @@ export function TaxesSection({
         </select>
         <span className="text-caption text-faint">brackets</span>
         <HelpTip text="Tax filing status used for retirement tax estimates — affects federal brackets, LTCG rates, IRMAA thresholds, and Social Security taxation. 'Auto' inherits from your primary job's W-4. Override it here if your filing status will change in retirement." />
-        <span className="text-micro text-purple-400 bg-purple-50 px-1.5 py-0.5 rounded">
-          Baseline + Simulation
-        </span>
+        <Badge color="indigo">Baseline + Simulation</Badge>
         <div className="flex-1 border-t" />
       </div>
       {/* Tax rates by account type — compact row */}

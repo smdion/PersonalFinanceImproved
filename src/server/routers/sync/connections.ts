@@ -58,7 +58,7 @@ export const syncConnectionsRouter = createTRPCRouter({
       ]),
     )
     .mutation(async ({ ctx, input }) => {
-      // SSRF block (v0.5 expert-review C2): for Actual Budget, the user
+      // SSRF block: for Actual Budget, the user
       // supplies a serverUrl and the container makes outbound requests to
       // it. Reject private/loopback/link-local destinations unless
       // ALLOWED_ACTUAL_HOSTS env var explicitly opts the host in.
@@ -82,10 +82,10 @@ export const syncConnectionsRouter = createTRPCRouter({
             };
 
       // Encrypt at rest with AES-256-GCM (per RULES.md § Permission &
-      // Security Gates and v0.5 expert-review item C1). The factory's
+      // Security Gates). The factory's
       // readMaybeEncrypted() handles both encrypted-envelope and legacy
       // plaintext rows on read, so this write transparently upgrades any
-      // pre-v0.5 row.
+      // legacy plaintext row.
       const encryptedConfig = encryptJson(config);
 
       // Single atomic upsert — onConflictDoUpdate is already transactional in

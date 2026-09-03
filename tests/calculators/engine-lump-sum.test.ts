@@ -130,6 +130,69 @@ describe("applyLumpSums", () => {
     expect(indBal.get("myBrokerage")).toBe(115000);
   });
 
+  it("R4: matches by name AND owner when two accounts share a name — lands on the RIGHT owner's account", () => {
+    const indBal = new Map<string, number>([
+      ["Sean::Long Term Brokerage", 200000],
+      ["Joanna::Long Term Brokerage", 150000],
+    ]);
+    const indAccts = [
+      {
+        name: "Long Term Brokerage",
+        category: "brokerage",
+        taxType: "afterTax",
+        ownerName: "Sean",
+      },
+      {
+        name: "Long Term Brokerage",
+        category: "brokerage",
+        taxType: "afterTax",
+        ownerName: "Joanna",
+      },
+    ];
+    const ctx = makeCtx({
+      hasIndividualAccounts: true,
+      indAccts,
+      indKey: (ia: { name?: string; ownerName?: string }) =>
+        `${ia.ownerName}::${ia.name}`,
+    });
+    const state = makeState({ indBal });
+    const ls: LumpSum[] = [
+      {
+        amount: 10000,
+        targetAccount: "brokerage",
+        targetAccountName: "Long Term Brokerage",
+        targetOwnerName: "Joanna",
+      },
+    ];
+    applyLumpSums(ls, ctx, state);
+    expect(indBal.get("Joanna::Long Term Brokerage")).toBe(160000);
+    // Sean's identically-named account must be untouched.
+    expect(indBal.get("Sean::Long Term Brokerage")).toBe(200000);
+  });
+
+  it("R4: falls back to name-only match when targetOwnerName isn't set (lump sums saved before the field existed)", () => {
+    const indBal = new Map<string, number>([["myBrokerage", 100000]]);
+    const indAccts = [
+      { name: "myBrokerage", category: "brokerage", taxType: "afterTax" },
+    ];
+    const ctx = makeCtx({
+      hasIndividualAccounts: true,
+      indAccts,
+      indKey: (ia: { name?: string }) => ia.name ?? "",
+    });
+    const state = makeState({ indBal });
+    const ls: LumpSum[] = [
+      {
+        amount: 15000,
+        targetAccount: "brokerage",
+        targetAccountName: "myBrokerage",
+        // targetOwnerName deliberately omitted
+      },
+    ];
+    applyLumpSums(ls, ctx, state);
+    expect(indBal.get("myBrokerage")).toBe(115000);
+  });
+
   it("updates indBal by category+taxType match when no targetAccountName", () => {
     const indBal = new Map<string, number>([["401k", 200000]]);
     const indAccts = [{ category: "401k", taxType: "preTax" }];

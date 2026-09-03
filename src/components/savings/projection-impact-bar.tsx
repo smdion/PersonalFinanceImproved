@@ -1,18 +1,12 @@
 "use client";
 
 import React from "react";
-import { formatCurrency, MONTH_NAMES_SHORT } from "@/lib/utils/format";
+import { compactCurrency, MONTH_NAMES_SHORT } from "@/lib/utils/format";
 import { FUND_COLORS } from "@/lib/utils/colors";
 import type { GoalProjection } from "./types";
 
 function shortMonth(d: Date): string {
   return `${MONTH_NAMES_SHORT[d.getMonth()]} '${String(d.getFullYear()).slice(2)}`;
-}
-
-function formatCompact(n: number): string {
-  if (Math.abs(n) >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
-  if (Math.abs(n) >= 1_000) return `$${(n / 1_000).toFixed(1)}k`;
-  return formatCurrency(n);
 }
 
 function isRevolvingAtRisk(gp: GoalProjection): boolean {
@@ -106,11 +100,11 @@ export function ProjectionImpactBar({
                 </span>
                 <span className="flex items-center justify-between text-caption tabular-nums">
                   <span className="text-faint">
-                    {formatCompact(gp.current)}
+                    {compactCurrency(gp.current)}
                   </span>
                   <span className="flex items-center gap-1 text-primary font-medium">
                     <span className="text-faint">proj</span>
-                    {formatCompact(endBalance)}
+                    {compactCurrency(endBalance)}
                   </span>
                 </span>
               </button>

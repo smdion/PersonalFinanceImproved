@@ -33,7 +33,7 @@ type CoastFireMcResult = {
    *  "found at later age," stopNowSuccessRate is the rate at today. */
   stopNowSuccessRate: number;
   /** % of stop-now trials that failed specifically because penalty-exposed
-   *  money was excluded (v0.7.8 penalty-hard-exclusion) rather than the
+   *  money was excluded rather than the
    *  household genuinely running out — surfaced so a low stopNowSuccessRate
    *  isn't read as "you'll be broke" when it actually means "your money is
    *  there but locked until 59½." */
@@ -72,7 +72,7 @@ type DeterministicResult = {
 interface CoastFireCardProps {
   input: CoastFireInput;
   /** Pass-down of the Coast FIRE MC binary-search result from
-   *  use-projection-queries.ts. On demand by default (2026-08-30) — fires
+   *  use-projection-queries.ts. On demand by default — fires
    *  once the household selects a Coast FIRE scenario, not on page load —
    *  so this card usually shows deterministic-only at first; the headline
    *  automatically upgrades to combined once the MC result arrives. */

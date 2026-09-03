@@ -71,9 +71,9 @@ export function ContribCard({
       )}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          {c.displayNameActive ? (
+          {(c.displayNameCustom ?? c.displayNameActive) ? (
             <span className="text-xs font-medium text-amber-600">
-              {c.displayNameActive}
+              {c.displayNameCustom ?? c.displayNameActive}
             </span>
           ) : (
             <>

@@ -1,4 +1,4 @@
-/** Version router for creating, listing, restoring, and deleting full database state snapshots used for undo/backup. */
+/** Version router for creating, listing, restoring, and deleting full database state versions used for undo/backup. */
 import { z } from "zod/v4";
 import { eq, sql, desc } from "drizzle-orm";
 import {
@@ -212,8 +212,8 @@ export const versionRouter = createTRPCRouter({
       // Tables to preserve (versioning system + app config)
       // local_admins is preserved: it's app auth, not user financial data, and
       // wiping it (while app_settings.onboarding_completed survives) opens an
-      // unauthenticated admin-takeover window via createLocalAdmin (see H9,
-      // .scratch/docs/review-findings.md). Manage/delete accounts via Settings.
+      // unauthenticated admin-takeover window via createLocalAdmin. Manage/delete
+      // accounts via Settings.
       const preserve = new Set([
         "state_versions",
         "state_version_tables",

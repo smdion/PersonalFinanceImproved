@@ -10,9 +10,6 @@
  * - `updateInflationRisk` — persists MC preset inflation params.
  * - `updateAssetClassOverrides` — persists user asset class return/vol
  *   overrides to appSettings.
- *
- * Extracted from the old monolith `projection.ts` in PR 2b of the v0.5.2
- * file-split refactor. Pure relocation — no logic changes.
  */
 import { eq } from "drizzle-orm";
 import { z } from "zod/v4";
@@ -250,7 +247,7 @@ export const strategyRouter = createTRPCRouter({
               label: meta.label,
               shortLabel: meta.shortLabel,
               portfolioDepletionAge: result.portfolioDepletionAge,
-              // R45 Step 3, Finding 11: sustainableWithdrawal dropped from
+              // sustainableWithdrawal dropped from
               // this comparison — it's never rendered by
               // withdrawal-comparison.tsx (year1Withdrawal/avgAnnualWithdrawal/
               // min/max already give the real per-strategy withdrawal picture,

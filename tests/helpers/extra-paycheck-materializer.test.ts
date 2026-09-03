@@ -14,7 +14,7 @@
 import "./setup-mocks";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createTestDb, type TestDbContext } from "./db-harness";
-import { materializeExtraPaycheckOverrides } from "@/server/helpers/extra-paycheck-materializer";
+import { materializeExtraPaycheckSavings } from "@/server/helpers/extra-paycheck-materializer";
 import { eq } from "drizzle-orm";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 
@@ -24,7 +24,7 @@ vi.mock("@/lib/calculators/paycheck", () => ({
     mockGetExtraPaycheckMonthKeys(...args),
 }));
 
-describe("materializeExtraPaycheckOverrides", () => {
+describe("materializeExtraPaycheckSavings", () => {
   let ctx: TestDbContext;
   let goalId: number;
   let salaryProfileId: number;
@@ -151,7 +151,7 @@ describe("materializeExtraPaycheckOverrides", () => {
   }
 
   it("materializes rows for the desired months", async () => {
-    await materializeExtraPaycheckOverrides(ctx.db as never);
+    await materializeExtraPaycheckSavings(ctx.db as never);
     const rows = ruleRows();
     expect(rows.map((r) => r.transactionDate).sort()).toEqual([
       "2026-06-01",
@@ -162,7 +162,7 @@ describe("materializeExtraPaycheckOverrides", () => {
 
   it("materializes nothing for a job paused via the Savings/Budget toggle (enabled: false), and cleans up rows from a prior enabled run", async () => {
     // First confirm rows exist while enabled (today's default).
-    await materializeExtraPaycheckOverrides(ctx.db as never);
+    await materializeExtraPaycheckSavings(ctx.db as never);
     expect(ruleRows().length).toBeGreaterThan(0);
 
     // Pause routing without touching the configured rule — same shape the
@@ -179,7 +179,7 @@ describe("materializeExtraPaycheckOverrides", () => {
       enabled: false,
     });
 
-    await materializeExtraPaycheckOverrides(ctx.db as never);
+    await materializeExtraPaycheckSavings(ctx.db as never);
     expect(ruleRows()).toEqual([]);
   });
 
@@ -197,7 +197,7 @@ describe("materializeExtraPaycheckOverrides", () => {
       })
       .run();
 
-    await materializeExtraPaycheckOverrides(ctx.db as never);
+    await materializeExtraPaycheckSavings(ctx.db as never);
 
     const rows = ruleRows();
     const jan = rows.find((r) => r.transactionDate === "2026-01-01");
@@ -205,7 +205,7 @@ describe("materializeExtraPaycheckOverrides", () => {
   });
 
   it("preserves a settled current-month row instead of duplicating it", async () => {
-    await materializeExtraPaycheckOverrides(ctx.db as never);
+    await materializeExtraPaycheckSavings(ctx.db as never);
     const juneRow = ruleRows().find((r) => r.transactionDate === "2026-06-01");
     expect(juneRow).toBeDefined();
 
@@ -228,7 +228,7 @@ describe("materializeExtraPaycheckOverrides", () => {
       ],
     });
 
-    await materializeExtraPaycheckOverrides(ctx.db as never);
+    await materializeExtraPaycheckSavings(ctx.db as never);
 
     const juneRows = ruleRows().filter(
       (r) => r.transactionDate === "2026-06-01",
@@ -245,15 +245,15 @@ describe("materializeExtraPaycheckOverrides", () => {
   });
 
   it("a settlement on a rule row survives regeneration (not cascade-deleted)", async () => {
-    await materializeExtraPaycheckOverrides(ctx.db as never);
+    await materializeExtraPaycheckSavings(ctx.db as never);
     const juneRow = ruleRows().find((r) => r.transactionDate === "2026-06-01");
     ctx.db
       .insert(ctx.schema.savingsPlannedTxSettlements)
       .values({ plannedTxId: juneRow!.id, occurrenceMonth: "2026-06-01" })
       .run();
 
-    await materializeExtraPaycheckOverrides(ctx.db as never);
-    await materializeExtraPaycheckOverrides(ctx.db as never);
+    await materializeExtraPaycheckSavings(ctx.db as never);
+    await materializeExtraPaycheckSavings(ctx.db as never);
 
     const settlements = ctx.db
       .select()

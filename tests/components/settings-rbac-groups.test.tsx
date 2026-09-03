@@ -69,9 +69,9 @@ describe("RbacGroupsSettings smoke", () => {
 
   it("renders setup instructions and group mapping inputs", () => {
     render(<RbacGroupsSettings />);
-    expect(
-      screen.getByText("Authentik OIDC Provider Setup"),
-    ).toBeInTheDocument();
+    // The Authentik OIDC provider walkthrough moved to AuthSettings (Access
+    // Control's own Authentik section) — see settings-auth-settings.test.tsx
+    // — RbacGroupsSettings now only covers RBAC-specific setup.
     expect(screen.getByText("RBAC Group Setup")).toBeInTheDocument();
     expect(screen.getByText("Authentik Group Mapping")).toBeInTheDocument();
     expect(screen.getByDisplayValue("ledgr-admin")).toBeInTheDocument();

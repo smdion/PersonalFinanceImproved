@@ -15,6 +15,9 @@ import { eq, sql } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { encryptJson, readMaybeEncrypted } from "@/lib/crypto";
 import { getAccounts, type SimplefinAccount } from "./client";
+import { localDateStr } from "@/lib/utils/date";
+
+export { localDateStr };
 
 type Db = typeof import("@/lib/db").db;
 
@@ -150,15 +153,6 @@ export async function removeSimplefinConnection(db: Db) {
   await db
     .delete(schema.apiConnections)
     .where(eq(schema.apiConnections.service, "simplefin"));
-}
-
-/** Local (not UTC) calendar date as YYYY-MM-DD, matching the version-cron convention. */
-export function localDateStr(date: Date): string {
-  return [
-    date.getFullYear(),
-    String(date.getMonth() + 1).padStart(2, "0"),
-    String(date.getDate()).padStart(2, "0"),
-  ].join("-");
 }
 
 export type SimplefinAccountRow = {

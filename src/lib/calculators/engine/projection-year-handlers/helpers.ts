@@ -1,8 +1,5 @@
 /**
  * Shared helpers used by both accumulation-year and decumulation-year handlers.
- *
- * Extracted from the old single-file `projection-year-handlers.ts` in the
- * v0.5.2 refactor. Pure relocation — no logic changes.
  */
 import { isPreTaxType } from "../../../config/account-types";
 import type { ProjectionContext, ProjectionLoopState } from "./types";

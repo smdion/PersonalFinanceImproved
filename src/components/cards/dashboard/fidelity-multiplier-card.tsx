@@ -63,7 +63,7 @@ function FidelityMultiplierCardImpl() {
   const salaryActiveFields = useActiveSalaries();
   // Uses result.projectionByYear for future-age lookups, which needs the
   // active Contribution Profile — omitting it makes the engine treat future
-  // years as $0 contributions (M27, .scratch/docs/review-findings.md).
+  // years as $0 contributions.
   const { queryInput: contribProfileInput } = useEffectiveContribProfileId();
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const engineInput = {

@@ -223,7 +223,7 @@ export const contributionProfileRouter = createTRPCRouter({
   }),
 
   /**
-   * Lightweight data for the Compare view (R20) and the swap-time diff:
+   * Lightweight data for the Compare view and the swap-time diff:
    * every account's live values plus every profile's raw active-fields
    * map, keyed by account id. Deliberately skips what `getById` does per
    * profile — perf-account fuzzy matching and full display-name
@@ -468,15 +468,15 @@ export const contributionProfileRouter = createTRPCRouter({
         const disambiguatedName =
           sameName.length > 0 ? `${accountName} — ${taxLabel}` : accountName;
 
-        const displayNameActive = activeFields?.displayNameActive as
-          string | undefined;
+        const displayNameCustom = (activeFields?.displayNameCustom ??
+          activeFields?.displayNameActive) as string | undefined;
 
         return {
           id: row.id,
           accountType: row.accountType,
           subType: row.subType,
           label: row.label,
-          accountName: displayNameActive || disambiguatedName,
+          accountName: displayNameCustom || disambiguatedName,
           liveAccountName: disambiguatedName,
           personId: row.personId,
           taxTreatment: row.taxTreatment,

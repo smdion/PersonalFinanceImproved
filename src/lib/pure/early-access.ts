@@ -86,8 +86,7 @@ export type EarlyAccessSlice = {
 /**
  * Penalty-free capacity = the sum of the LEADING, CONTIGUOUSLY penalty-free
  * PREFIX of an account's slices, in the order its own distribution
- * ordering rules release them (DESIGN-DECISION-v0.7.8-
- * penalty-hard-exclusion.md § Q1). NOT the sum of every penalty-free slice
+ * ordering rules release them. NOT the sum of every penalty-free slice
  * regardless of position: a Roth IRA's ordering forces dollars out
  * contribution → conversion → growth, and an unseasoned conversion slice
  * (`penaltyFree: false`) blocks access to any penalty-free slice behind it
@@ -102,9 +101,9 @@ export type EarlyAccessSlice = {
  * `withdrawal-eligibility.ts`, specifically so the Tax Buckets UI can
  * import it directly rather than re-deriving "accessible now" with its own
  * sum-every-penalty-free-slice loop — a real second definition of this
- * quantity, found in code review (2026-08-27), that happened to agree with
- * the prefix rule for every shape shipped so far only by the same
- * coincidence this docblock already warns about.
+ * quantity that happened to agree with the prefix rule for every shape
+ * shipped so far only by the same coincidence this docblock already warns
+ * about.
  */
 export function penaltyFreePrefixAmount(slices: EarlyAccessSlice[]): number {
   let sum = 0;

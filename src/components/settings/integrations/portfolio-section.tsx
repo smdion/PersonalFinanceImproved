@@ -14,6 +14,7 @@ import { formatCurrency } from "@/lib/utils/format";
 import { mappingsWithTypedIds } from "@/lib/utils/account-mapping";
 import type { PreviewData, Service } from "../integrations-types";
 import type { PortfolioMutations } from "./hooks/use-portfolio-mutations";
+import { Badge } from "@/components/ui/badge";
 import {
   SectionSummaryBadge,
   SectionSummaryRow,
@@ -97,9 +98,14 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                   key={`${m.localId ?? ""}|${m.localName}|${m.remoteAccountId}`}
                   className="flex items-center gap-1.5 text-xs bg-green-50 rounded px-2 py-1"
                 >
-                  <span className="text-caption px-1.5 py-0.5 rounded bg-green-100 text-green-700 whitespace-nowrap">
+                  <Badge
+                    color="green"
+                    size="sm"
+                    case="normal"
+                    className="whitespace-nowrap"
+                  >
                     Mapped
-                  </span>
+                  </Badge>
                   <span className="text-secondary truncate flex-1">
                     {(() => {
                       const lid = m.localId ?? m.localName;
@@ -124,9 +130,14 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                    * account, so the direction toggle is fixed rather than
                    * cyclable into a meaningless push/both state. */}
                   {m.localId === "cash" || m.localId === "creditCard" ? (
-                    <span className="text-caption px-1 py-0.5 rounded bg-blue-100 text-blue-600 whitespace-nowrap">
+                    <Badge
+                      color="blue"
+                      size="sm"
+                      case="normal"
+                      className="whitespace-nowrap"
+                    >
                       &rarr; pull
-                    </span>
+                    </Badge>
                   ) : (
                     <button
                       onClick={() => {
@@ -280,9 +291,14 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                 {unmappedTracking.map((t) => (
                   <div key={t.id} className="space-y-0.5">
                     <div className="flex items-center gap-1.5 text-xs">
-                      <span className="text-caption px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 whitespace-nowrap">
+                      <Badge
+                        color="purple"
+                        size="sm"
+                        case="normal"
+                        className="whitespace-nowrap"
+                      >
                         API only
-                      </span>
+                      </Badge>
                       <span className="text-muted truncate flex-1">
                         {t.name}
                       </span>
