@@ -33,6 +33,7 @@ export function ReportRoot({
   engineSettings,
   rmdExcessYears,
   qcdYears,
+  irmaaCappedRothYears,
   bracketOptimizerResult,
 }: {
   projectionResult: ProjectionResult;
@@ -45,6 +46,7 @@ export function ReportRoot({
   engineSettings: ReportEngineSettings;
   rmdExcessYears: number;
   qcdYears: number;
+  irmaaCappedRothYears: number;
   bracketOptimizerResult?: BracketOptimizerResult | null;
 }) {
   const narrative = buildReportNarrative(projectionResult, mcResult, {
@@ -77,6 +79,7 @@ export function ReportRoot({
         settings={engineSettings}
         rmdExcessYears={rmdExcessYears}
         qcdYears={qcdYears}
+        irmaaCappedRothYears={irmaaCappedRothYears}
       />
       <ReportFooter generatedAt={generatedAt} />
     </div>

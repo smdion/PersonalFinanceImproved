@@ -288,9 +288,7 @@ function toTaxYearRow(
     unmetNeed: y.unmetNeedMaterial ? (y.unmetNeed ?? 0) : 0,
     acaSubsidyPreserved: y.acaSubsidyPreserved,
     acaMagiHeadroom: y.acaMagiHeadroom,
-    rothConversionIrmaaCapped: (
-      y as EngineDecumulationYear & { rothConversionIrmaaCapped?: boolean }
-    ).rothConversionIrmaaCapped,
+    rothConversionIrmaaCapped: y.rothConversionIrmaaCapped,
     flags: taxYearFlags(y),
   };
 }

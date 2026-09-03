@@ -465,6 +465,13 @@ export function ProjectionCard(props: {
                         y.phase === "decumulation" && (y.qcdAmount ?? 0) > 0.01,
                     ).length
                   }
+                  irmaaCappedRothYears={
+                    result.projectionByYear.filter(
+                      (y) =>
+                        y.phase === "decumulation" &&
+                        y.rothConversionIrmaaCapped === true,
+                    ).length
+                  }
                   bracketOptimizerResult={bracketOptimizerResult}
                 />
               </div>

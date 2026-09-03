@@ -18,9 +18,7 @@ export interface YearTableRow {
  * The "something notable happened this year" flag vocabulary — one list,
  * shared by the advisor report's year table and the Tax Planning page's
  * year-by-year table so the two never drift. Order is deliberate (most
- * consequential first). `rothConversionIrmaaCapped` is populated by the
- * engine only once Group D of the Tax Planning plan lands; until then it
- * is always undefined and the flag simply never appears.
+ * consequential first).
  */
 export function taxYearFlags(
   y: Pick<
@@ -30,7 +28,8 @@ export function taxYearFlags(
     | "irmaaCost"
     | "acaSubsidyPreserved"
     | "rothConversionAmount"
-  > & { rothConversionIrmaaCapped?: boolean },
+    | "rothConversionIrmaaCapped"
+  >,
 ): string[] {
   const flags: string[] = [];
   if (y.rmdOverrodeRouting) flags.push("RMD");

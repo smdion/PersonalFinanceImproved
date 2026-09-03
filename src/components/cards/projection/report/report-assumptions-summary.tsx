@@ -116,6 +116,7 @@ export function ReportAssumptionsSummary({
   settings,
   rmdExcessYears = 0,
   qcdYears = 0,
+  irmaaCappedRothYears = 0,
 }: {
   settings: ReportEngineSettings | undefined;
   /** Count of years in this projection where RMD forced more
@@ -127,6 +128,9 @@ export function ReportAssumptionsSummary({
   /** Count of years with a Qualified Charitable Distribution
    *  applied. 0 = don't show the note. */
   qcdYears?: number;
+  /** Count of years where a Roth conversion was reduced to stay under an
+   *  IRMAA threshold (`irmaaAwareRothConversions`). 0 = don't show. */
+  irmaaCappedRothYears?: number;
 }) {
   if (!settings) return null;
   const strategyKey = settings.withdrawalStrategy as
@@ -317,6 +321,18 @@ export function ReportAssumptionsSummary({
           Distribution — money sent directly to charity from an IRA, satisfying
           part of the RMD without counting as taxable income. See the Retirement
           page for year-by-year detail.
+        </p>
+      )}
+
+      {irmaaCappedRothYears > 0 && (
+        <p className="text-faint mt-2 text-xs">
+          Note: {irmaaCappedRothYears} year
+          {irmaaCappedRothYears === 1 ? "" : "s"} in this projection{" "}
+          {irmaaCappedRothYears === 1 ? "had a" : "had"} Roth conversion
+          {irmaaCappedRothYears === 1 ? "" : "s"} capped to stay below the next
+          IRMAA (Medicare premium) threshold — converting more would have
+          crossed a surcharge cliff. See the Tax Planning page for year-by-year
+          detail.
         </p>
       )}
     </div>
