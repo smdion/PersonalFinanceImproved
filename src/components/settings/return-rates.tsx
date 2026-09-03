@@ -25,13 +25,10 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatPercent } from "@/lib/utils/format";
 import { IRS_LIMIT_GROWTH_RATE } from "@/lib/constants";
+import { SK_IRS_LIMIT_GROWTH_RATE } from "@/lib/constants/settings-keys";
 
-/** App-settings key the projection engine reads for how fast IRS
- *  contribution limits grow each future year. Kept as a literal (not a
- *  SK_ constant) to match the reader in
- *  server/retirement/build-engine-payload.ts. */
-const IRS_LIMIT_GROWTH_RATE_KEY = "irs_limit_growth_rate";
-/** Sanity bounds for the editable rate — 0% to 10%/yr. */
+/** Sanity bounds for the editable IRS-limit growth rate — 0% to 10%/yr.
+ *  Also enforced server-side (build-engine-payload.ts clamps on read). */
 const IRS_GROWTH_MIN = 0;
 const IRS_GROWTH_MAX = 0.1;
 
@@ -68,10 +65,18 @@ export function ReturnRatesSettings() {
 
   const { data: appSettings } = trpc.settings.appSettings.list.useQuery();
   const upsertSetting = trpc.settings.appSettings.upsert.useMutation({
-    onSuccess: () => utils.settings.appSettings.list.invalidate(),
+    onSuccess: () => {
+      utils.settings.appSettings.list.invalidate();
+      // This value feeds every projection — refetch them so /retirement
+      // reflects the new rate without a hard reload.
+      utils.projection.invalidate();
+      utils.retirement.invalidate();
+      setIrsGrowthError(null);
+    },
   });
+  const [irsGrowthError, setIrsGrowthError] = useState<string | null>(null);
   const irsGrowthRow = appSettings?.find(
-    (s) => s.key === IRS_LIMIT_GROWTH_RATE_KEY,
+    (s) => s.key === SK_IRS_LIMIT_GROWTH_RATE,
   );
   const irsGrowthRate =
     irsGrowthRow && Number.isFinite(Number(irsGrowthRow.value))
@@ -81,13 +86,26 @@ export function ReturnRatesSettings() {
 
   const handleSaveIrsGrowth = (rawPercent: string) => {
     const pct = parseFloat(rawPercent);
-    if (isNaN(pct)) return;
+    if (isNaN(pct)) {
+      setIrsGrowthError("Enter a number");
+      return;
+    }
     const rate = pct / 100;
-    if (rate < IRS_GROWTH_MIN || rate > IRS_GROWTH_MAX) return;
-    // Clearing back to the engine default: delete the row (upsert with a
-    // null value removes it), so the constant fallback applies.
-    if (Math.abs(rate - IRS_LIMIT_GROWTH_RATE) < 1e-9 && !irsGrowthRow) return;
-    upsertSetting.mutate({ key: IRS_LIMIT_GROWTH_RATE_KEY, value: rate });
+    if (rate < IRS_GROWTH_MIN || rate > IRS_GROWTH_MAX) {
+      setIrsGrowthError(
+        `Must be between ${IRS_GROWTH_MIN * 100}% and ${IRS_GROWTH_MAX * 100}%`,
+      );
+      return;
+    }
+    setIrsGrowthError(null);
+    // Back to the engine default → delete the row so the constant applies
+    // and the "(default)" tag returns. `upsert` with a null value deletes.
+    if (Math.abs(rate - IRS_LIMIT_GROWTH_RATE) < 1e-9) {
+      if (irsGrowthRow)
+        upsertSetting.mutate({ key: SK_IRS_LIMIT_GROWTH_RATE, value: null });
+      return;
+    }
+    upsertSetting.mutate({ key: SK_IRS_LIMIT_GROWTH_RATE, value: rate });
   };
 
   const [showAddRow, setShowAddRow] = useState(false);
@@ -159,20 +177,25 @@ export function ReturnRatesSettings() {
               projected year beyond the last entered tax year.
             </div>
           </div>
-          <div className="flex items-center gap-2 whitespace-nowrap">
-            {admin ? (
-              <InlineEdit
-                value={String(irsGrowthRate * 100)}
-                onSave={handleSaveIrsGrowth}
-                formatDisplay={(v) => `${parseFloat(v).toFixed(1)}%`}
-              />
-            ) : (
-              <span className="text-primary text-sm">
-                {formatPercent(irsGrowthRate, 1)}
-              </span>
-            )}
-            {irsGrowthIsDefault && (
-              <span className="text-faint text-xs">(default)</span>
+          <div className="flex flex-col items-end gap-0.5 whitespace-nowrap">
+            <div className="flex items-center gap-2">
+              {admin ? (
+                <InlineEdit
+                  value={(irsGrowthRate * 100).toFixed(2).replace(/\.?0+$/, "")}
+                  onSave={handleSaveIrsGrowth}
+                  formatDisplay={(v) => formatPercent(parseFloat(v) / 100, 1)}
+                />
+              ) : (
+                <span className="text-primary text-sm">
+                  {formatPercent(irsGrowthRate, 1)}
+                </span>
+              )}
+              {irsGrowthIsDefault && (
+                <span className="text-faint text-xs">(default)</span>
+              )}
+            </div>
+            {irsGrowthError && (
+              <span className="text-xs text-red-600">{irsGrowthError}</span>
             )}
           </div>
         </div>

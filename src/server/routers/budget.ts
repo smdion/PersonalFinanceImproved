@@ -1086,7 +1086,8 @@ export const budgetRouter = createTRPCRouter({
         list.push({ colIndex: u.colIndex, amount: u.amount });
         byId.set(u.id, list);
       }
-      if (byId.size === 0) return { ok: true, updated: 0, skipped: [] };
+      if (byId.size === 0)
+        return { ok: true, updated: 0, updatedItems: 0, skipped: [] };
 
       // One fetch, not one-per-item.
       const ids = Array.from(byId.keys());
@@ -1101,26 +1102,30 @@ export const budgetRouter = createTRPCRouter({
       // matches the server) is skipped, not fatal — but it's now reported
       // back in `skipped` instead of vanishing silently, so a caller can
       // surface "3 of 50 cells couldn't be saved". A non-finite amount is a
-      // client bug (not stale state) and still throws.
-      const skipped: { id: number; colIndex: number; reason: string }[] = [];
+      // client bug, not stale state — belt-and-braces since `z.number()`
+      // in the input schema already rejects NaN and plain JSON can't carry
+      // Infinity, but kept for any direct server-side caller.
+      type SkipReason = "deleted" | "column-out-of-range";
+      const skipped: { id: number; colIndex: number; reason: SkipReason }[] =
+        [];
       const toApply: {
         id: number;
+        amounts: number[];
         changes: { colIndex: number; amount: number }[];
       }[] = [];
       for (const [id, changes] of byId) {
         const item = itemById.get(id);
         if (!item) {
           for (const c of changes)
-            skipped.push({
-              id,
-              colIndex: c.colIndex,
-              reason: "item no longer exists",
-            });
+            skipped.push({ id, colIndex: c.colIndex, reason: "deleted" });
           continue;
         }
-        const len = item.contributionAccountId
-          ? Infinity // linked items resolve the column via the profile tier
-          : budgetAmountsSchema.parse(item.amounts).length;
+        // `amounts` tracks the profile's column count for linked items too
+        // (add/removeColumn rewrite every item's array), so it's a valid
+        // bound for both — a linked item that escapes this check would
+        // otherwise write a real amount into the globally-active
+        // Contribution Profile via the tier fallback, unreported.
+        const amounts = budgetAmountsSchema.parse(item.amounts);
         const valid = changes.filter((c) => {
           if (!Number.isFinite(c.amount)) {
             throw new TRPCError({
@@ -1128,23 +1133,26 @@ export const budgetRouter = createTRPCRouter({
               message: `Budget item ${id}: amount for column ${c.colIndex} is not a finite number`,
             });
           }
-          if (c.colIndex < 0 || c.colIndex >= len) {
+          if (c.colIndex < 0 || c.colIndex >= amounts.length) {
             skipped.push({
               id,
               colIndex: c.colIndex,
-              reason: `column ${c.colIndex} out of range`,
+              reason: "column-out-of-range",
             });
             return false;
           }
           return true;
         });
-        if (valid.length > 0) toApply.push({ id, changes: valid });
+        if (valid.length > 0) toApply.push({ id, amounts, changes: valid });
       }
+      // Deterministic lock-acquisition order (by id) so two concurrent
+      // pastes touching an overlapping set of items can't deadlock.
+      toApply.sort((a, b) => a.id - b.id);
 
       // Apply atomically — either the whole applicable paste lands or none
       // of it does (a mid-loop failure must not leave half a paste saved).
       await ctx.db.transaction(async (tx) => {
-        for (const { id, changes } of toApply) {
+        for (const { id, amounts, changes } of toApply) {
           const item = itemById.get(id)!;
 
           // Linked items: write through to the contribution account instead
@@ -1169,7 +1177,6 @@ export const budgetRouter = createTRPCRouter({
             continue;
           }
 
-          const amounts = budgetAmountsSchema.parse(item.amounts);
           for (const c of changes) amounts[c.colIndex] = c.amount;
           await tx
             .update(schema.budgetItems)
@@ -1177,7 +1184,13 @@ export const budgetRouter = createTRPCRouter({
             .where(eq(schema.budgetItems.id, id));
         }
       });
-      return { ok: true, updated: toApply.length, skipped };
+      const appliedCells = toApply.reduce((n, t) => n + t.changes.length, 0);
+      return {
+        ok: true,
+        updated: appliedCells,
+        updatedItems: toApply.length,
+        skipped,
+      };
     }),
 
   /** Add a new column (budget mode) to the target profile (active if not given). */

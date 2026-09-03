@@ -20,14 +20,8 @@ import {
 import { Card } from "@/components/ui/card";
 import { formatPercent, formatDate } from "@/lib/utils/format";
 import { computeAllocation } from "@/lib/pure/analytics";
-import { EXPENSE_PIE_COLORS } from "@/lib/utils/colors";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
-
-/** Palette index → color. Shared by both charts and the legend swatch in
- *  analytics-content. */
-export function sliceColor(i: number) {
-  return EXPENSE_PIE_COLORS[i % EXPENSE_PIE_COLORS.length]!;
-}
+import { sliceColor } from "./slice-color";
 
 type AllocHolding = { assetClassId: number | null; weightBps: number };
 

@@ -10,7 +10,7 @@ import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { Card } from "@/components/ui/card";
 import dynamic from "next/dynamic";
-import { sliceColor } from "@/components/analytics/analytics-charts";
+import { sliceColor } from "@/components/analytics/slice-color";
 
 // Code-split Recharts — keep its payload out of the analytics page chunk (R31).
 const AllocationDonut = dynamic(
