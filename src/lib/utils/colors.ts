@@ -278,12 +278,6 @@ export const CHART_COLORS = {
 };
 
 /**
- * Theme-aware hex palette for the savings trajectory chart (grid/axis/
- * tooltip colors that must flip with dark mode). Kept here rather than
- * inline in the component so the file's hex literals stay centralized —
- * see the no-restricted-syntax hardcoded-hex-color lint rule.
- */
-/**
  * Theme-aware overrides for data-carrying LINE colors whose single
  * `CHART_COLORS` value fails WCAG 1.4.11 (≥3:1 vs the card / adjacent
  * fill) in dark mode. Spread over `CHART_COLORS` in the chart component:
@@ -302,6 +296,12 @@ export function chartLinePalette(dark: boolean) {
   };
 }
 
+/**
+ * Theme-aware hex palette for the savings trajectory chart (grid/axis/
+ * tooltip colors that must flip with dark mode). Kept here rather than
+ * inline in the component so the file's hex literals stay centralized —
+ * see the no-restricted-syntax hardcoded-hex-color lint rule.
+ */
 export function trajectoryChartPalette(dark: boolean) {
   return {
     grid: dark ? "#374151" : "#e5e7eb",
