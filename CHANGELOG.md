@@ -37,6 +37,7 @@ Accessibility, print, and internal-quality pass. No schema changes, no migration
 - **Batched budget-amount saves are now atomic** — a grid paste (and the add/remove-column and reorder operations) either lands whole or not at all, and a paste cell that can't be saved is now surfaced with a toast (and a failed save no longer fails silently to the console).
 - **Failed-save toasts are now readable** — the app-wide mutation-error toast maps error codes (permission denied, not found, conflict, server error) to plain sentences and shows the first field issue for input-validation failures, instead of dumping a raw Zod/tRPC/database error string. Every router's user-facing `throw`s were converted to typed errors so their actionable messages survive the mapping; genuine internal invariants still show the generic line and are logged.
 - Recharts is code-split out of the `analytics` and `upkeep/utilities` page chunks; four static page wrappers dropped an unnecessary `"use client"`.
+- A failed optimistic mutation (essential-flag toggles, reorders) no longer shows two toasts; the app-wide handler is now the single source. Shared `RouterOutputs` type on `lib/trpc.ts` replaces a hand-copied result struct.
 - Engine audit (R48) for calculations/assumptions with no UI or report surface — the IRS-limit-growth-rate finding is fixed above; the Print Advisor Report now also states an assumed annual brokerage-contribution increase when one is set; two smaller findings triaged to the backlog; none change projection math.
 
 ## [0.8.0] - 2026-09-03
