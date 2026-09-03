@@ -98,6 +98,7 @@ export function NetWorthLineChart({
             }}
           />
           <Line
+            isAnimationActive={false}
             type="monotone"
             dataKey="netWorth"
             name="Net Worth"
@@ -107,6 +108,7 @@ export function NetWorthLineChart({
             activeDot={{ r: 6 }}
           />
           <Line
+            isAnimationActive={false}
             type="monotone"
             dataKey="portfolioTotal"
             name="Portfolio"
@@ -115,6 +117,7 @@ export function NetWorthLineChart({
             dot={{ r: 3 }}
           />
           <Line
+            isAnimationActive={false}
             type="monotone"
             dataKey="houseValue"
             name="House"
@@ -123,6 +126,7 @@ export function NetWorthLineChart({
             dot={{ r: 3 }}
           />
           <Line
+            isAnimationActive={false}
             type="monotone"
             dataKey="cash"
             name="Cash"
@@ -131,6 +135,7 @@ export function NetWorthLineChart({
             dot={{ r: 3 }}
           />
           <Line
+            isAnimationActive={false}
             type="monotone"
             dataKey="totalLiabilities"
             name="Liabilities"

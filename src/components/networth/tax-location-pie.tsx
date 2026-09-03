@@ -52,6 +52,7 @@ export function TaxLocationPie({
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>
               <Pie
+                isAnimationActive={false}
                 data={data}
                 cx="50%"
                 cy="50%"

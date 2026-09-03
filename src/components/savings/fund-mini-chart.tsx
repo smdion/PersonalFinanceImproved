@@ -177,6 +177,7 @@ export function FundMiniChart({
 
           {/* Positive balance area */}
           <Area
+            isAnimationActive={false}
             type="monotone"
             dataKey="balance"
             stroke={fundColor}

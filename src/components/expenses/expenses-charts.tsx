@@ -75,13 +75,20 @@ export function BudgetVsActualBar({
           {...tooltipProps}
         />
         <Bar
+          isAnimationActive={false}
           dataKey="budgeted"
           fill={CHART_COLORS.expenseBudgeted}
           barSize={12}
           radius={[0, 2, 2, 0]}
           name="Budgeted"
         />
-        <Bar dataKey="actual" barSize={12} radius={[0, 2, 2, 0]} name="Actual">
+        <Bar
+          dataKey="actual"
+          barSize={12}
+          radius={[0, 2, 2, 0]}
+          name="Actual"
+          isAnimationActive={false}
+        >
           {data.map((entry) => (
             <Cell
               key={entry.name}
@@ -103,6 +110,7 @@ export function SpendingPie({ data }: { data: readonly SpendingPieSlice[] }) {
     <ResponsiveContainer width="100%" height={250}>
       <PieChart>
         <Pie
+          isAnimationActive={false}
           data={[...data]}
           cx="50%"
           cy="50%"

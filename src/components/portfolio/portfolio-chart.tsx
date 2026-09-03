@@ -217,6 +217,7 @@ export function PortfolioChart({ snapshots }: { snapshots: SnapshotPoint[] }) {
             />
           )}
           <Area
+            isAnimationActive={false}
             type="monotone"
             dataKey="total"
             stroke={CHART_COLORS.perfBalance}
