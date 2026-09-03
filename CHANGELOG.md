@@ -12,6 +12,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No schema changes, no migration.
 
+### Added
+
+- **Tax Planning page** (Analysis → Tax Planning). A year-by-year tax projection through retirement — income sources, federal / NIIT / IRMAA tax, effective rate, balances, running lifetime tax, and flags for the notable years — read straight off the deterministic retirement projection (same engine, no separate tax model). Plus a **Roth conversion explorer** (the engine's own lifetime-tax-minimizing search, or an explicit target-rate schedule with a before/after break-even), a **withdrawal-strategy comparison** (traditional-first vs. brokerage-first vs. tax-optimized, side by side on lifetime tax), and an **IRMAA cliff alert**. Assumptions are edited via the same Retirement Profile controls the Retirement page uses — a change there saves to the profile and the tax view recomputes.
+
 ### Fixed
 
 - **Contribution Profile data loss from the Paycheck page.** Editing a contribution or deduction value on the Paycheck page (in profile mode) rebuilt the profile's entire `contributionActiveFields` blob from a client-side query snapshot and wrote the whole thing back. If that snapshot was stale — e.g. right after a profile rename, which invalidates the query — the write silently wiped every account and deduction entry the snapshot didn't have, leaving the profile "Incomplete" with everything falling back to no value. The Paycheck page now uses the same field-level, server-side, transactional patch procedures (`setAccountActiveFields` / `setDeductionActiveFields`) the Contribution Profile Manager already moved to — it was the last caller still doing the full-blob rewrite.

@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**353 procedures across 40 routers.**
+**356 procedures across 41 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -266,6 +266,14 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | Procedure           | Kind  | Auth                 | Description                                                                                                                                                                                              |
 | ------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `computeStressTest` | query | `protectedProcedure` | returnRates / inflationRate / salaryGrowthRate / withdrawalRate before calling calculateProjection. Returns summary metrics (nest egg at retirement, sustainable withdrawal, depletion age) so the PlanH |
+
+## `projection/tax-planning`
+
+| Procedure                     | Kind  | Auth                 | Description                                                                                                                                                                                              |
+| ----------------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `compareWithdrawalStrategies` | query | `protectedProcedure` | strategy and score each on lifetime tax — the side-by-side comparison (roadmap #2). Clone-and-score, same pattern as `optimizeRothBracketTarget`: a baseline run learns the first decumulation year, the |
+| `projectTaxYears`             | query | `protectedProcedure` | Year-by-year tax projection through decumulation — a straight read of the deterministic engine run (NOT Monte Carlo). One row per decumulation year with income sources, federal / NIIT / IRMAA tax, eff |
+| `rothConversionWhatIf`        | query | `protectedProcedure` | sticky-forward `decumulationOverrides`, runs the engine once, and also runs a baseline with conversions switched off, then returns the before/after: per-year conversion + tax now, RMD reduction, IRMAA |
 
 ## `projection/withdrawal-bracket-optimizer`
 
