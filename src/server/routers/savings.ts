@@ -62,6 +62,7 @@ import { zDecimal } from "./settings/_shared";
 import {
   targetModeSchema,
   budgetApiServiceSchema,
+  BUDGET_API_SERVICE_VALUES,
 } from "@/lib/config/enum-values";
 import { log } from "@/lib/logger";
 import type { SavingsInput, EFundInput } from "@/lib/calculators/types";
@@ -1537,13 +1538,23 @@ export const savingsRouter = createTRPCRouter({
         .returning();
 
       if (goal) {
-        const conversionService =
-          input.service ?? (await getActiveBudgetApi(ctx.db));
-        if (conversionService !== "none") {
+        // A budget item can carry a link for EACH service at once
+        // (budget_item_category_links is keyed per (item, service) —
+        // that's the whole point of the join-table migration). An
+        // explicit `input.service` copies just that one (the caller knows
+        // which they mean); omitted copies every service the item is
+        // actually linked to, not just whichever one happens to be
+        // "active" — otherwise a household with both YNAB and Actual
+        // connected silently loses the inactive service's link on every
+        // conversion.
+        const servicesToCopy = input.service
+          ? [input.service]
+          : BUDGET_API_SERVICE_VALUES;
+        for (const service of servicesToCopy) {
           await copySavingsGoalLinks(ctx.db, {
             fromBudgetItemId: item.id,
             toSavingsGoalId: goal.id,
-            service: conversionService,
+            service,
           });
         }
       }
@@ -1646,20 +1657,25 @@ export const savingsRouter = createTRPCRouter({
         .returning();
 
       if (item) {
-        const conversionService =
-          input.service ?? (await getActiveBudgetApi(ctx.db));
-        if (conversionService !== "none") {
+        // Same reasoning as convertBudgetItemToGoal above: a savings goal
+        // can carry a primary link for each service at once. Explicit
+        // input.service copies just that one; omitted copies every
+        // service the goal is actually linked to.
+        const servicesToCopy = input.service
+          ? [input.service]
+          : BUDGET_API_SERVICE_VALUES;
+        for (const service of servicesToCopy) {
           const goalLinks = await loadSavingsGoalLinks(
             ctx.db,
             [goal.id],
-            conversionService,
+            service,
             "primary",
           );
           const goalLink = goalLinks.get(goal.id);
           if (goalLink) {
             await setBudgetItemLink(ctx.db, {
               budgetItemId: item.id,
-              service: conversionService,
+              service,
               categoryId: goalLink.categoryId,
               categoryName: goalLink.categoryName,
               syncDirection: "pull",
