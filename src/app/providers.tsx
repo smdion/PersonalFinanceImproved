@@ -12,6 +12,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ToastContainer } from "@/components/ui/toast";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "@/lib/hooks/use-toast";
+import { friendlyMutationError } from "@/lib/utils/mutation-error";
 
 function getBaseUrl() {
   if (typeof window !== "undefined") return "";
@@ -30,7 +31,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         },
         mutationCache: new MutationCache({
           onError: (error) => {
-            toast.error(error.message || "Something went wrong");
+            toast.error(friendlyMutationError(error));
           },
         }),
       }),
