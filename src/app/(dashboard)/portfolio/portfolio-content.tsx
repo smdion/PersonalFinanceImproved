@@ -17,7 +17,7 @@ import {
 } from "@/lib/utils/format";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
-import { taxTypeLabel } from "@/lib/utils/colors";
+import { taxTypeLabel, gainLossTextColor } from "@/lib/utils/colors";
 import { getDisplayConfig } from "@/lib/config/account-types";
 import dynamic from "next/dynamic";
 import { confirm } from "@/components/ui/confirm-dialog";
@@ -513,14 +513,32 @@ export function PortfolioContent() {
                                 {snap.accountCount}
                               </td>
                               <td
-                                className={`text-right py-2 px-4 text-xs ${delta !== null ? (delta >= 0 ? "text-green-600" : "text-red-600") : "text-faint"}`}
+                                className={`text-right py-2 px-4 text-xs ${delta !== null ? gainLossTextColor(delta) : "text-faint"}`}
                               >
-                                {delta !== null
-                                  ? `${delta >= 0 ? "+" : ""}${formatCurrency(delta)}`
-                                  : "\u2014"}
+                                {delta !== null ? (
+                                  <>
+                                    <span aria-hidden="true">
+                                      {delta > 0
+                                        ? "\u25b2 "
+                                        : delta < 0
+                                          ? "\u25bc "
+                                          : ""}
+                                    </span>
+                                    {`${delta >= 0 ? "+" : ""}${formatCurrency(delta)}`}
+                                    <span className="sr-only">
+                                      {delta > 0
+                                        ? " increase from previous snapshot"
+                                        : delta < 0
+                                          ? " decrease from previous snapshot"
+                                          : " no change from previous snapshot"}
+                                    </span>
+                                  </>
+                                ) : (
+                                  "\u2014"
+                                )}
                               </td>
                               <td
-                                className={`text-right py-2 px-4 text-xs ${snap.deltaPct !== null ? (snap.deltaPct >= 0 ? "text-green-600" : "text-red-600") : "text-faint"}`}
+                                className={`text-right py-2 px-4 text-xs ${snap.deltaPct !== null ? gainLossTextColor(snap.deltaPct) : "text-faint"}`}
                               >
                                 {snap.deltaPct !== null
                                   ? `${snap.deltaPct >= 0 ? "+" : ""}${formatPercent(snap.deltaPct / 100, 2)}`

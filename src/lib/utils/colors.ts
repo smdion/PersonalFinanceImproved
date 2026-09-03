@@ -140,6 +140,32 @@ export const STATUS_COLORS: Record<
   blue: { bg: "bg-blue-100", text: "text-blue-700", border: "border-blue-300" },
 };
 
+// ── Signed-value text colors (gain/loss, over/under budget) ──
+// One place for the red/green a value cell uses to signal its sign, so cells
+// don't each re-inline `n >= 0 ? "text-green-600" : "text-red-600"`. Callers
+// must still pair this with a NON-COLOR cue (a +/- sign, a "▲"/"▼" glyph, or
+// a trailing "over"/"under" word) — color alone fails WCAG 1.4.1.
+
+const GAIN = "text-green-600";
+const LOSS = "text-red-600";
+const NEUTRAL_VALUE = "text-muted";
+
+/** Gain/loss framing: positive is green, negative is red (portfolio delta,
+ *  investment growth, contribution-vs-plan delta). Zero → neutral. */
+export function gainLossTextColor(value: number): string {
+  if (value > 0) return GAIN;
+  if (value < 0) return LOSS;
+  return NEUTRAL_VALUE;
+}
+
+/** Budget framing: over (positive delta) is red, under is green — the
+ *  opposite polarity from gainLossTextColor. Zero → neutral. */
+export function overUnderTextColor(delta: number): string {
+  if (delta > 0) return LOSS;
+  if (delta < 0) return GAIN;
+  return NEUTRAL_VALUE;
+}
+
 // ── Badge background colors ──
 // Derived from text color → matching light bg. Used by AccountBadge.
 // Explicitly listed so Tailwind JIT can detect the class names.

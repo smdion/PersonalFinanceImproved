@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
-import { categoryChartHex } from "@/lib/utils/colors";
+import { categoryChartHex, gainLossTextColor } from "@/lib/utils/colors";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { useScenario } from "@/lib/context/scenario-context";
 import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
@@ -909,13 +909,7 @@ export function ContributionsContent() {
                       )}
                     </td>
                     <td
-                      className={`text-right py-1.5 font-medium ${
-                        delta > 0
-                          ? "text-emerald-600"
-                          : delta < 0
-                            ? "text-red-500"
-                            : "text-muted"
-                      }`}
+                      className={`text-right py-1.5 font-medium ${gainLossTextColor(delta)}`}
                     >
                       {delta > 0 ? "+" : ""}
                       {formatCurrency(

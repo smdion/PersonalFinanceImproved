@@ -22,6 +22,7 @@ import {
   EXPENSE_PIE_COLORS,
   essentialColor,
   discretionaryColor,
+  overUnderTextColor,
 } from "@/lib/utils/colors";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
@@ -396,9 +397,7 @@ export function ExpensesContent() {
             label="Actual Spending"
             value={formatCurrency(totalActual)}
             sub={totalActual > totalBudgeted ? "over budget" : "under budget"}
-            color={
-              totalActual > totalBudgeted ? "text-red-600" : "text-green-600"
-            }
+            color={overUnderTextColor(totalActual - totalBudgeted)}
           />
           <SummaryCard
             label="Savings Rate"
@@ -538,7 +537,7 @@ export function ExpensesContent() {
                       {formatCurrency(totalActual)}
                     </td>
                     <td
-                      className={`text-right py-2 px-3 tabular-nums ${totalActual - totalBudgeted > 0 ? "text-red-600" : "text-green-600"}`}
+                      className={`text-right py-2 px-3 tabular-nums ${overUnderTextColor(totalActual - totalBudgeted)}`}
                     >
                       {formatCurrency(Math.abs(totalActual - totalBudgeted))}
                       {totalActual > totalBudgeted ? " over" : " under"}
@@ -621,7 +620,7 @@ export function ExpensesContent() {
                         {formatCurrency(Math.abs(cat.prior))}
                       </td>
                       <td
-                        className={`text-right py-1.5 px-3 tabular-nums ${cat.diff < 0 ? "text-green-600" : cat.diff > 0 ? "text-red-600" : ""}`}
+                        className={`text-right py-1.5 px-3 tabular-nums ${overUnderTextColor(cat.diff)}`}
                       >
                         {cat.diff !== 0
                           ? formatCurrency(Math.abs(cat.diff))
@@ -629,7 +628,7 @@ export function ExpensesContent() {
                         {cat.diff < 0 ? " less" : cat.diff > 0 ? " more" : ""}
                       </td>
                       <td
-                        className={`text-right py-1.5 px-3 tabular-nums ${(cat.percentChange ?? 0) < 0 ? "text-green-600" : (cat.percentChange ?? 0) > 0 ? "text-red-600" : ""}`}
+                        className={`text-right py-1.5 px-3 tabular-nums ${overUnderTextColor(cat.percentChange ?? 0)}`}
                       >
                         {cat.percentChange !== null
                           ? `${cat.percentChange > 0 ? "+" : ""}${formatPercent(cat.percentChange / 100, 1)}`
@@ -758,7 +757,7 @@ function GroupRows({
           {formatCurrency(group.actual)}
         </td>
         <td
-          className={`text-right py-1.5 px-3 tabular-nums font-semibold ${group.diff > 0 ? "text-red-600" : "text-green-600"}`}
+          className={`text-right py-1.5 px-3 tabular-nums font-semibold ${overUnderTextColor(group.diff)}`}
         >
           {formatCurrency(Math.abs(group.diff))}
           {group.diff > 0 ? " over" : " under"}
@@ -797,7 +796,7 @@ function GroupRows({
                   {formatCurrency(item.actual)}
                 </td>
                 <td
-                  className={`text-right py-1 px-3 tabular-nums text-xs ${item.diff > 0 ? "text-red-600" : "text-green-500"}`}
+                  className={`text-right py-1 px-3 tabular-nums text-xs ${overUnderTextColor(item.diff)}`}
                 >
                   {item.budgeted > 0 ? (
                     <>
