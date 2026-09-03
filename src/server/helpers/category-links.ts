@@ -13,7 +13,7 @@
  * The old raw columns stay on budget_items/savings_goals, dead-but-present
  * for now (cleanup deferred to a future schema squash).
  */
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { Db } from "./transforms";
 import type {
@@ -77,14 +77,20 @@ export async function setBudgetItemLink(
     lastSyncedAt?: Date | null;
   },
 ): Promise<void> {
-  const {
-    budgetItemId,
-    service,
-    categoryId,
-    categoryName = null,
-    syncDirection = null,
-    lastSyncedAt = null,
-  } = params;
+  const { budgetItemId, service, categoryId, categoryName = null } = params;
+
+  // syncDirection/lastSyncedAt: omitting the field means "leave whatever is
+  // already there" — NOT "clear it to null". Several callers (rename/
+  // name-sync paths) only ever touch categoryId/categoryName and must not
+  // silently wipe an existing link's syncDirection or reset its
+  // lastSyncedAt on every pass. Only a caller that explicitly passes the
+  // field (including an explicit `null`, e.g. to intentionally reset it)
+  // overwrites the stored value; the insert-branch (no existing row to
+  // preserve) still defaults an omitted field to null.
+  const syncDirectionProvided = "syncDirection" in params;
+  const lastSyncedAtProvided = "lastSyncedAt" in params;
+  const syncDirection = params.syncDirection ?? null;
+  const lastSyncedAt = params.lastSyncedAt ?? null;
 
   await db
     .insert(schema.budgetItemCategoryLinks)
@@ -101,7 +107,16 @@ export async function setBudgetItemLink(
         schema.budgetItemCategoryLinks.budgetItemId,
         schema.budgetItemCategoryLinks.service,
       ],
-      set: { categoryId, categoryName, syncDirection, lastSyncedAt },
+      set: {
+        categoryId,
+        categoryName,
+        syncDirection: syncDirectionProvided
+          ? syncDirection
+          : sql`${schema.budgetItemCategoryLinks.syncDirection}`,
+        lastSyncedAt: lastSyncedAtProvided
+          ? lastSyncedAt
+          : sql`${schema.budgetItemCategoryLinks.lastSyncedAt}`,
+      },
     });
 }
 
@@ -167,8 +182,12 @@ export async function setSavingsGoalLink(
     role = "primary",
     categoryId,
     categoryName = null,
-    lastSyncedAt = null,
   } = params;
+  // Same "omitted means preserve" contract as setBudgetItemLink — several
+  // rename/name-sync callers only touch categoryId/categoryName and must
+  // not reset an existing link's lastSyncedAt to null on every pass.
+  const lastSyncedAtProvided = "lastSyncedAt" in params;
+  const lastSyncedAt = params.lastSyncedAt ?? null;
 
   await db
     .insert(schema.savingsGoalCategoryLinks)
@@ -186,7 +205,13 @@ export async function setSavingsGoalLink(
         schema.savingsGoalCategoryLinks.service,
         schema.savingsGoalCategoryLinks.role,
       ],
-      set: { categoryId, categoryName, lastSyncedAt },
+      set: {
+        categoryId,
+        categoryName,
+        lastSyncedAt: lastSyncedAtProvided
+          ? lastSyncedAt
+          : sql`${schema.savingsGoalCategoryLinks.lastSyncedAt}`,
+      },
     });
 }
 
