@@ -412,10 +412,12 @@ export async function buildEnginePayload(
     (r) => r.profileId === activeProfileId,
   );
   // Primary person's raise rate — the fallback every other person inherits
-  // when their own `retirement_settings` row carries no distinct rate (a
-  // stored 0 or unparseable value counts as "no distinct rate", matching the
-  // engine's long-standing `|| primaryRaiseRate` semantics). Computed here so
-  // BOTH `perPersonSettings` (below, for the per-person UI control) and
+  // when they have no `retirement_settings` row in the active profile at
+  // all (not when their row holds an explicit 0 — 0% is a real, meaningful
+  // rate, e.g. someone at a salary cap or modeling a freeze; treating it as
+  // "unset" silently overwrote it with the primary's rate, defeating the
+  // per-person raise-rate control). Computed here so BOTH
+  // `perPersonSettings` (below, for the per-person UI control) and
   // `raiseRateByPerson` (further down, for salary-override growth) resolve
   // the effective rate the same way — one decision, one code path.
   const primaryRaiseRate = toNumber(settings.salaryAnnualIncrease);
@@ -423,25 +425,33 @@ export async function buildEnginePayload(
     const pp = profilePeople.find((r) => r.personId === p.id);
     // Legacy path: no profile resolved at all (see `settings` above).
     const ps = pp ?? retSettings.find((s) => s.personId === p.id);
-    // salary_annual_increase never moved to retirement_profile_people — it's
-    // still on retirement_settings, genuinely per (profile, person). Scope to
-    // the active profile so a household with 2+ profiles doesn't pick an
-    // arbitrary one's rate (same fix the raiseRateByPerson docblock records).
+    // salary_annual_increase DOES exist as a column on retirement_profile_people
+    // (migration 0032 backfilled it, profile duplication clones it) — but
+    // nothing reads or writes it there; `pp` above is never used for this
+    // field. retirement_settings stays the live source, genuinely per
+    // (profile, person). Scope to the active profile so a household with
+    // 2+ profiles doesn't pick an arbitrary one's rate (same fix the
+    // raiseRateByPerson docblock records).
     const rsRowForRaise = retSettings.find(
       (s) => s.personId === p.id && s.profileId === activeProfileId,
     );
-    const effectiveRaiseRate =
-      toNumber(rsRowForRaise?.salaryAnnualIncrease ?? "") || primaryRaiseRate;
+    const parsedRaiseRate = rsRowForRaise
+      ? toNumber(rsRowForRaise.salaryAnnualIncrease)
+      : NaN;
+    const effectiveRaiseRate = Number.isFinite(parsedRaiseRate)
+      ? parsedRaiseRate
+      : primaryRaiseRate;
     return {
       personId: p.id,
       name: p.name,
       birthYear: new Date(p.dateOfBirth).getFullYear(),
       retirementAge: ps?.retirementAge ?? settings.retirementAge,
       endAge: ps?.endAge ?? settings.endAge,
-      // Effective pre-retirement raise rate for THIS person. A person
-      // whose row has no distinct rate shows the primary's rate here rather
-      // than a misleading 0 — the per-person control edits the effective
-      // value, and writing a nonzero value through it stores a real rate.
+      // Effective pre-retirement raise rate for THIS person. A person with
+      // no retirement_settings row in the active profile at all shows the
+      // primary's rate here; a person with a row (including an explicit 0)
+      // shows their own — the per-person control edits this effective
+      // value directly.
       salaryAnnualIncrease: String(effectiveRaiseRate),
       // Still read from THIS person's own retirement_settings row, not from
       // the profile's. The field is dead (the client's PerPersonSettings type

@@ -550,29 +550,34 @@ describe("retirement.retirementProfiles", () => {
     expect(rows).toHaveLength(2);
   });
 
-  it("duplicate clones household settings from the PRIMARY person's row, not each person's own", async () => {
+  it("duplicate clones EACH person's own retirement_settings row, not the primary's row fanned out to everyone", async () => {
     // personA has retirementAge 65, personB has 62 -- they DISAGREE on this
-    // household-grain field (matching the real-world drift
-    // pickProfileSettingsRow's docblock documents). Neither person is
-    // flagged isPrimaryUser here, so getPrimaryPerson falls back to the
-    // first person in id order -- personA. Both new rows must carry
-    // personA's retirementAge (65), not a per-person mix.
+    // per-person field. `duplicate` used to source every new row from the
+    // primary's (personA's) row alone, silently overwriting personB's 62
+    // with 65 on every profile duplication -- the real cross-person leak
+    // an ultra code review caught (findings that looked similar elsewhere
+    // in build-engine-payload.ts turned out to already be correctly
+    // profile-scoped; this one wasn't). Each person's new row must keep
+    // their OWN values.
     const settings = await caller.retirement.retirementSettings.list();
     const newRows = settings.filter((s) => s.profileId === secondProfileId);
     expect(newRows).toHaveLength(2);
-    expect(newRows.every((r) => r.retirementAge === 65)).toBe(true);
+    expect(newRows.find((r) => r.personId === personA)!.retirementAge).toBe(65);
+    expect(newRows.find((r) => r.personId === personB)!.retirementAge).toBe(62);
   });
 
-  it("duplicate creates a retirement_profile_people row for every person (completeness invariant), sourced from the primary person", async () => {
+  it("duplicate creates a retirement_profile_people row for every person (completeness invariant), each sourced from their own source row", async () => {
     const rows = await caller.retirement.retirementProfilePeople.list();
     const newRows = rows.filter((r) => r.profileId === secondProfileId);
     expect(newRows).toHaveLength(2);
-    // personA (first by id, no isPrimaryUser set on either) is the source
-    // for BOTH new rows -- personB's own distinct retirementAge (62) must
-    // NOT appear on personB's new row, same rule as the household-settings
-    // assertion above.
-    expect(newRows.every((r) => r.retirementAge === 65)).toBe(true);
-    expect(newRows.every((r) => r.ssStartAge === 67)).toBe(true);
+    // personA's row keeps its own retirementAge/ssStartAge; personB's row
+    // keeps ITS own (62/65), not personA's (65/67) fanned out to both.
+    const newA = newRows.find((r) => r.personId === personA)!;
+    const newB = newRows.find((r) => r.personId === personB)!;
+    expect(newA.retirementAge).toBe(65);
+    expect(newA.ssStartAge).toBe(67);
+    expect(newB.retirementAge).toBe(62);
+    expect(newB.ssStartAge).toBe(65);
     expect(new Set(newRows.map((r) => r.personId))).toEqual(
       new Set([personA, personB]),
     );

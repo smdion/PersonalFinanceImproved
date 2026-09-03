@@ -1182,33 +1182,46 @@ export const retirementRouter = createTRPCRouter({
             .returning();
           if (!newProfile) throw new Error("Failed to create profile.");
 
-          const {
-            id: _hhId,
-            personId: _hhPersonId,
-            profileId: _hhProfileId,
-            ...householdFields
-          } = sourceHousehold;
+          // Duplicate each person's OWN source row, not the primary's row
+          // fanned out to everyone — a household with 2+ people previously
+          // had every non-primary person's retirementAge/endAge/
+          // socialSecurityMonthly/ssStartAge/ruleOf55Override/raise-rate
+          // silently overwritten with the primary's values on every
+          // profile duplication. Fall back to the primary's row only for a
+          // person with no source row of their own (matches the
+          // pre-existing behaviour for that edge case).
+          const sourceSettingsByPerson = new Map(
+            sourceSettings.map((s) => [s.personId, s]),
+          );
           await tx.insert(schema.retirementSettings).values(
-            people.map((p) => ({
-              ...householdFields,
-              personId: p.id,
-              profileId: newProfile.id,
-            })),
+            people.map((p) => {
+              const src = sourceSettingsByPerson.get(p.id) ?? sourceHousehold;
+              const {
+                id: _hhId,
+                personId: _hhPersonId,
+                profileId: _hhProfileId,
+                ...fields
+              } = src;
+              return { ...fields, personId: p.id, profileId: newProfile.id };
+            }),
           );
 
           if (sourcePrimaryPeopleRow) {
-            const {
-              id: _ppId,
-              personId: _ppPersonId,
-              profileId: _ppProfileId,
-              ...perPersonFields
-            } = sourcePrimaryPeopleRow;
+            const sourcePeopleByPerson = new Map(
+              sourcePeopleRows.map((r) => [r.personId, r]),
+            );
             await tx.insert(schema.retirementProfilePeople).values(
-              people.map((p) => ({
-                ...perPersonFields,
-                personId: p.id,
-                profileId: newProfile.id,
-              })),
+              people.map((p) => {
+                const src =
+                  sourcePeopleByPerson.get(p.id) ?? sourcePrimaryPeopleRow;
+                const {
+                  id: _ppId,
+                  personId: _ppPersonId,
+                  profileId: _ppProfileId,
+                  ...fields
+                } = src;
+                return { ...fields, personId: p.id, profileId: newProfile.id };
+              }),
             );
           }
 
