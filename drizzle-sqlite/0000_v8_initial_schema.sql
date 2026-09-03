@@ -1048,7 +1048,9 @@ WHERE NOT EXISTS (
 );
 --> statement-breakpoint
 INSERT INTO `app_settings` (`key`, `value`)
-VALUES ('active_salary_profile_id', CAST((SELECT MAX(`id`) FROM `salary_profiles`) AS TEXT))
+SELECT 'active_salary_profile_id', CAST(MAX(`id`) AS TEXT)
+FROM `salary_profiles`
+WHERE EXISTS (SELECT 1 FROM `salary_profiles`)
 ON CONFLICT(`key`) DO UPDATE
 	SET `value` = excluded.`value`
 	WHERE `app_settings`.`value` IS NULL

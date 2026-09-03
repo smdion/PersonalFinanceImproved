@@ -298,12 +298,9 @@ function resolveWritableBackupDir(): string | null {
 
 /**
  * Export a JSON snapshot of every VERSION_TABLE_NAMES table and write it to
- * disk. Shared by handleSquashUpgrade (pre-squash safety net) and the normal
- * idempotent pre-apply loop's pre-0016 backup (see the call site right
- * before migration 0016_drop_salary_ledger_tables's DROP TABLE runs) — same
- * format either way, so a single "pre-upgrade-backup-*.json" file on disk
- * always means the same thing to an operator regardless of which path wrote
- * it.
+ * disk. Written by the squash-upgrade path (pre-squash safety net). Same
+ * "pre-upgrade-backup-*.json" format regardless of which call site wrote it,
+ * so it always means the same thing to an operator.
  */
 async function writePreMigrationBackupPg(
   client: import("pg").PoolClient,
@@ -423,7 +420,7 @@ async function handleSquashUpgrade(
         const { rows: tableProbe } = await client.query(
           `SELECT EXISTS (
             SELECT 1 FROM information_schema.tables
-            WHERE table_name = 'people'
+            WHERE table_schema = 'public' AND table_name = 'people'
           ) AS exists`,
         );
         if (tableProbe[0]?.exists) {
@@ -516,12 +513,11 @@ async function handleSquashUpgrade(
       const sql = fs.readFileSync(sqlPath, "utf-8");
       const hash = crypto.createHash("sha256").update(sql).digest("hex");
 
-      // (The per-tag data-backfill hooks that used to run here — for
-      // 0016_drop_salary_ledger_tables and 0036_category_links_backfill —
-      // are gone: the v0.8.0 squash collapsed those tags out of the
-      // journal, so this replay loop only ever sees 0000_v8_initial_schema.
-      // The backfill functions are kept for reference / reuse. See
-      // backfillHistoricalSalaries / backfillCategoryLinks below.)
+      // (Per-tag data-backfill hooks for 0016_drop_salary_ledger_tables /
+      // 0036_category_links_backfill were removed in the v0.8.0 squash —
+      // those tags are no longer in any journal, so this replay loop only
+      // ever sees 0000_v8_initial_schema. See git history at 0d30aaf~1 if
+      // that backfill logic is ever needed again.)
 
       const statements = sql
         .split("--> statement-breakpoint")
@@ -574,7 +570,7 @@ async function handleSquashUpgrade(
         try {
           const { rows } = await client.query(
             `SELECT 1 FROM information_schema.columns
-             WHERE table_name = $1 AND column_name = $2`,
+             WHERE table_schema = 'public' AND table_name = $1 AND column_name = $2`,
             [table, from],
           );
           if (rows.length > 0) {
@@ -849,8 +845,8 @@ async function runPostgres() {
 
 /**
  * SQLite twin of writePreMigrationBackupPg (see its docblock) — same
- * VERSION_TABLE_NAMES snapshot, same JSON shape, same call sites (squash
- * detection, and the normal pre-apply loop's pre-0016 backup).
+ * VERSION_TABLE_NAMES snapshot, same JSON shape, written by the
+ * squash-upgrade path.
  */
 function writePreMigrationBackupSQLite(
   sqlite: InstanceType<typeof import("better-sqlite3")>,

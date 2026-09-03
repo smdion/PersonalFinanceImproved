@@ -25,18 +25,23 @@
  * emit clean ALTER TABLE ADD COLUMN migrations.
  *
  * Known SQLite-only divergence between a *fresh* migrate and an *upgraded*
- * one, accepted because SQLite is dev/test only and prod is PostgreSQL:
- *   - FK ON DELETE actions (scenarios.*_profile_id → SET NULL,
- *     retirement_settings.profile_id → CASCADE, etc.): a fresh v0.8.0
- *     baseline emits the declared action inline; SQLite installs upgraded
- *     from pre-v0.8 had those FKs added by table-recreate migrations that
- *     landed them as NO ACTION. A fresh dev DB therefore enforces cascade/
- *     set-null where a CI-upgraded dev DB does not.
+ * one, accepted because SQLite is dev/test only and prod is PostgreSQL
+ * (measured by replaying the full pre-squash SQLite chain and diffing
+ * structure against a fresh v0.8 baseline — tables/columns/indexes match):
+ *   - 6 FK ON DELETE actions differ: scenarios.{budget,salary,contribution,
+ *     retirement}_profile_id → SET NULL, retirement_salary_overrides.
+ *     salary_profile_id → SET NULL, retirement_settings.profile_id →
+ *     CASCADE. A fresh v0.8 baseline emits the declared action inline;
+ *     SQLite installs upgraded from pre-v0.8 had those FKs added by
+ *     table-recreate migrations that landed them as NO ACTION.
+ *   - mortgage_loans.refinanced_from_id FK (→ SET NULL): present on a fresh
+ *     v0.8 baseline (the schema now declares the self-reference), absent on
+ *     upgraded SQLite installs (the SQLite 0019 never added it).
  *   - account_holdings.weight_bps range CHECK: present on installs upgraded
  *     through the v0.7.0 in-memory replay, absent on a fresh v0.8 baseline
  *     (stripped, per above).
- * Neither affects PostgreSQL, where schema-pg.ts is authoritative and both
- * are enforced.
+ * None affect PostgreSQL, where schema-pg.ts is authoritative and all are
+ * enforced.
  */
 
 import * as fs from "fs";

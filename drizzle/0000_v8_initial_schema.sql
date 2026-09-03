@@ -1023,6 +1023,15 @@ CREATE UNIQUE INDEX "utility_service_kind_idx" ON "utility_service" USING btree 
 -- `drizzle-kit generate` output; everything below is carried forward by hand
 -- through the v0.8.0 squash and must be re-applied after any regenerate.
 -- ─────────────────────────────────────────────────────────────────────────────
+-- Converge the mortgage self-FK onto its canonical (drizzle-generated) name.
+-- Migration 0019 added it by hand as "mortgage_loans_refinanced_from_id_fk";
+-- the regenerated baseline emits the same constraint under the auto name
+-- "mortgage_loans_refinanced_from_id_mortgage_loans_id_fk". On a squash-
+-- recovery replay against an existing install the replay adds the auto-named
+-- one (no 42710 since the name differs) and PostgreSQL keeps BOTH — this drops
+-- the old name so upgraded and fresh installs match. No-op on a fresh install.
+ALTER TABLE "mortgage_loans" DROP CONSTRAINT IF EXISTS "mortgage_loans_refinanced_from_id_fk";
+--> statement-breakpoint
 -- Baseline profile seed (from 0008_kill_live_sentinel steps 3-6; the column
 -- reshapes that migration also did are baked into the CREATE TABLEs above).
 -- Idempotent: on a fresh install this seeds the "Current" Salary and

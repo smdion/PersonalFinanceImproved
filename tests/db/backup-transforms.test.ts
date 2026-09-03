@@ -713,6 +713,24 @@ describe("transformBackupToCurrentSchema — v0.7_final / v0.8.0 baseline", () =
       retirement_profile_people: [
         { id: 1, profile_id: 1, person_id: 1, retirement_age: 65 },
       ],
+      // Every column transformV07xToCurrent would otherwise backfill:
+      retirement_settings: [
+        {
+          id: 1,
+          person_id: 1,
+          profile_id: 1,
+          retirement_age: 65,
+          distribution_tax_rate_traditional: null,
+          distribution_tax_rate_roth: null,
+          distribution_tax_rate_brokerage: null,
+          distribution_tax_rate_hsa: null,
+        },
+      ],
+      scenarios: [{ id: 1, name: "Base", retirement_profile_id: null }],
+      app_settings: [
+        { id: 1, key: "theme", value: "dark" },
+        { id: 2, key: "active_retirement_profile_id", value: 1 },
+      ],
       fpl_by_household: [{ id: 1, tax_year: 2026, amounts: {} }],
       tax_params: [{ id: 1, tax_year: 2026, version: 1 }],
       savings_planned_tx_settlements: [{ id: 1, planned_tx_id: 1 }],
@@ -747,6 +765,37 @@ describe("transformBackupToCurrentSchema — v0.7_final / v0.8.0 baseline", () =
       ).not.toThrow();
     });
   }
+
+  // Regression: the cumulative era ladder runs transformV07xToCurrent for
+  // every era, including v0.6/v0.5/older. That transform appends an
+  // active-profile pointer row to app_settings — it must carry an `id` so
+  // the row is column-compatible with the table's existing (id-bearing)
+  // rows, or the restore INSERT NULL-fills the NOT NULL serial PK and aborts.
+  it("appends the app_settings pointer with an id when backfilling a pre-0032 backup", () => {
+    const tables = makeBackup({
+      // v0.6_final shape: retirement_settings present, no retirement_profiles.
+      retirement_settings: [{ id: 1, person_id: 1, retirement_age: 65 }],
+      retirement_scenarios: [],
+      app_settings: [{ id: 7, key: "theme", value: "dark" }],
+    });
+    const result = transformBackupToCurrentSchema(
+      tables,
+      "v0.6_final",
+      CURRENT_VERSION,
+    );
+    const appSettings = result.tables["app_settings"] as Record<
+      string,
+      unknown
+    >[];
+    const pointer = appSettings.find(
+      (r) => r["key"] === "active_retirement_profile_id",
+    );
+    expect(pointer).toBeDefined();
+    expect(pointer!["id"]).toBe(8); // max(7) + 1
+    // Every row now has the same key set — no NULL-filled NOT NULL column.
+    const keySets = appSettings.map((r) => Object.keys(r).sort().join(","));
+    expect(new Set(keySets).size).toBe(1);
+  });
 });
 
 // ---------------------------------------------------------------------------

@@ -53,7 +53,6 @@ export const VERSION_TABLES: VersionTableEntry[] = [
   { name: "mc_user_presets", tier: 0 },
   { name: "utility_service", tier: 0 },
   { name: "simplefin_balance_snapshots", tier: 0 },
-  { name: "simplefin_accounts", tier: 0 },
 
   // Tier 1 — depends on tier 0
   { name: "jobs", tier: 1 },
@@ -93,6 +92,7 @@ export const VERSION_TABLES: VersionTableEntry[] = [
   { name: "account_basis", tier: 2 }, // FKs into performance_accounts (tier 1) + people (tier 0)
   { name: "budget_item_category_links", tier: 2 }, // FK into budget_items (tier 1)
   { name: "savings_goal_category_links", tier: 2 }, // FK into savings_goals (tier 0)
+  { name: "simplefin_accounts", tier: 2 }, // FK into performance_accounts (tier 1)
 
   // Tier 3 — depends on tier 2
   { name: "pending_rollovers", tier: 3 }, // FKs into account_performance (tier 2, ON DELETE restrict) + performance_accounts (tier 1)

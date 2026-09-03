@@ -740,7 +740,18 @@ function transformV07xToCurrent(tables: TableData): TableData {
           (r) => r["key"] === "active_retirement_profile_id",
         )
       ) {
+        // Carry a synthetic id so the appended row is column-compatible
+        // with the table's existing rows. The restore paths build their
+        // INSERT column list from the row set and NULL-fill any key a row
+        // is missing — app_settings.id is a NOT NULL serial PK, so an
+        // id-less row here would abort the whole restore. Sequences are
+        // reset (setval) after restore, so a synthetic max+1 is safe.
+        const maxId = appSettingsRows.reduce(
+          (m, r) => Math.max(m, Number(r["id"]) || 0),
+          0,
+        );
         appSettingsRows.push({
+          id: maxId + 1,
           key: "active_retirement_profile_id",
           value: profileId,
         });
