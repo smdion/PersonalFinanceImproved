@@ -6,9 +6,9 @@
  *   - mortgage.mortgageWhatIfScenarios (list / create / update / delete)
  *   - mortgage.mortgageExtraPayments (list / create / update / delete)
  *
- * Moved from routers/settings/mortgage.ts to routers/mortgage.ts (audit
- * Batch 11 Finding 1 — page-ownership rule, RULES.md's "Settings Belong on
- * Their Pages") — this file moved alongside it (2026-08-20).
+ * Moved from routers/settings/mortgage.ts to routers/mortgage.ts
+ * (page-ownership rule, RULES.md's "Settings Belong on Their Pages") —
+ * this file moved alongside it.
  */
 import "./setup-mocks";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";

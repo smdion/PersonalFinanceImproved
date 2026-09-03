@@ -51,7 +51,7 @@ describe("enforceRmd", () => {
   });
 
   // -------------------------------------------------------------------
-  // R49: nonRetirement capacity scoping + rmdShortfallAmount
+  // nonRetirement capacity scoping + rmdShortfallAmount
   // -------------------------------------------------------------------
 
   it("caps the shortfall's distribution capacity to Retirement-only balance, leaving a real rmdShortfallAmount when that's insufficient", () => {

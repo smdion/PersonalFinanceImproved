@@ -1801,8 +1801,7 @@ describe("projection router — computeCoastFireMC", () => {
 });
 
 // ---------------------------------------------------------------------------
-// computeCoastFireProbe (Coast FIRE "Custom Age" picker,
-// PLAN-coast-fire-custom-age.md, advisor-reviewed 2026-08-30)
+// computeCoastFireProbe (Coast FIRE "Custom Age" picker)
 // ---------------------------------------------------------------------------
 
 describe("projection router — computeCoastFireProbe", () => {

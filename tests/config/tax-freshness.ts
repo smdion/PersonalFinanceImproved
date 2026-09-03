@@ -91,7 +91,7 @@ export function assertTaxFreshness(entry: TaxFreshnessEntry): void {
 export const TAX_PARAMETER_REGISTRY: TaxFreshnessEntry[] = [
   // --- DB-driven (annual, updated via seed file or Settings UI) ---
   //
-  // R43 (C10): the 6 seed-table + LTCG-fallback entries that used to live
+  // The 6 seed-table + LTCG-fallback entries that used to live
   // here individually (Federal tax brackets, Contribution limits, Standard
   // deduction, LTCG brackets, IRMAA brackets — all seed-only, no dedicated
   // drift-guard test referencing their name — plus the LTCG code fallback)
@@ -146,7 +146,7 @@ export const TAX_PARAMETER_REGISTRY: TaxFreshnessEntry[] = [
     location: "src/lib/config/aca-tables.ts → FPL_BY_HOUSEHOLD",
     changeFrequency: "annual",
   },
-  // (The "ACA premium estimates" entry was removed in R43 (C5) along with
+  // (The "ACA premium estimates" entry was removed along with
   // its dead `estimateAcaSubsidyValue` function — see aca-tables.ts.)
 
   // --- Structurally stable (rarely change) ---

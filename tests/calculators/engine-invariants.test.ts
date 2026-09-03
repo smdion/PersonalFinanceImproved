@@ -452,10 +452,8 @@ describe("engine invariants", () => {
               if (!catBal) continue;
               const catTotal = getTotalBalance(catBal);
               // Individual account sum should equal category total to the
-              // cent (v0.7.8 indBal reconciliation follow-up,
-              // DESIGN-DECISION-v0.7.8-indbal-reconciliation.md § Q4 —
-              // tightened from < $1 now that reconcileIndividualToAggregate
-              // runs every year).
+              // cent — tightened from < $1 now that
+              // reconcileIndividualToAggregate runs every year.
               expect(Math.abs(indivTotal - catTotal)).toBeLessThan(0.01);
             }
           }
@@ -613,8 +611,7 @@ describe("engine invariants", () => {
     });
 
     it("31 — no indBal/acctBal reconciliation diagnostic is emitted for any fixture (v0.7.8 indBal reconciliation follow-up)", () => {
-      // DESIGN-DECISION-v0.7.8-indbal-reconciliation.md § Q4 — a >$1
-      // indBal/acctBal drift is a structural finding, not rounding, and
+      // A >$1 indBal/acctBal drift is a structural finding, not rounding, and
       // reconcileIndividualToAggregate surfaces it as a "[DIAG] indBal/
       // acctBal reconciliation:"-prefixed warning rather than silently
       // absorbing it. This invariant asserts that finding never actually
@@ -641,8 +638,7 @@ describe("engine invariants", () => {
     });
 
     it("30 — sum of individual-account withdrawals per category equals that category's slot withdrawal (v0.7.8 indBal reconciliation follow-up)", () => {
-      // DESIGN-DECISION-v0.7.8-indbal-reconciliation.md § Q3/Q4 — before
-      // that fix, distributeWithdrawals could silently under-distribute a
+      // Before that fix, distributeWithdrawals could silently under-distribute a
       // slot's withdrawal across individual accounts (a shortfall re-routing
       // gap, not the over-withdrawal originally suspected). This invariant
       // guards the fix directly, at the category level (not just the

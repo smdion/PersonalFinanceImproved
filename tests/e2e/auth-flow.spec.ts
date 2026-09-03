@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 /**
- * Auth journey — v0.5 expert-review M18.
+ * Auth journey.
  *
  * Covers the login page contract: the form fields a real user sees when
  * the server redirects them for auth, and the error-display path that

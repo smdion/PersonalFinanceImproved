@@ -234,8 +234,7 @@ describe("taxBuckets router", () => {
   });
 
   it("batchUpdateRothBasis upserts multiple (account, owner) entries in one transaction, computeBreakdown reflects all of them", async () => {
-    // Missing test coverage found in code review, 2026-08-27 — this
-    // mutation shipped live in the UI's batch-save flow with no test at
+    // This mutation shipped live in the UI's batch-save flow with no test at
     // all, auth or success-path, despite writing financial (tax-basis)
     // figures used by IRS-related calculations.
     const person1Id = await seedPerson(db, "Batch One", "1980-01-01");

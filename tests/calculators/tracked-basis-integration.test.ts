@@ -1,8 +1,7 @@
 /**
- * Full-pipeline integration test for tracked Roth basis draw-down
- * (v0.7.8 tracked-basis follow-up, DESIGN-DECISION-v0.7.8-tracked-basis.md).
+ * Full-pipeline integration test for tracked Roth basis draw-down.
  *
- * Acceptance criteria exercised here (from the design doc):
+ * Acceptance criteria exercised here:
  *   6. Basis-exhaustion transition: a household whose tracked basis runs to
  *      zero mid-decumulation flips `eligibilityLocked` from false to true in
  *      a specific year, and stays true afterward.

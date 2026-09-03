@@ -1,13 +1,12 @@
 /**
- * Multi-year withdrawal-policy optimizer, Phase 1 (2026-08-29) --
+ * Multi-year withdrawal-policy optimizer, Phase 1 —
  * `rothBracketTarget` as a real per-year `DecumulationOverride`.
  * Previously this lived only at `decumulationDefaults.distributionTaxRates
  * .rothBracketTarget`, a single fixed value for the whole plan with no
  * override path at all -- added so a future multi-year search can express
  * "try this bracket target for this candidate" the same way
  * `accumulationOverrides` already lets Coast FIRE express a candidate
- * contribution rate. See
- * `.scratch/docs/plans/PLAN-v0.7.10-multi-year-withdrawal-optimizer.md`.
+ * contribution rate.
  */
 import { describe, it, expect } from "vitest";
 import { calculateProjection } from "@/lib/calculators/engine";

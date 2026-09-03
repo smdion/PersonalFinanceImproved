@@ -341,8 +341,8 @@ describe("buildEnginePayload — two-person household (H10/T24 wiring)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// R43 — irmaa_brackets is now wired into the engine payload.
-// Before R43 the table + its Settings editor were live but no engine path
+// irmaa_brackets is now wired into the engine payload.
+// The table + its Settings editor were previously live but no engine path
 // read them; distributionTaxRates had no irmaaBrackets field, and
 // decumulation-year.ts passed literal `undefined` to growIrmaaBrackets.
 // These lock in that (a) the seeded rows now reach the payload, and
@@ -409,9 +409,10 @@ describe("buildEnginePayload — irmaa_brackets wiring (R43)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// R43 C4d — retirement_profiles.tax_params_year pins the resolved year.
-// NULL (default) => newest enacted, byte-identical to pre-R43. A non-null
-// value re-prices the projection under that year's reference data.
+// retirement_profiles.tax_params_year pins the resolved year.
+// NULL (default) => newest enacted, byte-identical to before this field
+// existed. A non-null value re-prices the projection under that year's
+// reference data.
 // ---------------------------------------------------------------------------
 describe("buildEnginePayload — tax_params_year profile pin (R43)", () => {
   let db: BetterSQLite3Database<typeof sqliteSchema>;
@@ -467,7 +468,7 @@ describe("buildEnginePayload — tax_params_year profile pin (R43)", () => {
     expect(payload!.distributionTaxRates.standardDeduction).toBe(30000);
   });
 
-  // R43 C7 + post-release fix: resolveTaxParams's candidateYears() is
+  // resolveTaxParams's candidateYears() is
   // sourced from contribution_limits ALONE (not the union of all five
   // reference tables) specifically so a year like this — tax_brackets
   // seeded, contribution_limits not — is never selectable at all, pinned

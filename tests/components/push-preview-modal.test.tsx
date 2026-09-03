@@ -4,7 +4,7 @@
  * wording for Actual") threaded destinationLabel through the title/column
  * labels, but the body copy explaining why a push takes a while still
  * hardcoded "YNAB" verbatim — an Actual household saw YNAB-branded text
- * in the confirmation dialog. Advisor-caught 2026-09-01.
+ * in the confirmation dialog.
  */
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";

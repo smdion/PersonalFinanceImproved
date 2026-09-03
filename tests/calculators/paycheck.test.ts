@@ -123,8 +123,8 @@ describe("calculatePaycheck", () => {
   });
 
   describe("payFrequencyLabel", () => {
-    // Pinned per audit Batch 4 Finding 4 (paycheck.ts's local label map
-    // consolidated onto display-labels.ts's PAY_PERIOD_LABELS) — semimonthly's
+    // paycheck.ts's local label map is consolidated onto
+    // display-labels.ts's PAY_PERIOD_LABELS — semimonthly's
     // "(1st & 15th)" suffix and biweekly's even/odd suffix are paycheck-specific
     // detail not present in the shared base labels, preserved here explicitly.
     it("weekly", () => {
@@ -311,7 +311,7 @@ describe("calculateBlendedAnnual", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Anchor-payday date-walk pinned values (audit Batch 4 Finding 2)
+// Anchor-payday date-walk pinned values
 //
 // Pinned ahead of consolidating the "align anchor date to on/after a
 // reference date" idiom, duplicated across findExtraPaycheckMonths,

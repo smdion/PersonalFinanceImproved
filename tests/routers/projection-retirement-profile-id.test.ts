@@ -1,8 +1,6 @@
 /**
- * Regression coverage for a real cross-file gap the code-review found in
- * the v0.7.10 branch (advisor-caught 2026-09-01, confirmed independently
- * by a code-review cross-file tracer): the Retirement page's Assumptions
- * band lets you VIEW a non-active Retirement Profile without activating
+ * Regression coverage for a real cross-file gap: the Retirement page's
+ * Assumptions band lets you VIEW a non-active Retirement Profile without activating
  * it (same "view without activating" contract computeProjection/
  * computeStrategyComparison already honor via retirementProfileId), but
  * computeMonteCarloProjection/computeCoastFire/computeCoastFireMC/

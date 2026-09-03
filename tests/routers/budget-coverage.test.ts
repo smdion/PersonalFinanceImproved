@@ -1683,8 +1683,7 @@ describe("budget router — computeActiveSummary with contribution-linked items"
 });
 
 // ---------------------------------------------------------------------------
-// What-If sandbox support: itemAmountActiveFields + netMonthlyIncome. See
-// .scratch/docs/plans/what-if-editable-sandbox-final.md section 3.
+// What-If sandbox support: itemAmountActiveFields + netMonthlyIncome.
 // ---------------------------------------------------------------------------
 describe("budget router — computeActiveSummary sandbox support", () => {
   it("itemAmountActiveFields replaces an item's amount for the given column, leaving others untouched", async () => {

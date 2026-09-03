@@ -536,12 +536,12 @@ describe("findCoastFireAge — v0.7.8 penalty-hard-exclusion baseline honesty", 
   });
 });
 
-// Advisor review, 2026-08-29 (findings #8 and #9): two more baseline-honesty
-// gaps in passes(), same class of bug as the penalty-exclusion block above.
-describe("findCoastFireAge — R49 non-retirement exclusion baseline honesty (finding #8)", () => {
+// Two more baseline-honesty gaps in passes(), same class of bug as the
+// penalty-exclusion block above.
+describe("findCoastFireAge — non-retirement exclusion baseline honesty", () => {
   const AS_OF_3 = new Date("2025-03-07");
 
-  // A Portfolio-parented account (R49: unconditionally excluded from
+  // A Portfolio-parented account (unconditionally excluded from
   // retirement routing, no config lever) holds all the household's Roth
   // money. The other, routable accounts are deliberately thin -- not
   // enough on their own to cover the portfolio's share of spending once
@@ -691,7 +691,7 @@ describe("findCoastFireAge — R49 non-retirement exclusion baseline honesty (fi
 describe("findCoastFireAge — net/gross unit fix for the no-stated-need fallback (finding #9)", () => {
   const AS_OF_4 = new Date("2025-03-07");
 
-  // R45 Step 2 changed sustainableWithdrawal's meaning to the strategy's
+  // sustainableWithdrawal's meaning is the strategy's
   // actual tax-grossed-up withdrawal (gross of tax, net of Social
   // Security) without updating the no-stated-need fallback in passes(),
   // which still compared it directly against projectedExpenses (gross of

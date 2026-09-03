@@ -4,11 +4,9 @@
  *
  * Fixture style mirrors `coast-fire.test.ts`: hand-constructed households
  * run through `calculateProjection`/`optimizeRothBracketTarget` as a real
- * black box, no engine internals imported. `MAIN_HOUSEHOLD` reuses the
- * exact configuration from the design doc's committed probe
- * (`.scratch/probes/probe-multiyear-optimizer.ts`, round 4) so this file's
- * pinned numbers are independently reproducible from that probe too. See
- * `.scratch/docs/plans/PLAN-v0.7.10-multi-year-withdrawal-optimizer.md`.
+ * black box, no engine internals imported. `MAIN_HOUSEHOLD` is a
+ * hand-constructed configuration; its pinned numbers are reproducible by
+ * running the same household through `calculateProjection`.
  */
 import { describe, it, expect } from "vitest";
 import { calculateProjection } from "@/lib/calculators/engine";

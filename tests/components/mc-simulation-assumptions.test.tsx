@@ -1,7 +1,7 @@
 /**
- * Tests for SimulationAssumptions' withdrawal-rate tooltip branching
- * (R45 Step 3, Finding 9). Focused on the exact bug class the advisor
- * review caught: text must be keyed off `usesWithdrawalRate` (the real
+ * Tests for SimulationAssumptions' withdrawal-rate tooltip branching.
+ * Focused on the exact bug class: text must be keyed off
+ * `usesWithdrawalRate` (the real
  * budget-seeded-vs-balance-derived split), not `incomeSource` (a UI-framing
  * label that misclassifies Guyton-Klinger as balance-derived even though
  * its spending is budget-seeded and guardrail-adjusted every year).

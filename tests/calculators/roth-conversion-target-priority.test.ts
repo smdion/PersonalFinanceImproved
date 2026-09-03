@@ -1,7 +1,6 @@
 /**
- * Regression test for an advisor-caught priority-ordering bug
- * (2026-09-01) in decumulation-year.ts's rothBracketTarget fallback param
- * passed to performRothConversion.
+ * Regression test for a priority-ordering bug in decumulation-year.ts's
+ * rothBracketTarget fallback param passed to performRothConversion.
  *
  * That fallback is only consulted when config.rothConversionTarget (a
  * per-year override) is undefined — the common case, since nothing in the

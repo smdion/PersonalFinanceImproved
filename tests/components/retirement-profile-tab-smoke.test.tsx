@@ -3,9 +3,9 @@ import { render, screen } from "@testing-library/react";
 
 // Smoke test for RetirementProfileTab — the "Projection Assumptions" card
 // relocated from the Retirement page to the Budget page's Retirement
-// Profile tab in v0.7.8 (PLAN-v0.7.8-v4 Group A). Verifies the moved
-// content renders with real-shaped data and that the isAdmin gate (Group B)
-// survived the move: admin sees editable controls, non-admin sees the same
+// Profile tab. Verifies the moved content renders with real-shaped data
+// and that the isAdmin gate survived the move: admin sees editable
+// controls, non-admin sees the same
 // values read-only. Child components stubbed so we don't pull in recharts
 // or hit the engine — same pattern as retirement-content-smoke.test.tsx.
 
@@ -99,8 +99,7 @@ vi.mock("@/lib/trpc", () => ({
           error: null,
         }),
       },
-      // Multi-year withdrawal-policy optimizer, Phase 4 — retirement-
-      // profile-tab.tsx queries this directly (TaxesSection is a pure
+      // retirement-profile-tab.tsx queries this directly (TaxesSection is a pure
       // presentational leaf, see retirement-sections-smoke.test.tsx) and
       // passes the result down as a prop. `data: undefined` here matches
       // "query hasn't resolved yet" -- TaxesSection renders no

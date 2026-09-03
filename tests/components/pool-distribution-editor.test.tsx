@@ -6,7 +6,7 @@ import {
 } from "@/components/savings/pool-distribution-editor";
 
 // First direct coverage for this component. Written alongside its
-// migration onto useInlineNumberEdit (Phase 3 item 3d) — the 3 fields
+// migration onto useInlineNumberEdit — the 3 fields
 // (pool $, per-fund %, per-fund $) now share one editingField state
 // machine instead of 3 near-identical hand-rolled commit handlers, so
 // this locks in that only the field actually being edited responds to

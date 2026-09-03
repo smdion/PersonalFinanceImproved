@@ -194,7 +194,7 @@ describe("resolveDecumulationConfig", () => {
   });
 
   // ---------------------------------------------------------------------
-  // v0.7.10 R51 (Gap A): withdrawalOrder completeness backfill
+  // withdrawalOrder completeness backfill
   // ---------------------------------------------------------------------
 
   it("appends a category missing from an override's withdrawalOrder instead of stranding it", () => {
@@ -244,8 +244,8 @@ describe("resolveDecumulationConfig", () => {
   });
 
   // ---------------------------------------------------------------------
-  // Multi-year withdrawal-policy optimizer, Phase 1: rothBracketTarget /
-  // rmdSmoothingMaxBracketTarget as real per-year overrides
+  // rothBracketTarget / rmdSmoothingMaxBracketTarget as real per-year
+  // overrides (for the multi-year withdrawal-policy optimizer)
   // ---------------------------------------------------------------------
 
   it("rothBracketTarget is undefined with no override (falls through to the plan default at the read site, not resolved here)", () => {

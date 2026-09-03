@@ -687,7 +687,7 @@ describe("filterYearByParentCategory", () => {
       totalTraditionalWithdrawal: 0,
       totalRothWithdrawal: 0,
       // Household-wide figures the withdrawal total is compared against
-      // (advisor review, 2026-08-29 -- see the two new tests below).
+      // (see the two tests below).
       targetWithdrawal: 200000,
       taxCost: 20000,
       projectedExpenses: 150000,
@@ -727,7 +727,7 @@ describe("filterYearByParentCategory", () => {
     expect(brokSlot.gainsPortion).toBeCloseTo(164457.83 * ratio, 1);
   });
 
-  // Advisor review, 2026-08-29: targetWithdrawal/taxCost were previously
+  // targetWithdrawal/taxCost were previously
   // left at their household-wide values while totalWithdrawal was
   // Retirement-scoped -- a fully-funded plan could compare as
   // "underfunded" purely because the comparison basis (targetWithdrawal)

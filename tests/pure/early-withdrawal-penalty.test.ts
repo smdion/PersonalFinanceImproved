@@ -1,7 +1,6 @@
 /**
- * Unit tests for computeEarlyWithdrawalPenalty (v0.7.8
- * penalty-hard-exclusion follow-up — see
- * .scratch/docs/plans/DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md).
+ * Unit tests for computeEarlyWithdrawalPenalty (penalty-hard-exclusion
+ * behavior).
  *
  * Acceptance criteria exercised here:
  *   6. Cost path is exercised — penaltyCost === rate × penalizedAmount,

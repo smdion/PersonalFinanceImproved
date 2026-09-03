@@ -450,7 +450,7 @@ describe("distributeWithdrawals", () => {
     // Need exceeds the allowed account's entire balance ($20k) — the
     // residual is reported as a shortfall rather than falling through to
     // the disallowed sibling's exposed balance, which must stay fully
-    // unreachable regardless (R41 — see `distributeProportionallyPreferring
+    // unreachable regardless (see `distributeProportionallyPreferring
     // PenaltyFree`'s docblock).
     const bigSlots: DecumulationSlot[] = [
       makeDecumulationSlot("401k", {
@@ -635,7 +635,7 @@ describe("distributeWithdrawals", () => {
   });
 
   // -------------------------------------------------------------------
-  // R49: Portfolio-parented accounts are never a fan-out target
+  // Portfolio-parented accounts are never a fan-out target
   // -------------------------------------------------------------------
 
   it("never assigns a withdrawal to a Portfolio-parented account, even when it's the only large balance in its category", () => {
@@ -1321,8 +1321,8 @@ describe("distributeContributions", () => {
   });
 
   // Pinned-value tests below, ahead of a planned consolidation of this
-  // formula with the identical one duplicated in contribution-routing.ts
-  // (audit Batch 2 Finding 5). These cover the 3 branches/inputs not
+  // formula with the identical one duplicated in contribution-routing.ts.
+  // These cover the 3 branches/inputs not
   // exercised above — proRate scaling, contributionScaling "fixed_amount",
   // and fixedContribScalesWithSalary — so the refactor can be verified to
   // produce byte-identical results for both Step 1 (specRaw) and Step 5

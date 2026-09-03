@@ -148,7 +148,7 @@ describe("rankWithdrawalTiers", () => {
 
   // Roth/HSA growth rate is now priced off ordinaryIncomeFloor directly
   // (marginalRateAtIncome), not marginalRateAboveTarget(targetRate, ...)
-  // (advisor review, 2026-08-29 -- targetRate assumed Phase 1 always
+  // (targetRate assumed Phase 1 always
   // filled Traditional up to the bracket-filling cap, which isn't true
   // when Traditional simply ran out below it; pricing off the target
   // instead of the household's REAL income level systematically
@@ -272,7 +272,7 @@ describe("rankWithdrawalTiers", () => {
     expect(brokerageRateWith).toBeCloseTo(0.188, 5);
   });
 
-  // NIIT threshold split (advisor review, 2026-08-29): a household whose
+  // NIIT threshold split: a household whose
   // MAGI is BELOW the threshold, but whose brokerage tier's own gains
   // would push it OVER, must get NIIT priced only on the portion past the
   // threshold -- not 0%/full-rate on the whole tier (the old all-or-
@@ -306,8 +306,8 @@ describe("rankWithdrawalTiers", () => {
     expect(preNiit.capacity + postNiit.capacity).toBeCloseTo(100000, 2);
   });
 
-  // NIIT headroom nets out the 0%-LTCG zero tier's own MAGI contribution
-  // (advisor-flagged 2026-09-01): that tier is ranked and drawn ahead of
+  // NIIT headroom nets out the 0%-LTCG zero tier's own MAGI contribution:
+  // that tier is ranked and drawn ahead of
   // the NIIT-split tier in the same sequence, and its GAINS (not basis)
   // count toward MAGI just like any other realized gain, 0% federal rate
   // notwithstanding.
@@ -347,7 +347,7 @@ describe("rankWithdrawalTiers", () => {
     expect(postNiit.capacity).toBeCloseTo(53900, 2);
   });
 
-  // HSA is no longer hardcoded last (advisor review, 2026-08-29) -- once
+  // HSA is no longer hardcoded last -- once
   // its balance reaches this ranking it's ordinarily already the
   // penalty-free portion (excluded upstream when still locked, per
   // withdrawal-eligibility.ts's computeHsaAccess/subtractExcluded), so it
@@ -394,9 +394,9 @@ describe("rankWithdrawalTiers", () => {
     expect(tiers[0]).toMatchObject({ source: "roth", costRate: 0 });
   });
 
-  // Regression, 2026-08-30: ordinaryIncomeFloor was fed straight into the
+  // Regression guard: ordinaryIncomeFloor was fed straight into the
   // LTCG lookup with no standard-deduction subtraction — real household
-  // numbers (see live projection debugging session), $120,100 gross
+  // numbers: $120,100 gross
   // Traditional withdrawal, MFJ $32,200 standard deduction, $98,900
   // 0%-LTCG ceiling. Pre-fix: zero 0%-LTCG room (120,100 already exceeds
   // 98,900 on its own). Post-fix: ~$11,000 of real room.
@@ -517,9 +517,9 @@ describe("rankWithdrawalTiers", () => {
   });
 });
 
-// Advisor review, 2026-08-29 (finding #7): a Portfolio-parented Roth
-// account's basis is unconditionally excluded from the routable pool
-// (R49), but deriveBasisRankingInputs used to sum indBasis across every
+// A Portfolio-parented Roth
+// account's basis is unconditionally excluded from the routable pool,
+// but deriveBasisRankingInputs used to sum indBasis across every
 // tracked account regardless -- overstating rothBasisAvailable exactly for
 // a household whose basis happens to sit in an excluded account.
 describe("deriveBasisRankingInputs", () => {

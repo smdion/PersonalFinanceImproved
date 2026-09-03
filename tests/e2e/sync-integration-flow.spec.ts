@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 /**
- * Sync integration journey — v0.5 expert-review M18.
+ * Sync integration journey.
  *
  * Covers the user-facing YNAB connection setup flow in Settings →
  * Integrations, with the YNAB HTTP call stubbed at the tRPC edge so

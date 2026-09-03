@@ -197,8 +197,8 @@ describe("OverridesPanelV2", () => {
     expect(setAccumOverrides).not.toHaveBeenCalled();
   });
 
-  // "withdrawal_rate" is no longer offered from the type picker (R45 Step 3,
-  // Finding 2 — inert for every strategy, not just 4/8), but a household
+  // "withdrawal_rate" is no longer offered from the type picker (it was
+  // inert for every strategy), but a household
   // with a pre-existing saved override of this type can still edit or
   // delete it, so that path stays covered via the edit flow instead of the
   // picker.

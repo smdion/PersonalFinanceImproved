@@ -1,9 +1,8 @@
 /**
- * Engine input snapshot guard — the advisor-mandated numeric safety net for
- * the v0.5.2 refactor (see .scratch/docs/V052-REFACTOR-PLAN.md § Principles).
- * Expanded in v0.5.3 (B6) per advisor pushback on 200-line inline snapshots:
- * split into a structure test (keys-only inline snapshot) and content tests
- * (explicit per-field assertions that reviewers can reason about without -u).
+ * Engine input snapshot guard — a numeric safety net for the engine-input
+ * builder. Split into a structure test (keys-only inline snapshot) and
+ * content tests (explicit per-field assertions that reviewers can reason
+ * about without -u) rather than one 200-line inline snapshot.
  *
  * Seeds a deterministic fixture — birth year 1990, salary $120k, retirement
  * at 65, 2026-04-14 wall clock, 2026 IRS limits — and asserts that

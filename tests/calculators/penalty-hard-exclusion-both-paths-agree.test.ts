@@ -1,7 +1,6 @@
 /**
- * Acceptance criterion 7 (v0.7.8 penalty-hard-exclusion pass — see
- * .scratch/docs/plans/DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md):
- * "Both paths agree." `estimateWithdrawalTaxCost`'s estimate and the real
+ * "Both paths agree" check for the penalty-hard-exclusion behavior.
+ * `estimateWithdrawalTaxCost`'s estimate and the real
  * decumulation-year.ts execution must produce the same `penaltyCost` for
  * identical inputs — same requirement Group 0's criterion 5 and
  * roth-tax-basis's criterion 4 impose on `taxCost`.

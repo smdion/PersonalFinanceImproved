@@ -43,7 +43,7 @@ describe("resolveIrsLimit", () => {
     expect(limit).toBe(23500 + 11250);
   });
 
-  // SECURE 2.0 super catch-up boundary tests (v0.5 expert-review H2).
+  // SECURE 2.0 super catch-up boundary tests.
   // The age range is [60, 63] inclusive on both ends. Verify each boundary.
   describe("SECURE 2.0 super catch-up age boundaries (401k)", () => {
     it("age 49: no catch-up (under 50)", () => {

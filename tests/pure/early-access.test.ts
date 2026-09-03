@@ -82,8 +82,8 @@ describe("isRuleOf55Eligible", () => {
   });
 
   it("is eligible for a dormant former-employer plan separated at 56, still true decades later", () => {
-    // The case round 1 of advisor review got backwards: eligibility is
-    // permanent once earned, not tied to "current employer."
+    // A subtle case: eligibility is permanent once earned, not tied to
+    // "current employer."
     expect(isRuleOf55Eligible(2043, 1987)).toBe(true);
   });
 

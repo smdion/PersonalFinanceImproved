@@ -167,7 +167,7 @@ describe("monte carlo integration", () => {
     expect(result.percentileBands.length).toBeGreaterThan(0);
     expect(result.successRate).toBeGreaterThanOrEqual(0);
     expect(result.successRate).toBeLessThanOrEqual(1);
-    // Explicit value assertions (code review, 2026-08-27 -- seeded, so
+    // Explicit value assertions (seeded, so
     // deterministic; matches the T13 convention engine-snapshot.test.ts
     // uses for financial content that otherwise relies on
     // toMatchSnapshot() alone).
@@ -449,9 +449,9 @@ describe("monte carlo integration", () => {
     // opposite failure: withdrawals only ever route against the collapsed
     // brokerage category, so a real Traditional/IRA account never gets
     // drawn down while the real brokerage account gets exhausted, and the
-    // per-account total ends up OVERSTATING the real portfolio (caught by
-    // advisor review, not visible from a warnings-string check alone --
-    // hence this test asserts on the actual balance numbers).
+    // per-account total ends up OVERSTATING the real portfolio (not
+    // visible from a warnings-string check alone -- hence this test
+    // asserts on the actual balance numbers).
     const totalBalance = 1500000 + 1000000 + 300000; // 401k + IRA + brokerage
     const engineInput = makeInput({
       currentAge: 60,
@@ -637,7 +637,7 @@ describe("monte carlo integration", () => {
     };
 
     const result = calculateMonteCarlo(mcInput);
-    // Verified (advisor review, 2026-08-29): with the bug (baseline =
+    // With the bug (baseline =
     // y.projectedExpenses, which Guyton-Klinger overwrites to match its
     // own already-cut target every year), budgetStabilityRate sits at
     // successRate itself (0.2) -- the guardrail-mutated "budget" tracks

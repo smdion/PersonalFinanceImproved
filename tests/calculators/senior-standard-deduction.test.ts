@@ -1,6 +1,6 @@
 /**
- * R59 (v0.7.11): the IRC §63(f)(1) age-65+ additional standard deduction is
- * now modeled in the decumulation phase. `decumulation-year.ts` folds
+ * The IRC §63(f)(1) age-65+ additional standard deduction is
+ * modeled in the decumulation phase. `decumulation-year.ts` folds
  * `additionalStdDeduction65PerSenior × (count of household members 65+ that
  * projection year)` into the standard deduction BEFORE the per-year inflation
  * growth, so it grows on the same tax-data vintage as the base deduction.

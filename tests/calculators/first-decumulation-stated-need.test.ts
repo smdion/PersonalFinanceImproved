@@ -1,5 +1,5 @@
 /**
- * Advisor review, 2026-08-29 (finding #10): `firstDecumulationYearStatedNeed`
+ * `firstDecumulationYearStatedNeed`
  * used to always inflate `decumulationAnnualExpenses` to the first
  * decumulation year's nominal dollars, ignoring a budget override active on
  * that exact year -- coast-fire.ts's `passes()` then compared that

@@ -1,9 +1,8 @@
 /**
- * Tests for computeQcdAmounts / totalQcdAmount (R46) — the QCD-eligible
+ * Tests for computeQcdAmounts / totalQcdAmount — the QCD-eligible
  * amount approximation: min(cap, personIraTraditionalBalance). Not capped
- * by the person's RMD amount (advisor review, 2026-08-29 — IRC §408(d)(8)
- * caps a QCD at the annual dollar limit, not at the RMD; a QCD can
- * legally exceed the RMD).
+ * by the person's RMD amount — IRC §408(d)(8) caps a QCD at the annual
+ * dollar limit, not at the RMD; a QCD can legally exceed the RMD.
  */
 import { describe, it, expect } from "vitest";
 import {

@@ -1,5 +1,5 @@
 /**
- * Theme audit (v0.5 expert-review M26 — expanded scope).
+ * Theme audit.
  *
  * Static-string scan that flags hardcoded gray Tailwind utility classes
  * in component files. Prefer the centralized design tokens defined in

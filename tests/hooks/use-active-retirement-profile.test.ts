@@ -1,7 +1,6 @@
 /**
  * Regression coverage for the Retirement Profile "Activate" invalidation
- * gap (advisor-caught 2026-09-01, confirmed independently by 3 code-review
- * agents): switching the active Retirement Profile only invalidated
+ * gap: switching the active Retirement Profile only invalidated
  * settings.appSettings.list (the default upsert path's own onSuccess) —
  * every already-mounted retirement.* / projection.* query kept serving
  * numbers computed under the PREVIOUS active profile, the same bug class

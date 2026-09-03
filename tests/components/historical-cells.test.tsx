@@ -7,7 +7,7 @@ import {
 } from "@/components/historical/cells";
 
 // First direct coverage for these two cells. Written alongside their
-// migration onto useInlineNumberEdit (Phase 3 item 3d) — each previously
+// migration onto useInlineNumberEdit — each previously
 // hand-rolled its own local editing/editValue state + save/keydown
 // boilerplate; this locks in double-click-to-edit, blur/Enter-to-commit,
 // Escape-to-cancel, and the two fields' differing value transforms

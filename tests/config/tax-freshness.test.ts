@@ -11,8 +11,6 @@
  *
  * When a test fails, update the parameter values in the codebase,
  * then bump `validThrough` in the registry (tax-freshness.ts).
- *
- * See: .scratch/docs/TAX-PARAMETER-RUNBOOK.md for the full update procedure.
  */
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
@@ -61,9 +59,9 @@ describe("Tax parameter freshness", () => {
 
   it("registry covers all parameter categories", () => {
     const names = TAX_PARAMETER_REGISTRY.map((e) => e.name);
-    // Ensure we haven't forgotten a category. R43 (C10) collapsed the
+    // Ensure we haven't forgotten a category. The
     // seed-brackets/limits/deductions/LTCG entries + the LTCG code
-    // fallback into one combined entry — pnpm check:tax-params verifies
+    // fallback are collapsed into one combined entry — pnpm check:tax-params verifies
     // each of those individually now, so this registry only needs one.
     expect(names).toContain(
       "Seed reference data (brackets, limits, deductions, LTCG) + LTCG fallback",
@@ -101,10 +99,10 @@ describe("Tax parameter freshness", () => {
 });
 
 // ============================================================================
-// Part 1b: tax_brackets seed-data structural invariants (R58 regression guard)
+// Part 1b: tax_brackets seed-data structural invariants (regression guard)
 // ============================================================================
 //
-// R58 found two typos in seed-reference-data.sql's w4_checkbox=true rows
+// Two typos were once present in seed-reference-data.sql's w4_checkbox=true rows
 // (a dropped digit in a baseWithholding value, a dropped digit in a
 // threshold) that only surfaced via manual arithmetic verification. These
 // invariants catch that whole bug class automatically: every row's
@@ -162,7 +160,8 @@ describe("tax_brackets seed data structural invariants", () => {
   // is NOT the standard deduction; it's smaller and only applies when the
   // W-4 checkbox (multiple jobs) is unchecked. Verified independently of
   // the (mislabeled) seed data by matching bracket residuals against real
-  // 1040 bracket boundaries — see the seed file's R58 comment.
+  // 1040 bracket boundaries — see the seed file's comment on the
+  // tax_brackets INSERT.
   const W4_ADJUSTMENT: Record<"MFJ" | "Single" | "HOH", number> = {
     MFJ: 12900,
     Single: 8600,
@@ -173,7 +172,7 @@ describe("tax_brackets seed data structural invariants", () => {
     expect(rows.length).toBeGreaterThan(0);
   });
 
-  // R58 RESOLVED (2026-09-01): the 2025/2026 rows were byte-identical twins
+  // The 2025/2026 rows were once byte-identical twins
   // (MFJ rows held real 2026 on both years; Single/HOH held real 2025 on
   // both). All 12 rows are now transcribed from the official IRS Pub 15-T
   // PDFs (p15t--2025.pdf, p15t--2026.pdf) — see seed-reference-data.sql's
@@ -409,10 +408,10 @@ describe("IRMAA bracket values", () => {
     expect(getNextIrmaaCliff(800000, "MFJ")).toBeNull();
   });
 
-  // Phase 3 drift guard (2026-08-31, advisor-caught): IRMAA_DATA_YEAR
+  // IRMAA drift guard: IRMAA_DATA_YEAR
   // (bracket-growth.ts's growIrmaaBrackets anchor) is a hand-maintained
   // constant in a DIFFERENT file from this registry's "IRMAA bracket
-  // fallback (code)" entry -- unlike taxDataYear (Phases 1-2), which
+  // fallback (code)" entry -- unlike taxDataYear, which
   // arrives from the DB alongside its table and physically can't drift.
   // Without this assertion, refreshing IRMAA_BRACKETS to a new tax year
   // and bumping this registry's validThrough (the normal update
@@ -428,9 +427,9 @@ describe("IRMAA bracket values", () => {
     expect(IRMAA_DATA_YEAR).toBe(entry!.validThrough);
   });
 
-  // R43: irmaa_brackets is now READ by the engine payload
+  // irmaa_brackets is now READ by the engine payload
   // (build-engine-payload.ts -> distributionTaxRates.irmaaBrackets ->
-  // decumulation-year.ts's growIrmaaBrackets). Before R43 the table was
+  // decumulation-year.ts's growIrmaaBrackets). The table was previously
   // live but inert. This asserts the seed rows for the latest seeded year
   // are byte-identical to the IRMAA_BRACKETS hardcoded fallback, so the
   // wiring is a pure no-op for any household on seeded data (no
@@ -633,7 +632,7 @@ describe("Tax law structural checks", () => {
   });
 
   it("2026 standard deduction values per IRS Rev. Proc. 2025-32", () => {
-    // v0.5 expert-review H1 — document the authoritative 2026 values.
+    // Document the authoritative 2026 values.
     // The seed script reads these from Budget Overview.xlsx; this test
     // captures the IRS-published values so any future drift between the
     // xlsx and the published amounts is caught when someone updates the

@@ -5,7 +5,7 @@
  * After engine refactoring, these must produce byte-identical results.
  * Any difference = test failure (forces investigation before merge).
  *
- * FRESHNESS GUARD (v0.5 expert-review M16):
+ * FRESHNESS GUARD:
  * Snapshots can rot. Engineers update them after a refactor without
  * checking that the new values are CORRECT (the snapshot just records
  * what the code currently produces). To prevent silent multi-year drift,
@@ -18,7 +18,7 @@
  * To bump:
  *   1. Spot-check 3-5 fixtures against an authoritative source
  *   2. Update LAST_REVIEWED_AT below to today (YYYY-MM-DD)
- *   3. Document the verification in .scratch/docs/SNAPSHOT-REVIEW-LOG.md
+ *   3. Document what was checked and against what source
  */
 import { describe, it, expect } from "vitest";
 import { calculateProjection } from "@/lib/calculators/engine";
@@ -1588,10 +1588,10 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(28000);
-    // R49 (see SNAPSHOT-REVIEW-LOG.md): rmd-enforcement.ts's rounding-
+    // rmd-enforcement.ts's rounding-
     // residual fallback no longer force-feeds a genuine capacity shortfall
     // past an account's real remaining room.
-    // Phase 3 (see SNAPSHOT-REVIEW-LOG.md): IRMAA brackets now grow
+    // IRMAA brackets now grow
     // forward instead of holding flat nominal -- this fixture's Roth
     // conversions are IRMAA-cliff-aware, so a correctly-grown (tighter or
     // looser, depending on vintage) cliff shifts conversion amounts and
@@ -2735,9 +2735,9 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(46000);
-    // R49 (see SNAPSHOT-REVIEW-LOG.md): same rmd-enforcement.ts residual fix
+    // Same rmd-enforcement.ts residual fix
     // as fixture 31.
-    // Phase 3 (see SNAPSHOT-REVIEW-LOG.md): IRMAA brackets now grow
+    // IRMAA brackets now grow
     // forward -- this fixture is explicitly "IRMAA awareness enabled,
     // income near cliff," so it's expected to move.
     expect(metrics.finalYear?.endBalance).toBe(2393952.25);
@@ -2816,7 +2816,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(46000);
-    // R49 (see SNAPSHOT-REVIEW-LOG.md): same rmd-enforcement.ts residual fix
+    // Same rmd-enforcement.ts residual fix
     // as fixture 31.
     expect(metrics.finalYear?.endBalance).toBe(2423603.86);
     expect(metrics).toMatchSnapshot();
@@ -3304,10 +3304,10 @@ describe("engine snapshot parity", () => {
     expect(metrics).toMatchSnapshot();
   });
 
-  // R46: QCD + rmdExcessHandling fixtures. All three share the same
+  // QCD + rmdExcessHandling fixtures. All three share the same
   // household shape (per-person RMD tracking via individualAccounts +
   // socialSecurityEntries, required for qcdMaximize to take effect —
-  // see qcd.ts's docblock) so the only variable between them is the R46
+  // see qcd.ts's docblock) so the only variable between them is the QCD
   // settings themselves.
   it("fixture 65: qcdMaximize fully covers a modest RMD (no taxable distribution forced)", () => {
     const input = makeInput({
@@ -3435,8 +3435,8 @@ describe("engine snapshot parity", () => {
     );
     // RMD ($81,300.81 at age 75) is well under the IRA Traditional
     // balance ($800k), and QCD is no longer capped at the RMD amount
-    // (advisor review, 2026-08-29 — a QCD can legally exceed the RMD, up
-    // to the annual $115k/person cap) — so QCD maximizes to the $115k
+    // (a QCD can legally exceed the RMD, up to the annual $115k/person
+    // cap) — so QCD maximizes to the $115k
     // cap itself, still comfortably covering the RMD with room to spare,
     // so no taxable Traditional distribution is forced and there's no
     // leftover excess to reinvest.
@@ -3445,7 +3445,7 @@ describe("engine snapshot parity", () => {
     expect(decYears[0]?.totalTraditionalWithdrawal).toBe(0);
     expect(decYears[0]?.rmdExcessAmount).toBe(0);
     const metrics = extractMetrics(result);
-    // R49 (see SNAPSHOT-REVIEW-LOG.md): the QCD debit now applies directly
+    // The QCD debit now applies directly
     // to the IRA's individual-account balance instead of being deferred to
     // reconcileIndividualToAggregate — the withdrawal fan-out now correctly
     // sees the post-QCD capacity mid-year instead of a stale pre-QCD figure,
@@ -3577,7 +3577,7 @@ describe("engine snapshot parity", () => {
     expect(decYears[0]?.qcdAmount).toBe(115000);
     expect(decYears[0]?.totalTraditionalWithdrawal).toBe(128902.44);
     const metrics = extractMetrics(result);
-    // R49 (see SNAPSHOT-REVIEW-LOG.md) — same fix as fixture 65. Lower
+    // Same fix as fixture 65. Lower
     // than before the QCD-cap fix (was 6893089.39) — the extra $10k/yr
     // QCD (cap raised 105k->115k) leaves the account as charity instead
     // of compounding.
@@ -3699,7 +3699,7 @@ describe("engine snapshot parity", () => {
     expect(decYears[0]?.qcdAmount).toBe(115000);
     expect(decYears[0]?.rmdExcessAmount).toBe(97965.85);
     const metrics = extractMetrics(result);
-    // R49 (see SNAPSHOT-REVIEW-LOG.md) — same fix as fixture 65. Unchanged
+    // Same fix as fixture 65. Unchanged
     // from before the QCD-cap fix -- with rmdExcessHandling="spend", the
     // extra $10k/yr QCD (cap raised 105k->115k) reduces what's left to
     // spend as "excess" by the same amount, so the portfolio's own
@@ -3709,13 +3709,13 @@ describe("engine snapshot parity", () => {
     expect(metrics).toMatchSnapshot();
   });
 
-  // R47: RMD smoothing fixtures. Both share one household shape (a single
+  // RMD smoothing fixtures. Both share one household shape (a single
   // large pre-tax balance, well past the point where the projected future
   // RMD would exceed spending need — same scale as rmd-smoothing.test.ts's
   // "produces a positive target" case) so the only variable is
   // rmdSmoothingEnabled itself. Neither sets enableRothConversions,
   // proving smoothing is a fully self-contained activation path (see
-  // rmd-handling.tsx's docblock / PLAN-r47-rmd-aware-roth-smoothing.md).
+  // rmd-handling.tsx's docblock).
   const r47HouseholdInput = (rmdSmoothingEnabled: boolean) =>
     makeInput({
       currentAge: 65,
@@ -3793,7 +3793,7 @@ describe("engine snapshot parity", () => {
         // Traditional-first (not brokerage-first, unlike most other
         // fixtures in this file) -- deliberately so this household draws
         // down Traditional from year one, matching the "actively drawing
-        // down Traditional pre-RMD" population R47 targets, and so the
+        // down Traditional pre-RMD" population the smoothing feature targets, and so the
         // brokerage balance survives to fund conversion tax costs instead
         // of being exhausted covering ordinary spending first.
         withdrawalOrder: ["401k", "ira", "brokerage", "hsa"],
@@ -3843,7 +3843,7 @@ describe("engine snapshot parity", () => {
     // Pre-RMD years (birthYear 1960 -> RMD starts at 75, SECURE 2.0) should
     // show real conversions even though
     // enableRothConversions was never set -- rmdSmoothingEnabled alone is
-    // sufficient, same self-contained pattern as R46's qcdMaximize/
+    // sufficient, same self-contained pattern as the QCD fixtures' qcdMaximize/
     // rmdExcessHandling.
     const preRmdYears = decYears.filter((y) => y.age < 75);
     expect(preRmdYears.length).toBeGreaterThan(0);
@@ -3870,7 +3870,7 @@ describe("engine snapshot parity", () => {
     expect(
       unsmoothedPreRmdYears.every((y) => (y.rothConversionAmount ?? 0) === 0),
     ).toBe(true);
-    // The claim R47 exists to prove: shrinking the pre-RMD Traditional
+    // The claim this test proves: shrinking the pre-RMD Traditional
     // balance via smoothing produces a measurably SMALLER forced RMD at
     // age 75 than the same household that never smoothed.
     const smoothedRmdAt75 = smoothedDecYears.find(
@@ -3886,7 +3886,7 @@ describe("engine snapshot parity", () => {
     expect(metrics).toMatchSnapshot();
   });
 
-  // R47 Feature B (advisor review, 2026-08-28) — rateSeededDecumulationYear1.
+  // rateSeededDecumulationYear1.
   // Guyton-Klinger household with a stated budget deliberately far from
   // what withdrawalRate x balance would produce, so the two runs' year-1
   // spending provably differs when the flag is set.
@@ -3992,7 +3992,7 @@ describe("engine snapshot parity", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────
-// Freshness guard (M16)
+// Freshness guard
 // ─────────────────────────────────────────────────────────────────────
 
 describe("snapshot freshness guard", () => {

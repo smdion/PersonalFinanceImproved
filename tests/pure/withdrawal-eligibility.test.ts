@@ -1,7 +1,6 @@
 /**
- * Tests for computeWithdrawalEligibility (v0.7.8, PLAN-v0.7.8-v4 Group 2.1,
- * plus the tracked-basis follow-up — see
- * DESIGN-DECISION-v0.7.8-tracked-basis.md). Not yet wired into the engine —
+ * Tests for computeWithdrawalEligibility, including the tracked-basis
+ * behavior. Not yet wired into the engine —
  * these are pure-function tests against the locked designs.
  */
 import { describe, it, expect } from "vitest";
@@ -173,7 +172,7 @@ describe("computeWithdrawalEligibility", () => {
     });
 
     it("does NOT lock a 63-year-old with the override on -- the 59½ path still applies", () => {
-      // The bug an advisor review caught: a naive short-circuit to
+      // A subtle bug: a naive short-circuit to
       // locked=true would incorrectly lock this account. Rule-of-55-
       // ineligible is not the same as locked -- the pro_rata branch is
       // "Rule of 55 OR 59½", and the override only ever removes the
@@ -285,8 +284,7 @@ describe("computeWithdrawalEligibility", () => {
     });
     const entry = record.byKey.get(indKey(ia))!;
     // Contribution-basis slice ($20k) is always penalty-free; the $5k of
-    // growth behind it in the prefix is not — per-dollar partition
-    // (DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md § Q1), not the
+    // growth behind it in the prefix is not — per-dollar partition, not the
     // old binary "any penalty-free slice ⇒ whole account not locked" model.
     expect(entry.penaltyFreeAmount).toBe(20000);
     expect(entry.penaltyExposedAmount).toBe(5000);
@@ -581,8 +579,8 @@ describe("computeWithdrawalEligibility — tracked basis (indBasis)", () => {
     );
   });
 
-  // R41 — per-account penalty-allowance override
-  describe("allowPenalizedWithdrawals (R41)", () => {
+  // Per-account penalty-allowance override
+  describe("allowPenalizedWithdrawals", () => {
     it("defaults to false and leaves the *StillExcluded aggregates identical to the plain ones when no account opts in", () => {
       const ia = account({
         name: "Old Employer 401k",
@@ -656,7 +654,7 @@ describe("computeWithdrawalEligibility — tracked basis (indBasis)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// R49: computeNonRetirementExclusion + the double-count guard
+// computeNonRetirementExclusion + the double-count guard
 // ---------------------------------------------------------------------------
 
 describe("computeNonRetirementExclusion", () => {

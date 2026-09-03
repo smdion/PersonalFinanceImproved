@@ -10,12 +10,11 @@
  *
  * savingsGoals, performanceAccounts, portfolioSnapshots, and
  * relocationScenarios CRUD moved out to savings.ts/performance.ts/
- * networth.ts/projection/relocation.ts respectively (Phase 6.3-6.6) — their
+ * networth.ts/projection/relocation.ts respectively — their
  * tests moved to savings-goals-crud.test.ts / performance.test.ts /
- * networth.test.ts / projection-relocation.test.ts alongside them. This
- * completes Phase 6's settings-placement reorganization (audit Batch 11
- * Finding 1) — everything remaining in adminProcedures is a genuine
- * cross-cutting exception per RULES.md's Settings-page ownership table.
+ * networth.test.ts / projection-relocation.test.ts alongside them.
+ * Everything remaining in adminProcedures is a genuine cross-cutting
+ * exception per RULES.md's Settings-page ownership table.
  *
  * All procedures live at caller.settings.* because adminProcedures is spread
  * into settingsRouter (see src/server/routers/settings/index.ts).
@@ -429,17 +428,17 @@ describe("settings.apiConnections", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // savings.savingsGoals CRUD tests moved to savings-goals-crud.test.ts
-// (procedures moved to routers/savings.ts, Phase 6.3).
+// (procedures moved to routers/savings.ts).
 
 // relocationScenarios CRUD tests moved to projection-relocation.test.ts
-// (procedures moved to routers/projection/relocation.ts, Phase 6.6).
+// (procedures moved to routers/projection/relocation.ts).
 
 // performanceAccounts CRUD tests moved to performance.test.ts (procedures
-// moved to routers/performance.ts, Phase 6.4).
+// moved to routers/performance.ts).
 
 // portfolioSnapshots CRUD tests (getLatest/createAccount/updateAccount/
 // delete) moved to networth.test.ts (procedures moved to
-// routers/networth.ts, Phase 6.5).
+// routers/networth.ts).
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET DATA FRESHNESS
@@ -753,7 +752,7 @@ describe("settings.scenarios additional coverage", () => {
   });
 });
 
-// performanceAccounts delete test moved to performance.test.ts (Phase 6.4).
+// performanceAccounts delete test moved to performance.test.ts.
 
 // ─────────────────────────────────────────────────────────────────────────────
 // APP SETTINGS — non-admin filtering
@@ -1100,6 +1099,6 @@ describe("settings.apiConnections additional coverage", () => {
 // savings.savingsGoals additional coverage moved to savings-goals-crud.test.ts.
 
 // relocationScenarios additional coverage moved to
-// projection-relocation.test.ts (Phase 6.6).
+// projection-relocation.test.ts.
 
-// performanceAccounts additional coverage moved to performance.test.ts (Phase 6.4).
+// performanceAccounts additional coverage moved to performance.test.ts.

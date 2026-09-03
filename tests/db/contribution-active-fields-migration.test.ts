@@ -1,7 +1,7 @@
 /**
  * `0010_contribution_active_fields`, applied after every prior migration.
  *
- * R19 Phase 1: renames `contribution_profiles.contribution_overrides` to
+ * Renames `contribution_profiles.contribution_overrides` to
  * `contribution_active_fields` (a pure column rename — no stored bytes
  * change) and rewrites the nested `displayNameOverride` JSON key to
  * `displayNameActive` inside every profile's `contributionAccounts` map

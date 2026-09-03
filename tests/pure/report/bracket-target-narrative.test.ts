@@ -372,7 +372,7 @@ describe("describeDiscretionaryCapacityMath", () => {
 
   it("states both used and leftover correctly when a per-category withdrawal cap (not tier exhaustion) split the draw across both tiers", () => {
     // Neither tier's own household-wide capacity was actually reached --
-    // this reproduces the advisor-flagged case where an account cap, not
+    // this reproduces the case where an account cap, not
     // order/capacity, explains the split. The function must not claim a
     // mechanism ("ran out") it can't verify -- only the real numbers.
     const text = describeDiscretionaryCapacityMath(
@@ -414,7 +414,7 @@ describe("describeDiscretionaryCapacityMath", () => {
     // Both a $0-cost Roth basis draw AND a $0-cost Roth GROWTH draw exist
     // in tierBreakdown -- summing them uncapped would claim more came from
     // basis ($8,000) than the household's actual basis capacity ($5,000),
-    // a self-contradicting number (found in advisor review, 2026-08-31).
+    // a self-contradicting number.
     const text = describeDiscretionaryCapacityMath(
       { rothBasisCapacity: 5000, brokerageZeroLtcgCapacity: 20000 },
       tierBreakdown([

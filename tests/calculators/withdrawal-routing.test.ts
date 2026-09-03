@@ -430,7 +430,7 @@ describe("routeWithdrawalsBracketFilling", () => {
   });
 
   // -------------------------------------------------------------------------
-  // v0.7.10 R51 (Gap A): Phase 1 respects config.withdrawalOrder instead of
+  // Phase 1 respects config.withdrawalOrder instead of
   // a hardcoded 401k -> 403b -> ira declaration order.
   // -------------------------------------------------------------------------
 
@@ -614,7 +614,7 @@ describe("routeWithdrawalsBracketFilling", () => {
   });
 
   // -------------------------------------------------------------------------
-  // v0.7.9 R40 follow-up: cost-aware post-Traditional-cap ranking
+  // Cost-aware post-Traditional-cap ranking
   // -------------------------------------------------------------------------
 
   it("draws from brokerage sitting in the 0% LTCG zone instead of Roth growth, when filingStatus is provided and Roth has no basis left", () => {
@@ -719,7 +719,7 @@ describe("routeWithdrawalsBracketFilling", () => {
   });
 
   // -------------------------------------------------------------------------
-  // conversionTarget — reserved-room fix (advisor review, 2026-09-01)
+  // conversionTarget — reserved-room fix
   // -------------------------------------------------------------------------
 
   it("reserves discretionary-tier room up to conversionTarget's own bracket cap, not rothBracketTarget's, when the two differ", () => {
@@ -806,7 +806,7 @@ describe("routeWithdrawalsBracketFilling", () => {
 });
 
 // ---------------------------------------------------------------------------
-// routeForMode — Tier B eligibility gate (v0.7.8, PLAN-v0.7.8-v4 Group 2.2)
+// routeForMode — Tier B eligibility gate
 // ---------------------------------------------------------------------------
 
 /** Balances with the 401k entirely locked (Rule-of-55/59½ not yet met) and
@@ -851,7 +851,7 @@ function lockedBalances(overrides: Partial<AccountBalances> = {}): {
     penaltyExposedTrad,
     penaltyExposedRoth,
     penaltyExposedTotal,
-    // No account has the R41 override in this fixture, so "still excluded"
+    // No account has the penalty-allowance override in this fixture, so "still excluded"
     // is identical to the plain aggregates above.
     penaltyExposedTradStillExcluded: penaltyExposedTrad,
     penaltyExposedRothStillExcluded: penaltyExposedRoth,
@@ -881,7 +881,7 @@ describe("routeForMode (Tier B eligibility gate)", () => {
 
   it("draws exactly $0 from a fully-locked category in pass 1 when penaltyExposedTrad equals the category's real balance exactly (v0.7.8 indBal reconciliation follow-up)", () => {
     // Regression for the live bug found on the real household:
-    // DESIGN-DECISION-v0.7.8-indbal-reconciliation.md. Before
+    // Before
     // reconcileIndividualToAggregate existed, eligibility.penaltyExposedTrad[cat]
     // (summed from indBal-derived per-account locked amounts) could be a
     // few cents LESS than balances[cat].traditional (the separately-
@@ -946,9 +946,8 @@ describe("routeForMode (Tier B eligibility gate)", () => {
   });
 
   it("v0.7.8 penalty-hard-exclusion: leaves the need unfunded (penaltyAvoidedShortfall) instead of falling through to the locked 401k — hard exclusion, not the old soft model", () => {
-    // DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md § Q3 reverses
-    // Group 0 § Q0's soft-lock fallback (explicit user direction,
-    // 2026-08-26: "do not take money if it includes a penalty"). This
+    // This reverses Group 0 § Q0's soft-lock fallback (explicit user
+    // direction: "do not take money if it includes a penalty"). It
     // replaces the old "falls through to the locked 401k... soft model"
     // test, which asserted the exact behavior this pass exists to remove.
     const { balances, eligibility } = lockedBalances();
@@ -975,10 +974,9 @@ describe("routeForMode (Tier B eligibility gate)", () => {
 
   it("avoidPenalizedWithdrawals: false routes against full balances, ignoring the exposure partition entirely (pre-v0.7.8-penalty-pass routing)", () => {
     // avoidPenalizedWithdrawals is the only lever deciding whether
-    // penalty-exposed money is reachable at all —
-    // DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md § Q4. (The
-    // `preferPenaltyFreeSources` flag once proposed alongside it was
-    // never wired into routing and was deleted 2026-08-27.)
+    // penalty-exposed money is reachable at all under the hard-exclusion
+    // rule. (The `preferPenaltyFreeSources` flag once proposed alongside
+    // it was never wired into routing and was later deleted.)
     const { balances, eligibility } = lockedBalances();
     const config = makeDecumulationConfig({
       withdrawalRoutingMode: "waterfall",
@@ -1032,7 +1030,7 @@ describe("routeForMode (Tier B eligibility gate)", () => {
     // Formerly "decrements pass-2 config so it can't re-spend pass-1's
     // account cap headroom" — that test asserted the old two-pass
     // fallthrough (residual reaching the locked 401k). Pass 2 no longer
-    // exists (DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md § Q2): the
+    // exists: the
     // $10k the brokerage cap can't cover now stays unmet instead.
     const { balances, eligibility } = lockedBalances();
     const config = makeDecumulationConfig({
@@ -1176,7 +1174,7 @@ describe("routeForMode (Tier B eligibility gate)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// routeForMode — nonRetirement exclusion (R49)
+// routeForMode — nonRetirement exclusion
 // ---------------------------------------------------------------------------
 
 describe("routeForMode (nonRetirement exclusion, R49)", () => {
@@ -1273,8 +1271,8 @@ describe("routeForMode (nonRetirement exclusion, R49)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Waterfall + Roth-bracket-overlay: bracketTraditionalCap surfaced (TODO.md,
-// fixed 2026-09-01, advisor-reviewed — deliberately NOT mode-gated).
+// Waterfall + Roth-bracket-overlay: bracketTraditionalCap surfaced
+// (deliberately NOT mode-gated).
 // ---------------------------------------------------------------------------
 
 describe("routeForMode (waterfall + Roth-bracket-overlay surfaces bracketTraditionalCap)", () => {
@@ -1351,10 +1349,10 @@ describe("routeForMode (waterfall + Roth-bracket-overlay surfaces bracketTraditi
 });
 
 // ---------------------------------------------------------------------------
-// routeForMode (R44 — R41 penalty-allowance override as true last resort)
+// routeForMode (penalty-allowance override as true last resort)
 // ---------------------------------------------------------------------------
 
-/** An eligibility record with 401k penalty-exposed but ALLOWED (R41) —
+/** An eligibility record with 401k penalty-exposed but ALLOWED —
  *  `penaltyExposedTrad`/`Total` show the real exposure, but the
  *  `...StillExcluded` variant is zero, exactly like the real
  *  `computeWithdrawalEligibility` output for an account with
@@ -1374,7 +1372,7 @@ function allowedAccountEligibility(): EligibilityRecord {
     penaltyExposedTrad,
     penaltyExposedRoth: { ...zero },
     penaltyExposedTotal: { ...penaltyExposedTrad },
-    // R41 allowance: nothing is "still excluded" — the whole 401k exposure
+    // With the allowance on, nothing is "still excluded" — the whole 401k exposure
     // is allowed, so subtractExcluded (the OLD single-pass path) would
     // never have held any of it back at all.
     penaltyExposedTradStillExcluded: { ...zero },
@@ -1505,7 +1503,7 @@ describe("routeForMode (R44 — true last-resort for R41-allowed penalty exposur
     // `routeWithdrawals(90000, config, balances)` (a single dispatch with
     // the allowed money reachable from the start). That single dispatch
     // drains 401k FIRST (it's first in withdrawalOrder) before ever
-    // touching brokerage — which is exactly the pre-R44 bug this function
+    // touching brokerage — which is exactly the bug this function
     // exists to fix, not a correct reference to match. There is no
     // single-dispatch equivalent of "prefer non-allowed sources, allowed
     // money only for the true residual" by construction — that preference
@@ -1568,7 +1566,7 @@ describe("routeForMode (R44 — true last-resort for R41-allowed penalty exposur
 
   it("every existing non-allowance fixture stays on the single-pass path (hasLastResortAllowance false)", () => {
     // lockedBalances() has NO allowance (StillExcluded === full exposure) —
-    // this must behave byte-identically to before R44.
+    // this must behave byte-identically to the pre-allowance path.
     const { balances, eligibility } = lockedBalances();
     const config = makeDecumulationConfig({
       withdrawalRoutingMode: "waterfall",

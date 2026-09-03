@@ -4,7 +4,7 @@ import { SubAccountRow } from "@/components/portfolio/contribution-accounts-sub-
 import type { PortfolioSub } from "@/components/portfolio/contribution-accounts-types";
 
 // First direct coverage for SubAccountRow's label editor. Written
-// alongside its migration onto useInlineNumberEdit (Phase 3 item 3d) with
+// alongside its migration onto useInlineNumberEdit with
 // allowBlankCommit: true — clearing the label back to the default (tax
 // type label) is a meaningful commit here, not a cancel, so this locks
 // that in specifically (it's the same class of gap NoteButton had).

@@ -10,8 +10,8 @@ import {
 } from "@/server/routers/projection-v5-helpers";
 
 /**
- * Unit tests for the projection-v5-helpers module (v0.5 expert-review
- * M1/M2/M6). These helpers were extracted from projection.ts to keep
+ * Unit tests for the projection-v5-helpers module. These helpers were
+ * extracted from projection.ts to keep
  * that router under the 2000-line size limit. They're pure enough to
  * test in isolation without spinning up the full router runtime.
  */
@@ -287,8 +287,8 @@ describe("runStressTestScenarios (M2)", () => {
     expect(optimistic.nestEggAtRetirement).toBeGreaterThan(
       conservative.nestEggAtRetirement,
     );
-    // sustainableWithdrawal no longer tracks nestEggAtRetirement here (R45
-    // Step 2, Job (i)): for the "fixed" strategy under test,
+    // sustainableWithdrawal no longer tracks nestEggAtRetirement here: for
+    // the "fixed" strategy under test,
     // sustainableWithdrawal is the strategy's actual first decumulation
     // year withdrawal, not a `balance × withdrawalRate` reference figure.
     // makeBaseInput() sets no `decumulationAnnualExpenses`, so year-1
@@ -299,8 +299,7 @@ describe("runStressTestScenarios (M2)", () => {
     // nominal-dollar year-1 budget regardless of portfolio size, so
     // conservative's sustainableWithdrawal is correctly LARGER than
     // optimistic's here — the opposite of nestEggAtRetirement's ordering,
-    // and no longer meaningfully comparable to it. See
-    // .scratch/docs/plans/REVIEW-decumulation-strategy-ui-divergence.md.
+    // and no longer meaningfully comparable to it.
     expect(conservative.sustainableWithdrawal).toBeGreaterThan(
       optimistic.sustainableWithdrawal,
     );

@@ -67,9 +67,9 @@ describe("buildWatchlist", () => {
     expect(w.items[0]!.detail).toMatch(/within/i);
   });
 
-  // Phase 4 regression guard (2026-08-31, advisor-caught): acaMagiHeadroom
+  // Regression guard: acaMagiHeadroom
   // is a NOMINAL dollar figure (grows with the household's income, like
-  // every other engine value post-Phase-4), so the "close to cliff"
+  // every other engine value in nominal-dollar space), so the "close to cliff"
   // comparison against a flat REAL-dollar threshold must deflate FIRST.
   // Uses a real (non-identity) deflator, unlike every other test in this
   // file -- this is the only case where nominal-vs-real actually matters:

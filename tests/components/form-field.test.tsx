@@ -1,7 +1,7 @@
 /**
  * Tests for components/forms/form-field.tsx.
  *
- * Focus: the tooltip slot added in Phase 3 item 3b must not interfere with
+ * Focus: the tooltip slot must not interfere with
  * the existing cloneElement-based aria-invalid/aria-describedby wiring —
  * an explicit non-goal when the slot was added, since form-field.tsx only
  * clones a single `children` element and a careless change here could

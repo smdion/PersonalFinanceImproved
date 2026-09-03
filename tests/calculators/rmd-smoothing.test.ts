@@ -168,7 +168,7 @@ describe("computeRmdSmoothingTargets", () => {
     expect(result.householdSmoothingTarget).toBe(0);
   });
 
-  // Hand-computed dollar assertion (advisor review, 2026-08-29) -- every
+  // Hand-computed dollar assertion -- every
   // other test in this file only checks direction (>0, not-equal), which
   // is exactly why two real math bugs (targetBalanceAtRmdAge missing the
   // traditionalFractionOfSpending/personShare scale factors, and the

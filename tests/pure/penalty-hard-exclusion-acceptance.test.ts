@@ -1,7 +1,6 @@
 /**
- * Acceptance-criteria tests for the v0.7.8 penalty-hard-exclusion pass —
- * see .scratch/docs/plans/DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md
- * § "Acceptance criteria" for the numbered list this file works through.
+ * Acceptance-criteria tests for the penalty-hard-exclusion behavior —
+ * works through a numbered list of criteria.
  * Criteria requiring real routing (10 — per-mode unmetNeed/shortfall
  * typing) live in withdrawal-routing.test.ts; the dedicated Monte Carlo
  * honesty test (11) lives in

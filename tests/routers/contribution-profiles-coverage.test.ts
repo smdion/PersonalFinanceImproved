@@ -1075,7 +1075,7 @@ describe("contributionProfiles coverage", () => {
     });
   });
 
-  // ── COMPAREDATA: lightweight data for the R20 swap-diff + compare view ──
+  // ── COMPAREDATA: lightweight data for the swap-diff + compare view ──
 
   describe("compareData", () => {
     it("returns every profile and every account with active fields keyed by account id", async () => {

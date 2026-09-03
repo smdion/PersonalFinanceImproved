@@ -1,6 +1,6 @@
 /**
- * Tests for deriveFI (R45 Step 4, Findings 8/13): the FI-target formula
- * consolidation. deriveFI used to reimplement `annualExpenses /
+ * Tests for deriveFI: the FI-target formula consolidation. deriveFI used
+ * to reimplement `annualExpenses /
  * withdrawalRate` with raw division (no divide-by-zero guard) independently
  * of calculateNetWorth's safeDivide-guarded version — now both call the
  * same computeFiTarget helper.

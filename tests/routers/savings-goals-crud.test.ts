@@ -1,10 +1,9 @@
 /**
  * savings.savingsGoals router CRUD integration tests.
  *
- * Moved from routers/settings/admin.ts to routers/savings.ts (audit
- * Batch 11 Finding 1 — page-ownership rule, RULES.md's "Settings Belong on
- * Their Pages") — these describe blocks moved out of settings-admin.test.ts
- * alongside it (2026-08-20).
+ * Moved from routers/settings/admin.ts to routers/savings.ts
+ * (page-ownership rule, RULES.md's "Settings Belong on Their Pages") —
+ * these describe blocks moved out of settings-admin.test.ts alongside it.
  */
 import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";

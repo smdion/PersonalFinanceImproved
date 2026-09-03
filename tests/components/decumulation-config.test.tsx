@@ -134,7 +134,7 @@ describe("DecumulationConfig", () => {
     expect(newOrder[1]).toBe(order[0]);
   });
 
-  // v0.7.10 R51 (Gap A): bracket_filling's "Traditional Account Order"
+  // bracket_filling's "Traditional Account Order"
   // sub-control -- shows/reorders only the Traditional-preference subset,
   // splicing changes back into the SAME full withdrawalOrder waterfall's
   // editor writes.

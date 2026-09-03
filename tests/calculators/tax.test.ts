@@ -18,7 +18,7 @@ describe("calculateTax", () => {
     //   Person B: Trad 401k = $676.92 × 26 = $17,600
     //   Person B: HSA = $321 × 26 = $8,346
     //   Total pre-tax annual ≈ $31,276
-    // R57: calculateTax needs real Form 1040 taxable-income-space brackets,
+    // calculateTax needs real Form 1040 taxable-income-space brackets,
     // not the raw Pub 15-T withholding brackets (production derives this via
     // buildLiabilityBracketInput -> toTaxableIncomeBrackets).
     const input: TaxInput = {

@@ -199,8 +199,7 @@ describe("growLtcgBrackets", () => {
   });
 });
 
-// Regression guard (advisor review, 2026-08-31, following the reverted
-// NIIT mistake earlier this same session): NIIT's MAGI threshold and
+// Regression guard: NIIT's MAGI threshold and
 // Social Security's provisional-income taxation thresholds are genuinely
 // flat NOMINAL by law and must NEVER be grown by this module or anything
 // that consumes it. Neither function below takes a year/growth-related
@@ -224,7 +223,7 @@ describe("NIIT and Social Security taxation thresholds stay untouched by bracket
   });
 });
 
-// End-to-end wiring regression guard (advisor review, 2026-08-31): every
+// End-to-end wiring regression guard: every
 // UNIT test above exercises the helpers in isolation, and every OTHER
 // engine test in this suite leaves `taxDataYear` undefined (growth is a
 // no-op for all of them) -- meaning if someone later "cleans up" one of
@@ -551,8 +550,7 @@ describe("end-to-end: LTCG brackets actually grow through the real engine", () =
   });
 });
 
-// Advisor review of this same Phase-2 diff (2026-08-31) flagged that the
-// two tests above set enableRothConversions: false, so the entire
+// The two tests above set enableRothConversions: false, so the entire
 // rothConversionAmount > 0 branch in decumulation-year.ts's Roth-conversion
 // recompute block -- 4 of the 6 splice points this phase swapped from
 // taxRates.ltcgBrackets to grownLtcgBrackets (the computeLtcgTax call and
@@ -696,10 +694,9 @@ describe("growIrmaaBrackets", () => {
 // conversion raises MAGI, which (via the module's own documented
 // Roth-conversions-affect-MAGI-affects-IRMAA feedback chain) ALSO flips
 // year 2028's irmaaCost away from its correctly-grown trajectory, so a
-// cap-side revert fails BOTH tests below, not just the cap one. Advisor
-// diff review (2026-08-31) verified this cross-contamination directly and
-// flagged an earlier draft of this comment that incorrectly claimed the
-// two paths were independent -- they're independent in wiring (neither
+// cap-side revert fails BOTH tests below, not just the cap one. This
+// cross-contamination is verified directly here — the two paths are
+// independent in wiring (neither
 // call site's grown-table SOURCE depends on the other), but not in the
 // values they produce, because of the feedback loop.
 function makeIrmaaHouseholdInput(): ProjectionInput {
@@ -836,9 +833,7 @@ describe("end-to-end: IRMAA brackets grow through both the check and Roth-conver
     // still below tier 1 (returns $218,545, leaving much less room).
     // Growing the threshold can tighten a cap as easily as loosen one,
     // depending on which side of a tier boundary a household's MAGI lands
-    // on -- advisor-caught (2026-08-31) after an earlier draft of this
-    // comment wrongly described it as a proportional "two extra years of
-    // growth" gap.
+    // on -- not a proportional "two extra years of growth" gap.
     expect(y2026.rothConversionAmount).toBeGreaterThan(0);
     expect(y2026.rothConversionAmount).toBeLessThan(20000);
   });

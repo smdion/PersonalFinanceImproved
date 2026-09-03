@@ -1,6 +1,6 @@
 /**
- * R4 (advisor-reviewed 2026-09-01): the decumulation-phase "Portfolio
- * contribution continues after retirement" block in decumulation-year.ts
+ * The decumulation-phase "Portfolio contribution continues after
+ * retirement" block in decumulation-year.ts
  * used to match a contribution spec to its individual account by
  * `ia.name === spec.accountName` ALONE. Two household members with an
  * identically-named account (a common real pattern — "Long Term Brokerage"

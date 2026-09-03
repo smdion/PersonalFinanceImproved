@@ -1,5 +1,5 @@
 /**
- * E2E user journey: scenario edit flow (v0.5 expert-review M18).
+ * E2E user journey: scenario edit flow.
  *
  * Validates that the scenario edit affordances on the dashboard
  * actually expose the edit UI when clicked. This is a smoke-level
@@ -7,9 +7,8 @@
  * catch the most common regression class (scenario buttons / context
  * menus that silently break after a refactor).
  *
- * Two-of-three other journeys from the audit (auth flow, sync flow)
- * are deferred to v0.5.x because they need real Authentik / YNAB
- * fixtures.
+ * The other two journeys in this set (auth flow, sync flow) need real
+ * Authentik / YNAB fixtures and aren't covered here.
  */
 import { test, expect } from "@playwright/test";
 

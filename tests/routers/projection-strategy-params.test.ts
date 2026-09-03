@@ -7,7 +7,7 @@
  * configured one. They're two layers of the same fact and previously
  * diverged silently — the endowment strategy's rollingYears default was 10
  * server-side (and in the engine) but 5 in the UI config, with nothing to
- * catch the mismatch (2026-08-19 audit remediation, Phase 2 item 2g).
+ * catch the mismatch.
  *
  * These assertions use literal expected values, not the shared constants
  * the fix introduced — importing DEFAULT_ENDOWMENT_ROLLING_YEARS into both

@@ -1,10 +1,10 @@
 /**
  * Tests for tax-gross-up.ts's estimateWithdrawalTaxCost — moved here from
- * tax-estimation.test.ts when the function moved files (Phase 5 item 5.3).
+ * tax-estimation.test.ts when the function moved files.
  *
  * The 3 "diverges from real routing" describe blocks near the bottom are
- * regression tests for the specific bugs the advisor design review found
- * (Batch 2 Finding 10): the estimate previously hand-simulated routing
+ * regression tests for a specific bug class: the estimate previously
+ * hand-simulated routing
  * separately from withdrawal-routing.ts's real functions and had silently
  * drifted from them in percentage mode, waterfall + rothBracketTarget, and
  * bracket-filling account caps. Now both call routeForMode, so these tests
@@ -395,8 +395,7 @@ describe("estimateWithdrawalTaxCost matches real routing (regression for Batch 2
   });
 
   it("estimate's implied tax exactly matches calling routeForMode + computeTaxFromSlots directly, evaluated at the CONVERGED withdrawal amount", () => {
-    // v0.7.8 penalty-hard-exclusion gross-up fix (advisor review,
-    // 2026-08-26): estimateWithdrawalTaxCost now secant-converges on the
+    // estimateWithdrawalTaxCost now secant-converges on the
     // withdrawal amount itself (previously a single Picard step that
     // silently under-withdrew whenever cost wasn't proportional to
     // withdrawal size — see

@@ -1,6 +1,5 @@
 /**
- * Tests for roth-distribution-tax.ts (v0.7.8 Roth-tax-basis follow-up).
- * Per DESIGN-DECISION-v0.7.8-roth-tax-basis.md's acceptance criteria:
+ * Tests for roth-distribution-tax.ts. Acceptance criteria exercised here:
  * conservation, the qualified test matching PENALTY_FREE_AGE exactly (no
  * second "59.5" definition), and joint accounts (no ownerBirthYear) treated
  * as qualified — matching withdrawal-eligibility.ts's identical handling.

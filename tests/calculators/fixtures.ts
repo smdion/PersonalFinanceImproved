@@ -12,9 +12,9 @@ import type {
 } from "@/lib/calculators/types";
 import { toTaxableIncomeBrackets } from "@/lib/calculators/tax-brackets";
 
-// R43 (C9): a single source for the 2026 figures repeated across this
+// A single source for the 2026 figures repeated across this
 // file's bracket fixtures below, so a January bump is one edit here
-// instead of finding every inline copy. (The audit found the standard
+// instead of finding every inline copy. (An audit found the standard
 // deduction alone hand-copied 35x across 11 test files — this file was
 // one of them.) Source: seed-reference-data.sql (2026, MFJ, ...).
 export const FIXTURE_STANDARD_DEDUCTION_MFJ_2026 = 32200;
@@ -47,9 +47,9 @@ export const MFJ_2C_BRACKETS: TaxBracketInput = {
 
 // ── 2026 MFJ Tax Brackets (NO checkbox) ──
 // Standard brackets for annual tax estimation and paycheck withholding.
-// Source: seed-reference-data.sql tax_brackets (2026, MFJ, false) — R57 fixed
-// this fixture, which previously dropped the 24% bracket entirely and
-// duplicated 0.37 in its place (jumped 230700@0.22 -> 422850@0.32).
+// Source: seed-reference-data.sql tax_brackets (2026, MFJ, false). This
+// fixture once dropped the 24% bracket entirely and duplicated 0.37 in its
+// place (jumped 230700@0.22 -> 422850@0.32) — fixed.
 export const MFJ_NO_CHECKBOX_BRACKETS: TaxBracketInput = {
   filingStatus: "MFJ",
   w4Checkbox: false,
@@ -64,7 +64,7 @@ export const MFJ_NO_CHECKBOX_BRACKETS: TaxBracketInput = {
     { min: 788000, max: null, rate: 0.37 },
   ],
   standardDeduction: FIXTURE_STANDARD_DEDUCTION_MFJ_2026,
-  // Pub 15-T Worksheet 1A line 1g, MFJ standard table (R56/R58):
+  // Pub 15-T Worksheet 1A line 1g, MFJ standard table:
   // standardDeduction (32200) - this row's first non-zero threshold (19300).
   w4Adjustment: 12900,
   socialSecurityWageBase: FIXTURE_SS_WAGE_BASE_2026,
@@ -74,10 +74,10 @@ export const MFJ_NO_CHECKBOX_BRACKETS: TaxBracketInput = {
   medicareAdditionalThreshold: 200000,
 };
 
-// ── 2026 MFJ Tax Brackets, real Form 1040 taxable-income space (R57) ──
+// ── 2026 MFJ Tax Brackets, real Form 1040 taxable-income space ──
 // This is what calculateTax actually needs — MFJ_NO_CHECKBOX_BRACKETS above
 // is Pub 15-T withholding-space (for calculatePaycheck); feeding THAT
-// directly to calculateTax was the R57 double-deduction bug. Production
+// directly to calculateTax was a double-deduction bug. Production
 // derives this the same way, via buildLiabilityBracketInput ->
 // toTaxableIncomeBrackets — this fixture reuses that exact function so it
 // can't silently drift from what tax.ts actually receives.

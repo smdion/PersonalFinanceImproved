@@ -7,9 +7,9 @@
  *   - retirement.retirementBudgetOverrides (list / create / update / delete)
  *   - retirement.returnRates (list / upsert / delete)
  *
- * Moved from routers/settings/retirement.ts to routers/retirement.ts (audit
- * Batch 11 Finding 1 — page-ownership rule, RULES.md's "Settings Belong on
- * Their Pages") — this file moved alongside it (2026-08-20).
+ * Moved from routers/settings/retirement.ts to routers/retirement.ts
+ * (page-ownership rule, RULES.md's "Settings Belong on Their Pages") —
+ * this file moved alongside it.
  */
 import "./setup-mocks";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
@@ -125,7 +125,7 @@ describe("retirement.retirementSettings", () => {
   // Math.max(...perPersonSettings.map(p => p.endAge)) (build-engine-payload.ts:380).
   // Writing only the caller's row let a two-person household save endAge 90
   // against a sibling row still holding 95, so max() stayed 95 and the
-  // projection silently ignored the edit (found 2026-08-30).
+  // projection silently ignored the edit.
   describe("household field fan-out", () => {
     let secondPersonId: number;
 
@@ -688,7 +688,7 @@ describe("retirement.retirementProfiles", () => {
       expect(secondProfileRows.some((r) => r.endAge === 92)).toBe(false);
     });
 
-    // R53: before this, the only "Pre-Retirement Raise" control wrote the
+    // Before this, the only "Pre-Retirement Raise" control wrote the
     // primary person's retirement_settings row via `upsert` — a second
     // household member's `salary_annual_increase` was unreachable from the
     // UI. `upsertPersonRaiseRate` targets one (profile, person) and writes
@@ -721,7 +721,8 @@ describe("retirement.retirementProfiles", () => {
         )!;
 
         // Person B's rate in this profile is now the value we set — and it's
-        // genuinely distinct from person A's (the whole point of R53).
+        // genuinely distinct from person A's (the whole point of the
+        // per-person control).
         expect(personBAfter.salaryAnnualIncrease).toBe("0.045");
         expect(personAAfter.salaryAnnualIncrease).toBe(
           personARow.salaryAnnualIncrease,
@@ -759,9 +760,9 @@ describe("retirement.retirementProfiles", () => {
     expect(updated!.name).toBe("Retire Early (renamed)");
   });
 
-  // R43: taxParamsYear pins the profile's resolveTaxParams base year.
-  // Reachable via this mutation (advisor-caught gap: the column existed
-  // and was read correctly, but nothing could ever set it).
+  // taxParamsYear pins the profile's resolveTaxParams base year.
+  // Reachable via this mutation (the column existed and was read
+  // correctly, but nothing could ever set it).
   it("update sets and clears taxParamsYear", async () => {
     const pinned = await caller.retirement.retirementProfiles.update({
       id: secondProfileId,

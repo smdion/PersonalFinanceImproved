@@ -89,8 +89,8 @@ describe("computeTaxBucketBreakdown", () => {
     expect(sean.performanceAccountId).toBe(5);
     expect(joanna.amount).toBeCloseTo(101817.45, 2);
 
-    // v0.7.8 Group 1 prerequisite (advisor finding S3): accountBreakdownByCategory
-    // used to merge on (name, taxType) only, so these two identically-labeled
+    // accountBreakdownByCategory used to merge on (name, taxType) only, so
+    // these two identically-labeled
     // "IRA (Vanguard)" rows from different owners collapsed into ONE entry,
     // silently keeping only Sean's ownerPersonId — this feeds
     // build-engine-payload.ts's individualAccounts directly (the engine's

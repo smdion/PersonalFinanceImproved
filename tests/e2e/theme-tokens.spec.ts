@@ -1,9 +1,9 @@
 import { test, expect } from "@playwright/test";
 
 /**
- * Theme token regression guard (v0.5 expert-review M26).
+ * Theme token regression guard.
  *
- * The first M26 cleanup script bulk-replaced bg-gray-300/400 with
+ * An earlier cleanup script bulk-replaced bg-gray-300/400 with
  * bg-surface-elevated, which was the wrong target — surface-elevated is
  * gray-100 (#f3f4f6 in light mode), so dot indicators and dividers
  * effectively disappeared against the white card surfaces around them.

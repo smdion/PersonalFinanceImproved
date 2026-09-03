@@ -91,7 +91,7 @@ describe("toLtcgTaxableIncome", () => {
 });
 
 // ltcgRateForNextDollar is the exclusive counterpart to getLtcgRate,
-// deliberately NOT consolidated with it (found 2026-08-31 — see its
+// deliberately NOT consolidated with it (see its
 // docblock): getLtcgRate answers "what bracket is a real dollar SITTING
 // AT" (inclusive <=, correct for a total-income figure); this answers
 // "what bracket does the NEXT dollar enter" (exclusive <, matching

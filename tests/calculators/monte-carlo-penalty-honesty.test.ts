@@ -1,9 +1,7 @@
 /**
- * Acceptance criterion 11 (Monte Carlo honesty) for the v0.7.8
- * penalty-hard-exclusion pass — see
- * .scratch/docs/plans/DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md.
+ * Monte Carlo honesty check for the penalty-hard-exclusion behavior.
  *
- * Before this pass, `successRate` only checked `terminalBalance > 0`. A
+ * Before this, `successRate` only checked `terminalBalance > 0`. A
  * household whose only remaining money was penalty-exposed (and therefore
  * off-limits under `avoidPenalizedWithdrawals: true`) would under-spend
  * every year it couldn't reach that money, keep a LARGER terminal balance

@@ -156,8 +156,7 @@ describe("categoriesWithTaxPreference", () => {
 });
 
 describe("tradPreferenceEngineCategories", () => {
-  // Advisor review, 2026-08-29 (v0.7.10 R51 Gap A finding N3): asserts the
-  // intersection directly, not just "these two arrays happen to be equal
+  // Asserts the intersection directly, not just "these two arrays happen to be equal
   // today" — categoriesWithTaxPreference() filters by supportsRothSplit
   // only, getEngineCategories() filters by participatesInEngine/
   // engineParent, and they coincide today only because every category

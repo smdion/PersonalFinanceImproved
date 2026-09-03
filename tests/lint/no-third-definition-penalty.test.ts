@@ -1,7 +1,6 @@
 /**
- * Acceptance criterion 12 (v0.7.8 penalty-hard-exclusion pass — see
- * .scratch/docs/plans/DESIGN-DECISION-v0.7.8-penalty-hard-exclusion.md):
- * "No third definition." Two checks:
+ * "No third definition" guard for the penalty-hard-exclusion constants.
+ * Two checks:
  *
  *   A. `PENALTY_FREE_AGE`, `HSA_NON_MEDICAL_PENALTY_AGE`,
  *      `EARLY_WITHDRAWAL_PENALTY_RATE`, and `HSA_NON_MEDICAL_PENALTY_RATE`

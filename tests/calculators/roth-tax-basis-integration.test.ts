@@ -1,6 +1,5 @@
 /**
- * Full-pipeline integration test for Roth growth-vs-basis taxability
- * (v0.7.8 Roth-tax-basis follow-up, DESIGN-DECISION-v0.7.8-roth-tax-basis.md).
+ * Full-pipeline integration test for Roth growth-vs-basis taxability.
  *
  * Acceptance criteria exercised here:
  *   4. Both paths agree — the tax-gross-up estimate and the real

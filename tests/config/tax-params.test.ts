@@ -1,12 +1,12 @@
 /**
- * R43 — resolveTaxParams parity / behaviour gate.
+ * resolveTaxParams parity / behaviour gate.
  *
- * This is the merge gate for the C4d/C4e wiring commits. It is not enough
+ * It is not enough
  * to assert "engine-snapshot doesn't move" — that only exercises the case
  * where the calendar year, MAX(tax_brackets.taxYear) and the seeded
- * contribution_limits year are all the same, i.e. where every C4 change is
- * a no-op. The cases below cover the year-resolution edges C4 deliberately
- * changes.
+ * contribution_limits year are all the same, i.e. where the resolution
+ * rewrite is a no-op. The cases below cover the year-resolution edges that
+ * rewrite deliberately changes.
  */
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
@@ -92,7 +92,7 @@ function seedRows(overrides: Partial<TaxParamsRowSets> = {}): TaxParamsRowSets {
 }
 
 // ---------------------------------------------------------------------------
-// 1. All-2026 parity — the resolver must reproduce the pre-R43 4-table logic.
+// 1. All-2026 parity — the resolver must reproduce the previous 4-table logic.
 // ---------------------------------------------------------------------------
 
 describe("resolveTaxParams — parity with pre-R43 resolution", () => {
@@ -180,7 +180,7 @@ describe("resolveTaxParams — Oct-Jan drift window (F2-4)", () => {
     expect(r.limits.standard_deduction_mfj).toBeGreaterThan(0);
   });
 
-  // R43 C6 (F2-3): before R43, growLtcgBrackets was fed a taxDataYear
+  // Previously, growLtcgBrackets was fed a taxDataYear
   // sourced from tax_brackets' own MAX(taxYear), independent of
   // ltcg_brackets' own MAX — so a tax_brackets-only year bump would
   // silently grow the OLDER LTCG thresholds as if they were the newer

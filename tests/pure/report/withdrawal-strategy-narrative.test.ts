@@ -197,10 +197,10 @@ describe("buildWithdrawalStrategyNarrative", () => {
 
   it("folds the bracket-ceiling math into the narrative when the bracket-target year has a standardDeduction, using that SAME year's own bracketTraditionalCap/taxableSS/standardDeduction", () => {
     // standardDeduction now comes off the per-year engine field (the
-    // grown value, bracket-growth.ts) rather than a function parameter —
-    // advisor-caught, 2026-08-31: a plan-level ungrown parameter here
-    // paired with a grown bracketTraditionalCap was internally
-    // inconsistent for any year beyond the tax data's own vintage.
+    // grown value, bracket-growth.ts) rather than a function parameter: a
+    // plan-level ungrown parameter here paired with a grown
+    // bracketTraditionalCap was internally inconsistent for any year
+    // beyond the tax data's own vintage.
     const years = [
       decumYear({
         year: 2040,

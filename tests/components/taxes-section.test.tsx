@@ -1,7 +1,7 @@
 /**
- * Multi-year withdrawal-policy optimizer, Phase 4 —
  * `TaxesSection`'s live "Currently recommended: X%" note next to the
- * Bracket Ceiling control, and its "Apply" action.
+ * Bracket Ceiling control, and its "Apply" action (part of the multi-year
+ * withdrawal-policy optimizer).
  *
  * `TaxesSection` is a documented pure-presentational leaf
  * (retirement-sections-smoke.test.tsx) — the optimizer result is passed
@@ -125,8 +125,7 @@ describe("TaxesSection — withdrawal bracket optimizer recommendation", () => {
   it("Apply also sets rmdSmoothingMaxBracketTarget when rmdSmoothingEnabled is on, discloses it, and does NOT gate this on enableRothConversions", () => {
     // enableRothConversions is OFF here -- if the ceiling update were
     // (wrongly) gated on that toggle instead of rmdSmoothingEnabled, this
-    // would fail to update it. See PLAN-v0.7.10-multi-year-withdrawal-
-    // optimizer.md's Phase 4 correction.
+    // would fail to update it.
     const { mutate } = renderTaxesSection(
       { enableRothConversions: false, rmdSmoothingEnabled: true },
       { recommendedTarget: 0.22, currentTarget: 0.12 },

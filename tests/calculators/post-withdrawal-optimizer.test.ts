@@ -421,7 +421,7 @@ describe("checkAca", () => {
 });
 
 // ---------------------------------------------------------------------------
-// performRothConversion — Retirement-only scope (R49)
+// performRothConversion — Retirement-only scope
 // ---------------------------------------------------------------------------
 
 describe("performRothConversion (R49 — nonRetirement scope)", () => {
@@ -471,7 +471,8 @@ describe("performRothConversion (R49 — nonRetirement scope)", () => {
   it("caps the conversion SOURCE amount to Retirement-only pretax, not the blended balances.preTax", () => {
     // Blended preTax = 500000 (Retirement 100k + Portfolio 400k). Bracket
     // room is large (see makeRothInput's own comment: ~151550) -- without
-    // the R49 cap, conversion would size against the full blended balance.
+    // the retirement-only cap, conversion would size against the full
+    // blended balance.
     const balances = makeTaxBuckets({ preTax: 500000, afterTax: 300000 });
     const acctBal = makeAccountBalances({ preTax: 500000, afterTax: 300000 });
     acctBal["401k"] = {
@@ -592,7 +593,7 @@ describe("performRothConversion (R49 — nonRetirement scope)", () => {
   it("byte-identical to pre-R49 behavior when nonRetirement (and ind* data) are omitted entirely -- the real call site's actual fallback shape", () => {
     // decumulation-year.ts always computes nonRetirement and
     // indAccts/indBal/indKey together, gated on the same
-    // hasIndividualAccounts check (see its own R49 comment) -- so the real
+    // hasIndividualAccounts check (see its own comment) -- so the real
     // "not tracking individual accounts" fallback is ALL of these omitted
     // together, not nonRetirement alone.
     const balancesA = makeTaxBuckets();
@@ -629,7 +630,7 @@ describe("performRothConversion (R49 — nonRetirement scope)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// performRothConversion — R47 RMD-smoothing elevated ceiling
+// performRothConversion — RMD-smoothing elevated ceiling
 // ---------------------------------------------------------------------------
 
 describe("performRothConversion (R47 — RMD-smoothing elevated ceiling)", () => {

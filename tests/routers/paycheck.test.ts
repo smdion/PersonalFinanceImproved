@@ -185,13 +185,13 @@ describe("paycheck router — optional input params", () => {
       expect(result).toHaveProperty("people");
       expect(result).toHaveProperty("jointContribs");
       expect(result).toHaveProperty("householdTax");
-      // R43: the response now reports the resolved tax-data vintage.
+      // The response now reports the resolved tax-data vintage.
       expect(result.taxYear).toBe(2025);
     });
 
     it("returns null paycheck/tax for an unseeded (but in-range) year", async () => {
       // 2024 is within the 2000-2100 bound but has no seeded tables — the
-      // person entry still renders, paycheck/tax null (R43 onMissing:"null").
+      // person entry still renders, paycheck/tax null (onMissing: "null").
       const result = await caller.paycheck.computeSummary({
         taxYearOverride: 2024,
       });

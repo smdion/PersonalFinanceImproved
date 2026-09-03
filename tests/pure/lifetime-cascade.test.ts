@@ -9,8 +9,8 @@ import {
  *
  * recomputeLifetimeFields() is the pure core of the cascadeLifetimeFields
  * tRPC helper, which is the ONLY legal writer to the `lifetime_*` fields
- * on annual_performance rows that are marked is_immutable=true (the H4
- * immutability flag from the v0.5 expert review). A regression here =
+ * on annual_performance rows that are marked is_immutable=true. A
+ * regression here =
  * silently wrong historical numbers across every page that reads lifetime
  * data (Trends, Portfolio history, FI projection, Plan Health card, etc).
  *

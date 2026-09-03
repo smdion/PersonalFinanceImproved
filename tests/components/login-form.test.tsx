@@ -27,7 +27,7 @@ import { signIn } from "next-auth/react";
 import { LoginForm } from "@/app/login/login-form";
 
 /**
- * LoginForm component contract (v0.5 expert-review M18).
+ * LoginForm component contract.
  *
  * Pairs with tests/e2e/auth-flow.spec.ts — the e2e spec is skipped in
  * DEMO_ONLY mode because the demo session is auto-injected and /login

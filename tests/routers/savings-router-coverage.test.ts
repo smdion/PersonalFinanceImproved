@@ -1766,9 +1766,9 @@ describe("savings.extraPaycheckRouting", () => {
 
   it("save always recomputes baseNetPayPerCheck server-side, ignoring the client-supplied value (pinned)", async () => {
     // Pinned ahead of consolidating computeJobNetPayPerCheck's per-job
-    // paycheck-input construction with paycheck.ts router's equivalent
-    // (audit Batch 9 Finding 3). seedJob's defaults: $120,000 salary,
-    // biweekly, MFJ, no deductions/contributions, bonusPercent 0.
+    // paycheck-input construction with paycheck.ts router's equivalent.
+    // seedJob's defaults: $120,000 salary, biweekly, MFJ, no
+    // deductions/contributions, bonusPercent 0.
     await caller.savings.extraPaycheckRouting.save({
       jobId,
       rules: [{ from: "2025-01", to: null, splits: [{ goalId, pct: 100 }] }],
@@ -1780,7 +1780,7 @@ describe("savings.extraPaycheckRouting", () => {
     expect(baseNetPayPerCheck).not.toBe(999999);
     // $120,000 / 26 biweekly periods = $4,615.38 gross, minus federal
     // withholding and FICA (no deductions/contributions seeded).
-    // R56: calculatePaycheck now applies the Pub 15-T Worksheet 1A adjustment
+    // calculatePaycheck now applies the Pub 15-T Worksheet 1A adjustment
     // before the withholding bracket lookup (previously missing, which
     // over-withheld and understated net pay) — net pay rose accordingly.
     expect(baseNetPayPerCheck).toBeGreaterThan(3700);

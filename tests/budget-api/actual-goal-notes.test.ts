@@ -110,7 +110,7 @@ describe("mergeGoalIntoNote", () => {
     });
   });
 
-  // Advisor review, 2026-08-29: a negative amount used to write
+  // A negative amount used to write
   // `#template -50`, which FIXED_RE/TARGET_BALANCE_RE (digits-only, no
   // sign) can never match again -- every later write for that category
   // permanently fell into the ANY_TEMPLATE_RE "conflict" branch instead.

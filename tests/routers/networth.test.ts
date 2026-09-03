@@ -5,7 +5,7 @@
  * Tests computeSummary, listHistory, listSnapshots, listSnapshotTotals,
  * computeFIProgress, computeComparison, and portfolioSnapshots CRUD
  * (getLatest/create/createAccount/updateAccount/delete — moved from
- * routers/settings/admin.ts, Phase 6.5) with seeded SQLite data.
+ * routers/settings/admin.ts) with seeded SQLite data.
  */
 import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";

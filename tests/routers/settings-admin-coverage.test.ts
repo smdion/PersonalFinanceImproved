@@ -196,7 +196,7 @@ describe("settings.backfillPerformanceAccountIds", () => {
 });
 
 // portfolioSnapshots.delete/create additional coverage moved to
-// networth.test.ts (procedures moved to routers/networth.ts, Phase 6.5).
+// networth.test.ts (procedures moved to routers/networth.ts).
 
 // ─────────────────────────────────────────────────────────────────────────────
 // updateDataFreshness — additional branches
@@ -216,7 +216,7 @@ describe("settings.updateDataFreshness additional", () => {
 
 // relocationScenarios additional coverage moved to
 // projection-relocation.test.ts (procedures moved to
-// routers/projection/relocation.ts, Phase 6.6).
+// routers/projection/relocation.ts).
 
 describe("scenarios.setOverride / clearOverride", () => {
   async function seedScenario(

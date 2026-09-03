@@ -1,7 +1,6 @@
 /**
  * Unit tests for roth-basis-rollover.ts's year-scoped Roth basis lifecycle.
- * Missing test coverage found in code review, 2026-08-27 — this module
- * shipped with no test file at all despite touching finalized financial
+ * This module previously had no test file at all despite touching finalized financial
  * records, per its own docblock's non-trivial edge-case behavior (never
  * dropping a locked-in basis figure back to "nothing entered").
  */

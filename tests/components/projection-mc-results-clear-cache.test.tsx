@@ -1,5 +1,5 @@
 /**
- * Regression test for a live-household bug found 2026-08-29: the "Clear
+ * Regression test for a live-household bug: the "Clear
  * Cache" button in McResultsSection wiped the SERVER-side
  * `projection_cache` table (confirmed working, via `clearProjectionCache`)
  * but never invalidated the BROWSER's own client-side `computeProjection`

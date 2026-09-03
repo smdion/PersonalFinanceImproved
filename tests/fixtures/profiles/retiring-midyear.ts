@@ -10,7 +10,7 @@
  *   monthsRemaining = 12 − 3 = 9
  *   firstYearFraction = 9 / 12 = 0.75
  *
- * ── EXPECTED BEHAVIOR (option-b semantics, advisor-mandated) ──────────────
+ * ── EXPECTED BEHAVIOR (option-b semantics) ──────────────
  *
  * When retirementAge === currentAge AND firstYearFraction < 1, the engine
  * should treat y=0 as ONE final partial accumulation year (not decumulation).

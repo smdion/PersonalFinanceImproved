@@ -1,8 +1,8 @@
 /**
- * R35 — the 6-tier account-matching cascade that maps a contribution spec to
+ * The 6-tier account-matching cascade that maps a contribution spec to
  * a physical account row was an unnamed, undocumented, untested inline chain
- * inside `buildProfileContribData`, in a file (`contribution.ts`) that was
- * the site of the v0.7.6 employer-match grouping bug. Extracted as
+ * inside `buildProfileContribData`, in a file (`contribution.ts`) that had
+ * an employer-match grouping bug. Extracted as
  * `matchAccountForContribution`; this file pins each precedence tier so a
  * future refactor of the chain can't silently change which account a
  * contribution lands in.

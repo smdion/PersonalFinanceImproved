@@ -1,7 +1,6 @@
 /**
- * T1 — usePersistedSetting's pendingWrite guard (M42,
- * .scratch/docs/review-findings.md): a per-write generation counter must
- * ensure an OLDER write settling late doesn't clear the guard while a
+ * usePersistedSetting's pendingWrite guard: a per-write generation counter
+ * must ensure an OLDER write settling late doesn't clear the guard while a
  * NEWER write is still pending, which would let a stale DB-echoed value
  * briefly clobber the user's latest input.
  */

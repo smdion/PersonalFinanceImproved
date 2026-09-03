@@ -1,6 +1,6 @@
 /**
- * Tests for projectRuleOf55's forceIneligible option (v0.7.8 Rule of 55
- * forecasting toggle). Guards the specific bug an advisor review caught in
+ * Tests for projectRuleOf55's forceIneligible option (Rule of 55
+ * forecasting toggle). Guards a subtle bug in
  * a first implementation attempt: mutating the "now" status's `.eligible`
  * before calling this function did nothing for a still-employed
  * (source: "active") worker, because the function recomputes `eligible`

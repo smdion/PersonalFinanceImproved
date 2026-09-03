@@ -118,7 +118,7 @@ describe("LumpSumForm", () => {
   it("updates targetAccount when a different account is selected", () => {
     const onAdd = vi.fn();
     render(<LumpSumForm accounts={accounts} onAdd={onAdd} />);
-    // Option values are now a "name::ownerName" composite key (R4, v0.7.11)
+    // Option values are now a "name::ownerName" composite key
     // — plain name alone can't disambiguate two owners sharing an account
     // name, so the picker no longer uses it as the <option> value. These
     // fixture accounts have no ownerName, so the key is "name::".

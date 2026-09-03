@@ -534,8 +534,7 @@ describe("transformBackupToCurrentSchema — v0.6_final to v0.7.0", () => {
 // ---------------------------------------------------------------------------
 
 describe("transformBackupToCurrentSchema — v0.7.x Retirement Profiles backfill", () => {
-  // Advisor-caught 2026-09-01 (code-review "removed-behavior auditor"):
-  // this transform used to stop at 0032's step A (empty retirement_profiles/
+  // This transform used to stop at 0032's step A (empty retirement_profiles/
   // retirement_profile_people, null profile_id) — the INTERMEDIATE state
   // the real migration passes through before its own backfill runs, not
   // where a live upgrade actually lands. Restoring a genuinely old backup
@@ -682,7 +681,7 @@ describe("transformBackupToCurrentSchema — v0.7.x Retirement Profiles backfill
       PRE_0032_VERSION,
       CURRENT_VERSION,
     );
-    // 0038 (R43) adds the nullable retirement_profiles.tax_params_year
+    // 0038 adds the nullable retirement_profiles.tax_params_year
     // column to every restored row; the profile's identity is untouched.
     expect(result.tables["retirement_profiles"]).toEqual([
       { id: 42, name: "My Real Plan", tax_params_year: null },
@@ -772,8 +771,7 @@ describe("edge cases", () => {
  * maintained by hand and both stopped at 0001. Tags 0002-0031 shipped without
  * being registered, so transformBackupToCurrentSchema threw "Unknown schema
  * version" for any backup taken between v0.7.0 and v0.7.10 — restore was
- * broken across nearly the whole v0.7 line, silently, until someone tried it
- * (found 2026-08-30).
+ * broken across nearly the whole v0.7 line, silently, until someone tried it.
  *
  * This reads the real drizzle journals, so adding a migration without
  * registering its tag fails here instead of at someone's restore.
