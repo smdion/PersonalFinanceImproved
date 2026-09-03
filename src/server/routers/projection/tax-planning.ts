@@ -26,16 +26,28 @@
  * mirrors `computeProjection`'s input (`scenarios.ts`) field-for-field.
  */
 import { z } from "zod/v4";
-import { createTRPCRouter } from "../../trpc";
-import type { RoutingMode } from "@/lib/calculators/types";
+import { createTRPCRouter, protectedProcedure } from "../../trpc";
+import { calculateProjection } from "@/lib/calculators/engine";
+import type {
+  AccumulationOverride,
+  DecumulationOverride,
+  RoutingMode,
+} from "@/lib/calculators/types";
+import type { EngineDecumulationYear } from "@/lib/calculators/types/engine-projection";
+import { taxYearFlags } from "@/lib/pure/report/year-table";
 import {
   accountCategoryEnum,
   getDefaultDecumulationOrder,
 } from "@/lib/config/account-types";
 import {
+  fetchRetirementData,
+  buildEnginePayload,
+} from "@/server/retirement/build-engine-payload";
+import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
   decumulationDefaultsInputSchema,
+  buildDecumulationDefaults,
 } from "./_shared";
 
 /**
@@ -111,4 +123,206 @@ export const rothConversionTargetSchema = z.object({
 /** Kept exported so callers/tests can build a valid default `order`. */
 export const DEFAULT_WITHDRAWAL_ORDER = getDefaultDecumulationOrder();
 
-export const taxPlanningRouter = createTRPCRouter({});
+// ---------------------------------------------------------------------------
+// Shared engine runner — the single computation path
+// ---------------------------------------------------------------------------
+
+type TaxPlanningBaseInput = z.infer<typeof taxPlanningBaseInput>;
+
+/**
+ * fetch → buildEnginePayload → run `calculateProjection` ONCE, with the
+ * request's profile/budget selection and any client `decumulationDefaults`
+ * / overrides applied. Byte-for-byte the same construction
+ * `withdrawal-bracket-optimizer.ts` uses; the strategy-comparison and Roth
+ * what-if procedures call this in a loop with an extra override pushed on.
+ * Returns `null` when the household has no projectable data yet.
+ */
+async function runProjection(
+  db: Parameters<typeof fetchRetirementData>[0],
+  input: TaxPlanningBaseInput,
+  extraDecumulationOverrides: DecumulationOverride[] = [],
+) {
+  const data = await fetchRetirementData(db, {
+    snapshotId: input.snapshotId,
+    contributionProfileId: input.contributionProfileId,
+    salaryProfileId: input.salaryProfileId,
+  });
+  const payload = await buildEnginePayload(db, data, {
+    salaryActiveFields: input.salaryActiveFields,
+    contributionProfileId: input.contributionProfileId,
+    salaryProfileId: input.salaryProfileId,
+    retirementProfileId: input.retirementProfileId,
+    accumulationBudgetProfileId: input.accumulationBudgetProfileId,
+    accumulationBudgetColumn: input.accumulationBudgetColumn,
+    accumulationExpenseOverride: input.accumulationExpenseOverride,
+    decumulationBudgetProfileId: input.decumulationBudgetProfileId,
+    decumulationBudgetColumn: input.decumulationBudgetColumn,
+    decumulationExpenseOverride: input.decumulationExpenseOverride,
+  });
+  if (!payload) return null;
+
+  const { settings, distributionTaxRates, baseEngineInput } = payload;
+
+  const engineInput = {
+    ...baseEngineInput,
+    decumulationDefaults: buildDecumulationDefaults(
+      settings,
+      input.decumulationDefaults,
+      distributionTaxRates,
+    ),
+    accumulationOverrides:
+      input.accumulationOverrides as AccumulationOverride[],
+    decumulationOverrides: [
+      ...(input.decumulationOverrides as DecumulationOverride[]),
+      ...extraDecumulationOverrides,
+    ],
+  };
+
+  return {
+    result: calculateProjection(engineInput),
+    taxDataYear: distributionTaxRates.taxDataYear,
+    taxParamsVersion: distributionTaxRates.taxParamsVersion,
+  };
+}
+
+/** The decumulation slice of a projection, narrowed. */
+function decumulationYears(
+  projectionByYear: { phase: string }[],
+): EngineDecumulationYear[] {
+  return projectionByYear.filter(
+    (y): y is EngineDecumulationYear => y.phase === "decumulation",
+  );
+}
+
+/** Lifetime tax = Σ (withdrawal tax + Roth-conversion tax + IRMAA + NIIT +
+ *  early-withdrawal penalty) over the decumulation horizon. Mirrors
+ *  `scoreCandidate` in `withdrawal-bracket-optimizer.ts`, plus `niitAmount`
+ *  (that scorer predates the NIIT field). */
+export function lifetimeTax(years: EngineDecumulationYear[]): number {
+  return years.reduce(
+    (sum, y) =>
+      sum +
+      (y.taxCost ?? 0) +
+      (y.rothConversionTaxCost ?? 0) +
+      (y.irmaaCost ?? 0) +
+      (y.niitAmount ?? 0) +
+      (y.penaltyCost ?? 0),
+    0,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// projectTaxYears — the year-by-year tax table (roadmap #4)
+// ---------------------------------------------------------------------------
+
+export type TaxYearRow = {
+  year: number;
+  age: number;
+  /** Where the year's money comes from (nominal $). No salary/pension line
+   *  — the engine models neither in decumulation. */
+  income: {
+    socialSecurity: number;
+    traditionalWithdrawal: number;
+    rothWithdrawal: number;
+    otherWithdrawal: number;
+    requiredMinimumDistribution: number;
+    rothConversion: number;
+  };
+  taxableSocialSecurity: number;
+  /** Federal tax on withdrawals for the year (engine's `taxCost`). */
+  federalTax: number;
+  niit: number;
+  irmaaSurcharge: number;
+  rothConversionTax: number;
+  ltcgRate: number;
+  effectiveTaxRate: number;
+  /** Running Σ of federalTax + niit + irmaaSurcharge + rothConversionTax. */
+  cumulativeTax: number;
+  endingBalance: number;
+  balanceByTaxType: EngineDecumulationYear["balanceByTaxType"];
+  qcdAmount: number;
+  rmdShortfall: number;
+  rmdExcess: number;
+  unmetNeed: number;
+  acaSubsidyPreserved: boolean;
+  acaMagiHeadroom: number;
+  /** Set once Group D lands; harmless (undefined) until then. */
+  rothConversionIrmaaCapped?: boolean;
+  flags: string[];
+};
+
+function toTaxYearRow(
+  y: EngineDecumulationYear,
+  cumulativeTax: number,
+): TaxYearRow {
+  const otherWithdrawal = Math.max(
+    0,
+    y.totalWithdrawal - y.totalTraditionalWithdrawal - y.totalRothWithdrawal,
+  );
+  return {
+    year: y.year,
+    age: y.age,
+    income: {
+      socialSecurity: y.ssIncome,
+      traditionalWithdrawal: y.totalTraditionalWithdrawal,
+      rothWithdrawal: y.totalRothWithdrawal,
+      otherWithdrawal,
+      requiredMinimumDistribution: y.rmdAmount,
+      rothConversion: y.rothConversionAmount,
+    },
+    taxableSocialSecurity: y.taxableSS,
+    federalTax: y.taxCost,
+    niit: y.niitAmount,
+    irmaaSurcharge: y.irmaaCost,
+    rothConversionTax: y.rothConversionTaxCost,
+    ltcgRate: y.ltcgRate,
+    effectiveTaxRate: y.effectiveTaxRate,
+    cumulativeTax,
+    endingBalance: y.endBalance,
+    balanceByTaxType: y.balanceByTaxType,
+    qcdAmount: y.qcdAmount,
+    rmdShortfall: y.rmdShortfallAmount,
+    rmdExcess: y.rmdExcessAmount,
+    unmetNeed: y.unmetNeedMaterial ? (y.unmetNeed ?? 0) : 0,
+    acaSubsidyPreserved: y.acaSubsidyPreserved,
+    acaMagiHeadroom: y.acaMagiHeadroom,
+    rothConversionIrmaaCapped: (
+      y as EngineDecumulationYear & { rothConversionIrmaaCapped?: boolean }
+    ).rothConversionIrmaaCapped,
+    flags: taxYearFlags(y),
+  };
+}
+
+export const taxPlanningRouter = createTRPCRouter({
+  /**
+   * Year-by-year tax projection through decumulation — a straight read of
+   * the deterministic engine run (NOT Monte Carlo). One row per
+   * decumulation year with income sources, federal / NIIT / IRMAA tax,
+   * effective rate, balances, a running lifetime-tax total, and the shared
+   * "notable year" flags.
+   */
+  projectTaxYears: protectedProcedure
+    .input(taxPlanningBaseInput)
+    .query(async ({ ctx, input }) => {
+      const run = await runProjection(ctx.db, input);
+      if (!run) return { rows: [] as TaxYearRow[], meta: null };
+
+      const years = decumulationYears(run.result.projectionByYear);
+      let cumulative = 0;
+      const rows = years.map((y) => {
+        cumulative +=
+          y.taxCost + y.niitAmount + y.irmaaCost + y.rothConversionTaxCost;
+        return toTaxYearRow(y, cumulative);
+      });
+
+      return {
+        rows,
+        meta: {
+          bracketsThroughYear: run.taxDataYear,
+          taxParamsVersion: run.taxParamsVersion,
+          projectedFromYear: run.result.projectionByYear[0]?.year ?? null,
+          portfolioDepletionYear: run.result.portfolioDepletionYear,
+        },
+      };
+    }),
+});

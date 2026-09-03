@@ -14,24 +14,43 @@ export interface YearTableRow {
   flags: string[];
 }
 
+/**
+ * The "something notable happened this year" flag vocabulary — one list,
+ * shared by the advisor report's year table and the Tax Planning page's
+ * year-by-year table so the two never drift. Order is deliberate (most
+ * consequential first). `rothConversionIrmaaCapped` is populated by the
+ * engine only once Group D of the Tax Planning plan lands; until then it
+ * is always undefined and the flag simply never appears.
+ */
+export function taxYearFlags(
+  y: Pick<
+    EngineDecumulationYear,
+    | "rmdOverrodeRouting"
+    | "rmdShortfallAmount"
+    | "irmaaCost"
+    | "acaSubsidyPreserved"
+    | "rothConversionAmount"
+  > & { rothConversionIrmaaCapped?: boolean },
+): string[] {
+  const flags: string[] = [];
+  if (y.rmdOverrodeRouting) flags.push("RMD");
+  if (y.rmdShortfallAmount > 0) flags.push("RMD shortfall");
+  if (y.irmaaCost > 0) flags.push("IRMAA");
+  if (y.acaSubsidyPreserved === false) flags.push("ACA lost");
+  if (y.rothConversionAmount > 0) flags.push("Roth conversion");
+  if (y.rothConversionIrmaaCapped) flags.push("Roth capped (IRMAA)");
+  return flags;
+}
+
 export function buildYearTableRows(
   decumulationYears: EngineDecumulationYear[],
   deflate: (v: number, year: number) => number,
 ): YearTableRow[] {
-  return decumulationYears.map((y) => {
-    const flags: string[] = [];
-    if (y.rmdOverrodeRouting) flags.push("RMD");
-    if (y.rmdShortfallAmount > 0) flags.push("RMD shortfall");
-    if (y.irmaaCost > 0) flags.push("IRMAA");
-    if (y.acaSubsidyPreserved === false) flags.push("ACA lost");
-    if (y.rothConversionAmount > 0) flags.push("Roth conversion");
-
-    return {
-      year: y.year,
-      age: y.age,
-      withdrawal: formatCurrency(deflate(y.totalWithdrawal, y.year)),
-      taxCost: formatCurrency(deflate(y.taxCost, y.year)),
-      flags,
-    };
-  });
+  return decumulationYears.map((y) => ({
+    year: y.year,
+    age: y.age,
+    withdrawal: formatCurrency(deflate(y.totalWithdrawal, y.year)),
+    taxCost: formatCurrency(deflate(y.taxCost, y.year)),
+    flags: taxYearFlags(y),
+  }));
 }
