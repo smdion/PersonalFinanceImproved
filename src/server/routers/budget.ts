@@ -1128,9 +1128,11 @@ export const budgetRouter = createTRPCRouter({
         const amounts = budgetAmountsSchema.parse(item.amounts);
         const valid = changes.filter((c) => {
           if (!Number.isFinite(c.amount)) {
+            // Message is user-facing (surfaced by the global
+            // MutationCache.onError toast) — no raw ids.
             throw new TRPCError({
               code: "BAD_REQUEST",
-              message: `Budget item ${id}: amount for column ${c.colIndex} is not a finite number`,
+              message: "One of the pasted amounts isn't a valid number.",
             });
           }
           if (c.colIndex < 0 || c.colIndex >= amounts.length) {

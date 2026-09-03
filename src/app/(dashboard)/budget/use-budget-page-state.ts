@@ -147,13 +147,12 @@ export function useBudgetPageState({
 
   const toggleEditMode = () => {
     if (editMode) {
-      // A thrown save (validation reject, transaction rollback, network
-      // failure) previously went to console only, leaving the user stuck
-      // in edit mode with no feedback. Keep the raw message (may carry DB
-      // ids) out of user-facing copy.
+      // A thrown save is already surfaced app-wide by the QueryClient's
+      // MutationCache.onError (providers.tsx). Just swallow the rejection
+      // here so it isn't an unhandled promise; the `skipped[]` partial-
+      // success toast in saveAllDrafts is the only budget-specific case.
       saveAllDrafts().catch((e: unknown) => {
         console.warn("budget batch save failed", e);
-        toast("Couldn't save budget changes — please try again.", "error");
       });
     } else {
       setEditDrafts(new Map());
