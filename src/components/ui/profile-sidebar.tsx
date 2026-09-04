@@ -55,9 +55,11 @@ type ProfileListRowProps = {
   /** Type-specific summary line (Budget: $/yr + mode count; Contribution:
    *  contributions + employer match; Salary: job count or description). */
   meta?: React.ReactNode;
-  /** Type-specific extra badge next to the name (Budget's API-link
-   *  indicator is the only current user). */
-  extraBadge?: React.ReactNode;
+  /** Type-specific tag that leads the meta line — reference detail, not a
+   *  status you scan the list by, so it sits on the secondary line rather
+   *  than competing with the name (Budget's API-link indicator is the only
+   *  current user). Best rendered as a subtle (no-fill) Badge. */
+  metaTag?: React.ReactNode;
 };
 
 export function ProfileListRow({
@@ -71,7 +73,7 @@ export function ProfileListRow({
   onClone,
   onDelete,
   meta,
-  extraBadge,
+  metaTag,
 }: ProfileListRowProps) {
   const hasRowActions = onActivate || onClone || onDelete;
   return (
@@ -91,19 +93,24 @@ export function ProfileListRow({
           : "hover:bg-surface-sunken border border-transparent"
       }`}
     >
-      <div className="flex items-center justify-between">
-        <div className="flex min-w-0 items-center gap-1.5">
+      {/* flex-wrap so on the narrow rail (no hover) the always-visible
+          actions drop to their own line instead of squeezing the name;
+          on md+ the actions collapse to hover/focus reveal and never
+          wrap. */}
+      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+        <div className="flex min-w-0 flex-1 items-center gap-1.5">
           {onRename ? (
             // Keep the row's own click/keyboard (select) from firing when
             // the name field is used — same guard the row-actions and
             // meta slots use.
             <span
-              className="min-w-0"
+              className="min-w-0 flex-1"
               onClick={(e) => e.stopPropagation()}
               onKeyDown={(e) => e.stopPropagation()}
             >
               <InlineEdit
                 value={name}
+                truncate
                 onSave={(next) => {
                   const trimmed = next.trim();
                   if (trimmed && trimmed !== name) onRename(trimmed);
@@ -112,7 +119,7 @@ export function ProfileListRow({
               />
             </span>
           ) : (
-            <span className="text-primary truncate text-xs font-medium">
+            <span className="text-primary min-w-0 flex-1 truncate text-xs font-medium">
               {name}
             </span>
           )}
@@ -121,11 +128,10 @@ export function ProfileListRow({
               {activeLabel}
             </Badge>
           )}
-          {extraBadge}
         </div>
         {hasRowActions && (
           <div
-            className="flex shrink-0 gap-1 transition-all md:max-w-0 md:overflow-hidden md:opacity-0 md:group-hover:max-w-[13rem] md:group-hover:opacity-100"
+            className="flex shrink-0 gap-2 md:max-w-0 md:overflow-hidden md:opacity-0 md:transition-all md:group-focus-within:max-w-[13rem] md:group-focus-within:opacity-100 md:group-hover:max-w-[13rem] md:group-hover:opacity-100"
             onClick={(e) => e.stopPropagation()}
           >
             {onActivate && !isActive && (
@@ -158,8 +164,9 @@ export function ProfileListRow({
           </div>
         )}
       </div>
-      {meta && (
-        <div className="text-caption text-muted mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
+      {(metaTag || meta) && (
+        <div className="text-caption text-muted mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          {metaTag}
           {meta}
         </div>
       )}

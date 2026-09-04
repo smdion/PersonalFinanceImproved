@@ -15,6 +15,10 @@ type InlineEditProps = {
   className?: string;
   /** Whether editing is allowed. Default: true */
   isEditable?: boolean;
+  /** Ellipsize the displayed value instead of letting it push its
+   *  container wider. Opt-in — for tight rows (e.g. a profile list) where
+   *  a long value must yield space to its siblings. */
+  truncate?: boolean;
 };
 
 /**
@@ -29,6 +33,7 @@ export function InlineEdit({
   type = "text",
   className = "",
   isEditable = true,
+  truncate = false,
 }: InlineEditProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
@@ -74,7 +79,11 @@ export function InlineEdit({
 
   if (!isEditable) {
     const display = formatDisplay ? formatDisplay(value) : value;
-    return <span className={className}>{display}</span>;
+    return (
+      <span className={`${truncate ? "block truncate" : ""} ${className}`}>
+        {display}
+      </span>
+    );
   }
 
   if (editing) {
@@ -99,12 +108,16 @@ export function InlineEdit({
         setDraft(value);
         setEditing(true);
       }}
-      className={`group -mx-1 inline-flex cursor-pointer items-center gap-1 rounded px-1 transition-colors hover:bg-blue-50 ${className}`}
+      className={`group -mx-1 inline-flex cursor-pointer items-center gap-1 rounded px-1 transition-colors hover:bg-blue-50 ${
+        truncate ? "max-w-full min-w-0" : ""
+      } ${className}`}
       title="Click to edit"
     >
-      <span>{display}</span>
+      <span className={truncate ? "min-w-0 truncate" : undefined}>
+        {display}
+      </span>
       <svg
-        className="text-faint h-3 w-3 transition-colors group-hover:text-blue-400"
+        className="text-faint h-3 w-3 shrink-0 transition-colors group-hover:text-blue-400"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"

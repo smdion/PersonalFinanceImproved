@@ -10,7 +10,7 @@
  * (shared `ProfileListRow` behavior) — one `onRename` callback.
  */
 
-import { formatCurrency } from "@/lib/utils/format";
+import { budgetApiServiceLabel, formatCurrency } from "@/lib/utils/format";
 import { confirm, promptTextWithSelect } from "@/components/ui/confirm-dialog";
 import { useScenario } from "@/lib/context/scenario-context";
 import {
@@ -127,14 +127,27 @@ export function BudgetProfileSidebar({
                   }
                 : undefined
             }
-            extraBadge={
-              apiService && apiLinkedProfileId === p.id ? (
-                <Badge color="blue" case="normal" className="shrink-0">
-                  ⇄ {apiService.toUpperCase()} →{" "}
-                  {(p.columnLabels as string[])?.[apiLinkedColumnIndex] ??
-                    "Mode" + apiLinkedColumnIndex}
-                </Badge>
-              ) : undefined
+            metaTag={
+              apiService && apiLinkedProfileId === p.id
+                ? (() => {
+                    const mode =
+                      (p.columnLabels as string[])?.[apiLinkedColumnIndex] ??
+                      `Mode ${apiLinkedColumnIndex}`;
+                    return (
+                      <Badge
+                        color="blue"
+                        case="normal"
+                        subtle
+                        className="shrink-0"
+                        title={`This profile's "${mode}" mode two-way syncs with ${budgetApiServiceLabel(apiService as "ynab" | "actual")}`}
+                      >
+                        ⇄{" "}
+                        {budgetApiServiceLabel(apiService as "ynab" | "actual")}{" "}
+                        → {mode}
+                      </Badge>
+                    );
+                  })()
+                : undefined
             }
             meta={
               <>
