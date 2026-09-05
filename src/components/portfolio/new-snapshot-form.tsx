@@ -42,6 +42,92 @@ function nextKey() {
   return `row-${++rowKeyCounter}`;
 }
 
+// ── Local draft (browser only) ──────────────────────────────────────────
+// The new-snapshot form has ~30 balance fields; a draft lets you stop
+// partway and resume. Keyed by snapshot date so starting a snapshot for a
+// new date never inherits a stale draft. One draft per date, per browser,
+// not shared across devices/users — see SNAPSHOT-BALANCE-EDIT-AND-DRAFT.md.
+
+const DRAFT_PREFIX = "pf-snapshot-draft:";
+
+type SnapshotDraft = {
+  snapshotDate: string;
+  notes: string;
+  /** The `getLatest` snapshot id the rows were prefilled from — lets a
+   *  resume detect that the account set changed and reconcile. */
+  sourceSnapshotId: number | null;
+  savedAt: number;
+  rows: {
+    performanceAccountId: number | null;
+    institution: string;
+    accountType: string;
+    taxType: PortfolioTaxType;
+    amount: string;
+  }[];
+};
+
+function draftKey(date: string) {
+  return `${DRAFT_PREFIX}${date}`;
+}
+
+function readDraft(date: string): SnapshotDraft | null {
+  try {
+    const raw = window.localStorage.getItem(draftKey(date));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as SnapshotDraft;
+    return parsed && Array.isArray(parsed.rows) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeDraft(d: SnapshotDraft): void {
+  try {
+    window.localStorage.setItem(draftKey(d.snapshotDate), JSON.stringify(d));
+  } catch {
+    /* private mode / quota — a lost draft is acceptable */
+  }
+}
+
+function clearDraft(date: string): void {
+  try {
+    window.localStorage.removeItem(draftKey(date));
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Overlay a draft's typed amounts onto a freshly-built row set — keeps
+ *  the CURRENT account set (added masters appear, removed ones are gone)
+ *  and only carries the draft's amounts + notes forward. */
+function reconcileDraft(
+  base: AccountRow[],
+  draft: SnapshotDraft,
+): AccountRow[] {
+  const byPerf = new Map<number, string>();
+  const byUnlinked = new Map<string, string>();
+  for (const r of draft.rows) {
+    if (r.performanceAccountId != null) {
+      byPerf.set(r.performanceAccountId, r.amount);
+    } else {
+      byUnlinked.set(
+        `${r.institution}|${r.accountType}|${r.taxType}`,
+        r.amount,
+      );
+    }
+  }
+  return base.map((row) => {
+    if (row.isClosedAccount) return row; // server zeroes these regardless
+    const draftAmount =
+      row.performanceAccountId != null
+        ? byPerf.get(row.performanceAccountId)
+        : byUnlinked.get(
+            `${row.institution}|${row.accountType}|${row.taxType}`,
+          );
+    return draftAmount === undefined ? row : { ...row, amount: draftAmount };
+  });
+}
+
 // Form-specific grouping: works with AccountRow + perfAccounts + people data
 type FormRowGroup = {
   key: string;
@@ -192,24 +278,26 @@ export function NewSnapshotForm({
           "Snapshot saved. Budget API accounts already up to date.",
         );
       }
+      clearDraft(snapshotDate);
       onSaved();
     },
   });
+
+  const { data: snapshotTotals } = trpc.networth.listSnapshotTotals.useQuery();
 
   const today = localDateStr();
   const [snapshotDate, setSnapshotDate] = useState(today);
   const [notes, setNotes] = useState("");
   const [rows, setRows] = useState<AccountRow[] | null>(null);
+  const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
+  const [pendingDraft, setPendingDraft] = useState<SnapshotDraft | null>(null);
   const didInit = useRef(false);
 
-  // Once latest snapshot data loads, pre-fill rows (only once)
-  useEffect(() => {
-    if (didInit.current || loadingLatest || loadingPerfAccounts) return;
-    didInit.current = true;
+  const buildInitialRows = useCallback((): AccountRow[] => {
     const closedMasterIds = new Set(
       (perfAccounts ?? []).filter((p) => !p.isActive).map((p) => p.id),
     );
-    const initial: AccountRow[] =
+    return (
       latestSnap?.accounts.map((a) => {
         const isClosedAccount =
           a.performanceAccountId != null &&
@@ -230,9 +318,71 @@ export function NewSnapshotForm({
           performanceAccountId: a.performanceAccountId ?? null,
           isClosedAccount,
         };
-      }) ?? [];
-    setRows(initial);
-  }, [loadingLatest, latestSnap, loadingPerfAccounts, perfAccounts]);
+      }) ?? []
+    );
+  }, [latestSnap, perfAccounts]);
+
+  // Once latest snapshot data loads, pre-fill rows (only once). If a local
+  // draft exists for this date AND the date isn't already a saved
+  // snapshot, surface a resume prompt rather than restoring it silently.
+  useEffect(() => {
+    if (didInit.current || loadingLatest || loadingPerfAccounts) return;
+    didInit.current = true;
+    setRows(buildInitialRows());
+
+    const dateTaken = (snapshotTotals ?? []).some((s) => s.date === today);
+    const draft = readDraft(today);
+    if (draft && draft.rows.length > 0 && !dateTaken) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time init: surface a localStorage draft, same pattern as setRows above
+      setPendingDraft(draft);
+    }
+  }, [
+    loadingLatest,
+    loadingPerfAccounts,
+    buildInitialRows,
+    snapshotTotals,
+    today,
+  ]);
+
+  const resumeDraft = useCallback(() => {
+    if (!pendingDraft) return;
+    setRows(reconcileDraft(buildInitialRows(), pendingDraft));
+    setNotes(pendingDraft.notes);
+    setDraftSavedAt(pendingDraft.savedAt);
+    setPendingDraft(null);
+  }, [pendingDraft, buildInitialRows]);
+
+  const discardDraft = useCallback(() => {
+    clearDraft(snapshotDate);
+    setPendingDraft(null);
+    setDraftSavedAt(null);
+    setRows(buildInitialRows());
+    setNotes("");
+  }, [snapshotDate, buildInitialRows]);
+
+  // Autosave the working state, debounced. Keyed by date so a date change
+  // starts a fresh draft slot.
+  useEffect(() => {
+    if (!didInit.current || !rows || pendingDraft) return;
+    const t = setTimeout(() => {
+      const savedAt = Date.now();
+      writeDraft({
+        snapshotDate,
+        notes,
+        sourceSnapshotId: latestSnap?.snapshot.id ?? null,
+        savedAt,
+        rows: rows.map((r) => ({
+          performanceAccountId: r.performanceAccountId,
+          institution: r.institution,
+          accountType: r.accountType,
+          taxType: r.taxType,
+          amount: r.amount,
+        })),
+      });
+      setDraftSavedAt(savedAt);
+    }, 800);
+    return () => clearTimeout(t);
+  }, [rows, notes, snapshotDate, latestSnap, pendingDraft]);
 
   const updateRow = useCallback(
     (key: string, field: keyof AccountRow, value: string | number) => {
@@ -281,6 +431,35 @@ export function NewSnapshotForm({
 
   return (
     <div className="space-y-4">
+      {pendingDraft && (
+        <div className="flex items-center justify-between rounded-md border border-blue-300 bg-blue-50 px-3 py-2 text-xs text-blue-900">
+          <span>
+            You have an unsaved draft for {pendingDraft.snapshotDate} from{" "}
+            {new Date(pendingDraft.savedAt).toLocaleString(undefined, {
+              dateStyle: "medium",
+              timeStyle: "short",
+            })}
+            .
+          </span>
+          <span className="flex shrink-0 gap-2">
+            <button
+              type="button"
+              onClick={resumeDraft}
+              className="font-semibold text-blue-700 hover:underline"
+            >
+              Resume
+            </button>
+            <button
+              type="button"
+              onClick={discardDraft}
+              className="text-blue-600 hover:underline"
+            >
+              Discard
+            </button>
+          </span>
+        </div>
+      )}
+
       {/* Date + notes */}
       <div className="flex items-end gap-4">
         <div>
@@ -492,13 +671,30 @@ export function NewSnapshotForm({
 
       {/* Action buttons */}
       <div className="flex items-center gap-3">
+        {draftSavedAt != null && (
+          <span className="text-faint text-xs">
+            Draft saved on this device ·{" "}
+            {new Date(draftSavedAt).toLocaleTimeString(undefined, {
+              timeStyle: "short",
+            })}
+          </span>
+        )}
         <div className="flex-1" />
+        {draftSavedAt != null && (
+          <button
+            type="button"
+            onClick={discardDraft}
+            className="text-muted px-2 py-1.5 text-sm hover:text-red-600"
+          >
+            Discard draft
+          </button>
+        )}
         <button
           type="button"
           onClick={onClose}
           className="text-muted hover:text-primary border-strong rounded border px-3 py-1.5 text-sm"
         >
-          Cancel
+          Close
         </button>
         <button
           type="button"
