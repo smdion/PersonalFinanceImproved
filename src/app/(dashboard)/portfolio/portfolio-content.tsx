@@ -14,6 +14,7 @@ import {
   formatPercent,
   formatDate,
   accountDisplayName,
+  budgetApiServiceLabel,
 } from "@/lib/utils/format";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -220,6 +221,9 @@ export function PortfolioContent() {
 
   const { data: syncStatus } = trpc.sync.getSyncStatus.useQuery();
   const budgetApiConnected = !!syncStatus?.connected;
+  const syncServiceLabel = budgetApiServiceLabel(
+    (syncStatus?.service as "ynab" | "actual" | null | undefined) ?? "none",
+  );
 
   const {
     pending: syncPendingRaw,
@@ -237,10 +241,11 @@ export function PortfolioContent() {
   );
 
   /** Inline balance fix on the latest snapshot. Saves + recomputes
-   *  immediately; the budget-API push is deferred — the snapshot is
-   *  marked "not synced" and one resync fires when the user finishes
-   *  (collapses the row / clicks Sync now). Fixing several balances in a
-   *  row therefore triggers ONE resync, not one per edit. */
+   *  immediately; the budget-API push is NOT automatic — the snapshot is
+   *  marked "not synced" and stays that way (amber banner + row badge +
+   *  in-row "Sync to …" button) until the user pushes it explicitly. One
+   *  push covers every pending edit, so fixing several balances is still
+   *  one resync. */
   const handleBalanceEdit = useCallback(
     async (
       accountId: number,
@@ -266,9 +271,9 @@ export function PortfolioContent() {
     [updateAccountBalance, markDirty],
   );
 
-  /** Push the pending balance edits for one snapshot to YNAB/Actual —
+  /** Push the pending balance edits for one snapshot to the budget API —
    *  one resync for all of them. Clears the "not synced" flag on success;
-   *  keeps it (so the banner stays) on failure. */
+   *  keeps it (banner + badge stay) on failure. */
   const syncPendingSnapshot = useCallback(
     async (snapshotId: number) => {
       try {
@@ -278,16 +283,16 @@ export function PortfolioContent() {
         });
         clearSyncPending();
         toast.success(
-          `Synced to YNAB/Actual — posted ${r.posted}, cleaned ${r.cleaned}.`,
+          `Synced to ${syncServiceLabel} — posted ${r.posted}, cleaned ${r.cleaned}.`,
         );
       } catch (e) {
         toast.error(
-          `Sync failed: ${e instanceof Error ? e.message : "unknown error"}. Your edits are saved — use "Sync now" to retry.`,
+          `Sync failed: ${e instanceof Error ? e.message : "unknown error"}. Your edits are saved — the "Sync to ${syncServiceLabel}" button is still there to retry.`,
           9000,
         );
       }
     },
-    [resyncPush, clearSyncPending],
+    [resyncPush, clearSyncPending, syncServiceLabel],
   );
 
   const snapshotDate = data?.snapshotDate;
@@ -392,23 +397,28 @@ export function PortfolioContent() {
       </PageHeader>
 
       {/* Un-synced balance edits — persists across visits (localStorage)
-          so a closed tab mid-edit doesn't silently drift from YNAB. */}
+          so a closed tab mid-edit doesn't silently drift from the budget
+          API. Nothing syncs on its own; you push it here or in the
+          expanded snapshot row. */}
       {canEdit && syncPending && (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-          <span>
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2.5 text-xs text-amber-900">
+          <span className="font-medium">
             {syncPending.count} balance change
             {syncPending.count === 1 ? "" : "s"} on the{" "}
             {formatDate(syncPending.snapshotDate, "medium")} snapshot{" "}
-            {syncPending.count === 1 ? "isn't" : "aren't"} in YNAB/Actual yet.
+            {syncPending.count === 1 ? "hasn't" : "haven't"} been pushed to{" "}
+            {syncServiceLabel} yet.
           </span>
-          <span className="flex gap-3">
+          <span className="flex shrink-0 items-center gap-2">
             <button
               type="button"
               disabled={resyncPush.isPending}
               onClick={() => void syncPendingSnapshot(syncPending.snapshotId)}
-              className="font-semibold underline disabled:opacity-50"
+              className="rounded bg-amber-600 px-3 py-1.5 font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
             >
-              {resyncPush.isPending ? "Syncing…" : "Sync now"}
+              {resyncPush.isPending
+                ? "Syncing…"
+                : `Sync to ${syncServiceLabel}`}
             </button>
             <button
               type="button"
@@ -602,23 +612,9 @@ export function PortfolioContent() {
                           <React.Fragment key={snap.id}>
                             <tr
                               className={`border-subtle hover:bg-surface-sunken cursor-pointer border-b ${isExpanded ? "bg-surface-sunken" : ""}`}
-                              onClick={() => {
-                                const collapsing = isExpanded;
-                                setExpandedSnapshot(
-                                  collapsing ? null : snap.id,
-                                );
-                                // Collapsing the latest snapshot after
-                                // fixing balances = "done editing" → push
-                                // all the pending edits to YNAB/Actual in
-                                // one resync.
-                                if (
-                                  collapsing &&
-                                  syncPending?.snapshotId === snap.id &&
-                                  !resyncPush.isPending
-                                ) {
-                                  void syncPendingSnapshot(snap.id);
-                                }
-                              }}
+                              onClick={() =>
+                                setExpandedSnapshot(isExpanded ? null : snap.id)
+                              }
                             >
                               <td className="py-2 pr-4 font-medium">
                                 <span className="inline-flex items-center gap-1">
@@ -628,6 +624,14 @@ export function PortfolioContent() {
                                     &#9654;
                                   </span>
                                   {formatDate(snap.snapshotDate, "medium")}
+                                  {syncPending?.snapshotId === snap.id && (
+                                    <span
+                                      className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800"
+                                      title={`${syncPending.count} balance change(s) not pushed to ${syncServiceLabel} yet`}
+                                    >
+                                      unsynced
+                                    </span>
+                                  )}
                                 </span>
                               </td>
                               <td className="px-4 py-2 text-right font-medium">
@@ -740,40 +744,41 @@ export function PortfolioContent() {
                               <tr>
                                 <td colSpan={6} className="px-0 py-0">
                                   <div className="bg-surface-sunken px-8 py-2">
-                                    {isLatest && canEdit && (
-                                      <p className="text-faint mb-1.5 text-[11px]">
-                                        Click a balance to fix it. Changes save
-                                        right away;{" "}
-                                        {syncPending?.snapshotId === snap.id ? (
-                                          <span className="font-medium text-amber-700">
-                                            {syncPending.count} edit
+                                    {isLatest &&
+                                      canEdit &&
+                                      (syncPending?.snapshotId === snap.id ? (
+                                        <div className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2">
+                                          <span className="text-xs font-medium text-amber-900">
+                                            {syncPending.count} balance change
                                             {syncPending.count === 1
                                               ? ""
                                               : "s"}{" "}
-                                            not yet in YNAB/Actual — synced when
-                                            you collapse this row, or{" "}
-                                            <button
-                                              type="button"
-                                              disabled={resyncPush.isPending}
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                void syncPendingSnapshot(
-                                                  snap.id,
-                                                );
-                                              }}
-                                              className="underline disabled:opacity-50"
-                                            >
-                                              {resyncPush.isPending
-                                                ? "syncing…"
-                                                : "sync now"}
-                                            </button>
-                                            .
+                                            not pushed to {syncServiceLabel}{" "}
+                                            yet.
                                           </span>
-                                        ) : (
-                                          "YNAB/Actual syncs when you collapse this row."
-                                        )}
-                                      </p>
-                                    )}
+                                          <button
+                                            type="button"
+                                            disabled={resyncPush.isPending}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              void syncPendingSnapshot(snap.id);
+                                            }}
+                                            className="shrink-0 rounded bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
+                                          >
+                                            {resyncPush.isPending
+                                              ? "Syncing…"
+                                              : `Sync to ${syncServiceLabel}`}
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <p className="text-muted mb-2 text-xs">
+                                          Click a balance to fix it — changes
+                                          save immediately.
+                                          {budgetApiConnected
+                                            ? ` A "Sync to ${syncServiceLabel}" button appears here after an edit.`
+                                            : ""}
+                                        </p>
+                                      ))}
                                     {groupByPerformanceAccount(
                                       snap.accounts,
                                     ).map((group) => (
