@@ -16,6 +16,8 @@ No schema changes, no migration.
 
 - **Tax Planning page** (Analysis → Tax Planning). A year-by-year tax projection through retirement — income sources, federal / NIIT / IRMAA tax, effective rate, balances, running lifetime tax, and flags for the notable years — read straight off the deterministic retirement projection (same engine, no separate tax model). Plus a **Roth conversion explorer** (the engine's own lifetime-tax-minimizing search, or an explicit target-rate schedule with a before/after break-even), a **withdrawal-strategy comparison** (traditional-first vs. brokerage-first vs. tax-optimized, side by side on lifetime tax), and an **IRMAA cliff alert**. Assumptions are edited via the same Retirement Profile controls the Retirement page uses — a change there saves to the profile and the tax view recomputes.
 - **IRMAA-capped Roth conversions are now visible.** When IRMAA awareness is on, the engine caps a year's Roth conversion at the next Medicare-premium threshold; that used to leave no trace. The Tax Planning year table now flags those years, the IRMAA alert counts them, and the advisor report adds a note ("N years had Roth conversions capped for IRMAA"). No change to any projected figure.
+- **Fix a wrong balance in the latest portfolio snapshot.** Expand the newest snapshot in Snapshot History and click any balance to correct it. On save, that year's performance figures are re-derived and the corrected balances are re-pushed to YNAB/Actual automatically (a "resync" — it replaces this snapshot's prior entries, so there's nothing to reconcile). Latest snapshot only; a snapshot in a finalized year is left alone. Saving a snapshot for a date that already has one now shows a clear message instead of a raw error.
+- **Save-draft on a new snapshot.** The New Snapshot form now autosaves to your browser as you go, so a half-finished snapshot survives a closed tab. Reopen it and a "Resume / Discard" prompt appears; Resume merges your entries onto the current account list. One draft per date, per browser.
 
 ### Fixed
 
@@ -24,6 +26,7 @@ No schema changes, no migration.
 ### Changed
 
 - **One consistent way to rename a profile.** Budget, Contribution, Salary, and Retirement profiles are all renamed the same way now: click the profile's name in the list to edit it inline. Previously three of the four had a faint hover-only "rename" button in the list while two had a separate "Name" field in the editor pane — and Salary had no list-level rename at all. The Savings tab still has no rename (its rail reuses Budget profiles — rename them from the Budget → Profiles tab).
+- **Decluttered the profile-list row.** The active profile's row (especially when it's API-synced) no longer crams the name, an ACTIVE pill, a long "⇄ ACTUAL → Standard" pill, and the clone/activate/delete controls onto one narrow line. The name now takes the space it needs and truncates; the sync indicator moved to the quieter detail line below; row controls reveal on hover/focus and wrap out of the way on the narrow rail.
 
 ## [0.8.1] - 2026-09-03
 
