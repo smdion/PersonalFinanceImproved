@@ -387,9 +387,9 @@ export function generateSeed(): number {
 /** Unconditionally wipes every cached deterministic/MC/Coast-FIRE row —
  *  the operational escape hatch for "I need every projection recomputed
  *  right now" without bumping `PROJECTION_CACHE_ENGINE_VERSION` and
- *  redeploying (user request, 2026-08-28: bumping the version has been
- *  the only way to force this all session, which needs a code change +
- *  deploy for what's really a one-off cache-bust). No `user_id`/household
+ *  redeploying — bumping the version had been the only way to force this,
+ *  which needs a code change + deploy for what's really a one-off
+ *  cache-bust. No `user_id`/household
  *  scoping column exists on this table (single-tenant app), so this
  *  clears the whole table by design — the next request per input simply
  *  recomputes and re-populates it. Returns the row count deleted, for a

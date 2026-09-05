@@ -515,7 +515,7 @@ export const retirementRouter = createTRPCRouter({
           : null;
 
         // Shared resolver (was a near-duplicate re-implementation inline
-        // here — M26). jobSalaries already reflects the globally-active
+        // here). jobSalaries already reflects the globally-active
         // Salary Profile — this is the control/comparison arm of the
         // relocation analysis, so it stays un-overridden by any
         // Plan-specific salary the way it always has.
@@ -1087,7 +1087,7 @@ export const retirementRouter = createTRPCRouter({
       ),
   }),
 
-  // retirementScenarios CRUD removed 2026-08-30 (Retirement Profiles step B).
+  // retirementScenarios CRUD removed.
   // It had ZERO UI callers while the table it wrote was read on every engine
   // build, so it could silently change every projection with no way to see
   // or undo it. The four distribution tax rates it carried now live on
@@ -1318,8 +1318,8 @@ export const retirementRouter = createTRPCRouter({
         // production dialect) honours it — but the migration that added
         // retirement_settings.profile_id used ALTER TABLE ADD COLUMN, and
         // drizzle-kit's SQLite generator emits that form WITHOUT the ON
-        // DELETE clause (confirmed live 2026-08-30: SQLite CREATE TABLE
-        // preserves it, ALTER TABLE ADD COLUMN silently drops it). Any
+        // DELETE clause — confirmed live: SQLite CREATE TABLE
+        // preserves it, ALTER TABLE ADD COLUMN silently drops it. Any
         // SQLite-dialect install — which schema-sqlite.ts exists to
         // support, not just tests — would fail this delete with a foreign
         // key error instead of cascading. Deleting explicitly here is

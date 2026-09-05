@@ -397,7 +397,7 @@ describe("defaults", () => {
    */
   it("defaultDecumulationConfig matches the documented default shape", () => {
     const config = defaultDecumulationConfig();
-    // No `withdrawalRoutingMode` key (advisor-caught, 2026-09-05) — that
+    // No `withdrawalRoutingMode` key — that
     // field is no longer a request-level default; a caller must OMIT it
     // to reach the household's persisted `retirement_settings
     // .withdrawal_routing_mode` (buildDecumulationDefaults). This

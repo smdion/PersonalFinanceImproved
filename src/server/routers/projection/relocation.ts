@@ -255,7 +255,7 @@ export const relocationProjectionRouter = createTRPCRouter({
       });
       if (!relocPayload) return null;
 
-      // No `withdrawalRoutingMode` key (advisor-caught, 2026-09-05) — this
+      // No `withdrawalRoutingMode` key — this
       // object occupies `buildDecumulationDefaults`'s CLIENT-override slot,
       // which now wins over the household's persisted
       // `retirement_settings.withdrawal_routing_mode`. A hardcoded

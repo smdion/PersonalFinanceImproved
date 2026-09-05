@@ -145,7 +145,7 @@ export const networthRouter = createTRPCRouter({
       // Resolved once and threaded into getEffectiveCash/
       // getEffectiveCreditCardDebt below instead of each independently
       // re-querying it (previously 3 separate getActiveBudgetApi calls in
-      // this one procedure; code-review efficiency finding, 2026-09-01).
+      // this one procedure).
       const { getActiveBudgetApi } = await import("@/lib/budget-api");
       const activeBudgetApi = await getActiveBudgetApi(ctx.db);
       const [
@@ -735,8 +735,7 @@ export const networthRouter = createTRPCRouter({
       // Resolved once, threaded into getEffectiveCash/
       // getEffectiveCreditCardDebt, and run alongside the independent
       // otherAssets lookup instead of 2 separate getActiveBudgetApi calls
-      // plus a serialized otherAssets fetch (code-review efficiency
-      // finding, 2026-09-01).
+      // plus a serialized otherAssets fetch.
       const { getActiveBudgetApi } = await import("@/lib/budget-api");
       const activeBudgetApi = await getActiveBudgetApi(ctx.db);
       const [{ cash }, otherAssets] = await Promise.all([

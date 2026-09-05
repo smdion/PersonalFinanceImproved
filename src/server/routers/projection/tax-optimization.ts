@@ -54,8 +54,8 @@ import {
 
 /**
  * `RoutingMode` as a Zod enum — the withdrawal-sequencing strategies the
- * comparison procedure accepts. Never `z.string()` (`docs/RULES.md`; the
- * R48-REVIEW security note calls this out specifically). The `satisfies`
+ * comparison procedure accepts. Never `z.string()` (`docs/RULES.md`
+ * calls this out specifically as a security concern). The `satisfies`
  * check ties the tuple to the engine's own `RoutingMode` union so a new
  * routing mode can't be added there without this failing to compile.
  */

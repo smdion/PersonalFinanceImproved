@@ -1123,7 +1123,7 @@ export function runDecumulationYear(
   // line end up disagreeing about the same year).
   //
   // grossUpForTaxes:false households net out the tax+penalty portion of
-  // fundingShortfall before checking materiality (live-user finding,
+  // fundingShortfall before checking materiality.
   // With that setting off, the household has deliberately
   // chosen to withdraw the raw need and let tax/penalty come out of it
   // uncompensated -- fundingShortfall then equals ~taxCost+penaltyCost

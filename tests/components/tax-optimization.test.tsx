@@ -68,7 +68,7 @@ function row(overrides: Partial<TaxYearRow> = {}): TaxYearRow {
   };
 }
 
-describe("ReportAssumptionsSummary — IRMAA-capped note (R48a)", () => {
+describe("ReportAssumptionsSummary — IRMAA-capped note", () => {
   it("shows the note when irmaaCappedRothYears > 0 and hides it at 0", () => {
     const { rerender } = render(
       <ReportAssumptionsSummary settings={{}} irmaaCappedRothYears={3} />,

@@ -832,7 +832,7 @@ export function getDefaultDecumulationOrder(): AccountCategory[] {
  * would silently turn into a permanent cache miss for one of the two call
  * sites.
  *
- * NO `withdrawalRoutingMode` key (advisor-caught, 2026-09-05) — that field
+ * NO `withdrawalRoutingMode` key — that field
  * is no longer a request-level default at all. `retirement_settings
  * .withdrawal_routing_mode` is the real household default now
  * (buildDecumulationDefaults, server/routers/projection/_shared.ts); a

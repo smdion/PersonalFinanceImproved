@@ -117,7 +117,7 @@ export function useProjectionQueries(
         : {}),
       ...(contributionProfileId != null ? { contributionProfileId } : {}),
       ...(salaryProfileId != null ? { salaryProfileId } : {}),
-      // Advisor-caught 2026-09-01: this object is spread into every engine
+      // This object is spread into every engine
       // query in this hook (computeProjection, computeMonteCarloProjection,
       // computeCoastFire/MC/Probe, the bracket optimizer) — adding
       // retirementProfileId here once threads the AssumptionsBand's "view
@@ -207,11 +207,11 @@ export function useProjectionQueries(
     SK_RETIREMENT_MC_AUTOLOAD,
     true,
   );
-  // Default flipped false 2026-08-30 (live-user finding: the eager
-  // background Coast FIRE MC probe was adding ~4-6s of server work to
-  // EVERY projection page load, whether or not the household ever looks
-  // at Coast FIRE) — see coastFireMcQuery's docblock below for the new
-  // default behavior. Flipping this setting back on restores the old
+  // Defaults false: the eager background Coast FIRE MC probe was adding
+  // ~4-6s of server work to EVERY projection page load, whether or not
+  // the household ever looks at Coast FIRE — see coastFireMcQuery's
+  // docblock below for the new default behavior. Flipping this setting
+  // back on restores the old
   // "always prefetched in the background" experience for anyone who
   // prefers instant scenario switching over a faster initial load.
   const [coastFireMcAutoloadEnabled] = usePersistedToggle(
@@ -313,12 +313,11 @@ export function useProjectionQueries(
   // input itself, not a fresh random id per mount — a fresh id wouldn't
   // match the worker's actual in-progress job id, so progress would
   // silently reset to indeterminate on remount instead of resuming the
-  // real trial count (this is the same fix already applied to mcQuery
-  // 2026-08-30 — see monte-carlo-worker-client.ts's runId docblock).
+  // real trial count (this is the same fix already applied to mcQuery —
+  // see monte-carlo-worker-client.ts's runId docblock).
   // Memoized — these ran on every render otherwise, re-stringifying an
   // input object that (per the docblock above) only needs to change when
-  // the underlying input actually does (code-review efficiency finding,
-  // 2026-09-01).
+  // the underlying input actually does.
   const coastFireMcRunId = useMemo(
     () => JSON.stringify(debouncedBaseInput),
     [debouncedBaseInput],
@@ -452,7 +451,7 @@ export function useProjectionQueries(
       },
     );
 
-  // Operational escape hatch (user request, 2026-08-28): wipe every cached
+  // Operational escape hatch: wipe every cached
   // projection row server-side without bumping PROJECTION_CACHE_ENGINE_VERSION
   // and redeploying, then invalidate every projection query on THIS page so
   // it refetches against the now-empty cache immediately, rather than
@@ -528,7 +527,7 @@ export function useProjectionQueries(
   // is unchanged — but a fresh random runId wouldn't match the worker's
   // actual in-progress job id, so progress would silently reset to the
   // plain indeterminate state on return instead of resuming the real
-  // trial count (live-user finding, 2026-08-30). Deriving the id from the
+  // trial count. Deriving the id from the
   // input itself means "same inputs → same runId" across remounts, so the
   // progress poll reconnects to the correct in-flight job. Genuinely new
   // inputs naturally get a new id, matching the new (different) job the
@@ -601,7 +600,7 @@ export function useProjectionQueries(
   // Exposed on the return value below so index.tsx's progress-strip phase
   // computation can reuse this instead of re-deriving the same condition
   // (previously copy-pasted there, with only a comment tying the two
-  // together — code-review reuse/duplication finding, 2026-09-01).
+  // together).
   const coastFireMcQueryEnabled =
     coastFireMcAutoloadEnabled ||
     scenarioView === "coastFire" ||
@@ -651,7 +650,7 @@ export function useProjectionQueries(
       : coastFireMcQuery.data?.result?.stopNowMcResult
   ) as MonteCarloResult | undefined;
 
-  // Rate-Seeded scenario (Feature B, advisor review 2026-08-28) — reuses
+  // Rate-Seeded scenario — reuses
   // computeMonteCarloProjection itself (no bespoke procedure needed, unlike
   // Coast FIRE's binary search) with the new rateSeededDecumulationYear1
   // flag, which calculateMonteCarlo already returns a full MonteCarloResult
@@ -750,7 +749,7 @@ export function useProjectionQueries(
     scenarioView === "rateSeeded"
       ? rateSeededMcResult
       : scenarioView === "coastFireCustom"
-        ? // Advisor-caught 2026-09-01: without this guard, changing the
+        ? // Without this guard, changing the
           // custom age (committing a new coastFireCustomAge) without
           // clicking "Check this age" again kept rendering the PREVIOUS
           // age's MC bands/deterministic line with no loading indicator —

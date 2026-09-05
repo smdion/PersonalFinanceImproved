@@ -19,9 +19,8 @@ type NumLike = number | string;
 /** Human-readable labels for the engine's short-code filing status
  *  (`FilingStatusType`/`W4FilingStatus` — "MFJ"/"Single"/"HOH") — this
  *  printed report is a client-facing document, so it must never render
- *  the raw short code (advisor review, 2026-08-29 — "never render raw DB
- *  keys" rule). Falls back to the raw value for anything unrecognized
- *  rather than hiding it. */
+ *  the raw short code (the app's "never render raw DB keys" rule). Falls
+ *  back to the raw value for anything unrecognized rather than hiding it. */
 const FILING_STATUS_LABELS: Record<string, string> = {
   MFJ: "Married Filing Jointly",
   Single: "Single",

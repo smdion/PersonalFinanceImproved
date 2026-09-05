@@ -19,8 +19,8 @@ import {
  * Retirement tab, matching the master-detail shell Budget/Contribution/
  * Salary Profiles already use (`grid-cols-[240px_1fr]`, `ProfileListRow`/
  * `ProfileSidebarHeader` from `@/components/ui/profile-sidebar`). Was a
- * one-off flat pill row above the settings editor until 2026-08-30, found
- * inconsistent with the other three's layout and unified here.
+ * one-off flat pill row above the settings editor, found inconsistent with
+ * the other three's layout and unified here.
  *
  * Deliberately thin, matching SalaryProfileManager's philosophy: no bare
  * "create" (retirement_settings has ~40 NOT NULL columns with no sensible

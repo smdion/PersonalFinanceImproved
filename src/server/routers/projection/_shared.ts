@@ -143,7 +143,7 @@ export const decumulationOverrideSchema = z
         })
         .optional(),
       rothConversionTarget: z.number().min(0).max(1).optional(),
-      // Added 2026-08-29 — see DecumulationOverride's docblock in
+      // See DecumulationOverride's docblock in
       // engine-config.ts. Without these two, zod silently strips both
       // fields at this boundary regardless of what the engine/type layer
       // supports underneath.

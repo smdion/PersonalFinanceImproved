@@ -74,10 +74,10 @@ export function ProjectionCard(props: {
   salaryProfileId?: number;
   /** View a non-active Retirement Profile (AssumptionsBand) — threaded to
    *  every engine query so the chart/table this card renders agrees with
-   *  whichever profile the band above it is showing (advisor-caught
-   *  2026-09-01: previously accepted nowhere in this card's query layer,
-   *  so the band's "view a non-active profile" silently never reached the
-   *  chart — it kept showing the globally-active profile regardless). */
+   *  whichever profile the band above it is showing. Previously accepted
+   *  nowhere in this card's query layer, so the band's "view a non-active
+   *  profile" silently never reached the chart — it kept showing the
+   *  globally-active profile regardless. */
   retirementProfileId?: number | null;
   snapshotId?: number;
   /** When provided, overrides the internal dollarMode state (for shared page-level toggle). */
@@ -200,8 +200,7 @@ export function ProjectionCard(props: {
   // MC scenarios like Rate-Seeded) while a specific person is still
   // selected from a previous scenario, snap back to Joint rather than
   // leaving the user stuck on a view that would render $0 everywhere with
-  // no indication why (live-user finding, 2026-08-28 — see the matching
-  // disabled-pill guard below).
+  // no indication why — see the matching disabled-pill guard below.
   useEffect(() => {
     if (!result || !isPersonFiltered) return;
     if (!hasIndividualAccountData) setPersonFilter("all");
@@ -214,7 +213,7 @@ export function ProjectionCard(props: {
   // indicator at all. Replaced with a fixed banner pinned to the top of
   // the viewport (impossible to miss regardless of scroll position, same
   // z-index precedent as ToastContainer) that now covers every query that
-  // can trigger a real wait, consistently (live-user finding, 2026-08-30).
+  // can trigger a real wait, consistently.
   //
   // Shows real "N / total trials" progress once available — see
   // mcProgressQuery in use-projection-queries.ts, backed by the Monte
@@ -549,8 +548,7 @@ export function ProjectionCard(props: {
                   here (not inside the chart) so they stay visible/
                   interactive during engineQuery.isLoading and use one
                   consistent PillBtn/LabeledPillGroup/LabeledSelect
-                  convention instead of four separate hand-rolled ones
-                  (UI/UX pass, 2026-08-29 — advisor-reviewed plan). */}
+                  convention instead of four separate hand-rolled ones. */}
               {result &&
                 (() => {
                   const pp = people ?? enginePeople;
@@ -575,10 +573,10 @@ export function ProjectionCard(props: {
                   // "already_coast" is the one case where MC HAS resolved
                   // and definitively says there's no distinct future age to
                   // show (that's the separate "Coast FIRE (Today)" pill) —
-                  // showing a fallback age there would be the exact bug
-                  // fixed 2026-08-30 (pill said "Age 37", hero card said
-                  // "Age 47" for the same household), so that case still
-                  // nulls out rather than falling back.
+                  // showing a fallback age there would reproduce a real bug
+                  // (pill said "Age 37", hero card said "Age 47" for the
+                  // same household), so that case still nulls out rather
+                  // than falling back.
                   const coastFireMcData = coastFireMcQuery.data?.result;
                   const coastFireAge =
                     coastFireMcData?.status === "found"
@@ -596,7 +594,7 @@ export function ProjectionCard(props: {
                   // Simple-tax-mode scenario) has NO real per-person data
                   // to filter by — offering Sean/Joanna views would
                   // silently show $0 everywhere instead of an honest "not
-                  // available" (live-user finding, 2026-08-28).
+                  // available."
                   const personViewDisabledTitle = hasIndividualAccountData
                     ? undefined
                     : "Per-person breakdown isn't available for this scenario — it uses Simple tax mode, which doesn't track individual accounts. Switch to Advanced tax mode or view Joint totals.";
@@ -702,10 +700,9 @@ export function ProjectionCard(props: {
                             // of "42" got clamped up to the min bound
                             // immediately, forcing the DOM value to change
                             // mid-keystroke so the "2" landed in the wrong
-                            // position — e.g. produced "54" instead of "42"
-                            // (live-user finding, 2026-08-30). Clamping now
-                            // happens only in commitDraft, on blur or
-                            // "Check this age".
+                            // position — e.g. produced "54" instead of "42".
+                            // Clamping now happens only in commitDraft, on
+                            // blur or "Check this age".
                             const draftText =
                               coastFireCustomAgeDraft ?? String(committedAge);
                             const commitDraft = (): number => {
@@ -1271,8 +1268,8 @@ export function ProjectionCard(props: {
               {/* Chart area — engine skeleton, then real chart (with MC skeleton
                   if MC is still pending after engine completes). The advisor
                   report is a purpose-built document, not a printout of the
-                  interactive chart (correction #8, advisor report plan) —
-                  print:hidden whenever "advisor" mode is active. */}
+                  interactive chart — print:hidden whenever "advisor" mode
+                  is active. */}
               <div
                 className={
                   reportMode === "advisor" ? "print:hidden" : undefined
@@ -1345,7 +1342,7 @@ export function ProjectionCard(props: {
               real table otherwise. Same DOM position always. The advisor
               report is a purpose-built document, not a printout of the
               interactive table — print:hidden whenever "advisor" mode is
-              active (its own simplified table is Phase 4). */}
+              active (it renders its own simplified table instead). */}
           <div
             className={reportMode === "advisor" ? "print:hidden" : undefined}
           >

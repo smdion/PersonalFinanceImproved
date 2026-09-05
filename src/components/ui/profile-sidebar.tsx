@@ -6,7 +6,7 @@
  * now Retirement) uses, with a list of profiles on the left and the
  * selected one's editor on the right.
  *
- * Extracted 2026-08-30 from three near-identical, independently-maintained
+ * Extracted from three near-identical, independently-maintained
  * copies (`budget-profile-sidebar.tsx`'s inline row markup, and a
  * `ProfileListItem` locally defined in both `contribution-profile-manager.tsx`
  * and `salary-profile-manager.tsx`) after Retirement Profiles' own manager
@@ -14,7 +14,7 @@
  * the fourth divergent copy was the last straw.
  *
  * Rename is one gesture everywhere: the name renders as a click-to-edit
- * `InlineEdit` (2026-09-03) — the same always-visible affordance the app
+ * `InlineEdit` — the same always-visible affordance the app
  * uses for quick value edits elsewhere — driven by a single `onRename`
  * callback. A consumer that omits `onRename` (Savings, whose rail reuses
  * Budget profiles and is select-only) renders a plain, non-editable name.

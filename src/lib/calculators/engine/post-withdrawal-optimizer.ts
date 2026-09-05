@@ -143,8 +143,8 @@ export interface RothConversionResult {
    *  keep MAGI below the next IRMAA threshold — the `irmaaAwareRothConversions`
    *  clamp actually bit. Undefined/absent when it never applied. Surfaced so
    *  the Tax Optimization page and advisor report can say "N years had
-   *  conversions capped for IRMAA" instead of the cap being invisible
-   *  (R48 F1). Records a decision the engine already made — zero numeric
+   *  conversions capped for IRMAA" instead of the cap being invisible.
+   *  Records a decision the engine already made — zero numeric
    *  effect. */
   rothConversionIrmaaCapped?: boolean;
 }

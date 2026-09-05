@@ -217,12 +217,12 @@ export function DecumulationConfig({
       ? (persistedWithdrawalRoutingMode as RoutingModeLiteral)
       : DEFAULT_WITHDRAWAL_ROUTING_MODE;
   // What this panel actually SHOWS — the real plan default until the user
-  // clicks a mode button this session, then their choice (advisor-caught,
-  // 2026-09-05: `withdrawalRoutingMode` itself is a meaningless initial
-  // literal when untouched — see use-projection-form-state.ts — so
-  // rendering the toggle/sub-controls straight off it showed a household
-  // on a non-default mode the WRONG editor, e.g. hid the Withdrawal Order
-  // editor from someone actually running Waterfall). This is
+  // clicks a mode button this session, then their choice.
+  // `withdrawalRoutingMode` itself is a meaningless initial literal when
+  // untouched (see use-projection-form-state.ts), so rendering the
+  // toggle/sub-controls straight off it would show a household on a
+  // non-default mode the WRONG editor — e.g. hide the Withdrawal Order
+  // editor from someone actually running Waterfall. This is
   // display-only; what's SENT to the engine is still gated on `touched`
   // in use-projection-queries.ts, independently, so cache identity is
   // untouched by this.

@@ -226,8 +226,8 @@ function groupFormRows(
       if (owner) {
         // Owner prefix uses an em dash (DESIGN.md "Snapshot Display" — WHO
         // owns it), distinct from parens (WHAT kind of sub-account). Same
-        // fix as portfolio-content.tsx's buildSubRowLabel (decision point 1,
-        // 2026-08-19) — this file has its own copy of the same logic.
+        // fix as portfolio-content.tsx's buildSubRowLabel — this file has
+        // its own copy of the same logic.
         const qualifier =
           typeLabel !== taxLabel ? `${typeLabel} · ${taxLabel}` : typeLabel;
         row.subLabel = `${owner} — ${qualifier}`;

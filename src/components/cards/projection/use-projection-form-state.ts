@@ -121,9 +121,9 @@ export function useProjectionFormState() {
   // Simple (cFIREsim-style single-bucket comparison) — most households
   // have real Traditional/Roth/HSA/brokerage splits they care about
   // seeing, and Simple mode's collapse turned out to actively mislead
-  // when displayed as if it were a real account breakdown (live-user
-  // finding, 2026-08-28). Simple stays available for anyone who
-  // specifically wants the cFIREsim-comparable view.
+  // when displayed as if it were a real account breakdown. Simple stays
+  // available for anyone who specifically wants the cFIREsim-comparable
+  // view.
   const [mcTaxMode, setMcTaxMode] = useState<"simple" | "advanced">("advanced");
   const [mcAssetClassOverrides, setMcAssetClassOverrides] = useState<
     AssetClassOverride[]
@@ -160,8 +160,8 @@ export function useProjectionFormState() {
   // typing "42" with a min bound above 4 clamped the first "4" up to the
   // min immediately, forcing the DOM value to e.g. "38" mid-keystroke, so
   // the next digit landed in the wrong place and produced a mangled number
-  // like "54" instead of "42" (live-user finding, 2026-08-30). Clamping
-  // now happens only on blur / "Check this age", via commitCoastFireAgeDraft
+  // like "54" instead of "42". Clamping now happens only on blur / "Check
+  // this age", via commitCoastFireAgeDraft
   // in index.tsx — this field just tracks whatever the user has typed so
   // far, unclamped.
   const [coastFireCustomAgeDraft, setCoastFireCustomAgeDraft] = useState<
@@ -176,9 +176,9 @@ export function useProjectionFormState() {
   // baseline, which is meaningful regardless of strategy. The shared
   // BASELINE pill in index.tsx's toolbar reads/writes whichever of the two
   // is relevant for the currently-active chart, so there's still only one
-  // visible toggle -- not two overlapping ones (user feedback, 2026-08-28:
-  // a separate "Show anyway" link was confusing because the real BASELINE
-  // toggle appeared to do nothing on this chart).
+  // visible toggle -- not two overlapping ones. A separate "Show anyway"
+  // link was confusing because the real BASELINE toggle appeared to do
+  // nothing on this chart.
   const [showStabilityBars, setShowStabilityBars] = useState(true);
   // Balance chart's decumulation-year income overlay (total portfolio
   // withdrawal + Social Security, secondary axis) — see projection-chart.tsx.
