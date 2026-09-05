@@ -229,6 +229,30 @@ describe("runStressTestScenarios (M2)", () => {
     brokerage: 0.15,
   };
 
+  /** `runStressTestScenarios` now takes a fully-resolved
+   *  `decumulationDefaults` (the caller — stress-test.ts — builds it via
+   *  `buildDecumulationDefaults`; this helper only overrides
+   *  `withdrawalRate` per scenario) instead of the old hand-picked
+   *  `userStrategyParams`/`activeStrategy` pair — those two hardcoded the
+   *  household's RMD/QCD/discretionary-order settings to engine defaults
+   *  regardless of what was configured. `withdrawalRate` here is a placeholder — every
+   *  scenario overrides it. */
+  function makeDecumulationDefaults(
+    overrides: Partial<ProjectionInput["decumulationDefaults"]> = {},
+  ): ProjectionInput["decumulationDefaults"] {
+    return {
+      withdrawalRate: 0.04,
+      withdrawalRoutingMode: "bracket_filling",
+      withdrawalOrder: [],
+      withdrawalSplits: {},
+      withdrawalTaxPreference: {},
+      distributionTaxRates,
+      withdrawalStrategy: "fixed",
+      strategyParams: { fixed: {} },
+      ...overrides,
+    };
+  }
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -236,9 +260,7 @@ describe("runStressTestScenarios (M2)", () => {
   it("returns one result per canonical scenario (conservative/baseline/optimistic)", () => {
     const results = runStressTestScenarios({
       baseEngineInput: makeBaseInput(),
-      userStrategyParams: { fixed: {} },
-      activeStrategy: "fixed",
-      distributionTaxRates,
+      decumulationDefaults: makeDecumulationDefaults(),
       avgRetirementAge: 65,
     });
     expect(results).toHaveLength(3);
@@ -252,9 +274,7 @@ describe("runStressTestScenarios (M2)", () => {
   it("each result carries the scenario's return/inflation/salary/withdrawal rates", () => {
     const results = runStressTestScenarios({
       baseEngineInput: makeBaseInput(),
-      userStrategyParams: { fixed: {} },
-      activeStrategy: "fixed",
-      distributionTaxRates,
+      decumulationDefaults: makeDecumulationDefaults(),
       avgRetirementAge: 65,
     });
     // Conservative: 5% return, 4% inflation, 0% salary, 3.5% withdrawal
@@ -274,9 +294,7 @@ describe("runStressTestScenarios (M2)", () => {
   it("optimistic scenario produces a larger nest egg than conservative", () => {
     const results = runStressTestScenarios({
       baseEngineInput: makeBaseInput(),
-      userStrategyParams: { fixed: {} },
-      activeStrategy: "fixed",
-      distributionTaxRates,
+      decumulationDefaults: makeDecumulationDefaults(),
       avgRetirementAge: 65,
     });
     const conservative = results.find(
@@ -308,9 +326,7 @@ describe("runStressTestScenarios (M2)", () => {
   it("every result has a non-negative nest egg and sustainable withdrawal", () => {
     const results = runStressTestScenarios({
       baseEngineInput: makeBaseInput(),
-      userStrategyParams: { fixed: {} },
-      activeStrategy: "fixed",
-      distributionTaxRates,
+      decumulationDefaults: makeDecumulationDefaults(),
       avgRetirementAge: 65,
     });
     for (const r of results) {
@@ -330,9 +346,7 @@ describe("runStressTestScenarios (M2)", () => {
         currentAge: 68,
         retirementAge: 65,
       },
-      userStrategyParams: { fixed: {} },
-      activeStrategy: "fixed",
-      distributionTaxRates,
+      decumulationDefaults: makeDecumulationDefaults(),
       avgRetirementAge: 65,
     });
     expect(results).toHaveLength(3);
@@ -342,23 +356,24 @@ describe("runStressTestScenarios (M2)", () => {
   });
 
   it("respects non-fixed active strategies (e.g. guyton_klinger)", () => {
-    // The activeStrategy + userStrategyParams are plumbed through into
-    // decumulationDefaults.strategyParams. Swap to guyton_klinger so the
+    // withdrawalStrategy + strategyParams on decumulationDefaults are what
+    // the engine actually reads. Swap to guyton_klinger so the
     // strategy-params path is exercised rather than the trivial fixed
     // default.
     const results = runStressTestScenarios({
       baseEngineInput: makeBaseInput(),
-      userStrategyParams: {
-        guyton_klinger: {
-          upperGuardrail: 0.8,
-          lowerGuardrail: 1.2,
-          increasePercent: 0.1,
-          decreasePercent: 0.1,
-          skipInflationAfterLoss: true,
+      decumulationDefaults: makeDecumulationDefaults({
+        withdrawalStrategy: "guyton_klinger",
+        strategyParams: {
+          guyton_klinger: {
+            upperGuardrail: 0.8,
+            lowerGuardrail: 1.2,
+            increasePercent: 0.1,
+            decreasePercent: 0.1,
+            skipInflationAfterLoss: true,
+          },
         },
-      },
-      activeStrategy: "guyton_klinger",
-      distributionTaxRates,
+      }),
       avgRetirementAge: 65,
     });
     expect(results).toHaveLength(3);

@@ -11,22 +11,18 @@
  * - `updateAssetClassOverrides` — persists user asset class return/vol
  *   overrides to appSettings.
  *
- * KNOWN GAP (advisor-caught, 2026-09-05, not fixed here — flagging per
- * root-cause rule rather than leaving it silently latent): both
- * `decumulationDefaults` object literals below now correctly read
- * `settings.withdrawalRoutingMode`, but still hardcode
- * `rmdExcessHandling`/`qcdMaximize`/`rmdSmoothingEnabled`/
- * `discretionaryWithdrawalOrder` to their engine defaults instead of
- * reading `settings` for those too (they don't call
- * `buildDecumulationDefaults` — see `_shared.ts` — at all). "Varying only
- * withdrawalStrategy + strategyParams" (above) is therefore not quite
- * true: a household with `qcdMaximize` on, or `discretionaryWithdrawalOrder:
- * "brokerage_first"`, gets a strategy comparison computed against settings
- * they turned off. Not addressed in this pass (routing mode only) — a
- * real fix would swap both literals for `buildDecumulationDefaults` calls,
- * which is a bigger, separately-reviewable change since it'd also start
- * respecting those fields for Monte Carlo (this file) and stress tests
- * (`projection-v5-helpers.ts`'s `runStressTestScenarios`, same gap).
+ * Both procedures below build `decumulationDefaults` via the shared
+ * `buildDecumulationDefaults` (_shared.ts) — the single place that
+ * resolves a household's real RMD/QCD/discretionary-order/routing-mode
+ * settings — then override only the field(s) that are the actual
+ * controlled variable for that comparison (`withdrawalStrategy` +
+ * `strategyParams` per candidate in `computeStrategyComparison`; nothing
+ * in `analyzeStrategy`, which already wants the household's real active
+ * strategy). Previously both hand-built the object inline and silently
+ * dropped `rmdExcessHandling`/`qcdMaximize`/`rmdSmoothingEnabled`/
+ * `discretionaryWithdrawalOrder` to engine defaults regardless of what was
+ * configured — fixed alongside a related cache-key bug (see
+ * `computeStrategyComparison`'s `inputHash` comment).
  */
 import { eq } from "drizzle-orm";
 import { z } from "zod/v4";
@@ -45,9 +41,7 @@ import {
 } from "@/lib/calculators/random";
 import { formatPercent } from "@/lib/utils/format";
 import { MC_CONFIDENCE_THRESHOLD } from "@/lib/constants";
-import { toNumber } from "@/server/helpers";
-import type { AccountCategory, RoutingMode } from "@/lib/calculators/types";
-import { DEFAULT_WITHDRAWAL_ROUTING_MODE } from "@/lib/config/withdrawal-routing";
+import type { AccountCategory } from "@/lib/calculators/types";
 import {
   getDefaultDecumulationOrder,
   DEFAULT_WITHDRAWAL_SPLITS as CONFIG_WITHDRAWAL_SPLITS,
@@ -63,7 +57,11 @@ import {
   getStrategyMeta,
   getStrategyDefaults,
 } from "@/lib/config/withdrawal-strategies";
-import { buildStrategyParams, buildMcInputs } from "./_shared";
+import {
+  buildStrategyParams,
+  buildMcInputs,
+  buildDecumulationDefaults,
+} from "./_shared";
 import {
   hashEngineInput,
   readProjectionCache,
@@ -161,6 +159,24 @@ export const strategyRouter = createTRPCRouter({
       const activeStrategy =
         (settings.withdrawalStrategy as WithdrawalStrategyType) ?? "fixed";
 
+      // Resolved ONCE for the whole request — every candidate below spreads
+      // this and overrides only withdrawalStrategy/strategyParams, so the
+      // household's real RMD/QCD/discretionary-order/routing-mode settings
+      // apply to every candidate, not just whichever one happens to be
+      // "active" (buildDecumulationDefaults, _shared.ts).
+      const baseDecumulationDefaults = buildDecumulationDefaults(
+        settings,
+        {
+          withdrawalOrder: getDefaultDecumulationOrder() as AccountCategory[],
+          withdrawalSplits: { ...CONFIG_WITHDRAWAL_SPLITS } as Record<
+            AccountCategory,
+            number
+          >,
+          withdrawalTaxPreference: {},
+        },
+        distributionTaxRates,
+      );
+
       // Every strategy's lightweight MC uses a fixed seed (42, common random
       // numbers across strategies for a fair comparison) — like Coast-FIRE
       // MC's search, this whole computation is already a pure function of
@@ -171,11 +187,23 @@ export const strategyRouter = createTRPCRouter({
         activeStrategy: WithdrawalStrategyType;
         retirementAge: number;
       };
+      // `decumulationDefaults` (not the old `activeStrategy, userStrategyParams`
+      // pair) is what actually varies the computed result — it already
+      // contains both of those PLUS distributionTaxRates and every
+      // RMD/QCD/routing setting. The old key omitted distributionTaxRates
+      // and settings.withdrawalRoutingMode entirely: changing Withdrawal
+      // Routing on the Retirement Profile did NOT invalidate this cache,
+      // so this endpoint could silently
+      // serve a stale comparison computed under the household's OLD
+      // routing mode for the life of the cached row. Every other cache
+      // site in this codebase (scenarios.ts, monte-carlo.ts, coast-fire.ts)
+      // hashes the full built engine input; this was the one exception.
+      // No PROJECTION_CACHE_ENGINE_VERSION bump — the hash change
+      // self-invalidates every existing row; they simply orphan and evict.
       const inputHash = hashEngineInput("strategyComparison", {
         baseEngineInput,
         mcBaseEngineInput,
-        activeStrategy,
-        userStrategyParams,
+        decumulationDefaults: baseDecumulationDefaults,
         hasMcData,
         mcAssetClasses,
         mcCorrelations,
@@ -203,19 +231,7 @@ export const strategyRouter = createTRPCRouter({
                 : { [strategyKey]: getStrategyDefaults(strategyKey) };
 
             const decumulationDefaults = {
-              withdrawalRate: toNumber(settings.withdrawalRate),
-              withdrawalRoutingMode:
-                (settings.withdrawalRoutingMode as
-                  RoutingMode | null | undefined) ??
-                DEFAULT_WITHDRAWAL_ROUTING_MODE,
-              withdrawalOrder:
-                getDefaultDecumulationOrder() as AccountCategory[],
-              withdrawalSplits: { ...CONFIG_WITHDRAWAL_SPLITS } as Record<
-                AccountCategory,
-                number
-              >,
-              withdrawalTaxPreference: {},
-              distributionTaxRates,
+              ...baseDecumulationDefaults,
               withdrawalStrategy: strategyKey,
               strategyParams: params,
             };
@@ -411,22 +427,23 @@ export const strategyRouter = createTRPCRouter({
         returnRates: mcReturnRates,
         accumulationOverrides: [] as [],
         decumulationOverrides: [] as [],
-        decumulationDefaults: {
-          withdrawalRate: toNumber(settings.withdrawalRate),
-          withdrawalRoutingMode:
-            (settings.withdrawalRoutingMode as
-              RoutingMode | null | undefined) ??
-            DEFAULT_WITHDRAWAL_ROUTING_MODE,
-          withdrawalOrder: getDefaultDecumulationOrder() as AccountCategory[],
-          withdrawalSplits: { ...CONFIG_WITHDRAWAL_SPLITS } as Record<
-            AccountCategory,
-            number
-          >,
-          withdrawalTaxPreference: {},
+        // buildDecumulationDefaults already resolves withdrawalStrategy to
+        // settings.withdrawalStrategy (= activeStrategy) and strategyParams
+        // to buildStrategyParams(settings) (= userStrategyParams) — a pure
+        // drop-in, no override needed here (unlike computeStrategyComparison,
+        // which varies both per candidate).
+        decumulationDefaults: buildDecumulationDefaults(
+          settings,
+          {
+            withdrawalOrder: getDefaultDecumulationOrder() as AccountCategory[],
+            withdrawalSplits: { ...CONFIG_WITHDRAWAL_SPLITS } as Record<
+              AccountCategory,
+              number
+            >,
+            withdrawalTaxPreference: {},
+          },
           distributionTaxRates,
-          withdrawalStrategy: activeStrategy,
-          strategyParams: userStrategyParams,
-        },
+        ),
       };
 
       // --- Run baseline MC ---
