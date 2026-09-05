@@ -365,7 +365,7 @@ export const syncCoreRouter = createTRPCRouter({
       // getEffectiveCash (server/helpers/budget.ts): explicit "cash"
       // account mappings win when present (the only path that works for
       // Actual at all, which has no account-type field to auto-detect
-      // from — found live, 2026-08-31), else fall back to type-based
+      // from), else fall back to type-based
       // auto-detection (YNAB). This preview used to duplicate the
       // type-based logic independently, so it kept showing $0 even after
       // a household mapped Cash accounts — a household with mappings must
@@ -530,7 +530,7 @@ export const syncCoreRouter = createTRPCRouter({
             // because SOME id was stored, with no check that it still
             // resolves — a push would then silently write to a category
             // that no longer exists, reporting success with nothing to show
-            // for it (found live, 2026-08-31). Reported as "orphaned" so the
+            // for it. Reported as "orphaned" so the
             // UI can surface it distinctly and offer a re-link, instead of
             // silently masquerading as a working link.
             budgetMatches.push({
@@ -635,7 +635,7 @@ export const syncCoreRouter = createTRPCRouter({
           if (!apiCat) {
             // See the matching budget-item comment above — a stored id that
             // no longer resolves to any current API category must not be
-            // reported as "linked" (found live, 2026-08-31).
+            // reported as "linked".
             savingsMatches.push({
               goalId: goal.id,
               goalName: goal.name,
@@ -726,7 +726,7 @@ export const syncCoreRouter = createTRPCRouter({
       // picker for the "Cash" and "Credit Card" pseudo-mappings needs
       // on-budget checking/savings/credit-card accounts, which
       // trackingAccounts (off-budget only) excludes by design. Actual's API
-      // has no account "type" field at all (verified live, 2026-08-31 — the
+      // has no account "type" field at all (the
       // wrapper's own schema only has id/name/offbudget/closed), so there's
       // no way to auto-restrict this list to "checking/savings-like"
       // accounts; the household picks manually instead.

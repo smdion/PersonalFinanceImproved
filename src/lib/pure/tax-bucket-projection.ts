@@ -12,7 +12,7 @@
  * functions/entries is what keeps that distinction visible instead of
  * silently blended.
  *
- * Advisor-reviewed twice this session (see the plan file) — the match key
+ * The match key
  * is deliberately the same `(name, category, taxType, ownerPersonId)` tuple
  * `computeTaxBucketBreakdown` groups `accountRollup` on, so a rollup entry
  * and an engine row that represent the same real account always merge
@@ -156,8 +156,7 @@ export function projectRuleOf55(
      *  One-directional by construction — this can only ever push `eligible`
      *  from true to false, never the reverse. `separationYear`/`source`/
      *  `knownFutureSeparationYear` are preserved, so the UI can still show
-     *  "separates 2034" alongside "ineligible". Advisor-reviewed,
-     *  2026-08-26 — both call sites (withdrawal-eligibility.ts,
+     *  "separates 2034" alongside "ineligible". Both call sites (withdrawal-eligibility.ts,
      *  computeTaxBucketProjection below) must pass this identically or the
      *  Tax Buckets page and the retirement engine would disagree about the
      *  same account (Single Computation Path). Never applied to the "now"

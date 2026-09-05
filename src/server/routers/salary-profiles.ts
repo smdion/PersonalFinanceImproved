@@ -663,7 +663,7 @@ export const salaryProfileRouter = createTRPCRouter({
    * id: null). See contributionProfile.setActive's docblock for why this
    * is split out from settings.appSettings.upsert instead of writing
    * through it (same admin-only-write-vs-contributionProfile-permission
-   * gap) and for why null is accepted (advisor-caught 2026-09-01 — the
+   * gap) and for why null is accepted (the
    * hook's own `(id: number | null) => void` return type documents null
    * as a valid call, which used to silently lose the write).
    */

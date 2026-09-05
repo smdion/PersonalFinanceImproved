@@ -149,8 +149,7 @@ export function computeRmdSmoothingTargets(
     // — the RMD due in the year someone turns rmdStartAge is computed off
     // the PRIOR year-end balance (see rmd-enforcement.ts /
     // getRmdFactor's contract), so the loop must stop one year short of
-    // rmdStartAge, not run through it (advisor review, 2026-08-29 —
-    // running through rmdStartAge compounded one extra year of growth
+    // rmdStartAge, not run through it (running through rmdStartAge compounded one extra year of growth
     // into the projected balance while also inflating futureSpendingNeed
     // by one extra year; those two errors partially canceled, which is
     // why it wasn't caught by directional-only tests).
@@ -175,7 +174,7 @@ export function computeRmdSmoothingTargets(
     // must be scaled by the same traditionalFractionOfSpending/personShare
     // factors personAvgAnnualTraditionalWithdrawal already applies above,
     // or a multi-person household's summed tolerance silently becomes a
-    // multiple of real spending need (advisor review, 2026-08-29 — this
+    // multiple of real spending need (this
     // was comparing one person's share of need against the household's
     // whole need, systematically under-converting or fully no-op-ing the
     // feature depending on the Traditional fraction).

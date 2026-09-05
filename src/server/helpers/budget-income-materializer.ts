@@ -9,7 +9,7 @@
  * Complement of extra-paycheck-materializer.ts: that one covers jobs whose
  * routing is in Savings mode (real `rules`, `enabled` not false); this one
  * covers jobs in Budget mode (`isExtraPaycheckBudgetMode` — no rules, or
- * `enabled: false`). Per advisor review the two filters are mutually
+ * `enabled: false`). The two filters are mutually
  * exclusive per job, so together they cover every job exactly once under
  * its current mode. Budget mode has no split/goal concept, so this writes
  * ONE row per (job, month) rather than fanning out per split.

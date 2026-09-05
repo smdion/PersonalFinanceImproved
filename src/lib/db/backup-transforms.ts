@@ -612,8 +612,8 @@ function transformV07xToCurrent(tables: TableData): TableData {
   }
 
   // 0032: Retirement Profiles, step A (expand) + the backfill migration
-  // 0032_curved_silhouette.sql itself performs in the same file (advisor-
-  // caught 2026-09-01: this function used to stop at step A — empty
+  // 0032_curved_silhouette.sql itself performs in the same file. This
+  // function used to stop at step A — empty
   // tables, null profile_id — leaving a restored pre-0032 backup in the
   // migration's INTERMEDIATE state instead of where a live upgrade
   // actually lands. Real households upgrading get a real "Current Plan"
@@ -621,7 +621,7 @@ function transformV07xToCurrent(tables: TableData): TableData {
   // AFTER upgrading truncated that profile back to nothing with no way to
   // recreate one in-app — retirementProfiles.duplicate is the only
   // creation path and needs an existing profile to clone FROM. Mirrors
-  // the migration SQL's 5 steps exactly, in JS, against in-memory rows.)
+  // the migration SQL's 5 steps exactly, in JS, against in-memory rows.
   if (!tables["retirement_profiles"]) tables["retirement_profiles"] = [];
   if (!tables["retirement_profile_people"]) {
     tables["retirement_profile_people"] = [];

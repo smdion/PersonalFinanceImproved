@@ -4,8 +4,7 @@
  * currently-selected scenario, computed under Advanced tax mode?
  *
  * "Does `mcResult` exist" is NOT a safe proxy for this — verified against
- * the actual query behavior in use-projection-queries.ts (advisor review,
- * 2026-08-31):
+ * the actual query behavior in use-projection-queries.ts:
  *  - `mcPrefetchQuery`/`coastFireMcQuery`/`rateSeededMcQuery` all use
  *    `placeholderData: (prev) => prev` — a stale result from a PREVIOUS
  *    input survives across changes and reads as "present."

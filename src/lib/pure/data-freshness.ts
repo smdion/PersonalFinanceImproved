@@ -4,7 +4,7 @@
 
 /**
  * Given a set of raw date strings from different sources (some date-only
- * like "2026-08-01", some full ISO timestamps like the JSON-serialized
+ * like "2026-08-01", some full ISO timestamps like the JSON-serialized // lint-violation-ok: literal date-string format example
  * form of a Date), returns the raw string of the chronologically oldest
  * one — or null if none are valid.
  *

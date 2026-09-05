@@ -187,14 +187,14 @@ function mapTransaction(t: ActualTransaction): BudgetTransaction {
  * budget-api/cache.ts) has always passed YNAB's own native month format,
  * `YYYY-MM-01` (a full ISO date, first of the month -- YNAB's real API
  * requires exactly this). Actual's `actual-http-api` wrapper's `/months/:id`
- * route wants the SHORTER `YYYY-MM` (no day) -- confirmed live, 2026-08-30,
- * via a real "Invalid month format, use YYYY-MM: 2026-08-01" error from a
+ * route wants the SHORTER `YYYY-MM` (no day) -- confirmed via a real
+ * "Invalid month format, use YYYY-MM: 2026-08-01" error from a // lint-violation-ok
  * live sync attempt. Never worked for Actual before this fix; nothing
  * in this codebase had ever exercised the mismatch until this specific
  * error surfaced.
  *
  * `slice(0, 7)` is idempotent regardless of which format arrives --
- * `"2026-08-01".slice(0, 7)` and `"2026-08".slice(0, 7)` both produce
+ * `"2026-08-01".slice(0, 7)` and `"2026-08".slice(0, 7)` both produce // lint-violation-ok
  * `"2026-08"` -- so this is safe against getMonths()'s own internal
  * getMonthDetail(id) calls, which already pass bare YYYY-MM ids straight
  * from Actual's own `/months` list.
@@ -314,8 +314,7 @@ export class ActualClient implements BudgetAPIClient {
    *  balance override in savings.ts's computeSummary reads exactly this
    *  cache, so every API-linked sinking fund showed a $0 current balance
    *  even though its real Actual balance (and Ledgr's own separately-
-   *  tracked `savings_monthly` history) was correct (found live,
-   *  2026-08-31 — this had silently never worked for any Actual household,
+   *  tracked `savings_monthly` history) was correct (this had silently never worked for any Actual household,
    *  masked until now because the same balance also renders correctly
    *  from savings_monthly whenever the override doesn't fire). Fetch the
    *  current month's detail too and merge its real per-category numbers
@@ -335,8 +334,7 @@ export class ActualClient implements BudgetAPIClient {
     // the note-goal overlay (getMonthDetail applies both) — reuse it
     // instead of a second raw /months/:id fetch plus a second
     // overlayNoteGoals pass over every category (previously fetched the
-    // month and ran the per-category note overlay twice; code-review
-    // efficiency finding, 2026-09-01).
+    // month and ran the per-category note overlay twice).
     const currentByCatId = new Map(
       monthDetail.categories.map((c) => [c.id, c]),
     );
@@ -371,8 +369,7 @@ export class ActualClient implements BudgetAPIClient {
   async getMonths(start: string, end: string): Promise<BudgetMonth[]> {
     const res = await this.request<{ data: string[] }>("/months");
     const inRange = res.data.filter((id) => id >= start && id <= end);
-    // Batched, not one unbounded Promise.all fan-out (advisor review,
-    // 2026-08-29) — a wide date range could otherwise fire dozens of
+    // Batched, not one unbounded Promise.all fan-out — a wide date range could otherwise fire dozens of
     // concurrent requests at the actual-http-api wrapper at once. No
     // live caller today, but this is the shape any future one inherits.
     const MONTH_DETAIL_BATCH_SIZE = 10;
@@ -403,10 +400,10 @@ export class ActualClient implements BudgetAPIClient {
    * own docblock). Comparing a push/pull preview's "current" value
    * against a `goalTarget` derived purely from `cat.goal` shows every
    * Ledgr-managed goal as permanently changed, even immediately after a
-   * successful push, because the two never touch the same field (found
-   * live, 2026-09-01: every item in a budget push preview showed $0
-   * "current" and its full new amount as the delta, regardless of
-   * whether it had already been pushed). Read the note back instead —
+   * successful push, because the two never touch the same field (every
+   * item in a budget push preview showed $0 "current" and its full new
+   * amount as the delta, regardless of whether it had already been
+   * pushed). Read the note back instead —
    * the ONLY field Ledgr's own write path actually affects — and prefer
    * it over `cat.goal` when a `#template` of either shape is present, so
    * the diff stays internally consistent with what a push/pull actually

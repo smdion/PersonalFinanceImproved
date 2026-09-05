@@ -14,7 +14,7 @@ type LtcgBracket = { threshold: number; rate: number };
  * non-qualified Roth growth + Roth conversions, before any deduction) into
  * the TAXABLE ordinary income LTCG brackets are actually denominated in.
  *
- * Found 2026-08-30: every LTCG-stacking call site in the engine
+ * every LTCG-stacking call site in the engine
  * (`withdrawal-cost-ranking.ts`'s Tier 1 0%-room calc, `tax-estimation.ts`'s
  * `computeTaxFromSlots`, `decumulation-year.ts`'s Roth-conversion-revised
  * LTCG recompute) fed `LTCG_BRACKETS`/`ltcgBrackets` a gross figure with

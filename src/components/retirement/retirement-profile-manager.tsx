@@ -62,7 +62,7 @@ export function RetirementProfileManager({
   // table (tax_brackets) instead of a new endpoint — resolveTaxParams
   // itself already answers "which years have data" internally; a second,
   // independent answer here would be a second computation path in
-  // miniature (advisor review).
+  // miniature.
   const { data: taxBracketRows } = trpc.settings.taxBrackets.list.useQuery();
   const availableTaxYears = Array.from(
     new Set((taxBracketRows ?? []).map((r) => r.taxYear)),
@@ -133,8 +133,7 @@ export function RetirementProfileManager({
   // plan is priced under), the same category as name/description — not a
   // household assumption like the ones retirementSettings.upsert owns —
   // so it uses the same retirementProfiles.update mutation shape as
-  // rename, right here, not threaded into TaxesSection (advisor review:
-  // that component is a documented pure presentational leaf owned
+  // rename, right here, not threaded into TaxesSection (that component is a documented pure presentational leaf owned
   // entirely by retirement-profile-tab.tsx; a second mutation writing to
   // a second table there would break that contract).
   const updateTaxYearMut =

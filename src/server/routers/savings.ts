@@ -432,7 +432,7 @@ async function computeLiveMaxMonthlyFunding(
    *  (savings/page.tsx's effectiveContribProfileId/effectiveSalaryProfileId
    *  — the SAME precedence chain, Plan pin > column pin > local selection >
    *  active, computeActiveSummary's own contributionProfile/salaryProfile
-   *  tiers resolve against). Found live, 2026-08-31: the paycheck.computeSummary
+   *  tiers resolve against) — the paycheck.computeSummary
    *  call below had NO such resolution at all — it always used whichever
    *  contribution/salary profile is globally active, regardless of what
    *  column/profile the caller was actually viewing. A household with any
@@ -445,8 +445,8 @@ async function computeLiveMaxMonthlyFunding(
    *  like a complete no-op (`updated: N` returned, nothing actually moved).
    *  budgetCaller.computeActiveSummary ALSO needs the caller's raw
    *  contribution/salary TIERS (not just a resolved id) passed as its own
-   *  `contributionProfile`/`salaryProfile` input — found live, 2026-08-31,
-   *  round two: leaving that call bare (as the first fix here did) makes it
+   *  `contributionProfile`/`salaryProfile` input — leaving that call bare
+   *  (as the first fix here did) makes it
    *  fall back to NO_PROFILE_TIERS (column pins only, no Plan pin / global
    *  default), so contribution-linked budget items resolve against a
    *  DIFFERENT profile than the client's own top-level maxMonthlyFunding
@@ -667,14 +667,13 @@ export const savingsRouter = createTRPCRouter({
       //
       // Both come from the SAME month-scoped cache entry
       // (`months/${currentMonthKey}`), not the generic "categories" cache
-      // the balance override used to read alone — advisor review,
-      // 2026-09-01: sourcing balance and budgeted from two independently-
+      // the balance override used to read alone — sourcing balance and budgeted from two independently-
       // aged snapshots risks subtracting THIS month's budgeted amount
       // from a STALE prior month's balance (e.g. synced Aug 31 11pm,
       // read Sept 1 9am — "categories" would still hold August's numbers
       // with no signal it's the wrong month). The month-scoped key is
-      // self-verifying: if `months/2026-09-01` is absent, we know we
-      // don't have September data at all.
+      // self-verifying: if `months/<currentMonthKey>` is absent, we know
+      // we don't have that month's data at all.
       //
       // Degrades safely when that cache entry is missing (no sync yet
       // this month — most likely right at a month rollover, e.g. viewed
@@ -1862,7 +1861,7 @@ export const savingsRouter = createTRPCRouter({
       // back `pushed: 0, skippedUnsupported: 0` either way, and
       // formatSyncResultToast reads that combination as "No changes to
       // push — already up to date," an actively misleading success message
-      // for what was really a silent failure (found live, 2026-08-31 — a
+      // for what was really a silent failure (a
       // household whose goals DO have nonzero resolved amounts still saw
       // "0 pushed" with no error on every attempt). Counted and reported
       // distinctly, same reasoning as skippedUnsupported above but for the

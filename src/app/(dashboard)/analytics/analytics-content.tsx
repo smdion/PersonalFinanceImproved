@@ -12,7 +12,7 @@ import { Card } from "@/components/ui/card";
 import dynamic from "next/dynamic";
 import { sliceColor } from "@/components/analytics/slice-color";
 
-// Code-split Recharts — keep its payload out of the analytics page chunk (R31).
+// Code-split Recharts — keep its payload out of the analytics page chunk.
 const AllocationDonut = dynamic(
   () =>
     import("@/components/analytics/analytics-charts").then((m) => ({

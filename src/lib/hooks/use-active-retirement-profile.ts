@@ -27,8 +27,7 @@ export function useActiveRetirementProfile(): [
   // retirement-profile-manager.tsx), so unlike Contribution/Salary this
   // doesn't need a narrower-permission setActive endpoint — the generic
   // settings.appSettings.upsert's admin gate is already correct here. What
-  // WAS missing (confirmed by 3 independent reviewers, advisor-caught
-  // 2026-09-01): its default onSuccess only invalidates
+  // WAS missing: its default onSuccess only invalidates
   // settings.appSettings.list, so switching the active Retirement Profile
   // left every already-mounted retirement.*/projection.* query serving
   // stale data — the exact bug class fixed for Contribution/Salary

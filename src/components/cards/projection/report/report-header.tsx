@@ -23,7 +23,7 @@ export function ReportHeader({
 }
 
 /** Print-only footer disclaimer — pairs with `ReportHeader`, rendered once
- *  at the end of the advisor report. Extended (2026-08-31, Phase 4) to
+ *  at the end of the advisor report. Extended to
  *  cover the risk-analysis section's methodology now that this report
  *  makes probability claims — the original one-sentence disclaimer
  *  predates that section and only covered the deterministic assumptions. */

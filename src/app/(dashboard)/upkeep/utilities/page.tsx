@@ -13,7 +13,7 @@ import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { CHART_COLORS } from "@/lib/utils/colors";
 import { ChevronDown, ChevronRight, Lock, LockOpen } from "lucide-react";
 
-// Code-split Recharts — keep its payload out of the utilities page chunk (R31).
+// Code-split Recharts — keep its payload out of the utilities page chunk.
 const CostTrendChart = dynamic(
   () =>
     import("@/components/upkeep/cost-trend-chart").then((m) => ({

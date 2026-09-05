@@ -8,7 +8,7 @@
  *  this code and could drift silently if matched on text.
  *
  * Consecutive years with the SAME condition are collapsed into one range
- * entry rather than one line per year — found live, 2026-08-31: a
+ * entry rather than one line per year — a
  * household with a decades-long ACA cliff exposure got 40 near-identical
  * lines ("2044: ACA subsidy was lost", "2045: ACA subsidy was lost", ...),
  * which is unreadable in a document meant to be read, not scanned like a
@@ -118,7 +118,7 @@ export function buildWatchlist(
       // FPL_COVERAGE_YEAR (by year 40 at typical inflation, a nominal
       // $3,000 window is worth well under half that in real terms, so
       // this watchlist entry would quietly stop firing in exactly the
-      // late years where the cliff bites hardest). Advisor-caught: this
+      // late years where the cliff bites hardest). this
       // bug was mostly invisible before Phase 4 (a frozen ACA cliff kept
       // driving headroom to $0 regardless), and only becomes a real,
       // Phase-4-activated distortion once headroom genuinely grows.

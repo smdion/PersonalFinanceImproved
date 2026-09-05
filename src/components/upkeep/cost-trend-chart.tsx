@@ -3,7 +3,7 @@
 /**
  * Annual utility cost trend (one bar per year). Split into its own module
  * and lazy-loaded by upkeep/utilities so the Recharts payload isn't in the
- * page chunk (R31 — the page imported recharts statically).
+ * page chunk (the page imported recharts statically).
  */
 import {
   Bar,

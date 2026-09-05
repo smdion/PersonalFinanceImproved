@@ -84,8 +84,7 @@ function buildBuckets(entries: AccountEntry[]) {
       // position. An unseasoned Roth conversion slice blocks access to any
       // penalty-free slice behind it even though that slice's own
       // `penaltyFree` flag is true; summing them independently here would
-      // silently disagree with what the engine actually routes (code
-      // review, 2026-08-27).
+      // silently disagree with what the engine actually routes.
       const accessibleNow = penaltyFreePrefixAmount(entry.slices);
       b.accessibleNow += accessibleNow;
       b.locked += entry.balance - accessibleNow;
@@ -140,7 +139,7 @@ function bucketKeyFor(entry: AccountEntry): BucketKey {
  *  `@/lib/utils/colors.ts`'s canonical `taxTypeLabel(taxType)` (which only
  *  returns "Traditional"/"Roth"/"HSA"/"After-Tax") — deliberately named
  *  differently to avoid a same-name, different-signature collision with
- *  that function (code review, 2026-08-27). */
+ *  that function. */
 function bucketTaxTypeLabel(category: string, taxType: string): string {
   if (isTaxFreeBucket(taxType)) {
     return isIraCategory(category) ? "Roth IRA" : `Roth ${category}`;

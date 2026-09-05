@@ -299,7 +299,7 @@ function ServiceCard({
                 {setActiveMut.isPending ? "Activating..." : "Activate"}
               </Button>
             )}
-            {/* Live-user finding, 2026-08-30: a connected-but-never-synced
+            {/* a connected-but-never-synced
                 service silently had NO Activate button and no explanation
                 why — `getPreview` returns `synced: false` until a sync has
                 completed at least once, so the only way to make this

@@ -109,8 +109,8 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
         // "Clear Cache" clears the wrong side: the server would compute
         // fresh on its NEXT request, but nothing tells this tab to actually
         // make that next request, so the table keeps showing whatever
-        // computeProjection response it already has in memory. Found
-        // 2026-08-29 debugging a live household where a Bracket Ceiling
+        // computeProjection response it already has in memory. Found while
+        // debugging a live household where a Bracket Ceiling
         // change genuinely persisted and genuinely changed the engine's
         // output, but "Clear Cache" alone never made the page reflect it.
         void utils.projection.invalidate();
@@ -331,8 +331,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                           comparison — but it showed unconditionally for
                           every other strategy too, so someone who's never
                           touched GK got a confusing, unprompted mention of
-                          a strategy they're not using (live-user finding,
-                          2026-08-30). Dropped; the "shown here only as a
+                          a strategy they're not using. Dropped; the "shown here only as a
                           reference figure" framing already covers why the
                           number exists without needing the GK aside. */}
                         <div className="text-micro text-faint">

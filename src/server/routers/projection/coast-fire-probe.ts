@@ -92,8 +92,7 @@ export const coastFireProbeRouter = createTRPCRouter({
         salaryProfileId: z.number().int().optional(),
         /** View a non-active Retirement Profile — see
          *  computeMonteCarloProjection's matching field docblock
-         *  (monte-carlo.ts) for the full context (advisor-caught
-         *  2026-09-01). */
+         *  (monte-carlo.ts) for the full context. */
         retirementProfileId: z.number().int().optional(),
         accumulationBudgetProfileId: z.number().int().optional(),
         accumulationBudgetColumn: z.number().int().min(0).optional(),
@@ -223,9 +222,8 @@ export const coastFireProbeRouter = createTRPCRouter({
       // "coastFireMc". hashEngineInput hashes this DERIVED payload, not
       // the raw tRPC input, so reusing computeCoastFireMC's "coastFireMc"
       // kind here would let a probe's writeProjectionCache silently
-      // overwrite the real binary-search result under the same cache row
-      // (found in advisor review, 2026-08-30 -- see the plan doc). The
-      // kind union exists precisely so differently-shaped results can't
+      // overwrite the real binary-search result under the same cache row.
+      // The kind union exists precisely so differently-shaped results can't
       // collide like that.
       const inputHash = hashEngineInput("coastFireProbe", {
         engineInput,

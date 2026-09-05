@@ -31,6 +31,7 @@
  *   23. { MFJ: <figure> Single: <figure> HOH: <figure> } object literal outside src/lib/config/ (R43 audit F4 class)
  *   24. Local const re-declaring an ALL_CAPS name already exported from constants.ts / config/ (R43 audit F1 class)
  *   25. Review-history citation in a comment — finding-ID tag (H10)/(M42)/(C2), review-findings.md, expert-review, CodeRabbit
+ *   26. Broader review-history citation in a comment — attribution phrases ("advisor-caught", "live-user finding", "code-review ... finding"), bare ISO date-stamps, bare roadmap R## tags
  *
  * Intentionally NOT checked (needs semantic analysis, not string matching):
  *   - "Router computing budget expenses with different column index" (#1)
@@ -837,6 +838,70 @@ function findReviewCitationViolations(): Violation[] {
   return violations;
 }
 
+// Rule 26 (R17 broadened): the three shapes rule 25 deliberately left to
+// code review, promoted to a lint gate after a real session reintroduced
+// exactly these on top of a clean rule-25 tree — proof the "left to code
+// review" half of R17 wasn't holding on its own:
+//   - a bare attribution phrase ("advisor-caught", "advisor-flagged",
+//     "advisor review", "live-user finding", "code-review ... finding",
+//     "user request,"/"user feedback," immediately preceding what reads as
+//     a citation) wrapping an otherwise-fine technical reason
+//   - a bare full ISO date-stamp (YYYY-MM-DD) inside a comment — this
+//     codebase's real statutory/tax-law dates are always written as a
+//     year or year-RANGE (e.g. "2025-2028"), never a full calendar date,
+//     so this can't collide with RULES.md's statutory-date exception
+//   - a bare roadmap R## tag (R48a, R17, R6b, ...) — not a real
+//     identifier anywhere else in this codebase
+// One dedicated file exemption: projection-cache.ts's
+// PROJECTION_CACHE_ENGINE_VERSION changelog is RULES.md's own named
+// exception (the R##/date history there IS the documentation) — every
+// other file must pass clean. The narrower rule 25 above is unaffected;
+// keeping both means a regression against either shape still fails loudly
+// with the more specific message.
+const BROAD_CITATION_FILE_EXEMPT = new Set<string>([
+  "src/server/helpers/projection-cache.ts",
+]);
+const BROAD_CITATION_PATTERN = new RegExp(
+  [
+    "advisor[- ]caught",
+    "advisor[- ]flagged",
+    "advisor[- ]reviewed",
+    "advisor review",
+    "advisor gate",
+    "live-user finding",
+    "code-review[^\\n]{0,60}?finding",
+    "user (?:request|feedback),",
+    "\\b20[0-9]{2}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])\\b",
+    "\\bR[0-9]{1,3}[a-z]?\\b",
+  ].join("|"),
+  "i",
+);
+function findBroadCitationViolations(): Violation[] {
+  const violations: Violation[] = [];
+  for (const file of walkTsFiles(SRC_DIR)) {
+    const rel = relPath(file);
+    if (isExempt(rel) || BROAD_CITATION_FILE_EXEMPT.has(rel)) continue;
+    const lines = readFileLines(file);
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i]!;
+      if (line.includes("lint-violation-ok")) continue;
+      // Only inside a comment — same scoping as rule 25.
+      const commentStart = Math.max(line.indexOf("//"), line.indexOf("*"));
+      if (commentStart === -1) continue;
+      const commentText = line.slice(commentStart);
+      const m = BROAD_CITATION_PATTERN.exec(commentText);
+      if (!m) continue;
+      violations.push({
+        file: rel,
+        line: i + 1,
+        rule: "no-broad-review-history-citation",
+        snippet: line.trim().slice(0, 100),
+      });
+    }
+  }
+  return violations;
+}
+
 // ── Tests ───────────────────────────────────────────────────────────
 
 function formatViolations(label: string, violations: Violation[]): string {
@@ -1163,6 +1228,26 @@ describe("RULES.md violations sweep", () => {
           `session/finding produced the line (docs/RULES.md "Comments ` +
           `explain the code, not its history"). Keep the technical reasoning, ` +
           `drop the citation — it belongs in the commit message.\n` +
+          formatViolations("Violations", violations),
+      );
+    }
+  });
+
+  it("no broad review-history citation in comments (attribution phrases, bare dates, R## tags)", () => {
+    const violations = findBroadCitationViolations();
+    if (violations.length > 0) {
+      expect.fail(
+        `Found ${violations.length} broad review-history-citation violations. ` +
+          `Same rule as "no review-history citation" above, widened to the ` +
+          `shapes that rule's regex can't safely catch (docs/RULES.md ` +
+          `"Comments explain the code, not its history"): "advisor-caught"/` +
+          `"live-user finding"/"code-review ... finding" attribution phrases, ` +
+          `bare ISO date-stamps, and bare roadmap R## tags. Keep the ` +
+          `technical reasoning, drop the citation — it belongs in the commit ` +
+          `message. If this is a genuine RULES.md-exempt case (a statutory ` +
+          `date range, an incident narrative where the date IS the point), ` +
+          `add \`lint-violation-ok\` to that line rather than reintroducing ` +
+          `the citation shape elsewhere.\n` +
           formatViolations("Violations", violations),
       );
     }

@@ -17,7 +17,7 @@ export function PillBtn({
   /** "lg" marks a PRIMARY control (the 1-2 choices worth a second look —
    *  Scenario, Chart type) — bigger and bolder than the "sm" default used
    *  for everything else, so the eye has an obvious entry point instead
-   *  of every pill competing equally (UI/UX pass, 2026-08-29). */
+   *  of every pill competing equally. */
   size?: "sm" | "lg";
   /** Active-state color — ties a primary control's fill to its zone
    *  (compute = blue, display = amber) so color reinforces the same
@@ -135,15 +135,15 @@ export function LabeledSelect({
 }
 
 /** Tinted zone container — the load-bearing grouping device from the
- *  2026-08-29 UI/UX redesign (see the "Projection Control Rail" mockup
- *  this was approved against). "compute" (cool blue) holds controls that
+ *  redesign (see the "Projection Control Rail" mockup this was approved
+ *  against). "compute" (cool blue) holds controls that
  *  change what gets calculated (Scenario, simulation settings); "display"
  *  (warm amber) holds controls that only change how already-computed
  *  results are shown (Chart type, Baseline, Confidence Band, Dollars).
  *  The color + one-line `why` do double duty as both visual grouping and
  *  plain-language explanation, so a first-time viewer doesn't need to
  *  already know the app to guess what a control does — a bare label
- *  wasn't enough (live-user finding: "still overwhelming... where/what/
+ *  wasn't enough ("still overwhelming... where/what/
  *  why/how"). */
 export function ControlZone({
   tone,
@@ -157,7 +157,7 @@ export function ControlZone({
    *  violet family the app already colors MC output with elsewhere
    *  (Sim. Median line, confidence bands in CHART_COLORS), instead of
    *  reusing "compute" blue, which read as the same zone repeated
-   *  (live-user finding, 2026-08-29). */
+   * . */
   tone: "compute" | "display" | "results";
   title: string;
   why: string;

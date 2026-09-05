@@ -218,7 +218,7 @@ export function renderTooltip(data: TooltipData): React.ReactNode {
           )}
         </div>
       )}
-      {/* 3c. STRATEGY EVENT (UI/UX review, 2026-08-28 — see types.ts docblock) */}
+      {/* 3c. STRATEGY EVENT (see types.ts docblock) */}
       {d.strategyEvent && (
         <div
           className="text-caption font-medium"

@@ -43,7 +43,7 @@ export interface BudgetAPIClient {
    *  Actual's wrapper wants the shorter `YYYY-MM` — so each client
    *  implementation is responsible for converting to whatever its own API
    *  needs internally (see ActualClient's `toActualMonthId` for why this
-   *  bit the app in practice, 2026-08-30). Callers should never need to
+   *  bit the app in practice). Callers should never need to
    *  know this; always pass `YYYY-MM-01`. */
   getMonthDetail(month: string): Promise<BudgetMonthDetail>;
 

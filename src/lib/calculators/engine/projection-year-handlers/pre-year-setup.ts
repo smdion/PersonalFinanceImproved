@@ -202,7 +202,7 @@ export function runPreYearSetup(
     (input.decumulationAnnualExpenses != null ||
       input.rateSeededDecumulationYear1 === true);
   if (decumulationExpensesJustSet) {
-    // Rate-Seeded scenario (advisor review, 2026-08-28): ignore the stated
+    // Rate-Seeded scenario: ignore the stated
     // budget entirely for year 1 -- seed from the household's Initial
     // Withdrawal Rate × starting balance instead. Every strategy's ongoing
     // per-year mechanism (applySpendingStrategy below, unchanged) evolves
@@ -239,7 +239,7 @@ export function runPreYearSetup(
   // override didn't drive this," so letting an override immediately
   // clobber the rate seed on the very year it's set would silently make
   // the scenario a no-op for any household with a year-1 decumulation
-  // override configured (advisor review, 2026-08-28). Overrides in LATER
+  // override configured. Overrides in LATER
   // years still apply normally -- only the starting point is affected.
   const skipOverrideThisYear =
     decumulationExpensesJustSet && input.rateSeededDecumulationYear1 === true;

@@ -198,7 +198,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
       // All dollar figures below go through deflate() like every other
       // dollar value this chart renders (balances, MC bands) — previously
       // raw nominal dollars regardless of the Today's $/Future $ toggle
-      // (advisor review, 2026-08-29 — the table's own tooltip already
+      // (the table's own tooltip already
       // deflates the same underlying fields via `dyr.rmdAmount` etc.,
       // so the chart and table disagreed on every one of these numbers
       // in "Today's $" mode).
@@ -226,7 +226,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
       // is now possible (Retirement-only capacity can be genuinely
       // insufficient once Portfolio-parented balances no longer count).
       datum._rmdShortfallAmount = deflate(yr.rmdShortfallAmount ?? 0, yr.year);
-      // Real, material unmet-need shortfall (advisor review, 2026-08-28) —
+      // Real, material unmet-need shortfall —
       // threaded through the same way SS/RMD milestones are so hovering
       // this exact year shows WHY it's marked, not just that it is.
       datum._unmetNeedMaterial = yr.unmetNeedMaterial ? 1 : 0;
@@ -297,7 +297,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
   // Spending-Decline fire an action every single year (not an event), so
   // they're deliberately excluded — marking every year would be noise, not
   // a signal. Styling/wording factored out to utils.ts so the table
-  // tooltip's own guardrail note (UI/UX review, 2026-08-28) can't drift
+  // tooltip's own guardrail note can't drift
   // from this chart's markers.
   const STRATEGY_EVENT_STYLE = buildStrategyEventStyle(engineSettings);
   const strategyEventStyleKeys = Object.keys(STRATEGY_EVENT_STYLE);
@@ -314,7 +314,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
     }));
 
   // Real, material "the plan called for money it couldn't actually
-  // deliver" years (advisor review, 2026-08-28) — a SEPARATE overlay from
+  // deliver" years — a SEPARATE overlay from
   // guardrailEvents above, deliberately: a guardrail cut and a genuine
   // unmet-need shortfall are orthogonal (a GK cut year can ALSO be a
   // shortfall year), so this can't share guardrailEvents' one-marker-
@@ -354,8 +354,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
           )}
         </h5>
       </div>
-      {/* Standalone deterministic shortfall alert (advisor review,
-          2026-08-28) — deliberately its own callout, not a badge grafted
+      {/* Standalone deterministic shortfall alert — deliberately its own callout, not a badge grafted
           onto the Lifetime Income Stability MC ring (that ring is a
           1000-trial aggregate; this is the single deterministic path
           actually shown in this chart, a different kind of number). */}
@@ -417,8 +416,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                 // IRS excise-tax consequences. Otherwise show a checkmark
                 // whenever the RMD was actually met — not just the
                 // "eventful" excess/QCD case — since silence alone wasn't a
-                // reliable enough signal of "satisfied" (user feedback,
-                // 2026-08-28).
+                // reliable enough signal of "satisfied".
                 const rmdShortfall = Number(d._rmdShortfallAmount) > 0;
                 const rmdSatisfiedNotably = !rmdShortfall;
                 return (

@@ -103,8 +103,7 @@ export const coastFireRouter = createTRPCRouter({
         salaryProfileId: z.number().int().optional(),
         /** View a non-active Retirement Profile — see
          *  computeMonteCarloProjection's matching field docblock
-         *  (monte-carlo.ts) for the full context (advisor-caught
-         *  2026-09-01). */
+         *  (monte-carlo.ts) for the full context. */
         retirementProfileId: z.number().int().optional(),
         accumulationBudgetProfileId: z.number().int().optional(),
         accumulationBudgetColumn: z.number().int().min(0).optional(),
@@ -193,14 +192,14 @@ export const coastFireRouter = createTRPCRouter({
    * variance reduction) and a hardcoded "default" MC preset for
    * reproducibility.
    *
-   * Per advisor review: monotonicity of MC success rate in coast age is
+   * Per monotonicity of MC success rate in coast age is
    * *approximate*, not strict (IRMAA/ACA/LTCG cliffs can break it). After
    * binary search returns `lo`, we re-probe `lo - 1` as a sanity check.
    * If the re-probe also passes, the true earliest age may be lower but
    * we return the search result honestly with a warning.
    *
-   * Cost: ~5-6 probes × 1 MC run × 1000 trials ≈ 4-6s wall clock (profiled
-   * 2026-04-13). Rate-limited via `expensiveRateLimitMiddleware`.
+   * Cost: ~5-6 probes × 1 MC run × 1000 trials ≈ 4-6s wall clock
+   * (profiled). Rate-limited via `expensiveRateLimitMiddleware`.
    */
   computeCoastFireMC: protectedProcedure
     .use(expensiveRateLimitMiddleware)
@@ -217,8 +216,7 @@ export const coastFireRouter = createTRPCRouter({
         salaryProfileId: z.number().int().optional(),
         /** View a non-active Retirement Profile — see
          *  computeMonteCarloProjection's matching field docblock
-         *  (monte-carlo.ts) for the full context (advisor-caught
-         *  2026-09-01). */
+         *  (monte-carlo.ts) for the full context. */
         retirementProfileId: z.number().int().optional(),
         accumulationBudgetProfileId: z.number().int().optional(),
         accumulationBudgetColumn: z.number().int().min(0).optional(),

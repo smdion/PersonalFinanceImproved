@@ -75,7 +75,7 @@ export function getRmdFactor(age: number): number | null {
  * rmd-enforcement.ts's real per-year enforcement and
  * decumulation-year.ts's per-person QCD-ordering hoist (which needs the
  * amount before enforceRmd runs) can't independently drift on the same
- * formula (advisor review, 2026-08-29 — Single Computation Path,
+ * formula (Single Computation Path,
  * docs/RULES.md). Returns null when there's no valid divisor for `age`
  * (below the table) — callers decide what "no RMD" means for their case.
  */

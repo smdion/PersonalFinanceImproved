@@ -2,7 +2,7 @@
 
 /**
  * Analytics charts — split out and lazy-loaded by analytics-content so the
- * Recharts payload isn't in the analytics page chunk (R31 — the page
+ * Recharts payload isn't in the analytics page chunk (the page
  * imported recharts statically).
  */
 import {

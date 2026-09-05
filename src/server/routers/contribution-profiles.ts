@@ -814,7 +814,7 @@ export const contributionProfileRouter = createTRPCRouter({
    * snapped it back. Mirrors budget.setActiveProfile's pattern of a
    * narrowly-scoped, correctly-permissioned write.
    *
-   * `id: null` is accepted (advisor-caught 2026-09-01): the client-side
+   * `id: null` is accepted: the client-side
    * hook's writeVia originally special-cased null into a silent no-op
    * (this endpoint's input used to require a real id, which can't express
    * "clear the selection") — the hook's own return type

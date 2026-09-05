@@ -382,8 +382,7 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
   }
 
   // 12c. Retirement Profiles backfill — mirrors migration
-  // 0032_curved_silhouette.sql's own backfill (advisor-caught 2026-09-01:
-  // this seeder used to insert retirement_settings rows directly with no
+  // 0032_curved_silhouette.sql's own backfill (this seeder used to insert retirement_settings rows directly with no
   // profile_id at all and never created a retirement_profiles row,
   // leaving the Retirement Profile Manager sidebar permanently empty for
   // any demo household — retirementProfiles.duplicate is the only

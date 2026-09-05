@@ -196,7 +196,7 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
   // under-inflates relative to what the loop actually produced. Reading the
   // loop's own first decumulation row keeps this a single source of truth
   // instead of a second, divergence-prone computation of "which year."
-  // Advisor review, 2026-08-29 (finding #10): a budget override active on
+  // A budget override active on
   // the first decumulation year (pre-year-setup.ts:249-251) replaces
   // state.projectedExpenses outright, but this computation used to ignore
   // overrides entirely and always inflate `decumulationAnnualExpenses` --

@@ -128,8 +128,7 @@ export interface FundManagementSectionProps {
   recalcProfileId?: number | null;
   /** The Contribution/Salary Profile selection the live pool preview these
    *  buttons implicitly promise was computed from — see the savings page's
-   *  recalcIncomeParams for the full explanation (found live, 2026-08-31:
-   *  without this, a per-goal Recalculate/Update % click silently used the
+   *  recalcIncomeParams for the full explanation (without this, a per-goal Recalculate/Update % click silently used the
    *  household's globally-active profile instead, same bug as the page's
    *  bulk buttons). */
   recalcIncomeParams?: RecalcIncomeParams;
