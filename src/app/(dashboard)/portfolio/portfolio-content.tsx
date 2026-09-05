@@ -23,6 +23,7 @@ import dynamic from "next/dynamic";
 import { confirm } from "@/components/ui/confirm-dialog";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { toast } from "@/lib/hooks/use-toast";
+import { useSnapshotSyncPending } from "@/components/portfolio/hooks/use-snapshot-sync-pending";
 import { ContributionAccountsSettings } from "@/components/portfolio/contribution-accounts";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 import { NewSnapshotForm } from "@/components/portfolio/new-snapshot-form";
@@ -217,12 +218,36 @@ export function PortfolioContent() {
     invalidateSnapshotQueries,
   } = usePortfolioSnapshotMutations();
 
-  /** Inline balance fix on the latest snapshot — the server re-derives
-   *  performance figures and auto-resyncs the corrected balances to the
-   *  budget API. Silent toast on success; a loud, retryable one on a sync
-   *  failure (the DB write already landed). */
+  const { data: syncStatus } = trpc.sync.getSyncStatus.useQuery();
+  const budgetApiConnected = !!syncStatus?.connected;
+
+  const {
+    pending: syncPendingRaw,
+    markDirty: markDirtyRaw,
+    clear: clearSyncPending,
+  } = useSnapshotSyncPending();
+  // Only a household with a live budget-API connection has anything to
+  // resync — otherwise the balance edit just saves and we're done.
+  const syncPending = budgetApiConnected ? syncPendingRaw : null;
+  const markDirty = useCallback(
+    (snapshotId: number, snapshotDate: string) => {
+      if (budgetApiConnected) markDirtyRaw(snapshotId, snapshotDate);
+    },
+    [budgetApiConnected, markDirtyRaw],
+  );
+
+  /** Inline balance fix on the latest snapshot. Saves + recomputes
+   *  immediately; the budget-API push is deferred — the snapshot is
+   *  marked "not synced" and one resync fires when the user finishes
+   *  (collapses the row / clicks Sync now). Fixing several balances in a
+   *  row therefore triggers ONE resync, not one per edit. */
   const handleBalanceEdit = useCallback(
-    async (accountId: number, snapshotId: number, rawAmount: string) => {
+    async (
+      accountId: number,
+      snapshotId: number,
+      snapshotDate: string,
+      rawAmount: string,
+    ) => {
       const amount = rawAmount.replace(/[^0-9.]/g, "");
       const n = Number(amount);
       if (!amount || Number.isNaN(n) || n < 0) {
@@ -230,51 +255,39 @@ export function PortfolioContent() {
         return;
       }
       try {
-        const res = await updateAccountBalance.mutateAsync({
-          id: accountId,
-          amount,
-        });
-        const sync = res.amountEdited ? res.apiSyncResult : undefined;
-        if (sync?.error) {
-          toast.error(
-            `Balance saved — but the budget-API sync failed: ${sync.error}`,
-            9000,
-            {
-              label: "Retry sync",
-              onClick: () => {
-                resyncPush
-                  .mutateAsync({ snapshotId, confirmNonLatest: false })
-                  .then((r) =>
-                    toast.success(
-                      `Synced — posted ${r.posted}, cleaned ${r.cleaned}.`,
-                    ),
-                  )
-                  .catch((e) =>
-                    toast.error(
-                      `Retry failed: ${e instanceof Error ? e.message : "unknown error"}`,
-                    ),
-                  );
-              },
-            },
-          );
-        } else if (sync?.pushed) {
-          toast.success(
-            `Balance updated — YNAB/Actual synced (posted ${sync.accountsPushed}` +
-              (sync.accountsSkipped
-                ? `, skipped ${sync.accountsSkipped}`
-                : "") +
-              ").",
-          );
-        } else {
-          toast.success("Balance updated.");
-        }
+        await updateAccountBalance.mutateAsync({ id: accountId, amount });
+        markDirty(snapshotId, snapshotDate);
       } catch (e) {
         toast.error(
           e instanceof Error ? e.message : "Couldn't update the balance.",
         );
       }
     },
-    [updateAccountBalance, resyncPush],
+    [updateAccountBalance, markDirty],
+  );
+
+  /** Push the pending balance edits for one snapshot to YNAB/Actual —
+   *  one resync for all of them. Clears the "not synced" flag on success;
+   *  keeps it (so the banner stays) on failure. */
+  const syncPendingSnapshot = useCallback(
+    async (snapshotId: number) => {
+      try {
+        const r = await resyncPush.mutateAsync({
+          snapshotId,
+          confirmNonLatest: false,
+        });
+        clearSyncPending();
+        toast.success(
+          `Synced to YNAB/Actual — posted ${r.posted}, cleaned ${r.cleaned}.`,
+        );
+      } catch (e) {
+        toast.error(
+          `Sync failed: ${e instanceof Error ? e.message : "unknown error"}. Your edits are saved — use "Sync now" to retry.`,
+          9000,
+        );
+      }
+    },
+    [resyncPush, clearSyncPending],
   );
 
   const snapshotDate = data?.snapshotDate;
@@ -377,6 +390,36 @@ export function PortfolioContent() {
           )}
         </span>
       </PageHeader>
+
+      {/* Un-synced balance edits — persists across visits (localStorage)
+          so a closed tab mid-edit doesn't silently drift from YNAB. */}
+      {canEdit && syncPending && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          <span>
+            {syncPending.count} balance change
+            {syncPending.count === 1 ? "" : "s"} on the{" "}
+            {formatDate(syncPending.snapshotDate, "medium")} snapshot{" "}
+            {syncPending.count === 1 ? "isn't" : "aren't"} in YNAB/Actual yet.
+          </span>
+          <span className="flex gap-3">
+            <button
+              type="button"
+              disabled={resyncPush.isPending}
+              onClick={() => void syncPendingSnapshot(syncPending.snapshotId)}
+              className="font-semibold underline disabled:opacity-50"
+            >
+              {resyncPush.isPending ? "Syncing…" : "Sync now"}
+            </button>
+            <button
+              type="button"
+              onClick={() => clearSyncPending()}
+              className="text-amber-700 hover:underline"
+            >
+              Dismiss
+            </button>
+          </span>
+        </div>
+      )}
 
       {/* Quick Look Stats Panel */}
       {showQuickLook && snapshotTotals && snapshotTotals.length >= 2 && (
@@ -559,9 +602,23 @@ export function PortfolioContent() {
                           <React.Fragment key={snap.id}>
                             <tr
                               className={`border-subtle hover:bg-surface-sunken cursor-pointer border-b ${isExpanded ? "bg-surface-sunken" : ""}`}
-                              onClick={() =>
-                                setExpandedSnapshot(isExpanded ? null : snap.id)
-                              }
+                              onClick={() => {
+                                const collapsing = isExpanded;
+                                setExpandedSnapshot(
+                                  collapsing ? null : snap.id,
+                                );
+                                // Collapsing the latest snapshot after
+                                // fixing balances = "done editing" → push
+                                // all the pending edits to YNAB/Actual in
+                                // one resync.
+                                if (
+                                  collapsing &&
+                                  syncPending?.snapshotId === snap.id &&
+                                  !resyncPush.isPending
+                                ) {
+                                  void syncPendingSnapshot(snap.id);
+                                }
+                              }}
                             >
                               <td className="py-2 pr-4 font-medium">
                                 <span className="inline-flex items-center gap-1">
@@ -685,8 +742,36 @@ export function PortfolioContent() {
                                   <div className="bg-surface-sunken px-8 py-2">
                                     {isLatest && canEdit && (
                                       <p className="text-faint mb-1.5 text-[11px]">
-                                        Click a balance to fix it — changes
-                                        re-sync to YNAB/Actual.
+                                        Click a balance to fix it. Changes save
+                                        right away;{" "}
+                                        {syncPending?.snapshotId === snap.id ? (
+                                          <span className="font-medium text-amber-700">
+                                            {syncPending.count} edit
+                                            {syncPending.count === 1
+                                              ? ""
+                                              : "s"}{" "}
+                                            not yet in YNAB/Actual — synced when
+                                            you collapse this row, or{" "}
+                                            <button
+                                              type="button"
+                                              disabled={resyncPush.isPending}
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                void syncPendingSnapshot(
+                                                  snap.id,
+                                                );
+                                              }}
+                                              className="underline disabled:opacity-50"
+                                            >
+                                              {resyncPush.isPending
+                                                ? "syncing…"
+                                                : "sync now"}
+                                            </button>
+                                            .
+                                          </span>
+                                        ) : (
+                                          "YNAB/Actual syncs when you collapse this row."
+                                        )}
                                       </p>
                                     )}
                                     {groupByPerformanceAccount(
@@ -742,6 +827,7 @@ export function PortfolioContent() {
                                                       handleBalanceEdit(
                                                         a.id,
                                                         snap.id,
+                                                        snap.snapshotDate,
                                                         v,
                                                       )
                                                     }

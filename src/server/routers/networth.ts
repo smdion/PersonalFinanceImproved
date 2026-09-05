@@ -1299,17 +1299,14 @@ export const networthRouter = createTRPCRouter({
         });
         invalidateYearEndCache();
 
-        // Re-push the corrected balances. `mode: "resync"` deletes this
-        // snapshot's prior tagged transactions and re-posts; safe here
-        // because it is the latest snapshot (checked above).
-        const apiSyncResult = await pushSnapshotIfConfigured(ctx.db, {
-          snapshotId: snap.id,
-          snapshotDate: snap.snapshotDate,
-          mode: "resync",
-          asOfDate: new Date(),
-        });
-
-        return { amountEdited: true as const, apiSyncResult };
+        // NOTE: the budget-API resync is NOT run here. A single balance
+        // fix is rarely alone — running a full resync (list + delete +
+        // re-post per mapped account) on every edit would be slow, rate-
+        // limited, and non-atomic mid-sequence. The client batches: it
+        // marks the snapshot dirty and fires ONE `sync.resyncPortfolioPush`
+        // when the user finishes (collapses the row / navigates away), with
+        // a persistent "not synced" banner as the backstop.
+        return { amountEdited: true as const };
       }),
 
     /** Create a new sub-account row in the latest snapshot. */

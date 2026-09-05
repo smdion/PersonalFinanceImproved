@@ -201,6 +201,11 @@ vi.mock("@/lib/trpc", () => ({
       },
     },
     sync: {
+      getSyncStatus: {
+        useQuery: () => ({
+          data: { service: null, connected: false, lastSynced: null },
+        }),
+      },
       resyncPortfolioPush: {
         useMutation: () => ({
           mutate: vi.fn(),
