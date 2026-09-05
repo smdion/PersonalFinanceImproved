@@ -1391,6 +1391,23 @@ export const retirementSettings = sqliteTable(
     discretionaryWithdrawalOrder: text("discretionary_withdrawal_order")
       .notNull()
       .default("roth_first"),
+    /** Household default for `withdrawalRoutingMode` ("bracket_filling" |
+     *  "waterfall" | "percentage") — WHICH accounts fund a year's
+     *  withdrawal, as opposed to `withdrawalStrategy` (HOW MUCH). Read as
+     *  the DB fallback in `buildDecumulationDefaults`
+     *  (server/routers/projection/_shared.ts) — a client-supplied
+     *  `decumulationDefaults.withdrawalRoutingMode` still wins when
+     *  present (the Retirement page's per-session Configure toggle), this
+     *  only fills in when the caller sends none (Tax Optimization's
+     *  comparison + "your current plan" baseline, and any future caller
+     *  that wants the household's real default rather than a hardcoded
+     *  one). Validated as an enum in zod (retirement.ts's
+     *  retirementSettingsInput), not a CHECK constraint — see
+     *  gen-sqlite-schema.ts's header on why a CHECK forces the SQLite
+     *  recreate path this schema otherwise avoids. */
+    withdrawalRoutingMode: text("withdrawal_routing_mode")
+      .notNull()
+      .default("bracket_filling"),
     /** G-K: upper guardrail — if currentRate < initialRate × this, increase spending (e.g. 0.80). */
     gkUpperGuardrail: text("gk_upper_guardrail").default("0.80"),
     /** G-K: lower guardrail — if currentRate > initialRate × this, decrease spending (e.g. 1.20). */

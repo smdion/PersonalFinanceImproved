@@ -1,0 +1,1 @@
+ALTER TABLE "retirement_settings" ADD COLUMN "withdrawal_routing_mode" varchar(20) DEFAULT 'bracket_filling' NOT NULL;

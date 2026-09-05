@@ -1,27 +1,28 @@
 /**
- * Tax Planning surface — router endpoints.
+ * Tax Optimization surface — router endpoints.
  *
- * Presentation-only. Every procedure here runs the SAME
- * `calculateProjection()` the Retirement page uses, via the SAME
- * `fetchRetirementData` / `buildEnginePayload` helpers — there is no
- * parallel year-by-year tax loop (that is the banned "second computation
- * path", `docs/RULES.md`). The multi-strategy and Roth what-if procedures
- * run that engine N times with different `decumulationOverrides` and score
- * the results, exactly like `withdrawal-bracket-optimizer.ts` and
- * `coast-fire.ts` already do.
+ * Every procedure here runs the SAME `calculateProjection()` the
+ * Retirement page uses, via the SAME `fetchRetirementData` /
+ * `buildEnginePayload` helpers — there is no parallel year-by-year tax
+ * loop (that is the banned "second computation path", `docs/RULES.md`).
+ * `compareWithdrawalStrategies` and `rothConversionWhatIf` run that engine
+ * N times with different `decumulationOverrides` and score the results,
+ * exactly like `withdrawal-bracket-optimizer.ts` and `coast-fire.ts` do.
+ * `projectTaxYears` is a single deterministic run reshaped for the IRMAA
+ * callout (the page no longer renders a year-by-year table).
  *
  * Modeled on `withdrawal-bracket-optimizer.ts`: `protectedProcedure.query`,
  * synchronous, cheap, uncached — no `expensiveRateLimitMiddleware`, no
  * server-side projection cache (Coast FIRE precedent). Lives inside
- * `projection/` (not a top-level `routers/tax-planning.ts`) because it
+ * `projection/` (not a top-level `routers/tax-optimization.ts`) because it
  * shares `fetchRetirementData` / `buildEnginePayload` / `_shared.ts`
  * schemas verbatim with the rest of this family; client calls are
  * `api.projection.projectTaxYears` etc.
  *
  * Assumptions (retirement age, inflation, withdrawal strategy, Roth
- * settings, …) are NOT inputs here — the Tax Planning page edits the
- * active Retirement Profile through the Retirement page's own components
- * and save mutations, so the profile is the single source and the input
+ * settings, …) are NOT inputs here — the Tax Optimization page embeds the
+ * Retirement page's `AssumptionsBand`, which saves straight to the active
+ * Retirement Profile, so the profile is the single source and the input
  * below only needs to say WHICH profile / budget / snapshot to read. This
  * mirrors `computeProjection`'s input (`scenarios.ts`) field-for-field.
  */
@@ -74,12 +75,12 @@ void _routingModeCovered;
 export const zRoutingMode = z.enum(ROUTING_MODES);
 
 /**
- * The read-selection surface every Tax Planning procedure shares — which
+ * The read-selection surface every Tax Optimization procedure shares — which
  * profile(s) / budget / snapshot to project. Mirrors `computeProjection`'s
  * input (`scenarios.ts:61-108`); it deliberately carries no assumption
  * values (see the file docblock).
  */
-export const taxPlanningBaseInput = z.object({
+export const taxOptimizationBaseInput = z.object({
   decumulationDefaults: decumulationDefaultsInputSchema,
   accumulationOverrides: accumulationOverrideSchema,
   decumulationOverrides: decumulationOverrideSchema,
@@ -128,7 +129,7 @@ export const DEFAULT_WITHDRAWAL_ORDER = getDefaultDecumulationOrder();
 // Shared engine runner — the single computation path
 // ---------------------------------------------------------------------------
 
-type TaxPlanningBaseInput = z.infer<typeof taxPlanningBaseInput>;
+type TaxOptimizationBaseInput = z.infer<typeof taxOptimizationBaseInput>;
 
 /**
  * fetch → buildEnginePayload → run `calculateProjection` ONCE, with the
@@ -140,7 +141,7 @@ type TaxPlanningBaseInput = z.infer<typeof taxPlanningBaseInput>;
  */
 async function runProjection(
   db: Parameters<typeof fetchRetirementData>[0],
-  input: TaxPlanningBaseInput,
+  input: TaxOptimizationBaseInput,
   extraDecumulationOverrides: DecumulationOverride[] = [],
 ) {
   const data = await fetchRetirementData(db, {
@@ -196,10 +197,12 @@ function decumulationYears(
   );
 }
 
-/** Lifetime tax = Σ (withdrawal tax + Roth-conversion tax + IRMAA + NIIT +
- *  early-withdrawal penalty) over the decumulation horizon. Mirrors
- *  `scoreCandidate` in `withdrawal-bracket-optimizer.ts`, plus `niitAmount`
- *  (that scorer predates the NIIT field). */
+/** Lifetime tax = Σ (withdrawal tax + Roth-conversion tax + IRMAA +
+ *  early-withdrawal penalty) over the decumulation horizon. Byte-for-byte
+ *  `scoreCandidate` in `withdrawal-bracket-optimizer.ts`. NIIT is NOT
+ *  added separately — the engine already folds it into `taxCost`
+ *  (`decumulation-year.ts` does `taxCost = taxCost + niitAmount`); the
+ *  earlier `+ niitAmount` here was double-counting it. */
 export function lifetimeTax(years: EngineDecumulationYear[]): number {
   return years.reduce(
     (sum, y) =>
@@ -207,7 +210,6 @@ export function lifetimeTax(years: EngineDecumulationYear[]): number {
       (y.taxCost ?? 0) +
       (y.rothConversionTaxCost ?? 0) +
       (y.irmaaCost ?? 0) +
-      (y.niitAmount ?? 0) +
       (y.penaltyCost ?? 0),
     0,
   );
@@ -293,7 +295,7 @@ function toTaxYearRow(
   };
 }
 
-export const taxPlanningRouter = createTRPCRouter({
+export const taxOptimizationRouter = createTRPCRouter({
   /**
    * Year-by-year tax projection through decumulation — a straight read of
    * the deterministic engine run (NOT Monte Carlo). One row per
@@ -302,7 +304,7 @@ export const taxPlanningRouter = createTRPCRouter({
    * "notable year" flags.
    */
   projectTaxYears: protectedProcedure
-    .input(taxPlanningBaseInput)
+    .input(taxOptimizationBaseInput)
     .query(async ({ ctx, input }) => {
       const run = await runProjection(ctx.db, input);
       if (!run) return { rows: [] as TaxYearRow[], meta: null };
@@ -310,8 +312,9 @@ export const taxPlanningRouter = createTRPCRouter({
       const years = decumulationYears(run.result.projectionByYear);
       let cumulative = 0;
       const rows = years.map((y) => {
-        cumulative +=
-          y.taxCost + y.niitAmount + y.irmaaCost + y.rothConversionTaxCost;
+        // `y.taxCost` already includes NIIT — don't add `y.niitAmount`
+        // again (that was double-counting it into the running total).
+        cumulative += y.taxCost + y.irmaaCost + y.rothConversionTaxCost;
         return toTaxYearRow(y, cumulative);
       });
 
@@ -336,7 +339,7 @@ export const taxPlanningRouter = createTRPCRouter({
    */
   compareWithdrawalStrategies: protectedProcedure
     .input(
-      taxPlanningBaseInput.extend({
+      taxOptimizationBaseInput.extend({
         strategies: z.array(withdrawalStrategyChoiceSchema).min(2).max(5),
       }),
     )
@@ -349,6 +352,28 @@ export const taxPlanningRouter = createTRPCRouter({
       if (firstDecumYear === undefined) {
         return { strategies: [], baselineLabel: null };
       }
+
+      // "Your current plan" — the household's real resolved defaults
+      // (buildDecumulationDefaults: session override, else
+      // retirement_settings.withdrawal_routing_mode, else
+      // "bracket_filling"), scored the identical way as the named
+      // candidates below. `baseline` already computed this projection to
+      // learn `firstDecumYear`; previously its score was thrown away and
+      // the client had no way to tell which (if any) of the three fixed
+      // candidates matched what the plan actually runs — matching by
+      // `mode` string alone breaks the moment a household's real routing
+      // is "waterfall" with a custom order that isn't one of the three
+      // presets. Returning the baseline's own score sidesteps that
+      // entirely: it's never a guess.
+      const baselineFinalYear = baselineDecum[baselineDecum.length - 1];
+      const currentPlan = {
+        label: "Your current plan",
+        mode: baseline.engineInput.decumulationDefaults.withdrawalRoutingMode,
+        isCurrentPlan: true as const,
+        lifetimeTax: lifetimeTax(baselineDecum),
+        terminalByTaxType: baselineFinalYear?.balanceByTaxType ?? null,
+        depletedYear: baseline.result.portfolioDepletionYear ?? null,
+      };
 
       const scored = [];
       for (const strategy of input.strategies) {
@@ -373,14 +398,17 @@ export const taxPlanningRouter = createTRPCRouter({
       }
 
       // The cheapest lifetime tax among non-depleting strategies (any
-      // strategy — fall back to overall cheapest if all deplete).
-      const viable = scored.filter((s) => s.depletedYear === null);
-      const ranked = (viable.length ? viable : scored)
+      // strategy — fall back to overall cheapest if all deplete). Includes
+      // "Your current plan" in the ranking — it's a real, comparably-scored
+      // candidate, not just a reference row.
+      const allScored = [currentPlan, ...scored];
+      const viable = allScored.filter((s) => s.depletedYear === null);
+      const ranked = (viable.length ? viable : allScored)
         .slice()
         .sort((a, b) => a.lifetimeTax - b.lifetimeTax);
 
       return {
-        strategies: scored,
+        strategies: allScored,
         baselineLabel: ranked[0]?.label ?? null,
       };
     }),
@@ -401,8 +429,8 @@ export const taxPlanningRouter = createTRPCRouter({
   rothConversionWhatIf: protectedProcedure
     .input(
       z.discriminatedUnion("mode", [
-        taxPlanningBaseInput.extend({ mode: z.literal("optimize") }),
-        taxPlanningBaseInput.extend({
+        taxOptimizationBaseInput.extend({ mode: z.literal("optimize") }),
+        taxOptimizationBaseInput.extend({
           mode: z.literal("explicit"),
           conversionTargets: z.array(rothConversionTargetSchema).min(1).max(60),
         }),
@@ -460,13 +488,10 @@ export const taxPlanningRouter = createTRPCRouter({
       let breakEvenYear: number | null = null;
       const perYear = withYears.map((y) => {
         const off = offByYear.get(y.year);
-        cumWith +=
-          y.taxCost + y.niitAmount + y.irmaaCost + y.rothConversionTaxCost;
+        // `taxCost` already includes NIIT — see the projectTaxYears loop.
+        cumWith += y.taxCost + y.irmaaCost + y.rothConversionTaxCost;
         cumOff += off
-          ? off.taxCost +
-            off.niitAmount +
-            off.irmaaCost +
-            off.rothConversionTaxCost
+          ? off.taxCost + off.irmaaCost + off.rothConversionTaxCost
           : 0;
         if (breakEvenYear === null && cumWith < cumOff) breakEvenYear = y.year;
         return {

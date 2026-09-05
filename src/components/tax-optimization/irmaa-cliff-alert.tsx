@@ -6,8 +6,11 @@
  * Roth conversion was capped to stay under a threshold (Group D flag).
  * No new computation.
  */
-import type { TaxYearRow } from "./year-projection-table";
+import type { RouterOutputs } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils/format";
+
+export type TaxYearRow =
+  RouterOutputs["projection"]["projectTaxYears"]["rows"][number];
 
 export function IrmaaCliffAlert({ rows }: { rows: TaxYearRow[] }) {
   const surchargeYears = rows.filter((r) => r.irmaaSurcharge > 0);

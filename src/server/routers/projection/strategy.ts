@@ -10,6 +10,23 @@
  * - `updateInflationRisk` — persists MC preset inflation params.
  * - `updateAssetClassOverrides` — persists user asset class return/vol
  *   overrides to appSettings.
+ *
+ * KNOWN GAP (advisor-caught, 2026-09-05, not fixed here — flagging per
+ * root-cause rule rather than leaving it silently latent): both
+ * `decumulationDefaults` object literals below now correctly read
+ * `settings.withdrawalRoutingMode`, but still hardcode
+ * `rmdExcessHandling`/`qcdMaximize`/`rmdSmoothingEnabled`/
+ * `discretionaryWithdrawalOrder` to their engine defaults instead of
+ * reading `settings` for those too (they don't call
+ * `buildDecumulationDefaults` — see `_shared.ts` — at all). "Varying only
+ * withdrawalStrategy + strategyParams" (above) is therefore not quite
+ * true: a household with `qcdMaximize` on, or `discretionaryWithdrawalOrder:
+ * "brokerage_first"`, gets a strategy comparison computed against settings
+ * they turned off. Not addressed in this pass (routing mode only) — a
+ * real fix would swap both literals for `buildDecumulationDefaults` calls,
+ * which is a bigger, separately-reviewable change since it'd also start
+ * respecting those fields for Monte Carlo (this file) and stress tests
+ * (`projection-v5-helpers.ts`'s `runStressTestScenarios`, same gap).
  */
 import { eq } from "drizzle-orm";
 import { z } from "zod/v4";
@@ -29,7 +46,8 @@ import {
 import { formatPercent } from "@/lib/utils/format";
 import { MC_CONFIDENCE_THRESHOLD } from "@/lib/constants";
 import { toNumber } from "@/server/helpers";
-import type { AccountCategory } from "@/lib/calculators/types";
+import type { AccountCategory, RoutingMode } from "@/lib/calculators/types";
+import { DEFAULT_WITHDRAWAL_ROUTING_MODE } from "@/lib/config/withdrawal-routing";
 import {
   getDefaultDecumulationOrder,
   DEFAULT_WITHDRAWAL_SPLITS as CONFIG_WITHDRAWAL_SPLITS,
@@ -186,7 +204,10 @@ export const strategyRouter = createTRPCRouter({
 
             const decumulationDefaults = {
               withdrawalRate: toNumber(settings.withdrawalRate),
-              withdrawalRoutingMode: "bracket_filling" as const,
+              withdrawalRoutingMode:
+                (settings.withdrawalRoutingMode as
+                  RoutingMode | null | undefined) ??
+                DEFAULT_WITHDRAWAL_ROUTING_MODE,
               withdrawalOrder:
                 getDefaultDecumulationOrder() as AccountCategory[],
               withdrawalSplits: { ...CONFIG_WITHDRAWAL_SPLITS } as Record<
@@ -392,7 +413,10 @@ export const strategyRouter = createTRPCRouter({
         decumulationOverrides: [] as [],
         decumulationDefaults: {
           withdrawalRate: toNumber(settings.withdrawalRate),
-          withdrawalRoutingMode: "bracket_filling" as const,
+          withdrawalRoutingMode:
+            (settings.withdrawalRoutingMode as
+              RoutingMode | null | undefined) ??
+            DEFAULT_WITHDRAWAL_ROUTING_MODE,
           withdrawalOrder: getDefaultDecumulationOrder() as AccountCategory[],
           withdrawalSplits: { ...CONFIG_WITHDRAWAL_SPLITS } as Record<
             AccountCategory,

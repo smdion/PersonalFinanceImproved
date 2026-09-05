@@ -255,8 +255,14 @@ export const relocationProjectionRouter = createTRPCRouter({
       });
       if (!relocPayload) return null;
 
+      // No `withdrawalRoutingMode` key (advisor-caught, 2026-09-05) — this
+      // object occupies `buildDecumulationDefaults`'s CLIENT-override slot,
+      // which now wins over the household's persisted
+      // `retirement_settings.withdrawal_routing_mode`. A hardcoded
+      // "bracket_filling" here silently suppressed that setting for both
+      // the current and relocation scenarios; omitting the key lets each
+      // resolve its own household's real default.
       const clientDecumulationDefaults = {
-        withdrawalRoutingMode: "bracket_filling" as const,
         withdrawalOrder: getDefaultDecumulationOrder(),
         withdrawalSplits: { ...CONFIG_WITHDRAWAL_SPLITS },
         withdrawalTaxPreference: {} as Record<string, string>,

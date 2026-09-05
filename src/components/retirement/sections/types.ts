@@ -45,6 +45,12 @@ export type Settings = {
    *  real ACA/IRMAA MAGI cost for using the annual 0%-LTCG allowance
    *  sooner). */
   discretionaryWithdrawalOrder?: string | null;
+  /** Household default for `withdrawalRoutingMode` — WHICH accounts fund a
+   *  year's withdrawal ("bracket_filling" | "waterfall" | "percentage").
+   *  The Retirement page's Configure toggle can override this for one
+   *  session; this is what applies everywhere else (Tax Optimization
+   *  included) until it does. */
+  withdrawalRoutingMode?: string | null;
   // Strategy-specific params
   gkUpperGuardrail?: string | null;
   gkLowerGuardrail?: string | null;

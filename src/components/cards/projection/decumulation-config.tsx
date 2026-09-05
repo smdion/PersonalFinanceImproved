@@ -17,6 +17,13 @@ import {
   WITHDRAWAL_STRATEGY_CONFIG,
   type WithdrawalStrategyType,
 } from "@/lib/config/withdrawal-strategies";
+import {
+  WITHDRAWAL_ROUTING_MODE_LABELS,
+  WITHDRAWAL_ROUTING_MODE_DESCRIPTIONS,
+  DEFAULT_WITHDRAWAL_ROUTING_MODE,
+} from "@/lib/config/withdrawal-routing";
+
+type RoutingModeLiteral = "bracket_filling" | "waterfall" | "percentage";
 /** Shared small heading for the config sub-sections below. (Formerly lived
  *  in overrides-panel.tsx alongside a since-deleted unified panel; that
  *  file's only remaining export, so folded in here — its one consumer.) */
@@ -125,10 +132,17 @@ type DecumulationConfigProps = {
   personFilterName: string;
   showDecumConfig: boolean;
   setShowDecumConfig: (v: boolean) => void;
-  withdrawalRoutingMode: "bracket_filling" | "waterfall" | "percentage";
-  setWithdrawalRoutingMode: (
-    v: "bracket_filling" | "waterfall" | "percentage",
-  ) => void;
+  withdrawalRoutingMode: RoutingModeLiteral;
+  setWithdrawalRoutingMode: (v: RoutingModeLiteral) => void;
+  /** Whether the user has actually clicked a mode button this session —
+   *  see use-projection-form-state.ts's docblock. Gates which mode this
+   *  panel DISPLAYS (the toggle highlight, the sub-control shown, the
+   *  "customizing your plan" note) — NOT what gets sent to the engine
+   *  (that's use-projection-queries.ts's job, independently). Untouched,
+   *  `withdrawalRoutingMode` itself is a meaningless initial literal (see
+   *  that hook) — this component must derive its own display value from
+   *  `persistedWithdrawalRoutingMode` instead of trusting it directly. */
+  withdrawalRoutingModeTouched: boolean;
   withdrawalOrder: AccountCategory[];
   setWithdrawalOrder: (v: AccountCategory[]) => void;
   withdrawalSplits: Record<AccountCategory, number>;
@@ -148,6 +162,17 @@ type DecumulationConfigProps = {
    *  routing-override panel) so it's visible right next to bracket_filling's
    *  other routing controls. */
   discretionaryWithdrawalOrder?: string | null;
+  /** The household's PERSISTED routing-mode default
+   *  (`retirement_settings.withdrawal_routing_mode`) — same "edited on the
+   *  settings page" pattern as `discretionaryWithdrawalOrder` above, but
+   *  NOT purely read-only text here: this component derives `displayedMode`
+   *  from it (falling back to `withdrawalRoutingMode` only once
+   *  `withdrawalRoutingModeTouched`), so an untouched session shows the
+   *  real plan default — not a hardcoded literal — in the toggle
+   *  highlight, the sub-control shown, and the summary text. What's SENT
+   *  to the engine stays independently gated on `touched` in
+   *  use-projection-queries.ts; this prop only affects what's displayed. */
+  persistedWithdrawalRoutingMode?: string | null;
   enableAcaAwareness?: boolean;
   enableIrmaaAwareness?: boolean;
 };
@@ -162,6 +187,7 @@ export function DecumulationConfig({
   setShowDecumConfig,
   withdrawalRoutingMode,
   setWithdrawalRoutingMode,
+  withdrawalRoutingModeTouched,
   withdrawalOrder,
   setWithdrawalOrder,
   withdrawalSplits,
@@ -170,6 +196,7 @@ export function DecumulationConfig({
   setWithdrawalTaxPref,
   activeSpendingStrategy,
   discretionaryWithdrawalOrder,
+  persistedWithdrawalRoutingMode,
   enableAcaAwareness,
   enableIrmaaAwareness,
 }: DecumulationConfigProps) {
@@ -177,19 +204,35 @@ export function DecumulationConfig({
     "fixed") as WithdrawalStrategyType;
   const strategyCfg = WITHDRAWAL_STRATEGY_CONFIG[strategyKey];
   const isDynamic = strategyKey !== "fixed";
-  const modeLabel =
-    withdrawalRoutingMode === "bracket_filling"
-      ? "Bracket Filling"
-      : withdrawalRoutingMode === "waterfall"
-        ? "Waterfall"
-        : "Percentage";
-
-  const modeDescription =
-    withdrawalRoutingMode === "bracket_filling"
-      ? "Tax-optimal: Traditional up to bracket ceiling, then whichever of Roth or Brokerage (graduated LTCG) costs less that year, HSA last. Includes RMDs, SS taxation, Roth conversions, and IRMAA/ACA awareness."
-      : withdrawalRoutingMode === "waterfall"
-        ? "Drain accounts in priority order. Customize the order below."
-        : "Split withdrawals by fixed percentages across accounts.";
+  const persistedModeLabel =
+    persistedWithdrawalRoutingMode &&
+    persistedWithdrawalRoutingMode in WITHDRAWAL_ROUTING_MODE_LABELS
+      ? WITHDRAWAL_ROUTING_MODE_LABELS[
+          persistedWithdrawalRoutingMode as keyof typeof WITHDRAWAL_ROUTING_MODE_LABELS
+        ]
+      : null;
+  const persistedMode: RoutingModeLiteral =
+    persistedWithdrawalRoutingMode &&
+    persistedWithdrawalRoutingMode in WITHDRAWAL_ROUTING_MODE_LABELS
+      ? (persistedWithdrawalRoutingMode as RoutingModeLiteral)
+      : DEFAULT_WITHDRAWAL_ROUTING_MODE;
+  // What this panel actually SHOWS — the real plan default until the user
+  // clicks a mode button this session, then their choice (advisor-caught,
+  // 2026-09-05: `withdrawalRoutingMode` itself is a meaningless initial
+  // literal when untouched — see use-projection-form-state.ts — so
+  // rendering the toggle/sub-controls straight off it showed a household
+  // on a non-default mode the WRONG editor, e.g. hid the Withdrawal Order
+  // editor from someone actually running Waterfall). This is
+  // display-only; what's SENT to the engine is still gated on `touched`
+  // in use-projection-queries.ts, independently, so cache identity is
+  // untouched by this.
+  const displayedMode: RoutingModeLiteral = withdrawalRoutingModeTouched
+    ? withdrawalRoutingMode
+    : persistedMode;
+  const modeLabel = WITHDRAWAL_ROUTING_MODE_LABELS[displayedMode];
+  const modeDescription = WITHDRAWAL_ROUTING_MODE_DESCRIPTIONS[displayedMode];
+  const isOverridingPlanDefault =
+    withdrawalRoutingModeTouched && displayedMode !== persistedMode;
 
   // bracket_filling's Phase 1 only ever consults the
   // Traditional-preference subset of withdrawalOrder (401k/403b/IRA) —
@@ -202,9 +245,9 @@ export function DecumulationConfig({
 
   // Compact order display for collapsed view
   const orderSummary =
-    withdrawalRoutingMode === "bracket_filling"
+    displayedMode === "bracket_filling"
       ? `${tradPreferenceOrder.map((c) => getAccountTypeConfig(c).displayLabel).join(" → ")} → ${taxTypeLabel("taxFree")}/Brokerage/HSA (cost-ranked)`
-      : withdrawalRoutingMode === "waterfall"
+      : displayedMode === "waterfall"
         ? withdrawalOrder
             .map((c) => getAccountTypeConfig(c).displayLabel)
             .join(" → ")
@@ -261,18 +304,17 @@ export function DecumulationConfig({
           <div className="flex items-center gap-2">
             <div className="bg-surface-primary inline-flex rounded-md border p-0.5">
               {(
-                [
-                  ["bracket_filling", "Bracket Filling"],
-                  ["waterfall", "Waterfall"],
-                  ["percentage", "Percentage"],
-                ] as const
+                Object.entries(WITHDRAWAL_ROUTING_MODE_LABELS) as [
+                  "bracket_filling" | "waterfall" | "percentage",
+                  string,
+                ][]
               ).map(([key, label]) => (
                 <button
                   key={key}
                   type="button"
                   onClick={() => setWithdrawalRoutingMode(key)}
                   className={`rounded px-3 py-1.5 text-xs font-medium transition-colors ${
-                    withdrawalRoutingMode === key
+                    displayedMode === key
                       ? "bg-indigo-600 text-white shadow-sm"
                       : "text-muted hover:text-secondary"
                   }`}
@@ -283,9 +325,19 @@ export function DecumulationConfig({
             </div>
             <HelpTip text={modeDescription} />
           </div>
+          {persistedModeLabel != null && (
+            <p className="text-caption text-faint">
+              Your plan&rsquo;s saved default is{" "}
+              <span className="font-medium">{persistedModeLabel}</span> (Taxes
+              in Retirement).
+              {isOverridingPlanDefault
+                ? " The selection above only customizes it for this session — it isn't saved."
+                : ""}
+            </p>
+          )}
 
           {/* Order (waterfall) */}
-          {withdrawalRoutingMode === "waterfall" && (
+          {displayedMode === "waterfall" && (
             <div className="bg-surface-sunken rounded-lg p-3">
               <SectionHeader
                 title="Withdrawal Order"
@@ -302,7 +354,7 @@ export function DecumulationConfig({
               Traditional up to the bracket cap from
               401k/403b/IRA in THIS order before anything else; previously
               hardcoded, now user-editable like the other two modes. */}
-          {withdrawalRoutingMode === "bracket_filling" && (
+          {displayedMode === "bracket_filling" && (
             <div className="bg-surface-sunken rounded-lg p-3">
               <SectionHeader
                 title="Traditional Account Order"
@@ -342,7 +394,7 @@ export function DecumulationConfig({
           )}
 
           {/* Splits (percentage) */}
-          {withdrawalRoutingMode === "percentage" && (
+          {displayedMode === "percentage" && (
             <div className="bg-surface-sunken rounded-lg p-3">
               <SectionHeader
                 title="Withdrawal Splits"
@@ -388,7 +440,7 @@ export function DecumulationConfig({
             </div>
           )}
 
-          {withdrawalRoutingMode !== "bracket_filling" && (
+          {displayedMode !== "bracket_filling" && (
             <div className="bg-surface-sunken rounded-lg p-3">
               <SectionHeader
                 title="Tax Preference per Account"

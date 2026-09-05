@@ -105,6 +105,9 @@ const retirementSettingsInput = z.object({
   discretionaryWithdrawalOrder: z
     .enum(["roth_first", "brokerage_first"])
     .optional(),
+  withdrawalRoutingMode: z
+    .enum(["bracket_filling", "waterfall", "percentage"])
+    .optional(),
   gkUpperGuardrail: zDecimal.optional(),
   gkLowerGuardrail: zDecimal.optional(),
   gkIncreasePct: zDecimal.optional(),

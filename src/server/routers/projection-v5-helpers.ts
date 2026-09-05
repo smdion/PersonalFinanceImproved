@@ -24,6 +24,8 @@ import { getStressTestScenarios } from "@/lib/pure/stress-test";
 import { roundToCents } from "@/lib/utils/math";
 import { toNumber } from "@/server/helpers";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
+import type { RoutingMode } from "@/lib/calculators/types";
+import { DEFAULT_WITHDRAWAL_ROUTING_MODE } from "@/lib/config/withdrawal-routing";
 
 type DbType = typeof db;
 
@@ -184,6 +186,12 @@ interface StressTestRunInput {
   activeStrategy: WithdrawalStrategyType;
   distributionTaxRates: ProjectionInput["decumulationDefaults"]["distributionTaxRates"];
   avgRetirementAge: number;
+  /** Household default for WHICH accounts fund a withdrawal — read from
+   *  `retirement_settings.withdrawal_routing_mode`, same field
+   *  `buildDecumulationDefaults` falls back to. Stress-test scenarios vary
+   *  return rate / inflation / withdrawal rate only, so this should be the
+   *  household's real routing choice, not a hardcoded one. */
+  withdrawalRoutingMode?: string | null;
 }
 
 export interface StressTestScenarioResult {
@@ -213,8 +221,12 @@ export function runStressTestScenarios(
     activeStrategy,
     distributionTaxRates,
     avgRetirementAge,
+    withdrawalRoutingMode,
   } = input;
   const stressScenarios = getStressTestScenarios();
+  const resolvedRoutingMode =
+    (withdrawalRoutingMode as RoutingMode | null | undefined) ??
+    DEFAULT_WITHDRAWAL_ROUTING_MODE;
 
   return stressScenarios.map((scenario) => {
     const flatReturnRates: { label: string; rate: number }[] = [];
@@ -228,7 +240,7 @@ export function runStressTestScenarios(
 
     const decumulationDefaults = {
       withdrawalRate: scenario.withdrawalRate,
-      withdrawalRoutingMode: "bracket_filling" as const,
+      withdrawalRoutingMode: resolvedRoutingMode,
       withdrawalOrder: getDefaultDecumulationOrder() as AccountCategory[],
       withdrawalSplits: { ...CONFIG_WITHDRAWAL_SPLITS } as Record<
         AccountCategory,

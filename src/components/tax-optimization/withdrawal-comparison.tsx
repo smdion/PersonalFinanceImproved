@@ -3,13 +3,25 @@
 /**
  * Side-by-side lifetime-tax comparison of withdrawal-sequencing
  * strategies (roadmap #2). Runs `compareWithdrawalStrategies` with three
- * presets that are cleanly expressible through `withdrawalRoutingMode` +
- * `withdrawalOrder`:
- *  - Traditional first  → waterfall, pre-tax categories drained first
- *  - Brokerage first    → waterfall, taxable drained first
- *  - Tax-optimized      → bracket_filling (the engine's dynamic mode)
+ * fixed presets that are cleanly expressible through `withdrawalRoutingMode`
+ * + `withdrawalOrder`:
+ *  - Traditional first → waterfall, pre-tax categories drained first
+ *  - Brokerage first   → waterfall, taxable drained first
+ *  - Bracket Filling   → bracket_filling (the engine's dynamic mode) —
+ *    labeled from the SAME `WITHDRAWAL_ROUTING_MODE_LABELS` map the
+ *    Retirement page's Withdrawal Routing panel and the Taxes-in-Retirement
+ *    profile section use. This used to be hardcoded here as "Tax-optimized"
+ *    — a name that appeared nowhere else, so a household that saw it win
+ *    had no way to find or set it on their profile.
  * ("Roth first" is deliberately omitted — it needs a tax-preference
  * override, not a category order, which this procedure doesn't take.)
+ *
+ * The server also returns a 4th row, "Your current plan" (`isCurrentPlan`)
+ * — the household's REAL resolved routing mode (session override, else the
+ * persisted profile default), scored the identical way. It can coincide
+ * with one of the three presets or differ from all of them (e.g. a
+ * household on a custom waterfall order); either way it's the household's
+ * actual plan, not a guess matched by mode string.
  */
 import type { RouterInputs } from "@/lib/trpc";
 import { trpc } from "@/lib/trpc";
@@ -19,6 +31,7 @@ import {
   getDefaultDecumulationOrder,
   isOverflowTarget,
 } from "@/lib/config/account-types";
+import { WITHDRAWAL_ROUTING_MODE_LABELS } from "@/lib/config/withdrawal-routing";
 
 type Selection = Partial<
   Pick<
@@ -44,7 +57,10 @@ const STRATEGIES: RouterInputs["projection"]["compareWithdrawalStrategies"]["str
       mode: "waterfall",
       order: BROKERAGE_FIRST_ORDER,
     },
-    { label: "Tax-optimized", mode: "bracket_filling" },
+    {
+      label: WITHDRAWAL_ROUTING_MODE_LABELS.bracket_filling,
+      mode: "bracket_filling",
+    },
   ];
 
 export function WithdrawalComparison({ selection }: { selection: Selection }) {
@@ -88,11 +104,20 @@ export function WithdrawalComparison({ selection }: { selection: Selection }) {
               <tr
                 key={s.label}
                 className={
-                  s.label === best ? "bg-green-50 font-medium" : undefined
+                  s.label === best
+                    ? "bg-green-50 font-medium"
+                    : "isCurrentPlan" in s && s.isCurrentPlan
+                      ? "bg-slate-50"
+                      : undefined
                 }
               >
                 <td className="px-2 py-1.5 text-left">
                   {s.label}
+                  {"isCurrentPlan" in s && s.isCurrentPlan && (
+                    <span className="ml-1 text-[10px] text-slate-600">
+                      your plan
+                    </span>
+                  )}
                   {s.label === best && (
                     <span className="ml-1 text-[10px] text-green-700">
                       lowest

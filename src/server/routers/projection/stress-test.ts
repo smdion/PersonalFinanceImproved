@@ -84,6 +84,7 @@ export const stressTestRouter = createTRPCRouter({
         activeStrategy,
         distributionTaxRates,
         avgRetirementAge,
+        withdrawalRoutingMode: settings.withdrawalRoutingMode,
       });
 
       return {

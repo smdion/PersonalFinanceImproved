@@ -28,6 +28,12 @@ import type {
   IsEditable,
 } from "./types";
 import { buildSettingsPatch } from "./settings-patch";
+import {
+  WITHDRAWAL_ROUTING_MODES,
+  WITHDRAWAL_ROUTING_MODE_LABELS,
+  WITHDRAWAL_ROUTING_MODE_DESCRIPTIONS,
+  DEFAULT_WITHDRAWAL_ROUTING_MODE,
+} from "@/lib/config/withdrawal-routing";
 
 /** Shape of `computeWithdrawalBracketOptimizer`'s result — mirrored here
  *  (not imported from @/server/*, same reasoning as types.ts's docblock)
@@ -59,9 +65,10 @@ export function TaxesSection({
 
   // Multi-year withdrawal-policy optimizer, Phase 4 — live recommendation
   // next to the Bracket Ceiling control below. Not gated on
-  // withdrawalRoutingMode (this Settings type doesn't carry that field —
-  // it's a Projection-card-local override, see decumulation-config.tsx)
-  // and not gated on enableRothConversions either: rothBracketTarget also
+  // withdrawalRoutingMode (Settings DOES carry that field now — the
+  // persisted default below — but this recommendation is about
+  // rothBracketTarget, a genuinely separate lever) and not gated on
+  // enableRothConversions either: rothBracketTarget also
   // governs RMD smoothing's ceiling and (when routing IS bracket_filling,
   // the site-wide default) distribution routing itself, so the
   // recommendation is relevant regardless of which toggles happen to be on.
@@ -347,6 +354,39 @@ export function TaxesSection({
                   though those gains are taxed at 0% federally.
                 </div>
               )}
+          </div>
+        </div>
+        <div>
+          <span className="text-muted">
+            Withdrawal Routing
+            <HelpTip
+              text={`WHICH accounts fund a year's withdrawal (separate from your spending strategy above, which decides HOW MUCH). ${WITHDRAWAL_ROUTING_MODE_DESCRIPTIONS.bracket_filling} This is your saved default — the Retirement page's Configure toggle can customize it for one session without changing what's saved here.`}
+            />
+          </span>
+          <div className="font-medium">
+            <select
+              value={
+                settings?.withdrawalRoutingMode ??
+                DEFAULT_WITHDRAWAL_ROUTING_MODE
+              }
+              onChange={(e) => {
+                if (!settings) return;
+                upsertSettings.mutate(
+                  buildSettingsPatch(settings, {
+                    withdrawalRoutingMode: e.target.value,
+                  }),
+                );
+              }}
+              disabled={!isEditable}
+              className="rounded border px-1.5 py-0.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {WITHDRAWAL_ROUTING_MODES.map((mode) => (
+                <option key={mode} value={mode}>
+                  {WITHDRAWAL_ROUTING_MODE_LABELS[mode]}
+                  {mode === DEFAULT_WITHDRAWAL_ROUTING_MODE ? " (default)" : ""}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </div>

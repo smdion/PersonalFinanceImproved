@@ -1,0 +1,1 @@
+ALTER TABLE `retirement_settings` ADD `withdrawal_routing_mode` text DEFAULT 'bracket_filling' NOT NULL;

@@ -45,6 +45,7 @@ export function useProjectionQueries(
   const salaryActiveFields = useActiveSalaries();
   const {
     withdrawalRoutingMode,
+    withdrawalRoutingModeTouched,
     withdrawalOrder,
     withdrawalSplits,
     withdrawalTaxPref,
@@ -87,7 +88,13 @@ export function useProjectionQueries(
         salaryActiveFields.length > 0 ? salaryActiveFields : undefined,
       decumulationDefaults: {
         withdrawalRate: withdrawalRate / 100,
-        withdrawalRoutingMode,
+        // Omitted (not just left at its "bracket_filling" display default)
+        // until the user actually touches the Configure toggle — see
+        // use-projection-form-state.ts's docblock on
+        // withdrawalRoutingModeTouched for why this has to be an omission,
+        // not a value, to keep this byte-identical to the dashboard tile's
+        // peek query and still resolve the household's real setting.
+        ...(withdrawalRoutingModeTouched ? { withdrawalRoutingMode } : {}),
         withdrawalOrder,
         withdrawalSplits,
         withdrawalTaxPreference: withdrawalTaxPref,
@@ -123,6 +130,7 @@ export function useProjectionQueries(
       salaryActiveFields,
       withdrawalRate,
       withdrawalRoutingMode,
+      withdrawalRoutingModeTouched,
       withdrawalOrder,
       withdrawalSplits,
       withdrawalTaxPref,
@@ -164,16 +172,17 @@ export function useProjectionQueries(
   // narrative function, not two independently-worded explanations.
   // `debouncedBaseInput` (not `debouncedInput`) matches coastFireQuery's
   // own precedent above: always the baseline plan, not a scenario
-  // override. Only relevant under bracket_filling — Waterfall mode has no
-  // bracket target to explain — so gated off otherwise to avoid an
-  // unnecessary multi-projection-run query for households not using it.
+  // override. NOT gated on `withdrawalRoutingMode` — deliberately matches
+  // retirement-profile-tab.tsx's Taxes settings section, which never
+  // gated this either: `rothBracketTarget` also governs Roth conversions
+  // and RMD smoothing independent of routing mode, so the recommendation
+  // stays relevant even in Waterfall mode. (A prior version of this query
+  // DID gate on bracket_filling — an inconsistency with the Taxes
+  // section's own documented reasoning, not a deliberate difference.)
   const bracketOptimizerQuery =
     trpc.projection.computeWithdrawalBracketOptimizer.useQuery(
       debouncedBaseInput,
-      {
-        enabled: withdrawalRoutingMode === "bracket_filling",
-        staleTime: 5 * 60 * 1000,
-      },
+      { staleTime: 5 * 60 * 1000 },
     );
   const bracketOptimizerResult = bracketOptimizerQuery.data?.result ?? null;
 

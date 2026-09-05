@@ -32,6 +32,15 @@ function baseProps(overrides: Record<string, unknown> = {}) {
     setShowDecumConfig: vi.fn(),
     withdrawalRoutingMode: "bracket_filling" as const,
     setWithdrawalRoutingMode: vi.fn(),
+    // These tests exercise "given this mode, the panel shows Y" — that's
+    // the touched/session-override read, not the untouched/plan-default
+    // fallback (see decumulation-config.tsx's `displayedMode` — untouched
+    // ignores `withdrawalRoutingMode` entirely and shows
+    // `persistedWithdrawalRoutingMode` instead). Defaulting this true
+    // keeps every existing "renders X for mode Y" test meaning what it
+    // says; the untouched-fallback behavior itself is covered separately
+    // below.
+    withdrawalRoutingModeTouched: true,
     withdrawalOrder: getDefaultDecumulationOrder(),
     setWithdrawalOrder: vi.fn(),
     withdrawalSplits,
@@ -340,5 +349,80 @@ describe("DecumulationConfig", () => {
       />,
     );
     expect(screen.queryByText(/FROM WHICH accounts/)).not.toBeInTheDocument();
+  });
+});
+
+describe("DecumulationConfig — untouched display falls back to the plan's persisted default", () => {
+  it("shows the Withdrawal Order editor (not Traditional Account Order) for a household persisted on waterfall, even though the session state literal is still 'bracket_filling'", () => {
+    render(
+      <DecumulationConfig
+        {...baseProps({
+          withdrawalRoutingMode: "bracket_filling",
+          withdrawalRoutingModeTouched: false,
+          persistedWithdrawalRoutingMode: "waterfall",
+          showDecumConfig: true,
+        })}
+      />,
+    );
+    // The bug this guards: rendering straight off `withdrawalRoutingMode`
+    // (untouched, a meaningless initial literal) showed the WRONG editor —
+    // bracket_filling's "Traditional Account Order" for a household
+    // actually running waterfall, hiding the one editor that controls
+    // their real run.
+    expect(screen.getByText("Withdrawal Order")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Traditional Account Order"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("highlights the persisted mode's button, not bracket_filling, when untouched", () => {
+    render(
+      <DecumulationConfig
+        {...baseProps({
+          withdrawalRoutingMode: "bracket_filling",
+          withdrawalRoutingModeTouched: false,
+          persistedWithdrawalRoutingMode: "percentage",
+          showDecumConfig: true,
+        })}
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: "Percentage" }).className,
+    ).toContain("bg-indigo-600");
+    expect(
+      screen.getByRole("button", { name: "Bracket Filling" }).className,
+    ).not.toContain("bg-indigo-600");
+  });
+
+  it("does not claim the session is customizing anything when untouched", () => {
+    render(
+      <DecumulationConfig
+        {...baseProps({
+          withdrawalRoutingMode: "bracket_filling",
+          withdrawalRoutingModeTouched: false,
+          persistedWithdrawalRoutingMode: "waterfall",
+          showDecumConfig: true,
+        })}
+      />,
+    );
+    expect(
+      screen.queryByText(/customizes it for this session/),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows the customizing-for-this-session note once the user actually picks a different mode", () => {
+    render(
+      <DecumulationConfig
+        {...baseProps({
+          withdrawalRoutingMode: "percentage",
+          withdrawalRoutingModeTouched: true,
+          persistedWithdrawalRoutingMode: "waterfall",
+          showDecumConfig: true,
+        })}
+      />,
+    );
+    expect(
+      screen.getByText(/customizes it for this session/),
+    ).toBeInTheDocument();
   });
 });

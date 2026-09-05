@@ -105,6 +105,7 @@ export function ProjectionCard(props: {
   const {
     withdrawalRoutingMode,
     setWithdrawalRoutingMode,
+    withdrawalRoutingModeTouched,
     withdrawalOrder,
     setWithdrawalOrder,
     withdrawalSplits,
@@ -1375,6 +1376,7 @@ export function ProjectionCard(props: {
               setShowDecumConfig={setShowDecumConfig}
               withdrawalRoutingMode={withdrawalRoutingMode}
               setWithdrawalRoutingMode={setWithdrawalRoutingMode}
+              withdrawalRoutingModeTouched={withdrawalRoutingModeTouched}
               withdrawalOrder={withdrawalOrder}
               setWithdrawalOrder={setWithdrawalOrder}
               withdrawalSplits={withdrawalSplits}
@@ -1384,6 +1386,9 @@ export function ProjectionCard(props: {
               activeSpendingStrategy={engineSettings?.withdrawalStrategy}
               discretionaryWithdrawalOrder={
                 engineSettings?.discretionaryWithdrawalOrder
+              }
+              persistedWithdrawalRoutingMode={
+                engineSettings?.withdrawalRoutingMode
               }
               enableAcaAwareness={engineSettings?.enableAcaAwareness}
               enableIrmaaAwareness={engineSettings?.enableIrmaaAwareness}

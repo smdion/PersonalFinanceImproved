@@ -397,7 +397,15 @@ describe("defaults", () => {
    */
   it("defaultDecumulationConfig matches the documented default shape", () => {
     const config = defaultDecumulationConfig();
-    expect(config.withdrawalRoutingMode).toBe("bracket_filling");
+    // No `withdrawalRoutingMode` key (advisor-caught, 2026-09-05) — that
+    // field is no longer a request-level default; a caller must OMIT it
+    // to reach the household's persisted `retirement_settings
+    // .withdrawal_routing_mode` (buildDecumulationDefaults). This
+    // function returning it hardcoded here was the bug: the dashboard
+    // tile's peek query spread this object unconditionally, so it would
+    // silently keep sending "bracket_filling" and overrule a household's
+    // real "waterfall"/"percentage" choice.
+    expect(config).not.toHaveProperty("withdrawalRoutingMode");
     expect(config.withdrawalOrder).toEqual(getDefaultDecumulationOrder());
     expect(config.withdrawalSplits).toEqual(DEFAULT_WITHDRAWAL_SPLITS);
     for (const cat of categoriesWithTaxPreference()) {

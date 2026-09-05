@@ -8,6 +8,13 @@
       "when": 1788406194841,
       "tag": "0000_v8_initial_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1788643615870,
+      "tag": "0001_cool_frank_castle",
+      "breakpoints": true
     }
   ]
 }

@@ -16,6 +16,7 @@ import {
   DEFAULT_MC_INFLATION_RISK,
   DEFAULT_ENDOWMENT_ROLLING_YEARS,
 } from "@/lib/constants";
+import { DEFAULT_WITHDRAWAL_ROUTING_MODE } from "@/lib/config/withdrawal-routing";
 import type {
   AccountCategory,
   DecumulationDefaults,
@@ -85,9 +86,16 @@ export const accumulationOverrideSchema = z
 export const decumulationDefaultsInputSchema = z
   .object({
     withdrawalRate: z.number().min(0).max(1).default(DEFAULT_WITHDRAWAL_RATE),
+    // Deliberately `.optional()`, NOT `.default("bracket_filling")` — a
+    // default here would make "the caller omitted this" indistinguishable
+    // from "the caller explicitly chose bracket_filling," which would
+    // permanently hide the household's own `retirement_settings
+    // .withdrawal_routing_mode` behind an unreachable request-level
+    // default. `buildDecumulationDefaults` below is where the real
+    // fallback (client override > DB setting > "bracket_filling") lives.
     withdrawalRoutingMode: z
       .enum(["bracket_filling", "waterfall", "percentage"])
-      .default("bracket_filling"),
+      .optional(),
     withdrawalOrder: z
       .array(z.enum(accountCategoryEnum()))
       .default(getDefaultDecumulationOrder()),
@@ -98,9 +106,13 @@ export const decumulationDefaultsInputSchema = z
       .record(z.string(), z.enum(["traditional", "roth"]))
       .default({}),
   })
+  // NOTE: no `withdrawalRoutingMode` key in this object-level default —
+  // same reason as the field-level `.optional()` above. A caller that
+  // omits `decumulationDefaults` entirely (Tax Optimization's comparison
+  // procedures) must still reach the DB fallback, not get "bracket_filling"
+  // baked in here a second way.
   .default({
     withdrawalRate: DEFAULT_WITHDRAWAL_RATE,
-    withdrawalRoutingMode: "bracket_filling",
     withdrawalOrder: getDefaultDecumulationOrder(),
     withdrawalSplits: { ...CONFIG_WITHDRAWAL_SPLITS },
     withdrawalTaxPreference: {},
@@ -201,6 +213,7 @@ export function buildDecumulationDefaults(
   settings: Parameters<typeof buildStrategyParams>[0] & {
     withdrawalRate: string | null;
     withdrawalStrategy: string | null;
+    withdrawalRoutingMode?: string | null;
     rmdExcessHandling?: string | null;
     qcdMaximize?: boolean | null;
     rmdSmoothingEnabled?: boolean | null;
@@ -208,7 +221,7 @@ export function buildDecumulationDefaults(
     discretionaryWithdrawalOrder?: string | null;
   },
   clientDefaults: {
-    withdrawalRoutingMode: string;
+    withdrawalRoutingMode?: string;
     withdrawalOrder: string[];
     withdrawalSplits: Record<string, number>;
     withdrawalTaxPreference: Record<string, string>;
@@ -217,8 +230,17 @@ export function buildDecumulationDefaults(
 ): DecumulationDefaults {
   return {
     withdrawalRate: toNumber(settings.withdrawalRate),
-    withdrawalRoutingMode:
-      clientDefaults.withdrawalRoutingMode as DecumulationDefaults["withdrawalRoutingMode"],
+    // Client override wins when the caller sent one (the Retirement page's
+    // per-session Configure toggle, once the user actively touches it);
+    // otherwise fall back to the household's persisted
+    // `retirement_settings.withdrawal_routing_mode`; "bracket_filling" only
+    // if even that's somehow missing (pre-migration row). This is the ONE
+    // place that resolves the mode — every caller (computeProjection,
+    // Monte Carlo, Tax Optimization) goes through this function so they
+    // can't independently drift on which value wins.
+    withdrawalRoutingMode: (clientDefaults.withdrawalRoutingMode ??
+      settings.withdrawalRoutingMode ??
+      DEFAULT_WITHDRAWAL_ROUTING_MODE) as DecumulationDefaults["withdrawalRoutingMode"],
     withdrawalOrder: clientDefaults.withdrawalOrder as AccountCategory[],
     withdrawalSplits: clientDefaults.withdrawalSplits as Record<
       AccountCategory,

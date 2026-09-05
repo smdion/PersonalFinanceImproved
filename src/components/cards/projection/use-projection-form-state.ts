@@ -1,9 +1,10 @@
 /** Form and UI state for the projection card — withdrawal config, override forms, view toggles, and MC settings. Overrides are loaded from DB on mount. */
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import type { AccountCategory } from "@/lib/calculators/types";
 import { trpc } from "@/lib/trpc";
 import { type AssetClassOverride } from "@/components/cards/mc-simulation-assumptions";
 import { defaultDecumulationConfig } from "@/lib/config/account-types";
+import { DEFAULT_WITHDRAWAL_ROUTING_MODE } from "@/lib/config/withdrawal-routing";
 import type {
   AccumOverrideForm,
   DecumOverrideForm,
@@ -20,9 +21,34 @@ export function useProjectionFormState() {
   // SAME shared default the dashboard Retirement tile's cache-key-matching
   // "peek" queries reproduce, so the two can't independently drift the way
   // they had before this was consolidated.
-  const [withdrawalRoutingMode, setWithdrawalRoutingMode] = useState<
+  // `withdrawalRoutingModeTouched` gates whether this session's selection
+  // is actually SENT as a decumulationDefaults override (use-projection-
+  // queries.ts's baseSharedInput) — untouched, the query omits the field
+  // entirely so the server resolves the household's persisted
+  // `retirement_settings.withdrawal_routing_mode` instead
+  // (buildDecumulationDefaults, server/routers/projection/_shared.ts).
+  // This state's own initial value is `DEFAULT_WITHDRAWAL_ROUTING_MODE`
+  // (NOT the fetched settings value) deliberately — it's never SENT until
+  // touched anyway, so what it starts at doesn't affect the engine input;
+  // `decumulation-config.tsx` derives its own display-only value (from the
+  // real persisted setting) for what the toggle/sub-controls actually
+  // show. `defaultDecumulationConfig()` (account-types.ts) deliberately
+  // does NOT carry this field any more — see that function's docblock for
+  // the bug this state used to cause (the dashboard tile's "peek" query
+  // sending a hardcoded "bracket_filling" that silently overruled a
+  // household's real "waterfall"/"percentage" setting).
+  const [withdrawalRoutingMode, setWithdrawalRoutingModeRaw] = useState<
     "bracket_filling" | "waterfall" | "percentage"
-  >(() => defaultDecumulationConfig().withdrawalRoutingMode);
+  >(DEFAULT_WITHDRAWAL_ROUTING_MODE);
+  const [withdrawalRoutingModeTouched, setWithdrawalRoutingModeTouched] =
+    useState(false);
+  const setWithdrawalRoutingMode = useCallback(
+    (v: "bracket_filling" | "waterfall" | "percentage") => {
+      setWithdrawalRoutingModeRaw(v);
+      setWithdrawalRoutingModeTouched(true);
+    },
+    [],
+  );
   const [withdrawalOrder, setWithdrawalOrder] = useState<AccountCategory[]>(
     () => defaultDecumulationConfig().withdrawalOrder,
   );
@@ -205,6 +231,7 @@ export function useProjectionFormState() {
   return {
     withdrawalRoutingMode,
     setWithdrawalRoutingMode,
+    withdrawalRoutingModeTouched,
     withdrawalOrder,
     setWithdrawalOrder,
     withdrawalSplits,

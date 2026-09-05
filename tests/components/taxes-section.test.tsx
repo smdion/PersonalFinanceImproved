@@ -150,3 +150,33 @@ describe("TaxesSection — withdrawal bracket optimizer recommendation", () => {
     expect(patch.rmdSmoothingMaxBracketTarget).toBe("0.22");
   });
 });
+
+describe("TaxesSection — Withdrawal Routing (persisted default)", () => {
+  it("defaults the select to Bracket Filling when the household has no setting yet", () => {
+    renderTaxesSection({ withdrawalRoutingMode: undefined });
+    const select = screen.getByDisplayValue(
+      "Bracket Filling (default)",
+    ) as HTMLSelectElement;
+    expect(select.value).toBe("bracket_filling");
+  });
+
+  it("reflects a persisted non-default mode", () => {
+    renderTaxesSection({ withdrawalRoutingMode: "waterfall" });
+    const select = screen.getByDisplayValue("Waterfall") as HTMLSelectElement;
+    expect(select.value).toBe("waterfall");
+  });
+
+  it("saves the chosen mode via upsertSettings, scoped to this profile", () => {
+    const { mutate, settings } = renderTaxesSection({
+      withdrawalRoutingMode: "bracket_filling",
+    });
+    const select = screen.getByDisplayValue("Bracket Filling (default)");
+    select.dispatchEvent(new Event("focus"));
+    (select as HTMLSelectElement).value = "percentage";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(mutate).toHaveBeenCalled();
+    const patch = mutate.mock.calls[0][0];
+    expect(patch.withdrawalRoutingMode).toBe("percentage");
+    expect(patch.profileId).toBe(settings.profileId);
+  });
+});

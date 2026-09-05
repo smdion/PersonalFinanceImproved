@@ -12,7 +12,7 @@
  * "Simulation" wording, never "Monte Carlo" (this is the deterministic
  * run). Values the user sets are "adjusted", never "overridden".
  */
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import type { RouterInputs } from "@/lib/trpc";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
@@ -33,14 +33,11 @@ export function RothExplorer({ selection }: { selection: Selection }) {
     { ...selection, mode: "optimize" as const },
     { placeholderData: (prev) => prev },
   );
-  const recommended =
-    optimize.data?.mode === "optimize" && optimize.data.result
-      ? optimize.data.result.recommendedTarget
-      : null;
-  const current =
-    optimize.data?.mode === "optimize" && optimize.data.result
-      ? optimize.data.result.currentTarget
-      : null;
+  const optResult =
+    optimize.data?.mode === "optimize" ? optimize.data.result : null;
+  const recommended = optResult?.recommendedTarget ?? null;
+  const current = optResult?.currentTarget ?? null;
+  const candidates = optResult?.candidates ?? [];
 
   // Explicit-schedule run only fires once a start year is chosen.
   const explicit = trpc.projection.rothConversionWhatIf.useQuery(
@@ -82,9 +79,76 @@ export function RothExplorer({ selection }: { selection: Selection }) {
           </p>
         ) : (
           <p className="text-muted mt-1">
-            No recommendation — your profile has no configured target, or no
-            candidate beats it.
+            {current != null
+              ? `Your configured ${formatPercent(current, 0)} ceiling already scores best of the candidates below.`
+              : "Your profile has no configured conversion ceiling — the candidates below are scored against converting nothing."}
           </p>
+        )}
+
+        {candidates.length > 0 && (
+          <div className="mt-3 overflow-x-auto">
+            <p className="text-faint mb-1 text-[11px]">
+              Every marginal bracket rate, scored on lifetime tax plus a
+              terminal-value charge for Traditional money left unconverted.
+              Ranked best first.
+            </p>
+            <table className="w-full border-collapse text-right text-xs tabular-nums">
+              <thead>
+                <tr className="border-strong text-muted border-b-2 text-[11px]">
+                  <th className="px-2 py-1.5 text-left">Ceiling</th>
+                  <th className="px-2 py-1.5">Lifetime tax</th>
+                  <th className="px-2 py-1.5">Traditional left</th>
+                  <th className="px-2 py-1.5">Net score</th>
+                  <th className="px-2 py-1.5 text-left"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {candidates.map((c, i) => {
+                  const isRecommended =
+                    recommended != null && c.target === recommended;
+                  const isCurrent = current != null && c.target === current;
+                  return (
+                    <tr
+                      key={c.target}
+                      className={`border-subtle border-b ${
+                        isRecommended ? "bg-emerald-50 font-medium" : ""
+                      }`}
+                    >
+                      <td className="px-2 py-1 text-left">
+                        {formatPercent(c.target, 0)}
+                      </td>
+                      <td className="px-2 py-1">
+                        {formatCurrency(c.lifetimeTax)}
+                      </td>
+                      <td className="px-2 py-1">
+                        {formatCurrency(c.traditionalEnd)}
+                      </td>
+                      <td className="px-2 py-1">{formatCurrency(c.netCost)}</td>
+                      <td className="px-2 py-1 text-left">
+                        <span className="flex flex-wrap gap-1">
+                          {i === 0 && !c.depleted && (
+                            <Tag className="bg-emerald-100 text-emerald-800">
+                              best
+                            </Tag>
+                          )}
+                          {isCurrent && (
+                            <Tag className="bg-slate-100 text-slate-700">
+                              your setting
+                            </Tag>
+                          )}
+                          {c.depleted && (
+                            <Tag className="bg-red-100 text-red-800">
+                              depletes
+                            </Tag>
+                          )}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
@@ -192,6 +256,22 @@ export function RothExplorer({ selection }: { selection: Selection }) {
         )}
       </div>
     </div>
+  );
+}
+
+function Tag({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className: string;
+}) {
+  return (
+    <span
+      className={`rounded px-1 py-0.5 text-[10px] font-medium ${className}`}
+    >
+      {children}
+    </span>
   );
 }
 
