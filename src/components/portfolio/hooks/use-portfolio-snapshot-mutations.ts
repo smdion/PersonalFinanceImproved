@@ -26,5 +26,20 @@ export function usePortfolioSnapshotMutations() {
 
   const resyncPush = trpc.sync.resyncPortfolioPush.useMutation();
 
-  return { deleteSnapshot, resyncPush, invalidateSnapshotQueries };
+  /** Edit one account's balance on the latest snapshot. The server
+   *  re-derives that year's performance figures and auto-resyncs the
+   *  corrected balances to the budget API (`apiSyncResult` on the
+   *  response). Latest-snapshot / non-finalized-year only — the server
+   *  rejects otherwise. */
+  const updateAccountBalance =
+    trpc.networth.portfolioSnapshots.updateAccount.useMutation({
+      onSuccess: invalidateSnapshotQueries,
+    });
+
+  return {
+    deleteSnapshot,
+    resyncPush,
+    updateAccountBalance,
+    invalidateSnapshotQueries,
+  };
 }

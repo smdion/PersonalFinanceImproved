@@ -21,6 +21,8 @@ import { taxTypeLabel, gainLossTextColor } from "@/lib/utils/colors";
 import { getDisplayConfig } from "@/lib/config/account-types";
 import dynamic from "next/dynamic";
 import { confirm } from "@/components/ui/confirm-dialog";
+import { InlineEdit } from "@/components/ui/inline-edit";
+import { toast } from "@/lib/hooks/use-toast";
 import { ContributionAccountsSettings } from "@/components/portfolio/contribution-accounts";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 import { NewSnapshotForm } from "@/components/portfolio/new-snapshot-form";
@@ -47,6 +49,7 @@ const PortfolioChart = dynamic(
 // ---------------------------------------------------------------------------
 
 type SnapshotAccountWithPerf = {
+  id: number;
   institution: string;
   taxType: string;
   accountType: string;
@@ -207,8 +210,72 @@ export function PortfolioContent() {
     sortCol: sortCol ?? undefined,
     sortDir: sortDir,
   });
-  const { deleteSnapshot, resyncPush, invalidateSnapshotQueries } =
-    usePortfolioSnapshotMutations();
+  const {
+    deleteSnapshot,
+    resyncPush,
+    updateAccountBalance,
+    invalidateSnapshotQueries,
+  } = usePortfolioSnapshotMutations();
+
+  /** Inline balance fix on the latest snapshot — the server re-derives
+   *  performance figures and auto-resyncs the corrected balances to the
+   *  budget API. Silent toast on success; a loud, retryable one on a sync
+   *  failure (the DB write already landed). */
+  const handleBalanceEdit = useCallback(
+    async (accountId: number, snapshotId: number, rawAmount: string) => {
+      const amount = rawAmount.replace(/[^0-9.]/g, "");
+      const n = Number(amount);
+      if (!amount || Number.isNaN(n) || n < 0) {
+        toast.error("Enter a valid balance.");
+        return;
+      }
+      try {
+        const res = await updateAccountBalance.mutateAsync({
+          id: accountId,
+          amount,
+        });
+        const sync = res.amountEdited ? res.apiSyncResult : undefined;
+        if (sync?.error) {
+          toast.error(
+            `Balance saved — but the budget-API sync failed: ${sync.error}`,
+            9000,
+            {
+              label: "Retry sync",
+              onClick: () => {
+                resyncPush
+                  .mutateAsync({ snapshotId, confirmNonLatest: false })
+                  .then((r) =>
+                    toast.success(
+                      `Synced — posted ${r.posted}, cleaned ${r.cleaned}.`,
+                    ),
+                  )
+                  .catch((e) =>
+                    toast.error(
+                      `Retry failed: ${e instanceof Error ? e.message : "unknown error"}`,
+                    ),
+                  );
+              },
+            },
+          );
+        } else if (sync?.pushed) {
+          toast.success(
+            `Balance updated — YNAB/Actual synced (posted ${sync.accountsPushed}` +
+              (sync.accountsSkipped
+                ? `, skipped ${sync.accountsSkipped}`
+                : "") +
+              ").",
+          );
+        } else {
+          toast.success("Balance updated.");
+        }
+      } catch (e) {
+        toast.error(
+          e instanceof Error ? e.message : "Couldn't update the balance.",
+        );
+      }
+    },
+    [updateAccountBalance, resyncPush],
+  );
 
   const snapshotDate = data?.snapshotDate;
 
@@ -616,6 +683,12 @@ export function PortfolioContent() {
                               <tr>
                                 <td colSpan={6} className="px-0 py-0">
                                   <div className="bg-surface-sunken px-8 py-2">
+                                    {isLatest && canEdit && (
+                                      <p className="text-faint mb-1.5 text-[11px]">
+                                        Click a balance to fix it — changes
+                                        re-sync to YNAB/Actual.
+                                      </p>
+                                    )}
                                     {groupByPerformanceAccount(
                                       snap.accounts,
                                     ).map((group) => (
@@ -633,23 +706,52 @@ export function PortfolioContent() {
                                           </span>
                                         </div>
                                         {/* Sub-rows */}
-                                        {group.accounts.map((a, ai) => {
+                                        {group.accounts.map((a) => {
                                           const subLabel = buildSubRowLabel(
                                             a,
                                             group,
                                           );
                                           return (
                                             <div
-                                              // eslint-disable-next-line react/no-array-index-key -- SnapshotAccountWithPerf has no ID; index breaks ties when accountType/ownerPersonId/subType collide within a group
-                                              key={`${a.accountType}-${a.ownerPersonId}-${a.subType}-${ai}`}
+                                              key={a.id}
                                               className="border-subtle flex items-baseline justify-between border-b py-0.5 pl-4"
                                             >
                                               <span className="text-muted text-xs">
                                                 {subLabel}
                                               </span>
-                                              <span className="text-secondary text-xs">
-                                                {formatCurrency(a.amount)}
-                                              </span>
+                                              {isLatest && canEdit ? (
+                                                <span
+                                                  onClick={(e) =>
+                                                    e.stopPropagation()
+                                                  }
+                                                >
+                                                  <InlineEdit
+                                                    value={String(a.amount)}
+                                                    type="number"
+                                                    className="text-secondary text-xs"
+                                                    formatDisplay={(v) =>
+                                                      formatCurrency(Number(v))
+                                                    }
+                                                    parseInput={(raw) =>
+                                                      raw.replace(
+                                                        /[^0-9.]/g,
+                                                        "",
+                                                      )
+                                                    }
+                                                    onSave={(v) =>
+                                                      handleBalanceEdit(
+                                                        a.id,
+                                                        snap.id,
+                                                        v,
+                                                      )
+                                                    }
+                                                  />
+                                                </span>
+                                              ) : (
+                                                <span className="text-secondary text-xs">
+                                                  {formatCurrency(a.amount)}
+                                                </span>
+                                              )}
                                             </div>
                                           );
                                         })}

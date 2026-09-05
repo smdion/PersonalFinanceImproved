@@ -173,6 +173,13 @@ vi.mock("@/lib/trpc", () => ({
         delete: {
           useMutation: () => ({ mutate: vi.fn(), isPending: false }),
         },
+        updateAccount: {
+          useMutation: () => ({
+            mutate: vi.fn(),
+            mutateAsync: vi.fn(),
+            isPending: false,
+          }),
+        },
         create: {
           useMutation: () => ({
             mutate: createMutate,
@@ -195,7 +202,11 @@ vi.mock("@/lib/trpc", () => ({
     },
     sync: {
       resyncPortfolioPush: {
-        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+        useMutation: () => ({
+          mutate: vi.fn(),
+          mutateAsync: vi.fn(),
+          isPending: false,
+        }),
       },
     },
   },

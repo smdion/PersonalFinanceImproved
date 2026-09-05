@@ -556,6 +556,7 @@ export const networthRouter = createTRPCRouter({
       const snapshotIds = pageSnaps.map((s) => s.id);
       const allAccounts = await ctx.db
         .select({
+          id: schema.portfolioAccounts.id,
           snapshotId: schema.portfolioAccounts.snapshotId,
           institution: schema.portfolioAccounts.institution,
           taxType: schema.portfolioAccounts.taxType,
@@ -604,6 +605,7 @@ export const networthRouter = createTRPCRouter({
           deltaPct: s.deltaPct,
           daysSincePrev: s.daysSincePrev,
           accounts: accounts.map((a) => ({
+            id: a.id,
             institution: a.institution,
             taxType: a.taxType,
             accountType: a.accountType,
