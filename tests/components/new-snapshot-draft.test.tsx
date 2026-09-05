@@ -1,6 +1,6 @@
 /**
  * NewSnapshotForm — local (browser) draft: resume prompt, reconcile,
- * clear-on-save. Feature B of SNAPSHOT-BALANCE-EDIT-AND-DRAFT.md.
+ * clear-on-save. Shipped v0.8.2.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";

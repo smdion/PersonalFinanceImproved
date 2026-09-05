@@ -46,7 +46,7 @@ function nextKey() {
 // The new-snapshot form has ~30 balance fields; a draft lets you stop
 // partway and resume. Keyed by snapshot date so starting a snapshot for a
 // new date never inherits a stale draft. One draft per date, per browser,
-// not shared across devices/users — see SNAPSHOT-BALANCE-EDIT-AND-DRAFT.md.
+// not shared across devices/users (accepted limitation, shipped v0.8.2).
 
 const DRAFT_PREFIX = "pf-snapshot-draft:";
 
