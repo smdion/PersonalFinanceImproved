@@ -219,4 +219,92 @@ describe("WithdrawalComparison", () => {
     expect(screen.getByText("Tax-optimized")).toBeInTheDocument();
     expect(screen.getByText("lowest")).toBeInTheDocument();
   });
+
+  it("annotates the preset that matches the household's real current plan", () => {
+    const terminalByTaxType = {
+      preTax: 1,
+      taxFree: 2,
+      afterTax: 3,
+      afterTaxBasis: 0,
+      hsa: 0,
+    };
+    compareQuery.mockReturnValue({
+      data: {
+        baselineLabel: "Your current plan",
+        strategies: [
+          {
+            label: "Your current plan",
+            mode: "bracket_filling",
+            withdrawalOrder: [],
+            isCurrentPlan: true,
+            lifetimeTax: 90000,
+            terminalByTaxType,
+            depletedYear: null,
+          },
+          {
+            label: "Traditional first",
+            mode: "waterfall",
+            lifetimeTax: 120000,
+            terminalByTaxType,
+            depletedYear: null,
+          },
+          {
+            label: "Bracket Filling",
+            mode: "bracket_filling",
+            // Config match (same mode) AND output match (same
+            // lifetimeTax/depletedYear as "Your current plan" above) —
+            // this is the row that should get the annotation.
+            lifetimeTax: 90000,
+            terminalByTaxType,
+            depletedYear: null,
+          },
+        ],
+      },
+      isLoading: false,
+    });
+    render(<WithdrawalComparison selection={{}} />);
+    expect(screen.getByText("(same as your current plan)")).toBeInTheDocument();
+    // "Traditional first" has a different mode AND different numbers — no
+    // annotation, and only one match should exist in the whole table.
+    expect(screen.getAllByText("(same as your current plan)")).toHaveLength(1);
+  });
+
+  it("does not annotate a preset that shares a mode but not the resolved order or the numbers", () => {
+    compareQuery.mockReturnValue({
+      data: {
+        baselineLabel: "Traditional first",
+        strategies: [
+          {
+            label: "Your current plan",
+            mode: "waterfall",
+            // Deliberately NOT one of the two waterfall presets' orders.
+            withdrawalOrder: ["hsa", "brokerage", "401k", "403b", "ira"],
+            isCurrentPlan: true,
+            lifetimeTax: 100000,
+            terminalByTaxType: null,
+            depletedYear: null,
+          },
+          {
+            label: "Traditional first",
+            mode: "waterfall",
+            lifetimeTax: 95000,
+            terminalByTaxType: null,
+            depletedYear: null,
+          },
+          {
+            label: "Brokerage first",
+            mode: "waterfall",
+            lifetimeTax: 105000,
+            terminalByTaxType: null,
+            depletedYear: null,
+          },
+        ],
+      },
+      isLoading: false,
+    });
+    render(<WithdrawalComparison selection={{}} />);
+    expect(
+      screen.queryByText("(same as your current plan)"),
+    ).not.toBeInTheDocument();
+  });
 });

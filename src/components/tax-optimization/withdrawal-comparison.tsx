@@ -21,7 +21,11 @@
  * persisted profile default), scored the identical way. It can coincide
  * with one of the three presets or differ from all of them (e.g. a
  * household on a custom waterfall order); either way it's the household's
- * actual plan, not a guess matched by mode string.
+ * actual plan, not a guess matched by mode string. When it DOES coincide
+ * with a preset (the common case — most households are on Bracket
+ * Filling), the two rows would otherwise show identical numbers with no
+ * acknowledgment they're the same thing; `matchesCurrentPlan` annotates
+ * the preset row instead of leaving that silently redundant.
  */
 import type { RouterInputs } from "@/lib/trpc";
 import { trpc } from "@/lib/trpc";
@@ -63,6 +67,17 @@ const STRATEGIES: RouterInputs["projection"]["compareWithdrawalStrategies"]["str
     },
   ];
 
+/** A named preset's row and "Your current plan" can legitimately describe
+ *  the exact same run — e.g. a household already on Bracket Filling.
+ *  Matches on BOTH the config (mode, and for waterfall, the resolved
+ *  order) AND the computed output (lifetime tax, within a cent — the
+ *  same tolerance convention used elsewhere for candidate scoring — and
+ *  the depletion year): a config match with a different number would be
+ *  a real bug worth surfacing, not something to silently annotate away. */
+function ordersMatch(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((c, i) => c === b[i]);
+}
+
 export function WithdrawalComparison({ selection }: { selection: Selection }) {
   const { data, isLoading } =
     trpc.projection.compareWithdrawalStrategies.useQuery(
@@ -80,6 +95,27 @@ export function WithdrawalComparison({ selection }: { selection: Selection }) {
   }
 
   const best = data.baselineLabel;
+  const currentPlan = data.strategies.find(
+    (s) => "isCurrentPlan" in s && s.isCurrentPlan,
+  );
+  const matchesCurrentPlan = (s: (typeof data.strategies)[number]) => {
+    if (!currentPlan || "isCurrentPlan" in s) return false;
+    if (s.mode !== currentPlan.mode) return false;
+    if (s.mode === "waterfall") {
+      const preset = STRATEGIES.find((p) => p.label === s.label);
+      if (
+        !preset?.order ||
+        !("withdrawalOrder" in currentPlan) ||
+        !ordersMatch(preset.order, currentPlan.withdrawalOrder)
+      ) {
+        return false;
+      }
+    }
+    return (
+      Math.abs(s.lifetimeTax - currentPlan.lifetimeTax) < 1 &&
+      s.depletedYear === currentPlan.depletedYear
+    );
+  };
 
   return (
     <div className="space-y-2">
@@ -116,6 +152,11 @@ export function WithdrawalComparison({ selection }: { selection: Selection }) {
                   {"isCurrentPlan" in s && s.isCurrentPlan && (
                     <span className="ml-1 text-[10px] text-slate-600">
                       your plan
+                    </span>
+                  )}
+                  {matchesCurrentPlan(s) && (
+                    <span className="text-faint ml-1 text-[10px]">
+                      (same as your current plan)
                     </span>
                   )}
                   {s.label === best && (

@@ -162,6 +162,12 @@ describe("projection router — withdrawal routing DB fallback", () => {
         (s) => s.label === "Your current plan",
       );
       expect(currentPlan?.mode).toBe("waterfall");
+      // The resolved order, not just the mode — the client needs this to
+      // tell whether a waterfall household matches one of the named
+      // presets (withdrawal-comparison.tsx's "same as your current plan"
+      // annotation) rather than just sharing a routing mode.
+      expect(Array.isArray(currentPlan?.withdrawalOrder)).toBe(true);
+      expect(currentPlan?.withdrawalOrder.length).toBeGreaterThan(0);
     } finally {
       cleanup();
     }

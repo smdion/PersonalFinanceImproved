@@ -369,6 +369,13 @@ export const taxOptimizationRouter = createTRPCRouter({
       const currentPlan = {
         label: "Your current plan",
         mode: baseline.engineInput.decumulationDefaults.withdrawalRoutingMode,
+        // For waterfall households, `mode` alone can't tell the client
+        // whether this matches one of the three named presets (they each
+        // carry a specific order too) — the resolved order lets the client
+        // check both before annotating a preset row as "same as your
+        // current plan."
+        withdrawalOrder: baseline.engineInput.decumulationDefaults
+          .withdrawalOrder as string[],
         isCurrentPlan: true as const,
         lifetimeTax: lifetimeTax(baselineDecum),
         terminalByTaxType: baselineFinalYear?.balanceByTaxType ?? null,
