@@ -16,7 +16,7 @@ export interface YearTableRow {
 
 /**
  * The "something notable happened this year" flag vocabulary — one list,
- * shared by the advisor report's year table and the Tax Planning page's
+ * shared by the advisor report's year table and the Tax Optimization page's
  * year-by-year table so the two never drift. Order is deliberate (most
  * consequential first).
  */

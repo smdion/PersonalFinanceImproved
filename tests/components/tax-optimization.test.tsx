@@ -2,10 +2,9 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 import {
-  YearProjectionTable,
+  IrmaaCliffAlert,
   type TaxYearRow,
-} from "@/components/tax-planning/year-projection-table";
-import { IrmaaCliffAlert } from "@/components/tax-planning/irmaa-cliff-alert";
+} from "@/components/tax-optimization/irmaa-cliff-alert";
 import { ReportAssumptionsSummary } from "@/components/cards/projection/report/report-assumptions-summary";
 
 // --- trpc mock (RothExplorer / WithdrawalComparison use useQuery) ---
@@ -26,9 +25,9 @@ vi.mock("@/lib/trpc", () => ({
 
 // Import the query-driven components AFTER the mock is registered.
 const { RothExplorer } =
-  await import("@/components/tax-planning/roth-explorer");
+  await import("@/components/tax-optimization/roth-explorer");
 const { WithdrawalComparison } =
-  await import("@/components/tax-planning/withdrawal-comparison");
+  await import("@/components/tax-optimization/withdrawal-comparison");
 
 function row(overrides: Partial<TaxYearRow> = {}): TaxYearRow {
   return {
@@ -68,34 +67,6 @@ function row(overrides: Partial<TaxYearRow> = {}): TaxYearRow {
     ...overrides,
   };
 }
-
-describe("YearProjectionTable", () => {
-  it("renders a row per year with the flag chips", () => {
-    render(
-      <YearProjectionTable
-        rows={[row({ year: 2054, age: 65 }), row({ year: 2055, age: 66 })]}
-      />,
-    );
-    expect(screen.getByText("2054")).toBeInTheDocument();
-    expect(screen.getByText("2055")).toBeInTheDocument();
-    expect(screen.getAllByText("Roth conversion")).toHaveLength(2);
-  });
-
-  it("shows the 'Roth capped (IRMAA)' flag when a row carries it", () => {
-    render(
-      <YearProjectionTable
-        rows={[
-          row({
-            year: 2060,
-            age: 71,
-            flags: ["Roth conversion", "Roth capped (IRMAA)"],
-          }),
-        ]}
-      />,
-    );
-    expect(screen.getByText("Roth capped (IRMAA)")).toBeInTheDocument();
-  });
-});
 
 describe("ReportAssumptionsSummary — IRMAA-capped note (R48a)", () => {
   it("shows the note when irmaaCappedRothYears > 0 and hides it at 0", () => {
@@ -161,6 +132,49 @@ describe("RothExplorer", () => {
       screen.getByText(/Recommended conversion ceiling/i),
     ).toBeInTheDocument();
     expect(screen.getByText(/24% marginal rate/)).toBeInTheDocument();
+  });
+
+  it("renders the bracket-ceiling comparison and marks best + current", () => {
+    rothWhatIfQuery.mockReturnValue({
+      data: {
+        mode: "optimize",
+        result: {
+          recommendedTarget: 0.24,
+          currentTarget: 0.22,
+          candidates: [
+            {
+              target: 0.24,
+              netCost: 500000,
+              lifetimeTax: 300000,
+              traditionalEnd: 900000,
+              shortfallScore: 0,
+              depleted: false,
+            },
+            {
+              target: 0.22,
+              netCost: 520000,
+              lifetimeTax: 280000,
+              traditionalEnd: 1090000,
+              shortfallScore: 0,
+              depleted: false,
+            },
+            {
+              target: 0.32,
+              netCost: 700000,
+              lifetimeTax: 500000,
+              traditionalEnd: 100000,
+              shortfallScore: 0,
+              depleted: true,
+            },
+          ],
+        },
+      },
+      isLoading: false,
+    });
+    render(<RothExplorer selection={{}} />);
+    expect(screen.getByText("best")).toBeInTheDocument();
+    expect(screen.getByText("your setting")).toBeInTheDocument();
+    expect(screen.getByText("depletes")).toBeInTheDocument();
   });
 });
 

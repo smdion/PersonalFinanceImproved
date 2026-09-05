@@ -245,7 +245,7 @@ import { log } from "@/lib/logger";
  *  it when a Roth conversion is clamped to the next IRMAA threshold). Every
  *  numeric field is byte-identical — but the cache stores the raw engine
  *  RESULT, so a warm pre-R48a row would serve flag-less years for the 36h
- *  TTL on deploy day, exactly when the new Tax Planning page's IRMAA alert
+ *  TTL on deploy day, exactly when the new Tax Optimization page's IRMAA alert
  *  and assumptions note debut. One-time bump, no further one needed (an
  *  output field never touches the input hash). */
 export const PROJECTION_CACHE_ENGINE_VERSION = 31;

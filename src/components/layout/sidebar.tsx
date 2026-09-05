@@ -104,7 +104,11 @@ const navStructure: NavEntry[] = [
       { href: "/contributions", label: "Contributions", Icon: Layers },
       { href: "/analytics", label: "Analytics", Icon: PieChart },
       { href: "/tax-buckets", label: "Tax Buckets", Icon: Unlock },
-      { href: "/tax-planning", label: "Tax Planning", Icon: Calculator },
+      {
+        href: "/tax-optimization",
+        label: "Tax Optimization",
+        Icon: Calculator,
+      },
       { href: "/tools", label: "Relocation", Icon: Wrench },
       {
         href: "/budget?tab=whatif",

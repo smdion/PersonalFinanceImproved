@@ -331,8 +331,8 @@ export function ReportAssumptionsSummary({
           {irmaaCappedRothYears === 1 ? "had a" : "had"} Roth conversion
           {irmaaCappedRothYears === 1 ? "" : "s"} capped to stay below the next
           IRMAA (Medicare premium) threshold — converting more would have
-          crossed a surcharge cliff. See the Tax Planning page for year-by-year
-          detail.
+          crossed a surcharge cliff. The Tax Optimization page flags the
+          affected years.
         </p>
       )}
     </div>
