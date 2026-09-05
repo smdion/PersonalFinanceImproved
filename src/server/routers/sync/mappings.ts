@@ -240,8 +240,11 @@ export const syncMappingsRouter = createTRPCRouter({
       }
 
       // Block resync of non-latest snapshots unless explicitly confirmed:
-      // YNAB tracking-account deltas are cumulative, so resyncing an older
-      // snapshot leaves later snapshots in an inconsistent state.
+      // each push targets an ABSOLUTE balance (`group.total - currentRemote`,
+      // read live), so resyncing an OLDER snapshot sets the tracking
+      // account to that old snapshot's totals *as of now* — clobbering the
+      // current balance with a stale one. Editing/resyncing the latest
+      // snapshot is the one safe case (nothing is after it).
       const latest = await ctx.db
         .select({ id: schema.portfolioSnapshots.id })
         .from(schema.portfolioSnapshots)
