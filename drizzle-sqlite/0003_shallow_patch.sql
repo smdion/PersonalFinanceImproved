@@ -1,0 +1,1 @@
+ALTER TABLE `retirement_profile_people` ADD `social_security_pia` text;

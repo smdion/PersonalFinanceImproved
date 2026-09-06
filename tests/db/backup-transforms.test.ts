@@ -712,7 +712,13 @@ describe("transformBackupToCurrentSchema — v0.7_final / v0.8.0 baseline", () =
         { id: 1, name: "Current Plan", tax_params_year: null },
       ],
       retirement_profile_people: [
-        { id: 1, profile_id: 1, person_id: 1, retirement_age: 65 },
+        {
+          id: 1,
+          profile_id: 1,
+          person_id: 1,
+          retirement_age: 65,
+          social_security_pia: null,
+        },
       ],
       // Every column transformV07xToCurrent would otherwise backfill:
       retirement_settings: [
