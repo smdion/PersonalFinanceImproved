@@ -3,6 +3,8 @@ import {
   getFullRetirementAge,
   fraToMonths,
   getClaimingAdjustmentMultiplier,
+  getSpousalAdjustmentMultiplier,
+  SPOUSAL_BENEFIT_BASE_RATE,
 } from "@/lib/config/social-security";
 
 describe("getFullRetirementAge — SSA birth-year cohorts", () => {
@@ -102,6 +104,53 @@ describe("getClaimingAdjustmentMultiplier — FRA 67 (born 1960+)", () => {
 
   it("age 70 (36 months delayed) => 124.0% of PIA", () => {
     expect(getClaimingAdjustmentMultiplier(fra, 70 * 12)).toBeCloseTo(1.24, 5);
+  });
+});
+
+// Expected percentages below are SSA's own published spousal-benefit
+// percentage-of-worker's-PIA tables — a DIFFERENT reduction rate than the
+// worker's own benefit, and no delayed credit past FRA (capped at 1 there).
+describe("getSpousalAdjustmentMultiplier — FRA 66 (born 1943-1954)", () => {
+  const fra = { years: 66, months: 0 };
+
+  it("age 62 (48 months early) => 35.0% of PIA total (base 50% x 0.70)", () => {
+    const multiplier = getSpousalAdjustmentMultiplier(fra, 62 * 12);
+    expect(multiplier * SPOUSAL_BENEFIT_BASE_RATE).toBeCloseTo(0.35, 3);
+  });
+
+  it("age 63 (36 months early) => 37.8% of PIA total", () => {
+    const multiplier = getSpousalAdjustmentMultiplier(fra, 63 * 12);
+    expect(multiplier * SPOUSAL_BENEFIT_BASE_RATE).toBeCloseTo(0.378, 2);
+  });
+
+  it("age 64 (24 months early) => 41.7% of PIA total", () => {
+    const multiplier = getSpousalAdjustmentMultiplier(fra, 64 * 12);
+    expect(multiplier * SPOUSAL_BENEFIT_BASE_RATE).toBeCloseTo(0.417, 2);
+  });
+
+  it("age 65 (12 months early) => 45.8% of PIA total", () => {
+    const multiplier = getSpousalAdjustmentMultiplier(fra, 65 * 12);
+    expect(multiplier * SPOUSAL_BENEFIT_BASE_RATE).toBeCloseTo(0.458, 2);
+  });
+
+  it("age 66 (exactly FRA) => 50.0% of PIA total, the uncapped base", () => {
+    const multiplier = getSpousalAdjustmentMultiplier(fra, 66 * 12);
+    expect(multiplier).toBe(1);
+    expect(multiplier * SPOUSAL_BENEFIT_BASE_RATE).toBe(0.5);
+  });
+
+  it("age 70 (delayed) earns NO extra credit — still capped at 50%", () => {
+    const multiplier = getSpousalAdjustmentMultiplier(fra, 70 * 12);
+    expect(multiplier).toBe(1);
+  });
+});
+
+describe("getSpousalAdjustmentMultiplier — FRA 67 (born 1960+)", () => {
+  const fra = { years: 67, months: 0 };
+
+  it("age 62 (60 months early) => 32.5% of PIA total", () => {
+    const multiplier = getSpousalAdjustmentMultiplier(fra, 62 * 12);
+    expect(multiplier * SPOUSAL_BENEFIT_BASE_RATE).toBeCloseTo(0.325, 3);
   });
 });
 

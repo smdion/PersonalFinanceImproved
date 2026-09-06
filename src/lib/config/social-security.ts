@@ -90,3 +90,45 @@ export function getClaimingAdjustmentMultiplier(
   const monthsDelayed = clampedMonths - fraMonths;
   return 1 + monthsDelayed * DELAYED_CREDIT_RATE_PER_MONTH;
 }
+
+/**
+ * Spousal-benefit early-claiming reduction: 25/36 of 1% per month for the
+ * first 36 months before FRA, then 5/12 of 1% per month beyond that — a
+ * DIFFERENT rate than the worker's own reduction above (5/9%, not 25/36%).
+ * Unlike a worker's own retirement benefit, a spousal benefit never earns
+ * delayed-retirement credits past FRA — it's capped at 50% of the higher
+ * earner's PIA no matter how long the spouse waits.
+ */
+const SPOUSAL_REDUCTION_RATE_FIRST_36 = 25 / 36 / 100;
+const SPOUSAL_REDUCTION_RATE_BEYOND_36 = 5 / 12 / 100;
+
+/** Fraction of the higher earner's PIA a spousal benefit is based on. */
+export const SPOUSAL_BENEFIT_BASE_RATE = 0.5;
+
+/**
+ * Multiplier applied to `SPOUSAL_BENEFIT_BASE_RATE * higherEarnerPia` for
+ * claiming the spousal benefit at `claimingAgeMonths`. Returns 1 at (or
+ * after) FRA — no delayed credit — less than 1 for early claiming. Clamped
+ * to [62, FRA]: claiming a spousal benefit before 62 isn't possible, and
+ * waiting past FRA earns nothing more.
+ */
+export function getSpousalAdjustmentMultiplier(
+  fra: FullRetirementAge,
+  claimingAgeMonths: number,
+): number {
+  const fraMonths = fraToMonths(fra);
+  const clampedMonths = Math.min(
+    Math.max(claimingAgeMonths, SS_EARLIEST_CLAIMING_AGE_MONTHS),
+    fraMonths,
+  );
+
+  if (clampedMonths >= fraMonths) return 1;
+
+  const monthsEarly = fraMonths - clampedMonths;
+  const first36 = Math.min(monthsEarly, 36);
+  const beyond36 = Math.max(monthsEarly - 36, 0);
+  const reduction =
+    first36 * SPOUSAL_REDUCTION_RATE_FIRST_36 +
+    beyond36 * SPOUSAL_REDUCTION_RATE_BEYOND_36;
+  return 1 - reduction;
+}
