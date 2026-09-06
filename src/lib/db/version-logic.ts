@@ -441,7 +441,13 @@ async function importBackupPg(
             const val = row[col];
             if (val === null || val === undefined) return "NULL";
             if (tableJsonbCols.has(col)) {
-              params.push(JSON.stringify(val));
+              // A backup produced on SQLite carries `text({ mode: "json" })`
+              // columns as already-serialized JSON strings; one produced on
+              // PG carries jsonb as parsed objects. `JSON.stringify` a
+              // string would double-encode it (store `"\"[...]\""`), so
+              // only stringify when it isn't already a string. Mirrors the
+              // `typeof val === "object"` guard on the SQLite import path.
+              params.push(typeof val === "string" ? val : JSON.stringify(val));
               return `$${params.length}::jsonb`;
             }
             params.push(val);
