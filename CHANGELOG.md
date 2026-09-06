@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.8
 
-## [0.8.2] - 2026-09-03
+## [0.8.2] - 2026-09-05
 
 Three additive columns, no data loss: `retirement_settings.withdrawal_routing_mode` (NOT NULL, defaults every existing row to `bracket_filling` — everyone's actual behavior today) plus nullable `withdrawal_order` and `withdrawal_splits` (NULL on every existing row = "use the built-in default"). The migration changes nothing on its own.
 
@@ -19,7 +19,7 @@ Three additive columns, no data loss: `retirement_settings.withdrawal_routing_mo
 - The withdrawal-strategy comparison now says when a named strategy is the same as your current plan, instead of showing two rows with identical numbers and no explanation.
 - **Withdrawal order and percentage splits are now saved profile defaults too**, edited in Taxes in Retirement below Withdrawal Routing. The account draw order (which Traditional account Bracket Filling fills first; the full sequence Waterfall drains in) and the per-account splits Percentage mode uses were previously per-session only on the Retirement page and reset on reload — a household whose real choice was "Waterfall, brokerage first" had no way to make it stick. The Retirement page's Configure toggle still customizes them for one session without changing what's saved.
 - **IRMAA-capped Roth conversions are now visible.** When IRMAA awareness is on, the engine caps a year's Roth conversion at the next Medicare-premium threshold; that used to leave no trace. The Tax Optimization page's IRMAA alert now counts those years and the advisor report adds a note ("N years had Roth conversions capped for IRMAA"). No change to any projected figure.
-- **Fix a wrong balance in the latest portfolio snapshot.** Expand the newest snapshot in Snapshot History and click any balance to correct it. On save, that year's performance figures are re-derived and the corrected balances are re-pushed to YNAB/Actual automatically (a "resync" — it replaces this snapshot's prior entries, so there's nothing to reconcile). Latest snapshot only; a snapshot in a finalized year is left alone. Saving a snapshot for a date that already has one now shows a clear message instead of a raw error.
+- **Fix a wrong balance in the latest portfolio snapshot.** Expand the newest snapshot in Snapshot History and click any balance to correct it. On save, that year's performance figures are re-derived and the corrected balances are queued for a resync to YNAB/Actual (see the Changed note below — the resync replaces this snapshot's prior entries, so there's nothing to reconcile). Latest snapshot only; a snapshot in a finalized year is left alone. Saving a snapshot for a date that already has one now shows a clear message instead of a raw error.
 - **Save-draft on a new snapshot.** The New Snapshot form now autosaves to your browser as you go, so a half-finished snapshot survives a closed tab. Reopen it and a "Resume / Discard" prompt appears; Resume merges your entries onto the current account list. One draft per date, per browser.
 
 ### Fixed
@@ -29,6 +29,7 @@ Three additive columns, no data loss: `retirement_settings.withdrawal_routing_mo
 
 ### Changed
 
+- **Portfolio snapshot budget-app sync is now an explicit button.** After you edit a snapshot balance (or add a new snapshot), the pending push to YNAB/Actual is triggered by a solid **Sync to {service}** button — in an amber action bar on the expanded snapshot row and in the page-level banner — instead of firing implicitly when you collapsed the row (which was easy to miss). A collapsed snapshot with unpushed edits now shows an amber "unsynced" badge next to its date. Nothing is pushed to your budget app until you click Sync.
 - **One consistent way to rename a profile.** Budget, Contribution, Salary, and Retirement profiles are all renamed the same way now: click the profile's name in the list to edit it inline. Previously three of the four had a faint hover-only "rename" button in the list while two had a separate "Name" field in the editor pane — and Salary had no list-level rename at all. The Savings tab still has no rename (its rail reuses Budget profiles — rename them from the Budget → Profiles tab).
 - **Decluttered the profile-list row.** The active profile's row (especially when it's API-synced) no longer crams the name, an ACTIVE pill, a long "⇄ ACTUAL → Standard" pill, and the clone/activate/delete controls onto one narrow line. The name now takes the space it needs and truncates; the sync indicator moved to the quieter detail line below; row controls reveal on hover/focus and wrap out of the way on the narrow rail.
 
