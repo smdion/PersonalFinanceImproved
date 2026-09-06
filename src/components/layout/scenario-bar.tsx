@@ -224,7 +224,7 @@ export function ScenarioBar() {
     type: "persisted" | "session",
     id: number | string,
   ) => {
-    if (!(await confirm("Delete this scenario?"))) return;
+    if (!(await confirm("Delete this plan?"))) return;
     if (type === "persisted") {
       deleteMut.mutate(
         { id: id as number },
@@ -314,7 +314,7 @@ export function ScenarioBar() {
             <div
               className="bg-surface-primary absolute top-full right-0 z-50 mt-1 w-64 max-w-[calc(100vw-2rem)] rounded-lg border shadow-lg"
               role="listbox"
-              aria-label="Scenario selection"
+              aria-label="Plan selection"
             >
               {/* Main Plan */}
               <button
@@ -377,8 +377,8 @@ export function ScenarioBar() {
                             handleDelete("persisted", s.id);
                           }}
                           className="text-faint transition-opacity hover:text-red-500 sm:opacity-0 sm:group-hover:opacity-100"
-                          title="Delete scenario"
-                          aria-label="Delete scenario"
+                          title="Delete plan"
+                          aria-label="Delete plan"
                         >
                           <svg
                             className="h-3 w-3"
@@ -442,8 +442,8 @@ export function ScenarioBar() {
                             handleDelete("session", s.id);
                           }}
                           className="text-faint transition-opacity hover:text-red-500 sm:opacity-0 sm:group-hover:opacity-100"
-                          title="Delete scenario"
-                          aria-label="Delete scenario"
+                          title="Delete plan"
+                          aria-label="Delete plan"
                         >
                           <svg
                             className="h-3 w-3"
@@ -479,7 +479,7 @@ export function ScenarioBar() {
                         if (e.key === "Enter") handleCreate();
                         if (e.key === "Escape") setCreating(null);
                       }}
-                      placeholder="Scenario name..."
+                      placeholder="Plan name..."
                       className="border-strong bg-surface-primary text-primary w-full rounded border px-2 py-1 text-xs"
                     />
                     <div className="flex gap-1">
@@ -507,7 +507,7 @@ export function ScenarioBar() {
                         <button
                           onClick={() => setCreating("persisted")}
                           className="flex-1 rounded py-2 text-center text-blue-600 transition-colors hover:bg-blue-50"
-                          title="Create a scenario that persists across sessions"
+                          title="Create a plan that persists across sessions"
                         >
                           + Saved
                         </button>
@@ -515,7 +515,7 @@ export function ScenarioBar() {
                           variant="ghost"
                           onClick={() => setCreating("session")}
                           className="flex-1 !py-2"
-                          title="Create a quick what-if scenario (lost when you leave)"
+                          title="Create a plan that only lasts this session (lost when you leave)"
                         >
                           + Quick
                         </Button>
