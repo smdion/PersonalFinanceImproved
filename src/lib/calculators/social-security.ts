@@ -83,17 +83,35 @@ export type ClaimingAgeSweepResult = {
   /** The claiming age that scores best among the candidates. `null` when
    *  every candidate is depleted (nothing safe to recommend). */
   recommendedAge: number | null;
+  /** Sorted by RANK (best first, via `compareCandidates` — depletion
+   *  exclusion, then descending final net worth), NOT by claiming age. A
+   *  caller building an age-ordered comparison table must sort by
+   *  `claimingAge` itself. */
   candidates: ClaimingAgeSweepCandidate[];
 };
 
 export type ClaimingAgeSweepOptions = {
-  /** Base projection input. Must have `socialSecurityEntries` with an
-   *  entry matching `personId` — the sweep overrides that entry's
-   *  `annualAmount`/`startAge` per candidate age and leaves every other
-   *  entry (e.g. a spouse's) unchanged. */
+  /** Base projection input. If it has `socialSecurityEntries` (a
+   *  multi-person household), there must be an entry matching `personId` —
+   *  the sweep overrides that entry's `annualAmount`/`startAge` per
+   *  candidate age and leaves every other entry (e.g. a spouse's)
+   *  unchanged. If `socialSecurityEntries` is absent (a single-person
+   *  household), the sweep instead overrides the SCALAR
+   *  `socialSecurityAnnual`/`ssStartAge` fields — mirroring
+   *  `build-engine-payload.ts`'s own single-person path, which
+   *  deliberately never populates `socialSecurityEntries` (doing so would
+   *  silently activate per-person RMD tracking a single-person household's
+   *  real projection never uses — see the long comment there). This
+   *  distinction is load-bearing: candidates built here must match
+   *  production's real household-size branching, or the sweep would
+   *  recommend an age based on a projection shape production never
+   *  actually runs. */
   input: ProjectionInput;
-  /** Which person's claiming age to sweep — matches
-   *  `socialSecurityEntries[].personId`. */
+  /** Which person's claiming age to sweep. For a multi-person household,
+   *  matches `socialSecurityEntries[].personId`. For a single-person
+   *  household (no entries), this is assumed to be that one person — not
+   *  independently verified, since there's no entries array to check it
+   *  against. */
   personId: number;
   /** This person's PIA (annual benefit at FRA). */
   pia: number;
@@ -122,11 +140,18 @@ function buildCandidateInput(
 ): ProjectionInput {
   const entries = input.socialSecurityEntries;
   if (!entries) {
-    throw new Error(
-      "sweepClaimingAges requires ProjectionInput.socialSecurityEntries " +
-        "(per-person entries) — the scalar socialSecurityAnnual/ssStartAge " +
-        "fields don't carry a personId to attach the sweep to.",
-    );
+    // Single-person household: mirror build-engine-payload.ts's own
+    // scalar path exactly. Do NOT synthesize a socialSecurityEntries array
+    // here — that would activate per-person RMD tracking
+    // (rmdStartAgeByPerson) that a real single-person household's
+    // projection never uses, producing a candidate whose RMD behavior
+    // doesn't match what production would actually compute for this
+    // household.
+    return {
+      ...input,
+      socialSecurityAnnual: adjustedAnnualBenefit,
+      ssStartAge: claimingAge,
+    };
   }
   if (!entries.some((e) => e.personId === personId)) {
     throw new Error(

@@ -701,6 +701,13 @@ export const retirementRouter = createTRPCRouter({
           retirementAge: z.number().int().min(18).max(100).optional(),
           endAge: z.number().int().min(30).max(120).optional(),
           socialSecurityMonthly: zDecimal.nullable().optional(),
+          // PIA (Primary Insurance Amount, monthly benefit at Full
+          // Retirement Age) — opt-in direct user input, see
+          // SOCIAL-SECURITY-OPTIMIZATION-PLAN.md decision #1. Independent
+          // of socialSecurityMonthly; null means "not opted in," never
+          // falls back to a household-wide default (PIA is inherently
+          // per-person).
+          socialSecurityPia: zDecimal.nullable().optional(),
           ssStartAge: z.number().int().min(62).max(70).nullable().optional(),
           ruleOf55Override: z.boolean().nullable().optional(),
         }),
@@ -737,6 +744,9 @@ export const retirementRouter = createTRPCRouter({
           endAge: patch.endAge ?? existing!.endAge,
           ...("socialSecurityMonthly" in patch
             ? { socialSecurityMonthly: patch.socialSecurityMonthly }
+            : {}),
+          ...("socialSecurityPia" in patch
+            ? { socialSecurityPia: patch.socialSecurityPia }
             : {}),
           ...("ssStartAge" in patch ? { ssStartAge: patch.ssStartAge } : {}),
           ...("ruleOf55Override" in patch

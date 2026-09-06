@@ -230,14 +230,127 @@ describe("computeSpousalBenefit — greater-of logic", () => {
 });
 
 describe("sweepClaimingAges", () => {
-  it("throws when the input has no socialSecurityEntries", () => {
-    const input = {
+  it("with no socialSecurityEntries (single-person household), sweeps via the scalar path instead of throwing", () => {
+    const input: ProjectionInput = {
       ...makeSingleHousehold(),
       socialSecurityEntries: undefined,
     };
-    expect(() =>
-      sweepClaimingAges({ input, personId: 1, pia: 30000, birthYear: 1963 }),
-    ).toThrow(/socialSecurityEntries/);
+    const result = sweepClaimingAges({
+      input,
+      personId: 1,
+      pia: 30000,
+      birthYear: 1963,
+      ages: [62, 70],
+    });
+
+    expect(result.candidates).toHaveLength(2);
+    // Each candidate's amount matches computeAdjustedBenefit directly —
+    // proves the scalar override path (not a synthesized entries array)
+    // produced these numbers.
+    for (const candidate of result.candidates) {
+      expect(candidate.adjustedAnnualBenefit).toBeCloseTo(
+        computeAdjustedBenefit(30000, 1963, candidate.claimingAge * 12),
+        2,
+      );
+    }
+  });
+
+  it("with no socialSecurityEntries, never synthesizes one — mirrors build-engine-payload.ts's single-person scalar path exactly", () => {
+    // Regression guard for the same class of bug caught in
+    // build-engine-payload.ts (step 5): populating socialSecurityEntries
+    // for a single-person household silently activates per-person RMD
+    // tracking a real single-person projection never uses. Per-person RMD
+    // requires BOTH `rmdStartAgeByPerson.size > 0` (from
+    // socialSecurityEntries) AND `hasIndividualAccounts` (context.ts's
+    // gate) — makeSingleHousehold() already has owned individualAccounts,
+    // so this fixture alone exercises that second gate; adding an
+    // UNASSIGNED (ownerPersonId: undefined) pre-tax account is what
+    // actually produces a numeric difference between the two paths (an
+    // unassigned balance drops out of the per-person RMD base but not the
+    // household one) — this is the exact case build-engine-payload.ts's
+    // own comment names.
+    //
+    // This test is checked against a REAL sweepClaimingAges call (not
+    // reimplemented), and was verified to actually fail (not silently
+    // pass) against a deliberately-reintroduced bug before being kept:
+    // temporarily changing buildCandidateInput to synthesize a
+    // socialSecurityEntries array on the no-entries branch made this
+    // assertion fail, confirming it's a real regression guard, not a
+    // tautology comparing two things the test itself constructed the
+    // same way (the earlier version of this test had exactly that flaw).
+    const base = makeSingleHousehold();
+    const withUnassignedAccount: ProjectionInput = {
+      ...base,
+      socialSecurityEntries: undefined,
+      // The household-level preTax total must ACTUALLY include the
+      // unassigned account's balance for a divergence to exist — adding
+      // it only to individualAccounts without also growing
+      // startingBalances.preTax means the household total and the
+      // owned-accounts total are coincidentally equal, and nothing drops
+      // out of the per-person base at all (the mistake an earlier version
+      // of this test made, which is why it didn't reproduce anything).
+      startingBalances: {
+        ...base.startingBalances,
+        preTax: base.startingBalances.preTax + 200000,
+      },
+      individualAccounts: [
+        ...(base.individualAccounts ?? []),
+        {
+          name: "Unassigned 401k",
+          category: "401k",
+          taxType: "preTax",
+          startingBalance: 200000,
+          ownerName: "Household",
+          ownerPersonId: undefined,
+          parentCategory: "Retirement",
+        },
+      ],
+    };
+
+    const pia = 30000;
+    const birthYear = 1963;
+    const claimingAge = 62;
+    const adjustedAmount = computeAdjustedBenefit(
+      pia,
+      birthYear,
+      claimingAge * 12,
+    );
+
+    // The REAL sweep — `finalNetWorth` here is computed by the ACTUAL
+    // internal buildCandidateInput → calculateProjection pipeline, not
+    // reimplemented in this test. If buildCandidateInput's no-entries
+    // branch ever started synthesizing a socialSecurityEntries array
+    // instead of setting the scalar fields, this number would reflect
+    // THAT (buggy) computation instead.
+    const sweep = sweepClaimingAges({
+      input: withUnassignedAccount,
+      personId: 1,
+      pia,
+      birthYear,
+      ages: [claimingAge],
+    });
+    const realFinalNetWorth = sweep.candidates[0]!.finalNetWorth;
+
+    // The CORRECT expectation: production's actual single-person scalar
+    // path (build-engine-payload.ts's own construction), computed
+    // independently here via a direct calculateProjection call.
+    const expectedResult = calculateProjection({
+      ...withUnassignedAccount,
+      socialSecurityAnnual: adjustedAmount,
+      ssStartAge: claimingAge,
+    });
+    const expectedFinal =
+      expectedResult.projectionByYear[
+        expectedResult.projectionByYear.length - 1
+      ];
+    const expectedFinalNetWorth = expectedFinal?.balanceByTaxType
+      ? expectedFinal.balanceByTaxType.preTax +
+        expectedFinal.balanceByTaxType.taxFree +
+        expectedFinal.balanceByTaxType.hsa +
+        expectedFinal.balanceByTaxType.afterTax
+      : 0;
+
+    expect(realFinalNetWorth).toBeCloseTo(expectedFinalNetWorth, 2);
   });
 
   it("throws when personId doesn't match any entry", () => {
