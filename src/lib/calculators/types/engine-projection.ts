@@ -232,8 +232,6 @@ export type ProjectionInput = {
   enableIrmaaAwareness?: boolean;
   /** When true, cap Roth conversions to stay below the next IRMAA cliff (default: true when IRMAA awareness is on). */
   irmaaAwareRothConversions?: boolean;
-  /** When true, reinvest RMD excess above G-K spending need into brokerage (default: true). */
-  reinvestRmdExcess?: boolean;
   /** Enable ACA subsidy awareness — cap MAGI to preserve health insurance subsidies (pre-65). */
   enableAcaAwareness?: boolean;
   /** Household size for ACA FPL calculation (default 2). */

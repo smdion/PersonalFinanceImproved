@@ -168,7 +168,6 @@ export function clampBalances(
  */
 export function reinvestRmdExcess(
   mode: "reinvest" | "spend",
-  enabled: boolean,
   rmdOverrodeRouting: boolean,
   totalWithdrawal: number,
   afterTaxNeed: number,
@@ -179,11 +178,7 @@ export function reinvestRmdExcess(
   indBal?: Map<string, number>,
   indKey?: IndKeyFn,
 ): number {
-  if (
-    !enabled ||
-    !rmdOverrodeRouting ||
-    totalWithdrawal <= afterTaxNeed + taxCost
-  ) {
+  if (!rmdOverrodeRouting || totalWithdrawal <= afterTaxNeed + taxCost) {
     return 0;
   }
   const excess = roundToCents(totalWithdrawal - afterTaxNeed - taxCost);

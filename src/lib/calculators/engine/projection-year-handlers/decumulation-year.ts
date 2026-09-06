@@ -849,7 +849,6 @@ export function runDecumulationYear(
   applyLumpSums(config.lumpSums, ctx, state);
 
   // Handle RMD-forced excess (mode-aware) -- extracted to balance-deduction.ts
-  const shouldHandleRmdExcess = input.reinvestRmdExcess !== false; // default: true
   // Capture the excess amount (previously discarded) so it can
   // be surfaced in the UI — this money is real, forced out of Traditional
   // by the RMD floor regardless of what the strategy needed, with no prior
@@ -857,7 +856,6 @@ export function runDecumulationYear(
   // rmdExcessHandling setting (reinvest into brokerage, or spend it).
   const rmdExcessAmount = reinvestRmdExcess(
     config.rmdExcessHandling,
-    shouldHandleRmdExcess,
     rmdOverrodeRouting,
     totalWithdrawal,
     afterTaxNeed,
