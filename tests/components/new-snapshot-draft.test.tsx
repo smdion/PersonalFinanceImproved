@@ -4,6 +4,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { localDateStr } from "@/lib/utils/date";
 
 const createMutate = vi.fn();
 const mockLatest = {
@@ -72,8 +73,11 @@ vi.mock("@/lib/trpc", () => ({
 const { NewSnapshotForm } =
   await import("@/components/portfolio/new-snapshot-form");
 
-// The form defaults its date to "today" — pin it so the draft key matches.
-const TODAY = new Date().toISOString().slice(0, 10);
+// The form defaults its date to "today" and keys the draft on it via
+// localDateStr() (LOCAL date) — use the same function here, not
+// toISOString() (UTC), or the key mismatches in any timezone behind UTC
+// during the evening.
+const TODAY = localDateStr();
 
 beforeEach(() => {
   window.localStorage.clear();
