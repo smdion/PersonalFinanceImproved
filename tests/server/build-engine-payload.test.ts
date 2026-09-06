@@ -13,7 +13,7 @@
  * coverage here; this locks in the base wiring only).
  */
 import "../routers/setup-mocks";
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
 import {
   createTestCaller,
   seedPerson,
@@ -518,5 +518,278 @@ describe("buildEnginePayload — tax_params_year profile pin (R43)", () => {
       .set({ taxParamsYear: null })
       .where(eq(schema.retirementProfiles.id, profileId))
       .run();
+  });
+});
+
+// Step 5 of SOCIAL-SECURITY-OPTIMIZATION-PLAN.md: socialSecurityPia is
+// opt-in (decision #5). A single-person household with PIA set routes
+// through the SCALAR socialSecurityAnnual field, NOT socialSecurityEntries
+// — an earlier version of this diff populated entries for single-person
+// households too, which an advisor review caught: socialSecurityEntries is
+// also the engine's ONLY source for per-person RMD tracking
+// (rmdStartAgeByPerson in projection-year-handlers/context.ts), so
+// populating it for a single-person household silently changes RMD
+// behavior (and net worth) as a side effect of an SS-only feature. See the
+// long comment on socialSecurityEntries in build-engine-payload.ts.
+describe("buildEnginePayload — socialSecurityPia (opt-in, step 5)", () => {
+  let db: BetterSQLite3Database<typeof sqliteSchema>;
+  let cleanup: () => void;
+  let personId: number;
+  let profileId: number;
+
+  beforeAll(async () => {
+    const ctx = await createTestCaller();
+    db = ctx.db;
+    cleanup = ctx.cleanup;
+    const schema = await getSchema();
+
+    // Born 1963 -> FRA 67y0m (1960+ band), matching
+    // tests/calculators/social-security.test.ts's own fixture so the
+    // expected multiplier is the same well-known value.
+    personId = await seedPerson(db, "Pat", "1963-04-10");
+    await markPrimary(db, personId);
+    await seedRetirementSettings(db, personId, {
+      socialSecurityMonthly: "3000",
+      ssStartAge: 62, // 60 months early at FRA 67 -> 0.70 multiplier
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    profileId = (db as any)
+      .insert(schema.retirementProfiles)
+      .values({ name: "Current Plan" })
+      .returning({ id: schema.retirementProfiles.id })
+      .get().id;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (db as any).update(schema.retirementSettings).set({ profileId }).run();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (db as any)
+      .insert(schema.retirementProfilePeople)
+      .values({
+        profileId,
+        personId,
+        retirementAge: 65,
+        endAge: 95,
+        socialSecurityMonthly: "3000",
+        ssStartAge: 62,
+        // No socialSecurityPia yet — set per-test below where needed.
+      })
+      .run();
+  });
+
+  afterAll(() => cleanup());
+
+  // Reset both rows to their known-clean baseline after every test,
+  // regardless of pass/fail — a test that seeds a divergent ssStartAge (or
+  // fails partway through) must never leak state into the next test in
+  // this block.
+  afterEach(async () => {
+    const schema = await getSchema();
+    const { eq } = await import("drizzle-orm");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (db as any)
+      .update(schema.retirementProfilePeople)
+      .set({ ssStartAge: 62, socialSecurityPia: null })
+      .where(eq(schema.retirementProfilePeople.personId, personId))
+      .run();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (db as any)
+      .update(schema.retirementSettings)
+      .set({ ssStartAge: 62 })
+      .where(eq(schema.retirementSettings.personId, personId))
+      .run();
+  });
+
+  async function setPia(value: string | null) {
+    const schema = await getSchema();
+    const { eq } = await import("drizzle-orm");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (db as any)
+      .update(schema.retirementProfilePeople)
+      .set({ socialSecurityPia: value })
+      .where(eq(schema.retirementProfilePeople.personId, personId))
+      .run();
+  }
+
+  it("without PIA set, a single-person household stays on the scalar path (no socialSecurityEntries)", async () => {
+    const data = await fetchRetirementData(db, {});
+    const payload = await buildEnginePayload(db, data, {});
+
+    expect(payload!.baseEngineInput.socialSecurityEntries).toBeUndefined();
+    expect(payload!.baseEngineInput.socialSecurityAnnual).toBe(36000);
+    expect(payload!.baseEngineInput.ssStartAge).toBe(62);
+  });
+
+  it("with PIA set, a single-person household stays on the scalar path with the claiming-age-adjusted amount — socialSecurityEntries is still undefined", async () => {
+    await setPia("4000"); // PIA $4000/mo = $48000/yr at FRA
+
+    const data = await fetchRetirementData(db, {});
+    const payload = await buildEnginePayload(db, data, {});
+
+    // The load-bearing regression check: entries must NOT be populated for
+    // a single-person household just because PIA is set — that's exactly
+    // the bug the advisor review caught.
+    expect(payload!.baseEngineInput.socialSecurityEntries).toBeUndefined();
+    // FRA 67, claiming at 62 (60 months early) -> 0.70 multiplier (SSA's
+    // own published table, same golden value tests/config/
+    // social-security.test.ts checks against directly).
+    expect(payload!.baseEngineInput.socialSecurityAnnual).toBeCloseTo(
+      48000 * 0.7,
+      2,
+    );
+    expect(payload!.baseEngineInput.ssStartAge).toBe(62);
+
+    await setPia(null);
+  });
+
+  it("an empty-string PIA (blank form field) is treated as not-opted-in, not NaN", async () => {
+    await setPia("");
+
+    const data = await fetchRetirementData(db, {});
+    const payload = await buildEnginePayload(db, data, {});
+
+    expect(payload!.baseEngineInput.socialSecurityAnnual).toBe(36000);
+    expect(Number.isNaN(payload!.baseEngineInput.socialSecurityAnnual)).toBe(
+      false,
+    );
+
+    await setPia(null);
+  });
+
+  it('a "0" PIA is treated as not-opted-in, not a $0 benefit', async () => {
+    await setPia("0");
+
+    const data = await fetchRetirementData(db, {});
+    const payload = await buildEnginePayload(db, data, {});
+
+    // Falls back to the flat socialSecurityMonthly (36000), NOT 0.
+    expect(payload!.baseEngineInput.socialSecurityAnnual).toBe(36000);
+
+    await setPia(null);
+  });
+
+  // Permanent regression test for a bug an advisor review caught: an
+  // earlier version of this fix computed the PIA-adjusted amount using
+  // retirement_profile_people.ss_start_age (the live value the "SS Start
+  // Age" UI control actually writes — upsertHouseholdFields writes ONLY
+  // that table) but emitted the separate, staler retirement_settings.ss_
+  // start_age as the projection's actual ssStartAge — so the engine could
+  // pay a benefit adjusted for one claiming age starting at a different
+  // one. This test deliberately seeds the two tables with DIFFERENT
+  // ss_start_age values (the earlier tests in this block seed them
+  // identically, which is exactly what let the bug through unnoticed).
+  it("uses retirement_profile_people's ssStartAge for BOTH the PIA adjustment and the emitted ssStartAge, not a stale retirement_settings value", async () => {
+    const schema = await getSchema();
+    const { eq } = await import("drizzle-orm");
+    // Simulate a household whose retirement_settings row is stale (never
+    // updated after the profile-people table became the live source) —
+    // retirement_settings still says 67, but retirement_profile_people
+    // (what the UI actually edited) says 70.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (db as any)
+      .update(schema.retirementSettings)
+      .set({ ssStartAge: 67 })
+      .where(eq(schema.retirementSettings.personId, personId))
+      .run();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (db as any)
+      .update(schema.retirementProfilePeople)
+      .set({ ssStartAge: 70, socialSecurityPia: "4000" })
+      .where(eq(schema.retirementProfilePeople.personId, personId))
+      .run();
+
+    const data = await fetchRetirementData(db, {});
+    const payload = await buildEnginePayload(db, data, {});
+
+    // The emitted ssStartAge must be 70 (the live, per-person value) —
+    // NOT 67 (the stale retirement_settings value) — and the amount must
+    // be adjusted for claiming at 70 (delayed credits), not for 67.
+    expect(payload!.baseEngineInput.ssStartAge).toBe(70);
+    // FRA 67, claiming at 70 (36 months delayed) -> 1.24 multiplier (SSA's
+    // own published table).
+    expect(payload!.baseEngineInput.socialSecurityAnnual).toBeCloseTo(
+      48000 * 1.24,
+      2,
+    );
+    // afterEach resets both tables' ssStartAge to 62 and clears PIA.
+  });
+});
+
+describe("buildEnginePayload — socialSecurityPia, two-person household", () => {
+  let db: BetterSQLite3Database<typeof sqliteSchema>;
+  let cleanup: () => void;
+  let personAId: number;
+  let personBId: number;
+  let profileId: number;
+
+  beforeAll(async () => {
+    const ctx = await createTestCaller();
+    db = ctx.db;
+    cleanup = ctx.cleanup;
+    const schema = await getSchema();
+
+    personAId = await seedPerson(db, "Alex", "1963-04-10"); // FRA 67
+    personBId = await seedPerson(db, "Sam", "1965-09-20"); // FRA 67
+    await markPrimary(db, personAId);
+    await seedRetirementSettings(db, personAId, {
+      socialSecurityMonthly: "3000",
+    });
+    await seedRetirementSettings(db, personBId, {
+      socialSecurityMonthly: "1800",
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    profileId = (db as any)
+      .insert(schema.retirementProfiles)
+      .values({ name: "Current Plan" })
+      .returning({ id: schema.retirementProfiles.id })
+      .get().id;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (db as any).update(schema.retirementSettings).set({ profileId }).run();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (db as any)
+      .insert(schema.retirementProfilePeople)
+      .values([
+        {
+          profileId,
+          personId: personAId,
+          retirementAge: 65,
+          endAge: 95,
+          socialSecurityMonthly: "3000",
+          ssStartAge: 62, // 60 months early at FRA 67 -> 0.70
+          socialSecurityPia: "4000", // opted in
+        },
+        {
+          profileId,
+          personId: personBId,
+          retirementAge: 65,
+          endAge: 95,
+          socialSecurityMonthly: "1800",
+          ssStartAge: 67, // exactly at FRA -> 1.0, no PIA set
+        },
+      ])
+      .run();
+  });
+
+  afterAll(() => cleanup());
+
+  it("multi-person households already populated entries before this feature — that's unaffected by PIA either way", async () => {
+    const data = await fetchRetirementData(db, {});
+    const payload = await buildEnginePayload(db, data, {});
+
+    const entries = payload!.baseEngineInput.socialSecurityEntries;
+    expect(entries).toHaveLength(2);
+  });
+
+  it("only the person with PIA set gets the claiming-age-adjusted amount; the other keeps their flat monthly amount", async () => {
+    const data = await fetchRetirementData(db, {});
+    const payload = await buildEnginePayload(db, data, {});
+
+    const entries = payload!.baseEngineInput.socialSecurityEntries!;
+    const alex = entries.find((e) => e.personId === personAId)!;
+    const sam = entries.find((e) => e.personId === personBId)!;
+
+    // Alex: PIA $4000/mo = $48000/yr, claiming at 62 (60mo early, FRA 67) -> 0.70
+    expect(alex.annualAmount).toBeCloseTo(48000 * 0.7, 2);
+    // Sam: no PIA set -> unchanged flat monthly amount ($1800/mo = $21600/yr)
+    expect(sam.annualAmount).toBe(21600);
   });
 });

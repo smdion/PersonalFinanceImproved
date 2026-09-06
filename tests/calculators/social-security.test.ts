@@ -7,6 +7,7 @@
  * `sweepClaimingAges` as a real black box, no engine internals imported.
  */
 import { describe, it, expect } from "vitest";
+import { calculateProjection } from "@/lib/calculators/engine";
 import {
   computeAdjustedBenefit,
   computeSpousalBenefit,
@@ -334,5 +335,67 @@ describe("sweepClaimingAges", () => {
     // otherwise, since the projection would then be missing an income
     // source it expects).
     expect(result.candidates).toHaveLength(1);
+  });
+});
+
+// Plan §8's required check: "a person with socialSecurityPia set produces
+// the same result as manually pre-computing the adjusted amount and passing
+// it via the existing flat field — proves the integration is equivalent,
+// not a parallel code path with its own bugs." Run at the true engine
+// level (calculateProjection), not just checking build-engine-payload's
+// output shape — an earlier version of the server-side wiring (caught by
+// advisor review before commit) passed this kind of shape-only check while
+// still silently changing RMD behavior via a different field
+// (socialSecurityEntries also drives per-person RMD tracking). This test
+// exercises the SINGLE-PERSON path specifically — build-engine-payload.ts
+// routes a single person's PIA through the scalar socialSecurityAnnual
+// field precisely so this equivalence holds with zero side effects; a
+// version that routed it through socialSecurityEntries instead would still
+// pass this test's assertions (annualAmount is correct either way) while
+// failing the RMD side of the picture, which is why
+// tests/server/build-engine-payload.test.ts separately asserts
+// socialSecurityEntries stays undefined for a single-person household.
+describe("PIA wiring equivalence (plan §8) — engine level", () => {
+  it("a PIA-derived annualAmount produces an identical projection to manually passing the same pre-computed amount", () => {
+    const pia = 30000;
+    const birthYear = 1963; // FRA 67
+    const claimingAge = 63; // 48 months early
+    // Golden literal, NOT computeAdjustedBenefit called a second time — an
+    // earlier version of this test called the same function on both sides
+    // and only proved calculateProjection is deterministic (f(x) === f(x)).
+    // FRA 67, 48 months early: 36mo * 5/9% + 12mo * 5/12% = 20% + 5% = 25%
+    // reduction -> 0.75 multiplier (same formula golden-tested directly in
+    // tests/config/social-security.test.ts).
+    const expectedAdjustedAmount = pia * 0.75;
+
+    const base = makeSingleHousehold();
+    const viaFlatField: ProjectionInput = {
+      ...base,
+      ssStartAge: claimingAge,
+      socialSecurityAnnual: expectedAdjustedAmount,
+      socialSecurityEntries: undefined,
+    };
+    // What build-engine-payload.ts's single-person PIA path does under the
+    // hood: compute the adjusted amount, then set it on the SAME scalar
+    // field — not a different code path, just a different source for the
+    // number.
+    const computedAmount = computeAdjustedBenefit(
+      pia,
+      birthYear,
+      claimingAge * 12,
+    );
+    expect(computedAmount).toBeCloseTo(expectedAdjustedAmount, 2);
+    const viaPiaWiring: ProjectionInput = {
+      ...base,
+      ssStartAge: claimingAge,
+      socialSecurityAnnual: computedAmount,
+      socialSecurityEntries: undefined,
+    };
+
+    const resultA = calculateProjection(viaFlatField);
+    const resultB = calculateProjection(viaPiaWiring);
+
+    expect(resultB.projectionByYear).toEqual(resultA.projectionByYear);
+    expect(resultB.portfolioDepletionAge).toBe(resultA.portfolioDepletionAge);
   });
 });

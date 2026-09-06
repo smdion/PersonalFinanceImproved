@@ -88,7 +88,10 @@ export function SocialSecuritySection({
             </span>
             <div className="font-medium">
               <InlineEdit
-                value={settings.socialSecurityMonthly}
+                value={
+                  perPersonSettings?.[0]?.socialSecurityMonthly ??
+                  settings.socialSecurityMonthly
+                }
                 onSave={(v) => {
                   const parsed = parseFloat(v);
                   if (isNaN(parsed) || parsed < 0) return;
@@ -105,7 +108,12 @@ export function SocialSecuritySection({
                 isEditable={isEditable}
               />
               <span className="text-caption text-faint">
-                {formatCurrency(Number(settings.socialSecurityMonthly) * 12)}
+                {formatCurrency(
+                  Number(
+                    perPersonSettings?.[0]?.socialSecurityMonthly ??
+                      settings.socialSecurityMonthly,
+                  ) * 12,
+                )}
                 /yr
               </span>
             </div>
@@ -118,7 +126,11 @@ export function SocialSecuritySection({
           </span>
           <div className="font-medium">
             <InlineEdit
-              value={String(settings.ssStartAge)}
+              value={String(
+                perPersonSettings && perPersonSettings.length === 1
+                  ? perPersonSettings[0]!.ssStartAge
+                  : settings.ssStartAge,
+              )}
               onSave={(v) => {
                 const parsed = parseInt(v, 10);
                 if (isNaN(parsed) || parsed < 62 || parsed > 75) return;
