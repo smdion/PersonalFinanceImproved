@@ -8,6 +8,7 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { Badge } from "@/components/ui/badge";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatCurrency } from "@/lib/utils/format";
+import { ClaimingAgeExplorer } from "./claiming-age-explorer";
 import type {
   Settings,
   PerPersonSettings,
@@ -15,6 +16,16 @@ import type {
   UpsertProfileHouseholdFieldsMutation,
   IsEditable,
 } from "./types";
+
+/** `""` -> not opted in (`null` on save). A positive parsed number -> opted
+ *  in. Mirrors `piaAnnual()`'s guard in build-engine-payload.ts — this is
+ *  the DISPLAY-side twin of that same "what counts as opted in" question,
+ *  so the UI and the engine can't disagree on it. */
+function parsedPia(value: string | null | undefined): number | null {
+  if (!value) return null;
+  const parsed = parseFloat(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
 
 type Props = {
   settings: Settings;
@@ -38,6 +49,26 @@ export function SocialSecuritySection({
 }: Props) {
   if (settings.profileId == null) return null;
   const profileId = settings.profileId;
+
+  const peopleWithPia: {
+    personId: number;
+    name: string | null;
+    pia: number;
+  }[] =
+    perPersonSettings && perPersonSettings.length > 1
+      ? perPersonSettings.flatMap((ps) => {
+          const pia = parsedPia(ps.socialSecurityPia);
+          return pia != null
+            ? [{ personId: ps.personId, name: ps.name, pia }]
+            : [];
+        })
+      : (() => {
+          const pia = parsedPia(perPersonSettings?.[0]?.socialSecurityPia);
+          return pia != null
+            ? [{ personId: settings.personId, name: null, pia }]
+            : [];
+        })();
+
   return (
     <div className="bg-surface-sunken rounded-lg p-3">
       <div className="mb-2 flex items-center gap-2">
@@ -77,6 +108,43 @@ export function SocialSecuritySection({
                   {formatCurrency(Number(ps.socialSecurityMonthly) * 12)}
                   /yr
                 </span>
+              </div>
+              <div className="mt-1">
+                <span className="text-muted">
+                  {ps.name}&apos;s PIA (optional)
+                  <HelpTip text="Primary Insurance Amount — the benefit at Full Retirement Age, from your SSA statement. Entering it lets the app adjust for early/delayed claiming and compare claiming ages below. Leave blank to keep using the flat Monthly Benefit above unadjusted." />
+                </span>
+                <div className="font-medium">
+                  <InlineEdit
+                    value={ps.socialSecurityPia ?? ""}
+                    onSave={(v) => {
+                      if (v === "") {
+                        upsertPerson.mutate({
+                          profileId,
+                          personId: ps.personId,
+                          socialSecurityPia: null,
+                        });
+                        return;
+                      }
+                      const parsed = parseFloat(v);
+                      if (isNaN(parsed) || parsed <= 0) return;
+                      upsertPerson.mutate({
+                        profileId,
+                        personId: ps.personId,
+                        socialSecurityPia: String(parsed),
+                      });
+                    }}
+                    formatDisplay={(v) =>
+                      parsedPia(v) != null
+                        ? `${formatCurrency(Number(v))}/mo`
+                        : "Not set"
+                    }
+                    parseInput={(v) => v.replace(/[^0-9.]/g, "")}
+                    type="number"
+                    className="text-sm"
+                    isEditable={isEditable}
+                  />
+                </div>
               </div>
             </div>
           ))
@@ -119,6 +187,45 @@ export function SocialSecuritySection({
             </div>
           </div>
         )}
+        {(!perPersonSettings || perPersonSettings.length <= 1) && (
+          <div>
+            <span className="text-muted">
+              PIA (optional)
+              <HelpTip text="Primary Insurance Amount — the benefit at Full Retirement Age, from your SSA statement. Entering it lets the app adjust for early/delayed claiming and compare claiming ages below. Leave blank to keep using the flat Monthly Benefit above unadjusted." />
+            </span>
+            <div className="font-medium">
+              <InlineEdit
+                value={perPersonSettings?.[0]?.socialSecurityPia ?? ""}
+                onSave={(v) => {
+                  if (v === "") {
+                    upsertPerson.mutate({
+                      profileId,
+                      personId: settings.personId,
+                      socialSecurityPia: null,
+                    });
+                    return;
+                  }
+                  const parsed = parseFloat(v);
+                  if (isNaN(parsed) || parsed <= 0) return;
+                  upsertPerson.mutate({
+                    profileId,
+                    personId: settings.personId,
+                    socialSecurityPia: String(parsed),
+                  });
+                }}
+                formatDisplay={(v) =>
+                  parsedPia(v) != null
+                    ? `${formatCurrency(Number(v))}/mo`
+                    : "Not set"
+                }
+                parseInput={(v) => v.replace(/[^0-9.]/g, "")}
+                type="number"
+                className="text-sm"
+                isEditable={isEditable}
+              />
+            </div>
+          </div>
+        )}
         <div>
           <span className="text-muted">
             Start Age
@@ -150,6 +257,18 @@ export function SocialSecuritySection({
           <div className="text-muted font-medium">~85%</div>
         </div>
       </div>
+      {peopleWithPia.length > 0 && (
+        <div className="mt-3 space-y-2 border-t pt-3">
+          {peopleWithPia.map((p) => (
+            <ClaimingAgeExplorer
+              key={p.personId}
+              personId={p.personId}
+              pia={p.pia}
+              personName={p.name}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
