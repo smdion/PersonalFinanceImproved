@@ -19,6 +19,11 @@ type InlineEditProps = {
    *  container wider. Opt-in — for tight rows (e.g. a profile list) where
    *  a long value must yield space to its siblings. */
   truncate?: boolean;
+  /** Suppress the little pencil affordance on the display button. Opt-in —
+   *  for surfaces where a section-level control (an `EditLockToggle`
+   *  padlock) already signals "this area is editable", so a pencil on every
+   *  value is redundant clutter. Click-to-edit still works. */
+  hideEditIcon?: boolean;
 };
 
 /**
@@ -34,6 +39,7 @@ export function InlineEdit({
   className = "",
   isEditable = true,
   truncate = false,
+  hideEditIcon = false,
 }: InlineEditProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
@@ -116,20 +122,22 @@ export function InlineEdit({
       <span className={truncate ? "min-w-0 truncate" : undefined}>
         {display}
       </span>
-      <svg
-        className="text-faint h-3 w-3 shrink-0 transition-colors group-hover:text-blue-400"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={2}
-        aria-hidden="true"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-        />
-      </svg>
+      {!hideEditIcon && (
+        <svg
+          className="text-faint h-3 w-3 shrink-0 transition-colors group-hover:text-blue-400"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+          aria-hidden="true"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+          />
+        </svg>
+      )}
     </button>
   );
 }

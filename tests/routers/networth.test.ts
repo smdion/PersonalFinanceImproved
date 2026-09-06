@@ -600,6 +600,66 @@ describe("networth.portfolioSnapshots createAccount/updateAccount/delete", () =>
   });
 });
 
+describe("networth snapshot account order is stable across an inline balance edit", () => {
+  it("listSnapshots and getLatest both return accounts in id order, unchanged after updateAccount", async () => {
+    const ctx = await createTestCaller(adminSession);
+    try {
+      const { db, caller } = ctx;
+      await seedPerson(db, "Dana", "1988-03-03");
+      const p1 = seedPerformanceAccount(db, {
+        institution: "Vanguard",
+        accountType: "401k",
+      });
+      const p2 = seedPerformanceAccount(db, {
+        institution: "Fidelity",
+        accountType: "ira",
+      });
+      const p3 = seedPerformanceAccount(db, {
+        institution: "Schwab",
+        accountType: "brokerage",
+      });
+      seedSnapshot(db, "2025-08-01", [
+        { performanceAccountId: p1, amount: "100000", taxType: "preTax" },
+        { performanceAccountId: p2, amount: "50000", taxType: "preTax" },
+        { performanceAccountId: p3, amount: "25000", taxType: "afterTax" },
+      ]);
+
+      const before = await caller.networth.listSnapshots({
+        page: 1,
+        pageSize: 10,
+      });
+      const orderBefore = before.snapshots[0]!.accounts.map(
+        (a: { id: number }) => a.id,
+      );
+      expect(orderBefore.length).toBe(3);
+      // Seeded in ascending-id order.
+      expect([...orderBefore].sort((a, b) => a - b)).toEqual(orderBefore);
+
+      // Edit the MIDDLE account's balance — the case that reshuffled the row
+      // before the ORDER BY was added.
+      await caller.networth.portfolioSnapshots.updateAccount({
+        id: orderBefore[1]!,
+        amount: "999999",
+      });
+
+      const afterList = await caller.networth.listSnapshots({
+        page: 1,
+        pageSize: 10,
+      });
+      expect(
+        afterList.snapshots[0]!.accounts.map((a: { id: number }) => a.id),
+      ).toEqual(orderBefore);
+
+      const afterLatest = await caller.networth.portfolioSnapshots.getLatest();
+      expect(afterLatest!.accounts.map((a: { id: number }) => a.id)).toEqual(
+        orderBefore,
+      );
+    } finally {
+      ctx.cleanup();
+    }
+  });
+});
+
 // NOTE: portfolioSnapshots.create uses db.transaction() which is incompatible
 // with better-sqlite3 async pattern in tests. Tested via E2E instead.
 
