@@ -179,11 +179,18 @@ export async function createTestCaller(
 
 /**
  * Seed a person into the test database (many routers require at least one person).
+ *
+ * Default DOB is deliberately mid-year: `new Date("YYYY-01-01")` parses as
+ * UTC midnight, which `.getFullYear()` reads back as the PRIOR year in any
+ * timezone behind UTC — so a Jan-1 fixture makes engine-projected years
+ * (retirement year, RMD year, …) shift by one between a US-local test run
+ * and a UTC one. A June date is the same year everywhere. (Tests are also
+ * pinned to `TZ=UTC` in vitest.config.ts; this is belt-and-braces.)
  */
 export async function seedPerson(
   db: BetterSQLite3Database<typeof sqliteSchema>,
   name = "Test Person",
-  dateOfBirth = "1990-01-01",
+  dateOfBirth = "1990-06-15",
 ): Promise<number> {
   const result = db
     .insert(sqliteSchema.people)
@@ -672,7 +679,8 @@ export function seedStandardDataset(
     .insert(sqliteSchema.people)
     .values({
       name: "Test Person",
-      dateOfBirth: "1990-01-01",
+      // Mid-year on purpose — see seedPerson's docblock.
+      dateOfBirth: "1990-06-15",
       isPrimaryUser: true,
     })
     .returning({ id: sqliteSchema.people.id })
