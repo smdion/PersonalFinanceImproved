@@ -43,6 +43,15 @@ export const ASSUMED_TERMINAL_RATE = 0.22;
 export type BracketOptimizerCandidate = {
   target: number;
   netCost: number;
+  /** Σ (`taxCost` + `rothConversionTaxCost` + `penaltyCost` + `irmaaCost`)
+   *  over the decumulation horizon for this candidate — the tax half of
+   *  `netCost`, exposed so a comparison UI can show the real tradeoff
+   *  (higher ceiling ⇒ more tax now, less Traditional stranded) instead of
+   *  only the blended score. */
+  lifetimeTax: number;
+  /** Traditional (pre-tax) balance left at end of plan for this candidate —
+   *  the quantity the terminal-value penalty in `netCost` is applied to. */
+  traditionalEnd: number;
   /** Ranking signal — floored `unmetNeed` summed over years where
    *  `unmetNeedMaterial` is true. NOT a sum of `unmetNeed` +
    *  `penaltyAvoidedShortfall` + `nonRetirementShortfall` — those two are
@@ -183,6 +192,8 @@ function scoreCandidate(
   return {
     target,
     netCost,
+    lifetimeTax,
+    traditionalEnd,
     shortfallScore,
     depleted: result.portfolioDepletionAge !== null,
   };

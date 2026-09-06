@@ -32,8 +32,8 @@ export interface RecalcIncomeParams {
    *  mutation forwards these to budget.computeActiveSummary so that
    *  procedure's OWN per-column profile resolution (Plan pin > column pin >
    *  local selection > global default) matches what the client's own
-   *  maxMonthlyFunding query used, not just the paycheck side (found live,
-   *  2026-08-31, round two — see computeLiveMaxMonthlyFunding in savings.ts). */
+   *  maxMonthlyFunding query used, not just the paycheck side (see
+   *  computeLiveMaxMonthlyFunding in savings.ts). */
   contributionProfileTiers?: ProfileResolutionTiers;
   salaryProfileTiers?: ProfileResolutionTiers;
 }
@@ -351,8 +351,7 @@ export function useApiSync() {
         data.service === "actual",
       );
       // A genuine failure with nothing pushed is a real error, not a
-      // quiet "already up to date" — surface it as one (found live,
-      // 2026-08-31: this previously always showed a success toast, even
+      // quiet "already up to date" — surface it as one (this previously always showed a success toast, even
       // when every single push attempt failed server-side).
       if (data.failed > 0 && data.pushed === 0) {
         toast.error(message);
@@ -413,8 +412,7 @@ export function useApiSync() {
   >(undefined);
   // Threaded into recalculateMutation/lockInMutation's `income` fields so
   // the live pool the MUTATION recomputes against can't diverge from what
-  // this same preview just showed the household (found live, 2026-08-31 —
-  // see computeLiveMaxMonthlyFunding's docblock, savings.ts).
+  // this same preview just showed the household (see computeLiveMaxMonthlyFunding's docblock, savings.ts).
   const [pendingRecalcIncome, setPendingRecalcIncome] = useState<
     RecalcIncomeParams | undefined
   >(undefined);

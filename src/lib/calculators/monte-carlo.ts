@@ -321,8 +321,8 @@ export function calculateMonteCarlo(
     // Penalty-avoided shortfall -- any decumulation year whose
     // spending need went unfunded because penalty-exposed money was
     // excluded disqualifies this trial from counting as a success below,
-    // regardless of its terminal balance. Materiality floor (advisor
-    // review, 2026-08-27, matching coast-fire.ts's identically-reasoned
+    // regardless of its terminal balance. Materiality floor (matching
+    // coast-fire.ts's identically-reasoned
     // `passes()` floor): a rounding-scale shortfall in one of many
     // decumulation years shouldn't disqualify an otherwise-successful
     // trial.
@@ -382,8 +382,7 @@ export function calculateMonteCarlo(
       // y.projectedExpenses looked right but isn't: for Guyton-Klinger/
       // Forgo/Spending-Decline it's overwritten by that strategy's own
       // guardrail target every year, which silently collapsed "vs budget"
-      // into being identical to "vs strategy" (live-user finding,
-      // 2026-08-28 — both KPI rings showing the same percentage).
+      // into being identical to "vs strategy" (both KPI rings showing the same percentage).
       if (retirementBudget !== null) {
         const isBudgetStable = decYears.every((y) => {
           const baseline = y.budgetOnlyExpenses;

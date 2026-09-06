@@ -16,6 +16,8 @@
  * - `relocation.ts`   — `computeRelocationFiProjection`
  * - `withdrawal-bracket-optimizer.ts` — `computeWithdrawalBracketOptimizer`
  * - `coast-fire-probe.ts` — `computeCoastFireProbe`
+ * - `tax-optimization.ts` — `projectTaxYears`, `compareWithdrawalStrategies`,
+ *                           `rothConversionWhatIf`
  *
  * Shared Zod schemas + helper builders live in `_shared.ts`.
  *
@@ -36,6 +38,7 @@ import { relocationProjectionRouter } from "./relocation";
 import { scenariosRouter } from "./scenarios";
 import { strategyRouter } from "./strategy";
 import { stressTestRouter } from "./stress-test";
+import { taxOptimizationRouter } from "./tax-optimization";
 import { withdrawalBracketOptimizerRouter } from "./withdrawal-bracket-optimizer";
 
 export const projectionRouter = mergeRouters(
@@ -47,5 +50,6 @@ export const projectionRouter = mergeRouters(
   stressTestRouter,
   presetsRouter,
   relocationProjectionRouter,
+  taxOptimizationRouter,
   withdrawalBracketOptimizerRouter,
 );

@@ -13,8 +13,7 @@ import {
   buildEnginePayload,
 } from "@/server/retirement/build-engine-payload";
 import { runStressTestScenarios } from "../projection-v5-helpers";
-import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
-import { buildStrategyParams } from "./_shared";
+import { buildDecumulationDefaults } from "./_shared";
 
 export const stressTestRouter = createTRPCRouter({
   /**
@@ -75,14 +74,24 @@ export const stressTestRouter = createTRPCRouter({
         avgRetirementAge,
       } = payload;
 
-      const userStrategyParams = buildStrategyParams(settings);
-      const activeStrategy =
-        (settings.withdrawalStrategy as WithdrawalStrategyType) ?? "fixed";
+      // Resolved via the shared builder — the household's real routing
+      // mode, order/splits, RMD/QCD handling, discretionary order, and
+      // active strategy + params, same as every other consumer
+      // (computeProjection, computeStrategyComparison, analyzeStrategy).
+      // Each of the three stress scenarios then overrides only
+      // `withdrawalRate`, its own controlled variable
+      // (runStressTestScenarios, projection-v5-helpers.ts). Previously this
+      // hand-built the object inline and silently dropped rmdExcessHandling/
+      // qcdMaximize/rmdSmoothingEnabled/discretionaryWithdrawalOrder to
+      // engine defaults regardless of what was configured.
+      const decumulationDefaults = buildDecumulationDefaults(
+        settings,
+        { withdrawalTaxPreference: {} },
+        distributionTaxRates,
+      );
       const scenarios = runStressTestScenarios({
         baseEngineInput,
-        userStrategyParams,
-        activeStrategy,
-        distributionTaxRates,
+        decumulationDefaults,
         avgRetirementAge,
       });
 

@@ -32,7 +32,10 @@ import { getAllPeople } from "@/server/helpers/people";
 import type { Db } from "@/server/helpers";
 import type { W4FilingStatus } from "@/lib/config/enum-values";
 import type { ContribRowWithActiveFields } from "@/server/helpers/contribution";
-import { isRetirementParent } from "@/lib/config/account-types";
+import {
+  isRetirementParent,
+  accountCategoryEnum,
+} from "@/lib/config/account-types";
 import { getAge } from "@/lib/utils/date";
 import { roundToCents } from "@/lib/utils/math";
 import {
@@ -104,6 +107,50 @@ const retirementSettingsInput = z.object({
   withdrawalStrategy: z.enum(withdrawalStrategyEnum()).optional(),
   discretionaryWithdrawalOrder: z
     .enum(["roth_first", "brokerage_first"])
+    .optional(),
+  withdrawalRoutingMode: z
+    .enum(["bracket_filling", "waterfall", "percentage"])
+    .optional(),
+  /** Persisted household default for the withdrawal ORDER (Waterfall's
+   *  account sequence; also, filtered to Traditional accounts,
+   *  bracket_filling's Phase 1 order). Elements must be valid account
+   *  categories with no duplicates; a partial list is allowed — the engine
+   *  backfills any missing category via `ensureCompleteWithdrawalOrder`
+   *  (override-resolution.ts), so a strict full-permutation check here would
+   *  only add a way for the write to 400 with no read-path benefit (and go
+   *  unsatisfiable if `accountCategoryEnum()` and `getAllCategories()` ever
+   *  drift). `null` clears it back to `getDefaultDecumulationOrder()`; omit
+   *  the key to leave it unchanged. */
+  withdrawalOrder: z
+    .array(z.enum(accountCategoryEnum()))
+    .refine((arr) => new Set(arr).size === arr.length, {
+      message: "withdrawalOrder must not repeat an account category",
+    })
+    .nullable()
+    .optional(),
+  /** Persisted household default for percentage-mode splits — fractions per
+   *  account. A PARTIAL record is legal: a category absent from the record
+   *  resolves to 0 and the engine redistributes the shortfall
+   *  proportionally. `buildDecumulationDefaults` uses the stored record
+   *  wholesale (no merge with `DEFAULT_WITHDRAWAL_SPLITS`). `null` clears it
+   *  back to the default; omit the key to leave it unchanged. */
+  withdrawalSplits: z
+    .record(z.enum(accountCategoryEnum()), z.number().min(0).max(1))
+    .refine(
+      // Loose guard only — a single-field rebalance transiently pushes the
+      // sum off 100%, and the engine redistributes any shortfall
+      // proportionally, so this rejects gross nonsense (all-zero, 10×
+      // fat-finger) without blocking normal editing. The UI shows an amber
+      // "should be 100%" hint for anything off.
+      (rec) => {
+        const sum = Object.values(rec).reduce((s, v) => s + v, 0);
+        return sum > 0.5 && sum < 1.5;
+      },
+      {
+        message: "withdrawalSplits values must be in the neighbourhood of 100%",
+      },
+    )
+    .nullable()
     .optional(),
   gkUpperGuardrail: zDecimal.optional(),
   gkLowerGuardrail: zDecimal.optional(),
@@ -512,7 +559,7 @@ export const retirementRouter = createTRPCRouter({
           : null;
 
         // Shared resolver (was a near-duplicate re-implementation inline
-        // here — M26). jobSalaries already reflects the globally-active
+        // here). jobSalaries already reflects the globally-active
         // Salary Profile — this is the control/comparison arm of the
         // relocation analysis, so it stays un-overridden by any
         // Plan-specific salary the way it always has.
@@ -1084,7 +1131,7 @@ export const retirementRouter = createTRPCRouter({
       ),
   }),
 
-  // retirementScenarios CRUD removed 2026-08-30 (Retirement Profiles step B).
+  // retirementScenarios CRUD removed.
   // It had ZERO UI callers while the table it wrote was read on every engine
   // build, so it could silently change every projection with no way to see
   // or undo it. The four distribution tax rates it carried now live on
@@ -1315,8 +1362,8 @@ export const retirementRouter = createTRPCRouter({
         // production dialect) honours it — but the migration that added
         // retirement_settings.profile_id used ALTER TABLE ADD COLUMN, and
         // drizzle-kit's SQLite generator emits that form WITHOUT the ON
-        // DELETE clause (confirmed live 2026-08-30: SQLite CREATE TABLE
-        // preserves it, ALTER TABLE ADD COLUMN silently drops it). Any
+        // DELETE clause — confirmed live: SQLite CREATE TABLE
+        // preserves it, ALTER TABLE ADD COLUMN silently drops it. Any
         // SQLite-dialect install — which schema-sqlite.ts exists to
         // support, not just tests — would fail this delete with a foreign
         // key error instead of cascading. Deleting explicitly here is

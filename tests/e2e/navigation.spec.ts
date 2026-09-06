@@ -15,6 +15,7 @@ const dashboardPages = [
   { path: "/expenses", heading: /expenses/i },
   { path: "/performance", heading: /performance/i },
   { path: "/data-browser", heading: /data\s*browser/i },
+  { path: "/tax-optimization", heading: /tax\s*optimization/i },
 ];
 
 test.describe("Dashboard navigation", () => {

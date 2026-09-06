@@ -45,8 +45,11 @@ export function useProjectionQueries(
   const salaryActiveFields = useActiveSalaries();
   const {
     withdrawalRoutingMode,
+    withdrawalRoutingModeTouched,
     withdrawalOrder,
+    withdrawalOrderTouched,
     withdrawalSplits,
+    withdrawalSplitsTouched,
     withdrawalTaxPref,
     accumOverrides,
     decumOverrides,
@@ -87,9 +90,15 @@ export function useProjectionQueries(
         salaryActiveFields.length > 0 ? salaryActiveFields : undefined,
       decumulationDefaults: {
         withdrawalRate: withdrawalRate / 100,
-        withdrawalRoutingMode,
-        withdrawalOrder,
-        withdrawalSplits,
+        // Omitted (not just left at its display default) until the user
+        // actually touches the matching Configure editor — see
+        // use-projection-form-state.ts's docblock on the *Touched flags for
+        // why each of these has to be an omission, not a value, to keep this
+        // byte-identical to the dashboard tile's peek query and still
+        // resolve the household's real persisted setting.
+        ...(withdrawalRoutingModeTouched ? { withdrawalRoutingMode } : {}),
+        ...(withdrawalOrderTouched ? { withdrawalOrder } : {}),
+        ...(withdrawalSplitsTouched ? { withdrawalSplits } : {}),
         withdrawalTaxPreference: withdrawalTaxPref,
       },
       accumulationOverrides: accumOverrides,
@@ -110,7 +119,7 @@ export function useProjectionQueries(
         : {}),
       ...(contributionProfileId != null ? { contributionProfileId } : {}),
       ...(salaryProfileId != null ? { salaryProfileId } : {}),
-      // Advisor-caught 2026-09-01: this object is spread into every engine
+      // This object is spread into every engine
       // query in this hook (computeProjection, computeMonteCarloProjection,
       // computeCoastFire/MC/Probe, the bracket optimizer) — adding
       // retirementProfileId here once threads the AssumptionsBand's "view
@@ -123,8 +132,11 @@ export function useProjectionQueries(
       salaryActiveFields,
       withdrawalRate,
       withdrawalRoutingMode,
+      withdrawalRoutingModeTouched,
       withdrawalOrder,
+      withdrawalOrderTouched,
       withdrawalSplits,
+      withdrawalSplitsTouched,
       withdrawalTaxPref,
       accumOverrides,
       decumOverrides,
@@ -164,16 +176,17 @@ export function useProjectionQueries(
   // narrative function, not two independently-worded explanations.
   // `debouncedBaseInput` (not `debouncedInput`) matches coastFireQuery's
   // own precedent above: always the baseline plan, not a scenario
-  // override. Only relevant under bracket_filling — Waterfall mode has no
-  // bracket target to explain — so gated off otherwise to avoid an
-  // unnecessary multi-projection-run query for households not using it.
+  // override. NOT gated on `withdrawalRoutingMode` — deliberately matches
+  // retirement-profile-tab.tsx's Taxes settings section, which never
+  // gated this either: `rothBracketTarget` also governs Roth conversions
+  // and RMD smoothing independent of routing mode, so the recommendation
+  // stays relevant even in Waterfall mode. (A prior version of this query
+  // DID gate on bracket_filling — an inconsistency with the Taxes
+  // section's own documented reasoning, not a deliberate difference.)
   const bracketOptimizerQuery =
     trpc.projection.computeWithdrawalBracketOptimizer.useQuery(
       debouncedBaseInput,
-      {
-        enabled: withdrawalRoutingMode === "bracket_filling",
-        staleTime: 5 * 60 * 1000,
-      },
+      { staleTime: 5 * 60 * 1000 },
     );
   const bracketOptimizerResult = bracketOptimizerQuery.data?.result ?? null;
 
@@ -198,11 +211,11 @@ export function useProjectionQueries(
     SK_RETIREMENT_MC_AUTOLOAD,
     true,
   );
-  // Default flipped false 2026-08-30 (live-user finding: the eager
-  // background Coast FIRE MC probe was adding ~4-6s of server work to
-  // EVERY projection page load, whether or not the household ever looks
-  // at Coast FIRE) — see coastFireMcQuery's docblock below for the new
-  // default behavior. Flipping this setting back on restores the old
+  // Defaults false: the eager background Coast FIRE MC probe was adding
+  // ~4-6s of server work to EVERY projection page load, whether or not
+  // the household ever looks at Coast FIRE — see coastFireMcQuery's
+  // docblock below for the new default behavior. Flipping this setting
+  // back on restores the old
   // "always prefetched in the background" experience for anyone who
   // prefers instant scenario switching over a faster initial load.
   const [coastFireMcAutoloadEnabled] = usePersistedToggle(
@@ -304,12 +317,11 @@ export function useProjectionQueries(
   // input itself, not a fresh random id per mount — a fresh id wouldn't
   // match the worker's actual in-progress job id, so progress would
   // silently reset to indeterminate on remount instead of resuming the
-  // real trial count (this is the same fix already applied to mcQuery
-  // 2026-08-30 — see monte-carlo-worker-client.ts's runId docblock).
+  // real trial count (this is the same fix already applied to mcQuery —
+  // see monte-carlo-worker-client.ts's runId docblock).
   // Memoized — these ran on every render otherwise, re-stringifying an
   // input object that (per the docblock above) only needs to change when
-  // the underlying input actually does (code-review efficiency finding,
-  // 2026-09-01).
+  // the underlying input actually does.
   const coastFireMcRunId = useMemo(
     () => JSON.stringify(debouncedBaseInput),
     [debouncedBaseInput],
@@ -443,7 +455,7 @@ export function useProjectionQueries(
       },
     );
 
-  // Operational escape hatch (user request, 2026-08-28): wipe every cached
+  // Operational escape hatch: wipe every cached
   // projection row server-side without bumping PROJECTION_CACHE_ENGINE_VERSION
   // and redeploying, then invalidate every projection query on THIS page so
   // it refetches against the now-empty cache immediately, rather than
@@ -519,7 +531,7 @@ export function useProjectionQueries(
   // is unchanged — but a fresh random runId wouldn't match the worker's
   // actual in-progress job id, so progress would silently reset to the
   // plain indeterminate state on return instead of resuming the real
-  // trial count (live-user finding, 2026-08-30). Deriving the id from the
+  // trial count. Deriving the id from the
   // input itself means "same inputs → same runId" across remounts, so the
   // progress poll reconnects to the correct in-flight job. Genuinely new
   // inputs naturally get a new id, matching the new (different) job the
@@ -592,7 +604,7 @@ export function useProjectionQueries(
   // Exposed on the return value below so index.tsx's progress-strip phase
   // computation can reuse this instead of re-deriving the same condition
   // (previously copy-pasted there, with only a comment tying the two
-  // together — code-review reuse/duplication finding, 2026-09-01).
+  // together).
   const coastFireMcQueryEnabled =
     coastFireMcAutoloadEnabled ||
     scenarioView === "coastFire" ||
@@ -642,7 +654,7 @@ export function useProjectionQueries(
       : coastFireMcQuery.data?.result?.stopNowMcResult
   ) as MonteCarloResult | undefined;
 
-  // Rate-Seeded scenario (Feature B, advisor review 2026-08-28) — reuses
+  // Rate-Seeded scenario — reuses
   // computeMonteCarloProjection itself (no bespoke procedure needed, unlike
   // Coast FIRE's binary search) with the new rateSeededDecumulationYear1
   // flag, which calculateMonteCarlo already returns a full MonteCarloResult
@@ -741,7 +753,7 @@ export function useProjectionQueries(
     scenarioView === "rateSeeded"
       ? rateSeededMcResult
       : scenarioView === "coastFireCustom"
-        ? // Advisor-caught 2026-09-01: without this guard, changing the
+        ? // Without this guard, changing the
           // custom age (committing a new coastFireCustomAge) without
           // clicking "Check this age" again kept rendering the PREVIOUS
           // age's MC bands/deterministic line with no loading indicator —

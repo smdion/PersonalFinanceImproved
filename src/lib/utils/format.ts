@@ -282,8 +282,7 @@ export function formatSyncResultToast(
    *  rejected the specific write) and from `count === 0` (nothing needed
    *  sending). Without this, a real failure and "already up to date" were
    *  indistinguishable to the user — both produced the identical
-   *  misleadingly-calm "No changes — already up to date" message (found
-   *  live, 2026-08-31). */
+   *  misleadingly-calm "No changes — already up to date" message. */
   failed = 0,
   failureMessage?: string,
   /** Actual Budget has no writable field for a category's goal — pushing a
@@ -292,7 +291,7 @@ export function formatSyncResultToast(
    *  become a real budgeted amount until the household manually runs
    *  Actual's own "Apply Budget Template" action, so a plain "Pushed N
    *  items" success message reads as "this is already live in Actual,"
-   *  which it isn't (found live, 2026-08-31 — a household saw the success
+   *  which it isn't (a household saw the success
    *  toast, checked Actual, and saw no change, reasonably assuming the
    *  push had silently failed). Set only for `destination === "Actual
    *  Budget"` pushes of goal amounts; YNAB writes a real structured goal

@@ -67,8 +67,8 @@ export function localDateStr(date: Date = new Date()): string {
 }
 
 /**
- * Parse a value that MAY be a bare date-only string ("2020-11-01") as LOCAL
- * midnight rather than UTC midnight — `new Date("2020-11-01")` (unguarded)
+ * Parse a value that MAY be a bare date-only string ("2020-11-01") as LOCAL // lint-violation-ok: literal date-string format example
+ * midnight rather than UTC midnight — `new Date("2020-11-01")` (unguarded) // lint-violation-ok: literal date-string format example
  * parses as UTC, which `.toLocaleDateString()`/`.getMonth()`/etc. then read
  * back as the PRIOR calendar day in any timezone behind UTC (all of the US).
  * A value that already carries a time component (has a "T", e.g. a

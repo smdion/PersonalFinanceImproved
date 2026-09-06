@@ -1,9 +1,19 @@
 /** Form and UI state for the projection card — withdrawal config, override forms, view toggles, and MC settings. Overrides are loaded from DB on mount. */
-import { useState } from "react";
+import {
+  useCallback,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import type { AccountCategory } from "@/lib/calculators/types";
 import { trpc } from "@/lib/trpc";
 import { type AssetClassOverride } from "@/components/cards/mc-simulation-assumptions";
-import { defaultDecumulationConfig } from "@/lib/config/account-types";
+import {
+  defaultDecumulationConfig,
+  getDefaultDecumulationOrder,
+  DEFAULT_WITHDRAWAL_SPLITS,
+} from "@/lib/config/account-types";
+import { DEFAULT_WITHDRAWAL_ROUTING_MODE } from "@/lib/config/withdrawal-routing";
 import type {
   AccumOverrideForm,
   DecumOverrideForm,
@@ -20,15 +30,59 @@ export function useProjectionFormState() {
   // SAME shared default the dashboard Retirement tile's cache-key-matching
   // "peek" queries reproduce, so the two can't independently drift the way
   // they had before this was consolidated.
-  const [withdrawalRoutingMode, setWithdrawalRoutingMode] = useState<
+  // `withdrawalRoutingModeTouched` gates whether this session's selection
+  // is actually SENT as a decumulationDefaults override (use-projection-
+  // queries.ts's baseSharedInput) — untouched, the query omits the field
+  // entirely so the server resolves the household's persisted
+  // `retirement_settings.withdrawal_routing_mode` instead
+  // (buildDecumulationDefaults, server/routers/projection/_shared.ts).
+  // This state's own initial value is `DEFAULT_WITHDRAWAL_ROUTING_MODE`
+  // (NOT the fetched settings value) deliberately — it's never SENT until
+  // touched anyway, so what it starts at doesn't affect the engine input;
+  // `decumulation-config.tsx` derives its own display-only value (from the
+  // real persisted setting) for what the toggle/sub-controls actually
+  // show. `defaultDecumulationConfig()` (account-types.ts) deliberately
+  // does NOT carry this field any more — see that function's docblock for
+  // the bug this state used to cause (the dashboard tile's "peek" query
+  // sending a hardcoded "bracket_filling" that silently overruled a
+  // household's real "waterfall"/"percentage" setting).
+  const [withdrawalRoutingMode, setWithdrawalRoutingModeRaw] = useState<
     "bracket_filling" | "waterfall" | "percentage"
-  >(() => defaultDecumulationConfig().withdrawalRoutingMode);
-  const [withdrawalOrder, setWithdrawalOrder] = useState<AccountCategory[]>(
-    () => defaultDecumulationConfig().withdrawalOrder,
+  >(DEFAULT_WITHDRAWAL_ROUTING_MODE);
+  const [withdrawalRoutingModeTouched, setWithdrawalRoutingModeTouched] =
+    useState(false);
+  const setWithdrawalRoutingMode = useCallback(
+    (v: "bracket_filling" | "waterfall" | "percentage") => {
+      setWithdrawalRoutingModeRaw(v);
+      setWithdrawalRoutingModeTouched(true);
+    },
+    [],
   );
-  const [withdrawalSplits, setWithdrawalSplits] = useState<
+  // Same touched-gating as `withdrawalRoutingMode` above — the order and
+  // splits are only SENT as a decumulationDefaults override once the user
+  // edits them this session; until then the query omits them and the server
+  // resolves `retirement_settings.withdrawal_order` / `.withdrawal_splits`.
+  // Initial values are the config defaults (NOT the fetched settings) since
+  // they're never sent until touched; `decumulation-config.tsx` derives its
+  // own display value from the real persisted setting.
+  const [withdrawalOrder, setWithdrawalOrderRaw] = useState<AccountCategory[]>(
+    () => getDefaultDecumulationOrder(),
+  );
+  const [withdrawalOrderTouched, setWithdrawalOrderTouched] = useState(false);
+  const setWithdrawalOrder = useCallback((v: AccountCategory[]) => {
+    setWithdrawalOrderRaw(v);
+    setWithdrawalOrderTouched(true);
+  }, []);
+  const [withdrawalSplits, setWithdrawalSplitsRaw] = useState<
     Record<AccountCategory, number>
-  >(() => defaultDecumulationConfig().withdrawalSplits);
+  >(() => ({ ...DEFAULT_WITHDRAWAL_SPLITS }));
+  const [withdrawalSplitsTouched, setWithdrawalSplitsTouched] = useState(false);
+  const setWithdrawalSplits = useCallback<
+    Dispatch<SetStateAction<Record<AccountCategory, number>>>
+  >((v) => {
+    setWithdrawalSplitsRaw(v);
+    setWithdrawalSplitsTouched(true);
+  }, []);
   const [withdrawalTaxPref, setWithdrawalTaxPref] = useState<
     Partial<Record<AccountCategory, "traditional" | "roth">>
   >(() => defaultDecumulationConfig().withdrawalTaxPreference);
@@ -95,9 +149,9 @@ export function useProjectionFormState() {
   // Simple (cFIREsim-style single-bucket comparison) — most households
   // have real Traditional/Roth/HSA/brokerage splits they care about
   // seeing, and Simple mode's collapse turned out to actively mislead
-  // when displayed as if it were a real account breakdown (live-user
-  // finding, 2026-08-28). Simple stays available for anyone who
-  // specifically wants the cFIREsim-comparable view.
+  // when displayed as if it were a real account breakdown. Simple stays
+  // available for anyone who specifically wants the cFIREsim-comparable
+  // view.
   const [mcTaxMode, setMcTaxMode] = useState<"simple" | "advanced">("advanced");
   const [mcAssetClassOverrides, setMcAssetClassOverrides] = useState<
     AssetClassOverride[]
@@ -134,8 +188,8 @@ export function useProjectionFormState() {
   // typing "42" with a min bound above 4 clamped the first "4" up to the
   // min immediately, forcing the DOM value to e.g. "38" mid-keystroke, so
   // the next digit landed in the wrong place and produced a mangled number
-  // like "54" instead of "42" (live-user finding, 2026-08-30). Clamping
-  // now happens only on blur / "Check this age", via commitCoastFireAgeDraft
+  // like "54" instead of "42". Clamping now happens only on blur / "Check
+  // this age", via commitCoastFireAgeDraft
   // in index.tsx — this field just tracks whatever the user has typed so
   // far, unclamped.
   const [coastFireCustomAgeDraft, setCoastFireCustomAgeDraft] = useState<
@@ -150,9 +204,9 @@ export function useProjectionFormState() {
   // baseline, which is meaningful regardless of strategy. The shared
   // BASELINE pill in index.tsx's toolbar reads/writes whichever of the two
   // is relevant for the currently-active chart, so there's still only one
-  // visible toggle -- not two overlapping ones (user feedback, 2026-08-28:
-  // a separate "Show anyway" link was confusing because the real BASELINE
-  // toggle appeared to do nothing on this chart).
+  // visible toggle -- not two overlapping ones. A separate "Show anyway"
+  // link was confusing because the real BASELINE toggle appeared to do
+  // nothing on this chart.
   const [showStabilityBars, setShowStabilityBars] = useState(true);
   // Balance chart's decumulation-year income overlay (total portfolio
   // withdrawal + Social Security, secondary axis) — see projection-chart.tsx.
@@ -205,10 +259,13 @@ export function useProjectionFormState() {
   return {
     withdrawalRoutingMode,
     setWithdrawalRoutingMode,
+    withdrawalRoutingModeTouched,
     withdrawalOrder,
     setWithdrawalOrder,
+    withdrawalOrderTouched,
     withdrawalSplits,
     setWithdrawalSplits,
+    withdrawalSplitsTouched,
     withdrawalTaxPref,
     setWithdrawalTaxPref,
     accumOverrides,

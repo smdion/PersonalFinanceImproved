@@ -49,7 +49,7 @@ export const ROTH_CONVERSION_BRACKET_PRESETS = [
   "0.35",
 ];
 
-// Centralized tooltip accent-color lookup (2026-08-30 UI/UX pass) — every
+// Centralized tooltip accent-color lookup — every
 // projection tooltip color, chart or table, single-select or hand-rolled
 // JSX, resolves through here.
 //
@@ -185,9 +185,9 @@ export function filterYearByParentCategory(
   // category structure left once it collapses to one fictional bucket).
   // Filtering by parent category is meaningless here; returning `yr`
   // unchanged is the honest degradation, not zeroing every balance/
-  // withdrawal field below to match an empty account list (live-user
-  // finding, 2026-08-28 — Rate-Seeded showed $0 balances everywhere
-  // because this function was doing exactly that).
+  // withdrawal field below to match an empty account list (Rate-Seeded
+  // showed $0 balances everywhere because this function was doing exactly
+  // that).
   if (yr.individualAccountBalances.length === 0) return yr;
   const filtered = yr.individualAccountBalances.filter(
     (ia) => ia.parentCategory === parentCategory,
@@ -337,7 +337,7 @@ export function filterYearByParentCategory(
 
   // Rescope targetWithdrawal/taxCost by the SAME filtered/unfiltered ratio
   // as the slots above, instead of leaving them at their household-wide
-  // values (advisor review, 2026-08-29). Leaving targetWithdrawal
+  // values. Leaving targetWithdrawal
   // household-wide while totalWithdrawal is Retirement-scoped meant a
   // FULLY-funded plan could still compare as "underfunded" — the amber
   // withdrawal-cell coloring, the tooltip's "Eff. rate = tax / withdrawal"
@@ -721,7 +721,7 @@ export function lumpSumTotal(lumpSums: LumpSum[]): number {
 // ---------------------------------------------------------------------------
 // Guardrail/strategy event styling (shared between the Balance chart's
 // ReferenceLine markers and the table's "Total Withdrawals" tooltip —
-// UI/UX review, 2026-08-28: the table tooltip previously had no
+// the table tooltip previously had no
 // user-visible explanation for a spending jump/drop, only the hidden
 // diagMode diagnostic dump. Factored out here so both call sites can never
 // independently drift on color/wording.)

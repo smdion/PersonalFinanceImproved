@@ -19,9 +19,8 @@ type NumLike = number | string;
 /** Human-readable labels for the engine's short-code filing status
  *  (`FilingStatusType`/`W4FilingStatus` — "MFJ"/"Single"/"HOH") — this
  *  printed report is a client-facing document, so it must never render
- *  the raw short code (advisor review, 2026-08-29 — "never render raw DB
- *  keys" rule). Falls back to the raw value for anything unrecognized
- *  rather than hiding it. */
+ *  the raw short code (the app's "never render raw DB keys" rule). Falls
+ *  back to the raw value for anything unrecognized rather than hiding it. */
 const FILING_STATUS_LABELS: Record<string, string> = {
   MFJ: "Married Filing Jointly",
   Single: "Single",
@@ -116,6 +115,7 @@ export function ReportAssumptionsSummary({
   settings,
   rmdExcessYears = 0,
   qcdYears = 0,
+  irmaaCappedRothYears = 0,
 }: {
   settings: ReportEngineSettings | undefined;
   /** Count of years in this projection where RMD forced more
@@ -127,6 +127,9 @@ export function ReportAssumptionsSummary({
   /** Count of years with a Qualified Charitable Distribution
    *  applied. 0 = don't show the note. */
   qcdYears?: number;
+  /** Count of years where a Roth conversion was reduced to stay under an
+   *  IRMAA threshold (`irmaaAwareRothConversions`). 0 = don't show. */
+  irmaaCappedRothYears?: number;
 }) {
   if (!settings) return null;
   const strategyKey = settings.withdrawalStrategy as
@@ -317,6 +320,18 @@ export function ReportAssumptionsSummary({
           Distribution — money sent directly to charity from an IRA, satisfying
           part of the RMD without counting as taxable income. See the Retirement
           page for year-by-year detail.
+        </p>
+      )}
+
+      {irmaaCappedRothYears > 0 && (
+        <p className="text-faint mt-2 text-xs">
+          Note: {irmaaCappedRothYears} year
+          {irmaaCappedRothYears === 1 ? "" : "s"} in this projection{" "}
+          {irmaaCappedRothYears === 1 ? "had a" : "had"} Roth conversion
+          {irmaaCappedRothYears === 1 ? "" : "s"} capped to stay below the next
+          IRMAA (Medicare premium) threshold — converting more would have
+          crossed a surcharge cliff. The Tax Optimization page flags the
+          affected years.
         </p>
       )}
     </div>

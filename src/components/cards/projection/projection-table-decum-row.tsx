@@ -58,7 +58,7 @@ import {
 
 // getAllCategories() returns a fixed list — module-level so the account-sort
 // comparators below don't call it (and re-scan .indexOf) twice per
-// comparison on every render (code-review efficiency finding, 2026-09-01).
+// comparison on every render.
 const CATEGORY_ORDER = new Map(getAllCategories().map((c, i) => [c, i]));
 
 /**
@@ -161,7 +161,7 @@ function buildEligibilityNote(
  * implies this is a per-account cost breakdown this data can't actually
  * support, and deliberately avoids "free"/"0%" wording that would clash
  * with `buildEligibilityNote`'s own "taxable" note shown right above it on
- * the same line (found live, 2026-08-31 — Roth basis is genuinely
+ * the same line (Roth basis is genuinely
  * tax-free, but a Roth GROWTH tier entry can also legitimately show a
  * costRate of 0 at the household level, which is an ORDERING statement,
  * not a claim about this specific account's tax treatment).
@@ -189,7 +189,7 @@ function buildRoutingReasonClause(
     yr.bracketTraditionalCap != null
   ) {
     const targetPct = yr.config.rothBracketTarget;
-    // "Why THIS bracket" (found live, 2026-08-31) — shares
+    // "Why THIS bracket" — shares
     // describeBracketTargetChoice with the advisor report
     // (lib/pure/report/bracket-target-narrative.ts) so the two can never
     // disagree; folds in the real numeric comparison from the bracket
@@ -204,7 +204,7 @@ function buildRoutingReasonClause(
               bracketTraditionalCap: deflate(yr.bracketTraditionalCap, yr.year),
               taxableSS: deflate(yr.taxableSS, yr.year),
               // The GROWN per-year deduction (bracket-growth.ts), not the
-              // plan-level engineSettings echo — advisor-caught: pairing a
+              // plan-level engineSettings echo — pairing a
               // grown bracketTraditionalCap with an ungrown deduction in the
               // same sentence was internally inconsistent for any year
               // beyond the tax data's vintage.
@@ -243,14 +243,14 @@ function buildRoutingReasonClause(
   const breakdownClause = formatDiscretionaryTierBreakdown(
     relevant.map((t) => ({ ...t, amount: deflate(t.amount, yr.year) })),
   );
-  // "Why isn't brokerage draining before Roth" (found live, 2026-08-31) —
+  // "Why isn't brokerage draining before Roth" —
   // shares describeDiscretionaryCapacityMath with the advisor report so
   // the two can never disagree. Household-wide (not scoped to this
   // account's sourceKind, unlike breakdownClause above), so this uses the
   // FULL yr.discretionaryTierBreakdown, deflated the same way. Gated to
-  // roth/brokerage rows only (advisor review, 2026-08-31) — this paragraph
+  // roth/brokerage rows only — this paragraph
   // discusses neither of an HSA row's dollars — AND to `includeCapacityNote`
-  // (found live, 2026-08-31: with 1 Roth + 2 brokerage accounts drawing the
+  // (with 1 Roth + 2 brokerage accounts drawing the
   // same year, the identical household-wide paragraph showed up 3 times;
   // the caller sets this true for only the first qualifying account row).
   // lint-violation-ok: sourceKind is WithdrawalSourceKind, not an AccountCategory.
@@ -376,7 +376,7 @@ export function DecumulationRow({
 
   // The household-wide discretionary-capacity paragraph
   // (describeDiscretionaryCapacityMath) is the same text regardless of
-  // WHICH roth/brokerage account row triggers it — found live, 2026-08-31,
+  // WHICH roth/brokerage account row triggers it —
   // a household with 1 Roth + 2 brokerage accounts saw it verbatim 3 times
   // in one year. Show it on the first qualifying row only per year (this
   // component renders once per year, so a plain local flag closed over by
@@ -385,8 +385,7 @@ export function DecumulationRow({
 
   // Shared by all three withdrawal-by-tax-type/withdrawal-by-account
   // branches below — was the same 6-arg buildFullAccountNote call (incl.
-  // the same capacityNoteShownThisYear closure) copy-pasted 3x (code-review
-  // reuse/duplication finding, 2026-09-01).
+  // the same capacityNoteShownThisYear closure) copy-pasted 3x.
   const noteFor = (ia: IndividualAccountYearBalance) =>
     buildFullAccountNote(
       ia,
@@ -987,7 +986,7 @@ export function DecumulationRow({
           // chart tooltip's rmd block (see tooltip-renderer.tsx). Checkmark
           // shows whenever the RMD was actually met, not just the notable
           // excess/QCD case — silence isn't a reliable enough signal of
-          // "satisfied" on its own (user feedback, 2026-08-28).
+          // "satisfied" on its own.
           const rmdShortfallAmount = dyr.rmdShortfallAmount ?? 0;
           const rmdExcessAmount = dyr.rmdExcessAmount ?? 0;
           const rmdSatisfied = rmdShortfallAmount <= 0;

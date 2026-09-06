@@ -93,8 +93,8 @@ export const monteCarloRouter = createTRPCRouter({
         /** View a non-active Retirement Profile (phase 4 assumptions band) —
          *  same "view without activating" contract as the two profile ids
          *  above. Falls back to the household's globally-active profile
-         *  when omitted. Advisor-caught 2026-09-01: getProjection/
-         *  computeStrategyComparison already accepted this; the Monte
+         *  when omitted — `getProjection`/
+         *  `computeStrategyComparison` already accepted this; the Monte
          *  Carlo query (this endpoint) never did, so the AssumptionsBand's
          *  "view a non-active profile" never reached the chart/table it
          *  sits directly above — silently kept showing the globally-active
@@ -297,10 +297,10 @@ export const monteCarloRouter = createTRPCRouter({
         // brokerage category, so a real Traditional/IRA account never gets
         // drawn down in decumulation while the real brokerage account gets
         // exhausted, and the per-account total silently overstates the
-        // real portfolio (advisor review, 2026-08-28, after a live-user
-        // finding — a partial fix that only skipped the yearly indBal/
-        // acctBal reconciliation stopped the correction but not this
-        // divergence). Dropping individualAccounts to empty makes Simple
+        // real portfolio. An earlier partial fix that only skipped the
+        // yearly indBal/acctBal reconciliation stopped the correction but
+        // not this divergence. Dropping individualAccounts to empty makes
+        // Simple
         // mode's ONE fictional bucket the only representation, so nothing
         // downstream can disagree with it. The per-account table/chart and
         // the person-filtered ("Sean"/"Joanna") view both already degrade

@@ -11,7 +11,6 @@ import {
 import * as schema from "@/lib/db/schema";
 import { roundToCents, safeDivide } from "@/lib/utils/math";
 import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
-import { log } from "@/lib/logger";
 import {
   toNumber,
   computeMortgageBalance,
@@ -25,11 +24,15 @@ import {
   getPrimaryPerson,
   groupSnapshotAccounts,
   buildYearEndHistory,
-  pushSnapshotToBudgetApi,
 } from "@/server/helpers";
 import { getAllPeople } from "@/server/helpers/people";
+import {
+  refreshSnapshotYearDerivatives,
+  pushSnapshotIfConfigured,
+} from "@/server/helpers/snapshot-derivatives";
+import { invalidateYearEndCache } from "@/server/helpers/snapshot";
 import { zYearEndTargeting, toSalaryActiveMap } from "./_shared";
-import { zDecimal, recomputeAnnualRollups } from "./settings/_shared";
+import { zDecimal } from "./settings/_shared";
 import {
   accountCategoryEnum,
   parentCategoryEnum,
@@ -38,7 +41,6 @@ import { PORTFOLIO_TAX_TYPE_VALUES } from "@/lib/config/enum-values";
 import {
   buildPrevInactiveKeys,
   resolveAccountActiveStatus,
-  computeSnapshotEndingBalances,
   resolveSnapshotParentCategory,
   resolveSnapshotAccountAmounts,
 } from "@/lib/pure/portfolio";
@@ -143,7 +145,7 @@ export const networthRouter = createTRPCRouter({
       // Resolved once and threaded into getEffectiveCash/
       // getEffectiveCreditCardDebt below instead of each independently
       // re-querying it (previously 3 separate getActiveBudgetApi calls in
-      // this one procedure; code-review efficiency finding, 2026-09-01).
+      // this one procedure).
       const { getActiveBudgetApi } = await import("@/lib/budget-api");
       const activeBudgetApi = await getActiveBudgetApi(ctx.db);
       const [
@@ -554,6 +556,7 @@ export const networthRouter = createTRPCRouter({
       const snapshotIds = pageSnaps.map((s) => s.id);
       const allAccounts = await ctx.db
         .select({
+          id: schema.portfolioAccounts.id,
           snapshotId: schema.portfolioAccounts.snapshotId,
           institution: schema.portfolioAccounts.institution,
           taxType: schema.portfolioAccounts.taxType,
@@ -602,6 +605,7 @@ export const networthRouter = createTRPCRouter({
           deltaPct: s.deltaPct,
           daysSincePrev: s.daysSincePrev,
           accounts: accounts.map((a) => ({
+            id: a.id,
             institution: a.institution,
             taxType: a.taxType,
             accountType: a.accountType,
@@ -731,8 +735,7 @@ export const networthRouter = createTRPCRouter({
       // Resolved once, threaded into getEffectiveCash/
       // getEffectiveCreditCardDebt, and run alongside the independent
       // otherAssets lookup instead of 2 separate getActiveBudgetApi calls
-      // plus a serialized otherAssets fetch (code-review efficiency
-      // finding, 2026-09-01).
+      // plus a serialized otherAssets fetch.
       const { getActiveBudgetApi } = await import("@/lib/budget-api");
       const activeBudgetApi = await getActiveBudgetApi(ctx.db);
       const [{ cash }, otherAssets] = await Promise.all([
@@ -933,155 +936,158 @@ export const networthRouter = createTRPCRouter({
     create: portfolioProcedure
       .input(portfolioSnapshotInput)
       .mutation(async ({ ctx, input }) => {
+        // Friendly pre-check for the `snapshot_date` unique constraint —
+        // the catch below is the authoritative backstop against a race.
+        const existingForDate = await ctx.db
+          .select({ id: schema.portfolioSnapshots.id })
+          .from(schema.portfolioSnapshots)
+          .where(eq(schema.portfolioSnapshots.snapshotDate, input.snapshotDate))
+          .limit(1);
+        if (existingForDate.length > 0) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: `A snapshot already exists for ${input.snapshotDate}. Edit that one, or pick another date.`,
+          });
+        }
+
         // Wrap all DB mutations in a transaction for atomicity.
         // Budget API push happens after (external side effect, not rollback-able).
-        const snapshot = await ctx.db.transaction(async (tx) => {
-          const rows = await tx
-            .insert(schema.portfolioSnapshots)
-            .values({
-              snapshotDate: input.snapshotDate,
-              notes: input.notes ?? null,
-            })
-            .returning();
-          const snap = rows[0]!;
-
-          // Build perfId → parentCategory map so parentCategory syncs from
-          // master, and the set of masters that are still open — computed
-          // once here and reused for BOTH the account insert below and the
-          // ending-balance computation further down, so there is exactly
-          // one resolved view of "this snapshot's accounts," never two.
-          const perfIds = input.accounts
-            .map((a) => a.performanceAccountId)
-            .filter((id): id is number => id != null);
-          const perfCatMap = new Map<number, string>();
-          const activeMasterIds = new Set<number>();
-          if (perfIds.length > 0) {
-            const perfRows = await tx
-              .select({
-                id: schema.performanceAccounts.id,
-                parentCategory: schema.performanceAccounts.parentCategory,
-                isActive: schema.performanceAccounts.isActive,
+        const snapshot = await ctx.db
+          .transaction(async (tx) => {
+            const rows = await tx
+              .insert(schema.portfolioSnapshots)
+              .values({
+                snapshotDate: input.snapshotDate,
+                notes: input.notes ?? null,
               })
-              .from(schema.performanceAccounts)
-              .where(inArray(schema.performanceAccounts.id, perfIds));
-            for (const p of perfRows) {
-              perfCatMap.set(p.id, p.parentCategory);
-              if (p.isActive) activeMasterIds.add(p.id);
-            }
-          }
-          // A closed master's account keeps its row but its balance is
-          // zeroed rather than carried forward stale — see
-          // resolveSnapshotAccountAmounts's doc comment for why omitting
-          // the row instead would break period conservation.
-          const resolvedAccounts = resolveSnapshotAccountAmounts(
-            input.accounts,
-            activeMasterIds,
-          );
+              .returning();
+            const snap = rows[0]!;
 
-          if (resolvedAccounts.length > 0) {
-            // Carry forward isActive from previous snapshot's matching accounts
-            const prevSnapshots = await tx
-              .select({ id: schema.portfolioSnapshots.id })
-              .from(schema.portfolioSnapshots)
-              .where(sql`${schema.portfolioSnapshots.id} != ${snap.id}`)
-              .orderBy(desc(schema.portfolioSnapshots.snapshotDate))
-              .limit(1);
-            let prevInactiveKeys = new Set<string>();
-            if (prevSnapshots.length > 0) {
-              const prevAccounts = await tx
+            // Build perfId → parentCategory map so parentCategory syncs from
+            // master, and the set of masters that are still open — computed
+            // once here and reused for BOTH the account insert below and the
+            // ending-balance computation further down, so there is exactly
+            // one resolved view of "this snapshot's accounts," never two.
+            const perfIds = input.accounts
+              .map((a) => a.performanceAccountId)
+              .filter((id): id is number => id != null);
+            const perfCatMap = new Map<number, string>();
+            const activeMasterIds = new Set<number>();
+            if (perfIds.length > 0) {
+              const perfRows = await tx
                 .select({
-                  performanceAccountId:
-                    schema.portfolioAccounts.performanceAccountId,
-                  taxType: schema.portfolioAccounts.taxType,
-                  subType: schema.portfolioAccounts.subType,
-                  isActive: schema.portfolioAccounts.isActive,
+                  id: schema.performanceAccounts.id,
+                  parentCategory: schema.performanceAccounts.parentCategory,
+                  isActive: schema.performanceAccounts.isActive,
                 })
-                .from(schema.portfolioAccounts)
-                .where(
-                  eq(schema.portfolioAccounts.snapshotId, prevSnapshots[0]!.id),
-                );
-              prevInactiveKeys = buildPrevInactiveKeys(prevAccounts);
+                .from(schema.performanceAccounts)
+                .where(inArray(schema.performanceAccounts.id, perfIds));
+              for (const p of perfRows) {
+                perfCatMap.set(p.id, p.parentCategory);
+                if (p.isActive) activeMasterIds.add(p.id);
+              }
+            }
+            // A closed master's account keeps its row but its balance is
+            // zeroed rather than carried forward stale — see
+            // resolveSnapshotAccountAmounts's doc comment for why omitting
+            // the row instead would break period conservation.
+            const resolvedAccounts = resolveSnapshotAccountAmounts(
+              input.accounts,
+              activeMasterIds,
+            );
+
+            if (resolvedAccounts.length > 0) {
+              // Carry forward isActive from previous snapshot's matching accounts
+              const prevSnapshots = await tx
+                .select({ id: schema.portfolioSnapshots.id })
+                .from(schema.portfolioSnapshots)
+                .where(sql`${schema.portfolioSnapshots.id} != ${snap.id}`)
+                .orderBy(desc(schema.portfolioSnapshots.snapshotDate))
+                .limit(1);
+              let prevInactiveKeys = new Set<string>();
+              if (prevSnapshots.length > 0) {
+                const prevAccounts = await tx
+                  .select({
+                    performanceAccountId:
+                      schema.portfolioAccounts.performanceAccountId,
+                    taxType: schema.portfolioAccounts.taxType,
+                    subType: schema.portfolioAccounts.subType,
+                    isActive: schema.portfolioAccounts.isActive,
+                  })
+                  .from(schema.portfolioAccounts)
+                  .where(
+                    eq(
+                      schema.portfolioAccounts.snapshotId,
+                      prevSnapshots[0]!.id,
+                    ),
+                  );
+                prevInactiveKeys = buildPrevInactiveKeys(prevAccounts);
+              }
+
+              await tx.insert(schema.portfolioAccounts).values(
+                resolvedAccounts.map((a) => ({
+                  snapshotId: snap.id,
+                  institution: a.institution,
+                  taxType: a.taxType,
+                  accountType: a.accountType,
+                  subType: a.subType ?? null,
+                  label: a.label ?? null,
+                  parentCategory: resolveSnapshotParentCategory(
+                    a.parentCategory,
+                    a.performanceAccountId ?? null,
+                    perfCatMap,
+                  ),
+                  amount: a.amount,
+                  ownerPersonId: a.ownerPersonId,
+                  performanceAccountId: a.performanceAccountId ?? null,
+                  isActive: resolveAccountActiveStatus(
+                    {
+                      performanceAccountId: a.performanceAccountId ?? null,
+                      taxType: a.taxType,
+                      subType: a.subType ?? null,
+                    },
+                    prevInactiveKeys,
+                  ),
+                })),
+              );
             }
 
-            await tx.insert(schema.portfolioAccounts).values(
+            // Ending balances + annual rollups for the snapshot's year —
+            // shared with the latest-snapshot balance-edit path so the two
+            // never drift (RULES §Single Computation Path). Same
+            // `resolvedAccounts` used for the insert above, so a closed
+            // account's zeroed balance is reflected consistently.
+            const snapshotYear = parseInt(
+              input.snapshotDate.substring(0, 4),
+              10,
+            );
+            await refreshSnapshotYearDerivatives(
+              tx,
+              snapshotYear,
               resolvedAccounts.map((a) => ({
-                snapshotId: snap.id,
-                institution: a.institution,
-                taxType: a.taxType,
-                accountType: a.accountType,
-                subType: a.subType ?? null,
-                label: a.label ?? null,
-                parentCategory: resolveSnapshotParentCategory(
-                  a.parentCategory,
-                  a.performanceAccountId ?? null,
-                  perfCatMap,
-                ),
-                amount: a.amount,
-                ownerPersonId: a.ownerPersonId,
                 performanceAccountId: a.performanceAccountId ?? null,
-                isActive: resolveAccountActiveStatus(
-                  {
-                    performanceAccountId: a.performanceAccountId ?? null,
-                    taxType: a.taxType,
-                    subType: a.subType ?? null,
-                  },
-                  prevInactiveKeys,
-                ),
+                amount: a.amount,
               })),
             );
-          }
 
-          // Auto-update current-year performance ending balances
-          const snapshotYear = parseInt(input.snapshotDate.substring(0, 4), 10);
-          const currentYearAcctPerf = await tx
-            .select()
-            .from(schema.accountPerformance)
-            .where(eq(schema.accountPerformance.year, snapshotYear));
-
-          // Group snapshot accounts by performanceAccountId, sum amounts —
-          // same resolvedAccounts list used for the insert above, so a
-          // closed account's zeroed balance is reflected consistently here
-          // too (not a second, independently-derived total).
-          const perfTotals = computeSnapshotEndingBalances(
-            resolvedAccounts.map((a) => ({
-              performanceAccountId: a.performanceAccountId ?? null,
-              amount: a.amount,
-            })),
-          );
-
-          // Update ending_balance for each matching account_performance row
-          const updatedPerfIds = new Set<number>();
-          for (const acctPerf of currentYearAcctPerf) {
-            if (
-              acctPerf.performanceAccountId &&
-              perfTotals.has(acctPerf.performanceAccountId)
-            ) {
-              if (updatedPerfIds.has(acctPerf.performanceAccountId)) {
-                log("warn", "snapshot_sync_duplicate_perf_row", {
-                  acctPerfId: acctPerf.id,
-                  performanceAccountId: acctPerf.performanceAccountId,
-                  year: snapshotYear,
-                });
-                continue;
-              }
-              updatedPerfIds.add(acctPerf.performanceAccountId);
-              const newBalance = perfTotals.get(acctPerf.performanceAccountId)!;
-              await tx
-                .update(schema.accountPerformance)
-                .set({ endingBalance: newBalance.toFixed(2) })
-                .where(eq(schema.accountPerformance.id, acctPerf.id));
+            return snap;
+          })
+          .catch((e: unknown) => {
+            // Race backstop for the `snapshot_date` unique constraint —
+            // the pre-check above catches the common case.
+            const code =
+              e && typeof e === "object" && "code" in e
+                ? (e as { code?: string }).code
+                : undefined;
+            const msg = e instanceof Error ? e.message : "";
+            if (code === "23505" || /UNIQUE constraint failed/i.test(msg)) {
+              throw new TRPCError({
+                code: "CONFLICT",
+                message: `A snapshot already exists for ${input.snapshotDate}. Edit that one, or pick another date.`,
+              });
             }
-          }
-
-          // Recompute annual_performance category rollups for this year.
-          // Do NOT stamp performance_last_updated — snapshot saves are independent
-          // of performance tracking; only explicit performance edits should move that date.
-          if (perfTotals.size > 0) {
-            await recomputeAnnualRollups(tx, snapshotYear);
-          }
-
-          return snap;
-        });
+            throw e;
+          });
 
         // Auto-pull portfolio balances from budget API for linked accounts (before push)
         let apiPullResult: { pulled: number; error?: string } = { pulled: 0 };
@@ -1156,51 +1162,27 @@ export const networthRouter = createTRPCRouter({
           };
         }
 
-        // Auto-push to budget API tracking accounts if configured
-        const asOfDate = new Date();
-        let apiSyncResult: {
-          pushed: boolean;
-          accountsPushed: number;
-          accountsSkipped?: number;
-          error?: string;
-        } = { pushed: false, accountsPushed: 0 };
-        try {
-          const { getActiveBudgetApi, getClientForService, getApiConnection } =
-            await import("@/lib/budget-api");
-          const active = await getActiveBudgetApi(ctx.db);
-          if (active !== "none") {
-            const conn = await getApiConnection(ctx.db, active);
-            const mappings = conn?.accountMappings ?? [];
-            const client = await getClientForService(ctx.db, active);
-            if (client && mappings.length > 0) {
-              const result = await pushSnapshotToBudgetApi({
-                db: ctx.db,
-                snapshotId: snapshot.id,
-                snapshotDate: input.snapshotDate,
-                mappings,
-                client,
-                mode: "create",
-                asOfDate,
-              });
-              apiSyncResult = {
-                pushed: true,
-                accountsPushed: result.groupsPosted,
-                accountsSkipped: result.groupsSkipped,
-              };
-            }
-          }
-        } catch (e) {
-          apiSyncResult = {
-            pushed: false,
-            accountsPushed: 0,
-            error: e instanceof Error ? e.message : "Unknown error",
-          };
-        }
+        // Auto-push to budget API tracking accounts if configured — same
+        // helper the latest-snapshot balance edit uses (mode differs there).
+        const apiSyncResult = await pushSnapshotIfConfigured(ctx.db, {
+          snapshotId: snapshot.id,
+          snapshotDate: input.snapshotDate,
+          mode: "create",
+          asOfDate: new Date(),
+        });
 
         return { ...snapshot, apiSyncResult, apiPullResult };
       }),
 
-    /** Update a single portfolio account row (e.g. change owner, toggle active, set label, change tax type). */
+    /**
+     * Update a single portfolio account row. Metadata edits (owner /
+     * active / label / taxType) apply to any snapshot. An `amount` edit is
+     * only allowed on the **most recent** snapshot — it re-derives that
+     * year's performance ending balances + annual rollups and re-pushes
+     * ("resync") the corrected balances to the budget API. Older snapshots
+     * feed cumulative history + finalized years; their balances are fixed
+     * by delete-and-recreate, not edited here.
+     */
     updateAccount: portfolioProcedure
       .input(
         z.object({
@@ -1209,21 +1191,121 @@ export const networthRouter = createTRPCRouter({
           isActive: z.boolean().optional(),
           label: z.string().trim().nullable().optional(),
           taxType: z.enum(PORTFOLIO_TAX_TYPE_VALUES).optional(),
+          /** Corrected balance. Latest snapshot only. Triggers the
+           *  performance recompute + budget-API resync. */
+          amount: zDecimal.optional(),
         }),
       )
       .mutation(async ({ ctx, input }) => {
-        const updates: Record<string, unknown> = {};
+        const metaUpdates: Record<string, unknown> = {};
         if (input.ownerPersonId !== undefined)
-          updates.ownerPersonId = input.ownerPersonId;
-        if (input.isActive !== undefined) updates.isActive = input.isActive;
-        if (input.label !== undefined) updates.label = input.label || null;
-        if (input.taxType !== undefined) updates.taxType = input.taxType;
-        if (Object.keys(updates).length > 0) {
-          await ctx.db
-            .update(schema.portfolioAccounts)
-            .set(updates)
-            .where(eq(schema.portfolioAccounts.id, input.id));
+          metaUpdates.ownerPersonId = input.ownerPersonId;
+        if (input.isActive !== undefined) metaUpdates.isActive = input.isActive;
+        if (input.label !== undefined) metaUpdates.label = input.label || null;
+        if (input.taxType !== undefined) metaUpdates.taxType = input.taxType;
+
+        // ── Metadata-only edit: unchanged fast path ──────────────────────
+        if (input.amount === undefined) {
+          if (Object.keys(metaUpdates).length > 0) {
+            await ctx.db
+              .update(schema.portfolioAccounts)
+              .set(metaUpdates)
+              .where(eq(schema.portfolioAccounts.id, input.id));
+          }
+          return { amountEdited: false as const };
         }
+
+        // ── Balance edit ───────────────────────────────────────────────
+        const [row] = await ctx.db
+          .select()
+          .from(schema.portfolioAccounts)
+          .where(eq(schema.portfolioAccounts.id, input.id));
+        if (!row) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "That account row no longer exists.",
+          });
+        }
+        const [snap] = await ctx.db
+          .select()
+          .from(schema.portfolioSnapshots)
+          .where(eq(schema.portfolioSnapshots.id, row.snapshotId));
+        if (!snap) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "That snapshot no longer exists.",
+          });
+        }
+
+        const [latest] = await ctx.db
+          .select({ id: schema.portfolioSnapshots.id })
+          .from(schema.portfolioSnapshots)
+          .orderBy(desc(schema.portfolioSnapshots.snapshotDate))
+          .limit(1);
+        if (latest?.id !== snap.id) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message:
+              "Balances can only be edited on the most recent snapshot. " +
+              "For an older one, delete it and create a new snapshot.",
+          });
+        }
+
+        const snapshotYear = parseInt(snap.snapshotDate.substring(0, 4), 10);
+
+        // A finalized year's totals are authoritative in Performance and
+        // are NOT refreshed by this edit — block rather than let the
+        // snapshot and the locked year-end figure silently diverge.
+        const [finalized] = await ctx.db
+          .select({ isFinalized: schema.annualPerformance.isFinalized })
+          .from(schema.annualPerformance)
+          .where(
+            and(
+              eq(schema.annualPerformance.year, snapshotYear),
+              eq(schema.annualPerformance.isFinalized, true),
+            ),
+          )
+          .limit(1);
+        if (finalized) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message:
+              `${snapshotYear} is finalized in Performance — its year-end ` +
+              `figures are locked. Un-finalize the year there first if you ` +
+              `need to change this snapshot's balances.`,
+          });
+        }
+
+        // Write the balance (+ any metadata in the same call), then
+        // re-derive ending balances + annual rollups from the snapshot's
+        // full, post-edit row set — one shared code path with `create`.
+        await ctx.db.transaction(async (tx) => {
+          await tx
+            .update(schema.portfolioAccounts)
+            .set({ ...metaUpdates, amount: input.amount })
+            .where(eq(schema.portfolioAccounts.id, input.id));
+
+          const allRows = await tx
+            .select({
+              performanceAccountId:
+                schema.portfolioAccounts.performanceAccountId,
+              amount: schema.portfolioAccounts.amount,
+            })
+            .from(schema.portfolioAccounts)
+            .where(eq(schema.portfolioAccounts.snapshotId, snap.id));
+
+          await refreshSnapshotYearDerivatives(tx, snapshotYear, allRows);
+        });
+        invalidateYearEndCache();
+
+        // NOTE: the budget-API resync is NOT run here. A single balance
+        // fix is rarely alone — running a full resync (list + delete +
+        // re-post per mapped account) on every edit would be slow, rate-
+        // limited, and non-atomic mid-sequence. The client batches: it
+        // marks the snapshot dirty and fires ONE `sync.resyncPortfolioPush`
+        // when the user finishes (collapses the row / navigates away), with
+        // a persistent "not synced" banner as the backstop.
+        return { amountEdited: true as const };
       }),
 
     /** Create a new sub-account row in the latest snapshot. */

@@ -14,24 +14,42 @@ export interface YearTableRow {
   flags: string[];
 }
 
+/**
+ * The "something notable happened this year" flag vocabulary — one list,
+ * shared by the advisor report's year table and the Tax Optimization page's
+ * year-by-year table so the two never drift. Order is deliberate (most
+ * consequential first).
+ */
+export function taxYearFlags(
+  y: Pick<
+    EngineDecumulationYear,
+    | "rmdOverrodeRouting"
+    | "rmdShortfallAmount"
+    | "irmaaCost"
+    | "acaSubsidyPreserved"
+    | "rothConversionAmount"
+    | "rothConversionIrmaaCapped"
+  >,
+): string[] {
+  const flags: string[] = [];
+  if (y.rmdOverrodeRouting) flags.push("RMD");
+  if (y.rmdShortfallAmount > 0) flags.push("RMD shortfall");
+  if (y.irmaaCost > 0) flags.push("IRMAA");
+  if (y.acaSubsidyPreserved === false) flags.push("ACA lost");
+  if (y.rothConversionAmount > 0) flags.push("Roth conversion");
+  if (y.rothConversionIrmaaCapped) flags.push("Roth capped (IRMAA)");
+  return flags;
+}
+
 export function buildYearTableRows(
   decumulationYears: EngineDecumulationYear[],
   deflate: (v: number, year: number) => number,
 ): YearTableRow[] {
-  return decumulationYears.map((y) => {
-    const flags: string[] = [];
-    if (y.rmdOverrodeRouting) flags.push("RMD");
-    if (y.rmdShortfallAmount > 0) flags.push("RMD shortfall");
-    if (y.irmaaCost > 0) flags.push("IRMAA");
-    if (y.acaSubsidyPreserved === false) flags.push("ACA lost");
-    if (y.rothConversionAmount > 0) flags.push("Roth conversion");
-
-    return {
-      year: y.year,
-      age: y.age,
-      withdrawal: formatCurrency(deflate(y.totalWithdrawal, y.year)),
-      taxCost: formatCurrency(deflate(y.taxCost, y.year)),
-      flags,
-    };
-  });
+  return decumulationYears.map((y) => ({
+    year: y.year,
+    age: y.age,
+    withdrawal: formatCurrency(deflate(y.totalWithdrawal, y.year)),
+    taxCost: formatCurrency(deflate(y.taxCost, y.year)),
+    flags: taxYearFlags(y),
+  }));
 }

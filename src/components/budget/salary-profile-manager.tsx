@@ -104,6 +104,12 @@ export function SalaryProfileManager({
   });
   const { clone: cloneProfile } = useCloneProfile(duplicateMutation);
 
+  // Rename lives on the profile list row (click-to-edit) — the single
+  // rename gesture every profile manager now shares.
+  const renameMutation = trpc.salaryProfile.update.useMutation({
+    onSuccess: () => invalidateProfileDeps(),
+  });
+
   // Post-migration the active-profile setting always points at a real row;
   // useActiveSalaryProfile repairs it if the row ever goes missing. There is
   // no sentinel id to fall back to.
@@ -204,6 +210,11 @@ export function SalaryProfileManager({
                 setCreatingNew(false);
                 setSelectedProfileId(p.id);
               }}
+              onRename={
+                canEdit
+                  ? (name) => renameMutation.mutate({ id: p.id, name })
+                  : undefined
+              }
               onDelete={
                 canEdit && canDeleteAny
                   ? () => handleDelete(p.id, p.name)
@@ -1171,15 +1182,8 @@ function ProfileEditPanel({
 
   const details = profile.salaryDetails;
 
-  const commitName = () => {
-    const draft = drafts.name;
-    if (draft === undefined) return;
-    clearDraft("name");
-    const trimmed = draft.trim();
-    if (!trimmed || trimmed === profile.name) return;
-    updateMutation.mutate({ id: profileId, name: trimmed });
-  };
-
+  // Name is renamed from the profile list (click-to-edit on the row) — the
+  // one rename gesture shared by every profile manager.
   const commitDescription = () => {
     const draft = drafts.description;
     if (draft === undefined) return;
@@ -1335,15 +1339,7 @@ function ProfileEditPanel({
     <div className="bg-surface-sunken rounded-lg p-4">
       {error && <FormError message={error} className="mb-3" />}
 
-      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <FormField label="Name">
-          <FormInput
-            type="text"
-            value={drafts.name ?? profile.name}
-            onChange={(e) => setDraft("name", e.target.value)}
-            onBlur={commitName}
-          />
-        </FormField>
+      <div className="mb-4 max-w-sm">
         <FormField label="Description">
           <FormInput
             type="text"

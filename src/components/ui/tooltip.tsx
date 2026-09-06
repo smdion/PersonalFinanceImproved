@@ -16,7 +16,7 @@ import * as TooltipPrimitive from "@radix-ui/react-tooltip";
  * render prop) can match it exactly instead of drifting to a THEME-
  * ADAPTIVE surface (`bg-surface-primary` etc.) — mixing the two is exactly
  * what produced "light mode chart = light background, table = dark
- * background" (live user finding, 2026-08-30). Any text color used inside
+ * background". Any text color used inside
  * this surface must be legible on both bg-slate-900 AND bg-slate-700 —
  * NOT run through globals.css's `--c-*` page-theme remapping, which
  * assumes a theme-adaptive container and will actively fight this fixed

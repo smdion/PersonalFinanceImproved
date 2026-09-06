@@ -24,7 +24,7 @@ export interface ProjectionGoalInput {
    * `null`).
    *
    * Replaces a former `isApiSyncEnabled`/`apiCategoryId` + `now.getDate()
-   * > 1` date heuristic (found live, 2026-09-01: a household that
+   * > 1` date heuristic (a household that
    * assigned September's money on the 1st itself broke the heuristic's
    * assumption that day-1 can never already be funded, double-counting
    * the contribution). `budgeted` is real evidence instead of a guess —
@@ -158,8 +158,8 @@ export interface ProjectGoalBalancesOptions {
  *
  * Previously this was inferred from the calendar date (`now.getDate() >
  * 1` — "day 1 can't possibly be funded yet, day 2+ always already is").
- * That heuristic broke live, 2026-09-01: a household that assigned
- * September's money on the morning of the 1st itself had it double-
+ * That heuristic broke for a household that assigned
+ * September's money on the morning of the 1st itself — it had it double-
  * counted, because the heuristic assumed day 1 could never be funded.
  * Fixed by using `goal.currentMonthBudgeted` — the category's REAL
  * current-month budgeted amount — as actual evidence instead of a guess:

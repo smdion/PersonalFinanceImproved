@@ -66,11 +66,11 @@ export function buildBracketInput(
   );
   // Pub 15-T Worksheet 1A line 1g: standardDeduction minus the standard
   // table's own first non-zero threshold — the threshold alone is only
-  // ONE term of the real offset, not the whole thing (advisor-caught
-  // 2026-09-01, real bug: this previously used `brackets[1].threshold`
+  // ONE term of the real offset, not the whole thing. This previously
+  // used `brackets[1].threshold`
   // alone as the full adjustment, e.g. $19,300 MFJ for 2026 instead of the
   // real $32,200 - $19,300 = $12,900, under-withholding a $120k MFJ
-  // household by ~$768/yr at the 12% bracket, more at higher brackets).
+  // household by ~$768/yr at the 12% bracket, more at higher brackets.
   // Mirrors tax-estimation.ts's toOrdinaryBracketIncome, which computes
   // this same residual correctly — see that function's docblock. 0 for
   // w4Checkbox=true rows (2(c) tables assume no worksheet adjustment).

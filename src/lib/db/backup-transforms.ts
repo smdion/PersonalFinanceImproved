@@ -31,6 +31,24 @@ import { log } from "@/lib/logger";
  * appear once. 0002–0006 and 0025–0031 are drizzle-generated and differ per
  * dialect, so both spellings are listed.
  */
+/**
+ * Every v0.8-line incremental journal tag (post the v0.8.0 squash), in both
+ * dialects. Same single-source rule as `V07_SCHEMA_TAGS`: consumed by both
+ * `KNOWN_SCHEMA_VERSIONS` and `schemaEra()` so a new migration can't silently
+ * break restore by being added to one list and not the other.
+ *
+ * Every entry so far is an additive nullable/defaulted column on an existing
+ * table, so a backup naming one is already current-shape (minus columns that
+ * safely default on insert) and routes through the same idempotent
+ * v0.7 → current transform as the v8 baseline.
+ */
+const V08_SCHEMA_TAGS = [
+  "0001_nappy_blade", // PG: retirement_settings.withdrawal_routing_mode
+  "0001_cool_frank_castle", // SQLite counterpart of 0001
+  "0002_talented_monster_badoon", // PG: retirement_settings.withdrawal_order + withdrawal_splits
+  "0002_complete_jackpot", // SQLite counterpart of 0002
+] as const;
+
 const V07_SCHEMA_TAGS = [
   "0000_v7_initial_schema", // PG + SQLite (identical tag in both journals)
   // --- PG + SQLite diverge (drizzle-generated names) ---
@@ -151,11 +169,13 @@ export const KNOWN_SCHEMA_VERSIONS = [
   // from the single V07_SCHEMA_TAGS list above (shared with schemaEra()).
   ...V07_SCHEMA_TAGS,
   // v0.8.0 — pure migration squash, zero schema change vs the v0.7.11 tip.
-  // A backup exported at any v0.8.x patch carries this single baseline tag;
-  // it is already current-shape, so schemaEra() routes it through the same
-  // (idempotent) v0.7 → current transform until the v0.8 line accrues its
-  // own migrations and the next squash gives it a dedicated era.
+  // A backup exported at v0.8.0 carries this single baseline tag; it is
+  // already current-shape, so schemaEra() routes it through the same
+  // (idempotent) v0.7 → current transform.
   "0000_v8_initial_schema",
+  // v0.8.x incremental migrations, post-squash — same single-list rule as
+  // V07_SCHEMA_TAGS above (shared with schemaEra()).
+  ...V08_SCHEMA_TAGS,
 ] as const;
 
 export type KnownSchemaVersion = (typeof KNOWN_SCHEMA_VERSIONS)[number];
@@ -265,8 +285,13 @@ function versionIndex(tag: string): number {
 // Schema era classification
 // ---------------------------------------------------------------------------
 
-/** Returns the broad era for a schema version tag. */
-function schemaEra(
+/** Returns the broad era for a schema version tag. Exported for the
+ *  journal-drift guard (backup-transforms.test.ts) — a journal tag that
+ *  falls through to the "v0.1" default runs the entire v0.1 → current
+ *  rename ladder against a backup that is already current-shape, silently
+ *  (the passes are idempotent today), so the test asserts no journal tag
+ *  ever hits that default. */
+export function schemaEra(
   tag: string,
 ): "v0.1" | "v0.2" | "v0.3" | "v0.5" | "v0.6" | "v0.7" {
   if (tag === "v0.6_final") return "v0.6";
@@ -280,6 +305,10 @@ function schemaEra(
   // idempotent for a backup that is already current.
   if (tag === "v0.7_final") return "v0.7";
   if (tag === "0000_v8_initial_schema") return "v0.7";
+  // v0.8.x incremental tags — additive-only, so already current-shape; same
+  // idempotent v0.7 → current route as the v8 baseline. Shared list with
+  // KNOWN_SCHEMA_VERSIONS so the two can't drift.
+  if ((V08_SCHEMA_TAGS as readonly string[]).includes(tag)) return "v0.7";
 
   // v0.7.x tags (squashed v7 baseline + every incremental migration).
   // Same single source as KNOWN_SCHEMA_VERSIONS — see V07_SCHEMA_TAGS.
@@ -612,8 +641,8 @@ function transformV07xToCurrent(tables: TableData): TableData {
   }
 
   // 0032: Retirement Profiles, step A (expand) + the backfill migration
-  // 0032_curved_silhouette.sql itself performs in the same file (advisor-
-  // caught 2026-09-01: this function used to stop at step A — empty
+  // 0032_curved_silhouette.sql itself performs in the same file. This
+  // function used to stop at step A — empty
   // tables, null profile_id — leaving a restored pre-0032 backup in the
   // migration's INTERMEDIATE state instead of where a live upgrade
   // actually lands. Real households upgrading get a real "Current Plan"
@@ -621,7 +650,7 @@ function transformV07xToCurrent(tables: TableData): TableData {
   // AFTER upgrading truncated that profile back to nothing with no way to
   // recreate one in-app — retirementProfiles.duplicate is the only
   // creation path and needs an existing profile to clone FROM. Mirrors
-  // the migration SQL's 5 steps exactly, in JS, against in-memory rows.)
+  // the migration SQL's 5 steps exactly, in JS, against in-memory rows.
   if (!tables["retirement_profiles"]) tables["retirement_profiles"] = [];
   if (!tables["retirement_profile_people"]) {
     tables["retirement_profile_people"] = [];

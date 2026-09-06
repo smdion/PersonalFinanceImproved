@@ -104,7 +104,7 @@ describe("performRothConversion", () => {
     expect(balances.afterTax).toBeLessThan(300000);
   });
 
-  it("includes rothTaxableGrowth in yearTaxableIncome, shrinking conversionRoom by exactly that amount (advisor-flagged 2026-09-01)", () => {
+  it("includes rothTaxableGrowth in yearTaxableIncome, shrinking conversionRoom by exactly that amount", () => {
     // Same setup as the previous test, but with a real non-qualified Roth
     // growth draw this year. Before this fix, yearTaxableIncome silently
     // dropped rothTaxableGrowth (exactly the bug actualTaxableIncome's own
@@ -205,6 +205,40 @@ describe("performRothConversion", () => {
     // Without IRMAA: conversionRoom = 457525 - 160000 = 297525 (capped at preTax 500000)
     // With IRMAA: max = 206000 - 200000 = 6000
     expect(result.rothConversionAmount).toBeLessThanOrEqual(6000);
+  });
+
+  it("flags rothConversionIrmaaCapped when the IRMAA clamp actually bites", () => {
+    const result = performRothConversion(
+      makeRothInput({
+        irmaaAwareRothConversions: true,
+        totalTraditionalWithdrawal: 150000,
+        taxableSS: 10000,
+        brokerageGainsPortion: 40000, // MAGI w/o conversion = 200000
+        rothBracketTarget: 0.35, // bracket cap far above the next cliff (206000)
+      }),
+    );
+    // The conversion was clamped to the ~6000 of cliff headroom, and the
+    // engine records that it did so.
+    expect(result.rothConversionIrmaaCapped).toBe(true);
+    expect(result.rothConversionAmount).toBeLessThanOrEqual(6000);
+    expect(result.rothConversionAmount).toBeGreaterThan(0);
+  });
+
+  it("leaves rothConversionIrmaaCapped unset when IRMAA awareness is off", () => {
+    // Same capping-scale inputs as the test above, but the
+    // irmaaAwareRothConversions clamp is disabled — the flag must not
+    // appear (and the conversion is free to fill the bracket).
+    const result = performRothConversion(
+      makeRothInput({
+        irmaaAwareRothConversions: false,
+        totalTraditionalWithdrawal: 150000,
+        taxableSS: 10000,
+        brokerageGainsPortion: 40000,
+        rothBracketTarget: 0.35,
+      }),
+    );
+    expect(result.rothConversionAmount).toBeGreaterThan(6000);
+    expect(result.rothConversionIrmaaCapped).toBeUndefined();
   });
 
   it("applies tax multiplier to tax cost calculation", () => {
@@ -320,7 +354,7 @@ function makeAcaInput(overrides: Partial<AcaInput> = {}): AcaInput {
     brokerageGainsPortion: 5000,
     rothTaxableGrowth: 0,
     ssIncome: 0,
-    // Phase 4 (2026-08-31): factor 1 == no growth applied (matches
+    // factor 1 == no growth applied (matches
     // taxGrowthFactor's own "year === dataYear" identity convention) --
     // these existing fixture-driven tests were written before FPL growth
     // existed and assert against the raw $84,600 (2-person) cliff, so
@@ -366,7 +400,7 @@ describe("checkAca", () => {
     expect(result.warnings[0]).toContain("cliff");
   });
 
-  it("warning attributes the overage to brokerage when brokerage gains could cover it (R55)", () => {
+  it("warning attributes the overage to brokerage when brokerage gains could cover it", () => {
     // MAGI = 80000 + 0 + 5000 + 0 = 85000, overage = 400, brokerageGainsPortion 5000 >= 400
     const result = checkAca(
       makeAcaInput({ totalTraditionalWithdrawal: 80000 }),
@@ -375,7 +409,7 @@ describe("checkAca", () => {
     expect(result.warnings[0]).toContain("less from brokerage");
   });
 
-  it("warning omits the brokerage attribution when brokerage gains can't cover the overage (R55)", () => {
+  it("warning omits the brokerage attribution when brokerage gains can't cover the overage", () => {
     // MAGI = 84700 + 0 + 0 + 0 = 84700, overage = 100, brokerageGainsPortion 0 < 100
     const result = checkAca(
       makeAcaInput({
@@ -403,7 +437,7 @@ describe("checkAca", () => {
     expect(result.acaSubsidyPreserved).toBe(false);
   });
 
-  it("includes non-qualified Roth growth income in MAGI (advisor-caught 2026-09-01: previously omitted here while currentYearMagi/NIIT already included it)", () => {
+  it("includes non-qualified Roth growth income in MAGI (previously omitted here while currentYearMagi/NIIT already included it)", () => {
     // Base MAGI = 30000 + 5000 = 35000 (under cliff). Adding rothTaxableGrowth
     // must push it over the same way rothConversionAmount/ssIncome already do:
     // 35000 + 50000 = 85000 (over 84600 cliff).
@@ -424,7 +458,7 @@ describe("checkAca", () => {
 // performRothConversion — Retirement-only scope
 // ---------------------------------------------------------------------------
 
-describe("performRothConversion (R49 — nonRetirement scope)", () => {
+describe("performRothConversion (nonRetirement scope)", () => {
   const indKey = makeIndKey();
 
   function accts(): IndividualAccountInput[] {
@@ -590,7 +624,7 @@ describe("performRothConversion (R49 — nonRetirement scope)", () => {
     expect(result.rothConversionTaxCost).toBe(0);
   });
 
-  it("byte-identical to pre-R49 behavior when nonRetirement (and ind* data) are omitted entirely -- the real call site's actual fallback shape", () => {
+  it("byte-identical to the prior behavior when nonRetirement (and ind* data) are omitted entirely -- the real call site's actual fallback shape", () => {
     // decumulation-year.ts always computes nonRetirement and
     // indAccts/indBal/indKey together, gated on the same
     // hasIndividualAccounts check (see its own comment) -- so the real
@@ -633,7 +667,7 @@ describe("performRothConversion (R49 — nonRetirement scope)", () => {
 // performRothConversion — RMD-smoothing elevated ceiling
 // ---------------------------------------------------------------------------
 
-describe("performRothConversion (R47 — RMD-smoothing elevated ceiling)", () => {
+describe("performRothConversion (RMD-smoothing elevated ceiling)", () => {
   it("converts even when enableRothConversions is off, if smoothing is active (self-contained toggle)", () => {
     const result = performRothConversion(
       makeRothInput({
@@ -761,7 +795,7 @@ describe("performRothConversion (R47 — RMD-smoothing elevated ceiling)", () =>
     expect(result.rothConversionAmount).toBeLessThan(1_000_000);
   });
 
-  it("still respects R49's Retirement-only capacity cap even when smoothing elevates the target rate", () => {
+  it("still respects the Retirement-only capacity cap even when smoothing elevates the target rate", () => {
     const balances = makeTaxBuckets({ preTax: 500000, afterTax: 300000 });
     const acctBal = makeAccountBalances({ preTax: 500000, afterTax: 300000 });
     const result = performRothConversion(

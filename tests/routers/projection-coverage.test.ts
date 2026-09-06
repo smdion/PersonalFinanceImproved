@@ -1178,6 +1178,85 @@ describe("projection router — computeStrategyComparison cache", () => {
       cleanup();
     }
   }, 30000);
+
+  // Regression test for a real bug: the cache
+  // key used to hash `activeStrategy, userStrategyParams` instead of the
+  // full resolved `decumulationDefaults`, so it omitted
+  // `settings.withdrawalRoutingMode` (and distributionTaxRates) entirely —
+  // changing a household's Withdrawal Routing setting silently served a
+  // stale comparison computed under the OLD mode until the cache expired.
+  it("changing withdrawalRoutingMode invalidates the cache (was a live bug)", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedGlidePath(db);
+
+      await caller.projection.computeStrategyComparison();
+      db.update(schema.retirementSettings)
+        .set({ withdrawalRoutingMode: "waterfall" })
+        .run();
+      await caller.projection.computeStrategyComparison();
+
+      const rows = db.select().from(schema.projectionCache).all();
+      expect(rows).toHaveLength(2);
+    } finally {
+      cleanup();
+    }
+  }, 30000);
+
+  // Same class of bug, different field: rmdExcessHandling/qcdMaximize/
+  // rmdSmoothingEnabled/discretionaryWithdrawalOrder were silently dropped
+  // to engine defaults (not read from settings at all, not just excluded
+  // from the cache key) — this proves both halves of the fix: the fields
+  // are now READ (buildDecumulationDefaults) and the cache key now
+  // reflects a change to one of them.
+  it("changing discretionaryWithdrawalOrder invalidates the cache", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedGlidePath(db);
+
+      await caller.projection.computeStrategyComparison();
+      db.update(schema.retirementSettings)
+        .set({ discretionaryWithdrawalOrder: "brokerage_first" })
+        .run();
+      await caller.projection.computeStrategyComparison();
+
+      const rows = db.select().from(schema.projectionCache).all();
+      expect(rows).toHaveLength(2);
+    } finally {
+      cleanup();
+    }
+  }, 30000);
+
+  // Persisted `withdrawal_order` — now read via buildDecumulationDefaults
+  // (no client override sent by this procedure) and folded into the hashed
+  // `decumulationDefaults`, so a change to the household's saved order must
+  // invalidate the comparison cache the same way.
+  it("changing the persisted withdrawalOrder invalidates the cache", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedGlidePath(db);
+
+      await caller.projection.computeStrategyComparison();
+      db.update(schema.retirementSettings)
+        .set({ withdrawalOrder: ["brokerage", "401k", "403b", "ira", "hsa"] })
+        .run();
+      await caller.projection.computeStrategyComparison();
+
+      const rows = db.select().from(schema.projectionCache).all();
+      expect(rows).toHaveLength(2);
+    } finally {
+      cleanup();
+    }
+  }, 30000);
 });
 
 // ---------------------------------------------------------------------------

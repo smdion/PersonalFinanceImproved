@@ -6,18 +6,25 @@
  * now Retirement) uses, with a list of profiles on the left and the
  * selected one's editor on the right.
  *
- * Extracted 2026-08-30 from three near-identical, independently-maintained
+ * Extracted from three near-identical, independently-maintained
  * copies (`budget-profile-sidebar.tsx`'s inline row markup, and a
  * `ProfileListItem` locally defined in both `contribution-profile-manager.tsx`
  * and `salary-profile-manager.tsx`) after Retirement Profiles' own manager
  * was built as a one-off flat pill row instead of matching this pattern —
- * the fourth divergent copy was the last straw. All capability props are
- * optional: a consumer that doesn't support inline rename (Salary didn't)
- * just omits `onStartRename`/etc., and that button/input never renders —
- * this is additive for the three existing consumers, not a behavior change.
+ * the fourth divergent copy was the last straw.
+ *
+ * Rename is one gesture everywhere: the name renders as a click-to-edit
+ * `InlineEdit` — the same always-visible affordance the app
+ * uses for quick value edits elsewhere — driven by a single `onRename`
+ * callback. A consumer that omits `onRename` (Savings, whose rail reuses
+ * Budget profiles and is select-only) renders a plain, non-editable name.
+ * This replaced a hover-reveal "rename" button that three of the four
+ * managers wired and the fourth (Salary) didn't, plus two managers'
+ * separate editor-body "Name" fields.
  */
 
 import { Badge } from "@/components/ui/badge";
+import { InlineEdit } from "@/components/ui/inline-edit";
 
 type ProfileListRowProps = {
   name: string;
@@ -34,16 +41,10 @@ type ProfileListRowProps = {
   activeLabel?: string;
   onSelect: () => void;
 
-  /** Inline rename — omit all four to render a plain (non-editable) name,
-   *  matching Salary's existing behavior. */
-  isRenaming?: boolean;
-  renameValue?: string;
-  onRenameValueChange?: (value: string) => void;
-  onRenameComplete?: () => void;
-  onRenameCancel?: () => void;
-  /** Shows the "rename" hover button; omit to hide it (still renders the
-   *  plain name — this only controls whether renaming is reachable). */
-  onStartRename?: () => void;
+  /** Click-to-edit rename. Omit to render a plain, non-editable name
+   *  (Savings' select-only rail). Called with the trimmed new name only
+   *  when it actually changed. */
+  onRename?: (newName: string) => void;
 
   /** Row actions — each is only rendered when its handler is provided.
    *  `onActivate` additionally hides itself once `isActive` is true. */
@@ -54,9 +55,11 @@ type ProfileListRowProps = {
   /** Type-specific summary line (Budget: $/yr + mode count; Contribution:
    *  contributions + employer match; Salary: job count or description). */
   meta?: React.ReactNode;
-  /** Type-specific extra badge next to the name (Budget's API-link
-   *  indicator is the only current user). */
-  extraBadge?: React.ReactNode;
+  /** Type-specific tag that leads the meta line — reference detail, not a
+   *  status you scan the list by, so it sits on the secondary line rather
+   *  than competing with the name (Budget's API-link indicator is the only
+   *  current user). Best rendered as a subtle (no-fill) Badge. */
+  metaTag?: React.ReactNode;
 };
 
 export function ProfileListRow({
@@ -65,19 +68,14 @@ export function ProfileListRow({
   isActive,
   activeLabel = "ACTIVE",
   onSelect,
-  isRenaming,
-  renameValue,
-  onRenameValueChange,
-  onRenameComplete,
-  onRenameCancel,
-  onStartRename,
+  onRename,
   onActivate,
   onClone,
   onDelete,
   meta,
-  extraBadge,
+  metaTag,
 }: ProfileListRowProps) {
-  const hasRowActions = onStartRename || onActivate || onClone || onDelete;
+  const hasRowActions = onActivate || onClone || onDelete;
   return (
     <div
       role="button"
@@ -95,24 +93,33 @@ export function ProfileListRow({
           : "hover:bg-surface-sunken border border-transparent"
       }`}
     >
-      <div className="flex items-center justify-between">
-        <div className="flex min-w-0 items-center gap-1.5">
-          {isRenaming ? (
-            <input
-              type="text"
-              value={renameValue ?? ""}
-              onChange={(e) => onRenameValueChange?.(e.target.value)}
-              onBlur={() => onRenameComplete?.()}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-                if (e.key === "Escape") onRenameCancel?.();
-              }}
-              autoFocus
+      {/* flex-wrap so on the narrow rail (no hover) the always-visible
+          actions drop to their own line instead of squeezing the name;
+          on md+ the actions collapse to hover/focus reveal and never
+          wrap. */}
+      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+        <div className="flex min-w-0 flex-1 items-center gap-1.5">
+          {onRename ? (
+            // Keep the row's own click/keyboard (select) from firing when
+            // the name field is used — same guard the row-actions and
+            // meta slots use.
+            <span
+              className="min-w-0 flex-1"
               onClick={(e) => e.stopPropagation()}
-              className="text-primary bg-surface-primary border-strong w-full rounded border px-1 py-0.5 text-xs font-medium"
-            />
+              onKeyDown={(e) => e.stopPropagation()}
+            >
+              <InlineEdit
+                value={name}
+                truncate
+                onSave={(next) => {
+                  const trimmed = next.trim();
+                  if (trimmed && trimmed !== name) onRename(trimmed);
+                }}
+                className="text-primary text-xs font-medium"
+              />
+            </span>
           ) : (
-            <span className="text-primary truncate text-xs font-medium">
+            <span className="text-primary min-w-0 flex-1 truncate text-xs font-medium">
               {name}
             </span>
           )}
@@ -121,11 +128,10 @@ export function ProfileListRow({
               {activeLabel}
             </Badge>
           )}
-          {extraBadge}
         </div>
-        {hasRowActions && !isRenaming && (
+        {hasRowActions && (
           <div
-            className="flex shrink-0 gap-1 transition-all md:max-w-0 md:overflow-hidden md:opacity-0 md:group-hover:max-w-[13rem] md:group-hover:opacity-100"
+            className="flex shrink-0 gap-2 md:max-w-0 md:overflow-hidden md:opacity-0 md:transition-all md:group-focus-within:max-w-[13rem] md:group-focus-within:opacity-100 md:group-hover:max-w-[13rem] md:group-hover:opacity-100"
             onClick={(e) => e.stopPropagation()}
           >
             {onActivate && !isActive && (
@@ -135,15 +141,6 @@ export function ProfileListRow({
                 className="text-caption text-faint hover:text-green-600"
               >
                 activate
-              </button>
-            )}
-            {onStartRename && (
-              <button
-                type="button"
-                onClick={onStartRename}
-                className="text-caption text-faint hover:text-blue-600"
-              >
-                rename
               </button>
             )}
             {onClone && (
@@ -167,8 +164,9 @@ export function ProfileListRow({
           </div>
         )}
       </div>
-      {meta && (
-        <div className="text-caption text-muted mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
+      {(metaTag || meta) && (
+        <div className="text-caption text-muted mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          {metaTag}
           {meta}
         </div>
       )}

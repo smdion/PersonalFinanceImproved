@@ -23,11 +23,11 @@ Framework: [Vitest](https://vitest.dev/) with globals enabled. E2E: [Playwright]
 | **Edge Cases**    | 1     | 56    | Boundary and extreme inputs across all calculators                                      |
 | **Invariants**    | 1     | 32    | Property-based testing with fast-check (580+ generated inputs)                          |
 | **Snapshots**     | 3     | 73    | Byte-identical output after refactoring                                                 |
-| **Components**    | 60    | 599   | UI component behavior + dashboard + error boundary + sidebar                            |
+| **Components**    | 61    | 604   | UI component behavior + dashboard + error boundary + sidebar                            |
 | **Hooks**         | 8     | 48    | React hook unit tests (renderHook)                                                      |
 | **Accessibility** | 1     | 11    | axe-core ARIA/a11y checks on UI components                                              |
 | **Integration**   | 2     | 77    | Zod schema validation for tRPC inputs and JSONB columns                                 |
-| **Routers**       | 55    | 1411  | tRPC router integration tests (all routers + auth enforcement)                          |
+| **Routers**       | 56    | 1419  | tRPC router integration tests (all routers + auth enforcement)                          |
 | **Helpers**       | 15    | 238   | Server helper unit tests (budget, contribution, salary, snapshot, transforms, settings) |
 | **Pure**          | 21    | 426   | Business logic extracted per RULES.md's DB-transaction-free pure-function rule          |
 | **DB**            | 13    | 305   | Schema/migration/dialect-compat unit tests (SQLite + PostgreSQL)                        |
@@ -38,7 +38,7 @@ Framework: [Vitest](https://vitest.dev/) with globals enabled. E2E: [Playwright]
 | **Lint**          | 2     | 23    | RULES.md rule sweeps + repo-convention checks                                           |
 | **E2E**           | 13    | 38    | Playwright smoke tests (health, navigation, page flows)                                 |
 
-Total: **<!-- AUTO-GEN:totalTests -->5184<!-- /AUTO-GEN --> tests** across **<!-- AUTO-GEN:vitestFiles -->313<!-- /AUTO-GEN --> vitest files** + **38 Playwright E2E tests** (<!-- AUTO-GEN:e2eFiles -->13<!-- /AUTO-GEN --> files).
+Total: **<!-- AUTO-GEN:totalTests -->5197<!-- /AUTO-GEN --> tests** across **<!-- AUTO-GEN:vitestFiles -->318<!-- /AUTO-GEN --> vitest files** + **38 Playwright E2E tests** (<!-- AUTO-GEN:e2eFiles -->13<!-- /AUTO-GEN --> files).
 
 _Note: `totalTests` above is not auto-verified by `pnpm docs:verify` (only `vitestFiles`/`e2eFiles` are) — update it by hand from `pnpm test:coverage` + `pnpm test:benchmarks` output when the per-suite table changes._
 

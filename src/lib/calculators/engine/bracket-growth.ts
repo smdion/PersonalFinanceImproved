@@ -2,13 +2,13 @@
  * Growth helpers for legally inflation-indexed federal tax thresholds —
  * ordinary tax brackets, the standard deduction, LTCG brackets, IRMAA
  * brackets. (ACA's 400%-FPL cliff is inflation-indexed too and gets the
- * same fix, Phase 4, but grown at its own single call site —
+ * same fix, but grown at its own single call site —
  * `checkAca`, `post-withdrawal-optimizer.ts` — via a `fplGrowthFactor`
  * multiplier rather than a `grow*` helper here, since there's no
  * `fpl_by_household`-style DB override table to grow the way
- * `growLtcgBrackets`/`growIrmaaBrackets` do.) Found live, 2026-08-31
- * ("outside the box" review of
- * engine-wide tax assumptions): every one of these is resolved once from a
+ * `growLtcgBrackets`/`growIrmaaBrackets` do.) An "outside the box" review
+ * of engine-wide tax assumptions found that every one of these is resolved
+ * once from a
  * single DB row / hardcoded config and held flat in NOMINAL dollars for
  * the entire 40-60 year projection, while the income/spending figures
  * compared against them correctly grow in nominal terms
@@ -95,8 +95,8 @@ export function growAmount(
  * `tax(k·x) = k·tax(x)`, so scaling `baseWithholding` by the same `k`
  * keeps every bracket's cumulative tax correct. Scaling `threshold`
  * without `baseWithholding` (or vice versa) computes wrong cumulative tax
- * at every bracket above the first — verified by direct derivation and
- * advisor review before this was written, not asserted on faith (see
+ * at every bracket above the first — verified by direct derivation
+ * before this was written, not asserted on faith (see
  * this module's test file for the executable proof).
  */
 export function growWithholdingBrackets(

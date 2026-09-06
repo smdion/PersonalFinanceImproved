@@ -45,6 +45,20 @@ export type Settings = {
    *  real ACA/IRMAA MAGI cost for using the annual 0%-LTCG allowance
    *  sooner). */
   discretionaryWithdrawalOrder?: string | null;
+  /** Household default for `withdrawalRoutingMode` — WHICH accounts fund a
+   *  year's withdrawal ("bracket_filling" | "waterfall" | "percentage").
+   *  The Retirement page's Configure toggle can override this for one
+   *  session; this is what applies everywhere else (Tax Optimization
+   *  included) until it does. */
+  withdrawalRoutingMode?: string | null;
+  /** Persisted household default for the withdrawal ORDER (Waterfall's
+   *  account sequence; also bracket_filling's Traditional-account Phase 1
+   *  order). `null` = use `getDefaultDecumulationOrder()`. Same
+   *  session-override-then-fall-back semantics as `withdrawalRoutingMode`. */
+  withdrawalOrder?: string[] | null;
+  /** Persisted household default for percentage-mode splits — a fraction
+   *  per account. `null` = use `DEFAULT_WITHDRAWAL_SPLITS`. */
+  withdrawalSplits?: Record<string, number> | null;
   // Strategy-specific params
   gkUpperGuardrail?: string | null;
   gkLowerGuardrail?: string | null;

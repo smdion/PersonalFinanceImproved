@@ -181,7 +181,7 @@ export function RetirementProfileTab({
   // happening — the Retirement page's ProjectionCard (where the actual
   // recalculation UI lives) isn't mounted here, so utils.projection.
   // invalidate() above just marks the data stale for next time, silently
-  // (live-user finding, 2026-08-30: "does it wait till the portfolio page
+  // ("does it wait till the portfolio page
   // is reloaded?" — yes, and there was no confirmation it even queued).
   // Debounced so a quick burst of edits (several fields in a row) collapses
   // into ONE toast after saves settle, not one per field.

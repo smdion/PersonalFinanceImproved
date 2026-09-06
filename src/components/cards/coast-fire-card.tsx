@@ -50,8 +50,7 @@ type CoastFireMcResult = {
  *  shortfall, the "why stopping today fails" explanation isn't worth
  *  surfacing — too small a share of outcomes to be the real story. Single
  *  source for both the KPI card's tooltip line and its short headline
- *  caption (previously duplicated as a literal `0.05` in each — code
- *  review, 2026-08-27). */
+ *  caption (previously duplicated as a literal `0.05` in each). */
 const COAST_FIRE_GAP_MATERIALITY_THRESHOLD = 0.05;
 
 function hasCoastFireGapAmount(mc: CoastFireMcResult): boolean {

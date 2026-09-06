@@ -63,8 +63,7 @@ import type {
 type ProfileListEntry = { id: number; name: string };
 
 /** Inflation/Withdrawal-Rate/Raise chips were structurally identical
- *  (~16 lines each, same InlineEdit percent wiring) — code-review
- *  reuse/duplication finding, 2026-09-01. */
+ *  (~16 lines each, same InlineEdit percent wiring). */
 function PercentChip({
   chipCls,
   labelCls,

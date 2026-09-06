@@ -9,7 +9,7 @@
  * `reinvestRmdExcess` in `balance-deduction.ts` for the separate,
  * unrelated "what to do with leftover money" question).
  *
- * Not capped by the RMD amount (advisor review, 2026-08-29): IRC
+ * Not capped by the RMD amount: IRC
  * §408(d)(8) caps a QCD at the annual per-person dollar limit, full stop —
  * it is legal, and a real tax-planning move, to QCD MORE than the year's
  * RMD (the excess just doesn't count toward satisfying it, but is still

@@ -118,6 +118,49 @@ describe("retirement.retirementSettings", () => {
       expect(result!.socialSecurityMonthly).toBe("2500");
       expect(result!.ssStartAge).toBe(67);
     });
+
+    it("round-trips a persisted withdrawalOrder / withdrawalSplits and can clear them to null", async () => {
+      const order = ["brokerage", "401k", "403b", "ira", "hsa"];
+      const splits = {
+        "401k": 0.4,
+        "403b": 0,
+        ira: 0.2,
+        hsa: 0.1,
+        brokerage: 0.3,
+      };
+      const saved = await caller.retirement.retirementSettings.upsert({
+        ...baseSettings(),
+        withdrawalOrder: order,
+        withdrawalSplits: splits,
+      });
+      expect(saved!.withdrawalOrder).toEqual(order);
+      expect(saved!.withdrawalSplits).toEqual(splits);
+
+      const cleared = await caller.retirement.retirementSettings.upsert({
+        ...baseSettings(),
+        withdrawalOrder: null,
+        withdrawalSplits: null,
+      });
+      expect(cleared!.withdrawalOrder).toBeNull();
+      expect(cleared!.withdrawalSplits).toBeNull();
+    });
+
+    it("rejects a withdrawalOrder with a duplicated category", async () => {
+      await expect(
+        caller.retirement.retirementSettings.upsert({
+          ...baseSettings(),
+          withdrawalOrder: ["401k", "403b", "ira", "brokerage", "brokerage"],
+        }),
+      ).rejects.toThrow();
+    });
+
+    it("accepts a partial withdrawalOrder (engine backfills the rest at read time)", async () => {
+      const saved = await caller.retirement.retirementSettings.upsert({
+        ...baseSettings(),
+        withdrawalOrder: ["brokerage", "401k"],
+      });
+      expect(saved!.withdrawalOrder).toEqual(["brokerage", "401k"]);
+    });
   });
 
   // Regression: "Plan Through" is ONE household control (sections/timeline.tsx)

@@ -77,7 +77,7 @@ export type TooltipData =
          *  from this specific "Total Withdrawals" rmd block. */
         qcdAmount?: number;
         /** "Why is my RMD this amount" — per-person divisor × balance
-         *  breakdown (2026-08-31, user follow-up), e.g. "Sean: $45,231
+         *  breakdown, e.g. "Sean: $45,231
          *  (÷27.4, balance $1,239,329) · Joanna: $12,000 (÷25.5, balance
          *  $306,000)". Pre-formatted by the caller from
          *  `EngineDecumulationYear.rmdByPerson`'s divisor/priorYearEndTradBalance/age
@@ -87,7 +87,7 @@ export type TooltipData =
         divisorDetail?: string;
       };
       /** Real, material spending-need shortfall for this year (engine's
-       *  `unmetNeedMaterial` verdict — advisor review, 2026-08-28). Was
+       *  `unmetNeedMaterial` verdict). Was
        *  previously only visible behind the hidden diagMode dev toggle;
        *  this promotes it to a real, always-visible alert. Only ever set
        *  when the engine's own materiality floor is cleared — never
@@ -105,7 +105,7 @@ export type TooltipData =
        *  Guyton-Klinger raise/cut, Vanguard Dynamic ceiling/floor) — the
        *  same data the Balance chart's ReferenceLine markers already show,
        *  but previously invisible here except behind the hidden diagMode
-       *  dev toggle (UI/UX review, 2026-08-28). Build via
+       *  dev toggle. Build via
        *  `buildStrategyEventStyle` in utils.ts so this can't drift from
        *  the chart's own wording/color. */
       strategyEvent?: { color: string; text: string };

@@ -65,7 +65,7 @@ export function SpendingStabilityChart({
   // same BASELINE On/Off pill the Balance chart uses, contextually
   // rewired in index.tsx's toolbar) — never a permanent hide, and never
   // re-applied after the user's own first interaction, so it can't fight
-  // a manual toggle back on (user feedback, 2026-08-28: a separate
+  // a manual toggle back on (a separate
   // "Show anyway" link was confusing because the real BASELINE toggle
   // appeared to do nothing on this chart).
   const reactsToVolatility =
@@ -182,8 +182,8 @@ export function SpendingStabilityChart({
         // % of sims that breached the 75% floor THIS year — visible even
         // when percentiles are degenerate (e.g. only 8% of trials breach,
         // so p25/p50/p75 all stay flat at 100% and hide it). This is what
-        // actually answers the KPI warning's "see which years" (2026-08-28
-        // live-user finding: the chart didn't deliver on that promise).
+        // actually answers the KPI warning's "see which years" question —
+        // an earlier version of this chart didn't deliver on that promise.
         datum.mc_breach = pct(band.breachRate ?? 0);
 
         // Always include all band keys (0 for unused) so Recharts

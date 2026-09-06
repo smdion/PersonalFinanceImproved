@@ -93,7 +93,7 @@ export async function resolveTargetBudgetProfile(
  * own auto-detection instead of reporting a real $0.
  *
  * Manual mapping exists because Actual's API has no account "type" field
- * at all (verified live, 2026-08-31 — the plain `/accounts` endpoint
+ * at all (the plain `/accounts` endpoint
  * returns only id/name/offbudget/closed, and a raw query against the
  * underlying `accounts` table itself has no `type` column either), so
  * there's no way to auto-detect "this is a checking account" the way
@@ -150,8 +150,7 @@ export async function getEffectiveCash(
   /** Pass this when the caller already resolved it (e.g. alongside a
    *  sibling getEffectiveCreditCardDebt call in the same procedure) —
    *  avoids re-querying apiConnections/cached balances for a value that
-   *  can't have changed mid-request (code-review efficiency finding,
-   *  2026-09-01). Omit to resolve it here as before. */
+   *  can't have changed mid-request. Omit to resolve it here as before. */
   activeBudgetApi?: ActiveBudgetApi,
 ): Promise<{
   cash: number;

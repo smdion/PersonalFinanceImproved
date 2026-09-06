@@ -5,9 +5,9 @@
  * (up to numTrials × calculateProjection() calls, each across ~40-60 years)
  * with no `await`/yields. Called directly inside a tRPC handler it blocks
  * Node's single JS event-loop thread for the entire run — not just this
- * request, the WHOLE SERVER, for every user, until it finishes (found
- * 2026-08-30 from a live "entire UI freezes" report; verified by reading
- * the loop, not assumed). Running it on a separate OS thread lets the OS
+ * request, the WHOLE SERVER, for every user, until it finishes (a real
+ * "entire UI freezes" report, then verified by reading the loop, not
+ * assumed). Running it on a separate OS thread lets the OS
  * scheduler preempt it in favor of the main thread even under this
  * container's `cpus: 1.0` limit (docs/ops/OPS.md) — there's no real
  * parallelism gain from a second thread on one CPU, but preemption alone

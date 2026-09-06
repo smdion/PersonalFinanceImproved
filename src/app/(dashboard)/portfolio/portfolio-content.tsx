@@ -14,6 +14,7 @@ import {
   formatPercent,
   formatDate,
   accountDisplayName,
+  budgetApiServiceLabel,
 } from "@/lib/utils/format";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -21,6 +22,9 @@ import { taxTypeLabel, gainLossTextColor } from "@/lib/utils/colors";
 import { getDisplayConfig } from "@/lib/config/account-types";
 import dynamic from "next/dynamic";
 import { confirm } from "@/components/ui/confirm-dialog";
+import { InlineEdit } from "@/components/ui/inline-edit";
+import { toast } from "@/lib/hooks/use-toast";
+import { useSnapshotSyncPending } from "@/components/portfolio/hooks/use-snapshot-sync-pending";
 import { ContributionAccountsSettings } from "@/components/portfolio/contribution-accounts";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 import { NewSnapshotForm } from "@/components/portfolio/new-snapshot-form";
@@ -47,6 +51,7 @@ const PortfolioChart = dynamic(
 // ---------------------------------------------------------------------------
 
 type SnapshotAccountWithPerf = {
+  id: number;
   institution: string;
   taxType: string;
   accountType: string;
@@ -207,8 +212,88 @@ export function PortfolioContent() {
     sortCol: sortCol ?? undefined,
     sortDir: sortDir,
   });
-  const { deleteSnapshot, resyncPush, invalidateSnapshotQueries } =
-    usePortfolioSnapshotMutations();
+  const {
+    deleteSnapshot,
+    resyncPush,
+    updateAccountBalance,
+    invalidateSnapshotQueries,
+  } = usePortfolioSnapshotMutations();
+
+  const { data: syncStatus } = trpc.sync.getSyncStatus.useQuery();
+  const budgetApiConnected = !!syncStatus?.connected;
+  const syncServiceLabel = budgetApiServiceLabel(
+    (syncStatus?.service as "ynab" | "actual" | null | undefined) ?? "none",
+  );
+
+  const {
+    pending: syncPendingRaw,
+    markDirty: markDirtyRaw,
+    clear: clearSyncPending,
+  } = useSnapshotSyncPending();
+  // Only a household with a live budget-API connection has anything to
+  // resync — otherwise the balance edit just saves and we're done.
+  const syncPending = budgetApiConnected ? syncPendingRaw : null;
+  const markDirty = useCallback(
+    (snapshotId: number, snapshotDate: string) => {
+      if (budgetApiConnected) markDirtyRaw(snapshotId, snapshotDate);
+    },
+    [budgetApiConnected, markDirtyRaw],
+  );
+
+  /** Inline balance fix on the latest snapshot. Saves + recomputes
+   *  immediately; the budget-API push is NOT automatic — the snapshot is
+   *  marked "not synced" and stays that way (amber banner + row badge +
+   *  in-row "Sync to …" button) until the user pushes it explicitly. One
+   *  push covers every pending edit, so fixing several balances is still
+   *  one resync. */
+  const handleBalanceEdit = useCallback(
+    async (
+      accountId: number,
+      snapshotId: number,
+      snapshotDate: string,
+      rawAmount: string,
+    ) => {
+      const amount = rawAmount.replace(/[^0-9.]/g, "");
+      const n = Number(amount);
+      if (!amount || Number.isNaN(n) || n < 0) {
+        toast.error("Enter a valid balance.");
+        return;
+      }
+      try {
+        await updateAccountBalance.mutateAsync({ id: accountId, amount });
+        markDirty(snapshotId, snapshotDate);
+      } catch (e) {
+        toast.error(
+          e instanceof Error ? e.message : "Couldn't update the balance.",
+        );
+      }
+    },
+    [updateAccountBalance, markDirty],
+  );
+
+  /** Push the pending balance edits for one snapshot to the budget API —
+   *  one resync for all of them. Clears the "not synced" flag on success;
+   *  keeps it (banner + badge stay) on failure. */
+  const syncPendingSnapshot = useCallback(
+    async (snapshotId: number) => {
+      try {
+        const r = await resyncPush.mutateAsync({
+          snapshotId,
+          confirmNonLatest: false,
+        });
+        clearSyncPending();
+        toast.success(
+          `Synced to ${syncServiceLabel} — posted ${r.posted}, cleaned ${r.cleaned}.`,
+        );
+      } catch (e) {
+        toast.error(
+          `Sync failed: ${e instanceof Error ? e.message : "unknown error"}. Your edits are saved — the "Sync to ${syncServiceLabel}" button is still there to retry.`,
+          9000,
+        );
+      }
+    },
+    [resyncPush, clearSyncPending, syncServiceLabel],
+  );
 
   const snapshotDate = data?.snapshotDate;
 
@@ -310,6 +395,41 @@ export function PortfolioContent() {
           )}
         </span>
       </PageHeader>
+
+      {/* Un-synced balance edits — persists across visits (localStorage)
+          so a closed tab mid-edit doesn't silently drift from the budget
+          API. Nothing syncs on its own; you push it here or in the
+          expanded snapshot row. */}
+      {canEdit && syncPending && (
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2.5 text-xs text-amber-900">
+          <span className="font-medium">
+            {syncPending.count} balance change
+            {syncPending.count === 1 ? "" : "s"} on the{" "}
+            {formatDate(syncPending.snapshotDate, "medium")} snapshot{" "}
+            {syncPending.count === 1 ? "hasn't" : "haven't"} been pushed to{" "}
+            {syncServiceLabel} yet.
+          </span>
+          <span className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              disabled={resyncPush.isPending}
+              onClick={() => void syncPendingSnapshot(syncPending.snapshotId)}
+              className="rounded bg-amber-600 px-3 py-1.5 font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
+            >
+              {resyncPush.isPending
+                ? "Syncing…"
+                : `Sync to ${syncServiceLabel}`}
+            </button>
+            <button
+              type="button"
+              onClick={() => clearSyncPending()}
+              className="text-amber-700 hover:underline"
+            >
+              Dismiss
+            </button>
+          </span>
+        </div>
+      )}
 
       {/* Quick Look Stats Panel */}
       {showQuickLook && snapshotTotals && snapshotTotals.length >= 2 && (
@@ -504,6 +624,14 @@ export function PortfolioContent() {
                                     &#9654;
                                   </span>
                                   {formatDate(snap.snapshotDate, "medium")}
+                                  {syncPending?.snapshotId === snap.id && (
+                                    <span
+                                      className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800"
+                                      title={`${syncPending.count} balance change(s) not pushed to ${syncServiceLabel} yet`}
+                                    >
+                                      unsynced
+                                    </span>
+                                  )}
                                 </span>
                               </td>
                               <td className="px-4 py-2 text-right font-medium">
@@ -616,6 +744,41 @@ export function PortfolioContent() {
                               <tr>
                                 <td colSpan={6} className="px-0 py-0">
                                   <div className="bg-surface-sunken px-8 py-2">
+                                    {isLatest &&
+                                      canEdit &&
+                                      (syncPending?.snapshotId === snap.id ? (
+                                        <div className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2">
+                                          <span className="text-xs font-medium text-amber-900">
+                                            {syncPending.count} balance change
+                                            {syncPending.count === 1
+                                              ? ""
+                                              : "s"}{" "}
+                                            not pushed to {syncServiceLabel}{" "}
+                                            yet.
+                                          </span>
+                                          <button
+                                            type="button"
+                                            disabled={resyncPush.isPending}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              void syncPendingSnapshot(snap.id);
+                                            }}
+                                            className="shrink-0 rounded bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
+                                          >
+                                            {resyncPush.isPending
+                                              ? "Syncing…"
+                                              : `Sync to ${syncServiceLabel}`}
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <p className="text-muted mb-2 text-xs">
+                                          Click a balance to fix it — changes
+                                          save immediately.
+                                          {budgetApiConnected
+                                            ? ` A "Sync to ${syncServiceLabel}" button appears here after an edit.`
+                                            : ""}
+                                        </p>
+                                      ))}
                                     {groupByPerformanceAccount(
                                       snap.accounts,
                                     ).map((group) => (
@@ -633,23 +796,53 @@ export function PortfolioContent() {
                                           </span>
                                         </div>
                                         {/* Sub-rows */}
-                                        {group.accounts.map((a, ai) => {
+                                        {group.accounts.map((a) => {
                                           const subLabel = buildSubRowLabel(
                                             a,
                                             group,
                                           );
                                           return (
                                             <div
-                                              // eslint-disable-next-line react/no-array-index-key -- SnapshotAccountWithPerf has no ID; index breaks ties when accountType/ownerPersonId/subType collide within a group
-                                              key={`${a.accountType}-${a.ownerPersonId}-${a.subType}-${ai}`}
+                                              key={a.id}
                                               className="border-subtle flex items-baseline justify-between border-b py-0.5 pl-4"
                                             >
                                               <span className="text-muted text-xs">
                                                 {subLabel}
                                               </span>
-                                              <span className="text-secondary text-xs">
-                                                {formatCurrency(a.amount)}
-                                              </span>
+                                              {isLatest && canEdit ? (
+                                                <span
+                                                  onClick={(e) =>
+                                                    e.stopPropagation()
+                                                  }
+                                                >
+                                                  <InlineEdit
+                                                    value={String(a.amount)}
+                                                    type="number"
+                                                    className="text-secondary text-xs"
+                                                    formatDisplay={(v) =>
+                                                      formatCurrency(Number(v))
+                                                    }
+                                                    parseInput={(raw) =>
+                                                      raw.replace(
+                                                        /[^0-9.]/g,
+                                                        "",
+                                                      )
+                                                    }
+                                                    onSave={(v) =>
+                                                      handleBalanceEdit(
+                                                        a.id,
+                                                        snap.id,
+                                                        snap.snapshotDate,
+                                                        v,
+                                                      )
+                                                    }
+                                                  />
+                                                </span>
+                                              ) : (
+                                                <span className="text-secondary text-xs">
+                                                  {formatCurrency(a.amount)}
+                                                </span>
+                                              )}
                                             </div>
                                           );
                                         })}

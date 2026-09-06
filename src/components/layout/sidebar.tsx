@@ -40,6 +40,7 @@ import {
   Hammer,
   FlaskConical,
   Unlock,
+  Calculator,
   type LucideIcon,
 } from "lucide-react";
 import { BRAND_COLORS } from "@/lib/utils/colors";
@@ -103,6 +104,11 @@ const navStructure: NavEntry[] = [
       { href: "/contributions", label: "Contributions", Icon: Layers },
       { href: "/analytics", label: "Analytics", Icon: PieChart },
       { href: "/tax-buckets", label: "Tax Buckets", Icon: Unlock },
+      {
+        href: "/tax-optimization",
+        label: "Tax Optimization",
+        Icon: Calculator,
+      },
       { href: "/tools", label: "Relocation", Icon: Wrench },
       {
         href: "/budget?tab=whatif",

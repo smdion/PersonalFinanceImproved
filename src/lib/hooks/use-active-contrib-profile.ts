@@ -32,8 +32,7 @@ export function useActiveContribProfile(): [
     // rename/duplicate/delete) plus budget's invalidateSummaryAndContributions.
     // Promise.all instead of 10 uncoordinated fire-and-forget calls — same
     // outcome, dispatched together instead of serialized by whatever order
-    // they happen to be written in (code-review efficiency finding,
-    // 2026-09-01).
+    // they happen to be written in.
     onSuccess: () =>
       Promise.all([
         utils.settings.appSettings.list.invalidate(),
@@ -52,7 +51,7 @@ export function useActiveContribProfile(): [
     SK_ACTIVE_CONTRIB_PROFILE_ID,
     null,
     {
-      // Advisor-caught 2026-09-01: null used to short-circuit into a
+      // null used to short-circuit into a
       // silent no-op (setActive's input required a real id, which can't
       // express "clear the selection") — this hook's own return type is
       // `(id: number | null) => void`, so a caller reaching that branch

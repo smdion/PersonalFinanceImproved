@@ -19,8 +19,8 @@ import {
  * Retirement tab, matching the master-detail shell Budget/Contribution/
  * Salary Profiles already use (`grid-cols-[240px_1fr]`, `ProfileListRow`/
  * `ProfileSidebarHeader` from `@/components/ui/profile-sidebar`). Was a
- * one-off flat pill row above the settings editor until 2026-08-30, found
- * inconsistent with the other three's layout and unified here.
+ * one-off flat pill row above the settings editor, found inconsistent with
+ * the other three's layout and unified here.
  *
  * Deliberately thin, matching SalaryProfileManager's philosophy: no bare
  * "create" (retirement_settings has ~40 NOT NULL columns with no sensible
@@ -62,7 +62,7 @@ export function RetirementProfileManager({
   // table (tax_brackets) instead of a new endpoint — resolveTaxParams
   // itself already answers "which years have data" internally; a second,
   // independent answer here would be a second computation path in
-  // miniature (advisor review).
+  // miniature.
   const { data: taxBracketRows } = trpc.settings.taxBrackets.list.useQuery();
   const availableTaxYears = Array.from(
     new Set((taxBracketRows ?? []).map((r) => r.taxYear)),
@@ -90,8 +90,6 @@ export function RetirementProfileManager({
     },
   );
 
-  const [renamingId, setRenamingId] = useState<number | null>(null);
-  const [renameValue, setRenameValue] = useState("");
   const [duplicating, setDuplicating] = useState(false);
   const [duplicateSourceId, setDuplicateSourceId] = useState<number | null>(
     null,
@@ -127,7 +125,6 @@ export function RetirementProfileManager({
   const renameMut = trpc.retirement.retirementProfiles.update.useMutation({
     onSuccess: () => {
       invalidate();
-      setRenamingId(null);
       setError(null);
     },
     onError: (e) => setError(e.message),
@@ -136,8 +133,7 @@ export function RetirementProfileManager({
   // plan is priced under), the same category as name/description — not a
   // household assumption like the ones retirementSettings.upsert owns —
   // so it uses the same retirementProfiles.update mutation shape as
-  // rename, right here, not threaded into TaxesSection (advisor review:
-  // that component is a documented pure presentational leaf owned
+  // rename, right here, not threaded into TaxesSection (that component is a documented pure presentational leaf owned
   // entirely by retirement-profile-tab.tsx; a second mutation writing to
   // a second table there would break that contract).
   const updateTaxYearMut =
@@ -194,11 +190,6 @@ export function RetirementProfileManager({
     });
   };
 
-  const handleConfirmRename = (id: number) => {
-    if (!renameValue.trim()) return;
-    renameMut.mutate({ id, name: renameValue.trim() });
-  };
-
   const handleDelete = async (id: number, name: string) => {
     const ok = await confirm(
       `Delete "${name}"? This removes its retirement assumptions for every household member. This cannot be undone.`,
@@ -232,17 +223,11 @@ export function RetirementProfileManager({
                 : "ACTIVE"
             }
             onSelect={() => onViewingProfileChange(profile.id)}
-            isRenaming={renamingId === profile.id}
-            renameValue={renameValue}
-            onRenameValueChange={setRenameValue}
-            onRenameComplete={() => handleConfirmRename(profile.id)}
-            onRenameCancel={() => setRenamingId(null)}
-            onStartRename={
+            onRename={
               admin
-                ? () => {
+                ? (name) => {
                     setError(null);
-                    setRenamingId(profile.id);
-                    setRenameValue(profile.name);
+                    renameMut.mutate({ id: profile.id, name });
                   }
                 : undefined
             }

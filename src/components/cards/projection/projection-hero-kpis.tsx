@@ -160,7 +160,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
   // queries.ts and use-projection-derived.ts consume — previously hand-
   // derived a third time here with its own copy of the scenarioView
   // ternary, which risked silently disagreeing with the other two on a
-  // future scenarioView change (code review, 2026-08-27). Intentionally
+  // future scenarioView change. Intentionally
   // null while the alt-scenario MC is loading — the existing
   // `!mc && mcLoading` skeleton branch below handles the loading state.
   const mc =
@@ -259,7 +259,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
 
         {/* Card 2: Lifetime Income Stability */}
         {(() => {
-          // Advisor review, 2026-08-28: when "vs strategy" trails Portfolio
+          // when "vs strategy" trails Portfolio
           // Survival by a real margin, something is forcing deviations
           // from the strategy's own plan even though the money survives —
           // worth flagging urgently. This is an MC-vs-MC comparison (both

@@ -161,8 +161,8 @@ export type IndividualAccountInput = {
    *  `opts.forceIneligible` docblock (`lib/pure/tax-bucket-projection.ts`)
    *  for the full contract, and why this is threaded as a parameter INTO
    *  that function rather than checked by either of its two callers —
-   *  short-circuiting to "locked" in the consumer was a real bug caught in
-   *  advisor review (Rule-of-55-ineligible isn't the same as locked; the
+   *  short-circuiting to "locked" in the consumer was a real bug
+   *  (Rule-of-55-ineligible isn't the same as locked; the
    *  59½ path must still apply). */
   ruleOf55ForceIneligible?: boolean;
   /** Household is fine paying the 10%/20% early-withdrawal penalty on THIS

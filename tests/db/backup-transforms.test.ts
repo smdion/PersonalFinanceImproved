@@ -4,6 +4,7 @@ import path from "node:path";
 import {
   transformBackupToCurrentSchema,
   KNOWN_SCHEMA_VERSIONS,
+  schemaEra,
 } from "@/lib/db/backup-transforms";
 
 const CURRENT_VERSION = "0000_v3_initial_schema"; // v0.4.0 squashed
@@ -898,6 +899,21 @@ describe("schema-version registry tracks the drizzle journals", () => {
     const known = KNOWN_SCHEMA_VERSIONS as readonly string[];
     const missing = journalTags(dir).filter((tag) => !known.includes(tag));
     expect(missing).toEqual([]);
+  });
+
+  // KNOWN_SCHEMA_VERSIONS and schemaEra() are separate hand-maintained
+  // lists; a tag added to the first but forgotten in the second does NOT
+  // throw — it silently runs the whole v0.1 → current rename ladder against
+  // an already-current backup. Every real journal tag is post-v0.7, so none
+  // may classify as "v0.1" (the fallthrough default).
+  it.each([
+    ["drizzle", "PostgreSQL"],
+    ["drizzle-sqlite", "SQLite"],
+  ])("no %s (%s) journal tag falls through schemaEra() to v0.1", (dir) => {
+    const misclassified = journalTags(dir).filter(
+      (tag) => schemaEra(tag) === "v0.1",
+    );
+    expect(misclassified).toEqual([]);
   });
 
   it("keeps the frozen historical v0.7 tag range registered", () => {

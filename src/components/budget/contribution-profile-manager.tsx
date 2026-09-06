@@ -60,10 +60,6 @@ export function ContributionProfileManager({
   );
   const [creatingNew, setCreatingNew] = useState(false);
   const [viewMode, setViewMode] = useState<"profiles" | "compare">("profiles");
-  const [renamingProfileId, setRenamingProfileId] = useState<number | null>(
-    null,
-  );
-  const [renameValue, setRenameValue] = useState("");
   const [addingAccount, setAddingAccount] = useState(false);
 
   const invalidateProfileDeps = () => {
@@ -300,27 +296,11 @@ export function ContributionProfileManager({
                     setCreatingNew(false);
                     setSelectedProfileId(p.id);
                   }}
-                  onStartRename={
+                  onRename={
                     canEdit
-                      ? () => {
-                          setRenamingProfileId(p.id);
-                          setRenameValue(p.name);
-                        }
+                      ? (name) => renameMutation.mutate({ id: p.id, name })
                       : undefined
                   }
-                  isRenaming={renamingProfileId === p.id}
-                  renameValue={renameValue}
-                  onRenameValueChange={setRenameValue}
-                  onRenameComplete={() => {
-                    if (renameValue.trim() && renameValue.trim() !== p.name) {
-                      renameMutation.mutate({
-                        id: p.id,
-                        name: renameValue.trim(),
-                      });
-                    }
-                    setRenamingProfileId(null);
-                  }}
-                  onRenameCancel={() => setRenamingProfileId(null)}
                   onActivate={canEdit ? () => handleActivate(p.id) : undefined}
                   onDelete={
                     canEdit && canDeleteAny
@@ -1430,15 +1410,9 @@ function ProfileInlineEditor({
     apply(trimmed === "" ? undefined : trimmed);
   };
 
-  const commitProfileName = () => {
-    const draft = drafts["profile:name"];
-    if (draft === undefined) return;
-    clearDraft("profile:name");
-    const trimmed = draft.trim();
-    if (!trimmed || trimmed === profile.name) return;
-    updateMutation.mutate({ id: profileId, name: trimmed });
-  };
-
+  // Name is renamed from the profile list (click-to-edit on the row) — the
+  // one rename gesture shared by every profile manager. This editor pane
+  // owns only the fields that have nowhere else to live.
   const commitProfileDescription = () => {
     const draft = drafts["profile:description"];
     if (draft === undefined) return;
@@ -1456,15 +1430,7 @@ function ProfileInlineEditor({
         className="mb-3"
       />
 
-      <div className="mb-5 grid grid-cols-2 gap-3">
-        <FormField label="Name">
-          <FormInput
-            type="text"
-            value={drafts["profile:name"] ?? profile.name}
-            onChange={(e) => setDraft("profile:name", e.target.value)}
-            onBlur={commitProfileName}
-          />
-        </FormField>
+      <div className="mb-5 max-w-sm">
         <FormField label="Description">
           <FormInput
             type="text"

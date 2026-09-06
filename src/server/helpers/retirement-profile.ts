@@ -62,8 +62,8 @@ export function resolveRetirementProfileIdFrom(
  * person's row and are free to DISAGREE, because only the primary person's
  * copy was ever read — a real household here had `withdrawal_rate` 0.0325 vs
  * 0.04 and `rmd_excess_handling` reinvest vs spend across its two rows.
- * Picking the wrong one silently moves every number in the projection (caught
- * 2026-08-30 by the golden gate, which is the whole reason it exists).
+ * Picking the wrong one silently moves every number in the projection
+ * (caught by the golden gate, which is the whole reason it exists).
  *
  * So: prefer the primary person's row, exactly as the pre-migration code did.
  * Once the contract step collapses this to one row per profile, THAT row must

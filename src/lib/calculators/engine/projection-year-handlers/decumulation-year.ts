@@ -985,8 +985,12 @@ export function runDecumulationYear(
     rmdSmoothingTarget,
     rmdSmoothingMaxBracketTarget: config.rmdSmoothingMaxBracketTarget,
   });
-  const { rothConversionAmount, rothConversionTaxCost, rmdSmoothingShortfall } =
-    rothResult;
+  const {
+    rothConversionAmount,
+    rothConversionTaxCost,
+    rmdSmoothingShortfall,
+    rothConversionIrmaaCapped,
+  } = rothResult;
 
   // Recompute LTCG tax including Roth conversion income (#37).
   // Roth conversions are taxed as ordinary income and push total taxable income
@@ -1119,7 +1123,7 @@ export function runDecumulationYear(
   // line end up disagreeing about the same year).
   //
   // grossUpForTaxes:false households net out the tax+penalty portion of
-  // fundingShortfall before checking materiality (live-user finding,
+  // fundingShortfall before checking materiality.
   // With that setting off, the household has deliberately
   // chosen to withdraw the raw need and let tax/penalty come out of it
   // uncompensated -- fundingShortfall then equals ~taxCost+penaltyCost
@@ -1407,6 +1411,7 @@ export function runDecumulationYear(
     ltcgRate: postConversionLtcgRate,
     rothConversionAmount,
     rothConversionTaxCost,
+    rothConversionIrmaaCapped,
     strategyAction,
     niitAmount,
     irmaaCost,

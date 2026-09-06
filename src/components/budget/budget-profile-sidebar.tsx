@@ -3,13 +3,14 @@
 /**
  * Left-rail profile picker for the budget page master-detail layout.
  *
- * Parent owns: profile list query, rename state (for the inline input),
- * tRPC mutations (set-active, create, rename, delete), and permission
- * gating. This component is purely presentational: it renders the list
- * and wires click / keyboard / hover controls back up through callbacks.
+ * Parent owns: profile list query, tRPC mutations (set-active, create,
+ * rename, delete), and permission gating. This component is purely
+ * presentational: it renders the list and wires click / keyboard controls
+ * back up through callbacks. Rename is a click-to-edit on the row name
+ * (shared `ProfileListRow` behavior) — one `onRename` callback.
  */
 
-import { formatCurrency } from "@/lib/utils/format";
+import { budgetApiServiceLabel, formatCurrency } from "@/lib/utils/format";
 import { confirm, promptTextWithSelect } from "@/components/ui/confirm-dialog";
 import { useScenario } from "@/lib/context/scenario-context";
 import {
@@ -27,13 +28,9 @@ type Props = {
    *  creation time. */
   contribProfiles: { id: number; name: string }[];
 
-  // Inline rename state (hoisted to parent so Escape/Blur flow stays simple)
-  renamingProfileId: number | null;
-  renameValue: string;
-  onRenameValueChange: (value: string) => void;
-  onStartRename: (profileId: number, currentName: string) => void;
-  onFinishRename: (profileId: number, currentName: string) => void;
-  onCancelRename: () => void;
+  /** Rename a profile (click-to-edit on the row name). Called with the
+   *  trimmed new name only when it changed. */
+  onRename: (profileId: number, newName: string) => void;
 
   // API link badge
   apiService: string | null | undefined;
@@ -53,12 +50,7 @@ export function BudgetProfileSidebar({
   displayProfileId,
   canEdit,
   contribProfiles,
-  renamingProfileId,
-  renameValue,
-  onRenameValueChange,
-  onStartRename,
-  onFinishRename,
-  onCancelRename,
+  onRename,
   apiService,
   apiLinkedProfileId,
   apiLinkedColumnIndex,
@@ -102,7 +94,6 @@ export function BudgetProfileSidebar({
       />
       {profiles.map((p) => {
         const isViewing = p.id === displayProfileId;
-        const isRenamingThis = renamingProfileId === p.id;
         return (
           <ProfileListRow
             key={p.id}
@@ -110,14 +101,7 @@ export function BudgetProfileSidebar({
             isSelected={isViewing}
             isActive={p.isActive}
             onSelect={() => onSelectProfile(p.id)}
-            isRenaming={isRenamingThis}
-            renameValue={renameValue}
-            onRenameValueChange={onRenameValueChange}
-            onRenameComplete={() => onFinishRename(p.id, p.name)}
-            onRenameCancel={onCancelRename}
-            onStartRename={
-              canEdit ? () => onStartRename(p.id, p.name) : undefined
-            }
+            onRename={canEdit ? (name) => onRename(p.id, name) : undefined}
             onActivate={
               canEdit && !p.isActive
                 ? () => onSetActiveProfile(p.id)
@@ -143,14 +127,27 @@ export function BudgetProfileSidebar({
                   }
                 : undefined
             }
-            extraBadge={
-              apiService && apiLinkedProfileId === p.id ? (
-                <Badge color="blue" case="normal" className="shrink-0">
-                  ⇄ {apiService.toUpperCase()} →{" "}
-                  {(p.columnLabels as string[])?.[apiLinkedColumnIndex] ??
-                    "Mode" + apiLinkedColumnIndex}
-                </Badge>
-              ) : undefined
+            metaTag={
+              apiService && apiLinkedProfileId === p.id
+                ? (() => {
+                    const mode =
+                      (p.columnLabels as string[])?.[apiLinkedColumnIndex] ??
+                      `Mode ${apiLinkedColumnIndex}`;
+                    return (
+                      <Badge
+                        color="blue"
+                        case="normal"
+                        subtle
+                        className="shrink-0"
+                        title={`This profile's "${mode}" mode two-way syncs with ${budgetApiServiceLabel(apiService as "ynab" | "actual")}`}
+                      >
+                        ⇄{" "}
+                        {budgetApiServiceLabel(apiService as "ynab" | "actual")}{" "}
+                        → {mode}
+                      </Badge>
+                    );
+                  })()
+                : undefined
             }
             meta={
               <>

@@ -7,7 +7,7 @@
  * this prefetch always matches the client's eventual default ("now") view
  * query exactly (no profile-resolution mismatch risk). Previously
  * prefetched `projection.computeProjection` instead, which the client
- * never calls with matching cache-key input (code review, 2026-08-27) —
+ * never calls with matching cache-key input —
  * every visit paid for an unused server round-trip while the real data
  * still did a full client-side waterfall. The "At Retirement" view's
  * `projection.computeProjection` call (profile-dependent input) is

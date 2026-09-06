@@ -10,7 +10,7 @@
  * itself, so no tRPC mocking is needed here.
  */
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import {
   TaxesSection,
   type BracketOptimizerResult,
@@ -148,5 +148,98 @@ describe("TaxesSection — withdrawal bracket optimizer recommendation", () => {
     expect(patch.rothBracketTarget).toBe("0.22");
     expect(patch.rothConversionTarget).toBe("0.22");
     expect(patch.rmdSmoothingMaxBracketTarget).toBe("0.22");
+  });
+});
+
+describe("TaxesSection — Withdrawal Routing (persisted default)", () => {
+  it("defaults the select to Bracket Filling when the household has no setting yet", () => {
+    renderTaxesSection({ withdrawalRoutingMode: undefined });
+    const select = screen.getByDisplayValue(
+      "Bracket Filling (default)",
+    ) as HTMLSelectElement;
+    expect(select.value).toBe("bracket_filling");
+  });
+
+  it("reflects a persisted non-default mode", () => {
+    renderTaxesSection({ withdrawalRoutingMode: "waterfall" });
+    const select = screen.getByDisplayValue("Waterfall") as HTMLSelectElement;
+    expect(select.value).toBe("waterfall");
+  });
+
+  it("saves the chosen mode via upsertSettings, scoped to this profile", () => {
+    const { mutate, settings } = renderTaxesSection({
+      withdrawalRoutingMode: "bracket_filling",
+    });
+    const select = screen.getByDisplayValue("Bracket Filling (default)");
+    select.dispatchEvent(new Event("focus"));
+    (select as HTMLSelectElement).value = "percentage";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(mutate).toHaveBeenCalled();
+    const patch = mutate.mock.calls[0][0];
+    expect(patch.withdrawalRoutingMode).toBe("percentage");
+    expect(patch.profileId).toBe(settings.profileId);
+  });
+});
+
+describe("TaxesSection — Withdrawal Order / Splits (persisted defaults)", () => {
+  it("renders the order editor and reorders through upsertSettings, scoped to this profile", () => {
+    const { mutate, settings } = renderTaxesSection({
+      withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
+    });
+    // Each account past the first has a "Move <cat> left" button.
+    fireEvent.click(screen.getByTitle("Move 403b left"));
+    expect(mutate).toHaveBeenCalledTimes(1);
+    const patch = mutate.mock.calls[0][0];
+    expect(patch.withdrawalOrder).toEqual([
+      "403b",
+      "401k",
+      "ira",
+      "brokerage",
+      "hsa",
+    ]);
+    expect(patch.profileId).toBe(settings.profileId);
+  });
+
+  it("offers no reset when the order was never customized", () => {
+    renderTaxesSection({ withdrawalOrder: undefined });
+    expect(
+      screen.queryByText("Reset to default order"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("clears the order column to null via the reset action", () => {
+    const { mutate } = renderTaxesSection({
+      withdrawalOrder: ["hsa", "brokerage", "ira", "403b", "401k"],
+    });
+    fireEvent.click(screen.getByText("Reset to default order"));
+    expect(mutate.mock.calls[0][0].withdrawalOrder).toBeNull();
+  });
+
+  it("hides the splits grid unless routing mode is percentage", () => {
+    renderTaxesSection({ withdrawalRoutingMode: "waterfall" });
+    expect(screen.queryByText("Withdrawal Splits")).not.toBeInTheDocument();
+  });
+
+  it("shows the splits grid for percentage mode and saves an edited draft on Save", () => {
+    const { mutate } = renderTaxesSection({
+      withdrawalRoutingMode: "percentage",
+      withdrawalSplits: {
+        "401k": 0.35,
+        "403b": 0,
+        ira: 0.25,
+        hsa: 0.1,
+        brokerage: 0.3,
+      },
+    });
+    expect(screen.getByText("Withdrawal Splits")).toBeInTheDocument();
+    // No write until Save.
+    const inputs = screen.getAllByRole("spinbutton");
+    fireEvent.change(inputs[0]!, { target: { value: "40" } });
+    expect(mutate).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByText("Save splits"));
+    expect(mutate).toHaveBeenCalledTimes(1);
+    const patch = mutate.mock.calls[0][0];
+    expect(patch.withdrawalSplits["401k"]).toBeCloseTo(0.4);
+    expect(patch.withdrawalSplits.ira).toBeCloseTo(0.25);
   });
 });

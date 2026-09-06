@@ -1,5 +1,5 @@
 /**
- * Performance server page (server-prefetch split, R5).
+ * Performance server page (server-prefetch split).
  *
  * Server-side prefetches the two no-input queries PerformanceContent needs
  * on first paint:

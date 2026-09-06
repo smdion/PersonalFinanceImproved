@@ -92,7 +92,7 @@ export type WithdrawalStrategyConfig = {
    *  uses one smooth average return with no volatility, so a strategy with
    *  this true will show a flat, uneventful deterministic Yearly Income
    *  Stability chart even though its Monte Carlo confidence band carries
-   *  real signal — found via live user confusion, 2026-08-28. Used to
+   *  real signal — a real household found this confusing. Used to
    *  suppress the deterministic bars on that chart specifically for these
    *  strategies (see spending-stability-chart.tsx). */
   reactsToVolatility: boolean;

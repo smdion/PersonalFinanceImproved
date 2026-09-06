@@ -38,8 +38,7 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
     "push" | "pull" | "both"
   >("push");
 
-  // Was re-derived 4x below with the identical two-way startsWith check —
-  // code-review reuse/duplication finding, 2026-09-01.
+  // Was re-derived 4x below with the identical two-way startsWith check.
   const newPortfolioIsCashOrCredit =
     newPortfolioLocal.startsWith("cash|") ||
     newPortfolioLocal.startsWith("creditCard|");

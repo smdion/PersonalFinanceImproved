@@ -184,7 +184,7 @@ export interface RankWithdrawalTiersInput {
  * room existed" even in years where one tier's capacity was never reached
  * by the draw loop — e.g. Roth basis alone covered the year's need, so
  * brokerage's very real 0%-LTCG capacity was never touched, but is still a
- * real number worth surfacing (found live, 2026-08-31 — a household
+ * real number worth surfacing (a household
  * couldn't tell why brokerage wasn't draining when their Traditional
  * bracket target was crowding out the 0%-LTCG room; this is what let them
  * see it). Both capacities are 0, not omitted, when there is none — so
@@ -377,7 +377,7 @@ export function rankWithdrawalTiers(
     filingStatus,
     ltcgBrackets,
   );
-  // NIIT split (advisor review, 2026-08-29): NIIT is 3.8% on the LESSER of
+  // NIIT split: NIIT is 3.8% on the LESSER of
   // net investment income or MAGI-over-threshold — a marginal boundary,
   // not an all-or-nothing cliff on the whole tier. Split brokerage's
   // remaining capacity at the point this tier's OWN gains would cross the
@@ -394,8 +394,7 @@ export function rankWithdrawalTiers(
   // GAINS portion of that draw raises MAGI (a $1 gain contributes $1 to
   // MAGI regardless of its 0% federal LTCG rate — the basis portion
   // doesn't), so net that out before computing how much NIIT-threshold
-  // room is left for the tier that runs next (advisor-flagged 2026-09-01:
-  // without this, brokeragePreNiitCapacity is systematically overstated,
+  // room is left for the tier that runs next (without this, brokeragePreNiitCapacity is systematically overstated,
   // and some dollars get ranked at the bare ltcgRate when their real
   // marginal cost — once the zero tier's own gains are accounted for — is
   // ltcgRate + NIIT). Ordering-only: computeNiit prices the real charge
@@ -452,8 +451,8 @@ export function rankWithdrawalTiers(
   // and {HSA} by actual cost — unaffected by `discretionaryWithdrawalOrder`
   // either way (see this field's docblock: verified against the user's own
   // spreadsheet that brokerage beyond the free 0%-LTCG zone is genuinely
-  // priced, not "chosen" unconditionally — advisor review, 2026-08-29,
-  // also replacing what was a Roth-vs-brokerage-only 2-way comparison with
+  // priced, not "chosen" unconditionally — this also replaced what was a
+  // Roth-vs-brokerage-only 2-way comparison with
   // HSA hardcoded last regardless of cost).
   const priced = [
     rothGrowthTier,

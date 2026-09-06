@@ -16,6 +16,7 @@ import {
   DEFAULT_MC_INFLATION_RISK,
   DEFAULT_ENDOWMENT_ROLLING_YEARS,
 } from "@/lib/constants";
+import { DEFAULT_WITHDRAWAL_ROUTING_MODE } from "@/lib/config/withdrawal-routing";
 import type {
   AccountCategory,
   DecumulationDefaults,
@@ -85,24 +86,41 @@ export const accumulationOverrideSchema = z
 export const decumulationDefaultsInputSchema = z
   .object({
     withdrawalRate: z.number().min(0).max(1).default(DEFAULT_WITHDRAWAL_RATE),
+    // Deliberately `.optional()`, NOT `.default("bracket_filling")` — a
+    // default here would make "the caller omitted this" indistinguishable
+    // from "the caller explicitly chose bracket_filling," which would
+    // permanently hide the household's own `retirement_settings
+    // .withdrawal_routing_mode` behind an unreachable request-level
+    // default. `buildDecumulationDefaults` below is where the real
+    // fallback (client override > DB setting > "bracket_filling") lives.
     withdrawalRoutingMode: z
       .enum(["bracket_filling", "waterfall", "percentage"])
-      .default("bracket_filling"),
-    withdrawalOrder: z
-      .array(z.enum(accountCategoryEnum()))
-      .default(getDefaultDecumulationOrder()),
+      .optional(),
+    // `.optional()`, NOT `.default(...)` — same reasoning as
+    // `withdrawalRoutingMode` above: a field-level default here makes "the
+    // caller omitted this" indistinguishable from "the caller sent the
+    // config default," which permanently hides the household's persisted
+    // `retirement_settings.withdrawal_order` / `.withdrawal_splits` behind
+    // an unreachable request default. The client (the Retirement page's
+    // Configure editors) only sends these once the user has actively
+    // touched them; `buildDecumulationDefaults` owns the real fallback
+    // (client override > DB setting > config default).
+    withdrawalOrder: z.array(z.enum(accountCategoryEnum())).optional(),
     withdrawalSplits: z
       .record(z.enum(accountCategoryEnum()), z.number())
-      .default({ ...CONFIG_WITHDRAWAL_SPLITS }),
+      .optional(),
     withdrawalTaxPreference: z
       .record(z.string(), z.enum(["traditional", "roth"]))
       .default({}),
   })
+  // NOTE: no `withdrawalRoutingMode` / `withdrawalOrder` / `withdrawalSplits`
+  // key in this object-level default — same reason as the field-level
+  // `.optional()` on each above. A caller that omits `decumulationDefaults`
+  // entirely (Tax Optimization's comparison procedures) must still reach the
+  // DB fallback in `buildDecumulationDefaults`, not get the config default
+  // baked in here a second way.
   .default({
     withdrawalRate: DEFAULT_WITHDRAWAL_RATE,
-    withdrawalRoutingMode: "bracket_filling",
-    withdrawalOrder: getDefaultDecumulationOrder(),
-    withdrawalSplits: { ...CONFIG_WITHDRAWAL_SPLITS },
     withdrawalTaxPreference: {},
   });
 
@@ -131,7 +149,7 @@ export const decumulationOverrideSchema = z
         })
         .optional(),
       rothConversionTarget: z.number().min(0).max(1).optional(),
-      // Added 2026-08-29 — see DecumulationOverride's docblock in
+      // See DecumulationOverride's docblock in
       // engine-config.ts. Without these two, zod silently strips both
       // fields at this boundary regardless of what the engine/type layer
       // supports underneath.
@@ -201,6 +219,9 @@ export function buildDecumulationDefaults(
   settings: Parameters<typeof buildStrategyParams>[0] & {
     withdrawalRate: string | null;
     withdrawalStrategy: string | null;
+    withdrawalRoutingMode?: string | null;
+    withdrawalOrder?: string[] | null;
+    withdrawalSplits?: Record<string, number> | null;
     rmdExcessHandling?: string | null;
     qcdMaximize?: boolean | null;
     rmdSmoothingEnabled?: boolean | null;
@@ -208,22 +229,38 @@ export function buildDecumulationDefaults(
     discretionaryWithdrawalOrder?: string | null;
   },
   clientDefaults: {
-    withdrawalRoutingMode: string;
-    withdrawalOrder: string[];
-    withdrawalSplits: Record<string, number>;
+    withdrawalRoutingMode?: string;
+    withdrawalOrder?: string[];
+    withdrawalSplits?: Record<string, number>;
     withdrawalTaxPreference: Record<string, string>;
   },
   distributionTaxRates: DecumulationDefaults["distributionTaxRates"],
 ): DecumulationDefaults {
   return {
     withdrawalRate: toNumber(settings.withdrawalRate),
-    withdrawalRoutingMode:
-      clientDefaults.withdrawalRoutingMode as DecumulationDefaults["withdrawalRoutingMode"],
-    withdrawalOrder: clientDefaults.withdrawalOrder as AccountCategory[],
-    withdrawalSplits: clientDefaults.withdrawalSplits as Record<
-      AccountCategory,
-      number
-    >,
+    // Client override wins when the caller sent one (the Retirement page's
+    // per-session Configure toggle, once the user actively touches it);
+    // otherwise fall back to the household's persisted
+    // `retirement_settings.withdrawal_routing_mode`; "bracket_filling" only
+    // if even that's somehow missing (pre-migration row). This is the ONE
+    // place that resolves the mode — every caller (computeProjection,
+    // Monte Carlo, Tax Optimization) goes through this function so they
+    // can't independently drift on which value wins.
+    withdrawalRoutingMode: (clientDefaults.withdrawalRoutingMode ??
+      settings.withdrawalRoutingMode ??
+      DEFAULT_WITHDRAWAL_ROUTING_MODE) as DecumulationDefaults["withdrawalRoutingMode"],
+    // Same three-tier resolution as `withdrawalRoutingMode` above: a
+    // touched-session client override wins, else the household's persisted
+    // `retirement_settings.withdrawal_order` / `.withdrawal_splits`, else
+    // the config default. A NULL DB column means "never customized" and
+    // falls through to the config default.
+    withdrawalOrder: (clientDefaults.withdrawalOrder ??
+      settings.withdrawalOrder ??
+      getDefaultDecumulationOrder()) as AccountCategory[],
+    withdrawalSplits: (clientDefaults.withdrawalSplits ??
+      settings.withdrawalSplits ?? {
+        ...CONFIG_WITHDRAWAL_SPLITS,
+      }) as Record<AccountCategory, number>,
     withdrawalTaxPreference: clientDefaults.withdrawalTaxPreference as Partial<
       Record<AccountCategory, "traditional" | "roth">
     >,

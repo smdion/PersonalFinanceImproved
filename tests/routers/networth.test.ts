@@ -798,3 +798,187 @@ describe("portfolioSnapshots.create", () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// updateAccount — balance edit (latest snapshot only) + CONFLICT on duplicate
+// ---------------------------------------------------------------------------
+
+describe("networth.portfolioSnapshots.updateAccount — balance edit", () => {
+  it("edits an amount on the latest snapshot and re-derives ending balances", async () => {
+    const ctx = await createTestCaller(adminSession);
+    try {
+      const schema = await import("@/lib/db/schema");
+      const { eq } = await import("drizzle-orm");
+      const perfAcctId = seedPerformanceAccount(ctx.db, {
+        institution: "Vanguard",
+        accountType: "ira",
+      });
+      // account_performance row for the year — its ending_balance should
+      // follow the edited snapshot balance.
+      ctx.db
+        .insert(schema.accountPerformance)
+        .values({
+          year: 2025,
+          institution: "Vanguard",
+          accountLabel: "Vanguard IRA",
+          parentCategory: "Retirement",
+          performanceAccountId: perfAcctId,
+          beginningBalance: "40000",
+          totalContributions: "0",
+          yearlyGainLoss: "0",
+          endingBalance: "40000",
+          employerContributions: "0",
+          fees: "0",
+          distributions: "0",
+          isActive: true,
+        })
+        .run();
+      const snapId = seedSnapshot(ctx.db, "2025-08-01", [
+        {
+          performanceAccountId: perfAcctId,
+          amount: "50000",
+          taxType: "afterTax",
+        },
+      ]);
+      const [row] = await ctx.db
+        .select()
+        .from(schema.portfolioAccounts)
+        .where(eq(schema.portfolioAccounts.snapshotId, snapId));
+
+      const res = await ctx.caller.networth.portfolioSnapshots.updateAccount({
+        id: row!.id,
+        amount: "62500",
+      });
+      expect(res.amountEdited).toBe(true);
+
+      const [after] = await ctx.db
+        .select()
+        .from(schema.portfolioAccounts)
+        .where(eq(schema.portfolioAccounts.id, row!.id));
+      expect(after!.amount).toBe("62500");
+
+      const [perf] = await ctx.db
+        .select()
+        .from(schema.accountPerformance)
+        .where(eq(schema.accountPerformance.performanceAccountId, perfAcctId));
+      expect(Number(perf!.endingBalance)).toBe(62500);
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
+  it("rejects an amount edit on a non-latest snapshot", async () => {
+    const ctx = await createTestCaller(adminSession);
+    try {
+      const schema = await import("@/lib/db/schema");
+      const { eq } = await import("drizzle-orm");
+      const perfAcctId = seedPerformanceAccount(ctx.db, { institution: "Old" });
+      const oldSnapId = seedSnapshot(ctx.db, "2025-01-01", [
+        { performanceAccountId: perfAcctId, amount: "10000" },
+      ]);
+      seedSnapshot(ctx.db, "2025-06-01", [
+        { performanceAccountId: perfAcctId, amount: "11000" },
+      ]);
+      const [oldRow] = await ctx.db
+        .select()
+        .from(schema.portfolioAccounts)
+        .where(eq(schema.portfolioAccounts.snapshotId, oldSnapId));
+
+      await expect(
+        ctx.caller.networth.portfolioSnapshots.updateAccount({
+          id: oldRow!.id,
+          amount: "99999",
+        }),
+      ).rejects.toThrow(/most recent snapshot/i);
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
+  it("rejects an amount edit when the snapshot's year is finalized", async () => {
+    const ctx = await createTestCaller(adminSession);
+    try {
+      const schema = await import("@/lib/db/schema");
+      const { eq } = await import("drizzle-orm");
+      const perfAcctId = seedPerformanceAccount(ctx.db, {
+        institution: "Locked",
+      });
+      const snapId = seedSnapshot(ctx.db, "2024-12-31", [
+        { performanceAccountId: perfAcctId, amount: "20000" },
+      ]);
+      ctx.db
+        .insert(schema.annualPerformance)
+        .values({
+          year: 2024,
+          category: "Portfolio",
+          beginningBalance: "0",
+          totalContributions: "0",
+          yearlyGainLoss: "0",
+          endingBalance: "20000",
+          lifetimeGains: "0",
+          lifetimeContributions: "0",
+          lifetimeMatch: "0",
+          isFinalized: true,
+        })
+        .run();
+      const [row] = await ctx.db
+        .select()
+        .from(schema.portfolioAccounts)
+        .where(eq(schema.portfolioAccounts.snapshotId, snapId));
+
+      await expect(
+        ctx.caller.networth.portfolioSnapshots.updateAccount({
+          id: row!.id,
+          amount: "25000",
+        }),
+      ).rejects.toThrow(/finalized/i);
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
+  it("metadata-only updateAccount is unchanged (returns amountEdited: false)", async () => {
+    const ctx = await createTestCaller(adminSession);
+    try {
+      const schema = await import("@/lib/db/schema");
+      const { eq } = await import("drizzle-orm");
+      const perfAcctId = seedPerformanceAccount(ctx.db, {
+        institution: "Meta",
+      });
+      const snapId = seedSnapshot(ctx.db, "2025-09-01", [
+        { performanceAccountId: perfAcctId, amount: "1000" },
+      ]);
+      const [row] = await ctx.db
+        .select()
+        .from(schema.portfolioAccounts)
+        .where(eq(schema.portfolioAccounts.snapshotId, snapId));
+      const res = await ctx.caller.networth.portfolioSnapshots.updateAccount({
+        id: row!.id,
+        label: "Renamed",
+      });
+      expect(res.amountEdited).toBe(false);
+      const [after] = await ctx.db
+        .select()
+        .from(schema.portfolioAccounts)
+        .where(eq(schema.portfolioAccounts.id, row!.id));
+      expect(after!.label).toBe("Renamed");
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
+  it("create rejects a duplicate snapshot_date with CONFLICT", async () => {
+    const ctx = await createTestCaller(adminSession);
+    try {
+      seedSnapshot(ctx.db, "2025-07-04", []);
+      await expect(
+        ctx.caller.networth.portfolioSnapshots.create({
+          snapshotDate: "2025-07-04",
+          accounts: [],
+        }),
+      ).rejects.toThrow(/already exists for 2025-07-04/i);
+    } finally {
+      ctx.cleanup();
+    }
+  });
+});

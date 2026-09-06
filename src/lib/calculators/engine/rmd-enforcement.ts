@@ -209,8 +209,7 @@ export function enforceRmd(input: RmdEnforcementInput): RmdEnforcementResult {
           // decumulation-year.ts's `overrideRmdRequired`), this is the
           // REMAINING taxable amount, not the household's full legal RMD.
           // Worded to stay honest in both cases rather than implying
-          // "Required" means the gross RMD (advisor review, 2026-08-29 —
-          // the QCD-net figure was rendering under a gross-sounding
+          // "Required" means the gross RMD (the QCD-net figure was rendering under a gross-sounding
           // label).
           warnings.push(
             `RMD SHORTFALL: $${rmdRequired.toFixed(0)} of Traditional distribution still required this year but only $${totalTraditionalWithdrawal.toFixed(0)} available. ` +

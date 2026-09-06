@@ -224,9 +224,6 @@ export function BudgetContent() {
   const [pullPreviewItems, setPullPreviewItems] = useState<ReturnType<
     typeof buildPullPreviewItems
   > | null>(null);
-  const [renamingProfileId, setRenamingProfileId] = useState<number | null>(
-    null,
-  );
   // Retirement tab's own "view without activating" selection — lifted here
   // (not owned by RetirementProfileManager or RetirementProfileTab
   // individually) so both halves of the master-detail layout agree on
@@ -253,7 +250,6 @@ export function BudgetContent() {
       localSelection: viewingRetirementProfileId,
       globalDefaultId: activeRetirementProfileId,
     });
-  const [renameValue, setRenameValue] = useState("");
   const [showModeManager, setShowModeManager] = useState(false);
   const [addingItemToCategory, setAddingItemToCategory] = useState<
     string | null
@@ -589,19 +585,7 @@ export function BudgetContent() {
                     name: string;
                   }>
                 }
-                renamingProfileId={renamingProfileId}
-                renameValue={renameValue}
-                onRenameValueChange={setRenameValue}
-                onStartRename={(id, name) => {
-                  setRenamingProfileId(id);
-                  setRenameValue(name);
-                }}
-                onFinishRename={(id, currentName) => {
-                  if (renameValue.trim() && renameValue.trim() !== currentName)
-                    renameProfile.mutate({ id, name: renameValue.trim() });
-                  setRenamingProfileId(null);
-                }}
-                onCancelRename={() => setRenamingProfileId(null)}
+                onRename={(id, name) => renameProfile.mutate({ id, name })}
                 apiService={apiService}
                 apiLinkedProfileId={apiLinkedProfileId}
                 apiLinkedColumnIndex={apiLinkedColumnIndex ?? 0}

@@ -125,7 +125,7 @@ export function useProjectionDerived(
   // others later) has NO real per-account data at all. Computed once here
   // so every consumer (person-filter pills, visibleColumns' balance-by-
   // tax-type/account gating below) reads the same signal instead of each
-  // re-deriving it (live-user finding, 2026-08-28 — showing a fake
+  // re-deriving it (showing a fake
   // "everything in Brokerage" breakdown as if it were the real account
   // split was actively misleading, not just an unfamiliar simplification).
   const hasIndividualAccountData = !!result?.projectionByYear.some(
@@ -473,7 +473,7 @@ export function useProjectionDerived(
         // NUMBERS in that case (the honestly-collapsed aggregate), but
         // showing them broken out by account/tax-type dresses up a
         // fictional single bucket as if it were the household's real
-        // account split (live-user finding, 2026-08-28). Leaving both sets
+        // account split. Leaving both sets
         // empty collapses the "Balances" column group down to just the
         // real, correct Balance total — see hasIndividualAccountData above.
         if (hasIndividualAccountData) {

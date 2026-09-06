@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**353 procedures across 40 routers.**
+**356 procedures across 41 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -161,20 +161,20 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `networth`
 
-| Procedure                | Kind     | Auth                 | Description                                                                                                                                                                                       |
-| ------------------------ | -------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `computeComparison`      | query    | `protectedProcedure` | Compare net worth at two dates. Uses nearest portfolio snapshot for investment values, computes mortgage balance at each date, and uses current values for home/cash/other (noted as limitation). |
-| `computeDetailedHistory` | query    | `protectedProcedure` | Used by the spreadsheet view; heavier than listHistory (which feeds charts).                                                                                                                      |
-| `computeFIProgress`      | query    | `protectedProcedure` | (no description)                                                                                                                                                                                  |
-| `computeSummary`         | query    | `protectedProcedure` | (no description)                                                                                                                                                                                  |
-| `create`                 | mutation | `portfolioProcedure` | Create a new snapshot with all its accounts in a single call.                                                                                                                                     |
-| `createAccount`          | mutation | `portfolioProcedure` | Create a new sub-account row in the latest snapshot.                                                                                                                                              |
-| `delete`                 | mutation | `portfolioProcedure` | Delete a snapshot (cascades to its accounts).                                                                                                                                                     |
-| `getLatest`              | query    | `protectedProcedure` | Get the latest snapshot with its accounts (for pre-filling a new snapshot form).                                                                                                                  |
-| `listHistory`            | query    | `protectedProcedure` | (no description)                                                                                                                                                                                  |
-| `listSnapshots`          | query    | `protectedProcedure` | Paginated snapshot list with optional date range filter and sorting.                                                                                                                              |
-| `listSnapshotTotals`     | query    | `protectedProcedure` | Lightweight snapshot totals for portfolio chart — returns (date, total) pairs.                                                                                                                    |
-| `updateAccount`          | mutation | `portfolioProcedure` | Update a single portfolio account row (e.g. change owner, toggle active, set label, change tax type).                                                                                             |
+| Procedure                | Kind     | Auth                 | Description                                                                                                                                                                                              |
+| ------------------------ | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `computeComparison`      | query    | `protectedProcedure` | Compare net worth at two dates. Uses nearest portfolio snapshot for investment values, computes mortgage balance at each date, and uses current values for home/cash/other (noted as limitation).        |
+| `computeDetailedHistory` | query    | `protectedProcedure` | Used by the spreadsheet view; heavier than listHistory (which feeds charts).                                                                                                                             |
+| `computeFIProgress`      | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
+| `computeSummary`         | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
+| `create`                 | mutation | `portfolioProcedure` | Create a new snapshot with all its accounts in a single call.                                                                                                                                            |
+| `createAccount`          | mutation | `portfolioProcedure` | Create a new sub-account row in the latest snapshot.                                                                                                                                                     |
+| `delete`                 | mutation | `portfolioProcedure` | Delete a snapshot (cascades to its accounts).                                                                                                                                                            |
+| `getLatest`              | query    | `protectedProcedure` | Get the latest snapshot with its accounts (for pre-filling a new snapshot form).                                                                                                                         |
+| `listHistory`            | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
+| `listSnapshots`          | query    | `protectedProcedure` | Paginated snapshot list with optional date range filter and sorting.                                                                                                                                     |
+| `listSnapshotTotals`     | query    | `protectedProcedure` | Lightweight snapshot totals for portfolio chart — returns (date, total) pairs.                                                                                                                           |
+| `updateAccount`          | mutation | `portfolioProcedure` | only allowed on the **most recent** snapshot — it re-derives that year's performance ending balances + annual rollups and re-pushes ("resync") the corrected balances to the budget API. Older snapshots |
 
 ## `paycheck`
 
@@ -208,7 +208,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | Procedure            | Kind  | Auth                 | Description                                                                                                                                                                                              |
 | -------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `computeCoastFire`   | query | `protectedProcedure` | ~log₂(retirementAge - currentAge) engine runs. Success criterion: `portfolioDepletionAge === null` AND `sustainableWithdrawal >= projectedExpenses` at the first decumulation year. See `findCoastFireAg |
-| `computeCoastFireMC` | query | `protectedProcedure` | If the re-probe also passes, the true earliest age may be lower but we return the search result honestly with a warning. Cost: ~5-6 probes × 1 MC run × 1000 trials ≈ 4-6s wall clock (profiled 2026-04- |
+| `computeCoastFireMC` | query | `protectedProcedure` | If the re-probe also passes, the true earliest age may be lower but we return the search result honestly with a warning. Cost: ~5-6 probes × 1 MC run × 1000 trials ≈ 4-6s wall clock (profiled). Rate-l |
 
 ## `projection/coast-fire-probe`
 
@@ -267,6 +267,14 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | ------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `computeStressTest` | query | `protectedProcedure` | returnRates / inflationRate / salaryGrowthRate / withdrawalRate before calling calculateProjection. Returns summary metrics (nest egg at retirement, sustainable withdrawal, depletion age) so the PlanH |
 
+## `projection/tax-optimization`
+
+| Procedure                     | Kind  | Auth                 | Description                                                                                                                                                                                              |
+| ----------------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `compareWithdrawalStrategies` | query | `protectedProcedure` | strategy and score each on lifetime tax — the side-by-side comparison (roadmap #2). Clone-and-score, same pattern as `optimizeRothBracketTarget`: a baseline run learns the first decumulation year, the |
+| `projectTaxYears`             | query | `protectedProcedure` | Year-by-year tax projection through decumulation — a straight read of the deterministic engine run (NOT Monte Carlo). One row per decumulation year with income sources, federal / NIIT / IRMAA tax, eff |
+| `rothConversionWhatIf`        | query | `protectedProcedure` | sticky-forward `decumulationOverrides`, runs the engine once, and also runs a baseline with conversions switched off, then returns the before/after: per-year conversion + tax now, RMD reduction, IRMAA |
+
 ## `projection/withdrawal-bracket-optimizer`
 
 | Procedure                           | Kind  | Auth                 | Description                                                                                                                                                                                              |
@@ -314,7 +322,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `list`        | query    | `protectedProcedure`           | All salary profiles, oldest first. Real rows only.                                                                                                                                                       |
 | `patchEntry`  | mutation | `contributionProfileProcedure` | The read-merge-write happens inside a transaction so two overlapping patches to the same profile (two fields committed in quick succession, a second tab/device) can't silently clobber each other the w |
 | `removeEntry` | mutation | `contributionProfileProcedure` | Remove one job's entry from a profile entirely — it goes back to contributing $0, the same as a job that was never added. Same transactional read-merge-write pattern as patchEntry.                     |
-| `setActive`   | mutation | `contributionProfileProcedure` | is split out from settings.appSettings.upsert instead of writing through it (same admin-only-write-vs-contributionProfile-permission gap) and for why null is accepted (advisor-caught 2026-09-01 — the  |
+| `setActive`   | mutation | `contributionProfileProcedure` | is split out from settings.appSettings.upsert instead of writing through it (same admin-only-write-vs-contributionProfile-permission gap) and for why null is accepted (the hook's own `(id: number \| n |
 | `update`      | mutation | `contributionProfileProcedure` | (no description)                                                                                                                                                                                         |
 
 ## `savings`

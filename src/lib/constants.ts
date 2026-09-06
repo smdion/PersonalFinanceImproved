@@ -180,7 +180,7 @@ export const DEFAULT_STRATEGY_WITHDRAWAL_PERCENT = 0.05;
 export const DEFAULT_STRATEGY_FLOOR_PERCENT = 0.9;
 
 /** Default rolling-average window (years) for the endowment withdrawal
- *  strategy. Confirmed 2026-08-19: the UI config previously defaulted this
+ *  strategy. the UI config previously defaulted this
  *  to 5 while the engine and server fallback both used 10 — a real,
  *  user-facing divergence. Standardized on 10 (majority — engine, server
  *  fallback, and methodology docs all already agreed) and wired all three
@@ -219,7 +219,7 @@ export const MC_STRATEGY_STABILITY_GAP_ALERT_THRESHOLD = 0.1;
 export const DEFAULT_MC_INFLATION_RISK = { meanRate: 0.025, stdDev: 0.012 };
 
 /** Default number of trials for a Monte Carlo simulation run. Dropped from
- *  1000 → 500 2026-08-30 (user decision, after the worker-thread offload
+ *  1000 → 500 (after the worker-thread offload
  *  fixed the real motivation for a cut — it no longer needs to trade
  *  precision for a shorter server-wide freeze, since MC no longer blocks
  *  the event loop at all). Standard error scales as 1/sqrt(n): a true 90%
@@ -310,7 +310,7 @@ export const QCD_ANNUAL_CAP_PER_PERSON = 115000;
  *  `getRmdStartAge` (72/73/75 by birth year) — QCD eligibility was NOT
  *  moved by SECURE 2.0's RMD-age delay, so a household can (and often
  *  should, to shrink a future RMD) start QCDs years before RMDs are even
- *  required (advisor review, 2026-08-29 — QCD was previously computed
+ *  required (QCD was previously computed
  *  only for people who'd already reached RMD age, silently zeroing out
  *  this whole pre-RMD window, its highest-value use case). */
 export const QCD_MIN_ELIGIBILITY_AGE = 70;

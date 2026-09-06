@@ -64,7 +64,7 @@ export function describeBracketCeilingMath(
   // that information (how far over it SS pushed things) is gone.
   // Reconstructing incomeCap as bracketTraditionalCap + taxableSS in that
   // case silently reports taxableSS itself as "the ceiling," UNDER-stating
-  // the true (higher) ceiling (advisor-caught 2026-09-01). No honest dollar
+  // the true (higher) ceiling. No honest dollar
   // figure can be recovered from the clamped value alone, so state the real
   // fact instead of a fabricated number.
   if (input.bracketTraditionalCap <= 0 && input.taxableSS > 0) {
@@ -185,15 +185,14 @@ export type DiscretionaryCapacityInput = {
  * "Why isn't brokerage draining before Roth" — the real dollar room in each
  * of the two zero-cost discretionary tiers this year, how much of each was
  * actually drawn, how much of each went unused, and the household's
- * current `discretionaryWithdrawalOrder` setting (found live, 2026-08-31:
- * a household's Traditional bracket target was crowding out brokerage's
+ * current `discretionaryWithdrawalOrder` setting (a household's Traditional bracket target was crowding out brokerage's
  * 0%-LTCG room down to ~$0, so no order setting could have changed the
  * outcome that year — this function exists so the numbers are visible
  * instead of requiring a multi-message debugging session to work out by
  * hand).
  *
  * Deliberately states ONLY the numbers, never a causal claim about WHY a
- * tier stopped being drawn from (advisor review, 2026-08-31 — an earlier
+ * tier stopped being drawn from (an earlier
  * draft inferred "ran out" from used === capacity, which is wrong whenever
  * a per-category `withdrawalAccountCap`/`rothTypeCap` cuts a draw short
  * before the tier's own household-wide capacity is reached; this function
@@ -236,7 +235,7 @@ export function describeDiscretionaryCapacityMath(
     return undefined;
   }
 
-  // Deliberately descriptive only, not causal (advisor review, 2026-08-31):
+  // Deliberately descriptive only, not causal:
   // an earlier draft tried to say WHY a tier stopped ("ran out" / "covered
   // it on its own"), inferred from used === capacity — wrong whenever a
   // per-category withdrawalAccountCap or rothTypeCap cut a draw short

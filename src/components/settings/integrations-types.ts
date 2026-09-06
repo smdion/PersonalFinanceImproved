@@ -154,7 +154,7 @@ export const STATUS_STYLES = {
   // the household's budget was rebuilt/re-imported upstream, regenerating
   // every category's id. Distinct from "unmatched" (never linked) so a
   // household can tell "needs a first link" apart from "was linked, broke
-  // silently" (found live, 2026-08-31).
+  // silently".
   orphaned: {
     bg: "bg-red-50",
     text: "text-red-700",

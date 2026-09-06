@@ -15,15 +15,9 @@ import { asc, eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { db } from "@/lib/db";
 import { calculateProjection } from "@/lib/calculators/engine";
-import {
-  type AccountCategory,
-  getDefaultDecumulationOrder,
-  DEFAULT_WITHDRAWAL_SPLITS as CONFIG_WITHDRAWAL_SPLITS,
-} from "@/lib/config/account-types";
 import { getStressTestScenarios } from "@/lib/pure/stress-test";
 import { roundToCents } from "@/lib/utils/math";
 import { toNumber } from "@/server/helpers";
-import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 
 type DbType = typeof db;
 
@@ -177,12 +171,19 @@ interface StressTestRunInput {
     ProjectionInput,
     "decumulationDefaults" | "accumulationOverrides" | "decumulationOverrides"
   >;
-  /** Pre-built strategy params (caller already has this from
-   *  buildStrategyParams(settings) in projection.ts). */
-  userStrategyParams: ProjectionInput["decumulationDefaults"]["strategyParams"];
-  /** Active strategy key resolved from settings. */
-  activeStrategy: WithdrawalStrategyType;
-  distributionTaxRates: ProjectionInput["decumulationDefaults"]["distributionTaxRates"];
+  /** Fully resolved by the caller (stress-test.ts) via the shared
+   *  `buildDecumulationDefaults` (_shared.ts) — the household's real
+   *  routing mode, RMD/QCD handling, discretionary order, and active
+   *  strategy + params. Each scenario below overrides only
+   *  `withdrawalRate` (its own controlled variable: conservative /
+   *  baseline / optimistic each test a different rate); everything else
+   *  is the household's actual plan, not a hardcoded one. Deliberately
+   *  NOT built in this file — this helper
+   *  isn't a router under `projection/`, so it doesn't import
+   *  `buildDecumulationDefaults` itself; resolving in the router and
+   *  passing the built object down keeps this a mechanical one-field
+   *  override, same shape the existing tests already exercise. */
+  decumulationDefaults: ProjectionInput["decumulationDefaults"];
   avgRetirementAge: number;
 }
 
@@ -207,13 +208,7 @@ export interface StressTestScenarioResult {
 export function runStressTestScenarios(
   input: StressTestRunInput,
 ): StressTestScenarioResult[] {
-  const {
-    baseEngineInput,
-    userStrategyParams,
-    activeStrategy,
-    distributionTaxRates,
-    avgRetirementAge,
-  } = input;
+  const { baseEngineInput, decumulationDefaults, avgRetirementAge } = input;
   const stressScenarios = getStressTestScenarios();
 
   return stressScenarios.map((scenario) => {
@@ -226,18 +221,9 @@ export function runStressTestScenarios(
       flatReturnRates.push({ label: `Age ${a}`, rate: scenario.returnRate });
     }
 
-    const decumulationDefaults = {
+    const scenarioDecumulationDefaults = {
+      ...decumulationDefaults,
       withdrawalRate: scenario.withdrawalRate,
-      withdrawalRoutingMode: "bracket_filling" as const,
-      withdrawalOrder: getDefaultDecumulationOrder() as AccountCategory[],
-      withdrawalSplits: { ...CONFIG_WITHDRAWAL_SPLITS } as Record<
-        AccountCategory,
-        number
-      >,
-      withdrawalTaxPreference: {},
-      distributionTaxRates,
-      withdrawalStrategy: activeStrategy,
-      strategyParams: userStrategyParams,
     };
 
     const result = calculateProjection({
@@ -245,7 +231,7 @@ export function runStressTestScenarios(
       returnRates: flatReturnRates,
       inflationRate: scenario.inflationRate,
       salaryGrowthRate: scenario.salaryGrowthRate,
-      decumulationDefaults,
+      decumulationDefaults: scenarioDecumulationDefaults,
       accumulationOverrides: [],
       decumulationOverrides: [],
     } as ProjectionInput);
