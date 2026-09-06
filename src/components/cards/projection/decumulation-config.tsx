@@ -2,7 +2,6 @@
 
 /** Withdrawal strategy configuration panel — bracket filling, waterfall, and percentage routing modes with account order and tax preference editors. */
 import { HelpTip } from "@/components/ui/help-tip";
-import { AccountBadge } from "@/components/ui/account-badge";
 import type { AccountCategory } from "@/lib/calculators/types";
 import { accountTextColor, taxTypeLabel } from "@/lib/utils/colors";
 import { formatPercent } from "@/lib/utils/format";
@@ -22,6 +21,7 @@ import {
   WITHDRAWAL_ROUTING_MODE_DESCRIPTIONS,
   DEFAULT_WITHDRAWAL_ROUTING_MODE,
 } from "@/lib/config/withdrawal-routing";
+import { WithdrawalOrderEditor } from "@/components/retirement/withdrawal-order-editor";
 
 type RoutingModeLiteral = "bracket_filling" | "waterfall" | "percentage";
 /** Shared small heading for the config sub-sections below. (Formerly lived
@@ -47,86 +47,6 @@ function SectionHeader({
   );
 }
 
-function OrderEditor({
-  order,
-  onChange,
-  filter,
-}: {
-  order: AccountCategory[];
-  onChange: (order: AccountCategory[]) => void;
-  /** When set, only these categories are shown and
-   *  reordered — used by bracket_filling's "Traditional Account Order"
-   *  sub-control, which edits the SAME underlying `withdrawalOrder`
-   *  waterfall's full editor writes (single source of truth — the
-   *  engine's Phase 1 loop reads `withdrawalOrder` filtered to
-   *  Traditional-preference categories regardless of which UI wrote it),
-   *  just restricted to the subset that actually affects bracket_filling.
-   *  A swap permutes only the filtered categories' OCCUPANTS — every
-   *  other category (brokerage/HSA) keeps its exact position in the full
-   *  array, since bracket_filling's cost-ranked Phases 2-4 already decide
-   *  those, unaffected by this order. Omitted ⇒ identical behavior to
-   *  before this prop existed (waterfall's unrestricted full-order
-   *  editor). */
-  filter?: AccountCategory[];
-}) {
-  const filterSet = filter ? new Set(filter) : null;
-  const visible = filterSet ? order.filter((c) => filterSet.has(c)) : order;
-
-  function swapWithPrevious(idx: number) {
-    if (!filterSet) {
-      const next = [...order];
-      [next[idx - 1], next[idx]] = [next[idx]!, next[idx - 1]!];
-      onChange(next);
-      return;
-    }
-    // Filtered mode: find where these two categories actually sit in the
-    // FULL array (not necessarily adjacent there — an unfiltered category
-    // may sit between them) and swap only those two slots.
-    const a = visible[idx - 1]!;
-    const b = visible[idx]!;
-    const posA = order.indexOf(a);
-    const posB = order.indexOf(b);
-    const next = [...order];
-    next[posA] = b;
-    next[posB] = a;
-    onChange(next);
-  }
-
-  return (
-    <div className="flex items-center gap-1">
-      {visible.map((cat, idx) => (
-        <span key={cat} className="flex items-center gap-0.5">
-          {idx > 0 && <span className="text-faint mx-0.5">&rarr;</span>}
-          <AccountBadge type={cat} />
-          {idx > 0 && (
-            <button
-              type="button"
-              onClick={() => swapWithPrevious(idx)}
-              className="text-faint p-0.5 hover:text-blue-600"
-              title={`Move ${cat} left`}
-            >
-              <svg
-                className="h-3 w-3"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-            </button>
-          )}
-        </span>
-      ))}
-    </div>
-  );
-}
-
 type DecumulationConfigProps = {
   isPersonFiltered: boolean;
   personFilterName: string;
@@ -145,10 +65,26 @@ type DecumulationConfigProps = {
   withdrawalRoutingModeTouched: boolean;
   withdrawalOrder: AccountCategory[];
   setWithdrawalOrder: (v: AccountCategory[]) => void;
+  /** Whether the user has reordered accounts this session. Same
+   *  display-vs-send split as `withdrawalRoutingModeTouched`: until it flips,
+   *  this panel shows `persistedWithdrawalOrder` (the real saved default),
+   *  not the local `withdrawalOrder` initial literal. */
+  withdrawalOrderTouched: boolean;
+  /** The household's PERSISTED withdrawal-order default
+   *  (`retirement_settings.withdrawal_order`), or null/undefined when never
+   *  customized (→ config default). Drives `displayedOrder`. */
+  persistedWithdrawalOrder?: string[] | null;
   withdrawalSplits: Record<AccountCategory, number>;
   setWithdrawalSplits: React.Dispatch<
     React.SetStateAction<Record<AccountCategory, number>>
   >;
+  /** Whether the user has edited splits this session — gates
+   *  `displayedSplits` the same way. */
+  withdrawalSplitsTouched: boolean;
+  /** The household's PERSISTED percentage-split default
+   *  (`retirement_settings.withdrawal_splits`), or null when never
+   *  customized. Drives `displayedSplits`. */
+  persistedWithdrawalSplits?: Record<string, number> | null;
   withdrawalTaxPref: Partial<Record<AccountCategory, "traditional" | "roth">>;
   setWithdrawalTaxPref: React.Dispatch<
     React.SetStateAction<
@@ -190,8 +126,12 @@ export function DecumulationConfig({
   withdrawalRoutingModeTouched,
   withdrawalOrder,
   setWithdrawalOrder,
+  withdrawalOrderTouched,
+  persistedWithdrawalOrder,
   withdrawalSplits,
   setWithdrawalSplits,
+  withdrawalSplitsTouched,
+  persistedWithdrawalSplits,
   withdrawalTaxPref,
   setWithdrawalTaxPref,
   activeSpendingStrategy,
@@ -234,12 +174,29 @@ export function DecumulationConfig({
   const isOverridingPlanDefault =
     withdrawalRoutingModeTouched && displayedMode !== persistedMode;
 
+  // Same display-vs-send split as `displayedMode`: until the user edits the
+  // order/splits this session, show the household's real persisted default
+  // (not the local config-default seed), so an untouched Waterfall
+  // household doesn't see "401k → 403b → …" when the engine is actually
+  // running their saved "brokerage first" order. What's SENT stays gated on
+  // the *Touched flags in use-projection-queries.ts, independently.
+  const displayedOrder: AccountCategory[] = withdrawalOrderTouched
+    ? withdrawalOrder
+    : ((persistedWithdrawalOrder as AccountCategory[] | null | undefined) ??
+      withdrawalOrder);
+  const displayedSplits: Record<AccountCategory, number> =
+    withdrawalSplitsTouched
+      ? withdrawalSplits
+      : ((persistedWithdrawalSplits as
+          Record<AccountCategory, number> | null | undefined) ??
+        withdrawalSplits);
+
   // bracket_filling's Phase 1 only ever consults the
-  // Traditional-preference subset of withdrawalOrder (401k/403b/IRA) —
+  // Traditional-preference subset of the order (401k/403b/IRA) —
   // brokerage/HSA's position is decided by cost-ranking regardless of
   // where they sit in the full array, so both the sub-editor and the
   // summary below only show/build from that subset, not the full order.
-  const tradPreferenceOrder = withdrawalOrder.filter((c) =>
+  const tradPreferenceOrder = displayedOrder.filter((c) =>
     tradPreferenceEngineCategories().includes(c),
   );
 
@@ -248,12 +205,12 @@ export function DecumulationConfig({
     displayedMode === "bracket_filling"
       ? `${tradPreferenceOrder.map((c) => getAccountTypeConfig(c).displayLabel).join(" → ")} → ${taxTypeLabel("taxFree")}/Brokerage/HSA (cost-ranked)`
       : displayedMode === "waterfall"
-        ? withdrawalOrder
+        ? displayedOrder
             .map((c) => getAccountTypeConfig(c).displayLabel)
             .join(" → ")
         : ALL_CATEGORIES.map(
             (c) =>
-              `${getAccountTypeConfig(c).displayLabel} ${formatPercent(withdrawalSplits[c])}`,
+              `${getAccountTypeConfig(c).displayLabel} ${formatPercent(displayedSplits[c])}`,
           ).join(", ");
 
   return (
@@ -343,10 +300,16 @@ export function DecumulationConfig({
                 title="Withdrawal Order"
                 help="Which accounts to draw from first. Tax-efficient default: 401k/IRA first (fill low brackets with Traditional, then Roth), brokerage as overflow, HSA last. RMDs are enforced regardless of order."
               />
-              <OrderEditor
-                order={withdrawalOrder}
+              <WithdrawalOrderEditor
+                order={displayedOrder}
                 onChange={setWithdrawalOrder}
               />
+              {withdrawalOrderTouched && (
+                <p className="text-caption text-faint mt-1.5">
+                  This order only customizes your plan for this session — save
+                  it in Taxes in Retirement to make it your default.
+                </p>
+              )}
             </div>
           )}
 
@@ -360,11 +323,17 @@ export function DecumulationConfig({
                 title="Traditional Account Order"
                 help="Which Traditional account (401k/403b/IRA) fills the tax bracket first, before anything else is touched. Roth, Brokerage, and HSA are unaffected — bracket_filling always picks whichever of those actually costs least that year. This is the same underlying order Waterfall mode's editor writes, just restricted to the accounts bracket_filling's Traditional fill actually consults."
               />
-              <OrderEditor
-                order={withdrawalOrder}
+              <WithdrawalOrderEditor
+                order={displayedOrder}
                 onChange={setWithdrawalOrder}
                 filter={tradPreferenceEngineCategories()}
               />
+              {withdrawalOrderTouched && (
+                <p className="text-caption text-faint mt-1.5">
+                  This order only customizes your plan for this session — save
+                  it in Taxes in Retirement to make it your default.
+                </p>
+              )}
               <div className="mt-3 border-t pt-3">
                 <SectionHeader
                   title="Discretionary Withdrawal Order"
@@ -412,13 +381,21 @@ export function DecumulationConfig({
                       type="number"
                       min={0}
                       max={100}
-                      value={Math.round(withdrawalSplits[cat] * 100)}
+                      value={Math.round((displayedSplits[cat] ?? 0) * 100)}
                       onChange={(e) => {
                         const v = parseFloat(e.target.value) / 100;
-                        setWithdrawalSplits((prev) => ({
-                          ...prev,
+                        // Seed the first edit from what's DISPLAYED (the
+                        // persisted default until touched), not the local
+                        // config-default literal — otherwise editing one
+                        // field silently discards the household's saved
+                        // splits for every other account.
+                        const base = withdrawalSplitsTouched
+                          ? withdrawalSplits
+                          : displayedSplits;
+                        setWithdrawalSplits({
+                          ...base,
                           [cat]: isNaN(v) ? 0 : v,
-                        }));
+                        });
                       }}
                       className="border-strong mt-1 block w-full rounded border px-2 py-1 text-right text-sm"
                     />
@@ -426,7 +403,7 @@ export function DecumulationConfig({
                 ))}
               </div>
               {(() => {
-                const total = Object.values(withdrawalSplits).reduce(
+                const total = Object.values(displayedSplits).reduce(
                   (s, v) => s + v,
                   0,
                 );
@@ -437,6 +414,12 @@ export function DecumulationConfig({
                   </p>
                 ) : null;
               })()}
+              {withdrawalSplitsTouched && (
+                <p className="text-caption text-faint mt-1.5">
+                  These splits only customize your plan for this session — save
+                  them in Taxes in Retirement to make them your default.
+                </p>
+              )}
             </div>
           )}
 

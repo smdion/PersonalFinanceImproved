@@ -51,6 +51,14 @@ export type Settings = {
    *  session; this is what applies everywhere else (Tax Optimization
    *  included) until it does. */
   withdrawalRoutingMode?: string | null;
+  /** Persisted household default for the withdrawal ORDER (Waterfall's
+   *  account sequence; also bracket_filling's Traditional-account Phase 1
+   *  order). `null` = use `getDefaultDecumulationOrder()`. Same
+   *  session-override-then-fall-back semantics as `withdrawalRoutingMode`. */
+  withdrawalOrder?: string[] | null;
+  /** Persisted household default for percentage-mode splits — a fraction
+   *  per account. `null` = use `DEFAULT_WITHDRAWAL_SPLITS`. */
+  withdrawalSplits?: Record<string, number> | null;
   // Strategy-specific params
   gkUpperGuardrail?: string | null;
   gkLowerGuardrail?: string | null;

@@ -43,6 +43,11 @@ function baseProps(overrides: Record<string, unknown> = {}) {
     withdrawalRoutingModeTouched: true,
     withdrawalOrder: getDefaultDecumulationOrder(),
     setWithdrawalOrder: vi.fn(),
+    // Same rationale as withdrawalRoutingModeTouched above — these tests
+    // exercise the touched/session read, not the untouched plan-default
+    // fallback (covered separately).
+    withdrawalOrderTouched: true,
+    withdrawalSplitsTouched: true,
     withdrawalSplits,
     setWithdrawalSplits: vi.fn(),
     withdrawalTaxPref: {},
@@ -253,10 +258,12 @@ describe("DecumulationConfig", () => {
     const inputs = screen.getAllByRole("spinbutton");
     fireEvent.change(inputs[0]!, { target: { value: "40" } });
     expect(setWithdrawalSplits).toHaveBeenCalledTimes(1);
-    // functional updater — call it with the previous state to inspect
-    const updater = setWithdrawalSplits.mock.calls[0]![0];
-    const prev = buildCategoryRecord(() => 0.25);
-    const next = updater(prev);
+    // Plain next-state object (seeded from the displayed splits), not a
+    // functional updater — see decumulation-config.tsx's onChange.
+    const next = setWithdrawalSplits.mock.calls[0]![0] as Record<
+      string,
+      number
+    >;
     expect(next[cat]).toBeCloseTo(0.4);
   });
 
@@ -424,5 +431,58 @@ describe("DecumulationConfig — untouched display falls back to the plan's pers
     expect(
       screen.getByText(/customizes it for this session/),
     ).toBeInTheDocument();
+  });
+
+  it("renders the persisted withdrawal ORDER, not the local config-default seed, when the order is untouched", () => {
+    // Local seed = getDefaultDecumulationOrder() (401k-first). Persisted
+    // default = brokerage-first. Untouched, the collapsed waterfall summary
+    // must reflect the persisted order the engine is actually running.
+    render(
+      <DecumulationConfig
+        {...baseProps({
+          withdrawalRoutingMode: "bracket_filling",
+          withdrawalRoutingModeTouched: false,
+          persistedWithdrawalRoutingMode: "waterfall",
+          withdrawalOrderTouched: false,
+          persistedWithdrawalOrder: ["brokerage", "401k", "403b", "ira", "hsa"],
+          showDecumConfig: false,
+        })}
+      />,
+    );
+    const summary = screen.getByText(/→/);
+    expect(summary.textContent!.indexOf("Brokerage")).toBeLessThan(
+      summary.textContent!.indexOf("401k"),
+    );
+  });
+
+  it("seeds the first split edit from the persisted splits, not the local seed, when untouched", () => {
+    const setWithdrawalSplits = vi.fn();
+    render(
+      <DecumulationConfig
+        {...baseProps({
+          withdrawalRoutingMode: "percentage",
+          withdrawalRoutingModeTouched: true,
+          withdrawalSplitsTouched: false,
+          persistedWithdrawalSplits: {
+            "401k": 0.5,
+            "403b": 0,
+            ira: 0.2,
+            hsa: 0,
+            brokerage: 0.3,
+          },
+          setWithdrawalSplits,
+          showDecumConfig: true,
+        })}
+      />,
+    );
+    const inputs = screen.getAllByRole("spinbutton");
+    fireEvent.change(inputs[0]!, { target: { value: "10" } });
+    const next = setWithdrawalSplits.mock.calls[0]![0] as Record<
+      string,
+      number
+    >;
+    // Untouched → base is the PERSISTED splits: ira stays 0.2, brokerage 0.3.
+    expect(next.ira).toBeCloseTo(0.2);
+    expect(next.brokerage).toBeCloseTo(0.3);
   });
 });

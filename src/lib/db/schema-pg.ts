@@ -1554,6 +1554,31 @@ export const retirementSettings = pgTable(
     withdrawalRoutingMode: varchar("withdrawal_routing_mode", { length: 20 })
       .notNull()
       .default("bracket_filling"),
+    /** Household default for the withdrawal ORDER — the account sequence
+     *  Waterfall mode drains in, and (filtered to 401k/403b/IRA) the
+     *  Traditional Account Order bracket_filling's Phase 1 consults first.
+     *  Same DB-fallback role as `withdrawalRoutingMode` above: read in
+     *  `buildDecumulationDefaults` (server/routers/projection/_shared.ts),
+     *  a client-supplied `decumulationDefaults.withdrawalOrder` still wins
+     *  when the Retirement page's Configure toggle sends one.
+     *  NULL = "use `getDefaultDecumulationOrder()`" — never store a copy of
+     *  the config default (same "null means absent" convention
+     *  `distributionTaxRateTraditional` documents in this table). Element
+     *  type + no-duplicates enforced in zod (retirement.ts's
+     *  retirementSettingsInput); a partial list is allowed (the engine's
+     *  `ensureCompleteWithdrawalOrder` backfills the rest). jsonb array,
+     *  auto-converted to SQLite `text({ mode: "json" })` by
+     *  gen-sqlite-schema.ts, matching `budgetProfileColumns.columnLabels`. */
+    withdrawalOrder: jsonb("withdrawal_order").$type<string[]>(),
+    /** Household default for the percentage-mode splits — how a year's total
+     *  withdrawal divides across accounts. Same DB-fallback role and NULL
+     *  convention as `withdrawalOrder` above; NULL = "use
+     *  `DEFAULT_WITHDRAWAL_SPLITS`." Per-account fractions, roughly summing
+     *  to 1.0 (loose bound checked in zod, retirement.ts); a partial record
+     *  is legal — a missing account resolves to 0 and the engine
+     *  redistributes proportionally. */
+    withdrawalSplits:
+      jsonb("withdrawal_splits").$type<Record<string, number>>(),
     /** G-K: upper guardrail — if currentRate < initialRate × this, increase spending (e.g. 0.80). */
     gkUpperGuardrail: decimal("gk_upper_guardrail", {
       precision: 8,

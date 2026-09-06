@@ -108,8 +108,10 @@ export function ProjectionCard(props: {
     withdrawalRoutingModeTouched,
     withdrawalOrder,
     setWithdrawalOrder,
+    withdrawalOrderTouched,
     withdrawalSplits,
     setWithdrawalSplits,
+    withdrawalSplitsTouched,
     withdrawalTaxPref,
     setWithdrawalTaxPref,
     projectionMode,
@@ -1376,8 +1378,12 @@ export function ProjectionCard(props: {
               withdrawalRoutingModeTouched={withdrawalRoutingModeTouched}
               withdrawalOrder={withdrawalOrder}
               setWithdrawalOrder={setWithdrawalOrder}
+              withdrawalOrderTouched={withdrawalOrderTouched}
+              persistedWithdrawalOrder={engineSettings?.withdrawalOrder}
               withdrawalSplits={withdrawalSplits}
               setWithdrawalSplits={setWithdrawalSplits}
+              withdrawalSplitsTouched={withdrawalSplitsTouched}
+              persistedWithdrawalSplits={engineSettings?.withdrawalSplits}
               withdrawalTaxPref={withdrawalTaxPref}
               setWithdrawalTaxPref={setWithdrawalTaxPref}
               activeSpendingStrategy={engineSettings?.withdrawalStrategy}

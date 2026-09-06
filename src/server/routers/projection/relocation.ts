@@ -26,10 +26,6 @@ import {
   buildEnginePayload,
 } from "@/server/retirement/build-engine-payload";
 import { buildDecumulationDefaults } from "./_shared";
-import {
-  getDefaultDecumulationOrder,
-  DEFAULT_WITHDRAWAL_SPLITS as CONFIG_WITHDRAWAL_SPLITS,
-} from "@/lib/config/account-types";
 import { safeDivide } from "@/lib/utils/math";
 import {
   precomputePurchases,
@@ -255,16 +251,14 @@ export const relocationProjectionRouter = createTRPCRouter({
       });
       if (!relocPayload) return null;
 
-      // No `withdrawalRoutingMode` key — this
-      // object occupies `buildDecumulationDefaults`'s CLIENT-override slot,
-      // which now wins over the household's persisted
-      // `retirement_settings.withdrawal_routing_mode`. A hardcoded
-      // "bracket_filling" here silently suppressed that setting for both
-      // the current and relocation scenarios; omitting the key lets each
-      // resolve its own household's real default.
+      // No `withdrawalRoutingMode` / `withdrawalOrder` / `withdrawalSplits`
+      // key — this object occupies `buildDecumulationDefaults`'s
+      // CLIENT-override slot, which wins over the household's persisted
+      // `retirement_settings` defaults. Hardcoding the config defaults here
+      // silently suppressed those settings for both the current and
+      // relocation scenarios; omitting the keys lets each resolve its own
+      // household's real routing mode, order, and splits.
       const clientDecumulationDefaults = {
-        withdrawalOrder: getDefaultDecumulationOrder(),
-        withdrawalSplits: { ...CONFIG_WITHDRAWAL_SPLITS },
         withdrawalTaxPreference: {} as Record<string, string>,
       };
 

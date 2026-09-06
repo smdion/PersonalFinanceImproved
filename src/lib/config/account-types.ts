@@ -832,31 +832,28 @@ export function getDefaultDecumulationOrder(): AccountCategory[] {
  * would silently turn into a permanent cache miss for one of the two call
  * sites.
  *
- * NO `withdrawalRoutingMode` key — that field
- * is no longer a request-level default at all. `retirement_settings
- * .withdrawal_routing_mode` is the real household default now
- * (buildDecumulationDefaults, server/routers/projection/_shared.ts); a
- * caller must OMIT the field to reach it. This function returning a
- * hardcoded "bracket_filling" here would have this "shared so callers
- * can't drift" object itself be the drift: `retirement-card.tsx`'s peek
- * query spreads this whole object unconditionally (it can't know about a
- * session override, so it was never a candidate for touched-gating), so
- * it would keep SENDING "bracket_filling" — silently overruling any
- * household's saved "waterfall"/"percentage" choice for the dashboard
- * tile's FI year / Coast FIRE age / useFICache write, while the
- * Retirement page (which omits the field until the user touches its
- * Configure toggle) resolved the real setting. Two different answers to
- * the same question from what's supposed to be one shared default. */
+ * NO `withdrawalRoutingMode` / `withdrawalOrder` / `withdrawalSplits` key —
+ * none of those are request-level defaults any more. The real household
+ * defaults live in `retirement_settings` (`.withdrawal_routing_mode`,
+ * `.withdrawal_order`, `.withdrawal_splits`) and a caller must OMIT each
+ * field to reach them (buildDecumulationDefaults,
+ * server/routers/projection/_shared.ts). This function returning a
+ * hardcoded copy here would make this "shared so callers can't drift"
+ * object itself the drift: `retirement-card.tsx`'s peek query spreads it
+ * unconditionally (it can't know about a session override, so it was never
+ * a candidate for touched-gating), so it would keep SENDING the config
+ * default — silently overruling any household's saved
+ * waterfall/percentage/custom-order choice for the dashboard tile's FI year
+ * / Coast FIRE age / useFICache write, while the Retirement page (which
+ * omits these fields until the user touches its Configure editors) resolved
+ * the real setting. Two different answers to the same question from what's
+ * supposed to be one shared default. */
 export function defaultDecumulationConfig(): {
-  withdrawalOrder: AccountCategory[];
-  withdrawalSplits: Record<AccountCategory, number>;
   withdrawalTaxPreference: Partial<
     Record<AccountCategory, "traditional" | "roth">
   >;
 } {
   return {
-    withdrawalOrder: getDefaultDecumulationOrder(),
-    withdrawalSplits: { ...DEFAULT_WITHDRAWAL_SPLITS },
     withdrawalTaxPreference: Object.fromEntries(
       categoriesWithTaxPreference().map((cat) => [cat, "traditional" as const]),
     ),

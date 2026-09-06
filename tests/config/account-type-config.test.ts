@@ -131,6 +131,20 @@ describe("getAllCategories", () => {
     expect(getAllCategories()).toContain("401k");
     expect(getAllCategories()).toContain("brokerage");
   });
+
+  // `accountCategoryEnum()` (a hardcoded literal tuple in
+  // account-types.types.ts) and `getAllCategories()` (derived from
+  // ACCOUNT_TYPE_CONFIG's keys) are independent sources of truth. Zod
+  // schemas that use the enum for element type AND getAllCategories() for a
+  // completeness check (retirement.ts's `withdrawalOrder`) become
+  // unsatisfiable the moment the two disagree — add a config entry without
+  // the enum literal and every withdrawal-order save 400s. RULES.md's
+  // "adding an account type = one config entry" makes that an easy mistake.
+  it("agrees exactly with accountCategoryEnum()", () => {
+    expect([...accountCategoryEnum()].sort()).toEqual(
+      [...getAllCategories()].sort(),
+    );
+  });
 });
 
 describe("getEngineCategories", () => {
@@ -397,17 +411,17 @@ describe("defaults", () => {
    */
   it("defaultDecumulationConfig matches the documented default shape", () => {
     const config = defaultDecumulationConfig();
-    // No `withdrawalRoutingMode` key — that
-    // field is no longer a request-level default; a caller must OMIT it
-    // to reach the household's persisted `retirement_settings
-    // .withdrawal_routing_mode` (buildDecumulationDefaults). This
-    // function returning it hardcoded here was the bug: the dashboard
-    // tile's peek query spread this object unconditionally, so it would
-    // silently keep sending "bracket_filling" and overrule a household's
-    // real "waterfall"/"percentage" choice.
+    // No `withdrawalRoutingMode` / `withdrawalOrder` / `withdrawalSplits`
+    // key — none of those are request-level defaults; a caller must OMIT
+    // each to reach the household's persisted `retirement_settings`
+    // columns (buildDecumulationDefaults). This function returning them
+    // hardcoded here was the bug: the dashboard tile's peek query spreads
+    // this object unconditionally, so it would silently keep sending the
+    // config default and overrule a household's real
+    // waterfall/percentage/custom-order choice.
     expect(config).not.toHaveProperty("withdrawalRoutingMode");
-    expect(config.withdrawalOrder).toEqual(getDefaultDecumulationOrder());
-    expect(config.withdrawalSplits).toEqual(DEFAULT_WITHDRAWAL_SPLITS);
+    expect(config).not.toHaveProperty("withdrawalOrder");
+    expect(config).not.toHaveProperty("withdrawalSplits");
     for (const cat of categoriesWithTaxPreference()) {
       expect(config.withdrawalTaxPreference[cat]).toBe("traditional");
     }

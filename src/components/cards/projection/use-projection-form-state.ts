@@ -1,9 +1,18 @@
 /** Form and UI state for the projection card — withdrawal config, override forms, view toggles, and MC settings. Overrides are loaded from DB on mount. */
-import { useCallback, useState } from "react";
+import {
+  useCallback,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import type { AccountCategory } from "@/lib/calculators/types";
 import { trpc } from "@/lib/trpc";
 import { type AssetClassOverride } from "@/components/cards/mc-simulation-assumptions";
-import { defaultDecumulationConfig } from "@/lib/config/account-types";
+import {
+  defaultDecumulationConfig,
+  getDefaultDecumulationOrder,
+  DEFAULT_WITHDRAWAL_SPLITS,
+} from "@/lib/config/account-types";
 import { DEFAULT_WITHDRAWAL_ROUTING_MODE } from "@/lib/config/withdrawal-routing";
 import type {
   AccumOverrideForm,
@@ -49,12 +58,31 @@ export function useProjectionFormState() {
     },
     [],
   );
-  const [withdrawalOrder, setWithdrawalOrder] = useState<AccountCategory[]>(
-    () => defaultDecumulationConfig().withdrawalOrder,
+  // Same touched-gating as `withdrawalRoutingMode` above — the order and
+  // splits are only SENT as a decumulationDefaults override once the user
+  // edits them this session; until then the query omits them and the server
+  // resolves `retirement_settings.withdrawal_order` / `.withdrawal_splits`.
+  // Initial values are the config defaults (NOT the fetched settings) since
+  // they're never sent until touched; `decumulation-config.tsx` derives its
+  // own display value from the real persisted setting.
+  const [withdrawalOrder, setWithdrawalOrderRaw] = useState<AccountCategory[]>(
+    () => getDefaultDecumulationOrder(),
   );
-  const [withdrawalSplits, setWithdrawalSplits] = useState<
+  const [withdrawalOrderTouched, setWithdrawalOrderTouched] = useState(false);
+  const setWithdrawalOrder = useCallback((v: AccountCategory[]) => {
+    setWithdrawalOrderRaw(v);
+    setWithdrawalOrderTouched(true);
+  }, []);
+  const [withdrawalSplits, setWithdrawalSplitsRaw] = useState<
     Record<AccountCategory, number>
-  >(() => defaultDecumulationConfig().withdrawalSplits);
+  >(() => ({ ...DEFAULT_WITHDRAWAL_SPLITS }));
+  const [withdrawalSplitsTouched, setWithdrawalSplitsTouched] = useState(false);
+  const setWithdrawalSplits = useCallback<
+    Dispatch<SetStateAction<Record<AccountCategory, number>>>
+  >((v) => {
+    setWithdrawalSplitsRaw(v);
+    setWithdrawalSplitsTouched(true);
+  }, []);
   const [withdrawalTaxPref, setWithdrawalTaxPref] = useState<
     Partial<Record<AccountCategory, "traditional" | "roth">>
   >(() => defaultDecumulationConfig().withdrawalTaxPreference);
@@ -234,8 +262,10 @@ export function useProjectionFormState() {
     withdrawalRoutingModeTouched,
     withdrawalOrder,
     setWithdrawalOrder,
+    withdrawalOrderTouched,
     withdrawalSplits,
     setWithdrawalSplits,
+    withdrawalSplitsTouched,
     withdrawalTaxPref,
     setWithdrawalTaxPref,
     accumOverrides,

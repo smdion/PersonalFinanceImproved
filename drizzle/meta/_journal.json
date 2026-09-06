@@ -15,6 +15,13 @@
       "when": 1788643606868,
       "tag": "0001_nappy_blade",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788652231615,
+      "tag": "0002_talented_monster_badoon",
+      "breakpoints": true
     }
   ]
 }

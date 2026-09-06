@@ -41,11 +41,6 @@ import {
 } from "@/lib/calculators/random";
 import { formatPercent } from "@/lib/utils/format";
 import { MC_CONFIDENCE_THRESHOLD } from "@/lib/constants";
-import type { AccountCategory } from "@/lib/calculators/types";
-import {
-  getDefaultDecumulationOrder,
-  DEFAULT_WITHDRAWAL_SPLITS as CONFIG_WITHDRAWAL_SPLITS,
-} from "@/lib/config/account-types";
 import { roundToCents } from "@/lib/utils/math";
 import {
   fetchRetirementData,
@@ -161,19 +156,14 @@ export const strategyRouter = createTRPCRouter({
 
       // Resolved ONCE for the whole request — every candidate below spreads
       // this and overrides only withdrawalStrategy/strategyParams, so the
-      // household's real RMD/QCD/discretionary-order/routing-mode settings
-      // apply to every candidate, not just whichever one happens to be
-      // "active" (buildDecumulationDefaults, _shared.ts).
+      // household's real RMD/QCD/discretionary-order/routing-mode/order/splits
+      // settings apply to every candidate, not just whichever one happens to
+      // be "active" (buildDecumulationDefaults, _shared.ts). No client
+      // override slot filled here — order/splits resolve from the
+      // household's persisted profile defaults.
       const baseDecumulationDefaults = buildDecumulationDefaults(
         settings,
-        {
-          withdrawalOrder: getDefaultDecumulationOrder() as AccountCategory[],
-          withdrawalSplits: { ...CONFIG_WITHDRAWAL_SPLITS } as Record<
-            AccountCategory,
-            number
-          >,
-          withdrawalTaxPreference: {},
-        },
+        { withdrawalTaxPreference: {} },
         distributionTaxRates,
       );
 
@@ -434,14 +424,7 @@ export const strategyRouter = createTRPCRouter({
         // which varies both per candidate).
         decumulationDefaults: buildDecumulationDefaults(
           settings,
-          {
-            withdrawalOrder: getDefaultDecumulationOrder() as AccountCategory[],
-            withdrawalSplits: { ...CONFIG_WITHDRAWAL_SPLITS } as Record<
-              AccountCategory,
-              number
-            >,
-            withdrawalTaxPreference: {},
-          },
+          { withdrawalTaxPreference: {} },
           distributionTaxRates,
         ),
       };

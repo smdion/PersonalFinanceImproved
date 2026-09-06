@@ -47,7 +47,9 @@ export function useProjectionQueries(
     withdrawalRoutingMode,
     withdrawalRoutingModeTouched,
     withdrawalOrder,
+    withdrawalOrderTouched,
     withdrawalSplits,
+    withdrawalSplitsTouched,
     withdrawalTaxPref,
     accumOverrides,
     decumOverrides,
@@ -88,15 +90,15 @@ export function useProjectionQueries(
         salaryActiveFields.length > 0 ? salaryActiveFields : undefined,
       decumulationDefaults: {
         withdrawalRate: withdrawalRate / 100,
-        // Omitted (not just left at its "bracket_filling" display default)
-        // until the user actually touches the Configure toggle — see
-        // use-projection-form-state.ts's docblock on
-        // withdrawalRoutingModeTouched for why this has to be an omission,
-        // not a value, to keep this byte-identical to the dashboard tile's
-        // peek query and still resolve the household's real setting.
+        // Omitted (not just left at its display default) until the user
+        // actually touches the matching Configure editor — see
+        // use-projection-form-state.ts's docblock on the *Touched flags for
+        // why each of these has to be an omission, not a value, to keep this
+        // byte-identical to the dashboard tile's peek query and still
+        // resolve the household's real persisted setting.
         ...(withdrawalRoutingModeTouched ? { withdrawalRoutingMode } : {}),
-        withdrawalOrder,
-        withdrawalSplits,
+        ...(withdrawalOrderTouched ? { withdrawalOrder } : {}),
+        ...(withdrawalSplitsTouched ? { withdrawalSplits } : {}),
         withdrawalTaxPreference: withdrawalTaxPref,
       },
       accumulationOverrides: accumOverrides,
@@ -132,7 +134,9 @@ export function useProjectionQueries(
       withdrawalRoutingMode,
       withdrawalRoutingModeTouched,
       withdrawalOrder,
+      withdrawalOrderTouched,
       withdrawalSplits,
+      withdrawalSplitsTouched,
       withdrawalTaxPref,
       accumOverrides,
       decumOverrides,

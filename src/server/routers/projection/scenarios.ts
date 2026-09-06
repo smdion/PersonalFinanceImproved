@@ -446,6 +446,8 @@ export const scenariosRouter = createTRPCRouter({
           withdrawalStrategy: settings.withdrawalStrategy,
           discretionaryWithdrawalOrder: settings.discretionaryWithdrawalOrder,
           withdrawalRoutingMode: settings.withdrawalRoutingMode,
+          withdrawalOrder: settings.withdrawalOrder,
+          withdrawalSplits: settings.withdrawalSplits,
           gkUpperGuardrail: settings.gkUpperGuardrail,
           gkLowerGuardrail: settings.gkLowerGuardrail,
           gkIncreasePct: settings.gkIncreasePct,

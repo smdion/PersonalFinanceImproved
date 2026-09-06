@@ -16,11 +16,20 @@
  */
 "use client";
 
+import { useState } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Badge } from "@/components/ui/badge";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatPercent } from "@/lib/utils/format";
-import { taxTypeTextColor } from "@/lib/utils/colors";
+import { accountTextColor, taxTypeTextColor } from "@/lib/utils/colors";
+import {
+  getAllCategories,
+  getAccountTypeConfig,
+  getDefaultDecumulationOrder,
+  DEFAULT_WITHDRAWAL_SPLITS,
+} from "@/lib/config/account-types";
+import type { AccountCategory } from "@/lib/calculators/types";
+import { WithdrawalOrderEditor } from "@/components/retirement/withdrawal-order-editor";
 import type {
   Settings,
   SelectedScenario,
@@ -62,6 +71,29 @@ export function TaxesSection({
   bracketOptimizerResult,
 }: Props) {
   const filingStatus = settings.filingStatus;
+
+  // Persisted withdrawal ORDER / SPLITS defaults (this profile's saved
+  // household choice). NULL columns fall back to the config defaults — the
+  // same resolution `buildDecumulationDefaults` does server-side. The order
+  // editor writes each swap straight through (discrete gesture, like the
+  // routing-mode select); the splits grid keeps a local draft and writes
+  // once on Save to avoid a mutation per keystroke.
+  const persistedOrder =
+    (settings.withdrawalOrder as AccountCategory[] | null) ??
+    getDefaultDecumulationOrder();
+  const persistedSplits =
+    (settings.withdrawalSplits as Record<string, number> | null) ??
+    DEFAULT_WITHDRAWAL_SPLITS;
+  const routingMode =
+    settings.withdrawalRoutingMode ?? DEFAULT_WITHDRAWAL_ROUTING_MODE;
+  const [splitsDraft, setSplitsDraft] = useState<Record<string, number> | null>(
+    null,
+  );
+  const effectiveSplits = splitsDraft ?? persistedSplits;
+  const splitsTotal = getAllCategories().reduce(
+    (sum, c) => sum + (effectiveSplits[c] ?? 0),
+    0,
+  );
 
   // Multi-year withdrawal-policy optimizer, Phase 4 — live recommendation
   // next to the Bracket Ceiling control below. Not gated on
@@ -389,6 +421,123 @@ export function TaxesSection({
             </select>
           </div>
         </div>
+      </div>
+
+      {/* Persisted withdrawal order / splits — the saved household default
+          the Retirement page's Configure toggle overrides per-session. */}
+      <div className="mt-3 border-t pt-3">
+        <div className="mb-2 flex items-center gap-2">
+          <span className="text-muted text-xs font-medium tracking-wide uppercase">
+            Withdrawal Order
+          </span>
+          <HelpTip text="Your saved default account draw order. Waterfall mode drains accounts in exactly this sequence; Bracket Filling uses the 401k/403b/IRA part of it to decide which Traditional account fills the bracket first. RMDs are enforced regardless of order. The Retirement page's Configure toggle can customize this for one session without changing what's saved here." />
+        </div>
+        <WithdrawalOrderEditor
+          order={persistedOrder}
+          onChange={(next) => {
+            if (!settings) return;
+            upsertSettings.mutate(
+              buildSettingsPatch(settings, { withdrawalOrder: next }),
+            );
+          }}
+          disabled={!isEditable}
+        />
+        {settings.withdrawalOrder != null && isEditable && (
+          <button
+            type="button"
+            onClick={() =>
+              upsertSettings.mutate(
+                buildSettingsPatch(settings, { withdrawalOrder: null }),
+              )
+            }
+            className="text-caption text-faint hover:text-secondary mt-1.5 underline"
+          >
+            Reset to default order
+          </button>
+        )}
+
+        {routingMode === "percentage" && (
+          <div className="mt-3">
+            <div className="mb-2 flex items-center gap-2">
+              <span className="text-muted text-xs font-medium tracking-wide uppercase">
+                Withdrawal Splits
+              </span>
+              <HelpTip text="How a year's total withdrawal divides across accounts in Percentage mode. Values should sum to 100%. Only applies while Withdrawal Routing is set to Percentage." />
+            </div>
+            <div className="grid grid-cols-3 gap-3 md:grid-cols-5">
+              {getAllCategories().map((cat) => (
+                <label key={cat} className="block">
+                  <span
+                    className={`text-xs font-medium ${accountTextColor(cat)}`}
+                  >
+                    {getAccountTypeConfig(cat).displayLabel} %
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    disabled={!isEditable}
+                    value={Math.round((effectiveSplits[cat] ?? 0) * 100)}
+                    onChange={(e) => {
+                      const v = parseFloat(e.target.value) / 100;
+                      setSplitsDraft((prev) => ({
+                        ...(prev ?? persistedSplits),
+                        [cat]: isNaN(v) ? 0 : v,
+                      }));
+                    }}
+                    className="border-strong mt-1 block w-full rounded border px-2 py-1 text-right text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+                </label>
+              ))}
+            </div>
+            <div className="mt-1.5 flex items-center gap-2">
+              {Math.abs(splitsTotal - 1) > 0.001 && (
+                <span className="text-caption text-amber-600">
+                  Splits total {formatPercent(splitsTotal)} — should be 100%.
+                </span>
+              )}
+              {splitsDraft != null && isEditable && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!settings) return;
+                      upsertSettings.mutate(
+                        buildSettingsPatch(settings, {
+                          withdrawalSplits: splitsDraft,
+                        }),
+                      );
+                      setSplitsDraft(null);
+                    }}
+                    className="text-caption bg-accent/10 text-accent hover:bg-accent/20 rounded px-1.5 py-0.5"
+                  >
+                    Save splits
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSplitsDraft(null)}
+                    className="text-caption text-faint hover:text-secondary underline"
+                  >
+                    Cancel
+                  </button>
+                </>
+              )}
+              {splitsDraft == null && settings.withdrawalSplits != null && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    upsertSettings.mutate(
+                      buildSettingsPatch(settings, { withdrawalSplits: null }),
+                    )
+                  }
+                  className="text-caption text-faint hover:text-secondary underline"
+                >
+                  Reset to default splits
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

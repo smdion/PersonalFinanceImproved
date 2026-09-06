@@ -1232,6 +1232,31 @@ describe("projection router — computeStrategyComparison cache", () => {
       cleanup();
     }
   }, 30000);
+
+  // Persisted `withdrawal_order` — now read via buildDecumulationDefaults
+  // (no client override sent by this procedure) and folded into the hashed
+  // `decumulationDefaults`, so a change to the household's saved order must
+  // invalidate the comparison cache the same way.
+  it("changing the persisted withdrawalOrder invalidates the cache", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedGlidePath(db);
+
+      await caller.projection.computeStrategyComparison();
+      db.update(schema.retirementSettings)
+        .set({ withdrawalOrder: ["brokerage", "401k", "403b", "ira", "hsa"] })
+        .run();
+      await caller.projection.computeStrategyComparison();
+
+      const rows = db.select().from(schema.projectionCache).all();
+      expect(rows).toHaveLength(2);
+    } finally {
+      cleanup();
+    }
+  }, 30000);
 });
 
 // ---------------------------------------------------------------------------
