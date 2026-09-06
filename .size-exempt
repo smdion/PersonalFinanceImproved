@@ -32,3 +32,12 @@ src/lib/db/schema-sqlite.ts
 # ProfileEditor and ProfileInlineEditor are two large, largely-parallel
 # components in one file — extract one (or both) into sibling modules.
 src/components/budget/contribution-profile-manager.tsx
+
+# v0.8.1: crossed the limit (1998 -> 2002) across the account-basis columns
+# rework, per-account early-withdrawal-penalty allowance, and the
+# TRPCError sweep — no single feature, cumulative drift. Slipped past CI at
+# v0.8.1 and surfaced on the next fresh run. Split candidate is tracked as
+# FEATURE-ROADMAP R34: computeSummary is a ~573-line function the author
+# already comment-delimited into ~13 stages — pull those into named
+# helpers.
+src/server/routers/performance.ts
