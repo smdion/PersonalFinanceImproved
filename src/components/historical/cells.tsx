@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { parseLocalDateOnly } from "@/lib/utils/date";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useInlineNumberEdit } from "@/lib/hooks/use-inline-number-edit";
 
@@ -338,7 +339,8 @@ export function PerfEndBalCell({
 }) {
   const [showTip, setShowTip] = useState(false);
   const fmtDate = (iso: string) => {
-    const d = new Date(iso);
+    // date-only column — parse in local time, not UTC
+    const d = parseLocalDateOnly(iso);
     return d.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",

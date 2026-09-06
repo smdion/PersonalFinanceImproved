@@ -32,6 +32,7 @@
  *   24. Local const re-declaring an ALL_CAPS name already exported from constants.ts / config/ (R43 audit F1 class)
  *   25. Review-history citation in a comment — finding-ID tag (H10)/(M42)/(C2), review-findings.md, expert-review, CodeRabbit
  *   26. Broader review-history citation in a comment — attribution phrases ("advisor-caught", "live-user finding", "code-review ... finding"), bare ISO date-stamps, bare roadmap R## tags
+ *   27. `.toISOString().slice(0, 10)` / `.substring(0, 10)` / `.split("T")[0]` — reads a Date's calendar day in UTC, which is tomorrow for a US user any evening; use `localDateStr()` from `src/lib/utils/date.ts`
  *
  * Intentionally NOT checked (needs semantic analysis, not string matching):
  *   - "Router computing budget expenses with different column index" (#1)
@@ -902,6 +903,42 @@ function findBroadCitationViolations(): Violation[] {
   return violations;
 }
 
+// Rule 27: timezone-unsafe extraction of a calendar day from a `Date`.
+// `d.toISOString()` renders in UTC, so `.slice(0, 10)` / `.substring(0, 10)`
+// / `.split("T")[0]` on it returns TOMORROW's date for any user behind UTC
+// once local time passes midnight there (all of the US, every evening). The
+// fix is `localDateStr(d)` from `src/lib/utils/date.ts`, which reads the
+// day in the caller's own zone. `date.ts` itself documents the anti-pattern
+// (it's the helper's whole reason to exist); `paycheck.ts` builds its
+// payday strings with `Date.UTC(...)` and reads them back the same way —
+// internally UTC-consistent, reviewed, not a US-user-facing "today".
+const TZ_UNSAFE_DATE_EXEMPT = new Set<string>([
+  "src/lib/utils/date.ts",
+  "src/lib/calculators/paycheck.ts",
+]);
+const TZ_UNSAFE_DATE_PATTERN =
+  /\.toISOString\(\)\s*\.\s*(?:slice|substring)\(\s*0\s*,\s*(?:10|7)\s*\)|\.toISOString\(\)\s*\.\s*split\(\s*["']T["']\s*\)\s*\[\s*0\s*\]/;
+function findTzUnsafeDateViolations(): Violation[] {
+  const violations: Violation[] = [];
+  for (const file of walkTsFiles(SRC_DIR)) {
+    const rel = relPath(file);
+    if (isExempt(rel) || TZ_UNSAFE_DATE_EXEMPT.has(rel)) continue;
+    const lines = readFileLines(file);
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i]!;
+      if (line.includes("lint-violation-ok")) continue;
+      if (!TZ_UNSAFE_DATE_PATTERN.test(line)) continue;
+      violations.push({
+        file: rel,
+        line: i + 1,
+        rule: "no-tz-unsafe-date-extraction",
+        snippet: line.trim().slice(0, 100),
+      });
+    }
+  }
+  return violations;
+}
+
 // ── Tests ───────────────────────────────────────────────────────────
 
 function formatViolations(label: string, violations: Violation[]): string {
@@ -1248,6 +1285,25 @@ describe("RULES.md violations sweep", () => {
           `date range, an incident narrative where the date IS the point), ` +
           `add \`lint-violation-ok\` to that line rather than reintroducing ` +
           `the citation shape elsewhere.\n` +
+          formatViolations("Violations", violations),
+      );
+    }
+  });
+
+  it("no timezone-unsafe calendar-day extraction (.toISOString().slice(0, 10) etc.)", () => {
+    const violations = findTzUnsafeDateViolations();
+    if (violations.length > 0) {
+      expect.fail(
+        `Found ${violations.length} timezone-unsafe date extractions. ` +
+          `\`d.toISOString().slice(0, 10)\` (and \`.substring(0, 10)\` / ` +
+          `\`.split("T")[0]\`) reads the calendar day in UTC — that's ` +
+          `tomorrow's date for any user behind UTC every evening, so a ` +
+          `"today" default, a filter bound, or a stored year-end date built ` +
+          `this way is silently wrong for part of every day. Use ` +
+          `\`localDateStr(d)\` from \`src/lib/utils/date.ts\`. If the string ` +
+          `is genuinely wanted in UTC (an internally UTC-consistent key that ` +
+          `is never compared to a local calendar day), add ` +
+          `\`lint-violation-ok\` to that line.\n` +
           formatViolations("Violations", violations),
       );
     }

@@ -35,6 +35,51 @@ const localRules = {
         };
       },
     },
+    "no-tz-unsafe-date-string": {
+      meta: {
+        type: "problem",
+        docs: {
+          description:
+            "Disallow deriving a calendar day from a Date via .toISOString() — it renders in UTC, so the day is wrong (tomorrow) for a user behind UTC every evening. Use localDateStr() from @/lib/utils/date.ts.",
+        },
+        schema: [],
+      },
+      create(context) {
+        const MSG =
+          ".toISOString() renders in UTC, so slicing/splitting a calendar day off it is tomorrow's date for any user behind UTC every evening. Use localDateStr(d) from @/lib/utils/date.ts. If a UTC string is genuinely intended (an internal key never compared to a local day), add an eslint-disable with that justification.";
+        const isToISOStringCall = (n) =>
+          n &&
+          n.type === "CallExpression" &&
+          n.callee.type === "MemberExpression" &&
+          n.callee.property.type === "Identifier" &&
+          n.callee.property.name === "toISOString";
+        return {
+          // d.toISOString().slice(0, N) / .substring(0, N)
+          "CallExpression[callee.type='MemberExpression']"(node) {
+            const prop = node.callee.property;
+            if (
+              prop.type === "Identifier" &&
+              (prop.name === "slice" || prop.name === "substring") &&
+              isToISOStringCall(node.callee.object)
+            ) {
+              context.report({ node, message: MSG });
+            }
+          },
+          // d.toISOString().split("T")[0]
+          "MemberExpression[computed=true]"(node) {
+            if (
+              node.object.type === "CallExpression" &&
+              node.object.callee.type === "MemberExpression" &&
+              node.object.callee.property.type === "Identifier" &&
+              node.object.callee.property.name === "split" &&
+              isToISOStringCall(node.object.callee.object)
+            ) {
+              context.report({ node, message: MSG });
+            }
+          },
+        };
+      },
+    },
   },
 };
 
@@ -131,6 +176,22 @@ const config = [
         },
       ],
     },
+  },
+  {
+    // App-wide: no UTC calendar-day extraction from a Date. localStorage
+    // date keys, filter bounds, stored year-end dates, and cache keys built
+    // with `d.toISOString().slice(0, 10)` are all silently a day off for
+    // any US user every evening.
+    files: ["src/**/*.{ts,tsx}"],
+    plugins: { local: localRules },
+    rules: { "local/no-tz-unsafe-date-string": "error" },
+  },
+  {
+    // date.ts documents the anti-pattern (it's the helper's reason to
+    // exist); paycheck.ts builds payday strings with Date.UTC(...) and
+    // reads them back the same way — internally UTC-consistent, reviewed.
+    files: ["src/lib/utils/date.ts", "src/lib/calculators/paycheck.ts"],
+    rules: { "local/no-tz-unsafe-date-string": "off" },
   },
   {
     files: ["src/lib/pure/**/*.ts"],

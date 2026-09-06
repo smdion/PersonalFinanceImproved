@@ -5,6 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
+import { localDateStr } from "@/lib/utils/date";
 import { Skeleton } from "@/components/ui/skeleton";
 
 type PresetKey = "1m" | "3m" | "6m" | "ytd" | "1y" | "yoy" | "custom";
@@ -20,7 +21,10 @@ const PRESETS: { key: PresetKey; label: string }[] = [
 ];
 
 function toDateStr(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  // Local day — these strings are compared against `snapshot_date` (a
+  // date-only column), so a UTC render would shift the preset range by a
+  // day every evening in a US timezone.
+  return localDateStr(d);
 }
 
 function getPresetDates(preset: PresetKey): { from: string; to: string } {
