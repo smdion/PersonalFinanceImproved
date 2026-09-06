@@ -16,6 +16,7 @@
  */
 import "./setup-mocks";
 import { describe, it, expect } from "vitest";
+import { eq } from "drizzle-orm";
 import { createTestCaller, adminSession, seedStandardDataset } from "./setup";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
@@ -31,6 +32,16 @@ const END_AGE = 90;
  *  columns and the what-if procedure have something to chew on. */
 function seedTaxOptHousehold(db: BetterSQLite3Database<typeof sqliteSchema>) {
   const { personId, perfAcctId } = seedStandardDataset(db);
+
+  // seedStandardDataset uses a Jan-1 DOB. `new Date("1990-01-01")` is UTC
+  // midnight, which reads back as the PRIOR YEAR in any timezone behind UTC
+  // — so the engine's birth-year-derived retirement schedule, and this
+  // file's golden snapshot, shifted by a full year between a local run and
+  // CI (UTC). Pin a mid-year DOB: still 1990 in every timezone.
+  db.update(schema.people)
+    .set({ dateOfBirth: "1990-07-01" })
+    .where(eq(schema.people.id, personId))
+    .run();
 
   db.insert(schema.retirementSettings)
     .values({
