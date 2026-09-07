@@ -17,6 +17,7 @@ import { sql, eq } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "./schema";
 import { isPostgres } from "./dialect";
+import { encodeJsonbForPgImport } from "./jsonb-import";
 import {
   truncateTables,
   resetSequences,
@@ -319,6 +320,11 @@ export type BackupData = {
   schemaVersion: string;
   exportedAt: string;
   tables: Record<string, unknown[]>;
+  // The dialect the export ran against. Absent on backups made before this
+  // field existed — those are always treated as "postgres" on import (see
+  // importBackupPg), matching what every backup taken in practice actually
+  // was and what the code did before dialect-aware jsonb encoding existed.
+  sourceDialect?: "postgres" | "sqlite";
 };
 
 export async function exportBackup(
@@ -342,6 +348,7 @@ export async function exportBackup(
     schemaVersion: CURRENT_SCHEMA_VERSION,
     exportedAt: new Date().toISOString(),
     tables,
+    sourceDialect: isPostgres() ? "postgres" : "sqlite",
   };
 }
 
@@ -441,13 +448,7 @@ async function importBackupPg(
             const val = row[col];
             if (val === null || val === undefined) return "NULL";
             if (tableJsonbCols.has(col)) {
-              // A backup produced on SQLite carries `text({ mode: "json" })`
-              // columns as already-serialized JSON strings; one produced on
-              // PG carries jsonb as parsed objects. `JSON.stringify` a
-              // string would double-encode it (store `"\"[...]\""`), so
-              // only stringify when it isn't already a string. Mirrors the
-              // `typeof val === "object"` guard on the SQLite import path.
-              params.push(typeof val === "string" ? val : JSON.stringify(val));
+              params.push(encodeJsonbForPgImport(val, backup.sourceDialect));
               return `$${params.length}::jsonb`;
             }
             params.push(val);
