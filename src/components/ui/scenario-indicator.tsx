@@ -34,7 +34,7 @@ export function ScenarioValue({
     <span className={`relative inline-flex items-center gap-0.5 ${className}`}>
       <span
         className="h-1.5 w-1.5 flex-shrink-0 cursor-pointer rounded-full bg-amber-500"
-        title="Overridden in this plan — click to reset to main plan value"
+        title="Customized in this plan — click to reset to main plan value"
         onClick={async (e) => {
           e.stopPropagation();
           if (await confirm("Reset this value to the main plan?")) {

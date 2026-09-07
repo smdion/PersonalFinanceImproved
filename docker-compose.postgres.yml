@@ -13,6 +13,9 @@ services:
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
       - AUTH_TRUST_HOST=${AUTH_TRUST_HOST:-true}
       - CRON_SECRET=${CRON_SECRET}
+      # See docker-compose.yml / .env.example — set to your household's
+      # local timezone. Defaults to UTC (pre-existing behavior).
+      - TZ=${TZ:-UTC}
     read_only: true
     tmpfs:
       - /tmp
