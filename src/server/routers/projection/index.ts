@@ -18,6 +18,7 @@
  * - `coast-fire-probe.ts` — `computeCoastFireProbe`
  * - `tax-optimization.ts` — `projectTaxYears`, `compareWithdrawalStrategies`,
  *                           `rothConversionWhatIf`
+ * - `social-security.ts` — `sweepSocialSecurityClaimingAges`
  *
  * Shared Zod schemas + helper builders live in `_shared.ts`.
  *
@@ -36,6 +37,7 @@ import { monteCarloRouter } from "./monte-carlo";
 import { presetsRouter } from "./presets";
 import { relocationProjectionRouter } from "./relocation";
 import { scenariosRouter } from "./scenarios";
+import { socialSecurityRouter } from "./social-security";
 import { strategyRouter } from "./strategy";
 import { stressTestRouter } from "./stress-test";
 import { taxOptimizationRouter } from "./tax-optimization";
@@ -52,4 +54,5 @@ export const projectionRouter = mergeRouters(
   relocationProjectionRouter,
   taxOptimizationRouter,
   withdrawalBracketOptimizerRouter,
+  socialSecurityRouter,
 );

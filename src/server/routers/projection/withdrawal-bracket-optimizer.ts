@@ -37,6 +37,12 @@ export const withdrawalBracketOptimizerRouter = createTRPCRouter({
   /**
    * Multi-year withdrawal-policy optimizer
    *
+   * `retirementProfileId` (like `contributionProfileId`/`salaryProfileId`)
+   * is threaded straight into `fetchRetirementData`/`buildEnginePayload` —
+   * a household viewing a non-active Retirement Profile must get a
+   * recommendation computed against THAT profile's data, not silently
+   * against the active one.
+   *
    * Searches the household's own real marginal bracket rates for the
    * `rothBracketTarget` that minimizes lifetime tax cost (plus a
    * terminal-value penalty for Traditional money left unconverted),
@@ -62,6 +68,7 @@ export const withdrawalBracketOptimizerRouter = createTRPCRouter({
         decumulationBudgetProfileId: z.number().int().optional(),
         decumulationBudgetColumn: z.number().int().min(0).optional(),
         decumulationExpenseOverride: z.number().min(0).optional(),
+        retirementProfileId: z.number().int().optional(),
         snapshotId: z.number().int().optional(),
       }),
     )
@@ -81,6 +88,7 @@ export const withdrawalBracketOptimizerRouter = createTRPCRouter({
         decumulationBudgetProfileId: input.decumulationBudgetProfileId,
         decumulationBudgetColumn: input.decumulationBudgetColumn,
         decumulationExpenseOverride: input.decumulationExpenseOverride,
+        retirementProfileId: input.retirementProfileId,
       });
       if (!payload) return { result: null };
 

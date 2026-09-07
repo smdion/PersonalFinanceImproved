@@ -31,6 +31,7 @@ export function ReportRoot({
   peopleNames,
   generatedAt,
   engineSettings,
+  perPersonSettings,
   rmdExcessYears,
   qcdYears,
   irmaaCappedRothYears,
@@ -44,6 +45,11 @@ export function ReportRoot({
   peopleNames: string[];
   generatedAt: Date;
   engineSettings: ReportEngineSettings;
+  perPersonSettings?: ReadonlyArray<{
+    socialSecurityMonthly?: number | string | null;
+    socialSecurityPia?: number | string | null;
+    ssStartAge?: number | string | null;
+  }>;
   rmdExcessYears: number;
   qcdYears: number;
   irmaaCappedRothYears: number;
@@ -77,6 +83,7 @@ export function ReportRoot({
       </div>
       <ReportAssumptionsSummary
         settings={engineSettings}
+        perPersonSettings={perPersonSettings}
         rmdExcessYears={rmdExcessYears}
         qcdYears={qcdYears}
         irmaaCappedRothYears={irmaaCappedRothYears}

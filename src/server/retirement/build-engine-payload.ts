@@ -56,6 +56,7 @@ import {
 } from "@/lib/constants";
 import { log } from "@/lib/logger";
 import { estimateEffectiveTaxRate } from "@/lib/calculators/engine";
+import { buildSocialSecurityEntries } from "./social-security-entries";
 import { getLtcgRate } from "@/lib/config/tax-tables";
 import { resolveTaxParams } from "@/lib/config/tax-params";
 import type { db as _db } from "@/lib/db";
@@ -466,6 +467,17 @@ export async function buildEnginePayload(
         settings.withdrawalRate,
       socialSecurityMonthly:
         ps?.socialSecurityMonthly ?? settings.socialSecurityMonthly,
+      // PIA (benefit at FRA) — opt-in, no household-level fallback (decision
+      // #5 in SOCIAL-SECURITY-OPTIMIZATION-PLAN.md: unlike every other field
+      // here, an unset PIA on this person's row does NOT fall back to
+      // `settings`, since a household-wide PIA makes no sense — PIA is
+      // inherently per-person, computed from an individual's own earnings
+      // record. null means "not opted in," not "use the household default."
+      // Read from `pp` specifically (the retirement_profile_people row),
+      // not the wider `ps` union — the legacy fallback branch of `ps`
+      // (a bare retirement_settings row) has no PIA column at all; there's
+      // no household-grain equivalent to fall back to.
+      socialSecurityPia: pp?.socialSecurityPia ?? null,
       ssStartAge: ps?.ssStartAge ?? settings.ssStartAge,
       ruleOf55Override: ps?.ruleOf55Override ?? settings.ruleOf55Override,
     };
@@ -1726,17 +1738,63 @@ export async function buildEnginePayload(
       ? toNumber(settings.postRetirementInflation)
       : undefined,
     returnRates: relevantReturnRates,
-    socialSecurityAnnual: toNumber(settings.socialSecurityMonthly) * 12,
-    ssStartAge: settings.ssStartAge,
+    // Single-person household: source BOTH the amount (via
+    // personAnnualAmount, above) and the start age from
+    // `perPersonSettings[0]` (retirement_profile_people, falling back to
+    // `settings` when that row has no override — same resolution
+    // perPersonSettings itself already does), not from the `settings`
+    // scalar directly. The two MUST come from the same row: computing the
+    // claiming-age adjustment from one row's ssStartAge while emitting a
+    // different row's ssStartAge as the actual payment-start age would pay
+    // a benefit adjusted for one claiming age starting at a different one.
+    // `retirementProfilePeople.upsertHouseholdFields` is the only writer of
+    // "SS Start Age" (writes ONLY retirement_profile_people, never
+    // retirement_settings), so `retirement_settings.ss_start_age` can be
+    // stale for a household that's edited it — sourcing both fields from
+    // `perPersonSettings[0]` here fixes that for both the PIA and non-PIA
+    // amount, and the same staleness for socialSecurityMonthly too (a
+    // single-person "Monthly Benefit" edit writes only to
+    // retirement_profile_people and could otherwise silently not move the
+    // projection).
+    socialSecurityAnnual:
+      perPersonSettings.length === 1
+        ? buildSocialSecurityEntries([perPersonSettings[0]!], filingStatus)[0]!
+            .annualAmount
+        : toNumber(settings.socialSecurityMonthly) * 12,
+    ssStartAge:
+      perPersonSettings.length === 1
+        ? perPersonSettings[0]!.ssStartAge
+        : settings.ssStartAge,
+    // `socialSecurityEntries` is NOT just a Social Security income input —
+    // `rmdStartAgeByPerson` (engine/projection-year-handlers/context.ts) is
+    // built EXCLUSIVELY from it, and that map gates per-person RMD
+    // tracking, which OVERRIDES the household RMD calculation
+    // (decumulation-year.ts) once populated. `types/shared.ts`'s own
+    // docblock states the assumption this table's per-person UI relies on:
+    // "socialSecurityEntries/rmdStartAgeByPerson are only populated for
+    // multi-person households." Populating a length-1 entries array for a
+    // single-person household's PIA would silently flip on the per-person
+    // RMD path for single-person households too — it measurably changes
+    // RMD amounts (and net worth) for any single-person household with an
+    // individualAccount whose ownerPersonId is null (joint/unassigned
+    // pre-tax money silently drops out of the per-person RMD base), and
+    // even for a fully-owned single-person household it isn't
+    // byte-identical (per-person balance tracking drifts from the
+    // household balance bucket over a multi-year projection). So: PIA for
+    // a single person routes through the scalar socialSecurityAnnual above
+    // instead, which the engine has always treated as SS-only, no RMD
+    // side effect. Entries stay reserved for households that were ALREADY
+    // multi-person before this feature existed — their RMD behavior is
+    // completely unchanged by this diff (see the length > 1 condition
+    // below, unaffected by PIA either way).
+    // Per-person entries — PIA claiming-age adjustment + MFJ spousal
+    // benefit + "worker has filed" gating all live in the one shared
+    // `buildSocialSecurityEntries` helper (also used by the strategy
+    // optimizer's SS-start-age lever, so the two can't drift). No
+    // start-age shift here — this is the household's real plan.
     socialSecurityEntries:
       perPersonSettings.length > 1
-        ? perPersonSettings.map((ps) => ({
-            personId: ps.personId,
-            personName: ps.name,
-            annualAmount: toNumber(ps.socialSecurityMonthly) * 12,
-            startAge: ps.ssStartAge,
-            birthYear: ps.birthYear,
-          }))
+        ? buildSocialSecurityEntries(perPersonSettings, filingStatus)
         : undefined,
     birthYear: new Date(primaryPerson.dateOfBirth).getFullYear(),
     filingStatus,

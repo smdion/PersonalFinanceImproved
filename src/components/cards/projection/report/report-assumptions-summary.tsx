@@ -10,6 +10,7 @@ import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { MAX_BROKERAGE_RAMP_YEARS } from "@/lib/constants";
 import { WITHDRAWAL_STRATEGY_CONFIG } from "@/lib/config/withdrawal-strategies";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
+import { parseAnnualPia } from "@/lib/config/social-security";
 
 /** Numeric fields on the echo'd settings object come back as decimal
  *  strings for some (drizzle decimal columns) and plain numbers for others
@@ -85,6 +86,15 @@ function num(v: NumLike | null | undefined): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
+/** Minimal per-person shape the SS section needs — structural, so this
+ *  report component stays free of server-type imports (same reason
+ *  `ReportEngineSettings` is hand-rolled). */
+type ReportPerPersonSettings = ReadonlyArray<{
+  socialSecurityMonthly?: NumLike | null;
+  socialSecurityPia?: NumLike | null;
+  ssStartAge?: NumLike | null;
+}>;
+
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between gap-4 py-0.5 text-sm">
@@ -113,11 +123,20 @@ function Section({
 
 export function ReportAssumptionsSummary({
   settings,
+  perPersonSettings,
   rmdExcessYears = 0,
   qcdYears = 0,
   irmaaCappedRothYears = 0,
 }: {
   settings: ReportEngineSettings | undefined;
+  /** Per-person retirement settings from the engine payload. For a
+   *  single-person household the SS section sources start age / benefit
+   *  from here (matching the live Social Security section and assumptions
+   *  band), since "SS Start Age" and the per-person benefit are written to
+   *  `retirement_profile_people`, not the household `retirement_settings`
+   *  scalar this report otherwise reads. Undefined = fall back to
+   *  `settings`. */
+  perPersonSettings?: ReportPerPersonSettings;
   /** Count of years in this projection where RMD forced more
    *  out of Traditional than the strategy needed, with the excess
    *  reinvested into brokerage — a plan-level fact worth disclosing in
@@ -181,8 +200,20 @@ export function ReportAssumptionsSummary({
   const salaryCap = num(settings.salaryCap);
   const withdrawalRate = num(settings.withdrawalRate);
   const rothConversionTarget = num(settings.rothConversionTarget);
-  const socialSecurityMonthly = num(settings.socialSecurityMonthly);
-  const ssStartAge = num(settings.ssStartAge);
+  // Single-person household: source SS benefit / start age / PIA from the
+  // per-person row, which is where the live UI writes them — the household
+  // `settings` scalar can be stale for a household that's edited these.
+  const soloPerson =
+    perPersonSettings?.length === 1 ? perPersonSettings[0] : undefined;
+  const socialSecurityMonthly = num(
+    soloPerson?.socialSecurityMonthly ?? settings.socialSecurityMonthly,
+  );
+  const ssStartAge = num(soloPerson?.ssStartAge ?? settings.ssStartAge);
+  // Display value stays MONTHLY (the row is labelled "/mo"); `hasPia` is
+  // the canonical opt-in check (same `parseAnnualPia` the engine and the
+  // live UI use — so an empty-string or "0" PIA reads as not-set here too).
+  const socialSecurityPia = num(soloPerson?.socialSecurityPia);
+  const hasPia = parseAnnualPia(soloPerson?.socialSecurityPia) != null;
 
   return (
     <div className="mt-6 break-before-page border-t pt-4">
@@ -276,16 +307,30 @@ export function ReportAssumptionsSummary({
         )}
       </Section>
 
-      {(socialSecurityMonthly != null || ssStartAge != null) && (
+      {(socialSecurityMonthly != null || ssStartAge != null || hasPia) && (
         <Section title="Social Security">
-          {socialSecurityMonthly != null && (
+          {hasPia && socialSecurityPia != null ? (
             <Row
-              label="Estimated monthly benefit"
-              value={formatCurrency(socialSecurityMonthly)}
+              label="PIA (benefit at Full Retirement Age)"
+              value={`${formatCurrency(socialSecurityPia)}/mo`}
             />
+          ) : (
+            socialSecurityMonthly != null && (
+              <Row
+                label="Estimated monthly benefit"
+                value={formatCurrency(socialSecurityMonthly)}
+              />
+            )
           )}
           {ssStartAge != null && (
-            <Row label="Claiming age" value={String(ssStartAge)} />
+            <Row
+              label={
+                hasPia
+                  ? "Claiming age (benefit adjusted for early/delayed)"
+                  : "Claiming age"
+              }
+              value={String(ssStartAge)}
+            />
           )}
         </Section>
       )}

@@ -23,7 +23,10 @@ import { describe, it, expect, vi } from "vitest";
 // resolution just to import one pure function.
 vi.mock("@/lib/db/schema", () => ({}));
 
-import { buildStrategyParams } from "@/server/routers/projection/_shared";
+import {
+  buildStrategyParams,
+  resolveSsStartAgeBaseline,
+} from "@/server/routers/projection/_shared";
 import { WITHDRAWAL_STRATEGY_CONFIG } from "@/lib/config/withdrawal-strategies";
 
 const noOverrides = {
@@ -85,5 +88,34 @@ describe("withdrawal-strategy defaults agree across layers", () => {
     expect(cfg.basePercent).toBe(0.05);
     expect(cfg.ceilingPercent).toBe(0.05);
     expect(cfg.floorPercent).toBe(0.025);
+  });
+});
+
+describe("resolveSsStartAgeBaseline", () => {
+  it("single-person household (no perPersonSettings): uses the scalar baseEngineInput value", () => {
+    expect(resolveSsStartAgeBaseline(undefined, 68)).toBe(68);
+  });
+
+  it("single-entry perPersonSettings (length 1): still uses the scalar, not the per-person row", () => {
+    // Matches build-engine-payload.ts's own single-person routing — a
+    // length-1 perPersonSettings array is still a single-person
+    // household, so there's no "multiple people could disagree" case to
+    // protect against here.
+    expect(resolveSsStartAgeBaseline([{ ssStartAge: 62 }], 68)).toBe(68);
+  });
+
+  it("multi-person household: uses the EARLIEST real per-person start age, ignoring a stale scalar", () => {
+    // The stale scalar says 68 (nobody's really claiming that late); the
+    // real per-person rows say 62 and 65. The household's actual earliest
+    // actionable claiming age is 62 — the lever must be gated on that, not
+    // on 68 (which would clamp "delay by 3" out of the [0, 70] range for
+    // no real reason).
+    const perPersonSettings = [{ ssStartAge: 65 }, { ssStartAge: 62 }];
+    expect(resolveSsStartAgeBaseline(perPersonSettings, 68)).toBe(62);
+  });
+
+  it("multi-person household: matches the scalar when it isn't actually stale", () => {
+    const perPersonSettings = [{ ssStartAge: 67 }, { ssStartAge: 70 }];
+    expect(resolveSsStartAgeBaseline(perPersonSettings, 67)).toBe(67);
   });
 });

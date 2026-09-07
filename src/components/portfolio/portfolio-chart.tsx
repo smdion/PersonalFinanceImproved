@@ -22,6 +22,7 @@ import {
 import { CHART_COLORS, chartLinePalette } from "@/lib/utils/colors";
 import { useTheme } from "@/lib/hooks/use-theme";
 import { safeDivide } from "@/lib/utils/math";
+import { localDateStr } from "@/lib/utils/date";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
 
 type TimeFrame = "YTD" | "3M" | "6M" | "1Y" | "3Y" | "All";
@@ -45,7 +46,9 @@ function getTimeFrameCutoff(tf: TimeFrame): string | null {
   const months = { "3M": 3, "6M": 6, "1Y": 12, "3Y": 36 }[tf];
   const cutoff = new Date();
   cutoff.setMonth(cutoff.getMonth() - months);
-  return cutoff.toISOString().slice(0, 10);
+  // Local day — compared against `s.date` (a date-only value); a UTC render
+  // would move the cutoff a day every evening in a US timezone.
+  return localDateStr(cutoff);
 }
 
 export function PortfolioChart({ snapshots }: { snapshots: SnapshotPoint[] }) {

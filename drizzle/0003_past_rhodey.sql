@@ -1,0 +1,1 @@
+ALTER TABLE "retirement_profile_people" ADD COLUMN "social_security_pia" numeric(14, 2);

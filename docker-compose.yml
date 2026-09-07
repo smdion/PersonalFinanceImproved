@@ -14,6 +14,11 @@ services:
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
       - AUTH_TRUST_HOST=${AUTH_TRUST_HOST:-true}
       - CRON_SECRET=${CRON_SECRET}
+      # Set to your household's local timezone (e.g. America/Chicago) so
+      # server-side date math (year-end snapshots, paycheck/budget
+      # materializers) agrees with the browser UI near local midnight —
+      # see .env.example. Defaults to UTC (pre-existing behavior).
+      - TZ=${TZ:-UTC}
     volumes:
       - ledgr_data:/app/data
     read_only: true

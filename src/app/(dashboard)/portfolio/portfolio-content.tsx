@@ -23,6 +23,11 @@ import { getDisplayConfig } from "@/lib/config/account-types";
 import dynamic from "next/dynamic";
 import { confirm } from "@/components/ui/confirm-dialog";
 import { InlineEdit } from "@/components/ui/inline-edit";
+import {
+  EditLockToggle,
+  EDIT_LOCK_KEYS,
+  useEditLock,
+} from "@/components/ui/edit-lock-toggle";
 import { toast } from "@/lib/hooks/use-toast";
 import { useSnapshotSyncPending } from "@/components/portfolio/hooks/use-snapshot-sync-pending";
 import { ContributionAccountsSettings } from "@/components/portfolio/contribution-accounts";
@@ -189,6 +194,12 @@ export function PortfolioContent() {
   const [snapshotDateTo, setSnapshotDateTo] = useState("");
   const [showNewSnapshot, setShowNewSnapshot] = useState(false);
   const [expandedSnapshot, setExpandedSnapshot] = useState<number | null>(null);
+  // One padlock for the whole "fix a wrong balance in the latest snapshot"
+  // panel — locked by default, same pattern as the Budget/Performance
+  // editable surfaces. Replaces a per-value pencil affordance.
+  const [snapshotEditLocked, toggleSnapshotEditLock] = useEditLock(
+    EDIT_LOCK_KEYS.portfolioSnapshotEditLocked,
+  );
   const [showHistory, setShowHistory] = useState(false);
   const [showChart, setShowChart] = useState(false);
   const [showQuickLook, setShowQuickLook] = useState(false);
@@ -744,41 +755,58 @@ export function PortfolioContent() {
                               <tr>
                                 <td colSpan={6} className="px-0 py-0">
                                   <div className="bg-surface-sunken px-8 py-2">
-                                    {isLatest &&
-                                      canEdit &&
-                                      (syncPending?.snapshotId === snap.id ? (
-                                        <div className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2">
-                                          <span className="text-xs font-medium text-amber-900">
-                                            {syncPending.count} balance change
-                                            {syncPending.count === 1
-                                              ? ""
-                                              : "s"}{" "}
-                                            not pushed to {syncServiceLabel}{" "}
-                                            yet.
+                                    {isLatest && canEdit && (
+                                      <div
+                                        className="mb-2 space-y-2"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        {/* One padlock for the whole panel — no
+                                            per-value pencils. Locked by default. */}
+                                        <div className="flex items-center gap-2 text-xs">
+                                          <EditLockToggle
+                                            locked={snapshotEditLocked}
+                                            onToggle={toggleSnapshotEditLock}
+                                          />
+                                          <span className="text-muted">
+                                            {snapshotEditLocked
+                                              ? "Balances are locked. Unlock to fix a wrong balance in this snapshot."
+                                              : `Click a balance to fix it — changes save immediately.${
+                                                  budgetApiConnected
+                                                    ? ` A "Sync to ${syncServiceLabel}" button appears here after an edit.`
+                                                    : ""
+                                                }`}
                                           </span>
-                                          <button
-                                            type="button"
-                                            disabled={resyncPush.isPending}
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              void syncPendingSnapshot(snap.id);
-                                            }}
-                                            className="shrink-0 rounded bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
-                                          >
-                                            {resyncPush.isPending
-                                              ? "Syncing…"
-                                              : `Sync to ${syncServiceLabel}`}
-                                          </button>
                                         </div>
-                                      ) : (
-                                        <p className="text-muted mb-2 text-xs">
-                                          Click a balance to fix it — changes
-                                          save immediately.
-                                          {budgetApiConnected
-                                            ? ` A "Sync to ${syncServiceLabel}" button appears here after an edit.`
-                                            : ""}
-                                        </p>
-                                      ))}
+                                        {syncPending?.snapshotId ===
+                                          snap.id && (
+                                          <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2">
+                                            <span className="text-xs font-medium text-amber-900">
+                                              {syncPending.count} balance change
+                                              {syncPending.count === 1
+                                                ? ""
+                                                : "s"}{" "}
+                                              not pushed to {syncServiceLabel}{" "}
+                                              yet.
+                                            </span>
+                                            <button
+                                              type="button"
+                                              disabled={resyncPush.isPending}
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                void syncPendingSnapshot(
+                                                  snap.id,
+                                                );
+                                              }}
+                                              className="shrink-0 rounded bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
+                                            >
+                                              {resyncPush.isPending
+                                                ? "Syncing…"
+                                                : `Sync to ${syncServiceLabel}`}
+                                            </button>
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
                                     {groupByPerformanceAccount(
                                       snap.accounts,
                                     ).map((group) => (
@@ -809,7 +837,9 @@ export function PortfolioContent() {
                                               <span className="text-muted text-xs">
                                                 {subLabel}
                                               </span>
-                                              {isLatest && canEdit ? (
+                                              {isLatest &&
+                                              canEdit &&
+                                              !snapshotEditLocked ? (
                                                 <span
                                                   onClick={(e) =>
                                                     e.stopPropagation()
@@ -818,6 +848,7 @@ export function PortfolioContent() {
                                                   <InlineEdit
                                                     value={String(a.amount)}
                                                     type="number"
+                                                    hideEditIcon
                                                     className="text-secondary text-xs"
                                                     formatDisplay={(v) =>
                                                       formatCurrency(Number(v))

@@ -1,6 +1,16 @@
 import { defineConfig } from "vitest/config";
 import path from "path";
 
+// Pin the test timezone. `Date` parsing/formatting of bare date-only
+// strings ("2025-01-15") is timezone-dependent, so an unpinned suite gives
+// different results on a US-timezone dev laptop vs. a UTC CI runner —
+// exact-value engine snapshots and localStorage-date-key tests have both
+// silently disagreed that way. UTC keeps every run deterministic and
+// matches CI; production correctness for real (US) users is enforced
+// separately by the `date.ts` helpers + the no-raw-toISOString-date lint
+// rule (tests/lint/violations.test.ts), not by the test clock.
+process.env.TZ = "UTC";
+
 // Newer Node ships its own native localStorage (Web Storage API), which
 // jsdom 29 defers to on Node versions that have it instead of using its
 // own implementation. Without a backing file, Node's native localStorage

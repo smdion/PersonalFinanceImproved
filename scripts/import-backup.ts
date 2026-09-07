@@ -129,6 +129,7 @@ async function run() {
         schemaVersion: backup.schemaVersion,
         exportedAt: backup.exportedAt,
         tables: backup.tables, // importBackup handles transformation internally
+        sourceDialect: backup.sourceDialect,
       });
       console.error(
         `Import complete: ${result.restoredTables} tables, ${result.restoredRows} rows`,
@@ -160,6 +161,7 @@ async function run() {
         schemaVersion: backup.schemaVersion,
         exportedAt: backup.exportedAt,
         tables: backup.tables,
+        sourceDialect: backup.sourceDialect,
       });
       console.error(
         `Import complete: ${result.restoredTables} tables, ${result.restoredRows} rows`,

@@ -47,6 +47,8 @@ const V08_SCHEMA_TAGS = [
   "0001_cool_frank_castle", // SQLite counterpart of 0001
   "0002_talented_monster_badoon", // PG: retirement_settings.withdrawal_order + withdrawal_splits
   "0002_complete_jackpot", // SQLite counterpart of 0002
+  "0003_past_rhodey", // PG: retirement_profile_people.social_security_pia
+  "0003_shallow_patch", // SQLite counterpart of 0003
 ] as const;
 
 const V07_SCHEMA_TAGS = [
@@ -830,6 +832,20 @@ function transformV07xToCurrent(tables: TableData): TableData {
   if (!tables["fpl_by_household"]) tables["fpl_by_household"] = [];
   if (!tables["tax_params"]) tables["tax_params"] = [];
   addColumnDefault(tables, "retirement_profiles", "tax_params_year", null);
+
+  // v0.8.x 0003: retirement_profile_people.social_security_pia. Additive
+  // nullable column with no reader yet (Social Security claiming-age
+  // optimizer, schema-only so far) — NULL means "not opted into PIA-based
+  // optimization," never "row missing." unionColumns already omits the key
+  // for any pre-0003 backup, so this line is provably a no-op; written
+  // anyway to match the 0038 precedent immediately above, for the next
+  // person auditing this file.
+  addColumnDefault(
+    tables,
+    "retirement_profile_people",
+    "social_security_pia",
+    null,
+  );
 
   return tables;
 }

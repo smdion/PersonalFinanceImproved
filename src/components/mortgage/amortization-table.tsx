@@ -2,6 +2,7 @@
 
 import { useRef, useEffect } from "react";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
+import { parseLocalDateOnly } from "@/lib/utils/date";
 import type { AmortEntry } from "./types";
 
 export function AmortizationTable({ schedule }: { schedule: AmortEntry[] }) {
@@ -10,7 +11,9 @@ export function AmortizationTable({ schedule }: { schedule: AmortEntry[] }) {
 
   // Find the row closest to today
   const now = new Date();
-  const todayIdx = schedule.findIndex((entry) => new Date(entry.date) >= now);
+  const todayIdx = schedule.findIndex(
+    (entry) => parseLocalDateOnly(entry.date) >= now,
+  );
 
   useEffect(() => {
     // Use requestAnimationFrame to ensure the DOM is fully painted before scrolling

@@ -1653,6 +1653,14 @@ export const retirementProfilePeople = sqliteTable(
     retirementAge: integer("retirement_age").notNull(),
     endAge: integer("end_age").notNull(),
     socialSecurityMonthly: text("social_security_monthly"),
+    /** PIA (Primary Insurance Amount, monthly benefit at Full Retirement
+     *  Age) — the direct user input the claiming-age optimizer computes
+     *  from, per SOCIAL-SECURITY-OPTIMIZATION-PLAN.md decision #1 (not
+     *  derived from an earnings history). Independent of
+     *  socialSecurityMonthly on purpose: existing rows are left untouched
+     *  (decision #5, opt-in) — a household only starts using PIA-based
+     *  claiming-age optimization once they explicitly fill this in. */
+    socialSecurityPia: text("social_security_pia"),
     ssStartAge: integer("ss_start_age"),
     ruleOf55Override: integer("rule_of_55_override", { mode: "boolean" }),
     salaryAnnualIncrease: text("salary_annual_increase"),

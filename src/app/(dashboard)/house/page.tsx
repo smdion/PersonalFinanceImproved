@@ -10,7 +10,7 @@ import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { HelpTip } from "@/components/ui/help-tip";
-import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { formatCurrency, formatPercent, formatDate } from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
 import { Lock, LockOpen } from "lucide-react";
 import { SyncBadge } from "@/components/ui/sync-badge";
@@ -253,10 +253,7 @@ export default function HousePage() {
             <div>
               <div className="text-muted">Payoff Date</div>
               <div className="font-medium">
-                {new Date(loanResult.payoffDate).toLocaleDateString("en-US", {
-                  month: "short",
-                  year: "numeric",
-                })}
+                {formatDate(loanResult.payoffDate, "short")}
               </div>
             </div>
             <div>

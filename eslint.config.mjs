@@ -35,6 +35,71 @@ const localRules = {
         };
       },
     },
+    "no-tz-unsafe-date-string": {
+      meta: {
+        type: "problem",
+        docs: {
+          description:
+            "Two timezone footguns: deriving a calendar day from a Date via .toISOString() (renders in UTC), and new Date('YYYY-MM-DD') (parses as UTC midnight, reads back as the prior day/year in US zones). Use localDateStr() / parseLocalDateOnly() from @/lib/utils/date.ts.",
+        },
+        schema: [],
+      },
+      create(context) {
+        const OUT_MSG =
+          ".toISOString() renders in UTC, so slicing/splitting a calendar day off it is tomorrow's date for any user behind UTC every evening. Use localDateStr(d) from @/lib/utils/date.ts. If a UTC string is genuinely intended (an internal key never compared to a local day), add an eslint-disable with that justification.";
+        const PARSE_MSG =
+          "new Date('YYYY-MM-DD') parses a bare date-only string as UTC midnight — .getFullYear()/.getMonth()/comparisons then read it as the PRIOR calendar day (or prior YEAR at a Jan-1 boundary) in any US timezone. Use parseLocalDateOnly() from @/lib/utils/date.ts, or an explicit Date.UTC(...) if UTC is really intended.";
+        const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+        const isToISOStringCall = (n) =>
+          n &&
+          n.type === "CallExpression" &&
+          n.callee.type === "MemberExpression" &&
+          n.callee.property.type === "Identifier" &&
+          n.callee.property.name === "toISOString";
+        return {
+          // d.toISOString().slice(0, N) / .substring(0, N)
+          "CallExpression[callee.type='MemberExpression']"(node) {
+            const prop = node.callee.property;
+            if (
+              prop.type === "Identifier" &&
+              (prop.name === "slice" || prop.name === "substring") &&
+              isToISOStringCall(node.callee.object)
+            ) {
+              context.report({ node, message: OUT_MSG });
+            }
+          },
+          // d.toISOString().split("T")[0]
+          "MemberExpression[computed=true]"(node) {
+            if (
+              node.object.type === "CallExpression" &&
+              node.object.callee.type === "MemberExpression" &&
+              node.object.callee.property.type === "Identifier" &&
+              node.object.callee.property.name === "split" &&
+              isToISOStringCall(node.object.callee.object)
+            ) {
+              context.report({ node, message: OUT_MSG });
+            }
+          },
+          // new Date("YYYY-MM-DD") — bare date-only string literal. The
+          // variable form new Date(someString) needs type info to flag
+          // reliably and is left to review + the parseLocalDateOnly
+          // convention (full type-aware linting was rejected as too heavy
+          // for this repo — see .scratch/docs/reviews/UTC-TIME-AUDIT.md).
+          NewExpression(node) {
+            if (
+              node.callee.type === "Identifier" &&
+              node.callee.name === "Date" &&
+              node.arguments.length === 1 &&
+              node.arguments[0].type === "Literal" &&
+              typeof node.arguments[0].value === "string" &&
+              DATE_ONLY.test(node.arguments[0].value)
+            ) {
+              context.report({ node, message: PARSE_MSG });
+            }
+          },
+        };
+      },
+    },
   },
 };
 
@@ -131,6 +196,22 @@ const config = [
         },
       ],
     },
+  },
+  {
+    // App-wide: no UTC calendar-day extraction from a Date. localStorage
+    // date keys, filter bounds, stored year-end dates, and cache keys built
+    // with `d.toISOString().slice(0, 10)` are all silently a day off for
+    // any US user every evening.
+    files: ["src/**/*.{ts,tsx}"],
+    plugins: { local: localRules },
+    rules: { "local/no-tz-unsafe-date-string": "error" },
+  },
+  {
+    // date.ts documents the anti-pattern (it's the helper's reason to
+    // exist); paycheck.ts builds payday strings with Date.UTC(...) and
+    // reads them back the same way — internally UTC-consistent, reviewed.
+    files: ["src/lib/utils/date.ts", "src/lib/calculators/paycheck.ts"],
+    rules: { "local/no-tz-unsafe-date-string": "off" },
   },
   {
     files: ["src/lib/pure/**/*.ts"],

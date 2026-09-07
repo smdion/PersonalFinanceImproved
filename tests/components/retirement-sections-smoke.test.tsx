@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
 
 // Smoke tests for src/components/retirement/sections/ — created by the
 // v0.5.2/v0.5.3 file-split refactor of retirement-content.tsx and left with
@@ -11,6 +11,31 @@ import { render, screen } from "@testing-library/react";
 vi.mock("@/components/ui/help-tip", () => ({
   HelpTip: () => null,
 }));
+
+// SocialSecuritySection renders ClaimingAgeExplorer once a person has PIA
+// set, which calls trpc.projection.sweepSocialSecurityClaimingAges.useQuery
+// directly (same pattern as RothExplorer — see tests/components/
+// tax-optimization.test.tsx's own mock). Every existing test in this file
+// leaves PIA unset, so ClaimingAgeExplorer never mounts and this mock is
+// inert for them; only the new PIA-specific tests below actually invoke it.
+const claimingAgeSweepQuery = vi.fn(() => ({
+  data: undefined,
+  isLoading: false,
+}));
+vi.mock("@/lib/trpc", () => ({
+  trpc: {
+    projection: {
+      sweepSocialSecurityClaimingAges: {
+        useQuery: (...a: unknown[]) => claimingAgeSweepQuery(...a),
+      },
+    },
+  },
+}));
+
+afterEach(() => {
+  claimingAgeSweepQuery.mockClear();
+  claimingAgeSweepQuery.mockReturnValue({ data: undefined, isLoading: false });
+});
 
 import { StrategyParamsSection } from "@/components/retirement/sections/strategy-params";
 import { TaxesSection } from "@/components/retirement/sections/taxes";
@@ -165,6 +190,224 @@ describe("SocialSecuritySection smoke", () => {
     expect(screen.getByText(/Alice.*Benefit/)).toBeInTheDocument();
     expect(screen.getByText(/Bob.*Benefit/)).toBeInTheDocument();
     expect(screen.queryByText("Monthly Benefit")).toBeNull();
+  });
+
+  it("single-person: shows PIA as 'Not set' and does NOT render the claiming-age explorer when unset", () => {
+    render(
+      <SocialSecuritySection
+        settings={baseSettings}
+        perPersonSettings={null}
+        upsertPerson={{ mutate: vi.fn() }}
+        upsertHouseholdFields={{ mutate: vi.fn() }}
+        isEditable={true}
+      />,
+    );
+    expect(screen.getByText("PIA (optional)")).toBeInTheDocument();
+    expect(screen.getByText("Not set")).toBeInTheDocument();
+    expect(screen.queryByText(/Compare claiming ages/)).toBeNull();
+    // ClaimingAgeExplorer itself never mounts for an unset PIA (it's
+    // conditionally rendered based on peopleWithPia), so its useQuery call
+    // never happens at all — not just "called with enabled: false".
+    expect(claimingAgeSweepQuery).not.toHaveBeenCalled();
+  });
+
+  it("single-person: renders the claiming-age explorer button once PIA is set", () => {
+    render(
+      <SocialSecuritySection
+        settings={baseSettings}
+        perPersonSettings={[
+          {
+            personId: 1,
+            name: "Alex",
+            birthYear: 1990,
+            retirementAge: 65,
+            endAge: 95,
+            ssStartAge: 67,
+            socialSecurityMonthly: "2000",
+            socialSecurityPia: "3200",
+          },
+        ]}
+        upsertPerson={{ mutate: vi.fn() }}
+        upsertHouseholdFields={{ mutate: vi.fn() }}
+        isEditable={true}
+      />,
+    );
+    expect(screen.getByText("$3,200.00/mo")).toBeInTheDocument();
+    // Single-person explorer omits the "for {name}" suffix (personName=null).
+    expect(screen.getByText(/Compare claiming ages ▼/)).toBeInTheDocument();
+  });
+
+  it('a "0" PIA is treated as not-opted-in — shows "Not set", no explorer', () => {
+    render(
+      <SocialSecuritySection
+        settings={baseSettings}
+        perPersonSettings={[
+          {
+            personId: 1,
+            name: "Alex",
+            birthYear: 1990,
+            retirementAge: 65,
+            endAge: 95,
+            socialSecurityMonthly: "2000",
+            socialSecurityPia: "0",
+          },
+        ]}
+        upsertPerson={{ mutate: vi.fn() }}
+        upsertHouseholdFields={{ mutate: vi.fn() }}
+        isEditable={true}
+      />,
+    );
+    expect(screen.getByText("Not set")).toBeInTheDocument();
+    expect(screen.queryByText(/Compare claiming ages/)).toBeNull();
+  });
+
+  it("multi-person: only the person with PIA set gets a claiming-age explorer", () => {
+    render(
+      <SocialSecuritySection
+        settings={baseSettings}
+        perPersonSettings={[
+          {
+            personId: 1,
+            name: "Alice",
+            birthYear: 1990,
+            retirementAge: 65,
+            endAge: 95,
+            socialSecurityMonthly: "2000",
+            socialSecurityPia: "3000",
+          },
+          {
+            personId: 2,
+            name: "Bob",
+            birthYear: 1992,
+            retirementAge: 67,
+            endAge: 95,
+            socialSecurityMonthly: "1500",
+            // No PIA for Bob.
+          },
+        ]}
+        upsertPerson={{ mutate: vi.fn() }}
+        upsertHouseholdFields={{ mutate: vi.fn() }}
+        isEditable={true}
+      />,
+    );
+    expect(
+      screen.getByText(/Compare claiming ages for Alice/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Compare claiming ages for Bob/)).toBeNull();
+  });
+
+  it("clicking the explorer button expands the comparison table and calls the sweep query", () => {
+    claimingAgeSweepQuery.mockReturnValue({
+      data: {
+        result: {
+          recommendedAge: 70,
+          candidates: [
+            {
+              claimingAge: 62,
+              adjustedAnnualBenefit: 22400,
+              finalNetWorth: 900000,
+              depleted: false,
+            },
+            {
+              claimingAge: 70,
+              adjustedAnnualBenefit: 39680,
+              finalNetWorth: 1100000,
+              depleted: false,
+            },
+          ],
+        },
+      },
+      isLoading: false,
+    });
+    render(
+      <SocialSecuritySection
+        settings={baseSettings}
+        perPersonSettings={[
+          {
+            personId: 1,
+            name: "Alex",
+            birthYear: 1990,
+            retirementAge: 65,
+            endAge: 95,
+            ssStartAge: 67,
+            socialSecurityMonthly: "2000",
+            socialSecurityPia: "3200",
+          },
+        ]}
+        upsertPerson={{ mutate: vi.fn() }}
+        upsertHouseholdFields={{ mutate: vi.fn() }}
+        isEditable={true}
+      />,
+    );
+    // useQuery is called on every render regardless of `enabled` (that's
+    // how React Query gates the FETCH, not the hook call itself) — before
+    // expanding, it's called with enabled: false.
+    const expectedQueryInput = {
+      personId: 1,
+      pia: 38400,
+      // Threaded straight from SocialSecuritySection's props (see the
+      // ClaimingAgeExplorer/social-security.tsx docblocks) — NOT
+      // cosmetic, the sweep endpoint's docblock says omitting these
+      // silently resolves against the wrong profile/pin. This test
+      // doesn't pass contributionProfileId/salaryProfileId, so they come
+      // through undefined; retirementProfileId comes from settings.profileId.
+      retirementProfileId: 1,
+      contributionProfileId: undefined,
+      salaryProfileId: undefined,
+    };
+    expect(claimingAgeSweepQuery).toHaveBeenCalledWith(
+      expectedQueryInput,
+      expect.objectContaining({ enabled: false }),
+    );
+
+    fireEvent.click(screen.getByText(/Compare claiming ages ▼/));
+
+    expect(claimingAgeSweepQuery).toHaveBeenCalledWith(
+      expectedQueryInput,
+      expect.objectContaining({ enabled: true }),
+    );
+    expect(screen.getByText("62")).toBeInTheDocument();
+    expect(screen.getByText("70")).toBeInTheDocument();
+    expect(screen.getByText("Recommended")).toBeInTheDocument();
+  });
+
+  it("threads a pinned contribution/salary profile through to the sweep query — NOT cosmetic, the endpoint resolves budget/depletion against them", () => {
+    claimingAgeSweepQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+    render(
+      <SocialSecuritySection
+        settings={baseSettings}
+        perPersonSettings={[
+          {
+            personId: 1,
+            name: "Alex",
+            birthYear: 1990,
+            retirementAge: 65,
+            endAge: 95,
+            ssStartAge: 67,
+            socialSecurityMonthly: "2000",
+            socialSecurityPia: "3200",
+          },
+        ]}
+        upsertPerson={{ mutate: vi.fn() }}
+        upsertHouseholdFields={{ mutate: vi.fn() }}
+        isEditable={true}
+        contributionProfileId={42}
+        salaryProfileId={7}
+      />,
+    );
+    expect(claimingAgeSweepQuery).toHaveBeenCalledWith(
+      {
+        personId: 1,
+        pia: 38400,
+        retirementProfileId: baseSettings.profileId,
+        contributionProfileId: 42,
+        salaryProfileId: 7,
+      },
+      expect.objectContaining({ enabled: false }),
+    );
   });
 });
 

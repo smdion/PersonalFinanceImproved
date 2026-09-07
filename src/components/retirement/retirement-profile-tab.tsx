@@ -160,20 +160,25 @@ export function RetirementProfileTab({
   // Multi-year withdrawal-policy optimizer — queried
   // here (not inside TaxesSection, a documented pure-presentational leaf)
   // so it can be passed down as a plain prop, same pattern as CoastFireCard
-  // receiving coastFireMcResult. Queried with `{}` — this tab reflects the
-  // household's persisted baseline settings, not a scenario-override
-  // projection, so there are no accumulation/decumulation overrides to
-  // thread through. staleTime of a few minutes (not `staleTime: 0` +
-  // refetchOnMount: "always"): a household's balances don't meaningfully
-  // change mid-session, matching plan-health.tsx's stress-test query
-  // precedent — explicit, not left to the query library's default (which
-  // would otherwise silently serve a possibly-very-stale cached response
-  // on remount).
+  // receiving coastFireMcResult. Queried with `baseInput` — NOT `{}` (a
+  // prior version passed `{}` on the reasoning that "no accumulation/
+  // decumulation overrides need threading," which is true but doesn't
+  // cover `retirementProfileId`/`contributionProfileId`/`salaryProfileId`:
+  // those aren't overrides, they're WHICH household data to resolve
+  // against, and dropping them meant this always ran against the active
+  // profile/global pins even when viewing a different one. `baseInput`
+  // already carries all three (see its own comments above) and is the
+  // same object `computeProjection` builds its query from, so this can't
+  // drift from what the rest of the tab is showing. staleTime of a few
+  // minutes (not `staleTime: 0` + refetchOnMount: "always"): a household's
+  // balances don't meaningfully change mid-session, matching
+  // plan-health.tsx's stress-test query precedent — explicit, not left to
+  // the query library's default (which would otherwise silently serve a
+  // possibly-very-stale cached response on remount).
   const bracketOptimizerQuery =
-    trpc.projection.computeWithdrawalBracketOptimizer.useQuery(
-      {},
-      { staleTime: 5 * 60 * 1000 },
-    );
+    trpc.projection.computeWithdrawalBracketOptimizer.useQuery(baseInput, {
+      staleTime: 5 * 60 * 1000,
+    });
   // This tab holds many separate InlineEdit fields (Timeline, Rule of 55,
   // Raise-and-Rate, Strategy Params, SS, Taxes, Healthcare), but they all
   // funnel through this ONE upsertSettings mutation, called once per field
@@ -556,6 +561,8 @@ export function RetirementProfileTab({
               upsertPerson={upsertProfilePerson}
               upsertHouseholdFields={upsertProfileHouseholdFields}
               isEditable={admin}
+              contributionProfileId={effectiveContribProfileId ?? undefined}
+              salaryProfileId={effectiveSalaryProfileId ?? undefined}
             />
 
             <TaxesSection

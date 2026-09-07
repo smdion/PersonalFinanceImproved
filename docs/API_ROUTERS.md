@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**356 procedures across 41 routers.**
+**357 procedures across 42 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -251,6 +251,12 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | Procedure           | Kind  | Auth                 | Description                                                                                                                                                                                              |
 | ------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `computeProjection` | query | `protectedProcedure` | and per-year sticky-forward overrides. All data (salary, contributions, portfolio, limits, return rates) comes from the same DB sources as the other endpoints — this engine just gives you much more gr |
+
+## `projection/social-security`
+
+| Procedure                         | Kind  | Auth                 | Description                                                                                                                                                                                              |
+| --------------------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sweepSocialSecurityClaimingAges` | query | `protectedProcedure` | real flat `socialSecurityMonthly` benefit with a PIA-derived one (`sweepClaimingAges` unconditionally overrides the scalar SS fields per candidate) — the UI must not present these candidates as direct |
 
 ## `projection/strategy`
 

@@ -112,6 +112,11 @@ export type PerPersonSettings = ReadonlyArray<{
    *  primary's row, leaving a second household member's rate unreachable. */
   salaryAnnualIncrease: string;
   socialSecurityMonthly: string;
+  /** PIA (Primary Insurance Amount, monthly benefit at Full Retirement
+   *  Age) — opt-in direct input, independent of socialSecurityMonthly.
+   *  `null`/unset = not opted in, this person stays on the flat monthly
+   *  benefit. See SOCIAL-SECURITY-OPTIMIZATION-PLAN.md decision #1. */
+  socialSecurityPia?: string | null;
   ssStartAge?: number | null;
   /** Rule of 55 forecasting override — true (default) = no
    *  override, false = force this person's employer-plan accounts
@@ -149,6 +154,7 @@ export type UpsertProfilePersonMutation = {
     retirementAge?: number;
     endAge?: number;
     socialSecurityMonthly?: string | null;
+    socialSecurityPia?: string | null;
     ssStartAge?: number | null;
     ruleOf55Override?: boolean | null;
   }) => void;

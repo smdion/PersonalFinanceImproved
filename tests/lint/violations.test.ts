@@ -32,6 +32,7 @@
  *   24. Local const re-declaring an ALL_CAPS name already exported from constants.ts / config/ (R43 audit F1 class)
  *   25. Review-history citation in a comment — finding-ID tag (H10)/(M42)/(C2), review-findings.md, expert-review, CodeRabbit
  *   26. Broader review-history citation in a comment — attribution phrases ("advisor-caught", "live-user finding", "code-review ... finding"), bare ISO date-stamps, bare roadmap R## tags
+ *   27. Timezone footguns: `.toISOString().slice(0, 10)` (reads a Date's calendar day in UTC — tomorrow for a US user any evening) and `new Date("YYYY-MM-DD")` (bare date-only string parses as UTC midnight — prior day/year in US zones). Use `localDateStr()` / `parseLocalDateOnly()` from `src/lib/utils/date.ts`. Also an ESLint rule (`local/no-tz-unsafe-date-string`).
  *
  * Intentionally NOT checked (needs semantic analysis, not string matching):
  *   - "Router computing budget expenses with different column index" (#1)
@@ -902,6 +903,47 @@ function findBroadCitationViolations(): Violation[] {
   return violations;
 }
 
+// Rule 27: two timezone footguns (also enforced by the ESLint rule
+// `local/no-tz-unsafe-date-string` — this is the belt-and-braces copy).
+//   a) `d.toISOString()` renders in UTC, so `.slice(0, 10)` /
+//      `.substring(0, 10)` / `.split("T")[0]` on it returns TOMORROW's date
+//      for any user behind UTC once local time passes midnight there (all
+//      of the US, every evening). Fix: `localDateStr(d)`.
+//   b) `new Date("YYYY-MM-DD")` — a bare date-only string literal parses as
+//      UTC midnight, which reads back as the prior day (or prior YEAR at a
+//      Jan-1 boundary) in any US zone. Fix: `parseLocalDateOnly(...)` or an
+//      explicit `Date.UTC(...)`.
+// Both fixes live in `src/lib/utils/date.ts`. `date.ts` itself documents
+// the anti-patterns; `paycheck.ts` builds payday strings with
+// `Date.UTC(...)` and reads them back the same way — internally
+// UTC-consistent, reviewed.
+const TZ_UNSAFE_DATE_EXEMPT = new Set<string>([
+  "src/lib/utils/date.ts",
+  "src/lib/calculators/paycheck.ts",
+]);
+const TZ_UNSAFE_DATE_PATTERN =
+  /\.toISOString\(\)\s*\.\s*(?:slice|substring)\(\s*0\s*,\s*(?:10|7)\s*\)|\.toISOString\(\)\s*\.\s*split\(\s*["']T["']\s*\)\s*\[\s*0\s*\]|new Date\(\s*["']\d{4}-\d{2}-\d{2}["']\s*\)/;
+function findTzUnsafeDateViolations(): Violation[] {
+  const violations: Violation[] = [];
+  for (const file of walkTsFiles(SRC_DIR)) {
+    const rel = relPath(file);
+    if (isExempt(rel) || TZ_UNSAFE_DATE_EXEMPT.has(rel)) continue;
+    const lines = readFileLines(file);
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i]!;
+      if (line.includes("lint-violation-ok")) continue;
+      if (!TZ_UNSAFE_DATE_PATTERN.test(line)) continue;
+      violations.push({
+        file: rel,
+        line: i + 1,
+        rule: "no-tz-unsafe-date-extraction",
+        snippet: line.trim().slice(0, 100),
+      });
+    }
+  }
+  return violations;
+}
+
 // ── Tests ───────────────────────────────────────────────────────────
 
 function formatViolations(label: string, violations: Violation[]): string {
@@ -1248,6 +1290,24 @@ describe("RULES.md violations sweep", () => {
           `date range, an incident narrative where the date IS the point), ` +
           `add \`lint-violation-ok\` to that line rather than reintroducing ` +
           `the citation shape elsewhere.\n` +
+          formatViolations("Violations", violations),
+      );
+    }
+  });
+
+  it("no timezone-unsafe date handling (.toISOString().slice / new Date('YYYY-MM-DD'))", () => {
+    const violations = findTzUnsafeDateViolations();
+    if (violations.length > 0) {
+      expect.fail(
+        `Found ${violations.length} timezone-unsafe date sites. Either ` +
+          `\`d.toISOString().slice(0, 10)\` (reads the calendar day in UTC — ` +
+          `tomorrow for any user behind UTC every evening) or ` +
+          `\`new Date("YYYY-MM-DD")\` (a bare date-only string parses as UTC ` +
+          `midnight — the prior day, or prior year at a Jan-1 boundary, in ` +
+          `any US zone). Use \`localDateStr(d)\` / \`parseLocalDateOnly(s)\` ` +
+          `from \`src/lib/utils/date.ts\`. If UTC is genuinely intended (an ` +
+          `internally UTC-consistent key never compared to a local day), add ` +
+          `\`lint-violation-ok\` to that line.\n` +
           formatViolations("Violations", violations),
       );
     }

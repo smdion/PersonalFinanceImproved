@@ -150,4 +150,32 @@ describe("projection router — retirementProfileId (view a non-active Retiremen
       JSON.stringify(viewed.result),
     );
   });
+
+  it("computeWithdrawalBracketOptimizer resolves the SPECIFIED profile's retirementAge, not the globally-active one", async () => {
+    // Same class of gap as the two above — retirement-profile-tab.tsx's
+    // Taxes section queried this procedure with a literal `{}`, dropping
+    // retirementProfileId (and contributionProfileId/salaryProfileId)
+    // entirely, so it always searched against the active profile's data
+    // even when the tab was showing a different one.
+    const active = await caller.projection.computeWithdrawalBracketOptimizer({
+      accumulationOverrides: [],
+      decumulationOverrides: [],
+    });
+    const viewed = await caller.projection.computeWithdrawalBracketOptimizer({
+      accumulationOverrides: [],
+      decumulationOverrides: [],
+      retirementProfileId: secondProfileId,
+    });
+
+    // Different retirement ages produce different accumulation windows
+    // and terminal balances, so a real, structural difference is expected
+    // between the two runs (same assertion style as computeCoastFire
+    // above — the optimizer's result shape is a search over many
+    // candidate targets, not a single scalar worth pinning by value).
+    expect(active.result).not.toBeNull();
+    expect(viewed.result).not.toBeNull();
+    expect(JSON.stringify(active.result)).not.toEqual(
+      JSON.stringify(viewed.result),
+    );
+  });
 });

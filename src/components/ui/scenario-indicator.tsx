@@ -34,7 +34,7 @@ export function ScenarioValue({
     <span className={`relative inline-flex items-center gap-0.5 ${className}`}>
       <span
         className="h-1.5 w-1.5 flex-shrink-0 cursor-pointer rounded-full bg-amber-500"
-        title="Overridden in this scenario — click to reset to main plan value"
+        title="Customized in this plan — click to reset to main plan value"
         onClick={async (e) => {
           e.stopPropagation();
           if (await confirm("Reset this value to the main plan?")) {
@@ -75,7 +75,7 @@ export function ScenarioBanner() {
       </svg>
       <span>
         Viewing <strong>{activeScenario.name}</strong> — any changes you make
-        here only affect this scenario, not your main plan. Switch back to
+        here only affect this plan, not your main plan. Switch back to
         &quot;Main Plan&quot; to edit real data.
       </span>
     </div>

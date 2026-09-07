@@ -66,6 +66,11 @@ export const EDIT_LOCK_KEYS = {
    *  different pages), so one padlock covers all of it rather than several
    *  independent locks that can drift out of sync with each other. */
   profileEditLocked: "ledgr:budget:locked",
+  /** Portfolio page — inline fixing of a wrong balance in the latest
+   *  snapshot (Snapshot History → expand latest row). Its own lock: it
+   *  edits portfolio-snapshot data, unrelated to the profile surfaces
+   *  above, and shouldn't unlock (or be unlocked by) them. */
+  portfolioSnapshotEditLocked: "ledgr:portfolio-snapshot:locked",
 } as const;
 
 /**

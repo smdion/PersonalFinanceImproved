@@ -589,7 +589,13 @@ export const networthRouter = createTRPCRouter({
             snapshotIds.map((id) => sql`${id}`),
             sql`, `,
           )})`,
-        );
+        )
+        // Stable insertion order — without it the row order is the DB's
+        // physical scan order, which shifts after an inline balance edit
+        // (the updated tuple's new version lands elsewhere in a Postgres
+        // seq scan), so the expanded snapshot's sub-rows visibly reshuffle
+        // mid-edit.
+        .orderBy(asc(schema.portfolioAccounts.id));
 
       const accountsBySnapshot = groupSnapshotAccounts(allAccounts);
 

@@ -46,6 +46,9 @@ import {
   fetchRetirementData,
   buildEnginePayload,
 } from "@/server/retirement/build-engine-payload";
+import { buildSocialSecurityEntries } from "@/server/retirement/social-security-entries";
+import { computeAdjustedBenefit } from "@/lib/calculators/social-security";
+import { parseAnnualPia } from "@/lib/config/social-security";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import {
   getAllStrategyKeys,
@@ -56,6 +59,7 @@ import {
   buildStrategyParams,
   buildMcInputs,
   buildDecumulationDefaults,
+  resolveSsStartAgeBaseline,
 } from "./_shared";
 import {
   hashEngineInput,
@@ -379,7 +383,12 @@ export const strategyRouter = createTRPCRouter({
           strategyLabel: "",
         };
 
-      const { settings, distributionTaxRates, baseEngineInput } = payload;
+      const {
+        settings,
+        distributionTaxRates,
+        baseEngineInput,
+        perPersonSettings,
+      } = payload;
 
       if (mcAssetClasses.length === 0 || mcGlidePath.length === 0)
         return {
@@ -499,6 +508,15 @@ export const strategyRouter = createTRPCRouter({
         });
       }
 
+      // See resolveSsStartAgeBaseline's docblock — avoids gating the
+      // lever below on a possibly-stale household scalar for a
+      // multi-person household. Used for both the lever's `currentValue`
+      // here and the delta computed from it below.
+      const ssStartAgeBaseline = resolveSsStartAgeBaseline(
+        perPersonSettings,
+        baseEngineInput.ssStartAge,
+      );
+
       // Universal levers
       const universalLevers: {
         field: string;
@@ -524,7 +542,7 @@ export const strategyRouter = createTRPCRouter({
           unit: "absolute",
           targets: ["survival"],
           label: "SS Start Age",
-          currentValue: baseEngineInput.ssStartAge,
+          currentValue: ssStartAgeBaseline,
           max: 70,
         },
       ];
@@ -597,7 +615,50 @@ export const strategyRouter = createTRPCRouter({
           if (lever.field === "retirementAge") {
             variantInput = { ...variantInput, retirementAge: rounded };
           } else if (lever.field === "ssStartAge") {
+            // "Delay claiming by N years" — shift every person's SS start
+            // age by the same delta and re-derive the benefit amounts.
+            // Same `ssStartAgeBaseline` the lever's `currentValue` above
+            // was built from — NOT `baseEngineInput.ssStartAge` directly,
+            // which can be a stale household scalar for a multi-person
+            // household (see the comment there).
+            const delta = rounded - ssStartAgeBaseline;
             variantInput = { ...variantInput, ssStartAge: rounded };
+
+            if (perPersonSettings && perPersonSettings.length > 1) {
+              // Multi-person: the engine reads
+              // `socialSecurityEntries[].startAge`, not the scalar. Rebuild
+              // the entries with every claiming age shifted by `delta` via
+              // the SAME helper the real payload uses, so PIA claiming-age
+              // adjustment and MFJ spousal math stay consistent between the
+              // baseline and this variant. (Without this, moving the scalar
+              // `ssStartAge` did nothing for multi-person households — the
+              // "delay SS" lever silently returned ~0 and burned an MC run.)
+              variantInput = {
+                ...variantInput,
+                socialSecurityEntries: buildSocialSecurityEntries(
+                  perPersonSettings,
+                  settings.filingStatus,
+                  delta,
+                ),
+              };
+            } else {
+              // Single-person: scalar path. A PIA household's benefit
+              // AMOUNT responds to the claiming age (delayed-retirement
+              // credits), so recompute it; a non-PIA household's flat
+              // `socialSecurityMonthly` genuinely doesn't (the old model).
+              const solo = perPersonSettings?.[0];
+              const soloPia = parseAnnualPia(solo?.socialSecurityPia);
+              if (solo && soloPia != null) {
+                variantInput = {
+                  ...variantInput,
+                  socialSecurityAnnual: computeAdjustedBenefit(
+                    soloPia,
+                    solo.birthYear,
+                    rounded * 12,
+                  ),
+                };
+              }
+            }
           }
         }
 

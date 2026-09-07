@@ -110,6 +110,10 @@ async function run() {
     schemaVersion,
     exportedAt: new Date().toISOString(),
     tables,
+    // "postgres", not "postgresql" — matches BackupData.sourceDialect in
+    // src/lib/db/version-logic.ts, which importBackupPg's jsonb encoding
+    // branches on.
+    sourceDialect: dialect === "postgresql" ? "postgres" : "sqlite",
   };
 
   const json = JSON.stringify(backup);

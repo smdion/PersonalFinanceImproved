@@ -636,6 +636,16 @@ export const retirementRouter = createTRPCRouter({
           : toNumber(settings.withdrawalRate),
         inflationRate: toNumber(settings.annualInflation),
         nominalReturnRate: avgReturnRate,
+        // Known limitation (deliberately not fixed — see TODO.md): this is
+        // the household `retirement_settings` scalar, NOT the per-person /
+        // PIA-aware resolution `build-engine-payload.ts` uses
+        // (`personAnnualAmount` + `parseAnnualPia`). This proc doesn't even
+        // fetch `retirement_profile_people`. Low impact for a coarse
+        // relocation-vs-stay FI comparison: the same SS figure is applied
+        // to both arms, so it largely cancels in the reported delta. Wiring
+        // the full per-person/PIA resolution here isn't proportionate to
+        // that; revisit if the relocation tool ever surfaces an absolute
+        // (not just comparative) retirement number.
         socialSecurityAnnual: toNumber(settings.socialSecurityMonthly) * 12,
         asOfDate,
       });
@@ -701,6 +711,13 @@ export const retirementRouter = createTRPCRouter({
           retirementAge: z.number().int().min(18).max(100).optional(),
           endAge: z.number().int().min(30).max(120).optional(),
           socialSecurityMonthly: zDecimal.nullable().optional(),
+          // PIA (Primary Insurance Amount, monthly benefit at Full
+          // Retirement Age) — opt-in direct user input, see
+          // SOCIAL-SECURITY-OPTIMIZATION-PLAN.md decision #1. Independent
+          // of socialSecurityMonthly; null means "not opted in," never
+          // falls back to a household-wide default (PIA is inherently
+          // per-person).
+          socialSecurityPia: zDecimal.nullable().optional(),
           ssStartAge: z.number().int().min(62).max(70).nullable().optional(),
           ruleOf55Override: z.boolean().nullable().optional(),
         }),
@@ -737,6 +754,9 @@ export const retirementRouter = createTRPCRouter({
           endAge: patch.endAge ?? existing!.endAge,
           ...("socialSecurityMonthly" in patch
             ? { socialSecurityMonthly: patch.socialSecurityMonthly }
+            : {}),
+          ...("socialSecurityPia" in patch
+            ? { socialSecurityPia: patch.socialSecurityPia }
             : {}),
           ...("ssStartAge" in patch ? { ssStartAge: patch.ssStartAge } : {}),
           ...("ruleOf55Override" in patch

@@ -11,7 +11,11 @@ import {
   pickProfileSettingsRow,
 } from "./retirement-profile";
 import { safeDivide } from "@/lib/utils/math";
-import { parseLocalDateOnly, localMidnight } from "@/lib/utils/date";
+import {
+  parseLocalDateOnly,
+  localMidnight,
+  localDateStr,
+} from "@/lib/utils/date";
 import { DEFAULT_WITHDRAWAL_RATE } from "@/lib/constants";
 import type { Db } from "./transforms";
 import { parseAppSettings } from "./settings";
@@ -138,7 +142,11 @@ export async function getLatestSnapshot(
         schema.performanceAccounts.id,
       ),
     )
-    .where(eq(schema.portfolioAccounts.snapshotId, snapshot.id));
+    .where(eq(schema.portfolioAccounts.snapshotId, snapshot.id))
+    // Stable insertion order — matches the Snapshot History panel
+    // (networth.getSnapshots) so the latest snapshot reads the same on both
+    // surfaces and doesn't reshuffle after an inline balance edit.
+    .orderBy(asc(schema.portfolioAccounts.id));
 
   const accounts: SnapshotAccount[] = rawAccounts.map((a) => ({
     institution: a.institution,
@@ -880,7 +888,10 @@ export async function buildYearEndHistory(
 
     history.push({
       year: currentYear,
-      yearEndDate: asOfDate.toISOString().slice(0, 10),
+      // Local calendar day — `.toISOString()` would render this in UTC and
+      // store tomorrow's date (and the wrong YEAR at a Dec-31 boundary) for
+      // the "current" year-end row any evening in a US timezone.
+      yearEndDate: localDateStr(asOfDate),
       isCurrent: true,
       netWorth,
       portfolioTotal,

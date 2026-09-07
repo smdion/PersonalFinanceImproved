@@ -104,7 +104,7 @@ export function RbacGroupsSettings() {
           </li>
           <li>
             Permissions are additive &mdash; a user in both{" "}
-            <strong>Scenario</strong> and <strong>Portfolio</strong> groups can
+            <strong>Plan</strong> and <strong>Portfolio</strong> groups can
             manage both. Admin implicitly has all permissions.
           </li>
           <li>Users not in any group are read-only viewers.</li>
@@ -118,7 +118,7 @@ export function RbacGroupsSettings() {
         </div>
         <ul className="mt-1 ml-2 list-inside list-disc space-y-0.5 text-xs text-blue-700">
           <li>
-            <strong>Scenario</strong> &mdash; Create, edit, delete scenarios and
+            <strong>Plan</strong> &mdash; Create, edit, delete plans and
             overrides
           </li>
           <li>
@@ -178,7 +178,14 @@ export function RbacGroupsSettings() {
           {data.permissions.map((p) => (
             <div key={p.permission} className="flex items-center gap-3">
               <label className="text-secondary w-32 shrink-0 text-sm font-medium capitalize">
-                {p.permission}
+                {
+                  // Display-only rename: the persisted permission key stays
+                  // "scenario" (no DB/RBAC-data migration) — the UI everywhere
+                  // else already calls this concept "Plan" (docs/RULES.md's
+                  // Main Plan / Plan distinction), and this admin-facing label
+                  // was the one place still showing the raw internal key.
+                  p.permission === "scenario" ? "Plan" : p.permission
+                }
               </label>
               <input
                 type="text"

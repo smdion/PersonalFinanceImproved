@@ -398,7 +398,12 @@ export function AssumptionsBand({
             SS{" "}
             {isMultiPerson
               ? "(per person)"
-              : formatCurrency(Number(settings.socialSecurityMonthly))}
+              : formatCurrency(
+                  Number(
+                    perPersonSettings?.[0]?.socialSecurityMonthly ??
+                      settings.socialSecurityMonthly,
+                  ),
+                )}
             {strategyExpanded ? " ▲" : " ▼"}
           </button>
         ) : null}
@@ -433,7 +438,10 @@ export function AssumptionsBand({
             <span className={chipCls}>
               <span className={labelCls}>SS Benefit</span>
               <InlineEdit
-                value={settings.socialSecurityMonthly}
+                value={
+                  perPersonSettings?.[0]?.socialSecurityMonthly ??
+                  settings.socialSecurityMonthly
+                }
                 onSave={(v) => {
                   const n = parseFloat(v);
                   if (isNaN(n) || n < 0) return;
@@ -454,7 +462,11 @@ export function AssumptionsBand({
           <span className={chipCls}>
             <span className={labelCls}>SS Start Age</span>
             <InlineEdit
-              value={String(settings.ssStartAge)}
+              value={String(
+                !isMultiPerson && perPersonSettings?.[0]
+                  ? perPersonSettings[0].ssStartAge
+                  : settings.ssStartAge,
+              )}
               onSave={(v) => {
                 const n = parseInt(v, 10);
                 if (isNaN(n) || n < 62 || n > 70) return;

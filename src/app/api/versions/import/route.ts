@@ -25,6 +25,11 @@ const backupDataSchema = z.object({
     z.string().max(100),
     z.array(z.record(z.string().max(200), z.unknown())),
   ),
+  // Optional — absent on backups made before dialect-aware jsonb encoding
+  // existed. Must be preserved through validation (z.object strips unknown
+  // keys by default) so importBackupPg can tell a PG-sourced jsonb string
+  // scalar from an SQLite-sourced already-serialized one.
+  sourceDialect: z.enum(["postgres", "sqlite"]).optional(),
 });
 
 /** Recursively check that no string exceeds MAX_STRING_LENGTH and depth doesn't exceed MAX_JSON_DEPTH. */
