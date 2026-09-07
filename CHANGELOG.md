@@ -8,6 +8,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.8
 
+## [0.8.3] - 2026-09-07
+
+One additive, nullable column, no data loss: `retirement_profile_people.social_security_pia` (NULL on every existing row = not opted in). The migration changes nothing on its own.
+
+### Added
+
+- **Social Security PIA (Primary Insurance Amount) and claiming-age comparison.** Enter your Primary Insurance Amount from your SSA statement in Retirement → Social Security, and your benefit is now adjusted for claiming early or delaying past Full Retirement Age instead of assuming a flat, unadjusted monthly amount. Once entered, a new claiming-age comparison runs your real projection at every age from 62 to 70 and shows which one leaves you with the most money at the end of your plan, excluding any age that would run out your portfolio. For married couples, spousal benefits are calculated automatically — each person gets the greater of their own benefit or a share of their spouse's, correctly adjusted for both partners' ages and reduced for years before the other spouse has claimed.
+
+### Changed
+
+- Renamed "Scenario" to "Plan" throughout admin and account-permission screens, matching the terminology used everywhere else in the app.
+- The portfolio Snapshot Balance editor is now locked by default — click the padlock to make a correction. Account order in a snapshot no longer reshuffles.
+
+### Fixed
+
+- Restoring certain backups could silently corrupt a handful of internal settings values, depending on which database the backup was taken from and restored into.
+- Dates near midnight could land on the wrong calendar day depending on your timezone — this affected year-end snapshots and job start/end dates used in projections, and could shift a projected year boundary by one day. A `TZ` setting is now available for self-hosters to align server-side date handling with their household's timezone (see the deploy docs).
+- The Social Security claiming-age comparison and the "delay Social Security" retirement-strategy suggestion now correctly account for how delaying affects a spouse's benefit, for married households.
+- The withdrawal-bracket optimizer and the Social Security claiming-age comparison now use the retirement plan you're actually viewing, instead of always using your active plan, when looking at a different saved plan.
+
 ## [0.8.2] - 2026-09-05
 
 Three additive columns, no data loss: `retirement_settings.withdrawal_routing_mode` (NOT NULL, defaults every existing row to `bracket_filling` — everyone's actual behavior today) plus nullable `withdrawal_order` and `withdrawal_splits` (NULL on every existing row = "use the built-in default"). The migration changes nothing on its own.
