@@ -800,10 +800,39 @@ describe("buildEnginePayload — socialSecurityPia, two-person household", () =>
       (e) => e.personId === personBId,
     )!;
     // Sam's own: flat $1800/mo = $21600/yr. Spousal: Alex's PIA is
-    // $48000/yr, Sam claims at 67 = Alex's FRA (born 1963 -> FRA 67), so no
-    // spousal reduction -> 50% * 48000 * 1.0 = $24000. max(21600, 24000) =
-    // 24000, so Sam is bumped to the spousal amount.
+    // $48000/yr; Alex (the worker) files at 62, i.e. before Sam claims at
+    // 67, so spousal is available. Sam claims at 67 = Sam's OWN FRA (born
+    // 1965 -> FRA 67), so no spousal reduction -> 50% * 48000 * 1.0 =
+    // $24000. max(21600, 24000) = 24000, Sam is bumped to the spousal amount.
     expect(sam.annualAmount).toBeCloseTo(24000, 2);
+  });
+
+  it("does NOT pay a spousal top-up for years before the worker has filed", async () => {
+    const schema = await getSchema();
+    const { eq } = await import("drizzle-orm");
+    // Push Alex (the PIA worker) out to claim at 70, while Sam still claims
+    // at 67 — SSA pays no spousal benefit until the worker files, so Sam
+    // gets NO top-up and keeps their own flat $21600.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (db as any)
+      .update(schema.retirementProfilePeople)
+      .set({ ssStartAge: 70 })
+      .where(eq(schema.retirementProfilePeople.personId, personAId))
+      .run();
+
+    const data = await fetchRetirementData(db, {});
+    const payload = await buildEnginePayload(db, data, {});
+    const sam = payload!.baseEngineInput.socialSecurityEntries!.find(
+      (e) => e.personId === personBId,
+    )!;
+    expect(sam.annualAmount).toBe(21600);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (db as any)
+      .update(schema.retirementProfilePeople)
+      .set({ ssStartAge: 62 })
+      .where(eq(schema.retirementProfilePeople.personId, personAId))
+      .run();
   });
 
   it("does NOT apply spousal math when the household files Single (not married)", async () => {

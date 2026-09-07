@@ -1816,26 +1816,36 @@ export async function buildEnginePayload(
             // both models side by side — per-person opt-in, decision #5.
             let annualAmount = personAnnualAmount(ps);
 
-            // Spousal benefit ("greater of your own or up to 50% of your
-            // spouse's PIA, reduced for your own early claiming"). We treat
-            // the two people as spouses when the household files MFJ and has
-            // exactly two members — MFJ literally means married, and the
-            // data model has no dedicated spouse-link field (product
-            // decision 2026-09-07). HOH/Single households, or 3+ people,
-            // never get spousal math. Requires the OTHER person to have a
-            // PIA on record (there's no PIA to take 50% of otherwise).
-            // Applied symmetrically: for the genuinely higher earner,
-            // `computeSpousalBenefit`'s own `max()` picks their own benefit,
-            // so this is self-resolving without deciding "who is the
-            // dependent spouse" up front.
+            // Spousal benefit ("greater of your own or up to 50% of the
+            // other worker's PIA, reduced for YOUR OWN early claiming").
+            // We treat the two people as spouses when the household files
+            // MFJ and has exactly two members — MFJ literally means
+            // married, and the data model has no dedicated spouse-link
+            // field (product decision 2026-09-07). HOH/Single households,
+            // or 3+ people, never get spousal math. Requires the OTHER
+            // person to have a PIA on record (there's no PIA to take 50% of
+            // otherwise) AND to have already filed for their own benefit by
+            // the time this person claims — SSA pays no spousal benefit
+            // until the worker has filed, so a household where the low
+            // earner claims early and the high earner delays gets NO
+            // spousal top-up for the gap years (`other.ssStartAge <=
+            // ps.ssStartAge`). Applied symmetrically: for the genuinely
+            // higher earner, `computeSpousalBenefit`'s own `max()` picks
+            // their own benefit, so this is self-resolving without deciding
+            // "who is the dependent spouse" up front.
+            //
+            // Passing THIS person's birthYear (`ps.birthYear`), not the
+            // other's — the spousal reduction is counted against the
+            // claiming spouse's own FRA (SSA POMS RS 00202.001); only the
+            // worker's PIA matters, not their FRA.
             if (filingStatus === "MFJ" && perPersonSettings.length === 2) {
               const other = perPersonSettings[i === 0 ? 1 : 0]!;
               const otherPia = parseAnnualPia(other.socialSecurityPia);
-              if (otherPia != null) {
+              if (otherPia != null && other.ssStartAge <= ps.ssStartAge) {
                 annualAmount = computeSpousalBenefit(
                   annualAmount,
                   otherPia,
-                  other.birthYear,
+                  ps.birthYear,
                   ps.ssStartAge * 12,
                 );
               }

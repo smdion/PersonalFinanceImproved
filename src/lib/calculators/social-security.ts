@@ -44,25 +44,40 @@ export function computeAdjustedBenefit(
 }
 
 /**
- * A household's actual spousal benefit: the GREATER of the spouse's own
- * adjusted benefit or the spousal amount (up to 50% of the higher earner's
- * PIA, reduced for the spouse's own early claiming). Never additive — a
- * household never receives both, and a naive `own + spousal` sum would
- * overstate real income.
+ * The claiming spouse's actual benefit: the GREATER of their own adjusted
+ * benefit or the spousal amount (up to 50% of the OTHER worker's PIA,
+ * reduced for the claiming spouse's own early claiming). Never additive —
+ * a person receives one or the other, and a naive `own + spousal` sum
+ * would overstate real income.
+ *
+ * `workerPia` is the OTHER person's PIA — the only thing about the worker
+ * that matters here. The spousal reduction (25/36 of 1% per month early)
+ * is counted against the CLAIMING SPOUSE's own Full Retirement Age, per
+ * SSA (POMS RS 00202.001 / Pub 05-10035) — NOT the worker's FRA — so
+ * `spouseBirthYear` is the claiming spouse's, and the worker's birth year
+ * is deliberately not a parameter.
+ *
+ * KNOWN SIMPLIFICATION: SSA actually pays `own·ownMult + max(0,
+ * 0.5·workerPia − ownPIA)·spousalMult` (a reduced own benefit plus a
+ * separately-reduced excess), which is identical to `max(own, spousal)`
+ * at FRA but slightly higher for early claimers because the two reduction
+ * schedules differ. The `max()` form used here always errs conservative
+ * (it can only ever understate, never overstate). Fine for a projection;
+ * tracked in TODO.md if exactness is ever needed.
  */
 export function computeSpousalBenefit(
   ownAdjustedBenefit: number,
-  higherEarnerPia: number,
-  higherEarnerBirthYear: number,
+  workerPia: number,
+  spouseBirthYear: number,
   spouseClaimingAgeMonths: number,
 ): number {
-  const higherEarnerFra = getFullRetirementAge(higherEarnerBirthYear);
+  const spouseFra = getFullRetirementAge(spouseBirthYear);
   const spousalMultiplier = getSpousalAdjustmentMultiplier(
-    higherEarnerFra,
+    spouseFra,
     spouseClaimingAgeMonths,
   );
   const spousalAmount =
-    higherEarnerPia * SPOUSAL_BENEFIT_BASE_RATE * spousalMultiplier;
+    workerPia * SPOUSAL_BENEFIT_BASE_RATE * spousalMultiplier;
   return Math.max(ownAdjustedBenefit, spousalAmount);
 }
 

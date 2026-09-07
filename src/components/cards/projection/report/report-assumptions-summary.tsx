@@ -10,6 +10,7 @@ import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { MAX_BROKERAGE_RAMP_YEARS } from "@/lib/constants";
 import { WITHDRAWAL_STRATEGY_CONFIG } from "@/lib/config/withdrawal-strategies";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
+import { parseAnnualPia } from "@/lib/config/social-security";
 
 /** Numeric fields on the echo'd settings object come back as decimal
  *  strings for some (drizzle decimal columns) and plain numbers for others
@@ -208,7 +209,11 @@ export function ReportAssumptionsSummary({
     soloPerson?.socialSecurityMonthly ?? settings.socialSecurityMonthly,
   );
   const ssStartAge = num(soloPerson?.ssStartAge ?? settings.ssStartAge);
+  // Display value stays MONTHLY (the row is labelled "/mo"); `hasPia` is
+  // the canonical opt-in check (same `parseAnnualPia` the engine and the
+  // live UI use — so an empty-string or "0" PIA reads as not-set here too).
   const socialSecurityPia = num(soloPerson?.socialSecurityPia);
+  const hasPia = parseAnnualPia(soloPerson?.socialSecurityPia) != null;
 
   return (
     <div className="mt-6 break-before-page border-t pt-4">
@@ -302,11 +307,9 @@ export function ReportAssumptionsSummary({
         )}
       </Section>
 
-      {(socialSecurityMonthly != null ||
-        ssStartAge != null ||
-        socialSecurityPia != null) && (
+      {(socialSecurityMonthly != null || ssStartAge != null || hasPia) && (
         <Section title="Social Security">
-          {socialSecurityPia != null && socialSecurityPia > 0 ? (
+          {hasPia && socialSecurityPia != null ? (
             <Row
               label="PIA (benefit at Full Retirement Age)"
               value={`${formatCurrency(socialSecurityPia)}/mo`}
@@ -322,7 +325,7 @@ export function ReportAssumptionsSummary({
           {ssStartAge != null && (
             <Row
               label={
-                socialSecurityPia != null && socialSecurityPia > 0
+                hasPia
                   ? "Claiming age (benefit adjusted for early/delayed)"
                   : "Claiming age"
               }

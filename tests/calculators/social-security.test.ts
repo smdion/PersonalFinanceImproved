@@ -176,16 +176,16 @@ describe("computeAdjustedBenefit", () => {
 });
 
 describe("computeSpousalBenefit — greater-of logic", () => {
-  const higherEarnerPia = 40000;
-  const higherEarnerBirthYear = 1963; // FRA 67
+  const workerPia = 40000; // the OTHER person's PIA
+  const spouseBirthYear = 1963; // claiming spouse — FRA 67
 
   it("returns the spousal amount when it exceeds the spouse's own benefit", () => {
     // Spouse's own adjusted benefit is small; spousal (50% of 40000 = 20000
     // at FRA) dwarfs it.
     const result = computeSpousalBenefit(
       2000,
-      higherEarnerPia,
-      higherEarnerBirthYear,
+      workerPia,
+      spouseBirthYear,
       67 * 12, // spouse claims spousal benefit at FRA, no reduction
     );
     expect(result).toBeCloseTo(20000, 2);
@@ -194,8 +194,8 @@ describe("computeSpousalBenefit — greater-of logic", () => {
   it("returns the spouse's own benefit when it exceeds the spousal amount", () => {
     const result = computeSpousalBenefit(
       25000, // spouse's own benefit already exceeds any spousal amount
-      higherEarnerPia,
-      higherEarnerBirthYear,
+      workerPia,
+      spouseBirthYear,
       67 * 12,
     );
     expect(result).toBe(25000);
@@ -205,8 +205,8 @@ describe("computeSpousalBenefit — greater-of logic", () => {
     const ownBenefit = 18000;
     const result = computeSpousalBenefit(
       ownBenefit,
-      higherEarnerPia,
-      higherEarnerBirthYear,
+      workerPia,
+      spouseBirthYear,
       67 * 12,
     );
     // At FRA, spousal = 50% * 40000 = 20000, which exceeds ownBenefit (18000)
@@ -215,17 +215,29 @@ describe("computeSpousalBenefit — greater-of logic", () => {
     expect(result).not.toBeCloseTo(ownBenefit + 20000, 2);
   });
 
-  it("applies the spousal early-claiming reduction, not the worker's own rate", () => {
+  it("applies the spousal early-claiming reduction at the CLAIMING SPOUSE's FRA", () => {
     // FRA 67, claiming spousal at 62 (60 months early) -> 32.5% of PIA total
     // (confirmed against SSA's published spousal table in
     // tests/config/social-security.test.ts).
     const result = computeSpousalBenefit(
       0,
-      higherEarnerPia,
-      higherEarnerBirthYear,
+      workerPia,
+      spouseBirthYear,
       62 * 12,
     );
-    expect(result).toBeCloseTo(higherEarnerPia * 0.325, 0);
+    expect(result).toBeCloseTo(workerPia * 0.325, 0);
+  });
+
+  it("keys the reduction off the CLAIMING SPOUSE's FRA, not the worker's (mixed-FRA couple)", () => {
+    // Claiming spouse born 1962 -> FRA 67; worker born 1954 -> FRA 66.
+    // Spouse claims spousal at 62 = 60 months before THEIR FRA (67):
+    //   36 * 25/36% + 24 * 5/12% = 25% + 10% = 35% reduction -> 0.65 mult.
+    // If it wrongly used the WORKER's FRA (66), that's 48 months early ->
+    //   36 * 25/36% + 12 * 5/12% = 30% -> 0.70 mult (would overstate ~7.7%).
+    const correct = computeSpousalBenefit(0, workerPia, 1962, 62 * 12);
+    expect(correct).toBeCloseTo(workerPia * 0.5 * 0.65, 0);
+    // Guard against the old bug's number specifically.
+    expect(correct).not.toBeCloseTo(workerPia * 0.5 * 0.7, 0);
   });
 });
 
