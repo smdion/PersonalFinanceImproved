@@ -31,6 +31,29 @@ import {
 } from "@/lib/config/account-types";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 
+/**
+ * Baseline "current" SS claiming age for the strategy optimizer's
+ * ssStartAge lever. `baseEngineInput.ssStartAge` is the household-scalar
+ * `retirement_settings.ss_start_age`, which can be STALE for a
+ * multi-person household — "SS Start Age" is written ONLY to
+ * `retirement_profile_people` (see build-engine-payload.ts's own comment
+ * on this exact staleness). Sourcing the lever's baseline from the stale
+ * scalar can clamp the lever out of range entirely, or offer "delay from
+ * 68" for a household really claiming at 62. Use the earliest of the real
+ * per-person start ages instead, for multi-person households — the
+ * household's actual earliest actionable claiming age. Single-person
+ * households have no separate per-person source to drift from the
+ * scalar, so it's already correct there.
+ */
+export function resolveSsStartAgeBaseline(
+  perPersonSettings: ReadonlyArray<{ ssStartAge: number }> | undefined,
+  baseEngineInputSsStartAge: number,
+): number {
+  return perPersonSettings && perPersonSettings.length > 1
+    ? Math.min(...perPersonSettings.map((p) => p.ssStartAge))
+    : baseEngineInputSsStartAge;
+}
+
 export const lumpSumSchema = z
   .array(
     z.object({

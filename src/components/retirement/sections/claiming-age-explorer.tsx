@@ -27,13 +27,39 @@ type Props = {
    *  a single-person one (matches SocialSecuritySection's own "X's
    *  Benefit" vs "Monthly Benefit" labeling convention). */
   personName: string | null;
+  /** The household's REAL profile/pin context — NOT cosmetic. The sweep
+   *  reruns the household's actual projection at each candidate age
+   *  (budget, expenses, and depletion all come from these), so a
+   *  household viewing a non-active Retirement Profile, or with a pinned
+   *  contribution/salary profile, must resolve against THAT data, not
+   *  silently fall back to whatever's globally active. Omitted (not
+   *  passed at all) only means "use the global default," same as every
+   *  other projection endpoint's optional-id convention — never omit
+   *  these when the caller has real values, which SocialSecuritySection
+   *  always does. */
+  retirementProfileId?: number;
+  contributionProfileId?: number;
+  salaryProfileId?: number;
 };
 
-export function ClaimingAgeExplorer({ personId, pia, personName }: Props) {
+export function ClaimingAgeExplorer({
+  personId,
+  pia,
+  personName,
+  retirementProfileId,
+  contributionProfileId,
+  salaryProfileId,
+}: Props) {
   const [expanded, setExpanded] = useState(false);
 
   const query = trpc.projection.sweepSocialSecurityClaimingAges.useQuery(
-    { personId, pia },
+    {
+      personId,
+      pia,
+      retirementProfileId,
+      contributionProfileId,
+      salaryProfileId,
+    },
     { enabled: expanded, placeholderData: (prev) => prev },
   );
   const result = query.data?.result ?? null;

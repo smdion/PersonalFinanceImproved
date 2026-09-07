@@ -859,3 +859,86 @@ describe("buildEnginePayload — socialSecurityPia, two-person household", () =>
       .run();
   });
 });
+
+describe("buildEnginePayload — spousal 'worker has filed' gate, mismatched birth years", () => {
+  // Regression coverage for a bug an advisor review caught: the gate
+  // compared claiming AGES (`other.ssStartAge <= ps.ssStartAge`), but the
+  // engine pays each person at their OWN age, so two spouses who reach
+  // their claiming age in different CALENDAR YEARS need the comparison
+  // done in calendar years (`birthYear + startAge`), not ages. Both people
+  // here share FRA 67 (1960 is the "1960+" band boundary, same as 1990) so
+  // the spousal reduction SCHEDULE is identical for both — isolating the
+  // filed-gate itself as the only variable.
+  let db: BetterSQLite3Database<typeof sqliteSchema>;
+  let cleanup: () => void;
+
+  afterAll(() => cleanup());
+
+  it("uses calendar years, not ages: an older worker who already filed decades earlier still triggers a younger spouse's top-up", async () => {
+    const ctx = await createTestCaller();
+    db = ctx.db;
+    cleanup = ctx.cleanup;
+    const schema = await getSchema();
+
+    // Older worker: born 1960, PIA $48000/yr, claims at 65 -> files in
+    // calendar year 2025.
+    const workerId = await seedPerson(db, "Worker", "1960-01-15");
+    // Younger spouse: born 1990, no PIA (flat $1200/mo), claims at 62 ->
+    // files in calendar year 2052 -- decades after the worker already
+    // filed, so the top-up must apply.
+    const spouseId = await seedPerson(db, "Spouse", "1990-06-20");
+    await markPrimary(db, workerId);
+    await seedRetirementSettings(db, workerId, {
+      socialSecurityMonthly: "0",
+    });
+    await seedRetirementSettings(db, spouseId, {
+      socialSecurityMonthly: "1200",
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const profileId = (db as any)
+      .insert(schema.retirementProfiles)
+      .values({ name: "Current Plan" })
+      .returning({ id: schema.retirementProfiles.id })
+      .get().id;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (db as any).update(schema.retirementSettings).set({ profileId }).run();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (db as any)
+      .insert(schema.retirementProfilePeople)
+      .values([
+        {
+          profileId,
+          personId: workerId,
+          retirementAge: 65,
+          endAge: 95,
+          socialSecurityMonthly: "0",
+          ssStartAge: 65, // ages alone: 65 <= 62 is false (old buggy gate)
+          socialSecurityPia: "4000", // $48000/yr
+        },
+        {
+          profileId,
+          personId: spouseId,
+          retirementAge: 62,
+          endAge: 95,
+          socialSecurityMonthly: "1200",
+          ssStartAge: 62, // FRA 67, 60mo early -> spousal multiplier 0.65
+        },
+      ])
+      .run();
+
+    const data = await fetchRetirementData(db, {});
+    const payload = await buildEnginePayload(db, data, {});
+    const spouse = payload!.baseEngineInput.socialSecurityEntries!.find(
+      (e) => e.personId === spouseId,
+    )!;
+
+    // Spouse's own: flat $1200/mo = $14400/yr. Spousal: 50% * $48000 *
+    // 0.65 (spousal reduction at 62, FRA 67) = $15600. max(14400, 15600)
+    // = 15600 -- the bump only happens if the filed gate correctly reads
+    // this as "the worker filed in 2025, decades before the spouse claims
+    // in 2052." The old age-only gate (65 <= 62) would wrongly withhold
+    // it and leave this at 14400.
+    expect(spouse.annualAmount).toBeCloseTo(15600, 2);
+  });
+});

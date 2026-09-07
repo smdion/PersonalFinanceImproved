@@ -342,20 +342,72 @@ describe("SocialSecuritySection smoke", () => {
     // useQuery is called on every render regardless of `enabled` (that's
     // how React Query gates the FETCH, not the hook call itself) — before
     // expanding, it's called with enabled: false.
+    const expectedQueryInput = {
+      personId: 1,
+      pia: 38400,
+      // Threaded straight from SocialSecuritySection's props (see the
+      // ClaimingAgeExplorer/social-security.tsx docblocks) — NOT
+      // cosmetic, the sweep endpoint's docblock says omitting these
+      // silently resolves against the wrong profile/pin. This test
+      // doesn't pass contributionProfileId/salaryProfileId, so they come
+      // through undefined; retirementProfileId comes from settings.profileId.
+      retirementProfileId: 1,
+      contributionProfileId: undefined,
+      salaryProfileId: undefined,
+    };
     expect(claimingAgeSweepQuery).toHaveBeenCalledWith(
-      { personId: 1, pia: 38400 },
+      expectedQueryInput,
       expect.objectContaining({ enabled: false }),
     );
 
     fireEvent.click(screen.getByText(/Compare claiming ages ▼/));
 
     expect(claimingAgeSweepQuery).toHaveBeenCalledWith(
-      { personId: 1, pia: 38400 },
+      expectedQueryInput,
       expect.objectContaining({ enabled: true }),
     );
     expect(screen.getByText("62")).toBeInTheDocument();
     expect(screen.getByText("70")).toBeInTheDocument();
     expect(screen.getByText("Recommended")).toBeInTheDocument();
+  });
+
+  it("threads a pinned contribution/salary profile through to the sweep query — NOT cosmetic, the endpoint resolves budget/depletion against them", () => {
+    claimingAgeSweepQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
+    render(
+      <SocialSecuritySection
+        settings={baseSettings}
+        perPersonSettings={[
+          {
+            personId: 1,
+            name: "Alex",
+            birthYear: 1990,
+            retirementAge: 65,
+            endAge: 95,
+            ssStartAge: 67,
+            socialSecurityMonthly: "2000",
+            socialSecurityPia: "3200",
+          },
+        ]}
+        upsertPerson={{ mutate: vi.fn() }}
+        upsertHouseholdFields={{ mutate: vi.fn() }}
+        isEditable={true}
+        contributionProfileId={42}
+        salaryProfileId={7}
+      />,
+    );
+    expect(claimingAgeSweepQuery).toHaveBeenCalledWith(
+      {
+        personId: 1,
+        pia: 38400,
+        retirementProfileId: baseSettings.profileId,
+        contributionProfileId: 42,
+        salaryProfileId: 7,
+      },
+      expect.objectContaining({ enabled: false }),
+    );
   });
 });
 

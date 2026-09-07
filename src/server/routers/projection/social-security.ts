@@ -25,11 +25,16 @@ import { sweepClaimingAges } from "@/lib/calculators/social-security";
 import type {
   AccumulationOverride,
   DecumulationOverride,
+  ProjectionInput,
 } from "@/lib/calculators/types";
 import {
   fetchRetirementData,
   buildEnginePayload,
 } from "@/server/retirement/build-engine-payload";
+import {
+  buildSocialSecurityEntries,
+  type SsEntryOverride,
+} from "@/server/retirement/social-security-entries";
 import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
@@ -118,7 +123,12 @@ export const socialSecurityRouter = createTRPCRouter({
         });
       }
 
-      const { settings, distributionTaxRates, baseEngineInput } = payload;
+      const {
+        settings,
+        distributionTaxRates,
+        baseEngineInput,
+        perPersonSettings,
+      } = payload;
       const engineInput = {
         ...baseEngineInput,
         decumulationDefaults: buildDecumulationDefaults(
@@ -132,6 +142,32 @@ export const socialSecurityRouter = createTRPCRouter({
           input.decumulationOverrides as DecumulationOverride[],
       };
 
+      // Multi-person households need every candidate's FULL entries array
+      // rebuilt through the shared helper, not just this person's own
+      // entry patched in place — a spouse's spousal top-up depends on this
+      // person's claiming age (and, symmetrically, this person's own
+      // amount can depend on the spouse's stored data). The single-person
+      // path stays on `sweepClaimingAges`'s default scalar-override
+      // builder, which is already correct (no spousal math is possible
+      // with one person).
+      const buildCandidateInput =
+        perPersonSettings.length > 1
+          ? (claimingAge: number): ProjectionInput => {
+              const overrides = new Map<number, SsEntryOverride>([
+                [person.personId, { pia: input.pia, startAge: claimingAge }],
+              ]);
+              return {
+                ...engineInput,
+                socialSecurityEntries: buildSocialSecurityEntries(
+                  perPersonSettings,
+                  settings.filingStatus,
+                  0,
+                  overrides,
+                ),
+              };
+            }
+          : undefined;
+
       return {
         result: sweepClaimingAges({
           input: engineInput,
@@ -139,6 +175,7 @@ export const socialSecurityRouter = createTRPCRouter({
           pia: input.pia,
           birthYear: person.birthYear,
           ages: input.ages,
+          buildCandidateInput,
         }),
       };
     }),

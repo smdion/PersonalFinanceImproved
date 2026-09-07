@@ -29,6 +29,15 @@ type Props = {
    *  server-side. See retirementProfilePeople.upsertHouseholdFields. */
   upsertHouseholdFields: UpsertProfileHouseholdFieldsMutation;
   isEditable: IsEditable;
+  /** Threaded straight into `ClaimingAgeExplorer`'s sweep query — the
+   *  household's REAL pinned contribution/salary profile, so a household
+   *  viewing a non-default pin gets a claiming-age comparison computed
+   *  against the plan they're actually looking at, not silently against
+   *  the global default. Not required (undefined = use the global
+   *  default, same as every other projection endpoint's optional-id
+   *  convention). */
+  contributionProfileId?: number;
+  salaryProfileId?: number;
 };
 
 export function SocialSecuritySection({
@@ -37,6 +46,8 @@ export function SocialSecuritySection({
   upsertPerson,
   upsertHouseholdFields,
   isEditable,
+  contributionProfileId,
+  salaryProfileId,
 }: Props) {
   if (settings.profileId == null) return null;
   const profileId = settings.profileId;
@@ -55,9 +66,14 @@ export function SocialSecuritySection({
         })
       : (() => {
           const pia = parseAnnualPia(perPersonSettings?.[0]?.socialSecurityPia);
-          return pia != null
-            ? [{ personId: settings.personId, name: null, pia }]
-            : [];
+          // Same identity as the person the PIA/monthly-benefit fields
+          // above actually read from and write to — settings.personId is
+          // a second, potentially-stale source of truth for "who is this"
+          // (see build-engine-payload.ts's stale-scalar comments; the same
+          // class of bug applies to identity, not just values).
+          const personId =
+            perPersonSettings?.[0]?.personId ?? settings.personId;
+          return pia != null ? [{ personId, name: null, pia }] : [];
         })();
 
   return (
@@ -256,6 +272,9 @@ export function SocialSecuritySection({
               personId={p.personId}
               pia={p.pia}
               personName={p.name}
+              retirementProfileId={profileId}
+              contributionProfileId={contributionProfileId}
+              salaryProfileId={salaryProfileId}
             />
           ))}
         </div>

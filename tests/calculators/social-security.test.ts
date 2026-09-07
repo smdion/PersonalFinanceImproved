@@ -397,15 +397,26 @@ describe("sweepClaimingAges", () => {
     expect(realFinalNetWorth).toBeCloseTo(expectedFinalNetWorth, 2);
   });
 
-  it("throws when personId doesn't match any entry", () => {
+  it("throws for a multi-person input (socialSecurityEntries present) with no buildCandidateInput supplied", () => {
+    // makeSingleHousehold() carries a (single-entry) socialSecurityEntries
+    // array — enough to exercise the guard. The default builder can't
+    // safely handle ANY entries-shaped input on its own: patching one
+    // entry in place while leaving a spouse's spousal top-up frozen is
+    // exactly the bug this guard exists to prevent (see the module
+    // docblock and ClaimingAgeSweepOptions.buildCandidateInput). A real
+    // multi-person caller (the sweepSocialSecurityClaimingAges router)
+    // must supply its own builder via buildSocialSecurityEntries.
     const input = makeSingleHousehold();
     expect(() =>
-      sweepClaimingAges({ input, personId: 999, pia: 30000, birthYear: 1963 }),
-    ).toThrow(/personId 999/);
+      sweepClaimingAges({ input, personId: 1, pia: 30000, birthYear: 1963 }),
+    ).toThrow(/requires an explicit buildCandidateInput/);
   });
 
   it("returns one candidate per default age (62-70 inclusive = 9)", () => {
-    const input = makeSingleHousehold();
+    const input: ProjectionInput = {
+      ...makeSingleHousehold(),
+      socialSecurityEntries: undefined,
+    };
     const result = sweepClaimingAges({
       input,
       personId: 1,
@@ -419,7 +430,10 @@ describe("sweepClaimingAges", () => {
   });
 
   it("each candidate's adjustedAnnualBenefit matches computeAdjustedBenefit directly (no drift between the sweep and a manual single-age run)", () => {
-    const input = makeSingleHousehold();
+    const input: ProjectionInput = {
+      ...makeSingleHousehold(),
+      socialSecurityEntries: undefined,
+    };
     const result = sweepClaimingAges({
       input,
       personId: 1,
@@ -436,7 +450,10 @@ describe("sweepClaimingAges", () => {
   });
 
   it("honors a caller-supplied subset of ages", () => {
-    const input = makeSingleHousehold();
+    const input: ProjectionInput = {
+      ...makeSingleHousehold(),
+      socialSecurityEntries: undefined,
+    };
     const result = sweepClaimingAges({
       input,
       personId: 1,
@@ -450,7 +467,10 @@ describe("sweepClaimingAges", () => {
   });
 
   it("recommends a non-null, non-depleted age for a well-funded household", () => {
-    const input = makeSingleHousehold();
+    const input: ProjectionInput = {
+      ...makeSingleHousehold(),
+      socialSecurityEntries: undefined,
+    };
     const result = sweepClaimingAges({
       input,
       personId: 1,
@@ -464,34 +484,76 @@ describe("sweepClaimingAges", () => {
     expect(recommended?.depleted).toBe(false);
   });
 
-  it("leaves other people's socialSecurityEntries untouched", () => {
-    const input = makeSingleHousehold();
-    const withSpouse: ProjectionInput = {
-      ...input,
-      socialSecurityEntries: [
-        ...(input.socialSecurityEntries ?? []),
-        {
-          personId: 2,
-          personName: "Spouse",
-          annualAmount: 15000,
-          startAge: 67,
-          birthYear: 1965,
-        },
-      ],
+  it("a caller-supplied buildCandidateInput can vary a SPOUSE's entry per candidate age (the mechanism the multi-person router relies on)", () => {
+    // Proves the injected builder actually drives what calculateProjection
+    // sees, at every candidate age — not just the swept person's own
+    // amount. A spouse's entry here is deliberately set to a DIFFERENT
+    // amount at each claiming age (spouseAmountForAge), standing in for
+    // real spousal-top-up math the router computes via
+    // buildSocialSecurityEntries. If the sweep ignored the callback (fell
+    // through to the default patch-in-place builder), the spouse's
+    // benefit would be frozen at whatever the base input carried instead
+    // of tracking the swept age, and this test would still "pass" only by
+    // coincidence unless the resulting net worth actually differs — so
+    // assert the two single-age sweeps below (age 62 vs 70) produce
+    // DIFFERENT final net worth purely from the spouse-side change.
+    const base: ProjectionInput = {
+      ...makeSingleHousehold(),
+      socialSecurityEntries: undefined,
     };
-    const result = sweepClaimingAges({
-      input: withSpouse,
+    const spouseAmountForAge = (claimingAge: number) =>
+      claimingAge === 62 ? 5000 : 25000;
+
+    function buildCandidateInput(
+      claimingAge: number,
+      adjustedAnnualBenefit: number,
+    ): ProjectionInput {
+      return {
+        ...base,
+        socialSecurityEntries: [
+          {
+            personId: 1,
+            personName: "Owner",
+            annualAmount: adjustedAnnualBenefit,
+            startAge: claimingAge,
+            birthYear: 1963,
+          },
+          {
+            personId: 2,
+            personName: "Spouse",
+            annualAmount: spouseAmountForAge(claimingAge),
+            startAge: 67,
+            birthYear: 1965,
+          },
+        ],
+      };
+    }
+
+    const at62 = sweepClaimingAges({
+      input: base,
       personId: 1,
       pia: 30000,
       birthYear: 1963,
       ages: [62],
+      buildCandidateInput,
     });
-    // The sweep ran without error and returned a candidate — proves
-    // buildCandidateInput's per-person map didn't drop or mutate the
-    // spouse's entry (would have thrown or produced a wrong personId match
-    // otherwise, since the projection would then be missing an income
-    // source it expects).
-    expect(result.candidates).toHaveLength(1);
+    const at70 = sweepClaimingAges({
+      input: base,
+      personId: 1,
+      pia: 30000,
+      birthYear: 1963,
+      ages: [70],
+      buildCandidateInput,
+    });
+
+    expect(at62.candidates).toHaveLength(1);
+    expect(at70.candidates).toHaveLength(1);
+    expect(at62.candidates[0]!.finalNetWorth).not.toBeCloseTo(
+      at70.candidates[0]!.finalNetWorth,
+      -3, // differ by at least $500 — proves the spouse-side amount (not
+      // just the swept person's own claiming-age adjustment) reached the
+      // projection.
+    );
   });
 });
 

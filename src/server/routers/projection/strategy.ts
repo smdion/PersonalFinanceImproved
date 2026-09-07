@@ -59,6 +59,7 @@ import {
   buildStrategyParams,
   buildMcInputs,
   buildDecumulationDefaults,
+  resolveSsStartAgeBaseline,
 } from "./_shared";
 import {
   hashEngineInput,
@@ -507,6 +508,15 @@ export const strategyRouter = createTRPCRouter({
         });
       }
 
+      // See resolveSsStartAgeBaseline's docblock — avoids gating the
+      // lever below on a possibly-stale household scalar for a
+      // multi-person household. Used for both the lever's `currentValue`
+      // here and the delta computed from it below.
+      const ssStartAgeBaseline = resolveSsStartAgeBaseline(
+        perPersonSettings,
+        baseEngineInput.ssStartAge,
+      );
+
       // Universal levers
       const universalLevers: {
         field: string;
@@ -532,7 +542,7 @@ export const strategyRouter = createTRPCRouter({
           unit: "absolute",
           targets: ["survival"],
           label: "SS Start Age",
-          currentValue: baseEngineInput.ssStartAge,
+          currentValue: ssStartAgeBaseline,
           max: 70,
         },
       ];
@@ -607,7 +617,11 @@ export const strategyRouter = createTRPCRouter({
           } else if (lever.field === "ssStartAge") {
             // "Delay claiming by N years" — shift every person's SS start
             // age by the same delta and re-derive the benefit amounts.
-            const delta = rounded - baseEngineInput.ssStartAge;
+            // Same `ssStartAgeBaseline` the lever's `currentValue` above
+            // was built from — NOT `baseEngineInput.ssStartAge` directly,
+            // which can be a stale household scalar for a multi-person
+            // household (see the comment there).
+            const delta = rounded - ssStartAgeBaseline;
             variantInput = { ...variantInput, ssStartAge: rounded };
 
             if (perPersonSettings && perPersonSettings.length > 1) {

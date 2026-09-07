@@ -56,8 +56,6 @@ import {
 } from "@/lib/constants";
 import { log } from "@/lib/logger";
 import { estimateEffectiveTaxRate } from "@/lib/calculators/engine";
-import { computeAdjustedBenefit } from "@/lib/calculators/social-security";
-import { parseAnnualPia } from "@/lib/config/social-security";
 import { buildSocialSecurityEntries } from "./social-security-entries";
 import { getLtcgRate } from "@/lib/config/tax-tables";
 import { resolveTaxParams } from "@/lib/config/tax-params";
@@ -484,22 +482,6 @@ export async function buildEnginePayload(
       ruleOf55Override: ps?.ruleOf55Override ?? settings.ruleOf55Override,
     };
   });
-
-  /**
-   * This person's annual Social Security benefit: PIA-adjusted for their
-   * OWN claiming age if they've opted in (`parseAnnualPia` is the one
-   * canonical opt-in check — see its docblock), otherwise their flat
-   * monthly amount unchanged. ONE function, used for both the single-person
-   * scalar path and each entry in the multi-person `socialSecurityEntries`
-   * array below, so `annualAmount` can never be computed two different ways
-   * for the same person depending on household size.
-   */
-  function personAnnualAmount(ps: (typeof perPersonSettings)[number]): number {
-    const pia = parseAnnualPia(ps.socialSecurityPia);
-    return pia != null
-      ? computeAdjustedBenefit(pia, ps.birthYear, ps.ssStartAge * 12)
-      : toNumber(ps.socialSecurityMonthly) * 12;
-  }
 
   // Average age and retirement age across all people
   // When a historical snapshot is selected, use its date as the reference point
@@ -1776,7 +1758,8 @@ export async function buildEnginePayload(
     // projection).
     socialSecurityAnnual:
       perPersonSettings.length === 1
-        ? personAnnualAmount(perPersonSettings[0]!)
+        ? buildSocialSecurityEntries([perPersonSettings[0]!], filingStatus)[0]!
+            .annualAmount
         : toNumber(settings.socialSecurityMonthly) * 12,
     ssStartAge:
       perPersonSettings.length === 1

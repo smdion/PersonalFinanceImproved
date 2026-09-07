@@ -556,6 +556,8 @@ export function RetirementProfileTab({
               upsertPerson={upsertProfilePerson}
               upsertHouseholdFields={upsertProfileHouseholdFields}
               isEditable={admin}
+              contributionProfileId={effectiveContribProfileId ?? undefined}
+              salaryProfileId={effectiveSalaryProfileId ?? undefined}
             />
 
             <TaxesSection

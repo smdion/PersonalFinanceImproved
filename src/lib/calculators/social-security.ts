@@ -122,33 +122,37 @@ export type ClaimingAgeSweepResult = {
 };
 
 export type ClaimingAgeSweepOptions = {
-  /** Base projection input. If it has `socialSecurityEntries` (a
-   *  multi-person household), there must be an entry matching `personId` —
-   *  the sweep overrides that entry's `annualAmount`/`startAge` per
-   *  candidate age and leaves every other entry (e.g. a spouse's)
-   *  unchanged. If `socialSecurityEntries` is absent (a single-person
-   *  household), the sweep instead overrides the SCALAR
-   *  `socialSecurityAnnual`/`ssStartAge` fields — mirroring
-   *  `build-engine-payload.ts`'s own single-person path, which
-   *  deliberately never populates `socialSecurityEntries` (doing so would
-   *  silently activate per-person RMD tracking a single-person household's
-   *  real projection never uses — see the long comment there). This
-   *  distinction is load-bearing: candidates built here must match
-   *  production's real household-size branching, or the sweep would
-   *  recommend an age based on a projection shape production never
-   *  actually runs. */
+  /** Base projection input. Only consulted by the DEFAULT candidate-input
+   *  builder (see `buildCandidateInput`) — a caller that passes its own
+   *  `buildCandidateInput` is free to derive candidates from richer data
+   *  (e.g. the whole household's per-person settings) than this alone. */
   input: ProjectionInput;
-  /** Which person's claiming age to sweep. For a multi-person household,
-   *  matches `socialSecurityEntries[].personId`. For a single-person
-   *  household (no entries), this is assumed to be that one person — not
-   *  independently verified, since there's no entries array to check it
-   *  against. */
+  /** Which person's claiming age to sweep. Passed through to the default
+   *  builder and to `computeAdjustedBenefit` for the displayed
+   *  `adjustedAnnualBenefit` — not otherwise used when `buildCandidateInput`
+   *  is supplied. */
   personId: number;
   /** This person's PIA (annual benefit at FRA). */
   pia: number;
   birthYear: number;
   /** Claiming ages to test, in whole years. Defaults to every age 62-70. */
   ages?: number[];
+  /** Overrides how each candidate's `ProjectionInput` is built from a
+   *  claiming age. REQUIRED for a multi-person household: the default
+   *  builder only patches this person's own `socialSecurityEntries` entry
+   *  in place and leaves every other entry (e.g. a spouse's spousal
+   *  top-up, which depends on THIS person's claiming age) frozen at its
+   *  base value — wrong for any household where spousal math is live.
+   *  This module is pure (no server imports), so it can't call
+   *  `buildSocialSecurityEntries` itself; the caller (the
+   *  `sweepSocialSecurityClaimingAges` router, which has the household's
+   *  full `perPersonSettings`) supplies it instead. Not consulted for a
+   *  single-person household — the default scalar-override path is
+   *  already correct there (see `buildCandidateInput`). */
+  buildCandidateInput?: (
+    claimingAge: number,
+    adjustedAnnualBenefit: number,
+  ) => ProjectionInput;
 };
 
 function defaultCandidateAges(): number[] {
@@ -163,39 +167,33 @@ function defaultCandidateAges(): number[] {
   return ages;
 }
 
-function buildCandidateInput(
+/**
+ * Default candidate-input builder — only correct for a single-person
+ * household (no `socialSecurityEntries`). A multi-person household MUST
+ * supply its own `buildCandidateInput` (see `ClaimingAgeSweepOptions`);
+ * this throws rather than silently freezing a spouse's entry if one
+ * wasn't provided.
+ */
+function buildDefaultCandidateInput(
   input: ProjectionInput,
-  personId: number,
   claimingAge: number,
   adjustedAnnualBenefit: number,
 ): ProjectionInput {
-  const entries = input.socialSecurityEntries;
-  if (!entries) {
-    // Single-person household: mirror build-engine-payload.ts's own
-    // scalar path exactly. Do NOT synthesize a socialSecurityEntries array
-    // here — that would activate per-person RMD tracking
-    // (rmdStartAgeByPerson) that a real single-person household's
-    // projection never uses, producing a candidate whose RMD behavior
-    // doesn't match what production would actually compute for this
-    // household.
-    return {
-      ...input,
-      socialSecurityAnnual: adjustedAnnualBenefit,
-      ssStartAge: claimingAge,
-    };
-  }
-  if (!entries.some((e) => e.personId === personId)) {
+  if (input.socialSecurityEntries) {
     throw new Error(
-      `sweepClaimingAges: no socialSecurityEntries entry for personId ${personId}`,
+      "sweepClaimingAges: a multi-person household (socialSecurityEntries present) requires an explicit buildCandidateInput — the default builder only patches one entry and would leave a spouse's spousal top-up frozen.",
     );
   }
+  // Single-person household: mirror build-engine-payload.ts's own scalar
+  // path exactly. Do NOT synthesize a socialSecurityEntries array here —
+  // that would activate per-person RMD tracking (rmdStartAgeByPerson) that
+  // a real single-person household's projection never uses, producing a
+  // candidate whose RMD behavior doesn't match what production would
+  // actually compute for this household.
   return {
     ...input,
-    socialSecurityEntries: entries.map((e) =>
-      e.personId === personId
-        ? { ...e, annualAmount: adjustedAnnualBenefit, startAge: claimingAge }
-        : e,
-    ),
+    socialSecurityAnnual: adjustedAnnualBenefit,
+    ssStartAge: claimingAge,
   };
 }
 
@@ -234,8 +232,12 @@ function compareCandidates(
 export function sweepClaimingAges(
   options: ClaimingAgeSweepOptions,
 ): ClaimingAgeSweepResult {
-  const { input, personId, pia, birthYear } = options;
+  const { input, pia, birthYear } = options;
   const ages = options.ages ?? defaultCandidateAges();
+  const buildInput =
+    options.buildCandidateInput ??
+    ((claimingAge: number, adjustedAnnualBenefit: number) =>
+      buildDefaultCandidateInput(input, claimingAge, adjustedAnnualBenefit));
 
   const candidates = ages
     .map((claimingAge) => {
@@ -244,12 +246,7 @@ export function sweepClaimingAges(
         birthYear,
         claimingAge * 12,
       );
-      const candidateInput = buildCandidateInput(
-        input,
-        personId,
-        claimingAge,
-        adjustedAnnualBenefit,
-      );
+      const candidateInput = buildInput(claimingAge, adjustedAnnualBenefit);
       const result = calculateProjection(candidateInput);
       return {
         claimingAge,
