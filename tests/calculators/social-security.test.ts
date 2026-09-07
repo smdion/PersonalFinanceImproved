@@ -239,6 +239,38 @@ describe("computeSpousalBenefit — greater-of logic", () => {
     // Guard against the old bug's number specifically.
     expect(correct).not.toBeCloseTo(workerPia * 0.5 * 0.7, 0);
   });
+
+  describe("exact own+excess formula (with spouseOwnPia)", () => {
+    it("matches max() at FRA", () => {
+      // Own PIA 12k, worker PIA 48k, both at FRA 67.
+      // exact: reducedOwn 12000*1 + excess max(0,24000-12000)*1 = 24000.
+      // max(): max(12000, 24000) = 24000. Identical.
+      const exact = computeSpousalBenefit(12000, 48000, 1963, 67 * 12, 12000);
+      const shortcut = computeSpousalBenefit(12000, 48000, 1963, 67 * 12);
+      expect(exact).toBeCloseTo(24000, 2);
+      expect(exact).toBeCloseTo(shortcut, 2);
+    });
+
+    it("exceeds max() for an early claimer (the two reduction schedules differ)", () => {
+      // Own PIA 12k, worker PIA 48k, claim at 62 (FRA 67).
+      // reducedOwn = 12000 * 0.70 = 8400.
+      // excess = max(0, 24000 - 12000) = 12000; spousal mult at 62 = 0.65.
+      // reducedExcess = 12000 * 0.65 = 7800. total = 16200.
+      // shortcut max(): max(8400, 24000*0.65=15600) = 15600.
+      const exact = computeSpousalBenefit(8400, 48000, 1963, 62 * 12, 12000);
+      const shortcut = computeSpousalBenefit(8400, 48000, 1963, 62 * 12);
+      expect(exact).toBeCloseTo(16200, 2);
+      expect(shortcut).toBeCloseTo(15600, 2);
+      expect(exact).toBeGreaterThan(shortcut);
+    });
+
+    it("no spousal top-up when own PIA already exceeds half the worker's PIA", () => {
+      // Own PIA 30k > 0.5 * 48k = 24k -> excess is 0 -> just the reduced
+      // own benefit (delayed here: claim at 70, FRA 67 -> 1.24).
+      const result = computeSpousalBenefit(37200, 48000, 1963, 70 * 12, 30000);
+      expect(result).toBeCloseTo(30000 * 1.24, 2);
+    });
+  });
 });
 
 describe("sweepClaimingAges", () => {

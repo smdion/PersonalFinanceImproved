@@ -46,6 +46,7 @@ import {
   fetchRetirementData,
   buildEnginePayload,
 } from "@/server/retirement/build-engine-payload";
+import { buildSocialSecurityEntries } from "@/server/retirement/social-security-entries";
 import { computeAdjustedBenefit } from "@/lib/calculators/social-security";
 import { parseAnnualPia } from "@/lib/config/social-security";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
@@ -604,34 +605,45 @@ export const strategyRouter = createTRPCRouter({
           if (lever.field === "retirementAge") {
             variantInput = { ...variantInput, retirementAge: rounded };
           } else if (lever.field === "ssStartAge") {
+            // "Delay claiming by N years" — shift every person's SS start
+            // age by the same delta and re-derive the benefit amounts.
+            const delta = rounded - baseEngineInput.ssStartAge;
             variantInput = { ...variantInput, ssStartAge: rounded };
-            // The scalar `ssStartAge` only feeds a SINGLE-person
-            // household's projection (a multi-person household reads
-            // `socialSecurityEntries[].startAge` and ignores this scalar —
-            // so this lever is already a no-op for them, a pre-existing
-            // limitation). For a single person who has opted into PIA, the
-            // benefit AMOUNT responds to the claiming age (delayed-
-            // retirement credits etc.), so moving `ssStartAge` without
-            // re-adjusting `socialSecurityAnnual` would understate the
-            // gain from delaying — the optimizer could then never
-            // recommend it. Recompute the PIA-adjusted amount at the new
-            // age. A non-PIA household's flat `socialSecurityMonthly`
-            // genuinely doesn't change with claiming age (the old model),
-            // so leave it untouched.
-            const solo =
-              perPersonSettings?.length === 1
-                ? perPersonSettings[0]
-                : undefined;
-            const soloPia = parseAnnualPia(solo?.socialSecurityPia);
-            if (solo && soloPia != null) {
+
+            if (perPersonSettings && perPersonSettings.length > 1) {
+              // Multi-person: the engine reads
+              // `socialSecurityEntries[].startAge`, not the scalar. Rebuild
+              // the entries with every claiming age shifted by `delta` via
+              // the SAME helper the real payload uses, so PIA claiming-age
+              // adjustment and MFJ spousal math stay consistent between the
+              // baseline and this variant. (Without this, moving the scalar
+              // `ssStartAge` did nothing for multi-person households — the
+              // "delay SS" lever silently returned ~0 and burned an MC run.)
               variantInput = {
                 ...variantInput,
-                socialSecurityAnnual: computeAdjustedBenefit(
-                  soloPia,
-                  solo.birthYear,
-                  rounded * 12,
+                socialSecurityEntries: buildSocialSecurityEntries(
+                  perPersonSettings,
+                  settings.filingStatus,
+                  delta,
                 ),
               };
+            } else {
+              // Single-person: scalar path. A PIA household's benefit
+              // AMOUNT responds to the claiming age (delayed-retirement
+              // credits), so recompute it; a non-PIA household's flat
+              // `socialSecurityMonthly` genuinely doesn't (the old model).
+              const solo = perPersonSettings?.[0];
+              const soloPia = parseAnnualPia(solo?.socialSecurityPia);
+              if (solo && soloPia != null) {
+                variantInput = {
+                  ...variantInput,
+                  socialSecurityAnnual: computeAdjustedBenefit(
+                    soloPia,
+                    solo.birthYear,
+                    rounded * 12,
+                  ),
+                };
+              }
             }
           }
         }

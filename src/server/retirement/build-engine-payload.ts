@@ -56,11 +56,9 @@ import {
 } from "@/lib/constants";
 import { log } from "@/lib/logger";
 import { estimateEffectiveTaxRate } from "@/lib/calculators/engine";
-import {
-  computeAdjustedBenefit,
-  computeSpousalBenefit,
-} from "@/lib/calculators/social-security";
+import { computeAdjustedBenefit } from "@/lib/calculators/social-security";
 import { parseAnnualPia } from "@/lib/config/social-security";
+import { buildSocialSecurityEntries } from "./social-security-entries";
 import { getLtcgRate } from "@/lib/config/tax-tables";
 import { resolveTaxParams } from "@/lib/config/tax-params";
 import type { db as _db } from "@/lib/db";
@@ -1806,59 +1804,14 @@ export async function buildEnginePayload(
     // multi-person before this feature existed — their RMD behavior is
     // completely unchanged by this diff (see the length > 1 condition
     // below, unaffected by PIA either way).
+    // Per-person entries — PIA claiming-age adjustment + MFJ spousal
+    // benefit + "worker has filed" gating all live in the one shared
+    // `buildSocialSecurityEntries` helper (also used by the strategy
+    // optimizer's SS-start-age lever, so the two can't drift). No
+    // start-age shift here — this is the household's real plan.
     socialSecurityEntries:
       perPersonSettings.length > 1
-        ? perPersonSettings.map((ps, i) => {
-            // PIA-based (opt-in, via personAnnualAmount): this person's OWN
-            // benefit, claiming-age-adjusted if they've opted into PIA,
-            // otherwise their flat monthly amount unchanged. A mixed
-            // household (one person opted in, one not) intentionally runs
-            // both models side by side — per-person opt-in, decision #5.
-            let annualAmount = personAnnualAmount(ps);
-
-            // Spousal benefit ("greater of your own or up to 50% of the
-            // other worker's PIA, reduced for YOUR OWN early claiming").
-            // We treat the two people as spouses when the household files
-            // MFJ and has exactly two members — MFJ literally means
-            // married, and the data model has no dedicated spouse-link
-            // field (product decision 2026-09-07). HOH/Single households,
-            // or 3+ people, never get spousal math. Requires the OTHER
-            // person to have a PIA on record (there's no PIA to take 50% of
-            // otherwise) AND to have already filed for their own benefit by
-            // the time this person claims — SSA pays no spousal benefit
-            // until the worker has filed, so a household where the low
-            // earner claims early and the high earner delays gets NO
-            // spousal top-up for the gap years (`other.ssStartAge <=
-            // ps.ssStartAge`). Applied symmetrically: for the genuinely
-            // higher earner, `computeSpousalBenefit`'s own `max()` picks
-            // their own benefit, so this is self-resolving without deciding
-            // "who is the dependent spouse" up front.
-            //
-            // Passing THIS person's birthYear (`ps.birthYear`), not the
-            // other's — the spousal reduction is counted against the
-            // claiming spouse's own FRA (SSA POMS RS 00202.001); only the
-            // worker's PIA matters, not their FRA.
-            if (filingStatus === "MFJ" && perPersonSettings.length === 2) {
-              const other = perPersonSettings[i === 0 ? 1 : 0]!;
-              const otherPia = parseAnnualPia(other.socialSecurityPia);
-              if (otherPia != null && other.ssStartAge <= ps.ssStartAge) {
-                annualAmount = computeSpousalBenefit(
-                  annualAmount,
-                  otherPia,
-                  ps.birthYear,
-                  ps.ssStartAge * 12,
-                );
-              }
-            }
-
-            return {
-              personId: ps.personId,
-              personName: ps.name,
-              annualAmount,
-              startAge: ps.ssStartAge,
-              birthYear: ps.birthYear,
-            };
-          })
+        ? buildSocialSecurityEntries(perPersonSettings, filingStatus)
         : undefined,
     birthYear: new Date(primaryPerson.dateOfBirth).getFullYear(),
     filingStatus,

@@ -44,38 +44,54 @@ export function computeAdjustedBenefit(
 }
 
 /**
- * The claiming spouse's actual benefit: the GREATER of their own adjusted
- * benefit or the spousal amount (up to 50% of the OTHER worker's PIA,
- * reduced for the claiming spouse's own early claiming). Never additive —
- * a person receives one or the other, and a naive `own + spousal` sum
- * would overstate real income.
+ * The claiming spouse's actual annual Social Security benefit, taking the
+ * spousal benefit into account. A person receives their own benefit plus,
+ * if entitled, a spousal top-up — never two full benefits.
  *
  * `workerPia` is the OTHER person's PIA — the only thing about the worker
- * that matters here. The spousal reduction (25/36 of 1% per month early)
- * is counted against the CLAIMING SPOUSE's own Full Retirement Age, per
- * SSA (POMS RS 00202.001 / Pub 05-10035) — NOT the worker's FRA — so
- * `spouseBirthYear` is the claiming spouse's, and the worker's birth year
- * is deliberately not a parameter.
+ * that matters here (annual, as everywhere in this module). The spousal
+ * reduction (25/36 of 1% per month early) is counted against the CLAIMING
+ * SPOUSE's own Full Retirement Age, per SSA (POMS RS 00202.001 /
+ * Pub 05-10035) — NOT the worker's FRA — so `spouseBirthYear` is the
+ * claiming spouse's and the worker's birth year is not a parameter.
  *
- * KNOWN SIMPLIFICATION: SSA actually pays `own·ownMult + max(0,
- * 0.5·workerPia − ownPIA)·spousalMult` (a reduced own benefit plus a
- * separately-reduced excess), which is identical to `max(own, spousal)`
- * at FRA but slightly higher for early claimers because the two reduction
- * schedules differ. The `max()` form used here always errs conservative
- * (it can only ever understate, never overstate). Fine for a projection;
- * tracked in TODO.md if exactness is ever needed.
+ * With `spouseOwnPia` (the claiming spouse's OWN annual PIA — pass it
+ * whenever the claiming spouse has opted into PIA), this uses SSA's exact
+ * formula: `reducedOwn + reducedExcess`, where `reducedOwn` is the own PIA
+ * cut by the OWN-benefit reduction schedule and `reducedExcess` is
+ * `max(0, 0.5·workerPia − spouseOwnPia)` cut by the SPOUSAL reduction
+ * schedule. The two schedules differ, so for an early claimer this is
+ * strictly ≥ the `max(own, spousal)` shortcut (identical at/after FRA).
+ *
+ * Without `spouseOwnPia` (a claiming spouse still on the flat
+ * pre-PIA `socialSecurityMonthly` model — no own-benefit-reduction
+ * concept), it falls back to `max(ownAdjustedBenefit, reduced spousal
+ * amount)`, which can only ever understate, never overstate.
  */
 export function computeSpousalBenefit(
   ownAdjustedBenefit: number,
   workerPia: number,
   spouseBirthYear: number,
   spouseClaimingAgeMonths: number,
+  spouseOwnPia?: number,
 ): number {
   const spouseFra = getFullRetirementAge(spouseBirthYear);
   const spousalMultiplier = getSpousalAdjustmentMultiplier(
     spouseFra,
     spouseClaimingAgeMonths,
   );
+
+  if (spouseOwnPia != null) {
+    const reducedOwn =
+      spouseOwnPia *
+      getClaimingAdjustmentMultiplier(spouseFra, spouseClaimingAgeMonths);
+    const excess = Math.max(
+      0,
+      SPOUSAL_BENEFIT_BASE_RATE * workerPia - spouseOwnPia,
+    );
+    return reducedOwn + excess * spousalMultiplier;
+  }
+
   const spousalAmount =
     workerPia * SPOUSAL_BENEFIT_BASE_RATE * spousalMultiplier;
   return Math.max(ownAdjustedBenefit, spousalAmount);
