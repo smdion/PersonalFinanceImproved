@@ -9,13 +9,13 @@
  *   1. seed-reference-data.sql has rows for the expected tax year in every
  *      reference table (contribution_limits, tax_brackets, ltcg_brackets,
  *      irmaa_brackets, fpl_by_household).
- *   1b. tax_params vintage rows (R43) don't claim a year the actual value
+ *   1b. tax_params vintage rows don't claim a year the actual value
  *       tables haven't been seeded for — catches "bumped tax_params to 2027
  *       but forgot to add the 2027 brackets."
  *   2. Code fallback constants (irmaa-tables.ts's IRMAA_DATA_YEAR,
  *      aca-tables.ts's FPL_COVERAGE_YEAR, tax-tables.ts's LTCG_BRACKETS)
  *      are in sync with the latest seed data — read via real `import`s of
- *      the config modules, not comment-text scraping (R43 C10: the old
+ *      the config modules, not comment-text scraping (an earlier
  *      comment-regex approach silently returned "?" for aca-tables.ts, and
  *      a stale/reworded comment could drift from the real exported value
  *      with nothing to catch it).
@@ -51,7 +51,7 @@ const EXPECTED_AVAILABILITY: Record<string, { month: number; day: number }> = {
   fpl_by_household: { month: 1, day: 15 }, // Mid-January — HHS Federal Register
 };
 
-// tax_params (R43) has no availability cutoff of its own — it's a vintage
+// tax_params has no availability cutoff of its own — it's a vintage
 // marker, not a figure. It's checked against the other tables' max years
 // instead (check 1b below).
 
@@ -112,7 +112,7 @@ function checkSeedFile(sql: string, expectedTaxYear: number): SeedCheck[] {
 }
 
 // ---------------------------------------------------------------------------
-// Check 1b (R43): tax_params vintage rows shouldn't outrun the real data
+// Check 1b: tax_params vintage rows shouldn't outrun the real data
 // ---------------------------------------------------------------------------
 
 interface VintageCheck {
@@ -255,7 +255,7 @@ function run() {
 
   // --- Check 1b: tax_params vintage rows ---
   const vintageChecks = checkTaxParamsVintage(sql);
-  console.log("\n=== tax_params Vintage Rows (R43) ===\n");
+  console.log("\n=== tax_params Vintage Rows ===\n");
   if (vintageChecks.length === 0) {
     console.log("  ✓ every tax_params year is backed by real reference data");
   } else {

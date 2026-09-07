@@ -1,5 +1,5 @@
 /**
- * Auto-generated API + schema docs (v0.5 expert-review M25).
+ * Generates the API + schema docs.
  *
  * Walks src/server/routers/ and src/lib/db/schema-pg.ts and writes:
  *   - docs/API_ROUTERS.md  — one-line summary of every tRPC procedure

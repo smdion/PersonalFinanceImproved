@@ -1355,14 +1355,14 @@ describe("budget router", () => {
       expect(getBudgetItemAmounts(unlinkedItemId)[0]).toBe(80);
     });
 
-    it("updateItemAmounts (batch): two edits landing on accounts in the SAME Contribution Profile both persist (R55 — applyContributionAccountEditsBatch)", async () => {
+    it("updateItemAmounts (batch): two edits landing on accounts in the SAME Contribution Profile both persist (applyContributionAccountEditsBatch)", async () => {
       // Before the batch fold, applyContributionAccountEdit ran once per
       // account even when both belonged to the same profile row — correct
       // as long as the calls stayed sequential within one transaction, but
-      // exactly the N-round-trips-per-profile pattern R55 folds into one
-      // read + one write. This pins the OUTCOME that fold must preserve:
-      // both accounts' values land in the same profile's blob, neither
-      // clobbering the other.
+      // that's still N read-merge-write round trips against one profile
+      // row that folding into one read + one write removes. This pins the
+      // OUTCOME that fold must preserve: both accounts' values land in the
+      // same profile's blob, neither clobbering the other.
       const personId = await seedPerson(db);
       const accountA = seedLinkableContributionAccount(db, personId);
       const accountB = seedLinkableContributionAccount(db, personId);
@@ -1384,13 +1384,13 @@ describe("budget router", () => {
       });
       const itemA = seedBudgetItem(db, profileId, {
         category: "Investing",
-        subcategory: "R55 Account A",
+        subcategory: "Batch Test Account A",
         amounts: [999],
         contributionAccountId: accountA,
       });
       const itemB = seedBudgetItem(db, profileId, {
         category: "Investing",
-        subcategory: "R55 Account B",
+        subcategory: "Batch Test Account B",
         amounts: [999],
         contributionAccountId: accountB,
       });

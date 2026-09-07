@@ -521,16 +521,15 @@ describe("buildEnginePayload — tax_params_year profile pin (R43)", () => {
   });
 });
 
-// Step 5 of SOCIAL-SECURITY-OPTIMIZATION-PLAN.md: socialSecurityPia is
-// opt-in (decision #5). A single-person household with PIA set routes
-// through the SCALAR socialSecurityAnnual field, NOT socialSecurityEntries
-// — an earlier version of this diff populated entries for single-person
-// households too, which an advisor review caught: socialSecurityEntries is
-// also the engine's ONLY source for per-person RMD tracking
-// (rmdStartAgeByPerson in projection-year-handlers/context.ts), so
-// populating it for a single-person household silently changes RMD
-// behavior (and net worth) as a side effect of an SS-only feature. See the
-// long comment on socialSecurityEntries in build-engine-payload.ts.
+// socialSecurityPia is opt-in. A single-person household with PIA set
+// routes through the SCALAR socialSecurityAnnual field, NOT
+// socialSecurityEntries — populating entries for a single-person
+// household would be wrong: socialSecurityEntries is also the engine's
+// ONLY source for per-person RMD tracking (rmdStartAgeByPerson in
+// projection-year-handlers/context.ts), so populating it for a
+// single-person household silently changes RMD behavior (and net worth)
+// as a side effect of an SS-only feature. See the long comment on
+// socialSecurityEntries in build-engine-payload.ts.
 describe("buildEnginePayload — socialSecurityPia (opt-in, step 5)", () => {
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
@@ -625,8 +624,7 @@ describe("buildEnginePayload — socialSecurityPia (opt-in, step 5)", () => {
     const payload = await buildEnginePayload(db, data, {});
 
     // The load-bearing regression check: entries must NOT be populated for
-    // a single-person household just because PIA is set — that's exactly
-    // the bug the advisor review caught.
+    // a single-person household just because PIA is set.
     expect(payload!.baseEngineInput.socialSecurityEntries).toBeUndefined();
     // FRA 67, claiming at 62 (60 months early) -> 0.70 multiplier (SSA's
     // own published table, same golden value tests/config/
@@ -666,8 +664,8 @@ describe("buildEnginePayload — socialSecurityPia (opt-in, step 5)", () => {
     await setPia(null);
   });
 
-  // Permanent regression test for a bug an advisor review caught: an
-  // earlier version of this fix computed the PIA-adjusted amount using
+  // Permanent regression test: an earlier version of this fix computed
+  // the PIA-adjusted amount using
   // retirement_profile_people.ss_start_age (the live value the "SS Start
   // Age" UI control actually writes — upsertHouseholdFields writes ONLY
   // that table) but emitted the separate, staler retirement_settings.ss_
@@ -861,8 +859,8 @@ describe("buildEnginePayload — socialSecurityPia, two-person household", () =>
 });
 
 describe("buildEnginePayload — spousal 'worker has filed' gate, mismatched birth years", () => {
-  // Regression coverage for a bug an advisor review caught: the gate
-  // compared claiming AGES (`other.ssStartAge <= ps.ssStartAge`), but the
+  // Regression coverage: an earlier version of the "worker has filed"
+  // gate compared claiming AGES (`other.ssStartAge <= ps.ssStartAge`), but the
   // engine pays each person at their OWN age, so two spouses who reach
   // their claiming age in different CALENDAR YEARS need the comparison
   // done in calendar years (`birthYear + startAge`), not ages. Both people

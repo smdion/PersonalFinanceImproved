@@ -30,8 +30,8 @@
  *   22. API route under src/app/api/ that writes to the DB with no DEMO_ONLY guard (M5 class)
  *   23. { MFJ: <figure> Single: <figure> HOH: <figure> } object literal outside src/lib/config/ (R43 audit F4 class)
  *   24. Local const re-declaring an ALL_CAPS name already exported from constants.ts / config/ (R43 audit F1 class)
- *   25. Review-history citation in a comment — finding-ID tag (H10)/(M42)/(C2), review-findings.md, expert-review, CodeRabbit
- *   26. Broader review-history citation in a comment — attribution phrases ("advisor-caught", "live-user finding", "code-review ... finding"), bare ISO date-stamps, bare roadmap R## tags
+ *   25. Review-history citation in a comment — finding-ID tag (H10)/(M42)/(C2), review-findings.md, expert-review, CodeRabbit. Scans src/, tests/, and scripts/.
+ *   26. Broader review-history citation in a comment — attribution phrases ("advisor-caught", "live-user finding", "code-review ... finding") and bare roadmap R## tags scan src/, tests/, and scripts/; bare ISO date-stamps scan src/ only (ambiguous elsewhere — see the pattern's own comment)
  *   27. Timezone footguns: `.toISOString().slice(0, 10)` (reads a Date's calendar day in UTC — tomorrow for a US user any evening) and `new Date("YYYY-MM-DD")` (bare date-only string parses as UTC midnight — prior day/year in US zones). Use `localDateStr()` / `parseLocalDateOnly()` from `src/lib/utils/date.ts`. Also an ESLint rule (`local/no-tz-unsafe-date-string`).
  *
  * Intentionally NOT checked (needs semantic analysis, not string matching):
@@ -76,6 +76,24 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 
 const SRC_DIR = path.resolve(__dirname, "../../src");
+// Rules 25/26's citation checks also scan these two — a citation rots
+// exactly the same way in a test comment or a script comment as it does
+// in src/ (RULES.md's "comments explain the code, not its history" isn't
+// scoped to shipped app code). Every other rule in this file stays
+// src/-only on purpose: they check data-driven-architecture violations
+// (hardcoded category strings, etc.) that legitimately look different —
+// or don't apply at all — in test fixtures and one-off scripts.
+const TESTS_DIR = path.resolve(__dirname, "../../tests");
+const SCRIPTS_DIR = path.resolve(__dirname, "../../scripts");
+// This file's own rule-definition docblocks and comments necessarily
+// name the exact patterns/examples these two rules detect ("(H10)",
+// "advisor review", bare "R43") — those are illustrations, not
+// violations, so this file is exempt from both when scanned as a
+// tests/-tree file (it still fully applies to every rule that isn't
+// citation-related).
+const CITATION_RULE_FILE_EXEMPT = new Set<string>([
+  "tests/lint/violations.test.ts",
+]);
 
 // Files that legitimately use hardcoded categories. Each entry must include
 // a reason. Adding to this list requires reviewer signoff.
@@ -814,26 +832,28 @@ const REVIEW_CITATION_PATTERN =
   /\((?:H|M|L|T|C)[0-9]{1,3}\)|review-findings\.md|expert-review|CodeRabbit/;
 function findReviewCitationViolations(): Violation[] {
   const violations: Violation[] = [];
-  for (const file of walkTsFiles(SRC_DIR)) {
-    const rel = relPath(file);
-    if (isExempt(rel)) continue;
-    const lines = readFileLines(file);
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i]!;
-      if (line.includes("lint-violation-ok")) continue;
-      // Only inside a comment — a string literal or identifier that happens
-      // to contain e.g. "(C2)" is not this rule's concern.
-      const commentStart = Math.max(line.indexOf("//"), line.indexOf("*"));
-      if (commentStart === -1) continue;
-      const commentText = line.slice(commentStart);
-      const m = REVIEW_CITATION_PATTERN.exec(commentText);
-      if (!m) continue;
-      violations.push({
-        file: rel,
-        line: i + 1,
-        rule: "no-review-history-citation",
-        snippet: line.trim().slice(0, 100),
-      });
+  for (const root of [SRC_DIR, TESTS_DIR, SCRIPTS_DIR]) {
+    for (const file of walkTsFiles(root)) {
+      const rel = relPath(file);
+      if (isExempt(rel) || CITATION_RULE_FILE_EXEMPT.has(rel)) continue;
+      const lines = readFileLines(file);
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i]!;
+        if (line.includes("lint-violation-ok")) continue;
+        // Only inside a comment — a string literal or identifier that happens
+        // to contain e.g. "(C2)" is not this rule's concern.
+        const commentStart = Math.max(line.indexOf("//"), line.indexOf("*"));
+        if (commentStart === -1) continue;
+        const commentText = line.slice(commentStart);
+        const m = REVIEW_CITATION_PATTERN.exec(commentText);
+        if (!m) continue;
+        violations.push({
+          file: rel,
+          line: i + 1,
+          rule: "no-review-history-citation",
+          snippet: line.trim().slice(0, 100),
+        });
+      }
     }
   }
   return violations;
@@ -862,7 +882,11 @@ function findReviewCitationViolations(): Violation[] {
 const BROAD_CITATION_FILE_EXEMPT = new Set<string>([
   "src/server/helpers/projection-cache.ts",
 ]);
-const BROAD_CITATION_PATTERN = new RegExp(
+// A bare attribution phrase or a bare roadmap R## tag is NEVER a
+// legitimate "the story is the documentation" incident narrative
+// (RULES.md's exception is about DATES, not these) — safe to enforce
+// everywhere (src/, tests/, scripts/).
+const BROAD_CITATION_ATTRIBUTION_PATTERN = new RegExp(
   [
     "advisor[- ]caught",
     "advisor[- ]flagged",
@@ -872,32 +896,55 @@ const BROAD_CITATION_PATTERN = new RegExp(
     "live-user finding",
     "code-review[^\\n]{0,60}?finding",
     "user (?:request|feedback),",
-    "\\b20[0-9]{2}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])\\b",
     "\\bR[0-9]{1,3}[a-z]?\\b",
   ].join("|"),
   "i",
 );
+// A bare ISO date-stamp, by contrast, is genuinely ambiguous outside
+// src/: test fixtures legitimately describe simulated wall-clock dates
+// ("AS_OF is 2025-01-01, so projection year 0 = 2025"), and RULES.md
+// explicitly blesses a dated incident narrative ("found live 2026-08-31:
+// a household that...") as documentation, not a citation, when the story
+// itself is the point. A blunt regex can't tell that apart from an
+// actual rotting citation — kept src/-only, where app code doesn't
+// narrate test scenarios and that ambiguity essentially doesn't arise.
+const BROAD_CITATION_DATE_PATTERN =
+  /\b20[0-9]{2}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])\b/;
 function findBroadCitationViolations(): Violation[] {
   const violations: Violation[] = [];
-  for (const file of walkTsFiles(SRC_DIR)) {
-    const rel = relPath(file);
-    if (isExempt(rel) || BROAD_CITATION_FILE_EXEMPT.has(rel)) continue;
-    const lines = readFileLines(file);
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i]!;
-      if (line.includes("lint-violation-ok")) continue;
-      // Only inside a comment — same scoping as rule 25.
-      const commentStart = Math.max(line.indexOf("//"), line.indexOf("*"));
-      if (commentStart === -1) continue;
-      const commentText = line.slice(commentStart);
-      const m = BROAD_CITATION_PATTERN.exec(commentText);
-      if (!m) continue;
-      violations.push({
-        file: rel,
-        line: i + 1,
-        rule: "no-broad-review-history-citation",
-        snippet: line.trim().slice(0, 100),
-      });
+  const roots = [
+    { dir: SRC_DIR, includeDatePattern: true },
+    { dir: TESTS_DIR, includeDatePattern: false },
+    { dir: SCRIPTS_DIR, includeDatePattern: false },
+  ];
+  for (const { dir, includeDatePattern } of roots) {
+    for (const file of walkTsFiles(dir)) {
+      const rel = relPath(file);
+      if (
+        isExempt(rel) ||
+        BROAD_CITATION_FILE_EXEMPT.has(rel) ||
+        CITATION_RULE_FILE_EXEMPT.has(rel)
+      )
+        continue;
+      const lines = readFileLines(file);
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i]!;
+        if (line.includes("lint-violation-ok")) continue;
+        // Only inside a comment — same scoping as rule 25.
+        const commentStart = Math.max(line.indexOf("//"), line.indexOf("*"));
+        if (commentStart === -1) continue;
+        const commentText = line.slice(commentStart);
+        const matched =
+          BROAD_CITATION_ATTRIBUTION_PATTERN.test(commentText) ||
+          (includeDatePattern && BROAD_CITATION_DATE_PATTERN.test(commentText));
+        if (!matched) continue;
+        violations.push({
+          file: rel,
+          line: i + 1,
+          rule: "no-broad-review-history-citation",
+          snippet: line.trim().slice(0, 100),
+        });
+      }
     }
   }
   return violations;

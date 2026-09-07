@@ -281,8 +281,8 @@ describe("IntegrationsSettings", () => {
     ).toBeInTheDocument();
   });
 
-  // Live-user finding, 2026-08-30: a service with a real saved connection
-  // that has never completed a sync silently had NO way to activate it --
+  // A service with a real saved connection that has never completed a
+  // sync silently had NO way to activate it --
   // the Activate button (the only control that changes the active
   // provider) is gated on getPreview's `synced` flag, which is false
   // until a sync has run at least once, with zero explanation for why

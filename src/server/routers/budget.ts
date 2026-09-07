@@ -1184,9 +1184,8 @@ export const budgetRouter = createTRPCRouter({
       await ctx.db.transaction(async (tx) => {
         // Linked items are collected instead of applied inline so
         // applyContributionAccountEditsBatch can fold every edit landing
-        // on the SAME contribution profile through one read-merge-write —
-        // a paste touching several accounts in one profile previously ran
-        // that cycle once per account (R55).
+        // on the SAME contribution profile through one read-merge-write,
+        // instead of running that cycle once per account.
         const contributionEdits: {
           contributionAccountId: number;
           monthlyAmount: number;
