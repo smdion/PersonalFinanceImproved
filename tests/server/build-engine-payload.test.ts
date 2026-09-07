@@ -779,17 +779,54 @@ describe("buildEnginePayload — socialSecurityPia, two-person household", () =>
     expect(entries).toHaveLength(2);
   });
 
-  it("only the person with PIA set gets the claiming-age-adjusted amount; the other keeps their flat monthly amount", async () => {
+  it("the PIA person gets their own claiming-age-adjusted benefit (spousal doesn't beat it — the other has no PIA)", async () => {
     const data = await fetchRetirementData(db, {});
     const payload = await buildEnginePayload(db, data, {});
 
-    const entries = payload!.baseEngineInput.socialSecurityEntries!;
-    const alex = entries.find((e) => e.personId === personAId)!;
-    const sam = entries.find((e) => e.personId === personBId)!;
-
-    // Alex: PIA $4000/mo = $48000/yr, claiming at 62 (60mo early, FRA 67) -> 0.70
+    const alex = payload!.baseEngineInput.socialSecurityEntries!.find(
+      (e) => e.personId === personAId,
+    )!;
+    // Alex: PIA $4000/mo = $48000/yr, claiming at 62 (60mo early, FRA 67) ->
+    // 0.70 own benefit. Sam has NO PIA, so there's no spouse's PIA to take
+    // 50% of — spousal is skipped, Alex keeps their own.
     expect(alex.annualAmount).toBeCloseTo(48000 * 0.7, 2);
-    // Sam: no PIA set -> unchanged flat monthly amount ($1800/mo = $21600/yr)
+  });
+
+  it("the non-PIA spouse gets the GREATER of their flat benefit or 50% of the PIA spouse's PIA (MFJ + 2 people)", async () => {
+    const data = await fetchRetirementData(db, {});
+    const payload = await buildEnginePayload(db, data, {});
+
+    const sam = payload!.baseEngineInput.socialSecurityEntries!.find(
+      (e) => e.personId === personBId,
+    )!;
+    // Sam's own: flat $1800/mo = $21600/yr. Spousal: Alex's PIA is
+    // $48000/yr, Sam claims at 67 = Alex's FRA (born 1963 -> FRA 67), so no
+    // spousal reduction -> 50% * 48000 * 1.0 = $24000. max(21600, 24000) =
+    // 24000, so Sam is bumped to the spousal amount.
+    expect(sam.annualAmount).toBeCloseTo(24000, 2);
+  });
+
+  it("does NOT apply spousal math when the household files Single (not married)", async () => {
+    const schema = await getSchema();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (db as any)
+      .update(schema.retirementSettings)
+      .set({ filingStatus: "Single" })
+      .run();
+
+    const data = await fetchRetirementData(db, {});
+    const payload = await buildEnginePayload(db, data, {});
+    const sam = payload!.baseEngineInput.socialSecurityEntries!.find(
+      (e) => e.personId === personBId,
+    )!;
+    // Single filing -> not treated as spouses -> Sam keeps their own flat
+    // $21600, no spousal bump.
     expect(sam.annualAmount).toBe(21600);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (db as any)
+      .update(schema.retirementSettings)
+      .set({ filingStatus: "MFJ" })
+      .run();
   });
 });

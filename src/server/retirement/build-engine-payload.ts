@@ -56,7 +56,10 @@ import {
 } from "@/lib/constants";
 import { log } from "@/lib/logger";
 import { estimateEffectiveTaxRate } from "@/lib/calculators/engine";
-import { computeAdjustedBenefit } from "@/lib/calculators/social-security";
+import {
+  computeAdjustedBenefit,
+  computeSpousalBenefit,
+} from "@/lib/calculators/social-security";
 import { parseAnnualPia } from "@/lib/config/social-security";
 import { getLtcgRate } from "@/lib/config/tax-tables";
 import { resolveTaxParams } from "@/lib/config/tax-params";
@@ -1805,33 +1808,47 @@ export async function buildEnginePayload(
     // below, unaffected by PIA either way).
     socialSecurityEntries:
       perPersonSettings.length > 1
-        ? perPersonSettings.map((ps) => ({
-            personId: ps.personId,
-            personName: ps.name,
-            // PIA-based (opt-in, via personAnnualAmount above): apply the
-            // claiming-age adjustment to this person's own PIA. Otherwise
-            // unchanged — the flat monthly amount the household already
-            // enters directly.
-            //
-            // NOT wired: computeSpousalBenefit's "greater of own/spousal"
-            // logic (lib/calculators/social-security.ts, plan §5/§11). This
-            // data model has no marital-relationship field — a 2-person
-            // household isn't necessarily a married couple — so applying
-            // spousal-benefit math automatically here would assume a
-            // relationship this schema doesn't actually record. Needs an
-            // explicit product decision (does the household mark two
-            // people as spouses?) before wiring, not a default-on
-            // assumption. Tracked for a later step of
-            // SOCIAL-SECURITY-OPTIMIZATION-PLAN.md, not silently dropped.
-            // NOTE: a mixed household (one person opted into PIA, one not)
-            // runs two different benefit models side by side — the PIA
-            // person gets claiming-age adjustment, the other keeps their
-            // unadjusted flat amount paid at their own start age. That's
-            // intentional (per-person opt-in, decision #5), not a bug.
-            annualAmount: personAnnualAmount(ps),
-            startAge: ps.ssStartAge,
-            birthYear: ps.birthYear,
-          }))
+        ? perPersonSettings.map((ps, i) => {
+            // PIA-based (opt-in, via personAnnualAmount): this person's OWN
+            // benefit, claiming-age-adjusted if they've opted into PIA,
+            // otherwise their flat monthly amount unchanged. A mixed
+            // household (one person opted in, one not) intentionally runs
+            // both models side by side — per-person opt-in, decision #5.
+            let annualAmount = personAnnualAmount(ps);
+
+            // Spousal benefit ("greater of your own or up to 50% of your
+            // spouse's PIA, reduced for your own early claiming"). We treat
+            // the two people as spouses when the household files MFJ and has
+            // exactly two members — MFJ literally means married, and the
+            // data model has no dedicated spouse-link field (product
+            // decision 2026-09-07). HOH/Single households, or 3+ people,
+            // never get spousal math. Requires the OTHER person to have a
+            // PIA on record (there's no PIA to take 50% of otherwise).
+            // Applied symmetrically: for the genuinely higher earner,
+            // `computeSpousalBenefit`'s own `max()` picks their own benefit,
+            // so this is self-resolving without deciding "who is the
+            // dependent spouse" up front.
+            if (filingStatus === "MFJ" && perPersonSettings.length === 2) {
+              const other = perPersonSettings[i === 0 ? 1 : 0]!;
+              const otherPia = parseAnnualPia(other.socialSecurityPia);
+              if (otherPia != null) {
+                annualAmount = computeSpousalBenefit(
+                  annualAmount,
+                  otherPia,
+                  other.birthYear,
+                  ps.ssStartAge * 12,
+                );
+              }
+            }
+
+            return {
+              personId: ps.personId,
+              personName: ps.name,
+              annualAmount,
+              startAge: ps.ssStartAge,
+              birthYear: ps.birthYear,
+            };
+          })
         : undefined,
     birthYear: new Date(primaryPerson.dateOfBirth).getFullYear(),
     filingStatus,
