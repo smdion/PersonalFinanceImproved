@@ -43,6 +43,7 @@ import type { BudgetInput } from "@/lib/calculators/types";
 import {
   computeBudgetAnnualTotal,
   applyContributionAccountEdit,
+  applyContributionAccountEditsBatch,
   resolveTargetBudgetProfile,
   getResolvedGoalAllocations,
   resolveLinkedBudgetItemAmounts,
@@ -1052,18 +1053,27 @@ export const budgetRouter = createTRPCRouter({
       // whichever Contribution Profile is currently in effect for this
       // column — contributionValue/Method have no account-level fallback.
       if (item.contributionAccountId) {
-        const contribProfileId = await resolveEffectiveContribProfileIdForItem(
-          ctx.db,
-          item,
-          input.colIndex,
-          input.contributionProfile ?? NO_PROFILE_TIERS,
-        );
-        await applyContributionAccountEdit(
-          ctx.db,
-          item.contributionAccountId,
-          input.amount,
-          contribProfileId,
-        );
+        const accountId = item.contributionAccountId;
+        // Read-resolve-write in one transaction (matches
+        // patchProfileSubEntry's convention for the same class of
+        // read-merge-write-a-JSON-blob operation) — a bare SELECT then
+        // UPDATE with no transaction boundary at all, which this was
+        // before, is strictly worse than that convention for no reason.
+        await ctx.db.transaction(async (tx) => {
+          const contribProfileId =
+            await resolveEffectiveContribProfileIdForItem(
+              tx,
+              item,
+              input.colIndex,
+              input.contributionProfile ?? NO_PROFILE_TIERS,
+            );
+          await applyContributionAccountEdit(
+            tx,
+            accountId,
+            input.amount,
+            contribProfileId,
+          );
+        });
         return item;
       }
 
@@ -1172,6 +1182,17 @@ export const budgetRouter = createTRPCRouter({
       // Apply atomically — either the whole applicable paste lands or none
       // of it does (a mid-loop failure must not leave half a paste saved).
       await ctx.db.transaction(async (tx) => {
+        // Linked items are collected instead of applied inline so
+        // applyContributionAccountEditsBatch can fold every edit landing
+        // on the SAME contribution profile through one read-merge-write —
+        // a paste touching several accounts in one profile previously ran
+        // that cycle once per account (R55).
+        const contributionEdits: {
+          contributionAccountId: number;
+          monthlyAmount: number;
+          contributionProfileId: number;
+        }[] = [];
+
         for (const { id, amounts, changes } of toApply) {
           const item = itemById.get(id)!;
 
@@ -1188,12 +1209,11 @@ export const budgetRouter = createTRPCRouter({
                 lastChange.colIndex,
                 input.contributionProfile ?? NO_PROFILE_TIERS,
               );
-            await applyContributionAccountEdit(
-              tx,
-              item.contributionAccountId,
-              lastChange.amount,
-              contribProfileId,
-            );
+            contributionEdits.push({
+              contributionAccountId: item.contributionAccountId,
+              monthlyAmount: lastChange.amount,
+              contributionProfileId: contribProfileId,
+            });
             continue;
           }
 
@@ -1203,6 +1223,8 @@ export const budgetRouter = createTRPCRouter({
             .set({ amounts })
             .where(eq(schema.budgetItems.id, id));
         }
+
+        await applyContributionAccountEditsBatch(tx, contributionEdits);
       });
       const appliedCells = toApply.reduce((n, t) => n + t.changes.length, 0);
       return {

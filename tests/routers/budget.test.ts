@@ -1355,6 +1355,76 @@ describe("budget router", () => {
       expect(getBudgetItemAmounts(unlinkedItemId)[0]).toBe(80);
     });
 
+    it("updateItemAmounts (batch): two edits landing on accounts in the SAME Contribution Profile both persist (R55 — applyContributionAccountEditsBatch)", async () => {
+      // Before the batch fold, applyContributionAccountEdit ran once per
+      // account even when both belonged to the same profile row — correct
+      // as long as the calls stayed sequential within one transaction, but
+      // exactly the N-round-trips-per-profile pattern R55 folds into one
+      // read + one write. This pins the OUTCOME that fold must preserve:
+      // both accounts' values land in the same profile's blob, neither
+      // clobbering the other.
+      const personId = await seedPerson(db);
+      const accountA = seedLinkableContributionAccount(db, personId);
+      const accountB = seedLinkableContributionAccount(db, personId);
+      const sharedProfileId = seedContributionProfile(db, {
+        name: "Shared Profile — two linked accounts",
+        contributionActiveFields: {
+          contributionAccounts: {
+            [String(accountA)]: {
+              contributionValue: "10.00",
+              contributionMethod: "fixed_monthly",
+            },
+            [String(accountB)]: {
+              contributionValue: "20.00",
+              contributionMethod: "fixed_monthly",
+            },
+          },
+          jobs: {},
+        },
+      });
+      const itemA = seedBudgetItem(db, profileId, {
+        category: "Investing",
+        subcategory: "R55 Account A",
+        amounts: [999],
+        contributionAccountId: accountA,
+      });
+      const itemB = seedBudgetItem(db, profileId, {
+        category: "Investing",
+        subcategory: "R55 Account B",
+        amounts: [999],
+        contributionAccountId: accountB,
+      });
+
+      await caller.budget.updateItemAmounts({
+        updates: [
+          { id: itemA, colIndex: 0, amount: 111 },
+          { id: itemB, colIndex: 0, amount: 222 },
+        ],
+        contributionProfile: profileTiers(sharedProfileId),
+      });
+
+      const row = db
+        .select()
+        .from(sqliteSchema.contributionProfiles)
+        .where(eq(sqliteSchema.contributionProfiles.id, sharedProfileId))
+        .get()!;
+      const activeFields = row.contributionActiveFields as {
+        contributionAccounts: Record<string, { contributionValue: string }>;
+      };
+      expect(
+        Number(
+          activeFields.contributionAccounts[String(accountA)]!
+            .contributionValue,
+        ),
+      ).toBeCloseTo(111);
+      expect(
+        Number(
+          activeFields.contributionAccounts[String(accountB)]!
+            .contributionValue,
+        ),
+      ).toBeCloseTo(222);
+    });
+
     it("fixed_annual round-trips: editing to the currently-displayed monthly value is a no-op", async () => {
       const { itemId, contribProfileId } = await seedLinkedItem({
         contributionMethod: "fixed_annual",
