@@ -636,6 +636,16 @@ export const retirementRouter = createTRPCRouter({
           : toNumber(settings.withdrawalRate),
         inflationRate: toNumber(settings.annualInflation),
         nominalReturnRate: avgReturnRate,
+        // Known limitation (deliberately not fixed — see TODO.md): this is
+        // the household `retirement_settings` scalar, NOT the per-person /
+        // PIA-aware resolution `build-engine-payload.ts` uses
+        // (`personAnnualAmount` + `parseAnnualPia`). This proc doesn't even
+        // fetch `retirement_profile_people`. Low impact for a coarse
+        // relocation-vs-stay FI comparison: the same SS figure is applied
+        // to both arms, so it largely cancels in the reported delta. Wiring
+        // the full per-person/PIA resolution here isn't proportionate to
+        // that; revisit if the relocation tool ever surfaces an absolute
+        // (not just comparative) retirement number.
         socialSecurityAnnual: toNumber(settings.socialSecurityMonthly) * 12,
         asOfDate,
       });

@@ -42,6 +42,26 @@ export function fraToMonths(fra: FullRetirementAge): number {
   return fra.years * 12 + fra.months;
 }
 
+/**
+ * The one canonical "has this person opted into PIA" check, used by every
+ * layer that reads `retirement_profile_people.social_security_pia`
+ * (build-engine-payload's payload assembly, the strategy optimizer's
+ * claiming-age lever, and the client's PIA input field). `social_security_pia`
+ * is a decimal column — Drizzle hands it back as a string (PG `decimal`,
+ * SQLite `text`), so a bare `!= null` is NOT a safe check: an empty string
+ * from a blank form field survives it and then NaNs out of `parseFloat`,
+ * and `"0"` / `"0.00"` would read as "opted in with a $0 benefit" rather
+ * than "not set." Returns the ANNUAL PIA (the stored value is monthly) or
+ * `null` if not a usable positive amount.
+ */
+export function parseAnnualPia(
+  raw: string | number | null | undefined,
+): number | null {
+  if (raw == null || raw === "") return null;
+  const monthly = typeof raw === "number" ? raw : parseFloat(raw);
+  return Number.isFinite(monthly) && monthly > 0 ? monthly * 12 : null;
+}
+
 /** Earliest age Social Security retirement benefits can be claimed. */
 export const SS_EARLIEST_CLAIMING_AGE_MONTHS = 62 * 12;
 

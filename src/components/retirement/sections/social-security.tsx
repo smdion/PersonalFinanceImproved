@@ -8,6 +8,7 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { Badge } from "@/components/ui/badge";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatCurrency } from "@/lib/utils/format";
+import { parseAnnualPia } from "@/lib/config/social-security";
 import { ClaimingAgeExplorer } from "./claiming-age-explorer";
 import type {
   Settings,
@@ -16,16 +17,6 @@ import type {
   UpsertProfileHouseholdFieldsMutation,
   IsEditable,
 } from "./types";
-
-/** `""` -> not opted in (`null` on save). A positive parsed number -> opted
- *  in. Mirrors `piaAnnual()`'s guard in build-engine-payload.ts — this is
- *  the DISPLAY-side twin of that same "what counts as opted in" question,
- *  so the UI and the engine can't disagree on it. */
-function parsedPia(value: string | null | undefined): number | null {
-  if (!value) return null;
-  const parsed = parseFloat(value);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
-}
 
 type Props = {
   settings: Settings;
@@ -57,13 +48,13 @@ export function SocialSecuritySection({
   }[] =
     perPersonSettings && perPersonSettings.length > 1
       ? perPersonSettings.flatMap((ps) => {
-          const pia = parsedPia(ps.socialSecurityPia);
+          const pia = parseAnnualPia(ps.socialSecurityPia);
           return pia != null
             ? [{ personId: ps.personId, name: ps.name, pia }]
             : [];
         })
       : (() => {
-          const pia = parsedPia(perPersonSettings?.[0]?.socialSecurityPia);
+          const pia = parseAnnualPia(perPersonSettings?.[0]?.socialSecurityPia);
           return pia != null
             ? [{ personId: settings.personId, name: null, pia }]
             : [];
@@ -135,7 +126,7 @@ export function SocialSecuritySection({
                       });
                     }}
                     formatDisplay={(v) =>
-                      parsedPia(v) != null
+                      parseAnnualPia(v) != null
                         ? `${formatCurrency(Number(v))}/mo`
                         : "Not set"
                     }
@@ -214,7 +205,7 @@ export function SocialSecuritySection({
                   });
                 }}
                 formatDisplay={(v) =>
-                  parsedPia(v) != null
+                  parseAnnualPia(v) != null
                     ? `${formatCurrency(Number(v))}/mo`
                     : "Not set"
                 }

@@ -343,14 +343,14 @@ describe("SocialSecuritySection smoke", () => {
     // how React Query gates the FETCH, not the hook call itself) — before
     // expanding, it's called with enabled: false.
     expect(claimingAgeSweepQuery).toHaveBeenCalledWith(
-      { personId: 1, pia: 3200 },
+      { personId: 1, pia: 38400 },
       expect.objectContaining({ enabled: false }),
     );
 
     fireEvent.click(screen.getByText(/Compare claiming ages ▼/));
 
     expect(claimingAgeSweepQuery).toHaveBeenCalledWith(
-      { personId: 1, pia: 3200 },
+      { personId: 1, pia: 38400 },
       expect.objectContaining({ enabled: true }),
     );
     expect(screen.getByText("62")).toBeInTheDocument();

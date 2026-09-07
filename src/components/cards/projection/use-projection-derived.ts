@@ -171,6 +171,8 @@ export function useProjectionDerived(
   // with `result` via a discriminated union instead.
   const engineSettings =
     engineData && engineData.result ? engineData.settings : undefined;
+  const enginePerPersonSettings =
+    engineData && engineData.result ? engineData.perPersonSettings : undefined;
   const annualExpenses =
     engineData && engineData.result ? engineData.annualExpenses : 0;
 
@@ -648,6 +650,7 @@ export function useProjectionDerived(
     hasIndividualAccountData,
     combinedSalary,
     enginePeople,
+    enginePerPersonSettings,
     realDefaults,
     dbSalaryOverrides,
     dbBudgetOverrides,

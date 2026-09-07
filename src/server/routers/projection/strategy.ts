@@ -46,6 +46,8 @@ import {
   fetchRetirementData,
   buildEnginePayload,
 } from "@/server/retirement/build-engine-payload";
+import { computeAdjustedBenefit } from "@/lib/calculators/social-security";
+import { parseAnnualPia } from "@/lib/config/social-security";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import {
   getAllStrategyKeys,
@@ -379,7 +381,12 @@ export const strategyRouter = createTRPCRouter({
           strategyLabel: "",
         };
 
-      const { settings, distributionTaxRates, baseEngineInput } = payload;
+      const {
+        settings,
+        distributionTaxRates,
+        baseEngineInput,
+        perPersonSettings,
+      } = payload;
 
       if (mcAssetClasses.length === 0 || mcGlidePath.length === 0)
         return {
@@ -598,6 +605,34 @@ export const strategyRouter = createTRPCRouter({
             variantInput = { ...variantInput, retirementAge: rounded };
           } else if (lever.field === "ssStartAge") {
             variantInput = { ...variantInput, ssStartAge: rounded };
+            // The scalar `ssStartAge` only feeds a SINGLE-person
+            // household's projection (a multi-person household reads
+            // `socialSecurityEntries[].startAge` and ignores this scalar —
+            // so this lever is already a no-op for them, a pre-existing
+            // limitation). For a single person who has opted into PIA, the
+            // benefit AMOUNT responds to the claiming age (delayed-
+            // retirement credits etc.), so moving `ssStartAge` without
+            // re-adjusting `socialSecurityAnnual` would understate the
+            // gain from delaying — the optimizer could then never
+            // recommend it. Recompute the PIA-adjusted amount at the new
+            // age. A non-PIA household's flat `socialSecurityMonthly`
+            // genuinely doesn't change with claiming age (the old model),
+            // so leave it untouched.
+            const solo =
+              perPersonSettings?.length === 1
+                ? perPersonSettings[0]
+                : undefined;
+            const soloPia = parseAnnualPia(solo?.socialSecurityPia);
+            if (solo && soloPia != null) {
+              variantInput = {
+                ...variantInput,
+                socialSecurityAnnual: computeAdjustedBenefit(
+                  soloPia,
+                  solo.birthYear,
+                  rounded * 12,
+                ),
+              };
+            }
           }
         }
 

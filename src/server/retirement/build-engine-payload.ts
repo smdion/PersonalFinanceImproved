@@ -57,6 +57,7 @@ import {
 import { log } from "@/lib/logger";
 import { estimateEffectiveTaxRate } from "@/lib/calculators/engine";
 import { computeAdjustedBenefit } from "@/lib/calculators/social-security";
+import { parseAnnualPia } from "@/lib/config/social-security";
 import { getLtcgRate } from "@/lib/config/tax-tables";
 import { resolveTaxParams } from "@/lib/config/tax-params";
 import type { db as _db } from "@/lib/db";
@@ -484,33 +485,16 @@ export async function buildEnginePayload(
   });
 
   /**
-   * This person's PIA, annualized, or `null` if not opted in / not a valid
-   * positive amount. ONE predicate, used everywhere a "has this person set
-   * a usable PIA" decision is made, so no two call sites can independently
-   * drift on what counts as opted-in.
-   *
-   * `socialSecurityPia` is a decimal column — Drizzle returns it as a
-   * string (PG `decimal`, SQLite `text`), so `!= null` alone is NOT a safe
-   * "opted in" check: an empty string from a blank form field survives
-   * `!= null` and then NaNs out of `parseFloat`, and `"0"`/`"0.00"` would
-   * read as "opted in with a $0 benefit" rather than "not set." Guard both.
-   */
-  function piaAnnual(ps: (typeof perPersonSettings)[number]): number | null {
-    if (ps.socialSecurityPia == null) return null;
-    const monthly = parseFloat(ps.socialSecurityPia);
-    return Number.isFinite(monthly) && monthly > 0 ? monthly * 12 : null;
-  }
-
-  /**
    * This person's annual Social Security benefit: PIA-adjusted for their
-   * OWN claiming age if they've opted in, otherwise their flat monthly
-   * amount unchanged. ONE function, used for both the single-person scalar
-   * path and each entry in the multi-person `socialSecurityEntries` array
-   * below, so `annualAmount` can never be computed two different ways for
-   * the same person depending on household size.
+   * OWN claiming age if they've opted in (`parseAnnualPia` is the one
+   * canonical opt-in check — see its docblock), otherwise their flat
+   * monthly amount unchanged. ONE function, used for both the single-person
+   * scalar path and each entry in the multi-person `socialSecurityEntries`
+   * array below, so `annualAmount` can never be computed two different ways
+   * for the same person depending on household size.
    */
   function personAnnualAmount(ps: (typeof perPersonSettings)[number]): number {
-    const pia = piaAnnual(ps);
+    const pia = parseAnnualPia(ps.socialSecurityPia);
     return pia != null
       ? computeAdjustedBenefit(pia, ps.birthYear, ps.ssStartAge * 12)
       : toNumber(ps.socialSecurityMonthly) * 12;

@@ -178,6 +178,7 @@ export function ProjectionCard(props: {
     hasIndividualAccountData,
     enginePeople,
     engineSettings,
+    enginePerPersonSettings,
     baseYear,
     deflate,
     autoloadEnabled,
@@ -454,6 +455,7 @@ export function ProjectionCard(props: {
                   )}
                   generatedAt={new Date()}
                   engineSettings={engineSettings}
+                  perPersonSettings={enginePerPersonSettings}
                   rmdExcessYears={
                     result.projectionByYear.filter(
                       (y) =>

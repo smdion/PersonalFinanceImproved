@@ -5,7 +5,30 @@ import {
   getClaimingAdjustmentMultiplier,
   getSpousalAdjustmentMultiplier,
   SPOUSAL_BENEFIT_BASE_RATE,
+  parseAnnualPia,
 } from "@/lib/config/social-security";
+
+describe("parseAnnualPia — the one canonical opt-in check", () => {
+  it("annualizes a valid monthly string", () => {
+    expect(parseAnnualPia("3200")).toBe(38400);
+    expect(parseAnnualPia("3200.50")).toBeCloseTo(38406, 5);
+  });
+
+  it("accepts a number too (already-parsed)", () => {
+    expect(parseAnnualPia(3200)).toBe(38400);
+  });
+
+  it("returns null for not-opted-in / unusable values", () => {
+    expect(parseAnnualPia(null)).toBeNull();
+    expect(parseAnnualPia(undefined)).toBeNull();
+    expect(parseAnnualPia("")).toBeNull(); // blank form field
+    expect(parseAnnualPia("0")).toBeNull(); // "opted in with $0" is not opted in
+    expect(parseAnnualPia("0.00")).toBeNull();
+    expect(parseAnnualPia("-100")).toBeNull();
+    expect(parseAnnualPia("abc")).toBeNull(); // NaN
+    expect(parseAnnualPia(NaN)).toBeNull();
+  });
+});
 
 describe("getFullRetirementAge — SSA birth-year cohorts", () => {
   it("returns 65y0m for 1937 and earlier", () => {

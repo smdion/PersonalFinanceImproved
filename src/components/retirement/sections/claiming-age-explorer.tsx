@@ -19,7 +19,9 @@ import { formatCurrency } from "@/lib/utils/format";
 
 type Props = {
   personId: number;
-  /** This person's PIA, already validated positive by the caller. */
+  /** This person's PIA, ANNUALIZED (the stored value is monthly — the
+   *  caller runs it through `parseAnnualPia`), already validated positive.
+   *  Passed straight to the sweep endpoint, which expects annual. */
   pia: number;
   /** Display label, e.g. "Alex" for a multi-person household or null for
    *  a single-person one (matches SocialSecuritySection's own "X's
