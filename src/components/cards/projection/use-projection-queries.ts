@@ -3,6 +3,7 @@ import { useMemo, useEffect, useRef, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
+import { useBoundedPollInterval } from "@/lib/hooks/use-bounded-poll-interval";
 import { usePersistedToggle } from "@/lib/hooks/use-persisted-setting";
 import {
   SK_RETIREMENT_SIMULATION_AUTOLOAD,
@@ -37,6 +38,11 @@ type CoastFireProbeResult = {
   confidenceThreshold: number;
   mcResult: MonteCarloResult;
 };
+
+// Safety ceiling for every getMonteCarloProgress poller below (400ms
+// interval x 450 = ~3 minutes) — see useBoundedPollInterval's own
+// docblock for why a poll needs one at all.
+const MC_PROGRESS_POLL_MAX = 450;
 
 export function useProjectionQueries(
   form: ProjectionFormState,
@@ -445,12 +451,20 @@ export function useProjectionQueries(
       setCoastFireProbeRunId(null);
     }
   };
+  const coastFireProbeProgressEnabled =
+    coastFireProbeLoading && coastFireProbeRunId != null;
+  const coastFireProbeProgressInterval = useBoundedPollInterval(
+    400,
+    MC_PROGRESS_POLL_MAX,
+    coastFireProbeProgressEnabled,
+    "coastFireProbeProgress",
+  );
   const coastFireProbeProgressQuery =
     trpc.projection.getMonteCarloProgress.useQuery(
       { runId: coastFireProbeRunId ?? "" },
       {
-        enabled: coastFireProbeLoading && coastFireProbeRunId != null,
-        refetchInterval: 400,
+        enabled: coastFireProbeProgressEnabled,
+        refetchInterval: coastFireProbeProgressInterval,
         staleTime: 0,
       },
     );
@@ -505,12 +519,18 @@ export function useProjectionQueries(
   // mcQuery/"Simulation" run; this tracks the passive one that starts
   // right after the engine finishes, in every projection mode). See
   // index.tsx's mcProgress for how these are merged into one banner.
+  const mcPrefetchProgressInterval = useBoundedPollInterval(
+    400,
+    MC_PROGRESS_POLL_MAX,
+    mcPrefetchQuery.isFetching,
+    "mcPrefetchProgress",
+  );
   const mcPrefetchProgressQuery =
     trpc.projection.getMonteCarloProgress.useQuery(
       { runId: mcPrefetchRunId },
       {
         enabled: mcPrefetchQuery.isFetching,
-        refetchInterval: 400,
+        refetchInterval: mcPrefetchProgressInterval,
         staleTime: 0,
       },
     );
@@ -570,11 +590,18 @@ export function useProjectionQueries(
   // query path. See monte-carlo-worker-client.ts's module docblock for
   // why this is a lightweight poll against an in-memory map rather than a
   // subscription.
+  const mcProgressEnabled = mcQuery.isFetching || isRerunning;
+  const mcProgressInterval = useBoundedPollInterval(
+    400,
+    MC_PROGRESS_POLL_MAX,
+    mcProgressEnabled,
+    "mcProgress",
+  );
   const mcProgressQuery = trpc.projection.getMonteCarloProgress.useQuery(
     { runId: mcRunId },
     {
-      enabled: mcQuery.isFetching || isRerunning,
-      refetchInterval: 400,
+      enabled: mcProgressEnabled,
+      refetchInterval: mcProgressInterval,
       staleTime: 0,
     },
   );
@@ -626,12 +653,19 @@ export function useProjectionQueries(
   // currently running, resetting to 0 as each new one starts. Also polls
   // during a manual "Re-run Coast FIRE" (runCoastFireMc reuses this same
   // coastFireMcRunId).
+  const coastFireMcProgressEnabled = coastFireMcQuery.isFetching || isRerunning;
+  const coastFireMcProgressInterval = useBoundedPollInterval(
+    400,
+    MC_PROGRESS_POLL_MAX,
+    coastFireMcProgressEnabled,
+    "coastFireMcProgress",
+  );
   const coastFireMcProgressQuery =
     trpc.projection.getMonteCarloProgress.useQuery(
       { runId: coastFireMcRunId },
       {
-        enabled: coastFireMcQuery.isFetching || isRerunning,
-        refetchInterval: 400,
+        enabled: coastFireMcProgressEnabled,
+        refetchInterval: coastFireMcProgressInterval,
         staleTime: 0,
       },
     );
@@ -694,12 +728,18 @@ export function useProjectionQueries(
   // No manual "Re-run" action exists for this scenario (unlike mc/coast
   // fire above) — only the steady-state query itself, so this doesn't
   // need an `isRerunning` OR'd into its enabled condition.
+  const rateSeededMcProgressInterval = useBoundedPollInterval(
+    400,
+    MC_PROGRESS_POLL_MAX,
+    rateSeededMcQuery.isFetching,
+    "rateSeededMcProgress",
+  );
   const rateSeededMcProgressQuery =
     trpc.projection.getMonteCarloProgress.useQuery(
       { runId: rateSeededMcRunId },
       {
         enabled: rateSeededMcQuery.isFetching,
-        refetchInterval: 400,
+        refetchInterval: rateSeededMcProgressInterval,
         staleTime: 0,
       },
     );
