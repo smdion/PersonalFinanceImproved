@@ -56,6 +56,8 @@ import {
 } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
+import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
+import { PROJECTION_DEBOUNCE_MS } from "@/lib/constants";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import {
   usePaycheckPersonViews,
@@ -1182,7 +1184,14 @@ export function WhatIfTab({
   );
 
   const [activeColumn, setActiveColumn] = useState(0);
-  const { data: budgetData } = trpc.budget.computeActiveSummary.useQuery(
+  // Debounced: several of the sandbox editors below (deduction/contribution
+  // additions' name/amount/treatment fields) update on raw onChange, not
+  // blur — typing into a text field can otherwise re-key this query on
+  // every keystroke, each one making a REAL server round trip (which
+  // itself nests a paycheck.computeSummary call — see budget.ts's
+  // computeActiveSummary). Matches the debounce pattern
+  // use-projection-queries.ts already uses for the same reason.
+  const computeActiveSummaryInput = useDebouncedValue(
     {
       selectedColumn: activeColumn,
       contributionProfile: contributionProfileTiers,
@@ -1207,6 +1216,10 @@ export function WhatIfTab({
         ? { sandboxContribAdditions: sandbox.sandboxContribAdditions }
         : {}),
     },
+    PROJECTION_DEBOUNCE_MS,
+  );
+  const { data: budgetData } = trpc.budget.computeActiveSummary.useQuery(
+    computeActiveSummaryInput,
     { enabled: budgetId != null },
   );
   const { data: resolvedSavingsGoals } =
