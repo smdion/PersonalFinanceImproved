@@ -8,6 +8,7 @@ import {
   protectedProcedure,
   budgetProcedure,
   createCallerFactory,
+  internalCtx,
 } from "../trpc";
 import { paycheckRouter } from "./paycheck";
 import {
@@ -288,38 +289,88 @@ export const budgetRouter = createTRPCRouter({
       // across every profile's every column — not one per column. Goes
       // through paycheck.computeSummary itself (same procedure the Paycheck
       // page calls) rather than a parallel re-derivation.
-      const paycheckCaller = createCallerFactory(paycheckRouter)(ctx);
+      //
+      // Exempting this internal call from the caller's own rate-limit
+      // budget (internalCtx) removes a backstop that was, until now,
+      // accidentally capping this fan-out — each nested call opens its own
+      // demo-schema pool connection when a demo profile is active
+      // (demoSchemaMiddleware), and a single profile's columns resolve
+      // concurrently via Promise.all below, so a profile with many columns
+      // and many distinct pin combinations could otherwise make an
+      // unbounded number of these calls AT ONCE. MAX_NET_MONTHLY_PAIRS
+      // caps total DISTINCT pairs STARTED per request; anything beyond it
+      // is left as null (income simply omitted for that pair) rather than
+      // making the call, with one warning logged the first time this
+      // actually clamps something.
+      //
+      // `distinctPairsStarted` is incremented SYNCHRONOUSLY, before the
+      // `await`, specifically so this holds even when many columns fire
+      // concurrently: JS runs the synchronous portion of each call in the
+      // Promise.all array's construction order before any of them
+      // suspends, so the counter correctly climbs 1, 2, 3... across a
+      // burst of new pairs instead of every concurrent caller seeing a
+      // stale pre-await Map size (which a naive `netMonthlyByPair.size`
+      // check would — the bug an earlier version of this cap had). The
+      // pending-promise map also dedupes concurrent callers asking for the
+      // SAME pair at the same time, so they share one paycheck call
+      // instead of racing two.
+      const MAX_NET_MONTHLY_PAIRS = 20;
+      let netMonthlyPairsClamped = false;
+      let distinctPairsStarted = 0;
+      const paycheckCaller = createCallerFactory(paycheckRouter)(
+        internalCtx(ctx),
+      );
       const netMonthlyByPair = new Map<string, number | null>();
-      const netMonthlyForPair = async (
+      const netMonthlyPending = new Map<string, Promise<number | null>>();
+      const netMonthlyForPair = (
         contribProfileId: number | null,
         salaryProfileId: number | null,
       ): Promise<number | null> => {
         const key = `${contribProfileId}:${salaryProfileId}`;
         const cached = netMonthlyByPair.get(key);
-        if (cached !== undefined) return cached;
-        const paycheckData = await paycheckCaller.computeSummary({
-          ...(input?.salaryActiveFields && input.salaryActiveFields.length > 0
-            ? { salaryActiveFields: input.salaryActiveFields }
-            : {}),
-          ...(contribProfileId != null
-            ? { contributionProfileId: contribProfileId }
-            : {}),
-          ...(salaryProfileId != null ? { salaryProfileId } : {}),
-        });
-        // netPay is gross − pre-tax − withholding − FICA − post-tax, so
-        // "sum netPay × budget periods per month" is the same monthly
-        // take-home the client's buildPayrollBreakdown derives line by line.
-        let net: number | null = null;
-        for (const d of paycheckData.people) {
-          const pc = d.paycheck;
-          if (!pc || !d.job) continue;
-          const perMonth =
-            ("budgetPerMonth" in d ? d.budgetPerMonth : null) ??
-            pc.periodsPerYear / 12;
-          net = (net ?? 0) + pc.netPay * perMonth;
+        if (cached !== undefined) return Promise.resolve(cached);
+        const pending = netMonthlyPending.get(key);
+        if (pending) return pending;
+
+        if (distinctPairsStarted >= MAX_NET_MONTHLY_PAIRS) {
+          if (!netMonthlyPairsClamped) {
+            netMonthlyPairsClamped = true;
+            log("warn", "listProfiles.netMonthlyPairs_clamped", {
+              limit: MAX_NET_MONTHLY_PAIRS,
+            });
+          }
+          return Promise.resolve(null);
         }
-        netMonthlyByPair.set(key, net);
-        return net;
+        distinctPairsStarted += 1;
+
+        const promise = (async () => {
+          const paycheckData = await paycheckCaller.computeSummary({
+            ...(input?.salaryActiveFields && input.salaryActiveFields.length > 0
+              ? { salaryActiveFields: input.salaryActiveFields }
+              : {}),
+            ...(contribProfileId != null
+              ? { contributionProfileId: contribProfileId }
+              : {}),
+            ...(salaryProfileId != null ? { salaryProfileId } : {}),
+          });
+          // netPay is gross − pre-tax − withholding − FICA − post-tax, so
+          // "sum netPay × budget periods per month" is the same monthly
+          // take-home the client's buildPayrollBreakdown derives line by
+          // line.
+          let net: number | null = null;
+          for (const d of paycheckData.people) {
+            const pc = d.paycheck;
+            if (!pc || !d.job) continue;
+            const perMonth =
+              ("budgetPerMonth" in d ? d.budgetPerMonth : null) ??
+              pc.periodsPerYear / 12;
+            net = (net ?? 0) + pc.netPay * perMonth;
+          }
+          netMonthlyByPair.set(key, net);
+          return net;
+        })();
+        netMonthlyPending.set(key, promise);
+        return promise;
       };
 
       const rows: Array<
@@ -952,8 +1003,9 @@ export const budgetRouter = createTRPCRouter({
       // job.budgetPeriodsPerMonth.
       let netMonthlyIncome: number | null = null;
       try {
-        const paycheckCallerForIncome =
-          createCallerFactory(paycheckRouter)(ctx);
+        const paycheckCallerForIncome = createCallerFactory(paycheckRouter)(
+          internalCtx(ctx),
+        );
         const incomePaycheckData = await paycheckCallerForIncome.computeSummary(
           {
             ...(input?.salaryActiveFields && input.salaryActiveFields.length > 0

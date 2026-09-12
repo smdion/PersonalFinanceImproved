@@ -132,6 +132,57 @@ describe("budget router", () => {
         fresh.cleanup();
       }
     });
+
+    it("caps distinct (Contribution, Salary) pairs at MAX_NET_MONTHLY_PAIRS instead of an unbounded fan-out, logging once when it clamps", async () => {
+      // Exempting the nested paycheck.computeSummary call from the
+      // caller's own rate-limit budget (internalCtx) removed a backstop
+      // that was, until now, accidentally capping this fan-out — a
+      // household with many distinct column pins could otherwise make an
+      // unbounded number of nested calls (each one able to open its own
+      // demo-schema pool connection). One profile with more than
+      // MAX_NET_MONTHLY_PAIRS (20) columns, each pinned to its own
+      // distinct Contribution Profile, forces the count of distinct pairs
+      // well past the cap.
+      const NUM_COLUMNS = 25;
+      const contribProfileIds: number[] = [];
+      for (let i = 0; i < NUM_COLUMNS; i++) {
+        contribProfileIds.push(
+          seedContributionProfile(db, {
+            name: `Fan-Out Cap Test Profile ${i}`,
+            contributionActiveFields: { contributionAccounts: {} },
+          }),
+        );
+      }
+      const fanOutProfileId = await seedBudgetProfile(
+        db,
+        "Fan-Out Cap Test Budget",
+        false,
+      );
+      db.update(sqliteSchema.budgetProfiles)
+        .set({
+          columnLabels: contribProfileIds.map((_, i) => `Col ${i}`),
+          columnContributionProfileIds: contribProfileIds,
+        })
+        .where(eq(sqliteSchema.budgetProfiles.id, fanOutProfileId))
+        .run();
+
+      const consoleLogSpy = vi
+        .spyOn(console, "log")
+        .mockImplementation(() => {});
+      try {
+        const result = await caller.budget.listProfiles();
+        expect(result.find((p) => p.id === fanOutProfileId)).toBeDefined();
+
+        const clampLogged = consoleLogSpy.mock.calls.some(
+          (args) =>
+            typeof args[0] === "string" &&
+            args[0].includes("listProfiles.netMonthlyPairs_clamped"),
+        );
+        expect(clampLogged).toBe(true);
+      } finally {
+        consoleLogSpy.mockRestore();
+      }
+    });
   });
 
   // =========================================================================

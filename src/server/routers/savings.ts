@@ -5,6 +5,7 @@ import { TRPCError } from "@trpc/server";
 import {
   createTRPCRouter,
   createCallerFactory,
+  internalCtx,
   protectedProcedure,
   savingsProcedure,
   type Context,
@@ -462,8 +463,8 @@ async function computeLiveMaxMonthlyFunding(
     salaryProfileTiers?: ProfileResolutionTiers;
   },
 ): Promise<number | null> {
-  const paycheckCaller = createCallerFactory(paycheckRouter)(ctx);
-  const budgetCaller = createCallerFactory(budgetRouter)(ctx);
+  const paycheckCaller = createCallerFactory(paycheckRouter)(internalCtx(ctx));
+  const budgetCaller = createCallerFactory(budgetRouter)(internalCtx(ctx));
   const paycheckInput = {
     ...(income?.contributionProfileId != null
       ? { contributionProfileId: income.contributionProfileId }
