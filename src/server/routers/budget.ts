@@ -48,6 +48,7 @@ import {
   resolveTargetBudgetProfile,
   getResolvedGoalAllocations,
   resolveLinkedBudgetItemAmounts,
+  resolveBudgetProfileColumnProfileIds,
   loadBudgetItemLinks,
   setBudgetItemLink,
   deleteBudgetItemLink,
@@ -2123,8 +2124,8 @@ export const budgetRouter = createTRPCRouter({
 
   /** Push budget amounts to API for all linked items (Ledgr -> API). */
   syncBudgetToApi: budgetProcedure
-    .input(z.object({ selectedColumn: z.number().int().default(0) }))
-    .mutation(async ({ ctx, input }) => {
+    .input(z.object({}).optional())
+    .mutation(async ({ ctx }) => {
       const active = await getActiveBudgetApi(ctx.db);
       if (active === "none") {
         throw new TRPCError({
@@ -2143,7 +2144,10 @@ export const budgetRouter = createTRPCRouter({
 
       // Use linked profile from apiConnections (consistent with sync.ts orchestrator)
       const [conn] = await ctx.db
-        .select({ linkedProfileId: schema.apiConnections.linkedProfileId })
+        .select({
+          linkedProfileId: schema.apiConnections.linkedProfileId,
+          linkedColumnIndex: schema.apiConnections.linkedColumnIndex,
+        })
         .from(schema.apiConnections)
         .where(eq(schema.apiConnections.service, active));
       const allProfiles = await ctx.db.select().from(schema.budgetProfiles);
@@ -2155,6 +2159,11 @@ export const budgetRouter = createTRPCRouter({
           code: "NOT_FOUND",
           message: "No linked or active budget profile",
         });
+      // Same connection-configured column getPreview derives its
+      // `ledgrAmount` from (src/server/routers/sync/core.ts) — pushing a
+      // different, client-supplied column would push a number the preview
+      // never showed the user.
+      const colIdx = conn?.linkedColumnIndex ?? 0;
 
       const pushItemRows = await ctx.db
         .select()
@@ -2175,6 +2184,20 @@ export const budgetRouter = createTRPCRouter({
         };
       });
 
+      const numColumns = (profile.columnLabels as string[]).length;
+      const { contribProfileIdByColumn, salaryProfileIdByColumn } =
+        await resolveBudgetProfileColumnProfileIds(ctx.db, profile);
+      // Contribution-linked items freeze `amounts` on edit (see
+      // resolveLinkedBudgetItemAmounts docblock) — pushing raw `amounts`
+      // would push the stale value instead of the profile's live one.
+      const resolvedItems = await resolveLinkedBudgetItemAmounts(
+        ctx.db,
+        items,
+        numColumns,
+        contribProfileIdByColumn,
+        salaryProfileIdByColumn,
+      );
+
       let pushed = 0;
       // Counted separately from a hard failure below — the provider
       // COULDN'T perform this specific write, either because it has no API
@@ -2186,7 +2209,7 @@ export const budgetRouter = createTRPCRouter({
       // so the caller can tell "nothing to push" apart from "this item
       // couldn't be pushed".
       let skippedUnsupported = 0;
-      for (const item of items) {
+      for (const item of resolvedItems) {
         if (!item.apiCategoryId) continue;
         if (
           item.apiSyncDirection !== "push" &&
@@ -2194,9 +2217,7 @@ export const budgetRouter = createTRPCRouter({
         )
           continue;
 
-        const amounts = item.amounts as number[];
-        const colIdx = Math.min(input.selectedColumn, amounts.length - 1);
-        const amount = amounts[colIdx] ?? 0;
+        const amount = item.amounts[Math.min(colIdx, numColumns - 1)] ?? 0;
 
         // Push as YNAB goal target (plan-level, not month-specific)
         try {

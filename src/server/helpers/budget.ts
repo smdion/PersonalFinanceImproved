@@ -1,13 +1,21 @@
 /**
  * Budget expense computation helpers.
  */
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { roundToCents } from "@/lib/utils/math";
 import { toNumber } from "./transforms";
 import type { Db } from "./transforms";
 import { parseAppSettings } from "./settings";
 import type { ActiveBudgetApi } from "@/lib/budget-api/types";
+import {
+  resolveContributionProfileIdsForAllColumns,
+  resolveSalaryProfileIdsForAllColumns,
+} from "@/lib/calculators/contribution-profile-resolution";
+import {
+  SK_ACTIVE_CONTRIB_PROFILE_ID,
+  SK_ACTIVE_SALARY_PROFILE_ID,
+} from "@/lib/constants/settings-keys";
 import {
   filterActiveJobs,
   type ContribResolutionStatus,
@@ -359,6 +367,69 @@ export function computeBudgetAnnualTotal(
 }
 
 /**
+ * Resolves the (Contribution Profile, Salary Profile) id every column of
+ * `budgetProfile` should use, for a caller that has NO Plan/session context
+ * of its own — a budget-API sync, a background expense rollup, a retirement
+ * readiness check. Uses ONLY the household's globally-active profile
+ * settings (`app_settings`) plus `budgetProfile`'s own per-column pins —
+ * deliberately NOT a Plan pin: which Plan is "currently selected" is pure
+ * browser/session state (see `budget.ts` router's `listProfiles` docblock —
+ * "Plan pins are session/browser state, so the caller supplies them"), with
+ * no server-side "currently active Plan" to read. That's the right behavior
+ * here, not a gap to fill: a budget-API push writes to a REAL external
+ * system and must reflect the household's real persisted state, never an
+ * ephemeral session-local Plan preview one browser tab happens to have open.
+ *
+ * Feed the result straight into `resolveLinkedBudgetItemAmounts` below.
+ */
+export async function resolveBudgetProfileColumnProfileIds(
+  db: Db,
+  budgetProfile: {
+    columnLabels: unknown;
+    columnContributionProfileIds: unknown;
+    columnSalaryProfileIds: unknown;
+  },
+): Promise<{
+  contribProfileIdByColumn: (number | null)[];
+  salaryProfileIdByColumn: (number | null)[];
+  numColumns: number;
+}> {
+  const numColumns =
+    (budgetProfile.columnLabels as string[] | null)?.length ?? 0;
+  const settingRows = await db
+    .select()
+    .from(schema.appSettings)
+    .where(
+      inArray(schema.appSettings.key, [
+        SK_ACTIVE_CONTRIB_PROFILE_ID,
+        SK_ACTIVE_SALARY_PROFILE_ID,
+      ]),
+    );
+  const settingValue = (key: string): number | null => {
+    const raw = settingRows.find((r) => r.key === key)?.value ?? null;
+    const num = Number(raw);
+    return raw == null || Number.isNaN(num) ? null : num;
+  };
+  const contribProfileIdByColumn = resolveContributionProfileIdsForAllColumns({
+    planPinId: null,
+    localSelectionId: null,
+    globalDefaultId: settingValue(SK_ACTIVE_CONTRIB_PROFILE_ID),
+    columnPinIds: budgetProfile.columnContributionProfileIds as
+      (number | null)[] | null,
+    numColumns,
+  });
+  const salaryProfileIdByColumn = resolveSalaryProfileIdsForAllColumns({
+    planPinId: null,
+    localSelectionId: null,
+    globalDefaultId: settingValue(SK_ACTIVE_SALARY_PROFILE_ID),
+    columnPinIds: budgetProfile.columnSalaryProfileIds as
+      (number | null)[] | null,
+    numColumns,
+  });
+  return { contribProfileIdByColumn, salaryProfileIdByColumn, numColumns };
+}
+
+/**
  * Resolve every linked budget item's per-column dollar amounts through the
  * SAME contribution-account resolution `budget.computeActiveSummary` uses,
  * instead of the item's raw `amounts` column (which is intentionally left
@@ -594,14 +665,14 @@ export async function getAnnualExpensesFromBudget(
     .from(schema.budgetItems)
     .where(eq(schema.budgetItems.profileId, profile.id));
 
-  const columnLabels = profile.columnLabels as string[];
-  const numColumns = columnLabels.length;
+  const { contribProfileIdByColumn, salaryProfileIdByColumn, numColumns } =
+    await resolveBudgetProfileColumnProfileIds(db, profile);
   const resolvedItems = await resolveLinkedBudgetItemAmounts(
     db,
     items,
     numColumns,
-    new Array(numColumns).fill(null),
-    new Array(numColumns).fill(null),
+    contribProfileIdByColumn,
+    salaryProfileIdByColumn,
   );
 
   return computeBudgetAnnualTotal(

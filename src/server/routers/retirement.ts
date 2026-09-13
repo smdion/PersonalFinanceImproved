@@ -26,6 +26,7 @@ import {
   resolveProfile,
   getPrimaryPerson,
   resolveLinkedBudgetItemAmounts,
+  resolveBudgetProfileColumnProfileIds,
   resolveContribPeriods,
 } from "@/server/helpers";
 import { getAllPeople } from "@/server/helpers/people";
@@ -325,21 +326,23 @@ export const retirementRouter = createTRPCRouter({
       // Build per-profile column totals — resolved through the same
       // contribution-account chain computeActiveSummary/build-engine-payload.ts
       // use (see resolveLinkedBudgetItemAmounts) rather than raw `amounts`,
-      // which is intentionally stale for contribution-linked items. Live/
-      // globally-active profiles throughout (no Plan pin), matching this
-      // endpoint's documented "control arm" salary resolution below.
+      // which is intentionally stale for contribution-linked items. Global
+      // default profiles throughout (no Plan pin), matching this endpoint's
+      // documented "control arm" salary resolution below.
       const profileSummaries = await Promise.all(
         allBudgetProfiles.map(async (p) => {
           const items = allBudgetItems.filter((i) => i.profileId === p.id);
           const labels = p.columnLabels as string[];
           const months = (p.columnMonths as number[] | null) ?? null;
           const numColumns = labels.length;
+          const { contribProfileIdByColumn, salaryProfileIdByColumn } =
+            await resolveBudgetProfileColumnProfileIds(ctx.db, p);
           const resolvedItems = await resolveLinkedBudgetItemAmounts(
             ctx.db,
             items,
             numColumns,
-            new Array(numColumns).fill(null),
-            new Array(numColumns).fill(null),
+            contribProfileIdByColumn,
+            salaryProfileIdByColumn,
           );
           const totals = labels.map((_: string, colIdx: number) =>
             resolvedItems.reduce(
