@@ -113,6 +113,12 @@ export type ActualConfig = {
   serverUrl: string;
   apiKey: string;
   budgetSyncId: string;
+  /** User-facing URL for the Actual web app itself — `serverUrl` is often a
+   *  private/internal address the server uses for API calls (e.g. a LAN IP
+   *  or the actual-http-api wrapper's own address), not something a
+   *  browser outside that network can reach. Optional: a nav link to the
+   *  active budget API only renders once this is set. */
+  externalUrl?: string;
 };
 
 export type BudgetApiConfig = YnabConfig | ActualConfig;

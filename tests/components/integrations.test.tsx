@@ -57,6 +57,9 @@ vi.mock("@/lib/trpc", () => ({
           data: null,
         }),
       },
+      updateActualExternalUrl: {
+        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+      },
       fetchYnabBudgets: {
         useMutation: () => ({
           mutate: vi.fn(),
@@ -228,6 +231,9 @@ describe("IntegrationsSettings", () => {
               data: null,
             }),
           },
+          updateActualExternalUrl: {
+            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+          },
           fetchYnabBudgets: {
             useMutation: () => ({
               mutate: vi.fn(),
@@ -362,6 +368,9 @@ describe("IntegrationsSettings", () => {
               isSuccess: false,
               data: null,
             }),
+          },
+          updateActualExternalUrl: {
+            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
           },
           fetchYnabBudgets: {
             useMutation: () => ({
@@ -518,6 +527,9 @@ describe("IntegrationsSettings", () => {
               isSuccess: false,
               data: null,
             }),
+          },
+          updateActualExternalUrl: {
+            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
           },
           fetchYnabBudgets: {
             useMutation: () => ({

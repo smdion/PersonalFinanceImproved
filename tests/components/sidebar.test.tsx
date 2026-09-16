@@ -16,6 +16,22 @@ vi.mock("@/components/ui/theme-toggle", () => ({
   ),
 }));
 
+// BudgetApiLink (rendered inline in Sidebar, not a separate importable
+// component) uses tRPC internally — mock the one query it calls so these
+// tests don't need a full tRPC provider wrapper.
+const mockGetActiveBudgetApiLink = vi.fn().mockReturnValue({
+  data: { service: "none", url: null },
+});
+vi.mock("@/lib/trpc", () => ({
+  trpc: {
+    sync: {
+      getActiveBudgetApiLink: {
+        useQuery: () => mockGetActiveBudgetApiLink(),
+      },
+    },
+  },
+}));
+
 const defaultProps = {
   user: { name: "Admin", role: "admin" },
   mobileOpen: false,
@@ -84,5 +100,45 @@ describe("Sidebar", () => {
   it("shows collapse button", () => {
     render(<Sidebar {...defaultProps} />);
     expect(screen.getByLabelText("Collapse sidebar")).toBeInTheDocument();
+  });
+
+  describe("budget API link", () => {
+    it("is hidden when no budget API is active", () => {
+      mockGetActiveBudgetApiLink.mockReturnValueOnce({
+        data: { service: "none", url: null },
+      });
+      render(<Sidebar {...defaultProps} />);
+      expect(screen.queryByText("YNAB")).not.toBeInTheDocument();
+      expect(screen.queryByText("Actual Budget")).not.toBeInTheDocument();
+    });
+
+    it("is hidden when Actual is active but has no saved External URL", () => {
+      mockGetActiveBudgetApiLink.mockReturnValueOnce({
+        data: { service: "actual", url: null },
+      });
+      render(<Sidebar {...defaultProps} />);
+      expect(screen.queryByText("Actual Budget")).not.toBeInTheDocument();
+    });
+
+    it("links to the hosted app when YNAB is active", () => {
+      mockGetActiveBudgetApiLink.mockReturnValueOnce({
+        data: { service: "ynab", url: "https://app.youneedabudget.com/" },
+      });
+      render(<Sidebar {...defaultProps} />);
+      // Renders twice (mobile + desktop spans), same as every other nav item.
+      const link = screen.getAllByText("YNAB")[0]!.closest("a");
+      expect(link).toHaveAttribute("href", "https://app.youneedabudget.com/");
+      expect(link).toHaveAttribute("target", "_blank");
+      expect(link).toHaveAttribute("rel", "noopener noreferrer");
+    });
+
+    it("links to the saved External URL when Actual is active", () => {
+      mockGetActiveBudgetApiLink.mockReturnValueOnce({
+        data: { service: "actual", url: "https://actual.mydomain.com" },
+      });
+      render(<Sidebar {...defaultProps} />);
+      const link = screen.getAllByText("Actual Budget")[0]!.closest("a");
+      expect(link).toHaveAttribute("href", "https://actual.mydomain.com");
+    });
   });
 });

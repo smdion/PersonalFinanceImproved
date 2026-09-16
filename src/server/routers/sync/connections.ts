@@ -15,7 +15,7 @@ import {
   cacheClear,
 } from "@/lib/budget-api";
 import type { YnabConfig, ActualConfig } from "@/lib/budget-api";
-import { encryptJson } from "@/lib/crypto";
+import { encryptJson, readMaybeEncrypted } from "@/lib/crypto";
 import { validateOutboundUrl } from "@/lib/url-safety";
 import { TRPCError } from "@trpc/server";
 import { serviceEnum } from "./_shared";
@@ -35,8 +35,17 @@ export const syncConnectionsRouter = createTRPCRouter({
         ? { connected: true, lastSyncedAt: ynabConn.lastSyncedAt }
         : { connected: false, lastSyncedAt: null },
       actual: actualConn
-        ? { connected: true, lastSyncedAt: actualConn.lastSyncedAt }
-        : { connected: false, lastSyncedAt: null },
+        ? {
+            connected: true,
+            lastSyncedAt: actualConn.lastSyncedAt,
+            // Not a secret (unlike apiKey, never returned here) — safe to
+            // send back so the settings UI can prefill an edit field
+            // without requiring the whole credential form to be retyped.
+            externalUrl:
+              readMaybeEncrypted<ActualConfig>(actualConn.config).externalUrl ??
+              null,
+          }
+        : { connected: false, lastSyncedAt: null, externalUrl: null },
     };
   }),
 
@@ -54,6 +63,10 @@ export const syncConnectionsRouter = createTRPCRouter({
           serverUrl: z.string().url(),
           apiKey: z.string().min(1),
           budgetSyncId: z.string().min(1),
+          // Never sent server-side (no outbound fetch to it), so it gets
+          // no validateOutboundUrl SSRF check — only a valid-URL shape
+          // check, same as any other browser-opened link.
+          externalUrl: z.string().url().optional().or(z.literal("")),
         }),
       ]),
     )
@@ -79,6 +92,7 @@ export const syncConnectionsRouter = createTRPCRouter({
               serverUrl: input.serverUrl,
               apiKey: input.apiKey,
               budgetSyncId: input.budgetSyncId,
+              ...(input.externalUrl ? { externalUrl: input.externalUrl } : {}),
             };
 
       // Encrypt at rest with AES-256-GCM (per RULES.md § Permission &
@@ -107,6 +121,39 @@ export const syncConnectionsRouter = createTRPCRouter({
           target: schema.apiConnections.service,
           set: { config: storedConfig },
         });
+
+      return { success: true };
+    }),
+
+  /** Update just the Actual connection's External URL — the browser-facing
+   *  address for the nav link (see ActualConfig's docblock). Deliberately
+   *  separate from saveConnection: that mutation requires retyping every
+   *  credential field (apiKey isn't ever sent back to the client to
+   *  prefill), which would make editing only this one, non-secret field
+   *  unnecessarily require re-entering the API key. */
+  updateActualExternalUrl: syncProcedure
+    .input(
+      z.object({ externalUrl: z.string().url().optional().or(z.literal("")) }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const conn = await getApiConnection(ctx.db, "actual");
+      if (!conn)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "No Actual Budget connection configured",
+        });
+      const current = readMaybeEncrypted<ActualConfig>(conn.config);
+      const next: ActualConfig = { ...current };
+      if (input.externalUrl) next.externalUrl = input.externalUrl;
+      else delete next.externalUrl;
+
+      const storedConfig = encryptJson(next);
+      // eslint-disable-next-line no-restricted-syntax -- see saveConnection's block comment above
+      const storedConfigForDb = storedConfig as unknown as ActualConfig;
+      await ctx.db
+        .update(schema.apiConnections)
+        .set({ config: storedConfigForDb })
+        .where(eq(schema.apiConnections.service, "actual"));
 
       return { success: true };
     }),
