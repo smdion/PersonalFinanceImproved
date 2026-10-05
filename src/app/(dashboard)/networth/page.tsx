@@ -5,7 +5,11 @@
 import { useState, useMemo, useCallback } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
-import { formatCurrency, formatDate } from "@/lib/utils/format";
+import {
+  formatCurrency,
+  formatDate,
+  maskAmountsInText,
+} from "@/lib/utils/format";
 import { PageHeader } from "@/components/ui/page-header";
 import dynamic from "next/dynamic";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -444,7 +448,7 @@ export default function NetWorthPage() {
         <div className="mt-4 rounded-lg border border-yellow-200 bg-yellow-50 p-3">
           {result.warnings.map((w) => (
             <p key={w} className="text-sm text-yellow-800">
-              {w}
+              {maskAmountsInText(w)}
             </p>
           ))}
         </div>

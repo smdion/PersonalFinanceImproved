@@ -10,6 +10,7 @@ import {
   formatCurrency,
   formatPercent,
   formatRelativeTime,
+  maskAmountsInText,
 } from "@/lib/utils/format";
 import type { ProjectionState } from "./projection-table-types";
 
@@ -135,7 +136,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
           {mcQuery.data.result.warnings.length > 0 && (
             <div className="rounded bg-amber-50 px-3 py-2 text-xs text-amber-600">
               {mcQuery.data.result.warnings.map((w) => (
-                <div key={w}>{w}</div>
+                <div key={w}>{maskAmountsInText(w)}</div>
               ))}
             </div>
           )}

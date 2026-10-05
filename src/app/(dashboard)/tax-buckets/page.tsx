@@ -14,23 +14,14 @@
  * deliberately NOT prefetched here, same reasoning as
  * contributions/page.tsx: a guessed input wouldn't match either.
  */
-import {
-  HydrationBoundary,
-  dehydrate,
-  type DehydratedState,
-} from "@tanstack/react-query";
-import { createServerHelpers } from "@/server/helpers/server-trpc";
+import { HydrationBoundary } from "@tanstack/react-query";
+import { prefetchForPage } from "@/server/helpers/server-trpc";
 import { TaxBucketsContent } from "./tax-buckets-content";
 
 export default async function TaxBucketsPage() {
-  let dehydratedState: DehydratedState | undefined = undefined;
-  try {
-    const helpers = await createServerHelpers();
+  const dehydratedState = await prefetchForPage(async (helpers) => {
     await helpers.taxBuckets.computeBreakdown.prefetch().catch(() => undefined);
-    dehydratedState = dehydrate(helpers.queryClient);
-  } catch {
-    dehydratedState = undefined;
-  }
+  });
 
   return (
     <HydrationBoundary state={dehydratedState}>

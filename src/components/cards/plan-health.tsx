@@ -43,7 +43,11 @@ import {
   type WithdrawalStrategyRecommendation,
 } from "@/lib/pure/withdrawal-strategy-recommendation";
 import { deriveProjectionBand } from "@/lib/pure/projection-bands";
-import { formatPercent, formatCurrency } from "@/lib/utils/format";
+import {
+  formatPercent,
+  formatCurrency,
+  maskAmountsInText,
+} from "@/lib/utils/format";
 import { STATUS_COLORS } from "@/lib/utils/colors";
 
 interface PlanHealthCardProps {
@@ -153,7 +157,7 @@ export function PlanHealthCard(props: PlanHealthCardProps) {
     callouts.push(
       <CalloutLine key="m4-strategy" severity="info">
         <strong>Recommended strategy:</strong> {strategyRec.label}.{" "}
-        {strategyRec.rationale}
+        {maskAmountsInText(strategyRec.rationale)}
       </CalloutLine>,
     );
   }

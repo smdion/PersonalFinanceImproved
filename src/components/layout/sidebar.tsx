@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { PrivacyToggle } from "@/components/ui/privacy-toggle";
 import { Button } from "@/components/ui/button";
 import { DataFreshness } from "./data-freshness";
 import { signOut } from "next-auth/react";
@@ -463,18 +464,20 @@ export function Sidebar({
           )}
         </div>
 
-        {/* Mobile theme toggle */}
-        <div className="px-2 pb-1 md:hidden">
+        {/* Mobile theme + privacy toggles */}
+        <div className="space-y-1 px-2 pb-1 md:hidden">
           <ThemeToggle />
+          <PrivacyToggle />
         </div>
 
-        {/* Utility bar — theme + collapse + version (desktop only) */}
+        {/* Utility bar — theme + privacy + collapse + version (desktop only) */}
         <div
           className={`hidden items-center border-t py-1.5 md:flex ${
             collapsed ? "flex-col gap-1 px-0" : "flex-row px-2"
           }`}
         >
           <ThemeToggle compact />
+          <PrivacyToggle compact />
           {!collapsed && <div className="flex-1" />}
           {!collapsed &&
             process.env.APP_VERSION &&

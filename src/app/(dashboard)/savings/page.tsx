@@ -30,7 +30,7 @@ import type { TargetMode } from "@/lib/config/enum-values";
 function isTargetMode(v: unknown): v is TargetMode {
   return TARGET_MODE_VALUES.includes(v as TargetMode);
 }
-import { formatCurrency } from "@/lib/utils/format";
+import { formatCurrency, maskAmountsInText } from "@/lib/utils/format";
 import { BudgetCapacityBar } from "@/components/savings/budget-capacity-bar";
 import { ExtraPaycheckRulesEditor } from "@/components/savings/extra-paycheck-rules-editor";
 
@@ -593,7 +593,7 @@ export default function SavingsPage() {
         <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3">
           {savings.warnings.map((w) => (
             <p key={w} className="text-sm text-yellow-800">
-              {w}
+              {maskAmountsInText(w)}
             </p>
           ))}
         </div>

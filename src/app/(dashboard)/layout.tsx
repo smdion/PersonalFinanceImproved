@@ -6,6 +6,8 @@ import { redirect } from "next/navigation";
 import { DashboardLayout as DashboardLayoutClient } from "@/components/layout/dashboard-layout";
 import { DashboardShell } from "./dashboard-shell";
 import { UserProvider } from "@/lib/context/user-context";
+import { PrivacyProvider } from "@/lib/context/privacy-context";
+import { PRIVACY_COOKIE } from "@/lib/utils/format";
 import { DemoBanner } from "@/components/layout/demo-banner";
 import { DEMO_PROFILES } from "@/lib/demo";
 import { db, isPostgres } from "@/lib/db";
@@ -108,6 +110,7 @@ export default async function DashboardLayout({
   const cookieStore = await cookies();
   const demoSlug = cookieStore.get("demo_active_profile")?.value;
   const demoProfile = demoSlug ? DEMO_PROFILES[demoSlug] : null;
+  const privacy = cookieStore.get(PRIVACY_COOKIE)?.value === "1";
 
   // In demo-only mode, require a demo profile to be active
   if (isDemoOnly && !demoProfile) {
@@ -125,17 +128,19 @@ export default async function DashboardLayout({
       {demoProfile && (
         <DemoBanner profileName={demoProfile.name} isDemoOnly={isDemoOnly} />
       )}
-      <DashboardLayoutClient user={user} isDemoOnly={isDemoOnly}>
-        <UserProvider
-          user={{
-            name: user.name,
-            role: user.role,
-            permissions: user.permissions,
-          }}
-        >
-          <DashboardShell>{children}</DashboardShell>
-        </UserProvider>
-      </DashboardLayoutClient>
+      <PrivacyProvider initialPrivacy={privacy}>
+        <DashboardLayoutClient user={user} isDemoOnly={isDemoOnly}>
+          <UserProvider
+            user={{
+              name: user.name,
+              role: user.role,
+              permissions: user.permissions,
+            }}
+          >
+            <DashboardShell>{children}</DashboardShell>
+          </UserProvider>
+        </DashboardLayoutClient>
+      </PrivacyProvider>
     </>
   );
 }

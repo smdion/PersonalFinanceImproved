@@ -2,11 +2,18 @@
 
 import { ScenarioProvider } from "@/lib/context/scenario-context";
 import { ScenarioBar } from "@/components/layout/scenario-bar";
+import { usePrivacy } from "@/lib/context/privacy-context";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
+  const { privacy } = usePrivacy();
   return (
     <ScenarioProvider>
-      <div className="flex h-full flex-col">
+      {/* Keyed on privacy so toggling remounts the page and every
+          formatCurrency call re-runs against the new flag. */}
+      <div
+        key={privacy ? "private" : "public"}
+        className="flex h-full flex-col"
+      >
         <ScenarioBar />
         {/* print:p-0 print:overflow-visible — pl-12/overflow-auto exist to
             clear the mobile hamburger button and give the page its own

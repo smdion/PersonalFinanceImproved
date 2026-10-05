@@ -6,7 +6,11 @@ import {
   taxTypeTextColor,
   taxTypeLabel,
 } from "@/lib/utils/colors";
-import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import {
+  formatCurrency,
+  formatPercent,
+  maskAmountsInText,
+} from "@/lib/utils/format";
 import {
   type AccountCategory,
   getAccountTypeConfig,
@@ -276,7 +280,7 @@ export function ContribMethodologySection({ state }: ContribMethodologyProps) {
               key={w}
               className="rounded bg-amber-50 px-3 py-1.5 text-xs text-amber-600"
             >
-              {w}
+              {maskAmountsInText(w)}
             </div>
           ))}
         </div>

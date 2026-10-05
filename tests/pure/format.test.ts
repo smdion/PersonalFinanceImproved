@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import {
   stripInstitutionSuffix,
   personDisplayName,
@@ -10,6 +10,11 @@ import {
   buildAccountLabel,
   accountDisplayName,
   formatSyncResultToast,
+  setPrivacyMode,
+  isPrivacyMode,
+  maskedAmount,
+  maskAmountsInText,
+  MASKED_AMOUNT_PATTERN,
 } from "@/lib/utils/format";
 
 /**
@@ -419,6 +424,108 @@ describe("formatSyncResultToast", () => {
       );
       expect(msg).not.toContain("Apply Budget Template");
       expect(msg).toBe("No changes to push — already up to date");
+    });
+  });
+});
+
+describe("privacy mode", () => {
+  // The flag is module-level; never let one test's setting leak to the next.
+  afterEach(() => setPrivacyMode(false));
+
+  it("is off by default and toggles", () => {
+    expect(isPrivacyMode()).toBe(false);
+    setPrivacyMode(true);
+    expect(isPrivacyMode()).toBe(true);
+  });
+
+  it("leaves formatters unchanged while off", () => {
+    expect(formatCurrency(1234.56)).toBe("$1,234.56");
+    expect(compactCurrency(45000)).toBe("$45k");
+  });
+
+  it("masks formatCurrency for positive, negative, zero and fractional values", () => {
+    setPrivacyMode(true);
+    for (const v of [1234.56, -5000, 0, 0.5, 1e9]) {
+      const out = formatCurrency(v);
+      expect(out).toMatch(MASKED_AMOUNT_PATTERN);
+      expect(out).not.toMatch(/[\d,.-]/); // no digit, separator or sign
+    }
+  });
+
+  it("masks compactCurrency with a shorter mask", () => {
+    setPrivacyMode(true);
+    const out = compactCurrency(1_500_000);
+    expect(out).toMatch(MASKED_AMOUNT_PATTERN);
+    expect(out.length).toBeLessThanOrEqual(4); // "$" + 2-3 glyphs
+  });
+
+  it("does not mask percentages, plain numbers or dates", () => {
+    setPrivacyMode(true);
+    expect(formatPercent(0.2189, 2)).toBe("21.89%");
+    expect(formatNumber(1234567)).toBe("1,234,567");
+    expect(formatDate("2025-01-05", "medium")).toBe("Jan 5, 2025");
+  });
+
+  it("gives the same squiggle for the same seed within a page load", () => {
+    expect(maskedAmount("1234.00")).toBe(maskedAmount("1234.00"));
+    expect(maskedAmount(7, true)).toBe(maskedAmount(7, true));
+  });
+
+  it("varies length and glyphs across seeds", () => {
+    const lengths = new Set<number>();
+    const distinct = new Set<string>();
+    for (let i = 0; i < 400; i++) {
+      const m = maskedAmount(i * 37.5);
+      expect(m).toMatch(MASKED_AMOUNT_PATTERN);
+      expect(m.length).toBeGreaterThanOrEqual(4); // "$" + 3
+      expect(m.length).toBeLessThanOrEqual(9); // "$" + 8
+      lengths.add(m.length);
+      distinct.add(m);
+    }
+    expect(lengths.size).toBeGreaterThanOrEqual(5);
+    expect(distinct.size).toBeGreaterThan(100);
+  });
+
+  describe("maskAmountsInText", () => {
+    it("returns the text unchanged while off", () => {
+      const t = "Cap hit — $1,234.56 unmet";
+      expect(maskAmountsInText(t)).toBe(t);
+    });
+
+    it("masks every amount form", () => {
+      setPrivacyMode(true);
+      const out = maskAmountsInText(
+        "Pay $1,234.56, then -$500, $1.5M, $45k and $ 12 now",
+      );
+      expect(out).not.toMatch(/\d/);
+      expect(out).toContain("Pay ");
+      expect(out).toContain(" now");
+      expect((out.match(/\$/g) ?? []).length).toBe(5);
+    });
+
+    it("leaves non-money tokens alone", () => {
+      setPrivacyMode(true);
+      const t = "Max out your 401k at age 65 for a 21% rate in 2031";
+      expect(maskAmountsInText(t)).toBe(t);
+    });
+
+    it("does not let a k/M/B suffix swallow the next word", () => {
+      setPrivacyMode(true);
+      const out = maskAmountsInText("$500 Brokerage and $300 Bonus");
+      expect(out).toContain(" Brokerage and ");
+      expect(out).toContain(" Bonus");
+    });
+
+    it("is idempotent", () => {
+      setPrivacyMode(true);
+      const once = maskAmountsInText("Total $9,999");
+      expect(maskAmountsInText(once)).toBe(once);
+    });
+
+    it("gives equal amounts in one sentence the same mask", () => {
+      setPrivacyMode(true);
+      const [a, b] = maskAmountsInText("$100 vs $100").split(" vs ");
+      expect(a!.replace(/^.*?(\$)/, "$1")).toBe(b);
     });
   });
 });

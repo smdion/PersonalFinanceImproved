@@ -16,6 +16,13 @@ vi.mock("@/components/ui/theme-toggle", () => ({
   ),
 }));
 
+// Mock PrivacyToggle (uses usePrivacy, which needs PrivacyProvider)
+vi.mock("@/components/ui/privacy-toggle", () => ({
+  PrivacyToggle: ({ compact }: { compact?: boolean }) => (
+    <div data-testid="privacy-toggle">{compact ? "compact" : "full"}</div>
+  ),
+}));
+
 // BudgetApiLink (rendered inline in Sidebar, not a separate importable
 // component) uses tRPC internally — mock the one query it calls so these
 // tests don't need a full tRPC provider wrapper.
@@ -90,11 +97,12 @@ describe("Sidebar", () => {
     expect(screen.queryByText("Paycheck")).toBeNull();
   });
 
-  it("renders DataFreshness and ThemeToggle", () => {
+  it("renders DataFreshness, ThemeToggle and PrivacyToggle", () => {
     render(<Sidebar {...defaultProps} />);
     expect(screen.getByTestId("data-freshness")).toBeInTheDocument();
-    // ThemeToggle renders twice: once for mobile, once for desktop utility bar
+    // Each toggle renders twice: once for mobile, once for desktop utility bar
     expect(screen.getAllByTestId("theme-toggle").length).toBe(2);
+    expect(screen.getAllByTestId("privacy-toggle").length).toBe(2);
   });
 
   it("shows collapse button", () => {
