@@ -8,6 +8,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.8
 
+## [0.8.4] - 2026-10-05
+
+No database changes.
+
+### Added
+
+- Privacy mode: hide every dollar amount with the eye button at the bottom of the sidebar — handy when screen-sharing. Amounts become a handwritten-style scribble that looks different on every page load, and your choice is remembered in this browser. Percentages, dates and values you type into fields stay visible.
+- A link below the System group opens your budget app (YNAB or Actual) in a new tab. Actual has a separate "External URL" field, since its Server URL is often a private address a browser can't open. The link is hidden until one is set.
+
+### Fixed
+
+- Budget push and preview used a stale amount for items linked to a Contribution Profile instead of the profile's current value.
+- Editing contribution accounts in the budget could lose an update when several accounts shared one Contribution Profile.
+- Pages could show "too many requests" errors during normal use, including while typing in the What-If tab.
+- The simulation progress bar could keep running indefinitely if a simulation never finished; it now stops after about three minutes.
+
+---
+
 ## [0.8.3] - 2026-09-07
 
 One additive, nullable column, no data loss: `retirement_profile_people.social_security_pia` (NULL on every existing row = not opted in). The migration changes nothing on its own.
