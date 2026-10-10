@@ -13,6 +13,7 @@ import { SK_SETTINGS_INTEGRATIONS_SECTION } from "@/lib/constants/settings-keys"
 import type { Service, PreviewData } from "./integrations-types";
 import { PreviewPanel } from "./integrations-preview-panel";
 import { SimplefinCard } from "./integrations-simplefin";
+import { TiingoCard } from "./integrations-tiingo";
 import {
   ConnectionStatusLine,
   ConnectionResultMessage,
@@ -504,6 +505,7 @@ const INTEGRATIONS_SECTIONS = [
   { key: "ynab", label: "YNAB" },
   { key: "actual", label: "Actual Budget" },
   { key: "simplefin", label: "SimpleFIN" },
+  { key: "tiingo", label: "Tiingo" },
   { key: "syncBehavior", label: "Sync Behavior" },
 ] as const;
 
@@ -522,6 +524,7 @@ export function IntegrationsSettings() {
   const admin = isAdmin(user);
   const { data: connection } = trpc.sync.getConnection.useQuery();
   const { data: simplefinStatus } = trpc.simplefin.getStatus.useQuery();
+  const { data: tiingoStatus } = trpc.tiingo.getStatus.useQuery();
   const [section, setSection] = usePersistedSetting<IntegrationsSectionKey>(
     SK_SETTINGS_INTEGRATIONS_SECTION,
     "ynab",
@@ -631,13 +634,16 @@ export function IntegrationsSettings() {
               {s.key === "simplefin" && (
                 <NavStatusDot connected={simplefinStatus?.connected ?? false} />
               )}
+              {s.key === "tiingo" && (
+                <NavStatusDot connected={tiingoStatus?.connected ?? false} />
+              )}
               {s.label}
             </button>
           ))}
         </nav>
 
         <div>
-          {/* YNAB/Actual/SimpleFin stay mounted at all times — each holds
+          {/* YNAB/Actual/SimpleFin/Tiingo stay mounted at all times — each holds
               in-progress local state (credential drafts, fetched budget
               list, test/sync results) that would silently reset if the nav
               unmounted them on every switch away and back. Only visibility
@@ -671,6 +677,9 @@ export function IntegrationsSettings() {
           </div>
           <div className={section === "simplefin" ? "" : "hidden"}>
             <SimplefinCard />
+          </div>
+          <div className={section === "tiingo" ? "" : "hidden"}>
+            <TiingoCard />
           </div>
           {section === "syncBehavior" && <SyncBehaviorSettings />}
         </div>

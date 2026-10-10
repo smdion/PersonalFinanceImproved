@@ -16,6 +16,7 @@ No database changes.
 
 - Privacy mode: hide every dollar amount with the eye button at the bottom of the sidebar — handy when screen-sharing. Amounts become a handwritten-style scribble that looks different on every page load, and your choice is remembered in this browser. Percentages, dates and values you type into fields stay visible.
 - A link below the System group opens your budget app (YNAB or Actual) in a new tab. Actual has a separate "External URL" field, since its Server URL is often a private address a browser can't open. The link is hidden until one is set.
+- Tiingo connection in Settings → Integrations: save a free Tiingo API key for historical index and fund prices, groundwork for comparing your portfolio against market benchmarks. The key is checked with Tiingo before it's saved and stored encrypted.
 
 ### Fixed
 

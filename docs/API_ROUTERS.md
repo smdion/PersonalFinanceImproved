@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**359 procedures across 42 routers.**
+**363 procedures across 43 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -544,6 +544,15 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | Procedure  | Kind     | Auth             | Description      |
 | ---------- | -------- | ---------------- | ---------------- |
 | `runTests` | mutation | `adminProcedure` | (no description) |
+
+## `tiingo`
+
+| Procedure          | Kind     | Auth                 | Description                                                                            |
+| ------------------ | -------- | -------------------- | -------------------------------------------------------------------------------------- |
+| `getStatus`        | query    | `protectedProcedure` | Connection status for the Settings integrations card. Never returns the key.           |
+| `removeConnection` | mutation | `syncProcedure`      | Remove the stored key.                                                                 |
+| `saveKey`          | mutation | `syncProcedure`      | Validate a key against Tiingo, then store it encrypted. An invalid key is never saved. |
+| `testConnection`   | mutation | `syncProcedure`      | Test the stored key and report how far back price history goes.                        |
 
 ## `utilities`
 
