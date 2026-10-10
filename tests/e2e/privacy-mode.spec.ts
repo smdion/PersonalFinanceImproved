@@ -111,12 +111,20 @@ test.describe("Privacy mode", () => {
     await page.goto("/networth");
     await waitForContent(page);
     await expect
-      .poll(async () => DOLLAR_AMOUNT.test(await visibleText(page)))
+      .poll(async () => DOLLAR_AMOUNT.test(await visibleText(page)), {
+        // Amounts arrive via client queries after hydration — slow CI runners
+        // need more than expect.poll's 5 s default.
+        timeout: 30_000,
+      })
       .toBe(true);
 
     await page.getByRole("button", { name: "Hide amounts" }).first().click();
     await expect
-      .poll(async () => DOLLAR_AMOUNT.test(await visibleText(page)))
+      .poll(async () => DOLLAR_AMOUNT.test(await visibleText(page)), {
+        // Amounts arrive via client queries after hydration — slow CI runners
+        // need more than expect.poll's 5 s default.
+        timeout: 30_000,
+      })
       .toBe(false);
     const cookies = await context.cookies();
     expect(cookies.find((c) => c.name === PRIVACY_COOKIE)?.value).toBe("1");
@@ -128,7 +136,11 @@ test.describe("Privacy mode", () => {
 
     await page.getByRole("button", { name: "Show amounts" }).first().click();
     await expect
-      .poll(async () => DOLLAR_AMOUNT.test(await visibleText(page)))
+      .poll(async () => DOLLAR_AMOUNT.test(await visibleText(page)), {
+        // Amounts arrive via client queries after hydration — slow CI runners
+        // need more than expect.poll's 5 s default.
+        timeout: 30_000,
+      })
       .toBe(true);
     expect(
       (await context.cookies()).find((c) => c.name === PRIVACY_COOKIE),
