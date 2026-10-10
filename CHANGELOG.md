@@ -25,6 +25,7 @@ No database changes.
 - Pages could show "too many requests" errors during normal use, including while typing in the What-If tab.
 - The simulation progress bar could keep running indefinitely if a simulation never finished; it now stops after about three minutes.
 - Any signed-in user could read the stored settings of connected services (including credentials) through an internal settings endpoint. It is now admin-only and never returns credentials.
+- For users who can't change settings (viewers, demo mode), the dashboard kept re-sending a request to fix the active Contribution, Salary and Retirement Profile several times a second and could show a stack of "didn't save" messages. It now tries once per page load.
 
 ---
 

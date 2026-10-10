@@ -60,7 +60,7 @@ export function useActiveRetirementProfile(): [
   );
   const { data: profiles } = trpc.retirement.retirementProfiles.list.useQuery();
 
-  useActiveProfileRepair(activeId, profiles, setActiveId);
+  useActiveProfileRepair("retirement", activeId, profiles, setActiveId);
 
   return [activeId, setActiveId];
 }

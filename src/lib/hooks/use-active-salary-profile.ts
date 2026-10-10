@@ -56,7 +56,7 @@ export function useActiveSalaryProfile(): [
   );
   const { data: profiles } = trpc.salaryProfile.list.useQuery();
 
-  useActiveProfileRepair(activeId, profiles, setActiveId);
+  useActiveProfileRepair("salary", activeId, profiles, setActiveId);
 
   return [activeId, setActiveId];
 }

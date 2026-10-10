@@ -104,7 +104,11 @@ test.describe("Privacy mode", () => {
     page,
     context,
   }) => {
-    await page.goto("/");
+    // Not the dashboard: on a fresh install (CI's SQLite demo database has
+    // no household) "/" opens the first-run wizard as a full-screen modal
+    // that intercepts clicks on the sidebar toggle. Net Worth always renders
+    // amounts ($0.00 on an empty database) and has no wizard.
+    await page.goto("/networth");
     await waitForContent(page);
     await expect
       .poll(async () => DOLLAR_AMOUNT.test(await visibleText(page)))
