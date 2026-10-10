@@ -132,6 +132,57 @@ describe("budget router", () => {
         fresh.cleanup();
       }
     });
+
+    it("caps distinct (Contribution, Salary) pairs at MAX_NET_MONTHLY_PAIRS instead of an unbounded fan-out, logging once when it clamps", async () => {
+      // Exempting the nested paycheck.computeSummary call from the
+      // caller's own rate-limit budget (internalCtx) removed a backstop
+      // that was, until now, accidentally capping this fan-out — a
+      // household with many distinct column pins could otherwise make an
+      // unbounded number of nested calls (each one able to open its own
+      // demo-schema pool connection). One profile with more than
+      // MAX_NET_MONTHLY_PAIRS (20) columns, each pinned to its own
+      // distinct Contribution Profile, forces the count of distinct pairs
+      // well past the cap.
+      const NUM_COLUMNS = 25;
+      const contribProfileIds: number[] = [];
+      for (let i = 0; i < NUM_COLUMNS; i++) {
+        contribProfileIds.push(
+          seedContributionProfile(db, {
+            name: `Fan-Out Cap Test Profile ${i}`,
+            contributionActiveFields: { contributionAccounts: {} },
+          }),
+        );
+      }
+      const fanOutProfileId = await seedBudgetProfile(
+        db,
+        "Fan-Out Cap Test Budget",
+        false,
+      );
+      db.update(sqliteSchema.budgetProfiles)
+        .set({
+          columnLabels: contribProfileIds.map((_, i) => `Col ${i}`),
+          columnContributionProfileIds: contribProfileIds,
+        })
+        .where(eq(sqliteSchema.budgetProfiles.id, fanOutProfileId))
+        .run();
+
+      const consoleLogSpy = vi
+        .spyOn(console, "log")
+        .mockImplementation(() => {});
+      try {
+        const result = await caller.budget.listProfiles();
+        expect(result.find((p) => p.id === fanOutProfileId)).toBeDefined();
+
+        const clampLogged = consoleLogSpy.mock.calls.some(
+          (args) =>
+            typeof args[0] === "string" &&
+            args[0].includes("listProfiles.netMonthlyPairs_clamped"),
+        );
+        expect(clampLogged).toBe(true);
+      } finally {
+        consoleLogSpy.mockRestore();
+      }
+    });
   });
 
   // =========================================================================
@@ -1353,6 +1404,76 @@ describe("budget router", () => {
       expect(getContributionValue(contribProfileId)).toBeCloseTo(120);
       expect(getBudgetItemAmounts(linkedItemId)[0]).toBe(999); // untouched
       expect(getBudgetItemAmounts(unlinkedItemId)[0]).toBe(80);
+    });
+
+    it("updateItemAmounts (batch): two edits landing on accounts in the SAME Contribution Profile both persist (applyContributionAccountEditsBatch)", async () => {
+      // Before the batch fold, applyContributionAccountEdit ran once per
+      // account even when both belonged to the same profile row — correct
+      // as long as the calls stayed sequential within one transaction, but
+      // that's still N read-merge-write round trips against one profile
+      // row that folding into one read + one write removes. This pins the
+      // OUTCOME that fold must preserve: both accounts' values land in the
+      // same profile's blob, neither clobbering the other.
+      const personId = await seedPerson(db);
+      const accountA = seedLinkableContributionAccount(db, personId);
+      const accountB = seedLinkableContributionAccount(db, personId);
+      const sharedProfileId = seedContributionProfile(db, {
+        name: "Shared Profile — two linked accounts",
+        contributionActiveFields: {
+          contributionAccounts: {
+            [String(accountA)]: {
+              contributionValue: "10.00",
+              contributionMethod: "fixed_monthly",
+            },
+            [String(accountB)]: {
+              contributionValue: "20.00",
+              contributionMethod: "fixed_monthly",
+            },
+          },
+          jobs: {},
+        },
+      });
+      const itemA = seedBudgetItem(db, profileId, {
+        category: "Investing",
+        subcategory: "Batch Test Account A",
+        amounts: [999],
+        contributionAccountId: accountA,
+      });
+      const itemB = seedBudgetItem(db, profileId, {
+        category: "Investing",
+        subcategory: "Batch Test Account B",
+        amounts: [999],
+        contributionAccountId: accountB,
+      });
+
+      await caller.budget.updateItemAmounts({
+        updates: [
+          { id: itemA, colIndex: 0, amount: 111 },
+          { id: itemB, colIndex: 0, amount: 222 },
+        ],
+        contributionProfile: profileTiers(sharedProfileId),
+      });
+
+      const row = db
+        .select()
+        .from(sqliteSchema.contributionProfiles)
+        .where(eq(sqliteSchema.contributionProfiles.id, sharedProfileId))
+        .get()!;
+      const activeFields = row.contributionActiveFields as {
+        contributionAccounts: Record<string, { contributionValue: string }>;
+      };
+      expect(
+        Number(
+          activeFields.contributionAccounts[String(accountA)]!
+            .contributionValue,
+        ),
+      ).toBeCloseTo(111);
+      expect(
+        Number(
+          activeFields.contributionAccounts[String(accountB)]!
+            .contributionValue,
+        ),
+      ).toBeCloseTo(222);
     });
 
     it("fixed_annual round-trips: editing to the currently-displayed monthly value is a no-op", async () => {

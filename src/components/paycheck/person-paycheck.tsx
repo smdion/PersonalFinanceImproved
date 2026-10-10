@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { InlineEdit } from "@/components/ui/inline-edit";
-import { formatCurrency } from "@/lib/utils/format";
+import { formatCurrency, maskAmountsInText } from "@/lib/utils/format";
 import { PAY_PERIOD_LABELS } from "@/lib/config/display-labels";
 import { useScenario } from "@/lib/context/scenario-context";
 import { PayStub } from "./pay-stub";
@@ -342,7 +342,7 @@ export function PersonPaycheck({
             <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3">
               {paycheck.warnings.map((w) => (
                 <p key={w} className="text-sm text-yellow-800">
-                  {w}
+                  {maskAmountsInText(w)}
                 </p>
               ))}
             </div>

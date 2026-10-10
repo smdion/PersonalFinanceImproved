@@ -346,6 +346,16 @@ describe("settings.apiConnections", () => {
       ).toBeDefined();
     });
 
+    it("list never returns stored credentials", async () => {
+      const rows = await caller.settings.apiConnections.list();
+      const row = rows.find(
+        (r: { service: string }) => r.service === "simplefin",
+      );
+      expect(row).toBeDefined();
+      expect(row).not.toHaveProperty("config");
+      expect(JSON.stringify(rows)).not.toContain("abc123");
+    });
+
     it("updates an existing connection on upsert (same service key)", async () => {
       const result = await caller.settings.apiConnections.upsert({
         service: "simplefin",
@@ -788,6 +798,15 @@ describe("settings.appSettings non-admin filtering", () => {
       expect(
         adminRows.find((r: { key: string }) => r.key === "normal_setting"),
       ).toBeDefined();
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
+  it("viewer session cannot list API connections", async () => {
+    const ctx = await createTestCaller(viewerSession);
+    try {
+      await expect(ctx.caller.settings.apiConnections.list()).rejects.toThrow();
     } finally {
       ctx.cleanup();
     }

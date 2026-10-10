@@ -33,6 +33,8 @@ import {
   buildMortgageInputs,
   loadBudgetItemLinks,
   loadSavingsGoalLinks,
+  resolveLinkedBudgetItemAmounts,
+  resolveBudgetProfileColumnProfileIds,
 } from "@/server/helpers";
 import { calculateMortgage } from "@/lib/calculators/mortgage";
 import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
@@ -481,7 +483,7 @@ export const syncCoreRouter = createTRPCRouter({
           rawBudgetItemRows.map((i) => i.id),
           service,
         );
-        budgetItemRows = rawBudgetItemRows.map((i) => {
+        const linkedRows = rawBudgetItemRows.map((i) => {
           const link = previewItemLinks.get(i.id);
           return {
             ...i,
@@ -490,6 +492,21 @@ export const syncCoreRouter = createTRPCRouter({
             apiSyncDirection: link?.syncDirection ?? null,
           };
         });
+        // Contribution-linked items freeze `amounts` on edit (see
+        // resolveLinkedBudgetItemAmounts docblock) — this preview must show
+        // the same figure syncBudgetToApi would actually push, not the
+        // stale DB column.
+        const previewNumColumns = (activeProfile.columnLabels as string[])
+          .length;
+        const { contribProfileIdByColumn, salaryProfileIdByColumn } =
+          await resolveBudgetProfileColumnProfileIds(ctx.db, activeProfile);
+        budgetItemRows = await resolveLinkedBudgetItemAmounts(
+          ctx.db,
+          linkedRows,
+          previewNumColumns,
+          contribProfileIdByColumn,
+          salaryProfileIdByColumn,
+        );
       }
 
       // Determine which budget column to use (linked or active)

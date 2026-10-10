@@ -11,18 +11,12 @@
  * back to client-side fetching.
  */
 
-import {
-  HydrationBoundary,
-  dehydrate,
-  type DehydratedState,
-} from "@tanstack/react-query";
-import { createServerHelpers } from "@/server/helpers/server-trpc";
+import { HydrationBoundary } from "@tanstack/react-query";
+import { prefetchForPage } from "@/server/helpers/server-trpc";
 import { DashboardContent } from "./dashboard-content";
 
 export default async function DashboardPage() {
-  let dehydratedState: DehydratedState | undefined = undefined;
-  try {
-    const helpers = await createServerHelpers();
+  const dehydratedState = await prefetchForPage(async (helpers) => {
     // Prefetch the queries the dashboard cards consume. Each Promise.all
     // member is independent — one failure doesn't block the others.
     // We prefetch the high-traffic networth + onboarding queries; other
@@ -31,11 +25,7 @@ export default async function DashboardPage() {
       helpers.networth.computeSummary.prefetch().catch(() => undefined),
       helpers.settings.isOnboardingComplete.prefetch().catch(() => undefined),
     ]);
-    dehydratedState = dehydrate(helpers.queryClient);
-  } catch {
-    // Swallow — fall back to pure client-side fetching.
-    dehydratedState = undefined;
-  }
+  });
 
   return (
     <HydrationBoundary state={dehydratedState}>

@@ -351,7 +351,11 @@ export function useBudgetDerivedData({
       if (!item.apiCategoryId) continue;
       if (item.apiSyncDirection !== "push" && item.apiSyncDirection !== "both")
         continue;
-      const amounts = item.amounts as number[];
+      // Contribution-linked items keep `amounts` frozen/stale on purpose
+      // (see resolveLinkedBudgetItemAmounts) — the resolved figure this
+      // modal must preview (and what syncBudgetToApi actually pushes)
+      // lives in `contribAmounts` instead.
+      const amounts = (item.contribAmounts ?? item.amounts) as number[];
       const colIdx = Math.min(activeColumn, amounts.length - 1);
       const newValue = amounts[colIdx] ?? 0;
       const actual = apiActualsMap.get(item.id);

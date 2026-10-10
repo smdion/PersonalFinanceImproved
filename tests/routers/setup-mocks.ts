@@ -75,7 +75,14 @@ vi.mock("@/lib/db/schema", async () => {
   return await vi.importActual("@/lib/db/schema-sqlite");
 });
 
-// Mock rate-limit — disable rate limiting in tests
+// Mock rate-limit — disable rate limiting in tests. A vi.fn() (not a bare
+// arrow function) so tests that specifically exercise rate-limit wiring
+// (e.g. authenticatedRateLimitMiddleware's `internal` skip) can assert on
+// whether/how often it was called — every other test just ignores that.
 vi.mock("@/lib/rate-limit", () => ({
-  rateLimit: () => ({ success: true, remaining: 999 }),
+  rateLimit: vi.fn(() => ({
+    success: true,
+    remaining: 999,
+    firstExceedance: false,
+  })),
 }));

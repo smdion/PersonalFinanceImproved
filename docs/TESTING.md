@@ -36,9 +36,9 @@ Framework: [Vitest](https://vitest.dev/) with globals enabled. E2E: [Playwright]
 | **Simplefin**     | 2     | 25    | SimpleFIN client + sync logic                                                           |
 | **Scripts**       | 1     | 11    | Repo tooling script unit tests                                                          |
 | **Lint**          | 2     | 23    | RULES.md rule sweeps + repo-convention checks                                           |
-| **E2E**           | 13    | 38    | Playwright smoke tests (health, navigation, page flows)                                 |
+| **E2E**           | 14    | 42    | Playwright smoke tests (health, navigation, page flows)                                 |
 
-Total: **<!-- AUTO-GEN:totalTests -->5197<!-- /AUTO-GEN --> tests** across **<!-- AUTO-GEN:vitestFiles -->325<!-- /AUTO-GEN --> vitest files** + **38 Playwright E2E tests** (<!-- AUTO-GEN:e2eFiles -->13<!-- /AUTO-GEN --> files).
+Total: **<!-- AUTO-GEN:totalTests -->5197<!-- /AUTO-GEN --> tests** across **<!-- AUTO-GEN:vitestFiles -->331<!-- /AUTO-GEN --> vitest files** + **42 Playwright E2E tests** (<!-- AUTO-GEN:e2eFiles -->14<!-- /AUTO-GEN --> files).
 
 _Note: `totalTests` above is not auto-verified by `pnpm docs:verify` (only `vitestFiles`/`e2eFiles` are) — update it by hand from `pnpm test:coverage` + `pnpm test:benchmarks` output when the per-suite table changes._
 
@@ -609,7 +609,7 @@ Validates Zod schemas from `src/lib/db/json-schemas.ts` used by tRPC routers.
 
 ## E2E Tests
 
-`tests/e2e/` — Playwright E2E smoke tests across 13 spec files, 38 tests.
+`tests/e2e/` — Playwright E2E smoke tests across 14 spec files, 42 tests.
 
 **Setup:** Node.js 20+, install browsers with `pnpm exec playwright install chromium --with-deps`, start dev server.
 
@@ -620,6 +620,13 @@ pnpm exec playwright test --headed                         # debug with visible 
 ```
 
 **Config** (`playwright.config.ts`): Chromium only, 30s timeout, 1 retry, screenshots/traces on failure. In CI, auto-starts the app via `webServer` config using standalone Next.js server with SQLite + `DEMO_ONLY=true`.
+
+### privacy-mode.spec.ts
+
+- No `$<digit>` is visible on any dashboard route when the `ledgr-privacy` cookie is set (the leak scan)
+- The server's HTML never contains amounts while the cookie is set
+- The sidebar toggle hides and restores amounts, sets and clears the cookie, and survives a reload
+- The page font stack still reaches the "Ledgr Redacted" squiggle font
 
 ### health.spec.ts
 
@@ -683,7 +690,7 @@ pnpm exec playwright test --headed                         # debug with visible 
 | **Schema validation**        | zod-schemas                                                             | Verify tRPC input schemas accept/reject correctly        |
 | **Router integration**       | All 39 router test files                                                | Test tRPC procedures directly with isolated SQLite DB    |
 | **Helper unit tests**        | All 10 helper test files                                                | Test server helpers in isolation                         |
-| **E2E smoke**                | 13 Playwright spec files                                                | Verify app loads and navigates in a real browser         |
+| **E2E smoke**                | 14 Playwright spec files                                                | Verify app loads and navigates in a real browser         |
 
 ### Snapshot Maintenance
 

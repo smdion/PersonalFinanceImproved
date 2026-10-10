@@ -6,7 +6,11 @@ import {
   taxTypeTextColor,
   taxTypeLabel,
 } from "@/lib/utils/colors";
-import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import {
+  formatCurrency,
+  formatPercent,
+  maskAmountsInText,
+} from "@/lib/utils/format";
 import { safeDivide, roundToCents } from "@/lib/utils/math";
 import type {
   AccountCategory,
@@ -1590,7 +1594,7 @@ export function DecumulationRow({
             content={renderTooltip({
               kind: "info",
               lines: dyr.warnings.map((w) => ({
-                text: w,
+                text: maskAmountsInText(w),
                 style: "note" as const,
               })),
             })}

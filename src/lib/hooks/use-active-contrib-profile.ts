@@ -61,7 +61,7 @@ export function useActiveContribProfile(): [
   );
   const { data: profiles } = trpc.contributionProfile.list.useQuery();
 
-  useActiveProfileRepair(activeId, profiles, setActiveId);
+  useActiveProfileRepair("contribution", activeId, profiles, setActiveId);
 
   return [activeId, setActiveId];
 }

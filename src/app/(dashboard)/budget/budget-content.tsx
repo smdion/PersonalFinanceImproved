@@ -564,8 +564,14 @@ export function BudgetContent() {
                 isPushing: syncToApi.isPending,
                 onPullFromApi: () =>
                   setPullPreviewItems(buildPullPreviewItems(activeColumn)),
+                // Preview the column syncBudgetToApi will actually push
+                // (the connection's configured linkedColumnIndex), not
+                // necessarily the page's currently-viewed column — a
+                // mismatch here would show one number and push another.
                 onOpenPushPreview: () =>
-                  setPushPreviewItems(buildPushPreviewItems(activeColumn)),
+                  setPushPreviewItems(
+                    buildPushPreviewItems(apiLinkedColumnIndex ?? activeColumn),
+                  ),
               }}
               unsavedCount={editDrafts.size}
               onToggleModeManager={() => setShowModeManager(!showModeManager)}
@@ -718,14 +724,13 @@ export function BudgetContent() {
         {pushPreviewItems && (
           <BudgetPushYnabModal
             items={pushPreviewItems}
-            activeColumnLabel={cols[activeColumn]}
+            activeColumnLabel={cols[apiLinkedColumnIndex ?? activeColumn]}
             apiService={apiService}
             isPending={syncToApi.isPending}
             onConfirm={() =>
-              syncToApi.mutate(
-                { selectedColumn: activeColumn },
-                { onSettled: () => setPushPreviewItems(null) },
-              )
+              syncToApi.mutate(undefined, {
+                onSettled: () => setPushPreviewItems(null),
+              })
             }
             onCancel={() => setPushPreviewItems(null)}
           />

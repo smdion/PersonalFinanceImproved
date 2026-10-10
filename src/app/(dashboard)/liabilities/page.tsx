@@ -8,7 +8,7 @@ import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { MortgageSettings } from "@/components/mortgage/mortgage-settings";
-import { formatCurrency } from "@/lib/utils/format";
+import { formatCurrency, maskAmountsInText } from "@/lib/utils/format";
 import {
   ActiveLoanCard,
   HistoricalLoans,
@@ -191,7 +191,7 @@ export default function LiabilitiesPage() {
             <div className="mt-4 rounded-lg border border-yellow-200 bg-yellow-50 p-3">
               {result.warnings.map((w) => (
                 <p key={w} className="text-sm text-yellow-800">
-                  {w}
+                  {maskAmountsInText(w)}
                 </p>
               ))}
             </div>

@@ -18,6 +18,18 @@ export type Context = {
   db: typeof db;
   session: Session | null;
   demoSchema: string | null;
+  /** Set ONLY by `internalCaller()` below, for a server-side nested tRPC
+   *  call made on behalf of an already-authenticated request (e.g.
+   *  `computeActiveSummary` calling into the paycheck router for its own
+   *  income figure). Skips ONLY the authenticated rate-limit middleware —
+   *  every other middleware (auth check, permission check, demo guards,
+   *  error logging) still runs unchanged, so this is not a second
+   *  computation path, just an exemption from double-charging the calling
+   *  request's own rate-limit budget for work the server does on its
+   *  behalf. `createContext()` takes no arguments and ignores any
+   *  request-supplied input, so this can only ever become `true` via
+   *  `internalCaller()` — never from request-derived data. */
+  internal?: boolean;
 };
 
 const isDev = process.env.NODE_ENV === "development";
@@ -125,6 +137,35 @@ export const createTRPCRouter = t.router;
 export const mergeRouters = t.mergeRouters;
 export const createCallerFactory = t.createCallerFactory;
 
+/**
+ * Marks a context for a server-side nested call into another router, made
+ * on behalf of an already-authenticated request — e.g.
+ * `budget.computeActiveSummary` calling into the paycheck router for its
+ * own income figure, rather than re-deriving paycheck math independently
+ * (single computation path).
+ *
+ * Use `createCallerFactory(someRouter)(internalCtx(ctx))` for any such
+ * nested call, instead of passing `ctx` straight through: it exempts the
+ * nested call from the CALLING request's own authenticated rate-limit
+ * budget (see `authenticatedRateLimitMiddleware`) — every other middleware
+ * (auth check, permission check, demo guards, error logging) still runs
+ * exactly as it would for a caller hitting that procedure directly.
+ * Without this, a page that internally fans out several nested calls
+ * silently burns several extra tokens from the SAME bucket the user's own
+ * browser requests draw from, with no way for the client to see or back
+ * off from the hidden consumption.
+ *
+ * A thin wrapper around `{ ...ctx, internal: true }` rather than a generic
+ * `createCallerFactory` wrapper — a generic router-typed wrapper here
+ * collapses tRPC's own inferred caller type to an uncallable union, so
+ * this keeps `createCallerFactory(router)` called directly (full type
+ * inference intact) while still giving every nested-call site one shared,
+ * documented spelling of the flag that's easy to grep for.
+ */
+export function internalCtx(ctx: Context): Context {
+  return { ...ctx, internal: true };
+}
+
 // ── Shared change_log middleware (fire-and-forget, never blocks) ──
 
 /** Extract display label from OIDC/local session user. */
@@ -192,8 +233,17 @@ const demoOnlyGuard = t.middleware(async ({ ctx, next, type, path }) => {
 // ── Rate-limit helpers ──
 
 const RATE_LIMIT_PUBLIC = { maxRequests: 60, windowMs: 60_000 } as const;
+// Raised from 200: a cold dashboard load alone is ~46 requests (shared
+// layout chrome — data-freshness, scenario-bar — adds ~7 more to every
+// single navigation), and httpBatchLink batches the HTTP request but each
+// procedure in the batch still runs the middleware separately, so batching
+// gives this limiter no headroom back. This limit exists to catch runaway
+// bugs (an infinite refetch loop, a poll that never stops), not to throttle
+// normal browsing on a single-household app — 600 tolerates roughly a
+// dozen cold page loads a minute while still tripping within seconds on an
+// actual loop.
 const RATE_LIMIT_AUTHENTICATED = {
-  maxRequests: 200,
+  maxRequests: 600,
   windowMs: 60_000,
 } as const;
 
@@ -213,13 +263,21 @@ async function getRateLimitKey(): Promise<string> {
   }
 }
 
-const rateLimitMiddleware = t.middleware(async ({ ctx, next }) => {
+const rateLimitMiddleware = t.middleware(async ({ ctx, next, path }) => {
   const key = await getRateLimitKey();
-  const { success, remaining } = rateLimit(
+  const { success, remaining, firstExceedance } = rateLimit(
     key,
     RATE_LIMIT_PUBLIC.maxRequests,
     RATE_LIMIT_PUBLIC.windowMs,
   );
+  if (firstExceedance) {
+    log("warn", "rate_limit_exceeded", {
+      tier: "public",
+      key,
+      path,
+      limit: RATE_LIMIT_PUBLIC.maxRequests,
+    });
+  }
   if (!success) {
     throw new TRPCError({
       code: "TOO_MANY_REQUESTS",
@@ -229,24 +287,55 @@ const rateLimitMiddleware = t.middleware(async ({ ctx, next }) => {
   return next({ ctx });
 });
 
-const authenticatedRateLimitMiddleware = t.middleware(async ({ ctx, next }) => {
-  // Use session user ID when available for per-user limiting, fall back to IP
-  const key = ctx.session?.user?.id
+/**
+ * Per-user rate-limit key. DEMO_ONLY collapses every visitor onto the same
+ * literal `"demo"` session user id (see `demoOnlySession` above) — keying
+ * by that would put every simultaneous demo visitor in ONE shared bucket
+ * instead of separate per-visitor ones (and raising the limit would raise
+ * a SHARED ceiling for the whole demo instance). Fall back to IP in that
+ * case, matching the public limiter's own per-visitor granularity.
+ */
+export async function resolveAuthenticatedRateLimitKey(
+  ctx: Context,
+): Promise<string> {
+  if (isDemoOnly || ctx.session?.user?.id === "demo") {
+    return getRateLimitKey();
+  }
+  return ctx.session?.user?.id
     ? `user:${ctx.session.user.id}`
     : await getRateLimitKey();
-  const { success, remaining } = rateLimit(
-    key,
-    RATE_LIMIT_AUTHENTICATED.maxRequests,
-    RATE_LIMIT_AUTHENTICATED.windowMs,
-  );
-  if (!success) {
-    throw new TRPCError({
-      code: "TOO_MANY_REQUESTS",
-      message: `Rate limit exceeded. Try again shortly. (remaining: ${remaining})`,
-    });
-  }
-  return next({ ctx });
-});
+}
+
+const authenticatedRateLimitMiddleware = t.middleware(
+  async ({ ctx, next, path }) => {
+    // Server-side nested call on behalf of an already-authenticated
+    // request (see internalCaller()) — every other middleware still runs,
+    // only the throttle is skipped.
+    if (ctx.internal) return next({ ctx });
+
+    const key = await resolveAuthenticatedRateLimitKey(ctx);
+    const { success, remaining, firstExceedance } = rateLimit(
+      key,
+      RATE_LIMIT_AUTHENTICATED.maxRequests,
+      RATE_LIMIT_AUTHENTICATED.windowMs,
+    );
+    if (firstExceedance) {
+      log("warn", "rate_limit_exceeded", {
+        tier: "authenticated",
+        key,
+        path,
+        limit: RATE_LIMIT_AUTHENTICATED.maxRequests,
+      });
+    }
+    if (!success) {
+      throw new TRPCError({
+        code: "TOO_MANY_REQUESTS",
+        message: `Rate limit exceeded. Try again shortly. (remaining: ${remaining})`,
+      });
+    }
+    return next({ ctx });
+  },
+);
 
 /** Rate limit for expensive operations (Monte Carlo, full sync) — 5 per minute per user. */
 const RATE_LIMIT_EXPENSIVE = { maxRequests: 5, windowMs: 60_000 } as const;
@@ -271,11 +360,19 @@ export const expensiveRateLimitMiddleware = t.middleware(
     const key = ctx.session?.user?.id
       ? `expensive:${ctx.session.user.id}:${path}`
       : `expensive:${await getRateLimitKey()}:${path}`;
-    const { success } = rateLimit(
+    const { success, firstExceedance } = rateLimit(
       key,
       RATE_LIMIT_EXPENSIVE.maxRequests,
       RATE_LIMIT_EXPENSIVE.windowMs,
     );
+    if (firstExceedance) {
+      log("warn", "rate_limit_exceeded", {
+        tier: "expensive",
+        key,
+        path,
+        limit: RATE_LIMIT_EXPENSIVE.maxRequests,
+      });
+    }
     if (!success) {
       throw new TRPCError({
         code: "TOO_MANY_REQUESTS",
@@ -320,6 +417,18 @@ const baseProcedure = t.procedure
   .use(demoOnlyGuard)
   .use(demoSchemaMiddleware);
 
+// Shared by every procedure that requires a session (protected, admin, and
+// every withPermission() addon below) — the authenticated rate limit used
+// to apply to protectedProcedure alone, leaving adminProcedure and every
+// permission-gated (budget/savings/sync/etc.) procedure completely
+// unlimited: the write-capable half of the API had no throttle at all
+// while read-only queries carried the whole burden. One shared base keeps
+// the limit (and the `internal` bypass) uniform across all of them instead
+// of applying to one of several builders.
+const rateLimitedAuthedBase = baseProcedure.use(
+  authenticatedRateLimitMiddleware,
+);
+
 // ── Procedures ──
 
 // Public — no auth required (health check), rate-limited
@@ -328,8 +437,7 @@ export const publicProcedure = baseProcedure
   .meta({ auth: "public" });
 
 // Protected — requires valid session (all dashboard queries), rate-limited per user
-export const protectedProcedure = baseProcedure
-  .use(authenticatedRateLimitMiddleware)
+export const protectedProcedure = rateLimitedAuthedBase
   .meta({ auth: "protected" })
   .use(async ({ ctx, next }) => {
     if (!ctx.session?.user) {
@@ -344,7 +452,7 @@ export const protectedProcedure = baseProcedure
   });
 
 // Admin — requires Admin role + logs mutations to change_log
-export const adminProcedure = baseProcedure
+export const adminProcedure = rateLimitedAuthedBase
   .meta({ auth: "admin" })
   .use(async ({ ctx, next, path, type, getRawInput }) => {
     if (!ctx.session?.user) {
@@ -374,7 +482,7 @@ export const adminProcedure = baseProcedure
 
 // Permission-gated — requires admin OR specific permission addon + logs mutations
 function withPermission(permission: Permission) {
-  return baseProcedure
+  return rateLimitedAuthedBase
     .meta({ auth: permission })
     .use(async ({ ctx, next, path, type, getRawInput }) => {
       if (!ctx.session?.user) {

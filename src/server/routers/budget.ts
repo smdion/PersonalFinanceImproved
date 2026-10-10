@@ -8,6 +8,7 @@ import {
   protectedProcedure,
   budgetProcedure,
   createCallerFactory,
+  internalCtx,
 } from "../trpc";
 import { paycheckRouter } from "./paycheck";
 import {
@@ -43,9 +44,11 @@ import type { BudgetInput } from "@/lib/calculators/types";
 import {
   computeBudgetAnnualTotal,
   applyContributionAccountEdit,
+  applyContributionAccountEditsBatch,
   resolveTargetBudgetProfile,
   getResolvedGoalAllocations,
   resolveLinkedBudgetItemAmounts,
+  resolveBudgetProfileColumnProfileIds,
   loadBudgetItemLinks,
   setBudgetItemLink,
   deleteBudgetItemLink,
@@ -287,38 +290,88 @@ export const budgetRouter = createTRPCRouter({
       // across every profile's every column — not one per column. Goes
       // through paycheck.computeSummary itself (same procedure the Paycheck
       // page calls) rather than a parallel re-derivation.
-      const paycheckCaller = createCallerFactory(paycheckRouter)(ctx);
+      //
+      // Exempting this internal call from the caller's own rate-limit
+      // budget (internalCtx) removes a backstop that was, until now,
+      // accidentally capping this fan-out — each nested call opens its own
+      // demo-schema pool connection when a demo profile is active
+      // (demoSchemaMiddleware), and a single profile's columns resolve
+      // concurrently via Promise.all below, so a profile with many columns
+      // and many distinct pin combinations could otherwise make an
+      // unbounded number of these calls AT ONCE. MAX_NET_MONTHLY_PAIRS
+      // caps total DISTINCT pairs STARTED per request; anything beyond it
+      // is left as null (income simply omitted for that pair) rather than
+      // making the call, with one warning logged the first time this
+      // actually clamps something.
+      //
+      // `distinctPairsStarted` is incremented SYNCHRONOUSLY, before the
+      // `await`, specifically so this holds even when many columns fire
+      // concurrently: JS runs the synchronous portion of each call in the
+      // Promise.all array's construction order before any of them
+      // suspends, so the counter correctly climbs 1, 2, 3... across a
+      // burst of new pairs instead of every concurrent caller seeing a
+      // stale pre-await Map size (which a naive `netMonthlyByPair.size`
+      // check would — the bug an earlier version of this cap had). The
+      // pending-promise map also dedupes concurrent callers asking for the
+      // SAME pair at the same time, so they share one paycheck call
+      // instead of racing two.
+      const MAX_NET_MONTHLY_PAIRS = 20;
+      let netMonthlyPairsClamped = false;
+      let distinctPairsStarted = 0;
+      const paycheckCaller = createCallerFactory(paycheckRouter)(
+        internalCtx(ctx),
+      );
       const netMonthlyByPair = new Map<string, number | null>();
-      const netMonthlyForPair = async (
+      const netMonthlyPending = new Map<string, Promise<number | null>>();
+      const netMonthlyForPair = (
         contribProfileId: number | null,
         salaryProfileId: number | null,
       ): Promise<number | null> => {
         const key = `${contribProfileId}:${salaryProfileId}`;
         const cached = netMonthlyByPair.get(key);
-        if (cached !== undefined) return cached;
-        const paycheckData = await paycheckCaller.computeSummary({
-          ...(input?.salaryActiveFields && input.salaryActiveFields.length > 0
-            ? { salaryActiveFields: input.salaryActiveFields }
-            : {}),
-          ...(contribProfileId != null
-            ? { contributionProfileId: contribProfileId }
-            : {}),
-          ...(salaryProfileId != null ? { salaryProfileId } : {}),
-        });
-        // netPay is gross − pre-tax − withholding − FICA − post-tax, so
-        // "sum netPay × budget periods per month" is the same monthly
-        // take-home the client's buildPayrollBreakdown derives line by line.
-        let net: number | null = null;
-        for (const d of paycheckData.people) {
-          const pc = d.paycheck;
-          if (!pc || !d.job) continue;
-          const perMonth =
-            ("budgetPerMonth" in d ? d.budgetPerMonth : null) ??
-            pc.periodsPerYear / 12;
-          net = (net ?? 0) + pc.netPay * perMonth;
+        if (cached !== undefined) return Promise.resolve(cached);
+        const pending = netMonthlyPending.get(key);
+        if (pending) return pending;
+
+        if (distinctPairsStarted >= MAX_NET_MONTHLY_PAIRS) {
+          if (!netMonthlyPairsClamped) {
+            netMonthlyPairsClamped = true;
+            log("warn", "listProfiles.netMonthlyPairs_clamped", {
+              limit: MAX_NET_MONTHLY_PAIRS,
+            });
+          }
+          return Promise.resolve(null);
         }
-        netMonthlyByPair.set(key, net);
-        return net;
+        distinctPairsStarted += 1;
+
+        const promise = (async () => {
+          const paycheckData = await paycheckCaller.computeSummary({
+            ...(input?.salaryActiveFields && input.salaryActiveFields.length > 0
+              ? { salaryActiveFields: input.salaryActiveFields }
+              : {}),
+            ...(contribProfileId != null
+              ? { contributionProfileId: contribProfileId }
+              : {}),
+            ...(salaryProfileId != null ? { salaryProfileId } : {}),
+          });
+          // netPay is gross − pre-tax − withholding − FICA − post-tax, so
+          // "sum netPay × budget periods per month" is the same monthly
+          // take-home the client's buildPayrollBreakdown derives line by
+          // line.
+          let net: number | null = null;
+          for (const d of paycheckData.people) {
+            const pc = d.paycheck;
+            if (!pc || !d.job) continue;
+            const perMonth =
+              ("budgetPerMonth" in d ? d.budgetPerMonth : null) ??
+              pc.periodsPerYear / 12;
+            net = (net ?? 0) + pc.netPay * perMonth;
+          }
+          netMonthlyByPair.set(key, net);
+          return net;
+        })();
+        netMonthlyPending.set(key, promise);
+        return promise;
       };
 
       const rows: Array<
@@ -951,8 +1004,9 @@ export const budgetRouter = createTRPCRouter({
       // job.budgetPeriodsPerMonth.
       let netMonthlyIncome: number | null = null;
       try {
-        const paycheckCallerForIncome =
-          createCallerFactory(paycheckRouter)(ctx);
+        const paycheckCallerForIncome = createCallerFactory(paycheckRouter)(
+          internalCtx(ctx),
+        );
         const incomePaycheckData = await paycheckCallerForIncome.computeSummary(
           {
             ...(input?.salaryActiveFields && input.salaryActiveFields.length > 0
@@ -1052,18 +1106,27 @@ export const budgetRouter = createTRPCRouter({
       // whichever Contribution Profile is currently in effect for this
       // column — contributionValue/Method have no account-level fallback.
       if (item.contributionAccountId) {
-        const contribProfileId = await resolveEffectiveContribProfileIdForItem(
-          ctx.db,
-          item,
-          input.colIndex,
-          input.contributionProfile ?? NO_PROFILE_TIERS,
-        );
-        await applyContributionAccountEdit(
-          ctx.db,
-          item.contributionAccountId,
-          input.amount,
-          contribProfileId,
-        );
+        const accountId = item.contributionAccountId;
+        // Read-resolve-write in one transaction (matches
+        // patchProfileSubEntry's convention for the same class of
+        // read-merge-write-a-JSON-blob operation) — a bare SELECT then
+        // UPDATE with no transaction boundary at all, which this was
+        // before, is strictly worse than that convention for no reason.
+        await ctx.db.transaction(async (tx) => {
+          const contribProfileId =
+            await resolveEffectiveContribProfileIdForItem(
+              tx,
+              item,
+              input.colIndex,
+              input.contributionProfile ?? NO_PROFILE_TIERS,
+            );
+          await applyContributionAccountEdit(
+            tx,
+            accountId,
+            input.amount,
+            contribProfileId,
+          );
+        });
         return item;
       }
 
@@ -1172,6 +1235,16 @@ export const budgetRouter = createTRPCRouter({
       // Apply atomically — either the whole applicable paste lands or none
       // of it does (a mid-loop failure must not leave half a paste saved).
       await ctx.db.transaction(async (tx) => {
+        // Linked items are collected instead of applied inline so
+        // applyContributionAccountEditsBatch can fold every edit landing
+        // on the SAME contribution profile through one read-merge-write,
+        // instead of running that cycle once per account.
+        const contributionEdits: {
+          contributionAccountId: number;
+          monthlyAmount: number;
+          contributionProfileId: number;
+        }[] = [];
+
         for (const { id, amounts, changes } of toApply) {
           const item = itemById.get(id)!;
 
@@ -1188,12 +1261,11 @@ export const budgetRouter = createTRPCRouter({
                 lastChange.colIndex,
                 input.contributionProfile ?? NO_PROFILE_TIERS,
               );
-            await applyContributionAccountEdit(
-              tx,
-              item.contributionAccountId,
-              lastChange.amount,
-              contribProfileId,
-            );
+            contributionEdits.push({
+              contributionAccountId: item.contributionAccountId,
+              monthlyAmount: lastChange.amount,
+              contributionProfileId: contribProfileId,
+            });
             continue;
           }
 
@@ -1203,6 +1275,8 @@ export const budgetRouter = createTRPCRouter({
             .set({ amounts })
             .where(eq(schema.budgetItems.id, id));
         }
+
+        await applyContributionAccountEditsBatch(tx, contributionEdits);
       });
       const appliedCells = toApply.reduce((n, t) => n + t.changes.length, 0);
       return {
@@ -2050,8 +2124,8 @@ export const budgetRouter = createTRPCRouter({
 
   /** Push budget amounts to API for all linked items (Ledgr -> API). */
   syncBudgetToApi: budgetProcedure
-    .input(z.object({ selectedColumn: z.number().int().default(0) }))
-    .mutation(async ({ ctx, input }) => {
+    .input(z.object({}).optional())
+    .mutation(async ({ ctx }) => {
       const active = await getActiveBudgetApi(ctx.db);
       if (active === "none") {
         throw new TRPCError({
@@ -2070,7 +2144,10 @@ export const budgetRouter = createTRPCRouter({
 
       // Use linked profile from apiConnections (consistent with sync.ts orchestrator)
       const [conn] = await ctx.db
-        .select({ linkedProfileId: schema.apiConnections.linkedProfileId })
+        .select({
+          linkedProfileId: schema.apiConnections.linkedProfileId,
+          linkedColumnIndex: schema.apiConnections.linkedColumnIndex,
+        })
         .from(schema.apiConnections)
         .where(eq(schema.apiConnections.service, active));
       const allProfiles = await ctx.db.select().from(schema.budgetProfiles);
@@ -2082,6 +2159,11 @@ export const budgetRouter = createTRPCRouter({
           code: "NOT_FOUND",
           message: "No linked or active budget profile",
         });
+      // Same connection-configured column getPreview derives its
+      // `ledgrAmount` from (src/server/routers/sync/core.ts) — pushing a
+      // different, client-supplied column would push a number the preview
+      // never showed the user.
+      const colIdx = conn?.linkedColumnIndex ?? 0;
 
       const pushItemRows = await ctx.db
         .select()
@@ -2102,6 +2184,20 @@ export const budgetRouter = createTRPCRouter({
         };
       });
 
+      const numColumns = (profile.columnLabels as string[]).length;
+      const { contribProfileIdByColumn, salaryProfileIdByColumn } =
+        await resolveBudgetProfileColumnProfileIds(ctx.db, profile);
+      // Contribution-linked items freeze `amounts` on edit (see
+      // resolveLinkedBudgetItemAmounts docblock) — pushing raw `amounts`
+      // would push the stale value instead of the profile's live one.
+      const resolvedItems = await resolveLinkedBudgetItemAmounts(
+        ctx.db,
+        items,
+        numColumns,
+        contribProfileIdByColumn,
+        salaryProfileIdByColumn,
+      );
+
       let pushed = 0;
       // Counted separately from a hard failure below — the provider
       // COULDN'T perform this specific write, either because it has no API
@@ -2113,7 +2209,7 @@ export const budgetRouter = createTRPCRouter({
       // so the caller can tell "nothing to push" apart from "this item
       // couldn't be pushed".
       let skippedUnsupported = 0;
-      for (const item of items) {
+      for (const item of resolvedItems) {
         if (!item.apiCategoryId) continue;
         if (
           item.apiSyncDirection !== "push" &&
@@ -2121,9 +2217,7 @@ export const budgetRouter = createTRPCRouter({
         )
           continue;
 
-        const amounts = item.amounts as number[];
-        const colIdx = Math.min(input.selectedColumn, amounts.length - 1);
-        const amount = amounts[colIdx] ?? 0;
+        const amount = item.amounts[Math.min(colIdx, numColumns - 1)] ?? 0;
 
         // Push as YNAB goal target (plan-level, not month-specific)
         try {

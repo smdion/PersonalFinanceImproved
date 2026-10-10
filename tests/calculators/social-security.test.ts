@@ -557,15 +557,15 @@ describe("sweepClaimingAges", () => {
   });
 });
 
-// Plan §8's required check: "a person with socialSecurityPia set produces
-// the same result as manually pre-computing the adjusted amount and passing
-// it via the existing flat field — proves the integration is equivalent,
-// not a parallel code path with its own bugs." Run at the true engine
-// level (calculateProjection), not just checking build-engine-payload's
-// output shape — an earlier version of the server-side wiring (caught by
-// advisor review before commit) passed this kind of shape-only check while
-// still silently changing RMD behavior via a different field
-// (socialSecurityEntries also drives per-person RMD tracking). This test
+// Proves the integration is equivalent, not a parallel code path with its
+// own bugs: a person with socialSecurityPia set must produce the same
+// result as manually pre-computing the adjusted amount and passing it via
+// the existing flat field. Run at the true engine level
+// (calculateProjection), not just checking build-engine-payload's output
+// shape — an earlier version of the server-side wiring passed a
+// shape-only check like that while still silently changing RMD behavior
+// via a different field (socialSecurityEntries also drives per-person RMD
+// tracking). This test
 // exercises the SINGLE-PERSON path specifically — build-engine-payload.ts
 // routes a single person's PIA through the scalar socialSecurityAnnual
 // field precisely so this equivalence holds with zero side effects; a

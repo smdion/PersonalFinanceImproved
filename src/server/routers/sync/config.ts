@@ -10,12 +10,31 @@ import {
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { getActiveBudgetApi, getApiConnection } from "@/lib/budget-api";
+import type { ActualConfig } from "@/lib/budget-api";
+import { readMaybeEncrypted } from "@/lib/crypto";
 import { serviceEnum } from "./_shared";
+
+const YNAB_APP_URL = "https://app.youneedabudget.com/";
 
 export const syncConfigRouter = createTRPCRouter({
   /** Get the current active_budget_api setting */
   getActiveBudgetApi: protectedProcedure.query(async ({ ctx }) => {
     return getActiveBudgetApi(ctx.db);
+  }),
+
+  /** URL for the nav's "open budget API" link — YNAB always links to the
+   *  hosted app; Actual only links once the household has set an External
+   *  URL (its `serverUrl` is often a private/internal address a browser
+   *  outside that network can't reach — see ActualConfig's docblock). */
+  getActiveBudgetApiLink: protectedProcedure.query(async ({ ctx }) => {
+    const active = await getActiveBudgetApi(ctx.db);
+    if (active === "none") return { service: active, url: null } as const;
+    if (active === "ynab")
+      return { service: active, url: YNAB_APP_URL } as const;
+    const conn = await getApiConnection(ctx.db, "actual");
+    if (!conn) return { service: active, url: null } as const;
+    const config = readMaybeEncrypted<ActualConfig>(conn.config);
+    return { service: active, url: config.externalUrl ?? null } as const;
   }),
 
   /** Set the active_budget_api setting */

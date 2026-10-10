@@ -3,6 +3,7 @@
  *  above are derived from structured fields, disclosures below are the
  *  engine's own warning text, never parsed — see
  *  lib/pure/report/action-items.ts). Presentational only. */
+import { maskAmountsInText } from "@/lib/utils/format";
 import type { ActionItemsSection } from "@/lib/pure/report/action-items";
 
 export function ReportActionItemsSection({
@@ -20,7 +21,10 @@ export function ReportActionItemsSection({
         <ol className="list-inside list-decimal space-y-2 text-sm">
           {actionItems.items.map((item) => (
             <li key={item.title}>
-              <span className="font-medium">{item.title}.</span> {item.detail}
+              <span className="font-medium">
+                {maskAmountsInText(item.title)}.
+              </span>{" "}
+              {maskAmountsInText(item.detail)}
             </li>
           ))}
         </ol>
@@ -37,7 +41,7 @@ export function ReportActionItemsSection({
           </p>
           <ul className="text-muted list-inside list-disc space-y-0.5 text-xs">
             {actionItems.disclosures.map((d) => (
-              <li key={d}>{d}</li>
+              <li key={d}>{maskAmountsInText(d)}</li>
             ))}
           </ul>
         </div>

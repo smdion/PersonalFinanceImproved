@@ -11,6 +11,9 @@ vi.mock("@/lib/trpc", () => ({
         getActiveBudgetApi: { invalidate: vi.fn() },
         getPreview: { invalidate: vi.fn() },
       },
+      tiingo: {
+        getStatus: { invalidate: vi.fn() },
+      },
       simplefin: {
         getStatus: { invalidate: vi.fn() },
         listBalanceHistory: { invalidate: vi.fn() },
@@ -57,6 +60,9 @@ vi.mock("@/lib/trpc", () => ({
           data: null,
         }),
       },
+      updateActualExternalUrl: {
+        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+      },
       fetchYnabBudgets: {
         useMutation: () => ({
           mutate: vi.fn(),
@@ -77,6 +83,25 @@ vi.mock("@/lib/trpc", () => ({
         }),
       },
       setActiveBudgetApi: {
+        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+      },
+    },
+    tiingo: {
+      getStatus: {
+        useQuery: () => ({ data: { connected: false, lastSyncedAt: null } }),
+      },
+      saveKey: {
+        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+      },
+      testConnection: {
+        useMutation: () => ({
+          mutate: vi.fn(),
+          isPending: false,
+          isSuccess: false,
+          data: null,
+        }),
+      },
+      removeConnection: {
         useMutation: () => ({ mutate: vi.fn(), isPending: false }),
       },
     },
@@ -180,6 +205,9 @@ describe("IntegrationsSettings", () => {
             getActiveBudgetApi: { invalidate: vi.fn() },
             getPreview: { invalidate: vi.fn() },
           },
+          tiingo: {
+            getStatus: { invalidate: vi.fn() },
+          },
           simplefin: {
             getStatus: { invalidate: vi.fn() },
             listBalanceHistory: { invalidate: vi.fn() },
@@ -195,6 +223,27 @@ describe("IntegrationsSettings", () => {
             upsert: {
               useMutation: () => ({ mutate: vi.fn(), isPending: false }),
             },
+          },
+        },
+        tiingo: {
+          getStatus: {
+            useQuery: () => ({
+              data: { connected: false, lastSyncedAt: null },
+            }),
+          },
+          saveKey: {
+            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+          },
+          testConnection: {
+            useMutation: () => ({
+              mutate: vi.fn(),
+              isPending: false,
+              isSuccess: false,
+              data: null,
+            }),
+          },
+          removeConnection: {
+            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
           },
         },
         simplefin: {
@@ -227,6 +276,9 @@ describe("IntegrationsSettings", () => {
               isSuccess: false,
               data: null,
             }),
+          },
+          updateActualExternalUrl: {
+            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
           },
           fetchYnabBudgets: {
             useMutation: () => ({
@@ -281,8 +333,8 @@ describe("IntegrationsSettings", () => {
     ).toBeInTheDocument();
   });
 
-  // Live-user finding, 2026-08-30: a service with a real saved connection
-  // that has never completed a sync silently had NO way to activate it --
+  // A service with a real saved connection that has never completed a
+  // sync silently had NO way to activate it --
   // the Activate button (the only control that changes the active
   // provider) is gated on getPreview's `synced` flag, which is false
   // until a sync has run at least once, with zero explanation for why
@@ -307,6 +359,9 @@ describe("IntegrationsSettings", () => {
           savings: { invalidate: vi.fn() },
           budget: { invalidate: vi.fn() },
           assets: { invalidate: vi.fn() },
+          tiingo: {
+            getStatus: { invalidate: vi.fn() },
+          },
           simplefin: {
             getStatus: { invalidate: vi.fn() },
             listBalanceHistory: { invalidate: vi.fn() },
@@ -363,6 +418,9 @@ describe("IntegrationsSettings", () => {
               data: null,
             }),
           },
+          updateActualExternalUrl: {
+            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+          },
           fetchYnabBudgets: {
             useMutation: () => ({
               mutate: vi.fn(),
@@ -384,6 +442,27 @@ describe("IntegrationsSettings", () => {
             }),
           },
           setActiveBudgetApi: {
+            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+          },
+        },
+        tiingo: {
+          getStatus: {
+            useQuery: () => ({
+              data: { connected: false, lastSyncedAt: null },
+            }),
+          },
+          saveKey: {
+            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+          },
+          testConnection: {
+            useMutation: () => ({
+              mutate: vi.fn(),
+              isPending: false,
+              isSuccess: false,
+              data: null,
+            }),
+          },
+          removeConnection: {
             useMutation: () => ({ mutate: vi.fn(), isPending: false }),
           },
         },
@@ -478,6 +557,9 @@ describe("IntegrationsSettings", () => {
             getActiveBudgetApi: { invalidate: vi.fn() },
             getPreview: { invalidate: vi.fn() },
           },
+          tiingo: {
+            getStatus: { invalidate: vi.fn() },
+          },
           simplefin: {
             getStatus: { invalidate: vi.fn() },
             listBalanceHistory: { invalidate: vi.fn() },
@@ -519,6 +601,9 @@ describe("IntegrationsSettings", () => {
               data: null,
             }),
           },
+          updateActualExternalUrl: {
+            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+          },
           fetchYnabBudgets: {
             useMutation: () => ({
               mutate: vi.fn(),
@@ -540,6 +625,27 @@ describe("IntegrationsSettings", () => {
             }),
           },
           setActiveBudgetApi: {
+            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+          },
+        },
+        tiingo: {
+          getStatus: {
+            useQuery: () => ({
+              data: { connected: false, lastSyncedAt: null },
+            }),
+          },
+          saveKey: {
+            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+          },
+          testConnection: {
+            useMutation: () => ({
+              mutate: vi.fn(),
+              isPending: false,
+              isSuccess: false,
+              data: null,
+            }),
+          },
+          removeConnection: {
             useMutation: () => ({ mutate: vi.fn(), isPending: false }),
           },
         },

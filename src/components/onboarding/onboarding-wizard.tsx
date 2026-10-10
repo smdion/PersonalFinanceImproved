@@ -5,6 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { FormError } from "@/components/ui/form-error";
 import { Badge } from "@/components/ui/badge";
 import { localDateStr } from "@/lib/utils/date";
+import { formatCurrency } from "@/lib/utils/format";
 
 // --- Types ---
 
@@ -506,8 +507,8 @@ function IncomeStep({
                   {job.employerName}
                 </span>
                 <span className="text-muted ml-2 text-sm">
-                  ({people[job.personIndex]?.name}) -- $
-                  {Number(job.annualSalary).toLocaleString()}/{job.payPeriod}
+                  ({people[job.personIndex]?.name}) --{" "}
+                  {formatCurrency(Number(job.annualSalary))}/{job.payPeriod}
                 </span>
               </div>
               <button

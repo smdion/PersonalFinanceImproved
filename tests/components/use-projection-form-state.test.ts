@@ -1,7 +1,7 @@
 /**
  * Tests for useProjectionFormState — form/UI state for the projection card,
  * with a focus on the accumOverrides/decumOverrides DB-vs-local "touched"
- * merge logic (T12).
+ * merge logic.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";

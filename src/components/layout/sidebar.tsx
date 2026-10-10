@@ -4,9 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { PrivacyToggle } from "@/components/ui/privacy-toggle";
 import { Button } from "@/components/ui/button";
 import { DataFreshness } from "./data-freshness";
 import { signOut } from "next-auth/react";
+import { trpc } from "@/lib/trpc";
 import {
   LayoutDashboard,
   Wallet,
@@ -41,6 +43,7 @@ import {
   FlaskConical,
   Unlock,
   Calculator,
+  ExternalLink,
   type LucideIcon,
 } from "lucide-react";
 import { BRAND_COLORS } from "@/lib/utils/colors";
@@ -267,6 +270,39 @@ function CollapsibleNavGroup({
   );
 }
 
+const BUDGET_API_LABELS = { ynab: "YNAB", actual: "Actual Budget" } as const;
+
+/** Standalone link to the active budget API's own web app, below the System
+ *  group. Hidden entirely when no service is active, or when Actual is
+ *  active but has no External URL saved (its `serverUrl` is often a
+ *  private/internal address a browser can't open directly — see
+ *  ActualConfig's docblock). */
+function BudgetApiLink({
+  collapsed,
+  showLabels,
+}: {
+  collapsed: boolean;
+  showLabels: boolean;
+}) {
+  const { data } = trpc.sync.getActiveBudgetApiLink.useQuery();
+  if (!data || data.service === "none" || !data.url) return null;
+
+  const label = BUDGET_API_LABELS[data.service];
+  return (
+    <a
+      href={data.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={collapsed ? label : undefined}
+      className={`text-faint hover:bg-surface-elevated hover:text-primary flex min-h-[44px] items-center gap-3 rounded px-3 py-2 text-sm transition-colors ${collapsed ? "md:justify-center" : ""}`}
+    >
+      <ExternalLink className="h-4 w-4 shrink-0" aria-hidden="true" />
+      {showLabels && <span className="hidden md:inline">{label}</span>}
+      <span className="md:hidden">{label}</span>
+    </a>
+  );
+}
+
 export function Sidebar({
   user,
   isDemoOnly,
@@ -385,6 +421,8 @@ export function Sidebar({
               />
             ),
           )}
+          <div className="my-1 border-t" />
+          <BudgetApiLink collapsed={collapsed} showLabels={showLabels} />
         </nav>
 
         {/* Footer */}
@@ -426,18 +464,20 @@ export function Sidebar({
           )}
         </div>
 
-        {/* Mobile theme toggle */}
-        <div className="px-2 pb-1 md:hidden">
+        {/* Mobile theme + privacy toggles */}
+        <div className="space-y-1 px-2 pb-1 md:hidden">
           <ThemeToggle />
+          <PrivacyToggle />
         </div>
 
-        {/* Utility bar — theme + collapse + version (desktop only) */}
+        {/* Utility bar — theme + privacy + collapse + version (desktop only) */}
         <div
           className={`hidden items-center border-t py-1.5 md:flex ${
             collapsed ? "flex-col gap-1 px-0" : "flex-row px-2"
           }`}
         >
           <ThemeToggle compact />
+          <PrivacyToggle compact />
           {!collapsed && <div className="flex-1" />}
           {!collapsed &&
             process.env.APP_VERSION &&

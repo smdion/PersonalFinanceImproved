@@ -6,7 +6,11 @@ import {
   taxTypeTextColor,
   taxTypeLabel,
 } from "@/lib/utils/colors";
-import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import {
+  formatCurrency,
+  formatPercent,
+  maskAmountsInText,
+} from "@/lib/utils/format";
 import type {
   AccountCategory,
   EngineAccumulationYear,
@@ -1381,7 +1385,7 @@ export function AccumulationRow({
             content={renderTooltip({
               kind: "info",
               lines: yr.warnings.map((w) => ({
-                text: w,
+                text: maskAmountsInText(w),
                 style: "note" as const,
               })),
             })}

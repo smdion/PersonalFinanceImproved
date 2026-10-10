@@ -11,7 +11,7 @@ import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useInlineNumberEdit } from "@/lib/hooks/use-inline-number-edit";
-import { formatDate } from "@/lib/utils/format";
+import { formatCurrency, formatDate } from "@/lib/utils/format";
 import {
   PERF_CATEGORY_PORTFOLIO,
   accountTypeToPerformanceCategory,
@@ -513,21 +513,9 @@ export function PerformanceContent() {
           </svg>
           <span>
             <span className="font-semibold">Balance mismatch:</span> Performance
-            account totals (
-            {new Intl.NumberFormat("en-US", {
-              style: "currency",
-              currency: "USD",
-            }).format(balanceMismatch.perfTotal)}
-            ) differ from portfolio snapshot (
-            {new Intl.NumberFormat("en-US", {
-              style: "currency",
-              currency: "USD",
-            }).format(balanceMismatch.snapTotal)}
-            ) by{" "}
-            {new Intl.NumberFormat("en-US", {
-              style: "currency",
-              currency: "USD",
-            }).format(Math.abs(balanceMismatch.delta))}
+            account totals ({formatCurrency(balanceMismatch.perfTotal)}) differ
+            from portfolio snapshot ({formatCurrency(balanceMismatch.snapTotal)}
+            ) by {formatCurrency(Math.abs(balanceMismatch.delta))}
             {balanceMismatch.explainedByPending
               ? " — this matches your pending rollover(s)."
               : ". Check that ending balances and snapshot values are consistent."}

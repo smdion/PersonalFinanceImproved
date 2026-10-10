@@ -5,7 +5,11 @@
  */
 
 import { HelpTip } from "@/components/ui/help-tip";
-import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import {
+  formatCurrency,
+  formatPercent,
+  maskAmountsInText,
+} from "@/lib/utils/format";
 import type { RelocationEngineResult, RelocationResult } from "./types";
 
 type Props = {
@@ -188,7 +192,7 @@ export function RelocationMetricsAndBanner({
               key={w}
               className="rounded bg-amber-50 p-2 text-xs text-amber-600"
             >
-              {w}
+              {maskAmountsInText(w)}
             </div>
           ))}
         </div>

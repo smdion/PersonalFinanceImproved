@@ -15,6 +15,7 @@ import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createTestCaller, adminSession } from "./setup";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
+import * as schema from "@/lib/db/schema-sqlite";
 
 const mockGetActiveBudgetApi = vi.fn().mockResolvedValue("none");
 const mockGetApiConnection = vi.fn().mockResolvedValue(null);
@@ -92,6 +93,93 @@ describe("sync.saveConnection", () => {
         budgetSyncId: "sync-456",
       }),
     ).rejects.toThrow();
+  });
+
+  it("saves an Actual connection's optional External URL alongside credentials", async () => {
+    const result = await caller.sync.saveConnection({
+      service: "actual",
+      serverUrl: "https://actual.example.com",
+      apiKey: "ak-xyz",
+      budgetSyncId: "sync-456",
+      externalUrl: "https://actual.mydomain.com",
+    });
+    expect(result).toEqual({ success: true });
+  });
+
+  it("rejects an Actual connection with a malformed External URL", async () => {
+    await expect(
+      caller.sync.saveConnection({
+        service: "actual",
+        serverUrl: "https://actual.example.com",
+        apiKey: "ak-xyz",
+        budgetSyncId: "sync-456",
+        externalUrl: "not-a-url",
+      }),
+    ).rejects.toThrow();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// updateActualExternalUrl — quick-edit for the External URL alone
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("sync.updateActualExternalUrl", () => {
+  let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
+  let db: Awaited<ReturnType<typeof createTestCaller>>["db"];
+  let cleanup: () => void;
+
+  beforeAll(async () => {
+    const ctx = await createTestCaller(adminSession);
+    caller = ctx.caller;
+    db = ctx.db;
+    cleanup = ctx.cleanup;
+
+    mockGetApiConnection.mockImplementation(async (_db, service) => {
+      const rows = db.select().from(schema.apiConnections).all();
+      const row = rows.find((r) => r.service === service);
+      return row ?? null;
+    });
+  });
+
+  afterAll(() => {
+    cleanup();
+    mockGetApiConnection.mockResolvedValue(null);
+  });
+
+  it("throws NOT_FOUND when Actual isn't connected yet", async () => {
+    await expect(
+      caller.sync.updateActualExternalUrl({
+        externalUrl: "https://actual.mydomain.com",
+      }),
+    ).rejects.toThrow("No Actual Budget connection configured");
+  });
+
+  it("sets, then clears, the External URL without touching other credential fields", async () => {
+    await caller.sync.saveConnection({
+      service: "actual",
+      serverUrl: "https://actual.example.com",
+      apiKey: "ak-xyz",
+      budgetSyncId: "sync-456",
+    });
+
+    const setResult = await caller.sync.updateActualExternalUrl({
+      externalUrl: "https://actual.mydomain.com",
+    });
+    expect(setResult).toEqual({ success: true });
+
+    const afterSet = await caller.sync.getConnection();
+    expect(afterSet.actual.externalUrl).toBe("https://actual.mydomain.com");
+
+    const clearResult = await caller.sync.updateActualExternalUrl({
+      externalUrl: "",
+    });
+    expect(clearResult).toEqual({ success: true });
+
+    const afterClear = await caller.sync.getConnection();
+    expect(afterClear.actual.externalUrl).toBeNull();
+    // Still connected — clearing the External URL must not touch apiKey/
+    // serverUrl/budgetSyncId.
+    expect(afterClear.actual.connected).toBe(true);
   });
 });
 

@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**357 procedures across 42 routers.**
+**363 procedures across 43 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -391,7 +391,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `getDataFreshness`              | query    | `protectedProcedure` | ══ DATA FRESHNESS ══                                                                         |
 | `list`                          | query    | `protectedProcedure` | ══ APP SETTINGS ══                                                                           |
 | `list`                          | query    | `protectedProcedure` | ══ SCENARIOS (global what-if system) ══                                                      |
-| `list`                          | query    | `protectedProcedure` | ══ API CONNECTIONS ══                                                                        |
+| `list`                          | query    | `adminProcedure`     | (encrypted envelopes, or plaintext for legacy rows such as FMP).                             |
 | `setBudgetProfilePin`           | mutation | `scenarioProcedure`  | Pin (or clear, with null) which Budget Profile is "active" when this Plan is selected.       |
 | `setContributionProfilePin`     | mutation | `scenarioProcedure`  | Pin (or clear, with null) which Contribution Profile is "active" when this Plan is selected. |
 | `setOverride`                   | mutation | `scenarioProcedure`  | Update a single override within a scenario's overrides JSONB                                 |
@@ -476,25 +476,27 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `sync/config`
 
-| Procedure            | Kind     | Auth                 | Description                                                          |
-| -------------------- | -------- | -------------------- | -------------------------------------------------------------------- |
-| `getActiveBudgetApi` | query    | `protectedProcedure` | Get the current active_budget_api setting                            |
-| `setActiveBudgetApi` | mutation | `syncProcedure`      | Set the active_budget_api setting                                    |
-| `setLinkedColumn`    | mutation | `syncProcedure`      | Set which budget column (mode) syncs with the budget API.            |
-| `setLinkedProfile`   | mutation | `syncProcedure`      | Set (or clear) which Ledgr budget profile syncs with the budget API. |
-| `skipCategory`       | mutation | `syncProcedure`      | Skip an API category — hide from "not in Ledgr" list                 |
-| `unskipCategory`     | mutation | `syncProcedure`      | Unskip an API category — restore to "not in Ledgr" list              |
+| Procedure                | Kind     | Auth                 | Description                                                                                                                                                                                              |
+| ------------------------ | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `getActiveBudgetApi`     | query    | `protectedProcedure` | Get the current active_budget_api setting                                                                                                                                                                |
+| `getActiveBudgetApiLink` | query    | `protectedProcedure` | hosted app; Actual only links once the household has set an External URL (its `serverUrl` is often a private/internal address a browser outside that network can't reach — see ActualConfig's docblock). |
+| `setActiveBudgetApi`     | mutation | `syncProcedure`      | Set the active_budget_api setting                                                                                                                                                                        |
+| `setLinkedColumn`        | mutation | `syncProcedure`      | Set which budget column (mode) syncs with the budget API.                                                                                                                                                |
+| `setLinkedProfile`       | mutation | `syncProcedure`      | Set (or clear) which Ledgr budget profile syncs with the budget API.                                                                                                                                     |
+| `skipCategory`           | mutation | `syncProcedure`      | Skip an API category — hide from "not in Ledgr" list                                                                                                                                                     |
+| `unskipCategory`         | mutation | `syncProcedure`      | Unskip an API category — restore to "not in Ledgr" list                                                                                                                                                  |
 
 ## `sync/connections`
 
-| Procedure          | Kind     | Auth                 | Description                                                          |
-| ------------------ | -------- | -------------------- | -------------------------------------------------------------------- |
-| `deleteConnection` | mutation | `syncProcedure`      | Delete a connection and clear its cache                              |
-| `fetchYnabBudgets` | mutation | `syncProcedure`      | Fetch YNAB budgets list using a raw token (before saving connection) |
-| `getConnection`    | query    | `protectedProcedure` | Get connection status for each service (not just the active one)     |
-| `getSyncStatus`    | query    | `protectedProcedure` | Get sync status for the active API                                   |
-| `saveConnection`   | mutation | `syncProcedure`      | Save (upsert) a budget API connection                                |
-| `testConnection`   | mutation | `syncProcedure`      | Test a specific service connection (works before activation)         |
+| Procedure                 | Kind     | Auth                 | Description                                                                                                                                                                                             |
+| ------------------------- | -------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `deleteConnection`        | mutation | `syncProcedure`      | Delete a connection and clear its cache                                                                                                                                                                 |
+| `fetchYnabBudgets`        | mutation | `syncProcedure`      | Fetch YNAB budgets list using a raw token (before saving connection)                                                                                                                                    |
+| `getConnection`           | query    | `protectedProcedure` | Get connection status for each service (not just the active one)                                                                                                                                        |
+| `getSyncStatus`           | query    | `protectedProcedure` | Get sync status for the active API                                                                                                                                                                      |
+| `saveConnection`          | mutation | `syncProcedure`      | Save (upsert) a budget API connection                                                                                                                                                                   |
+| `testConnection`          | mutation | `syncProcedure`      | Test a specific service connection (works before activation)                                                                                                                                            |
+| `updateActualExternalUrl` | mutation | `syncProcedure`      | address for the nav link (see ActualConfig's docblock). Deliberately separate from saveConnection: that mutation requires retyping every credential field (apiKey isn't ever sent back to the client to |
 
 ## `sync/core`
 
@@ -542,6 +544,15 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | Procedure  | Kind     | Auth             | Description      |
 | ---------- | -------- | ---------------- | ---------------- |
 | `runTests` | mutation | `adminProcedure` | (no description) |
+
+## `tiingo`
+
+| Procedure          | Kind     | Auth                 | Description                                                                            |
+| ------------------ | -------- | -------------------- | -------------------------------------------------------------------------------------- |
+| `getStatus`        | query    | `protectedProcedure` | Connection status for the Settings integrations card. Never returns the key.           |
+| `removeConnection` | mutation | `syncProcedure`      | Remove the stored key.                                                                 |
+| `saveKey`          | mutation | `syncProcedure`      | Validate a key against Tiingo, then store it encrypted. An invalid key is never saved. |
+| `testConnection`   | mutation | `syncProcedure`      | Test the stored key and report how far back price history goes.                        |
 
 ## `utilities`
 

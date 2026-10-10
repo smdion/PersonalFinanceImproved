@@ -2,6 +2,7 @@
  *  exposure + ACA/IRMAA cliff proximity, aggregated across years — see
  *  lib/pure/report/aca-irmaa-narrative.ts. Presentational only. */
 import type { WatchlistSection } from "@/lib/pure/report/aca-irmaa-narrative";
+import { maskAmountsInText } from "@/lib/utils/format";
 
 export function ReportRiskWatchlistSection({
   watchlist,
@@ -11,7 +12,9 @@ export function ReportRiskWatchlistSection({
   return (
     <section className="mb-6" style={{ breakInside: "avoid" }}>
       <h2 className="mb-2 text-lg font-semibold">Watch List</h2>
-      <p className="mb-3 text-sm leading-relaxed">{watchlist.narrative}</p>
+      <p className="mb-3 text-sm leading-relaxed">
+        {maskAmountsInText(watchlist.narrative)}
+      </p>
       {watchlist.items.length > 0 && (
         <ul className="space-y-1 text-sm">
           {watchlist.items.map((item) => (
@@ -29,7 +32,7 @@ export function ReportRiskWatchlistSection({
                   item.severity === "warning" ? "text-amber-700" : undefined
                 }
               >
-                {item.detail}
+                {maskAmountsInText(item.detail)}
               </span>
             </li>
           ))}

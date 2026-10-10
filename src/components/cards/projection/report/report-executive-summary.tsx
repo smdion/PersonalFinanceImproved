@@ -2,6 +2,7 @@
  *  paragraph and key numbers lib/pure/report/executive-summary.ts already
  *  computed. Presentational only. */
 import type { ReportExecutiveSummary } from "@/lib/pure/report/types";
+import { maskAmountsInText } from "@/lib/utils/format";
 
 export function ReportExecutiveSummarySection({
   summary,
@@ -11,7 +12,9 @@ export function ReportExecutiveSummarySection({
   return (
     <section className="mb-6" style={{ breakInside: "avoid" }}>
       <h2 className="mb-2 text-lg font-semibold">Executive Summary</h2>
-      <p className="mb-3 text-sm leading-relaxed">{summary.narrative}</p>
+      <p className="mb-3 text-sm leading-relaxed">
+        {maskAmountsInText(summary.narrative)}
+      </p>
       {summary.coastFireLine && (
         <p className="text-muted mb-3 text-sm">{summary.coastFireLine}</p>
       )}

@@ -8,6 +8,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.8
 
+## [0.8.4] - 2026-10-10
+
+No database changes.
+
+### Added
+
+- Privacy mode: hide every dollar amount with the eye button at the bottom of the sidebar — handy when screen-sharing. Amounts become a handwritten-style scribble that looks different on every page load, and your choice is remembered in this browser. Percentages, dates and values you type into fields stay visible.
+- A link below the System group opens your budget app (YNAB or Actual) in a new tab. Actual has a separate "External URL" field, since its Server URL is often a private address a browser can't open. The link is hidden until one is set.
+- Tiingo connection in Settings → Integrations: save a free Tiingo API key for historical index and fund prices, groundwork for comparing your portfolio against market benchmarks. The key is checked with Tiingo before it's saved and stored encrypted.
+
+### Fixed
+
+- Budget push and preview used a stale amount for items linked to a Contribution Profile instead of the profile's current value.
+- Editing contribution accounts in the budget could lose an update when several accounts shared one Contribution Profile.
+- Pages could show "too many requests" errors during normal use, including while typing in the What-If tab.
+- The simulation progress bar could keep running indefinitely if a simulation never finished; it now stops after about three minutes.
+- Any signed-in user could read the stored settings of connected services (including credentials) through an internal settings endpoint. It is now admin-only and never returns credentials.
+- For users who can't change settings (viewers, demo mode), the dashboard kept re-sending a request to fix the active Contribution, Salary and Retirement Profile several times a second and could show a stack of "didn't save" messages. It now tries once per page load.
+
+---
+
 ## [0.8.3] - 2026-09-07
 
 One additive, nullable column, no data loss: `retirement_profile_people.social_security_pia` (NULL on every existing row = not opted in). The migration changes nothing on its own.

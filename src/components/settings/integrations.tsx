@@ -13,6 +13,7 @@ import { SK_SETTINGS_INTEGRATIONS_SECTION } from "@/lib/constants/settings-keys"
 import type { Service, PreviewData } from "./integrations-types";
 import { PreviewPanel } from "./integrations-preview-panel";
 import { SimplefinCard } from "./integrations-simplefin";
+import { TiingoCard } from "./integrations-tiingo";
 import {
   ConnectionStatusLine,
   ConnectionResultMessage,
@@ -29,9 +30,18 @@ const SERVICE_CREDENTIAL_FIELDS = {
     budget: { label: "Budget" },
   },
   actual: {
-    url: { label: "Server URL", placeholder: "https://actual.example.com" },
+    url: {
+      label: "Server URL",
+      placeholder: "https://actual.example.com",
+      help: "The address Ledgr's server uses to call the Actual API directly — often an internal/LAN address, and commonly different from what you'd type in a browser (reverse proxy, SSO, etc. can sit in front of the public one).",
+    },
     apiKey: { label: "API Key", placeholder: "Enter API key" },
     budgetSyncId: { label: "Budget Sync ID", placeholder: "Budget sync UUID" },
+    externalUrl: {
+      label: "External URL (optional)",
+      placeholder: "e.g. https://actual.mydomain.com",
+      help: "The address you'd actually open in a browser to view Actual — used for the nav link to your budget.",
+    },
   },
 } as const;
 
@@ -41,12 +51,15 @@ function ServiceCard({
   isActive,
   isConnected,
   lastSyncedAt: _lastSyncedAt,
+  savedActualExternalUrl,
 }: {
   service: Service;
   label: string;
   isActive: boolean;
   isConnected: boolean;
   lastSyncedAt: Date | null;
+  /** Current saved External URL — only meaningful for service === "actual". */
+  savedActualExternalUrl?: string | null;
 }) {
   const utils = trpc.useUtils();
 
@@ -60,11 +73,26 @@ function ServiceCard({
   const [actualUrl, setActualUrl] = useState("");
   const [actualApiKey, setActualApiKey] = useState("");
   const [actualBudgetSyncId, setActualBudgetSyncId] = useState("");
+  const [actualExternalUrl, setActualExternalUrl] = useState("");
+
+  // Quick-edit for the External URL alone, separate from the full
+  // credential-update form's blank draft above — prefilled from the
+  // currently saved value (not a secret, safe to prefill; unlike apiKey
+  // which is never sent back to the client). Reset on open (not via a
+  // useEffect keyed on the query value) so a mid-edit draft never gets
+  // silently clobbered by a background refetch.
+  const [showEditExternalUrl, setShowEditExternalUrl] = useState(false);
+  const [externalUrlEdit, setExternalUrlEdit] = useState("");
+  const openEditExternalUrl = () => {
+    setExternalUrlEdit(savedActualExternalUrl ?? "");
+    setShowEditExternalUrl(true);
+  };
 
   const invalidateAll = () => {
     utils.sync.getConnection.invalidate();
     utils.sync.getSyncStatus.invalidate();
     utils.sync.getActiveBudgetApi.invalidate();
+    utils.sync.getActiveBudgetApiLink.invalidate();
     utils.sync.getPreview.invalidate();
     utils.savings.invalidate();
     utils.budget.invalidate();
@@ -78,6 +106,12 @@ function ServiceCard({
     },
   });
   const testConnectionMut = trpc.sync.testConnection.useMutation();
+  const updateExternalUrlMut = trpc.sync.updateActualExternalUrl.useMutation({
+    onSuccess: () => {
+      invalidateAll();
+      setShowEditExternalUrl(false);
+    },
+  });
   const fetchBudgetsMut = trpc.sync.fetchYnabBudgets.useMutation({
     onSuccess: (data) => {
       if (data.success && data.budgets) {
@@ -124,6 +158,7 @@ function ServiceCard({
         serverUrl: actualUrl,
         apiKey: actualApiKey,
         budgetSyncId: actualBudgetSyncId,
+        externalUrl: actualExternalUrl,
       });
     }
   };
@@ -207,7 +242,10 @@ function ServiceCard({
               </>
             ) : (
               <>
-                <FormField label={SERVICE_CREDENTIAL_FIELDS.actual.url.label}>
+                <FormField
+                  label={SERVICE_CREDENTIAL_FIELDS.actual.url.label}
+                  help={SERVICE_CREDENTIAL_FIELDS.actual.url.help}
+                >
                   <FormInput
                     type="text"
                     value={actualUrl}
@@ -238,6 +276,19 @@ function ServiceCard({
                     onChange={(e) => setActualBudgetSyncId(e.target.value)}
                     placeholder={
                       SERVICE_CREDENTIAL_FIELDS.actual.budgetSyncId.placeholder
+                    }
+                  />
+                </FormField>
+                <FormField
+                  label={SERVICE_CREDENTIAL_FIELDS.actual.externalUrl.label}
+                  help={SERVICE_CREDENTIAL_FIELDS.actual.externalUrl.help}
+                >
+                  <FormInput
+                    type="text"
+                    value={actualExternalUrl}
+                    onChange={(e) => setActualExternalUrl(e.target.value)}
+                    placeholder={
+                      SERVICE_CREDENTIAL_FIELDS.actual.externalUrl.placeholder
                     }
                   />
                 </FormField>
@@ -321,6 +372,23 @@ function ServiceCard({
                 Deactivate
               </Button>
             )}
+            {service === "actual" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  showEditExternalUrl
+                    ? setShowEditExternalUrl(false)
+                    : openEditExternalUrl()
+                }
+              >
+                {showEditExternalUrl
+                  ? "Hide"
+                  : savedActualExternalUrl
+                    ? "Edit External URL"
+                    : "Add External URL"}
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"
@@ -336,6 +404,53 @@ function ServiceCard({
             >
               Remove
             </Button>
+          </div>
+        )}
+
+        {/* Quick-edit for Actual's External URL alone — doesn't require
+            retyping serverUrl/apiKey/budgetSyncId the way the full
+            credential form (above) does. */}
+        {service === "actual" && isConnected && showEditExternalUrl && (
+          <div className="space-y-2">
+            <FormField
+              label={SERVICE_CREDENTIAL_FIELDS.actual.externalUrl.label}
+              help={SERVICE_CREDENTIAL_FIELDS.actual.externalUrl.help}
+            >
+              <FormInput
+                type="text"
+                value={externalUrlEdit}
+                onChange={(e) => setExternalUrlEdit(e.target.value)}
+                placeholder={
+                  SERVICE_CREDENTIAL_FIELDS.actual.externalUrl.placeholder
+                }
+              />
+            </FormField>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() =>
+                  updateExternalUrlMut.mutate({
+                    externalUrl: externalUrlEdit,
+                  })
+                }
+                disabled={updateExternalUrlMut.isPending}
+              >
+                {updateExternalUrlMut.isPending ? "Saving..." : "Save"}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowEditExternalUrl(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+            {updateExternalUrlMut.isError && (
+              <ConnectionResultMessage tone="error">
+                {updateExternalUrlMut.error.message}
+              </ConnectionResultMessage>
+            )}
           </div>
         )}
 
@@ -390,6 +505,7 @@ const INTEGRATIONS_SECTIONS = [
   { key: "ynab", label: "YNAB" },
   { key: "actual", label: "Actual Budget" },
   { key: "simplefin", label: "SimpleFIN" },
+  { key: "tiingo", label: "Tiingo" },
   { key: "syncBehavior", label: "Sync Behavior" },
 ] as const;
 
@@ -408,6 +524,7 @@ export function IntegrationsSettings() {
   const admin = isAdmin(user);
   const { data: connection } = trpc.sync.getConnection.useQuery();
   const { data: simplefinStatus } = trpc.simplefin.getStatus.useQuery();
+  const { data: tiingoStatus } = trpc.tiingo.getStatus.useQuery();
   const [section, setSection] = usePersistedSetting<IntegrationsSectionKey>(
     SK_SETTINGS_INTEGRATIONS_SECTION,
     "ynab",
@@ -517,13 +634,16 @@ export function IntegrationsSettings() {
               {s.key === "simplefin" && (
                 <NavStatusDot connected={simplefinStatus?.connected ?? false} />
               )}
+              {s.key === "tiingo" && (
+                <NavStatusDot connected={tiingoStatus?.connected ?? false} />
+              )}
               {s.label}
             </button>
           ))}
         </nav>
 
         <div>
-          {/* YNAB/Actual/SimpleFin stay mounted at all times — each holds
+          {/* YNAB/Actual/SimpleFin/Tiingo stay mounted at all times — each holds
               in-progress local state (credential drafts, fetched budget
               list, test/sync results) that would silently reset if the nav
               unmounted them on every switch away and back. Only visibility
@@ -552,10 +672,14 @@ export function IntegrationsSettings() {
                   ? new Date(connection.actual.lastSyncedAt)
                   : null
               }
+              savedActualExternalUrl={connection?.actual.externalUrl}
             />
           </div>
           <div className={section === "simplefin" ? "" : "hidden"}>
             <SimplefinCard />
+          </div>
+          <div className={section === "tiingo" ? "" : "hidden"}>
+            <TiingoCard />
           </div>
           {section === "syncBehavior" && <SyncBehaviorSettings />}
         </div>

@@ -15,6 +15,7 @@ import {
   formatCurrency,
   formatPercent,
   accountDisplayName,
+  maskAmountsInText,
 } from "@/lib/utils/format";
 import { DEFAULT_INFLATION_RATE } from "@/lib/constants";
 import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
@@ -441,7 +442,7 @@ export function BrokerageContent() {
         <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
           {brokerageResult.warnings.map((w) => (
             <p key={w} className="text-xs text-amber-700">
-              {w}
+              {maskAmountsInText(w)}
             </p>
           ))}
         </div>

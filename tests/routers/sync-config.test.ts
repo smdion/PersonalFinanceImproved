@@ -222,3 +222,85 @@ describe("sync config router — skip/unskip with connection", () => {
     expect(result).toEqual({ ok: true });
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// getActiveBudgetApiLink — the nav's "open budget API" link
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("sync config router — getActiveBudgetApiLink", () => {
+  let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
+  let cleanup: () => void;
+
+  beforeAll(async () => {
+    const ctx = await createTestCaller();
+    caller = ctx.caller;
+    cleanup = ctx.cleanup;
+  });
+
+  afterAll(() => cleanup());
+
+  it("returns a null url when no API is active", async () => {
+    const { getActiveBudgetApi } = await import("@/lib/budget-api");
+    vi.mocked(getActiveBudgetApi).mockResolvedValueOnce("none");
+
+    const result = await caller.sync.getActiveBudgetApiLink();
+    expect(result).toEqual({ service: "none", url: null });
+  });
+
+  it("YNAB always links to the hosted app, regardless of saved config", async () => {
+    const { getActiveBudgetApi } = await import("@/lib/budget-api");
+    vi.mocked(getActiveBudgetApi).mockResolvedValueOnce("ynab");
+
+    const result = await caller.sync.getActiveBudgetApiLink();
+    expect(result).toEqual({
+      service: "ynab",
+      url: "https://app.youneedabudget.com/",
+    });
+  });
+
+  it("Actual links to the saved External URL when set", async () => {
+    const { getActiveBudgetApi, getApiConnection } =
+      await import("@/lib/budget-api");
+    vi.mocked(getActiveBudgetApi).mockResolvedValueOnce("actual");
+    vi.mocked(getApiConnection).mockResolvedValueOnce({
+      config: {
+        serverUrl: "http://10.0.0.5:5006",
+        apiKey: "ak",
+        budgetSyncId: "sync-1",
+        externalUrl: "https://actual.mydomain.com",
+      },
+    } as unknown as Awaited<ReturnType<typeof getApiConnection>>);
+
+    const result = await caller.sync.getActiveBudgetApiLink();
+    expect(result).toEqual({
+      service: "actual",
+      url: "https://actual.mydomain.com",
+    });
+  });
+
+  it("Actual has no link when connected but no External URL was ever saved — serverUrl (often internal/behind a reverse proxy) is never used as a fallback", async () => {
+    const { getActiveBudgetApi, getApiConnection } =
+      await import("@/lib/budget-api");
+    vi.mocked(getActiveBudgetApi).mockResolvedValueOnce("actual");
+    vi.mocked(getApiConnection).mockResolvedValueOnce({
+      config: {
+        serverUrl: "http://10.0.0.5:5006",
+        apiKey: "ak",
+        budgetSyncId: "sync-1",
+      },
+    } as unknown as Awaited<ReturnType<typeof getApiConnection>>);
+
+    const result = await caller.sync.getActiveBudgetApiLink();
+    expect(result).toEqual({ service: "actual", url: null });
+  });
+
+  it("Actual has no link when active but never connected", async () => {
+    const { getActiveBudgetApi, getApiConnection } =
+      await import("@/lib/budget-api");
+    vi.mocked(getActiveBudgetApi).mockResolvedValueOnce("actual");
+    vi.mocked(getApiConnection).mockResolvedValueOnce(null);
+
+    const result = await caller.sync.getActiveBudgetApiLink();
+    expect(result).toEqual({ service: "actual", url: null });
+  });
+});

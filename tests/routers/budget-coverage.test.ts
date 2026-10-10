@@ -23,7 +23,10 @@ import {
   viewerSession,
 } from "./setup";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
-import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
+import {
+  SK_ACTIVE_SALARY_PROFILE_ID,
+  SK_ACTIVE_CONTRIB_PROFILE_ID,
+} from "@/lib/constants/settings-keys";
 
 vi.mock("@/lib/budget-api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/budget-api")>();
@@ -980,9 +983,9 @@ describe("budget router — syncBudgetToApi", () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedStandardDataset(db);
-      await expect(
-        caller.budget.syncBudgetToApi({ selectedColumn: 0 }),
-      ).rejects.toThrow("No budget API active");
+      await expect(caller.budget.syncBudgetToApi()).rejects.toThrow(
+        "No budget API active",
+      );
     } finally {
       cleanup();
     }
@@ -997,9 +1000,9 @@ describe("budget router — syncBudgetToApi", () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedStandardDataset(db);
-      await expect(
-        caller.budget.syncBudgetToApi({ selectedColumn: 0 }),
-      ).rejects.toThrow("Budget API client not available");
+      await expect(caller.budget.syncBudgetToApi()).rejects.toThrow(
+        "Budget API client not available",
+      );
     } finally {
       cleanup();
     }
@@ -1028,9 +1031,7 @@ describe("budget router — syncBudgetToApi", () => {
         syncDirection: "push",
       });
 
-      const result = await caller.budget.syncBudgetToApi({
-        selectedColumn: 0,
-      });
+      const result = await caller.budget.syncBudgetToApi();
       expect(result.pushed).toBe(1);
       expect(mockUpdateGoal).toHaveBeenCalledWith("api-push-cat", 2000);
       // Push must refresh budget_api_cache so subsequent previews don't
@@ -1056,9 +1057,7 @@ describe("budget router — syncBudgetToApi", () => {
     try {
       seedStandardDataset(db);
       // No items linked with push/both direction — nothing to push.
-      const result = await caller.budget.syncBudgetToApi({
-        selectedColumn: 0,
-      });
+      const result = await caller.budget.syncBudgetToApi();
       expect(result.pushed).toBe(0);
       expect(refreshCategoryCache).not.toHaveBeenCalled();
     } finally {
@@ -1088,9 +1087,7 @@ describe("budget router — syncBudgetToApi", () => {
         syncDirection: "pull",
       });
 
-      const result = await caller.budget.syncBudgetToApi({
-        selectedColumn: 0,
-      });
+      const result = await caller.budget.syncBudgetToApi();
       expect(result.pushed).toBe(0);
       expect(mockUpdateGoal).not.toHaveBeenCalled();
     } finally {
@@ -1120,9 +1117,7 @@ describe("budget router — syncBudgetToApi", () => {
         syncDirection: "both",
       });
 
-      const result = await caller.budget.syncBudgetToApi({
-        selectedColumn: 0,
-      });
+      const result = await caller.budget.syncBudgetToApi();
       expect(result.pushed).toBe(1);
     } finally {
       cleanup();
@@ -1153,10 +1148,135 @@ describe("budget router — syncBudgetToApi", () => {
         `INSERT INTO api_connections (service, config, linked_profile_id) VALUES ('ynab', '{}', ${secondProfileId})`,
       );
 
-      const result = await caller.budget.syncBudgetToApi({
-        selectedColumn: 0,
-      });
+      const result = await caller.budget.syncBudgetToApi();
       expect(result.pushed).toBe(0); // No linked items in new profile
+    } finally {
+      cleanup();
+    }
+  });
+
+  // Regression for the live incident (2026-09-12): a household set a
+  // contribution-linked item's real value to $900/yr via its globally-active
+  // Contribution Profile, but syncBudgetToApi pushed the item's frozen,
+  // pre-link `amounts` value ($100) instead — getPreview independently
+  // agreed with the stale figure, so nothing surfaced the disagreement
+  // before the push actually happened. Asserts all three of
+  // computeActiveSummary / sync.getPreview / syncBudgetToApi's actual push
+  // resolve to the SAME dollar figure for the same linked item, sourced from
+  // the Contribution Profile rather than the stale `amounts` column.
+  it("pushes and previews the Contribution Profile's resolved amount, not the linked item's frozen `amounts` column", async () => {
+    const { getActiveBudgetApi, getClientForService, cacheGet } =
+      await import("@/lib/budget-api");
+    const mockUpdateGoal = vi.fn().mockResolvedValue(undefined);
+    (getActiveBudgetApi as ReturnType<typeof vi.fn>).mockResolvedValue("ynab");
+    (getClientForService as ReturnType<typeof vi.fn>).mockResolvedValue({
+      updateCategoryGoalTarget: mockUpdateGoal,
+    });
+    (cacheGet as ReturnType<typeof vi.fn>).mockImplementation(
+      async (_db: unknown, _service: unknown, key: string) => {
+        if (key === "accounts")
+          return {
+            data: [
+              {
+                id: "a1",
+                name: "Checking",
+                balance: 1000,
+                onBudget: true,
+                closed: false,
+                type: "checking",
+              },
+            ],
+            fetchedAt: new Date(),
+          };
+        if (key === "categories")
+          return {
+            data: [
+              {
+                id: "g1",
+                name: "Investing",
+                hidden: false,
+                categories: [
+                  { id: "api-brokerage-cat", name: "Brokerage", hidden: false },
+                ],
+              },
+            ],
+            fetchedAt: new Date(),
+          };
+        return null;
+      },
+    );
+
+    const { caller, db, sqlite, cleanup } =
+      await createTestCaller(adminSession);
+    try {
+      const seed = seedStandardDataset(db);
+      const contrib = await seedContribAccount(db, seed.personId, {
+        jobId: null,
+      });
+      await caller.budget.linkContributionAccount({
+        budgetItemId: seed.itemIds[0]!,
+        contributionAccountId: contrib.id,
+      });
+      await caller.budget.linkToApi({
+        budgetItemId: seed.itemIds[0]!,
+        service: "ynab",
+        apiCategoryId: "api-brokerage-cat",
+        apiCategoryName: "Brokerage",
+        syncDirection: "push",
+      });
+      // The item's own `amounts` column is frozen at its pre-link value —
+      // this is the stale "$100" the incident showed instead of $900/yr.
+      db.update(sqliteSchema.budgetItems)
+        .set({ amounts: [100] })
+        .where(eq(sqliteSchema.budgetItems.id, seed.itemIds[0]!))
+        .run();
+
+      // The household's real, current value: $900/yr via the Contribution
+      // Profile, set as the globally-active default.
+      const profileId = seedContributionProfile(db, {
+        name: "Brokerage Contribution",
+        contributionActiveFields: {
+          contributionAccounts: {
+            [String(contrib.id)]: {
+              contributionValue: "900",
+              contributionMethod: "fixed_annual",
+            },
+          },
+        },
+      });
+      // Migrations seed a default row for this key, so replace it rather
+      // than insert (seedAppSetting assumes no row exists yet).
+      sqlite.exec(
+        `INSERT OR REPLACE INTO app_settings (key, value) VALUES ('${SK_ACTIVE_CONTRIB_PROFILE_ID}', '${profileId}')`,
+      );
+
+      sqlite.exec(
+        `INSERT INTO api_connections (service, config, linked_profile_id, linked_column_index) VALUES ('ynab', '{}', ${seed.profileId}, 0)`,
+      );
+
+      const summary = await caller.budget.computeActiveSummary({
+        contributionProfile: {
+          planPinId: null,
+          localSelectionId: null,
+          globalDefaultId: profileId,
+        },
+      });
+      const summaryItem = summary.rawItems!.find(
+        (i) => i.id === seed.itemIds[0]!,
+      );
+      expect(summaryItem!.contribAmount).toBe(75);
+
+      const preview = await caller.sync.getPreview({ service: "ynab" });
+      expect(preview.synced).toBe(true);
+      if (!preview.synced) throw new Error("expected synced:true");
+      const previewMatch = preview.budget.matches.find(
+        (m) => m.budgetItemId === seed.itemIds[0]!,
+      );
+      expect(previewMatch!.ledgrAmount).toBe(75);
+
+      const pushResult = await caller.budget.syncBudgetToApi();
+      expect(pushResult.pushed).toBe(1);
+      expect(mockUpdateGoal).toHaveBeenCalledWith("api-brokerage-cat", 75);
     } finally {
       cleanup();
     }
@@ -2500,9 +2620,9 @@ describe("budget router — syncBudgetToApi no profile", () => {
         `INSERT INTO api_connections (service, config, linked_profile_id) VALUES ('ynab', '{}', 999999)`,
       );
 
-      await expect(
-        caller.budget.syncBudgetToApi({ selectedColumn: 0 }),
-      ).rejects.toThrow("No linked or active budget profile");
+      await expect(caller.budget.syncBudgetToApi()).rejects.toThrow(
+        "No linked or active budget profile",
+      );
     } finally {
       cleanup();
     }

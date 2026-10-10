@@ -64,7 +64,10 @@ function DollarMultiplierCardImpl() {
       href="/retirement"
     >
       <div className="mb-1 flex items-baseline gap-2">
-        <span className="text-2xl font-bold text-green-600">
+        <span
+          className="text-2xl font-bold text-green-600"
+          data-privacy-visible
+        >
           ${formatNumber(multiplier, 2)}
         </span>
         <span className="text-muted flex items-center gap-1 text-sm">
@@ -144,7 +147,7 @@ function DollarMultiplierCardImpl() {
         {yearsToRetirement > 5 && (
           <div className="flex justify-between">
             <span>In 5 years</span>
-            <span>
+            <span data-privacy-visible>
               $
               {formatNumber(
                 Math.pow(1 + avgReturn, Math.max(0, yearsToRetirement - 5)),
@@ -157,7 +160,7 @@ function DollarMultiplierCardImpl() {
         {yearsToRetirement > 10 && (
           <div className="flex justify-between">
             <span>In 10 years</span>
-            <span>
+            <span data-privacy-visible>
               $
               {formatNumber(
                 Math.pow(1 + avgReturn, Math.max(0, yearsToRetirement - 10)),

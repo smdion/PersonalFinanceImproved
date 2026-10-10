@@ -12,26 +12,17 @@
  * client falls back to its own fetch on error.
  */
 
-import {
-  HydrationBoundary,
-  dehydrate,
-  type DehydratedState,
-} from "@tanstack/react-query";
-import { createServerHelpers } from "@/server/helpers/server-trpc";
+import { HydrationBoundary } from "@tanstack/react-query";
+import { prefetchForPage } from "@/server/helpers/server-trpc";
 import { ExpensesContent } from "./expenses-content";
 
 export default async function ExpensesPage() {
-  let dehydratedState: DehydratedState | undefined = undefined;
-  try {
-    const helpers = await createServerHelpers();
+  const dehydratedState = await prefetchForPage(async (helpers) => {
     await Promise.all([
       helpers.budget.listApiCategories.prefetch().catch(() => undefined),
       helpers.budget.listApiActuals.prefetch().catch(() => undefined),
     ]);
-    dehydratedState = dehydrate(helpers.queryClient);
-  } catch {
-    dehydratedState = undefined;
-  }
+  });
 
   return (
     <HydrationBoundary state={dehydratedState}>
