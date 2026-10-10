@@ -411,9 +411,20 @@ export const adminProcedures = {
 
   // ══ API CONNECTIONS ══
   apiConnections: createTRPCRouter({
-    list: protectedProcedure.query(({ ctx }) =>
+    /** Admin-only, and never returns `config`: it holds credentials
+     *  (encrypted envelopes, or plaintext for legacy rows such as FMP). */
+    list: adminProcedure.query(({ ctx }) =>
       ctx.db
-        .select()
+        .select({
+          id: schema.apiConnections.id,
+          service: schema.apiConnections.service,
+          accountMappings: schema.apiConnections.accountMappings,
+          skippedCategoryIds: schema.apiConnections.skippedCategoryIds,
+          linkedProfileId: schema.apiConnections.linkedProfileId,
+          linkedColumnIndex: schema.apiConnections.linkedColumnIndex,
+          serverKnowledge: schema.apiConnections.serverKnowledge,
+          lastSyncedAt: schema.apiConnections.lastSyncedAt,
+        })
         .from(schema.apiConnections)
         .orderBy(asc(schema.apiConnections.service)),
     ),

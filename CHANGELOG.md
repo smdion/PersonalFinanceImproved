@@ -24,6 +24,7 @@ No database changes.
 - Editing contribution accounts in the budget could lose an update when several accounts shared one Contribution Profile.
 - Pages could show "too many requests" errors during normal use, including while typing in the What-If tab.
 - The simulation progress bar could keep running indefinitely if a simulation never finished; it now stops after about three minutes.
+- Any signed-in user could read the stored settings of connected services (including credentials) through an internal settings endpoint. It is now admin-only and never returns credentials.
 
 ---
 

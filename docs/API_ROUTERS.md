@@ -391,7 +391,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `getDataFreshness`              | query    | `protectedProcedure` | ══ DATA FRESHNESS ══                                                                         |
 | `list`                          | query    | `protectedProcedure` | ══ APP SETTINGS ══                                                                           |
 | `list`                          | query    | `protectedProcedure` | ══ SCENARIOS (global what-if system) ══                                                      |
-| `list`                          | query    | `protectedProcedure` | ══ API CONNECTIONS ══                                                                        |
+| `list`                          | query    | `adminProcedure`     | (encrypted envelopes, or plaintext for legacy rows such as FMP).                             |
 | `setBudgetProfilePin`           | mutation | `scenarioProcedure`  | Pin (or clear, with null) which Budget Profile is "active" when this Plan is selected.       |
 | `setContributionProfilePin`     | mutation | `scenarioProcedure`  | Pin (or clear, with null) which Contribution Profile is "active" when this Plan is selected. |
 | `setOverride`                   | mutation | `scenarioProcedure`  | Update a single override within a scenario's overrides JSONB                                 |
