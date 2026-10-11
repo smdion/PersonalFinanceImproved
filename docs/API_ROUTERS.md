@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**394 procedures across 53 routers.**
+**395 procedures across 53 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -148,9 +148,10 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `investments/comparison`
 
-| Procedure       | Kind  | Auth                 | Description                                                                                                 |
-| --------------- | ----- | -------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `getComparison` | query | `portfolioProcedure` | Yearly results and the same money in each benchmark, from `fromYear` (default: first year with real gains). |
+| Procedure            | Kind  | Auth                 | Description                                                                                                                                                                                              |
+| -------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `getBenchmarkPrices` | query | `protectedProcedure` | An index's month-end total-return prices from `fromYear` — public market data, no household figures, so any signed-in user (the Performance page's benchmark column computes against its own rows). Null |
+| `getComparison`      | query | `portfolioProcedure` | Yearly results and the same money in each benchmark, from `fromYear` (default: first year with real gains).                                                                                              |
 
 ## `investments/fund-facts`
 

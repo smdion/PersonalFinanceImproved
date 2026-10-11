@@ -1,6 +1,7 @@
 /** Yearly benchmark comparison. Invented numbers only. */
 import { describe, it, expect } from "vitest";
 import {
+  indexYearReturn,
   simulateIndex,
   windowReturn,
   yearlyReturn,
@@ -94,5 +95,32 @@ describe("returns", () => {
     const short = windowReturn([year({ year: 2020 })], 1050, 6)!;
     expect(short.annualized).toBe(false);
     expect(short.value).toBeCloseTo(0.05, 3);
+  });
+});
+
+describe("indexYearReturn", () => {
+  it("gives a full year's index return for that year's money", () => {
+    const r = indexYearReturn(
+      year({ year: 2020 }),
+      steadyPrices(2020, 12, 0.01),
+    )!;
+    expect(r.months).toBe(12);
+    expect(r.returnPct).toBeCloseTo(1.01 ** 12 - 1, 4);
+  });
+
+  it("spreads a year-to-date year's money over the priced months only", () => {
+    // 9 priced months, flat index, $900 deposited so far: no gain at all.
+    const r = indexYearReturn(
+      year({ year: 2020, begin: 0, contributions: 900, end: 900 }),
+      steadyPrices(2020, 9, 0),
+    )!;
+    expect(r.months).toBe(9);
+    expect(r.returnPct).toBeCloseTo(0, 6);
+  });
+
+  it("has nothing to say without prices for the year", () => {
+    expect(
+      indexYearReturn(year({ year: 2030 }), steadyPrices(2020, 12, 0.01)),
+    ).toBeNull();
   });
 });

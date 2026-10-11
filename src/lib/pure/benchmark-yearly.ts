@@ -137,3 +137,38 @@ export function windowReturn(
     return { value: Math.pow(1 + monthly, totalMonths) - 1, annualized: false };
   return { value: annual, annualized: true };
 }
+
+/**
+ * One year's money in an index instead: same opening balance, same money
+ * in and out spread across the year. Returns the index's return for that
+ * year, computed the way the Performance page computes yours, and how many
+ * months were priced. For a year still in progress (`months` < 12) the
+ * year's figures are year-to-date, so they're spread over the priced
+ * months only. Null when the index has no price for the year's start.
+ */
+export function indexYearReturn(
+  y: YearlyResult,
+  prices: MonthlyPrices,
+): { returnPct: number | null; months: number } | null {
+  let months = 0;
+  for (let m = 1; m <= 12; m++) {
+    const [py, pm] = previousMonth(y.year, m);
+    if (!prices.has(monthKey(py, pm)) || !prices.has(monthKey(y.year, m)))
+      break;
+    months++;
+  }
+  if (months === 0) return null;
+  const scale = 12 / months;
+  const run = simulateIndex(
+    [
+      {
+        ...y,
+        contributions: y.contributions * scale,
+        outflows: y.outflows * scale,
+      },
+    ],
+    prices,
+  );
+  const first = run?.[0];
+  return first ? { returnPct: first.returnPct, months: first.months } : null;
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import { BasisCell } from "./basis-cell";
+import { BenchmarkCell } from "./benchmark-cell";
 import React from "react";
 import {
   formatCurrency,
@@ -45,6 +46,7 @@ export function YearRow({
   showUnrealized,
   onlyBasis,
   canEdit = true,
+  benchmark,
 }: YearRowProps) {
   const gainColor = row.yearlyGainLoss >= 0 ? "text-green-600" : "text-red-600";
   // Per-account, data-driven gate — never assume a whole category is pure
@@ -340,6 +342,9 @@ export function YearRow({
               : "—"}
           </td>
         )}
+        {benchmark && !onlyBasis && (
+          <BenchmarkCell benchmark={benchmark} row={row} />
+        )}
         <td
           className={`px-4 py-3 text-right font-medium ${row.annualReturnPct !== null ? (row.annualReturnPct >= 0 ? "text-green-600" : "text-red-600") : ""}`}
         >
@@ -378,7 +383,7 @@ export function YearRow({
                 <tr className="bg-surface-elevated">
                   <td
                     colSpan={
-                      (onlyBasis ? 2 : 10) +
+                      (onlyBasis ? 2 : benchmark ? 11 : 10) +
                       (showBasis ? 3 : 0) +
                       (showUnrealized ? 1 : 0)
                     }
@@ -686,6 +691,9 @@ export function YearRow({
                     </>
                   );
                 })()}
+                {benchmark && !onlyBasis && (
+                  <BenchmarkCell benchmark={benchmark} row={a} dense />
+                )}
                 <td
                   className={`px-4 py-2 text-right font-medium ${a.annualReturnPct !== null ? (a.annualReturnPct >= 0 ? "text-green-600" : "text-red-600") : "text-muted"}`}
                 >
