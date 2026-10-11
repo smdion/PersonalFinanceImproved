@@ -107,7 +107,12 @@ vi.mock("@/lib/sec/client", async () => {
         seriesName: "EXAMPLE LIFESTAGE INDEX 2060 FUND",
         seriesLei: "LEI-LIFE",
         periodDate: "2026-06-30",
-        holdings: [holding("Example Intl Corp", 100, { invCountry: "JP" })],
+        holdings: [
+          holding("Example Intl Corp", 60, { invCountry: "JP" }),
+          // A private master portfolio: a fund (SEC tags it RF) with no
+          // registry name or LEI to look through — must stay unknown.
+          holding("EXAMPLE MASTER PORTFOLIO", 40, { issuerCat: "RF" }),
+        ],
       };
     }),
     fetchExpenseRatios: vi.fn(
@@ -229,11 +234,9 @@ describe("syncSecurityFacts", () => {
       force: true,
       now: new Date("2026-10-02T00:00:00Z"),
     });
-    expect(
-      Number(
-        facts("plan").find((f) => f.source === "sec_nport")!.intlEquityPct,
-      ),
-    ).toBe(1);
+    const planMix = facts("plan").find((f) => f.source === "sec_nport")!;
+    expect(Number(planMix.intlEquityPct)).toBe(1); // of what could be seen
+    expect(Number(planMix.coverage)).toBeCloseTo(0.6); // the master portfolio stays unknown
   });
 
   it("doesn't download filings it already has", async () => {

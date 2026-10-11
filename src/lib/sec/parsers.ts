@@ -45,10 +45,14 @@ export function createNportParser(): Chunked<NportFiling> {
         assetCat: null,
         invCountry: null,
         payoffProfile: null,
+        issuerCat: null,
       };
     } else if (current && name === "assetConditional") {
       const cat = node.attributes["assetCat"];
       if (typeof cat === "string") current.assetCat = cat;
+    } else if (current && name === "issuerConditional") {
+      const cat = node.attributes["issuerCat"];
+      if (typeof cat === "string") current.issuerCat = cat;
     }
   });
   p.on("text", (t) => {
@@ -71,6 +75,7 @@ export function createNportParser(): Chunked<NportFiling> {
         else if (name === "invCountry") current.invCountry = value || null;
         else if (name === "payoffProfile")
           current.payoffProfile = value || null;
+        else if (name === "issuerCat") current.issuerCat = value || null;
       }
     } else if (name === "seriesId") result.seriesId = value || null;
     else if (name === "seriesName") result.seriesName = value || null;

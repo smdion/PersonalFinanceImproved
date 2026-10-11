@@ -25,7 +25,20 @@ export type NportHolding = {
   invCountry: string | null;
   /** "Long" | "Short" | "N/A" */
   payoffProfile: string | null;
+  /**
+   * N-PORT issuer category. "RF" = the holding is itself a registered fund
+   * (SEC's own tag), e.g. a fund-of-funds' underlying funds, which the
+   * asset-category and country tags describe only as "equity, US".
+   */
+  issuerCat?: string | null;
 };
+
+/** The holding is itself a fund (other than a money market fund, which is just cash). */
+export function isFundHolding(
+  h: Pick<NportHolding, "issuerCat" | "assetCat">,
+): boolean {
+  return h.issuerCat === "RF" && (h.assetCat ?? "").toUpperCase() !== "STIV";
+}
 
 export type Composition = Record<CompositionBucket, number> & {
   /** Share of the fund's long holdings that could be classified. */

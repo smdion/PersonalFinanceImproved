@@ -15,6 +15,7 @@ import { log } from "@/lib/logger";
 import {
   EMPTY_BUCKETS,
   composeFund,
+  isFundHolding,
   normalizeSeriesName,
   type Composition,
   type HoldingResolution,
@@ -120,11 +121,17 @@ class Composer {
         depth < MAX_LOOK_THROUGH_DEPTH && h.pctVal > 0
           ? this.index.seriesByName.get(normalizeSeriesName(h.name))
           : undefined;
-      if (!underlying || underlying === seriesId) {
+      if (underlying && underlying !== seriesId) {
+        resolutions.push(await this.lookThrough(underlying, h.lei, depth + 1));
+      } else if (isFundHolding(h)) {
+        // Itself a fund (SEC tags it so) that we can't look through — a
+        // private master portfolio, an unmatched name, or past the depth
+        // limit. Its own asset-category tags say only "equity, US", so
+        // leave it unknown rather than guess.
+        resolutions.push({ kind: "unresolved_fund" });
+      } else {
         resolutions.push({ kind: "security" });
-        continue;
       }
-      resolutions.push(await this.lookThrough(underlying, h.lei, depth + 1));
     }
     const composition = composeFund(nport.holdings, (i) => resolutions[i]!);
     const periodDate = nport.periodDate ?? filing.filingDate;

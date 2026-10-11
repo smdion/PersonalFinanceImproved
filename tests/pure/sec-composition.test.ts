@@ -1,6 +1,7 @@
 /** Fund composition from N-PORT holdings. Invented holdings only. */
 import { describe, it, expect } from "vitest";
 import {
+  isFundHolding,
   classifyByTags,
   composeFund,
   normalizeSeriesName,
@@ -80,5 +81,14 @@ describe("normalizeSeriesName", () => {
       normalizeSeriesName("Example Total Bond Market II Index Fund"),
     );
     expect(normalizeSeriesName("S&amp;P 500 Index")).toBe("s&p 500 index");
+  });
+});
+
+describe("isFundHolding", () => {
+  it("recognises SEC's registered-fund tag, but treats money market funds as cash", () => {
+    expect(isFundHolding({ issuerCat: "RF", assetCat: "EC" })).toBe(true);
+    expect(isFundHolding({ issuerCat: "RF", assetCat: "STIV" })).toBe(false);
+    expect(isFundHolding({ issuerCat: "CORP", assetCat: "EC" })).toBe(false);
+    expect(isFundHolding({ assetCat: "EC" })).toBe(false);
   });
 });

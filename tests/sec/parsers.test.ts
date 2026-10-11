@@ -24,6 +24,7 @@ const NPORT = `<?xml version="1.0"?>
         <pctVal>40.5</pctVal>
         <payoffProfile>Long</payoffProfile>
         <assetCat>EC</assetCat>
+        <issuerCat>RF</issuerCat>
         <invCountry>US</invCountry>
       </invstOrSec>
       <invstOrSec>
@@ -32,6 +33,7 @@ const NPORT = `<?xml version="1.0"?>
         <pctVal>-0.2</pctVal>
         <payoffProfile>N/A</payoffProfile>
         <assetConditional desc="futures" assetCat="DE"/>
+        <issuerConditional desc="other" issuerCat="OTHER"/>
         <invCountry>N/A</invCountry>
       </invstOrSec>
     </invstOrSecs>
@@ -57,6 +59,7 @@ describe("createNportParser", () => {
         assetCat: "EC",
         invCountry: "US",
         payoffProfile: "Long",
+        issuerCat: "RF",
       },
       {
         name: "N/A",
@@ -65,6 +68,7 @@ describe("createNportParser", () => {
         assetCat: "DE",
         invCountry: "N/A",
         payoffProfile: "N/A",
+        issuerCat: "OTHER",
       },
     ]);
   });
