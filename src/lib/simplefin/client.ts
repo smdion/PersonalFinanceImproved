@@ -107,6 +107,17 @@ export type SimplefinAccount = {
 
 type SimplefinAccountsResponse = {
   errors?: string[];
+  /**
+   * Protocol v2: the institutions behind the accounts. An account names
+   * its connection by `conn_id`; v1's per-account `org` is gone.
+   */
+  connections?: Array<{
+    conn_id: string;
+    name?: string;
+    /** Not in the attribute tables, but present in the protocol's samples. */
+    org_name?: string;
+    org_id?: string;
+  }>;
   /** Protocol v2: structured errors, optionally scoped to an account/connection. */
   errlist?: Array<{
     code?: string;
@@ -119,7 +130,12 @@ type SimplefinAccountsResponse = {
     name: string;
     balance: string;
     "balance-date"?: number;
+    /** Protocol v1 only. */
     org?: { name?: string };
+    /** Protocol v2: the connection (institution) this account belongs to. */
+    conn_id?: string;
+    /** Present in the protocol's samples. */
+    conn_name?: string;
     holdings?: Array<{
       id?: string;
       symbol?: string;
@@ -249,8 +265,29 @@ const num = (v: string | undefined): number | null =>
 const CAPPED_NOTICE = /date range.*\bcapped\b/i;
 const LIMIT_DAYS = /limit of (\d+) days?/i;
 
+/**
+ * An account's institution: v2 resolves it through the account's
+ * connection; v1 sent it on the account.
+ */
+function institutionName(
+  a: NonNullable<SimplefinAccountsResponse["accounts"]>[number],
+  connectionNames: ReadonlyMap<string, string>,
+): string {
+  return (
+    (a.conn_id ? connectionNames.get(a.conn_id) : undefined) ??
+    a.conn_name ??
+    a.org?.name ??
+    ""
+  );
+}
+
 function mapResponse(json: SimplefinAccountsResponse): GetAccountsResult {
   const errlist = json.errlist ?? [];
+  const connectionNames = new Map(
+    (json.connections ?? [])
+      .map((c) => [c.conn_id, (c.org_name ?? c.name ?? "").trim()] as const)
+      .filter(([, name]) => name !== ""),
+  );
   const messages = [
     ...(json.errors ?? []),
     ...errlist.map((e) => e.msg ?? e.code ?? "Unknown SimpleFIN error"),
@@ -280,7 +317,7 @@ function mapResponse(json: SimplefinAccountsResponse): GetAccountsResult {
       id: a.id,
       name: a.name,
       balance: Number(a.balance),
-      orgName: a.org?.name ?? "",
+      orgName: institutionName(a, connectionNames),
       balanceDate:
         a["balance-date"] !== undefined
           ? new Date(a["balance-date"] * 1000)
@@ -311,11 +348,24 @@ function mapResponse(json: SimplefinAccountsResponse): GetAccountsResult {
     providerErrors,
     notices,
     windowLimitDays,
-    // A notice isn't an account failure, even if the provider scoped it to one.
-    accountIdsWithErrors: errlist
-      .filter((e) => !CAPPED_NOTICE.test(e.msg ?? ""))
-      .map((e) => e.account_id)
-      .filter((id): id is string => !!id),
+    // A notice isn't an account failure, even if the provider scoped it to
+    // one. A connection-level error (e.g. "sign in again") covers every
+    // account on that connection.
+    accountIdsWithErrors: [
+      ...new Set(
+        errlist
+          .filter((e) => !CAPPED_NOTICE.test(e.msg ?? ""))
+          .flatMap((e) =>
+            e.account_id
+              ? [e.account_id]
+              : e.conn_id
+                ? (json.accounts ?? [])
+                    .filter((a) => a.conn_id === e.conn_id)
+                    .map((a) => a.id)
+                : [],
+          ),
+      ),
+    ],
   };
 }
 

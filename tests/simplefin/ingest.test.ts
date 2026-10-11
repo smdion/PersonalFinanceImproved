@@ -469,4 +469,44 @@ describe("ingestInvestmentData", () => {
       ),
     ).toBe(true);
   });
+
+  it("adopts a fund stored without its institution instead of duplicating it", async () => {
+    // As stored when a v2 response was read without its connection names.
+    const unnamed = ctx.db
+      .insert(ctx.schema.securities)
+      .values({
+        name: "Example Plan Fund",
+        kind: "plan_fund",
+        institution: "",
+        sourceDescription: "Example Plan Fund",
+      })
+      .returning()
+      .get().id;
+    await run([
+      account({
+        id: "sf-ira",
+        balanceDate: new Date("2026-05-28T08:00:00Z"),
+        holdings: [
+          {
+            id: "p1",
+            symbol: null,
+            description: "Example Plan Fund",
+            shares: 5,
+            marketValue: 500,
+            costBasisPerShare: null,
+          },
+        ],
+      }),
+    ]);
+    const rows = ctx.db
+      .select()
+      .from(ctx.schema.securities)
+      .where(eq(ctx.schema.securities.sourceDescription, "Example Plan Fund"))
+      .all();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      id: unnamed,
+      institution: "Example Brokerage",
+    });
+  });
 });

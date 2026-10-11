@@ -88,6 +88,29 @@ async function ensureSecurity(
     )
     .limit(1);
   if (existing[0]) return existing[0].id;
+  // Stored before the institution name was known (a SimpleFIN v2 response
+  // read without its connection names): adopt it rather than duplicate the
+  // fund and split its history.
+  if (id.institution) {
+    const [unnamed] = await db
+      .select({ id: schema.securities.id })
+      .from(schema.securities)
+      .where(
+        and(
+          isNull(schema.securities.ticker),
+          eq(schema.securities.institution, ""),
+          eq(schema.securities.sourceDescription, id.sourceDescription),
+        ),
+      )
+      .limit(1);
+    if (unnamed) {
+      await db
+        .update(schema.securities)
+        .set({ institution: id.institution })
+        .where(eq(schema.securities.id, unnamed.id));
+      return unnamed.id;
+    }
+  }
   const inserted = await db
     .insert(schema.securities)
     .values({

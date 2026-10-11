@@ -259,6 +259,85 @@ describe("getAccounts — full request (holdings + transactions)", () => {
     ]);
   });
 
+  it("reads each account's institution from its v2 connection", async () => {
+    mockFetch.mockReturnValueOnce(
+      jsonResponse({
+        connections: [
+          {
+            conn_id: "CON-1",
+            name: "Example Bank",
+            org_id: "ORG-1",
+            sfin_url: "https://example",
+          },
+          {
+            conn_id: "CON-2",
+            name: "Label",
+            org_name: "Example Brokerage",
+            org_id: "ORG-2",
+            sfin_url: "https://example",
+          },
+        ],
+        errlist: [],
+        accounts: [
+          { id: "a1", name: "Checking", balance: "1.00", conn_id: "CON-1" },
+          { id: "a2", name: "IRA", balance: "2.00", conn_id: "CON-2" },
+          {
+            id: "a3",
+            name: "Old style",
+            balance: "3.00",
+            org: { name: "Example Credit Union" },
+          },
+          {
+            id: "a4",
+            name: "Sample style",
+            balance: "4.00",
+            conn_id: "CON-9",
+            conn_name: "Example Plan",
+          },
+        ],
+      }),
+    );
+    const r = await getAccounts("https://u:p@bridge.simplefin.org", {
+      startDate,
+    });
+    expect(r.accounts.map((a) => a.orgName)).toEqual([
+      "Example Bank",
+      "Example Brokerage", // org_name preferred over the connection label
+      "Example Credit Union", // v1 still works
+      "Example Plan",
+    ]);
+  });
+
+  it("marks every account on a connection that reported an error", async () => {
+    mockFetch.mockReturnValueOnce(
+      jsonResponse({
+        connections: [
+          {
+            conn_id: "CON-1",
+            name: "Example Bank",
+            org_id: "O",
+            sfin_url: "u",
+          },
+        ],
+        errlist: [
+          {
+            code: "con.auth",
+            msg: "Example Bank needs you to sign in again",
+            conn_id: "CON-1",
+          },
+        ],
+        accounts: [
+          { id: "a1", name: "Checking", balance: "1.00", conn_id: "CON-1" },
+          { id: "a2", name: "Savings", balance: "2.00", conn_id: "CON-1" },
+        ],
+      }),
+    );
+    const r = await getAccounts("https://u:p@bridge.simplefin.org", {
+      startDate,
+    });
+    expect(r.accountIdsWithErrors.sort()).toEqual(["a1", "a2"]);
+  });
+
   it("treats SimpleFIN's 'date range was capped' message as a notice, not an error", async () => {
     mockFetch.mockReturnValueOnce(
       jsonResponse({
