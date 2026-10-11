@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Investments → "How you did vs the market": your yearly results next to
+ * Benchmarks → "How you did vs the market": your yearly results next to
  * the same money, on the same schedule, in each market index. Rough
  * comparison until holdings history makes a verdict possible.
  */
@@ -159,7 +159,7 @@ export function ComparisonSection() {
             ? ` (${activeFrom}–${YEARLY_ONLY_BEFORE - 1} are yearly totals only)`
             : ""}
           . A verdict needs your holdings history.{" "}
-          <Link href="/investments/methodology" className="underline">
+          <Link href="/benchmarks/methodology" className="underline">
             How this is calculated
           </Link>
         </p>

@@ -51,8 +51,8 @@ export default function MethodologyPage() {
         subtitle={
           <>
             The rules behind{" "}
-            <Link href="/investments" className="underline">
-              Investments
+            <Link href="/benchmarks" className="underline">
+              Benchmarks
             </Link>
             , in plain language.
           </>

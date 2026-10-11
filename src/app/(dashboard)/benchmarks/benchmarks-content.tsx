@@ -1,20 +1,20 @@
 "use client";
 
-/** Investments page body: market comparison first, then funds & targets. */
+/** Benchmarks page body: market comparison first, then what you hold and what it costs. */
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { ComparisonSection } from "@/components/investments/comparison-section";
 import { AnalyticsContent } from "../analytics/analytics-content";
 
-export function InvestmentsContent() {
+export function BenchmarksContent() {
   const user = useUser();
   if (!hasPermission(user, "portfolio")) {
     return (
       <div className="space-y-4">
-        <PageHeader title="Investments" />
+        <PageHeader title="Benchmarks" />
         <EmptyState
-          message="You don't have permission to view Investments."
+          message="You don't have permission to view Benchmarks."
           hint="Ask an admin to grant portfolio access."
         />
       </div>
@@ -23,7 +23,7 @@ export function InvestmentsContent() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Investments"
+        title="Benchmarks"
         subtitle="How your investments did against the market, what you hold, and what it costs"
       />
       <ComparisonSection />

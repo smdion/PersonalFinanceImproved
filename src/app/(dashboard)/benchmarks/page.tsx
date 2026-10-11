@@ -1,13 +1,13 @@
 /**
- * Investments page — how your investments did against the market, then
+ * Benchmarks page — how your investments did against the market, then
  * holdings, allocation vs. target, drift and costs (formerly Analytics).
  */
 
 import { HydrationBoundary } from "@tanstack/react-query";
 import { prefetchForPage } from "@/server/helpers/server-trpc";
-import { InvestmentsContent } from "./investments-content";
+import { BenchmarksContent } from "./benchmarks-content";
 
-export default async function InvestmentsPage() {
+export default async function BenchmarksPage() {
   const dehydratedState = await prefetchForPage(async (helpers) => {
     await Promise.all([
       helpers.investments.getComparison.prefetch({}).catch(() => undefined),
@@ -19,7 +19,7 @@ export default async function InvestmentsPage() {
 
   return (
     <HydrationBoundary state={dehydratedState}>
-      <InvestmentsContent />
+      <BenchmarksContent />
     </HydrationBoundary>
   );
 }
