@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import { RefreshCw } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { useUser, hasPermission } from "@/lib/context/user-context";
 import { budgetApiServiceLabel, formatDate } from "@/lib/utils/format";
 import {
   evaluateDataSources,
@@ -15,6 +16,13 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
   const { data } = trpc.settings.getDataFreshness.useQuery();
   const { data: syncStatus } = trpc.sync.getSyncStatus.useQuery();
   const { data: simplefinStatus } = trpc.simplefin.getStatus.useQuery();
+  const user = useUser();
+  const { data: investmentHealth } = trpc.investments.getHealth.useQuery(
+    undefined,
+    {
+      enabled: !!simplefinStatus?.connected && hasPermission(user, "portfolio"),
+    },
+  );
   const hasFiredAutoSync = useRef(false);
 
   const syncAllMut = trpc.sync.syncAll.useMutation({
@@ -90,6 +98,7 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
       ? {
           lastUpdated: simplefinStatus?.lastSyncedAt?.toString() ?? null,
           error: simplefinStatus?.lastError ?? null,
+          warnings: investmentHealth?.issues.map((i) => i.message),
         }
       : undefined,
   });
@@ -141,6 +150,18 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
                   {simplefinStatus.lastError}
                 </div>
               )}
+              {s.source.key === "simplefin" &&
+                !simplefinStatus?.lastError &&
+                (investmentHealth?.issues.length ?? 0) > 1 && (
+                  <div className="text-caption text-slate-500">
+                    {investmentHealth!.issues
+                      .slice(0, 2)
+                      .map((i) => i.message)
+                      .join(" · ")}
+                    {investmentHealth!.issues.length > 2 &&
+                      ` · and ${investmentHealth!.issues.length - 2} more`}
+                  </div>
+                )}
             </div>
           ))}
         </div>

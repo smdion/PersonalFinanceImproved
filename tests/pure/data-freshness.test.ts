@@ -66,4 +66,24 @@ describe("evaluateDataSources", () => {
       { needsAttention: true, reason: "never synced", ageDays: null },
     );
   });
+
+  it("turns monitor findings into attention without a sync error", () => {
+    const one = byKey({
+      simplefin: {
+        lastUpdated: "2026-06-15T08:00:00.000Z",
+        warnings: ["Example Plan: holdings last reported 9 days ago"],
+      },
+    }).simplefin!;
+    expect(one).toMatchObject({
+      needsAttention: true,
+      reason: "Example Plan: holdings last reported 9 days ago",
+    });
+    const two = byKey({
+      simplefin: {
+        lastUpdated: "2026-06-15T08:00:00.000Z",
+        warnings: ["a", "b"],
+      },
+    }).simplefin!;
+    expect(two.reason).toBe("2 problems");
+  });
 });

@@ -268,6 +268,17 @@ describe("investments router", () => {
     expect(row).not.toHaveProperty("balanceForRules");
   });
 
+  it("reports holdings an account stopped sending", async () => {
+    const health = await ctx.caller.investments.getHealth();
+    expect(health.issues).toContainEqual(
+      expect.objectContaining({
+        account: "Example Bank sf-ira",
+        kind: "holdings_stale",
+      }),
+    );
+    expect(typeof health.needsReview).toBe("number");
+  });
+
   it("requires the portfolio permission to read or change anything", async () => {
     for (const session of [
       viewerSession,
@@ -280,6 +291,7 @@ describe("investments router", () => {
           other.caller.investments.listTransactions({}),
         ).rejects.toThrow();
         await expect(other.caller.investments.listRules()).rejects.toThrow();
+        await expect(other.caller.investments.getHealth()).rejects.toThrow();
         await expect(
           other.caller.investments.setTransactionKind({ id: 1, kind: "other" }),
         ).rejects.toThrow();

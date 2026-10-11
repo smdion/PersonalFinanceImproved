@@ -7,6 +7,7 @@
  */
 import Link from "next/link";
 import { trpc } from "@/lib/trpc";
+import { useUser, hasPermission } from "@/lib/context/user-context";
 import { Card } from "@/components/ui/card";
 import {
   budgetApiServiceLabel,
@@ -25,6 +26,10 @@ export function DataSourcesSettings() {
     undefined,
     { enabled: !!simplefin?.connected },
   );
+  const user = useUser();
+  const { data: health } = trpc.investments.getHealth.useQuery(undefined, {
+    enabled: !!simplefin?.connected && hasPermission(user, "portfolio"),
+  });
   if (!freshness) return null;
 
   const budgetConnected = !!(syncStatus?.service && syncStatus.connected);
@@ -46,6 +51,7 @@ export function DataSourcesSettings() {
         ? {
             lastUpdated: simplefin.lastSyncedAt?.toString() ?? null,
             error: simplefin.lastError,
+            warnings: health?.issues.map((i) => i.message),
           }
         : undefined,
     }).map((s) => [s.source.key, s]),
@@ -79,6 +85,18 @@ export function DataSourcesSettings() {
         )}
         {simplefin.lastError && (
           <span className="block text-amber-600">{simplefin.lastError}</span>
+        )}
+        {health?.issues.map((i) => (
+          <span key={i.message} className="block text-amber-600">
+            {i.message}
+          </span>
+        ))}
+        {health && health.needsReview > 0 && (
+          <span className="block">
+            {health.needsReview} investment{" "}
+            {health.needsReview === 1 ? "row needs" : "rows need"} review in
+            Settings → Integrations → SimpleFIN.
+          </span>
         )}
       </>
     ),

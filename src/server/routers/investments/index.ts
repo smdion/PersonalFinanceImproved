@@ -4,9 +4,11 @@ import { mergeRouters } from "../../trpc";
 import { investmentHoldingsRouter } from "./holdings";
 import { investmentTransactionsRouter } from "./transactions";
 import { investmentRulesRouter } from "./rules";
+import { investmentHealthRouter } from "./health";
 
 export const investmentsRouter = mergeRouters(
   investmentHoldingsRouter,
   investmentTransactionsRouter,
   investmentRulesRouter,
+  investmentHealthRouter,
 );

@@ -13,6 +13,8 @@ export type DataSourceInput = {
   lastUpdated: string | null;
   /** Last run's error, for automatic sources. */
   error?: string | null;
+  /** Problems found in what the source collected (monitors). */
+  warnings?: readonly string[];
 };
 
 export type DataSourceInputs = Partial<Record<DataSourceKey, DataSourceInput>>;
@@ -53,8 +55,12 @@ export function evaluateDataSources(
       : null;
 
     let reason: string | null = null;
+    const warnings = input.warnings ?? [];
     if (input.error) {
       reason = "last sync failed";
+    } else if (warnings.length > 0) {
+      reason =
+        warnings.length === 1 ? warnings[0]! : `${warnings.length} problems`;
     } else if (!valid) {
       reason = source.mode === "automatic" ? "never synced" : "never updated";
     } else if (source.rhythm.kind === "days") {

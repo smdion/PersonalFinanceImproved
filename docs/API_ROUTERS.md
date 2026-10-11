@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**375 procedures across 46 routers.**
+**376 procedures across 47 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -140,6 +140,12 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `update`         | mutation | `adminProcedure`     | Update editable fields on a net_worth_annual row (income/tax + otherLiabilities only).                                                                                                                   |
 | `upsertNote`     | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
 | `upsertSalary`   | mutation | `adminProcedure`     | field falls back to the SAME live estimate the current-year auto-fill in `computeSummary` shows (active job's compensation under the active Salary Profile) for the current year, or 0 for a past year w |
+
+## `investments/health`
+
+| Procedure   | Kind  | Auth                 | Description                                                                                         |
+| ----------- | ----- | -------------------- | --------------------------------------------------------------------------------------------------- |
+| `getHealth` | query | `portfolioProcedure` | Accounts whose holdings stopped arriving or don't add up to the balance, and the review-queue size. |
 
 ## `investments/holdings`
 
