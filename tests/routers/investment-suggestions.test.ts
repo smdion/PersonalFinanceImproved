@@ -343,12 +343,11 @@ describe("investment suggestions", () => {
   });
 
   it("suggests snapshot balances from linked accounts", async () => {
-    const rows = await ctx.caller.investments.suggestSnapshot();
-    const amounts = Object.fromEntries(rows.map((r) => [r.key, r.amount]));
-    expect(Object.values(amounts).sort((x, y) => x - y)).toEqual([
+    const s = await ctx.caller.investments.suggestSnapshot();
+    expect(s.amounts.map((r) => r.amount).sort((x, y) => x - y)).toEqual([
       6100, 9000, 10300, 11500,
     ]);
-    expect(rows.every((r) => r.source === "linked")).toBe(true);
+    expect(s.accounts.every((a) => !a.split)).toBe(true);
   });
 
   it("estimates contributions from the paycheck setup for an account with no feed", async () => {

@@ -6,10 +6,13 @@
  * server/helpers/fill-ledger.ts).
  */
 import { z } from "zod/v4";
-import { and, eq, isNotNull } from "drizzle-orm";
+import { and, desc, eq, gte, isNotNull } from "drizzle-orm";
 import { createTRPCRouter, portfolioProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { isTaxFreeBucket } from "@/lib/config/account-types";
+import {
+  getEmployerMatchSubType,
+  isTaxFreeBucket,
+} from "@/lib/config/account-types";
 import { getTransactionCoverageStart } from "@/lib/simplefin/sync";
 import { utcDayOf } from "@/lib/simplefin/ingest";
 import { roundToCents } from "@/lib/utils/math";
@@ -22,7 +25,10 @@ import {
   splitContributions,
   type FeedAccount,
 } from "@/lib/pure/flow-suggestions";
-import { suggestSnapshotAmounts } from "@/lib/pure/snapshot-suggestions";
+import {
+  suggestSnapshotAmounts,
+  type NewMoney,
+} from "@/lib/pure/snapshot-suggestions";
 import { loadLatestSubAccounts } from "@/server/helpers/sub-accounts";
 import { loadContributionMix } from "@/server/helpers/contribution-mix";
 import { loadFillRecord } from "@/server/helpers/fill-ledger";
@@ -67,15 +73,24 @@ async function loadYearRows(db: Db, year: number) {
   return rows.filter((r) => r.posted <= `${year}-12-31`);
 }
 
+/** How far back a feed must have sent a transaction not to count as balance-only. */
+const RECENT_DAYS = 90;
+
 /**
- * SimpleFIN accounts that have ever sent a transaction. Some institutions
+ * SimpleFIN accounts that have sent a transaction (since a day, if given). Some institutions
  * send only a balance for an account; its contributions are estimated the
  * way an unlinked account's are.
  */
-async function feedsWithTransactions(db: Db): Promise<Set<number>> {
+async function feedsWithTransactions(
+  db: Db,
+  since?: string,
+): Promise<Set<number>> {
   const rows = await db
     .selectDistinct({ id: schema.investmentTransactions.simplefinAccountId })
-    .from(schema.investmentTransactions);
+    .from(schema.investmentTransactions)
+    .where(
+      since ? gte(schema.investmentTransactions.posted, since) : undefined,
+    );
   return new Set(rows.map((r) => r.id));
 }
 
@@ -105,23 +120,113 @@ export const investmentSuggestionsRouter = createTRPCRouter({
    * sub-account key, from linked SimpleFIN accounts.
    */
   suggestSnapshot: portfolioProcedure.query(async ({ ctx }) => {
-    const [feeds, subs] = await Promise.all([
-      ctx.db
-        .select({
-          performanceAccountId:
-            schema.simplefinAccounts.linkedPerformanceAccountId,
-          subKey: schema.simplefinAccounts.linkedSubKey,
-          balance: schema.simplefinAccounts.lastBalance,
-          balanceDate: schema.simplefinAccounts.lastBalanceDate,
-        })
-        .from(schema.simplefinAccounts)
-        .where(isNotNull(schema.simplefinAccounts.linkedPerformanceAccountId)),
-      loadLatestSubAccounts(ctx.db),
-    ]);
-    const suggestions = suggestSnapshotAmounts(
+    const [feeds, subs, latest, mix, withTransactions, perfAccounts] =
+      await Promise.all([
+        ctx.db
+          .select({
+            id: schema.simplefinAccounts.id,
+            performanceAccountId:
+              schema.simplefinAccounts.linkedPerformanceAccountId,
+            subKey: schema.simplefinAccounts.linkedSubKey,
+            balance: schema.simplefinAccounts.lastBalance,
+            balanceDate: schema.simplefinAccounts.lastBalanceDate,
+          })
+          .from(schema.simplefinAccounts)
+          .where(
+            isNotNull(schema.simplefinAccounts.linkedPerformanceAccountId),
+          ),
+        loadLatestSubAccounts(ctx.db),
+        ctx.db
+          .select({ date: schema.portfolioSnapshots.snapshotDate })
+          .from(schema.portfolioSnapshots)
+          .orderBy(desc(schema.portfolioSnapshots.snapshotDate))
+          .limit(1),
+        loadContributionMix(ctx.db),
+        // A feed that used to send transactions but now sends only a
+        // balance counts as balance-only here.
+        feedsWithTransactions(
+          ctx.db,
+          utcDayOf(new Date(Date.now() - RECENT_DAYS * 86_400_000)),
+        ),
+        ctx.db
+          .select({
+            id: schema.performanceAccounts.id,
+            accountType: schema.performanceAccounts.accountType,
+          })
+          .from(schema.performanceAccounts),
+      ]);
+    const snapshotDate = latest[0]?.date ?? null;
+    const today = utcDayOf(new Date());
+    // Placing contributions uses this year's paycheck setup at a flat rate;
+    // across a year end or a long gap that's no longer a fair estimate, so
+    // the change is then just divided by size.
+    const snapshotTooOld =
+      snapshotDate !== null &&
+      (snapshotDate.slice(0, 4) !== today.slice(0, 4) ||
+        Date.parse(today) - Date.parse(snapshotDate) >
+          RECENT_DAYS * 86_400_000);
+    const flows = snapshotDate
+      ? (
+          await loadClassifiedTransactions(ctx.db, { since: snapshotDate })
+        ).filter(
+          (r) =>
+            r.posted > snapshotDate &&
+            !r.pending &&
+            !r.voided &&
+            r.kind === "contribution",
+        )
+      : [];
+    const typeOf = new Map(perfAccounts.map((p) => [p.id, p.accountType]));
+
+    /** Contributions since the snapshot into an account's whole-account feeds. */
+    const newMoneyFor = (performanceAccountId: number): NewMoney | null => {
+      const m = mix.get(performanceAccountId);
+      if (!m || !snapshotDate || snapshotTooOld) return null;
+      const all =
+        m.employeePreTax + m.employeeRoth + m.employeeOther + m.employer;
+      if (all <= 0) return null;
+      const whole = feeds.filter(
+        (f) => f.performanceAccountId === performanceAccountId && !f.subKey,
+      );
+      const ids = whole.map((f) => f.id);
+      // Only money the reported balance already includes.
+      const dates = whole.map((f) =>
+        f.balanceDate ? utcDayOf(f.balanceDate) : today,
+      );
+      const asOf = dates.sort()[0] ?? today;
+      const balanceOnly = ids.every((id) => !withTransactions.has(id));
+      // Deposits on the snapshot day itself are taken to be in the snapshot.
+      const total = balanceOnly
+        ? (() => {
+            const e = estimateFromPaycheck(m, snapshotDate, asOf);
+            return e.employee + e.employer;
+          })()
+        : flows
+            .filter(
+              (r) => ids.includes(r.simplefinAccountId) && r.posted <= asOf,
+            )
+            .reduce((t, r) => t + r.amount, 0);
+      const part = (v: number) => (total * v) / all;
+      return {
+        employeeRoth: part(m.employeeRoth),
+        employeePreTax: part(m.employeePreTax),
+        employeeOther: part(m.employeeOther),
+        employer: part(m.employer),
+        employerRoth: part(m.employerRoth),
+        estimated: balanceOnly,
+      };
+    };
+    const matchSubTypeFor = (performanceAccountId: number) => {
+      const type = typeOf.get(performanceAccountId);
+      return type ? getEmployerMatchSubType(type) : null;
+    };
+
+    const { amounts, accounts } = suggestSnapshotAmounts(
       subs.map((s) => ({
         key: s.key,
         performanceAccountId: s.performanceAccountId,
+        taxType: s.taxType,
+        subType: s.subType,
         amount: s.amount,
       })),
       feeds.map((f) => ({
@@ -130,8 +235,18 @@ export const investmentSuggestionsRouter = createTRPCRouter({
         balance: toNumber(f.balance),
         balanceDate: f.balanceDate ? utcDayOf(f.balanceDate) : null,
       })),
+      newMoneyFor,
+      matchSubTypeFor,
     );
-    return [...suggestions].map(([key, s]) => ({ key, ...s }));
+    return {
+      snapshotDate,
+      snapshotTooOld,
+      amounts: [...amounts].map(([key, amount]) => ({ key, amount })),
+      accounts: [...accounts].map(([performanceAccountId, note]) => ({
+        performanceAccountId,
+        ...note,
+      })),
+    };
   }),
 
   /**

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   ACCOUNT_TYPE_CONFIG,
+  getEmployerMatchSubType,
   getAllCategories,
   getEngineCategories,
   categoriesWithTaxPreference,
@@ -508,5 +509,16 @@ describe("Roth ordering rules / Rule of 55 config (Tax Buckets tool)", () => {
     expect(tracksRothBasis("hsa")).toBe(false);
     expect(tracksRothBasis("brokerage")).toBe(false);
     expect(tracksRothBasis("not_a_real_category")).toBe(false);
+  });
+});
+
+describe("employerMatchSubType", () => {
+  it("is always one of the category's own sub-type options", () => {
+    for (const [category, cfg] of Object.entries(ACCOUNT_TYPE_CONFIG)) {
+      const match = getEmployerMatchSubType(category);
+      if (match !== null)
+        expect(cfg.subTypeOptions as readonly string[]).toContain(match);
+    }
+    expect(getEmployerMatchSubType("not_a_real_category")).toBeNull();
   });
 });

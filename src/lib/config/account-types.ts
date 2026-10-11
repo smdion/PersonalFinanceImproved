@@ -123,6 +123,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     taxPreferenceNote:
       "Can be split between Traditional (pre-tax) and Roth (after-tax)",
     subTypeOptions: ["Rollover", "Employer Match", "Profit Sharing"],
+    employerMatchSubType: "Employer Match",
     subTypeDisplay: {},
   },
   "403b": {
@@ -169,6 +170,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     taxPreferenceNote:
       "Can be split between Traditional (pre-tax) and Roth (after-tax)",
     subTypeOptions: ["Rollover", "Employer Match"],
+    employerMatchSubType: "Employer Match",
     subTypeDisplay: {},
   },
   ira: {
@@ -557,6 +559,13 @@ export function getLimitGroup(category: string): string | null {
 /** Check if a category shares the 401k IRS elective deferral limit (e.g. 401k, 403b). */
 export function isInLimit401kGroup(category: string): boolean {
   return getLimitGroup(category) === "401k";
+}
+
+/** The sub-type holding employer match money for a category, if it tracks one. */
+export function getEmployerMatchSubType(category: string): string | null {
+  const cfg: AccountTypeConfig | undefined =
+    ACCOUNT_TYPE_CONFIG[category as AccountCategory];
+  return cfg?.employerMatchSubType ?? null;
 }
 
 /** Check if a category tracks cost basis (after-tax accounts like brokerage). */

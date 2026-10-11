@@ -92,20 +92,26 @@ beforeEach(() => {
 
 describe("NewSnapshotForm fill from SimpleFIN", () => {
   it("fills linked balances and labels them", () => {
-    mockSuggestions = [
-      {
-        key: "11_preTax__1",
-        amount: 104321.5,
-        source: "linked",
-        balanceDate: "2026-10-10",
-      },
-    ];
+    mockSuggestions = {
+      snapshotDate: "2025-01-01",
+      amounts: [{ key: "11_preTax__1", amount: 104321.5 }],
+      accounts: [
+        {
+          performanceAccountId: 11,
+          total: 104321.5,
+          balanceDate: "2026-10-10",
+          split: false,
+          newMoney: 0,
+          newMoneyEstimated: false,
+        },
+      ],
+    };
     render(<NewSnapshotForm onClose={vi.fn()} onSaved={vi.fn()} />);
     fireEvent.click(
       screen.getByRole("button", { name: "Fill from SimpleFIN" }),
     );
     expect(screen.getByDisplayValue("104321.50")).toBeInTheDocument();
-    expect(screen.getByText(/^SimpleFIN/)).toBeInTheDocument();
+    expect(screen.getByText(/^From SimpleFIN as of/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Save Snapshot" }));
     const input = createMutate.mock.calls[0]![0] as {
       accounts: { amount: string }[];

@@ -38,7 +38,7 @@ type AccountRow = {
    *  too rather than displaying a stale total the save won't match. */
   isClosedAccount: boolean;
   /** Set when the amount came from a SimpleFIN fill. */
-  filled?: { source: "linked" | "estimated"; balanceDate: string | null };
+  filled?: true;
 };
 
 let rowKeyCounter = 0;
@@ -294,6 +294,9 @@ export function NewSnapshotForm({
     { retry: false },
   );
   const [filled, setFilled] = useState(false);
+  const [accountNotes, setAccountNotes] = useState<
+    Map<number, NonNullable<typeof suggestions>["accounts"][number]>
+  >(new Map());
 
   const today = localDateStr();
   const [snapshotDate, setSnapshotDate] = useState(today);
@@ -412,10 +415,10 @@ export function NewSnapshotForm({
    */
   const fillFromSimplefin = () => {
     if (!rows || !suggestions) return;
-    const byKey = new Map(suggestions.map((s) => [s.key, s]));
+    const byKey = new Map(suggestions.amounts.map((s) => [s.key, s.amount]));
     setRows(
       rows.map((r) => {
-        const s = byKey.get(
+        const amount = byKey.get(
           snapshotAccountKey({
             performanceAccountId: r.performanceAccountId,
             taxType: r.taxType,
@@ -424,15 +427,14 @@ export function NewSnapshotForm({
           }),
         );
         const untouched = (parseFloat(r.amount) || 0) === r.previousAmount;
-        if (!s || r.isClosedAccount || !untouched) return r;
-        return {
-          ...r,
-          amount: s.amount.toFixed(2),
-          filled: { source: s.source, balanceDate: s.balanceDate },
-        };
+        if (amount === undefined || r.isClosedAccount || !untouched) return r;
+        return { ...r, amount: amount.toFixed(2), filled: true };
       }),
     );
     setFilled(true);
+    setAccountNotes(
+      new Map(suggestions.accounts.map((a) => [a.performanceAccountId, a])),
+    );
   };
 
   const handleSave = () => {
@@ -502,7 +504,7 @@ export function NewSnapshotForm({
         </div>
       )}
 
-      {suggestions && suggestions.length > 0 && (
+      {suggestions && suggestions.amounts.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 rounded bg-blue-50 p-2 text-xs text-blue-900 dark:bg-blue-950/30 dark:text-blue-200">
           <span>
             {filled
@@ -639,6 +641,29 @@ export function NewSnapshotForm({
                             </span>
                           )}
                         </div>
+                        {(() => {
+                          const id = group.rows[0]?.performanceAccountId;
+                          const note =
+                            id != null ? accountNotes.get(id) : undefined;
+                          if (!note || !group.rows.some((r) => r.filled))
+                            return null;
+                          const asOf = note.balanceDate
+                            ? ` as of ${formatDate(note.balanceDate, "medium")}`
+                            : "";
+                          return (
+                            <p
+                              className={`text-caption py-1 pl-6 ${note.split ? "text-amber-700 dark:text-amber-400" : "text-faint"}`}
+                            >
+                              {note.split
+                                ? `SimpleFIN reports one balance for this account (${formatCurrency(note.total)}${asOf}), so it's divided across these parts: ${
+                                    note.newMoney
+                                      ? `${formatCurrency(note.newMoney)} of new contributions placed by your paycheck setup${note.newMoneyEstimated ? " (estimated — this account sends only a balance)" : ""}, then `
+                                      : ""
+                                  }the rest divided by each part's size${suggestions?.snapshotTooOld ? " (your last snapshot is too old to place new contributions from the paycheck setup)" : ""}. Check against your statement.`
+                                : `From SimpleFIN${asOf}.`}
+                            </p>
+                          );
+                        })()}
                         {/* Sub-rows */}
                         {group.rows.map((row) => {
                           const amt = parseFloat(row.amount) || 0;
@@ -657,19 +682,6 @@ export function NewSnapshotForm({
                                     CLOSED
                                   </span>
                                 )}
-                                {row.filled &&
-                                  (parseFloat(row.amount) || 0) !==
-                                    row.previousAmount && (
-                                    <span
-                                      className={`text-caption ml-1.5 ${row.filled.source === "estimated" ? "text-amber-600" : "text-faint"}`}
-                                    >
-                                      {row.filled.source === "estimated"
-                                        ? "SimpleFIN, split by your last snapshot — check against your statement"
-                                        : "SimpleFIN"}
-                                      {row.filled.balanceDate &&
-                                        ` · as of ${formatDate(row.filled.balanceDate, "medium")}`}
-                                    </span>
-                                  )}
                               </span>
                               <div className="flex flex-col items-end gap-0.5">
                                 <div

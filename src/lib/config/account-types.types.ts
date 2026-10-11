@@ -107,6 +107,10 @@ export type AccountTypeConfig = {
   employerContribKind: "match" | "discount";
   taxPreferenceNote: string;
   subTypeOptions: readonly string[];
+  /** The sub-type (one of subTypeOptions) that holds employer match money,
+   *  when the plan tracks it as its own part. Used to place estimated new
+   *  contributions when a feed reports only the account's total. */
+  employerMatchSubType?: string;
 
   // --- Sub-type display overrides ---
   // Sub-types (e.g. ESPP under brokerage) that need distinct display behavior.
