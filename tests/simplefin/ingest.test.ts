@@ -309,6 +309,30 @@ describe("ingestInvestmentData", () => {
     expect(row?.description).toBe("DEBIT CARD PURCHASE EXAMPLE STORE");
   });
 
+  it("never duplicates rows older than the requested window (provider ignored start-date)", async () => {
+    const old = {
+      id: "old-1",
+      posted: at("2026-03-02T12:00:00Z"),
+      transactedAt: null,
+      amount: 75,
+      description: "CONTRIBUTION",
+      pending: false,
+    };
+    const sync = (windowStart: string) =>
+      ingestInvestmentData(ctx.rawDb, {
+        accounts: [account({ id: "sf-ira", transactions: [old] })],
+        registry,
+        windowStart,
+        accountIdsWithErrors: new Set(),
+      });
+    await sync("2026-03-01");
+    const summary = await sync("2026-05-01"); // later sync, narrower window, same old row sent again
+    expect(summary.warnings).toEqual([]);
+    expect(
+      transactions(brokerageId).filter((r) => r.externalId === "old-1"),
+    ).toHaveLength(1);
+  });
+
   it("never voids when the response named the account in an error", async () => {
     const voidedBefore = transactions(brokerageId).filter(
       (r) => r.voidedAt !== null,

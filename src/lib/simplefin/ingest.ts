@@ -244,6 +244,12 @@ async function ingestTransactions(
     incoming.map((t) => [t.externalId, t.transacted]),
   );
 
+  // Cover every incoming row as well as the window: a response can include
+  // rows older than the requested start (providers don't always honour it).
+  const earliest = incoming.reduce(
+    (min, t) => (t.posted < min ? t.posted : min),
+    addDaysIso(windowStart, -RECONCILE_LOOKBACK_DAYS),
+  );
   const storedRows = await db
     .select()
     .from(schema.investmentTransactions)
@@ -253,10 +259,7 @@ async function ingestTransactions(
           schema.investmentTransactions.simplefinAccountId,
           simplefinAccountId,
         ),
-        gte(
-          schema.investmentTransactions.posted,
-          addDaysIso(windowStart, -RECONCILE_LOOKBACK_DAYS),
-        ),
+        gte(schema.investmentTransactions.posted, earliest),
       ),
     );
   const plan = planReconcile({
@@ -277,17 +280,22 @@ async function ingestTransactions(
   const now = new Date();
   for (const t of plan.inserts) {
     const lock = redacted.has(t.externalId);
-    await db.insert(schema.investmentTransactions).values({
-      simplefinAccountId,
-      externalId: t.externalId,
-      posted: t.posted,
-      transacted: transactedById.get(t.externalId) ?? null,
-      amount: t.amount.toFixed(2),
-      description: t.description,
-      pending: t.pending,
-      kindOverride: lock ? "withdrawal" : null,
-      kindOverrideSource: lock ? "ingest_redacted" : null,
-    });
+    await db
+      .insert(schema.investmentTransactions)
+      .values({
+        simplefinAccountId,
+        externalId: t.externalId,
+        posted: t.posted,
+        transacted: transactedById.get(t.externalId) ?? null,
+        amount: t.amount.toFixed(2),
+        description: t.description,
+        pending: t.pending,
+        kindOverride: lock ? "withdrawal" : null,
+        kindOverrideSource: lock ? "ingest_redacted" : null,
+      })
+      // Safety net: a row that already exists is never an error worth
+      // aborting the rest of the account over.
+      .onConflictDoNothing();
   }
   for (const u of plan.updates) {
     await db
