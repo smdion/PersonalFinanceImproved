@@ -61,30 +61,38 @@ export function UpdateBasisForm({
       a.contributionBasis !== null,
   );
 
+  // One form row per person: basis is per person, and one account row can
+  // cover two people's Roth (see AccountRow.basisByOwner).
   const [rows, setRows] = useState<BasisFormRow[]>(() =>
-    basisEligible.map((a) => ({
-      performanceAccountId: a.performanceAccountId!,
-      ownerPersonId: a.ownerPersonId ?? 0,
-      year: currentYear,
-      displayName: accountDisplayName(
-        {
-          institution: a.institution,
-          // lint-violation-ok: passing accountLabel into the blessed accountDisplayName helper, not rendering it directly
-          accountLabel: a.accountLabel,
-          accountType: a.accountType ?? undefined,
-          ownershipType: a.ownershipType,
+    basisEligible.flatMap((a) =>
+      (a.basisByOwner ?? []).map((o) => ({
+        performanceAccountId: a.performanceAccountId!,
+        ownerPersonId: o.ownerPersonId,
+        year: currentYear,
+        displayName: `${
+          (a.basisByOwner?.length ?? 0) > 1 && o.ownerName
+            ? `${o.ownerName} — `
+            : ""
+        }${accountDisplayName(
+          {
+            institution: a.institution,
+            // lint-violation-ok: passing accountLabel into the blessed accountDisplayName helper, not rendering it directly
+            accountLabel: a.accountLabel,
+            accountType: a.accountType ?? undefined,
+            ownershipType: a.ownershipType,
+          },
+          o.ownerName ?? undefined,
+        )}`,
+        contributionBasis: String(o.contributionBasis),
+        conversionBasis: String(o.conversionBasis),
+        latestConversionYear:
+          o.latestConversionYear != null ? String(o.latestConversionYear) : "",
+        original: {
+          contributionBasis: String(o.contributionBasis),
+          conversionBasis: String(o.conversionBasis),
         },
-        a.ownerName ?? undefined,
-      ),
-      contributionBasis: String(a.contributionBasis ?? 0),
-      conversionBasis: String(a.conversionBasis ?? 0),
-      latestConversionYear:
-        a.latestConversionYear != null ? String(a.latestConversionYear) : "",
-      original: {
-        contributionBasis: String(a.contributionBasis ?? 0),
-        conversionBasis: String(a.conversionBasis ?? 0),
-      },
-    })),
+      })),
+    ),
   );
 
   function updateRow(idx: number, field: keyof BasisFormRow, value: string) {

@@ -17,6 +17,7 @@ import {
   formatDate,
 } from "@/lib/utils/format";
 import { findBasisGaps } from "@/lib/pure/basis-consistency";
+import { parseBasisEditField } from "@/components/performance/basis-cell";
 import {
   PERF_CATEGORY_PORTFOLIO,
   accountTypeToPerformanceCategory,
@@ -129,27 +130,28 @@ export function PerformanceContent() {
       } else if (type === "master") {
         updateCostBasis.mutate({ performanceAccountId: id, costBasis: value });
       } else if (type === "basis") {
+        // field is "<basis field>:<ownerPersonId>" — basis is per person.
         const row = data?.accountRows.find((r) => r.id === id) as
           AccountRow | undefined;
-        if (
-          !row ||
-          row.performanceAccountId == null ||
-          row.ownerPersonId == null
-        )
+        const target = parseBasisEditField(field);
+        const owner = row?.basisByOwner?.find(
+          (b) => b.ownerPersonId === target?.ownerPersonId,
+        );
+        if (!row || row.performanceAccountId == null || !target || !owner)
           return;
         updateRothBasis.mutate({
           performanceAccountId: row.performanceAccountId,
-          ownerPersonId: row.ownerPersonId,
+          ownerPersonId: owner.ownerPersonId,
           year: row.year,
           contributionBasis: String(
-            field === "contributionBasis"
+            target.field === "contributionBasis"
               ? value
-              : (row.contributionBasis ?? 0),
+              : owner.contributionBasis,
           ),
           conversionBasis: String(
-            field === "conversionBasis" ? value : (row.conversionBasis ?? 0),
+            target.field === "conversionBasis" ? value : owner.conversionBasis,
           ),
-          latestConversionYear: row.latestConversionYear,
+          latestConversionYear: owner.latestConversionYear,
         });
       } else {
         updateAccount.mutate({ id, [field]: value });
@@ -440,35 +442,33 @@ export function PerformanceContent() {
   };
 
   const basisGaps = findBasisGaps(
-    accountRows
-      .filter(
-        (a) => a.performanceAccountId !== null && a.conversionBasis !== null,
-      )
-      .map((a) => ({
-        performanceAccountId: a.performanceAccountId!,
-        ownerPersonId: a.ownerPersonId,
-        year: a.year,
-        conversionBasis: a.conversionBasis!,
-        latestConversionYear: a.latestConversionYear,
-      })),
+    accountRows.flatMap((a) =>
+      a.performanceAccountId === null
+        ? []
+        : (a.basisByOwner ?? []).map((b) => ({
+            performanceAccountId: a.performanceAccountId!,
+            ownerPersonId: b.ownerPersonId,
+            year: a.year,
+            conversionBasis: b.conversionBasis,
+            latestConversionYear: b.latestConversionYear,
+          })),
+    ),
   );
   const basisGapLabel = (g: (typeof basisGaps)[number]) => {
     const a = accountRows.find(
-      (r) =>
-        r.performanceAccountId === g.performanceAccountId &&
-        r.ownerPersonId === g.ownerPersonId,
+      (r) => r.performanceAccountId === g.performanceAccountId,
     );
+    const owner = a?.basisByOwner?.find(
+      (b) => b.ownerPersonId === g.ownerPersonId,
+    )?.ownerName;
     return a
-      ? accountDisplayName(
-          {
-            institution: a.institution,
-            // lint-violation-ok: passing accountLabel into the blessed accountDisplayName helper, not rendering it directly
-            accountLabel: a.accountLabel,
-            accountType: a.accountType ?? undefined,
-            ownershipType: a.ownershipType,
-          },
-          a.ownerName ?? undefined,
-        )
+      ? `${owner ? `${owner} — ` : ""}${accountDisplayName({
+          institution: a.institution,
+          // lint-violation-ok: passing accountLabel into the blessed accountDisplayName helper, not rendering it directly
+          accountLabel: a.accountLabel,
+          accountType: a.accountType ?? undefined,
+          ownershipType: a.ownershipType,
+        })}`
       : "An account";
   };
 
@@ -541,7 +541,7 @@ export function PerformanceContent() {
               {formatCurrency(g.recorded)}, but {g.fromYear} says the latest
               conversion was in {g.year} with {formatCurrency(g.expected)} —{" "}
               {g.year}&apos;s row is probably missing it. Turn on the Basis
-              columns and check {g.year}.
+              columns and fix their line on the {g.year} row.
             </p>
           ))}
         </div>

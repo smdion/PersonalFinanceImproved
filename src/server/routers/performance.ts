@@ -715,6 +715,12 @@ export const performanceRouter = createTRPCRouter({
     // Combined for backwards compat
     const categories = [...accountTypeCategories, ...parentCategories];
 
+    const rowsPerAccountYear = new Map<string, number>();
+    for (const r of accounts) {
+      const k = `${r.performanceAccountId}|${r.year}`;
+      rowsPerAccountYear.set(k, (rowsPerAccountYear.get(k) ?? 0) + 1);
+    }
+
     // Transform account rows — enrich with master account data + compute missing return %
     const accountRows = accounts.map((r) => {
       const master = resolveMaster(r, perfLookups);
@@ -725,12 +731,51 @@ export const performanceRouter = createTRPCRouter({
       const distributions = toNumber(r.distributions);
       const fees = toNumber(r.fees);
       const rollovers = toNumber(r.rollovers);
-      const basis =
+      // Roth basis is per person, but one Performance row can cover an
+      // account two people hold (a joint-labeled IRA with each spouse's
+      // Roth). Every person's basis for this account and year rides along;
+      // the row's own figures are their total.
+      // (An account tracked with a row per person keeps each row to its
+      // own person, so nothing is counted twice.)
+      const perPerson =
+        (rowsPerAccountYear.get(`${r.performanceAccountId}|${r.year}`) ?? 0) >
+        1;
+      const owners = basisRows.filter(
+        (b) =>
+          b.performanceAccountId === r.performanceAccountId &&
+          b.year === r.year &&
+          (!perPerson || b.ownerPersonId === r.ownerPersonId),
+      );
+      const own =
         r.ownerPersonId != null
           ? basisByKey.get(
               `${r.performanceAccountId}|${r.ownerPersonId}|${r.year}`,
             )
           : undefined;
+      const basisByOwner = (
+        owners.length > 0
+          ? owners
+          : r.ownerPersonId != null
+            ? [
+                {
+                  ownerPersonId: r.ownerPersonId,
+                  contributionBasis: "0",
+                  conversionBasis: "0",
+                  latestConversionYear: null,
+                },
+              ]
+            : []
+      )
+        .map((b) => ({
+          ownerPersonId: b.ownerPersonId,
+          ownerName: resolveOwnerName(b.ownerPersonId, peopleMap),
+          contributionBasis: toNumber(b.contributionBasis),
+          conversionBasis: toNumber(b.conversionBasis),
+          latestConversionYear: b.latestConversionYear,
+        }))
+        .sort((a, b) => a.ownerPersonId - b.ownerPersonId);
+      const sumBasis = (f: "contributionBasis" | "conversionBasis") =>
+        basisByOwner.reduce((t, b) => t + b[f], 0);
       return {
         id: r.id,
         year: r.year,
@@ -761,9 +806,20 @@ export const performanceRouter = createTRPCRouter({
         isActive: r.isActive,
         performanceAccountId: r.performanceAccountId,
         displayOrder: master.displayOrder,
-        contributionBasis: basis ? toNumber(basis.contributionBasis) : null,
-        conversionBasis: basis ? toNumber(basis.conversionBasis) : null,
-        latestConversionYear: basis?.latestConversionYear ?? null,
+        contributionBasis:
+          owners.length > 0 || own ? sumBasis("contributionBasis") : null,
+        conversionBasis:
+          owners.length > 0 || own ? sumBasis("conversionBasis") : null,
+        latestConversionYear:
+          basisByOwner.reduce<number | null>(
+            (y, b) =>
+              b.latestConversionYear !== null &&
+              (y === null || b.latestConversionYear > y)
+                ? b.latestConversionYear
+                : y,
+            null,
+          ) ?? null,
+        basisByOwner,
       };
     });
 
