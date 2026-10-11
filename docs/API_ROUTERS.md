@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**363 procedures across 43 routers.**
+**365 procedures across 43 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -578,8 +578,10 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `getRetention`         | query    | `protectedProcedure` | Read retention setting.                                                                                                  |
 | `getSchedule`          | query    | `protectedProcedure` | Read auto-version schedule setting.                                                                                      |
 | `getUpgradeBanner`     | query    | `protectedProcedure` | Check if a pre-upgrade backup banner should be shown.                                                                    |
+| `importDataLoss`       | query    | `versionProcedure`   | Same check for an uploaded backup file, given only its table names.                                                      |
 | `list`                 | query    | `protectedProcedure` | List all versions (metadata only, no JSONB data).                                                                        |
 | `resetAllData`         | mutation | `adminProcedure`     | Reset all user data — truncates every table except state_versions, state_version_tables, app_settings, and local_admins. |
 | `restore`              | mutation | `versionProcedure`   | Restore from a version.                                                                                                  |
+| `restoreDataLoss`      | query    | `versionProcedure`   | Tables a restore of this version would empty (it predates them), for the pre-restore warning.                            |
 | `setRetention`         | mutation | `versionProcedure`   | Update retention setting and trigger cleanup.                                                                            |
 | `setSchedule`          | mutation | `versionProcedure`   | Update auto-version schedule.                                                                                            |

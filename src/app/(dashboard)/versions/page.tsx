@@ -28,6 +28,34 @@ function formatDate(date: Date | string): string {
   });
 }
 
+/** Warns that a restore would empty tables the backup predates. */
+function DataLossWarning({
+  tables,
+}: {
+  tables: { tableName: string; currentRows: number }[] | undefined;
+}) {
+  if (!tables || tables.length === 0) return null;
+  return (
+    <div className="mb-3 rounded border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-400">
+      <p className="mb-1 font-medium">
+        This backup is older than some of your data.
+      </p>
+      <p className="mb-1">
+        These tables will be emptied, and synced history can&rsquo;t be fetched
+        again:
+      </p>
+      <ul className="list-disc pl-4">
+        {tables.map((t) => (
+          <li key={t.tableName}>
+            {t.tableName.replace(/_/g, " ")} ({t.currentRows.toLocaleString()}{" "}
+            {t.currentRows === 1 ? "row" : "rows"})
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export default function VersionsPage() {
   const utils = trpc.useUtils();
   const { data: versions, isLoading } = trpc.version.list.useQuery();
@@ -93,6 +121,9 @@ export default function VersionsPage() {
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importLoading, setImportLoading] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
+  const [importTableNames, setImportTableNames] = useState<string[] | null>(
+    null,
+  );
   const [cronExpression, setCronExpression] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -111,6 +142,15 @@ export default function VersionsPage() {
   const { data: previewData } = trpc.version.getPreview.useQuery(
     { versionId: previewVersionId!, tableName: previewTable },
     { enabled: !!previewVersionId && !!previewTable },
+  );
+
+  const { data: restoreDataLoss } = trpc.version.restoreDataLoss.useQuery(
+    { id: restoreTarget?.id ?? 0 },
+    { enabled: !!restoreTarget },
+  );
+  const { data: importDataLoss } = trpc.version.importDataLoss.useQuery(
+    { tableNames: importTableNames ?? [] },
+    { enabled: showImportConfirm && importTableNames !== null },
   );
 
   const { data: versionDetail } = trpc.version.getById.useQuery(
@@ -173,6 +213,18 @@ export default function VersionsPage() {
       setShowImportConfirm(true);
       setImportConfirmText("");
       setImportError(null);
+      setImportTableNames(null);
+      // Read only the table names, for the data-loss warning. A file that
+      // doesn't parse is left to the import itself to reject.
+      file
+        .text()
+        .then((text) => {
+          const parsed = JSON.parse(text) as { tables?: unknown };
+          if (parsed.tables && typeof parsed.tables === "object") {
+            setImportTableNames(Object.keys(parsed.tables));
+          }
+        })
+        .catch(() => {});
     }
   };
 
@@ -738,6 +790,8 @@ export default function VersionsPage() {
               action cannot be undone unless you create a backup first.
             </p>
 
+            <DataLossWarning tables={restoreDataLoss} />
+
             <label className="mb-3 flex items-center gap-2">
               <input
                 type="checkbox"
@@ -841,6 +895,8 @@ export default function VersionsPage() {
             <p className="text-primary mb-3 font-mono text-sm font-medium">
               {importFile?.name}
             </p>
+
+            <DataLossWarning tables={importDataLoss} />
 
             <div className="mb-4">
               <label className="text-secondary mb-1 block text-sm font-medium">

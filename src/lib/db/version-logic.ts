@@ -199,6 +199,37 @@ async function cleanupAutoVersions(database: NodePgDatabase<typeof schema>) {
   }
 }
 
+/**
+ * Tables a restore would empty that the backup can't refill: every
+ * versioned table the backup has no entry for (it predates the table) and
+ * that holds rows now. Restore truncates every versioned table, so this
+ * history is lost — synced data such as SimpleFIN holdings and
+ * transactions can't be fetched again. An empty entry in the backup is not
+ * listed: the table existed and was empty when the backup was taken.
+ */
+export async function tablesLostOnRestore(
+  database: NodePgDatabase<typeof schema>,
+  backupTableNames: Iterable<string>,
+): Promise<{ tableName: string; currentRows: number }[]> {
+  const present = new Set(backupTableNames);
+  const lost: { tableName: string; currentRows: number }[] = [];
+  for (const tableName of VERSION_TABLE_NAMES) {
+    if (present.has(tableName)) continue;
+    let currentRows = 0;
+    try {
+      const rows = await queryRaw<{ n: number | string }>(
+        database,
+        sql.raw(`SELECT COUNT(*) AS n FROM "${tableName}"`),
+      );
+      currentRows = Number(rows[0]?.n ?? 0);
+    } catch {
+      continue; // table doesn't exist yet (migration pending)
+    }
+    if (currentRows > 0) lost.push({ tableName, currentRows });
+  }
+  return lost;
+}
+
 export async function restoreVersion(
   database: NodePgDatabase<typeof schema>,
   versionId: number,

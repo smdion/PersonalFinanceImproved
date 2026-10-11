@@ -8,7 +8,11 @@ import {
   versionProcedure,
 } from "../trpc";
 import * as schema from "@/lib/db/schema";
-import { createVersion, restoreVersion } from "@/lib/db/version-logic";
+import {
+  createVersion,
+  restoreVersion,
+  tablesLostOnRestore,
+} from "@/lib/db/version-logic";
 
 export const versionRouter = createTRPCRouter({
   /** List all versions (metadata only, no JSONB data). */
@@ -87,6 +91,27 @@ export const versionRouter = createTRPCRouter({
         type: "manual",
         createdBy: ctx.session.user.name ?? ctx.session.user.email ?? "unknown",
       });
+    }),
+
+  /** Tables a restore of this version would empty (it predates them), for the pre-restore warning. */
+  restoreDataLoss: versionProcedure
+    .input(z.object({ id: z.number().int() }))
+    .query(async ({ ctx, input }) => {
+      const tables = await ctx.db
+        .select({ tableName: schema.stateVersionTables.tableName })
+        .from(schema.stateVersionTables)
+        .where(eq(schema.stateVersionTables.versionId, input.id));
+      return tablesLostOnRestore(
+        ctx.db,
+        tables.map((t) => t.tableName),
+      );
+    }),
+
+  /** Same check for an uploaded backup file, given only its table names. */
+  importDataLoss: versionProcedure
+    .input(z.object({ tableNames: z.array(z.string().max(100)).max(500) }))
+    .query(async ({ ctx, input }) => {
+      return tablesLostOnRestore(ctx.db, input.tableNames);
     }),
 
   /** Restore from a version. */
