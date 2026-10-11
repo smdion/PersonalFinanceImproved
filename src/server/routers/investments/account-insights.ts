@@ -4,7 +4,7 @@
  * transaction-level detail): live balance and link status, what it holds,
  * and whether deposits match the paycheck setup.
  */
-import { desc, gte } from "drizzle-orm";
+import { asc, desc, gte, inArray } from "drizzle-orm";
 import { createTRPCRouter, portfolioProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { utcDayOf } from "@/lib/simplefin/ingest";
@@ -12,6 +12,7 @@ import { roundToCents } from "@/lib/utils/math";
 import { blendedCost, portfolioBuckets } from "@/lib/pure/fund-facts";
 import { checkDeposits } from "@/lib/pure/deposit-check";
 import { accountFlowsSince } from "@/lib/pure/snapshot-flows";
+import { dailyEstimates, liveCoversAccount } from "@/lib/pure/simplefin-feeds";
 import { getTransactionCoverageStart } from "@/lib/simplefin/sync";
 import { suggestSnapshotAmounts } from "@/lib/pure/snapshot-suggestions";
 import { loadLatestSubAccounts } from "@/server/helpers/sub-accounts";
@@ -152,11 +153,11 @@ export const investmentAccountInsightsRouter = createTRPCRouter({
       // snapshot does (every part linked, nothing outside a part).
       const comparable =
         snapshotDate !== null &&
-        mine.length > 0 &&
-        accountSubs.length > 0 &&
-        (whole ||
-          accountSubs.every((s) => mine.some((f) => f.subKey === s.key))) &&
-        accountUnplaced.length === 0;
+        liveCoversAccount(
+          accountSubs.map((s) => s.key),
+          mine.map((f) => f.subKey),
+          accountUnplaced.length,
+        );
       const sinceSnapshot = comparable
         ? {
             snapshotDate: snapshotDate!,
@@ -217,5 +218,104 @@ export const investmentAccountInsightsRouter = createTRPCRouter({
         ),
       };
     });
+  }),
+
+  /**
+   * How the household's linked accounts moved each day since the latest
+   * snapshot, as a change from it — the Portfolio chart's live line and the
+   * Net Worth page's "today" estimate add it to the snapshot's own total.
+   * Only accounts whose live balance covers the whole account count.
+   */
+  getLiveSinceSnapshot: portfolioProcedure.query(async ({ ctx }) => {
+    const [feeds, subs, latest] = await Promise.all([
+      ctx.db
+        .select({
+          id: schema.simplefinAccounts.id,
+          performanceAccountId:
+            schema.simplefinAccounts.linkedPerformanceAccountId,
+          subKey: schema.simplefinAccounts.linkedSubKey,
+          balance: schema.simplefinAccounts.lastBalance,
+          balanceDate: schema.simplefinAccounts.lastBalanceDate,
+        })
+        .from(schema.simplefinAccounts)
+        .where(countedFeed),
+      loadLatestSubAccounts(ctx.db),
+      ctx.db
+        .select({ date: schema.portfolioSnapshots.snapshotDate })
+        .from(schema.portfolioSnapshots)
+        .orderBy(desc(schema.portfolioSnapshots.snapshotDate))
+        .limit(1),
+    ]);
+    const snapshotDate = latest[0]?.date ?? null;
+    if (!snapshotDate || feeds.length === 0)
+      return { snapshotDate, points: [] };
+    const { unplaced } = suggestSnapshotAmounts(
+      subs.map((s) => ({
+        key: s.key,
+        performanceAccountId: s.performanceAccountId,
+        taxType: s.taxType,
+        subType: s.subType,
+        amount: s.amount,
+      })),
+      feeds.map((f) => ({
+        id: f.id,
+        performanceAccountId: f.performanceAccountId!,
+        subKey: f.subKey,
+        balance: toNumber(f.balance),
+        balanceDate: null,
+      })),
+    );
+    const history = await ctx.db
+      .select({
+        id: schema.simplefinAccountBalances.simplefinAccountId,
+        date: schema.simplefinAccountBalances.balanceDate,
+        balance: schema.simplefinAccountBalances.balance,
+      })
+      .from(schema.simplefinAccountBalances)
+      .where(
+        inArray(
+          schema.simplefinAccountBalances.simplefinAccountId,
+          feeds.map((f) => f.id),
+        ),
+      )
+      .orderBy(asc(schema.simplefinAccountBalances.balanceDate));
+    const historyOf = (f: (typeof feeds)[number]) => {
+      const rows: [string, number][] = history
+        .filter((h) => h.id === f.id)
+        .map((h) => [utcDayOf(h.date), toNumber(h.balance)]);
+      if (f.balanceDate)
+        rows.push([utcDayOf(f.balanceDate), toNumber(f.balance)]);
+      return rows.sort((a, b) => a[0].localeCompare(b[0]));
+    };
+    const accounts = [...new Set(feeds.map((f) => f.performanceAccountId!))]
+      .map((id) => {
+        const mine = feeds.filter((f) => f.performanceAccountId === id);
+        const parts = subs.filter((s) => s.performanceAccountId === id);
+        if (
+          !liveCoversAccount(
+            parts.map((p) => p.key),
+            mine.map((f) => f.subKey),
+            unplaced.filter((u) => u.performanceAccountId === id).length,
+          )
+        )
+          return null;
+        return {
+          snapshotAmount: parts.reduce((t, p) => t + p.amount, 0),
+          feedHistories: mine.map(historyOf),
+        };
+      })
+      .filter((a): a is NonNullable<typeof a> => a !== null);
+    const days: string[] = [];
+    const today = utcDayOf(new Date());
+    for (let d = new Date(`${snapshotDate}T00:00:00Z`); utcDayOf(d) < today;) {
+      d.setUTCDate(d.getUTCDate() + 1);
+      days.push(utcDayOf(d));
+    }
+    return {
+      snapshotDate,
+      points: dailyEstimates(days, 0, accounts)
+        .filter((p) => p.accounts > 0)
+        .map((p) => ({ date: p.date, change: p.total, accounts: p.accounts })),
+    };
   }),
 });

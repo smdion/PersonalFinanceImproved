@@ -210,6 +210,12 @@ export function PortfolioContent() {
   >(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const snapshotPageSize = showAll ? 1000 : 52;
+  // Dashed live line after the latest snapshot — hidden (no error) without
+  // the portfolio permission it needs.
+  const { data: liveSinceSnapshot } =
+    trpc.investments.getLiveSinceSnapshot.useQuery(undefined, {
+      retry: false,
+    });
   const { data: snapshotTotals } = trpc.networth.listSnapshotTotals.useQuery(
     undefined,
     {
@@ -471,7 +477,10 @@ export function PortfolioContent() {
       {/* Portfolio value chart */}
       {showChart && snapshotTotals && snapshotTotals.length > 0 && (
         <CardBoundary title="Portfolio Chart">
-          <PortfolioChart snapshots={snapshotTotals} />
+          <PortfolioChart
+            snapshots={snapshotTotals}
+            live={liveSinceSnapshot?.points}
+          />
         </CardBoundary>
       )}
 

@@ -156,6 +156,7 @@ vi.mock("@/lib/trpc", () => ({
       suggestSnapshot: { useQuery: () => ({ data: undefined }) },
       getHoldingsOverview: { useQuery: () => ({ data: undefined }) },
       getAccountInsights: { useQuery: () => ({ data: undefined }) },
+      getLiveSinceSnapshot: { useQuery: () => ({ data: undefined }) },
     },
     networth: {
       computeSummary: {

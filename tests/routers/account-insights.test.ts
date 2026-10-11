@@ -150,6 +150,16 @@ describe("getAccountInsights", () => {
   });
   afterAll(() => ctx.cleanup());
 
+  it("reports the daily change since the snapshot for fully linked accounts", async () => {
+    const live = await ctx.caller.investments.getLiveSinceSnapshot();
+    expect(live.snapshotDate).toBe(daysAgo(30));
+    // The plan (5,000 → 5,400) and the HSA (700 → 750) are fully linked;
+    // the IRA isn't (its Traditional part has no feed). Feeds report from
+    // yesterday.
+    expect(live.points.at(-1)).toMatchObject({ change: 450, accounts: 2 });
+    expect(live.points[0]!.date).toBe(daysAgo(1));
+  });
+
   it("reports live balance, link coverage and the deposit check per account", async () => {
     const rows = await ctx.caller.investments.getAccountInsights();
     const by = new Map(rows.map((r) => [r.performanceAccountId, r]));

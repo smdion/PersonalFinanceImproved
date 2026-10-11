@@ -33,10 +33,24 @@ type SnapshotPoint = { date: string; total: number };
 type ChartPoint = {
   date: string;
   label: string;
-  total: number;
+  /** Snapshot total; null on a live-estimate day. */
+  total: number | null;
   change: number | null;
   changePct: number | null;
+  /** Live estimate: the last snapshot plus how linked accounts moved since. */
+  live?: number;
+  liveAccounts?: number;
 };
+
+/** A day after the latest snapshot: change from it across fully linked accounts. */
+export type LivePoint = { date: string; change: number; accounts: number };
+
+const shortLabel = (date: string) =>
+  new Date(date + "T00:00:00").toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "2-digit",
+  });
 
 function getTimeFrameCutoff(tf: TimeFrame): string | null {
   if (tf === "All") return null;
@@ -51,7 +65,14 @@ function getTimeFrameCutoff(tf: TimeFrame): string | null {
   return localDateStr(cutoff);
 }
 
-export function PortfolioChart({ snapshots }: { snapshots: SnapshotPoint[] }) {
+export function PortfolioChart({
+  snapshots,
+  live = [],
+}: {
+  snapshots: SnapshotPoint[];
+  /** Days after the latest snapshot (see investments.getLiveSinceSnapshot). */
+  live?: LivePoint[];
+}) {
   const c = {
     ...CHART_COLORS,
     ...chartLinePalette(useTheme().resolvedTheme === "dark"),
@@ -74,14 +95,9 @@ export function PortfolioChart({ snapshots }: { snapshots: SnapshotPoint[] }) {
       const change = prev ? s.total - prev.total : null;
       const changeRatio = prev ? safeDivide(change!, prev.total, null) : null;
       const changePct = changeRatio === null ? null : changeRatio * 100;
-      const d = new Date(s.date + "T00:00:00");
       return {
         date: s.date,
-        label: d.toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "2-digit",
-        }),
+        label: shortLabel(s.date),
         total: s.total,
         change,
         changePct,
@@ -101,8 +117,31 @@ export function PortfolioChart({ snapshots }: { snapshots: SnapshotPoint[] }) {
 
   const first = chartData[0]!;
   const last = chartData[chartData.length - 1]!;
-  const totalChange = last.total - first.total;
-  const totalChangePct = safeDivide(totalChange, first.total, 0) * 100;
+  const totalChange = (last.total ?? 0) - (first.total ?? 0);
+  const totalChangePct = safeDivide(totalChange, first.total ?? 0, 0) * 100;
+
+  // The dashed live line starts at the latest snapshot (when it's in view).
+  const latest = snapshots.at(-1);
+  const liveAfter =
+    latest && last.date === latest.date
+      ? live.filter((p) => p.date > latest.date)
+      : [];
+  const renderData: ChartPoint[] =
+    liveAfter.length > 0
+      ? [
+          ...chartData.slice(0, -1),
+          { ...last, live: last.total ?? undefined },
+          ...liveAfter.map((p) => ({
+            date: p.date,
+            label: shortLabel(p.date),
+            total: null,
+            change: null,
+            changePct: null,
+            live: Math.round((latest!.total + p.change) * 100) / 100,
+            liveAccounts: p.accounts,
+          })),
+        ]
+      : chartData;
   const isPositive = totalChange >= 0;
 
   return (
@@ -141,7 +180,7 @@ export function PortfolioChart({ snapshots }: { snapshots: SnapshotPoint[] }) {
     >
       <ResponsiveContainer width="100%" height={300}>
         <AreaChart
-          data={chartData}
+          data={renderData}
           margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
         >
           <defs>
@@ -165,10 +204,13 @@ export function PortfolioChart({ snapshots }: { snapshots: SnapshotPoint[] }) {
           />
           <RechartsTooltip
             content={({ active, payload }) => {
-              const val =
+              const hovered =
                 active && payload?.length
-                  ? (payload[0]!.payload as ChartPoint).total
+                  ? (payload[0]!.payload as ChartPoint)
                   : null;
+              const val = hovered
+                ? (hovered.total ?? hovered.live ?? null)
+                : null;
               // Sync hover value via ref + deferred state update to avoid render-during-render
               if (hoverRef.current !== val) {
                 hoverRef.current = val;
@@ -180,8 +222,17 @@ export function PortfolioChart({ snapshots }: { snapshots: SnapshotPoint[] }) {
                 <div className="bg-surface-primary rounded-lg border p-2.5 text-xs shadow-lg">
                   <div className="text-primary mb-1 font-medium">{p.date}</div>
                   <div className="text-secondary">
-                    {formatCurrency(p.total)}
+                    {p.total !== null
+                      ? formatCurrency(p.total)
+                      : `≈ ${formatCurrency(p.live ?? 0)}`}
                   </div>
+                  {p.total === null && (
+                    <div className="text-faint">
+                      Live estimate: last snapshot plus how {p.liveAccounts}{" "}
+                      linked account
+                      {p.liveAccounts === 1 ? "" : "s"} moved
+                    </div>
+                  )}
                   {p.change !== null && (
                     <div
                       className={
@@ -228,6 +279,20 @@ export function PortfolioChart({ snapshots }: { snapshots: SnapshotPoint[] }) {
             }
             activeDot={{ r: 4 }}
           />
+          {liveAfter.length > 0 && (
+            <Area
+              isAnimationActive={false}
+              type="monotone"
+              dataKey="live"
+              stroke={c.perfBalance}
+              strokeWidth={2}
+              strokeDasharray="5 4"
+              fill="none"
+              dot={false}
+              activeDot={{ r: 4 }}
+              name="Live estimate"
+            />
+          )}
         </AreaChart>
       </ResponsiveContainer>
     </Card>

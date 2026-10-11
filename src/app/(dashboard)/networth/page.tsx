@@ -69,6 +69,12 @@ export default function NetWorthPage() {
   const { data, isLoading, error } =
     trpc.networth.computeSummary.useQuery(targeting);
   const { data: historyData } = trpc.networth.listHistory.useQuery(targeting);
+  // Today's estimate from live balances — hidden (no error) without the
+  // portfolio permission it needs.
+  const { data: liveSinceSnapshot } =
+    trpc.investments.getLiveSinceSnapshot.useQuery(undefined, {
+      retry: false,
+    });
   const primaryBirthYear = historyData?.primaryBirthYear;
   const [budgetColumn] = usePersistedSetting<number>("budget_active_column", 0);
   const [activeContribProfileId] = usePersistedSetting<number | null>(
@@ -276,6 +282,19 @@ export default function NetWorthPage() {
         <p className="text-3xl font-bold sm:text-4xl">
           {formatCurrency(displayNetWorth)}
         </p>
+        {(() => {
+          const today = liveSinceSnapshot?.points.at(-1);
+          if (!today || !liveSinceSnapshot?.snapshotDate) return null;
+          return (
+            <p className="mt-1 text-sm opacity-80">
+              ≈ {formatCurrency(displayNetWorth + today.change)} with live
+              balances ({today.change >= 0 ? "+" : "−"}
+              {formatCurrency(Math.abs(today.change))} since your{" "}
+              {formatDate(liveSinceSnapshot.snapshotDate, "medium")} snapshot,{" "}
+              {today.accounts} linked account{today.accounts === 1 ? "" : "s"})
+            </p>
+          );
+        })()}
         {hasHouse && (
           <p className="mt-1 text-sm opacity-70">
             {useMarketValue

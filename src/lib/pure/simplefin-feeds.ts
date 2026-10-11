@@ -14,3 +14,61 @@ export function countsAsFeed(a: {
 }): boolean {
   return a.linkedPerformanceAccountId != null && a.isIncluded;
 }
+
+/**
+ * Whether an account's live balance covers the whole account the way the
+ * snapshot does, so the two can be compared: it has feeds, every part of
+ * it is linked (or a feed covers the whole account), and no feed's money
+ * sits outside a part.
+ */
+export function liveCoversAccount(
+  partKeys: readonly string[],
+  feedSubKeys: readonly (string | null)[],
+  unplacedFeeds: number,
+): boolean {
+  if (feedSubKeys.length === 0 || partKeys.length === 0) return false;
+  if (unplacedFeeds > 0) return false;
+  return (
+    feedSubKeys.includes(null) || partKeys.every((k) => feedSubKeys.includes(k))
+  );
+}
+
+/**
+ * The household's portfolio estimated for each day after a snapshot:
+ * the snapshot total plus, for every account whose live balance covers it,
+ * that day's live balance minus its snapshot amount. A day counts an
+ * account only once all its feeds have a balance on or before that day.
+ */
+export function dailyEstimates(
+  days: readonly string[],
+  snapshotTotal: number,
+  accounts: readonly {
+    snapshotAmount: number;
+    /** Per feed: [day, balance] ascending. */
+    feedHistories: readonly (readonly [string, number])[][];
+  }[],
+): { date: string; total: number; accounts: number }[] {
+  const asOf = (h: readonly (readonly [string, number])[], day: string) => {
+    let v: number | null = null;
+    for (const [d, b] of h) {
+      if (d > day) break;
+      v = b;
+    }
+    return v;
+  };
+  return days.map((day) => {
+    let total = snapshotTotal;
+    let counted = 0;
+    for (const a of accounts) {
+      const balances = a.feedHistories.map((h) => asOf(h, day));
+      if (balances.some((b) => b === null)) continue;
+      total += balances.reduce<number>((t, b) => t + b!, 0) - a.snapshotAmount;
+      counted++;
+    }
+    return {
+      date: day,
+      total: Math.round(total * 100) / 100,
+      accounts: counted,
+    };
+  });
+}
