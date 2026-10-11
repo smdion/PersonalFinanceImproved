@@ -1,0 +1,1 @@
+ALTER TABLE "simplefin_accounts" ADD COLUMN "linked_sub_key" text;

@@ -2622,6 +2622,16 @@ export const simplefinAccounts = pgTable(
     linkedPerformanceAccountId: integer(
       "linked_performance_account_id",
     ).references(() => performanceAccounts.id, { onDelete: "set null" }),
+    /**
+     * The sub-account this SimpleFIN account is (snapshotAccountKey: tracked
+     * account + tax type + kind + owner), or null for the whole tracked
+     * account. Institutions report sub-accounts separately — e.g. each
+     * spouse's Roth IRA inside one joint "IRA" tracked account.
+     * Only meaningful with linkedPerformanceAccountId (enforced by the
+     * router, not a CHECK: deleting a tracked account nulls the link and
+     * must not be blocked by a leftover key, which readers ignore).
+     */
+    linkedSubKey: text("linked_sub_key"),
   },
   (table) => [
     index("simplefin_accounts_org_name_idx").on(

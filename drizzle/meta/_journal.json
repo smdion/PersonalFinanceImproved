@@ -50,6 +50,13 @@
       "when": 1791744769474,
       "tag": "0006_empty_zarda",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791747324763,
+      "tag": "0007_bizarre_zarek",
+      "breakpoints": true
     }
   ]
 }

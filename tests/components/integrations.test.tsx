@@ -145,6 +145,10 @@ vi.mock("@/lib/trpc", () => ({
       setAccountMapping: {
         useMutation: () => ({ mutate: vi.fn(), isPending: false }),
       },
+
+      acceptLinkSuggestions: {
+        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+      },
     },
   },
 }));
@@ -516,6 +520,10 @@ describe("IntegrationsSettings", () => {
           setAccountMapping: {
             useMutation: () => ({ mutate: vi.fn(), isPending: false }),
           },
+
+          acceptLinkSuggestions: {
+            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+          },
         },
       },
     }));
@@ -698,6 +706,10 @@ describe("IntegrationsSettings", () => {
             useMutation: () => ({ mutate: vi.fn(), isPending: false }),
           },
           setAccountMapping: {
+            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+          },
+
+          acceptLinkSuggestions: {
             useMutation: () => ({ mutate: vi.fn(), isPending: false }),
           },
         },

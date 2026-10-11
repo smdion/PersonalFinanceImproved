@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**389 procedures across 51 routers.**
+**390 procedures across 51 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -526,6 +526,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 | Procedure               | Kind     | Auth                 | Description                                                                                                                                                                                             |
 | ----------------------- | -------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `acceptLinkSuggestions` | mutation | `syncProcedure`      | Link every unlinked SimpleFIN account to its suggested (sub-)account.                                                                                                                                   |
 | `getCollectionStats`    | query    | `protectedProcedure` | What the sync has collected and how much of today's request quota is used — counts only, for Settings → Data sources.                                                                                   |
 | `getStatus`             | query    | `protectedProcedure` | Connection status for the Settings integrations card and the sidebar's Data Updated tooltip.                                                                                                            |
 | `listAccounts`          | query    | `protectedProcedure` | matched-group level: every SimpleFIN account linked to a given performance account shares the same `change`, comparing their _combined_ live balance against that one snapshot balance. A per-row delta |

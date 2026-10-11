@@ -788,10 +788,24 @@ export function AnalyticsContent({ embedded = false }: { embedded?: boolean }) {
 
       {/* Account holdings tables */}
       {embedded && (
-        <p className="text-muted -mt-2 text-xs">
-          Only accounts SimpleFIN doesn&apos;t report holdings for — enter what
-          they hold here.
-        </p>
+        <div className="text-muted -mt-2 space-y-0.5 text-xs">
+          <p>
+            Only accounts SimpleFIN doesn&apos;t report holdings for — enter
+            what they hold here.
+          </p>
+          <ul className="text-faint list-disc pl-5">
+            {editableAccounts.map((a) => (
+              <li key={a.id}>
+                {accountDisplayName(a)} —{" "}
+                {(simplefinAccounts ?? []).some(
+                  (s) => s.linkedPerformanceAccountId === a.id,
+                )
+                  ? "SimpleFIN sends its balance but not its holdings"
+                  : "not linked to a SimpleFIN account (link it in Settings → Integrations → SimpleFIN)"}
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
       {editableAccounts.length === 0 ? (
         embedded ? (

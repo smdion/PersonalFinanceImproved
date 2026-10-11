@@ -38,6 +38,8 @@ import {
   lastSimplefinRequestAt,
 } from "@/lib/simplefin/request-log";
 import { redactStoredCardSpending } from "@/lib/simplefin/ingest";
+import { loadLatestSubAccounts } from "@/server/helpers/sub-accounts";
+import { suggestLinks } from "@/lib/pure/simplefin-link-suggestions";
 import { readMaybeEncrypted } from "@/lib/crypto";
 import { summarizeBalanceDates } from "@/lib/pure/balance-dates";
 import type { SimplefinConfig } from "@/lib/simplefin/sync";
@@ -52,6 +54,77 @@ import type { ParentCategory } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types.types";
 import type { PortfolioTaxType } from "@/lib/config/enum-values";
 import { TRPCError } from "@trpc/server";
+
+type LinkSuggestionView = {
+  performanceAccountId: number;
+  subKey: string | null;
+  /** e.g. "IRA (Vanguard) — Sean — Roth" or "Alice 401k (Fidelity)". */
+  label: string;
+};
+
+/**
+ * Sub-accounts by key, and a suggested link for each unlinked SimpleFIN
+ * account. Suggestions never take a sub-account (or whole account) the
+ * household already linked.
+ */
+async function linkContext(
+  db: Parameters<typeof loadLatestSubAccounts>[0],
+  rows: (typeof schema.simplefinAccounts.$inferSelect)[],
+) {
+  const [subs, perf, people] = await Promise.all([
+    loadLatestSubAccounts(db),
+    db.select().from(schema.performanceAccounts),
+    db
+      .select({ id: schema.people.id, name: schema.people.name })
+      .from(schema.people),
+  ]);
+  const names = new Map(people.map((p) => [p.id, p.name]));
+  const perfLabel = new Map(
+    perf.map((a) => [
+      a.id,
+      accountDisplayName(
+        a,
+        a.ownerPersonId != null ? names.get(a.ownerPersonId) : undefined,
+      ),
+    ]),
+  );
+  const subByKey = new Map(subs.map((sub) => [sub.key, sub]));
+  const takenKeys = new Set(rows.map((r) => r.linkedSubKey).filter(Boolean));
+  const takenWhole = new Set(
+    rows
+      .filter((r) => r.linkedPerformanceAccountId != null && !r.linkedSubKey)
+      .map((r) => r.linkedPerformanceAccountId),
+  );
+  const open = subs.filter(
+    (sub) =>
+      !takenKeys.has(sub.key) && !takenWhole.has(sub.performanceAccountId),
+  );
+  const keyOf = new Map(open.map((sub) => [sub, sub.key]));
+  const suggestions = new Map<number, LinkSuggestionView>();
+  for (const s of suggestLinks(
+    rows
+      .filter((r) => r.linkedPerformanceAccountId == null)
+      .map((r) => ({
+        id: r.id,
+        orgName: r.orgName,
+        accountName: r.accountName,
+        balance: Number(r.lastBalance),
+      })),
+    open,
+  )) {
+    const subKey =
+      s.candidate.taxType === null
+        ? null
+        : (keyOf.get(s.candidate as (typeof open)[number]) ?? null);
+    const account = perfLabel.get(s.candidate.performanceAccountId) ?? "";
+    suggestions.set(s.simplefinAccountId, {
+      performanceAccountId: s.candidate.performanceAccountId,
+      subKey,
+      label: subKey ? `${account} — ${subByKey.get(subKey)!.label}` : account,
+    });
+  }
+  return { subByKey, suggestions };
+}
 
 export const simplefinRouter = createTRPCRouter({
   /** Claim a one-time setup token and store the resulting access URL. */
@@ -295,6 +368,7 @@ export const simplefinRouter = createTRPCRouter({
     }
 
     const snapshotDate = latest?.snapshot.snapshotDate ?? null;
+    const links = await linkContext(ctx.db, rows);
 
     return rows.map((r) => {
       const lastBalance = Number(r.lastBalance);
@@ -307,6 +381,19 @@ export const simplefinRouter = createTRPCRouter({
         isIncluded: r.isIncluded,
         lastSeenAt: r.lastSeenAt,
         linkedPerformanceAccountId: r.linkedPerformanceAccountId,
+        // The sub-account it's linked to; a key no longer in the latest
+        // snapshot (edited or deactivated) is kept and flagged, and the
+        // link counts for the whole account meanwhile.
+        linkedSubKey:
+          r.linkedPerformanceAccountId != null ? r.linkedSubKey : null,
+        linkedSubLabel: r.linkedSubKey
+          ? (links.subByKey.get(r.linkedSubKey)?.label ?? null)
+          : null,
+        subLinkMissing:
+          r.linkedPerformanceAccountId != null &&
+          !!r.linkedSubKey &&
+          !links.subByKey.has(r.linkedSubKey),
+        suggestion: links.suggestions.get(r.id) ?? null,
         snapshotDate,
       };
       if (r.linkedPerformanceAccountId == null) {
@@ -349,7 +436,7 @@ export const simplefinRouter = createTRPCRouter({
 
   /** Active performance_accounts, for the match-to-existing-account picker. */
   listMatchableAccounts: protectedProcedure.query(async ({ ctx }) => {
-    const [accounts, people] = await Promise.all([
+    const [accounts, people, subs] = await Promise.all([
       ctx.db
         .select()
         .from(schema.performanceAccounts)
@@ -359,6 +446,7 @@ export const simplefinRouter = createTRPCRouter({
           asc(schema.performanceAccounts.id),
         ),
       ctx.db.select().from(schema.people),
+      loadLatestSubAccounts(ctx.db),
     ]);
     const peopleMap = new Map(people.map((p) => [p.id, p.name]));
     return accounts.map((a) => ({
@@ -367,8 +455,39 @@ export const simplefinRouter = createTRPCRouter({
         a,
         a.ownerPersonId != null ? peopleMap.get(a.ownerPersonId) : undefined,
       ),
+      // Only worth choosing between when the account has more than one.
+      subAccounts: subs
+        .filter((sub) => sub.performanceAccountId === a.id)
+        .map((sub) => ({ key: sub.key, label: sub.label })),
     }));
   }),
+
+  /** Link every unlinked SimpleFIN account to its suggested (sub-)account. */
+  acceptLinkSuggestions: syncProcedure
+    .input(z.object({ ids: z.array(z.number().int()).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const rows = await ctx.db.select().from(schema.simplefinAccounts);
+      const { suggestions } = await linkContext(ctx.db, rows);
+      let linked = 0;
+      for (const [id, s] of suggestions) {
+        if (input.ids && !input.ids.includes(id)) continue;
+        await ctx.db
+          .update(schema.simplefinAccounts)
+          .set({
+            linkedPerformanceAccountId: s.performanceAccountId,
+            linkedSubKey: s.subKey,
+          })
+          .where(
+            and(
+              eq(schema.simplefinAccounts.id, id),
+              isNull(schema.simplefinAccounts.linkedPerformanceAccountId),
+            ),
+          );
+        await redactStoredCardSpending(ctx.db, id);
+        linked++;
+      }
+      return { linked };
+    }),
 
   /**
    * Match (or unmatch) a SimpleFIN account to an existing performance_accounts
@@ -384,9 +503,27 @@ export const simplefinRouter = createTRPCRouter({
       z.object({
         id: z.number().int(),
         performanceAccountId: z.number().int().nullable(),
+        /** A sub-account of that tracked account (snapshotAccountKey), or null/absent for the whole account. */
+        subKey: z.string().max(200).nullable().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      const subKey =
+        input.performanceAccountId == null ? null : (input.subKey ?? null);
+      if (subKey) {
+        const subs = await loadLatestSubAccounts(ctx.db);
+        if (
+          !subs.some(
+            (sub) =>
+              sub.key === subKey &&
+              sub.performanceAccountId === input.performanceAccountId,
+          )
+        )
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "That sub-account isn't in the latest snapshot",
+          });
+      }
       if (input.performanceAccountId != null) {
         const [target] = await ctx.db
           .select({ id: schema.performanceAccounts.id })
@@ -408,7 +545,10 @@ export const simplefinRouter = createTRPCRouter({
 
       const [row] = await ctx.db
         .update(schema.simplefinAccounts)
-        .set({ linkedPerformanceAccountId: input.performanceAccountId })
+        .set({
+          linkedPerformanceAccountId: input.performanceAccountId,
+          linkedSubKey: subKey,
+        })
         .where(eq(schema.simplefinAccounts.id, input.id))
         .returning();
 

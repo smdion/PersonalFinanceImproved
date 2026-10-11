@@ -18,11 +18,27 @@ type SimplefinAccountListItem = {
   lastBalance: number;
   isIncluded: boolean;
   linkedPerformanceAccountId: number | null;
+  linkedSubKey: string | null;
+  linkedSubLabel: string | null;
+  subLinkMissing: boolean;
+  suggestion: {
+    performanceAccountId: number;
+    subKey: string | null;
+    label: string;
+  } | null;
   snapshotBalance: number | null;
   change: number | null;
 };
 
-type MatchableAccount = { id: number; label: string };
+type MatchableAccount = {
+  id: number;
+  label: string;
+  subAccounts: { key: string; label: string }[];
+};
+
+/** Select value: "<perfId>" for a whole account, "<perfId>|<subKey>" for one of its sub-accounts. */
+const linkValue = (perfId: number | null, subKey: string | null) =>
+  perfId === null ? "" : subKey ? `${perfId}|${subKey}` : String(perfId);
 
 /** Group accounts by institution, preserving the orgName/accountName order the query already returns. */
 function groupAccountsByOrg(
@@ -46,7 +62,7 @@ function AccountRow({
   account: SimplefinAccountListItem;
   matchableAccounts: MatchableAccount[];
   onToggleIncluded: (isIncluded: boolean) => void;
-  onMatch: (performanceAccountId: number | null) => void;
+  onMatch: (performanceAccountId: number | null, subKey: string | null) => void;
 }) {
   const change = account.change;
   return (
@@ -73,18 +89,38 @@ function AccountRow({
       </label>
       <div className="mt-1 flex items-center justify-between gap-2 pl-6">
         <select
-          value={account.linkedPerformanceAccountId ?? ""}
-          onChange={(e) =>
-            onMatch(e.target.value ? Number(e.target.value) : null)
-          }
+          value={linkValue(
+            account.linkedPerformanceAccountId,
+            account.subLinkMissing ? null : account.linkedSubKey,
+          )}
+          onChange={(e) => {
+            const [perf, ...key] = e.target.value.split("|");
+            onMatch(
+              perf ? Number(perf) : null,
+              key.length ? key.join("|") : null,
+            );
+          }}
           className="text-caption border-strong bg-surface-primary text-muted rounded border px-1.5 py-0.5"
         >
           <option value="">Not linked to a tracked account</option>
-          {matchableAccounts.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.label}
-            </option>
-          ))}
+          {matchableAccounts.map((m) =>
+            m.subAccounts.length > 1 ? (
+              <optgroup key={m.id} label={m.label}>
+                <option value={linkValue(m.id, null)}>
+                  {m.label} — whole account
+                </option>
+                {m.subAccounts.map((sub) => (
+                  <option key={sub.key} value={linkValue(m.id, sub.key)}>
+                    {m.label} — {sub.label}
+                  </option>
+                ))}
+              </optgroup>
+            ) : (
+              <option key={m.id} value={linkValue(m.id, null)}>
+                {m.label}
+              </option>
+            ),
+          )}
         </select>
         {change !== null && (
           <span
@@ -96,6 +132,30 @@ function AccountRow({
           </span>
         )}
       </div>
+      {account.subLinkMissing && (
+        <p className="text-caption mt-0.5 pl-6 text-amber-600">
+          The sub-account this was linked to isn&apos;t in your latest snapshot
+          (changed or deactivated) — counted for the whole account until you
+          pick another.
+        </p>
+      )}
+      {account.linkedPerformanceAccountId === null && account.suggestion && (
+        <p className="text-caption text-muted mt-0.5 pl-6">
+          Looks like{" "}
+          <span className="text-primary">{account.suggestion.label}</span>{" "}
+          <button
+            className="hover:text-primary underline"
+            onClick={() =>
+              onMatch(
+                account.suggestion!.performanceAccountId,
+                account.suggestion!.subKey,
+              )
+            }
+          >
+            Link
+          </button>
+        </p>
+      )}
     </div>
   );
 }
@@ -127,6 +187,12 @@ export function SimplefinCard() {
   const setAccountMappingMut = trpc.simplefin.setAccountMapping.useMutation({
     onSuccess: invalidate,
   });
+  const acceptSuggestionsMut = trpc.simplefin.acceptLinkSuggestions.useMutation(
+    { onSuccess: invalidate },
+  );
+  const suggestionCount = (accounts ?? []).filter(
+    (a) => a.linkedPerformanceAccountId === null && a.suggestion,
+  ).length;
 
   const saveTokenMut = trpc.simplefin.saveToken.useMutation({
     onSuccess: () => {
@@ -305,6 +371,23 @@ export function SimplefinCard() {
               same tracked account (e.g. a historical split) — the comparison
               uses their combined balance.
             </p>
+            {suggestionCount > 0 && (
+              <div className="flex flex-wrap items-center gap-2 rounded bg-blue-50 p-2 text-xs text-blue-900 dark:bg-blue-950/30 dark:text-blue-200">
+                <span>
+                  {suggestionCount} account{suggestionCount === 1 ? "" : "s"}{" "}
+                  can be linked by institution, account type and balance — check
+                  each suggestion below, or
+                </span>
+                <Button
+                  size="xs"
+                  variant="primary"
+                  disabled={acceptSuggestionsMut.isPending}
+                  onClick={() => acceptSuggestionsMut.mutate({})}
+                >
+                  Link all suggestions
+                </Button>
+              </div>
+            )}
             {groupAccountsByOrg(accounts).map(([orgName, orgAccounts]) => (
               <div key={orgName}>
                 <p className="text-muted mb-1 text-xs font-medium">
@@ -322,10 +405,11 @@ export function SimplefinCard() {
                           isIncluded,
                         })
                       }
-                      onMatch={(performanceAccountId) =>
+                      onMatch={(performanceAccountId, subKey) =>
                         setAccountMappingMut.mutate({
                           id: account.id,
                           performanceAccountId,
+                          subKey,
                         })
                       }
                     />

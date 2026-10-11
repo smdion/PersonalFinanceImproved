@@ -56,6 +56,8 @@ const V08_SCHEMA_TAGS = [
   "0005_neat_namorita", // SQLite counterpart of 0005
   "0006_empty_zarda", // PG: v0.8.5 SEC fund facts (security_facts, sec_filing_cache, securities SEC identity, asset_class_params.composition_bucket)
   "0006_opposite_onslaught", // SQLite counterpart of 0006
+  "0007_bizarre_zarek", // PG: simplefin_accounts.linked_sub_key (link to a sub-account)
+  "0007_closed_bastion", // SQLite counterpart of 0007
 ] as const;
 
 const V07_SCHEMA_TAGS = [
