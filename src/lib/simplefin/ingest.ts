@@ -66,6 +66,16 @@ async function ensureSecurity(
   holding: Parameters<typeof securityIdentity>[1],
 ): Promise<number> {
   const id = securityIdentity(institution, holding);
+  // A validated ticker (confirmed by SEC) is one fund wherever it's held.
+  const symbol = id.sourceSymbol?.toUpperCase();
+  if (symbol) {
+    const [byTicker] = await db
+      .select({ id: schema.securities.id })
+      .from(schema.securities)
+      .where(eq(schema.securities.ticker, symbol))
+      .limit(1);
+    if (byTicker) return byTicker.id;
+  }
   const existing = await db
     .select({ id: schema.securities.id })
     .from(schema.securities)

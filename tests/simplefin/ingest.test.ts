@@ -436,4 +436,37 @@ describe("ingestInvestmentData", () => {
     });
     expect(JSON.stringify(transactions(brokerageId))).not.toContain("STORE");
   });
+
+  it("keeps using a fund once its ticker is validated, instead of duplicating it", async () => {
+    const holding = {
+      id: "h1",
+      symbol: "EXMPX",
+      description: "Example Index Fund",
+      shares: 10,
+      marketValue: 1000,
+      costBasisPerShare: 80,
+    };
+    const before = ctx.db.select().from(ctx.schema.securities).all();
+    const fund = before.find((r) => r.sourceSymbol === "EXMPX")!;
+    // As the SEC facts sync does once it confirms the symbol.
+    ctx.db
+      .update(ctx.schema.securities)
+      .set({ ticker: "EXMPX" })
+      .where(eq(ctx.schema.securities.id, fund.id))
+      .run();
+    await run([
+      account({
+        id: "sf-ira",
+        balanceDate: new Date("2026-05-27T08:00:00Z"),
+        holdings: [holding],
+      }),
+    ]);
+    const after = ctx.db.select().from(ctx.schema.securities).all();
+    expect(after.filter((r) => r.sourceSymbol === "EXMPX")).toHaveLength(1);
+    expect(
+      observations(brokerageId).some(
+        (o) => o.securityId === fund.id && o.asOf === "2026-05-26",
+      ),
+    ).toBe(true);
+  });
 });

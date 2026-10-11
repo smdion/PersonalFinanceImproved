@@ -71,6 +71,7 @@ export const securityKindSchema = z.enum(SECURITY_KIND_VALUES);
 export const SECURITY_FACT_SOURCE_VALUES = [
   "sec_nport", // composition from the fund's latest N-PORT portfolio report
   "sec_ncsr", // expense ratio from its latest shareholder report (N-CSR)
+  "sec_nmfp", // money market fund: all cash, per its N-MFP report (money market funds don't file N-PORT)
   "user", // entered or confirmed by the household
 ] as const;
 export type SecurityFactSource = (typeof SECURITY_FACT_SOURCE_VALUES)[number];
