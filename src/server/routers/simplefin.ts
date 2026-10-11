@@ -39,6 +39,7 @@ import {
 } from "@/lib/simplefin/request-log";
 import { redactStoredCardSpending } from "@/lib/simplefin/ingest";
 import { readMaybeEncrypted } from "@/lib/crypto";
+import { summarizeBalanceDates } from "@/lib/pure/balance-dates";
 import type { SimplefinConfig } from "@/lib/simplefin/sync";
 import { getLatestSnapshot } from "@/server/helpers/snapshot";
 import { accountDisplayName } from "@/lib/utils/format";
@@ -51,13 +52,6 @@ import type { ParentCategory } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types.types";
 import type { PortfolioTaxType } from "@/lib/config/enum-values";
 import { TRPCError } from "@trpc/server";
-
-/** A raw `max()` of a timestamp column: a Date on Postgres, seconds on SQLite. */
-function toDate(value: Date | string | number): Date {
-  if (value instanceof Date) return value;
-  if (typeof value === "number") return new Date(value * 1000);
-  return new Date(value);
-}
 
 export const simplefinRouter = createTRPCRouter({
   /** Claim a one-time setup token and store the resulting access URL. */
@@ -176,32 +170,19 @@ export const simplefinRouter = createTRPCRouter({
         ctx.db
           .select({
             orgName: schema.simplefinAccounts.orgName,
-            accountId: schema.simplefinAccountBalances.simplefinAccountId,
-            latest: sql<
-              Date | string | number
-            >`max(${schema.simplefinAccountBalances.balanceDate})`,
+            lastBalanceDate: schema.simplefinAccounts.lastBalanceDate,
+            lastSeenAt: schema.simplefinAccounts.lastSeenAt,
           })
-          .from(schema.simplefinAccountBalances)
-          .innerJoin(
-            schema.simplefinAccounts,
-            eq(
-              schema.simplefinAccounts.id,
-              schema.simplefinAccountBalances.simplefinAccountId,
-            ),
-          )
-          .groupBy(
-            schema.simplefinAccounts.orgName,
-            schema.simplefinAccountBalances.simplefinAccountId,
-          ),
+          .from(schema.simplefinAccounts)
+          .where(eq(schema.simplefinAccounts.isIncluded, true)),
       ]);
-    // Per institution: the oldest of its accounts' latest balance dates, so
-    // one account lagging behind its siblings isn't hidden.
-    const dataAsOfByOrg = new Map<string, Date>();
-    for (const r of balanceRows) {
-      const latest = toDate(r.latest);
-      const prev = dataAsOfByOrg.get(r.orgName);
-      if (!prev || latest < prev) dataAsOfByOrg.set(r.orgName, latest);
-    }
+    // Same summary as the Live Balance card, so both say the same "as of".
+    const balanceDates = summarizeBalanceDates(
+      balanceRows.map((r) => ({
+        institution: r.orgName,
+        reportedAt: r.lastBalanceDate ?? r.lastSeenAt,
+      })),
+    );
     // Latest row per (account, fund); a fund whose latest row is 0 shares was sold.
     const latest = new Map<string, { asOf: string; shares: number }>();
     for (const r of holdingRows) {
@@ -222,10 +203,8 @@ export const simplefinRouter = createTRPCRouter({
       oldestTransaction: txStats[0]?.oldest ?? null,
       requestsLastDay,
       dailyRequestLimit: SIMPLEFIN_DAILY_REQUEST_LIMIT,
-      /** Oldest first — the institution furthest behind leads. */
-      dataAsOf: [...dataAsOfByOrg.entries()]
-        .map(([institution, asOf]) => ({ institution, asOf }))
-        .sort((a, b) => a.asOf.getTime() - b.asOf.getTime()),
+      /** Least current first; `asOf` is a valuation date (YYYY-MM-DD). */
+      dataAsOf: balanceDates.institutions,
     };
   }),
 

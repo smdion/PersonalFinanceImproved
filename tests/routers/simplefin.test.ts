@@ -5,6 +5,7 @@
 import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { TRPCError } from "@trpc/server";
+import { eq } from "drizzle-orm";
 import {
   createTestCaller,
   viewerSession,
@@ -575,26 +576,29 @@ describe("simplefin router", () => {
           })
           .returning()
           .get().id;
+        // Each account's own balance date; 22:00 UTC is after the close.
         for (const [id, iso] of [
-          [account, "2026-05-08T12:00:00Z"],
-          [account, "2026-05-10T12:00:00Z"],
-          [other, "2026-05-07T12:00:00Z"], // lags its sibling
-          [laterPlan, "2026-05-09T12:00:00Z"],
+          [account, "2026-05-14T22:00:00Z"],
+          [other, "2026-05-12T22:00:00Z"], // lags its sibling at the same bank
+          [laterPlan, "2026-05-13T22:00:00Z"],
         ] as const)
           ctx.db
-            .insert(sqliteSchema.simplefinAccountBalances)
-            .values({
-              simplefinAccountId: id,
-              balanceDate: new Date(iso),
-              balance: "1000",
-            })
+            .update(sqliteSchema.simplefinAccounts)
+            .set({ lastBalanceDate: new Date(iso) })
+            .where(eq(sqliteSchema.simplefinAccounts.id, id))
             .run();
         const stats = await ctx.caller.simplefin.getCollectionStats();
-        expect(
-          stats.dataAsOf.map((d) => [d.institution, d.asOf.toISOString()]),
-        ).toEqual([
-          ["Example Bank", "2026-05-07T12:00:00.000Z"],
-          ["Example Plan Co", "2026-05-09T12:00:00.000Z"],
+        expect(stats.dataAsOf).toEqual([
+          {
+            institution: "Example Bank",
+            asOf: "2026-05-12",
+            tradingDaysBehind: 1,
+          },
+          {
+            institution: "Example Plan Co",
+            asOf: "2026-05-13",
+            tradingDaysBehind: 0,
+          },
         ]);
         expect(stats).toMatchObject({
           holdings: 1,

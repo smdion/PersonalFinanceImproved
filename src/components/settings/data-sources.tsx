@@ -87,7 +87,7 @@ export function DataSourcesSettings() {
                 {stats.dataAsOf
                   .map(
                     (d) =>
-                      `${d.institution} ${formatDate(new Date(d.asOf), "medium").replace(`, ${new Date().getFullYear()}`, "")}`,
+                      `${d.institution} ${formatDate(d.asOf, "medium").replace(`, ${new Date().getFullYear()}`, "")}`,
                   )
                   .join(" · ")}
               </span>
