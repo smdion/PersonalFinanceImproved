@@ -30,6 +30,28 @@ export const PAY_PERIOD_VALUES = [
 export type PayPeriod = (typeof PAY_PERIOD_VALUES)[number];
 export const payPeriodSchema = z.enum(PAY_PERIOD_VALUES);
 
+// ── Investment transaction kind (SimpleFIN ingest) ──
+// What a brokerage/401k/HSA transaction row means for performance math.
+// Only `contribution` and `withdrawal` move money into or out of an
+// account; everything else happens inside it (see simplefin-transaction-rules).
+
+export const INVESTMENT_TRANSACTION_KIND_VALUES = [
+  "contribution", // money in from outside (payroll, bank deposit, IRA conversion in)
+  "withdrawal", // money out (distribution, conversion out, HSA medical spending)
+  "dividend", // income paid by a holding (stays in the account)
+  "interest", // money-market / cash interest (stays in the account)
+  "fee", // account or fund fee taken from the balance
+  "trade", // buy or sell of a holding (value moves between holdings)
+  "sweep", // cash moved between the settlement/core fund and cash
+  "gain_loss", // realized gain/loss bookkeeping row (no money moves)
+  "other", // unrecognised — shown for review, never dropped
+] as const;
+export type InvestmentTransactionKind =
+  (typeof INVESTMENT_TRANSACTION_KIND_VALUES)[number];
+export const investmentTransactionKindSchema = z.enum(
+  INVESTMENT_TRANSACTION_KIND_VALUES,
+);
+
 // ── Pay Week ──
 
 export const PAY_WEEK_VALUES = ["even", "odd", "na"] as const;
