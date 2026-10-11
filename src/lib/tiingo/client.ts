@@ -48,3 +48,23 @@ export async function getTickerMeta(
 export async function testApiKey(apiKey: string): Promise<TiingoTickerMeta> {
   return getTickerMeta(apiKey, TEST_TICKER);
 }
+
+export type TiingoMonthlyPrice = {
+  /** Month-end trading day, YYYY-MM-DD. */
+  date: string;
+  /** Close adjusted for splits and with dividends reinvested — total return. */
+  adjClose: number;
+};
+
+/** Month-end total-return prices from `startDate` (YYYY-MM-DD) to today. */
+export async function getMonthlyPrices(
+  apiKey: string,
+  ticker: string,
+  startDate: string,
+): Promise<TiingoMonthlyPrice[]> {
+  const rows = await requestJson<{ date: string; adjClose: number }[]>(
+    `/tiingo/daily/${encodeURIComponent(ticker)}/prices?startDate=${encodeURIComponent(startDate)}&resampleFreq=monthly`,
+    apiKey,
+  );
+  return rows.map((r) => ({ date: r.date.slice(0, 10), adjClose: r.adjClose }));
+}

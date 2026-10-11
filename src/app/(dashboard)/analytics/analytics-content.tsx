@@ -606,7 +606,8 @@ function DriftTable({
 // Main content
 // ---------------------------------------------------------------------------
 
-export function AnalyticsContent() {
+/** `embedded`: shown as the "Funds & targets" section of the Investments page instead of its own page. */
+export function AnalyticsContent({ embedded = false }: { embedded?: boolean }) {
   const user = useUser();
   const canEdit = hasPermission(user, "portfolio");
 
@@ -713,7 +714,7 @@ export function AnalyticsContent() {
   if (!canEdit) {
     return (
       <div className="space-y-4">
-        <PageHeader title="Analytics" />
+        <PageHeader title={embedded ? "Funds & targets" : "Analytics"} />
         <EmptyState
           message="You don't have permission to view Analytics."
           hint="Ask an admin to grant portfolio access."
@@ -725,7 +726,7 @@ export function AnalyticsContent() {
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <PageHeader title="Analytics" />
+        <PageHeader title={embedded ? "Funds & targets" : "Analytics"} />
         <Skeleton className="h-32 w-full" />
         <Skeleton className="h-32 w-full" />
       </div>
@@ -737,7 +738,7 @@ export function AnalyticsContent() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Analytics"
+        title={embedded ? "Funds & targets" : "Analytics"}
         subtitle="Holdings, allocation vs. target, drift, and blended expense ratio"
       >
         {/* Snapshot selector */}

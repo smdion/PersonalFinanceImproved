@@ -105,7 +105,7 @@ const navStructure: NavEntry[] = [
     items: [
       { href: "/retirement", label: "Retirement", Icon: Palmtree },
       { href: "/contributions", label: "Contributions", Icon: Layers },
-      { href: "/analytics", label: "Analytics", Icon: PieChart },
+      { href: "/investments", label: "Investments", Icon: PieChart },
       { href: "/tax-buckets", label: "Tax Buckets", Icon: Unlock },
       {
         href: "/tax-optimization",

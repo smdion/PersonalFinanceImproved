@@ -224,6 +224,12 @@ export const CHART_COLORS = {
   perfRetirement: "#3b82f6", // blue-500
   perfBrokerage: "#f97316", // orange-500
   perfHsa: "#10b981", // emerald-500
+  // Investments: you vs the same money in market indexes
+  benchYou: "#4f46e5", // indigo-600
+  benchSp500: "#f97316", // orange-500
+  benchTotalUs: "#0d9488", // teal-600
+  benchDow: "#a855f7", // purple-500
+  benchDeposits: "#9ca3af", // gray-400
   // Linked balance sparkline (SimpleFIN)
   linkedBalance: "#0d9488", // teal-600
   // Expenses: budget-vs-actual bar chart
