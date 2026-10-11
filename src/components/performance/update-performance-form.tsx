@@ -2,7 +2,11 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
-import { formatCurrency, accountDisplayName } from "@/lib/utils/format";
+import {
+  formatCurrency,
+  formatDate,
+  accountDisplayName,
+} from "@/lib/utils/format";
 import { computeGainLoss } from "@/lib/pure/performance";
 import { getDisplayConfig } from "@/lib/config/account-types";
 import {
@@ -28,9 +32,21 @@ export function UpdatePerformanceForm({
     onSuccess: onSaved,
   });
 
+  // Hidden (no error shown) without the portfolio permission it needs.
+  const { data: suggestions } = trpc.investments.suggestPerformance.useQuery(
+    { year: currentYear },
+    { retry: false },
+  );
+
   const [endingBalanceSource, setEndingBalanceSource] =
     useState<EndingBalanceSource>("snapshot");
   const [rows, setRows] = useState<UpdateFormRow[] | null>(null);
+  const [fill, setFill] = useState<{
+    year: number;
+    baselines: Record<string, string>;
+    counted: Record<string, string>;
+  } | null>(null);
+  const [fillNotes, setFillNotes] = useState<Map<number, string>>(new Map());
   const didInit = useRef(false);
 
   // Build snapshot lookup: performanceAccountId → sum of amounts
@@ -148,6 +164,109 @@ export function UpdatePerformanceForm({
     [getEndingBalance],
   );
 
+  /**
+   * Prefill from SimpleFIN: stored figures plus what no saved fill has
+   * counted yet. Fields already edited in this form keep the edit.
+   */
+  const fillFromSimplefin = () => {
+    if (!rows || !suggestions) return;
+    const byId = new Map(
+      suggestions.accounts.map((a) => [a.accountPerformanceId, a]),
+    );
+    const notes = new Map<number, string>();
+    const record = {
+      year: suggestions.year,
+      baselines: {} as Record<string, string>,
+      counted: {} as Record<string, string>,
+    };
+    setRows(
+      rows.map((r) => {
+        const s = byId.get(r.accountPerformanceId);
+        // The form switches to manual ending balances below; each row starts
+        // from what it showed (its snapshot, or a balance typed in).
+        const shownEnding =
+          endingBalanceSource === "snapshot"
+            ? String(r.snapshotEndingBalance ?? r.endingBalance)
+            : r.endingBalance;
+        if (!s || s.feed !== "linked") {
+          notes.set(
+            r.accountPerformanceId,
+            s?.feed === "ambiguous"
+              ? "Linked in SimpleFIN to the whole account — link each person's sub-account to fill this."
+              : "No SimpleFIN feed — enter by hand.",
+          );
+          return { ...r, endingBalance: shownEnding };
+        }
+        record.baselines[r.accountPerformanceId] = s.baseline;
+        Object.assign(record.counted, s.counted);
+        const untouched = (field: keyof typeof r.original, value: string) =>
+          (parseFloat(value) || 0) === r.original[field];
+        const fill = (
+          field: keyof typeof r.original & keyof UpdateFormRow,
+          value: number,
+        ) =>
+          untouched(field, r[field] as string)
+            ? value.toFixed(2)
+            : (r[field] as string);
+        const kept = (
+          [
+            "employeeContrib",
+            "employerContributions",
+            "distributions",
+            "rollovers",
+            "fees",
+          ] as const
+        ).some((f) => !untouched(f, r[f]));
+        const a = s.added;
+        const parts = [
+          a.contributions && `${formatCurrency(a.contributions)} in`,
+          a.distributions && `${formatCurrency(a.distributions)} out`,
+          a.rollovers &&
+            `${formatCurrency(a.rollovers)} moved between your accounts${a.unmatchedTransfers ? ` (${formatCurrency(a.unmatchedTransfers)} marked by hand, no matching side found)` : ""}`,
+          a.fees && `${formatCurrency(a.fees)} fees`,
+        ].filter(Boolean);
+        notes.set(
+          r.accountPerformanceId,
+          [
+            parts.length
+              ? `Added from SimpleFIN since ${formatDate(s.baseline, "medium")}: ${parts.join(", ")}.`
+              : `Nothing new from SimpleFIN since ${formatDate(s.baseline, "medium")}.`,
+            a.estimated &&
+              "Employee/employer split estimated from your paycheck setup.",
+            s.missingBefore &&
+              `SimpleFIN transactions only go back to ${formatDate(s.missingBefore, "medium")} — add anything before that by hand.`,
+            s.reviewCount > 0 &&
+              `${s.reviewCount} transaction${s.reviewCount === 1 ? "" : "s"} still need a kind (Settings → Integrations) and aren't counted yet.`,
+            s.suggested.endingBalance === null &&
+              "Ending balance: not every part of this account is linked — kept the snapshot.",
+            kept && "Kept the figures you'd already edited.",
+          ]
+            .filter(Boolean)
+            .join(" "),
+        );
+        return {
+          ...r,
+          employeeContrib: fill("employeeContrib", s.suggested.employeeContrib),
+          employerContributions: fill(
+            "employerContributions",
+            s.suggested.employerContributions,
+          ),
+          distributions: fill("distributions", s.suggested.distributions),
+          rollovers: fill("rollovers", s.suggested.rollovers),
+          fees: fill("fees", s.suggested.fees),
+          endingBalance:
+            s.suggested.endingBalance !== null &&
+            untouched("endingBalance", r.endingBalance)
+              ? s.suggested.endingBalance.toFixed(2)
+              : shownEnding,
+        };
+      }),
+    );
+    setFillNotes(notes);
+    setFill(record);
+    setEndingBalanceSource("manual");
+  };
+
   const handleSave = () => {
     if (!rows) return;
     const accounts = rows.map((r) => {
@@ -170,7 +289,10 @@ export function UpdatePerformanceForm({
         yearlyGainLoss: gainLoss.toFixed(2),
       };
     });
-    batchMutation.mutate({ accounts });
+    batchMutation.mutate({
+      accounts,
+      simplefinFill: fill ?? undefined,
+    });
   };
 
   const currentRows = rows ?? [];
@@ -200,6 +322,27 @@ export function UpdatePerformanceForm({
 
   return (
     <div className="space-y-4">
+      {suggestions && suggestions.accounts.length > 0 && (
+        <div className="rounded bg-blue-50 p-2 text-xs text-blue-900 dark:bg-blue-950/30 dark:text-blue-200">
+          <div className="flex flex-wrap items-center gap-2">
+            <span>
+              {fill
+                ? "Filled from SimpleFIN — check each figure, then save."
+                : "Add what SimpleFIN has seen since these figures were last updated."}
+            </span>
+            {!fill && (
+              <button
+                type="button"
+                onClick={fillFromSimplefin}
+                className="rounded bg-blue-600 px-2 py-0.5 text-white hover:bg-blue-700"
+              >
+                Fill from SimpleFIN
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Ending balance source toggle */}
       <div className="flex items-center gap-4 text-sm">
         <span className="text-muted font-medium">Ending Balance Source:</span>
@@ -262,6 +405,7 @@ export function UpdatePerformanceForm({
                 snapshotDate={snapshotDate}
                 computedGainLoss={getComputedGainLoss(row)}
                 effectiveEndingBalance={getEndingBalance(row)}
+                fillNote={fillNotes.get(row.accountPerformanceId) ?? null}
                 onFieldChange={updateRow}
               />
             ))}
@@ -315,6 +459,7 @@ function AccountFormRow({
   snapshotDate,
   computedGainLoss,
   effectiveEndingBalance,
+  fillNote,
   onFieldChange,
 }: {
   row: UpdateFormRow;
@@ -322,6 +467,7 @@ function AccountFormRow({
   snapshotDate: string | null;
   computedGainLoss: number;
   effectiveEndingBalance: number;
+  fillNote: string | null;
   onFieldChange: (
     id: number,
     field: keyof UpdateFormRow,
@@ -383,6 +529,8 @@ function AccountFormRow({
           onDismiss={() => setShowCalculator(false)}
         />
       )}
+
+      {fillNote && <p className="text-caption text-muted mb-1">{fillNote}</p>}
 
       {/* Flow fields — one row */}
       <div className="mb-1 grid grid-cols-5 gap-2">

@@ -210,6 +210,7 @@ async function stampPerformanceUpdated(db: DbType) {
 // --- Zod schemas for input validation ---
 
 import { zDecimal } from "@/server/routers/settings/_shared";
+import { recordFill, zFillRecord } from "@/server/helpers/fill-ledger";
 
 /** Optional decimal — for partial-update mutations. */
 const zDecimalOpt = zDecimal.optional();
@@ -1062,6 +1063,9 @@ export const performanceRouter = createTRPCRouter({
             yearlyGainLoss: zDecimal,
           }),
         ),
+        /** Set when the figures were filled from SimpleFIN: what they
+         *  counted, so the next fill adds only what's new. */
+        simplefinFill: zFillRecord.optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -1099,6 +1103,8 @@ export const performanceRouter = createTRPCRouter({
           }
         }
         await stampPerformanceUpdated(tx);
+        if (input.simplefinFill)
+          await recordFill(tx, "performance", input.simplefinFill);
       });
       return { success: true };
     }),

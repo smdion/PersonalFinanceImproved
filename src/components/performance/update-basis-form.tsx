@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { accountDisplayName } from "@/lib/utils/format";
+import {
+  accountDisplayName,
+  formatCurrency,
+  formatDate,
+} from "@/lib/utils/format";
 import type { AccountRow } from "./types";
 
 type BasisFormRow = {
@@ -13,6 +17,8 @@ type BasisFormRow = {
   contributionBasis: string;
   conversionBasis: string;
   latestConversionYear: string;
+  /** As loaded — a fill leaves fields edited since alone. */
+  original: { contributionBasis: string; conversionBasis: string };
 };
 
 /** Bulk Roth basis entry — mirrors UpdatePerformanceForm's batch-save shape,
@@ -33,6 +39,19 @@ export function UpdateBasisForm({
   const batchMutation = trpc.taxBuckets.batchUpdateRothBasis.useMutation({
     onSuccess: onSaved,
   });
+  // Hidden (no error shown) without the portfolio permission it needs.
+  const { data: suggestions } = trpc.investments.suggestBasis.useQuery(
+    { year: currentYear },
+    { retry: false },
+  );
+  const [fillNotes, setFillNotes] = useState<Map<string, string> | null>(null);
+  const [fill, setFill] = useState<{
+    year: number;
+    baselines: Record<string, string>;
+    counted: Record<string, string>;
+  } | null>(null);
+  const rowKey = (r: { performanceAccountId: number; ownerPersonId: number }) =>
+    `${r.performanceAccountId}:${r.ownerPersonId}`;
 
   const basisEligible = accountRows.filter(
     (a) =>
@@ -61,6 +80,10 @@ export function UpdateBasisForm({
       conversionBasis: String(a.conversionBasis ?? 0),
       latestConversionYear:
         a.latestConversionYear != null ? String(a.latestConversionYear) : "",
+      original: {
+        contributionBasis: String(a.contributionBasis ?? 0),
+        conversionBasis: String(a.conversionBasis ?? 0),
+      },
     })),
   );
 
@@ -68,6 +91,73 @@ export function UpdateBasisForm({
     setRows((prev) =>
       prev.map((r, i) => (i === idx ? { ...r, [field]: value } : r)),
     );
+  }
+
+  /**
+   * Prefill from SimpleFIN: stored basis plus Roth money no saved fill has
+   * counted yet. Fields already edited in this form keep the edit.
+   */
+  function fillFromSimplefin() {
+    if (!suggestions) return;
+    const byKey = new Map(suggestions.accounts.map((a) => [rowKey(a), a]));
+    const notes = new Map<string, string>();
+    const record = {
+      year: suggestions.year,
+      baselines: {} as Record<string, string>,
+      counted: {} as Record<string, string>,
+    };
+    setRows((prev) =>
+      prev.map((r) => {
+        const s = byKey.get(rowKey(r));
+        if (!s || s.feed !== "linked") {
+          notes.set(
+            rowKey(r),
+            s?.feed === "ambiguous"
+              ? "Linked in SimpleFIN to the whole account — link each person's sub-account to fill this."
+              : "No SimpleFIN feed — enter by hand.",
+          );
+          return r;
+        }
+        record.baselines[s.accountBasisId] = s.baseline;
+        Object.assign(record.counted, s.counted);
+        const untouched = (field: "contributionBasis" | "conversionBasis") =>
+          (parseFloat(r[field]) || 0) === (parseFloat(r.original[field]) || 0);
+        const kept =
+          !untouched("contributionBasis") || !untouched("conversionBasis");
+        const a = s.added;
+        notes.set(
+          rowKey(r),
+          [
+            a.contributions || a.conversions
+              ? `Added from SimpleFIN since ${formatDate(s.baseline, "medium")}: ${formatCurrency(a.contributions)} Roth contributions, ${formatCurrency(a.conversions)} conversions.`
+              : `Nothing new from SimpleFIN since ${formatDate(s.baseline, "medium")}.`,
+            a.estimated && "Roth part estimated from your paycheck setup.",
+            s.missingBefore &&
+              `SimpleFIN transactions only go back to ${formatDate(s.missingBefore, "medium")} — add anything before that by hand.`,
+            a.outflow > 0 &&
+              `${formatCurrency(a.outflow)} left the account — taken off contributions first, then conversions (IRS ordering rules).`,
+            kept && "Kept the figures you'd already edited.",
+          ]
+            .filter(Boolean)
+            .join(" "),
+        );
+        return {
+          ...r,
+          contributionBasis: untouched("contributionBasis")
+            ? s.suggested.contributionBasis.toFixed(2)
+            : r.contributionBasis,
+          conversionBasis: untouched("conversionBasis")
+            ? s.suggested.conversionBasis.toFixed(2)
+            : r.conversionBasis,
+          latestConversionYear:
+            s.suggested.latestConversionYear != null
+              ? String(s.suggested.latestConversionYear)
+              : "",
+        };
+      }),
+    );
+    setFillNotes(notes);
+    setFill(record);
   }
 
   function handleSave() {
@@ -82,6 +172,7 @@ export function UpdateBasisForm({
           ? parseInt(r.latestConversionYear, 10)
           : null,
       })),
+      simplefinFill: fill ?? undefined,
     });
   }
 
@@ -102,14 +193,37 @@ export function UpdateBasisForm({
           penalty-free portion of each Roth account. Also editable inline on
           this page or on Tax Buckets.
         </p>
+        {suggestions && suggestions.accounts.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 rounded bg-blue-50 p-2 text-xs text-blue-900 dark:bg-blue-950/30 dark:text-blue-200">
+            <span>
+              {fillNotes
+                ? "Filled from SimpleFIN — check each figure, then save."
+                : "Add Roth contributions and conversions SimpleFIN has seen since each row was last saved."}
+            </span>
+            {!fillNotes && (
+              <button
+                type="button"
+                onClick={fillFromSimplefin}
+                className="rounded bg-blue-600 px-2 py-0.5 text-white hover:bg-blue-700"
+              >
+                Fill from SimpleFIN
+              </button>
+            )}
+          </div>
+        )}
         {rows.map((row, idx) => (
           <div
-            key={row.performanceAccountId}
+            key={rowKey(row)}
             className="border-default space-y-2 rounded-lg border p-3"
           >
             <div className="text-primary text-sm font-medium">
               {row.displayName}
             </div>
+            {fillNotes?.get(rowKey(row)) && (
+              <p className="text-caption text-muted">
+                {fillNotes.get(rowKey(row))}
+              </p>
+            )}
             <div className="grid grid-cols-3 gap-2">
               <div>
                 <label className="text-caption text-muted mb-0.5 block font-medium">

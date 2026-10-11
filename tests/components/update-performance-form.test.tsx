@@ -29,8 +29,15 @@ let batchMutationState: {
   error: null,
 };
 
+let suggestionData: unknown = undefined;
+
 vi.mock("@/lib/trpc", () => ({
   trpc: {
+    investments: {
+      suggestPerformance: {
+        useQuery: () => ({ data: suggestionData }),
+      },
+    },
     networth: {
       portfolioSnapshots: {
         getLatest: {
@@ -115,6 +122,151 @@ describe("UpdatePerformanceForm", () => {
   beforeEach(() => {
     batchMutate.mockClear();
     batchMutationState = { isPending: false, isError: false, error: null };
+    suggestionData = undefined;
+  });
+
+  it("fills from SimpleFIN and saves what the fill counted", () => {
+    suggestionData = {
+      year: 2026,
+      accounts: [
+        {
+          accountPerformanceId: 1,
+          feed: "linked",
+          baseline: "2026-03-31",
+          missingBefore: null,
+          counted: { 41: "contribution", 42: "fee" },
+          added: {
+            contributions: 1000,
+            distributions: 0,
+            rollovers: 0,
+            fees: 10,
+            unmatchedTransfers: 0,
+            estimated: true,
+          },
+          reviewCount: 0,
+          suggested: {
+            employeeContrib: 10800,
+            employerContributions: 2200,
+            distributions: 0,
+            rollovers: 0,
+            fees: 60,
+            endingBalance: null,
+          },
+        },
+        {
+          accountPerformanceId: 2,
+          feed: "none",
+          baseline: "2025-12-31",
+          missingBefore: null,
+          counted: {},
+          added: {},
+          reviewCount: 0,
+          suggested: {},
+        },
+      ],
+    };
+    render(
+      <UpdatePerformanceForm
+        currentYear={2026}
+        accountRows={accountRows}
+        onClose={vi.fn()}
+        onSaved={vi.fn()}
+      />,
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Fill from SimpleFIN" }),
+    );
+    expect(
+      screen.getByText(/split estimated from your paycheck setup/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/No SimpleFIN feed/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Save Update" }));
+    const input = batchMutate.mock.calls[0][0] as {
+      accounts: {
+        id: number;
+        totalContributions: string;
+        fees: string;
+        endingBalance: string;
+        yearlyGainLoss: string;
+      }[];
+      simplefinFill?: unknown;
+    };
+    expect(input.simplefinFill).toEqual({
+      year: 2026,
+      baselines: { 1: "2026-03-31" },
+      counted: { 41: "contribution", 42: "fee" },
+    });
+    const acct1 = input.accounts.find((a) => a.id === 1)!;
+    expect(acct1).toMatchObject({
+      totalContributions: "13000.00",
+      fees: "60.00",
+      // No full SimpleFIN balance: the snapshot's stays.
+      endingBalance: "115000.00",
+    });
+    // 115000 - 100000 - 13000 + 0 - 0 + 60
+    expect(acct1.yearlyGainLoss).toBe("2060.00");
+    // An account without a feed keeps its figures.
+    expect(input.accounts.find((a) => a.id === 2)!.endingBalance).toBe(
+      "50000.00",
+    );
+  });
+
+  it("keeps a figure already edited in the form when filling", () => {
+    suggestionData = {
+      year: 2026,
+      accounts: [
+        {
+          accountPerformanceId: 1,
+          feed: "linked",
+          baseline: "2026-03-31",
+          missingBefore: null,
+          counted: {},
+          added: {
+            contributions: 1000,
+            distributions: 0,
+            rollovers: 0,
+            fees: 0,
+            unmatchedTransfers: 0,
+            estimated: false,
+          },
+          reviewCount: 0,
+          suggested: {
+            employeeContrib: 11000,
+            employerContributions: 2000,
+            distributions: 0,
+            rollovers: 0,
+            fees: 50,
+            endingBalance: null,
+          },
+        },
+      ],
+    };
+    render(
+      <UpdatePerformanceForm
+        currentYear={2026}
+        accountRows={accountRows}
+        onClose={vi.fn()}
+        onSaved={vi.fn()}
+      />,
+    );
+    // Fidelity's row comes first; its first field is Employee Contrib.
+    fireEvent.change(screen.getAllByRole("spinbutton")[0]!, {
+      target: { value: "10500" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Fill from SimpleFIN" }),
+    );
+    expect(
+      screen.getByText(/Kept the figures you'd already edited/),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Save Update" }));
+    const { accounts } = batchMutate.mock.calls[0][0] as {
+      accounts: { id: number; totalContributions: string }[];
+    };
+    expect(accounts.find((a) => a.id === 1)!.totalContributions).toBe(
+      "12500.00",
+    );
   });
 
   it("renders without crashing and shows both account rows", () => {

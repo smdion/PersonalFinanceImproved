@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**390 procedures across 51 routers.**
+**392 procedures across 52 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -184,6 +184,13 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | Procedure          | Kind  | Auth                 | Description                                                                                                                                                                                              |
 | ------------------ | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `getSnapshotFlows` | query | `portfolioProcedure` | Money added since a snapshot across SimpleFIN accounts linked to tracked accounts (the Live Balance change's scope), whether stored transactions reach back that far, and the latest few money movements |
+
+## `investments/suggestions`
+
+| Procedure            | Kind  | Auth                 | Description                                                                                                                                                                                              |
+| -------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `suggestBasis`       | query | `portfolioProcedure` | The year's Roth basis rows with Roth contributions and conversions no saved fill has counted yet. Basis is cumulative, so these add onto the stored figures; money out of a Roth account reduces them (c |
+| `suggestPerformance` | query | `portfolioProcedure` | The year's Performance rows with what SimpleFIN has seen that no saved fill has counted yet, added onto the stored figures.                                                                              |
 
 ## `investments/transactions`
 
