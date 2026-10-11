@@ -22,6 +22,7 @@ export function DataSourcesSettings() {
   const { data: freshness } = trpc.settings.getDataFreshness.useQuery();
   const { data: syncStatus } = trpc.sync.getSyncStatus.useQuery();
   const { data: simplefin } = trpc.simplefin.getStatus.useQuery();
+  const { data: secStatus } = trpc.sec.getStatus.useQuery();
   const { data: stats } = trpc.simplefin.getCollectionStats.useQuery(
     undefined,
     { enabled: !!simplefin?.connected },
@@ -54,10 +55,24 @@ export function DataSourcesSettings() {
             warnings: health?.issues.map((i) => i.message),
           }
         : undefined,
+      secFacts: secStatus?.connected
+        ? { lastUpdated: secStatus.lastRun, error: secStatus.lastError }
+        : undefined,
     }).map((s) => [s.source.key, s]),
   );
 
   const details: Partial<Record<DataSourceKey, React.ReactNode>> = {
+    secFacts: secStatus?.connected && (
+      <>
+        Expense ratios and holdings from SEC filings for{" "}
+        {secStatus.fundsWithFacts} funds.
+        {secStatus.standInsToConfirm > 0 &&
+          ` ${secStatus.standInsToConfirm} suggested stand-in${secStatus.standInsToConfirm === 1 ? "" : "s"} to confirm on Benchmarks.`}
+        {secStatus.lastError && (
+          <span className="block text-amber-600">{secStatus.lastError}</span>
+        )}
+      </>
+    ),
     budgetApi: budgetConnected && syncStatus && (
       <>
         {budgetApiServiceLabel(syncStatus.service)} ·{" "}

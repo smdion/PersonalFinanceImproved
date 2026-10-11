@@ -10,6 +10,7 @@ import { reportError } from "@/lib/error-reporting";
 
 let versionInterval: ReturnType<typeof setInterval> | undefined;
 let simplefinInterval: ReturnType<typeof setInterval> | undefined;
+let secInterval: ReturnType<typeof setInterval> | undefined;
 
 export function registerNodeHandlers() {
   process.on("unhandledRejection", (reason) => {
@@ -25,6 +26,7 @@ export function registerNodeHandlers() {
     log("info", "sigterm_received", { message: "Shutting down gracefully" });
     if (versionInterval) clearInterval(versionInterval);
     if (simplefinInterval) clearInterval(simplefinInterval);
+    if (secInterval) clearInterval(secInterval);
     process.exit(0);
   });
 
@@ -48,6 +50,15 @@ export function registerNodeHandlers() {
     runSimplefinDailyCheck();
     simplefinInterval = setInterval(runSimplefinDailyCheck, 60 * 60 * 1000);
   }, 30_000 + simplefinJitterMs);
+
+  // SEC fund facts: hourly check, runs once a week (persisted last-run
+  // marker, so restarts don't re-run it). Its own timer and error handling,
+  // independent of the SimpleFIN sync.
+  const secJitterMs = Math.floor(Math.random() * 55 * 60 * 1000);
+  setTimeout(() => {
+    runSecWeeklyCheck();
+    secInterval = setInterval(runSecWeeklyCheck, 60 * 60 * 1000);
+  }, 60_000 + secJitterMs);
 }
 
 function getBaseUrl(): string {
@@ -138,5 +149,28 @@ async function runSimplefinDailyCheck() {
     } else {
       log("error", "simplefin_daily_failed", { error: String(err) });
     }
+  }
+}
+
+async function runSecWeeklyCheck() {
+  try {
+    const cronSecret = process.env.CRON_SECRET;
+    if (!cronSecret) return;
+    const res = await fetch(`${getBaseUrl()}/api/sec/weekly`, {
+      headers: { "X-Cron-Secret": cronSecret },
+    });
+    const body = await res.json();
+    if (body.ok) {
+      log("info", "sec_weekly_refreshed", {
+        checked: body.checked,
+        updated: body.updated,
+        stoppedBySec: body.stoppedBySec,
+      });
+    } else if (!body.skipped) {
+      log("warn", "sec_weekly_unexpected", { status: res.status });
+    }
+  } catch (err) {
+    if (err instanceof Error) reportError(err, { context: "sec_weekly_check" });
+    else log("error", "sec_weekly_failed", { error: String(err) });
   }
 }

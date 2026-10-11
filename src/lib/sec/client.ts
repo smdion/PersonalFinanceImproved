@@ -170,3 +170,8 @@ export async function fetchExpenseRatio(
   );
   return parser.close();
 }
+
+/** Check SEC accepts this contact: one request for its fund ticker list. Returns how many funds it lists. */
+export async function testSecContact(contact: string): Promise<number> {
+  return (await fetchFundTickers(contact)).size;
+}

@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**378 procedures across 49 routers.**
+**383 procedures across 50 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -418,6 +418,16 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `upsert`                    | mutation | `savingsProcedure`   | of the live pool (contrast with recalculateAllocation/ lockInAllocationPercent, which also write here but derive the value from the live pool instead of taking it directly from the caller).            |
 | `upsertMonth`               | mutation | `savingsProcedure`   | Atomically upsert overrides for ALL goals in a single month (pool-constrained).                                                                                                                          |
 | `upsertMonthRange`          | mutation | `savingsProcedure`   | Atomically upsert overrides for ALL goals across a month range (fill-forward).                                                                                                                           |
+
+## `sec`
+
+| Procedure          | Kind     | Auth                 | Description                                                           |
+| ------------------ | -------- | -------------------- | --------------------------------------------------------------------- |
+| `getStatus`        | query    | `protectedProcedure` | Status for Settings and Data sources. Never returns the contact.      |
+| `refreshNow`       | mutation | `syncProcedure`      | Check every held fund for new filings now (at most every 10 minutes). |
+| `removeConnection` | mutation | `syncProcedure`      | (no description)                                                      |
+| `saveContact`      | mutation | `syncProcedure`      | Check SEC accepts the contact, then store it encrypted.               |
+| `testConnection`   | mutation | `syncProcedure`      | Test the stored contact.                                              |
 
 ## `settings/admin`
 

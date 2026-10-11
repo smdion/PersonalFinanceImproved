@@ -86,6 +86,7 @@ vi.mock("@/lib/trpc", () => ({
         useMutation: () => ({ mutate: vi.fn(), isPending: false }),
       },
     },
+    sec: { getStatus: { useQuery: () => ({ data: { connected: false } }) } },
     tiingo: {
       getStatus: {
         useQuery: () => ({ data: { connected: false, lastSyncedAt: null } }),
@@ -168,6 +169,9 @@ vi.mock("@/components/ui/card", () => ({
   ),
 }));
 
+vi.mock("@/components/settings/integrations-sec", () => ({
+  SecCard: () => <div data-testid="sec-card" />,
+}));
 vi.mock("@/components/settings/integrations-simplefin-investments", () => ({
   SimplefinInvestmentsCard: () => <div data-testid="simplefin-investments" />,
 }));
@@ -227,6 +231,9 @@ describe("IntegrationsSettings", () => {
               useMutation: () => ({ mutate: vi.fn(), isPending: false }),
             },
           },
+        },
+        sec: {
+          getStatus: { useQuery: () => ({ data: { connected: false } }) },
         },
         tiingo: {
           getStatus: {
@@ -448,6 +455,9 @@ describe("IntegrationsSettings", () => {
             useMutation: () => ({ mutate: vi.fn(), isPending: false }),
           },
         },
+        sec: {
+          getStatus: { useQuery: () => ({ data: { connected: false } }) },
+        },
         tiingo: {
           getStatus: {
             useQuery: () => ({
@@ -630,6 +640,9 @@ describe("IntegrationsSettings", () => {
           setActiveBudgetApi: {
             useMutation: () => ({ mutate: vi.fn(), isPending: false }),
           },
+        },
+        sec: {
+          getStatus: { useQuery: () => ({ data: { connected: false } }) },
         },
         tiingo: {
           getStatus: {

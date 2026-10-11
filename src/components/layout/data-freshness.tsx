@@ -16,6 +16,7 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
   const { data } = trpc.settings.getDataFreshness.useQuery();
   const { data: syncStatus } = trpc.sync.getSyncStatus.useQuery();
   const { data: simplefinStatus } = trpc.simplefin.getStatus.useQuery();
+  const { data: secStatus } = trpc.sec.getStatus.useQuery();
   const user = useUser();
   const { data: investmentHealth } = trpc.investments.getHealth.useQuery(
     undefined,
@@ -100,6 +101,9 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
           error: simplefinStatus?.lastError ?? null,
           warnings: investmentHealth?.issues.map((i) => i.message),
         }
+      : undefined,
+    secFacts: secStatus?.connected
+      ? { lastUpdated: secStatus.lastRun, error: secStatus.lastError }
       : undefined,
   });
   const attention = statuses.filter((s) => s.needsAttention);

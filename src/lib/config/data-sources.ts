@@ -27,7 +27,7 @@ export type DataSourceDefinition = {
 };
 
 export type DataSourceKey =
-  "balance" | "performance" | "basis" | "budgetApi" | "simplefin";
+  "balance" | "performance" | "basis" | "budgetApi" | "simplefin" | "secFacts";
 
 export const DATA_SOURCES: readonly DataSourceDefinition[] = [
   {
@@ -68,6 +68,14 @@ export const DATA_SOURCES: readonly DataSourceDefinition[] = [
     mode: "automatic",
     rhythm: { kind: "days", days: 2 },
     rhythmLabel: "Daily",
+    href: "/settings",
+  },
+  {
+    key: "secFacts",
+    label: "Fund facts",
+    mode: "automatic",
+    rhythm: { kind: "days", days: 9 },
+    rhythmLabel: "Weekly",
     href: "/settings",
   },
 ];
