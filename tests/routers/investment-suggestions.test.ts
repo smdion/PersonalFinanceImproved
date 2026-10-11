@@ -350,6 +350,28 @@ describe("investment suggestions", () => {
     expect(s.accounts.every((a) => !a.split)).toBe(true);
   });
 
+  it("counts from the start of the year when a row still holds last year's basis", async () => {
+    const alice2026 = (
+      await ctx.caller.investments.suggestBasis({ year: 2026 })
+    ).accounts.find((a) => a.ownerPersonId === alice)!;
+    expect(alice2026.baseline).toBe("2026-03-01");
+    ctx.db
+      .insert(sqliteSchema.accountBasis)
+      .values({
+        performanceAccountId: alice2026.performanceAccountId,
+        ownerPersonId: alice,
+        year: 2025,
+        contributionBasis: "2000",
+        conversionBasis: "1000",
+        latestConversionYear: 2025,
+      })
+      .run();
+    const again = (
+      await ctx.caller.investments.suggestBasis({ year: 2026 })
+    ).accounts.find((a) => a.ownerPersonId === alice)!;
+    expect(again.baseline).toBe("2025-12-31");
+  });
+
   it("estimates contributions from the paycheck setup for an account with no feed", async () => {
     const db = ctx.db;
     const hsa = seedPerformanceAccount(db, {

@@ -406,25 +406,53 @@ export const investmentSuggestionsRouter = createTRPCRouter({
   suggestBasis: portfolioProcedure
     .input(z.object({ year: z.number().int() }))
     .query(async ({ ctx, input }) => {
-      const [basisRows, coverage, { feeds, subs }, mix, ledger, flows] =
-        await Promise.all([
-          ctx.db
-            .select()
-            .from(schema.accountBasis)
-            .where(
-              and(
-                eq(schema.accountBasis.year, input.year),
-                eq(schema.accountBasis.isFinalized, false),
-              ),
+      const [
+        basisRows,
+        coverage,
+        { feeds, subs },
+        mix,
+        ledger,
+        flows,
+        priorRows,
+      ] = await Promise.all([
+        ctx.db
+          .select()
+          .from(schema.accountBasis)
+          .where(
+            and(
+              eq(schema.accountBasis.year, input.year),
+              eq(schema.accountBasis.isFinalized, false),
             ),
-          getTransactionCoverageStart(ctx.db),
-          loadFeeds(ctx.db),
-          loadContributionMix(ctx.db),
-          loadFillRecord(ctx.db, "basis", input.year),
-          loadYearRows(ctx.db, input.year),
-        ]);
+          ),
+        getTransactionCoverageStart(ctx.db),
+        loadFeeds(ctx.db),
+        loadContributionMix(ctx.db),
+        loadFillRecord(ctx.db, "basis", input.year),
+        loadYearRows(ctx.db, input.year),
+        ctx.db
+          .select()
+          .from(schema.accountBasis)
+          .where(eq(schema.accountBasis.year, input.year - 1)),
+      ]);
       const coverageStart = coverage ? utcDayOf(coverage) : null;
       const perAccount = rowsPerAccount(basisRows);
+      /** Still holding exactly last year's figures: nothing of this year added yet. */
+      const sameAsLastYear = (r: (typeof basisRows)[number]) => {
+        const prior = priorRows.find(
+          (p) =>
+            p.performanceAccountId === r.performanceAccountId &&
+            p.ownerPersonId === r.ownerPersonId,
+        );
+        return (
+          !!prior &&
+          Math.abs(
+            toNumber(prior.contributionBasis) - toNumber(r.contributionBasis),
+          ) < 0.005 &&
+          Math.abs(
+            toNumber(prior.conversionBasis) - toNumber(r.conversionBasis),
+          ) < 0.005
+        );
+      };
       const isRoth = (key: string | null, performanceAccountId: number) => {
         const accountSubs = subs.filter(
           (s) => s.performanceAccountId === performanceAccountId,
@@ -441,10 +469,15 @@ export const investmentSuggestionsRouter = createTRPCRouter({
       };
 
       const accounts = basisRows.map((r) => {
-        // A row carried forward at year end hasn't seen this year's money.
+        // A row carried forward at year end — or saved later but still
+        // holding last year's figures — hasn't seen this year's money.
         const baseline =
           ledger.baselines[r.id] ??
-          initialBaseline(input.year, utcDayOf(r.updatedAt), r.isSeeded);
+          initialBaseline(
+            input.year,
+            utcDayOf(r.updatedAt),
+            r.isSeeded || sameAsLastYear(r),
+          );
         const feed = attributeFeeds(
           r,
           perAccount.get(r.performanceAccountId) ?? 1,

@@ -1145,6 +1145,14 @@ describe("performance router", () => {
       expect(
         row.basisByOwner.map((b: { ownerName: string | null }) => b.ownerName),
       ).toEqual(["Basis Owner", "Basis Spouse"]);
+      // A year with no basis row says so instead of showing $0.
+      const blank = summary.accountRows.find(
+        (r: { performanceAccountId: number | null; year: number }) =>
+          r.performanceAccountId === perfAcctId && r.year === 2023,
+      )!;
+      expect(blank.basisByOwner).toEqual([
+        expect.objectContaining({ recorded: false, contributionBasis: 0 }),
+      ]);
     });
   });
 

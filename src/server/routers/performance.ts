@@ -762,6 +762,7 @@ export const performanceRouter = createTRPCRouter({
                   contributionBasis: "0",
                   conversionBasis: "0",
                   latestConversionYear: null,
+                  recorded: false,
                 },
               ]
             : []
@@ -772,6 +773,8 @@ export const performanceRouter = createTRPCRouter({
           contributionBasis: toNumber(b.contributionBasis),
           conversionBasis: toNumber(b.conversionBasis),
           latestConversionYear: b.latestConversionYear,
+          /** False when there's no basis row for this person and year yet. */
+          recorded: !("recorded" in b),
         }))
         .sort((a, b) => a.ownerPersonId - b.ownerPersonId);
       const sumBasis = (f: "contributionBasis" | "conversionBasis") =>

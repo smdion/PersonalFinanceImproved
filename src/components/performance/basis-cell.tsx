@@ -77,13 +77,20 @@ export function BasisCell({
             ) : editable ? (
               <button
                 type="button"
-                className="rounded px-1 hover:bg-blue-50"
+                className={`rounded px-1 hover:bg-blue-50 ${o.recorded === false ? "text-faint" : ""}`}
+                title={
+                  o.recorded === false
+                    ? "No basis recorded for this year — click to enter it"
+                    : undefined
+                }
                 onClick={() => onStartEdit(key, value)}
               >
-                {formatCurrency(value)}
+                {o.recorded === false ? "not recorded" : formatCurrency(value)}
               </button>
             ) : (
-              <span>{formatCurrency(value)}</span>
+              <span className={o.recorded === false ? "text-faint" : ""}>
+                {o.recorded === false ? "not recorded" : formatCurrency(value)}
+              </span>
             )}
           </div>
         );
