@@ -69,6 +69,7 @@ describe("classifySimplefinTransaction", () => {
       amount: 120,
       ruleId: "fidelity-contribution",
       needsReview: true,
+      redactDescription: false,
     });
   });
 
@@ -133,6 +134,7 @@ describe("classifySimplefinTransaction", () => {
       amount: 7,
       ruleId: null,
       needsReview: true,
+      redactDescription: false,
     });
   });
 
@@ -142,6 +144,19 @@ describe("classifySimplefinTransaction", () => {
       classifySimplefinTransaction("Vanguard", tx("2026-05-01", 500, "CASH"))
         .ruleId,
     ).toBe("vanguard-cash");
+  });
+});
+
+describe("redactDescription", () => {
+  it("flags card spending (health data in an HSA) but not other withdrawals", () => {
+    const r = (inst: string, d: string) =>
+      classifySimplefinTransaction(inst, tx("2026-05-01", -40, d))
+        .redactDescription;
+    expect(
+      r("Fidelity Investments", "DEBIT CARD PURCHASE EXAMPLE CLINIC (Cash)"),
+    ).toBe(true);
+    expect(r("Example Bank", "POS PURCHASE EXAMPLE PHARMACY")).toBe(true);
+    expect(r("Example Bank", "QUALIFIED DISTRIBUTION")).toBe(false);
   });
 });
 

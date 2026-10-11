@@ -49,6 +49,12 @@ export type SimplefinTransactionRule = {
    * For types the feed has been seen to send with a flipped sign.
    */
   absoluteAmount?: boolean;
+  /**
+   * Card spending from an HSA names the merchant — health data. Ingest stores
+   * these as "Medical withdrawal" (amount and date kept) unless the account
+   * is linked to a non-HSA account type.
+   */
+  redactDescription?: boolean;
 };
 
 export const SIMPLEFIN_TRANSACTION_RULES: readonly SimplefinTransactionRule[] =
@@ -111,6 +117,7 @@ export const SIMPLEFIN_TRANSACTION_RULES: readonly SimplefinTransactionRule[] =
       institution: /^Fidelity/i,
       description: /^DEBIT CARD PURCHASE/i,
       kind: "withdrawal",
+      redactDescription: true,
     },
     {
       id: "fidelity-core-account",
@@ -161,9 +168,14 @@ export const SIMPLEFIN_TRANSACTION_RULES: readonly SimplefinTransactionRule[] =
       kind: "contribution",
     },
     {
+      id: "generic-card-purchase",
+      description: /DEBIT CARD|CARD PURCHASE|POS PURCHASE/i,
+      kind: "withdrawal",
+      redactDescription: true,
+    },
+    {
       id: "generic-withdrawal",
-      description:
-        /DISTRIBUTION|WITHDRAWAL|ROLLOVER OUT|TRANSFER OUT|DEBIT CARD/i,
+      description: /DISTRIBUTION|WITHDRAWAL|ROLLOVER OUT|TRANSFER OUT/i,
       kind: "withdrawal",
     },
     {

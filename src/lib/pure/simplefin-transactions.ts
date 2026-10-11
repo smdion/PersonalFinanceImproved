@@ -25,6 +25,8 @@ export type ClassifiedTransaction = {
   amount: number;
   /** Matching rule id, or null when no rule matched. */
   ruleId: string | null;
+  /** The matching rule marks this row's description as health data to redact at ingest. */
+  redactDescription: boolean;
   needsReview: boolean;
 };
 
@@ -67,6 +69,7 @@ export function classifySimplefinTransaction(
       amount: tx.amount,
       ruleId: null,
       needsReview: true,
+      redactDescription: false,
     };
   const kind =
     typeof rule.kind === "string"
@@ -78,7 +81,13 @@ export function classifySimplefinTransaction(
     (rule.reviewWhen === "negative" && tx.amount < 0) ||
     (rule.reviewWhen === "positive" && tx.amount > 0);
   const amount = rule.absoluteAmount ? Math.abs(tx.amount) : tx.amount;
-  return { kind, amount, ruleId: rule.id, needsReview };
+  return {
+    kind,
+    amount,
+    ruleId: rule.id,
+    needsReview,
+    redactDescription: rule.redactDescription === true,
+  };
 }
 
 export type AccountFlowSummary = {
