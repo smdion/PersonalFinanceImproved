@@ -522,6 +522,34 @@ export function NewSnapshotForm({
           )}
         </div>
       )}
+      {suggestions && suggestions.unplaced.length > 0 && (
+        <div className="rounded border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
+          <p className="font-medium">
+            SimpleFIN shows money no part of this snapshot holds:
+          </p>
+          <ul className="mt-0.5 list-disc pl-4">
+            {suggestions.unplaced.map((u) => {
+              const pa = (perfAccounts ?? []).find(
+                (p) => p.id === u.performanceAccountId,
+              );
+              return (
+                <li key={u.feedId}>
+                  {formatCurrency(u.balance)} in {u.name}
+                  {pa && ` (linked to ${accountDisplayName(pa)})`} —{" "}
+                  {u.reason === "part_gone"
+                    ? "it's linked to a part that's no longer in your snapshot."
+                    : "the account has no part for it."}
+                </li>
+              );
+            })}
+          </ul>
+          <p className="mt-1">
+            Add the missing part in Portfolio → Account &amp; Contribution
+            Settings → the account → Sub-accounts, then link it in Settings →
+            Integrations → SimpleFIN.
+          </p>
+        </div>
+      )}
 
       {/* Date + notes */}
       <div className="flex items-end gap-4">

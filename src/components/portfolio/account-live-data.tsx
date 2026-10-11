@@ -184,6 +184,17 @@ export function AccountLiveSection({
             .
           </p>
         )}
+        {insight.unplaced.map((u) => (
+          <p key={u.name} className="mt-0.5 text-amber-700 dark:text-amber-400">
+            {formatCurrency(u.balance)} in {u.name} isn&apos;t held by any part
+            of this account
+            {u.reason === "part_gone"
+              ? " (it's linked to a part no longer in your snapshot)"
+              : ""}
+            , so snapshots leave it out — add the part under Sub-accounts below,
+            then link it in Settings → Integrations.
+          </p>
+        ))}
         {insight.unlinkedParts.length > 0 && (
           <p className="mt-0.5 text-amber-700 dark:text-amber-400">
             Not linked yet: {insight.unlinkedParts.join(", ")} — link them in

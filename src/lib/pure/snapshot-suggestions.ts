@@ -30,6 +30,7 @@ export type SnapshotSub = {
 };
 
 export type SnapshotFeed = {
+  id: number;
   performanceAccountId: number;
   subKey: string | null;
   balance: number;
@@ -61,9 +62,24 @@ export type SnapshotAccountNote = {
   newMoneyEstimated: boolean;
 };
 
+/**
+ * A linked feed whose money no part of the latest snapshot holds — it
+ * would silently go missing from the snapshot. "no_part": the account has
+ * no part left for it (e.g. a Traditional IRA that only holds money on its
+ * way to Roth, after its part was dropped); "part_gone": it's linked to a
+ * part that's no longer in the snapshot.
+ */
+export type UnplacedFeed = {
+  feedId: number;
+  performanceAccountId: number;
+  balance: number;
+  reason: "no_part" | "part_gone";
+};
+
 export type SnapshotSuggestions = {
   amounts: Map<string, number>;
   accounts: Map<number, SnapshotAccountNote>;
+  unplaced: UnplacedFeed[];
 };
 
 const earliest = (days: (string | null)[]) =>
@@ -132,7 +148,23 @@ export function suggestSnapshotAmounts(
 ): SnapshotSuggestions {
   const amounts = new Map<string, number>();
   const notes = new Map<number, SnapshotAccountNote>();
+  const unplaced: UnplacedFeed[] = [];
   const accounts = new Set(subs.map((s) => s.performanceAccountId));
+  const keys = new Set(subs.map((s) => s.key));
+  for (const f of feeds) {
+    const reason = !accounts.has(f.performanceAccountId)
+      ? ("no_part" as const)
+      : f.subKey !== null && !keys.has(f.subKey)
+        ? ("part_gone" as const)
+        : null;
+    if (reason)
+      unplaced.push({
+        feedId: f.id,
+        performanceAccountId: f.performanceAccountId,
+        balance: roundToCents(f.balance),
+        reason,
+      });
+  }
   for (const account of accounts) {
     const accountSubs = subs.filter((s) => s.performanceAccountId === account);
     const accountFeeds = feeds.filter(
@@ -168,6 +200,15 @@ export function suggestSnapshotAmounts(
       for (const [k, v] of r.amounts) amounts.set(k, v);
       placed = r.placed;
       linked.push(...whole);
+    } else if (whole.length > 0) {
+      // Every part already has its own feed: nothing is left to hold this.
+      for (const f of whole)
+        unplaced.push({
+          feedId: f.id,
+          performanceAccountId: account,
+          balance: roundToCents(f.balance),
+          reason: "no_part",
+        });
     }
     if (linked.length === 0) continue;
     notes.set(account, {
@@ -178,5 +219,5 @@ export function suggestSnapshotAmounts(
       newMoneyEstimated: placed !== 0 && (newMoney?.estimated ?? false),
     });
   }
-  return { amounts, accounts: notes };
+  return { amounts, accounts: notes, unplaced };
 }

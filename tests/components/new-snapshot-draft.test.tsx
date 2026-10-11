@@ -105,6 +105,7 @@ describe("NewSnapshotForm fill from SimpleFIN", () => {
           newMoneyEstimated: false,
         },
       ],
+      unplaced: [],
     };
     render(<NewSnapshotForm onClose={vi.fn()} onSaved={vi.fn()} />);
     fireEvent.click(

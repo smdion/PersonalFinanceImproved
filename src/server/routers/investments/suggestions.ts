@@ -28,12 +28,13 @@ import {
 import {
   suggestSnapshotAmounts,
   type NewMoney,
+  type UnplacedFeed,
 } from "@/lib/pure/snapshot-suggestions";
 import { loadLatestSubAccounts } from "@/server/helpers/sub-accounts";
 import { loadContributionMix } from "@/server/helpers/contribution-mix";
 import { loadFillRecord } from "@/server/helpers/fill-ledger";
 import { toNumber } from "@/server/helpers/transforms";
-import { loadClassifiedTransactions } from "./_shared";
+import { loadAccounts, loadClassifiedTransactions } from "./_shared";
 
 type Db = Parameters<typeof loadLatestSubAccounts>[0];
 
@@ -112,6 +113,19 @@ function rowsPerAccount(rows: readonly { performanceAccountId: number }[]) {
   for (const r of rows)
     n.set(r.performanceAccountId, (n.get(r.performanceAccountId) ?? 0) + 1);
   return n;
+}
+
+/** Unplaced feeds with the SimpleFIN account's name, for the warning. */
+export async function namedUnplaced(db: Db, unplaced: readonly UnplacedFeed[]) {
+  if (unplaced.length === 0) return [];
+  const accounts = await loadAccounts(db);
+  return unplaced.map((u) => {
+    const a = accounts.get(u.feedId);
+    return {
+      ...u,
+      name: `${a?.institution ?? ""} ${a?.accountName ?? ""}`.trim(),
+    };
+  });
 }
 
 export const investmentSuggestionsRouter = createTRPCRouter({
@@ -221,7 +235,7 @@ export const investmentSuggestionsRouter = createTRPCRouter({
       return type ? getEmployerMatchSubType(type) : null;
     };
 
-    const { amounts, accounts } = suggestSnapshotAmounts(
+    const { amounts, accounts, unplaced } = suggestSnapshotAmounts(
       subs.map((s) => ({
         key: s.key,
         performanceAccountId: s.performanceAccountId,
@@ -230,6 +244,7 @@ export const investmentSuggestionsRouter = createTRPCRouter({
         amount: s.amount,
       })),
       feeds.map((f) => ({
+        id: f.id,
         performanceAccountId: f.performanceAccountId!,
         subKey: f.subKey,
         balance: toNumber(f.balance),
@@ -246,6 +261,7 @@ export const investmentSuggestionsRouter = createTRPCRouter({
         performanceAccountId,
         ...note,
       })),
+      unplaced: await namedUnplaced(ctx.db, unplaced),
     };
   }),
 

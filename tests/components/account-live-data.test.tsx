@@ -40,6 +40,9 @@ const insight: AccountInsight = {
   live: { total: 1234.5, asOf: "2026-10-10" },
   feeds: [{ id: 9, name: "Example Bank Plan", part: null }],
   unlinkedParts: ["Alice — Roth"],
+  unplaced: [
+    { name: "Example Bank Traditional IRA", balance: 0.19, reason: "no_part" },
+  ],
   mix: { buckets: { ...zero, us_equity: 1000 }, unknown: 0, total: 1000 },
   cost: { expenseRatio: 0.0005, yearlyCost: 0.5, coveredShare: 1 },
   deposits: {

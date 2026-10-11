@@ -127,6 +127,28 @@ describe("simplefin sub-account links", () => {
       .run();
   });
 
+  it("says which part is missing when a Traditional IRA has nowhere to go", async () => {
+    const id = ctx.db
+      .insert(sqliteSchema.simplefinAccounts)
+      .values({
+        externalAccountId: "sf-trad",
+        orgName: "Example Bank",
+        accountName: "Traditional IRA Brokerage Account",
+        lastBalance: "0.19",
+        linkedPerformanceAccountId: ira,
+      })
+      .returning()
+      .get().id;
+    const row = (await ctx.caller.simplefin.listAccounts()).find(
+      (r) => r.id === id,
+    );
+    expect(row?.missingPart).toMatch(/traditional/i);
+    ctx.db
+      .delete(sqliteSchema.simplefinAccounts)
+      .where(eq(sqliteSchema.simplefinAccounts.id, id))
+      .run();
+  });
+
   it("rejects a sub-account that isn't in the latest snapshot", async () => {
     await expect(
       ctx.caller.simplefin.setAccountMapping({

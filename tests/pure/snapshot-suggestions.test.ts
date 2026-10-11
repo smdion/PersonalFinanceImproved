@@ -24,6 +24,7 @@ describe("suggestSnapshotAmounts", () => {
   it("uses a sub-account link's balance as is", () => {
     const s = suggestSnapshotAmounts(subs, [
       {
+        id: 1,
         performanceAccountId: 1,
         subKey: "roth",
         balance: 320,
@@ -42,12 +43,14 @@ describe("suggestSnapshotAmounts", () => {
   it("spreads a whole-account balance's change by the last snapshot without contribution data", () => {
     const s = suggestSnapshotAmounts(subs, [
       {
+        id: 2,
         performanceAccountId: 1,
         subKey: null,
         balance: 800,
         balanceDate: null,
       },
       {
+        id: 3,
         performanceAccountId: 2,
         subKey: null,
         balance: 55.55,
@@ -65,16 +68,77 @@ describe("suggestSnapshotAmounts", () => {
   it("gives a whole-account link only the sub-accounts not linked on their own", () => {
     const s = suggestSnapshotAmounts(subs, [
       {
+        id: 4,
         performanceAccountId: 1,
         subKey: "roth",
         balance: 320,
         balanceDate: null,
       },
-      { performanceAccountId: 1, subKey: null, balance: 90, balanceDate: null },
+      {
+        id: 5,
+        performanceAccountId: 1,
+        subKey: null,
+        balance: 90,
+        balanceDate: null,
+      },
     ]);
     expect(s.amounts.get("roth")).toBe(320);
     expect(s.amounts.get("trad")).toBe(90);
     expect(s.accounts.get(1)?.total).toBe(410);
+  });
+});
+
+describe("unplaced money", () => {
+  it("flags a whole-account feed when every part already has its own feed", () => {
+    const s = suggestSnapshotAmounts(subs, [
+      {
+        id: 1,
+        performanceAccountId: 1,
+        subKey: "roth",
+        balance: 320,
+        balanceDate: null,
+      },
+      {
+        id: 2,
+        performanceAccountId: 1,
+        subKey: "trad",
+        balance: 90,
+        balanceDate: null,
+      },
+      {
+        id: 3,
+        performanceAccountId: 1,
+        subKey: null,
+        balance: 0.19,
+        balanceDate: null,
+      },
+    ]);
+    expect(s.unplaced).toEqual([
+      { feedId: 3, performanceAccountId: 1, balance: 0.19, reason: "no_part" },
+    ]);
+  });
+
+  it("flags a link to a part that left the snapshot, and an account with no parts", () => {
+    const s = suggestSnapshotAmounts(subs, [
+      {
+        id: 4,
+        performanceAccountId: 1,
+        subKey: "gone",
+        balance: 5,
+        balanceDate: null,
+      },
+      {
+        id: 5,
+        performanceAccountId: 9,
+        subKey: null,
+        balance: 7,
+        balanceDate: null,
+      },
+    ]);
+    expect(s.unplaced.map((u) => [u.feedId, u.reason])).toEqual([
+      [4, "part_gone"],
+      [5, "no_part"],
+    ]);
   });
 });
 

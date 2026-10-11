@@ -50,6 +50,8 @@ import {
 import { redactStoredCardSpending } from "@/lib/simplefin/ingest";
 import { loadLatestSubAccounts } from "@/server/helpers/sub-accounts";
 import { suggestLinks } from "@/lib/pure/simplefin-link-suggestions";
+import { recogniseAccountKind } from "@/lib/config/simplefin-account-kinds";
+import { taxTypeLabel } from "@/lib/utils/colors";
 import { readMaybeEncrypted } from "@/lib/crypto";
 import { summarizeBalanceDates } from "@/lib/pure/balance-dates";
 import type { SimplefinConfig } from "@/lib/simplefin/sync";
@@ -169,7 +171,24 @@ async function linkContext(
       });
     }
   }
-  return { subByKey, suggestions };
+  // A whole-account link whose name states a tax treatment the tracked
+  // account has no part for (e.g. a Traditional IRA that only holds money
+  // on its way to Roth, after its part was dropped from the snapshot): its
+  // money has nowhere to go, so say which part to add.
+  const missingParts = new Map<number, string>();
+  for (const r of rows) {
+    if (r.linkedPerformanceAccountId == null || r.linkedSubKey) continue;
+    if (suggestions.has(r.id)) continue;
+    const kind = recogniseAccountKind(r.accountName);
+    if (!kind?.taxType) continue;
+    const has = subs.some(
+      (sub) =>
+        sub.performanceAccountId === r.linkedPerformanceAccountId &&
+        sub.taxType === kind.taxType,
+    );
+    if (!has) missingParts.set(r.id, taxTypeLabel(kind.taxType));
+  }
+  return { subByKey, suggestions, missingParts };
 }
 
 export const simplefinRouter = createTRPCRouter({
@@ -440,6 +459,8 @@ export const simplefinRouter = createTRPCRouter({
           !!r.linkedSubKey &&
           !links.subByKey.has(r.linkedSubKey),
         suggestion: links.suggestions.get(r.id) ?? null,
+        /** Tax treatment (label) of a part this account needs but the tracked account lacks. */
+        missingPart: links.missingParts.get(r.id) ?? null,
         snapshotDate,
       };
       if (r.linkedPerformanceAccountId == null) {

@@ -11,7 +11,12 @@ import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useInlineNumberEdit } from "@/lib/hooks/use-inline-number-edit";
-import { formatCurrency, formatDate } from "@/lib/utils/format";
+import {
+  accountDisplayName,
+  formatCurrency,
+  formatDate,
+} from "@/lib/utils/format";
+import { findBasisGaps } from "@/lib/pure/basis-consistency";
 import {
   PERF_CATEGORY_PORTFOLIO,
   accountTypeToPerformanceCategory,
@@ -434,6 +439,39 @@ export function PerformanceContent() {
     if (match) setSelectedAccountIds(new Set(match.ids));
   };
 
+  const basisGaps = findBasisGaps(
+    accountRows
+      .filter(
+        (a) => a.performanceAccountId !== null && a.conversionBasis !== null,
+      )
+      .map((a) => ({
+        performanceAccountId: a.performanceAccountId!,
+        ownerPersonId: a.ownerPersonId,
+        year: a.year,
+        conversionBasis: a.conversionBasis!,
+        latestConversionYear: a.latestConversionYear,
+      })),
+  );
+  const basisGapLabel = (g: (typeof basisGaps)[number]) => {
+    const a = accountRows.find(
+      (r) =>
+        r.performanceAccountId === g.performanceAccountId &&
+        r.ownerPersonId === g.ownerPersonId,
+    );
+    return a
+      ? accountDisplayName(
+          {
+            institution: a.institution,
+            // lint-violation-ok: passing accountLabel into the blessed accountDisplayName helper, not rendering it directly
+            accountLabel: a.accountLabel,
+            accountType: a.accountType ?? undefined,
+            ownershipType: a.ownershipType,
+          },
+          a.ownerName ?? undefined,
+        )
+      : "An account";
+  };
+
   return (
     <div>
       <PageHeader
@@ -492,6 +530,21 @@ export function PerformanceContent() {
           totals={lifetimeTotals}
           snapshotDate={lastSnapshotDate}
         />
+      )}
+
+      {/* Roth conversion basis entered on a later year but not its own */}
+      {basisGaps.length > 0 && (
+        <div className="mb-3 rounded-md border border-amber-400/60 bg-amber-50/40 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/20 dark:text-amber-300">
+          {basisGaps.map((g) => (
+            <p key={`${g.performanceAccountId}-${g.ownerPersonId}-${g.year}`}>
+              {basisGapLabel(g)}: {g.year} conversion basis is{" "}
+              {formatCurrency(g.recorded)}, but {g.fromYear} says the latest
+              conversion was in {g.year} with {formatCurrency(g.expected)} —{" "}
+              {g.year}&apos;s row is probably missing it. Turn on the Basis
+              columns and check {g.year}.
+            </p>
+          ))}
+        </div>
       )}
 
       {/* Ending balance consistency warning */}

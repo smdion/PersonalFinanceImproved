@@ -11,6 +11,7 @@ import { utcDayOf } from "@/lib/simplefin/ingest";
 import { roundToCents } from "@/lib/utils/math";
 import { blendedCost, portfolioBuckets } from "@/lib/pure/fund-facts";
 import { checkDeposits } from "@/lib/pure/deposit-check";
+import { suggestSnapshotAmounts } from "@/lib/pure/snapshot-suggestions";
 import { loadLatestSubAccounts } from "@/server/helpers/sub-accounts";
 import { loadContributionMix } from "@/server/helpers/contribution-mix";
 import { toNumber } from "@/server/helpers/transforms";
@@ -55,6 +56,22 @@ export const investmentAccountInsightsRouter = createTRPCRouter({
       valueHoldings(ctx.db, holdings),
     ]);
     const sending = new Set(recent.map((r) => r.id));
+    const { unplaced } = suggestSnapshotAmounts(
+      subs.map((s) => ({
+        key: s.key,
+        performanceAccountId: s.performanceAccountId,
+        taxType: s.taxType,
+        subType: s.subType,
+        amount: s.amount,
+      })),
+      feeds.map((f) => ({
+        id: f.id,
+        performanceAccountId: f.performanceAccountId!,
+        subKey: f.subKey,
+        balance: toNumber(f.balance),
+        balanceDate: null,
+      })),
+    );
     const subByKey = new Map(subs.map((s) => [s.key, s]));
     const perfIds = new Set([
       ...feeds.map((f) => f.performanceAccountId!),
@@ -123,6 +140,17 @@ export const investmentAccountInsightsRouter = createTRPCRouter({
             : accountSubs
                 .filter((s) => !mine.some((f) => f.subKey === s.key))
                 .map((s) => s.label),
+        /** Feeds whose money no part of the latest snapshot holds. */
+        unplaced: unplaced
+          .filter((u) => u.performanceAccountId === performanceAccountId)
+          .map((u) => {
+            const a = accounts.get(u.feedId);
+            return {
+              name: `${a?.institution ?? ""} ${a?.accountName ?? ""}`.trim(),
+              balance: u.balance,
+              reason: u.reason,
+            };
+          }),
         mix: { buckets, unknown, total },
         cost: blendedCost(accountHoldings),
         deposits: checkDeposits(

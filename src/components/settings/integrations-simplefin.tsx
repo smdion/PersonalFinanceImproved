@@ -26,6 +26,8 @@ type SimplefinAccountListItem = {
     subKey: string | null;
     label: string;
   } | null;
+  /** Tax treatment of a part this account needs but the tracked account lacks. */
+  missingPart?: string | null;
   snapshotBalance: number | null;
   change: number | null;
 };
@@ -137,6 +139,16 @@ function AccountRow({
           The sub-account this was linked to isn&apos;t in your latest snapshot
           (changed or deactivated) — counted for the whole account until you
           pick another.
+        </p>
+      )}
+      {account.missingPart && (
+        <p className="text-caption mt-0.5 pl-6 text-amber-600">
+          This looks like a {account.missingPart} account, but the tracked
+          account has no {account.missingPart} part in your latest snapshot, so
+          its money isn&apos;t counted anywhere. Add the part in Portfolio →
+          Account &amp; Contribution Settings → the account → Sub-accounts (one
+          per person, if it&apos;s tracked per person); a link suggestion
+          appears here after.
         </p>
       )}
       {account.suggestion && (
