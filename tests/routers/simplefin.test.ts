@@ -555,7 +555,48 @@ describe("simplefin router", () => {
               voidedAt: voided ? new Date() : null,
             })
             .run();
-        expect(await ctx.caller.simplefin.getCollectionStats()).toMatchObject({
+        const other = ctx.db
+          .insert(sqliteSchema.simplefinAccounts)
+          .values({
+            externalAccountId: "sf-2",
+            orgName: "Example Bank",
+            accountName: "Example Brokerage",
+            lastBalance: "1000",
+          })
+          .returning()
+          .get().id;
+        const laterPlan = ctx.db
+          .insert(sqliteSchema.simplefinAccounts)
+          .values({
+            externalAccountId: "sf-3",
+            orgName: "Example Plan Co",
+            accountName: "Example 401k",
+            lastBalance: "1000",
+          })
+          .returning()
+          .get().id;
+        for (const [id, iso] of [
+          [account, "2026-05-08T12:00:00Z"],
+          [account, "2026-05-10T12:00:00Z"],
+          [other, "2026-05-07T12:00:00Z"], // lags its sibling
+          [laterPlan, "2026-05-09T12:00:00Z"],
+        ] as const)
+          ctx.db
+            .insert(sqliteSchema.simplefinAccountBalances)
+            .values({
+              simplefinAccountId: id,
+              balanceDate: new Date(iso),
+              balance: "1000",
+            })
+            .run();
+        const stats = await ctx.caller.simplefin.getCollectionStats();
+        expect(
+          stats.dataAsOf.map((d) => [d.institution, d.asOf.toISOString()]),
+        ).toEqual([
+          ["Example Bank", "2026-05-07T12:00:00.000Z"],
+          ["Example Plan Co", "2026-05-09T12:00:00.000Z"],
+        ]);
+        expect(stats).toMatchObject({
           holdings: 1,
           holdingsAsOf: "2026-05-15",
           transactions: 1,

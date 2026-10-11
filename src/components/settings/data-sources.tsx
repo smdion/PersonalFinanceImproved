@@ -81,6 +81,17 @@ export function DataSourcesSettings() {
               ` since ${formatDate(stats.oldestTransaction, "medium")}`}
             . Requests in the last 24 h: {stats.requestsLastDay} of{" "}
             {stats.dailyRequestLimit}.
+            {stats.dataAsOf.length > 0 && (
+              <span className="block">
+                Data as of:{" "}
+                {stats.dataAsOf
+                  .map(
+                    (d) =>
+                      `${d.institution} ${formatDate(new Date(d.asOf), "medium").replace(`, ${new Date().getFullYear()}`, "")}`,
+                  )
+                  .join(" · ")}
+              </span>
+            )}
           </>
         )}
         {simplefin.lastError && (

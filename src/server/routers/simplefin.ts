@@ -52,6 +52,13 @@ import type { AccountCategory } from "@/lib/config/account-types.types";
 import type { PortfolioTaxType } from "@/lib/config/enum-values";
 import { TRPCError } from "@trpc/server";
 
+/** A raw `max()` of a timestamp column: a Date on Postgres, seconds on SQLite. */
+function toDate(value: Date | string | number): Date {
+  if (value instanceof Date) return value;
+  if (typeof value === "number") return new Date(value * 1000);
+  return new Date(value);
+}
+
 export const simplefinRouter = createTRPCRouter({
   /** Claim a one-time setup token and store the resulting access URL. */
   saveToken: syncProcedure
@@ -146,26 +153,55 @@ export const simplefinRouter = createTRPCRouter({
   getCollectionStats: protectedProcedure.query(async ({ ctx }) => {
     const h = schema.holdingObservations;
     const t = schema.investmentTransactions;
-    const [holdingRows, txStats, requestsLastDay] = await Promise.all([
-      ctx.db
-        .select({
-          accountId: h.simplefinAccountId,
-          securityId: h.securityId,
-          asOf: h.asOf,
-          shares: h.shares,
-        })
-        .from(h)
-        .where(isNotNull(h.simplefinAccountId)),
-      ctx.db
-        .select({
-          count: sql<number>`count(*)`,
-          accounts: sql<number>`count(distinct ${t.simplefinAccountId})`,
-          oldest: sql<string | null>`min(${t.posted})`,
-        })
-        .from(t)
-        .where(isNull(t.voidedAt)),
-      countSimplefinRequestsLastDay(ctx.db),
-    ]);
+    const [holdingRows, txStats, requestsLastDay, balanceRows] =
+      await Promise.all([
+        ctx.db
+          .select({
+            accountId: h.simplefinAccountId,
+            securityId: h.securityId,
+            asOf: h.asOf,
+            shares: h.shares,
+          })
+          .from(h)
+          .where(isNotNull(h.simplefinAccountId)),
+        ctx.db
+          .select({
+            count: sql<number>`count(*)`,
+            accounts: sql<number>`count(distinct ${t.simplefinAccountId})`,
+            oldest: sql<string | null>`min(${t.posted})`,
+          })
+          .from(t)
+          .where(isNull(t.voidedAt)),
+        countSimplefinRequestsLastDay(ctx.db),
+        ctx.db
+          .select({
+            orgName: schema.simplefinAccounts.orgName,
+            accountId: schema.simplefinAccountBalances.simplefinAccountId,
+            latest: sql<
+              Date | string | number
+            >`max(${schema.simplefinAccountBalances.balanceDate})`,
+          })
+          .from(schema.simplefinAccountBalances)
+          .innerJoin(
+            schema.simplefinAccounts,
+            eq(
+              schema.simplefinAccounts.id,
+              schema.simplefinAccountBalances.simplefinAccountId,
+            ),
+          )
+          .groupBy(
+            schema.simplefinAccounts.orgName,
+            schema.simplefinAccountBalances.simplefinAccountId,
+          ),
+      ]);
+    // Per institution: the oldest of its accounts' latest balance dates, so
+    // one account lagging behind its siblings isn't hidden.
+    const dataAsOfByOrg = new Map<string, Date>();
+    for (const r of balanceRows) {
+      const latest = toDate(r.latest);
+      const prev = dataAsOfByOrg.get(r.orgName);
+      if (!prev || latest < prev) dataAsOfByOrg.set(r.orgName, latest);
+    }
     // Latest row per (account, fund); a fund whose latest row is 0 shares was sold.
     const latest = new Map<string, { asOf: string; shares: number }>();
     for (const r of holdingRows) {
@@ -186,6 +222,10 @@ export const simplefinRouter = createTRPCRouter({
       oldestTransaction: txStats[0]?.oldest ?? null,
       requestsLastDay,
       dailyRequestLimit: SIMPLEFIN_DAILY_REQUEST_LIMIT,
+      /** Oldest first — the institution furthest behind leads. */
+      dataAsOf: [...dataAsOfByOrg.entries()]
+        .map(([institution, asOf]) => ({ institution, asOf }))
+        .sort((a, b) => a.asOf.getTime() - b.asOf.getTime()),
     };
   }),
 
