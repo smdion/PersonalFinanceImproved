@@ -14,6 +14,7 @@ import {
   formatCurrency,
   formatDate,
   formatNumber,
+  formatPercent,
   isPrivacyMode,
   maskAmountsInText,
 } from "@/lib/utils/format";
@@ -23,6 +24,8 @@ import {
   type InvestmentTransactionKind,
 } from "@/lib/config/enum-values";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
+import { TickerLink } from "@/components/investments/ticker-link";
+import { safeDivide } from "@/lib/utils/math";
 
 const KIND_OPTIONS = INVESTMENT_TRANSACTION_KIND_VALUES.map((k) => ({
   value: k,
@@ -246,39 +249,78 @@ function Holdings() {
     ]);
   }
   return (
-    <div className="space-y-3">
-      {[...groups.entries()].map(([accountId, rows]) => (
-        <div key={accountId}>
-          <p className="text-muted mb-1 text-xs font-medium">
-            {`${rows[0]!.institution} ${rows[0]!.accountName}`.trim()}{" "}
-            <span className="text-faint font-normal">
-              · as of {formatDate(rows[0]!.asOf, "medium")}
-            </span>
-          </p>
-          <table className="w-full text-xs">
-            <tbody>
-              {rows.map((h) => (
-                <tr key={`${h.symbol}-${h.name}`}>
-                  <td className="text-primary py-0.5 pr-2">
-                    {h.symbol && (
-                      <span className="mr-1 font-mono">{h.symbol}</span>
-                    )}
-                    <span className="text-muted">{h.name}</span>
-                  </td>
-                  <td className="text-muted py-0.5 pr-2 text-right whitespace-nowrap">
-                    {privacy ? "•••• sh" : `${formatNumber(h.shares, 3)} sh`}
-                  </td>
-                  <td className="text-primary py-0.5 text-right whitespace-nowrap">
-                    {h.reportedMarketValue === null
-                      ? "—"
-                      : formatCurrency(h.reportedMarketValue)}
-                  </td>
-                </tr>
-              ))}
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[32rem] text-xs tabular-nums">
+        <colgroup>
+          <col />
+          <col className="w-28" />
+          <col className="w-28" />
+          <col className="w-16" />
+        </colgroup>
+        <thead>
+          <tr className="text-faint border-subtle border-b text-left">
+            <th className="py-1 pr-2 font-medium">Fund</th>
+            <th className="py-1 pr-2 text-right font-medium">Shares</th>
+            <th className="py-1 pr-2 text-right font-medium">Value</th>
+            <th className="py-1 text-right font-medium">Of account</th>
+          </tr>
+        </thead>
+        {[...groups.entries()].map(([accountId, rows]) => {
+          const total = rows.reduce(
+            (t, h) => t + (h.reportedMarketValue ?? 0),
+            0,
+          );
+          return (
+            <tbody key={accountId}>
+              <tr>
+                <td
+                  colSpan={2}
+                  className="text-primary pt-3 pr-2 pb-1 font-medium"
+                >
+                  {`${rows[0]!.institution} ${rows[0]!.accountName}`.trim()}
+                  <span className="text-faint font-normal">
+                    {" "}
+                    · as of {formatDate(rows[0]!.asOf, "medium")}
+                  </span>
+                </td>
+                <td className="text-primary pt-3 pr-2 pb-1 text-right font-medium whitespace-nowrap">
+                  {formatCurrency(total)}
+                </td>
+                <td />
+              </tr>
+              {rows.map((h) => {
+                return (
+                  <tr
+                    key={`${h.symbol}-${h.name}`}
+                    className="border-subtle border-b last:border-b-0"
+                  >
+                    <td className="py-1 pr-2 pl-3">
+                      {h.symbol && <TickerLink symbol={h.symbol} />}
+                      <span className="text-muted">{h.name}</span>
+                    </td>
+                    <td className="text-muted py-1 pr-2 text-right whitespace-nowrap">
+                      {privacy ? "••••" : formatNumber(h.shares, 3)}
+                    </td>
+                    <td className="text-primary py-1 pr-2 text-right whitespace-nowrap">
+                      {h.reportedMarketValue === null
+                        ? "—"
+                        : formatCurrency(h.reportedMarketValue)}
+                    </td>
+                    <td className="text-faint py-1 text-right whitespace-nowrap">
+                      {h.reportedMarketValue === null || total <= 0
+                        ? "—"
+                        : formatPercent(
+                            safeDivide(h.reportedMarketValue, total),
+                            0,
+                          )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
-          </table>
-        </div>
-      ))}
+          );
+        })}
+      </table>
     </div>
   );
 }

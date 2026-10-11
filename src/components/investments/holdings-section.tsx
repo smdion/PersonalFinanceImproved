@@ -5,6 +5,7 @@
  * your target, and what it costs. Holdings from SimpleFIN, priced at
  * today's close (Tiingo); fund facts from SEC filings or your own entries.
  */
+import { TickerLink } from "./ticker-link";
 import { useState } from "react";
 import { trpc, type RouterOutputs } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
@@ -245,9 +246,7 @@ function HoldingRow({ h }: { h: Holding }) {
     <div className="border-subtle border-b py-1.5 text-xs last:border-0">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <div className="min-w-0 flex-1">
-          {h.symbol && (
-            <span className="text-primary mr-1 font-mono">{h.symbol}</span>
-          )}
+          {h.symbol && <TickerLink symbol={h.symbol} />}
           <span className="text-muted">{h.name}</span>
         </div>
         <MixBar facts={h.facts} />
