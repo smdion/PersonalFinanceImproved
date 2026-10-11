@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**387 procedures across 51 routers.**
+**389 procedures across 51 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -148,13 +148,15 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `investments/fund-facts`
 
-| Procedure              | Kind     | Auth                 | Description                                                                                    |
-| ---------------------- | -------- | -------------------- | ---------------------------------------------------------------------------------------------- |
-| `confirmStandIn`       | mutation | `portfolioProcedure` | Use the suggested stand-in's SEC filings for this fund, and fetch them now.                    |
-| `getHoldingsOverview`  | query    | `portfolioProcedure` | Holdings valued today, with each fund's facts; allocation vs target; blended cost.             |
-| `rejectStandIn`        | mutation | `portfolioProcedure` | No registered fund fits: stop suggesting one (enter facts instead).                            |
-| `setCompositionBucket` | mutation | `portfolioProcedure` | Which composition bucket an asset class receives (null = none).                                |
-| `setUserFacts`         | mutation | `portfolioProcedure` | The household's own expense ratio and/or mix for a fund (e.g. from the plan's fee disclosure). |
+| Procedure              | Kind     | Auth                 | Description                                                                                                                                                                   |
+| ---------------------- | -------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `clearUserFacts`       | mutation | `portfolioProcedure` | Remove your own expense ratio or mix for a fund, going back to SEC's (or none).                                                                                               |
+| `confirmStandIn`       | mutation | `portfolioProcedure` | Use the suggested stand-in's SEC filings for this fund, and fetch them now.                                                                                                   |
+| `findStandIn`          | mutation | `portfolioProcedure` | After "Not a match": look for a stand-in again (asks SEC now).                                                                                                                |
+| `getHoldingsOverview`  | query    | `portfolioProcedure` | Holdings valued today, with each fund's facts; allocation vs target; blended cost.                                                                                            |
+| `rejectStandIn`        | mutation | `portfolioProcedure` | Stop using a stand-in (suggested or already confirmed): no registered fund fits. Facts that came from it are removed and it isn't suggested again; your own entries are kept. |
+| `setCompositionBucket` | mutation | `portfolioProcedure` | Which composition bucket an asset class receives (null = none).                                                                                                               |
+| `setUserFacts`         | mutation | `portfolioProcedure` | The household's own expense ratio and/or mix for a fund (e.g. from the plan's fee disclosure).                                                                                |
 
 ## `investments/health`
 

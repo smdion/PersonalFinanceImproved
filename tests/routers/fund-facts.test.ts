@@ -179,11 +179,24 @@ describe("fund facts", () => {
     expect(s.standinConfirmedAt).not.toBeNull();
   });
 
-  it("records 'not a match' so the stand-in isn't suggested again", async () => {
+  it("stopping a stand-in removes its facts, keeps the household's, and isn't re-suggested", async () => {
     ctx.db
-      .update(sqliteSchema.securities)
-      .set({ standinConfirmedAt: null })
-      .where(eq(sqliteSchema.securities.id, id.plan!))
+      .insert(sqliteSchema.securityFacts)
+      .values([
+        {
+          securityId: id.plan!,
+          source: "sec_ncsr",
+          asOf: "2026-05-01",
+          expenseRatio: "0.003000",
+          secSeriesId: "S9",
+        },
+        {
+          securityId: id.plan!,
+          source: "user",
+          asOf: "2026-01-02",
+          expenseRatio: "0.000500",
+        },
+      ])
       .run();
     await ctx.caller.investments.rejectStandIn({ securityId: id.plan! });
     const s = ctx.db
@@ -191,7 +204,31 @@ describe("fund facts", () => {
       .from(sqliteSchema.securities)
       .where(eq(sqliteSchema.securities.id, id.plan!))
       .get()!;
-    expect(s).toMatchObject({ factsBasis: "none", factsSeriesId: null });
+    expect(s).toMatchObject({
+      factsBasis: "none",
+      factsSeriesId: null,
+      standinConfirmedAt: null,
+    });
+    const left = ctx.db
+      .select()
+      .from(sqliteSchema.securityFacts)
+      .where(eq(sqliteSchema.securityFacts.securityId, id.plan!))
+      .all();
+    expect(left.map((r) => r.source)).toEqual(["user"]);
+  });
+
+  it("can look for a stand-in again after 'not a match'", async () => {
+    const r = await ctx.caller.investments.findStandIn({
+      securityId: id.plan!,
+    });
+    expect(syncCalls.ids.at(-1)).toEqual([id.plan]);
+    expect(r.stoppedBySec).toBe(false);
+    const s = ctx.db
+      .select()
+      .from(sqliteSchema.securities)
+      .where(eq(sqliteSchema.securities.id, id.plan!))
+      .get()!;
+    expect(s.factsBasis).toBeNull();
   });
 
   it("takes the household's own facts, and rejects a mix that doesn't add up", async () => {
@@ -213,6 +250,37 @@ describe("fund facts", () => {
       fromUser: true,
     });
     expect(o.allocation.unknown).toBeCloseTo(0);
+  });
+
+  it("entering only a fee keeps the household's mix, and each part can be cleared", async () => {
+    await ctx.caller.investments.setUserFacts({
+      securityId: id.plan!,
+      expenseRatio: 0.0007,
+    });
+    let plan = (
+      await ctx.caller.investments.getHoldingsOverview()
+    ).accounts[0]!.holdings.find((r) => r.securityId === id.plan)!;
+    expect(plan.facts.expenseRatio?.value).toBeCloseTo(0.0007);
+    expect(plan.facts.composition?.fromUser).toBe(true);
+    await ctx.caller.investments.clearUserFacts({
+      securityId: id.plan!,
+      part: "expenseRatio",
+    });
+    plan = (
+      await ctx.caller.investments.getHoldingsOverview()
+    ).accounts[0]!.holdings.find((r) => r.securityId === id.plan)!;
+    expect(plan.facts.expenseRatio).toBeNull();
+    expect(plan.facts.composition?.fromUser).toBe(true);
+    await ctx.caller.investments.clearUserFacts({
+      securityId: id.plan!,
+      part: "composition",
+    });
+    const rows = ctx.db
+      .select()
+      .from(sqliteSchema.securityFacts)
+      .where(eq(sqliteSchema.securityFacts.securityId, id.plan!))
+      .all();
+    expect(rows.filter((r) => r.source === "user")).toHaveLength(0);
   });
 
   it("links a bucket to one asset class at a time", async () => {

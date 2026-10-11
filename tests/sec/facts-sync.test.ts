@@ -110,7 +110,15 @@ vi.mock("@/lib/sec/client", async () => {
         holdings: [holding("Example Intl Corp", 100, { invCountry: "JP" })],
       };
     }),
-    fetchExpenseRatio: vi.fn(async () => 0.0012),
+    fetchExpenseRatios: vi.fn(
+      async () =>
+        new Map([
+          ["C1", 0.0012],
+          ["C3", 0.0011],
+          ["C4", 0.0035], // the stand-in's retail class
+          ["C5", 0.0009], // its cheaper class
+        ]),
+    ),
   };
 });
 

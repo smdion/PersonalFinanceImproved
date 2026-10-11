@@ -5,7 +5,7 @@
  * portfolioProcedure throughout — holdings, values and allocation.
  */
 import { z } from "zod/v4";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, isNull, ne } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, portfolioProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
@@ -214,12 +214,16 @@ export const investmentFundFactsRouter = createTRPCRouter({
       return { fetched: summary.updated, stoppedBySec: summary.stoppedBySec };
     }),
 
-  /** No registered fund fits: stop suggesting one (enter facts instead). */
+  /**
+   * Stop using a stand-in (suggested or already confirmed): no registered
+   * fund fits. Facts that came from it are removed and it isn't suggested
+   * again; your own entries are kept.
+   */
   rejectStandIn: portfolioProcedure
     .input(z.object({ securityId: z.number().int() }))
     .mutation(async ({ ctx, input }) => {
       const s = schema.securities;
-      await ctx.db
+      const updated = await ctx.db
         .update(s)
         .set({
           factsBasis: "none",
@@ -228,7 +232,74 @@ export const investmentFundFactsRouter = createTRPCRouter({
           factsSeriesName: null,
           standinConfirmedAt: null,
         })
-        .where(and(eq(s.id, input.securityId), eq(s.factsBasis, "standin")));
+        .where(and(eq(s.id, input.securityId), eq(s.factsBasis, "standin")))
+        .returning({ id: s.id });
+      if (updated.length > 0) {
+        const f = schema.securityFacts;
+        await ctx.db
+          .delete(f)
+          .where(and(eq(f.securityId, input.securityId), ne(f.source, "user")));
+      }
+      return { ok: true as const };
+    }),
+
+  /** After "Not a match": look for a stand-in again (asks SEC now). */
+  findStandIn: portfolioProcedure
+    .input(z.object({ securityId: z.number().int() }))
+    .mutation(async ({ ctx, input }) => {
+      const s = schema.securities;
+      await ctx.db
+        .update(s)
+        .set({ factsBasis: null, factsCheckedAt: null })
+        .where(and(eq(s.id, input.securityId), eq(s.factsBasis, "none")));
+      const summary = await syncSecurityFacts(ctx.db, {
+        securityIds: [input.securityId],
+      });
+      const [after] = await ctx.db
+        .select({ name: s.factsSeriesName })
+        .from(s)
+        .where(eq(s.id, input.securityId));
+      return {
+        suggestion: after?.name ?? null,
+        stoppedBySec: summary.stoppedBySec,
+      };
+    }),
+
+  /** Remove your own expense ratio or mix for a fund, going back to SEC's (or none). */
+  clearUserFacts: portfolioProcedure
+    .input(
+      z.object({
+        securityId: z.number().int(),
+        part: z.enum(["expenseRatio", "composition"]),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const f = schema.securityFacts;
+      const mine = and(
+        eq(f.securityId, input.securityId),
+        eq(f.source, "user"),
+      );
+      await ctx.db
+        .update(f)
+        .set(
+          input.part === "expenseRatio"
+            ? { expenseRatio: null }
+            : {
+                usEquityPct: null,
+                intlEquityPct: null,
+                usBondPct: null,
+                intlBondPct: null,
+                tipsPct: null,
+                cashPct: null,
+                otherPct: null,
+                coverage: null,
+              },
+        )
+        .where(mine);
+      // Rows left with nothing in them go away.
+      await ctx.db
+        .delete(f)
+        .where(and(mine, isNull(f.expenseRatio), isNull(f.coverage)));
       return { ok: true as const };
     }),
 
@@ -237,12 +308,19 @@ export const investmentFundFactsRouter = createTRPCRouter({
     .input(userFactsInput)
     .mutation(async ({ ctx, input }) => {
       const comp = input.composition;
+      // Only the parts given are set; an existing entry for the other part stays.
       const values = {
         securityId: input.securityId,
         source: "user" as const,
         asOf: localDateStr(),
-        expenseRatio:
-          input.expenseRatio == null ? null : input.expenseRatio.toFixed(6),
+        ...(input.expenseRatio !== undefined
+          ? {
+              expenseRatio:
+                input.expenseRatio === null
+                  ? null
+                  : input.expenseRatio.toFixed(6),
+            }
+          : {}),
         ...(comp
           ? {
               usEquityPct: (comp.us_equity ?? 0).toFixed(6),

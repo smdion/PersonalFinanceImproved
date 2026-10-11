@@ -27,7 +27,7 @@ import {
 import { getSecContact } from "./connection";
 import {
   SecRateLimitError,
-  fetchExpenseRatio,
+  fetchExpenseRatios,
   fetchFundTickers,
   fetchNport,
   fetchRegistry,
@@ -393,7 +393,25 @@ async function refreshOne(
         await listFilings(contact, sec.factsClassId, "N-CSR"),
       );
       if (report && !known.has(report.accession)) {
-        const er = await fetchExpenseRatio(contact, report, sec.factsClassId);
+        const ratios = await fetchExpenseRatios(contact, report);
+        let classId: string | null = sec.factsClassId;
+        if (sec.factsBasis === "standin") {
+          // A plan's own version of a strategy usually costs less than the
+          // retail fund standing in for it: use the stand-in's cheapest
+          // share class in the report (the household can still enter the
+          // real fee, which wins).
+          const classes = index.series.get(sec.factsSeriesId!)?.classIds ?? [];
+          classId =
+            classes
+              .filter((c) => ratios.has(c))
+              .sort((a, b) => ratios.get(a)! - ratios.get(b)!)[0] ?? null;
+          if (classId && classId !== sec.factsClassId)
+            await db
+              .update(s)
+              .set({ factsClassId: classId })
+              .where(eq(s.id, sec.id));
+        }
+        const er = classId ? (ratios.get(classId) ?? null) : null;
         if (er !== null) {
           await upsertFact(db, {
             securityId: sec.id,

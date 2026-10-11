@@ -152,19 +152,18 @@ export async function fetchNport(
   return parser.close();
 }
 
-/** Expense ratio of one share class from a shareholder report, or null if not tagged. */
-export async function fetchExpenseRatio(
+/** Expense ratio of every share class in a shareholder report (class id → ratio). */
+export async function fetchExpenseRatios(
   contact: string,
   filing: EdgarFiling,
-  classId: string,
-): Promise<number | null> {
+): Promise<Map<string, number>> {
   const index = JSON.parse(
     await secText(contact, `${filingFolder(filing)}index.json`),
   ) as { directory: { item: { name: string }[] } };
   // The inline-XBRL instance is the filing's "*_htm.xml" document.
   const instance = index.directory.item.find((i) => /_htm\.xml$/i.test(i.name));
-  if (!instance) return null;
-  const parser = createNcsrExpenseParser(classId);
+  if (!instance) return new Map();
+  const parser = createNcsrExpenseParser();
   await secStream(contact, `${filingFolder(filing)}${instance.name}`, (c) =>
     parser.write(c),
   );

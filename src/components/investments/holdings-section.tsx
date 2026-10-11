@@ -101,6 +101,12 @@ function FactsForm({
       onDone();
     },
   });
+  const clear = trpc.investments.clearUserFacts.useMutation({
+    onSuccess: () => {
+      utils.investments.invalidate();
+      onDone();
+    },
+  });
   const mixTotal = COMPOSITION_BUCKET_VALUES.reduce(
     (s, b) => s + (Number(mix[b]) || 0),
     0,
@@ -109,8 +115,9 @@ function FactsForm({
   return (
     <div className="bg-surface-elevated mt-1 space-y-2 rounded p-3 text-xs">
       <p className="text-faint">
-        From your plan&apos;s fee disclosure or the fund&apos;s fact sheet. Your
-        entries are used instead of SEC&apos;s.
+        From your plan&apos;s fee disclosure or the fund&apos;s fact sheet. Fill
+        in either or both — what you enter is used instead of SEC&apos;s or a
+        stand-in&apos;s; the other stays as it is.
       </p>
       <label className="flex items-center gap-2">
         <span className="text-muted w-28">Expense ratio</span>
@@ -154,7 +161,7 @@ function FactsForm({
           onClick={() =>
             save.mutate({
               securityId: holding.securityId,
-              expenseRatio: er === "" ? null : Number(er) / 100,
+              expenseRatio: er === "" ? undefined : Number(er) / 100,
               composition: hasMix
                 ? (Object.fromEntries(
                     COMPOSITION_BUCKET_VALUES.map((b) => [
@@ -171,30 +178,69 @@ function FactsForm({
         <Button size="xs" variant="ghost" onClick={onDone}>
           Cancel
         </Button>
+        {holding.facts.expenseRatio?.fromUser && (
+          <Button
+            size="xs"
+            variant="ghost"
+            disabled={clear.isPending}
+            onClick={() =>
+              clear.mutate({
+                securityId: holding.securityId,
+                part: "expenseRatio",
+              })
+            }
+          >
+            Clear my fee
+          </Button>
+        )}
+        {holding.facts.composition?.fromUser && (
+          <Button
+            size="xs"
+            variant="ghost"
+            disabled={clear.isPending}
+            onClick={() =>
+              clear.mutate({
+                securityId: holding.securityId,
+                part: "composition",
+              })
+            }
+          >
+            Clear my mix
+          </Button>
+        )}
       </div>
     </div>
   );
 }
 
+/** Where one fact came from, in words. */
+function sourceLabel(
+  h: Holding,
+  fact: { fromUser: boolean; asOf: string } | null,
+  kind: "fee" | "mix",
+): string | null {
+  if (!fact) return null;
+  if (fact.fromUser) return "your entry";
+  if (h.factsBasis === "standin")
+    return `Estimated — stand-in ${h.factsSeriesName}${kind === "fee" ? ", cheapest share class" : ""}`;
+  return `SEC, ${shortDay(fact.asOf)}`;
+}
+
 function HoldingRow({ h }: { h: Holding }) {
   const utils = trpc.useUtils();
   const [editing, setEditing] = useState(false);
+  const refresh = () => utils.investments.invalidate();
   const confirm = trpc.investments.confirmStandIn.useMutation({
-    onSuccess: () => utils.investments.invalidate(),
+    onSuccess: refresh,
   });
   const reject = trpc.investments.rejectStandIn.useMutation({
-    onSuccess: () => utils.investments.invalidate(),
+    onSuccess: refresh,
   });
+  const find = trpc.investments.findStandIn.useMutation({ onSuccess: refresh });
   const privacy = isPrivacyMode();
   const er = h.facts.expenseRatio;
-  const factsLabel =
-    h.factsBasis === "standin" && !h.standInPending
-      ? `Estimated — stand-in ${h.factsSeriesName}`
-      : h.facts.composition?.fromUser || er?.fromUser
-        ? "Your entry"
-        : h.facts.composition || er
-          ? "SEC"
-          : null;
+  const mixSource = sourceLabel(h, h.facts.composition, "mix");
+  const feeSource = sourceLabel(h, er, "fee");
   return (
     <div className="border-subtle border-b py-1.5 text-xs last:border-0">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -219,7 +265,8 @@ function HoldingRow({ h }: { h: Holding }) {
             ? `${shortDay(h.valuedOn)} close`
             : `As reported ${shortDay(h.valuedOn)}`}
         </span>
-        {factsLabel && <span>· {factsLabel}</span>}
+        {mixSource && <span>· Mix: {mixSource}</span>}
+        {feeSource && <span>· Fee: {feeSource}</span>}
         {h.facts.stale && (
           <span className="text-amber-600">· facts over 15 months old</span>
         )}
@@ -229,12 +276,41 @@ function HoldingRow({ h }: { h: Holding }) {
         >
           {editing ? "close" : "edit facts"}
         </button>
+        {h.factsBasis === "standin" && !h.standInPending && (
+          <button
+            className="hover:text-primary underline"
+            disabled={reject.isPending}
+            onClick={() => reject.mutate({ securityId: h.securityId })}
+          >
+            stop using stand-in
+          </button>
+        )}
+        {h.factsBasis === "none" && (
+          <button
+            className="hover:text-primary underline"
+            disabled={find.isPending}
+            onClick={() => find.mutate({ securityId: h.securityId })}
+          >
+            {find.isPending ? "looking…" : "look for a stand-in again"}
+          </button>
+        )}
       </div>
+      {find.isSuccess && !find.data.suggestion && (
+        <p className="text-caption text-faint mt-0.5">
+          No registered fund with a matching name — enter this fund&apos;s facts
+          instead.
+        </p>
+      )}
       {h.standInPending && (
         <div className="mt-1 rounded bg-amber-50 p-2 text-amber-900 dark:bg-amber-900/20 dark:text-amber-300">
-          SEC has no filings for this fund. Use{" "}
-          <span className="font-medium">{h.factsSeriesName}</span> as a stand-in
-          for its expense ratio and mix? Values will be marked Estimated.
+          SEC has no filings for this fund (plan-only funds don&apos;t file with
+          SEC). By name, it looks like{" "}
+          <span className="font-medium">{h.factsSeriesName}</span> — a
+          different, registered fund that likely follows the same strategy or
+          index. Check your plan&apos;s fact sheet; if the mix matches, Ledgr
+          can use it as a stand-in. Values will be marked Estimated, and its fee
+          is a retail fund&apos;s — enter your plan&apos;s real fee with
+          &ldquo;edit facts&rdquo;.
           <div className="mt-1 flex gap-2">
             <Button
               size="xs"

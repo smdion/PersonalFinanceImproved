@@ -75,15 +75,15 @@ describe("createNcsrExpenseParser", () => {
     <oef:ExpenseRatioPct contextRef="FY2025_C000000002Member" unitRef="pure">0.0005</oef:ExpenseRatioPct>
     <oef:ExpenseRatioPct contextRef="FY2025_C000000001Member" unitRef="pure">0.0012</oef:ExpenseRatioPct>
   </xbrli:xbrl>`;
-  it("returns the expense ratio of the requested share class", () => {
-    const p = createNcsrExpenseParser("C000000001");
+  it("returns every share class's expense ratio", () => {
+    const p = createNcsrExpenseParser();
     p.write(XBRL);
-    expect(p.close()).toBe(0.0012);
-  });
-  it("is null when the class isn't in the report", () => {
-    const p = createNcsrExpenseParser("C000000009");
-    p.write(XBRL);
-    expect(p.close()).toBeNull();
+    expect(p.close()).toEqual(
+      new Map([
+        ["C000000002", 0.0005],
+        ["C000000001", 0.0012],
+      ]),
+    );
   });
 });
 

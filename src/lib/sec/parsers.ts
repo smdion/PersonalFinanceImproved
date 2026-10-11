@@ -89,30 +89,29 @@ export function createNportParser(): Chunked<NportFiling> {
 }
 
 /**
- * Annual expense ratio for one share class from a shareholder report's
- * XBRL instance (`oef:ExpenseRatioPct`, context naming the class id).
+ * Annual expense ratio of every share class in a shareholder report's XBRL
+ * instance (`oef:ExpenseRatioPct`; each context names its class id).
  */
-export function createNcsrExpenseParser(
-  classId: string,
-): Chunked<number | null> {
+export function createNcsrExpenseParser(): Chunked<Map<string, number>> {
   const p = new SaxesParser();
-  let capturing = false;
+  let classId: string | null = null;
   let text = "";
-  let found: number | null = null;
+  const found = new Map<string, number>();
   p.on("opentag", (node) => {
     if (local(node.name) !== "ExpenseRatioPct") return;
     const ctx = node.attributes["contextRef"];
-    capturing = typeof ctx === "string" && ctx.includes(classId);
+    classId =
+      typeof ctx === "string" ? (ctx.match(/C\d{9}/)?.[0] ?? null) : null;
     text = "";
   });
   p.on("text", (t) => {
-    if (capturing) text += t;
+    if (classId) text += t;
   });
   p.on("closetag", (node) => {
-    if (capturing && local(node.name) === "ExpenseRatioPct") {
+    if (classId && local(node.name) === "ExpenseRatioPct") {
       const v = Number(text.trim());
-      if (Number.isFinite(v) && found === null) found = v;
-      capturing = false;
+      if (Number.isFinite(v) && !found.has(classId)) found.set(classId, v);
+      classId = null;
     }
   });
   return {
