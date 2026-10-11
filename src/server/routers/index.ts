@@ -21,6 +21,7 @@ import { salaryProfileRouter } from "./salary-profiles";
 import { syncRouter } from "./sync";
 import { simplefinRouter } from "./simplefin";
 import { tiingoRouter } from "./tiingo";
+import { investmentsRouter } from "./investments";
 import { demoRouter } from "./demo";
 import { dataBrowserRouter } from "./data-browser";
 import { testingRouter } from "./testing";
@@ -49,6 +50,7 @@ export const appRouter = createTRPCRouter({
   sync: syncRouter,
   simplefin: simplefinRouter,
   tiingo: tiingoRouter,
+  investments: investmentsRouter,
   demo: demoRouter,
   dataBrowser: dataBrowserRouter,
   testing: testingRouter,

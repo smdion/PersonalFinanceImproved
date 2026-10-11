@@ -36,10 +36,16 @@ export type ClassifyOptions = {
   rules?: readonly SimplefinTransactionRule[];
 };
 
+/** What classification looks at — stored rows carry no unix timestamp. */
+type ClassifiableRow = Pick<
+  SimplefinTransactionInput,
+  "amount" | "description"
+>;
+
 function ruleMatches(
   rule: SimplefinTransactionRule,
   institution: string,
-  tx: SimplefinTransactionInput,
+  tx: ClassifiableRow,
   accountBalance: number | undefined,
 ): boolean {
   if (rule.institution && !rule.institution.test(institution)) return false;
@@ -56,7 +62,7 @@ function ruleMatches(
 
 export function classifySimplefinTransaction(
   institution: string,
-  tx: SimplefinTransactionInput,
+  tx: ClassifiableRow,
   options: ClassifyOptions = {},
 ): ClassifiedTransaction {
   const rules = options.rules ?? SIMPLEFIN_TRANSACTION_RULES;

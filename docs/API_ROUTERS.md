@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**365 procedures across 43 routers.**
+**374 procedures across 46 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -140,6 +140,30 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `update`         | mutation | `adminProcedure`     | Update editable fields on a net_worth_annual row (income/tax + otherLiabilities only).                                                                                                                   |
 | `upsertNote`     | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
 | `upsertSalary`   | mutation | `adminProcedure`     | field falls back to the SAME live estimate the current-year auto-fill in `computeSummary` shows (active job's compensation under the active Salary Profile) for the current year, or 0 for a past year w |
+
+## `investments/holdings`
+
+| Procedure      | Kind  | Auth                 | Description                                                                                                                   |
+| -------------- | ----- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `listHoldings` | query | `portfolioProcedure` | Each account's holdings on the latest date it reported them. A fund sold since then is left out (its latest row is 0 shares). |
+
+## `investments/rules`
+
+| Procedure     | Kind     | Auth                 | Description                                                               |
+| ------------- | -------- | -------------------- | ------------------------------------------------------------------------- |
+| `createRule`  | mutation | `portfolioProcedure` | Save a rule. `fromTransactionId` records the row it was made from.        |
+| `deleteRule`  | mutation | `portfolioProcedure` | Delete a rule; rows it matched go back to the built-in rules.             |
+| `listRules`   | query    | `portfolioProcedure` | The household's rules, highest priority first.                            |
+| `previewRule` | query    | `portfolioProcedure` | How many stored rows a rule would match and reclassify, before saving it. |
+
+## `investments/transactions`
+
+| Procedure              | Kind     | Auth                 | Description                                                                |
+| ---------------------- | -------- | -------------------- | -------------------------------------------------------------------------- |
+| `clearTransactionKind` | mutation | `portfolioProcedure` | Undo a choice made in the review queue (never the redaction lock).         |
+| `listReviewQueue`      | query    | `portfolioProcedure` | Rows no rule could place, or that a rule flags for a look.                 |
+| `listTransactions`     | query    | `portfolioProcedure` | Investment transactions with the kind each counts as, newest first.        |
+| `setTransactionKind`   | mutation | `portfolioProcedure` | Set the kind of one row. Redacted HSA rows are fixed and can't be changed. |
 
 ## `mortgage`
 
