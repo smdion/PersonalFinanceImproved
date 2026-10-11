@@ -14,6 +14,7 @@ import { and, desc, eq, gte, inArray, isNull, lt, sql } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { SimplefinAccount } from "./client";
 import {
+  assertHoldingHasOneAccount,
   hasInvestedHoldings,
   planHoldingObservations,
   securityIdentity,
@@ -57,21 +58,6 @@ function addDaysIso(day: string, n: number): string {
   const t = new Date(`${day}T00:00:00Z`);
   t.setUTCDate(t.getUTCDate() + n);
   return utcDayOf(t);
-}
-
-/** Holding rows always come from SimpleFIN here; this guards the exactly-one rule SQLite can't enforce. */
-function assertOneAccount(row: {
-  simplefinAccountId: number | null;
-  performanceAccountId: number | null;
-}): void {
-  if (
-    (row.simplefinAccountId === null) ===
-    (row.performanceAccountId === null)
-  ) {
-    throw new Error(
-      "A holding observation must belong to exactly one account (SimpleFIN or tracked).",
-    );
-  }
 }
 
 async function ensureSecurity(
@@ -190,7 +176,7 @@ async function ingestHoldings(
           : row.costBasisPerShare.toFixed(8),
       source: "simplefin" as const,
     };
-    assertOneAccount(values);
+    assertHoldingHasOneAccount(values);
     await db
       .insert(schema.holdingObservations)
       .values(values)

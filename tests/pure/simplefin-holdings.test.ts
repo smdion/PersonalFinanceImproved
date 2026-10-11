@@ -1,6 +1,9 @@
 /** SimpleFIN holdings → securities and observations. Invented examples only. */
 import { describe, it, expect } from "vitest";
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 import {
+  assertHoldingHasOneAccount,
   inferSecurityKind,
   securityIdentity,
   hasInvestedHoldings,
@@ -146,5 +149,48 @@ describe("planHoldingObservations", () => {
         costBasisPerShare: null,
       },
     ]);
+  });
+});
+
+describe("assertHoldingHasOneAccount (the exactly-one rule SQLite can't enforce)", () => {
+  it("accepts a synced row", () => {
+    expect(() =>
+      assertHoldingHasOneAccount({
+        simplefinAccountId: 1,
+        performanceAccountId: null,
+      }),
+    ).not.toThrow();
+  });
+  it("accepts a manual row", () => {
+    expect(() =>
+      assertHoldingHasOneAccount({
+        simplefinAccountId: null,
+        performanceAccountId: 1,
+      }),
+    ).not.toThrow();
+  });
+  it("rejects a row with both accounts", () => {
+    expect(() =>
+      assertHoldingHasOneAccount({
+        simplefinAccountId: 1,
+        performanceAccountId: 2,
+      }),
+    ).toThrow(/exactly one account/);
+  });
+  it("rejects a row with neither account", () => {
+    expect(() =>
+      assertHoldingHasOneAccount({
+        simplefinAccountId: null,
+        performanceAccountId: null,
+      }),
+    ).toThrow(/exactly one account/);
+  });
+  it("is backed by a CHECK constraint in the Postgres migrations", () => {
+    const dir = join(process.cwd(), "drizzle");
+    const sqlText = readdirSync(dir)
+      .filter((f) => f.endsWith(".sql"))
+      .map((f) => readFileSync(join(dir, f), "utf-8"))
+      .join("\n");
+    expect(sqlText).toContain("holding_observations_one_account_check");
   });
 });

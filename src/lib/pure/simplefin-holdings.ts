@@ -139,3 +139,23 @@ export function planHoldingObservations(
   }
   return { status: "ok", rows: [...rows.values()] };
 }
+
+/**
+ * A holding observation belongs to exactly one account: a SimpleFIN account
+ * (synced) or a tracked account (manual entry). Postgres enforces this with
+ * `holding_observations_one_account_check`; SQLite drops CHECK constraints,
+ * so every writer calls this before inserting.
+ */
+export function assertHoldingHasOneAccount(row: {
+  simplefinAccountId: number | null;
+  performanceAccountId: number | null;
+}): void {
+  if (
+    (row.simplefinAccountId === null) ===
+    (row.performanceAccountId === null)
+  ) {
+    throw new Error(
+      "A holding observation must belong to exactly one account (SimpleFIN or tracked).",
+    );
+  }
+}
