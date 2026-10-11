@@ -68,3 +68,16 @@ export async function getMonthlyPrices(
   );
   return rows.map((r) => ({ date: r.date.slice(0, 10), adjClose: r.adjClose }));
 }
+
+/** Latest daily close (unadjusted — what shares are worth today). */
+export async function getLatestClose(
+  apiKey: string,
+  ticker: string,
+): Promise<{ date: string; close: number } | null> {
+  const rows = await requestJson<{ date: string; close: number }[]>(
+    `/tiingo/daily/${encodeURIComponent(ticker)}/prices`,
+    apiKey,
+  );
+  const last = rows.at(-1);
+  return last ? { date: last.date.slice(0, 10), close: last.close } : null;
+}

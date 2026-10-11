@@ -1054,11 +1054,12 @@ export const accountHoldings = sqliteTable(
 
     // Source of the asset class assignment — surfaces to user so they
     // know whether to trust or override it.
-    // 'fmp' = auto-assigned from FMP sector, 'manual' = user set it.
+    // 'sec' = filled in from stored SEC fund facts, 'manual' = user set it,
+    // 'fmp' = legacy rows filled from FMP before it was removed.
     assetClassSource: text("asset_class_source")
       .notNull()
       .default("manual")
-      .$type<"fmp" | "manual">(),
+      .$type<"sec" | "fmp" | "manual">(),
   },
   (table) => [
     // Unique: one ticker entry per account per snapshot

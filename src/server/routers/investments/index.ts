@@ -7,6 +7,7 @@ import { investmentRulesRouter } from "./rules";
 import { investmentHealthRouter } from "./health";
 import { investmentSnapshotFlowsRouter } from "./snapshot-flows";
 import { investmentComparisonRouter } from "./comparison";
+import { investmentFundFactsRouter } from "./fund-facts";
 
 export const investmentsRouter = mergeRouters(
   investmentHoldingsRouter,
@@ -15,4 +16,5 @@ export const investmentsRouter = mergeRouters(
   investmentHealthRouter,
   investmentSnapshotFlowsRouter,
   investmentComparisonRouter,
+  investmentFundFactsRouter,
 );

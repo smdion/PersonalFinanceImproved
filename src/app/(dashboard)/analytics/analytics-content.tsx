@@ -67,7 +67,7 @@ type HoldingRow = {
   weightBps: number;
   expenseRatio: string | null;
   assetClassId: number | null;
-  assetClassSource: "fmp" | "manual";
+  assetClassSource: "sec" | "fmp" | "manual";
 };
 
 type DraftHolding = {
@@ -77,7 +77,7 @@ type DraftHolding = {
   weightBps: number;
   expenseRatioStr: string;
   assetClassId: number | null;
-  assetClassSource: "fmp" | "manual";
+  assetClassSource: "sec" | "fmp" | "manual";
   lookupState: "idle" | "loading" | "done" | "error";
   lookupError?: string;
 };
@@ -144,7 +144,7 @@ function HoldingsTable({
   snapshotId,
   savedHoldings,
   assetClasses,
-  hasFmpKey,
+  canLookUp,
   onSaved,
   locked = false,
   onToggleLock,
@@ -155,7 +155,7 @@ function HoldingsTable({
   snapshotId: number | undefined;
   savedHoldings: HoldingRow[];
   assetClasses: { id: number; name: string }[];
-  hasFmpKey: boolean;
+  canLookUp: boolean;
   onSaved: () => void;
   locked?: boolean;
   onToggleLock?: () => void;
@@ -236,17 +236,12 @@ function HoldingsTable({
       setDrafts((d) =>
         d.map((r) => {
           if (r.key !== key || r.ticker !== requestedTicker) return r;
-          if ("error" in result && result.error) {
-            const messages: Record<string, string> = {
-              no_key: "No FMP key configured",
-              not_found: "Ticker not found",
-              rate_limit: "FMP rate limit reached (250/day)",
-              error: "Lookup failed",
-            };
+          if ("error" in result) {
             return {
               ...r,
               lookupState: "error",
-              lookupError: messages[result.error] ?? "Lookup failed",
+              lookupError:
+                "No fund facts for this ticker yet — SEC facts cover funds you hold through SimpleFIN",
             };
           }
           // Find assetClassId from suggested name; only defined when the
@@ -272,7 +267,7 @@ function HoldingsTable({
                 ? matchedAssetClassId
                 : r.assetClassId,
             assetClassSource:
-              matchedAssetClassId !== undefined ? "fmp" : r.assetClassSource,
+              matchedAssetClassId !== undefined ? "sec" : r.assetClassSource,
             lookupState: "done",
             lookupError: undefined,
           };
@@ -394,12 +389,13 @@ function HoldingsTable({
                         updateRow(row.key, { name: e.target.value })
                       }
                     />
-                    {hasFmpKey && (
+                    {canLookUp && (
                       <button
                         title={
                           row.lookupState === "loading"
                             ? "Looking up…"
-                            : (row.lookupError ?? "Look up ticker via FMP")
+                            : (row.lookupError ??
+                              "Fill in from stored SEC fund facts")
                         }
                         disabled={
                           row.lookupState === "loading" || !row.ticker.trim()
@@ -481,12 +477,16 @@ function HoldingsTable({
                 <td className="py-1 pr-1">
                   <span
                     className={`rounded px-1 py-0.5 text-xs ${
-                      row.assetClassSource === "fmp"
+                      row.assetClassSource !== "manual"
                         ? "bg-blue-100 text-blue-700"
                         : "bg-surface-sunken text-faint"
                     }`}
                   >
-                    {row.assetClassSource === "fmp" ? "FMP" : "Man"}
+                    {row.assetClassSource === "sec"
+                      ? "SEC"
+                      : row.assetClassSource === "fmp"
+                        ? "FMP"
+                        : "Man"}
                   </span>
                 </td>
                 <td className="py-1">
@@ -622,9 +622,21 @@ export function AnalyticsContent({ embedded = false }: { embedded?: boolean }) {
     trpc.analytics.getSnapshots.useQuery(undefined, { enabled: canEdit });
   const { data: assetClasses, isLoading: acLoading } =
     trpc.analytics.getAssetClasses.useQuery(undefined, { enabled: canEdit });
-  const { data: hasFmpKey } = trpc.analytics.hasFmpKey.useQuery(undefined, {
+  // Lookups read stored SEC fund facts, so offer them once SEC is set up.
+  const { data: secStatus } = trpc.sec.getStatus.useQuery(undefined, {
     enabled: canEdit,
   });
+  const canLookUp = secStatus?.connected ?? false;
+  // Embedded on Benchmarks: only accounts whose holdings SimpleFIN doesn't
+  // report (those are shown above, from SimpleFIN itself).
+  const { data: overview } = trpc.investments.getHoldingsOverview.useQuery(
+    undefined,
+    { enabled: canEdit && embedded },
+  );
+  const { data: simplefinAccounts } = trpc.simplefin.listAccounts.useQuery(
+    undefined,
+    { enabled: canEdit && embedded },
+  );
 
   const [selectedSnapshotId, setSelectedSnapshotId] = useState<
     number | undefined
@@ -734,6 +746,18 @@ export function AnalyticsContent({ embedded = false }: { embedded?: boolean }) {
   }
 
   const hasAnyHoldings = (holdings?.length ?? 0) > 0;
+  const reportedPerfIds = new Set(
+    (simplefinAccounts ?? [])
+      .filter(
+        (a) =>
+          a.linkedPerformanceAccountId !== null &&
+          (overview?.accounts ?? []).some((o) => o.simplefinAccountId === a.id),
+      )
+      .map((a) => a.linkedPerformanceAccountId),
+  );
+  const editableAccounts = (accounts ?? []).filter(
+    (a) => !embedded || !reportedPerfIds.has(a.id),
+  );
 
   return (
     <div className="space-y-4">
@@ -763,21 +787,33 @@ export function AnalyticsContent({ embedded = false }: { embedded?: boolean }) {
       </PageHeader>
 
       {/* Account holdings tables */}
-      {(accounts ?? []).length === 0 ? (
-        <EmptyState
-          icon={<PieIcon />}
-          message="No active portfolio accounts."
-          hint="Add accounts in Portfolio to get started."
-          link={{ label: "Go to Portfolio", href: "/portfolio" }}
-        />
+      {embedded && (
+        <p className="text-muted -mt-2 text-xs">
+          Only accounts SimpleFIN doesn&apos;t report holdings for — enter what
+          they hold here.
+        </p>
+      )}
+      {editableAccounts.length === 0 ? (
+        embedded ? (
+          <p className="text-faint text-sm">
+            Every tracked account&apos;s holdings come from SimpleFIN.
+          </p>
+        ) : (
+          <EmptyState
+            icon={<PieIcon />}
+            message="No active portfolio accounts."
+            hint="Add accounts in Portfolio to get started."
+            link={{ label: "Go to Portfolio", href: "/portfolio" }}
+          />
+        )
       ) : (
         <div className="space-y-4">
-          {(accounts ?? []).map((acct) => (
+          {editableAccounts.map((acct) => (
             <Card
               key={acct.id}
               title={accountDisplayName(acct)}
               isCollapsible
-              isDefaultOpen
+              isDefaultOpen={!embedded}
             >
               <HoldingsTable
                 accountId={acct.id}
@@ -786,7 +822,7 @@ export function AnalyticsContent({ embedded = false }: { embedded?: boolean }) {
                 snapshotId={effectiveSnapshotId ?? snapshots?.[0]?.id}
                 savedHoldings={holdingsByAccount.get(acct.id) ?? []}
                 assetClasses={assetClasses ?? []}
-                hasFmpKey={hasFmpKey ?? false}
+                canLookUp={canLookUp}
                 onSaved={() => refetchHoldings()}
                 locked={holdingsLocked}
                 onToggleLock={
@@ -799,7 +835,7 @@ export function AnalyticsContent({ embedded = false }: { embedded?: boolean }) {
       )}
 
       {/* Aggregate view */}
-      {hasAnyHoldings && (
+      {!embedded && hasAnyHoldings && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {/* Allocation donut */}
           <Card title="Allocation — All Accounts">
@@ -866,7 +902,7 @@ export function AnalyticsContent({ embedded = false }: { embedded?: boolean }) {
       )}
 
       {/* Drift table */}
-      {hasAnyHoldings && targetAllocation.size > 0 && (
+      {!embedded && hasAnyHoldings && targetAllocation.size > 0 && (
         <Card title="Drift from Glide Path Target">
           <DriftTable
             actual={aggregatedAllocation}
@@ -876,7 +912,7 @@ export function AnalyticsContent({ embedded = false }: { embedded?: boolean }) {
         </Card>
       )}
 
-      {hasAnyHoldings && targetAllocation.size === 0 && (
+      {!embedded && hasAnyHoldings && targetAllocation.size === 0 && (
         <Card title="Drift from Glide Path Target">
           <EmptyState
             message="Configure your glide path to see drift from target."

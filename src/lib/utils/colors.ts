@@ -230,6 +230,14 @@ export const CHART_COLORS = {
   benchTotalUs: "#0d9488", // teal-600
   benchDow: "#a855f7", // purple-500
   benchDeposits: "#9ca3af", // gray-400
+  // Fund composition buckets
+  mixUsEquity: "#4f46e5", // indigo-600
+  mixIntlEquity: "#0ea5e9", // sky-500
+  mixUsBond: "#10b981", // emerald-500
+  mixIntlBond: "#14b8a6", // teal-500
+  mixTips: "#84cc16", // lime-500
+  mixCash: "#f59e0b", // amber-500
+  mixOther: "#9ca3af", // gray-400
   // Linked balance sparkline (SimpleFIN)
   linkedBalance: "#0d9488", // teal-600
   // Expenses: budget-vs-actual bar chart

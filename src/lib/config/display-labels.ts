@@ -2,7 +2,10 @@
 // Components import from here — never define local label maps.
 
 import type { ContribResolutionStatus } from "@/lib/pure/profiles";
-import type { InvestmentTransactionKind } from "./enum-values";
+import type {
+  CompositionBucket,
+  InvestmentTransactionKind,
+} from "./enum-values";
 
 export const PAY_PERIOD_LABELS: Record<string, string> = {
   weekly: "Weekly",
@@ -282,5 +285,16 @@ export const INVESTMENT_TRANSACTION_KIND_LABELS: Record<
   trade: "Trade (inside the account)",
   sweep: "Cash sweep (inside the account)",
   gain_loss: "Realized gain/loss",
+  other: "Other",
+};
+
+/** Composition buckets of a fund's holdings. */
+export const COMPOSITION_BUCKET_LABELS: Record<CompositionBucket, string> = {
+  us_equity: "US stocks",
+  intl_equity: "International stocks",
+  us_bond: "US bonds",
+  intl_bond: "International bonds",
+  tips: "TIPS",
+  cash: "Cash",
   other: "Other",
 };

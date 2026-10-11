@@ -12,7 +12,7 @@ import {
   yearlyReturn,
   type YearlyResult,
 } from "@/lib/pure/benchmark-yearly";
-import { getBenchmarkMonthlyPrices } from "@/server/helpers/benchmark-prices";
+import { getBenchmarkMonthlyPrices } from "@/server/helpers/market-prices";
 
 /**
  * Where the default window starts: after any leading placeholder years —

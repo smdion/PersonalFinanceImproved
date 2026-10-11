@@ -198,7 +198,7 @@ export async function secFactsRefreshDue(db: Db, now = new Date()) {
 
 export async function syncSecurityFacts(
   db: Db,
-  options: { force?: boolean; now?: Date } = {},
+  options: { force?: boolean; now?: Date; securityIds?: number[] } = {},
 ): Promise<SecFactsSummary> {
   const now = options.now ?? new Date();
   const summary: SecFactsSummary = {
@@ -216,12 +216,14 @@ export async function syncSecurityFacts(
     .select()
     .from(s)
     .where(
-      options.force
-        ? undefined
-        : or(
-            isNull(s.factsCheckedAt),
-            lt(s.factsCheckedAt, new Date(now.getTime() - CHECK_EVERY_MS)),
-          ),
+      options.securityIds
+        ? inArray(s.id, options.securityIds)
+        : options.force
+          ? undefined
+          : or(
+              isNull(s.factsCheckedAt),
+              lt(s.factsCheckedAt, new Date(now.getTime() - CHECK_EVERY_MS)),
+            ),
     );
   try {
     if (due.length > 0) {
@@ -251,7 +253,8 @@ export async function syncSecurityFacts(
         }
       }
     }
-    await setSetting(db, LAST_RUN_KEY, now.toISOString());
+    if (!options.securityIds)
+      await setSetting(db, LAST_RUN_KEY, now.toISOString());
     await setSetting(
       db,
       LAST_ERROR_KEY,

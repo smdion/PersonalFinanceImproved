@@ -162,3 +162,45 @@ export async function loadClassifiedTransactions(
     })
     .sort((a, b) => b.posted.localeCompare(a.posted) || b.id - a.id);
 }
+
+/**
+ * Each SimpleFIN account's holdings on the latest date it reported them,
+ * with fund details. Funds sold since (latest row 0 shares) are left out.
+ */
+export async function loadLatestHoldings(db: Db) {
+  const h = schema.holdingObservations;
+  const s = schema.securities;
+  const rows = await db
+    .select({
+      simplefinAccountId: h.simplefinAccountId,
+      securityId: h.securityId,
+      asOf: h.asOf,
+      shares: h.shares,
+      reportedMarketValue: h.reportedMarketValue,
+      avgCostPerShare: h.avgCostPerShare,
+      ticker: s.ticker,
+      sourceSymbol: s.sourceSymbol,
+      name: s.name,
+      kind: s.kind,
+    })
+    .from(h)
+    .innerJoin(s, eq(s.id, h.securityId));
+  const latest = new Map<string, (typeof rows)[number]>();
+  for (const r of rows) {
+    if (r.simplefinAccountId === null) continue; // manual rows come later
+    const key = `${r.simplefinAccountId}:${r.securityId}`;
+    const prev = latest.get(key);
+    if (!prev || r.asOf > prev.asOf) latest.set(key, r);
+  }
+  return [...latest.values()]
+    .filter((r) => Number(r.shares) !== 0)
+    .map((r) => ({
+      ...r,
+      simplefinAccountId: r.simplefinAccountId!,
+      shares: Number(r.shares),
+      reportedMarketValue:
+        r.reportedMarketValue === null ? null : Number(r.reportedMarketValue),
+      avgCostPerShare:
+        r.avgCostPerShare === null ? null : Number(r.avgCostPerShare),
+    }));
+}

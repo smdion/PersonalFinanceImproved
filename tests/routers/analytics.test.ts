@@ -3,13 +3,11 @@
  *
  * Covers the main query + mutation procedures in src/server/routers/analytics.ts:
  * getHoldings, getAccounts, getSnapshots, getAssetClasses, getGlidePathForAge,
- * getSnapshotBalances, hasFmpKey, getHoldingsHistory, copyHoldingsToSnapshot,
- * bulkUpsertHoldings, deleteHolding.
- *
- * lookupTicker is excluded — it makes an outbound HTTP call to FMP and cannot
- * be reliably tested without a live API key.
+ * getSnapshotBalances, getHoldingsHistory, copyHoldingsToSnapshot,
+ * bulkUpsertHoldings, deleteHolding, lookupTicker (reads stored fund facts).
  */
 import "./setup-mocks";
+import * as sqliteSchema from "@/lib/db/schema-sqlite";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import {
   createTestCaller,
@@ -266,12 +264,66 @@ describe("analytics router", () => {
     });
   });
 
-  // ── hasFmpKey ──────────────────────────────────────────────────────────────
+  // ── lookupTicker ───────────────────────────────────────────────────────────
 
-  describe("hasFmpKey", () => {
-    it("returns false when no FMP connection is configured", async () => {
-      const result = await caller.analytics.hasFmpKey();
-      expect(result).toBe(false);
+  describe("lookupTicker", () => {
+    it("returns not_found for a fund Ledgr has no facts for", async () => {
+      expect(await caller.analytics.lookupTicker({ ticker: "zzzzx" })).toEqual({
+        error: "not_found",
+      });
+    });
+
+    it("fills in name, expense ratio and the dominant asset class from stored facts", async () => {
+      const ctx = await createTestCaller(adminSession);
+      try {
+        const cls = ctx.db
+          .insert(sqliteSchema.assetClassParams)
+          .values({
+            name: "Example Stocks",
+            meanReturn: "0.07",
+            stdDev: "0.15",
+            compositionBucket: "us_equity",
+          })
+          .returning()
+          .get();
+        const sec = ctx.db
+          .insert(sqliteSchema.securities)
+          .values({
+            ticker: "EXIDX",
+            name: "Example Index Fund",
+            kind: "mutual_fund",
+          })
+          .returning()
+          .get();
+        ctx.db
+          .insert(sqliteSchema.securityFacts)
+          .values([
+            {
+              securityId: sec.id,
+              source: "sec_ncsr",
+              asOf: "2026-06-01",
+              expenseRatio: "0.000400",
+            },
+            {
+              securityId: sec.id,
+              source: "sec_nport",
+              asOf: "2026-06-30",
+              usEquityPct: "0.950000",
+              cashPct: "0.050000",
+              coverage: "1.000000",
+            },
+          ])
+          .run();
+        expect(
+          await ctx.caller.analytics.lookupTicker({ ticker: "exidx" }),
+        ).toEqual({
+          name: "Example Index Fund",
+          expenseRatio: 0.0004,
+          suggestedAssetClassName: cls.name,
+        });
+      } finally {
+        ctx.cleanup();
+      }
     });
   });
 });

@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { ComparisonSection } from "@/components/investments/comparison-section";
+import { HoldingsSection } from "@/components/investments/holdings-section";
 import { AnalyticsContent } from "../analytics/analytics-content";
 
 export function BenchmarksContent() {
@@ -27,7 +28,15 @@ export function BenchmarksContent() {
         subtitle="How your investments did against the market, what you hold, and what it costs"
       />
       <ComparisonSection />
-      <AnalyticsContent embedded />
+      <HoldingsSection />
+      <details className="group">
+        <summary className="text-secondary hover:text-primary cursor-pointer text-sm font-medium">
+          Accounts SimpleFIN doesn&apos;t report holdings for
+        </summary>
+        <div className="mt-3">
+          <AnalyticsContent embedded />
+        </div>
+      </details>
     </div>
   );
 }
