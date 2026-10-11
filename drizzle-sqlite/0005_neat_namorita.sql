@@ -1,0 +1,1 @@
+ALTER TABLE `simplefin_accounts` ADD `last_balance_date` integer;

@@ -2522,6 +2522,8 @@ export const simplefinAccounts = pgTable(
       precision: 14,
       scale: 2,
     }).notNull(),
+    /** The institution's as-of time for lastBalance (SimpleFIN `balance-date`); null when not reported. */
+    lastBalanceDate: timestamp("last_balance_date", { withTimezone: true }),
     isIncluded: boolean("is_included").notNull().default(true),
     lastSeenAt: timestamp("last_seen_at", { withTimezone: true })
       .notNull()

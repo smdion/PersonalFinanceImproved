@@ -131,3 +131,12 @@ export function valuationDateFor(reportedAt: Date): string {
     minutes < MARKET_CLOSE_MINUTES ? addDays(day, -1) : day,
   );
 }
+
+/** Trading days after `from` up to and including `to` (0 when `to` ≤ `from`). */
+export function tradingDaysBetween(from: string, to: string): number {
+  let count = 0;
+  for (let d = addDays(from, 1); d <= to; d = addDays(d, 1)) {
+    if (isTradingDay(d)) count++;
+  }
+  return count;
+}

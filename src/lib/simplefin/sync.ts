@@ -193,6 +193,8 @@ export type SimplefinAccountRow = {
   orgName: string;
   accountName: string;
   lastBalance: number;
+  /** The institution's as-of time for lastBalance; null when not reported. */
+  lastBalanceDate: Date | null;
   isIncluded: boolean;
   lastSeenAt: Date;
 };
@@ -225,6 +227,8 @@ export async function upsertSimplefinAccounts(
         orgName: a.orgName,
         accountName: a.name,
         lastBalance: a.balance.toFixed(2),
+        // Paired with lastBalance: null when not reported, never an older date.
+        lastBalanceDate: a.balanceDate ?? null,
         lastSeenAt: now,
       })),
     )
@@ -234,6 +238,7 @@ export async function upsertSimplefinAccounts(
         orgName: sql`excluded.org_name`,
         accountName: sql`excluded.account_name`,
         lastBalance: sql`excluded.last_balance`,
+        lastBalanceDate: sql`excluded.last_balance_date`,
         lastSeenAt: sql`excluded.last_seen_at`,
       },
     })
@@ -245,6 +250,7 @@ export async function upsertSimplefinAccounts(
     orgName: r.orgName,
     accountName: r.accountName,
     lastBalance: Number(r.lastBalance),
+    lastBalanceDate: r.lastBalanceDate,
     isIncluded: r.isIncluded,
     lastSeenAt: r.lastSeenAt,
   }));

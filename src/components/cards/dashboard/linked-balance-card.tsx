@@ -4,6 +4,8 @@ import React, { memo, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
+import { Tooltip } from "@/components/ui/tooltip";
+import { summarizeBalanceDates } from "@/lib/pure/balance-dates";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
 import { safeDivide, roundToCents } from "@/lib/utils/math";
 import { getDisplayConfig } from "@/lib/config/account-types";
@@ -19,6 +21,8 @@ export type SimplefinAccountListItem = {
   orgName: string;
   isIncluded: boolean;
   lastBalance: number;
+  lastBalanceDate: Date | string | null;
+  lastSeenAt: Date | string;
   linkedPerformanceAccountId: number | null;
   change: number | null;
   taxType: PortfolioTaxType | "mixed" | null;
@@ -179,6 +183,70 @@ function DriftBadge({ drift, balance }: { drift: number; balance: number }) {
         ` / ${drift > 0 ? "+" : "-"}${formatPercent(Math.abs(driftPct), 1)}`}
       )
     </span>
+  );
+}
+
+const shortDay = (day: string) =>
+  formatDate(day, "medium").replace(`, ${new Date().getFullYear()}`, "");
+
+function BalanceDatesFooter({
+  accounts,
+  accountCount,
+  lastSyncedAt,
+}: {
+  accounts: SimplefinAccountListItem[] | undefined;
+  accountCount: number;
+  lastSyncedAt: Date | string | null;
+}) {
+  const countLabel = `${accountCount} account${accountCount === 1 ? "" : "s"}`;
+  const summary = summarizeBalanceDates(
+    (accounts ?? [])
+      .filter((a) => a.isIncluded)
+      .map((a) => ({
+        institution: a.orgName,
+        reportedAt: new Date(a.lastBalanceDate ?? a.lastSeenAt),
+      })),
+  );
+  if (!summary.oldest || !summary.newest) {
+    return (
+      <p className="text-caption text-faint mt-1">
+        {lastSyncedAt
+          ? `As of ${formatDate(lastSyncedAt.toString(), "medium")}`
+          : "Not yet synced"}
+        {" · "}
+        {countLabel}
+      </p>
+    );
+  }
+  const range =
+    summary.oldest === summary.newest
+      ? shortDay(summary.oldest)
+      : `${shortDay(summary.oldest)}–${shortDay(summary.newest)}`;
+  const behind = summary.behind;
+  return (
+    <div className="mt-1">
+      <Tooltip
+        side="top"
+        lines={[
+          "Balances as each institution reported them:",
+          ...summary.institutions.map(
+            (i) =>
+              `${i.institution} — ${shortDay(i.asOf)}${i.tradingDaysBehind > 0 ? ` (${i.tradingDaysBehind} market day${i.tradingDaysBehind === 1 ? "" : "s"} behind)` : ""}`,
+          ),
+        ]}
+      >
+        <p className="text-caption text-faint w-fit cursor-help underline decoration-dotted underline-offset-2">
+          Balances as of {range} · {countLabel}
+        </p>
+      </Tooltip>
+      {behind.length > 0 && (
+        <p className="text-caption text-amber-600">
+          {behind.length === 1
+            ? `${behind[0]!.institution} is ${behind[0]!.tradingDaysBehind} market day${behind[0]!.tradingDaysBehind === 1 ? "" : "s"} behind`
+            : `${behind.map((b) => b.institution).join(" and ")} are behind`}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -356,15 +424,14 @@ function LinkedBalanceCardImpl() {
         </div>
       )}
 
-      {/* Freshness footer — same position (bottom of card) and format
-          ("Updated <medium date>") as the Net Worth card's footer. */}
-      <p className="text-caption text-faint mt-1">
-        {status?.lastSyncedAt
-          ? `As of ${formatDate(status.lastSyncedAt.toString(), "medium")}`
-          : "Not yet synced"}
-        {" · "}
-        {latest.accountCount} account{latest.accountCount === 1 ? "" : "s"}
-      </p>
+      {/* Freshness footer: how current the balances are, by the
+          institutions' own dates (not when Ledgr synced). Hover lists each
+          institution; amber only when one falls a trading day behind. */}
+      <BalanceDatesFooter
+        accounts={accounts}
+        accountCount={latest.accountCount}
+        lastSyncedAt={status?.lastSyncedAt ?? null}
+      />
     </Card>
   );
 }

@@ -2278,6 +2278,8 @@ export const simplefinAccounts = sqliteTable(
     orgName: text("org_name").notNull(),
     accountName: text("account_name").notNull(),
     lastBalance: text("last_balance").notNull(),
+    /** The institution's as-of time for lastBalance (SimpleFIN `balance-date`); null when not reported. */
+    lastBalanceDate: integer("last_balance_date", { mode: "timestamp" }),
     isIncluded: integer("is_included", { mode: "boolean" })
       .notNull()
       .default(true),

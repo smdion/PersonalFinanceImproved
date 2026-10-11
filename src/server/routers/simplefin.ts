@@ -324,6 +324,7 @@ export const simplefinRouter = createTRPCRouter({
         orgName: r.orgName,
         accountName: r.accountName,
         lastBalance,
+        lastBalanceDate: r.lastBalanceDate,
         isIncluded: r.isIncluded,
         lastSeenAt: r.lastSeenAt,
         linkedPerformanceAccountId: r.linkedPerformanceAccountId,

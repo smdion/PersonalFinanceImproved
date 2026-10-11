@@ -1,0 +1,1 @@
+ALTER TABLE "simplefin_accounts" ADD COLUMN "last_balance_date" timestamp with time zone;
