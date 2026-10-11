@@ -10,7 +10,7 @@
  * check below makes it a build failure instead of a review miss.
  */
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { getTableName } from "drizzle-orm";
 import * as pgSchema from "@/lib/db/schema-pg";
@@ -68,10 +68,12 @@ describe("state-version table registry coverage", () => {
       "budget_items->contribution_accounts",
     ]);
     const tierOf = new Map(VERSION_TABLES.map((t) => [t.name, t.tier]));
-    const baselineSql = readFileSync(
-      path.join(process.cwd(), "drizzle", "0000_v8_initial_schema.sql"),
-      "utf8",
-    );
+    // Every migration, not just the baseline — later ones add FKs too.
+    const migrationsDir = path.join(process.cwd(), "drizzle");
+    const baselineSql = readdirSync(migrationsDir)
+      .filter((f) => f.endsWith(".sql"))
+      .map((f) => readFileSync(path.join(migrationsDir, f), "utf8"))
+      .join("\n");
     const fkRe =
       /ALTER TABLE "([a-z_]+)" ADD CONSTRAINT "[a-z_]+" FOREIGN KEY \("[a-z_]+"\) REFERENCES "public"\."([a-z_]+)"/g;
     const violations: string[] = [];
@@ -89,5 +91,19 @@ describe("state-version table registry coverage", () => {
       }
     }
     expect(violations).toEqual([]);
+  });
+
+  it("db-migrate.ts's own copy of the table list matches VERSION_TABLE_NAMES", () => {
+    // db-migrate.ts runs before src/ is available in the container, so it
+    // keeps a local copy for its pre-upgrade backups. A table missing there
+    // is silently left out of the backup taken right before a migration.
+    const source = readFileSync(
+      path.join(process.cwd(), "db-migrate.ts"),
+      "utf8",
+    );
+    const block = source.match(/const VERSION_TABLE_NAMES = \[([\s\S]*?)\];/);
+    expect(block).not.toBeNull();
+    const mirrored = [...block![1]!.matchAll(/"([a-z_]+)"/g)].map((m) => m[1]);
+    expect([...mirrored].sort()).toEqual([...VERSION_TABLE_NAMES].sort());
   });
 });

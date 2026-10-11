@@ -269,19 +269,28 @@ export default function VersionsPage() {
           <div className="flex items-start justify-between gap-3">
             <div>
               <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-200">
-                Upgrade Complete: v0.1.x → v0.2.0
+                Upgrade complete
               </h3>
               <p className="mt-1 text-sm text-blue-800 dark:text-blue-300">
-                Your data was migrated automatically. A pre-upgrade backup was
-                saved to{" "}
+                Your data was updated automatically. A backup from before the
+                upgrade was saved to{" "}
                 <code className="rounded bg-blue-100 px-1 py-0.5 font-mono text-xs dark:bg-blue-900/50">
                   {upgradeBanner.backupPath}
                 </code>
+                .
               </p>
               <p className="mt-1.5 text-xs text-blue-700 dark:text-blue-400">
-                Your existing v0.1.x backups can still be imported — they are
-                automatically transformed to the new schema.
+                {upgradeBanner.backupPath.endsWith(".db")
+                  ? "To go back, stop Ledgr, put this file in place of your database file, and start the previous version."
+                  : "To go back to it, use Import Backup above. Older backups can still be imported — they're converted to the current version automatically."}
               </p>
+              {upgradeBanner.backupPath.startsWith("/tmp/") && (
+                <p className="mt-1.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+                  This copy is inside the container and is lost when the
+                  container is recreated — copy it somewhere safe, and set
+                  LEDGR_BACKUP_DIR to a mounted folder.
+                </p>
+              )}
             </div>
             <button
               onClick={() => dismissBannerMutation.mutate()}
