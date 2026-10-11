@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**374 procedures across 46 routers.**
+**375 procedures across 46 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -487,6 +487,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 | Procedure               | Kind     | Auth                 | Description                                                                                                                                                                                             |
 | ----------------------- | -------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `getCollectionStats`    | query    | `protectedProcedure` | What the sync has collected and how much of today's request quota is used — counts only, for Settings → Data sources.                                                                                   |
 | `getStatus`             | query    | `protectedProcedure` | Connection status for the Settings integrations card and the sidebar's Data Updated tooltip.                                                                                                            |
 | `listAccounts`          | query    | `protectedProcedure` | matched-group level: every SimpleFIN account linked to a given performance account shares the same `change`, comparing their _combined_ live balance against that one snapshot balance. A per-row delta |
 | `listBalanceHistory`    | query    | `protectedProcedure` | Snapshot history for the dashboard sparkline.                                                                                                                                                           |

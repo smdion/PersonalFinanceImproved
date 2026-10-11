@@ -168,6 +168,9 @@ vi.mock("@/components/ui/card", () => ({
   ),
 }));
 
+vi.mock("@/components/settings/integrations-simplefin-investments", () => ({
+  SimplefinInvestmentsCard: () => <div data-testid="simplefin-investments" />,
+}));
 vi.mock("@/components/settings/integrations-preview-panel", () => ({
   PreviewPanel: () => <div data-testid="preview-panel">Preview</div>,
 }));

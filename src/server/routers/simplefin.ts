@@ -13,7 +13,7 @@
  */
 
 import { z } from "zod/v4";
-import { and, asc, desc, eq, gte } from "drizzle-orm";
+import { and, asc, desc, eq, gte, isNotNull, isNull, sql } from "drizzle-orm";
 import { createTRPCRouter, protectedProcedure, syncProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import {
@@ -32,7 +32,9 @@ import {
   isSimplefinReplayMode,
 } from "@/lib/simplefin/client";
 import {
+  SIMPLEFIN_DAILY_REQUEST_LIMIT,
   SIMPLEFIN_MANUAL_SYNC_MIN_GAP_MS,
+  countSimplefinRequestsLastDay,
   lastSimplefinRequestAt,
 } from "@/lib/simplefin/request-log";
 import { redactStoredCardSpending } from "@/lib/simplefin/ingest";
@@ -137,6 +139,53 @@ export const simplefinRouter = createTRPCRouter({
       connected: true as const,
       lastSyncedAt: conn.lastSyncedAt,
       lastError: await getSimplefinLastError(ctx.db),
+    };
+  }),
+
+  /** What the sync has collected and how much of today's request quota is used — counts only, for Settings → Data sources. */
+  getCollectionStats: protectedProcedure.query(async ({ ctx }) => {
+    const h = schema.holdingObservations;
+    const t = schema.investmentTransactions;
+    const [holdingRows, txStats, requestsLastDay] = await Promise.all([
+      ctx.db
+        .select({
+          accountId: h.simplefinAccountId,
+          securityId: h.securityId,
+          asOf: h.asOf,
+          shares: h.shares,
+        })
+        .from(h)
+        .where(isNotNull(h.simplefinAccountId)),
+      ctx.db
+        .select({
+          count: sql<number>`count(*)`,
+          accounts: sql<number>`count(distinct ${t.simplefinAccountId})`,
+          oldest: sql<string | null>`min(${t.posted})`,
+        })
+        .from(t)
+        .where(isNull(t.voidedAt)),
+      countSimplefinRequestsLastDay(ctx.db),
+    ]);
+    // Latest row per (account, fund); a fund whose latest row is 0 shares was sold.
+    const latest = new Map<string, { asOf: string; shares: number }>();
+    for (const r of holdingRows) {
+      const key = `${r.accountId}:${r.securityId}`;
+      const prev = latest.get(key);
+      if (!prev || r.asOf > prev.asOf)
+        latest.set(key, { asOf: r.asOf, shares: Number(r.shares) });
+    }
+    const held = [...latest.values()].filter((v) => v.shares !== 0);
+    return {
+      holdings: held.length,
+      holdingsAsOf: held.reduce<string | null>(
+        (max, v) => (max === null || v.asOf > max ? v.asOf : max),
+        null,
+      ),
+      transactions: Number(txStats[0]?.count ?? 0),
+      transactionAccounts: Number(txStats[0]?.accounts ?? 0),
+      oldestTransaction: txStats[0]?.oldest ?? null,
+      requestsLastDay,
+      dailyRequestLimit: SIMPLEFIN_DAILY_REQUEST_LIMIT,
     };
   }),
 

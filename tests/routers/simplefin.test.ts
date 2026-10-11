@@ -501,4 +501,71 @@ describe("simplefin router", () => {
       );
     });
   });
+
+  describe("getCollectionStats", () => {
+    it("counts current holdings (not sold funds) and live transactions", async () => {
+      const ctx = await createTestCaller();
+      try {
+        const account = ctx.db
+          .insert(sqliteSchema.simplefinAccounts)
+          .values({
+            externalAccountId: "sf-1",
+            orgName: "Example Bank",
+            accountName: "Example IRA",
+            lastBalance: "1000",
+          })
+          .returning()
+          .get().id;
+        const sec = (ticker: string) =>
+          ctx.db
+            .insert(sqliteSchema.securities)
+            .values({ ticker, name: ticker, kind: "etf" })
+            .returning()
+            .get().id;
+        const [kept, sold] = [sec("EXKPT"), sec("EXSLD")];
+        for (const [securityId, asOf, shares] of [
+          [kept, "2026-05-14", "1"],
+          [kept, "2026-05-15", "2"],
+          [sold, "2026-05-14", "3"],
+          [sold, "2026-05-15", "0"],
+        ] as const)
+          ctx.db
+            .insert(sqliteSchema.holdingObservations)
+            .values({
+              simplefinAccountId: account,
+              securityId,
+              asOf,
+              shares,
+              source: "simplefin",
+            })
+            .run();
+        for (const [externalId, voided] of [
+          ["t1", false],
+          ["t2", true],
+        ] as const)
+          ctx.db
+            .insert(sqliteSchema.investmentTransactions)
+            .values({
+              simplefinAccountId: account,
+              externalId,
+              posted: "2026-05-10",
+              amount: "10.00",
+              description: "EXAMPLE",
+              pending: false,
+              voidedAt: voided ? new Date() : null,
+            })
+            .run();
+        expect(await ctx.caller.simplefin.getCollectionStats()).toMatchObject({
+          holdings: 1,
+          holdingsAsOf: "2026-05-15",
+          transactions: 1,
+          transactionAccounts: 1,
+          oldestTransaction: "2026-05-10",
+          requestsLastDay: 0,
+        });
+      } finally {
+        ctx.cleanup();
+      }
+    });
+  });
 });

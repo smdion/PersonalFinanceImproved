@@ -1,48 +1,69 @@
 import { describe, it, expect } from "vitest";
-import { findOldestDateSource } from "@/lib/pure/data-freshness";
+import { evaluateDataSources } from "@/lib/pure/data-freshness";
 
-describe("findOldestDateSource", () => {
-  it("returns null when no dates are given", () => {
-    expect(findOldestDateSource([])).toBeNull();
-    expect(findOldestDateSource([null, undefined, ""])).toBeNull();
+const now = new Date("2026-06-15T12:00:00");
+const byKey = (inputs: Parameters<typeof evaluateDataSources>[0], at = now) =>
+  Object.fromEntries(
+    evaluateDataSources(inputs, at).map((s) => [s.source.key, s]),
+  );
+
+describe("evaluateDataSources", () => {
+  it("lists only sources in use, in registry order", () => {
+    const keys = evaluateDataSources(
+      {
+        simplefin: { lastUpdated: "2026-06-15T08:00:00.000Z" },
+        balance: { lastUpdated: "2026-06-12" },
+      },
+      now,
+    ).map((s) => s.source.key);
+    expect(keys).toEqual(["balance", "simplefin"]);
   });
 
-  it("picks the chronologically oldest among mixed date-only and timestamp sources", () => {
-    // Regression case: Balance/Performance (date-only) are the true
-    // oldest here, but a naive string/positional pick could return YNAB.
-    const result = findOldestDateSource([
-      "2026-08-01", // Balance (date-only)
-      "2026-08-01", // Performance (date-only)
-      "2026-08-06T13:39:00.000Z", // YNAB (timestamp)
-      "2026-08-05T18:30:00.000Z", // SimpleFIN (timestamp)
-    ]);
-    expect(result).toBe("2026-08-01");
+  it("judges each source against its own rhythm", () => {
+    const s = byKey({
+      balance: { lastUpdated: "2026-06-01" }, // 14 days, weekly
+      performance: { lastUpdated: "2026-06-01" }, // 14 days, monthly
+      simplefin: { lastUpdated: "2026-06-11T12:00:00" }, // 4 days, daily
+    });
+    expect(s.balance).toMatchObject({
+      needsAttention: true,
+      reason: "14 days old",
+    });
+    expect(s.performance!.needsAttention).toBe(false);
+    expect(s.simplefin).toMatchObject({
+      needsAttention: true,
+      reason: "4 days old",
+    });
   });
 
-  it("returns the original raw string of the winner, not a reconstructed date", () => {
-    // The caller must be able to hand this straight to formatDate() and
-    // get the date-only (local midnight) interpretation, not a shifted
-    // one from an ISO round-trip.
-    const result = findOldestDateSource([
-      "2026-08-01",
-      "2026-08-06T00:00:00.000Z",
-    ]);
-    expect(result).toBe("2026-08-01");
-    expect(result).not.toContain("T");
+  it("does not call a yearly source stale before it is due", () => {
+    const basis = { basis: { lastUpdated: "2025-02-01" } };
+    expect(byKey(basis).basis!.needsAttention).toBe(true); // past Jan 31, not updated this year
+    expect(
+      byKey(basis, new Date("2026-01-20T12:00:00")).basis!.needsAttention,
+    ).toBe(false);
+    expect(
+      byKey({ basis: { lastUpdated: "2026-01-10" } }).basis!.needsAttention,
+    ).toBe(false);
+    expect(
+      byKey({ basis: { lastUpdated: "2025-12-31" } }).basis!.needsAttention,
+    ).toBe(false);
   });
 
-  it("ignores invalid/unparseable entries", () => {
-    const result = findOldestDateSource(["not-a-date", "2026-08-01", null]);
-    expect(result).toBe("2026-08-01");
+  it("flags a failed sync even when it is recent", () => {
+    expect(
+      byKey({
+        simplefin: {
+          lastUpdated: "2026-06-15T08:00:00.000Z",
+          error: "Example Bank needs re-login",
+        },
+      }).simplefin,
+    ).toMatchObject({ needsAttention: true, reason: "last sync failed" });
   });
 
-  it("compares a date-only source against a same-day timestamp correctly", () => {
-    // A date-only string is local midnight; a timestamp later that same
-    // day is still chronologically after it.
-    const result = findOldestDateSource([
-      "2026-08-01",
-      "2026-08-01T09:00:00.000Z",
-    ]);
-    expect(result).toBe("2026-08-01");
+  it("flags a connected source that never ran", () => {
+    expect(byKey({ budgetApi: { lastUpdated: null } }).budgetApi).toMatchObject(
+      { needsAttention: true, reason: "never synced", ageDays: null },
+    );
   });
 });
