@@ -2,6 +2,7 @@
 // Components import from here — never define local label maps.
 
 import type { ContribResolutionStatus } from "@/lib/pure/profiles";
+import type { InvestmentTransactionKind } from "./enum-values";
 
 export const PAY_PERIOD_LABELS: Record<string, string> = {
   weekly: "Weekly",
@@ -267,3 +268,19 @@ export function wealthScoreTier(aawScore: number): {
     shortLabel: "UAW — Behind",
   };
 }
+
+/** Investment transaction kinds, as shown in Settings → SimpleFIN. */
+export const INVESTMENT_TRANSACTION_KIND_LABELS: Record<
+  InvestmentTransactionKind,
+  string
+> = {
+  contribution: "Contribution",
+  withdrawal: "Withdrawal",
+  dividend: "Dividend",
+  interest: "Interest",
+  fee: "Fee",
+  trade: "Trade (inside the account)",
+  sweep: "Cash sweep (inside the account)",
+  gain_loss: "Realized gain/loss",
+  other: "Other",
+};

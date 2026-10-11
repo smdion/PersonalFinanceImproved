@@ -13,6 +13,7 @@ import { SK_SETTINGS_INTEGRATIONS_SECTION } from "@/lib/constants/settings-keys"
 import type { Service, PreviewData } from "./integrations-types";
 import { PreviewPanel } from "./integrations-preview-panel";
 import { SimplefinCard } from "./integrations-simplefin";
+import { SimplefinInvestmentsCard } from "./integrations-simplefin-investments";
 import { TiingoCard } from "./integrations-tiingo";
 import {
   ConnectionStatusLine,
@@ -675,8 +676,10 @@ export function IntegrationsSettings() {
               savedActualExternalUrl={connection?.actual.externalUrl}
             />
           </div>
-          <div className={section === "simplefin" ? "" : "hidden"}>
+          <div className={section === "simplefin" ? "space-y-4" : "hidden"}>
             <SimplefinCard />
+            {/* Admin-only page, so the portfolio permission is implied. */}
+            {simplefinStatus?.connected && <SimplefinInvestmentsCard />}
           </div>
           <div className={section === "tiingo" ? "" : "hidden"}>
             <TiingoCard />
