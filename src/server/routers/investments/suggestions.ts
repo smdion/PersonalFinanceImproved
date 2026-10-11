@@ -67,6 +67,18 @@ async function loadYearRows(db: Db, year: number) {
   return rows.filter((r) => r.posted <= `${year}-12-31`);
 }
 
+/**
+ * SimpleFIN accounts that have ever sent a transaction. Some institutions
+ * send only a balance for an account; its contributions are estimated the
+ * way an unlinked account's are.
+ */
+async function feedsWithTransactions(db: Db): Promise<Set<number>> {
+  const rows = await db
+    .selectDistinct({ id: schema.investmentTransactions.simplefinAccountId })
+    .from(schema.investmentTransactions);
+  return new Set(rows.map((r) => r.id));
+}
+
 function nextDay(day: string): string {
   const d = new Date(`${day}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() + 1);
@@ -129,28 +141,37 @@ export const investmentSuggestionsRouter = createTRPCRouter({
   suggestPerformance: portfolioProcedure
     .input(z.object({ year: z.number().int() }))
     .query(async ({ ctx, input }) => {
-      const [perfRows, stamp, coverage, { feeds, subs }, mix, ledger, flows] =
-        await Promise.all([
-          ctx.db
-            .select()
-            .from(schema.accountPerformance)
-            .where(
-              and(
-                eq(schema.accountPerformance.year, input.year),
-                eq(schema.accountPerformance.isActive, true),
-                eq(schema.accountPerformance.isFinalized, false),
-              ),
+      const [
+        perfRows,
+        stamp,
+        coverage,
+        { feeds, subs },
+        mix,
+        ledger,
+        flows,
+        withTransactions,
+      ] = await Promise.all([
+        ctx.db
+          .select()
+          .from(schema.accountPerformance)
+          .where(
+            and(
+              eq(schema.accountPerformance.year, input.year),
+              eq(schema.accountPerformance.isActive, true),
+              eq(schema.accountPerformance.isFinalized, false),
             ),
-          ctx.db
-            .select({ value: schema.appSettings.value })
-            .from(schema.appSettings)
-            .where(eq(schema.appSettings.key, "performance_last_updated")),
-          getTransactionCoverageStart(ctx.db),
-          loadFeeds(ctx.db),
-          loadContributionMix(ctx.db),
-          loadFillRecord(ctx.db, "performance", input.year),
-          loadYearRows(ctx.db, input.year),
-        ]);
+          ),
+        ctx.db
+          .select({ value: schema.appSettings.value })
+          .from(schema.appSettings)
+          .where(eq(schema.appSettings.key, "performance_last_updated")),
+        getTransactionCoverageStart(ctx.db),
+        loadFeeds(ctx.db),
+        loadContributionMix(ctx.db),
+        loadFillRecord(ctx.db, "performance", input.year),
+        loadYearRows(ctx.db, input.year),
+        feedsWithTransactions(ctx.db),
+      ]);
       const stamped =
         typeof stamp[0]?.value === "string"
           ? utcDayOf(new Date(stamp[0].value))
@@ -194,7 +215,10 @@ export const investmentSuggestionsRouter = createTRPCRouter({
         // No feed: what the paycheck setup should have sent instead.
         const estimateTo = today < yearEnd ? today : yearEnd;
         const estimate =
-          feed.status === "none" && accountMix
+          (feed.status === "none" ||
+            (feed.status === "linked" &&
+              feed.feedIds.every((id) => !withTransactions.has(id)))) &&
+          accountMix
             ? {
                 ...estimateFromPaycheck(accountMix, countFrom, estimateTo),
                 through: estimateTo,
@@ -211,6 +235,10 @@ export const investmentSuggestionsRouter = createTRPCRouter({
         return {
           accountPerformanceId: r.id,
           feed: feed.status,
+          /** Linked, but the institution sends only a balance. */
+          balanceOnly:
+            feed.status === "linked" &&
+            feed.feedIds.every((id) => !withTransactions.has(id)),
           baseline,
           /** New money is counted after this day. */
           since: countFrom,

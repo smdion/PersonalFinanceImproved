@@ -450,6 +450,31 @@ describe("investment suggestions", () => {
     ).toMatchObject({
       employee: 0,
     });
+
+    // Linked, but the institution only ever sends a balance: still estimated,
+    // with the ending balance from SimpleFIN.
+    db.insert(sqliteSchema.simplefinAccounts)
+      .values({
+        externalAccountId: "hsa-balance-only",
+        orgName: "Other Bank",
+        accountName: "Health Savings Account",
+        lastBalance: "4321",
+        linkedPerformanceAccountId: hsa,
+      })
+      .run();
+    // Forget the saved estimate so this fill starts from the row's baseline.
+    db.delete(sqliteSchema.appSettings)
+      .where(eq(sqliteSchema.appSettings.key, "simplefin_fill_ledger"))
+      .run();
+    const linked = (
+      await ctx.caller.investments.suggestPerformance({ year: 2026 })
+    ).accounts.find((a) => a.accountPerformanceId === row)!;
+    expect(linked).toMatchObject({
+      feed: "linked",
+      balanceOnly: true,
+      suggested: { endingBalance: 4321 },
+    });
+    expect(linked.estimate).not.toBeNull();
   });
 
   it("needs the portfolio permission", async () => {

@@ -233,7 +233,7 @@ export function UpdatePerformanceForm({
           r.accountPerformanceId,
           [
             s.estimate &&
-              `No SimpleFIN feed — estimated ${formatCurrency(s.estimate.employee + s.estimate.employer)} of contributions from your paycheck setup since ${formatDate(s.since, "medium")}. Check against a statement, and add any withdrawals and the ending balance by hand.`,
+              `${s.balanceOnly ? "SimpleFIN sends only a balance for this account" : "No SimpleFIN feed"} — estimated ${formatCurrency(s.estimate.employee + s.estimate.employer)} of contributions from your paycheck setup since ${formatDate(s.since, "medium")}. Check against a statement, and add any withdrawals${s.balanceOnly ? "" : " and the ending balance"} by hand.`,
             !s.estimate && parts.length
               ? `Added from SimpleFIN since ${formatDate(s.since, "medium")}: ${parts.join(", ")}.`
               : !s.estimate &&
