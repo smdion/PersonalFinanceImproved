@@ -67,6 +67,69 @@ const userFactsInput = z.object({
     ),
 });
 
+/**
+ * Latest holdings valued today (shares × latest close when the ticker is
+ * priced, else the institution's reported value) with each fund's facts.
+ * Shared by Benchmarks and the Portfolio page so both value alike.
+ */
+export async function valueHoldings(
+  db: Db,
+  holdings: Awaited<ReturnType<typeof loadLatestHoldings>>,
+) {
+  const securityIds = [...new Set(holdings.map((h) => h.securityId))];
+  const [securities, facts] = securityIds.length
+    ? await Promise.all([
+        db
+          .select()
+          .from(schema.securities)
+          .where(inArray(schema.securities.id, securityIds)),
+        db
+          .select()
+          .from(schema.securityFacts)
+          .where(inArray(schema.securityFacts.securityId, securityIds)),
+      ])
+    : [[], []];
+  const today = localDateStr();
+  const securityById = new Map(securities.map((s) => [s.id, s]));
+  const factsBySecurity = new Map(
+    securityIds.map((id) => [
+      id,
+      effectiveFacts(
+        toFactRows(facts.filter((f) => f.securityId === id)),
+        today,
+      ),
+    ]),
+  );
+  const closes = new Map(
+    await Promise.all(
+      [
+        ...new Set(
+          holdings.map((h) => h.ticker).filter((t): t is string => !!t),
+        ),
+      ].map(async (t) => [t, await getLatestMarketClose(db, t)] as const),
+    ),
+  );
+
+  const valued = holdings.map((h) => {
+    const close = h.ticker ? closes.get(h.ticker) : null;
+    const security = securityById.get(h.securityId);
+    const value = close ? h.shares * close.close : (h.reportedMarketValue ?? 0);
+    return {
+      ...h,
+      value,
+      valueBasis: close ? ("priced" as const) : ("reported" as const),
+      valuedOn: close ? close.date : h.asOf,
+      facts: factsBySecurity.get(h.securityId)!,
+      factsBasis: security?.factsBasis ?? null,
+      factsSeriesName: security?.factsSeriesName ?? null,
+      standInPending:
+        security?.factsBasis === "standin" && !security.standinConfirmedAt,
+    };
+  });
+
+  return valued;
+}
+
 export const investmentFundFactsRouter = createTRPCRouter({
   /** Holdings valued today, with each fund's facts; allocation vs target; blended cost. */
   getHoldingsOverview: portfolioProcedure.query(async ({ ctx }) => {
@@ -85,58 +148,7 @@ export const investmentFundFactsRouter = createTRPCRouter({
         .orderBy(schema.assetClassParams.sortOrder),
       targetByAssetClass(ctx.db),
     ]);
-    const securityIds = [...new Set(holdings.map((h) => h.securityId))];
-    const [securities, facts] = securityIds.length
-      ? await Promise.all([
-          ctx.db
-            .select()
-            .from(schema.securities)
-            .where(inArray(schema.securities.id, securityIds)),
-          ctx.db
-            .select()
-            .from(schema.securityFacts)
-            .where(inArray(schema.securityFacts.securityId, securityIds)),
-        ])
-      : [[], []];
-    const today = localDateStr();
-    const securityById = new Map(securities.map((s) => [s.id, s]));
-    const factsBySecurity = new Map(
-      securityIds.map((id) => [
-        id,
-        effectiveFacts(
-          toFactRows(facts.filter((f) => f.securityId === id)),
-          today,
-        ),
-      ]),
-    );
-    const closes = new Map(
-      await Promise.all(
-        [
-          ...new Set(
-            holdings.map((h) => h.ticker).filter((t): t is string => !!t),
-          ),
-        ].map(async (t) => [t, await getLatestMarketClose(ctx.db, t)] as const),
-      ),
-    );
-
-    const valued = holdings.map((h) => {
-      const close = h.ticker ? closes.get(h.ticker) : null;
-      const security = securityById.get(h.securityId);
-      const value = close
-        ? h.shares * close.close
-        : (h.reportedMarketValue ?? 0);
-      return {
-        ...h,
-        value,
-        valueBasis: close ? ("priced" as const) : ("reported" as const),
-        valuedOn: close ? close.date : h.asOf,
-        facts: factsBySecurity.get(h.securityId)!,
-        factsBasis: security?.factsBasis ?? null,
-        factsSeriesName: security?.factsSeriesName ?? null,
-        standInPending:
-          security?.factsBasis === "standin" && !security.standinConfirmedAt,
-      };
-    });
+    const valued = await valueHoldings(ctx.db, holdings);
 
     const { buckets, unknown, total } = portfolioBuckets(valued);
     const mapped = new Set(assetClasses.map((a) => a.bucket).filter(Boolean));
@@ -155,6 +167,7 @@ export const investmentFundFactsRouter = createTRPCRouter({
           const a = accounts.get(id);
           return {
             simplefinAccountId: id,
+            performanceAccountId: a?.performanceAccountId ?? null,
             label: `${a?.institution ?? ""} ${a?.accountName ?? ""}`.trim(),
             total: rows.reduce((s, r) => s + r.value, 0),
             holdings: rows

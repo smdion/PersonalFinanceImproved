@@ -17,6 +17,7 @@ vi.mock("@/lib/utils/colors", () => ({
   accountBorderColor: () => "border-blue-300",
   accountMatchColor: () => "bg-blue-50",
   accountColor: () => "bg-blue-500",
+  CHART_COLORS: {},
 }));
 
 vi.mock("@/lib/config/account-types", () => {
