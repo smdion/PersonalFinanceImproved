@@ -7,6 +7,7 @@
 import { z } from "zod/v4";
 import { and, eq, gte, inArray, lte } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
+import { utcDayOf } from "@/lib/simplefin/ingest";
 import type { Db, DbOrTx } from "./transforms";
 
 export const FILL_LEDGER_KEY = "simplefin_fill_ledger";
@@ -18,6 +19,9 @@ export type FillRecord = {
   baselines: Record<string, string>;
   /** Transaction id → how it was counted ("removed" once taken back out). */
   counted: Record<string, string>;
+  /** Row id → last day an estimate from the paycheck setup covered (rows
+   *  with no feed); later fills, and any feed linked later, start after it. */
+  estimatedThrough?: Record<string, string>;
 };
 
 type Ledger = Partial<Record<FillScope, Record<string, FillRecord>>>;
@@ -32,6 +36,7 @@ export const zFillRecord = z.object({
     z.string(),
     z.string().regex(/^(?:[a-z_]+(?::conversion)?|removed)$/),
   ),
+  estimatedThrough: z.record(z.string(), day).optional(),
 });
 
 async function readLedger(db: DbOrTx): Promise<Ledger> {
@@ -49,7 +54,11 @@ export async function loadFillRecord(
   year: number,
 ): Promise<FillRecord> {
   const r = (await readLedger(db))[scope]?.[year];
-  return { baselines: r?.baselines ?? {}, counted: r?.counted ?? {} };
+  return {
+    baselines: r?.baselines ?? {},
+    counted: r?.counted ?? {},
+    estimatedThrough: r?.estimatedThrough ?? {},
+  };
 }
 
 /**
@@ -86,6 +95,16 @@ export async function recordFill(
     )
       record.baselines[row] = baseline;
   for (const { id } of known) record.counted[id] = fill.counted[id]!;
+  // Only forward, and never past today or the year.
+  const today = utcDayOf(new Date());
+  const through = (record.estimatedThrough ??= {});
+  for (const [row, d] of Object.entries(fill.estimatedThrough ?? {}))
+    if (
+      d <= today &&
+      d <= `${fill.year}-12-31` &&
+      d > (through[row] ?? `${fill.year - 1}-12-31`)
+    )
+      through[row] = d;
   await tx
     .insert(schema.appSettings)
     .values({ key: FILL_LEDGER_KEY, value: ledger })

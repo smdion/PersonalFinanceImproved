@@ -2,6 +2,7 @@
 import { describe, it, expect } from "vitest";
 import {
   attributeFeeds,
+  estimateFromPaycheck,
   flowsSinceFill,
   initialBaseline,
   reduceBasis,
@@ -235,5 +236,27 @@ describe("attributeFeeds", () => {
         subs,
       ).status,
     ).toBe("none");
+  });
+});
+
+describe("estimateFromPaycheck", () => {
+  const mix = {
+    employeePreTax: 3650,
+    employeeRoth: 0,
+    employeeOther: 0,
+    employer: 730,
+    employerRoth: 0,
+  };
+  it("pro-rates the year's setup over the days after `from`", () => {
+    expect(estimateFromPaycheck(mix, "2026-03-01", "2026-03-11")).toEqual({
+      employee: 100,
+      employer: 20,
+    });
+  });
+  it("adds nothing for an empty or backwards window", () => {
+    expect(estimateFromPaycheck(mix, "2026-03-11", "2026-03-11")).toEqual({
+      employee: 0,
+      employer: 0,
+    });
   });
 });

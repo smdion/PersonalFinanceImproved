@@ -45,6 +45,7 @@ export function UpdatePerformanceForm({
     year: number;
     baselines: Record<string, string>;
     counted: Record<string, string>;
+    estimatedThrough: Record<string, string>;
   } | null>(null);
   const [fillNotes, setFillNotes] = useState<Map<number, string>>(new Map());
   const didInit = useRef(false);
@@ -178,6 +179,7 @@ export function UpdatePerformanceForm({
       year: suggestions.year,
       baselines: {} as Record<string, string>,
       counted: {} as Record<string, string>,
+      estimatedThrough: {} as Record<string, string>,
     };
     setRows(
       rows.map((r) => {
@@ -188,7 +190,7 @@ export function UpdatePerformanceForm({
           endingBalanceSource === "snapshot"
             ? String(r.snapshotEndingBalance ?? r.endingBalance)
             : r.endingBalance;
-        if (!s || s.feed !== "linked") {
+        if (!s || (s.feed !== "linked" && !s.estimate)) {
           notes.set(
             r.accountPerformanceId,
             s?.feed === "ambiguous"
@@ -199,6 +201,8 @@ export function UpdatePerformanceForm({
         }
         record.baselines[r.accountPerformanceId] = s.baseline;
         Object.assign(record.counted, s.counted);
+        if (s.estimate)
+          record.estimatedThrough[r.accountPerformanceId] = s.estimate.through;
         const untouched = (field: keyof typeof r.original, value: string) =>
           (parseFloat(value) || 0) === r.original[field];
         const fill = (
@@ -228,10 +232,14 @@ export function UpdatePerformanceForm({
         notes.set(
           r.accountPerformanceId,
           [
-            parts.length
-              ? `Added from SimpleFIN since ${formatDate(s.baseline, "medium")}: ${parts.join(", ")}.`
-              : `Nothing new from SimpleFIN since ${formatDate(s.baseline, "medium")}.`,
+            s.estimate &&
+              `No SimpleFIN feed — estimated ${formatCurrency(s.estimate.employee + s.estimate.employer)} of contributions from your paycheck setup since ${formatDate(s.since, "medium")}. Check against a statement, and add any withdrawals and the ending balance by hand.`,
+            !s.estimate && parts.length
+              ? `Added from SimpleFIN since ${formatDate(s.since, "medium")}: ${parts.join(", ")}.`
+              : !s.estimate &&
+                `Nothing new from SimpleFIN since ${formatDate(s.since, "medium")}.`,
             a.estimated &&
+              !s.estimate &&
               "Employee/employer split estimated from your paycheck setup.",
             s.missingBefore &&
               `SimpleFIN transactions only go back to ${formatDate(s.missingBefore, "medium")} — add anything before that by hand.`,

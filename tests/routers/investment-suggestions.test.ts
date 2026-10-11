@@ -6,6 +6,7 @@
  */
 import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { eq } from "drizzle-orm";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
 import {
   createTestCaller,
@@ -339,6 +340,116 @@ describe("investment suggestions", () => {
     expect(
       again.accounts.find((a) => a.ownerPersonId === bob)?.added.count,
     ).toBe(0);
+  });
+
+  it("suggests snapshot balances from linked accounts", async () => {
+    const rows = await ctx.caller.investments.suggestSnapshot();
+    const amounts = Object.fromEntries(rows.map((r) => [r.key, r.amount]));
+    expect(Object.values(amounts).sort((x, y) => x - y)).toEqual([
+      6100, 9000, 10300, 11500,
+    ]);
+    expect(rows.every((r) => r.source === "linked")).toBe(true);
+  });
+
+  it("estimates contributions from the paycheck setup for an account with no feed", async () => {
+    const db = ctx.db;
+    const hsa = seedPerformanceAccount(db, {
+      institution: "Other Bank",
+      accountType: "hsa",
+      accountLabel: "HSA",
+      ownerPersonId: bob,
+    });
+    const row = db
+      .insert(sqliteSchema.accountPerformance)
+      .values({
+        year: 2026,
+        institution: "Other Bank",
+        accountLabel: "HSA",
+        ownerPersonId: bob,
+        beginningBalance: "1000",
+        totalContributions: "300",
+        employerContributions: "0",
+        yearlyGainLoss: "0",
+        endingBalance: "1300",
+        parentCategory: "Retirement",
+        performanceAccountId: hsa,
+      })
+      .returning()
+      .get().id;
+    const contrib = db
+      .insert(sqliteSchema.contributionAccounts)
+      .values({
+        personId: bob,
+        accountType: "hsa",
+        taxTreatment: "hsa",
+        employerMatchType: "none",
+        performanceAccountId: hsa,
+      })
+      .returning()
+      .get().id;
+    const profile = db
+      .select()
+      .from(sqliteSchema.contributionProfiles)
+      .all()
+      .find((p) => p.name === "Now")!;
+    const fields = profile.contributionActiveFields as {
+      contributionAccounts: Record<string, unknown>;
+    };
+    fields.contributionAccounts[contrib] = {
+      contributionMethod: "fixed_annual",
+      contributionValue: "3650",
+    };
+    db.update(sqliteSchema.contributionProfiles)
+      .set({ contributionActiveFields: fields })
+      .where(eq(sqliteSchema.contributionProfiles.id, profile.id))
+      .run();
+
+    // An earlier save stamped "last updated" today; start this row in March.
+    db.update(sqliteSchema.appSettings)
+      .set({ value: "2026-03-01T12:00:00Z" })
+      .where(eq(sqliteSchema.appSettings.key, "performance_last_updated"))
+      .run();
+    const s = await ctx.caller.investments.suggestPerformance({ year: 2026 });
+    const hsaRow = s.accounts.find((a) => a.accountPerformanceId === row)!;
+    const to =
+      new Date().toISOString().slice(0, 10) < "2026-12-31" // lint-violation-ok: compared as UTC days, as the router does
+        ? new Date().toISOString().slice(0, 10) // lint-violation-ok: UTC day key
+        : "2026-12-31";
+    const days = (Date.parse(to) - Date.parse(hsaRow.since)) / 86_400_000;
+    expect(hsaRow.feed).toBe("none");
+    expect(hsaRow.estimate).toMatchObject({ through: to });
+    expect(hsaRow.estimate!.employee).toBeCloseTo(days * 10, 2);
+    expect(hsaRow.suggested.employeeContrib).toBeCloseTo(300 + days * 10, 2);
+
+    // Saved: a second fill doesn't estimate the same days again.
+    await ctx.caller.performance.batchUpdateAccounts({
+      accounts: [
+        {
+          id: row,
+          totalContributions: hsaRow.suggested.employeeContrib.toFixed(2),
+          employerContributions: "0",
+          distributions: "0",
+          rollovers: "0",
+          fees: "0",
+          endingBalance: "1300",
+          yearlyGainLoss: "0",
+        },
+      ],
+      simplefinFill: {
+        year: 2026,
+        baselines: { [row]: hsaRow.baseline },
+        counted: {},
+        estimatedThrough: { [row]: hsaRow.estimate!.through },
+      },
+    });
+    const again = await ctx.caller.investments.suggestPerformance({
+      year: 2026,
+    });
+    expect(
+      again.accounts.find((a) => a.accountPerformanceId === row)!.estimate,
+    ).toMatchObject({
+      employee: 0,
+    });
   });
 
   it("needs the portfolio permission", async () => {

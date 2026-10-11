@@ -133,6 +133,7 @@ describe("UpdatePerformanceForm", () => {
           accountPerformanceId: 1,
           feed: "linked",
           baseline: "2026-03-31",
+          since: "2026-03-31",
           missingBefore: null,
           counted: { 41: "contribution", 42: "fee" },
           added: {
@@ -196,6 +197,7 @@ describe("UpdatePerformanceForm", () => {
       year: 2026,
       baselines: { 1: "2026-03-31" },
       counted: { 41: "contribution", 42: "fee" },
+      estimatedThrough: {},
     });
     const acct1 = input.accounts.find((a) => a.id === 1)!;
     expect(acct1).toMatchObject({
@@ -220,6 +222,7 @@ describe("UpdatePerformanceForm", () => {
           accountPerformanceId: 1,
           feed: "linked",
           baseline: "2026-03-31",
+          since: "2026-03-31",
           missingBefore: null,
           counted: {},
           added: {

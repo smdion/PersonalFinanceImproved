@@ -337,3 +337,28 @@ export function initialBaseline(
   if (empty || !savedOn) return start;
   return savedOn < start ? start : savedOn > end ? end : savedOn;
 }
+
+/**
+ * Contributions the paycheck setup should have sent between two days (after
+ * `from`, through `to`), for an account with no feed. A pro-rated estimate —
+ * pay dates and mid-year changes aren't modelled — so it's always labelled.
+ */
+export function estimateFromPaycheck(
+  mix: ContributionMix,
+  from: string,
+  to: string,
+): { employee: number; employer: number } {
+  const days =
+    (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) /
+    86_400_000;
+  if (!(days > 0)) return { employee: 0, employer: 0 };
+  const year = Number(to.slice(0, 4));
+  const leap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+  const share = days / (leap ? 366 : 365);
+  return {
+    employee: roundToCents(
+      (mix.employeePreTax + mix.employeeRoth + mix.employeeOther) * share,
+    ),
+    employer: roundToCents(mix.employer * share),
+  };
+}

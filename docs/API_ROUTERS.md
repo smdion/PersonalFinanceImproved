@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**392 procedures across 52 routers.**
+**393 procedures across 52 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -191,6 +191,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | -------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `suggestBasis`       | query | `portfolioProcedure` | The year's Roth basis rows with Roth contributions and conversions no saved fill has counted yet. Basis is cumulative, so these add onto the stored figures; money out of a Roth account reduces them (c |
 | `suggestPerformance` | query | `portfolioProcedure` | The year's Performance rows with what SimpleFIN has seen that no saved fill has counted yet, added onto the stored figures.                                                                              |
+| `suggestSnapshot`    | query | `portfolioProcedure` | Suggested balances for a new portfolio snapshot, by snapshot sub-account key, from linked SimpleFIN accounts.                                                                                            |
 
 ## `investments/transactions`
 

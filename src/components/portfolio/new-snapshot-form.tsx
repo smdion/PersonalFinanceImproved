@@ -8,11 +8,13 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import {
   formatCurrency,
+  formatDate,
   accountDisplayName,
   personDisplayName,
 } from "@/lib/utils/format";
 import { taxTypeLabel } from "@/lib/utils/colors";
 import { localDateStr } from "@/lib/utils/date";
+import { snapshotAccountKey } from "@/lib/pure/portfolio";
 import { getDisplayConfig } from "@/lib/config/account-types";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
@@ -35,6 +37,8 @@ type AccountRow = {
    *  resolveSnapshotAccountAmounts), so the row is shown/held at $0 here
    *  too rather than displaying a stale total the save won't match. */
   isClosedAccount: boolean;
+  /** Set when the amount came from a SimpleFIN fill. */
+  filled?: { source: "linked" | "estimated"; balanceDate: string | null };
 };
 
 let rowKeyCounter = 0;
@@ -284,6 +288,12 @@ export function NewSnapshotForm({
   });
 
   const { data: snapshotTotals } = trpc.networth.listSnapshotTotals.useQuery();
+  // Hidden (no error shown) without the portfolio permission it needs.
+  const { data: suggestions } = trpc.investments.suggestSnapshot.useQuery(
+    undefined,
+    { retry: false },
+  );
+  const [filled, setFilled] = useState(false);
 
   const today = localDateStr();
   const [snapshotDate, setSnapshotDate] = useState(today);
@@ -387,11 +397,43 @@ export function NewSnapshotForm({
   const updateRow = useCallback(
     (key: string, field: keyof AccountRow, value: string | number) => {
       setRows((prev) =>
-        (prev ?? []).map((r) => (r.key === key ? { ...r, [field]: value } : r)),
+        (prev ?? []).map((r) =>
+          // A typed amount is no longer SimpleFIN's.
+          r.key === key ? { ...r, [field]: value, filled: undefined } : r,
+        ),
       );
     },
     [],
   );
+
+  /**
+   * Prefill from SimpleFIN: each linked sub-account's live balance. Amounts
+   * already typed in this form keep the edit.
+   */
+  const fillFromSimplefin = () => {
+    if (!rows || !suggestions) return;
+    const byKey = new Map(suggestions.map((s) => [s.key, s]));
+    setRows(
+      rows.map((r) => {
+        const s = byKey.get(
+          snapshotAccountKey({
+            performanceAccountId: r.performanceAccountId,
+            taxType: r.taxType,
+            subType: r.subType,
+            ownerPersonId: r.ownerPersonId,
+          }),
+        );
+        const untouched = (parseFloat(r.amount) || 0) === r.previousAmount;
+        if (!s || r.isClosedAccount || !untouched) return r;
+        return {
+          ...r,
+          amount: s.amount.toFixed(2),
+          filled: { source: s.source, balanceDate: s.balanceDate },
+        };
+      }),
+    );
+    setFilled(true);
+  };
 
   const handleSave = () => {
     if (!rows) return;
@@ -457,6 +499,25 @@ export function NewSnapshotForm({
               Discard
             </button>
           </span>
+        </div>
+      )}
+
+      {suggestions && suggestions.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 rounded bg-blue-50 p-2 text-xs text-blue-900 dark:bg-blue-950/30 dark:text-blue-200">
+          <span>
+            {filled
+              ? "Filled from SimpleFIN — check each balance, then save. Accounts without a feed keep their last value; amounts you'd typed were kept."
+              : "Fill balances from your linked SimpleFIN accounts."}
+          </span>
+          {!filled && (
+            <button
+              type="button"
+              onClick={fillFromSimplefin}
+              className="rounded bg-blue-600 px-2 py-0.5 text-white hover:bg-blue-700"
+            >
+              Fill from SimpleFIN
+            </button>
+          )}
         </div>
       )}
 
@@ -596,6 +657,19 @@ export function NewSnapshotForm({
                                     CLOSED
                                   </span>
                                 )}
+                                {row.filled &&
+                                  (parseFloat(row.amount) || 0) !==
+                                    row.previousAmount && (
+                                    <span
+                                      className={`text-caption ml-1.5 ${row.filled.source === "estimated" ? "text-amber-600" : "text-faint"}`}
+                                    >
+                                      {row.filled.source === "estimated"
+                                        ? "SimpleFIN, split by your last snapshot — check against your statement"
+                                        : "SimpleFIN"}
+                                      {row.filled.balanceDate &&
+                                        ` · as of ${formatDate(row.filled.balanceDate, "medium")}`}
+                                    </span>
+                                  )}
                               </span>
                               <div className="flex flex-col items-end gap-0.5">
                                 <div

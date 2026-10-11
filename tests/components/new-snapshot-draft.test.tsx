@@ -33,8 +33,13 @@ const mockPerf = [
   },
 ];
 
+let mockSuggestions: unknown = undefined;
+
 vi.mock("@/lib/trpc", () => ({
   trpc: {
+    investments: {
+      suggestSnapshot: { useQuery: () => ({ data: mockSuggestions }) },
+    },
     networth: {
       listSnapshotTotals: { useQuery: () => ({ data: [] }) },
       portfolioSnapshots: {
@@ -82,6 +87,31 @@ const TODAY = localDateStr();
 beforeEach(() => {
   window.localStorage.clear();
   createMutate.mockClear();
+  mockSuggestions = undefined;
+});
+
+describe("NewSnapshotForm fill from SimpleFIN", () => {
+  it("fills linked balances and labels them", () => {
+    mockSuggestions = [
+      {
+        key: "11_preTax__1",
+        amount: 104321.5,
+        source: "linked",
+        balanceDate: "2026-10-10",
+      },
+    ];
+    render(<NewSnapshotForm onClose={vi.fn()} onSaved={vi.fn()} />);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Fill from SimpleFIN" }),
+    );
+    expect(screen.getByDisplayValue("104321.50")).toBeInTheDocument();
+    expect(screen.getByText(/^SimpleFIN/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Save Snapshot" }));
+    const input = createMutate.mock.calls[0]![0] as {
+      accounts: { amount: string }[];
+    };
+    expect(input.accounts[0]!.amount).toBe("104321.50");
+  });
 });
 
 describe("NewSnapshotForm local draft", () => {
@@ -139,6 +169,9 @@ describe("NewSnapshotForm local draft", () => {
     vi.resetModules();
     vi.doMock("@/lib/trpc", () => ({
       trpc: {
+        investments: {
+          suggestSnapshot: { useQuery: () => ({ data: undefined }) },
+        },
         networth: {
           listSnapshotTotals: {
             useQuery: () => ({ data: [{ id: 1, date: TODAY, total: 1 }] }),

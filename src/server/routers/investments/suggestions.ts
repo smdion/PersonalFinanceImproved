@@ -15,12 +15,14 @@ import { utcDayOf } from "@/lib/simplefin/ingest";
 import { roundToCents } from "@/lib/utils/math";
 import {
   attributeFeeds,
+  estimateFromPaycheck,
   flowsSinceFill,
   initialBaseline,
   reduceBasis,
   splitContributions,
   type FeedAccount,
 } from "@/lib/pure/flow-suggestions";
+import { suggestSnapshotAmounts } from "@/lib/pure/snapshot-suggestions";
 import { loadLatestSubAccounts } from "@/server/helpers/sub-accounts";
 import { loadContributionMix } from "@/server/helpers/contribution-mix";
 import { loadFillRecord } from "@/server/helpers/fill-ledger";
@@ -87,6 +89,40 @@ function rowsPerAccount(rows: readonly { performanceAccountId: number }[]) {
 
 export const investmentSuggestionsRouter = createTRPCRouter({
   /**
+   * Suggested balances for a new portfolio snapshot, by snapshot
+   * sub-account key, from linked SimpleFIN accounts.
+   */
+  suggestSnapshot: portfolioProcedure.query(async ({ ctx }) => {
+    const [feeds, subs] = await Promise.all([
+      ctx.db
+        .select({
+          performanceAccountId:
+            schema.simplefinAccounts.linkedPerformanceAccountId,
+          subKey: schema.simplefinAccounts.linkedSubKey,
+          balance: schema.simplefinAccounts.lastBalance,
+          balanceDate: schema.simplefinAccounts.lastBalanceDate,
+        })
+        .from(schema.simplefinAccounts)
+        .where(isNotNull(schema.simplefinAccounts.linkedPerformanceAccountId)),
+      loadLatestSubAccounts(ctx.db),
+    ]);
+    const suggestions = suggestSnapshotAmounts(
+      subs.map((s) => ({
+        key: s.key,
+        performanceAccountId: s.performanceAccountId,
+        amount: s.amount,
+      })),
+      feeds.map((f) => ({
+        performanceAccountId: f.performanceAccountId!,
+        subKey: f.subKey,
+        balance: toNumber(f.balance),
+        balanceDate: f.balanceDate ? utcDayOf(f.balanceDate) : null,
+      })),
+    );
+    return [...suggestions].map(([key, s]) => ({ key, ...s }));
+  }),
+
+  /**
    * The year's Performance rows with what SimpleFIN has seen that no saved
    * fill has counted yet, added onto the stored figures.
    */
@@ -121,6 +157,8 @@ export const investmentSuggestionsRouter = createTRPCRouter({
           : null;
       const coverageStart = coverage ? utcDayOf(coverage) : null;
       const perAccount = rowsPerAccount(perfRows);
+      const today = utcDayOf(new Date());
+      const yearEnd = `${input.year}-12-31`;
 
       const accounts = perfRows.map((r) => {
         const empty = [
@@ -137,27 +175,48 @@ export const investmentSuggestionsRouter = createTRPCRouter({
           feeds,
           subs,
         );
+        // Days an earlier paycheck estimate covered aren't counted again.
+        const estimatedThrough = ledger.estimatedThrough?.[r.id];
+        const countFrom =
+          estimatedThrough && estimatedThrough > baseline
+            ? estimatedThrough
+            : baseline;
         const mine = flows.filter((f) =>
           feed.feedIds.includes(f.simplefinAccountId),
         );
         const { totals: t, counted } = flowsSinceFill(
           mine,
           ledger.counted,
-          baseline,
+          countFrom,
         );
-        const split = splitContributions(
-          t.contributions,
-          mix.get(r.performanceAccountId) ?? null,
-          false,
-        );
+        const accountMix = mix.get(r.performanceAccountId) ?? null;
+        const split = splitContributions(t.contributions, accountMix, false);
+        // No feed: what the paycheck setup should have sent instead.
+        const estimateTo = today < yearEnd ? today : yearEnd;
+        const estimate =
+          feed.status === "none" && accountMix
+            ? {
+                ...estimateFromPaycheck(accountMix, countFrom, estimateTo),
+                through: estimateTo,
+              }
+            : null;
+        if (estimate && estimate.employee + estimate.employer === 0)
+          estimate.through = countFrom;
+        if (estimate) {
+          split.employee += estimate.employee;
+          split.employer += estimate.employer;
+        }
         const storedEmployer = toNumber(r.employerContributions);
         const storedEmployee = toNumber(r.totalContributions) - storedEmployer;
         return {
           accountPerformanceId: r.id,
           feed: feed.status,
           baseline,
-          missingBefore: gapAfter(coverageStart, baseline),
+          /** New money is counted after this day. */
+          since: countFrom,
+          missingBefore: estimate ? null : gapAfter(coverageStart, countFrom),
           added: { ...t, ...split },
+          estimate,
           reviewCount: mine.filter(
             (f) => f.needsReview && !f.voided && f.posted > baseline,
           ).length,

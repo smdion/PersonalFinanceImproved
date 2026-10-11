@@ -152,6 +152,9 @@ vi.mock("@/lib/trpc", () => ({
         portfolioSnapshots: { getLatest: { invalidate: vi.fn() } },
       },
     }),
+    investments: {
+      suggestSnapshot: { useQuery: () => ({ data: undefined }) },
+    },
     networth: {
       computeSummary: {
         useQuery: () => ({
