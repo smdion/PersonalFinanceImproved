@@ -295,6 +295,13 @@ function mapResponse(json: SimplefinAccountsResponse): GetAccountsResult {
   };
 }
 
+/** Replay mode: saved responses instead of real calls — never in production. */
+export function isSimplefinReplayMode(): boolean {
+  return (
+    !!process.env.SIMPLEFIN_REPLAY_DIR && process.env.NODE_ENV !== "production"
+  );
+}
+
 /** Development-only: read saved responses instead of calling SimpleFIN. */
 async function readReplayResponses(dir: string): Promise<GetAccountsResult> {
   const files = (await fs.readdir(dir)).filter((f) => f.endsWith(".json"));
@@ -318,9 +325,8 @@ export async function getAccounts(
   accessUrl: string,
   options: GetAccountsOptions = {},
 ): Promise<GetAccountsResult> {
-  const replayDir = process.env.SIMPLEFIN_REPLAY_DIR;
-  if (replayDir && process.env.NODE_ENV !== "production") {
-    return readReplayResponses(replayDir);
+  if (isSimplefinReplayMode()) {
+    return readReplayResponses(process.env.SIMPLEFIN_REPLAY_DIR!);
   }
   const { baseUrl, authHeader } = parseAccessUrl(accessUrl);
   const query = options.startDate

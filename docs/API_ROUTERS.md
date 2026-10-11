@@ -471,7 +471,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `saveToken`             | mutation | `syncProcedure`      | Claim a one-time setup token and store the resulting access URL.                                                                                                                                        |
 | `setAccountIncluded`    | mutation | `syncProcedure`      | Toggle an account's inclusion and recompute today's total from local data immediately — no SimpleFIN API call, so this is free to click repeatedly. Does not touch any prior day's snapshot.            |
 | `setAccountMapping`     | mutation | `syncProcedure`      | multiple SimpleFIN accounts can point at the same performance account (e.g. historical account splits/merges Ledgr still tracks as a single account) — listAccounts sums every linked account's balance |
-| `syncNow`               | mutation | `syncProcedure`      | Manual sync trigger — calls the same runSimplefinSync the daily cron calls.                                                                                                                             |
+| `syncNow`               | mutation | `syncProcedure`      | Manual sync trigger — calls the same runSimplefinSync the daily cron calls. At most once per 10 minutes (quota).                                                                                        |
 | `testConnection`        | mutation | `syncProcedure`      | Test the stored connection without writing a snapshot.                                                                                                                                                  |
 
 ## `sync/config`

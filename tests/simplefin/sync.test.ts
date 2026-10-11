@@ -13,6 +13,7 @@ import { createTestDb, type TestDbContext } from "../helpers/db-harness";
 
 vi.mock("@/lib/simplefin/client", () => ({
   getAccounts: vi.fn(),
+  isSimplefinReplayMode: () => false,
 }));
 
 // ENCRYPTION_KEY must be set before crypto.ts is imported (transitively via

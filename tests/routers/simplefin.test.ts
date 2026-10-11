@@ -490,4 +490,15 @@ describe("simplefin router", () => {
       }
     });
   });
+
+  describe("syncNow", () => {
+    it("refuses a manual sync within 10 minutes of the last SimpleFIN request (quota)", async () => {
+      db.insert(sqliteSchema.syncRequestLog)
+        .values({ service: "simplefin", endpoint: "/accounts", outcome: "ok" })
+        .run();
+      await expect(caller.simplefin.syncNow()).rejects.toThrow(
+        /Try again in \d+ minute/,
+      );
+    });
+  });
 });

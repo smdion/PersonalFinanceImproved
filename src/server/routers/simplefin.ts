@@ -26,7 +26,15 @@ import {
   localDateStr,
   getSimplefinLastError,
 } from "@/lib/simplefin/sync";
-import { claimSetupToken, getAccounts } from "@/lib/simplefin/client";
+import {
+  claimSetupToken,
+  getAccounts,
+  isSimplefinReplayMode,
+} from "@/lib/simplefin/client";
+import {
+  SIMPLEFIN_MANUAL_SYNC_MIN_GAP_MS,
+  lastSimplefinRequestAt,
+} from "@/lib/simplefin/request-log";
 import { readMaybeEncrypted } from "@/lib/crypto";
 import type { SimplefinConfig } from "@/lib/simplefin/sync";
 import { getLatestSnapshot } from "@/server/helpers/snapshot";
@@ -83,8 +91,24 @@ export const simplefinRouter = createTRPCRouter({
     }
   }),
 
-  /** Manual sync trigger — calls the same runSimplefinSync the daily cron calls. */
+  /** Manual sync trigger — calls the same runSimplefinSync the daily cron calls. At most once per 10 minutes (quota). */
   syncNow: syncProcedure.mutation(async ({ ctx }) => {
+    if (!isSimplefinReplayMode()) {
+      const last = await lastSimplefinRequestAt(ctx.db);
+      if (
+        last &&
+        Date.now() - last.getTime() < SIMPLEFIN_MANUAL_SYNC_MIN_GAP_MS
+      ) {
+        const minutes = Math.ceil(
+          (SIMPLEFIN_MANUAL_SYNC_MIN_GAP_MS - (Date.now() - last.getTime())) /
+            60_000,
+        );
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: `SimpleFIN was synced moments ago. Try again in ${minutes} minute${minutes === 1 ? "" : "s"} — SimpleFIN allows only about 24 requests a day.`,
+        });
+      }
+    }
     try {
       return { success: true as const, ...(await runSimplefinSync(ctx.db)) };
     } catch (e) {

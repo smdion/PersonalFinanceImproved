@@ -14,7 +14,19 @@ import "server-only";
 import { eq, sql } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { encryptJson, readMaybeEncrypted } from "@/lib/crypto";
-import { getAccounts, type SimplefinAccount } from "./client";
+import {
+  getAccounts,
+  isSimplefinReplayMode,
+  type SimplefinAccount,
+} from "./client";
+import { BudgetApiError } from "@/lib/budget-api/errors";
+import {
+  SIMPLEFIN_DAILY_REQUEST_LIMIT,
+  countSimplefinRequestsLastDay,
+  pruneSimplefinRequestLog,
+  recordSimplefinRequest,
+} from "./request-log";
+import { ingestInvestmentData, utcDayOf, type IngestSummary } from "./ingest";
 import { localDateStr } from "@/lib/utils/date";
 
 export { localDateStr };
@@ -31,7 +43,27 @@ export type SimplefinSyncResult = {
   accountCount: number;
   /** Non-fatal provider errors from this sync (e.g. one institution needs re-auth), for the UI to surface. */
   providerErrors: string[];
+  /** What was stored for investment accounts (holdings, transactions); absent for local recomputes. */
+  investments?: Omit<IngestSummary, "warnings">;
 };
+
+/** Re-request this many days before the last successful sync so late-posting rows are caught. */
+const WINDOW_OVERLAP_DAYS = 5;
+/** SimpleFIN keeps about 90 days of transactions. */
+const MAX_WINDOW_DAYS = 90;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Start of the transaction window to request: last success minus the overlap, at most 90 days back. */
+export function transactionWindowStart(
+  lastSyncedAt: Date | null,
+  now: Date,
+): Date {
+  const earliest = now.getTime() - MAX_WINDOW_DAYS * DAY_MS;
+  if (!lastSyncedAt) return new Date(earliest);
+  return new Date(
+    Math.max(earliest, lastSyncedAt.getTime() - WINDOW_OVERLAP_DAYS * DAY_MS),
+  );
+}
 
 const LAST_ERROR_SETTING_KEY = "simplefin_last_error";
 const PARTIAL_SYNC_STATE_KEY = "simplefin_partial_sync_state";
@@ -288,7 +320,47 @@ export async function runSimplefinSync(
       .from(schema.simplefinAccounts)
       .where(eq(schema.simplefinAccounts.isIncluded, true));
 
-    const { accounts: fetched, providerErrors } = await getAccounts(accessUrl);
+    // Quota: every real request counts against SimpleFIN Bridge's daily
+    // limit (exceeding it can disable the connection). Replays don't count.
+    const replay = isSimplefinReplayMode();
+    await pruneSimplefinRequestLog(db, asOfDate);
+    if (!replay) {
+      const used = await countSimplefinRequestsLastDay(db, asOfDate);
+      if (used >= SIMPLEFIN_DAILY_REQUEST_LIMIT) {
+        await recordSimplefinRequest(db, {
+          endpoint: "/accounts",
+          outcome: "skipped_quota",
+        });
+        throw new Error(
+          `Paused: ${used} SimpleFIN requests in the last 24 hours (Ledgr's limit is ${SIMPLEFIN_DAILY_REQUEST_LIMIT}, below SimpleFIN's daily quota). Syncing resumes automatically.`,
+        );
+      }
+    }
+    const windowStart = transactionWindowStart(conn.lastSyncedAt, asOfDate);
+    let response: Awaited<ReturnType<typeof getAccounts>>;
+    try {
+      response = await getAccounts(accessUrl, { startDate: windowStart });
+      await recordSimplefinRequest(db, {
+        endpoint: "/accounts",
+        outcome: replay ? "replay" : "ok",
+        httpStatus: replay ? null : 200,
+      });
+    } catch (e) {
+      await recordSimplefinRequest(db, {
+        endpoint: "/accounts",
+        outcome:
+          e instanceof BudgetApiError && e.code === "timeout"
+            ? "timeout"
+            : "error",
+        httpStatus: e instanceof BudgetApiError ? e.status : null,
+      });
+      throw e;
+    }
+    const {
+      accounts: fetched,
+      providerErrors,
+      accountIdsWithErrors,
+    } = response;
     const fetchedIds = new Set(fetched.map((a) => a.id));
     const missingAccounts = expectedIncluded.filter(
       (a) => !fetchedIds.has(a.externalAccountId),
@@ -340,9 +412,47 @@ export async function runSimplefinSync(
       // tick retries instead of treating a partial sync as done for the day.
     }
 
+    // Investment detail (holdings, transactions). A failure here must not
+    // lose the balance snapshot already written — it becomes a warning.
+    let investments: SimplefinSyncResult["investments"];
+    const ingestWarnings: string[] = [];
+    try {
+      const registryRows = await db
+        .select({
+          id: schema.simplefinAccounts.id,
+          externalAccountId: schema.simplefinAccounts.externalAccountId,
+          linkedPerformanceAccountId:
+            schema.simplefinAccounts.linkedPerformanceAccountId,
+        })
+        .from(schema.simplefinAccounts);
+      const summary = await ingestInvestmentData(db, {
+        accounts: fetched,
+        registry: new Map(
+          registryRows.map((r) => [
+            r.externalAccountId,
+            {
+              id: r.id,
+              linkedPerformanceAccountId: r.linkedPerformanceAccountId,
+            },
+          ]),
+        ),
+        windowStart: utcDayOf(windowStart),
+        accountIdsWithErrors: new Set(accountIdsWithErrors ?? []),
+        now: asOfDate,
+      });
+      const { warnings, ...counts } = summary;
+      investments = counts;
+      ingestWarnings.push(...warnings);
+    } catch (e) {
+      ingestWarnings.push(
+        `Couldn't store holdings and transactions this sync: ${e instanceof Error ? e.message.slice(0, 200) : String(e)}`,
+      );
+    }
+
     const allWarnings = [
       ...providerErrors,
       ...(missingWarning ? [missingWarning] : []),
+      ...ingestWarnings,
     ];
     await setSimplefinLastError(
       db,
@@ -354,6 +464,7 @@ export async function runSimplefinSync(
       totalBalance,
       accountCount,
       providerErrors: allWarnings,
+      investments,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
