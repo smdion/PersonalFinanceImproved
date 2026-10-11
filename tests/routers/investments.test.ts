@@ -228,6 +228,46 @@ describe("investments router", () => {
     expect(rows.find((r) => r.id === tx.div)?.kind).toBe("dividend");
   });
 
+  it("judges a small fee against the balance at the time, not today's", async () => {
+    const plan = ctx.db
+      .insert(sqliteSchema.simplefinAccounts)
+      .values({
+        externalAccountId: "sf-plan",
+        orgName: "Voya Financial",
+        accountName: "Example Plan",
+        lastBalance: "1000",
+      })
+      .returning()
+      .get().id;
+    const balance = (day: string, amount: string) =>
+      ctx.db
+        .insert(sqliteSchema.simplefinAccountBalances)
+        .values({
+          simplefinAccountId: plan,
+          balanceDate: new Date(`${day}T12:00:00Z`),
+          balance: amount,
+        })
+        .run();
+    balance(daysAgo(10), "100000"); // fee was 0.05% of the balance then
+    balance(daysAgo(1), "1000"); // 5% of today's balance
+    const fee = ctx.db
+      .insert(sqliteSchema.investmentTransactions)
+      .values({
+        simplefinAccountId: plan,
+        externalId: "fee",
+        posted: daysAgo(5),
+        amount: "-50.00",
+        description: "Example Target Fund",
+        pending: false,
+      })
+      .returning()
+      .get().id;
+    const rows = await ctx.caller.investments.listTransactions({});
+    const row = rows.find((r) => r.id === fee);
+    expect(row).toMatchObject({ kind: "fee", needsReview: false });
+    expect(row).not.toHaveProperty("balanceForRules");
+  });
+
   it("requires the portfolio permission to read or change anything", async () => {
     for (const session of [
       viewerSession,

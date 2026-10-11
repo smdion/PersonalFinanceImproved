@@ -50,6 +50,12 @@ export type SimplefinTransactionRule = {
    */
   absoluteAmount?: boolean;
   /**
+   * Set on the household's own rules: take `absoluteAmount` from the
+   * built-in rule that matches the same row, when it agrees on the kind, so
+   * a user rule can't undo a built-in direction fix.
+   */
+  inheritSignFix?: boolean;
+  /**
    * Card spending from an HSA names the merchant — health data. Ingest stores
    * these as "Medical withdrawal" (amount and date kept) unless the account
    * is linked to a non-HSA account type.

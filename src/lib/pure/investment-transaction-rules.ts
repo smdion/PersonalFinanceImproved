@@ -54,6 +54,7 @@ export function toClassifierRules(
         : {}),
       kind: r.kind,
       ...(r.reviewWhen ? { reviewWhen: r.reviewWhen } : {}),
+      inheritSignFix: true,
     }));
 }
 
@@ -158,4 +159,23 @@ export function previewRuleImpact(
       changed++;
   }
   return { matched, changed };
+}
+
+/**
+ * The account balance used to judge "small" for a row posted on `day`: the
+ * last balance on or before that day, so re-reading a row always gives the
+ * same answer. Rows older than the first stored balance (the first sync
+ * reaches back ~90 days) use the earliest one — also fixed once stored.
+ * `history` is sorted by day, ascending.
+ */
+export function balanceAsOf(
+  history: readonly { day: string; balance: number }[],
+  day: string,
+): number | undefined {
+  let found: number | undefined;
+  for (const h of history) {
+    if (h.day > day) break;
+    found = h.balance;
+  }
+  return found ?? history[0]?.balance;
 }

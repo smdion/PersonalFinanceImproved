@@ -14,11 +14,7 @@ import {
 } from "@/lib/config/enum-values";
 import { previewRuleImpact } from "@/lib/pure/investment-transaction-rules";
 import { accountRedactsCardSpending } from "@/lib/simplefin/ingest";
-import {
-  loadAccounts,
-  loadClassifiedTransactions,
-  loadUserRules,
-} from "./_shared";
+import { loadClassifiedTransactions, loadUserRules } from "./_shared";
 
 const ruleInput = z.object({
   institutionContains: z.string().trim().min(1).max(100),
@@ -31,17 +27,14 @@ const ruleInput = z.object({
 type Db = typeof import("@/lib/db").db;
 
 async function impactOf(db: Db, candidate: z.infer<typeof ruleInput>) {
-  const [existing, accounts] = await Promise.all([
-    loadUserRules(db),
-    loadAccounts(db),
-  ]);
+  const existing = await loadUserRules(db);
   const rows = await loadClassifiedTransactions(db, {});
   return previewRuleImpact(
     { ...candidate, reviewWhen: null, maxFractionOfBalance: null },
     existing,
     rows.map((r) => ({
       institution: r.institution,
-      accountBalance: accounts.get(r.simplefinAccountId)?.balance,
+      accountBalance: r.balanceForRules,
       amount: r.rawAmount,
       description: r.description,
       kindOverride: r.kindOverride,

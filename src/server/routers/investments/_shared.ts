@@ -2,10 +2,12 @@
  * Shared helpers for the investments router group.
  * Internal to investments/ — do not import from outside this directory.
  */
-import { and, eq, gte, isNull } from "drizzle-orm";
+import { and, asc, eq, gte, isNull } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { isHsaCategory } from "@/lib/config/account-types";
+import { utcDayOf } from "@/lib/simplefin/ingest";
 import {
+  balanceAsOf,
   classifierRulesWith,
   effectiveTransactionKind,
   type EffectiveKind,
@@ -23,7 +25,6 @@ export type AccountInfo = {
   id: number;
   institution: string;
   accountName: string;
-  balance: number;
   /** Linked to an HSA-type tracked account. */
   isHsa: boolean;
 };
@@ -39,7 +40,6 @@ export async function loadAccounts(db: Db): Promise<Map<number, AccountInfo>> {
       id: schema.simplefinAccounts.id,
       orgName: schema.simplefinAccounts.orgName,
       accountName: schema.simplefinAccounts.accountName,
-      lastBalance: schema.simplefinAccounts.lastBalance,
       accountType: schema.performanceAccounts.accountType,
     })
     .from(schema.simplefinAccounts)
@@ -57,11 +57,27 @@ export async function loadAccounts(db: Db): Promise<Map<number, AccountInfo>> {
         id: r.id,
         institution: r.orgName,
         accountName: r.accountName,
-        balance: Number(r.lastBalance),
         isHsa: r.accountType != null && isHsaCategory(r.accountType),
       },
     ]),
   );
+}
+
+export type BalanceHistory = Map<number, { day: string; balance: number }[]>;
+
+/** Each account's stored balances by UTC day, ascending — input to {@link balanceAsOf}. */
+export async function loadBalanceHistory(db: Db): Promise<BalanceHistory> {
+  const rows = await db
+    .select()
+    .from(schema.simplefinAccountBalances)
+    .orderBy(asc(schema.simplefinAccountBalances.balanceDate));
+  const history: BalanceHistory = new Map();
+  for (const r of rows) {
+    const list = history.get(r.simplefinAccountId) ?? [];
+    list.push({ day: utcDayOf(r.balanceDate), balance: Number(r.balance) });
+    history.set(r.simplefinAccountId, list);
+  }
+  return history;
 }
 
 export type ClassifiedTransactionRow = {
@@ -72,6 +88,8 @@ export type ClassifiedTransactionRow = {
   posted: string;
   /** As SimpleFIN sent it. */
   rawAmount: number;
+  /** Balance used to judge "small" for this row (never shown). */
+  balanceForRules: number | undefined;
   description: string;
   pending: boolean;
   voided: boolean;
@@ -93,6 +111,7 @@ export async function loadClassifiedTransactions(
   },
 ): Promise<ClassifiedTransactionRow[]> {
   const accounts = context?.accounts ?? (await loadAccounts(db));
+  const balances = await loadBalanceHistory(db);
   const rules = context?.rules ?? classifierRulesWith(await loadUserRules(db));
   const t = schema.investmentTransactions;
   const rows = await db
@@ -112,6 +131,10 @@ export async function loadClassifiedTransactions(
       const account = accounts.get(r.simplefinAccountId);
       const institution = account?.institution ?? "";
       const amount = Number(r.amount);
+      const balanceForRules = balanceAsOf(
+        balances.get(r.simplefinAccountId) ?? [],
+        r.posted,
+      );
       return {
         id: r.id,
         simplefinAccountId: r.simplefinAccountId,
@@ -119,6 +142,7 @@ export async function loadClassifiedTransactions(
         accountName: account?.accountName ?? "",
         posted: r.posted,
         rawAmount: amount,
+        balanceForRules,
         description: r.description,
         pending: r.pending,
         voided: r.voidedAt !== null,
@@ -132,7 +156,7 @@ export async function loadClassifiedTransactions(
             kindOverride: r.kindOverride,
             kindOverrideSource: r.kindOverrideSource,
           },
-          { rules, accountBalance: account?.balance },
+          { rules, accountBalance: balanceForRules },
         ),
       };
     })

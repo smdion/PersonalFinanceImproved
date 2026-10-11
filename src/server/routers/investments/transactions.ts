@@ -14,9 +14,21 @@ import * as schema from "@/lib/db/schema";
 import { investmentTransactionKindSchema } from "@/lib/config/enum-values";
 import { lockAsMedicalWithdrawal } from "@/lib/simplefin/ingest";
 import { localDateStr } from "@/lib/utils/date";
-import { loadAccounts, loadClassifiedTransactions } from "./_shared";
+import {
+  loadAccounts,
+  loadClassifiedTransactions,
+  type ClassifiedTransactionRow,
+} from "./_shared";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** The balance used for rules stays on the server. */
+function forClient({
+  balanceForRules: _balance,
+  ...row
+}: ClassifiedTransactionRow) {
+  return row;
+}
 
 export const investmentTransactionsRouter = createTRPCRouter({
   /** Investment transactions with the kind each counts as, newest first. */
@@ -29,17 +41,18 @@ export const investmentTransactionsRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      return loadClassifiedTransactions(ctx.db, {
+      const rows = await loadClassifiedTransactions(ctx.db, {
         simplefinAccountId: input.simplefinAccountId,
         since: localDateStr(new Date(Date.now() - input.days * DAY_MS)),
         includeVoided: input.includeVoided,
       });
+      return rows.map(forClient);
     }),
 
   /** Rows no rule could place, or that a rule flags for a look. */
   listReviewQueue: portfolioProcedure.query(async ({ ctx }) => {
     const rows = await loadClassifiedTransactions(ctx.db, {});
-    return rows.filter((r) => r.needsReview);
+    return rows.filter((r) => r.needsReview).map(forClient);
   }),
 
   /** Set the kind of one row. Redacted HSA rows are fixed and can't be changed. */

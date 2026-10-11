@@ -60,6 +60,21 @@ function ruleMatches(
   return true;
 }
 
+function signFixed(
+  rule: SimplefinTransactionRule,
+  kind: InvestmentTransactionKind,
+  institution: string,
+  tx: ClassifiableRow,
+  accountBalance: number | undefined,
+): boolean {
+  if (rule.absoluteAmount) return true;
+  if (!rule.inheritSignFix) return false;
+  const builtIn = SIMPLEFIN_TRANSACTION_RULES.find((r) =>
+    ruleMatches(r, institution, tx, accountBalance),
+  );
+  return builtIn?.absoluteAmount === true && builtIn.kind === kind;
+}
+
 export function classifySimplefinTransaction(
   institution: string,
   tx: ClassifiableRow,
@@ -86,7 +101,9 @@ export function classifySimplefinTransaction(
   const needsReview =
     (rule.reviewWhen === "negative" && tx.amount < 0) ||
     (rule.reviewWhen === "positive" && tx.amount > 0);
-  const amount = rule.absoluteAmount ? Math.abs(tx.amount) : tx.amount;
+  const amount = signFixed(rule, kind, institution, tx, options.accountBalance)
+    ? Math.abs(tx.amount)
+    : tx.amount;
   return {
     kind,
     amount,

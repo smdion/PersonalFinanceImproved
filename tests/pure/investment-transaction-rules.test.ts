@@ -1,6 +1,7 @@
 /** User transaction rules and read-time kinds. Invented rows only. */
 import { describe, it, expect } from "vitest";
 import {
+  balanceAsOf,
   classifierRulesWith,
   effectiveTransactionKind,
   previewRuleImpact,
@@ -138,5 +139,64 @@ describe("previewRuleImpact", () => {
       matched: 0,
       changed: 0,
     });
+  });
+});
+
+describe("sign fix with household rules", () => {
+  // Built-in: Fidelity plan "contribution" rows are money in whatever sign
+  // the feed sends (absoluteAmount).
+  const flipped = row("contribution", -50);
+
+  it("a household rule agreeing on the kind keeps the built-in fix", () => {
+    const rules = classifierRulesWith([
+      rule({
+        id: 1,
+        institutionContains: "Fidelity",
+        descriptionContains: "contribution",
+        kind: "contribution",
+      }),
+    ]);
+    const k = effectiveTransactionKind("Fidelity Investments", flipped, {
+      rules,
+    });
+    expect(k).toMatchObject({
+      kind: "contribution",
+      amount: 50,
+      source: "user_rule",
+      needsReview: false,
+    });
+  });
+
+  it("a household rule choosing another kind uses the amount as sent", () => {
+    const rules = classifierRulesWith([
+      rule({
+        id: 1,
+        institutionContains: "Fidelity",
+        descriptionContains: "contribution",
+        kind: "withdrawal",
+      }),
+    ]);
+    const k = effectiveTransactionKind("Fidelity Investments", flipped, {
+      rules,
+    });
+    expect(k).toMatchObject({ kind: "withdrawal", amount: -50 });
+  });
+});
+
+describe("balanceAsOf", () => {
+  const history = [
+    { day: "2026-05-10", balance: 1000 },
+    { day: "2026-05-20", balance: 2000 },
+  ];
+  it("uses the last balance on or before the day", () => {
+    expect(balanceAsOf(history, "2026-05-10")).toBe(1000);
+    expect(balanceAsOf(history, "2026-05-19")).toBe(1000);
+    expect(balanceAsOf(history, "2026-05-25")).toBe(2000);
+  });
+  it("uses the earliest balance for older rows", () => {
+    expect(balanceAsOf(history, "2026-04-01")).toBe(1000);
+  });
+  it("has nothing without history", () => {
+    expect(balanceAsOf([], "2026-04-01")).toBeUndefined();
   });
 });
