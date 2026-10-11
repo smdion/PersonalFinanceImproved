@@ -76,6 +76,30 @@ const PARTIAL_SYNC_STATE_KEY = "simplefin_partial_sync_state";
  *  warning visible. */
 export const MAX_PARTIAL_SYNC_RETRIES_PER_DAY = 3;
 
+const INVESTMENTS_SYNCED_AT_KEY = "simplefin_investments_synced_at";
+
+/** When holdings and transactions were last stored completely, or null if never. */
+export async function getInvestmentsSyncedAt(db: Db): Promise<Date | null> {
+  const rows = await db
+    .select({ value: schema.appSettings.value })
+    .from(schema.appSettings)
+    .where(eq(schema.appSettings.key, INVESTMENTS_SYNCED_AT_KEY));
+  const value = rows[0]?.value;
+  if (typeof value !== "string") return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+async function setInvestmentsSyncedAt(db: Db, at: Date): Promise<void> {
+  await db
+    .insert(schema.appSettings)
+    .values({ key: INVESTMENTS_SYNCED_AT_KEY, value: at.toISOString() })
+    .onConflictDoUpdate({
+      target: schema.appSettings.key,
+      set: { value: at.toISOString() },
+    });
+}
+
 /** Get the api_connections row for the simplefin service, or null if not configured. */
 export async function getSimplefinConnection(db: Db) {
   const rows = await db
@@ -342,7 +366,13 @@ export async function runSimplefinSync(
         );
       }
     }
-    const windowStart = transactionWindowStart(conn.lastSyncedAt, asOfDate);
+    // Based on the last complete investment ingest, not the balance sync:
+    // the first sync after upgrading (or after a failed ingest) must reach
+    // back the full window SimpleFIN still holds.
+    const windowStart = transactionWindowStart(
+      await getInvestmentsSyncedAt(db),
+      asOfDate,
+    );
     let response: Awaited<ReturnType<typeof getAccounts>>;
     try {
       response = await getAccounts(accessUrl, { startDate: windowStart });
@@ -449,6 +479,10 @@ export async function runSimplefinSync(
       const { warnings, ...counts } = summary;
       investments = counts;
       ingestWarnings.push(...warnings);
+      // Only a complete ingest moves the window forward; an account that
+      // reported an error is re-requested from the old start next time.
+      if ((accountIdsWithErrors ?? []).length === 0)
+        await setInvestmentsSyncedAt(db, asOfDate);
     } catch (e) {
       ingestWarnings.push(
         `Couldn't store holdings and transactions this sync: ${e instanceof Error ? e.message.slice(0, 200) : String(e)}`,
