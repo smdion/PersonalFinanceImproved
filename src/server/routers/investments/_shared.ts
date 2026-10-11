@@ -16,7 +16,13 @@ import {
 import type {
   InvestmentTransactionKind,
   KindOverrideSource,
+  PortfolioTaxType,
 } from "@/lib/config/enum-values";
+import {
+  matchInternalTransfers,
+  type TransferMatch,
+} from "@/lib/pure/internal-transfers";
+import { loadLatestSubAccounts } from "@/server/helpers/sub-accounts";
 import type { SimplefinTransactionRule } from "@/lib/config/simplefin-transaction-rules";
 
 type Db = typeof import("@/lib/db").db;
@@ -27,6 +33,10 @@ export type AccountInfo = {
   accountName: string;
   /** Linked to an HSA-type tracked account. */
   isHsa: boolean;
+  performanceAccountId: number | null;
+  /** From a sub-account link (null for a whole-account link or a joint sub-account). */
+  ownerPersonId: number | null;
+  taxType: PortfolioTaxType | null;
 };
 
 export async function loadUserRules(db: Db): Promise<UserTransactionRule[]> {
@@ -41,6 +51,8 @@ export async function loadAccounts(db: Db): Promise<Map<number, AccountInfo>> {
       orgName: schema.simplefinAccounts.orgName,
       accountName: schema.simplefinAccounts.accountName,
       accountType: schema.performanceAccounts.accountType,
+      performanceAccountId: schema.simplefinAccounts.linkedPerformanceAccountId,
+      linkedSubKey: schema.simplefinAccounts.linkedSubKey,
     })
     .from(schema.simplefinAccounts)
     .leftJoin(
@@ -50,16 +62,28 @@ export async function loadAccounts(db: Db): Promise<Map<number, AccountInfo>> {
         schema.simplefinAccounts.linkedPerformanceAccountId,
       ),
     );
+  const subs = rows.some((r) => r.linkedSubKey)
+    ? new Map((await loadLatestSubAccounts(db)).map((s) => [s.key, s]))
+    : new Map();
   return new Map(
-    rows.map((r) => [
-      r.id,
-      {
-        id: r.id,
-        institution: r.orgName,
-        accountName: r.accountName,
-        isHsa: r.accountType != null && isHsaCategory(r.accountType),
-      },
-    ]),
+    rows.map((r) => {
+      const sub =
+        r.performanceAccountId !== null && r.linkedSubKey
+          ? subs.get(r.linkedSubKey)
+          : undefined;
+      return [
+        r.id,
+        {
+          id: r.id,
+          institution: r.orgName,
+          accountName: r.accountName,
+          isHsa: r.accountType != null && isHsaCategory(r.accountType),
+          performanceAccountId: r.performanceAccountId,
+          ownerPersonId: sub?.ownerPersonId ?? null,
+          taxType: sub?.taxType ?? null,
+        },
+      ];
+    }),
   );
 }
 
@@ -95,6 +119,8 @@ export type ClassifiedTransactionRow = {
   voided: boolean;
   kindOverride: InvestmentTransactionKind | null;
   kindOverrideSource: KindOverrideSource | null;
+  /** Set when this row is one side of a move between the household's own accounts. */
+  transfer: TransferMatch | null;
 } & EffectiveKind;
 
 /** Stored transactions with the kind each is shown as (worked out now, never stored). */
@@ -114,53 +140,108 @@ export async function loadClassifiedTransactions(
   const balances = await loadBalanceHistory(db);
   const rules = context?.rules ?? classifierRulesWith(await loadUserRules(db));
   const t = schema.investmentTransactions;
+  // Transfers pair rows across accounts and a few days, so read every
+  // account and a margin before `since`; the filter applies afterwards.
+  const readFrom =
+    filter.since !== undefined
+      ? addDays(filter.since, -TRANSFER_MARGIN_DAYS)
+      : undefined;
   const rows = await db
     .select()
     .from(t)
     .where(
       and(
-        filter.simplefinAccountId !== undefined
-          ? eq(t.simplefinAccountId, filter.simplefinAccountId)
-          : undefined,
-        filter.since !== undefined ? gte(t.posted, filter.since) : undefined,
+        readFrom !== undefined ? gte(t.posted, readFrom) : undefined,
         filter.includeVoided ? undefined : isNull(t.voidedAt),
       ),
     );
-  return rows
-    .map((r) => {
-      const account = accounts.get(r.simplefinAccountId);
-      const institution = account?.institution ?? "";
-      const amount = Number(r.amount);
-      const balanceForRules = balanceAsOf(
-        balances.get(r.simplefinAccountId) ?? [],
-        r.posted,
-      );
-      return {
-        id: r.id,
-        simplefinAccountId: r.simplefinAccountId,
+  const classified = rows.map((r) => {
+    const account = accounts.get(r.simplefinAccountId);
+    const institution = account?.institution ?? "";
+    const amount = Number(r.amount);
+    const balanceForRules = balanceAsOf(
+      balances.get(r.simplefinAccountId) ?? [],
+      r.posted,
+    );
+    return {
+      id: r.id,
+      simplefinAccountId: r.simplefinAccountId,
+      institution,
+      accountName: account?.accountName ?? "",
+      posted: r.posted,
+      rawAmount: amount,
+      balanceForRules,
+      description: r.description,
+      pending: r.pending,
+      voided: r.voidedAt !== null,
+      kindOverride: r.kindOverride,
+      kindOverrideSource: r.kindOverrideSource,
+      ...effectiveTransactionKind(
         institution,
-        accountName: account?.accountName ?? "",
-        posted: r.posted,
-        rawAmount: amount,
-        balanceForRules,
-        description: r.description,
-        pending: r.pending,
-        voided: r.voidedAt !== null,
-        kindOverride: r.kindOverride,
-        kindOverrideSource: r.kindOverrideSource,
-        ...effectiveTransactionKind(
-          institution,
-          {
-            amount,
-            description: r.description,
-            kindOverride: r.kindOverride,
-            kindOverrideSource: r.kindOverrideSource,
-          },
-          { rules, accountBalance: balanceForRules },
-        ),
-      };
-    })
+        {
+          amount,
+          description: r.description,
+          kindOverride: r.kindOverride,
+          kindOverrideSource: r.kindOverrideSource,
+        },
+        { rules, accountBalance: balanceForRules },
+      ),
+      transfer: null as TransferMatch | null,
+    };
+  });
+
+  // A household's own money moving between its accounts is neither added
+  // nor taken out. Rows the household set by hand keep their choice.
+  const matches = matchInternalTransfers(
+    classified
+      .filter(
+        (r) =>
+          !r.pending &&
+          !r.voided &&
+          r.source !== "override" &&
+          r.source !== "locked",
+      )
+      .map((r) => {
+        const a = accounts.get(r.simplefinAccountId);
+        return {
+          id: r.id,
+          simplefinAccountId: r.simplefinAccountId,
+          performanceAccountId: a?.performanceAccountId ?? null,
+          ownerPersonId: a?.ownerPersonId ?? null,
+          taxType: a?.taxType ?? null,
+          posted: r.posted,
+          amount: r.amount,
+          kind: r.kind,
+        };
+      }),
+  );
+  for (const r of classified) {
+    const m = matches.get(r.id);
+    if (!m) continue;
+    r.transfer = m;
+    r.kind = "transfer";
+    r.source = "transfer_match";
+    r.needsReview = false;
+    r.ruleId = null;
+  }
+
+  return classified
+    .filter(
+      (r) =>
+        (filter.since === undefined || r.posted >= filter.since) &&
+        (filter.simplefinAccountId === undefined ||
+          r.simplefinAccountId === filter.simplefinAccountId),
+    )
     .sort((a, b) => b.posted.localeCompare(a.posted) || b.id - a.id);
+}
+
+const TRANSFER_MARGIN_DAYS = 7;
+
+function addDays(day: string, n: number): string {
+  const d = new Date(`${day}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  // eslint-disable-next-line local/no-tz-unsafe-date-string -- calendar-day arithmetic done entirely in UTC on a YYYY-MM-DD key; never compared to a local "today".
+  return d.toISOString().slice(0, 10); // lint-violation-ok: UTC day arithmetic on a date key
 }
 
 /**

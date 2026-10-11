@@ -44,6 +44,7 @@ export const INVESTMENT_TRANSACTION_KIND_VALUES = [
   "trade", // buy or sell of a holding (value moves between holdings)
   "sweep", // cash moved between the settlement/core fund and cash
   "gain_loss", // realized gain/loss bookkeeping row (no money moves)
+  "transfer", // between the household's own accounts (IRA conversion, rollover) — not money added or taken out
   "other", // unrecognised — shown for review, never dropped
 ] as const;
 export type InvestmentTransactionKind =

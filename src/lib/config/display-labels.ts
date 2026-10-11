@@ -285,6 +285,7 @@ export const INVESTMENT_TRANSACTION_KIND_LABELS: Record<
   trade: "Trade (inside the account)",
   sweep: "Cash sweep (inside the account)",
   gain_loss: "Realized gain/loss",
+  transfer: "Transfer between your accounts",
   other: "Other",
 };
 

@@ -77,7 +77,14 @@ export type EffectiveKind = {
   /** Amount to use — the classifier may fix the direction of a row type the feed sends with a flipped sign. */
   amount: number;
   /** Where the kind came from. */
-  source: "override" | "locked" | "user_rule" | "built_in" | "unmatched";
+  source:
+    | "override"
+    | "locked"
+    | "user_rule"
+    | "built_in"
+    | "unmatched"
+    /** Paired with an equal, opposite move in another of the household's accounts. */
+    | "transfer_match";
   ruleId: string | null;
   needsReview: boolean;
 };

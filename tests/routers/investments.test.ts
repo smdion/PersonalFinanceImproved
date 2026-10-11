@@ -307,6 +307,90 @@ describe("investments router", () => {
     ).toBe(false);
   });
 
+  it("pairs a move between two of the household's accounts as a transfer", async () => {
+    const db = ctx.db;
+    const account = (externalAccountId: string, label: string) => {
+      const perf = db
+        .insert(sqliteSchema.performanceAccounts)
+        .values({
+          institution: "Example Broker",
+          accountType: "brokerage",
+          accountLabel: label,
+          ownershipType: "individual",
+          parentCategory: "Portfolio",
+        })
+        .returning()
+        .get().id;
+      return db
+        .insert(sqliteSchema.simplefinAccounts)
+        .values({
+          externalAccountId,
+          orgName: "Example Broker",
+          accountName: externalAccountId,
+          lastBalance: "5000",
+          linkedPerformanceAccountId: perf,
+        })
+        .returning()
+        .get().id;
+    };
+    const from = account("sf-move-plan", "Example Plan");
+    const to = account("sf-move-taxable", "Example Taxable");
+    const row = (
+      simplefinAccountId: number,
+      externalId: string,
+      posted: string,
+      amount: string,
+      description: string,
+    ) =>
+      db
+        .insert(sqliteSchema.investmentTransactions)
+        .values({
+          simplefinAccountId,
+          externalId,
+          posted,
+          amount,
+          description,
+          pending: false,
+        })
+        .returning()
+        .get().id;
+    const out = row(from, "t-out", daysAgo(6), "-1234.56", "TRANSFER OUT");
+    const into = row(to, "t-in", daysAgo(4), "1234.56", "TRANSFER IN");
+    const other = row(to, "t-dep", daysAgo(4), "99.00", "DEPOSIT");
+
+    const rows = await ctx.caller.investments.listTransactions({});
+    const byId = new Map(rows.map((r) => [r.id, r]));
+    expect(byId.get(out)).toMatchObject({
+      kind: "transfer",
+      source: "transfer_match",
+      transfer: { pairId: into, conversion: false },
+    });
+    expect(byId.get(into)).toMatchObject({
+      kind: "transfer",
+      transfer: { pairId: out },
+    });
+    expect(byId.get(other)).toMatchObject({
+      kind: "contribution",
+      transfer: null,
+    });
+
+    // The pair still holds when only the receiving account is listed.
+    const recent = await ctx.caller.investments.listTransactions({
+      simplefinAccountId: to,
+    });
+    expect(recent.find((r) => r.id === into)?.kind).toBe("transfer");
+    expect(recent.some((r) => r.id === out)).toBe(false);
+
+    // A choice the household made by hand is never re-labelled.
+    await ctx.caller.investments.setTransactionKind({
+      id: out,
+      kind: "withdrawal",
+    });
+    const after = await ctx.caller.investments.listTransactions({});
+    expect(after.find((r) => r.id === into)?.kind).toBe("contribution");
+    expect(after.find((r) => r.id === out)?.source).toBe("override");
+  });
+
   it("requires the portfolio permission to read or change anything", async () => {
     for (const session of [
       viewerSession,

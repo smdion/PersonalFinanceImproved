@@ -35,6 +35,7 @@ const SOURCE_LABELS = {
   user_rule: "your rule",
   built_in: "",
   unmatched: "",
+  transfer_match: "matched to another of your accounts",
 } as const;
 
 const selectClass =
@@ -316,7 +317,9 @@ function RecentActivity() {
             </td>
             <td className="py-1 pr-2 whitespace-nowrap">
               <span className={r.needsReview ? "text-amber-600" : "text-muted"}>
-                {INVESTMENT_TRANSACTION_KIND_LABELS[r.kind]}
+                {r.transfer?.conversion
+                  ? "Conversion Traditional → Roth"
+                  : INVESTMENT_TRANSACTION_KIND_LABELS[r.kind]}
               </span>
               {SOURCE_LABELS[r.source] && (
                 <span className="text-faint block">
