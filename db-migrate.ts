@@ -165,6 +165,7 @@ const VERSION_TABLE_NAMES = [
   "simplefin_account_balances",
   "holding_observations",
   "investment_transactions",
+  "security_facts",
 ];
 
 // ---------------------------------------------------------------------------

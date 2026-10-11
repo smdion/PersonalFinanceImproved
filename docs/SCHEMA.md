@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**78 tables.**
+**80 tables.**
 
 ## Mermaid diagram
 
@@ -176,6 +176,12 @@ erDiagram
   securities {
     int id PK
   }
+  security_facts {
+    int id PK
+  }
+  sec_filing_cache {
+    int id PK
+  }
   simplefin_account_balances {
     int id PK
   }
@@ -281,6 +287,7 @@ erDiagram
   retirement_profile_people }o--|| people : references
   retirement_salary_overrides }o--|| people : references
   retirement_budget_overrides }o--|| people : references
+  security_facts }o--|| securities : references
   simplefin_account_balances }o--|| simplefin_accounts : references
   holding_observations }o--|| securities : references
   investment_transactions }o--|| simplefin_accounts : references
@@ -363,7 +370,9 @@ erDiagram
 - **savings_planned_transactions** → savings_goals
 - **savings_planned_tx_settlements** → savings_planned_transactions
 - **scenarios**
+- **sec_filing_cache**
 - **securities**
+- **security_facts** → securities
 - **self_loans** → savings_goals, savings_goals
 - **simplefin_account_balances** → simplefin_accounts
 - **simplefin_accounts** → performance_accounts

@@ -66,6 +66,37 @@ export const SECURITY_KIND_VALUES = [
 export type SecurityKind = (typeof SECURITY_KIND_VALUES)[number];
 export const securityKindSchema = z.enum(SECURITY_KIND_VALUES);
 
+// ── Fund facts (SEC filings / user) ──
+
+export const SECURITY_FACT_SOURCE_VALUES = [
+  "sec_nport", // composition from the fund's latest N-PORT portfolio report
+  "sec_ncsr", // expense ratio from its latest shareholder report (N-CSR)
+  "user", // entered or confirmed by the household
+] as const;
+export type SecurityFactSource = (typeof SECURITY_FACT_SOURCE_VALUES)[number];
+export const securityFactSourceSchema = z.enum(SECURITY_FACT_SOURCE_VALUES);
+
+/** Whose SEC filings supply a fund's facts: its own, or a registered stand-in. */
+export const FACTS_BASIS_VALUES = ["exact", "standin"] as const;
+export type FactsBasis = (typeof FACTS_BASIS_VALUES)[number];
+export const factsBasisSchema = z.enum(FACTS_BASIS_VALUES);
+
+/**
+ * Composition buckets a fund's holdings are summed into. Fixed set; each
+ * asset class can point at one (asset_class_params.composition_bucket).
+ */
+export const COMPOSITION_BUCKET_VALUES = [
+  "us_equity",
+  "intl_equity",
+  "us_bond",
+  "intl_bond",
+  "tips",
+  "cash",
+  "other",
+] as const;
+export type CompositionBucket = (typeof COMPOSITION_BUCKET_VALUES)[number];
+export const compositionBucketSchema = z.enum(COMPOSITION_BUCKET_VALUES);
+
 // ── Holding observation source ──
 
 export const HOLDING_SOURCE_VALUES = ["simplefin", "manual"] as const;

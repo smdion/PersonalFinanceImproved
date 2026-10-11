@@ -43,6 +43,13 @@
       "when": 1791739092202,
       "tag": "0005_neat_namorita",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1791743832555,
+      "tag": "0006_greedy_vivisector",
+      "breakpoints": true
     }
   ]
 }

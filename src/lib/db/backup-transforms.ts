@@ -37,10 +37,11 @@ import { log } from "@/lib/logger";
  * `KNOWN_SCHEMA_VERSIONS` and `schemaEra()` so a new migration can't silently
  * break restore by being added to one list and not the other.
  *
- * Every entry so far is an additive nullable/defaulted column on an existing
- * table, so a backup naming one is already current-shape (minus columns that
- * safely default on insert) and routes through the same idempotent
- * v0.7 → current transform as the v8 baseline.
+ * Every entry so far only adds — new tables, or nullable/defaulted columns
+ * on existing ones — so a backup naming one is already current-shape (minus
+ * tables that restore empty and columns that safely default on insert) and
+ * routes through the same idempotent v0.7 → current transform as the v8
+ * baseline.
  */
 const V08_SCHEMA_TAGS = [
   "0001_nappy_blade", // PG: retirement_settings.withdrawal_routing_mode
@@ -53,6 +54,8 @@ const V08_SCHEMA_TAGS = [
   "0004_glorious_tigra", // SQLite counterpart of 0004
   "0005_light_prima", // PG: simplefin_accounts.last_balance_date
   "0005_neat_namorita", // SQLite counterpart of 0005
+  "0006_foamy_vin_gonzales", // PG: v0.8.5 SEC fund facts (security_facts, sec_filing_cache, securities SEC identity, asset_class_params.composition_bucket)
+  "0006_greedy_vivisector", // SQLite counterpart of 0006
 ] as const;
 
 const V07_SCHEMA_TAGS = [

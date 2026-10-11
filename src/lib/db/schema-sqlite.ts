@@ -34,6 +34,9 @@ import type {
   PortfolioTaxType,
   InvestmentTransactionKind,
   SecurityKind,
+  SecurityFactSource,
+  FactsBasis,
+  CompositionBucket,
   HoldingSource,
   AmountSign,
   KindOverrideSource,
@@ -2091,6 +2094,16 @@ export const securities = sqliteTable(
     /** Identity for funds with no ticker: SimpleFIN org name + description. */
     institution: text("institution"),
     sourceDescription: text("source_description"),
+    /** SEC identity of this fund (series + share class), when it is registered. */
+    secSeriesId: text("sec_series_id"),
+    secClassId: text("sec_class_id"),
+    /** Series whose filings supply the facts: this fund's own, or a confirmed stand-in. */
+    factsSeriesId: text("facts_series_id"),
+    factsClassId: text("facts_class_id"),
+    factsBasis: text("facts_basis").$type<FactsBasis>(),
+    standinConfirmedAt: integer("standin_confirmed_at", { mode: "timestamp" }),
+    /** Last time SEC was checked for new filings (whether or not anything changed). */
+    factsCheckedAt: integer("facts_checked_at", { mode: "timestamp" }),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
       .default(sql`(unixepoch())`),
@@ -2103,6 +2116,74 @@ export const securities = sqliteTable(
       .on(table.institution, table.sourceDescription)
       .where(sql`${table.ticker} IS NULL`),
   ],
+);
+
+/** Composition columns shared by security_facts and sec_filing_cache: fractions of the fund, long positions only, normalised to sum to 1. */
+const compositionColumns = {
+  usEquityPct: text("us_equity_pct"),
+  intlEquityPct: text("intl_equity_pct"),
+  usBondPct: text("us_bond_pct"),
+  intlBondPct: text("intl_bond_pct"),
+  tipsPct: text("tips_pct"),
+  cashPct: text("cash_pct"),
+  otherPct: text("other_pct"),
+  /** Share of the fund's holdings that could be classified (the rest is unresolved). */
+  coverage: text("coverage"),
+};
+
+/**
+ * Dated facts about a fund: its expense ratio and what it holds. From SEC
+ * filings (its own, or a confirmed stand-in's) or entered by the
+ * household. Read as groups — expense ratio and composition each come
+ * whole from one row, never mixed across filings.
+ */
+export const securityFacts = sqliteTable(
+  "security_facts",
+  {
+    id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    securityId: integer("security_id")
+      .notNull()
+      .references(() => securities.id, { onDelete: "restrict" }),
+    /** Period the facts describe (filing period end), or the day the user entered them. */
+    asOf: text("as_of").notNull(),
+    source: text("source").$type<SecurityFactSource>().notNull(),
+    /** Series the filing belongs to — differs from the fund's own when a stand-in supplied it. */
+    secSeriesId: text("sec_series_id"),
+    accession: text("accession"),
+    /** Annual expense ratio as a fraction (0.0008 = 0.08%). */
+    expenseRatio: text("expense_ratio"),
+    ...compositionColumns,
+    fetchedAt: integer("fetched_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [
+    uniqueIndex("security_facts_identity_idx").on(
+      table.securityId,
+      table.source,
+      table.asOf,
+    ),
+    index("security_facts_security_idx").on(table.securityId),
+  ],
+);
+
+/**
+ * Normalised composition of any fund's N-PORT filing, by accession — so a
+ * look-through into the same underlying fund isn't downloaded twice.
+ * Re-fetchable: not versioned or backed up.
+ */
+export const secFilingCache = sqliteTable(
+  "sec_filing_cache",
+  {
+    accession: text("accession").primaryKey(),
+    seriesId: text("series_id").notNull(),
+    periodEnd: text("period_end").notNull(),
+    ...compositionColumns,
+    fetchedAt: integer("fetched_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [index("sec_filing_cache_series_idx").on(table.seriesId)],
 );
 
 /** A SimpleFIN account's balance as reported, per balance date. */
@@ -2450,12 +2531,19 @@ export const assetClassParams = sqliteTable(
   {
     id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
     name: text("name").notNull().unique(),
+    /** Which composition bucket of a fund's holdings this asset class receives (none = not mapped). */
+    compositionBucket: text("composition_bucket").$type<CompositionBucket>(),
     meanReturn: text("mean_return").notNull(),
     stdDev: text("std_dev").notNull(),
     sortOrder: integer("sort_order").notNull().default(0),
     isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   },
-  (table) => [index("asset_class_params_is_active_idx").on(table.isActive)],
+  (table) => [
+    index("asset_class_params_is_active_idx").on(table.isActive),
+    uniqueIndex("asset_class_params_composition_bucket_idx")
+      .on(table.compositionBucket)
+      .where(sql`${table.compositionBucket} IS NOT NULL`),
+  ],
 );
 
 export const assetClassCorrelations = sqliteTable(

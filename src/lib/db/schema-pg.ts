@@ -42,6 +42,9 @@ import type {
   PortfolioTaxType,
   InvestmentTransactionKind,
   SecurityKind,
+  SecurityFactSource,
+  FactsBasis,
+  CompositionBucket,
   HoldingSource,
   AmountSign,
   KindOverrideSource,
@@ -2317,6 +2320,18 @@ export const securities = pgTable(
     /** Identity for funds with no ticker: SimpleFIN org name + description. */
     institution: text("institution"),
     sourceDescription: text("source_description"),
+    /** SEC identity of this fund (series + share class), when it is registered. */
+    secSeriesId: text("sec_series_id"),
+    secClassId: text("sec_class_id"),
+    /** Series whose filings supply the facts: this fund's own, or a confirmed stand-in. */
+    factsSeriesId: text("facts_series_id"),
+    factsClassId: text("facts_class_id"),
+    factsBasis: text("facts_basis").$type<FactsBasis>(),
+    standinConfirmedAt: timestamp("standin_confirmed_at", {
+      withTimezone: true,
+    }),
+    /** Last time SEC was checked for new filings (whether or not anything changed). */
+    factsCheckedAt: timestamp("facts_checked_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -2329,6 +2344,79 @@ export const securities = pgTable(
       .on(table.institution, table.sourceDescription)
       .where(sql`${table.ticker} IS NULL`),
   ],
+);
+
+/** Composition columns shared by security_facts and sec_filing_cache: fractions of the fund, long positions only, normalised to sum to 1. */
+const compositionColumns = {
+  usEquityPct: decimal("us_equity_pct", { precision: 12, scale: 6 }),
+  intlEquityPct: decimal("intl_equity_pct", { precision: 12, scale: 6 }),
+  usBondPct: decimal("us_bond_pct", { precision: 12, scale: 6 }),
+  intlBondPct: decimal("intl_bond_pct", { precision: 12, scale: 6 }),
+  tipsPct: decimal("tips_pct", { precision: 12, scale: 6 }),
+  cashPct: decimal("cash_pct", { precision: 12, scale: 6 }),
+  otherPct: decimal("other_pct", { precision: 12, scale: 6 }),
+  /** Share of the fund's holdings that could be classified (the rest is unresolved). */
+  coverage: decimal("coverage", { precision: 12, scale: 6 }),
+};
+
+/**
+ * Dated facts about a fund: its expense ratio and what it holds. From SEC
+ * filings (its own, or a confirmed stand-in's) or entered by the
+ * household. Read as groups — expense ratio and composition each come
+ * whole from one row, never mixed across filings.
+ */
+export const securityFacts = pgTable(
+  "security_facts",
+  {
+    id: serial("id").primaryKey(),
+    securityId: integer("security_id")
+      .notNull()
+      .references(() => securities.id, { onDelete: "restrict" }),
+    /** Period the facts describe (filing period end), or the day the user entered them. */
+    asOf: date("as_of").notNull(),
+    source: text("source").$type<SecurityFactSource>().notNull(),
+    /** Series the filing belongs to — differs from the fund's own when a stand-in supplied it. */
+    secSeriesId: text("sec_series_id"),
+    accession: text("accession"),
+    /** Annual expense ratio as a fraction (0.0008 = 0.08%). */
+    expenseRatio: decimal("expense_ratio", { precision: 12, scale: 6 }),
+    ...compositionColumns,
+    fetchedAt: timestamp("fetched_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("security_facts_identity_idx").on(
+      table.securityId,
+      table.source,
+      table.asOf,
+    ),
+    index("security_facts_security_idx").on(table.securityId),
+    check(
+      "security_facts_fraction_check",
+      sql`(${table.expenseRatio} IS NULL OR (${table.expenseRatio} >= 0 AND ${table.expenseRatio} < 1))
+        AND (${table.coverage} IS NULL OR (${table.coverage} >= 0 AND ${table.coverage} <= 1))`,
+    ),
+  ],
+);
+
+/**
+ * Normalised composition of any fund's N-PORT filing, by accession — so a
+ * look-through into the same underlying fund isn't downloaded twice.
+ * Re-fetchable: not versioned or backed up.
+ */
+export const secFilingCache = pgTable(
+  "sec_filing_cache",
+  {
+    accession: text("accession").primaryKey(),
+    seriesId: text("series_id").notNull(),
+    periodEnd: date("period_end").notNull(),
+    ...compositionColumns,
+    fetchedAt: timestamp("fetched_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [index("sec_filing_cache_series_idx").on(table.seriesId)],
 );
 
 /** A SimpleFIN account's balance as reported, per balance date. */
@@ -2688,12 +2776,19 @@ export const assetClassParams = pgTable(
   {
     id: serial("id").primaryKey(),
     name: text("name").notNull().unique(),
+    /** Which composition bucket of a fund's holdings this asset class receives (none = not mapped). */
+    compositionBucket: text("composition_bucket").$type<CompositionBucket>(),
     meanReturn: decimal("mean_return", { precision: 12, scale: 6 }).notNull(),
     stdDev: decimal("std_dev", { precision: 12, scale: 6 }).notNull(),
     sortOrder: integer("sort_order").notNull().default(0),
     isActive: boolean("is_active").notNull().default(true),
   },
-  (table) => [index("asset_class_params_is_active_idx").on(table.isActive)],
+  (table) => [
+    index("asset_class_params_is_active_idx").on(table.isActive),
+    uniqueIndex("asset_class_params_composition_bucket_idx")
+      .on(table.compositionBucket)
+      .where(sql`${table.compositionBucket} IS NOT NULL`),
+  ],
 );
 
 export const assetClassCorrelations = pgTable(

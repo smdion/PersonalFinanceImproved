@@ -54,7 +54,8 @@ export const VERSION_TABLES: VersionTableEntry[] = [
   { name: "utility_service", tier: 0 },
   { name: "simplefin_balance_snapshots", tier: 0 },
   { name: "securities", tier: 0 },
-  { name: "investment_transaction_rules", tier: 0 }, // no FKs (sample_description snapshot instead)
+  { name: "investment_transaction_rules", tier: 0 },
+  { name: "security_facts", tier: 1 }, // FK into securities (tier 0); user-entered facts can't be re-fetched // no FKs (sample_description snapshot instead)
 
   // Tier 1 — depends on tier 0
   { name: "jobs", tier: 1 },
@@ -130,4 +131,5 @@ export const EXCLUDED_TABLES = [
   "budget_api_cache",
   "projection_cache", // derived-from-inputs cache; rebuilt on demand, never user data
   "sync_request_log", // outbound-request quota ledger; operational, pruned after 30 days
+  "sec_filing_cache", // normalised SEC filings by accession; re-fetchable
 ];
