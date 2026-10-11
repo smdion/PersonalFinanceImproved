@@ -100,6 +100,33 @@ describe("simplefin sub-account links", () => {
     });
   });
 
+  it("narrows whole-account links to each person's Roth", async () => {
+    for (const id of [sf.a!, sf.b!])
+      await ctx.caller.simplefin.setAccountMapping({
+        id,
+        performanceAccountId: ira,
+      });
+    const rows = await ctx.caller.simplefin.listAccounts();
+    expect(rows.find((r) => r.id === sf.a)?.suggestion).toMatchObject({
+      performanceAccountId: ira,
+      subKey: key(alice),
+    });
+    expect(rows.find((r) => r.id === sf.b)?.suggestion).toMatchObject({
+      subKey: key(bob),
+    });
+    expect(await ctx.caller.simplefin.acceptLinkSuggestions({})).toEqual({
+      linked: 2,
+    });
+    const linked = ctx.db.select().from(sqliteSchema.simplefinAccounts).all();
+    expect(linked.find((r) => r.id === sf.a)?.linkedSubKey).toBe(key(alice));
+    expect(linked.find((r) => r.id === sf.b)?.linkedSubKey).toBe(key(bob));
+    // Back to unlinked for the tests below.
+    ctx.db
+      .update(sqliteSchema.simplefinAccounts)
+      .set({ linkedPerformanceAccountId: null, linkedSubKey: null })
+      .run();
+  });
+
   it("rejects a sub-account that isn't in the latest snapshot", async () => {
     await expect(
       ctx.caller.simplefin.setAccountMapping({

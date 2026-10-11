@@ -139,9 +139,11 @@ function AccountRow({
           pick another.
         </p>
       )}
-      {account.linkedPerformanceAccountId === null && account.suggestion && (
+      {account.suggestion && (
         <p className="text-caption text-muted mt-0.5 pl-6">
-          Looks like{" "}
+          {account.linkedPerformanceAccountId === null
+            ? "Looks like"
+            : "More precisely"}{" "}
           <span className="text-primary">{account.suggestion.label}</span>{" "}
           <button
             className="hover:text-primary underline"
@@ -190,9 +192,7 @@ export function SimplefinCard() {
   const acceptSuggestionsMut = trpc.simplefin.acceptLinkSuggestions.useMutation(
     { onSuccess: invalidate },
   );
-  const suggestionCount = (accounts ?? []).filter(
-    (a) => a.linkedPerformanceAccountId === null && a.suggestion,
-  ).length;
+  const suggestionCount = (accounts ?? []).filter((a) => a.suggestion).length;
 
   const saveTokenMut = trpc.simplefin.saveToken.useMutation({
     onSuccess: () => {
@@ -375,8 +375,8 @@ export function SimplefinCard() {
               <div className="flex flex-wrap items-center gap-2 rounded bg-blue-50 p-2 text-xs text-blue-900 dark:bg-blue-950/30 dark:text-blue-200">
                 <span>
                   {suggestionCount} account{suggestionCount === 1 ? "" : "s"}{" "}
-                  can be linked by institution, account type and balance — check
-                  each suggestion below, or
+                  can be linked (or linked more precisely) by institution,
+                  account type and balance — check each suggestion below, or
                 </span>
                 <Button
                   size="xs"

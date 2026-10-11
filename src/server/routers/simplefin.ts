@@ -13,7 +13,17 @@
  */
 
 import { z } from "zod/v4";
-import { and, asc, desc, eq, gte, isNotNull, isNull, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gte,
+  isNotNull,
+  isNull,
+  or,
+  sql,
+} from "drizzle-orm";
 import { createTRPCRouter, protectedProcedure, syncProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import {
@@ -122,6 +132,42 @@ async function linkContext(
       subKey,
       label: subKey ? `${account} — ${subByKey.get(subKey)!.label}` : account,
     });
+  }
+
+  // An account linked to a whole tracked account whose name states one tax
+  // treatment (e.g. a Roth IRA linked to an IRA holding two people's Roth
+  // and traditional money) can be narrowed to that sub-account. Only that
+  // tracked account's own free sub-accounts are considered.
+  const wholeLinked = new Map<number, typeof rows>();
+  for (const r of rows) {
+    if (r.linkedPerformanceAccountId == null || r.linkedSubKey) continue;
+    const list = wholeLinked.get(r.linkedPerformanceAccountId) ?? [];
+    list.push(r);
+    wholeLinked.set(r.linkedPerformanceAccountId, list);
+  }
+  for (const [performanceAccountId, linked] of wholeLinked) {
+    const own = subs.filter(
+      (sub) => sub.performanceAccountId === performanceAccountId,
+    );
+    if (own.length < 2) continue;
+    const free = own.filter((sub) => !takenKeys.has(sub.key));
+    for (const s of suggestLinks(
+      linked.map((r) => ({
+        id: r.id,
+        orgName: r.orgName,
+        accountName: r.accountName,
+        balance: Number(r.lastBalance),
+      })),
+      free,
+    )) {
+      if (s.candidate.taxType === null) continue;
+      const sub = s.candidate as (typeof free)[number];
+      suggestions.set(s.simplefinAccountId, {
+        performanceAccountId,
+        subKey: sub.key,
+        label: `${perfLabel.get(performanceAccountId) ?? ""} — ${sub.label}`,
+      });
+    }
   }
   return { subByKey, suggestions };
 }
@@ -462,7 +508,10 @@ export const simplefinRouter = createTRPCRouter({
     }));
   }),
 
-  /** Link every unlinked SimpleFIN account to its suggested (sub-)account. */
+  /**
+   * Link every unlinked SimpleFIN account to its suggested (sub-)account, and
+   * narrow whole-account links to their suggested sub-account.
+   */
   acceptLinkSuggestions: syncProcedure
     .input(z.object({ ids: z.array(z.number().int()).optional() }))
     .mutation(async ({ ctx, input }) => {
@@ -480,7 +529,17 @@ export const simplefinRouter = createTRPCRouter({
           .where(
             and(
               eq(schema.simplefinAccounts.id, id),
-              isNull(schema.simplefinAccounts.linkedPerformanceAccountId),
+              // Unlinked, or linked to this whole account (a narrower link).
+              or(
+                isNull(schema.simplefinAccounts.linkedPerformanceAccountId),
+                and(
+                  eq(
+                    schema.simplefinAccounts.linkedPerformanceAccountId,
+                    s.performanceAccountId,
+                  ),
+                  isNull(schema.simplefinAccounts.linkedSubKey),
+                ),
+              ),
             ),
           );
         await redactStoredCardSpending(ctx.db, id);
