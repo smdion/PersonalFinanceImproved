@@ -279,6 +279,34 @@ describe("investments router", () => {
     expect(typeof health.needsReview).toBe("number");
   });
 
+  it("splits only when stored transactions reach back to the snapshot", async () => {
+    // No complete ingest recorded yet → coverage unknown.
+    expect(
+      (await ctx.caller.investments.getSnapshotFlows({ since: daysAgo(10) }))
+        .covered,
+    ).toBe(false);
+    ctx.db
+      .insert(sqliteSchema.appSettings)
+      .values({
+        key: "simplefin_investments_first_synced_at",
+        value: new Date().toISOString(),
+      })
+      .run();
+    const recent = await ctx.caller.investments.getSnapshotFlows({
+      since: daysAgo(10),
+    });
+    expect(recent.covered).toBe(true);
+    expect(recent.recent.length).toBeLessThanOrEqual(3);
+    expect(
+      recent.recent.every((r) => !("description" in r) && r.label.length > 0),
+    ).toBe(true);
+    // A snapshot older than SimpleFIN's 90-day window can't be split.
+    expect(
+      (await ctx.caller.investments.getSnapshotFlows({ since: daysAgo(120) }))
+        .covered,
+    ).toBe(false);
+  });
+
   it("requires the portfolio permission to read or change anything", async () => {
     for (const session of [
       viewerSession,
@@ -292,6 +320,9 @@ describe("investments router", () => {
         ).rejects.toThrow();
         await expect(other.caller.investments.listRules()).rejects.toThrow();
         await expect(other.caller.investments.getHealth()).rejects.toThrow();
+        await expect(
+          other.caller.investments.getSnapshotFlows({ since: "2026-01-01" }),
+        ).rejects.toThrow();
         await expect(
           other.caller.investments.setTransactionKind({ id: 1, kind: "other" }),
         ).rejects.toThrow();

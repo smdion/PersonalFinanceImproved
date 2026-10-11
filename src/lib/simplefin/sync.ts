@@ -77,6 +77,7 @@ const PARTIAL_SYNC_STATE_KEY = "simplefin_partial_sync_state";
 export const MAX_PARTIAL_SYNC_RETRIES_PER_DAY = 3;
 
 const INVESTMENTS_SYNCED_AT_KEY = "simplefin_investments_synced_at";
+const INVESTMENTS_FIRST_SYNCED_AT_KEY = "simplefin_investments_first_synced_at";
 
 /** When holdings and transactions were last stored completely, or null if never. */
 export async function getInvestmentsSyncedAt(db: Db): Promise<Date | null> {
@@ -98,6 +99,29 @@ async function setInvestmentsSyncedAt(db: Db, at: Date): Promise<void> {
       target: schema.appSettings.key,
       set: { value: at.toISOString() },
     });
+  // The first complete ingest fixes how far back stored transactions reach.
+  await db
+    .insert(schema.appSettings)
+    .values({ key: INVESTMENTS_FIRST_SYNCED_AT_KEY, value: at.toISOString() })
+    .onConflictDoNothing();
+}
+
+/**
+ * The earliest day stored transactions are complete from: SimpleFIN's
+ * 90-day window before the first complete ingest. Null before any ingest.
+ */
+export async function getTransactionCoverageStart(
+  db: Db,
+): Promise<Date | null> {
+  const rows = await db
+    .select({ value: schema.appSettings.value })
+    .from(schema.appSettings)
+    .where(eq(schema.appSettings.key, INVESTMENTS_FIRST_SYNCED_AT_KEY));
+  const value = rows[0]?.value;
+  if (typeof value !== "string") return null;
+  const first = new Date(value);
+  if (Number.isNaN(first.getTime())) return null;
+  return transactionWindowStart(null, first);
 }
 
 /** Get the api_connections row for the simplefin service, or null if not configured. */

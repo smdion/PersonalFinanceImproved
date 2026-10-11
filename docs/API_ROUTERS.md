@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**376 procedures across 47 routers.**
+**377 procedures across 48 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -161,6 +161,12 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `deleteRule`  | mutation | `portfolioProcedure` | Delete a rule; rows it matched go back to the built-in rules.             |
 | `listRules`   | query    | `portfolioProcedure` | The household's rules, highest priority first.                            |
 | `previewRule` | query    | `portfolioProcedure` | How many stored rows a rule would match and reclassify, before saving it. |
+
+## `investments/snapshot-flows`
+
+| Procedure          | Kind  | Auth                 | Description                                                                                                                                                                                              |
+| ------------------ | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `getSnapshotFlows` | query | `portfolioProcedure` | Money added since a snapshot across SimpleFIN accounts linked to tracked accounts (the Live Balance change's scope), whether stored transactions reach back that far, and the latest few money movements |
 
 ## `investments/transactions`
 

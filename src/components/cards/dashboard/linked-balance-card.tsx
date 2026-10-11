@@ -5,6 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Tooltip } from "@/components/ui/tooltip";
+import { useUser, hasPermission } from "@/lib/context/user-context";
 import { summarizeBalanceDates } from "@/lib/pure/balance-dates";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
 import { safeDivide, roundToCents } from "@/lib/utils/math";
@@ -273,6 +274,14 @@ function LinkedBalanceCardImpl() {
     trpc.simplefin.listMatchableAccounts.useQuery(undefined, {
       enabled: isConnected,
     });
+  // Transaction-level detail (what you added, recent activity) needs the
+  // portfolio permission; everyone else sees the balance-only card.
+  const canSeeActivity = hasPermission(useUser(), "portfolio");
+  const flowsSince = accounts?.find((a) => a.snapshotDate)?.snapshotDate;
+  const { data: flows } = trpc.investments.getSnapshotFlows.useQuery(
+    { since: flowsSince ?? "" },
+    { enabled: isConnected && canSeeActivity && !!flowsSince },
+  );
 
   if (statusLoading) return <LoadingCard title="Live Balance" />;
   // No SimpleFIN connection configured — omit the card entirely rather
@@ -376,6 +385,43 @@ function LinkedBalanceCardImpl() {
           <span className="text-caption text-muted ml-2">
             vs. {snapshotLabel}
           </span>
+        </div>
+      )}
+
+      {/* What you added vs what markets did — only when stored transactions
+          reach back to the snapshot, and marked estimated while rows still
+          await review. */}
+      {drift && drift.groupCount > 0 && flows?.covered && (
+        <p className="text-caption text-muted mb-1">
+          {flows.added >= 0 ? "You added " : "You took out "}
+          {formatCurrency(Math.abs(flows.added))} · markets{" "}
+          {drift.totalDrift - flows.added >= 0 ? "+" : "-"}
+          {formatCurrency(
+            Math.abs(roundToCents(drift.totalDrift - flows.added)),
+          )}
+          {flows.reviewCount > 0 && (
+            <span className="text-faint">
+              {" "}
+              (estimated — {flows.reviewCount}{" "}
+              {flows.reviewCount === 1 ? "row" : "rows"} to review)
+            </span>
+          )}
+        </p>
+      )}
+
+      {canSeeActivity && flows && flows.recent.length > 0 && (
+        <div className="mb-2 space-y-0.5">
+          {flows.recent.map((r) => (
+            <div
+              key={r.id}
+              className="text-caption text-faint flex justify-between gap-2"
+            >
+              <span className="truncate">
+                {shortDay(r.posted)} · {r.institution} — {r.label}
+              </span>
+              <span className="shrink-0">{formatCurrency(r.amount)}</span>
+            </div>
+          ))}
         </div>
       )}
 
