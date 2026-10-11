@@ -590,7 +590,7 @@ export const demoRouter = createTRPCRouter({
       const client = await pool.connect();
       try {
         const schemaCount = await client.query(
-          `SELECT count(*)::int AS cnt FROM information_schema.schemata WHERE schema_name LIKE 'demo_%'`,
+          `SELECT count(*)::int AS cnt FROM information_schema.schemata WHERE schema_name LIKE 'demo\\_%'`,
         );
         if ((schemaCount.rows[0]?.cnt ?? 0) >= MAX_DEMO_SCHEMAS) {
           throw new TRPCError({
