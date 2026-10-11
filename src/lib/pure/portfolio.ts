@@ -4,49 +4,47 @@
  */
 import { toNumber } from "@/server/helpers/transforms";
 
+/** A snapshot row's sub-account identity (see {@link snapshotAccountKey}). */
+export type SubAccountIdentity = {
+  performanceAccountId: number | null;
+  taxType: string;
+  subType: string | null;
+  /** Null = joint (no single owner). */
+  ownerPersonId: number | null;
+};
+
 /**
  * Build a set of account keys that were inactive in a previous snapshot.
  * Used to carry forward isActive=false status to new snapshots.
  */
 export function buildPrevInactiveKeys(
-  prevAccounts: {
-    performanceAccountId: number | null;
-    taxType: string;
-    subType: string | null;
-    isActive: boolean;
-  }[],
+  prevAccounts: (SubAccountIdentity & { isActive: boolean })[],
 ): Set<string> {
   const keys = new Set<string>();
-  for (const pa of prevAccounts) {
-    if (!pa.isActive) {
-      keys.add(
-        `${pa.performanceAccountId ?? ""}_${pa.taxType}_${pa.subType ?? ""}`,
-      );
-    }
-  }
+  for (const pa of prevAccounts)
+    if (!pa.isActive) keys.add(snapshotAccountKey(pa));
   return keys;
 }
 
 /**
- * Build the account key for matching against previous snapshot inactive status.
+ * A sub-account's identity across snapshots: tracked account, tax type,
+ * kind (subType) and owner. Sub-accounts exist only as snapshot rows (one
+ * tracked account holds several — each spouse's Roth in a joint IRA, a
+ * 401k's Roth + Traditional + match; DESIGN.md "Performance Accounts"), so
+ * this key is how a row is recognised from one snapshot to the next and
+ * how a SimpleFIN account links to one. The owner is part of it: two
+ * people's Roth rows in one joint IRA are different sub-accounts. The
+ * free-text `label` is a display override and deliberately not part of it.
  */
-export function snapshotAccountKey(account: {
-  performanceAccountId: number | null;
-  taxType: string;
-  subType: string | null;
-}): string {
-  return `${account.performanceAccountId ?? ""}_${account.taxType}_${account.subType ?? ""}`;
+export function snapshotAccountKey(account: SubAccountIdentity): string {
+  return `${account.performanceAccountId ?? ""}_${account.taxType}_${account.subType ?? ""}_${account.ownerPersonId ?? ""}`;
 }
 
 /**
  * Resolve whether a snapshot account should be active based on previous snapshot carry-forward.
  */
 export function resolveAccountActiveStatus(
-  account: {
-    performanceAccountId: number | null;
-    taxType: string;
-    subType: string | null;
-  },
+  account: SubAccountIdentity,
   prevInactiveKeys: Set<string>,
 ): boolean {
   return !prevInactiveKeys.has(snapshotAccountKey(account));

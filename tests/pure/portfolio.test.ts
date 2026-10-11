@@ -20,26 +20,29 @@ describe("buildPrevInactiveKeys", () => {
         performanceAccountId: 1,
         taxType: "traditional",
         subType: null,
+        ownerPersonId: null,
         isActive: false,
       },
       {
         performanceAccountId: 2,
         taxType: "roth",
         subType: null,
+        ownerPersonId: null,
         isActive: true,
       },
       {
         performanceAccountId: 3,
         taxType: "traditional",
         subType: "espp",
+        ownerPersonId: 7,
         isActive: false,
       },
     ];
     const keys = buildPrevInactiveKeys(prevAccounts);
     expect(keys.size).toBe(2);
-    expect(keys.has("1_traditional_")).toBe(true);
-    expect(keys.has("3_traditional_espp")).toBe(true);
-    expect(keys.has("2_roth_")).toBe(false);
+    expect(keys.has("1_traditional__")).toBe(true);
+    expect(keys.has("3_traditional_espp_7")).toBe(true);
+    expect(keys.has("2_roth__")).toBe(false);
   });
 
   it("returns empty set when all active", () => {
@@ -48,6 +51,7 @@ describe("buildPrevInactiveKeys", () => {
         performanceAccountId: 1,
         taxType: "roth",
         subType: null,
+        ownerPersonId: null,
         isActive: true,
       },
     ]);
@@ -56,34 +60,41 @@ describe("buildPrevInactiveKeys", () => {
 });
 
 describe("snapshotAccountKey", () => {
-  it("builds key with all fields", () => {
+  it("builds key with all fields, owner included", () => {
     expect(
       snapshotAccountKey({
         performanceAccountId: 5,
         taxType: "traditional",
         subType: "401k",
+        ownerPersonId: 2,
       }),
-    ).toBe("5_traditional_401k");
+    ).toBe("5_traditional_401k_2");
   });
 
-  it("handles null performanceAccountId", () => {
+  it("handles null performanceAccountId and a joint owner", () => {
     expect(
       snapshotAccountKey({
         performanceAccountId: null,
         taxType: "roth",
         subType: null,
+        ownerPersonId: null,
       }),
-    ).toBe("_roth_");
+    ).toBe("_roth__");
   });
 });
 
 describe("resolveAccountActiveStatus", () => {
-  const inactiveKeys = new Set(["1_traditional_", "3_roth_espp"]);
+  const inactiveKeys = new Set(["1_traditional__", "3_roth_espp_"]);
 
   it("returns false for previously inactive account", () => {
     expect(
       resolveAccountActiveStatus(
-        { performanceAccountId: 1, taxType: "traditional", subType: null },
+        {
+          performanceAccountId: 1,
+          taxType: "traditional",
+          subType: null,
+          ownerPersonId: null,
+        },
         inactiveKeys,
       ),
     ).toBe(false);
@@ -92,7 +103,12 @@ describe("resolveAccountActiveStatus", () => {
   it("returns true for account not in inactive set", () => {
     expect(
       resolveAccountActiveStatus(
-        { performanceAccountId: 2, taxType: "roth", subType: null },
+        {
+          performanceAccountId: 2,
+          taxType: "roth",
+          subType: null,
+          ownerPersonId: null,
+        },
         inactiveKeys,
       ),
     ).toBe(true);
@@ -101,10 +117,57 @@ describe("resolveAccountActiveStatus", () => {
   it("returns true when inactive keys are empty", () => {
     expect(
       resolveAccountActiveStatus(
-        { performanceAccountId: 1, taxType: "traditional", subType: null },
+        {
+          performanceAccountId: 1,
+          taxType: "traditional",
+          subType: null,
+          ownerPersonId: null,
+        },
         new Set(),
       ),
     ).toBe(true);
+  });
+
+  it("deactivating one person's sub-account in a joint account leaves the other's active", () => {
+    // Joint IRA: Alice's Roth was deactivated, Bob's Roth was not.
+    const keys = buildPrevInactiveKeys([
+      {
+        performanceAccountId: 9,
+        taxType: "taxFree",
+        subType: null,
+        ownerPersonId: 1,
+        isActive: false,
+      },
+      {
+        performanceAccountId: 9,
+        taxType: "taxFree",
+        subType: null,
+        ownerPersonId: 2,
+        isActive: true,
+      },
+    ]);
+    expect(
+      resolveAccountActiveStatus(
+        {
+          performanceAccountId: 9,
+          taxType: "taxFree",
+          subType: null,
+          ownerPersonId: 2,
+        },
+        keys,
+      ),
+    ).toBe(true);
+    expect(
+      resolveAccountActiveStatus(
+        {
+          performanceAccountId: 9,
+          taxType: "taxFree",
+          subType: null,
+          ownerPersonId: 1,
+        },
+        keys,
+      ),
+    ).toBe(false);
   });
 });
 

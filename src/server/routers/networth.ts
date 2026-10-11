@@ -1018,6 +1018,7 @@ export const networthRouter = createTRPCRouter({
                       schema.portfolioAccounts.performanceAccountId,
                     taxType: schema.portfolioAccounts.taxType,
                     subType: schema.portfolioAccounts.subType,
+                    ownerPersonId: schema.portfolioAccounts.ownerPersonId,
                     isActive: schema.portfolioAccounts.isActive,
                   })
                   .from(schema.portfolioAccounts)
@@ -1051,6 +1052,7 @@ export const networthRouter = createTRPCRouter({
                       performanceAccountId: a.performanceAccountId ?? null,
                       taxType: a.taxType,
                       subType: a.subType ?? null,
+                      ownerPersonId: a.ownerPersonId ?? null,
                     },
                     prevInactiveKeys,
                   ),
