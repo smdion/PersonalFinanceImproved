@@ -6,7 +6,7 @@
  * it holds (with the household's fund-fact controls), its asset mix and
  * yearly fee, and whether deposits match the paycheck setup.
  */
-import { type RouterOutputs } from "@/lib/trpc";
+import { trpc, type RouterOutputs } from "@/lib/trpc";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
 import { COMPOSITION_BUCKET_LABELS } from "@/lib/config/display-labels";
@@ -76,6 +76,84 @@ function AccountMixBar({
         ))}
       </div>
     </div>
+  );
+}
+
+const signed = (n: number) =>
+  `${n > 0 ? "+" : n < 0 ? "−" : ""}${formatCurrency(Math.abs(n))}`;
+
+/** "Since your Oct 10 snapshot: +$X — you added $A, moved …, markets $M". */
+function SinceSnapshot({
+  s,
+}: {
+  s: NonNullable<AccountInsight["sinceSnapshot"]>;
+}) {
+  const parts = [
+    s.added !== 0 &&
+      `${s.added > 0 ? "you added" : "you took out"} ${formatCurrency(Math.abs(s.added))}`,
+    s.moved !== 0 &&
+      `${signed(s.moved)} moved ${s.moved > 0 ? "in from" : "out to"} your other accounts`,
+    `markets ${signed(s.markets)}`,
+  ].filter(Boolean);
+  return (
+    <p className="text-xs">
+      <span className="text-muted">
+        Since your {day(s.snapshotDate)} snapshot:{" "}
+      </span>
+      <span
+        className={`font-medium ${s.change >= 0 ? "text-green-600" : "text-red-600"}`}
+      >
+        {signed(s.change)}
+      </span>
+      <span className="text-muted"> — {parts.join(", ")}</span>
+      {(!s.covered || s.reviewCount > 0) && (
+        <span className="text-faint">
+          {" "}
+          (estimate:{" "}
+          {!s.covered
+            ? "SimpleFIN transactions don't reach back to the snapshot"
+            : `${s.reviewCount} transaction${s.reviewCount === 1 ? "" : "s"} still need a kind`}
+          )
+        </span>
+      )}
+    </p>
+  );
+}
+
+/** Household total of the per-account split, for the Portfolio page. */
+export function SinceSnapshotSummary({
+  insights,
+}: {
+  insights: readonly AccountInsight[];
+}) {
+  const rows = insights
+    .map((i) => i.sinceSnapshot)
+    .filter((s): s is NonNullable<typeof s> => s !== null);
+  if (rows.length === 0) return null;
+  const sum = (f: "change" | "added" | "markets") =>
+    rows.reduce((t, r) => t + r[f], 0);
+  const change = sum("change");
+  const added = sum("added");
+  const markets = sum("markets");
+  const estimate = rows.some((r) => !r.covered || r.reviewCount > 0);
+  return (
+    <p className="text-sm">
+      <span className="text-muted">
+        Since your {day(rows[0]!.snapshotDate)} snapshot, across {rows.length}{" "}
+        linked account{rows.length === 1 ? "" : "s"}:{" "}
+      </span>
+      <span
+        className={`font-semibold ${change >= 0 ? "text-green-600" : "text-red-600"}`}
+      >
+        {signed(change)}
+      </span>
+      <span className="text-muted">
+        {" "}
+        — {added >= 0 ? "you added" : "you took out"}{" "}
+        {formatCurrency(Math.abs(added))}, markets {signed(markets)}
+        {estimate && " (estimate)"}
+      </span>
+    </p>
   );
 }
 
@@ -203,6 +281,8 @@ export function AccountLiveSection({
         )}
       </div>
 
+      {insight.sinceSnapshot && <SinceSnapshot s={insight.sinceSnapshot} />}
+
       {holdings.length > 0 && (
         <div>
           <div className="text-caption text-muted mb-1 flex flex-wrap items-baseline justify-between gap-2 font-semibold tracking-wider uppercase">
@@ -230,6 +310,19 @@ export function AccountLiveSection({
       )}
 
       <DepositCheck d={insight.deposits} />
+    </div>
+  );
+}
+
+/** The household line, fetched on its own (hidden without the portfolio permission). */
+export function SinceSnapshotBanner() {
+  const { data } = trpc.investments.getAccountInsights.useQuery(undefined, {
+    retry: false,
+  });
+  if (!data) return null;
+  return (
+    <div className="mb-4">
+      <SinceSnapshotSummary insights={data} />
     </div>
   );
 }

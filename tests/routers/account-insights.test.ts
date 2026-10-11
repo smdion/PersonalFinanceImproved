@@ -159,6 +159,16 @@ describe("getAccountInsights", () => {
       unlinkedParts: [],
       deposits: { verdict: "matches", paydays: 4, typical: 300, everyDays: 14 },
     });
+    // Snapshot 5,000 → live 5,400; deposits after the snapshot: 300 × 2.
+    expect(by.get(plan)?.sinceSnapshot).toMatchObject({
+      snapshotDate: daysAgo(30),
+      change: 400,
+      added: 600,
+      moved: 0,
+      markets: -200,
+    });
+    // Not every part linked: no comparison.
+    expect(by.get(ira)?.sinceSnapshot).toBeNull();
     expect(by.get(ira)).toMatchObject({
       live: { total: 950 },
       unlinkedParts: ["Alice — Traditional"],

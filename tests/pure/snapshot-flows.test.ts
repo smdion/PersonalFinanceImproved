@@ -1,6 +1,10 @@
 /** Splitting change since a snapshot into money added vs markets. Invented rows. */
 import { describe, it, expect } from "vitest";
-import { flowsSince, type FlowRow } from "@/lib/pure/snapshot-flows";
+import {
+  accountFlowsSince,
+  flowsSince,
+  type FlowRow,
+} from "@/lib/pure/snapshot-flows";
 
 const row = (over: Partial<FlowRow>): FlowRow => ({
   posted: "2026-06-10",
@@ -50,5 +54,22 @@ describe("flowsSince", () => {
         "2026-06-01",
       ),
     ).toEqual({ added: 0, reviewCount: 1 });
+  });
+});
+
+describe("accountFlowsSince", () => {
+  it("splits one account's change into added, moved between accounts, and markets", () => {
+    expect(
+      accountFlowsSince(
+        [
+          row({ posted: "2026-03-01", amount: 999 }), // snapshot day: already in it
+          row({ posted: "2026-03-05", amount: 300 }),
+          row({ posted: "2026-03-06", kind: "transfer", amount: -1000 }),
+          row({ posted: "2026-03-07", kind: "dividend", amount: 12 }),
+        ],
+        "2026-03-01",
+        -650,
+      ),
+    ).toEqual({ added: 300, moved: -1000, markets: 50, reviewCount: 0 });
   });
 });

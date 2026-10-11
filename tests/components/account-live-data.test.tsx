@@ -40,6 +40,15 @@ const insight: AccountInsight = {
   live: { total: 1234.5, asOf: "2026-10-10" },
   feeds: [{ id: 9, name: "Example Bank Plan", part: null }],
   unlinkedParts: ["Alice — Roth"],
+  sinceSnapshot: {
+    snapshotDate: "2026-10-01",
+    change: 150,
+    covered: true,
+    added: 100,
+    moved: 0,
+    markets: 50,
+    reviewCount: 0,
+  },
   unplaced: [
     { name: "Example Bank Traditional IRA", balance: 0.19, reason: "no_part" },
   ],
@@ -76,6 +85,9 @@ describe("AccountLiveSection", () => {
       screen.getByText(/Not linked yet: Alice — Roth/),
     ).toBeInTheDocument();
     expect(screen.getByText(/your paycheck setup says/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/you added \$100.*markets \+\$50/),
+    ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "EXMPX" })).toHaveAttribute(
       "href",
       "https://finance.yahoo.com/quote/EXMPX",

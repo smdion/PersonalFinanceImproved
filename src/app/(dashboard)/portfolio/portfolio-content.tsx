@@ -4,6 +4,7 @@
  *  portfolio/page.tsx is a thin server component that prefetches the most
  *  expensive query before rendering this. */
 
+import { SinceSnapshotBanner } from "@/components/portfolio/account-live-data";
 import React, { useState, useCallback, useMemo } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
@@ -441,6 +442,9 @@ export function PortfolioContent() {
           </span>
         </div>
       )}
+
+      {/* Change since the latest snapshot: added vs markets */}
+      <SinceSnapshotBanner />
 
       {/* Quick Look Stats Panel */}
       {showQuickLook && snapshotTotals && snapshotTotals.length >= 2 && (

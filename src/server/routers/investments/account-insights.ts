@@ -4,13 +4,15 @@
  * transaction-level detail): live balance and link status, what it holds,
  * and whether deposits match the paycheck setup.
  */
-import { gte } from "drizzle-orm";
+import { desc, gte } from "drizzle-orm";
 import { createTRPCRouter, portfolioProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { utcDayOf } from "@/lib/simplefin/ingest";
 import { roundToCents } from "@/lib/utils/math";
 import { blendedCost, portfolioBuckets } from "@/lib/pure/fund-facts";
 import { checkDeposits } from "@/lib/pure/deposit-check";
+import { accountFlowsSince } from "@/lib/pure/snapshot-flows";
+import { getTransactionCoverageStart } from "@/lib/simplefin/sync";
 import { suggestSnapshotAmounts } from "@/lib/pure/snapshot-suggestions";
 import { loadLatestSubAccounts } from "@/server/helpers/sub-accounts";
 import { loadContributionMix } from "@/server/helpers/contribution-mix";
@@ -29,7 +31,16 @@ const WINDOW_DAYS = 90;
 export const investmentAccountInsightsRouter = createTRPCRouter({
   getAccountInsights: portfolioProcedure.query(async ({ ctx }) => {
     const since = utcDayOf(new Date(Date.now() - WINDOW_DAYS * 86_400_000));
-    const [feeds, subs, accounts, mix, recent, holdings] = await Promise.all([
+    const [
+      feeds,
+      subs,
+      accounts,
+      mix,
+      recent,
+      holdings,
+      latestSnapshot,
+      coverage,
+    ] = await Promise.all([
       ctx.db
         .select({
           id: schema.simplefinAccounts.id,
@@ -51,9 +62,23 @@ export const investmentAccountInsightsRouter = createTRPCRouter({
         .from(schema.investmentTransactions)
         .where(gte(schema.investmentTransactions.posted, since)),
       loadLatestHoldings(ctx.db),
+      ctx.db
+        .select({ date: schema.portfolioSnapshots.snapshotDate })
+        .from(schema.portfolioSnapshots)
+        .orderBy(desc(schema.portfolioSnapshots.snapshotDate))
+        .limit(1),
+      getTransactionCoverageStart(ctx.db),
     ]);
+    const snapshotDate = latestSnapshot[0]?.date ?? null;
+    // Since the snapshot needs transactions back to it, not just 90 days.
+    const loadFrom =
+      snapshotDate !== null && snapshotDate < since ? snapshotDate : since;
+    const snapshotCovered =
+      snapshotDate !== null &&
+      coverage !== null &&
+      utcDayOf(coverage) <= snapshotDate;
     const [rows, valued] = await Promise.all([
-      loadClassifiedTransactions(ctx.db, { since }),
+      loadClassifiedTransactions(ctx.db, { since: loadFrom }),
       valueHoldings(ctx.db, holdings),
     ]);
     const sending = new Set(recent.map((r) => r.id));
@@ -109,10 +134,41 @@ export const investmentAccountInsightsRouter = createTRPCRouter({
       const deposits = rows.filter(
         (r) =>
           ids.has(r.simplefinAccountId) &&
+          r.posted >= since &&
           r.kind === "contribution" &&
           !r.pending &&
           !r.voided,
       );
+      const liveTotal = roundToCents(
+        mine.reduce((t, f) => t + toNumber(f.balance), 0),
+      );
+      const snapshotTotal = roundToCents(
+        accountSubs.reduce((t, s) => t + s.amount, 0),
+      );
+      const accountUnplaced = unplaced.filter(
+        (u) => u.performanceAccountId === performanceAccountId,
+      );
+      // Only when the live balance covers the whole account as the
+      // snapshot does (every part linked, nothing outside a part).
+      const comparable =
+        snapshotDate !== null &&
+        mine.length > 0 &&
+        accountSubs.length > 0 &&
+        (whole ||
+          accountSubs.every((s) => mine.some((f) => f.subKey === s.key))) &&
+        accountUnplaced.length === 0;
+      const sinceSnapshot = comparable
+        ? {
+            snapshotDate: snapshotDate!,
+            change: roundToCents(liveTotal - snapshotTotal),
+            covered: snapshotCovered,
+            ...accountFlowsSince(
+              rows.filter((r) => ids.has(r.simplefinAccountId) && !r.voided),
+              snapshotDate!,
+              liveTotal - snapshotTotal,
+            ),
+          }
+        : null;
       const { buckets, unknown, total } = portfolioBuckets(accountHoldings);
       return {
         performanceAccountId,
@@ -141,17 +197,17 @@ export const investmentAccountInsightsRouter = createTRPCRouter({
             : accountSubs
                 .filter((s) => !mine.some((f) => f.subKey === s.key))
                 .map((s) => s.label),
+        /** Change since the latest snapshot, split added / moved / markets (null when not comparable). */
+        sinceSnapshot,
         /** Feeds whose money no part of the latest snapshot holds. */
-        unplaced: unplaced
-          .filter((u) => u.performanceAccountId === performanceAccountId)
-          .map((u) => {
-            const a = accounts.get(u.feedId);
-            return {
-              name: `${a?.institution ?? ""} ${a?.accountName ?? ""}`.trim(),
-              balance: u.balance,
-              reason: u.reason,
-            };
-          }),
+        unplaced: accountUnplaced.map((u) => {
+          const a = accounts.get(u.feedId);
+          return {
+            name: `${a?.institution ?? ""} ${a?.accountName ?? ""}`.trim(),
+            balance: u.balance,
+            reason: u.reason,
+          };
+        }),
         mix: { buckets, unknown, total },
         cost: blendedCost(accountHoldings),
         deposits: checkDeposits(
