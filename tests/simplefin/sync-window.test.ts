@@ -29,6 +29,7 @@ afterAll(() => {
 import { getAccounts } from "@/lib/simplefin/client";
 import {
   getInvestmentsSyncedAt,
+  getWindowLimitDays,
   runSimplefinSync,
   saveSimplefinConnection,
 } from "@/lib/simplefin/sync";
@@ -68,11 +69,11 @@ describe("transaction window across syncs", () => {
   });
   afterAll(() => ctx.cleanup());
 
-  it("asks for the full 90 days on the first sync after upgrading", async () => {
+  it("asks for the full window on the first sync after upgrading", async () => {
     const asOf = new Date("2026-06-02T12:00:00Z");
     mockGetAccounts.mockResolvedValueOnce(response());
     await runSimplefinSync(ctx.rawDb, asOf);
-    expect(requestedStart()).toEqual(new Date(asOf.getTime() - 90 * DAY));
+    expect(requestedStart()).toEqual(new Date(asOf.getTime() - 89 * DAY));
     expect(await getInvestmentsSyncedAt(ctx.rawDb)).toEqual(asOf);
   });
 
@@ -91,5 +92,30 @@ describe("transaction window across syncs", () => {
     mockGetAccounts.mockResolvedValueOnce(response());
     await runSimplefinSync(ctx.rawDb, new Date("2026-06-05T12:00:00Z"));
     expect(requestedStart()).toEqual(new Date("2026-05-29T12:00:00Z")); // still from Jun 3
+  });
+
+  it("reports a 'capped' notice as information, not an error, and learns the limit", async () => {
+    const capped = {
+      ...response(),
+      notices: [
+        "Requested date range exceeds limit of 60 days and was capped.",
+      ],
+      windowLimitDays: 60,
+    };
+    mockGetAccounts.mockResolvedValueOnce(capped);
+    const r = await runSimplefinSync(
+      ctx.rawDb,
+      new Date("2026-06-06T12:00:00Z"),
+    );
+    expect(r.providerErrors).toEqual([]);
+    expect(await getWindowLimitDays(ctx.rawDb)).toBe(59);
+    // The next request stays inside the learned limit.
+    await ctx.rawDb
+      .delete(ctx.schema.appSettings)
+      .where(eq(ctx.schema.appSettings.key, "simplefin_investments_synced_at"));
+    mockGetAccounts.mockResolvedValueOnce(response());
+    const asOf = new Date("2026-06-07T12:00:00Z");
+    await runSimplefinSync(ctx.rawDb, asOf);
+    expect(requestedStart()).toEqual(new Date(asOf.getTime() - 59 * DAY));
   });
 });

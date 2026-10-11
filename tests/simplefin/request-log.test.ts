@@ -107,9 +107,9 @@ describe("SimpleFIN request ledger", () => {
 
 describe("transactionWindowStart", () => {
   const now = new Date("2026-06-30T12:00:00Z");
-  it("asks for 90 days on the first sync", () => {
+  it("asks for 89 days on the first sync — a day inside SimpleFIN's 90-day limit", () => {
     expect(transactionWindowStart(null, now)).toEqual(
-      new Date("2026-04-01T12:00:00Z"),
+      new Date("2026-04-02T12:00:00Z"),
     );
   });
   it("overlaps the last successful sync by 5 days", () => {
@@ -117,9 +117,12 @@ describe("transactionWindowStart", () => {
       transactionWindowStart(new Date("2026-06-29T12:00:00Z"), now),
     ).toEqual(new Date("2026-06-24T12:00:00Z"));
   });
-  it("never reaches further back than 90 days", () => {
+  it("never reaches further back than the limit", () => {
     expect(
       transactionWindowStart(new Date("2026-01-01T00:00:00Z"), now),
-    ).toEqual(new Date("2026-04-01T12:00:00Z"));
+    ).toEqual(new Date("2026-04-02T12:00:00Z"));
+    expect(
+      transactionWindowStart(new Date("2026-01-01T00:00:00Z"), now, 30),
+    ).toEqual(new Date("2026-05-31T12:00:00Z"));
   });
 });

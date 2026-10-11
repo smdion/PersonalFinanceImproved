@@ -259,6 +259,51 @@ describe("getAccounts — full request (holdings + transactions)", () => {
     ]);
   });
 
+  it("treats SimpleFIN's 'date range was capped' message as a notice, not an error", async () => {
+    mockFetch.mockReturnValueOnce(
+      jsonResponse({
+        errors: [
+          "Requested date range exceeds limit of 90 days and was capped.",
+        ],
+        accounts: [{ id: "acct-1", name: "Ok", balance: "1.00" }],
+      }),
+    );
+    const r = await getAccounts("https://u:p@bridge.simplefin.org", {
+      startDate,
+    });
+    expect(r.providerErrors).toEqual([]);
+    expect(r.notices).toHaveLength(1);
+    expect(r.windowLimitDays).toBe(90);
+    expect(r.accountIdsWithErrors).toEqual([]);
+  });
+
+  it("still reports real errors that arrive with a capped notice", async () => {
+    mockFetch.mockReturnValueOnce(
+      jsonResponse({
+        errlist: [
+          {
+            code: "con.auth",
+            msg: "Example Bank needs you to sign in again",
+            account_id: "acct-2",
+          },
+          {
+            code: "gen.range",
+            msg: "Requested date range exceeds limit of 90 days and was capped.",
+            account_id: "acct-1",
+          },
+        ],
+        accounts: [{ id: "acct-1", name: "Ok", balance: "1.00" }],
+      }),
+    );
+    const r = await getAccounts("https://u:p@bridge.simplefin.org", {
+      startDate,
+    });
+    expect(r.providerErrors).toEqual([
+      "Example Bank needs you to sign in again",
+    ]);
+    expect(r.accountIdsWithErrors).toEqual(["acct-2"]);
+  });
+
   it("reports v2 errlist entries and which accounts they name", async () => {
     mockFetch.mockReturnValueOnce(
       jsonResponse({

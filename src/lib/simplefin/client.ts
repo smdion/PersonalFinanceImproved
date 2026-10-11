@@ -222,6 +222,14 @@ export type GetAccountsResult = {
    * just log them), not silently drop them.
    */
   providerErrors: string[];
+  /**
+   * Informational messages that aren't failures (e.g. "Requested date range
+   * exceeds limit of 90 days and was capped") — the data is complete for
+   * what the provider keeps.
+   */
+  notices?: string[];
+  /** A transaction-history limit (days) the provider reported, if any. */
+  windowLimitDays?: number | null;
   /** Account ids named by a v2 `errlist` entry — their data this run is not trustworthy. */
   accountIdsWithErrors: string[];
 };
@@ -237,12 +245,24 @@ export type GetAccountsOptions = {
 const num = (v: string | undefined): number | null =>
   v === undefined || v === "" || Number.isNaN(Number(v)) ? null : Number(v);
 
+/** A message saying our requested history was trimmed to the provider's limit — informational, not an error. */
+const CAPPED_NOTICE = /date range.*\bcapped\b/i;
+const LIMIT_DAYS = /limit of (\d+) days?/i;
+
 function mapResponse(json: SimplefinAccountsResponse): GetAccountsResult {
   const errlist = json.errlist ?? [];
-  const providerErrors = [
+  const messages = [
     ...(json.errors ?? []),
     ...errlist.map((e) => e.msg ?? e.code ?? "Unknown SimpleFIN error"),
   ];
+  const notices = messages.filter((m) => CAPPED_NOTICE.test(m));
+  const providerErrors = messages.filter((m) => !CAPPED_NOTICE.test(m));
+  const windowLimitDays =
+    notices
+      .map((m) => Number(m.match(LIMIT_DAYS)?.[1]))
+      .find((n) => Number.isFinite(n) && n > 0) ?? null;
+  if (notices.length > 0)
+    log("info", "simplefin_window_capped", { windowLimitDays });
   const hasAccounts = json.accounts && json.accounts.length > 0;
   if (providerErrors.length > 0 && !hasAccounts) {
     throw new Error(`SimpleFIN provider error: ${providerErrors.join("; ")}`);
@@ -289,7 +309,11 @@ function mapResponse(json: SimplefinAccountsResponse): GetAccountsResult {
       })),
     })),
     providerErrors,
+    notices,
+    windowLimitDays,
+    // A notice isn't an account failure, even if the provider scoped it to one.
     accountIdsWithErrors: errlist
+      .filter((e) => !CAPPED_NOTICE.test(e.msg ?? ""))
       .map((e) => e.account_id)
       .filter((id): id is string => !!id),
   };

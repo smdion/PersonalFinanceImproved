@@ -50,15 +50,24 @@ export type SimplefinSyncResult = {
 /** Re-request this many days before the last successful sync so late-posting rows are caught. */
 const WINDOW_OVERLAP_DAYS = 5;
 /** SimpleFIN keeps about 90 days of transactions. */
-const MAX_WINDOW_DAYS = 90;
+/**
+ * SimpleFIN keeps 90 days of transactions and answers a request for more
+ * than that with a "capped" notice — and an exact 90 can already exceed it
+ * by the time the provider evaluates it. Ask for a day less; if the
+ * provider ever reports a smaller limit, use that instead (learned, see
+ * getWindowLimitDays).
+ */
+const DEFAULT_MAX_WINDOW_DAYS = 89;
+const WINDOW_LIMIT_KEY = "simplefin_window_limit_days";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** Start of the transaction window to request: last success minus the overlap, at most 90 days back. */
 export function transactionWindowStart(
   lastSyncedAt: Date | null,
   now: Date,
+  maxDays: number = DEFAULT_MAX_WINDOW_DAYS,
 ): Date {
-  const earliest = now.getTime() - MAX_WINDOW_DAYS * DAY_MS;
+  const earliest = now.getTime() - maxDays * DAY_MS;
   if (!lastSyncedAt) return new Date(earliest);
   return new Date(
     Math.max(earliest, lastSyncedAt.getTime() - WINDOW_OVERLAP_DAYS * DAY_MS),
@@ -121,7 +130,32 @@ export async function getTransactionCoverageStart(
   if (typeof value !== "string") return null;
   const first = new Date(value);
   if (Number.isNaN(first.getTime())) return null;
-  return transactionWindowStart(null, first);
+  return transactionWindowStart(null, first, await getWindowLimitDays(db));
+}
+
+/** How many days of history to request: the default, or less if the provider said its limit is lower. */
+export async function getWindowLimitDays(db: Db): Promise<number> {
+  const rows = await db
+    .select({ value: schema.appSettings.value })
+    .from(schema.appSettings)
+    .where(eq(schema.appSettings.key, WINDOW_LIMIT_KEY));
+  const stored = Number(rows[0]?.value);
+  return Number.isFinite(stored) && stored > 0
+    ? Math.min(DEFAULT_MAX_WINDOW_DAYS, stored)
+    : DEFAULT_MAX_WINDOW_DAYS;
+}
+
+/** Remember a lower limit the provider reported (one day inside it, like the default). */
+async function learnWindowLimit(db: Db, reportedDays: number): Promise<void> {
+  const learned = Math.max(1, reportedDays - 1);
+  if (learned >= (await getWindowLimitDays(db))) return;
+  await db
+    .insert(schema.appSettings)
+    .values({ key: WINDOW_LIMIT_KEY, value: learned })
+    .onConflictDoUpdate({
+      target: schema.appSettings.key,
+      set: { value: learned },
+    });
 }
 
 /** Get the api_connections row for the simplefin service, or null if not configured. */
@@ -396,6 +430,7 @@ export async function runSimplefinSync(
     const windowStart = transactionWindowStart(
       await getInvestmentsSyncedAt(db),
       asOfDate,
+      await getWindowLimitDays(db),
     );
     let response: Awaited<ReturnType<typeof getAccounts>>;
     try {
@@ -420,7 +455,11 @@ export async function runSimplefinSync(
       accounts: fetched,
       providerErrors,
       accountIdsWithErrors,
+      windowLimitDays,
     } = response;
+    // The provider trimmed our history request: remember its limit so the
+    // next request stays inside it (and this isn't reported as an error).
+    if (windowLimitDays) await learnWindowLimit(db, windowLimitDays);
     const fetchedIds = new Set(fetched.map((a) => a.id));
     const missingAccounts = expectedIncluded.filter(
       (a) => !fetchedIds.has(a.externalAccountId),
