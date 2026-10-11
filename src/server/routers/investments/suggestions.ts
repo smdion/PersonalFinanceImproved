@@ -6,7 +6,7 @@
  * server/helpers/fill-ledger.ts).
  */
 import { z } from "zod/v4";
-import { and, desc, eq, gte, isNotNull } from "drizzle-orm";
+import { and, desc, eq, gte } from "drizzle-orm";
 import { createTRPCRouter, portfolioProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import {
@@ -34,7 +34,11 @@ import { loadLatestSubAccounts } from "@/server/helpers/sub-accounts";
 import { loadContributionMix } from "@/server/helpers/contribution-mix";
 import { loadFillRecord } from "@/server/helpers/fill-ledger";
 import { toNumber } from "@/server/helpers/transforms";
-import { loadAccounts, loadClassifiedTransactions } from "./_shared";
+import {
+  countedFeed,
+  loadAccounts,
+  loadClassifiedTransactions,
+} from "./_shared";
 
 type Db = Parameters<typeof loadLatestSubAccounts>[0];
 
@@ -49,7 +53,7 @@ async function loadFeeds(db: Db) {
         balance: schema.simplefinAccounts.lastBalance,
       })
       .from(schema.simplefinAccounts)
-      .where(isNotNull(schema.simplefinAccounts.linkedPerformanceAccountId)),
+      .where(countedFeed),
     loadLatestSubAccounts(db),
   ]);
   const subByKey = new Map(subs.map((s) => [s.key, s]));
@@ -146,9 +150,7 @@ export const investmentSuggestionsRouter = createTRPCRouter({
             balanceDate: schema.simplefinAccounts.lastBalanceDate,
           })
           .from(schema.simplefinAccounts)
-          .where(
-            isNotNull(schema.simplefinAccounts.linkedPerformanceAccountId),
-          ),
+          .where(countedFeed),
         loadLatestSubAccounts(ctx.db),
         ctx.db
           .select({ date: schema.portfolioSnapshots.snapshotDate })

@@ -168,6 +168,20 @@ describe("summarizeDrift", () => {
     expect(result.totalDrift).toBe(15); // 25 + -10 + 0
   });
 
+  it("ignores an unchecked account even while it stays linked", () => {
+    const result = summarizeDrift([
+      account({ id: 1, linkedPerformanceAccountId: 10, change: 0.4 }),
+      // Unchecked, linked, stale balance vs a $0 snapshot.
+      account({
+        id: 2,
+        linkedPerformanceAccountId: 20,
+        change: 3951.88,
+        isIncluded: false,
+      }),
+    ]);
+    expect(result).toEqual({ groupCount: 1, driftedCount: 1, totalDrift: 0.4 });
+  });
+
   it("returns zeroed summary when nothing is matched", () => {
     expect(summarizeDrift([account(), account()])).toEqual({
       groupCount: 0,

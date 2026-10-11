@@ -4,7 +4,7 @@
  * transaction-level detail): live balance and link status, what it holds,
  * and whether deposits match the paycheck setup.
  */
-import { gte, isNotNull } from "drizzle-orm";
+import { gte } from "drizzle-orm";
 import { createTRPCRouter, portfolioProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { utcDayOf } from "@/lib/simplefin/ingest";
@@ -16,6 +16,7 @@ import { loadLatestSubAccounts } from "@/server/helpers/sub-accounts";
 import { loadContributionMix } from "@/server/helpers/contribution-mix";
 import { toNumber } from "@/server/helpers/transforms";
 import {
+  countedFeed,
   loadAccounts,
   loadClassifiedTransactions,
   loadLatestHoldings,
@@ -39,7 +40,7 @@ export const investmentAccountInsightsRouter = createTRPCRouter({
           balanceDate: schema.simplefinAccounts.lastBalanceDate,
         })
         .from(schema.simplefinAccounts)
-        .where(isNotNull(schema.simplefinAccounts.linkedPerformanceAccountId)),
+        .where(countedFeed),
       loadLatestSubAccounts(ctx.db),
       loadAccounts(ctx.db),
       loadContributionMix(ctx.db),

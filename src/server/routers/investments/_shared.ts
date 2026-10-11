@@ -2,7 +2,7 @@
  * Shared helpers for the investments router group.
  * Internal to investments/ — do not import from outside this directory.
  */
-import { and, asc, eq, gte, isNull } from "drizzle-orm";
+import { and, asc, eq, gte, isNotNull, isNull } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { isHsaCategory } from "@/lib/config/account-types";
 import { utcDayOf } from "@/lib/simplefin/ingest";
@@ -23,6 +23,7 @@ import {
   type TransferMatch,
 } from "@/lib/pure/internal-transfers";
 import { loadLatestSubAccounts } from "@/server/helpers/sub-accounts";
+import { countsAsFeed } from "@/lib/pure/simplefin-feeds";
 import type { SimplefinTransactionRule } from "@/lib/config/simplefin-transaction-rules";
 
 type Db = typeof import("@/lib/db").db;
@@ -39,6 +40,15 @@ export type AccountInfo = {
   taxType: PortfolioTaxType | null;
 };
 
+/**
+ * SQL form of countsAsFeed (lib/pure/simplefin-feeds.ts): linked to a
+ * tracked account and included. Unchecked accounts are ignored everywhere.
+ */
+export const countedFeed = and(
+  isNotNull(schema.simplefinAccounts.linkedPerformanceAccountId),
+  eq(schema.simplefinAccounts.isIncluded, true),
+);
+
 export async function loadUserRules(db: Db): Promise<UserTransactionRule[]> {
   return db.select().from(schema.investmentTransactionRules);
 }
@@ -53,6 +63,7 @@ export async function loadAccounts(db: Db): Promise<Map<number, AccountInfo>> {
       accountType: schema.performanceAccounts.accountType,
       performanceAccountId: schema.simplefinAccounts.linkedPerformanceAccountId,
       linkedSubKey: schema.simplefinAccounts.linkedSubKey,
+      isIncluded: schema.simplefinAccounts.isIncluded,
     })
     .from(schema.simplefinAccounts)
     .leftJoin(
@@ -67,10 +78,14 @@ export async function loadAccounts(db: Db): Promise<Map<number, AccountInfo>> {
     : new Map();
   return new Map(
     rows.map((r) => {
+      // An unchecked account keeps its link (HSA redaction still follows
+      // it) but feeds no tracked account — see countsAsFeed.
+      const feeds = countsAsFeed({
+        linkedPerformanceAccountId: r.performanceAccountId,
+        isIncluded: r.isIncluded,
+      });
       const sub =
-        r.performanceAccountId !== null && r.linkedSubKey
-          ? subs.get(r.linkedSubKey)
-          : undefined;
+        feeds && r.linkedSubKey ? subs.get(r.linkedSubKey) : undefined;
       return [
         r.id,
         {
@@ -78,7 +93,7 @@ export async function loadAccounts(db: Db): Promise<Map<number, AccountInfo>> {
           institution: r.orgName,
           accountName: r.accountName,
           isHsa: r.accountType != null && isHsaCategory(r.accountType),
-          performanceAccountId: r.performanceAccountId,
+          performanceAccountId: feeds ? r.performanceAccountId : null,
           ownerPersonId: sub?.ownerPersonId ?? null,
           taxType: sub?.taxType ?? null,
         },

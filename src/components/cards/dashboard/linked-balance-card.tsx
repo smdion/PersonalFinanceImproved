@@ -1,5 +1,6 @@
 "use client";
 
+import { countsAsFeed } from "@/lib/pure/simplefin-feeds";
 import React, { memo, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
@@ -138,9 +139,9 @@ export function summarizeByInstitution(
  * Drift summary across matched tracked accounts. Deduped by
  * linkedPerformanceAccountId — many-to-one matching means several
  * SimpleFIN accounts can share one target and an identical `change`
- * value, so counting per row would overcount. Deliberately not filtered
- * by isIncluded: matching is a data-comparison concept independent of
- * whether an account currently counts toward the total.
+ * value, so counting per row would overcount. Unchecked accounts are
+ * left out: they count for nothing anywhere (countsAsFeed), and an
+ * unchecked account's stale balance would otherwise show as drift.
  */
 export function summarizeDrift(accounts: SimplefinAccountListItem[]): {
   groupCount: number;
@@ -149,7 +150,8 @@ export function summarizeDrift(accounts: SimplefinAccountListItem[]): {
 } {
   const changeByPerfId = new Map<number, number>();
   for (const a of accounts) {
-    if (a.linkedPerformanceAccountId == null || a.change == null) continue;
+    if (!countsAsFeed(a) || a.change == null) continue;
+    if (a.linkedPerformanceAccountId == null) continue;
     if (!changeByPerfId.has(a.linkedPerformanceAccountId)) {
       changeByPerfId.set(a.linkedPerformanceAccountId, a.change);
     }
@@ -325,6 +327,7 @@ function LinkedBalanceCardImpl() {
   const linkedCount = accounts
     ? new Set(
         accounts
+          .filter(countsAsFeed)
           .map((a) => a.linkedPerformanceAccountId)
           .filter((id): id is number => id != null),
       ).size

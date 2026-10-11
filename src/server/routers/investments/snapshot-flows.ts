@@ -1,13 +1,12 @@
 /** "You added / markets" split for the Live Balance card (portfolioProcedure — transaction-level detail). */
 import { z } from "zod/v4";
-import { isNotNull } from "drizzle-orm";
 import { createTRPCRouter, portfolioProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { flowsSince } from "@/lib/pure/snapshot-flows";
 import { getTransactionCoverageStart } from "@/lib/simplefin/sync";
 import { REDACTED_MEDICAL_DESCRIPTION, utcDayOf } from "@/lib/simplefin/ingest";
 import { INVESTMENT_TRANSACTION_KIND_LABELS } from "@/lib/config/display-labels";
-import { loadClassifiedTransactions } from "./_shared";
+import { countedFeed, loadClassifiedTransactions } from "./_shared";
 
 /** Kinds worth showing as recent activity on the dashboard. */
 const ACTIVITY_KINDS = new Set([
@@ -31,9 +30,7 @@ export const investmentSnapshotFlowsRouter = createTRPCRouter({
         ctx.db
           .select({ id: schema.simplefinAccounts.id })
           .from(schema.simplefinAccounts)
-          .where(
-            isNotNull(schema.simplefinAccounts.linkedPerformanceAccountId),
-          ),
+          .where(countedFeed),
         getTransactionCoverageStart(ctx.db),
         loadClassifiedTransactions(ctx.db, { since: input.since }),
       ]);

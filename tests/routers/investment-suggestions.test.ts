@@ -498,6 +498,28 @@ describe("investment suggestions", () => {
     expect(linked.estimate).not.toBeNull();
   });
 
+  it("ignores an unchecked account everywhere while keeping its link", async () => {
+    ctx.db
+      .update(sqliteSchema.simplefinAccounts)
+      .set({ isIncluded: false })
+      .where(eq(sqliteSchema.simplefinAccounts.id, feeds.brk!))
+      .run();
+    const snap = await ctx.caller.investments.suggestSnapshot();
+    expect(snap.amounts.some((r) => r.amount === 6100)).toBe(false);
+    const insights = await ctx.caller.investments.getAccountInsights();
+    expect(insights.every((i) => i.live?.total !== 6100)).toBe(true);
+    const listed = await ctx.caller.simplefin.listAccounts();
+    expect(listed.find((r) => r.id === feeds.brk)).toMatchObject({
+      linkedPerformanceAccountId: expect.any(Number),
+      change: null,
+    });
+    ctx.db
+      .update(sqliteSchema.simplefinAccounts)
+      .set({ isIncluded: true })
+      .where(eq(sqliteSchema.simplefinAccounts.id, feeds.brk!))
+      .run();
+  });
+
   it("needs the portfolio permission", async () => {
     const { createViewerSessionWithPermissions } = await import("./setup");
     const other = await createTestCaller(

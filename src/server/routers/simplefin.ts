@@ -51,6 +51,7 @@ import { redactStoredCardSpending } from "@/lib/simplefin/ingest";
 import { loadLatestSubAccounts } from "@/server/helpers/sub-accounts";
 import { suggestLinks } from "@/lib/pure/simplefin-link-suggestions";
 import { recogniseAccountKind } from "@/lib/config/simplefin-account-kinds";
+import { countsAsFeed } from "@/lib/pure/simplefin-feeds";
 import { taxTypeLabel } from "@/lib/utils/colors";
 import { readMaybeEncrypted } from "@/lib/crypto";
 import { summarizeBalanceDates } from "@/lib/pure/balance-dates";
@@ -420,11 +421,12 @@ export const simplefinRouter = createTRPCRouter({
       taxTypeByPerfId.set(perfId, taxTypes.size === 1 && only ? only : "mixed");
     }
 
-    // Group every currently-linked SimpleFIN account's balance by target
-    // performanceAccountId, since more than one can point at the same id.
+    // Group every counted (linked and included) SimpleFIN account's balance
+    // by target performanceAccountId, since more than one can point at the
+    // same id. Unchecked accounts count for nothing — see countsAsFeed.
     const linkedTotalByPerfId = new Map<number, number>();
     for (const r of rows) {
-      if (r.linkedPerformanceAccountId == null) continue;
+      if (!countsAsFeed(r) || r.linkedPerformanceAccountId == null) continue;
       linkedTotalByPerfId.set(
         r.linkedPerformanceAccountId,
         (linkedTotalByPerfId.get(r.linkedPerformanceAccountId) ?? 0) +
@@ -463,7 +465,7 @@ export const simplefinRouter = createTRPCRouter({
         missingPart: links.missingParts.get(r.id) ?? null,
         snapshotDate,
       };
-      if (r.linkedPerformanceAccountId == null) {
+      if (r.linkedPerformanceAccountId == null || !countsAsFeed(r)) {
         return {
           ...base,
           snapshotBalance: null,
