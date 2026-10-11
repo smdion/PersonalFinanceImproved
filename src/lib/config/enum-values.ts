@@ -52,6 +52,41 @@ export const investmentTransactionKindSchema = z.enum(
   INVESTMENT_TRANSACTION_KIND_VALUES,
 );
 
+// ── Security kind (holdings) ──
+
+export const SECURITY_KIND_VALUES = [
+  "etf",
+  "mutual_fund",
+  "plan_fund", // workplace-plan fund with no public ticker (collective trust etc.)
+  "stock",
+  "money_market",
+  "cash",
+  "other",
+] as const;
+export type SecurityKind = (typeof SECURITY_KIND_VALUES)[number];
+export const securityKindSchema = z.enum(SECURITY_KIND_VALUES);
+
+// ── Holding observation source ──
+
+export const HOLDING_SOURCE_VALUES = ["simplefin", "manual"] as const;
+export type HoldingSource = (typeof HOLDING_SOURCE_VALUES)[number];
+export const holdingSourceSchema = z.enum(HOLDING_SOURCE_VALUES);
+
+// ── Transaction amount sign (user rules) ──
+
+export const AMOUNT_SIGN_VALUES = ["positive", "negative"] as const;
+export type AmountSign = (typeof AMOUNT_SIGN_VALUES)[number];
+export const amountSignSchema = z.enum(AMOUNT_SIGN_VALUES);
+
+// ── Who fixed a transaction's kind ──
+// "user" = chosen in the review queue; "ingest_redacted" = locked when the
+// description was redacted at ingest (HSA medical spending), because the
+// classifier can no longer see the original text.
+
+export const KIND_OVERRIDE_SOURCE_VALUES = ["user", "ingest_redacted"] as const;
+export type KindOverrideSource = (typeof KIND_OVERRIDE_SOURCE_VALUES)[number];
+export const kindOverrideSourceSchema = z.enum(KIND_OVERRIDE_SOURCE_VALUES);
+
 // ── Pay Week ──
 
 export const PAY_WEEK_VALUES = ["even", "odd", "na"] as const;

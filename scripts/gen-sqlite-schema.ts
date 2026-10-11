@@ -143,6 +143,9 @@ out = out.replace(/\.defaultNow\(\)/g, ".default(sql`(unixepoch())`)");
 // uses sql`...` interpolation, so we use a non-greedy multiline regex.
 // IMPORTANT: this assumes check() calls are NEVER nested inside other arrays.
 out = out.replace(/^\s*check\(\s*\n[\s\S]*?\n\s*\),?\s*\n/gm, "");
+// A table whose only extras were CHECKs is left with an empty list and an
+// unused `table` parameter (fails no-unused-vars) — drop the parameter.
+out = out.replace(/\(table\) => \[\s*\]/g, "() => []");
 
 // --- Write output ---
 const outPath = path.resolve(__dirname, "../src/lib/db/schema-sqlite.ts");

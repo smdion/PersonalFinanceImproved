@@ -29,6 +29,13 @@
       "when": 1788670995054,
       "tag": "0003_past_rhodey",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791684817439,
+      "tag": "0004_simple_rogue",
+      "breakpoints": true
     }
   ]
 }

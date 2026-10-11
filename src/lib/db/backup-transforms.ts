@@ -49,6 +49,8 @@ const V08_SCHEMA_TAGS = [
   "0002_complete_jackpot", // SQLite counterpart of 0002
   "0003_past_rhodey", // PG: retirement_profile_people.social_security_pia
   "0003_shallow_patch", // SQLite counterpart of 0003
+  "0004_simple_rogue", // PG: v0.8.5 investments foundation (securities, holding_observations, investment_transactions, investment_transaction_rules, simplefin_account_balances, sync_request_log)
+  "0004_glorious_tigra", // SQLite counterpart of 0004
 ] as const;
 
 const V07_SCHEMA_TAGS = [

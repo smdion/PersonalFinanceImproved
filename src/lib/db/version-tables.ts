@@ -53,6 +53,8 @@ export const VERSION_TABLES: VersionTableEntry[] = [
   { name: "mc_user_presets", tier: 0 },
   { name: "utility_service", tier: 0 },
   { name: "simplefin_balance_snapshots", tier: 0 },
+  { name: "securities", tier: 0 },
+  { name: "investment_transaction_rules", tier: 0 }, // no FKs (sample_description snapshot instead)
 
   // Tier 1 — depends on tier 0
   { name: "jobs", tier: 1 },
@@ -96,6 +98,10 @@ export const VERSION_TABLES: VersionTableEntry[] = [
 
   // Tier 3 — depends on tier 2
   { name: "pending_rollovers", tier: 3 }, // FKs into account_performance (tier 2, ON DELETE restrict) + performance_accounts (tier 1)
+  // SimpleFIN history (v0.8.5) — can't be re-fetched after 90 days, so versioned + backed up.
+  { name: "simplefin_account_balances", tier: 3 }, // FK into simplefin_accounts (tier 2)
+  { name: "holding_observations", tier: 3 }, // FKs into simplefin_accounts (tier 2), performance_accounts (tier 1), securities (tier 0)
+  { name: "investment_transactions", tier: 3 }, // FK into simplefin_accounts (tier 2)
 ];
 
 // Validate tier ordering: entries must be grouped by ascending tier.
@@ -123,4 +129,5 @@ export const EXCLUDED_TABLES = [
   "state_version_tables",
   "budget_api_cache",
   "projection_cache", // derived-from-inputs cache; rebuilt on demand, never user data
+  "sync_request_log", // outbound-request quota ledger; operational, pruned after 30 days
 ];

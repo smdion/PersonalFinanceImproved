@@ -32,6 +32,11 @@ import type {
   BudgetApiService,
   ApiSyncDirection,
   PortfolioTaxType,
+  InvestmentTransactionKind,
+  SecurityKind,
+  HoldingSource,
+  AmountSign,
+  KindOverrideSource,
   UtilityKind,
   UtilityUnit,
 } from "@/lib/config/enum-values";
@@ -2062,6 +2067,206 @@ export const simplefinBalanceSnapshots = sqliteTable(
   },
   (table) => [
     index("simplefin_balance_snapshots_date_idx").on(table.snapshotDate),
+  ],
+);
+
+// ── Investments data foundation (v0.8.5) ─────────────────────────────────
+// What SimpleFIN only keeps for 90 days (holdings, transactions) is stored
+// here as sent. Transaction classification is NOT stored — it is computed on
+// read by lib/pure/simplefin-transactions.ts from these inputs plus the
+// built-in and user rules, so a rule change re-classifies history (RULES:
+// computed values are not stored). Only explicit overrides are stored.
+
+/** A fund/security as an institution reports it. */
+export const securities = sqliteTable(
+  "securities",
+  {
+    id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    /** Validated public ticker (uppercase) — set only once confirmed, never a raw pseudo-symbol. */
+    ticker: text("ticker"),
+    /** Symbol exactly as the institution sent it (may be a plan pseudo-symbol). */
+    sourceSymbol: text("source_symbol"),
+    name: text("name").notNull(),
+    kind: text("kind").$type<SecurityKind>().notNull(),
+    /** Identity for funds with no ticker: SimpleFIN org name + description. */
+    institution: text("institution"),
+    sourceDescription: text("source_description"),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [
+    uniqueIndex("securities_ticker_idx")
+      .on(table.ticker)
+      .where(sql`${table.ticker} IS NOT NULL`),
+    uniqueIndex("securities_untickered_identity_idx")
+      .on(table.institution, table.sourceDescription)
+      .where(sql`${table.ticker} IS NULL`),
+  ],
+);
+
+/** A SimpleFIN account's balance as reported, per balance date. */
+export const simplefinAccountBalances = sqliteTable(
+  "simplefin_account_balances",
+  {
+    id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    simplefinAccountId: integer("simplefin_account_id")
+      .notNull()
+      .references(() => simplefinAccounts.id, { onDelete: "restrict" }),
+    /** SimpleFIN `balance-date`, as sent (UTC). */
+    balanceDate: integer("balance_date", { mode: "timestamp" }).notNull(),
+    balance: text("balance").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [
+    uniqueIndex("simplefin_account_balances_account_date_idx").on(
+      table.simplefinAccountId,
+      table.balanceDate,
+    ),
+  ],
+);
+
+/**
+ * Shares held per account, security and trading day. One row per day: for
+ * funds with no public ticker, the reported value ÷ shares is the only price
+ * history there is. Exactly one of simplefinAccountId / performanceAccountId
+ * is set (enforced in the app layer too — SQLite drops CHECK constraints).
+ */
+export const holdingObservations = sqliteTable(
+  "holding_observations",
+  {
+    id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    simplefinAccountId: integer("simplefin_account_id").references(
+      () => simplefinAccounts.id,
+      { onDelete: "restrict" },
+    ),
+    performanceAccountId: integer("performance_account_id").references(
+      () => performanceAccounts.id,
+      { onDelete: "restrict" },
+    ),
+    securityId: integer("security_id")
+      .notNull()
+      .references(() => securities.id, { onDelete: "restrict" }),
+    /** SimpleFIN `balance-date` as sent (UTC); null for manual rows. */
+    balanceDate: integer("balance_date", { mode: "timestamp" }),
+    /** Valuation date: the most recent completed US trading day for balanceDate. */
+    asOf: text("as_of").notNull(),
+    shares: text("shares").notNull(),
+    /** As reported — evidence only, never summed as a balance. */
+    reportedMarketValue: text("reported_market_value"),
+    avgCostPerShare: text("avg_cost_per_share"),
+    source: text("source").$type<HoldingSource>().notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [
+    uniqueIndex("holding_observations_simplefin_idx")
+      .on(table.simplefinAccountId, table.securityId, table.asOf)
+      .where(sql`${table.simplefinAccountId} IS NOT NULL`),
+    uniqueIndex("holding_observations_manual_idx")
+      .on(table.performanceAccountId, table.securityId, table.asOf)
+      .where(sql`${table.performanceAccountId} IS NOT NULL`),
+    index("holding_observations_security_idx").on(table.securityId),
+    index("holding_observations_perf_account_idx").on(
+      table.performanceAccountId,
+    ),
+  ],
+);
+
+/**
+ * Investment-account transactions exactly as SimpleFIN sent them. The kind
+ * (contribution, fee, …) is computed on read; only an explicit override is
+ * stored. HSA medical-spending descriptions are redacted at ingest, which
+ * locks the kind (kindOverrideSource = ingest_redacted).
+ */
+export const investmentTransactions = sqliteTable(
+  "investment_transactions",
+  {
+    id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    simplefinAccountId: integer("simplefin_account_id")
+      .notNull()
+      .references(() => simplefinAccounts.id, { onDelete: "restrict" }),
+    /** SimpleFIN transaction id — unique only within its account. */
+    externalId: text("external_id").notNull(),
+    /** Institution posting date (UTC date of SimpleFIN `posted`). */
+    posted: text("posted").notNull(),
+    transacted: text("transacted"),
+    amount: text("amount").notNull(),
+    description: text("description").notNull(),
+    pending: integer("pending", { mode: "boolean" }).notNull().default(false),
+    kindOverride: text("kind_override").$type<InvestmentTransactionKind>(),
+    kindOverrideSource: text(
+      "kind_override_source",
+    ).$type<KindOverrideSource>(),
+    /** Set when the row vanished from a window that should still contain it. */
+    voidedAt: integer("voided_at", { mode: "timestamp" }),
+    firstSeenAt: integer("first_seen_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [
+    uniqueIndex("investment_transactions_external_idx").on(
+      table.simplefinAccountId,
+      table.externalId,
+    ),
+    index("investment_transactions_account_posted_idx").on(
+      table.simplefinAccountId,
+      table.posted,
+    ),
+  ],
+);
+
+/**
+ * User-defined classification rules, created from the review queue and
+ * checked before the built-in ones. Plain case-insensitive substrings — never
+ * user-supplied regex.
+ */
+export const investmentTransactionRules = sqliteTable(
+  "investment_transaction_rules",
+  {
+    id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    institutionContains: text("institution_contains").notNull(),
+    descriptionContains: text("description_contains").notNull(),
+    sign: text("sign").$type<AmountSign>(),
+    kind: text("kind").$type<InvestmentTransactionKind>().notNull(),
+    /** Flag matching rows of this sign for review. */
+    reviewWhen: text("review_when").$type<AmountSign>(),
+    /** Only rows at most this fraction of the account balance (e.g. 0.001). */
+    maxFractionOfBalance: text("max_fraction_of_balance"),
+    priority: integer("priority").notNull().default(0),
+    /** The description the rule was created from (snapshot, no FK). */
+    sampleDescription: text("sample_description"),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  () => [],
+);
+
+/** Outbound SimpleFIN request ledger — enforces the daily quota. Not versioned; pruned after 30 days. */
+export const syncRequestLog = sqliteTable(
+  "sync_request_log",
+  {
+    id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    service: text("service").notNull(),
+    requestedAt: integer("requested_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+    endpoint: text("endpoint").notNull(),
+    httpStatus: integer("http_status"),
+    outcome: text("outcome").notNull(),
+  },
+  (table) => [
+    index("sync_request_log_service_requested_idx").on(
+      table.service,
+      table.requestedAt,
+    ),
   ],
 );
 

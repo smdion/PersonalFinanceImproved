@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**72 tables.**
+**78 tables.**
 
 ## Mermaid diagram
 
@@ -173,6 +173,24 @@ erDiagram
   simplefin_balance_snapshots {
     int id PK
   }
+  securities {
+    int id PK
+  }
+  simplefin_account_balances {
+    int id PK
+  }
+  holding_observations {
+    int id PK
+  }
+  investment_transactions {
+    int id PK
+  }
+  investment_transaction_rules {
+    int id PK
+  }
+  sync_request_log {
+    int id PK
+  }
   simplefin_accounts {
     int id PK
   }
@@ -263,6 +281,9 @@ erDiagram
   retirement_profile_people }o--|| people : references
   retirement_salary_overrides }o--|| people : references
   retirement_budget_overrides }o--|| people : references
+  simplefin_account_balances }o--|| simplefin_accounts : references
+  holding_observations }o--|| securities : references
+  investment_transactions }o--|| simplefin_accounts : references
   simplefin_accounts }o--|| performance_accounts : references
   asset_class_correlations }o--|| asset_class_params : references
   asset_class_correlations }o--|| asset_class_params : references
@@ -299,7 +320,10 @@ erDiagram
 - **glide_path_allocations** → asset_class_params
 - **historical_notes**
 - **historical_salaries** → people
+- **holding_observations** → securities
 - **home_improvement_items**
+- **investment_transaction_rules**
+- **investment_transactions** → simplefin_accounts
 - **irmaa_brackets**
 - **jobs** → people
 - **local_admins**
@@ -339,11 +363,14 @@ erDiagram
 - **savings_planned_transactions** → savings_goals
 - **savings_planned_tx_settlements** → savings_planned_transactions
 - **scenarios**
+- **securities**
 - **self_loans** → savings_goals, savings_goals
+- **simplefin_account_balances** → simplefin_accounts
 - **simplefin_accounts** → performance_accounts
 - **simplefin_balance_snapshots**
 - **state_version_tables** → state_versions
 - **state_versions**
+- **sync_request_log**
 - **tax_brackets**
 - **tax_params**
 - **utility_reading** → utility_service

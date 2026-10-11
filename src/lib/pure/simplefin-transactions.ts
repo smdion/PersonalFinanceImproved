@@ -136,7 +136,7 @@ export function summarizeAccountFlows(
     }
     if (flow !== 0) {
       // eslint-disable-next-line local/no-tz-unsafe-date-string -- SimpleFIN encodes the institution's posting date as a UTC timestamp; converting to local time could move it to the previous day. Internal grouping key, never compared to a local "today".
-      const date = new Date(tx.posted * 1000).toISOString().slice(0, 10);
+      const date = new Date(tx.posted * 1000).toISOString().slice(0, 10); // lint-violation-ok: institution posting date, internal UTC key
       byDate[date] = roundToCents((byDate[date] ?? 0) + flow);
     }
   }
