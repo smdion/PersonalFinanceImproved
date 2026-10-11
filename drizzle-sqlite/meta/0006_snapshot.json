@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "86589809-0459-4a87-b093-1ce32dd5db0c",
+  "id": "2aa3959f-a2dd-4434-8764-2296d69ab1ed",
   "prevId": "24672f54-625b-4471-994b-662d70b7a3be",
   "tables": {
     "account_basis": {
@@ -6350,6 +6350,13 @@
         },
         "facts_class_id": {
           "name": "facts_class_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "facts_series_name": {
+          "name": "facts_series_name",
           "type": "text",
           "primaryKey": false,
           "notNull": false,

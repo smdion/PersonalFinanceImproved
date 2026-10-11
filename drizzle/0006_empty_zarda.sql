@@ -39,6 +39,7 @@ ALTER TABLE "securities" ADD COLUMN "sec_series_id" text;--> statement-breakpoin
 ALTER TABLE "securities" ADD COLUMN "sec_class_id" text;--> statement-breakpoint
 ALTER TABLE "securities" ADD COLUMN "facts_series_id" text;--> statement-breakpoint
 ALTER TABLE "securities" ADD COLUMN "facts_class_id" text;--> statement-breakpoint
+ALTER TABLE "securities" ADD COLUMN "facts_series_name" text;--> statement-breakpoint
 ALTER TABLE "securities" ADD COLUMN "facts_basis" text;--> statement-breakpoint
 ALTER TABLE "securities" ADD COLUMN "standin_confirmed_at" timestamp with time zone;--> statement-breakpoint
 ALTER TABLE "securities" ADD COLUMN "facts_checked_at" timestamp with time zone;--> statement-breakpoint

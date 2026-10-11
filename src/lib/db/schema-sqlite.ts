@@ -2100,6 +2100,8 @@ export const securities = sqliteTable(
     /** Series whose filings supply the facts: this fund's own, or a confirmed stand-in. */
     factsSeriesId: text("facts_series_id"),
     factsClassId: text("facts_class_id"),
+    /** Name of the series supplying the facts (shown when confirming a stand-in). */
+    factsSeriesName: text("facts_series_name"),
     factsBasis: text("facts_basis").$type<FactsBasis>(),
     standinConfirmedAt: integer("standin_confirmed_at", { mode: "timestamp" }),
     /** Last time SEC was checked for new filings (whether or not anything changed). */

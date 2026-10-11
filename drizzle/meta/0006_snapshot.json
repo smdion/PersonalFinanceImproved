@@ -1,5 +1,5 @@
 {
-  "id": "6c552b53-0b70-4e6a-814d-3cb8b4bc16b5",
+  "id": "64fa2fbb-a54e-45d1-9a65-19ccf82052ce",
   "prevId": "5015684e-9e6d-44a5-907f-1d93ad356fce",
   "version": "7",
   "dialect": "postgresql",
@@ -7444,6 +7444,12 @@
         },
         "facts_class_id": {
           "name": "facts_class_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "facts_series_name": {
+          "name": "facts_series_name",
           "type": "text",
           "primaryKey": false,
           "notNull": false

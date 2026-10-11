@@ -77,8 +77,11 @@ export const SECURITY_FACT_SOURCE_VALUES = [
 export type SecurityFactSource = (typeof SECURITY_FACT_SOURCE_VALUES)[number];
 export const securityFactSourceSchema = z.enum(SECURITY_FACT_SOURCE_VALUES);
 
-/** Whose SEC filings supply a fund's facts: its own, or a registered stand-in. */
-export const FACTS_BASIS_VALUES = ["exact", "standin"] as const;
+/**
+ * Whose SEC filings supply a fund's facts: its own, a registered stand-in,
+ * or none (the household said no stand-in fits — don't suggest again).
+ */
+export const FACTS_BASIS_VALUES = ["exact", "standin", "none"] as const;
 export type FactsBasis = (typeof FACTS_BASIS_VALUES)[number];
 export const factsBasisSchema = z.enum(FACTS_BASIS_VALUES);
 

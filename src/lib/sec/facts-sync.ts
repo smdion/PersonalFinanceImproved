@@ -281,7 +281,7 @@ async function refreshOne(
 ): Promise<number | null> {
   const s = schema.securities;
   // 1. Identity: its own registration, or a suggested stand-in (unconfirmed).
-  if (!sec.secSeriesId && !sec.factsSeriesId) {
+  if (!sec.secSeriesId && !sec.factsSeriesId && sec.factsBasis !== "none") {
     const symbol = (sec.ticker ?? sec.sourceSymbol ?? "").toUpperCase();
     const own = symbol ? index.byTicker.get(symbol) : undefined;
     if (own) {
@@ -290,6 +290,7 @@ async function refreshOne(
         secClassId: own.classId,
         factsSeriesId: own.seriesId,
         factsClassId: own.classId,
+        factsSeriesName: index.series.get(own.seriesId)?.name ?? null,
         factsBasis: "exact" as const,
       });
     } else {
@@ -300,6 +301,7 @@ async function refreshOne(
       if (suggestion)
         Object.assign(sec, {
           factsSeriesId: suggestion.seriesId,
+          factsSeriesName: suggestion.name,
           factsClassId:
             index.series.get(suggestion.seriesId)?.classIds[0] ?? null,
           factsBasis: "standin" as const,
@@ -313,6 +315,7 @@ async function refreshOne(
         secClassId: sec.secClassId,
         factsSeriesId: sec.factsSeriesId,
         factsClassId: sec.factsClassId,
+        factsSeriesName: sec.factsSeriesName,
         factsBasis: sec.factsBasis,
       })
       .where(eq(s.id, sec.id));

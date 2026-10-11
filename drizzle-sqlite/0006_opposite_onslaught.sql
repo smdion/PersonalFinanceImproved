@@ -42,6 +42,7 @@ ALTER TABLE `securities` ADD `sec_series_id` text;--> statement-breakpoint
 ALTER TABLE `securities` ADD `sec_class_id` text;--> statement-breakpoint
 ALTER TABLE `securities` ADD `facts_series_id` text;--> statement-breakpoint
 ALTER TABLE `securities` ADD `facts_class_id` text;--> statement-breakpoint
+ALTER TABLE `securities` ADD `facts_series_name` text;--> statement-breakpoint
 ALTER TABLE `securities` ADD `facts_basis` text;--> statement-breakpoint
 ALTER TABLE `securities` ADD `standin_confirmed_at` integer;--> statement-breakpoint
 ALTER TABLE `securities` ADD `facts_checked_at` integer;--> statement-breakpoint
