@@ -212,7 +212,7 @@ async function ingestTransactions(
   const incoming = (account.transactions ?? []).map((t) => {
     const c = classifySimplefinTransaction(
       account.orgName,
-      { posted: t.posted, amount: t.amount, description: t.description },
+      { amount: t.amount, description: t.description },
       { accountBalance: account.balance },
     );
     const redact = redactCardSpending && c.redactDescription;
@@ -226,9 +226,6 @@ async function ingestTransactions(
       pending: t.pending,
     };
   });
-  const transactedById = new Map(
-    incoming.map((t) => [t.externalId, t.transacted]),
-  );
 
   // Cover every incoming row as well as the window: a response can include
   // rows older than the requested start (providers don't always honour it).
@@ -248,6 +245,24 @@ async function ingestTransactions(
         gte(schema.investmentTransactions.posted, earliest),
       ),
     );
+  // A row redacted once stays redacted, whatever text the provider sends
+  // later (pending → posted, a format change): the merchant name must never
+  // overwrite "Medical withdrawal".
+  const lockedIds = new Set(
+    storedRows
+      .filter((r) => r.kindOverrideSource === "ingest_redacted")
+      .map((r) => r.externalId),
+  );
+  for (const t of incoming) {
+    if (lockedIds.has(t.externalId)) {
+      t.description = REDACTED_MEDICAL_DESCRIPTION;
+      redacted.add(t.externalId);
+    }
+  }
+  const transactedById = new Map(
+    incoming.map((t) => [t.externalId, t.transacted]),
+  );
+
   const plan = planReconcile({
     incoming,
     stored: storedRows.map((r) => ({
@@ -284,6 +299,9 @@ async function ingestTransactions(
       .onConflictDoNothing();
   }
   for (const u of plan.updates) {
+    // A row that becomes card spending on update gets the same lock as an
+    // insert, so it can't be reclassified into showing up elsewhere.
+    const lock = redacted.has(u.next.externalId);
     await db
       .update(schema.investmentTransactions)
       .set({
@@ -293,6 +311,12 @@ async function ingestTransactions(
         pending: u.next.pending,
         voidedAt: null,
         updatedAt: now,
+        ...(lock
+          ? {
+              kindOverride: "withdrawal" as const,
+              kindOverrideSource: "ingest_redacted" as const,
+            }
+          : {}),
       })
       .where(eq(schema.investmentTransactions.id, u.id));
   }
@@ -313,6 +337,95 @@ async function ingestTransactions(
  * one SimpleFIN response. `registry` maps SimpleFIN external account ids to
  * their simplefin_accounts rows (already upserted by the caller).
  */
+/**
+ * Card spending is redacted unless the account is linked to a non-HSA type:
+ * an unlinked account might be an HSA, so it is treated as one.
+ */
+export function redactsCardSpending(
+  linked: boolean,
+  accountType: string | undefined,
+): boolean {
+  return !linked || (accountType !== undefined && isHsaCategory(accountType));
+}
+
+/** Whether a stored SimpleFIN account's card spending is redacted (see {@link redactsCardSpending}). */
+export async function accountRedactsCardSpending(
+  db: Db,
+  simplefinAccountId: number,
+): Promise<boolean> {
+  const [row] = await db
+    .select({
+      linkedId: schema.simplefinAccounts.linkedPerformanceAccountId,
+      accountType: schema.performanceAccounts.accountType,
+    })
+    .from(schema.simplefinAccounts)
+    .leftJoin(
+      schema.performanceAccounts,
+      eq(
+        schema.performanceAccounts.id,
+        schema.simplefinAccounts.linkedPerformanceAccountId,
+      ),
+    )
+    .where(eq(schema.simplefinAccounts.id, simplefinAccountId));
+  if (!row) return true;
+  return redactsCardSpending(
+    row.linkedId !== null,
+    row.accountType ?? undefined,
+  );
+}
+
+/** Replace a stored row's description with "Medical withdrawal" and lock its kind. */
+export async function lockAsMedicalWithdrawal(
+  db: Db,
+  transactionIds: readonly number[],
+): Promise<void> {
+  if (transactionIds.length === 0) return;
+  await db
+    .update(schema.investmentTransactions)
+    .set({
+      description: REDACTED_MEDICAL_DESCRIPTION,
+      kindOverride: "withdrawal",
+      kindOverrideSource: "ingest_redacted",
+      updatedAt: new Date(),
+    })
+    .where(inArray(schema.investmentTransactions.id, [...transactionIds]));
+}
+
+/**
+ * Redact card spending already stored for an account — for when an account
+ * is (re)linked to an HSA after rows were kept with merchant names. Returns
+ * the number of rows redacted.
+ */
+export async function redactStoredCardSpending(
+  db: Db,
+  simplefinAccountId: number,
+): Promise<number> {
+  if (!(await accountRedactsCardSpending(db, simplefinAccountId))) return 0;
+  const [account] = await db
+    .select({ orgName: schema.simplefinAccounts.orgName })
+    .from(schema.simplefinAccounts)
+    .where(eq(schema.simplefinAccounts.id, simplefinAccountId));
+  if (!account) return 0;
+  const rows = await db
+    .select()
+    .from(schema.investmentTransactions)
+    .where(
+      eq(schema.investmentTransactions.simplefinAccountId, simplefinAccountId),
+    );
+  const ids = rows
+    .filter(
+      (r) =>
+        r.kindOverrideSource !== "ingest_redacted" &&
+        classifySimplefinTransaction(account.orgName, {
+          amount: Number(r.amount),
+          description: r.description,
+        }).redactDescription,
+    )
+    .map((r) => r.id);
+  await lockAsMedicalWithdrawal(db, ids);
+  return ids.length;
+}
+
 export async function ingestInvestmentData(
   db: Db,
   args: {
@@ -382,12 +495,12 @@ export async function ingestInvestmentData(
     );
     await ingestHoldings(db, reg.id, account, asOf, label, summary);
 
-    // Redact card spending unless the account is linked to a non-HSA type.
-    const category = linked
-      ? categoryByPerfId.get(reg.linkedPerformanceAccountId!)
-      : undefined;
-    const redactCardSpending =
-      !linked || (category !== undefined && isHsaCategory(category));
+    const redactCardSpending = redactsCardSpending(
+      linked,
+      linked
+        ? categoryByPerfId.get(reg.linkedPerformanceAccountId!)
+        : undefined,
+    );
     await ingestTransactions(
       db,
       reg.id,

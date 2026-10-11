@@ -8,6 +8,7 @@ import { eq } from "drizzle-orm";
 import { createTestDb, type TestDbContext } from "../helpers/db-harness";
 import {
   ingestInvestmentData,
+  redactStoredCardSpending,
   REDACTED_MEDICAL_DESCRIPTION,
 } from "@/lib/simplefin/ingest";
 import type { SimplefinAccount } from "@/lib/simplefin/client";
@@ -288,6 +289,78 @@ describe("ingestInvestmentData", () => {
     expect(JSON.stringify(transactions(hsaId))).not.toContain("CLINIC");
   });
 
+  it("keeps a redacted row redacted when the provider later changes its text", async () => {
+    await run([
+      account({
+        id: "sf-hsa",
+        orgName: "Fidelity Investments",
+        holdings: [
+          {
+            id: "x",
+            symbol: "EXHSX",
+            description: "Example HSA Fund",
+            shares: 3,
+            marketValue: 300,
+            costBasisPerShare: null,
+          },
+        ],
+        transactions: [
+          {
+            id: "m1",
+            posted: at("2026-05-09T12:00:00Z"),
+            transactedAt: null,
+            amount: -80,
+            description: "EXAMPLE CLINIC 1234", // no longer matches a card rule
+            pending: false,
+          },
+        ],
+      }),
+    ]);
+    const row = transactions(hsaId).find((r) => r.externalId === "m1");
+    expect(row).toMatchObject({
+      description: REDACTED_MEDICAL_DESCRIPTION,
+      kindOverrideSource: "ingest_redacted",
+    });
+  });
+
+  it("locks a row that becomes card spending on a later sync", async () => {
+    const send = (description: string) =>
+      run([
+        account({
+          id: "sf-hsa",
+          orgName: "Fidelity Investments",
+          holdings: [
+            {
+              id: "x",
+              symbol: "EXHSX",
+              description: "Example HSA Fund",
+              shares: 3,
+              marketValue: 300,
+              costBasisPerShare: null,
+            },
+          ],
+          transactions: [
+            {
+              id: "m3",
+              posted: at("2026-05-11T12:00:00Z"),
+              transactedAt: null,
+              amount: -20,
+              description,
+              pending: true,
+            },
+          ],
+        }),
+      ]);
+    await send("PENDING 0001");
+    await send("DEBIT CARD PURCHASE EXAMPLE PHARMACY");
+    const row = transactions(hsaId).find((r) => r.externalId === "m3");
+    expect(row).toMatchObject({
+      description: REDACTED_MEDICAL_DESCRIPTION,
+      kindOverride: "withdrawal",
+      kindOverrideSource: "ingest_redacted",
+    });
+  });
+
   it("does not redact card spending on an account linked to a non-HSA type", async () => {
     await run([
       account({
@@ -345,5 +418,22 @@ describe("ingestInvestmentData", () => {
     expect(
       transactions(brokerageId).filter((r) => r.voidedAt !== null),
     ).toHaveLength(voidedBefore);
+  });
+
+  it("redacts stored card spending when an account is relinked to an HSA", async () => {
+    const hsaPerf = registry.get("sf-hsa")!.linkedPerformanceAccountId!;
+    ctx.db
+      .update(ctx.schema.simplefinAccounts)
+      .set({ linkedPerformanceAccountId: hsaPerf })
+      .where(eq(ctx.schema.simplefinAccounts.id, brokerageId))
+      .run();
+    const redacted = await redactStoredCardSpending(ctx.rawDb, brokerageId);
+    expect(redacted).toBe(1);
+    const row = transactions(brokerageId).find((r) => r.externalId === "m2");
+    expect(row).toMatchObject({
+      description: REDACTED_MEDICAL_DESCRIPTION,
+      kindOverrideSource: "ingest_redacted",
+    });
+    expect(JSON.stringify(transactions(brokerageId))).not.toContain("STORE");
   });
 });

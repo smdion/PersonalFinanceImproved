@@ -35,6 +35,7 @@ import {
   SIMPLEFIN_MANUAL_SYNC_MIN_GAP_MS,
   lastSimplefinRequestAt,
 } from "@/lib/simplefin/request-log";
+import { redactStoredCardSpending } from "@/lib/simplefin/ingest";
 import { readMaybeEncrypted } from "@/lib/crypto";
 import type { SimplefinConfig } from "@/lib/simplefin/sync";
 import { getLatestSnapshot } from "@/server/helpers/snapshot";
@@ -348,6 +349,10 @@ export const simplefinRouter = createTRPCRouter({
           message: "SimpleFIN account not found",
         });
       }
+
+      // Relinking to an HSA (or unlinking) redacts card spending kept while
+      // the account was linked elsewhere — same rule as ingest.
+      await redactStoredCardSpending(ctx.db, row.id);
 
       return {
         success: true as const,
