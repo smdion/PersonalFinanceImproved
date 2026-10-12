@@ -1,6 +1,7 @@
 /**
- * Investments router: holdings, transactions with read-time kinds, the
- * review queue and household rules. Invented accounts and rows only.
+ * Investment transactions and holdings as the investments router reads
+ * them: read-time kinds, transfer matching, money already recorded as
+ * moved, snapshot flows and permissions. Invented accounts and rows only.
  */
 import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
@@ -12,6 +13,10 @@ import {
 } from "./setup";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
 import { REDACTED_MEDICAL_DESCRIPTION } from "@/lib/simplefin/ingest";
+import {
+  loadClassifiedTransactions,
+  loadLatestHoldings,
+} from "@/server/routers/investments/_shared";
 
 const daysAgo = (n: number) =>
   new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10); // lint-violation-ok: test fixture dates, compared only to each other
@@ -113,19 +118,28 @@ describe("investments router", () => {
 
   afterAll(() => ctx.cleanup());
 
+  // The loaders take the app's database type; tests run them on SQLite.
+  type AppDb = Parameters<typeof loadLatestHoldings>[0];
+  const db = (): AppDb =>
+    // eslint-disable-next-line no-restricted-syntax -- Drizzle ORM type limitation (SQLite test db for the PG-typed loader)
+    ctx.db as unknown as AppDb;
+  const listTransactions = (
+    filter: Parameters<typeof loadClassifiedTransactions>[1] = {},
+  ) => loadClassifiedTransactions(db(), filter);
+
   it("lists the latest holdings per account, leaving out sold funds", async () => {
-    const holdings = await ctx.caller.investments.listHoldings();
+    const holdings = await loadLatestHoldings(db());
     expect(holdings).toHaveLength(1);
     expect(holdings[0]).toMatchObject({
-      symbol: "EXMPX",
+      ticker: "EXMPX",
       shares: 10,
       asOf: "2026-05-15",
-      accountName: "sf-ira",
+      simplefinAccountId: brokerageId,
     });
   });
 
   it("lists transactions with their read-time kind, hiding voided rows", async () => {
-    const rows = await ctx.caller.investments.listTransactions({});
+    const rows = await listTransactions({});
     const byId = new Map(rows.map((r) => [r.id, r]));
     expect(byId.get(tx.div!)).toMatchObject({
       kind: "dividend",
@@ -139,97 +153,10 @@ describe("investments router", () => {
   });
 
   it("flags rows no rule could place", async () => {
-    const queue = (await ctx.caller.investments.listTransactions({})).filter(
-      (r) => r.needsReview,
-    );
+    const queue = (await listTransactions({})).filter((r) => r.needsReview);
     expect(queue.map((r) => r.id).sort()).toEqual(
       [tx.mystery1!, tx.mystery2!, tx["hsa-out"]!].sort(),
     );
-  });
-
-  it("previews then saves a rule that reclassifies matching rows", async () => {
-    const rule = {
-      institutionContains: "example bank",
-      descriptionContains: "zzz payroll",
-      kind: "contribution" as const,
-    };
-    expect(await ctx.caller.investments.previewRule(rule)).toEqual({
-      matched: 2,
-      changed: 2,
-    });
-    const saved = await ctx.caller.investments.createRule({
-      ...rule,
-      fromTransactionId: tx.mystery1,
-    });
-    expect(saved.rule.sampleDescription).toBe("ZZZ PAYROLL 01");
-    const queue = (await ctx.caller.investments.listTransactions({})).filter(
-      (r) => r.needsReview,
-    );
-    expect(queue.map((r) => r.id)).toEqual([tx["hsa-out"]!]);
-    const rows = await ctx.caller.investments.listTransactions({});
-    expect(rows.find((r) => r.id === tx.mystery2)).toMatchObject({
-      kind: "contribution",
-      source: "user_rule",
-    });
-  });
-
-  it("never copies text from an HSA row into a rule", async () => {
-    const saved = await ctx.caller.investments.createRule({
-      institutionContains: "Example Bank",
-      descriptionContains: "ZZZ TRANSFER",
-      kind: "other",
-      priority: -1,
-      fromTransactionId: tx["hsa-out"],
-    });
-    expect(saved.rule.sampleDescription).toBeNull();
-    await ctx.caller.investments.deleteRule({ id: saved.rule.id });
-  });
-
-  it("refuses to change a redacted row", async () => {
-    await expect(
-      ctx.caller.investments.setTransactionKind({
-        id: tx.locked!,
-        kind: "trade",
-      }),
-    ).rejects.toThrow(/fixed/);
-  });
-
-  it("redacts an HSA row the user marks as a withdrawal", async () => {
-    const result = await ctx.caller.investments.setTransactionKind({
-      id: tx["hsa-out"]!,
-      kind: "withdrawal",
-    });
-    expect(result.redacted).toBe(true);
-    const row = ctx.db
-      .select()
-      .from(sqliteSchema.investmentTransactions)
-      .where(eq(sqliteSchema.investmentTransactions.id, tx["hsa-out"]!))
-      .get();
-    expect(row).toMatchObject({
-      description: REDACTED_MEDICAL_DESCRIPTION,
-      kindOverrideSource: "ingest_redacted",
-    });
-    // The lock isn't a user choice, so it can't be cleared.
-    expect(
-      await ctx.caller.investments.clearTransactionKind({ id: tx["hsa-out"]! }),
-    ).toEqual({ cleared: false });
-  });
-
-  it("sets and clears a user choice", async () => {
-    await ctx.caller.investments.setTransactionKind({
-      id: tx.div!,
-      kind: "interest",
-    });
-    let rows = await ctx.caller.investments.listTransactions({});
-    expect(rows.find((r) => r.id === tx.div)).toMatchObject({
-      kind: "interest",
-      source: "override",
-    });
-    expect(
-      await ctx.caller.investments.clearTransactionKind({ id: tx.div! }),
-    ).toEqual({ cleared: true });
-    rows = await ctx.caller.investments.listTransactions({});
-    expect(rows.find((r) => r.id === tx.div)?.kind).toBe("dividend");
   });
 
   it("judges a small fee against the balance at the time, not today's", async () => {
@@ -266,10 +193,9 @@ describe("investments router", () => {
       })
       .returning()
       .get().id;
-    const rows = await ctx.caller.investments.listTransactions({});
+    const rows = await listTransactions({});
     const row = rows.find((r) => r.id === fee);
     expect(row).toMatchObject({ kind: "fee", needsReview: false });
-    expect(row).not.toHaveProperty("balanceForRules");
   });
 
   it("reports holdings an account stopped sending", async () => {
@@ -362,7 +288,7 @@ describe("investments router", () => {
     const into = row(to, "t-in", daysAgo(4), "1234.56", "TRANSFER IN");
     const other = row(to, "t-dep", daysAgo(4), "99.00", "DEPOSIT");
 
-    const rows = await ctx.caller.investments.listTransactions({});
+    const rows = await listTransactions({});
     const byId = new Map(rows.map((r) => [r.id, r]));
     expect(byId.get(out)).toMatchObject({
       kind: "transfer",
@@ -379,18 +305,18 @@ describe("investments router", () => {
     });
 
     // The pair still holds when only the receiving account is listed.
-    const recent = await ctx.caller.investments.listTransactions({
+    const recent = await listTransactions({
       simplefinAccountId: to,
     });
     expect(recent.find((r) => r.id === into)?.kind).toBe("transfer");
     expect(recent.some((r) => r.id === out)).toBe(false);
 
     // A choice the household made by hand is never re-labelled.
-    await ctx.caller.investments.setTransactionKind({
-      id: out,
-      kind: "withdrawal",
-    });
-    const after = await ctx.caller.investments.listTransactions({});
+    db.update(sqliteSchema.investmentTransactions)
+      .set({ kindOverride: "withdrawal", kindOverrideSource: "user" })
+      .where(eq(sqliteSchema.investmentTransactions.id, out))
+      .run();
+    const after = await listTransactions({});
     expect(after.find((r) => r.id === into)?.kind).toBe("contribution");
     expect(after.find((r) => r.id === out)?.source).toBe("override");
   });
@@ -453,7 +379,7 @@ describe("investments router", () => {
       })
       .returning()
       .get().id;
-    const rows = await ctx.caller.investments.listTransactions({});
+    const rows = await listTransactions({});
     expect(rows.find((r) => r.id === dep)?.recordedMoveFrom).toMatch(
       /Example Old Plan/,
     );
@@ -468,24 +394,25 @@ describe("investments router", () => {
     });
   });
 
-  it("requires the portfolio permission to read or change anything", async () => {
+  it("requires the portfolio permission for transaction-level detail", async () => {
     for (const session of [
       viewerSession,
       createViewerSessionWithPermissions(["sync"]),
     ]) {
       const other = await createTestCaller(session);
       try {
-        await expect(other.caller.investments.listHoldings()).rejects.toThrow();
-        await expect(
-          other.caller.investments.listTransactions({}),
-        ).rejects.toThrow();
-        await expect(other.caller.investments.listRules()).rejects.toThrow();
         await expect(other.caller.investments.getHealth()).rejects.toThrow();
         await expect(
           other.caller.investments.getSnapshotFlows({ since: "2026-01-01" }),
         ).rejects.toThrow();
         await expect(
-          other.caller.investments.setTransactionKind({ id: 1, kind: "other" }),
+          other.caller.investments.getAccountInsights(),
+        ).rejects.toThrow();
+        await expect(
+          other.caller.investments.getHoldingsOverview(),
+        ).rejects.toThrow();
+        await expect(
+          other.caller.investments.suggestPerformance({ year: 2026 }),
         ).rejects.toThrow();
       } finally {
         other.cleanup();
@@ -495,7 +422,9 @@ describe("investments router", () => {
       createViewerSessionWithPermissions(["portfolio"]),
     );
     try {
-      await expect(allowed.caller.investments.listRules()).resolves.toEqual([]);
+      await expect(
+        allowed.caller.investments.getAccountInsights(),
+      ).resolves.toEqual([]);
     } finally {
       allowed.cleanup();
     }

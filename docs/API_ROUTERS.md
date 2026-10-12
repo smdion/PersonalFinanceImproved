@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**395 procedures across 53 routers.**
+**387 procedures across 50 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -172,21 +172,6 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | ----------- | ----- | -------------------- | --------------------------------------------------------------------------------------------------- |
 | `getHealth` | query | `portfolioProcedure` | Accounts whose holdings stopped arriving or don't add up to the balance, and the review-queue size. |
 
-## `investments/holdings`
-
-| Procedure      | Kind  | Auth                 | Description                                                                                                                   |
-| -------------- | ----- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `listHoldings` | query | `portfolioProcedure` | Each account's holdings on the latest date it reported them. A fund sold since then is left out (its latest row is 0 shares). |
-
-## `investments/rules`
-
-| Procedure     | Kind     | Auth                 | Description                                                               |
-| ------------- | -------- | -------------------- | ------------------------------------------------------------------------- |
-| `createRule`  | mutation | `portfolioProcedure` | Save a rule. `fromTransactionId` records the row it was made from.        |
-| `deleteRule`  | mutation | `portfolioProcedure` | Delete a rule; rows it matched go back to the built-in rules.             |
-| `listRules`   | query    | `portfolioProcedure` | The household's rules, highest priority first.                            |
-| `previewRule` | query    | `portfolioProcedure` | How many stored rows a rule would match and reclassify, before saving it. |
-
 ## `investments/snapshot-flows`
 
 | Procedure          | Kind  | Auth                 | Description                                                                                                                                                                                              |
@@ -200,14 +185,6 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `suggestBasis`       | query | `portfolioProcedure` | The year's Roth basis rows with Roth contributions and conversions no saved fill has counted yet. Basis is cumulative, so these add onto the stored figures; money out of a Roth account reduces them (c |
 | `suggestPerformance` | query | `portfolioProcedure` | The year's Performance rows with what SimpleFIN has seen that no saved fill has counted yet, added onto the stored figures.                                                                              |
 | `suggestSnapshot`    | query | `portfolioProcedure` | Suggested balances for a new portfolio snapshot, by snapshot sub-account key, from linked SimpleFIN accounts.                                                                                            |
-
-## `investments/transactions`
-
-| Procedure              | Kind     | Auth                 | Description                                                                |
-| ---------------------- | -------- | -------------------- | -------------------------------------------------------------------------- |
-| `clearTransactionKind` | mutation | `portfolioProcedure` | Undo a choice made in the review queue (never the redaction lock).         |
-| `listTransactions`     | query    | `portfolioProcedure` | Investment transactions with the kind each counts as, newest first.        |
-| `setTransactionKind`   | mutation | `portfolioProcedure` | Set the kind of one row. Redacted HSA rows are fixed and can't be changed. |
 
 ## `mortgage`
 

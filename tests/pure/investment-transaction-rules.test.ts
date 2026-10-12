@@ -4,7 +4,6 @@ import {
   balanceAsOf,
   classifierRulesWith,
   effectiveTransactionKind,
-  previewRuleImpact,
   toClassifierRules,
   type UserTransactionRule,
 } from "@/lib/pure/investment-transaction-rules";
@@ -107,37 +106,6 @@ describe("effectiveTransactionKind", () => {
       kind: "other",
       source: "unmatched",
       needsReview: true,
-    });
-  });
-});
-
-describe("previewRuleImpact", () => {
-  const rows = [
-    { ...row("ZZZ PAYROLL", 100), institution: "Example Bank" },
-    { ...row("ZZZ PAYROLL", 100), institution: "Example Bank" },
-    { ...row("ZZZ PAYROLL", 100), institution: "Other Bank" },
-    {
-      ...row("ZZZ PAYROLL", 100),
-      institution: "Example Bank",
-      kindOverride: "trade" as const,
-      kindOverrideSource: "user" as const,
-    },
-  ];
-
-  it("counts matching rows, skipping per-row choices and other institutions", () => {
-    const { id: _id, ...candidate } = rule({ id: 0 });
-    expect(previewRuleImpact(candidate, [], rows)).toEqual({
-      matched: 2,
-      changed: 2,
-    });
-  });
-
-  it("counts nothing a higher-priority existing rule already claims", () => {
-    const { id: _id, ...candidate } = rule({ id: 0 });
-    const existing = [rule({ id: 7, priority: 9, kind: "trade" })];
-    expect(previewRuleImpact(candidate, existing, rows)).toEqual({
-      matched: 0,
-      changed: 0,
     });
   });
 });

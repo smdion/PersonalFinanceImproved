@@ -131,44 +131,6 @@ export type RuleImpactRow = StoredTransactionForKind & {
 };
 
 /**
- * What adding `candidate` would do to the stored rows: how many it matches
- * (rows with a per-row choice are never affected) and how many of those
- * would change kind or leave the review queue.
- */
-export function previewRuleImpact(
-  candidate: Omit<UserTransactionRule, "id">,
-  existing: readonly UserTransactionRule[],
-  rows: readonly RuleImpactRow[],
-): { matched: number; changed: number } {
-  const before = classifierRulesWith(existing);
-  // Placeholder id, sorted with the candidate's priority like a saved rule.
-  const after = classifierRulesWith([
-    ...existing,
-    { ...candidate, id: Number.MAX_SAFE_INTEGER },
-  ]);
-  const candidateId = `${USER_RULE_ID_PREFIX}${Number.MAX_SAFE_INTEGER}`;
-  let matched = 0;
-  let changed = 0;
-  for (const row of rows) {
-    if (row.kindOverride) continue;
-    const opts = { accountBalance: row.accountBalance };
-    const next = effectiveTransactionKind(row.institution, row, {
-      ...opts,
-      rules: after,
-    });
-    if (next.ruleId !== candidateId) continue;
-    matched++;
-    const prev = effectiveTransactionKind(row.institution, row, {
-      ...opts,
-      rules: before,
-    });
-    if (prev.kind !== next.kind || prev.needsReview !== next.needsReview)
-      changed++;
-  }
-  return { matched, changed };
-}
-
-/**
  * The account balance used to judge "small" for a row posted on `day`: the
  * last balance on or before that day, so re-reading a row always gives the
  * same answer. Rows older than the first stored balance (the first sync
