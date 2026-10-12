@@ -49,17 +49,17 @@ export function DashboardContent() {
         </CardBoundary>
       </div>
 
-      {/* This year's money: the budget and spending, what's going into
-          savings, and the goals it funds */}
+      {/* This year's money: the goals savings fund, the budget and
+          spending, and what's going into savings */}
       <div className="mb-3 grid grid-cols-[repeat(auto-fit,minmax(340px,1fr))] gap-3">
+        <CardBoundary title="Savings Goals">
+          <SavingsGoalsCard />
+        </CardBoundary>
         <CardBoundary title="Budget & Spending">
           <LivingCostsCard />
         </CardBoundary>
         <CardBoundary title="Contributions">
           <ContributionsCard />
-        </CardBoundary>
-        <CardBoundary title="Savings Goals">
-          <SavingsGoalsCard />
         </CardBoundary>
       </div>
 
