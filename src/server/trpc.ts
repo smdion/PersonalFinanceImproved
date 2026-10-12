@@ -510,6 +510,14 @@ export const adminProcedure = rateLimitedAuthedBase
   });
 
 // Permission-gated — requires admin OR specific permission addon + logs mutations
+/** Whether a signed-in user holds a permission (admins hold all) — the rule withPermission enforces. */
+export function userHasPermission(
+  user: { role: string; permissions: readonly string[] },
+  permission: Permission,
+): boolean {
+  return user.role === "admin" || user.permissions.includes(permission);
+}
+
 function withPermission(permission: Permission) {
   return rateLimitedAuthedBase
     .meta({ auth: permission })
@@ -520,8 +528,7 @@ function withPermission(permission: Permission) {
           message: "Not authenticated",
         });
       }
-      const { role, permissions } = ctx.session.user;
-      if (role !== "admin" && !permissions.includes(permission)) {
+      if (!userHasPermission(ctx.session.user, permission)) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: `${permission} permission required`,

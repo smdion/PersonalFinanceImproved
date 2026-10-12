@@ -545,6 +545,40 @@ describe("investment suggestions", () => {
       .run();
   });
 
+  it("gives live year-to-date per account, split employee / employer", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-12T12:00:00"));
+    try {
+      const { loadLiveContributions, liveYearToDate } =
+        await import("@/server/routers/investments/live-contributions");
+      const perf = await ctx.caller.investments.suggestPerformance({
+        year: 2026,
+      });
+      const row = perf.accounts.find(
+        (a) => a.accountPerformanceId === ap.brokerage,
+      )!;
+      const live = (
+        await loadLiveContributions(ctx.db as never, "2026-10-12")
+      ).find((c) => c.performanceAccountId === row.performanceAccountId)!;
+      // Performance's figures split employee / employer, plus exactly what
+      // the Performance fill would add now (the same loader).
+      expect(live.recorded.employer).toBeGreaterThan(0);
+      expect(live.pending).toEqual({
+        employee: row.added.employee,
+        employer: row.added.employer,
+      });
+      const ytd = liveYearToDate(live);
+      expect(ytd.contributions).toBeCloseTo(
+        live.recorded.employee + live.pending.employee + live.unposted.employee,
+      );
+      expect(ytd.employerMatch).toBeCloseTo(
+        live.recorded.employer + live.pending.employer + live.unposted.employer,
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("needs the portfolio permission", async () => {
     const { createViewerSessionWithPermissions } = await import("./setup");
     const other = await createTestCaller(

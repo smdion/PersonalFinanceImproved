@@ -32,6 +32,7 @@ import {
   isPortfolioParent,
 } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
+import { PaceStatusText } from "./pace-status";
 import { LoadingCard, ErrorCard } from "./utils";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
@@ -125,6 +126,16 @@ function ContributionsCardImpl() {
   } as Parameters<typeof trpc.contribution.computeSummary.useQuery>[0];
   const { data, isLoading, error } =
     trpc.contribution.computeSummary.useQuery(contribInput);
+  // Live status per tracked account (needs the portfolio permission; the
+  // card works without it).
+  const { data: pace } = trpc.investments.getSavingsThisYear.useQuery(
+    undefined,
+    { retry: false },
+  );
+  const statusOf = (ids: readonly number[]) =>
+    pace?.accounts.find(
+      (a) => ids.includes(a.performanceAccountId) && a.status !== "no_plan",
+    )?.status ?? null;
   const [contribPeriod, setContribPeriod] = useState<ContribPeriod>("annual");
   if (isLoading) return <LoadingCard title="Contributions" />;
   if (error)
@@ -219,6 +230,13 @@ function ContributionsCardImpl() {
                           {at.isJoint && (
                             <span className="text-faint text-caption ml-1 font-normal">
                               (Joint)
+                            </span>
+                          )}
+                          {statusOf(at.performanceAccountIds) && (
+                            <span className="ml-1.5">
+                              <PaceStatusText
+                                status={statusOf(at.performanceAccountIds)!}
+                              />
                             </span>
                           )}
                         </span>
@@ -452,9 +470,18 @@ function ContributionsCardImpl() {
                   <div className="flex items-baseline justify-between text-xs">
                     <span className="text-muted font-medium">
                       {at.accountType}
+                      {statusOf(at.performanceAccountIds) && (
+                        <span className="ml-1.5">
+                          <PaceStatusText
+                            status={statusOf(at.performanceAccountIds)!}
+                          />
+                        </span>
+                      )}
                     </span>
                     <span className="text-primary font-medium">
-                      {formatCurrency(at.employeeContrib * householdMult)}
+                      {formatCurrency(
+                        at.views[viewMode].employeeContrib * householdMult,
+                      )}
                       {suffix}
                     </span>
                   </div>
@@ -561,7 +588,7 @@ function ContributionsCardImpl() {
                 {formatCurrency(householdRetNoMatch * householdMult)}
               </span>
               {householdRetWithMatch > householdRetNoMatch && (
-                <span className="text-muted ml-1">
+                <span className="text-muted block">
                   {formatCurrency(householdRetWithMatch * householdMult)} w/
                   match
                 </span>
@@ -577,7 +604,7 @@ function ContributionsCardImpl() {
                 {formatCurrency(householdPortNoMatch * householdMult)}
               </span>
               {householdPortWithMatch > householdPortNoMatch && (
-                <span className="text-muted ml-1">
+                <span className="text-muted block">
                   {formatCurrency(householdPortWithMatch * householdMult)} w/
                   match
                 </span>
@@ -598,7 +625,7 @@ function ContributionsCardImpl() {
                 {formatCurrency(householdTotalNoMatch * householdMult)}
               </span>
               {householdTotalWithMatch > householdTotalNoMatch && (
-                <span className="text-muted ml-1">
+                <span className="text-muted block">
                   {formatCurrency(householdTotalWithMatch * householdMult)} w/
                   match
                 </span>
@@ -606,6 +633,19 @@ function ContributionsCardImpl() {
             </div>
           </div>
         </div>
+        {pace && pace.total.saved > 0 && (
+          <p className="text-caption text-muted flex flex-wrap items-center justify-between gap-x-2">
+            <span>
+              Saved so far this year{" "}
+              <span className="text-primary font-medium">
+                {formatCurrency(pace.total.saved)}
+              </span>
+              {pace.total.unposted > 0 &&
+                ` (+${formatCurrency(pace.total.unposted)} on its way)`}
+            </span>
+            <PaceStatusText status={pace.total.status} />
+          </p>
+        )}
       </div>
     </Card>
   );

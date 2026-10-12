@@ -103,3 +103,43 @@ export function checkDeposits(
           : "higher",
   };
 }
+
+export type LatestContributionVerdict =
+  /** The latest contribution day matches today's setup. */
+  | "matches"
+  /** It differs by more than DEPOSIT_MATCH_TOLERANCE. */
+  | "differs"
+  /** No contribution arrived in the window. */
+  | "none";
+
+/**
+ * Whether the latest contribution (one paycheck or month — the feed's rows
+ * for that day summed) matches what today's setup puts in per
+ * contribution. Unlike checkDeposits' pace it answers "is the setup being
+ * followed now?" — right even when the setup changed recently (the year's
+ * earlier contributions followed an old setup Ledgr has no record of).
+ */
+export function checkLatestContribution(
+  deposits: readonly { posted: string; amount: number }[],
+  perContribution: number,
+): {
+  verdict: LatestContributionVerdict;
+  latest: { day: string; amount: number } | null;
+} {
+  const byDay = new Map<string, number>();
+  for (const d of deposits)
+    byDay.set(d.posted, (byDay.get(d.posted) ?? 0) + d.amount);
+  const last = [...byDay.entries()]
+    .filter(([, amount]) => amount > 0)
+    .sort(([a], [b]) => b.localeCompare(a))[0];
+  if (!last) return { verdict: "none", latest: null };
+  const latest = { day: last[0], amount: roundToCents(last[1]) };
+  const off =
+    perContribution > 0
+      ? Math.abs(latest.amount - perContribution) / perContribution
+      : Infinity;
+  return {
+    verdict: off <= DEPOSIT_MATCH_TOLERANCE ? "matches" : "differs",
+    latest,
+  };
+}

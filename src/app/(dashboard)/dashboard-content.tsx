@@ -12,7 +12,6 @@ import {
   NetWorthCard,
   LinkedBalanceCard,
   ContributionsCard,
-  SavingsThisYearCard,
   TaxesCard,
   FinancialCheckupCard,
   FidelityMultiplierCard,
@@ -56,42 +55,39 @@ export function DashboardContent() {
         </CardBoundary>
       </div>
 
-      {/* Secondary row */}
+      {/* This year's saving: the plan vs what's going in, the rate, the goals */}
       <div className="mb-3 grid grid-cols-[repeat(auto-fit,minmax(340px,1fr))] gap-3">
-        <CardBoundary title="Savings Goals">
-          <SavingsGoalsCard />
-        </CardBoundary>
-        <CardBoundary title="Retirement">
-          <RetirementCard />
-        </CardBoundary>
         <CardBoundary title="Contributions">
           <ContributionsCard />
         </CardBoundary>
-        <CardBoundary title="Saved This Year">
-          <SavingsThisYearCard />
+        <CardBoundary title="Savings Rate">
+          <SavingsRateCard />
+        </CardBoundary>
+        <CardBoundary title="Savings Goals">
+          <SavingsGoalsCard />
         </CardBoundary>
       </div>
 
-      {/* Retirement & budgeting insights */}
+      {/* Retirement outlook */}
       <div className="mb-3 grid grid-cols-[repeat(auto-fit,minmax(340px,1fr))] gap-3">
+        <CardBoundary title="Retirement">
+          <RetirementCard />
+        </CardBoundary>
         <CardBoundary title="Fidelity Multiplier">
           <FidelityMultiplierCard />
         </CardBoundary>
         <CardBoundary title="Dollar Multiplier">
           <DollarMultiplierCard />
         </CardBoundary>
+      </div>
+
+      {/* Details */}
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-3">
         <CardBoundary title="Living Costs">
           <LivingCostsCard />
         </CardBoundary>
-      </div>
-
-      {/* Detail row */}
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-3">
         <CardBoundary title="Mortgage">
           <MortgageCard />
-        </CardBoundary>
-        <CardBoundary title="Savings Rate">
-          <SavingsRateCard />
         </CardBoundary>
         <CardBoundary title="Budget Status">
           <BudgetStatusCard />

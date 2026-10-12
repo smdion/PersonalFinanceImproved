@@ -1,6 +1,9 @@
 /** Deposits vs the paycheck setup. Invented figures only. */
 import { describe, it, expect } from "vitest";
-import { checkDeposits } from "@/lib/pure/deposit-check";
+import {
+  checkDeposits,
+  checkLatestContribution,
+} from "@/lib/pure/deposit-check";
 
 const every14 = (n: number, amount: number) =>
   Array.from({ length: n }, (_, i) => ({
@@ -35,5 +38,37 @@ describe("checkDeposits", () => {
   it("waits for enough paydays, and can't judge a balance-only feed", () => {
     expect(checkDeposits(every14(2, 100), 5000, true).verdict).toBe("too_few");
     expect(checkDeposits(every14(4, 100), 5000, false).verdict).toBe("unknown");
+  });
+});
+
+describe("checkLatestContribution", () => {
+  it("judges the latest contribution day against today's setup", () => {
+    // An old, smaller setup, then today's: the latest matches.
+    const deposits = [
+      { posted: "2026-08-03", amount: 75 },
+      { posted: "2026-09-02", amount: 100 },
+      { posted: "2026-10-02", amount: 950 },
+    ];
+    expect(checkLatestContribution(deposits, 950)).toEqual({
+      verdict: "matches",
+      latest: { day: "2026-10-02", amount: 950 },
+    });
+    expect(checkLatestContribution(deposits, 1500).verdict).toBe("differs");
+  });
+
+  it("sums one payday's rows (one per fund)", () => {
+    const r = checkLatestContribution(
+      [
+        { posted: "2026-09-25", amount: 690 },
+        { posted: "2026-09-25", amount: 215 },
+        { posted: "2026-09-25", amount: 215 },
+      ],
+      1120,
+    );
+    expect(r).toMatchObject({ verdict: "matches", latest: { amount: 1120 } });
+  });
+
+  it("says when nothing arrived", () => {
+    expect(checkLatestContribution([], 500).verdict).toBe("none");
   });
 });

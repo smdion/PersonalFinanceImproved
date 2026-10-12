@@ -13,4 +13,3 @@ export { FinancialCheckupCard } from "./financial-checkup-card";
 export { FidelityMultiplierCard } from "./fidelity-multiplier-card";
 export { DollarMultiplierCard } from "./dollar-multiplier-card";
 export { LivingCostsCard } from "./living-costs-card";
-export { SavingsThisYearCard } from "./savings-this-year-card";
