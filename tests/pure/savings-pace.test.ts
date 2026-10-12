@@ -2,13 +2,8 @@
 import { describe, it, expect } from "vitest";
 import { savingsPace } from "@/lib/pure/savings-pace";
 
-const plan = (employee: number, employer: number) => ({
-  employeePreTax: employee,
-  employeeRoth: 0,
-  employeeOther: 0,
-  employer,
-  employerRoth: 0,
-});
+// A $26,000-a-year plan paid over 26 paychecks ($1,000 each), 20 paid so far.
+const plan = { yearly: 26_000, remaining: 6_000, perContribution: 1_000 };
 
 const account = (over: Partial<Parameters<typeof savingsPace>[0][number]>) => ({
   performanceAccountId: 1,
@@ -16,71 +11,81 @@ const account = (over: Partial<Parameters<typeof savingsPace>[0][number]>) => ({
   recorded: 0,
   pending: 0,
   pendingEstimated: false,
-  plan: plan(24_000, 12_000),
+  unposted: 0,
+  plan,
   ...over,
 });
 
 describe("savingsPace", () => {
-  // 2026-07-02 is 183 days in: about half the year.
-  const today = "2026-07-02";
-
-  it("compares saved with the plan pro-rated to today", () => {
-    const r = savingsPace(
-      [account({ recorded: 15_000, pending: 3_000 })],
-      today,
-    );
-    expect(r.accounts[0]).toMatchObject({
+  it("counts a paycheck the feed hasn't posted yet as on its way", () => {
+    const [r] = savingsPace([
+      account({ recorded: 18_000, unposted: 1_000 }),
+    ]).accounts;
+    expect(r).toMatchObject({
       saved: 18_000,
-      planYear: 36_000,
+      yearEnd: 25_000,
       status: "on_pace",
     });
-    expect(r.accounts[0]!.planToDate).toBeCloseTo(36_000 * (183 / 365), 0);
   });
 
-  it("allows half a month of slack for paydays, then calls it behind", () => {
+  it("compares saved with the plan through the latest contribution", () => {
+    const [r] = savingsPace([
+      account({ recorded: 17_000, pending: 3_000 }),
+    ]).accounts;
+    expect(r).toMatchObject({
+      saved: 20_000,
+      planYear: 26_000,
+      planToDate: 20_000,
+      status: "on_pace",
+    });
+  });
+
+  it("allows one contribution's worth for a deposit that posts late, then calls it behind", () => {
     expect(
-      savingsPace([account({ recorded: 16_600 })], today).accounts[0]!.status,
+      savingsPace([account({ recorded: 19_000 })]).accounts[0]!.status,
     ).toBe("on_pace");
     expect(
-      savingsPace([account({ recorded: 14_000 })], today).accounts[0]!.status,
+      savingsPace([account({ recorded: 18_500 })]).accounts[0]!.status,
     ).toBe("behind");
   });
 
-  it("says the goal is met once the year's plan is saved", () => {
+  it("estimates the year end as saved plus the rest of the year at today's rate", () => {
+    // Saved less earlier in the year (a lower election): on pace now, short for the year.
+    const [r] = savingsPace([account({ recorded: 18_400 })]).accounts;
+    expect(r!.yearEnd).toBe(24_400);
+  });
+
+  it("says the plan is met once the year's plan is saved", () => {
     expect(
-      savingsPace([account({ recorded: 36_000 })], today).accounts[0]!.status,
+      savingsPace([account({ recorded: 26_000 })]).accounts[0]!.status,
     ).toBe("met");
   });
 
   it("keeps accounts with savings but no plan, and drops empty ones", () => {
-    const r = savingsPace(
-      [
-        account({ performanceAccountId: 2, plan: null, recorded: 7_000 }),
-        account({ performanceAccountId: 3, plan: null }),
-      ],
-      today,
-    );
+    const r = savingsPace([
+      account({ performanceAccountId: 2, plan: null, recorded: 7_000 }),
+      account({ performanceAccountId: 3, plan: null }),
+    ]);
     expect(r.accounts.map((a) => [a.performanceAccountId, a.status])).toEqual([
       [2, "no_plan"],
     ]);
   });
 
   it("totals the household and flags estimated amounts", () => {
-    const r = savingsPace(
-      [
-        account({ recorded: 18_000 }),
-        account({
-          performanceAccountId: 2,
-          plan: plan(6_000, 0),
-          pending: 2_000,
-          pendingEstimated: true,
-        }),
-      ],
-      today,
-    );
+    const r = savingsPace([
+      account({ recorded: 20_000 }),
+      account({
+        performanceAccountId: 2,
+        plan: { yearly: 6_000, remaining: 1_000, perContribution: 500 },
+        pending: 2_000,
+        pendingEstimated: true,
+      }),
+    ]);
     expect(r.total).toMatchObject({
-      saved: 20_000,
-      planYear: 42_000,
+      saved: 22_000,
+      planYear: 32_000,
+      planToDate: 25_000,
+      yearEnd: 29_000,
       estimated: true,
     });
   });

@@ -229,7 +229,8 @@ export const investmentSuggestionsRouter = createTRPCRouter({
   getSavingsThisYear: portfolioProcedure.query(async ({ ctx }) => {
     const today = localDateStr();
     const year = Number(today.slice(0, 4));
-    const [rows, pending, mix, names] = await Promise.all([
+    const dayDate = (day: string) => new Date(`${day}T12:00:00Z`);
+    const [rows, pending, mix, names, context] = await Promise.all([
       ctx.db
         .select({
           performanceAccountId: schema.accountPerformance.performanceAccountId,
@@ -243,9 +244,31 @@ export const investmentSuggestionsRouter = createTRPCRouter({
           ),
         ),
       loadPerformanceSuggestions(ctx.db, year),
-      loadContributionMix(ctx.db),
+      loadContributionMix(ctx.db, dayDate(today)),
       loadTrackedAccountNames(ctx.db),
+      loadFeedContext(ctx.db),
     ]);
+    // An account whose feed sends transactions is known only through its
+    // latest posted one; the plan between then and today is taken to be on
+    // its way — the gap the Year-End Estimate view fills ("stale periods").
+    const lastPosted = new Map<number, string>();
+    for (const f of context.feeds) {
+      const day = context.lastTransactionDay.get(f.id);
+      if (
+        day &&
+        day < today &&
+        day > (lastPosted.get(f.performanceAccountId) ?? "")
+      )
+        lastPosted.set(f.performanceAccountId, day);
+    }
+    const mixAt = new Map(
+      await Promise.all(
+        [...new Set(lastPosted.values())].map(
+          async (day) =>
+            [day, await loadContributionMix(ctx.db, dayDate(day))] as const,
+        ),
+      ),
+    );
     const ids = new Set([
       ...rows.map((r) => r.performanceAccountId),
       ...mix.keys(),
@@ -253,6 +276,10 @@ export const investmentSuggestionsRouter = createTRPCRouter({
     return savingsPace(
       [...ids].map((id) => {
         const mine = pending.filter((p) => p.performanceAccountId === id);
+        const m = mix.get(id);
+        const estimated = mine.some((p) => p.estimate !== null);
+        const posted = lastPosted.get(id);
+        const then = posted ? mixAt.get(posted)?.get(id) : undefined;
         return {
           performanceAccountId: id,
           label: names.get(id) ?? "",
@@ -263,11 +290,25 @@ export const investmentSuggestionsRouter = createTRPCRouter({
             (t, p) => t + p.added.employee + p.added.employer,
             0,
           ),
-          pendingEstimated: mine.some((p) => p.estimate !== null),
-          plan: mix.get(id) ?? null,
+          pendingEstimated: estimated,
+          // A paycheck estimate already runs to today: nothing in between.
+          unposted:
+            m && then && !estimated
+              ? Math.max(0, then.remainingThisYear - m.remainingThisYear)
+              : 0,
+          plan: m
+            ? {
+                yearly:
+                  m.employeePreTax +
+                  m.employeeRoth +
+                  m.employeeOther +
+                  m.employer,
+                remaining: m.remainingThisYear,
+                perContribution: m.perContribution,
+              }
+            : null,
         };
       }),
-      today,
     );
   }),
 

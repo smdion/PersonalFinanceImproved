@@ -366,6 +366,9 @@ function StackedByAccount({
   stacked: ReturnType<typeof stackedSeries>;
 }) {
   const colorOf = (i: number) => FUND_COLORS[i % FUND_COLORS.length]!;
+  // The account band under the mouse: drawn stronger, and picked out in the
+  // tooltip and legend.
+  const [hovered, setHovered] = useState<string | null>(null);
   const rows: (Record<string, number | string> & {
     date: string;
     label: string;
@@ -402,15 +405,31 @@ function StackedByAccount({
                   <div className="text-primary mb-1 font-medium">
                     {row.date} · {formatCurrency(total)}
                   </div>
-                  {[...stacked.series].reverse().map((s) => (
-                    <div
-                      key={s.key}
-                      className="text-secondary flex justify-between gap-3"
-                    >
-                      <span>{s.label}</span>
-                      <span>{formatCurrency(Number(row[s.key] ?? 0))}</span>
-                    </div>
-                  ))}
+                  {[...stacked.series].reverse().map((s) => {
+                    const i = stacked.series.indexOf(s);
+                    const on = s.key === hovered;
+                    return (
+                      <div
+                        key={s.key}
+                        className={`flex justify-between gap-3 rounded px-1 ${
+                          on
+                            ? "bg-surface-elevated text-primary font-semibold"
+                            : hovered
+                              ? "text-faint"
+                              : "text-secondary"
+                        }`}
+                      >
+                        <span className="inline-flex items-center gap-1.5">
+                          <span
+                            className="inline-block h-2 w-2 rounded-sm"
+                            style={{ background: colorOf(i) }}
+                          />
+                          {s.label}
+                        </span>
+                        <span>{formatCurrency(Number(row[s.key] ?? 0))}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               );
             }}
@@ -424,16 +443,26 @@ function StackedByAccount({
               name={s.label}
               stackId="accounts"
               stroke={colorOf(i)}
+              strokeWidth={s.key === hovered ? 2 : 1}
               fill={colorOf(i)}
-              fillOpacity={0.55}
+              fillOpacity={
+                hovered === null ? 0.55 : s.key === hovered ? 0.9 : 0.2
+              }
               dot={false}
+              onMouseEnter={() => setHovered(s.key)}
+              onMouseLeave={() => setHovered(null)}
             />
           ))}
         </AreaChart>
       </ResponsiveContainer>
       <div className="text-caption text-muted mt-2 flex flex-wrap gap-x-3 gap-y-1">
         {stacked.series.map((s, i) => (
-          <span key={s.key} className="inline-flex items-center gap-1">
+          <span
+            key={s.key}
+            className={`inline-flex items-center gap-1 ${
+              s.key === hovered ? "text-primary font-semibold" : ""
+            }`}
+          >
             <span
               className="inline-block h-2 w-2 rounded-sm"
               style={{ background: colorOf(i) }}

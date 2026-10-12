@@ -366,6 +366,10 @@ export function estimateFromPaycheck(
 /** An account's mix in total and per person whose paycheck feeds it. */
 export type AccountContributionMix = ContributionMix & {
   byPerson: Map<number, ContributionMix>;
+  /** Of the year's plan (employee + employer), what's still to come after today. */
+  remainingThisYear: number;
+  /** One contribution's worth of the plan (a paycheck, or a month) — the pace allowance. */
+  perContribution: number;
 };
 
 /**

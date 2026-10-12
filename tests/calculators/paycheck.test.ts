@@ -4,6 +4,10 @@ import {
   calculateBlendedAnnual,
   mapSalaryTimelineToPeriods,
   countPeriodsElapsed,
+  contribRemainingFraction,
+  contribStepFraction,
+  monthsElapsedYtd,
+  periodsElapsedYtd,
   getExtraPaycheckMonthKeys,
   type SalarySegment,
 } from "@/lib/calculators/paycheck";
@@ -570,5 +574,34 @@ describe("mapSalaryTimelineToPeriods", () => {
     expect(result).toHaveLength(2);
     expect(result[0]!.startPeriod).toBe(1);
     expect(result[1]!.endPeriod).toBe(24);
+  });
+});
+
+describe("contribution schedule helpers", () => {
+  it("walks paychecks from the anchor payday, else estimates from the month", () => {
+    const asOf = new Date(Date.UTC(2026, 9, 12));
+    expect(periodsElapsedYtd(asOf, "biweekly", "2026-01-02", 26)).toBe(
+      countPeriodsElapsed(asOf, "biweekly", new Date("2026-01-02")),
+    );
+    expect(periodsElapsedYtd(asOf, "biweekly", null, 26)).toBe(
+      Math.round((asOf.getMonth() / 12) * 26),
+    );
+  });
+
+  it("counts a month from the 15th", () => {
+    expect(monthsElapsedYtd(new Date(2026, 9, 14))).toBe(9);
+    expect(monthsElapsedYtd(new Date(2026, 9, 15))).toBe(10);
+  });
+
+  it("gives what's still to come and one contribution's share, by method", () => {
+    const p = { periodsElapsed: 20, periodsPerYear: 26, monthsElapsed: 9 };
+    expect(contribRemainingFraction("percent_of_salary", p)).toBeCloseTo(
+      6 / 26,
+    );
+    expect(contribRemainingFraction("fixed_monthly", p)).toBeCloseTo(3 / 12);
+    expect(contribRemainingFraction("fixed_annual", p)).toBe(0);
+    expect(contribStepFraction("fixed_per_period", 24)).toBeCloseTo(1 / 24);
+    expect(contribStepFraction("fixed_monthly", 26)).toBeCloseTo(1 / 12);
+    expect(contribStepFraction("fixed_annual", 26)).toBe(0);
   });
 });

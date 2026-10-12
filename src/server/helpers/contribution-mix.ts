@@ -15,7 +15,14 @@ import type {
 } from "@/lib/pure/flow-suggestions";
 import { filterActiveJobs } from "@/lib/pure/profiles";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
-import { toNumber, type Db } from "./transforms";
+import { getPeriodsPerYear, toNumber, type Db } from "./transforms";
+import {
+  contribRemainingFraction,
+  contribStepFraction,
+  monthsElapsedYtd,
+  periodsElapsedYtd,
+} from "@/lib/calculators/paycheck";
+import { DEFAULT_PAY_PERIODS_PER_YEAR } from "@/lib/constants";
 import { loadEffectiveSalaryProfile, resolveCompensation } from "./salary";
 import {
   computeAnnualContribution,
@@ -26,6 +33,7 @@ import {
 
 export async function loadContributionMix(
   db: Db,
+  asOf: Date = new Date(),
 ): Promise<Map<number, AccountContributionMix>> {
   const [allJobs, contribs, activeProfile] = await Promise.all([
     db.select().from(schema.jobs),
@@ -74,7 +82,31 @@ export async function loadContributionMix(
       salary,
       periodsPerYear,
     );
-    return { c, job, salary, annual };
+    // Where the year stands on this contribution's schedule — the same
+    // paycheck walk the Contributions page's YTD / Year-End Estimate use.
+    const payPeriods =
+      job?.payPeriod != null
+        ? getPeriodsPerYear(job.payPeriod)
+        : DEFAULT_PAY_PERIODS_PER_YEAR;
+    const elapsed = {
+      periodsPerYear: payPeriods,
+      // No job (or no anchor payday): estimated from the month.
+      periodsElapsed: periodsElapsedYtd(
+        asOf,
+        job?.payPeriod ?? "",
+        job?.anchorPayDate,
+        payPeriods,
+      ),
+      monthsElapsed: monthsElapsedYtd(asOf),
+    };
+    return {
+      c,
+      job,
+      salary,
+      annual,
+      remaining: contribRemainingFraction(c.contributionMethod, elapsed),
+      step: contribStepFraction(c.contributionMethod, payPeriods),
+    };
   });
 
   const match = computeGroupedEmployerMatch(
@@ -114,12 +146,17 @@ export async function loadContributionMix(
       mix.employerRoth += m.matchAnnual;
   };
   const out = new Map<number, AccountContributionMix>();
-  for (const { c, job, annual } of resolved) {
+  for (const { c, job, annual, remaining, step } of resolved) {
     const account = out.get(c.performanceAccountId!) ?? {
       ...empty(),
       byPerson: new Map(),
+      remainingThisYear: 0,
+      perContribution: 0,
     };
     add(account, c, annual);
+    const withMatch = annual + (match.get(c.id)?.matchAnnual ?? 0);
+    account.remainingThisYear += withMatch * remaining;
+    account.perContribution += withMatch * step;
     // Whose paycheck it is: the contribution's person, else its job's.
     const person = c.personId ?? job?.personId ?? null;
     if (person !== null) {

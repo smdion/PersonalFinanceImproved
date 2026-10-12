@@ -4,7 +4,12 @@ import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { calculateContributions } from "@/lib/calculators/contribution";
-import { countPeriodsElapsed } from "@/lib/calculators/paycheck";
+import {
+  contribRemainingFraction,
+  countPeriodsElapsed,
+  monthsElapsedYtd,
+  periodsElapsedYtd,
+} from "@/lib/calculators/paycheck";
 import { accountDisplayName, stripInstitutionSuffix } from "@/lib/utils/format";
 import {
   toNumber,
@@ -358,10 +363,12 @@ export const contributionRouter = createTRPCRouter({
           effectiveSalaryMap,
         );
         const periodsPerYear = getPeriodsPerYear(job.payPeriod);
-        const anchor = job.anchorPayDate ? new Date(job.anchorPayDate) : null;
-        const periodsElapsed = anchor
-          ? countPeriodsElapsed(asOfDate, job.payPeriod, anchor)
-          : Math.round((asOfDate.getMonth() / 12) * periodsPerYear);
+        const periodsElapsed = periodsElapsedYtd(
+          asOfDate,
+          job.payPeriod,
+          job.anchorPayDate,
+          periodsPerYear,
+        );
         jobCache.set(c.jobId, { salary, periodsPerYear, periodsElapsed });
       }
 
@@ -500,13 +507,12 @@ export const contributionRouter = createTRPCRouter({
           // Total compensation (always includes bonus) — used for savings rate denominator
           const totalCompensation = getTotalCompensation(dbSalary, bonusTerms);
           const periodsPerYear = getPeriodsPerYear(activeJob.payPeriod);
-          const periodsElapsedYtd = activeJob.anchorPayDate
-            ? countPeriodsElapsed(
-                asOfDate,
-                activeJob.payPeriod,
-                new Date(activeJob.anchorPayDate),
-              )
-            : Math.round((asOfDate.getMonth() / 12) * periodsPerYear);
+          const periodsElapsed = periodsElapsedYtd(
+            asOfDate,
+            activeJob.payPeriod,
+            activeJob.anchorPayDate,
+            periodsPerYear,
+          );
           const age = getAgeFromDob(person.dateOfBirth, asOfDate);
 
           const jobContribs = effectiveContribs.filter(
@@ -674,20 +680,11 @@ export const contributionRouter = createTRPCRouter({
 
           // Compute method-aware remaining fraction for blended estimates.
           // Each contribution method has a different delivery cadence.
-          const monthsElapsed =
-            asOfDate.getMonth() + (asOfDate.getDate() >= 15 ? 1 : 0);
-          function methodRemainingFraction(method: string): number {
-            switch (method) {
-              case "fixed_monthly":
-                return (12 - monthsElapsed) / 12;
-              case "fixed_annual":
-                return 0;
-              default:
-                return periodsPerYear > 0
-                  ? (periodsPerYear - periodsElapsedYtd) / periodsPerYear
-                  : 1;
-            }
-          }
+          const elapsed = {
+            periodsElapsed,
+            periodsPerYear,
+            monthsElapsed: monthsElapsedYtd(asOfDate),
+          };
           for (let i = 0; i < accounts.length; i++) {
             const acct = accounts[i]!;
             const rawContrib = rawContribs[i]!;
@@ -770,8 +767,9 @@ export const contributionRouter = createTRPCRouter({
             // Stale gap: periods between last performance update and today,
             // filled at current projected rate. Actuals are trusted (may
             // reflect old contribution rates or salary changes).
-            const remaining = methodRemainingFraction(
+            const remaining = contribRemainingFraction(
               rawContrib.contributionMethod,
+              elapsed,
             );
             const ytdEmp = contribActual?.contributions ?? 0;
             const ytdMatch = contribActual?.employerMatch ?? 0;
@@ -795,10 +793,7 @@ export const contributionRouter = createTRPCRouter({
                   activeJob.payPeriod,
                   anchor,
                 );
-                stalePeriods = Math.max(
-                  0,
-                  periodsElapsedYtd - periodsAtPerfDate,
-                );
+                stalePeriods = Math.max(0, periodsElapsed - periodsAtPerfDate);
               }
               if (stalePeriods > 0) entry.ytdDataStale = true;
               const perPeriodEmp = acct.annualContribution / periodsPerYear;
@@ -1038,7 +1033,7 @@ export const contributionRouter = createTRPCRouter({
           );
 
           const ytdRatioForTotals = safeDivide(
-            periodsElapsedYtd,
+            periodsElapsed,
             periodsPerYear,
             0,
           );
@@ -1079,7 +1074,7 @@ export const contributionRouter = createTRPCRouter({
             totalCompensation,
             bonusGross,
             periodsPerYear,
-            periodsElapsedYtd,
+            periodsElapsedYtd: periodsElapsed,
             accountTypes,
             perContribData,
             totals: {
