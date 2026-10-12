@@ -4,6 +4,7 @@
  *  retirement/page.tsx is a thin server component that prefetches the most
  *  expensive query before rendering this. */
 
+import { RealizedVsAssumedCard } from "@/components/retirement/realized-vs-assumed-card";
 import { useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
@@ -391,6 +392,13 @@ export function RetirementContent() {
               snapshotId={snapshotId ?? undefined}
               dollarMode={dollarMode}
               onDollarModeChange={setDollarMode}
+            />
+          </CardBoundary>
+
+          {/* Actual returns vs the projections' assumption (display only) */}
+          <CardBoundary title="Realized vs assumed returns">
+            <RealizedVsAssumedCard
+              profileId={effectiveRetirementProfileId ?? null}
             />
           </CardBoundary>
 
