@@ -15,6 +15,7 @@ import {
   type CompositionBucket,
 } from "@/lib/config/enum-values";
 import {
+  accountRollup,
   blendedCost,
   effectiveFacts,
   portfolioBuckets,
@@ -178,6 +179,8 @@ export const investmentFundFactsRouter = createTRPCRouter({
             performanceAccountId: a?.performanceAccountId ?? null,
             label: `${a?.institution ?? ""} ${a?.accountName ?? ""}`.trim(),
             total: rows.reduce((s, r) => s + r.value, 0),
+            /** Its funds added up (null for an effectively single-fund account). */
+            rollup: accountRollup(rows),
             holdings: rows
               .sort((x, y) => y.value - x.value)
               .map((r) => ({

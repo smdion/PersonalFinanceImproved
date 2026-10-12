@@ -134,3 +134,37 @@ export function blendedCost(holdings: readonly ValuedHolding[]): {
     coveredShare: total > 0 ? covered / total : 0,
   };
 }
+
+/** A fund smaller than this share of its account doesn't make it "multi-fund" (e.g. cash dust). */
+export const ROLLUP_MIN_SHARE = 0.01;
+
+/**
+ * One account's funds added up — mix as shares of the money whose mix is
+ * known, plus blended cost — or null when the account effectively holds a
+ * single fund (then that fund's own row already says it all).
+ */
+export function accountRollup(holdings: readonly ValuedHolding[]): {
+  mix: Record<CompositionBucket, number> | null;
+  /** Share of the account's value whose mix is known. */
+  coverage: number;
+  cost: ReturnType<typeof blendedCost>;
+} | null {
+  const total = holdings.reduce((s, h) => s + h.value, 0);
+  if (total <= 0) return null;
+  const meaningful = holdings.filter(
+    (h) => h.value / total >= ROLLUP_MIN_SHARE,
+  );
+  if (meaningful.length < 2) return null;
+  const { buckets, unknown } = portfolioBuckets(holdings);
+  const known = total - unknown;
+  return {
+    mix:
+      known > 0
+        ? (Object.fromEntries(
+            COMPOSITION_BUCKET_VALUES.map((b) => [b, buckets[b] / known]),
+          ) as Record<CompositionBucket, number>)
+        : null,
+    coverage: known / total,
+    cost: blendedCost(holdings),
+  };
+}

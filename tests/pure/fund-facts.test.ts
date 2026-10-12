@@ -1,6 +1,7 @@
 /** Effective fund facts and portfolio roll-ups. Invented values only. */
 import { describe, it, expect } from "vitest";
 import {
+  accountRollup,
   blendedCost,
   effectiveFacts,
   portfolioBuckets,
@@ -103,5 +104,28 @@ describe("portfolio roll-ups", () => {
     expect(c.yearlyCost).toBeCloseTo(1 + 2.5);
     expect(c.expenseRatio).toBeCloseTo(3.5 / 1500);
     expect(c.coveredShare).toBeCloseTo(0.6);
+  });
+
+  it("adds up an account's funds as shares of the money whose mix is known", () => {
+    const r = accountRollup(holdings)!;
+    expect(r.coverage).toBeCloseTo(1500 / 2500);
+    expect(r.mix!.us_equity).toBeCloseTo(1000 / 1500);
+    expect(r.mix!.us_bond).toBeCloseTo(500 / 1500);
+    expect(r.cost.expenseRatio).toBeCloseTo(3.5 / 1500);
+  });
+
+  it("has no rollup for an account that effectively holds one fund", () => {
+    const one = holdings[0]!;
+    expect(accountRollup([one])).toBeNull();
+    // Cash dust next to the fund doesn't make it a multi-fund account.
+    expect(accountRollup([one, { ...one, value: 1 }])).toBeNull();
+    expect(accountRollup([])).toBeNull();
+  });
+
+  it("still adds up an account whose funds' mixes are all unknown", () => {
+    const r = accountRollup([holdings[2]!, holdings[2]!])!;
+    expect(r.mix).toBeNull();
+    expect(r.coverage).toBe(0);
+    expect(r.cost.yearlyCost).toBeCloseTo(5);
   });
 });

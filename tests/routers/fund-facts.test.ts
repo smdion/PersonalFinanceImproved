@@ -143,6 +143,13 @@ describe("fund facts", () => {
   it("values holdings at today's close when priced, else as reported", async () => {
     const o = await ctx.caller.investments.getHoldingsOverview();
     const rows = o.accounts[0]!.holdings;
+    // Two funds of real size: the account gets a rollup (the plan fund's
+    // mix and fee aren't known, so they cover the stock fund only).
+    expect(o.accounts[0]!.rollup).toMatchObject({
+      coverage: expect.closeTo(5000 / 6000, 5),
+      cost: { expenseRatio: expect.closeTo(0.001, 6) },
+    });
+    expect(o.accounts[0]!.rollup!.mix!.us_equity).toBeCloseTo(0.8);
     expect(rows.find((r) => r.securityId === id.stock)).toMatchObject({
       value: 5000,
       valueBasis: "priced",

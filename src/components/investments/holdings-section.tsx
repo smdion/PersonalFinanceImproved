@@ -11,6 +11,70 @@ import { Card } from "@/components/ui/card";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { CHART_COLORS } from "@/lib/utils/colors";
 import { COMPOSITION_BUCKET_LABELS } from "@/lib/config/display-labels";
+import { COMPOSITION_BUCKET_VALUES } from "@/lib/config/enum-values";
+
+type OverviewAccount = Overview["accounts"][number];
+
+/**
+ * The account's name and total; for an account holding several funds, also
+ * their combined mix and blended fee, in the same columns as the fund rows.
+ */
+function AccountHeader({ a }: { a: OverviewAccount }) {
+  const r = a.rollup;
+  const er = r?.cost.expenseRatio ?? null;
+  const parts = r?.mix
+    ? COMPOSITION_BUCKET_VALUES.filter((b) => r.mix![b] >= 0.005)
+    : [];
+  return (
+    <div className="mb-1 text-xs">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span className="text-secondary min-w-0 flex-1 font-medium">
+          {a.label}
+        </span>
+        {r && (
+          <>
+            {r.mix ? (
+              <div className="bg-surface-strong flex h-2 w-24 overflow-hidden rounded">
+                {parts.map((b) => (
+                  <div
+                    key={b}
+                    style={{
+                      width: `${r.mix![b] * 100}%`,
+                      backgroundColor: BUCKET_COLORS[b],
+                    }}
+                  />
+                ))}
+              </div>
+            ) : (
+              <span className="text-faint text-caption">Mix unknown</span>
+            )}
+            <span className="text-muted w-16 text-right">
+              {er !== null ? formatPercent(er, er < 0.001 ? 3 : 2) : "—"}
+            </span>
+          </>
+        )}
+        <span className="text-secondary w-24 text-right font-medium">
+          {formatCurrency(a.total)}
+        </span>
+      </div>
+      {r?.mix && (
+        <p className="text-caption text-faint mt-0.5">
+          All funds:{" "}
+          {parts
+            .map(
+              (b) =>
+                `${COMPOSITION_BUCKET_LABELS[b]} ${formatPercent(r.mix![b], 0)}`,
+            )
+            .join(" · ")}
+          {r.coverage < 0.995 &&
+            ` (mix known for ${formatPercent(r.coverage, 0)})`}
+          {er !== null &&
+            ` · about ${formatCurrency(r.cost.yearlyCost)} a year in fees`}
+        </p>
+      )}
+    </div>
+  );
+}
 
 function AllocationCard({ data }: { data: Overview }) {
   const utils = trpc.useUtils();
@@ -166,10 +230,7 @@ export function HoldingsSection() {
         <div className="space-y-4">
           {data.accounts.map((a) => (
             <div key={a.simplefinAccountId}>
-              <div className="mb-1 flex justify-between text-xs">
-                <span className="text-secondary font-medium">{a.label}</span>
-                <span className="text-muted">{formatCurrency(a.total)}</span>
-              </div>
+              <AccountHeader a={a} />
               {a.holdings.map((h) => (
                 <HoldingRow key={h.securityId} h={h} editable={false} />
               ))}
