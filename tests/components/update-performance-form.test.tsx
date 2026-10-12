@@ -29,6 +29,11 @@ let batchMutationState: {
   error: null,
 };
 
+// The decisions step has its own queries; out of scope here.
+vi.mock("@/components/investments/transaction-decisions", () => ({
+  TransactionDecisions: () => null,
+}));
+
 let suggestionData: unknown = undefined;
 
 vi.mock("@/lib/trpc", () => ({

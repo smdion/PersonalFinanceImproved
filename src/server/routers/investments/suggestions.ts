@@ -23,7 +23,7 @@ import {
   flowsSinceFill,
   initialBaseline,
   reduceBasis,
-  splitWithKnown,
+  splitContributions,
   type FeedAccount,
 } from "@/lib/pure/flow-suggestions";
 import {
@@ -354,7 +354,7 @@ export const investmentSuggestionsRouter = createTRPCRouter({
             ? r.ownerPersonId
             : null,
         );
-        const split = splitWithKnown(t, accountMix, false);
+        const split = splitContributions(t.contributions, accountMix, false);
         // No feed: what the paycheck setup should have sent instead.
         const estimateTo = today < yearEnd ? today : yearEnd;
         const estimate =
@@ -513,7 +513,11 @@ export const investmentSuggestionsRouter = createTRPCRouter({
             baseline,
           );
           Object.assign(counted, c);
-          const split = splitWithKnown(t, accountMix, accountIsRoth);
+          const split = splitContributions(
+            t.contributions,
+            accountMix,
+            accountIsRoth,
+          );
           roth += split.employeeRoth;
           estimated ||= split.estimated && split.employeeRoth !== 0;
           conversions += t.conversionsIn;

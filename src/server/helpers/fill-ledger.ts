@@ -34,11 +34,7 @@ export const zFillRecord = z.object({
   baselines: z.record(z.string(), day),
   counted: z.record(
     z.string(),
-    z
-      .string()
-      .regex(
-        /^(?:[a-z_]+(?::conversion)?(?:\|e:-?\d+(?:\.\d+)?\|r:-?\d+(?:\.\d+)?)?|removed)$/,
-      ),
+    z.string().regex(/^(?:[a-z_]+(?::conversion)?|removed)$/),
   ),
   estimatedThrough: z.record(z.string(), day).optional(),
 });

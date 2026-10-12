@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**397 procedures across 53 routers.**
+**396 procedures across 53 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -203,13 +203,12 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `investments/transactions`
 
-| Procedure              | Kind     | Auth                 | Description                                                                                                                                                                                    |
-| ---------------------- | -------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `clearTransactionKind` | mutation | `portfolioProcedure` | Undo a choice made in the review queue (never the redaction lock).                                                                                                                             |
-| `listReviewQueue`      | query    | `portfolioProcedure` | Rows no rule could place, or that a rule flags for a look.                                                                                                                                     |
-| `listTransactions`     | query    | `portfolioProcedure` | Investment transactions with the kind each counts as, newest first.                                                                                                                            |
-| `setTransactionKind`   | mutation | `portfolioProcedure` | Set the kind of one row. Redacted HSA rows are fixed and can't be changed.                                                                                                                     |
-| `setTransactionSplit`  | mutation | `portfolioProcedure` | Split one deposit by hand — how much was the employer's and how much the employee's Roth money (feeds report one amount; fills otherwise estimate it from the paycheck setup). Null clears it. |
+| Procedure              | Kind     | Auth                 | Description                                                                                                                                                                                              |
+| ---------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `clearTransactionKind` | mutation | `portfolioProcedure` | Undo a choice made in the review queue (never the redaction lock).                                                                                                                                       |
+| `listDecisions`        | query    | `portfolioProcedure` | The few transactions a Performance or Basis fill for `year` needs a decision on: rows in accounts that count toward a tracked account that no rule could place (or that a rule flags), and deposits / wi |
+| `listTransactions`     | query    | `portfolioProcedure` | Investment transactions with the kind each counts as, newest first.                                                                                                                                      |
+| `setTransactionKind`   | mutation | `portfolioProcedure` | Set the kind of one row. Redacted HSA rows are fixed and can't be changed.                                                                                                                               |
 
 ## `mortgage`
 

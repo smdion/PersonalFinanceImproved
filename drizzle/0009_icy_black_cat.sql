@@ -1,0 +1,1 @@
+ALTER TABLE "investment_transactions" DROP COLUMN "source_split";

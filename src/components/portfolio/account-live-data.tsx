@@ -339,6 +339,16 @@ export function AccountLiveSection({
       </div>
 
       {insight.sinceSnapshot && <SinceSnapshot s={insight.sinceSnapshot} />}
+      {insight.likelyMoves.length > 0 && (
+        <p className="text-xs text-amber-700 dark:text-amber-400">
+          {insight.likelyMoves
+            .map((m) => `${formatCurrency(m.amount)} on ${day(m.posted)}`)
+            .join(", ")}{" "}
+          {insight.likelyMoves.length === 1 ? "looks" : "look"} like money moved
+          between your accounts — decide in Update Performance before filling
+          it.
+        </p>
+      )}
 
       {holdings.length > 0 && (
         <div>

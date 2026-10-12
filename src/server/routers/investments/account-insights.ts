@@ -227,6 +227,16 @@ export const investmentAccountInsightsRouter = createTRPCRouter({
                 .map((s) => s.label),
         /** Change since the latest snapshot, split added / moved / markets (null when not comparable). */
         sinceSnapshot,
+        /** Undecided rows that look like a move between accounts (decided in Update Performance). */
+        likelyMoves: rows
+          .filter(
+            (r) =>
+              ids.has(r.simplefinAccountId) &&
+              r.transferSuggestion !== null &&
+              !r.pending &&
+              !r.voided,
+          )
+          .map((r) => ({ posted: r.posted, amount: r.amount })),
         /** Feeds whose money no part of the latest snapshot holds. */
         unplaced: accountUnplaced.map((u) => {
           const a = accounts.get(u.feedId);

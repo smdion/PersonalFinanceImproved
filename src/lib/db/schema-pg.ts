@@ -2506,9 +2506,6 @@ export const holdingObservations = pgTable(
  * stored. HSA medical-spending descriptions are redacted at ingest, which
  * locks the kind (kindOverrideSource = ingest_redacted).
  */
-/** See investmentTransactions.sourceSplit. Dollars, both within the row's amount. */
-export type TransactionSourceSplit = { employer: number; employeeRoth: number };
-
 export const investmentTransactions = pgTable(
   "investment_transactions",
   {
@@ -2528,11 +2525,6 @@ export const investmentTransactions = pgTable(
     kindOverrideSource: text(
       "kind_override_source",
     ).$type<KindOverrideSource>(),
-    /** The household's own split of a deposit (feeds report one amount):
-     *  how much was the employer's and how much was the employee's Roth
-     *  money; the rest is the employee's other money. Null = estimate it
-     *  from the paycheck setup. Only meaningful on a contribution. */
-    sourceSplit: jsonb("source_split").$type<TransactionSourceSplit>(),
     /** Set when the row vanished from a window that should still contain it. */
     voidedAt: timestamp("voided_at", { withTimezone: true }),
     firstSeenAt: timestamp("first_seen_at", { withTimezone: true })

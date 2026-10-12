@@ -138,8 +138,10 @@ describe("investments router", () => {
     expect(byId.has(tx["old-voided"]!)).toBe(false);
   });
 
-  it("queues unmatched rows for review", async () => {
-    const queue = await ctx.caller.investments.listReviewQueue();
+  it("asks for a decision on rows no rule could place", async () => {
+    const queue = await ctx.caller.investments.listDecisions({
+      year: Number(daysAgo(3).slice(0, 4)),
+    });
     expect(queue.map((r) => r.id).sort()).toEqual(
       [tx.mystery1!, tx.mystery2!, tx["hsa-out"]!].sort(),
     );
@@ -160,7 +162,9 @@ describe("investments router", () => {
       fromTransactionId: tx.mystery1,
     });
     expect(saved.rule.sampleDescription).toBe("ZZZ PAYROLL 01");
-    const queue = await ctx.caller.investments.listReviewQueue();
+    const queue = await ctx.caller.investments.listDecisions({
+      year: Number(daysAgo(3).slice(0, 4)),
+    });
     expect(queue.map((r) => r.id)).toEqual([tx["hsa-out"]!]);
     const rows = await ctx.caller.investments.listTransactions({});
     expect(rows.find((r) => r.id === tx.mystery2)).toMatchObject({

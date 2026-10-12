@@ -64,6 +64,13 @@
       "when": 1791763850141,
       "tag": "0008_worthless_talisman",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791822999890,
+      "tag": "0009_icy_black_cat",
+      "breakpoints": true
     }
   ]
 }

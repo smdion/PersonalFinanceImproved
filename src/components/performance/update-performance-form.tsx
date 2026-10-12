@@ -1,5 +1,6 @@
 "use client";
 
+import { TransactionDecisions } from "@/components/investments/transaction-decisions";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import {
@@ -330,6 +331,8 @@ export function UpdatePerformanceForm({
 
   return (
     <div className="space-y-4">
+      {/* Decisions change what a fill adds, so they come first. */}
+      {!fill && <TransactionDecisions year={currentYear} />}
       {suggestions && suggestions.accounts.length > 0 && (
         <div className="rounded bg-blue-50 p-2 text-xs text-blue-900 dark:bg-blue-950/30 dark:text-blue-200">
           <div className="flex flex-wrap items-center gap-2">

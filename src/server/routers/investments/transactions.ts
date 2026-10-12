@@ -15,6 +15,7 @@ import { investmentTransactionKindSchema } from "@/lib/config/enum-values";
 import { lockAsMedicalWithdrawal } from "@/lib/simplefin/ingest";
 import { localDateStr } from "@/lib/utils/date";
 import {
+  countedFeed,
   loadAccounts,
   loadClassifiedTransactions,
   type ClassifiedTransactionRow,
@@ -49,11 +50,37 @@ export const investmentTransactionsRouter = createTRPCRouter({
       return rows.map(forClient);
     }),
 
-  /** Rows no rule could place, or that a rule flags for a look. */
-  listReviewQueue: portfolioProcedure.query(async ({ ctx }) => {
-    const rows = await loadClassifiedTransactions(ctx.db, {});
-    return rows.filter((r) => r.needsReview).map(forClient);
-  }),
+  /**
+   * The few transactions a Performance or Basis fill for `year` needs a
+   * decision on: rows in accounts that count toward a tracked account that
+   * no rule could place (or that a rule flags), and deposits / withdrawals
+   * that look like a move between the household's accounts. Rows the
+   * household already decided are left out. Newest first.
+   */
+  listDecisions: portfolioProcedure
+    .input(z.object({ year: z.number().int() }))
+    .query(async ({ ctx, input }) => {
+      const [rows, counted] = await Promise.all([
+        loadClassifiedTransactions(ctx.db, { since: `${input.year}-01-01` }),
+        ctx.db
+          .select({ id: schema.simplefinAccounts.id })
+          .from(schema.simplefinAccounts)
+          .where(countedFeed),
+      ]);
+      const countedIds = new Set(counted.map((c) => c.id));
+      return rows
+        .filter(
+          (r) =>
+            r.posted <= `${input.year}-12-31` &&
+            countedIds.has(r.simplefinAccountId) &&
+            !r.pending &&
+            !r.voided &&
+            r.source !== "override" &&
+            r.source !== "locked" &&
+            (r.needsReview || r.transferSuggestion !== null),
+        )
+        .map(forClient);
+    }),
 
   /** Set the kind of one row. Redacted HSA rows are fixed and can't be changed. */
   setTransactionKind: portfolioProcedure
@@ -90,8 +117,6 @@ export const investmentTransactionsRouter = createTRPCRouter({
         .set({
           kindOverride: input.kind,
           kindOverrideSource: "user",
-          // A split only means something on a deposit.
-          ...(input.kind === "contribution" ? {} : { sourceSplit: null }),
           updatedAt: new Date(),
         })
         .where(eq(t.id, row.id));
@@ -113,72 +138,5 @@ export const investmentTransactionsRouter = createTRPCRouter({
         .where(and(eq(t.id, input.id), eq(t.kindOverrideSource, "user")))
         .returning({ id: t.id });
       return { cleared: cleared.length > 0 };
-    }),
-
-  /**
-   * Split one deposit by hand — how much was the employer's and how much the
-   * employee's Roth money (feeds report one amount; fills otherwise estimate
-   * it from the paycheck setup). Null clears it.
-   */
-  setTransactionSplit: portfolioProcedure
-    .input(
-      z.object({
-        id: z.number().int(),
-        split: z
-          .object({
-            employer: z.number().min(0),
-            employeeRoth: z.number().min(0),
-          })
-          .nullable(),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      const t = schema.investmentTransactions;
-      const [raw] = await ctx.db.select().from(t).where(eq(t.id, input.id));
-      if (!raw)
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Transaction not found",
-        });
-      if (input.split) {
-        // Judge against the amount the row counts as (sign fixes applied).
-        const row = (
-          await loadClassifiedTransactions(ctx.db, {
-            simplefinAccountId: raw.simplefinAccountId,
-            since: raw.posted,
-            includeVoided: true,
-          })
-        ).find((r) => r.id === raw.id);
-        if (!row || row.kind !== "contribution" || row.amount <= 0)
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Only a deposit can be split.",
-          });
-        if (row.pending)
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message:
-              "Wait until the deposit settles — a pending row often comes back as a new one.",
-          });
-        const { employer, employeeRoth } = input.split;
-        if (employer + employeeRoth > row.amount + 0.005)
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "The parts can't add up to more than the deposit.",
-          });
-      }
-      await ctx.db
-        .update(t)
-        .set({
-          sourceSplit: input.split
-            ? {
-                employer: Math.round(input.split.employer * 100) / 100,
-                employeeRoth: Math.round(input.split.employeeRoth * 100) / 100,
-              }
-            : null,
-          updatedAt: new Date(),
-        })
-        .where(eq(t.id, raw.id));
-      return { id: raw.id, split: input.split };
     }),
 });

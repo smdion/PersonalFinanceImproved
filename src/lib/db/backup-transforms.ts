@@ -60,6 +60,8 @@ const V08_SCHEMA_TAGS = [
   "0007_closed_bastion", // SQLite counterpart of 0007
   "0008_worthless_talisman", // PG: investment_transactions.source_split
   "0008_absent_tenebrous", // SQLite counterpart of 0008
+  "0009_icy_black_cat", // PG: drop investment_transactions.source_split (per-deposit split removed before release)
+  "0009_vengeful_mister_sinister", // SQLite counterpart of 0009
 ] as const;
 
 const V07_SCHEMA_TAGS = [
@@ -652,6 +654,12 @@ function transformV07xToCurrent(tables: TableData): TableData {
   if (!tables["savings_planned_tx_settlements"]) {
     tables["savings_planned_tx_settlements"] = [];
   }
+
+  // v0.8.5 0009: investment_transactions.source_split (added in 0008) was
+  // dropped before release — a backup or version saved while it existed
+  // still carries the field, which import would reject as unknown.
+  for (const row of tables["investment_transactions"] ?? [])
+    delete (row as Record<string, unknown>)["source_split"];
 
   // 0032: Retirement Profiles, step A (expand) + the backfill migration
   // 0032_curved_silhouette.sql itself performs in the same file. This
