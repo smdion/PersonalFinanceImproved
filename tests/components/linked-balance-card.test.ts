@@ -7,6 +7,7 @@
 import { describe, it, expect } from "vitest";
 import {
   summarizeByAccountType,
+  summarizeByTrackedAccount,
   summarizeDrift,
   type SimplefinAccountListItem,
 } from "@/components/cards/dashboard/linked-balance-card";
@@ -198,5 +199,44 @@ describe("summarizeDrift", () => {
     ];
     const result = summarizeDrift(accounts);
     expect(result.totalDrift).toBe(0);
+  });
+});
+
+describe("summarizeByTrackedAccount", () => {
+  it("gives each tracked account its own row, by name, and agrees on the total", () => {
+    const accounts = [
+      account({
+        id: 1,
+        lastBalance: 100,
+        linkedPerformanceAccountId: 7,
+        change: 10,
+      }),
+      account({
+        id: 2,
+        lastBalance: 50,
+        linkedPerformanceAccountId: 7,
+        change: 10,
+      }),
+      account({
+        id: 3,
+        lastBalance: 200,
+        linkedPerformanceAccountId: 8,
+        change: -5,
+      }),
+      account({ id: 4, lastBalance: 25 }),
+    ];
+    const names = new Map([
+      [7, "Alex IRA (Example)"],
+      [8, "Sam 401k (Example)"],
+    ]);
+    const result = summarizeByTrackedAccount(accounts, names);
+    expect(result).toEqual([
+      { key: "8", label: "Sam 401k (Example)", balance: 200, drift: -5 },
+      { key: "7", label: "Alex IRA (Example)", balance: 150, drift: 10 },
+      { key: "", label: "Not matched", balance: 25, drift: 0 },
+    ]);
+    expect(result.reduce((t, r) => t + r.balance, 0)).toBe(
+      summarizeByAccountType(accounts).reduce((t, r) => t + r.balance, 0),
+    );
   });
 });

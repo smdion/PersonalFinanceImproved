@@ -15,11 +15,19 @@ import {
 } from "recharts";
 import { Card } from "@/components/ui/card";
 import {
+  stackedSeries,
+  type StackedSnapshot,
+} from "@/lib/pure/snapshot-series";
+import {
   formatCurrency,
   formatPercent,
   compactCurrency,
 } from "@/lib/utils/format";
-import { CHART_COLORS, chartLinePalette } from "@/lib/utils/colors";
+import {
+  CHART_COLORS,
+  chartLinePalette,
+  FUND_COLORS,
+} from "@/lib/utils/colors";
 import { useTheme } from "@/lib/hooks/use-theme";
 import { safeDivide } from "@/lib/utils/math";
 import { localDateStr } from "@/lib/utils/date";
@@ -28,7 +36,14 @@ import { CHART_FONT } from "@/components/charts/chart-defaults";
 type TimeFrame = "YTD" | "3M" | "6M" | "1Y" | "3Y" | "All";
 const TIME_FRAMES: TimeFrame[] = ["YTD", "3M", "6M", "1Y", "3Y", "All"];
 
-type SnapshotPoint = { date: string; total: number };
+type SnapshotPoint = {
+  date: string;
+  total: number;
+  /** Amount per tracked account (see networth.listSnapshotTotals). */
+  byAccount?: StackedSnapshot["byAccount"];
+};
+
+type ChartMode = "total" | "account";
 
 type ChartPoint = {
   date: string;
@@ -78,6 +93,8 @@ export function PortfolioChart({
     ...chartLinePalette(useTheme().resolvedTheme === "dark"),
   };
   const [timeFrame, setTimeFrame] = useState<TimeFrame>("1Y");
+  const [mode, setMode] = useState<ChartMode>("total");
+  const canStack = snapshots.some((s) => (s.byAccount?.length ?? 0) > 0);
   const [hoverValue, setHoverValue] = useState<number | null>(null);
   const hoverRef = useRef<number | null>(null);
 
@@ -103,6 +120,15 @@ export function PortfolioChart({
         changePct,
       } satisfies ChartPoint;
     });
+  }, [snapshots, timeFrame]);
+
+  const stacked = useMemo(() => {
+    const cutoffStr = getTimeFrameCutoff(timeFrame);
+    return stackedSeries(
+      snapshots
+        .filter((s) => cutoffStr === null || s.date >= cutoffStr)
+        .map((s) => ({ date: s.date, byAccount: s.byAccount ?? [] })),
+    );
   }, [snapshots, timeFrame]);
 
   if (chartData.length === 0) {
@@ -159,6 +185,24 @@ export function PortfolioChart({
               {formatPercent(totalChangePct / 100, 1)})
             </span>
           </span>
+          {canStack && (
+            <div className="bg-surface-elevated flex gap-0.5 rounded-md p-0.5">
+              {(["total", "account"] as const).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setMode(m)}
+                  aria-pressed={mode === m}
+                  className={`text-label rounded px-2 py-0.5 transition-colors ${
+                    mode === m
+                      ? "bg-surface-primary text-primary font-medium shadow-sm"
+                      : "text-muted hover:text-secondary"
+                  }`}
+                >
+                  {m === "total" ? "Total" : "By account"}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="bg-surface-elevated flex gap-0.5 rounded-md p-0.5">
             {TIME_FRAMES.map((tf) => (
               <button
@@ -178,17 +222,161 @@ export function PortfolioChart({
       }
       className="mb-6"
     >
+      {mode === "account" && canStack ? (
+        <StackedByAccount stacked={stacked} />
+      ) : (
+        <ResponsiveContainer width="100%" height={300}>
+          <AreaChart
+            data={renderData}
+            margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+          >
+            <defs>
+              <linearGradient
+                id="portfolioGradient"
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="1"
+              >
+                <stop offset="5%" stopColor={c.perfBalance} stopOpacity={0.3} />
+                <stop
+                  offset="95%"
+                  stopColor={c.perfBalance}
+                  stopOpacity={0.05}
+                />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.mcGrid} />
+            <XAxis
+              dataKey="label"
+              tick={{ fontSize: CHART_FONT.tick, fill: CHART_COLORS.mcAxis }}
+              interval="preserveStartEnd"
+              minTickGap={40}
+            />
+            <YAxis
+              tick={{ fontSize: CHART_FONT.tick, fill: CHART_COLORS.mcAxis }}
+              tickFormatter={compactCurrency}
+              width={65}
+              domain={["auto", "auto"]}
+            />
+            <RechartsTooltip
+              content={({ active, payload }) => {
+                const hovered =
+                  active && payload?.length
+                    ? (payload[0]!.payload as ChartPoint)
+                    : null;
+                const val = hovered
+                  ? (hovered.total ?? hovered.live ?? null)
+                  : null;
+                // Sync hover value via ref + deferred state update to avoid render-during-render
+                if (hoverRef.current !== val) {
+                  hoverRef.current = val;
+                  queueMicrotask(() => setHoverValue(val));
+                }
+                if (!active || !payload?.length) return null;
+                const p = payload[0]!.payload as ChartPoint;
+                return (
+                  <div className="bg-surface-primary rounded-lg border p-2.5 text-xs shadow-lg">
+                    <div className="text-primary mb-1 font-medium">
+                      {p.date}
+                    </div>
+                    <div className="text-secondary">
+                      {p.total !== null
+                        ? formatCurrency(p.total)
+                        : `≈ ${formatCurrency(p.live ?? 0)}`}
+                    </div>
+                    {p.total === null && (
+                      <div className="text-faint">
+                        Live estimate: last snapshot plus how {p.liveAccounts}{" "}
+                        linked account
+                        {p.liveAccounts === 1 ? "" : "s"} moved
+                      </div>
+                    )}
+                    {p.change !== null && (
+                      <div
+                        className={
+                          p.change >= 0 ? "text-green-600" : "text-red-600"
+                        }
+                      >
+                        {p.change >= 0 ? "+" : ""}
+                        {formatCurrency(p.change)}
+                        {p.changePct !== null && (
+                          <span className="ml-1">
+                            ({p.change >= 0 ? "+" : ""}
+                            {formatPercent(p.changePct / 100, 1)})
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              }}
+            />
+            {hoverValue !== null && (
+              <ReferenceLine
+                y={hoverValue}
+                stroke={CHART_COLORS.mcAxis}
+                strokeDasharray="4 3"
+                strokeOpacity={0.6}
+                label={{
+                  value: compactCurrency(hoverValue),
+                  position: "right",
+                  fontSize: CHART_FONT.label,
+                  fill: CHART_COLORS.mcAxis,
+                }}
+              />
+            )}
+            <Area
+              isAnimationActive={false}
+              type="monotone"
+              dataKey="total"
+              stroke={c.perfBalance}
+              strokeWidth={2}
+              fill="url(#portfolioGradient)"
+              dot={
+                chartData.length <= 52 ? { r: 2.5, fill: c.perfBalance } : false
+              }
+              activeDot={{ r: 4 }}
+            />
+            {liveAfter.length > 0 && (
+              <Area
+                isAnimationActive={false}
+                type="monotone"
+                dataKey="live"
+                stroke={c.perfBalance}
+                strokeWidth={2}
+                strokeDasharray="5 4"
+                fill="none"
+                dot={false}
+                activeDot={{ r: 4 }}
+                name="Live estimate"
+              />
+            )}
+          </AreaChart>
+        </ResponsiveContainer>
+      )}
+    </Card>
+  );
+}
+
+/** Each tracked account's snapshot amounts, stacked (largest at the bottom). */
+function StackedByAccount({
+  stacked,
+}: {
+  stacked: ReturnType<typeof stackedSeries>;
+}) {
+  const colorOf = (i: number) => FUND_COLORS[i % FUND_COLORS.length]!;
+  const rows: (Record<string, number | string> & {
+    date: string;
+    label: string;
+  })[] = stacked.rows.map((r) => ({ ...r, label: shortLabel(r.date) }));
+  return (
+    <>
       <ResponsiveContainer width="100%" height={300}>
         <AreaChart
-          data={renderData}
+          data={rows}
           margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
         >
-          <defs>
-            <linearGradient id="portfolioGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor={c.perfBalance} stopOpacity={0.3} />
-              <stop offset="95%" stopColor={c.perfBalance} stopOpacity={0.05} />
-            </linearGradient>
-          </defs>
           <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.mcGrid} />
           <XAxis
             dataKey="label"
@@ -200,101 +388,60 @@ export function PortfolioChart({
             tick={{ fontSize: CHART_FONT.tick, fill: CHART_COLORS.mcAxis }}
             tickFormatter={compactCurrency}
             width={65}
-            domain={["auto", "auto"]}
           />
           <RechartsTooltip
             content={({ active, payload }) => {
-              const hovered =
-                active && payload?.length
-                  ? (payload[0]!.payload as ChartPoint)
-                  : null;
-              const val = hovered
-                ? (hovered.total ?? hovered.live ?? null)
-                : null;
-              // Sync hover value via ref + deferred state update to avoid render-during-render
-              if (hoverRef.current !== val) {
-                hoverRef.current = val;
-                queueMicrotask(() => setHoverValue(val));
-              }
               if (!active || !payload?.length) return null;
-              const p = payload[0]!.payload as ChartPoint;
+              const row = payload[0]!.payload as (typeof rows)[number];
+              const total = stacked.series.reduce(
+                (t, s) => t + Number(row[s.key] ?? 0),
+                0,
+              );
               return (
                 <div className="bg-surface-primary rounded-lg border p-2.5 text-xs shadow-lg">
-                  <div className="text-primary mb-1 font-medium">{p.date}</div>
-                  <div className="text-secondary">
-                    {p.total !== null
-                      ? formatCurrency(p.total)
-                      : `≈ ${formatCurrency(p.live ?? 0)}`}
+                  <div className="text-primary mb-1 font-medium">
+                    {row.date} · {formatCurrency(total)}
                   </div>
-                  {p.total === null && (
-                    <div className="text-faint">
-                      Live estimate: last snapshot plus how {p.liveAccounts}{" "}
-                      linked account
-                      {p.liveAccounts === 1 ? "" : "s"} moved
-                    </div>
-                  )}
-                  {p.change !== null && (
+                  {[...stacked.series].reverse().map((s) => (
                     <div
-                      className={
-                        p.change >= 0 ? "text-green-600" : "text-red-600"
-                      }
+                      key={s.key}
+                      className="text-secondary flex justify-between gap-3"
                     >
-                      {p.change >= 0 ? "+" : ""}
-                      {formatCurrency(p.change)}
-                      {p.changePct !== null && (
-                        <span className="ml-1">
-                          ({p.change >= 0 ? "+" : ""}
-                          {formatPercent(p.changePct / 100, 1)})
-                        </span>
-                      )}
+                      <span>{s.label}</span>
+                      <span>{formatCurrency(Number(row[s.key] ?? 0))}</span>
                     </div>
-                  )}
+                  ))}
                 </div>
               );
             }}
           />
-          {hoverValue !== null && (
-            <ReferenceLine
-              y={hoverValue}
-              stroke={CHART_COLORS.mcAxis}
-              strokeDasharray="4 3"
-              strokeOpacity={0.6}
-              label={{
-                value: compactCurrency(hoverValue),
-                position: "right",
-                fontSize: CHART_FONT.label,
-                fill: CHART_COLORS.mcAxis,
-              }}
-            />
-          )}
-          <Area
-            isAnimationActive={false}
-            type="monotone"
-            dataKey="total"
-            stroke={c.perfBalance}
-            strokeWidth={2}
-            fill="url(#portfolioGradient)"
-            dot={
-              chartData.length <= 52 ? { r: 2.5, fill: c.perfBalance } : false
-            }
-            activeDot={{ r: 4 }}
-          />
-          {liveAfter.length > 0 && (
+          {stacked.series.map((s, i) => (
             <Area
+              key={s.key}
               isAnimationActive={false}
               type="monotone"
-              dataKey="live"
-              stroke={c.perfBalance}
-              strokeWidth={2}
-              strokeDasharray="5 4"
-              fill="none"
+              dataKey={s.key}
+              name={s.label}
+              stackId="accounts"
+              stroke={colorOf(i)}
+              fill={colorOf(i)}
+              fillOpacity={0.55}
               dot={false}
-              activeDot={{ r: 4 }}
-              name="Live estimate"
             />
-          )}
+          ))}
         </AreaChart>
       </ResponsiveContainer>
-    </Card>
+      <div className="text-caption text-muted mt-2 flex flex-wrap gap-x-3 gap-y-1">
+        {stacked.series.map((s, i) => (
+          <span key={s.key} className="inline-flex items-center gap-1">
+            <span
+              className="inline-block h-2 w-2 rounded-sm"
+              style={{ background: colorOf(i) }}
+            />
+            {s.label}
+          </span>
+        ))}
+      </div>
+    </>
   );
 }

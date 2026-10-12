@@ -3,6 +3,8 @@ import { describe, it, expect } from "vitest";
 import {
   accountRollup,
   blendedCost,
+  combineHoldings,
+  fundsInBucket,
   effectiveFacts,
   portfolioBuckets,
   valueByClass,
@@ -160,5 +162,65 @@ describe("valueByClass", () => {
       4: 0,
     });
     expect(r.unlinked).toEqual(["cash", "other"]);
+  });
+});
+
+describe("combineHoldings", () => {
+  const h = (securityId: number, shares: number, value: number) => ({
+    securityId,
+    shares,
+    value,
+  });
+
+  it("puts each fund once, across accounts, largest first", () => {
+    const r = combineHoldings([
+      { label: "Alex 401k", holdings: [h(1, 10, 1000), h(2, 5, 200)] },
+      { label: "Joint brokerage", holdings: [h(1, 4, 400)] },
+    ]);
+    expect(r.map((f) => [f.holding.securityId, f.shares, f.value])).toEqual([
+      [1, 14, 1400],
+      [2, 5, 200],
+    ]);
+    expect(r[0]!.share).toBeCloseTo(1400 / 1600);
+    expect(r[0]!.accounts).toEqual([
+      { label: "Alex 401k", value: 1000 },
+      { label: "Joint brokerage", value: 400 },
+    ]);
+  });
+
+  it("has nothing for no holdings", () => {
+    expect(combineHoldings([])).toEqual([]);
+  });
+});
+
+describe("fundsInBucket", () => {
+  const fund = (id: number, value: number, us: number, coverage = 1) => ({
+    value,
+    holding: {
+      securityId: id,
+      value,
+      facts: {
+        expenseRatio: null,
+        composition: {
+          buckets: { ...comp(), us_equity: us, us_bond: 1 - us },
+          coverage,
+          asOf: "2026-01-01",
+          fromUser: false,
+        },
+        stale: false,
+      },
+    },
+  });
+
+  it("splits a bucket across the funds that hold it, by their known share", () => {
+    const r = fundsInBucket(
+      [fund(1, 1000, 0.6), fund(2, 500, 1, 0.5), fund(3, 400, 0)],
+      "us_equity",
+    );
+    expect(r.map((f) => [f.holding.securityId, f.value])).toEqual([
+      [1, 600],
+      [2, 250],
+    ]);
+    expect(r[0]!.share).toBeCloseTo(600 / 850);
   });
 });

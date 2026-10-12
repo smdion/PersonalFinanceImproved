@@ -12,6 +12,7 @@ import {
   NetWorthCard,
   LinkedBalanceCard,
   ContributionsCard,
+  SavingsThisYearCard,
   TaxesCard,
   FinancialCheckupCard,
   FidelityMultiplierCard,
@@ -65,6 +66,9 @@ export function DashboardContent() {
         </CardBoundary>
         <CardBoundary title="Contributions">
           <ContributionsCard />
+        </CardBoundary>
+        <CardBoundary title="Saved This Year">
+          <SavingsThisYearCard />
         </CardBoundary>
       </div>
 

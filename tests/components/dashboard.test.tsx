@@ -16,6 +16,9 @@ vi.mock("@/components/cards/dashboard", () => ({
     <div data-testid="linked-balance">LinkedBalance</div>
   ),
   ContributionsCard: () => <div data-testid="contributions">Contributions</div>,
+  SavingsThisYearCard: () => (
+    <div data-testid="savings-this-year">SavingsThisYear</div>
+  ),
   TaxesCard: () => <div data-testid="taxes">Taxes</div>,
   FinancialCheckupCard: () => (
     <div data-testid="financial-checkup">FinancialCheckup</div>
@@ -92,6 +95,7 @@ describe("DashboardPage", () => {
     expect(screen.getByTestId("savings-goals")).toBeInTheDocument();
     expect(screen.getByTestId("retirement")).toBeInTheDocument();
     expect(screen.getByTestId("contributions")).toBeInTheDocument();
+    expect(screen.getByTestId("savings-this-year")).toBeInTheDocument();
     expect(screen.getByTestId("mortgage")).toBeInTheDocument();
     expect(screen.getByTestId("savings-rate")).toBeInTheDocument();
     expect(screen.getByTestId("budget-status")).toBeInTheDocument();

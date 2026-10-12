@@ -5,7 +5,7 @@
  * paycheck setup funds with an employer contribution.
  */
 import "./setup-mocks";
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { eq } from "drizzle-orm";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
 import {
@@ -252,6 +252,31 @@ describe("investment suggestions", () => {
         endingBalance: 6100,
       },
     });
+  });
+
+  it("counts saved this year as recorded plus what's new since the last fill", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-12T12:00:00"));
+    try {
+      const [pace, perf] = await Promise.all([
+        ctx.caller.investments.getSavingsThisYear(),
+        ctx.caller.investments.suggestPerformance({ year: 2026 }),
+      ]);
+      const brokerage = perf.accounts.find(
+        (a) => a.accountPerformanceId === ap.brokerage,
+      )!;
+      const row = pace.accounts.find(
+        (a) => a.performanceAccountId === brokerage.performanceAccountId,
+      )!;
+      // Recorded $1,000 ($800 + $200 employer) + the $1,000 deposit not yet filled.
+      expect(row).toMatchObject({ recorded: 1000, pending: 1000, saved: 2000 });
+      expect(row.planYear).toBeGreaterThan(0);
+      expect(pace.total.saved).toBeCloseTo(
+        pace.accounts.reduce((t, a) => t + a.saved, 0),
+      );
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("offers only what a saved fill hasn't counted, late arrivals included", async () => {

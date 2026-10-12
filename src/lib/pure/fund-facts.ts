@@ -193,3 +193,79 @@ export function valueByClass(
   }
   return { byClass, unlinked };
 }
+
+/**
+ * The household's holdings by fund instead of by account: each fund held
+ * in several accounts appears once, with its combined shares and value,
+ * its share of everything held, and which accounts hold how much. Largest
+ * first. `holding` is the fund's first row (name, symbol, facts are the
+ * fund's own, so any account's row carries them).
+ */
+export function combineHoldings<
+  H extends { securityId: number; shares: number; value: number },
+>(
+  accounts: readonly { label: string; holdings: readonly H[] }[],
+): {
+  holding: H;
+  shares: number;
+  value: number;
+  /** Of the value of everything held. */
+  share: number;
+  accounts: { label: string; value: number }[];
+}[] {
+  const byFund = new Map<
+    number,
+    {
+      holding: H;
+      shares: number;
+      value: number;
+      accounts: { label: string; value: number }[];
+    }
+  >();
+  let total = 0;
+  for (const a of accounts)
+    for (const h of a.holdings) {
+      total += h.value;
+      const f = byFund.get(h.securityId) ?? {
+        holding: h,
+        shares: 0,
+        value: 0,
+        accounts: [],
+      };
+      f.shares += h.shares;
+      f.value += h.value;
+      f.accounts.push({ label: a.label, value: h.value });
+      byFund.set(h.securityId, f);
+    }
+  return [...byFund.values()]
+    .map((f) => ({
+      ...f,
+      share: total > 0 ? f.value / total : 0,
+      accounts: [...f.accounts].sort((x, y) => y.value - x.value),
+    }))
+    .sort((x, y) => y.value - x.value);
+}
+
+/**
+ * Which funds make up one composition bucket, and how much of it each
+ * holds (value × the fund's known share in that bucket), largest first.
+ * Funds holding none of it are left out.
+ */
+export function fundsInBucket<H extends ValuedHolding & { securityId: number }>(
+  funds: readonly { holding: H; value: number }[],
+  bucket: CompositionBucket,
+): { holding: H; value: number; share: number }[] {
+  const rows = funds
+    .map((f) => {
+      const c = f.holding.facts.composition;
+      return {
+        holding: f.holding,
+        value: c ? f.value * c.coverage * c.buckets[bucket] : 0,
+      };
+    })
+    .filter((r) => r.value > 0);
+  const total = rows.reduce((t, r) => t + r.value, 0);
+  return rows
+    .map((r) => ({ ...r, share: total > 0 ? r.value / total : 0 }))
+    .sort((x, y) => y.value - x.value);
+}

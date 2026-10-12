@@ -15,6 +15,15 @@ import type { AccountCategory } from "@/lib/config/account-types.types";
 import type { PortfolioTaxType } from "@/lib/config/enum-values";
 import { LoadingCard } from "./utils";
 
+/** How the breakdown groups balances; the button steps through them in order. */
+type Rollup = "category" | "institution" | "account";
+const ROLLUPS: readonly Rollup[] = ["category", "institution", "account"];
+const ROLLUP_LABELS: Record<Rollup, string> = {
+  category: "category",
+  institution: "institution",
+  account: "account",
+};
+
 // Only need enough history to compute yesterday-vs-today for the trend arrow.
 const HISTORY_DAYS = 2;
 
@@ -132,6 +141,28 @@ export function summarizeByInstitution(
     accounts,
     (a) => ({ key: a.orgName || "unknown", label: a.orgName || "Unknown" }),
     "unknown",
+  );
+}
+
+/**
+ * Same balances/drift, one row per tracked account (named as everywhere
+ * else — `names` maps tracked-account id to its display name). Accounts
+ * linked to no tracked account, or unchecked, stay under "Not matched".
+ */
+export function summarizeByTrackedAccount(
+  accounts: SimplefinAccountListItem[],
+  names: ReadonlyMap<number, string>,
+): AccountTypeGroup[] {
+  return summarizeAccounts(
+    accounts,
+    (a) =>
+      countsAsFeed(a) && a.linkedPerformanceAccountId != null
+        ? {
+            key: String(a.linkedPerformanceAccountId),
+            label: names.get(a.linkedPerformanceAccountId) ?? a.orgName,
+          }
+        : { key: "", label: "Not matched" },
+    "",
   );
 }
 
@@ -254,9 +285,7 @@ function BalanceDatesFooter({
 }
 
 function LinkedBalanceCardImpl() {
-  const [rollupBy, setRollupBy] = useState<"category" | "institution">(
-    "category",
-  );
+  const [rollupBy, setRollupBy] = useState<Rollup>("category");
   const { data: status, isLoading: statusLoading } =
     trpc.simplefin.getStatus.useQuery();
   const isConnected = status?.connected ?? false;
@@ -308,8 +337,14 @@ function LinkedBalanceCardImpl() {
   const accountTypeGroups = accounts
     ? rollupBy === "category"
       ? summarizeByAccountType(accounts)
-      : summarizeByInstitution(accounts)
+      : rollupBy === "institution"
+        ? summarizeByInstitution(accounts)
+        : summarizeByTrackedAccount(
+            accounts,
+            new Map((matchableAccounts ?? []).map((m) => [m.id, m.label])),
+          )
     : [];
+  const nextRollup = ROLLUPS[(ROLLUPS.indexOf(rollupBy) + 1) % ROLLUPS.length]!;
   const drift = accounts ? summarizeDrift(accounts) : null;
   const snapshotDate = accounts?.find((a) => a.snapshotDate)?.snapshotDate;
   const snapshotLabel = snapshotDate
@@ -448,13 +483,11 @@ function LinkedBalanceCardImpl() {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                setRollupBy(
-                  rollupBy === "category" ? "institution" : "category",
-                );
+                setRollupBy(nextRollup);
               }}
               className="bg-surface-elevated hover:bg-surface-strong text-muted rounded-full px-2 py-0.5 text-xs transition-colors"
             >
-              By {rollupBy === "category" ? "institution" : "category"}
+              By {ROLLUP_LABELS[nextRollup]}
             </button>
           </div>
           {accountTypeGroups.map(

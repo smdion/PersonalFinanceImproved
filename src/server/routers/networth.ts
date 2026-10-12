@@ -1,4 +1,5 @@
 /** Net worth router that aggregates account snapshots, mortgage balances, cash, and other assets into a current and projected net worth summary, plus portfolio snapshot CRUD (including budget-API pull/push side-effects). */
+import { loadTrackedAccountNames } from "@/server/helpers/account-names";
 import { eq, asc, desc, sql, gte, lte, and, inArray } from "drizzle-orm";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
@@ -638,7 +639,11 @@ export const networthRouter = createTRPCRouter({
       };
     }),
 
-  /** Lightweight snapshot totals for portfolio chart — returns (date, total) pairs. */
+  /**
+   * Lightweight snapshot totals for the portfolio chart — (date, total)
+   * pairs, plus each snapshot's amount per tracked account (for the
+   * stacked by-account view; rows tied to no account are "Other").
+   */
   listSnapshotTotals: protectedProcedure.query(async ({ ctx }) => {
     const rows = await ctx.db
       .select({
@@ -662,11 +667,40 @@ export const networthRouter = createTRPCRouter({
     const totalMap = new Map(
       totals.map((t) => [t.snapshotId, toNumber(t.total)]),
     );
+    const [perAccount, names] = await Promise.all([
+      ctx.db
+        .select({
+          snapshotId: schema.portfolioAccounts.snapshotId,
+          performanceAccountId: schema.portfolioAccounts.performanceAccountId,
+          amount: sql<string>`sum(${schema.portfolioAccounts.amount})`,
+        })
+        .from(schema.portfolioAccounts)
+        .groupBy(
+          schema.portfolioAccounts.snapshotId,
+          schema.portfolioAccounts.performanceAccountId,
+        ),
+      loadTrackedAccountNames(ctx.db),
+    ]);
+    const bySnapshot = new Map<
+      number,
+      { key: string; label: string; amount: number }[]
+    >();
+    for (const r of perAccount) {
+      const list = bySnapshot.get(r.snapshotId) ?? [];
+      const id = r.performanceAccountId;
+      list.push({
+        key: id === null ? "other" : String(id),
+        label: (id !== null && names.get(id)) || "Other",
+        amount: toNumber(r.amount),
+      });
+      bySnapshot.set(r.snapshotId, list);
+    }
 
     return rows.map((r) => ({
       id: r.snapshotId,
       date: r.snapshotDate,
       total: totalMap.get(r.snapshotId) ?? 0,
+      byAccount: bySnapshot.get(r.snapshotId) ?? [],
     }));
   }),
 

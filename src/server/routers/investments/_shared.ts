@@ -2,7 +2,6 @@
  * Shared helpers for the investments router group.
  * Internal to investments/ — do not import from outside this directory.
  */
-import { accountDisplayName } from "@/lib/utils/format";
 import { and, asc, desc, eq, gte, isNotNull, isNull, max } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { isHsaCategory } from "@/lib/config/account-types";
@@ -25,6 +24,7 @@ import {
   loadLatestSubAccounts,
   type SubAccount,
 } from "@/server/helpers/sub-accounts";
+import { loadTrackedAccountNames } from "@/server/helpers/account-names";
 import { toNumber } from "@/server/helpers/transforms";
 import type { FeedAccount } from "@/lib/pure/flow-suggestions";
 import {
@@ -136,24 +136,16 @@ export async function loadFeedContext(db: Db): Promise<FeedContext> {
  * (positive rollovers) while another's records it rolling out.
  */
 async function recordedMovesIn(db: Db): Promise<Map<string, string>> {
-  const rows = await db
-    .select({
-      performanceAccountId: schema.accountPerformance.performanceAccountId,
-      year: schema.accountPerformance.year,
-      rollovers: schema.accountPerformance.rollovers,
-      institution: schema.performanceAccounts.institution,
-      accountLabel: schema.performanceAccounts.accountLabel,
-      displayName: schema.performanceAccounts.displayName,
-      accountType: schema.performanceAccounts.accountType,
-    })
-    .from(schema.accountPerformance)
-    .innerJoin(
-      schema.performanceAccounts,
-      eq(
-        schema.performanceAccounts.id,
-        schema.accountPerformance.performanceAccountId,
-      ),
-    );
+  const [rows, names] = await Promise.all([
+    db
+      .select({
+        performanceAccountId: schema.accountPerformance.performanceAccountId,
+        year: schema.accountPerformance.year,
+        rollovers: schema.accountPerformance.rollovers,
+      })
+      .from(schema.accountPerformance),
+    loadTrackedAccountNames(db),
+  ]);
   const out = new Map<string, string>();
   for (const into of rows) {
     if (Number(into.rollovers) <= 0) continue;
@@ -166,7 +158,7 @@ async function recordedMovesIn(db: Db): Promise<Map<string, string>> {
     if (from)
       out.set(
         `${into.performanceAccountId}|${into.year}`,
-        accountDisplayName(from),
+        names.get(from.performanceAccountId) ?? "",
       );
   }
   return out;
@@ -180,16 +172,6 @@ export async function loadAccounts(db: Db): Promise<Map<number, AccountInfo>> {
       orgName: schema.simplefinAccounts.orgName,
       accountName: schema.simplefinAccounts.accountName,
       accountType: schema.performanceAccounts.accountType,
-      perf: {
-        accountType: schema.performanceAccounts.accountType,
-        subType: schema.performanceAccounts.subType,
-        label: schema.performanceAccounts.label,
-        institution: schema.performanceAccounts.institution,
-        displayName: schema.performanceAccounts.displayName,
-        accountLabel: schema.performanceAccounts.accountLabel,
-        ownershipType: schema.performanceAccounts.ownershipType,
-        ownerPersonId: schema.performanceAccounts.ownerPersonId,
-      },
       performanceAccountId: schema.simplefinAccounts.linkedPerformanceAccountId,
       linkedSubKey: schema.simplefinAccounts.linkedSubKey,
       isIncluded: schema.simplefinAccounts.isIncluded,
@@ -202,15 +184,12 @@ export async function loadAccounts(db: Db): Promise<Map<number, AccountInfo>> {
         schema.simplefinAccounts.linkedPerformanceAccountId,
       ),
     );
-  const [subs, people] = await Promise.all([
+  const [subs, trackedNames] = await Promise.all([
     rows.some((r) => r.linkedSubKey)
       ? loadLatestSubAccounts(db).then((l) => new Map(l.map((s) => [s.key, s])))
       : new Map(),
-    db
-      .select({ id: schema.people.id, name: schema.people.name })
-      .from(schema.people),
+    loadTrackedAccountNames(db),
   ]);
-  const names = new Map(people.map((p) => [p.id, p.name]));
   return new Map(
     rows.map((r) => {
       // An unchecked account keeps its link (HSA redaction still follows
@@ -221,22 +200,21 @@ export async function loadAccounts(db: Db): Promise<Map<number, AccountInfo>> {
       });
       const sub =
         feeds && r.linkedSubKey ? subs.get(r.linkedSubKey) : undefined;
+      const feedName = `${r.orgName} ${r.accountName}`.trim();
+      const tracked =
+        feeds && r.performanceAccountId != null
+          ? trackedNames.get(r.performanceAccountId)
+          : undefined;
       return [
         r.id,
         {
           id: r.id,
           institution: r.orgName,
           accountName: r.accountName,
-          feedName: `${r.orgName} ${r.accountName}`.trim(),
-          label:
-            feeds && r.perf?.accountLabel
-              ? `${accountDisplayName(
-                  r.perf,
-                  r.perf.ownerPersonId != null
-                    ? names.get(r.perf.ownerPersonId)
-                    : undefined,
-                )}${sub ? ` · ${sub.label}` : ""}`
-              : `${r.orgName} ${r.accountName}`.trim(),
+          feedName,
+          label: tracked
+            ? `${tracked}${sub ? ` · ${sub.label}` : ""}`
+            : feedName,
           isHsa: r.accountType != null && isHsaCategory(r.accountType),
           performanceAccountId: feeds ? r.performanceAccountId : null,
           ownerPersonId: sub?.ownerPersonId ?? null,

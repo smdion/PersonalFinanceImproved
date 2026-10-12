@@ -35,6 +35,9 @@ import {
   loadClassifiedTransactions,
   loadFeedContext,
 } from "./_shared";
+import { loadTrackedAccountNames } from "@/server/helpers/account-names";
+import { savingsPace } from "@/lib/pure/savings-pace";
+import { localDateStr } from "@/lib/utils/date";
 
 type Db = Parameters<typeof loadFeedContext>[0];
 
@@ -45,6 +48,79 @@ async function loadYearRows(db: Db, year: number) {
     includeVoided: true,
   });
   return rows.filter((r) => r.posted <= `${year}-12-31`);
+}
+
+/**
+ * The year's (unfinalized) Performance rows with what SimpleFIN has seen
+ * since each was last filled — shared by the Performance fill and the
+ * "saved this year" pace so both count new money the same way.
+ */
+export async function loadPerformanceSuggestions(db: Db, year: number) {
+  const [perfRows, stamp, coverage, context, mix, ledger, flows] =
+    await Promise.all([
+      db
+        .select()
+        .from(schema.accountPerformance)
+        .where(
+          and(
+            eq(schema.accountPerformance.year, year),
+            eq(schema.accountPerformance.isActive, true),
+            eq(schema.accountPerformance.isFinalized, false),
+          ),
+        ),
+      db
+        .select({ value: schema.appSettings.value })
+        .from(schema.appSettings)
+        .where(eq(schema.appSettings.key, "performance_last_updated")),
+      getTransactionCoverageStart(db),
+      loadFeedContext(db),
+      loadContributionMix(db),
+      loadFillRecord(db, "performance", year),
+      loadYearRows(db, year),
+    ]);
+  const perAccount = rowsPerAccount(perfRows);
+  const shared = {
+    year,
+    stamped:
+      typeof stamp[0]?.value === "string"
+        ? utcDayOf(new Date(stamp[0].value))
+        : null,
+    feeds: context.feeds,
+    subs: context.subs,
+    lastTransactionDay: context.lastTransactionDay,
+    ledger,
+    flows,
+    coverageStart: coverage ? utcDayOf(coverage) : null,
+    today: utcDayOf(new Date()),
+  };
+  const accounts = perfRows.map((r) => {
+    const rowsOnAccount = perAccount.get(r.performanceAccountId) ?? 1;
+    return suggestPerformanceRow(
+      {
+        id: r.id,
+        performanceAccountId: r.performanceAccountId,
+        ownerPersonId: r.ownerPersonId,
+        totalContributions: toNumber(r.totalContributions),
+        employerContributions: toNumber(r.employerContributions),
+        distributions: toNumber(r.distributions),
+        fees: toNumber(r.fees),
+        rollovers: toNumber(r.rollovers),
+      },
+      {
+        ...shared,
+        rowsOnAccount,
+        // A row tracked per person splits by that person's paycheck; a
+        // single row for the account (even one stored under a person)
+        // covers everyone's.
+        accountMix: mixFor(
+          mix,
+          r.performanceAccountId,
+          rowsOnAccount > 1 ? r.ownerPersonId : null,
+        ),
+      },
+    );
+  });
+  return accounts;
 }
 
 export const investmentSuggestionsRouter = createTRPCRouter({
@@ -141,73 +217,59 @@ export const investmentSuggestionsRouter = createTRPCRouter({
    */
   suggestPerformance: portfolioProcedure
     .input(z.object({ year: z.number().int() }))
-    .query(async ({ ctx, input }) => {
-      const [perfRows, stamp, coverage, context, mix, ledger, flows] =
-        await Promise.all([
-          ctx.db
-            .select()
-            .from(schema.accountPerformance)
-            .where(
-              and(
-                eq(schema.accountPerformance.year, input.year),
-                eq(schema.accountPerformance.isActive, true),
-                eq(schema.accountPerformance.isFinalized, false),
-              ),
-            ),
-          ctx.db
-            .select({ value: schema.appSettings.value })
-            .from(schema.appSettings)
-            .where(eq(schema.appSettings.key, "performance_last_updated")),
-          getTransactionCoverageStart(ctx.db),
-          loadFeedContext(ctx.db),
-          loadContributionMix(ctx.db),
-          loadFillRecord(ctx.db, "performance", input.year),
-          loadYearRows(ctx.db, input.year),
-        ]);
-      const perAccount = rowsPerAccount(perfRows);
-      const shared = {
-        year: input.year,
-        stamped:
-          typeof stamp[0]?.value === "string"
-            ? utcDayOf(new Date(stamp[0].value))
-            : null,
-        feeds: context.feeds,
-        subs: context.subs,
-        lastTransactionDay: context.lastTransactionDay,
-        ledger,
-        flows,
-        coverageStart: coverage ? utcDayOf(coverage) : null,
-        today: utcDayOf(new Date()),
-      };
-      const accounts = perfRows.map((r) => {
-        const rowsOnAccount = perAccount.get(r.performanceAccountId) ?? 1;
-        return suggestPerformanceRow(
-          {
-            id: r.id,
-            performanceAccountId: r.performanceAccountId,
-            ownerPersonId: r.ownerPersonId,
-            totalContributions: toNumber(r.totalContributions),
-            employerContributions: toNumber(r.employerContributions),
-            distributions: toNumber(r.distributions),
-            fees: toNumber(r.fees),
-            rollovers: toNumber(r.rollovers),
-          },
-          {
-            ...shared,
-            rowsOnAccount,
-            // A row tracked per person splits by that person's paycheck; a
-            // single row for the account (even one stored under a person)
-            // covers everyone's.
-            accountMix: mixFor(
-              mix,
-              r.performanceAccountId,
-              rowsOnAccount > 1 ? r.ownerPersonId : null,
-            ),
-          },
-        );
-      });
-      return { year: input.year, accounts };
-    }),
+    .query(async ({ ctx, input }) => ({
+      year: input.year,
+      accounts: await loadPerformanceSuggestions(ctx.db, input.year),
+    })),
+
+  /**
+   * Saved so far this year against the paycheck plan, per tracked account
+   * and for the household (Dashboard).
+   */
+  getSavingsThisYear: portfolioProcedure.query(async ({ ctx }) => {
+    const today = localDateStr();
+    const year = Number(today.slice(0, 4));
+    const [rows, pending, mix, names] = await Promise.all([
+      ctx.db
+        .select({
+          performanceAccountId: schema.accountPerformance.performanceAccountId,
+          totalContributions: schema.accountPerformance.totalContributions,
+        })
+        .from(schema.accountPerformance)
+        .where(
+          and(
+            eq(schema.accountPerformance.year, year),
+            eq(schema.accountPerformance.isActive, true),
+          ),
+        ),
+      loadPerformanceSuggestions(ctx.db, year),
+      loadContributionMix(ctx.db),
+      loadTrackedAccountNames(ctx.db),
+    ]);
+    const ids = new Set([
+      ...rows.map((r) => r.performanceAccountId),
+      ...mix.keys(),
+    ]);
+    return savingsPace(
+      [...ids].map((id) => {
+        const mine = pending.filter((p) => p.performanceAccountId === id);
+        return {
+          performanceAccountId: id,
+          label: names.get(id) ?? "",
+          recorded: rows
+            .filter((r) => r.performanceAccountId === id)
+            .reduce((t, r) => t + toNumber(r.totalContributions), 0),
+          pending: mine.reduce(
+            (t, p) => t + p.added.employee + p.added.employer,
+            0,
+          ),
+          pendingEstimated: mine.some((p) => p.estimate !== null),
+          plan: mix.get(id) ?? null,
+        };
+      }),
+      today,
+    );
+  }),
 
   /**
    * The year's Roth basis rows with Roth contributions and conversions no

@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**387 procedures across 50 routers.**
+**388 procedures across 50 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -182,6 +182,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 | Procedure            | Kind  | Auth                 | Description                                                                                                                                                                                              |
 | -------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `getSavingsThisYear` | query | `portfolioProcedure` | Saved so far this year against the paycheck plan, per tracked account and for the household (Dashboard).                                                                                                 |
 | `suggestBasis`       | query | `portfolioProcedure` | The year's Roth basis rows with Roth contributions and conversions no saved fill has counted yet. Basis is cumulative, so these add onto the stored figures; money out of a Roth account reduces them (c |
 | `suggestPerformance` | query | `portfolioProcedure` | The year's Performance rows with what SimpleFIN has seen that no saved fill has counted yet, added onto the stored figures.                                                                              |
 | `suggestSnapshot`    | query | `portfolioProcedure` | Suggested balances for a new portfolio snapshot, by snapshot sub-account key, from linked SimpleFIN accounts.                                                                                            |
@@ -218,7 +219,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `getLatest`              | query    | `protectedProcedure` | Get the latest snapshot with its accounts (for pre-filling a new snapshot form).                                                                                                                         |
 | `listHistory`            | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
 | `listSnapshots`          | query    | `protectedProcedure` | Paginated snapshot list with optional date range filter and sorting.                                                                                                                                     |
-| `listSnapshotTotals`     | query    | `protectedProcedure` | Lightweight snapshot totals for portfolio chart — returns (date, total) pairs.                                                                                                                           |
+| `listSnapshotTotals`     | query    | `protectedProcedure` | Lightweight snapshot totals for the portfolio chart — (date, total) pairs, plus each snapshot's amount per tracked account (for the stacked by-account view; rows tied to no account are "Other").       |
 | `updateAccount`          | mutation | `portfolioProcedure` | only allowed on the **most recent** snapshot — it re-derives that year's performance ending balances + annual rollups and re-pushes ("resync") the corrected balances to the budget API. Older snapshots |
 
 ## `paycheck`

@@ -209,6 +209,7 @@ export function suggestPerformanceRow(
   const storedEmployee = r.totalContributions - r.employerContributions;
   return {
     accountPerformanceId: r.id,
+    performanceAccountId: r.performanceAccountId,
     feed: feed.status,
     /** Linked, but the institution sends only a balance. */
     balanceOnly,

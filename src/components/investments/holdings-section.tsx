@@ -6,15 +6,91 @@
  * today's close (Tiingo); fund facts from SEC filings or your own entries.
  */
 import { FULL_SHARE, NEGLIGIBLE_SHARE } from "@/lib/constants";
-import { BUCKET_COLORS, HoldingRow, type Overview } from "./fund-holding-row";
+import { useState } from "react";
+import {
+  BUCKET_COLORS,
+  HoldingRow,
+  MixBar,
+  type Holding,
+  type Overview,
+} from "./fund-holding-row";
+import { TickerLink } from "./ticker-link";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
-import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import {
+  formatCurrency,
+  formatNumber,
+  formatPercent,
+  isPrivacyMode,
+} from "@/lib/utils/format";
+import { combineHoldings, fundsInBucket } from "@/lib/pure/fund-facts";
 import { CHART_COLORS } from "@/lib/utils/colors";
 import { COMPOSITION_BUCKET_LABELS } from "@/lib/config/display-labels";
-import { COMPOSITION_BUCKET_VALUES } from "@/lib/config/enum-values";
+import {
+  COMPOSITION_BUCKET_VALUES,
+  type CompositionBucket,
+} from "@/lib/config/enum-values";
 
 type OverviewAccount = Overview["accounts"][number];
+
+/** How "What you hold now" lists holdings; remembered per browser. */
+type HoldingsView = "account" | "fund";
+const VIEW_KEY = "ledgr:benchmarks-holdings-view";
+
+function savedView(): HoldingsView {
+  try {
+    return window.localStorage.getItem(VIEW_KEY) === "fund"
+      ? "fund"
+      : "account";
+  } catch {
+    return "account";
+  }
+}
+
+/** One fund across every account that holds it. */
+function FundRow({
+  f,
+}: {
+  f: ReturnType<typeof combineHoldings<Holding>>[number];
+}) {
+  const h = f.holding;
+  const er = h.facts.expenseRatio;
+  return (
+    <div className="border-subtle border-b py-1.5 text-xs last:border-0">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <div className="min-w-0 flex-1">
+          {h.symbol &&
+            (h.symbolConfirmed ? (
+              <TickerLink symbol={h.symbol} />
+            ) : (
+              <span className="text-muted mr-1.5 font-mono">{h.symbol}</span>
+            ))}
+          <span className="text-muted">{h.name}</span>
+        </div>
+        <MixBar facts={h.facts} />
+        <span className="text-muted w-16 text-right">
+          {er ? formatPercent(er.value, er.value < 0.001 ? 3 : 2) : "—"}
+        </span>
+        <span className="text-muted w-14 text-right">
+          {formatPercent(f.share, 1)}
+        </span>
+        <span className="text-primary w-24 text-right">
+          {formatCurrency(f.value)}
+        </span>
+      </div>
+      <p className="text-caption text-faint mt-0.5">
+        {isPrivacyMode() ? "•••• sh" : `${formatNumber(f.shares, 3)} sh`} ·{" "}
+        {f.accounts
+          .map((a) =>
+            f.accounts.length > 1
+              ? `${a.label} ${formatCurrency(a.value)}`
+              : a.label,
+          )
+          .join(" · ")}
+      </p>
+    </div>
+  );
+}
 
 /**
  * The account's name and total; for an account holding several funds, also
@@ -96,6 +172,8 @@ function MixBarRow({
   target,
   color,
   note,
+  expanded,
+  onToggle,
   children,
 }: {
   label: string;
@@ -103,12 +181,25 @@ function MixBarRow({
   target: number | null;
   color: string;
   note?: string;
+  /** Set (with onToggle) when the row can list what makes it up. */
+  expanded?: boolean;
+  onToggle?: () => void;
   children?: React.ReactNode;
 }) {
   return (
     <div className="text-xs">
       <div className="flex justify-between gap-2">
-        <span className="text-primary">{label}</span>
+        {onToggle ? (
+          <button
+            className="text-primary hover:underline"
+            aria-expanded={expanded}
+            onClick={onToggle}
+          >
+            {expanded ? "▾" : "▸"} {label}
+          </button>
+        ) : (
+          <span className="text-primary">{label}</span>
+        )}
         <span className="text-muted">
           {formatPercent(pct, 1)}
           {target !== null ? (
@@ -162,6 +253,8 @@ function AllocationCard({ data }: { data: Overview }) {
     (u) => !categories.some((c) => c.bucket === u.bucket),
   );
   const noCategory = rows.filter((r) => r.buckets.length === 0);
+  const [open, setOpen] = useState<CompositionBucket | null>(null);
+  const funds = combineHoldings(data.accounts);
   return (
     <Card title="Your mix vs your target">
       <p className="text-caption text-faint mb-3">
@@ -193,7 +286,32 @@ function AllocationCard({ data }: { data: Overview }) {
                       : undefined
                     : "no target in your plan"
                 }
+                expanded={open === c.bucket}
+                onToggle={
+                  c.value > 0
+                    ? () => setOpen(open === c.bucket ? null : c.bucket)
+                    : undefined
+                }
               >
+                {open === c.bucket && (
+                  <ul className="text-caption mt-1 mb-1 space-y-0.5 pl-3">
+                    {fundsInBucket(funds, c.bucket).map((f) => (
+                      <li
+                        key={f.holding.securityId}
+                        className="flex justify-between gap-2"
+                      >
+                        <span className="text-muted truncate">
+                          {f.holding.symbol ? `${f.holding.symbol} · ` : ""}
+                          {f.holding.name}
+                        </span>
+                        <span className="text-faint whitespace-nowrap">
+                          {formatCurrency(f.value)} ·{" "}
+                          {formatPercent(f.share, 0)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
                 {!cls && rows.length > 0 && (
                   <div className="text-caption text-faint mt-0.5 flex flex-wrap items-center gap-1">
                     Give it a target by counting it in one of your asset
@@ -283,6 +401,16 @@ function AllocationCard({ data }: { data: Overview }) {
 
 export function HoldingsSection() {
   const { data } = trpc.investments.getHoldingsOverview.useQuery();
+  // Holdings load on the client, so nothing renders before this is read.
+  const [view, setView] = useState<HoldingsView>(savedView);
+  const chooseView = (v: HoldingsView) => {
+    setView(v);
+    try {
+      window.localStorage.setItem(VIEW_KEY, v);
+    } catch {
+      // Storage unavailable (private window): the choice lasts this visit.
+    }
+  };
   if (!data) return null;
   if (data.accounts.length === 0)
     return (
@@ -297,7 +425,23 @@ export function HoldingsSection() {
   const cost = data.cost;
   return (
     <div className="space-y-4">
-      <Card title="What you hold now">
+      <Card
+        title="What you hold now"
+        headerRight={
+          <div className="flex rounded border text-xs" role="group">
+            {(["account", "fund"] as const).map((v) => (
+              <button
+                key={v}
+                aria-pressed={view === v}
+                className={`px-2 py-0.5 ${view === v ? "bg-surface-strong text-primary" : "text-muted"}`}
+                onClick={() => chooseView(v)}
+              >
+                {v === "account" ? "By account" : "By fund"}
+              </button>
+            ))}
+          </div>
+        }
+      >
         <p className="text-caption text-faint mb-2">
           To confirm a stand-in fund or enter a fund&apos;s own fee and mix,
           open the account in Portfolio → Account &amp; Contribution Settings.
@@ -308,16 +452,31 @@ export function HoldingsSection() {
             fund&apos;s mix and expense ratio.
           </p>
         )}
-        <div className="space-y-4">
-          {data.accounts.map((a) => (
-            <div key={a.simplefinAccountId}>
-              <AccountHeader a={a} />
-              {a.holdings.map((h) => (
-                <HoldingRow key={h.securityId} h={h} editable={false} />
-              ))}
+        {view === "fund" ? (
+          <div>
+            <div className="text-caption text-faint mb-1 flex gap-x-3">
+              <span className="flex-1">Fund · held in</span>
+              <span className="w-24 text-right">Mix</span>
+              <span className="w-16 text-right">Fee</span>
+              <span className="w-14 text-right">Of total</span>
+              <span className="w-24 text-right">Value</span>
             </div>
-          ))}
-        </div>
+            {combineHoldings(data.accounts).map((f) => (
+              <FundRow key={f.holding.securityId} f={f} />
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {data.accounts.map((a) => (
+              <div key={a.simplefinAccountId}>
+                <AccountHeader a={a} />
+                {a.holdings.map((h) => (
+                  <HoldingRow key={h.securityId} h={h} editable={false} />
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
       </Card>
       <div className="grid gap-4 lg:grid-cols-2">
         <AllocationCard data={data} />
