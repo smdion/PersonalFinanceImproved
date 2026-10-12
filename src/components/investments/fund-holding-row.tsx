@@ -414,16 +414,19 @@ function StandInPrompt({
         </p>
       )}
       {advice.mix === "checking" ? (
-        <p>
-          Ledgr hasn&apos;t checked that fund&apos;s own filings yet.{" "}
-          <button
-            className="underline"
+        <div className="flex flex-wrap items-center gap-2">
+          <span>
+            Ledgr hasn&apos;t checked that fund&apos;s own filings yet.
+          </span>
+          <Button
+            size="xs"
+            variant="secondary"
             disabled={check.isPending}
             onClick={() => check.mutate({ securityId: h.securityId })}
           >
             {check.isPending ? "Checking…" : "Check now"}
-          </button>
-        </p>
+          </Button>
+        </div>
       ) : (
         <p>
           {preview!.coverage === null
