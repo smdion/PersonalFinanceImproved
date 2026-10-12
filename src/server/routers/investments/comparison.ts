@@ -9,7 +9,8 @@ import {
   protectedProcedure,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { BENCHMARKS } from "@/lib/config/benchmarks";
+import { BENCHMARKS, resolveBenchmark } from "@/lib/config/benchmarks";
+import { householdRetirementYear } from "@/server/helpers/retirement-profile";
 import {
   simulateIndex,
   windowReturn,
@@ -43,14 +44,23 @@ export const investmentComparisonRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const b = BENCHMARKS.find((x) => x.key === input.key)!;
+      const b = resolveBenchmark(
+        BENCHMARKS.find((x) => x.key === input.key)!,
+        await householdRetirementYear(ctx.db),
+      );
+      if (!b) return null;
       const prices = await getBenchmarkMonthlyPrices(
         ctx.db,
         b.ticker,
         input.fromYear,
       );
       return prices
-        ? { key: b.key, label: b.label, prices: Object.fromEntries(prices) }
+        ? {
+            key: b.key,
+            label: b.label,
+            ticker: b.ticker,
+            prices: Object.fromEntries(prices),
+          }
         : null;
     }),
 
@@ -85,10 +95,17 @@ export const investmentComparisonRouter = createTRPCRouter({
       );
       const currentYear = new Date().getFullYear();
 
+      const retirementYear = await householdRetirementYear(ctx.db);
       const benchmarks = await Promise.all(
-        BENCHMARKS.map(async (b) => {
+        BENCHMARKS.map(async (def) => {
+          const b = resolveBenchmark(def, retirementYear) ?? {
+            key: def.key,
+            label: def.label,
+            ticker: "",
+            description: def.description,
+          };
           const prices =
-            years.length > 0
+            years.length > 0 && b.ticker
               ? await getBenchmarkMonthlyPrices(
                   ctx.db,
                   b.ticker,
@@ -101,6 +118,7 @@ export const investmentComparisonRouter = createTRPCRouter({
           return {
             key: b.key,
             label: b.label,
+            ticker: b.ticker,
             description: b.description,
             available: !!run && run.length > 0,
             years: run ?? [],

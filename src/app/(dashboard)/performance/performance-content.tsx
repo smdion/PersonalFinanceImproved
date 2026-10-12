@@ -17,7 +17,7 @@ import {
   formatDate,
 } from "@/lib/utils/format";
 import { findBasisGaps } from "@/lib/pure/basis-consistency";
-import { BENCHMARKS } from "@/lib/config/benchmarks";
+import { DEFAULT_BENCHMARK_KEY } from "@/lib/config/benchmarks";
 import { parseBasisEditField } from "@/components/performance/basis-cell";
 import {
   PERF_CATEGORY_PORTFOLIO,
@@ -81,9 +81,10 @@ export function PerformanceContent() {
     false,
   );
   // Benchmark column: each row's money in an index instead.
+  // Shared with the Benchmarks page's "Compare with".
   const [benchmarkKey, setBenchmarkKey] = usePersistedSetting<string>(
-    "performance_benchmark",
-    BENCHMARKS[0]!.key,
+    "benchmark_primary",
+    DEFAULT_BENCHMARK_KEY,
   );
   const firstYear = data?.annualRows.reduce<number | null>(
     (y, r) => (y === null || r.year < y ? r.year : y),

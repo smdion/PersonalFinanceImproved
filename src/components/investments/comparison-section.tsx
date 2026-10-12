@@ -28,17 +28,18 @@ import {
   yAxisProps,
 } from "@/components/charts/chart-defaults";
 import { CHART_COLORS } from "@/lib/utils/colors";
+import { DEFAULT_BENCHMARK_KEY } from "@/lib/config/benchmarks";
+import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import {
   compactCurrency,
   formatCurrency,
   formatPercent,
 } from "@/lib/utils/format";
 
-const LINE_COLORS: Record<string, string> = {
-  sp500: CHART_COLORS.benchSp500,
-  total_us: CHART_COLORS.benchTotalUs,
-  dow: CHART_COLORS.benchDow,
-};
+/** The benchmark you compare with, then the S&P 500 for context. */
+const PRIMARY_COLOR = CHART_COLORS.benchTotalUs;
+const CONTEXT_COLOR = CHART_COLORS.benchSp500;
+const CONTEXT_KEY = "sp500";
 
 /** Yearly records start before 2020 for most households; weekly detail comes later. */
 const YEARLY_ONLY_BEFORE = 2020;
@@ -84,6 +85,11 @@ export function ComparisonSection() {
   const { data, isLoading } = trpc.investments.getComparison.useQuery({
     fromYear,
   });
+  // Shared with the Performance page's index column.
+  const [benchmarkKey, setBenchmarkKey] = usePersistedSetting<string>(
+    "benchmark_primary",
+    DEFAULT_BENCHMARK_KEY,
+  );
 
   if (isLoading || !data) {
     return (
@@ -117,7 +123,16 @@ export function ComparisonSection() {
       all.findIndex((o) => o.year === s.year) === i,
   );
   const activeFrom = data.fromYear;
-  const sp500 = data.benchmarks.find((b) => b.key === "sp500");
+  const available = data.benchmarks.filter((b) => b.available);
+  const primary =
+    available.find((b) => b.key === benchmarkKey) ?? available[0] ?? null;
+  const context =
+    primary?.key !== CONTEXT_KEY
+      ? (available.find((b) => b.key === CONTEXT_KEY) ?? null)
+      : null;
+  const shown = [primary, context].filter(
+    (b): b is NonNullable<typeof b> => b !== null,
+  );
 
   // Chart: one point per year end (current year: latest), dollars.
   const points = chartPoints(data.years, data.benchmarks);
@@ -140,15 +155,36 @@ export function ComparisonSection() {
         ))}
       </div>
 
+      {available.length > 0 && (
+        <label className="text-muted mb-2 flex flex-wrap items-center gap-2 text-xs">
+          Compare with
+          <select
+            value={primary?.key ?? ""}
+            onChange={(e) => setBenchmarkKey(e.target.value)}
+            className="border-default bg-surface-primary text-primary rounded border px-2 py-0.5 text-xs"
+          >
+            {available.map((b) => (
+              <option key={b.key} value={b.key}>
+                {b.label}
+                {b.ticker ? ` (${b.ticker})` : ""}
+              </option>
+            ))}
+          </select>
+          {primary && <span className="text-faint">{primary.description}</span>}
+        </label>
+      )}
+
       {/* Headline — a rough comparison until holdings history allows a verdict. */}
       <div className="mb-1">
         <p className="text-primary text-lg">
           You earned{" "}
           <span className="font-semibold">{windowLabel(data.yourWindow)}</span>
-          {sp500?.available && (
+          {primary && (
             <>
-              . The same deposits in the S&amp;P 500:{" "}
-              <span className="font-semibold">{windowLabel(sp500.window)}</span>
+              . The same deposits in the {primary.label}:{" "}
+              <span className="font-semibold">
+                {windowLabel(primary.window)}
+              </span>
             </>
           )}
           .
@@ -197,17 +233,17 @@ export function ComparisonSection() {
               strokeWidth={2.5}
               dot={{ r: 3 }}
             />
-            {data.benchmarks
-              .filter((b) => b.available)
-              .map((b) => (
-                <Line
-                  key={b.key}
-                  dataKey={b.key}
-                  name={`Same money in ${b.label}`}
-                  stroke={LINE_COLORS[b.key]}
-                  dot={false}
-                />
-              ))}
+            {shown.map((b) => (
+              <Line
+                key={b.key}
+                dataKey={b.key}
+                name={`Same money in ${b.label}`}
+                stroke={b === primary ? PRIMARY_COLOR : CONTEXT_COLOR}
+                strokeWidth={b === primary ? 2 : 1}
+                strokeDasharray={b === primary ? undefined : "2 2"}
+                dot={false}
+              />
+            ))}
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -217,22 +253,24 @@ export function ComparisonSection() {
           <tr className="text-faint border-subtle border-b text-left">
             <th className="py-1 font-medium">Year</th>
             <th className="py-1 text-right font-medium">You</th>
-            {data.benchmarks
-              .filter((b) => b.available)
-              .map((b) => (
-                <th key={b.key} className="py-1 text-right font-medium">
-                  {b.label}
-                </th>
-              ))}
-            <th className="py-1 text-right font-medium">You vs S&amp;P</th>
+            {shown.map((b) => (
+              <th key={b.key} className="py-1 text-right font-medium">
+                {b.label}
+              </th>
+            ))}
+            {primary && (
+              <th className="py-1 text-right font-medium">
+                You vs {primary.label}
+              </th>
+            )}
           </tr>
         </thead>
         <tbody>
           {[...data.years].reverse().map((y) => {
-            const sp = sp500?.years.find((r) => r.year === y.year);
+            const p = primary?.years.find((r) => r.year === y.year);
             const diff =
-              y.returnPct != null && sp?.returnPct != null
-                ? y.returnPct - sp.returnPct
+              y.returnPct != null && p?.returnPct != null
+                ? y.returnPct - p.returnPct
                 : null;
             return (
               <tr key={y.year} className="border-subtle border-b">
@@ -243,13 +281,11 @@ export function ComparisonSection() {
                 <td className="text-primary py-1 text-right">
                   {pct(y.returnPct)}
                 </td>
-                {data.benchmarks
-                  .filter((b) => b.available)
-                  .map((b) => (
-                    <td key={b.key} className="text-muted py-1 text-right">
-                      {pct(b.years.find((r) => r.year === y.year)?.returnPct)}
-                    </td>
-                  ))}
+                {shown.map((b) => (
+                  <td key={b.key} className="text-muted py-1 text-right">
+                    {pct(b.years.find((r) => r.year === y.year)?.returnPct)}
+                  </td>
+                ))}
                 <td
                   className={`py-1 text-right ${
                     diff == null

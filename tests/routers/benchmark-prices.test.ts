@@ -4,7 +4,7 @@ import { describe, it, expect, vi, afterAll } from "vitest";
 
 vi.mock("@/server/helpers/market-prices", () => ({
   getBenchmarkMonthlyPrices: vi.fn(async (_db: unknown, ticker: string) =>
-    ticker === "SPY"
+    ticker === "SPY" || ticker === "VFFVX"
       ? new Map([
           ["2019-12", 100],
           ["2020-01", 101],
@@ -12,6 +12,11 @@ vi.mock("@/server/helpers/market-prices", () => ({
       : null,
   ),
   getLatestMarketClose: vi.fn(async () => null),
+}));
+
+vi.mock("@/server/helpers/retirement-profile", async (orig) => ({
+  ...(await orig<typeof import("@/server/helpers/retirement-profile")>()),
+  householdRetirementYear: vi.fn(async () => 2054),
 }));
 
 const { createTestCaller, viewerSession } = await import("./setup");
@@ -31,8 +36,20 @@ describe("investments.getBenchmarkPrices", () => {
     ).toEqual({
       key: "sp500",
       label: "S&P 500",
+      ticker: "SPY",
       prices: { "2019-12": 100, "2020-01": 101 },
     });
+  });
+
+  it("prices the target-date fund for the household's retirement year", async () => {
+    const t = await createTestCaller();
+    cleanups.push(t.cleanup);
+    expect(
+      await t.caller.investments.getBenchmarkPrices({
+        key: "target_date",
+        fromYear: 2020,
+      }),
+    ).toMatchObject({ label: "Target-date 2055 fund", ticker: "VFFVX" });
   });
 
   it("is null when prices aren't available, and rejects unknown indexes", async () => {
