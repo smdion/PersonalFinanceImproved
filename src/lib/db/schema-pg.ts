@@ -46,8 +46,6 @@ import type {
   FactsBasis,
   CompositionBucket,
   HoldingSource,
-  AmountSign,
-  KindOverrideSource,
   UtilityKind,
   UtilityUnit,
   StandInPreview,
@@ -2527,10 +2525,11 @@ export const investmentTransactions = pgTable(
     amount: decimal("amount", { precision: 14, scale: 2 }).notNull(),
     description: text("description").notNull(),
     pending: boolean("pending").notNull().default(false),
+    /**
+     * Locked by ingest: HSA card spending stored as a "Medical withdrawal"
+     * (merchant redacted). Null = the kind is worked out when read.
+     */
     kindOverride: text("kind_override").$type<InvestmentTransactionKind>(),
-    kindOverrideSource: text(
-      "kind_override_source",
-    ).$type<KindOverrideSource>(),
     /** Set when the row vanished from a window that should still contain it. */
     voidedAt: timestamp("voided_at", { withTimezone: true }),
     firstSeenAt: timestamp("first_seen_at", { withTimezone: true })
@@ -2548,41 +2547,6 @@ export const investmentTransactions = pgTable(
     index("investment_transactions_account_posted_idx").on(
       table.simplefinAccountId,
       table.posted,
-    ),
-  ],
-);
-
-/**
- * User-defined classification rules, created from the review queue and
- * checked before the built-in ones. Plain case-insensitive substrings — never
- * user-supplied regex.
- */
-export const investmentTransactionRules = pgTable(
-  "investment_transaction_rules",
-  {
-    id: serial("id").primaryKey(),
-    institutionContains: text("institution_contains").notNull(),
-    descriptionContains: text("description_contains").notNull(),
-    sign: text("sign").$type<AmountSign>(),
-    kind: text("kind").$type<InvestmentTransactionKind>().notNull(),
-    /** Flag matching rows of this sign for review. */
-    reviewWhen: text("review_when").$type<AmountSign>(),
-    /** Only rows at most this fraction of the account balance (e.g. 0.001). */
-    maxFractionOfBalance: decimal("max_fraction_of_balance", {
-      precision: 12,
-      scale: 6,
-    }),
-    priority: integer("priority").notNull().default(0),
-    /** The description the rule was created from (snapshot, no FK). */
-    sampleDescription: text("sample_description"),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [
-    check(
-      "investment_transaction_rules_nonempty_check",
-      sql`length(${table.institutionContains}) > 0 AND length(${table.descriptionContains}) > 0`,
     ),
   ],
 );

@@ -9,14 +9,11 @@ import { isHsaCategory } from "@/lib/config/account-types";
 import { utcDayOf } from "@/lib/simplefin/ingest";
 import {
   balanceAsOf,
-  classifierRulesWith,
   effectiveTransactionKind,
   type EffectiveKind,
-  type UserTransactionRule,
-} from "@/lib/pure/investment-transaction-rules";
+} from "@/lib/pure/transaction-kind";
 import type {
   InvestmentTransactionKind,
-  KindOverrideSource,
   PortfolioTaxType,
 } from "@/lib/config/enum-values";
 import {
@@ -26,7 +23,6 @@ import {
 } from "@/lib/pure/internal-transfers";
 import { loadLatestSubAccounts } from "@/server/helpers/sub-accounts";
 import { countsAsFeed } from "@/lib/pure/simplefin-feeds";
-import type { SimplefinTransactionRule } from "@/lib/config/simplefin-transaction-rules";
 
 type Db = typeof import("@/lib/db").db;
 
@@ -97,10 +93,6 @@ async function recordedMovesIn(db: Db): Promise<Map<string, string>> {
       );
   }
   return out;
-}
-
-export async function loadUserRules(db: Db): Promise<UserTransactionRule[]> {
-  return db.select().from(schema.investmentTransactionRules);
 }
 
 /** SimpleFIN accounts with stored investment data, by id. */
@@ -208,7 +200,6 @@ export type ClassifiedTransactionRow = {
   pending: boolean;
   voided: boolean;
   kindOverride: InvestmentTransactionKind | null;
-  kindOverrideSource: KindOverrideSource | null;
   /** Set when this row is one side of a move between the household's own accounts. */
   transfer: TransferMatch | null;
   /** Probably money already recorded (in Performance) as moved in from this account; fills leave it out. */
@@ -223,14 +214,11 @@ export async function loadClassifiedTransactions(
     since?: string;
     includeVoided?: boolean;
   },
-  context?: {
-    accounts: Map<number, AccountInfo>;
-    rules: readonly SimplefinTransactionRule[];
-  },
 ): Promise<ClassifiedTransactionRow[]> {
-  const accounts = context?.accounts ?? (await loadAccounts(db));
-  const balances = await loadBalanceHistory(db);
-  const rules = context?.rules ?? classifierRulesWith(await loadUserRules(db));
+  const [accounts, balances] = await Promise.all([
+    loadAccounts(db),
+    loadBalanceHistory(db),
+  ]);
   const t = schema.investmentTransactions;
   // Transfers pair rows across accounts and a few days, so read every
   // account and a margin before `since`; the filter applies afterwards.
@@ -267,16 +255,14 @@ export async function loadClassifiedTransactions(
       pending: r.pending,
       voided: r.voidedAt !== null,
       kindOverride: r.kindOverride,
-      kindOverrideSource: r.kindOverrideSource,
       ...effectiveTransactionKind(
         institution,
         {
           amount,
           description: r.description,
           kindOverride: r.kindOverride,
-          kindOverrideSource: r.kindOverrideSource,
         },
-        { rules, accountBalance: balanceForRules },
+        { accountBalance: balanceForRules },
       ),
       transfer: null as TransferMatch | null,
       recordedMoveFrom: null as string | null,
@@ -284,16 +270,10 @@ export async function loadClassifiedTransactions(
   });
 
   // A household's own money moving between its accounts is neither added
-  // nor taken out. Rows the household set by hand keep their choice.
+  // nor taken out. Rows ingest locked keep their kind.
   const matches = matchInternalTransfers(
     classified
-      .filter(
-        (r) =>
-          !r.pending &&
-          !r.voided &&
-          r.source !== "override" &&
-          r.source !== "locked",
-      )
+      .filter((r) => !r.pending && !r.voided && r.source !== "locked")
       .map((r) => {
         const a = accounts.get(r.simplefinAccountId);
         return {
@@ -314,7 +294,7 @@ export async function loadClassifiedTransactions(
     r.transfer = m;
     r.kind = "transfer";
     r.source = "transfer_match";
-    r.needsReview = false;
+    r.uncertain = false;
     r.ruleId = null;
   }
 
@@ -330,10 +310,7 @@ export async function loadClassifiedTransactions(
         posted: r.posted,
         amount: r.amount,
         kind: r.kind,
-        settled:
-          r.transfer !== null ||
-          r.source === "override" ||
-          r.source === "locked",
+        settled: r.transfer !== null || r.source === "locked",
       })),
     (performanceAccountId, year) =>
       recorded.get(`${performanceAccountId}|${year}`) ?? null,

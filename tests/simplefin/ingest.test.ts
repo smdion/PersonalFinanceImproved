@@ -284,7 +284,6 @@ describe("ingestInvestmentData", () => {
     expect(row).toMatchObject({
       description: REDACTED_MEDICAL_DESCRIPTION,
       kindOverride: "withdrawal",
-      kindOverrideSource: "ingest_redacted",
     });
     expect(JSON.stringify(transactions(hsaId))).not.toContain("CLINIC");
   });
@@ -319,7 +318,6 @@ describe("ingestInvestmentData", () => {
     const row = transactions(hsaId).find((r) => r.externalId === "m1");
     expect(row).toMatchObject({
       description: REDACTED_MEDICAL_DESCRIPTION,
-      kindOverrideSource: "ingest_redacted",
     });
   });
 
@@ -357,7 +355,6 @@ describe("ingestInvestmentData", () => {
     expect(row).toMatchObject({
       description: REDACTED_MEDICAL_DESCRIPTION,
       kindOverride: "withdrawal",
-      kindOverrideSource: "ingest_redacted",
     });
   });
 
@@ -432,7 +429,6 @@ describe("ingestInvestmentData", () => {
     const row = transactions(brokerageId).find((r) => r.externalId === "m2");
     expect(row).toMatchObject({
       description: REDACTED_MEDICAL_DESCRIPTION,
-      kindOverrideSource: "ingest_redacted",
     });
     expect(JSON.stringify(transactions(brokerageId))).not.toContain("STORE");
   });

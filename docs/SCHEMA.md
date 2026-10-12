@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**81 tables.**
+**80 tables.**
 
 ## Mermaid diagram
 
@@ -191,9 +191,6 @@ erDiagram
   investment_transactions {
     int id PK
   }
-  investment_transaction_rules {
-    int id PK
-  }
   sync_request_log {
     int id PK
   }
@@ -334,7 +331,6 @@ erDiagram
 - **historical_salaries** → people
 - **holding_observations** → securities
 - **home_improvement_items**
-- **investment_transaction_rules**
 - **investment_transactions** → simplefin_accounts
 - **irmaa_brackets**
 - **jobs** → people

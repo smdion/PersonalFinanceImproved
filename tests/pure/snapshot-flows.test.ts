@@ -11,7 +11,7 @@ const row = (over: Partial<FlowRow>): FlowRow => ({
   kind: "contribution",
   amount: 100,
   pending: false,
-  needsReview: false,
+  uncertain: false,
   ...over,
 });
 
@@ -27,7 +27,7 @@ describe("flowsSince", () => {
         ],
         "2026-06-01",
       ),
-    ).toEqual({ added: 379.5, reviewCount: 0 });
+    ).toEqual({ added: 379.5, uncertainCount: 0 });
   });
 
   it("leaves dividends, fees, trades and sweeps to the markets side", () => {
@@ -49,11 +49,11 @@ describe("flowsSince", () => {
       flowsSince(
         [
           row({ pending: true, amount: 300 }),
-          row({ needsReview: true, kind: "other", amount: 50 }),
+          row({ uncertain: true, kind: "other", amount: 50 }),
         ],
         "2026-06-01",
       ),
-    ).toEqual({ added: 0, reviewCount: 1 });
+    ).toEqual({ added: 0, uncertainCount: 1 });
   });
 });
 
@@ -70,6 +70,6 @@ describe("accountFlowsSince", () => {
         "2026-03-01",
         -650,
       ),
-    ).toEqual({ added: 300, moved: -1000, markets: 50, reviewCount: 0 });
+    ).toEqual({ added: 300, moved: -1000, markets: 50, uncertainCount: 0 });
   });
 });

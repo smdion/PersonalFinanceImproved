@@ -106,13 +106,13 @@ function SinceSnapshot({
         {signed(s.change)}
       </span>
       <span className="text-muted"> — {parts.join(", ")}</span>
-      {(!s.covered || s.reviewCount > 0) && (
+      {(!s.covered || s.uncertainCount > 0) && (
         <span className="text-faint">
           {" "}
           (estimate:{" "}
           {!s.covered
             ? "SimpleFIN transactions don't reach back to the snapshot"
-            : `${s.reviewCount} transaction${s.reviewCount === 1 ? "" : "s"} still need a kind`}
+            : `Ledgr guessed the kind of ${s.uncertainCount} transaction${s.uncertainCount === 1 ? "" : "s"}`}
           )
         </span>
       )}
@@ -135,7 +135,7 @@ export function SinceSnapshotSummary({
   const change = sum("change");
   const added = sum("added");
   const markets = sum("markets");
-  const estimate = rows.some((r) => !r.covered || r.reviewCount > 0);
+  const estimate = rows.some((r) => !r.covered || r.uncertainCount > 0);
   return (
     <p className="text-sm">
       <span className="text-muted">

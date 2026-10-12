@@ -16,7 +16,7 @@
  * - Fidelity HSA (brokerage-style): "DEBIT CARD PURCHASE" = medical spending;
  *   core-account and REINVESTMENT rows stay inside the account.
  * - Voya 401k: rows carry only the fund name — positive = contribution,
- *   debits under 0.1% of the balance = fee (larger negatives need review).
+ *   debits under 0.1% of the balance = fee (larger negatives are a best guess).
  */
 import type { InvestmentTransactionKind } from "./enum-values";
 
@@ -42,19 +42,13 @@ export type SimplefinTransactionRule = {
         positive: InvestmentTransactionKind;
         negative: InvestmentTransactionKind;
       };
-  /** Flag matches with this sign for the user to review (classified, never dropped). */
-  reviewWhen?: "positive" | "negative";
+  /** Matches with this sign are a best guess (classified, never dropped; totals say "estimated"). */
+  uncertainWhen?: "positive" | "negative";
   /**
    * The row's direction is fixed by its type, so use the absolute amount.
    * For types the feed has been seen to send with a flipped sign.
    */
   absoluteAmount?: boolean;
-  /**
-   * Set on the household's own rules: take `absoluteAmount` from the
-   * built-in rule that matches the same row, when it agrees on the kind, so
-   * a user rule can't undo a built-in direction fix.
-   */
-  inheritSignFix?: boolean;
   /**
    * Card spending from an HSA names the merchant — health data. Ingest stores
    * these as "Medical withdrawal" (amount and date kept) unless the account
@@ -96,7 +90,7 @@ export const SIMPLEFIN_TRANSACTION_RULES: readonly SimplefinTransactionRule[] =
       description: /^contribution$/,
       kind: "contribution",
       absoluteAmount: true,
-      reviewWhen: "negative",
+      uncertainWhen: "negative",
     },
     {
       id: "fidelity-dividend",

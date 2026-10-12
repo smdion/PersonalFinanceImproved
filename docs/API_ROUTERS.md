@@ -168,9 +168,9 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `investments/health`
 
-| Procedure   | Kind  | Auth                 | Description                                                                                         |
-| ----------- | ----- | -------------------- | --------------------------------------------------------------------------------------------------- |
-| `getHealth` | query | `portfolioProcedure` | Accounts whose holdings stopped arriving or don't add up to the balance, and the review-queue size. |
+| Procedure   | Kind  | Auth                 | Description                                                              |
+| ----------- | ----- | -------------------- | ------------------------------------------------------------------------ |
+| `getHealth` | query | `portfolioProcedure` | Accounts whose holdings stopped arriving or don't add up to the balance. |
 
 ## `investments/snapshot-flows`
 

@@ -117,13 +117,6 @@ export function DataSourcesSettings() {
             {i.message}
           </span>
         ))}
-        {health && health.needsReview > 0 && (
-          <span className="block">
-            {health.needsReview} investment{" "}
-            {health.needsReview === 1 ? "row needs" : "rows need"} review in
-            Settings → Integrations → SimpleFIN.
-          </span>
-        )}
       </>
     ),
   };

@@ -86,7 +86,6 @@ describe("investments router", () => {
     insert("hsa-out", hsaId, "ZZZ TRANSFER EXAMPLE CLINIC", -60);
     insert("locked", hsaId, REDACTED_MEDICAL_DESCRIPTION, -40, {
       kindOverride: "withdrawal",
-      kindOverrideSource: "ingest_redacted",
     });
     insert("old-voided", brokerageId, "ZZZ OLD", 5, { voidedAt: new Date() });
 
@@ -153,7 +152,7 @@ describe("investments router", () => {
   });
 
   it("flags rows no rule could place", async () => {
-    const queue = (await listTransactions({})).filter((r) => r.needsReview);
+    const queue = (await listTransactions({})).filter((r) => r.uncertain);
     expect(queue.map((r) => r.id).sort()).toEqual(
       [tx.mystery1!, tx.mystery2!, tx["hsa-out"]!].sort(),
     );
@@ -195,7 +194,7 @@ describe("investments router", () => {
       .get().id;
     const rows = await listTransactions({});
     const row = rows.find((r) => r.id === fee);
-    expect(row).toMatchObject({ kind: "fee", needsReview: false });
+    expect(row).toMatchObject({ kind: "fee", uncertain: false });
   });
 
   it("reports holdings an account stopped sending", async () => {
@@ -206,7 +205,6 @@ describe("investments router", () => {
         kind: "holdings_stale",
       }),
     );
-    expect(typeof health.needsReview).toBe("number");
   });
 
   it("splits only when stored transactions reach back to the snapshot", async () => {
@@ -311,14 +309,14 @@ describe("investments router", () => {
     expect(recent.find((r) => r.id === into)?.kind).toBe("transfer");
     expect(recent.some((r) => r.id === out)).toBe(false);
 
-    // A choice the household made by hand is never re-labelled.
+    // A row ingest locked is never re-labelled as a transfer.
     db.update(sqliteSchema.investmentTransactions)
-      .set({ kindOverride: "withdrawal", kindOverrideSource: "user" })
+      .set({ kindOverride: "withdrawal" })
       .where(eq(sqliteSchema.investmentTransactions.id, out))
       .run();
     const after = await listTransactions({});
     expect(after.find((r) => r.id === into)?.kind).toBe("contribution");
-    expect(after.find((r) => r.id === out)?.source).toBe("override");
+    expect(after.find((r) => r.id === out)?.source).toBe("locked");
   });
 
   it("leaves out a deposit Performance already records as moved in", async () => {

@@ -282,9 +282,7 @@ async function ingestTransactions(
   // later (pending → posted, a format change): the merchant name must never
   // overwrite "Medical withdrawal".
   const lockedIds = new Set(
-    storedRows
-      .filter((r) => r.kindOverrideSource === "ingest_redacted")
-      .map((r) => r.externalId),
+    storedRows.filter((r) => r.kindOverride !== null).map((r) => r.externalId),
   );
   for (const t of incoming) {
     if (lockedIds.has(t.externalId)) {
@@ -325,7 +323,6 @@ async function ingestTransactions(
         description: t.description,
         pending: t.pending,
         kindOverride: lock ? "withdrawal" : null,
-        kindOverrideSource: lock ? "ingest_redacted" : null,
       })
       // Safety net: a row that already exists is never an error worth
       // aborting the rest of the account over.
@@ -344,12 +341,7 @@ async function ingestTransactions(
         pending: u.next.pending,
         voidedAt: null,
         updatedAt: now,
-        ...(lock
-          ? {
-              kindOverride: "withdrawal" as const,
-              kindOverrideSource: "ingest_redacted" as const,
-            }
-          : {}),
+        ...(lock ? { kindOverride: "withdrawal" as const } : {}),
       })
       .where(eq(schema.investmentTransactions.id, u.id));
   }
@@ -418,7 +410,6 @@ export async function lockAsMedicalWithdrawal(
     .set({
       description: REDACTED_MEDICAL_DESCRIPTION,
       kindOverride: "withdrawal",
-      kindOverrideSource: "ingest_redacted",
       updatedAt: new Date(),
     })
     .where(inArray(schema.investmentTransactions.id, [...transactionIds]));
@@ -448,7 +439,7 @@ export async function redactStoredCardSpending(
   const ids = rows
     .filter(
       (r) =>
-        r.kindOverrideSource !== "ingest_redacted" &&
+        r.kindOverride === null &&
         classifySimplefinTransaction(account.orgName, {
           amount: Number(r.amount),
           description: r.description,

@@ -56,7 +56,7 @@ const insight: AccountInsight = {
     added: 100,
     moved: 0,
     markets: 50,
-    reviewCount: 0,
+    uncertainCount: 0,
   },
   unplaced: [
     { name: "Example Bank Traditional IRA", balance: 0.19, reason: "no_part" },

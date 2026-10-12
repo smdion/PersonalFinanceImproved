@@ -3,18 +3,12 @@
  * invented examples in each institution's format — no real account data.
  */
 import { describe, it, expect } from "vitest";
-import {
-  classifySimplefinTransaction,
-  summarizeAccountFlows,
-  type SimplefinTransactionInput,
-} from "@/lib/pure/simplefin-transactions";
+import { classifySimplefinTransaction } from "@/lib/pure/simplefin-transactions";
 
-const day = (iso: string) => Date.parse(`${iso}T12:00:00Z`) / 1000;
-const tx = (
-  iso: string,
-  amount: number,
-  description: string,
-): SimplefinTransactionInput => ({ posted: day(iso), amount, description });
+const tx = (_iso: string, amount: number, description: string) => ({
+  amount,
+  description,
+});
 
 describe("classifySimplefinTransaction", () => {
   it("Vanguard: CASH rows are money crossing the boundary, by sign", () => {
@@ -68,7 +62,7 @@ describe("classifySimplefinTransaction", () => {
       kind: "contribution",
       amount: 120,
       ruleId: "fidelity-contribution",
-      needsReview: true,
+      uncertain: true,
       redactDescription: false,
     });
   });
@@ -106,9 +100,9 @@ describe("classifySimplefinTransaction", () => {
     expect(v(300, 50_000).kind).toBe("contribution");
     // 0.1% of the balance is the cutoff, so "small" scales with the account.
     expect(v(-40, 50_000).kind).toBe("fee");
-    expect(v(-40, 5_000)).toMatchObject({ kind: "other", needsReview: true });
+    expect(v(-40, 5_000)).toMatchObject({ kind: "other", uncertain: true });
     // Without a known balance a debit can't be judged — flagged, not guessed.
-    expect(v(-1.25)).toMatchObject({ kind: "other", needsReview: true });
+    expect(v(-1.25)).toMatchObject({ kind: "other", uncertain: true });
   });
 
   it("an unknown institution falls back to keywords, then to other (never dropped)", () => {
@@ -133,7 +127,7 @@ describe("classifySimplefinTransaction", () => {
       kind: "other",
       amount: 7,
       ruleId: null,
-      needsReview: true,
+      uncertain: true,
       redactDescription: false,
     });
   });
@@ -160,9 +154,33 @@ describe("redactDescription", () => {
   });
 });
 
-describe("summarizeAccountFlows", () => {
+/** Totals of classified rows — the way fills and Live Balance add them up. */
+function totals(
+  institution: string,
+  rows: readonly { amount: number; description: string }[],
+  options: { accountBalance?: number } = {},
+) {
+  const t = {
+    contributions: 0,
+    withdrawals: 0,
+    fees: 0,
+    dividends: 0,
+    uncertain: 0,
+  };
+  for (const r of rows) {
+    const c = classifySimplefinTransaction(institution, r, options);
+    if (c.uncertain) t.uncertain++;
+    if (c.kind === "contribution") t.contributions += c.amount;
+    else if (c.kind === "withdrawal") t.withdrawals -= c.amount;
+    else if (c.kind === "fee") t.fees -= c.amount;
+    else if (c.kind === "dividend") t.dividends += c.amount;
+  }
+  return { ...t, netFlow: t.contributions - t.withdrawals };
+}
+
+describe("classified totals", () => {
   it("Vanguard: a deposit, its sweep and the fund purchase count as one contribution", () => {
-    const s = summarizeAccountFlows("Vanguard", [
+    const s = totals("Vanguard", [
       tx("2026-05-01", 500, "CASH"),
       tx("2026-05-01", -500, "VANGUARD FEDERAL MONEY MARKET INVESTOR CL"),
       tx("2026-05-04", -500.05, "VANGUARD TARGET RETIREMENT 2050 INVESTOR CL"),
@@ -171,24 +189,20 @@ describe("summarizeAccountFlows", () => {
     ]);
     expect(s.contributions).toBe(500);
     expect(s.withdrawals).toBe(0);
-    expect(s.netFlow).toBe(500);
-    expect(s.netFlowByDate).toEqual({ "2026-05-01": 500 });
   });
 
   it("Vanguard: an IRA-to-IRA conversion is a withdrawal on one side and a contribution on the other", () => {
-    const traditional = summarizeAccountFlows("Vanguard", [
+    const traditional = totals("Vanguard", [
       tx("2026-05-01", 500, "CASH"),
       tx("2026-05-04", -500, "CASH"),
     ]);
-    const roth = summarizeAccountFlows("Vanguard", [
-      tx("2026-05-04", 500, "CASH"),
-    ]);
+    const roth = totals("Vanguard", [tx("2026-05-04", 500, "CASH")]);
     expect(traditional.netFlow).toBe(0);
     expect(roth.netFlow).toBe(500);
   });
 
-  it("Fidelity: one payday split across five funds collapses into one dated deposit", () => {
-    const s = summarizeAccountFlows("Fidelity Investments", [
+  it("Fidelity: a payday split across funds, plus dividends and fees", () => {
+    const s = totals("Fidelity Investments", [
       tx("2026-05-08", 290, "contribution"),
       tx("2026-05-08", 60, "contribution"),
       tx("2026-05-08", 60, "contribution"),
@@ -198,14 +212,13 @@ describe("summarizeAccountFlows", () => {
       tx("2026-05-29", -1.5, "fees"),
       tx("2026-05-29", 0.2, "realizedGainLoss"),
     ]);
-    expect(s.netFlowByDate).toEqual({ "2026-05-08": 500 });
+    expect(s.contributions).toBe(500);
     expect(s.dividends).toBe(20);
     expect(s.fees).toBe(1.5);
-    expect(s.netFlow).toBe(500);
   });
 
   it("HSA: medical spending is a withdrawal and a refund reduces it", () => {
-    const s = summarizeAccountFlows("Fidelity Investments", [
+    const s = totals("Fidelity Investments", [
       tx("2026-05-10", -80, "DEBIT CARD PURCHASE EXAMPLE CLINIC (Cash)"),
       tx(
         "2026-05-10",
@@ -218,20 +231,19 @@ describe("summarizeAccountFlows", () => {
     expect(s.netFlow).toBe(-60);
   });
 
-  it("Fidelity: paydays with flipped signs still total as deposits", () => {
-    const s = summarizeAccountFlows("Fidelity Investments", [
+  it("Fidelity: paydays with flipped signs still total as deposits, as a best guess", () => {
+    const s = totals("Fidelity Investments", [
       tx("2026-05-08", -300, "contribution"),
       tx("2026-05-08", -200, "contribution"),
       tx("2026-05-22", 300, "contribution"),
       tx("2026-05-22", 200, "contribution"),
     ]);
-    expect(s.netFlowByDate).toEqual({ "2026-05-08": 500, "2026-05-22": 500 });
     expect(s.contributions).toBe(1000);
-    expect(s.needsReviewCount).toBe(2);
+    expect(s.uncertain).toBe(2);
   });
 
-  it("counts rows that need review", () => {
-    const s = summarizeAccountFlows(
+  it("marks rows it isn't sure about", () => {
+    const s = totals(
       "Voya Financial",
       [
         tx("2026-05-08", 300, "LifePath Index 2050 Fund"),
@@ -240,6 +252,6 @@ describe("summarizeAccountFlows", () => {
       { accountBalance: 50_000 },
     );
     expect(s.contributions).toBe(300);
-    expect(s.needsReviewCount).toBe(1);
+    expect(s.uncertain).toBe(1);
   });
 });

@@ -4,13 +4,13 @@ import { createTRPCRouter, portfolioProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { investmentHealthIssues } from "@/lib/pure/investment-health";
 import { localDateStr } from "@/lib/utils/date";
-import { loadAccounts, loadClassifiedTransactions } from "./_shared";
+import { loadAccounts } from "./_shared";
 
 export const investmentHealthRouter = createTRPCRouter({
-  /** Accounts whose holdings stopped arriving or don't add up to the balance, and the review-queue size. */
+  /** Accounts whose holdings stopped arriving or don't add up to the balance. */
   getHealth: portfolioProcedure.query(async ({ ctx }) => {
     const h = schema.holdingObservations;
-    const [observations, balances, accounts, transactions] = await Promise.all([
+    const [observations, balances, accounts] = await Promise.all([
       ctx.db
         .select({
           accountId: h.simplefinAccountId,
@@ -23,7 +23,6 @@ export const investmentHealthRouter = createTRPCRouter({
         .where(isNotNull(h.simplefinAccountId)),
       ctx.db.select().from(schema.simplefinAccountBalances),
       loadAccounts(ctx.db),
-      loadClassifiedTransactions(ctx.db, {}),
     ]);
 
     // Each account's latest holdings day, the funds held that day, and the
@@ -56,9 +55,6 @@ export const investmentHealthRouter = createTRPCRouter({
       };
     });
 
-    return {
-      issues: investmentHealthIssues(inputs, localDateStr()),
-      needsReview: transactions.filter((t) => t.needsReview).length,
-    };
+    return { issues: investmentHealthIssues(inputs, localDateStr()) };
   }),
 });

@@ -37,7 +37,7 @@ export const investmentSnapshotFlowsRouter = createTRPCRouter({
       const linkedIds = new Set(linked.map((l) => l.id));
       const covered =
         coverageStart !== null && utcDayOf(coverageStart) <= input.since;
-      const { added, reviewCount } = flowsSince(
+      const { added, uncertainCount } = flowsSince(
         rows.filter((r) => linkedIds.has(r.simplefinAccountId)),
         input.since,
       );
@@ -56,6 +56,6 @@ export const investmentSnapshotFlowsRouter = createTRPCRouter({
               : INVESTMENT_TRANSACTION_KIND_LABELS[r.kind],
           amount: r.amount,
         }));
-      return { covered, added, reviewCount, recent };
+      return { covered, added, uncertainCount, recent };
     }),
 });

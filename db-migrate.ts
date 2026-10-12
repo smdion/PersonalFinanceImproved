@@ -165,7 +165,6 @@ const VERSION_TABLE_NAMES = [
   "utility_reading",
   // v0.8.5 investments foundation
   "securities",
-  "investment_transaction_rules",
   "simplefin_account_balances",
   "holding_observations",
   "investment_transactions",

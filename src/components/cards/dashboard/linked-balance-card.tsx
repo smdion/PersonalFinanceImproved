@@ -402,12 +402,12 @@ function LinkedBalanceCardImpl() {
           {formatCurrency(
             Math.abs(roundToCents(drift.totalDrift - flows.added)),
           )}
-          {flows.reviewCount > 0 && (
+          {flows.uncertainCount > 0 && (
             <span className="text-faint">
               {" "}
-              (estimated — {flows.reviewCount}{" "}
-              {flows.reviewCount === 1 ? "transaction" : "transactions"} Ledgr
-              wasn&apos;t sure about)
+              (estimated — {flows.uncertainCount}{" "}
+              {flows.uncertainCount === 1 ? "transaction" : "transactions"}{" "}
+              Ledgr wasn&apos;t sure about)
             </span>
           )}
         </p>

@@ -426,8 +426,8 @@ export const investmentSuggestionsRouter = createTRPCRouter({
           estimate,
           /** Deposits left out as money already recorded as moved in. */
           leftOut,
-          reviewCount: mine.filter(
-            (f) => f.needsReview && !f.voided && f.posted > baseline,
+          uncertainCount: mine.filter(
+            (f) => f.uncertain && !f.voided && f.posted > baseline,
           ).length,
           suggested: {
             employeeContrib: roundToCents(storedEmployee + split.employee),

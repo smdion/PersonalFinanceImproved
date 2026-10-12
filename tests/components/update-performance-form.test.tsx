@@ -144,7 +144,7 @@ describe("UpdatePerformanceForm", () => {
             unmatchedTransfers: 0,
             estimated: true,
           },
-          reviewCount: 0,
+          uncertainCount: 0,
           suggested: {
             employeeContrib: 10800,
             employerContributions: 2200,
@@ -161,7 +161,7 @@ describe("UpdatePerformanceForm", () => {
           missingBefore: null,
           counted: {},
           added: {},
-          reviewCount: 0,
+          uncertainCount: 0,
           suggested: {},
         },
       ],
@@ -233,7 +233,7 @@ describe("UpdatePerformanceForm", () => {
             unmatchedTransfers: 0,
             estimated: false,
           },
-          reviewCount: 0,
+          uncertainCount: 0,
           suggested: {
             employeeContrib: 11000,
             employerContributions: 2000,

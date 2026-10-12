@@ -241,8 +241,8 @@ export function UpdatePerformanceForm({
               "Employee/employer split estimated from your paycheck setup.",
             s.missingBefore &&
               `SimpleFIN transactions only go back to ${formatDate(s.missingBefore, "medium")} — add anything before that by hand.`,
-            s.reviewCount > 0 &&
-              `Ledgr wasn't sure about ${s.reviewCount} transaction${s.reviewCount === 1 ? "" : "s"} and used its best guess — adjust the totals if they look off.`,
+            s.uncertainCount > 0 &&
+              `Ledgr wasn't sure about ${s.uncertainCount} transaction${s.uncertainCount === 1 ? "" : "s"} and used its best guess — adjust the totals if they look off.`,
             s.leftOut &&
               `Left out ${formatCurrency(s.leftOut.amount)} of deposits that look like the money from ${s.leftOut.from} you already recorded under Rollovers.`,
             s.suggested.endingBalance === null &&

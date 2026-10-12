@@ -91,7 +91,6 @@ export const securities = active.securities;
 export const simplefinAccountBalances = active.simplefinAccountBalances;
 export const holdingObservations = active.holdingObservations;
 export const investmentTransactions = active.investmentTransactions;
-export const investmentTransactionRules = active.investmentTransactionRules;
 export const syncRequestLog = active.syncRequestLog;
 export const securityFacts = active.securityFacts;
 export const secFilingCache = active.secFilingCache;
