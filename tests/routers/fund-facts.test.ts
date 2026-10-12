@@ -153,7 +153,8 @@ describe("fund facts", () => {
       valueBasis: "reported",
       standInPending: true,
       factsSeriesName: "Example Registered Twin Fund",
-      symbol: null,
+      symbol: "ZZQX",
+      symbolConfirmed: false,
     });
     expect(rows.find((r) => r.securityId === id.stock)).toMatchObject({
       symbol: "EXSTX",
