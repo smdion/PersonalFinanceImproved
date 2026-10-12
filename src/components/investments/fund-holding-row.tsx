@@ -260,7 +260,12 @@ export function HoldingRow({
     <div className="border-subtle border-b py-1.5 text-xs last:border-0">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <div className="min-w-0 flex-1">
-          {h.symbol && <TickerLink symbol={h.symbol} />}
+          {h.symbol &&
+            (h.symbolConfirmed ? (
+              <TickerLink symbol={h.symbol} />
+            ) : (
+              <span className="text-muted mr-1.5 font-mono">{h.symbol}</span>
+            ))}
           <span className="text-muted">{h.name}</span>
         </div>
         <MixBar facts={h.facts} />

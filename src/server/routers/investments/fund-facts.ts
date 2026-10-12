@@ -182,7 +182,16 @@ export const investmentFundFactsRouter = createTRPCRouter({
               .sort((x, y) => y.value - x.value)
               .map((r) => ({
                 securityId: r.securityId,
-                symbol: r.ticker ?? r.sourceSymbol,
+                // A plan-only fund's code from the feed is the institution's
+                // own (not even what the plan's site shows), so it isn't
+                // shown; other unconfirmed codes are shown but not linked.
+                symbol:
+                  r.ticker ??
+                  (r.kind === "plan_fund" || r.factsBasis === "standin"
+                    ? null
+                    : r.sourceSymbol),
+                /** SEC confirmed it's a public ticker (safe to link). */
+                symbolConfirmed: r.ticker !== null,
                 name: r.name,
                 shares: r.shares,
                 value: r.value,

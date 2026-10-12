@@ -40,6 +40,7 @@ const { HoldingRow } =
 const holding = (standInPreview: Holding["standInPreview"]): Holding => ({
   securityId: 5,
   symbol: null,
+  symbolConfirmed: false,
   name: "Example Plan Index Fund",
   shares: 10,
   value: 1000,

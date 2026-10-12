@@ -83,6 +83,7 @@ const insight: AccountInsight = {
 const holding: Holding = {
   securityId: 5,
   symbol: "EXMPX",
+  symbolConfirmed: true,
   name: "Example Index Fund",
   shares: 10,
   value: 1000,

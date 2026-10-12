@@ -113,6 +113,7 @@ describe("fund facts", () => {
     };
     sec("stock", { ticker: "EXSTX", factsBasis: "exact" });
     sec("plan", {
+      sourceSymbol: "ZZQX", // the institution's own code, not a ticker
       factsBasis: "standin",
       factsSeriesId: "S9",
       factsSeriesName: "Example Registered Twin Fund",
@@ -152,6 +153,11 @@ describe("fund facts", () => {
       valueBasis: "reported",
       standInPending: true,
       factsSeriesName: "Example Registered Twin Fund",
+      symbol: null,
+    });
+    expect(rows.find((r) => r.securityId === id.stock)).toMatchObject({
+      symbol: "EXSTX",
+      symbolConfirmed: true,
     });
   });
 
