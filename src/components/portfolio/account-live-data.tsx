@@ -157,6 +157,63 @@ export function SinceSnapshotSummary({
   );
 }
 
+/** Stored cost basis vs what the institution's average cost says; one click to use it. */
+function CostBasisSuggestion({
+  performanceAccountId,
+  c,
+}: {
+  performanceAccountId: number;
+  c: NonNullable<AccountInsight["costBasis"]>;
+}) {
+  const utils = trpc.useUtils();
+  const save = trpc.performance.updateCostBasis.useMutation({
+    onSuccess: () =>
+      Promise.all([
+        utils.investments.getAccountInsights.invalidate(),
+        utils.performance.invalidate(),
+      ]),
+  });
+  const differs = Math.abs(c.suggested - c.stored) >= 1;
+  return (
+    <div className="text-xs">
+      <p className="text-muted">
+        Cost basis recorded:{" "}
+        <span className="text-primary">{formatCurrency(c.stored)}</span>
+        {differs ? (
+          <>
+            . From the institution&apos;s average cost
+            {c.asOf ? ` (${day(c.asOf)})` : ""}:{" "}
+            <span className="text-primary font-medium">
+              {formatCurrency(c.suggested)}
+            </span>
+            {!c.complete &&
+              ` — not counting ${formatCurrency(c.unknownValue)} of holdings with no reported cost`}
+            .{" "}
+            <button
+              type="button"
+              className="hover:text-primary underline"
+              disabled={save.isPending}
+              onClick={() =>
+                save.mutate({
+                  performanceAccountId,
+                  costBasis: c.suggested.toFixed(2),
+                })
+              }
+            >
+              {save.isPending ? "Saving…" : "Use it"}
+            </button>
+          </>
+        ) : (
+          " — matches the institution's average cost."
+        )}
+      </p>
+      {save.isError && (
+        <p className="text-red-600">Couldn&apos;t save: {save.error.message}</p>
+      )}
+    </div>
+  );
+}
+
 function DepositCheck({ d }: { d: AccountInsight["deposits"] }) {
   const pace =
     d.typical !== null && d.everyDays !== null
@@ -307,6 +364,13 @@ export function AccountLiveSection({
             ))}
           </div>
         </div>
+      )}
+
+      {insight.costBasis && (
+        <CostBasisSuggestion
+          performanceAccountId={insight.performanceAccountId}
+          c={insight.costBasis}
+        />
       )}
 
       <DepositCheck d={insight.deposits} />

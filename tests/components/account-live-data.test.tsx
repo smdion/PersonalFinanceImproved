@@ -3,12 +3,20 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
 const confirmStandIn = vi.fn();
+const updateCostBasis = vi.fn();
 const mutation = (fn = vi.fn()) => ({
   useMutation: () => ({ mutate: fn, isPending: false, isSuccess: false }),
 });
 vi.mock("@/lib/trpc", () => ({
   trpc: {
-    useUtils: () => ({ investments: { invalidate: vi.fn() } }),
+    useUtils: () => ({
+      investments: {
+        invalidate: vi.fn(),
+        getAccountInsights: { invalidate: vi.fn() },
+      },
+      performance: { invalidate: vi.fn() },
+    }),
+    performance: { updateCostBasis: mutation(updateCostBasis) },
     investments: {
       confirmStandIn: mutation(confirmStandIn),
       rejectStandIn: mutation(),
@@ -53,6 +61,13 @@ const insight: AccountInsight = {
     { name: "Example Bank Traditional IRA", balance: 0.19, reason: "no_part" },
   ],
   mix: { buckets: { ...zero, us_equity: 1000 }, unknown: 0, total: 1000 },
+  costBasis: {
+    stored: 500,
+    suggested: 800,
+    unknownValue: 0,
+    complete: true,
+    asOf: "2026-10-09",
+  },
   cost: { expenseRatio: 0.0005, yearlyCost: 0.5, coveredShare: 1 },
   deposits: {
     verdict: "lower",
@@ -92,8 +107,15 @@ describe("AccountLiveSection", () => {
       "href",
       "https://finance.yahoo.com/quote/EXMPX",
     );
-    fireEvent.click(screen.getByRole("button", { name: "Use it" }));
+    // Two "Use it" buttons: the stand-in fund (first) and the cost basis.
+    const [standIn, cost] = screen.getAllByRole("button", { name: "Use it" });
+    fireEvent.click(standIn!);
     expect(confirmStandIn).toHaveBeenCalledWith({ securityId: 5 });
+    fireEvent.click(cost!);
+    expect(updateCostBasis).toHaveBeenCalledWith({
+      performanceAccountId: 1,
+      costBasis: "800.00",
+    });
   });
 
   it("summarises the live balance for the card header", () => {

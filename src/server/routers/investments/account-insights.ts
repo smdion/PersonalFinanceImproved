@@ -11,6 +11,8 @@ import { utcDayOf } from "@/lib/simplefin/ingest";
 import { roundToCents } from "@/lib/utils/math";
 import { blendedCost, portfolioBuckets } from "@/lib/pure/fund-facts";
 import { checkDeposits } from "@/lib/pure/deposit-check";
+import { suggestCostBasis } from "@/lib/pure/cost-basis";
+import { tracksCostBasis } from "@/lib/config/account-types";
 import { accountFlowsSince } from "@/lib/pure/snapshot-flows";
 import { dailyEstimates, liveCoversAccount } from "@/lib/pure/simplefin-feeds";
 import { getTransactionCoverageStart } from "@/lib/simplefin/sync";
@@ -70,6 +72,14 @@ export const investmentAccountInsightsRouter = createTRPCRouter({
         .limit(1),
       getTransactionCoverageStart(ctx.db),
     ]);
+    const perfRows = await ctx.db
+      .select({
+        id: schema.performanceAccounts.id,
+        accountType: schema.performanceAccounts.accountType,
+        costBasis: schema.performanceAccounts.costBasis,
+      })
+      .from(schema.performanceAccounts);
+    const perfById = new Map(perfRows.map((p) => [p.id, p]));
     const snapshotDate = latestSnapshot[0]?.date ?? null;
     // Since the snapshot needs transactions back to it, not just 90 days.
     const loadFrom =
@@ -171,6 +181,23 @@ export const investmentAccountInsightsRouter = createTRPCRouter({
           }
         : null;
       const { buckets, unknown, total } = portfolioBuckets(accountHoldings);
+      const perf = perfById.get(performanceAccountId);
+      const costBasis =
+        perf && tracksCostBasis(perf.accountType)
+          ? (() => {
+              const s = suggestCostBasis(
+                holdings.filter((h) => ids.has(h.simplefinAccountId)),
+              );
+              return s
+                ? {
+                    stored: toNumber(perf.costBasis),
+                    ...s,
+                    asOf: holdings.find((h) => ids.has(h.simplefinAccountId))
+                      ?.asOf,
+                  }
+                : null;
+            })()
+          : null;
       return {
         performanceAccountId,
         status,
@@ -210,6 +237,8 @@ export const investmentAccountInsightsRouter = createTRPCRouter({
           };
         }),
         mix: { buckets, unknown, total },
+        /** Taxable accounts: stored cost basis and the one holdings suggest. */
+        costBasis,
         cost: blendedCost(accountHoldings),
         deposits: checkDeposits(
           deposits.map((d) => ({ posted: d.posted, amount: d.amount })),
