@@ -1,6 +1,9 @@
 import * as fs from "fs";
 import * as path from "path";
 
+/** Kept equal to src/lib/db/demo-schema-marker.ts (standalone build; a test checks). */
+export const DEMO_SCHEMA_MARKER_PREFIX = "ledgr-migrations:";
+
 function log(
   level: "info" | "warn" | "error",
   event: string,
@@ -879,46 +882,49 @@ async function runPostgres() {
 
     log("info", "migrations_applied", { dialect: "postgresql" });
 
-    // Drop demo schemas after a schema change so they get rebuilt fresh
-    // from the public schema's new structure on next activation. Demo
-    // schemas are sandboxes that the demo router (src/server/routers/
-    // demo.ts:436) recreates via DROP TABLE + CREATE TABLE LIKE public.x
-    // INCLUDING ALL on every activateProfile call. They never carry
-    // user-meaningful state, so dropping them on schema upgrade is the
-    // simplest way to keep them in sync with the public schema.
-    //
-    // Without this, demo profiles activated before a schema change
-    // would have stale per-tenant tables (missing new columns, old
-    // decimal precision, etc.) and any query into the demo schema
-    // would fail at runtime.
-    if (backupPath) {
+    // Drop stale demo schemas so they get rebuilt fresh from the public
+    // schema's current structure on next activation. Demo schemas are
+    // sandboxes the demo router (src/server/routers/demo.ts) builds with
+    // CREATE TABLE LIKE public.x and stamps with the applied-migration
+    // count (src/lib/db/demo-schema-marker.ts); any whose stamp doesn't
+    // match the current count was built for an older structure. Checked on
+    // EVERY start, not just when a migration ran, so a failed drop is
+    // retried — and it's fatal: a stale schema can't be left in place
+    // (requests refuse to use it, but it must not linger silently).
+    {
       const demoClient = await pool.connect();
       try {
-        const { rows: demoSchemas } = await demoClient.query<{
-          nspname: string;
-        }>(
-          "SELECT nspname FROM pg_namespace WHERE nspname LIKE 'demo\\_%' ORDER BY nspname",
+        const { rows: stale } = await demoClient.query<{ nspname: string }>(
+          `SELECT n.nspname FROM pg_namespace n
+            WHERE n.nspname LIKE 'demo\\_%'
+              AND obj_description(n.oid, 'pg_namespace') IS DISTINCT FROM
+                  $1 || (SELECT count(*)::int FROM drizzle.__drizzle_migrations)::text
+            ORDER BY n.nspname`,
+          [DEMO_SCHEMA_MARKER_PREFIX],
         );
-        for (const { nspname } of demoSchemas) {
+        for (const { nspname } of stale) {
           // Quote identifier to defend against schema names with special chars
           const quoted = '"' + nspname.replaceAll('"', '""') + '"';
           await demoClient.query(`DROP SCHEMA IF EXISTS ${quoted} CASCADE`);
           log("info", "demo_schema_dropped_for_rebuild", {
             schema: nspname,
             reason:
-              "Schema upgrade — demo profile will be rebuilt fresh on next activation",
+              "Built for an older schema — demo profile will be rebuilt fresh on next activation",
           });
         }
-        if (demoSchemas.length > 0) {
+        if (stale.length > 0) {
           log("info", "demo_schemas_cleared", {
-            count: demoSchemas.length,
+            count: stale.length,
             note: "Users with active demo profiles will need to re-activate via the UI",
           });
         }
       } catch (demoErr) {
-        log("warn", "demo_schema_cleanup_failed", {
+        log("error", "demo_schema_cleanup_failed", {
           error: demoErr instanceof Error ? demoErr.message : String(demoErr),
         });
+        throw new Error(
+          `Couldn't drop stale demo schemas: ${demoErr instanceof Error ? demoErr.message : String(demoErr)}`,
+        );
       } finally {
         demoClient.release();
       }
