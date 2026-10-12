@@ -21,16 +21,9 @@ import type {
 } from "@/lib/config/enum-values";
 import {
   matchInternalTransfers,
-  suggestOneSidedTransfers,
+  recordedMoveDeposits,
   type TransferMatch,
 } from "@/lib/pure/internal-transfers";
-
-export type TransferSuggestionView = {
-  reason: "pair" | "words" | "recorded";
-  /** The other account (for "pair"). */
-  other: string | null;
-  otherPosted: string | null;
-};
 import { loadLatestSubAccounts } from "@/server/helpers/sub-accounts";
 import { countsAsFeed } from "@/lib/pure/simplefin-feeds";
 import type { SimplefinTransactionRule } from "@/lib/config/simplefin-transaction-rules";
@@ -187,8 +180,8 @@ export type ClassifiedTransactionRow = {
   kindOverrideSource: KindOverrideSource | null;
   /** Set when this row is one side of a move between the household's own accounts. */
   transfer: TransferMatch | null;
-  /** Looks like such a move, but the other side isn't in a counted account. */
-  transferSuggestion: TransferSuggestionView | null;
+  /** Probably money already recorded (in Performance) as moved in from this account; fills leave it out. */
+  recordedMoveFrom: string | null;
 } & EffectiveKind;
 
 /** Stored transactions with the kind each is shown as (worked out now, never stored). */
@@ -255,7 +248,7 @@ export async function loadClassifiedTransactions(
         { rules, accountBalance: balanceForRules },
       ),
       transfer: null as TransferMatch | null,
-      transferSuggestion: null as TransferSuggestionView | null,
+      recordedMoveFrom: null as string | null,
     };
   });
 
@@ -294,22 +287,18 @@ export async function loadClassifiedTransactions(
     r.ruleId = null;
   }
 
-  // Moves whose other side isn't in a counted account: suggest, never set.
+  // Deposits that are probably money already recorded as moved in.
   const recorded = await recordedMovesIn(db);
-  const suggestions = suggestOneSidedTransfers(
+  const likely = recordedMoveDeposits(
     classified
       .filter((r) => !r.pending && !r.voided)
       .map((r) => ({
+        id: r.id,
         performanceAccountId:
           accounts.get(r.simplefinAccountId)?.performanceAccountId ?? null,
-        id: r.id,
-        simplefinAccountId: r.simplefinAccountId,
-        counted:
-          accounts.get(r.simplefinAccountId)?.performanceAccountId != null,
         posted: r.posted,
         amount: r.amount,
         kind: r.kind,
-        description: r.description,
         settled:
           r.transfer !== null ||
           r.source === "override" ||
@@ -319,21 +308,8 @@ export async function loadClassifiedTransactions(
       recorded.get(`${performanceAccountId}|${year}`) ?? null,
   );
   for (const r of classified) {
-    const s = suggestions.get(r.id);
-    if (!s) continue;
-    const other =
-      s.reason === "pair"
-        ? classified.find((o) => o.id === s.pairId)
-        : undefined;
-    r.transferSuggestion = other
-      ? {
-          reason: "pair",
-          other: `${other.institution} ${other.accountName}`.trim(),
-          otherPosted: other.posted,
-        }
-      : s.reason === "recorded"
-        ? { reason: "recorded", other: s.fromAccount, otherPosted: null }
-        : { reason: "words", other: null, otherPosted: null };
+    const from = likely.get(r.id);
+    if (from) r.recordedMoveFrom = from;
   }
 
   return classified

@@ -9,7 +9,6 @@ import type {
   AccountRow,
   MasterAccount,
   EditingCell,
-  BenchmarkColumn,
 } from "./types";
 import {
   accountTypeToPerformanceCategory,
@@ -17,7 +16,6 @@ import {
   PERF_CATEGORY_RETIREMENT,
 } from "@/lib/config/display-labels";
 import { isRetirementParent } from "@/lib/config/account-types";
-import { BENCHMARKS } from "@/lib/config/benchmarks";
 
 type PerformanceTableProps = {
   filtered: AnnualRow[];
@@ -43,8 +41,6 @@ type PerformanceTableProps = {
   showBasis: boolean;
   showUnrealized: boolean;
   onlyBasis: boolean;
-  /** Index column; null when no index prices are available. */
-  benchmark?: BenchmarkColumn | null;
 };
 
 export function PerformanceTable({
@@ -66,7 +62,6 @@ export function PerformanceTable({
   showBasis,
   showUnrealized,
   onlyBasis,
-  benchmark = null,
 }: PerformanceTableProps) {
   const years = Array.from(new Set(filtered.map((r) => r.year))).sort(
     (a, b) => b - a,
@@ -133,25 +128,6 @@ export function PerformanceTable({
               <th className="text-muted px-4 py-3 text-right font-medium whitespace-nowrap">
                 Unrealized
                 <HelpTip text="Ending balance minus cost basis — the portion subject to capital gains tax if sold." />
-              </th>
-            )}
-            {benchmark && !onlyBasis && (
-              <th className="text-muted px-4 py-3 text-right font-medium whitespace-nowrap">
-                <span className="inline-flex items-center justify-end gap-1">
-                  <select
-                    aria-label="Index to compare with"
-                    value={benchmark.key}
-                    onChange={(e) => benchmark.onChange(e.target.value)}
-                    className="text-muted cursor-pointer bg-transparent text-right font-medium focus:outline-none"
-                  >
-                    {BENCHMARKS.map((b) => (
-                      <option key={b.key} value={b.key}>
-                        {b.label}
-                      </option>
-                    ))}
-                  </select>
-                  <HelpTip text="What each row's money would have returned in this index instead: same starting balance, same money in and out, spread across the year — computed the same way as Return. The small number is how far your return was ahead (+) or behind (−), in percentage points. Index priced with a low-cost fund that tracks it, dividends reinvested." />
-                </span>
               </th>
             )}
             <th className="text-muted px-4 py-3 text-right font-medium whitespace-nowrap">
@@ -235,7 +211,6 @@ export function PerformanceTable({
                 showUnrealized={showUnrealized}
                 onlyBasis={onlyBasis}
                 canEdit={canEdit}
-                benchmark={benchmark}
               />
             );
           })}

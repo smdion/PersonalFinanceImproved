@@ -106,6 +106,41 @@ function nextDay(day: string): string {
   return utcDayOf(d);
 }
 
+/**
+ * Deposits that are probably money the household already recorded (in
+ * Performance) as moved in from another account count for nothing in a
+ * fill — kind "other", so one counted by an earlier fill is taken back out.
+ */
+function withoutRecordedMoves<
+  R extends { recordedMoveFrom: string | null; kind: string },
+>(rows: readonly R[]): R[] {
+  return rows.map((r) =>
+    r.recordedMoveFrom ? { ...r, kind: "other" as const } : r,
+  );
+}
+
+/** What a fill leaves out as already-recorded moves, after `after`. */
+function recordedMovesSince(
+  rows: readonly {
+    recordedMoveFrom: string | null;
+    posted: string;
+    amount: number;
+    pending: boolean;
+    voided: boolean;
+  }[],
+  after: string,
+): { amount: number; from: string } | null {
+  const left = rows.filter(
+    (r) => r.recordedMoveFrom && r.posted > after && !r.pending && !r.voided,
+  );
+  return left.length === 0
+    ? null
+    : {
+        amount: roundToCents(left.reduce((t, r) => t + r.amount, 0)),
+        from: left[0]!.recordedMoveFrom!,
+      };
+}
+
 /** First day SimpleFIN transactions reach, when that's after `baseline`'s next day. */
 function gapAfter(coverageStart: string | null, baseline: string) {
   return coverageStart === null || coverageStart > nextDay(baseline)
@@ -340,10 +375,11 @@ export const investmentSuggestionsRouter = createTRPCRouter({
           feed.feedIds.includes(f.simplefinAccountId),
         );
         const { totals: t, counted } = flowsSinceFill(
-          mine,
+          withoutRecordedMoves(mine),
           ledger.counted,
           countFrom,
         );
+        const leftOut = recordedMovesSince(mine, countFrom);
         // A row tracked per person splits by that person's paycheck; a
         // single row for the account (even one stored under a person)
         // covers everyone's.
@@ -388,6 +424,8 @@ export const investmentSuggestionsRouter = createTRPCRouter({
           missingBefore: estimate ? null : gapAfter(coverageStart, countFrom),
           added: { ...t, ...split },
           estimate,
+          /** Deposits left out as money already recorded as moved in. */
+          leftOut,
           reviewCount: mine.filter(
             (f) => f.needsReview && !f.voided && f.posted > baseline,
           ).length,
@@ -504,14 +542,24 @@ export const investmentSuggestionsRouter = createTRPCRouter({
         let latestConversionYear = r.latestConversionYear;
         let count = 0;
         const counted: Record<string, string> = {};
+        const leftOut: { amount: number; from: string | null } = {
+          amount: 0,
+          from: null,
+        };
         for (const id of feed.feedIds) {
           const f = feeds.find((x) => x.id === id)!;
           const accountIsRoth = isRoth(f.subKey, r.performanceAccountId);
+          const feedRows = flows.filter((x) => x.simplefinAccountId === id);
           const { totals: t, counted: c } = flowsSinceFill(
-            flows.filter((x) => x.simplefinAccountId === id),
+            withoutRecordedMoves(feedRows),
             ledger.counted,
             baseline,
           );
+          const out = recordedMovesSince(feedRows, baseline);
+          if (out) {
+            leftOut.amount += out.amount;
+            leftOut.from ??= out.from;
+          }
           Object.assign(counted, c);
           const split = splitContributions(
             t.contributions,
@@ -544,6 +592,11 @@ export const investmentSuggestionsRouter = createTRPCRouter({
           ownerPersonId: r.ownerPersonId,
           baseline,
           missingBefore: gapAfter(coverageStart, baseline),
+          /** Deposits left out as money already recorded as moved in. */
+          leftOut:
+            leftOut.amount !== 0 && leftOut.from
+              ? { amount: roundToCents(leftOut.amount), from: leftOut.from }
+              : null,
           feed: feed.status,
           added: {
             contributions: roundToCents(roth),

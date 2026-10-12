@@ -17,7 +17,6 @@ import {
   formatDate,
 } from "@/lib/utils/format";
 import { findBasisGaps } from "@/lib/pure/basis-consistency";
-import { DEFAULT_BENCHMARK_KEY } from "@/lib/config/benchmarks";
 import { parseBasisEditField } from "@/components/performance/basis-cell";
 import {
   PERF_CATEGORY_PORTFOLIO,
@@ -80,21 +79,6 @@ export function PerformanceContent() {
     "performance_only_basis_column",
     false,
   );
-  // Benchmark column: each row's money in an index instead.
-  // Shared with the Benchmarks page's "Compare with".
-  const [benchmarkKey, setBenchmarkKey] = usePersistedSetting<string>(
-    "benchmark_primary",
-    DEFAULT_BENCHMARK_KEY,
-  );
-  const firstYear = data?.annualRows.reduce<number | null>(
-    (y, r) => (y === null || r.year < y ? r.year : y),
-    null,
-  );
-  const { data: benchmarkPrices } =
-    trpc.investments.getBenchmarkPrices.useQuery(
-      { key: benchmarkKey, fromYear: firstYear ?? 0 },
-      { enabled: firstYear != null, retry: false },
-    );
 
   // ── Custom account/year filtering (additive — CategoryTabs still work
   // standalone; this is a separate, opt-in view). Persisted as string-
@@ -676,16 +660,6 @@ export function PerformanceContent() {
             showBasis={showBasisColumn}
             showUnrealized={showUnrealizedColumn}
             onlyBasis={onlyBasisColumn}
-            benchmark={
-              benchmarkPrices
-                ? {
-                    key: benchmarkPrices.key,
-                    label: benchmarkPrices.label,
-                    prices: new Map(Object.entries(benchmarkPrices.prices)),
-                    onChange: setBenchmarkKey,
-                  }
-                : null
-            }
             expandedYears={expandedYears}
             onToggleYear={(year) =>
               setExpandedYears((prev) => {

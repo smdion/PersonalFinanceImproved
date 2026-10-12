@@ -3,11 +3,7 @@
  * (portfolioProcedure — balances and returns).
  */
 import { z } from "zod/v4";
-import {
-  createTRPCRouter,
-  portfolioProcedure,
-  protectedProcedure,
-} from "../../trpc";
+import { createTRPCRouter, portfolioProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { BENCHMARKS, resolveBenchmark } from "@/lib/config/benchmarks";
 import { householdRetirementYear } from "@/server/helpers/retirement-profile";
@@ -30,40 +26,6 @@ function firstRealYear(years: YearlyResult[]): number | null {
 }
 
 export const investmentComparisonRouter = createTRPCRouter({
-  /**
-   * An index's month-end total-return prices from `fromYear` — public
-   * market data, no household figures, so any signed-in user (the
-   * Performance page's benchmark column computes against its own rows).
-   * Null when Tiingo isn't connected or the fetch failed.
-   */
-  getBenchmarkPrices: protectedProcedure
-    .input(
-      z.object({
-        key: z.enum(BENCHMARKS.map((b) => b.key) as [string, ...string[]]),
-        fromYear: z.number().int().min(1900).max(2200),
-      }),
-    )
-    .query(async ({ ctx, input }) => {
-      const b = resolveBenchmark(
-        BENCHMARKS.find((x) => x.key === input.key)!,
-        await householdRetirementYear(ctx.db),
-      );
-      if (!b) return null;
-      const prices = await getBenchmarkMonthlyPrices(
-        ctx.db,
-        b.ticker,
-        input.fromYear,
-      );
-      return prices
-        ? {
-            key: b.key,
-            label: b.label,
-            ticker: b.ticker,
-            prices: Object.fromEntries(prices),
-          }
-        : null;
-    }),
-
   /** Yearly results and the same money in each benchmark, from `fromYear` (default: first year with real gains). */
   getComparison: portfolioProcedure
     .input(z.object({ fromYear: z.number().int().optional() }))

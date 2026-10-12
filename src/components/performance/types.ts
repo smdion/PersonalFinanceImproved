@@ -109,15 +109,6 @@ export type EditableCellProps = {
   annotation?: React.ReactNode;
 };
 
-/** The Performance table's index column: which index and its prices. */
-export type BenchmarkColumn = {
-  key: string;
-  label: string;
-  /** "YYYY-MM" → month-end total-return price. */
-  prices: ReadonlyMap<string, number>;
-  onChange: (key: string) => void;
-};
-
 export type YearRowProps = {
   row: AnnualRow;
   accounts: AccountRow[];
@@ -141,8 +132,6 @@ export type YearRowProps = {
   showUnrealized: boolean;
   onlyBasis: boolean;
   canEdit?: boolean;
-  /** Null when no index prices are available (column hidden). */
-  benchmark?: BenchmarkColumn | null;
 };
 
 export type AddAccountFormProps = {

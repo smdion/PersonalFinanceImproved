@@ -1,6 +1,5 @@
 "use client";
 
-import { TransactionDecisions } from "@/components/investments/transaction-decisions";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import {
@@ -245,7 +244,9 @@ export function UpdatePerformanceForm({
             s.missingBefore &&
               `SimpleFIN transactions only go back to ${formatDate(s.missingBefore, "medium")} — add anything before that by hand.`,
             s.reviewCount > 0 &&
-              `${s.reviewCount} transaction${s.reviewCount === 1 ? "" : "s"} still need a kind (Settings → Integrations) and aren't counted yet.`,
+              `Ledgr wasn't sure about ${s.reviewCount} transaction${s.reviewCount === 1 ? "" : "s"} and used its best guess — adjust the totals if they look off.`,
+            s.leftOut &&
+              `Left out ${formatCurrency(s.leftOut.amount)} of deposits that look like the money from ${s.leftOut.from} you already recorded under Rollovers.`,
             s.suggested.endingBalance === null &&
               "Ending balance: not every part of this account is linked — kept the snapshot.",
             kept && "Kept the figures you'd already edited.",
@@ -331,8 +332,6 @@ export function UpdatePerformanceForm({
 
   return (
     <div className="space-y-4">
-      {/* Decisions change what a fill adds, so they come first. */}
-      {!fill && <TransactionDecisions year={currentYear} />}
       {suggestions && suggestions.accounts.length > 0 && (
         <div className="rounded bg-blue-50 p-2 text-xs text-blue-900 dark:bg-blue-950/30 dark:text-blue-200">
           <div className="flex flex-wrap items-center gap-2">

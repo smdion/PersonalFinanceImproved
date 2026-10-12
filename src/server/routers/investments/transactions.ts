@@ -15,7 +15,6 @@ import { investmentTransactionKindSchema } from "@/lib/config/enum-values";
 import { lockAsMedicalWithdrawal } from "@/lib/simplefin/ingest";
 import { localDateStr } from "@/lib/utils/date";
 import {
-  countedFeed,
   loadAccounts,
   loadClassifiedTransactions,
   type ClassifiedTransactionRow,
@@ -48,38 +47,6 @@ export const investmentTransactionsRouter = createTRPCRouter({
         includeVoided: input.includeVoided,
       });
       return rows.map(forClient);
-    }),
-
-  /**
-   * The few transactions a Performance or Basis fill for `year` needs a
-   * decision on: rows in accounts that count toward a tracked account that
-   * no rule could place (or that a rule flags), and deposits / withdrawals
-   * that look like a move between the household's accounts. Rows the
-   * household already decided are left out. Newest first.
-   */
-  listDecisions: portfolioProcedure
-    .input(z.object({ year: z.number().int() }))
-    .query(async ({ ctx, input }) => {
-      const [rows, counted] = await Promise.all([
-        loadClassifiedTransactions(ctx.db, { since: `${input.year}-01-01` }),
-        ctx.db
-          .select({ id: schema.simplefinAccounts.id })
-          .from(schema.simplefinAccounts)
-          .where(countedFeed),
-      ]);
-      const countedIds = new Set(counted.map((c) => c.id));
-      return rows
-        .filter(
-          (r) =>
-            r.posted <= `${input.year}-12-31` &&
-            countedIds.has(r.simplefinAccountId) &&
-            !r.pending &&
-            !r.voided &&
-            r.source !== "override" &&
-            r.source !== "locked" &&
-            (r.needsReview || r.transferSuggestion !== null),
-        )
-        .map(forClient);
     }),
 
   /** Set the kind of one row. Redacted HSA rows are fixed and can't be changed. */

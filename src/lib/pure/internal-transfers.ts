@@ -86,76 +86,43 @@ export function matchInternalTransfers(
   return result;
 }
 
-/** Words institutions use for money moving between accounts. */
-const MOVE_WORDS = /\b(roll ?overs?|transfers?|xfer|trnsfr|journal|acat)\b/i;
-
-export type TransferSuggestion =
-  | {
-      reason: "pair";
-      /** The opposite row elsewhere (an unchecked or unlinked account). */
-      pairId: number;
-    }
-  | { reason: "words" }
-  | {
-      reason: "recorded";
-      /** The tracked account Performance records the money leaving. */
-      fromAccount: string;
-    };
-
 /**
- * Deposits and withdrawals that look like a move between the household's
- * accounts but couldn't be matched (the other side is in an account that
- * isn't linked or checked, or isn't in SimpleFIN at all). Suggestions only:
- * an equal, opposite amount in any other SimpleFIN account within a few
- * days; a description that says so; or a deposit into an account whose
- * Performance figures for that year already record money rolled in from
- * another tracked account (`recordedMoveIn` names it) — counting it as a
- * contribution too would count it twice. Rows already matched or set by
- * hand get none.
+ * Deposits that are probably money the household already recorded as
+ * moved in: a deposit into a tracked account whose Performance figures for
+ * that year record money rolled in from another tracked account
+ * (`recordedMoveIn` names it) — e.g. an emptied ESPP whose proceeds went
+ * to a brokerage, entered by hand under Rollovers. A Fill from SimpleFIN
+ * leaves these out (counting them as contributions too would count the
+ * money twice) and says so. Rows already matched or set by hand are left
+ * alone.
  */
-export function suggestOneSidedTransfers(
+export function recordedMoveDeposits(
   rows: readonly {
-    /** Tracked account it counts toward, if counted. */
-    performanceAccountId?: number | null;
     id: number;
-    simplefinAccountId: number;
-    /** Counts toward a tracked account (linked and checked). */
-    counted: boolean;
+    /** Tracked account it counts toward (null when not counted). */
+    performanceAccountId: number | null;
     posted: string;
     amount: number;
     kind: string;
-    description: string;
     /** Already matched, or kind set by hand / locked. */
     settled: boolean;
   }[],
-  recordedMoveIn: (
-    performanceAccountId: number,
-    year: number,
-  ) => string | null = () => null,
-): Map<number, TransferSuggestion> {
-  const out = new Map<number, TransferSuggestion>();
-  const money = (r: (typeof rows)[number]) =>
-    (r.kind === "contribution" && r.amount > 0) ||
-    (r.kind === "withdrawal" && r.amount < 0);
+  recordedMoveIn: (performanceAccountId: number, year: number) => string | null,
+): Map<number, string> {
+  const out = new Map<number, string>();
   for (const r of rows) {
-    if (!r.counted || r.settled || !money(r)) continue;
-    const other = rows.find(
-      (o) =>
-        o.id !== r.id &&
-        o.simplefinAccountId !== r.simplefinAccountId &&
-        !o.counted &&
-        Math.round((o.amount + r.amount) * 100) === 0 &&
-        Math.abs(Date.parse(o.posted) - Date.parse(r.posted)) / DAY_MS <=
-          MAX_DAYS,
+    if (
+      r.settled ||
+      r.kind !== "contribution" ||
+      r.amount <= 0 ||
+      r.performanceAccountId === null
+    )
+      continue;
+    const from = recordedMoveIn(
+      r.performanceAccountId,
+      Number(r.posted.slice(0, 4)),
     );
-    const recorded =
-      r.amount > 0 && r.performanceAccountId != null
-        ? recordedMoveIn(r.performanceAccountId, Number(r.posted.slice(0, 4)))
-        : null;
-    if (other) out.set(r.id, { reason: "pair", pairId: other.id });
-    else if (recorded)
-      out.set(r.id, { reason: "recorded", fromAccount: recorded });
-    else if (MOVE_WORDS.test(r.description)) out.set(r.id, { reason: "words" });
+    if (from) out.set(r.id, from);
   }
   return out;
 }

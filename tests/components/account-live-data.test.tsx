@@ -48,7 +48,6 @@ const insight: AccountInsight = {
   live: { total: 1234.5, asOf: "2026-10-10" },
   feeds: [{ id: 9, name: "Example Bank Plan", part: null }],
   unlinkedParts: ["Alice — Roth"],
-  likelyMoves: [],
   sinceSnapshot: {
     snapshotDate: "2026-10-01",
     change: 150,

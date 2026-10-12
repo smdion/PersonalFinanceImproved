@@ -1,6 +1,5 @@
 "use client";
 
-import { TransactionDecisions } from "@/components/investments/transaction-decisions";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import {
@@ -145,6 +144,8 @@ export function UpdateBasisForm({
               `SimpleFIN transactions only go back to ${formatDate(s.missingBefore, "medium")} — add anything before that by hand.`,
             a.outflow > 0 &&
               `${formatCurrency(a.outflow)} left the account — taken off contributions first, then conversions (IRS ordering rules).`,
+            s.leftOut &&
+              `Left out ${formatCurrency(s.leftOut.amount)} of deposits that look like money from ${s.leftOut.from} already recorded in Performance under Rollovers.`,
             kept && "Kept the figures you'd already edited.",
           ]
             .filter(Boolean)
@@ -202,8 +203,6 @@ export function UpdateBasisForm({
           penalty-free portion of each Roth account. Also editable inline on
           this page or on Tax Buckets.
         </p>
-        {/* Decisions change what a fill adds, so they come first. */}
-        {!fillNotes && <TransactionDecisions year={currentYear} />}
         {suggestions && suggestions.accounts.length > 0 && (
           <div className="flex flex-wrap items-center gap-2 rounded bg-blue-50 p-2 text-xs text-blue-900 dark:bg-blue-950/30 dark:text-blue-200">
             <span>

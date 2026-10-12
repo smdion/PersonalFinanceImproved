@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { countsAsFeed } from "@/lib/pure/simplefin-feeds";
 import React, { memo, useState } from "react";
 import { trpc } from "@/lib/trpc";
@@ -407,12 +406,8 @@ function LinkedBalanceCardImpl() {
             <span className="text-faint">
               {" "}
               (estimated — {flows.reviewCount}{" "}
-              {flows.reviewCount === 1 ? "transaction" : "transactions"} to
-              decide in{" "}
-              <Link href="/performance" className="underline">
-                Update Performance
-              </Link>
-              )
+              {flows.reviewCount === 1 ? "transaction" : "transactions"} Ledgr
+              wasn&apos;t sure about)
             </span>
           )}
         </p>

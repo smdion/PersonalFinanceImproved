@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**396 procedures across 53 routers.**
+**394 procedures across 53 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -149,10 +149,9 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `investments/comparison`
 
-| Procedure            | Kind  | Auth                 | Description                                                                                                                                                                                              |
-| -------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `getBenchmarkPrices` | query | `protectedProcedure` | An index's month-end total-return prices from `fromYear` — public market data, no household figures, so any signed-in user (the Performance page's benchmark column computes against its own rows). Null |
-| `getComparison`      | query | `portfolioProcedure` | Yearly results and the same money in each benchmark, from `fromYear` (default: first year with real gains).                                                                                              |
+| Procedure       | Kind  | Auth                 | Description                                                                                                 |
+| --------------- | ----- | -------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `getComparison` | query | `portfolioProcedure` | Yearly results and the same money in each benchmark, from `fromYear` (default: first year with real gains). |
 
 ## `investments/fund-facts`
 
@@ -203,12 +202,11 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `investments/transactions`
 
-| Procedure              | Kind     | Auth                 | Description                                                                                                                                                                                              |
-| ---------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `clearTransactionKind` | mutation | `portfolioProcedure` | Undo a choice made in the review queue (never the redaction lock).                                                                                                                                       |
-| `listDecisions`        | query    | `portfolioProcedure` | The few transactions a Performance or Basis fill for `year` needs a decision on: rows in accounts that count toward a tracked account that no rule could place (or that a rule flags), and deposits / wi |
-| `listTransactions`     | query    | `portfolioProcedure` | Investment transactions with the kind each counts as, newest first.                                                                                                                                      |
-| `setTransactionKind`   | mutation | `portfolioProcedure` | Set the kind of one row. Redacted HSA rows are fixed and can't be changed.                                                                                                                               |
+| Procedure              | Kind     | Auth                 | Description                                                                |
+| ---------------------- | -------- | -------------------- | -------------------------------------------------------------------------- |
+| `clearTransactionKind` | mutation | `portfolioProcedure` | Undo a choice made in the review queue (never the redaction lock).         |
+| `listTransactions`     | query    | `portfolioProcedure` | Investment transactions with the kind each counts as, newest first.        |
+| `setTransactionKind`   | mutation | `portfolioProcedure` | Set the kind of one row. Redacted HSA rows are fixed and can't be changed. |
 
 ## `mortgage`
 

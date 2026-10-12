@@ -138,10 +138,10 @@ describe("investments router", () => {
     expect(byId.has(tx["old-voided"]!)).toBe(false);
   });
 
-  it("asks for a decision on rows no rule could place", async () => {
-    const queue = await ctx.caller.investments.listDecisions({
-      year: Number(daysAgo(3).slice(0, 4)),
-    });
+  it("flags rows no rule could place", async () => {
+    const queue = (await ctx.caller.investments.listTransactions({})).filter(
+      (r) => r.needsReview,
+    );
     expect(queue.map((r) => r.id).sort()).toEqual(
       [tx.mystery1!, tx.mystery2!, tx["hsa-out"]!].sort(),
     );
@@ -162,9 +162,9 @@ describe("investments router", () => {
       fromTransactionId: tx.mystery1,
     });
     expect(saved.rule.sampleDescription).toBe("ZZZ PAYROLL 01");
-    const queue = await ctx.caller.investments.listDecisions({
-      year: Number(daysAgo(3).slice(0, 4)),
-    });
+    const queue = (await ctx.caller.investments.listTransactions({})).filter(
+      (r) => r.needsReview,
+    );
     expect(queue.map((r) => r.id)).toEqual([tx["hsa-out"]!]);
     const rows = await ctx.caller.investments.listTransactions({});
     expect(rows.find((r) => r.id === tx.mystery2)).toMatchObject({
@@ -395,7 +395,7 @@ describe("investments router", () => {
     expect(after.find((r) => r.id === out)?.source).toBe("override");
   });
 
-  it("suggests a transfer for a deposit Performance already records as moved in", async () => {
+  it("leaves out a deposit Performance already records as moved in", async () => {
     const db = ctx.db;
     const perf = (label: string) =>
       db
@@ -454,18 +454,17 @@ describe("investments router", () => {
       .returning()
       .get().id;
     const rows = await ctx.caller.investments.listTransactions({});
-    expect(rows.find((r) => r.id === dep)?.transferSuggestion).toMatchObject({
-      reason: "recorded",
-    });
-    // One click settles it.
-    await ctx.caller.investments.setTransactionKind({
-      id: dep,
-      kind: "transfer",
-    });
-    const after = await ctx.caller.investments.listTransactions({});
-    expect(after.find((r) => r.id === dep)).toMatchObject({
-      kind: "transfer",
-      transferSuggestion: null,
+    expect(rows.find((r) => r.id === dep)?.recordedMoveFrom).toMatch(
+      /Example Old Plan/,
+    );
+    // A Performance fill leaves it out instead of counting new money.
+    const fill = await ctx.caller.investments.suggestPerformance({ year });
+    const receiving = fill.accounts.find((x) =>
+      x.leftOut?.from.includes("Example Old Plan"),
+    );
+    expect(receiving).toMatchObject({
+      leftOut: { amount: 900 },
+      added: { contributions: 0 },
     });
   });
 
