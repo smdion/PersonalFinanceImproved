@@ -1,4 +1,8 @@
 import { initTRPC, TRPCError } from "@trpc/server";
+import {
+  DEMO_SCHEMA_MARKER_PREFIX,
+  MIGRATION_COUNT_SUBQUERY,
+} from "@/lib/db/demo-schema-marker";
 import { ZodError, z } from "zod/v4";
 import type { Session } from "next-auth";
 import { cookies, headers } from "next/headers";
@@ -199,7 +203,7 @@ function logMutation(session: Session, path: string, rawInput: unknown) {
 // set search_path on it, and use it for all queries in this procedure.
 // This avoids the pool-connection-hop problem where SET search_path on one
 // connection doesn't apply to queries that land on a different connection.
-const demoSchemaMiddleware = t.middleware(async ({ ctx, next }) => {
+const demoSchemaMiddleware = t.middleware(async ({ ctx, next, path }) => {
   // Demo schemas require PG (uses SET search_path for isolation)
   if (!ctx.demoSchema || !isPostgres()) return next({ ctx });
 
@@ -208,6 +212,31 @@ const demoSchemaMiddleware = t.middleware(async ({ ctx, next }) => {
   const quotedSchema = `"${ctx.demoSchema.replace(/"/g, '""')}"`;
   const client = await pool.connect();
   try {
+    // Fail closed: PostgreSQL silently skips a missing schema in
+    // search_path, so a demo schema dropped by an upgrade (or missing a
+    // table added since it was built) would send this request to the real
+    // public tables. Only the demo.* procedures (set up / leave a demo)
+    // run without a complete demo schema — and they never read app data.
+    // A schema built before the latest migration is stale too (its tables
+    // lack new columns), so its stamp must match the current count.
+    const { rows } = (await client.query(
+      `SELECT to_regnamespace($1) IS NOT NULL AND NOT EXISTS (
+         SELECT 1 FROM pg_tables p WHERE p.schemaname = 'public'
+           AND NOT EXISTS (SELECT 1 FROM pg_tables d
+             WHERE d.schemaname = $1 AND d.tablename = p.tablename)
+       ) AND obj_description(to_regnamespace($1)::oid, 'pg_namespace')
+         = $2 || ${MIGRATION_COUNT_SUBQUERY}::text
+       AS complete`,
+      [ctx.demoSchema, DEMO_SCHEMA_MARKER_PREFIX],
+    )) as { rows: { complete: boolean }[] };
+    if (!rows[0]?.complete) {
+      if (path.startsWith("demo.")) return await next({ ctx });
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message:
+          "This demo profile needs to be set up again (Ledgr was updated). Choose a demo profile again to continue.",
+      });
+    }
     await client.query(`SET search_path TO ${quotedSchema}, public`);
     const { drizzle: pgDrizzle } = await import("drizzle-orm/node-postgres");
     // eslint-disable-next-line no-restricted-syntax -- Drizzle ORM type limitation
@@ -481,6 +510,14 @@ export const adminProcedure = rateLimitedAuthedBase
   });
 
 // Permission-gated — requires admin OR specific permission addon + logs mutations
+/** Whether a signed-in user holds a permission (admins hold all) — the rule withPermission enforces. */
+export function userHasPermission(
+  user: { role: string; permissions: readonly string[] },
+  permission: Permission,
+): boolean {
+  return user.role === "admin" || user.permissions.includes(permission);
+}
+
 function withPermission(permission: Permission) {
   return rateLimitedAuthedBase
     .meta({ auth: permission })
@@ -491,8 +528,7 @@ function withPermission(permission: Permission) {
           message: "Not authenticated",
         });
       }
-      const { role, permissions } = ctx.session.user;
-      if (role !== "admin" && !permissions.includes(permission)) {
+      if (!userHasPermission(ctx.session.user, permission)) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: `${permission} permission required`,

@@ -108,3 +108,37 @@ export async function resolveRetirementProfileId(
   ]);
   return resolveRetirementProfileIdFrom(appSettings, profiles);
 }
+
+/**
+ * The household's planned retirement year under the active retirement
+ * profile: the average of each person's birth year + planned retirement
+ * age (the profile's per-person age, else the person's settings row).
+ * Null when nobody has a planned age.
+ */
+export async function householdRetirementYear(db: Db): Promise<number | null> {
+  const [profileId, people, profilePeople, settings] = await Promise.all([
+    resolveRetirementProfileId(db),
+    db.select().from(schema.people),
+    db.select().from(schema.retirementProfilePeople),
+    db.select().from(schema.retirementSettings),
+  ]);
+  const years: number[] = [];
+  for (const p of people) {
+    const born = Number(String(p.dateOfBirth).slice(0, 4));
+    if (!(born > 1900)) continue;
+    const age =
+      profilePeople.find(
+        (r) => r.profileId === profileId && r.personId === p.id,
+      )?.retirementAge ??
+      settings.find(
+        (r) =>
+          r.personId === p.id &&
+          (profileId === null || r.profileId === profileId),
+      )?.retirementAge ??
+      settings.find((r) => r.personId === p.id)?.retirementAge;
+    if (age != null) years.push(born + age);
+  }
+  return years.length === 0
+    ? null
+    : Math.round(years.reduce((t, y) => t + y, 0) / years.length);
+}

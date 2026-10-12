@@ -1,6 +1,9 @@
 import * as fs from "fs";
 import * as path from "path";
 
+/** Kept equal to src/lib/db/demo-schema-marker.ts (standalone build; a test checks). */
+export const DEMO_SCHEMA_MARKER_PREFIX = "ledgr-migrations:";
+
 function log(
   level: "info" | "warn" | "error",
   event: string,
@@ -137,6 +140,7 @@ const VERSION_TABLE_NAMES = [
   "retirement_salary_overrides",
   "retirement_budget_overrides",
   "asset_class_correlations",
+  "asset_class_buckets",
   "glide_path_allocations",
   "brokerage_planned_transactions",
   "annual_performance",
@@ -159,6 +163,12 @@ const VERSION_TABLE_NAMES = [
   "simplefin_accounts",
   "utility_service",
   "utility_reading",
+  // v0.8.5 investments foundation
+  "securities",
+  "simplefin_account_balances",
+  "holding_observations",
+  "investment_transactions",
+  "security_facts",
 ];
 
 // ---------------------------------------------------------------------------
@@ -184,6 +194,41 @@ const BASELINE_HASHES: Record<string, string> = {
     "v0.6_final",
 };
 
+// sha256 of every PostgreSQL migration file of the v0.8 line up to the
+// v0.8.5 squash, including the pre-release 0004–0011 that v0.8.5 squashed
+// into one. The LATEST applied row names exactly where an install was, so a
+// backup taken before the squash is labelled with its real schema tag
+// (all are in backup-transforms' V08_SCHEMA_TAGS).
+const V08_MIGRATION_HASHES: Record<string, string> = {
+  a626ffc04645cdc4d3a28b0793d380796c27be18d954ba22b62514018d595d5f:
+    "0000_v8_initial_schema",
+  fcdc386e4feec343e36bf406408b945085d25e3ab894400c35380eae6f089db1:
+    "0001_nappy_blade",
+  "1e41b0bc9dffb0f161e934366d6bca24f7eb760c2a36dfa1089570c8c5a264f7":
+    "0002_talented_monster_badoon",
+  "3885f68b63400bafa5255385298f696ac03762bde8d62f63d10eafdfd87ab59d":
+    "0003_past_rhodey",
+  "604efb62e506b15c0e4fb1badcd39e8322e6029754caeb07aa655d9883d40995":
+    "0004_simple_rogue",
+  "0fdbea5668319cde21964cdc4731467be705ca30948d1277d751f0b2600213c2":
+    "0005_light_prima",
+  bf1ae798460566c4643eaa7513f73346fa19db826e20c822fbb748b2f44caad0:
+    "0006_empty_zarda",
+  a67207de4f5756238733969d786dd6b3e50425e0cdb7806c709af5c8d723ea6a:
+    "0007_bizarre_zarek",
+  "20aa1a547298db796e508d3f2a3b89e8e288e8926ea5c44d662831f03efbddb8":
+    "0008_worthless_talisman",
+  "714af5cf53b1209c1ce826835d770efa3f119848479cd8bb0c0d8d050644af2b":
+    "0009_icy_black_cat",
+  "540178c73bb2f46266a77e5b57eafab7f90913c3641fe03ab0fb2d1bfecccca0":
+    "0010_red_ink",
+  "5d38e8c357c954874148fe4052d3dff8a10ca116b2f873fb09a432526c3bb178":
+    "0011_lumpy_maximus",
+  // v0.8.5 as released (0004–0011 squashed). Keep in step with the file.
+  da6dbae6f960a0e17c5d3810ad13a8971de5de1782b171d8249107e3d75ff3a7:
+    "0004_v085_investments",
+};
+
 /**
  * Detect the pre-squash schema era. Hash of the earliest applied migration
  * first (exact for v0.6.x / v0.7.x), then schema-shape probes for older
@@ -192,6 +237,19 @@ const BASELINE_HASHES: Record<string, string> = {
 async function detectSchemaEra(
   client: import("pg").PoolClient,
 ): Promise<string> {
+  // Exact, v0.8 line: the latest migration applied.
+  try {
+    const { rows: lastRow } = await client.query(
+      "SELECT hash FROM drizzle.__drizzle_migrations ORDER BY id DESC LIMIT 1",
+    );
+    const lastHash = lastRow[0]?.hash as string | undefined;
+    if (lastHash && V08_MIGRATION_HASHES[lastHash]) {
+      return V08_MIGRATION_HASHES[lastHash];
+    }
+  } catch {
+    // __drizzle_migrations absent or unreadable — fall through.
+  }
+
   // Exact: the first migration a post-squash install ever applied is its
   // release-line baseline.
   try {
@@ -296,24 +354,75 @@ function resolveWritableBackupDir(): string | null {
   return null;
 }
 
+/** How many pre-upgrade backups to keep in the backup directory (newest first). */
+const PRE_UPGRADE_BACKUPS_KEPT = 5;
+
+/** Keep only the newest pre-upgrade backups — restart loops would otherwise pile them up. */
+export function prunePreUpgradeBackups(backupDir: string): void {
+  try {
+    const files = fs
+      .readdirSync(backupDir)
+      .filter((f) => /^pre-upgrade-backup-.*\.(json|db)$/.test(f))
+      .sort()
+      .reverse();
+    for (const f of files.slice(PRE_UPGRADE_BACKUPS_KEPT)) {
+      fs.unlinkSync(path.join(backupDir, f));
+      log("info", "pre_upgrade_backup_pruned", { file: f });
+    }
+  } catch (err) {
+    log("warn", "pre_upgrade_backup_prune_failed", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
+/** Warn when a backup landed somewhere a container rebuild would erase. */
+function warnIfEphemeral(backupPath: string): void {
+  if (process.env.LEDGR_BACKUP_DIR || backupPath.startsWith("/app/data/"))
+    return;
+  log("error", "pre_upgrade_backup_not_persistent", {
+    path: backupPath,
+    message:
+      "The pre-upgrade backup was written outside a persistent volume and will be lost when the container is recreated. Copy it out now, and set LEDGR_BACKUP_DIR to a mounted directory.",
+  });
+}
+
 /**
  * Export a JSON snapshot of every VERSION_TABLE_NAMES table and write it to
- * disk. Written by the squash-upgrade path (pre-squash safety net). Same
- * "pre-upgrade-backup-*.json" format regardless of which call site wrote it,
- * so it always means the same thing to an operator.
+ * disk — the safety net before any schema change (squash or normal
+ * upgrade). Same "pre-upgrade-backup-*.json" format from every call site.
+ *
+ * Read in one REPEATABLE READ, READ ONLY transaction so all tables come
+ * from the same moment. Only a table that doesn't exist yet (added by the
+ * migration about to run) is exported empty; any other read error fails
+ * the backup rather than writing one with silently missing data.
  */
 async function writePreMigrationBackupPg(
   client: import("pg").PoolClient,
   schemaVersion: string,
 ): Promise<string | null> {
   const tables: Record<string, unknown[]> = {};
-  for (const tableName of VERSION_TABLE_NAMES) {
-    try {
+  try {
+    await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
+    const { rows: existing } = await client.query<{ tablename: string }>(
+      "SELECT tablename FROM pg_tables WHERE schemaname = 'public'",
+    );
+    const present = new Set(existing.map((r) => r.tablename));
+    for (const tableName of VERSION_TABLE_NAMES) {
+      if (!present.has(tableName)) {
+        tables[tableName] = [];
+        continue;
+      }
       const { rows } = await client.query(`SELECT * FROM "${tableName}"`);
       tables[tableName] = rows;
-    } catch {
-      tables[tableName] = [];
     }
+    await client.query("COMMIT");
+  } catch (readErr) {
+    await client.query("ROLLBACK").catch(() => {});
+    log("error", "pre_migration_backup_read_failed", {
+      error: readErr instanceof Error ? readErr.message : String(readErr),
+    });
+    return null;
   }
 
   const backup = {
@@ -327,7 +436,7 @@ async function writePreMigrationBackupPg(
   if (!backupDir) {
     log("error", "pre_migration_backup_no_writable_dir", {
       message:
-        "No writable directory for the pre-upgrade backup (tried LEDGR_BACKUP_DIR, /app/data, /tmp, .). Migration is proceeding WITHOUT an on-disk safety net — set LEDGR_BACKUP_DIR to a writable volume mount.",
+        "No writable directory for the pre-upgrade backup (tried LEDGR_BACKUP_DIR, /app/data, /tmp, .). Set LEDGR_BACKUP_DIR to a writable volume mount.",
     });
     return null;
   }
@@ -346,13 +455,13 @@ async function writePreMigrationBackupPg(
         0,
       ),
     });
+    warnIfEphemeral(backupPath);
+    prunePreUpgradeBackups(backupDir);
     return backupPath;
   } catch (backupErr) {
     log("error", "pre_migration_backup_write_failed", {
       dir: backupDir,
       error: backupErr instanceof Error ? backupErr.message : String(backupErr),
-      message:
-        "Pre-upgrade backup write failed after its directory passed a probe. Migration is proceeding WITHOUT an on-disk safety net.",
     });
     return null;
   }
@@ -473,6 +582,9 @@ async function handleSquashUpgrade(
     if (!isPartialRecovery) {
       backupPath = await writePreMigrationBackupPg(client, schemaVersion);
       backupPathBeforeFailure = backupPath;
+      // Clearing the journal below is the most destructive step — never
+      // without a backup.
+      requireBackupOrAbort(backupPath);
 
       // 2. Clear old migration journal
       await client.query("DELETE FROM drizzle.__drizzle_migrations");
@@ -596,6 +708,9 @@ async function handleSquashUpgrade(
     log("info", "squash_upgrade_complete", { schemaVersion });
     return { backupPath, schemaVersion, wasSquash: true };
   } catch (err) {
+    // A missing backup stops everything — never swallowed like other
+    // squash failures below.
+    if (err instanceof BackupRequiredError) throw err;
     // A backup written before the failure is real, on-disk pre-upgrade
     // state — say so explicitly. Without this, the swallow-and-continue
     // behavior below (unchanged: callers proceed as if no squash happened)
@@ -616,6 +731,56 @@ async function handleSquashUpgrade(
   }
 }
 
+/**
+ * Journal entries whose migration file hash isn't recorded yet, and the tag
+ * of the last entry that is (the schema the database is at now — the
+ * backup's schemaVersion, which restore transforms key on).
+ */
+export function pendingJournalEntries(
+  journal: { entries: { tag: string }[] },
+  migrationsFolder: string,
+  recordedHashes: Set<string>,
+  crypto: typeof import("crypto"),
+): { pendingTags: string[]; lastAppliedTag: string | null } {
+  const pendingTags: string[] = [];
+  let lastAppliedTag: string | null = null;
+  for (const entry of journal.entries) {
+    const sqlPath = path.resolve(`${migrationsFolder}/${entry.tag}.sql`);
+    if (!fs.existsSync(sqlPath)) continue;
+    const hash = crypto
+      .createHash("sha256")
+      .update(fs.readFileSync(sqlPath, "utf-8"))
+      .digest("hex");
+    if (recordedHashes.has(hash)) lastAppliedTag = entry.tag;
+    else pendingTags.push(entry.tag);
+  }
+  return { pendingTags, lastAppliedTag };
+}
+
+/**
+ * Stop before migrating when the pre-migration backup couldn't be written.
+ * LEDGR_SKIP_PREMIGRATION_BACKUP=true proceeds anyway (an operator who has
+ * their own backup, e.g. a pg_dump or volume snapshot).
+ */
+/** The pre-migration backup couldn't be written — always stops the migration. */
+export class BackupRequiredError extends Error {
+  override name = "BackupRequiredError";
+}
+
+export function requireBackupOrAbort(backupPath: string | null): void {
+  if (backupPath) return;
+  if (process.env.LEDGR_SKIP_PREMIGRATION_BACKUP === "true") {
+    log("warn", "pre_migration_backup_skipped", {
+      message:
+        "No pre-migration backup could be written; continuing because LEDGR_SKIP_PREMIGRATION_BACKUP=true.",
+    });
+    return;
+  }
+  throw new BackupRequiredError(
+    "Refusing to migrate: the pre-migration backup could not be written. The database has not been changed. Set LEDGR_BACKUP_DIR to a writable directory (or LEDGR_SKIP_PREMIGRATION_BACKUP=true if you have your own backup) and restart.",
+  );
+}
+
 async function runPostgres() {
   const { drizzle } = await import("drizzle-orm/node-postgres");
   const { migrate } = await import("drizzle-orm/node-postgres/migrator");
@@ -634,11 +799,12 @@ async function runPostgres() {
     // journal, a schema squash occurred.  This creates a backup, clears old
     // journal entries, applies the new squashed migration idempotently, and
     // records its hash — so Drizzle's migrate() below becomes a no-op.
-    const { backupPath } = await handleSquashUpgrade(
+    const squash = await handleSquashUpgrade(
       pool,
       "./drizzle",
       "./drizzle/meta/_journal.json",
     );
+    let backupPath = squash.backupPath;
 
     // Apply any pending migrations idempotently before handing off to Drizzle's
     // migrate(). This handles upgrade DBs that already have tables/columns from
@@ -668,6 +834,38 @@ async function runPostgres() {
         recorded.map((r: { hash: string }) => r.hash),
       );
       const crypto = await import("crypto");
+
+      // Back up before changing an existing install's schema — every
+      // upgrade, not only squashes. Fresh installs (no app tables yet)
+      // have nothing to lose. Refuse to migrate if no backup could be
+      // written: the container then fails to start with the database
+      // untouched, and the previous image still runs against it.
+      const pending = pendingJournalEntries(
+        journal,
+        "./drizzle",
+        recordedHashes,
+        crypto,
+      );
+      if (pending.pendingTags.length > 0 && !backupPath) {
+        const { rows: probe } = await preClient.query(
+          `SELECT EXISTS (SELECT 1 FROM information_schema.tables
+             WHERE table_schema = 'public' AND table_name = 'people') AS exists`,
+        );
+        if (probe[0]?.exists) {
+          log("info", "pre_migration_backup_start", {
+            pending: pending.pendingTags,
+            from: pending.lastAppliedTag,
+          });
+          backupPath = await writePreMigrationBackupPg(
+            preClient,
+            // The label restore transforms key on — never "unknown", which
+            // the import path rejects.
+            pending.lastAppliedTag ?? (await detectSchemaEra(preClient)),
+          );
+          requireBackupOrAbort(backupPath);
+        }
+      }
+
       // See the matching comment in handleSquashUpgrade above — this loop
       // has the identical "replay a migration whose hash isn't recorded yet
       // against a DB that may already be past it" shape, so it needs the
@@ -732,46 +930,49 @@ async function runPostgres() {
 
     log("info", "migrations_applied", { dialect: "postgresql" });
 
-    // Drop demo schemas after a schema change so they get rebuilt fresh
-    // from the public schema's new structure on next activation. Demo
-    // schemas are sandboxes that the demo router (src/server/routers/
-    // demo.ts:436) recreates via DROP TABLE + CREATE TABLE LIKE public.x
-    // INCLUDING ALL on every activateProfile call. They never carry
-    // user-meaningful state, so dropping them on schema upgrade is the
-    // simplest way to keep them in sync with the public schema.
-    //
-    // Without this, demo profiles activated before a schema change
-    // would have stale per-tenant tables (missing new columns, old
-    // decimal precision, etc.) and any query into the demo schema
-    // would fail at runtime.
-    if (backupPath) {
+    // Drop stale demo schemas so they get rebuilt fresh from the public
+    // schema's current structure on next activation. Demo schemas are
+    // sandboxes the demo router (src/server/routers/demo.ts) builds with
+    // CREATE TABLE LIKE public.x and stamps with the applied-migration
+    // count (src/lib/db/demo-schema-marker.ts); any whose stamp doesn't
+    // match the current count was built for an older structure. Checked on
+    // EVERY start, not just when a migration ran, so a failed drop is
+    // retried — and it's fatal: a stale schema can't be left in place
+    // (requests refuse to use it, but it must not linger silently).
+    {
       const demoClient = await pool.connect();
       try {
-        const { rows: demoSchemas } = await demoClient.query<{
-          nspname: string;
-        }>(
-          "SELECT nspname FROM pg_namespace WHERE nspname LIKE 'demo_%' ORDER BY nspname",
+        const { rows: stale } = await demoClient.query<{ nspname: string }>(
+          `SELECT n.nspname FROM pg_namespace n
+            WHERE n.nspname LIKE 'demo\\_%'
+              AND obj_description(n.oid, 'pg_namespace') IS DISTINCT FROM
+                  $1 || (SELECT count(*)::int FROM drizzle.__drizzle_migrations)::text
+            ORDER BY n.nspname`,
+          [DEMO_SCHEMA_MARKER_PREFIX],
         );
-        for (const { nspname } of demoSchemas) {
+        for (const { nspname } of stale) {
           // Quote identifier to defend against schema names with special chars
           const quoted = '"' + nspname.replaceAll('"', '""') + '"';
           await demoClient.query(`DROP SCHEMA IF EXISTS ${quoted} CASCADE`);
           log("info", "demo_schema_dropped_for_rebuild", {
             schema: nspname,
             reason:
-              "Schema upgrade — demo profile will be rebuilt fresh on next activation",
+              "Built for an older schema — demo profile will be rebuilt fresh on next activation",
           });
         }
-        if (demoSchemas.length > 0) {
+        if (stale.length > 0) {
           log("info", "demo_schemas_cleared", {
-            count: demoSchemas.length,
+            count: stale.length,
             note: "Users with active demo profiles will need to re-activate via the UI",
           });
         }
       } catch (demoErr) {
-        log("warn", "demo_schema_cleanup_failed", {
+        log("error", "demo_schema_cleanup_failed", {
           error: demoErr instanceof Error ? demoErr.message : String(demoErr),
         });
+        throw new Error(
+          `Couldn't drop stale demo schemas: ${demoErr instanceof Error ? demoErr.message : String(demoErr)}`,
+        );
       } finally {
         demoClient.release();
       }
@@ -908,6 +1109,39 @@ function writePreMigrationBackupSQLite(
  * Detects squash, creates backup, clears old journal, applies migration
  * idempotently, and records the hash so Drizzle's migrate() is a no-op.
  */
+/**
+ * Exact copy of the SQLite database (VACUUM INTO — consistent, includes the
+ * migration journal). Restoring = stop Ledgr, put this file in place of the
+ * database file, start the previous version.
+ */
+function writePreMigrationBackupSqlite(
+  sqlite: InstanceType<typeof import("better-sqlite3")>,
+): string | null {
+  const backupDir = resolveWritableBackupDir();
+  if (!backupDir) {
+    log("error", "pre_migration_backup_no_writable_dir", {
+      message:
+        "No writable directory for the pre-upgrade backup (tried LEDGR_BACKUP_DIR, /app/data, /tmp, .).",
+    });
+    return null;
+  }
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const backupPath = path.join(backupDir, `pre-upgrade-backup-${timestamp}.db`);
+  try {
+    sqlite.exec(`VACUUM INTO '${backupPath.replaceAll("'", "''")}'`);
+    log("info", "pre_migration_backup_complete", { path: backupPath });
+    warnIfEphemeral(backupPath);
+    prunePreUpgradeBackups(backupDir);
+    return backupPath;
+  } catch (err) {
+    log("error", "pre_migration_backup_write_failed", {
+      dir: backupDir,
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return null;
+  }
+}
+
 function handleSQLiteSquashUpgrade(
   sqlite: InstanceType<typeof import("better-sqlite3")>,
   migrationsFolder: string,
@@ -1068,8 +1302,9 @@ function handleSQLiteSquashUpgrade(
     schemaVersion,
   });
 
-  // 1. Export backup
+  // 1. Export backup — never clear the journal without one.
   const backupPath = writePreMigrationBackupSQLite(sqlite, schemaVersion);
+  requireBackupOrAbort(backupPath);
 
   // 2. Clear old journal
   sqlite.prepare("DELETE FROM __drizzle_migrations").run();
@@ -1150,7 +1385,7 @@ function runSQLite() {
   sqlite.pragma("synchronous = NORMAL");
 
   // Handle squash upgrade before running Drizzle's migrate()
-  const backupPath = handleSQLiteSquashUpgrade(
+  let backupPath = handleSQLiteSquashUpgrade(
     sqlite,
     "./drizzle-sqlite",
     "./drizzle-sqlite/meta/_journal.json",
@@ -1179,6 +1414,30 @@ function runSQLite() {
         }[]
       ).map((r) => r.hash),
     );
+
+    // Same rule as PostgreSQL: back up an existing install before changing
+    // its schema, and don't migrate without a backup.
+    const pending = pendingJournalEntries(
+      journal,
+      "./drizzle-sqlite",
+      appliedHashes,
+      crypto,
+    );
+    const hasAppTables = !!sqlite
+      .prepare(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'people'",
+      )
+      .get();
+    if (pending.pendingTags.length > 0 && !backupPath && hasAppTables) {
+      log("info", "pre_migration_backup_start", {
+        pending: pending.pendingTags,
+        from: pending.lastAppliedTag,
+        dialect: "sqlite",
+      });
+      backupPath = writePreMigrationBackupSqlite(sqlite);
+      requireBackupOrAbort(backupPath);
+    }
+
     for (const entry of journal.entries) {
       const sqlPath = path.resolve(`./drizzle-sqlite/${entry.tag}.sql`);
       if (!fs.existsSync(sqlPath)) continue;

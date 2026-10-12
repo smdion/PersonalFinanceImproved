@@ -86,6 +86,7 @@ vi.mock("@/lib/trpc", () => ({
         useMutation: () => ({ mutate: vi.fn(), isPending: false }),
       },
     },
+    sec: { getStatus: { useQuery: () => ({ data: { connected: false } }) } },
     tiingo: {
       getStatus: {
         useQuery: () => ({ data: { connected: false, lastSyncedAt: null } }),
@@ -144,6 +145,10 @@ vi.mock("@/lib/trpc", () => ({
       setAccountMapping: {
         useMutation: () => ({ mutate: vi.fn(), isPending: false }),
       },
+
+      acceptLinkSuggestions: {
+        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+      },
     },
   },
 }));
@@ -168,6 +173,9 @@ vi.mock("@/components/ui/card", () => ({
   ),
 }));
 
+vi.mock("@/components/settings/integrations-sec", () => ({
+  SecCard: () => <div data-testid="sec-card" />,
+}));
 vi.mock("@/components/settings/integrations-preview-panel", () => ({
   PreviewPanel: () => <div data-testid="preview-panel">Preview</div>,
 }));
@@ -224,6 +232,9 @@ describe("IntegrationsSettings", () => {
               useMutation: () => ({ mutate: vi.fn(), isPending: false }),
             },
           },
+        },
+        sec: {
+          getStatus: { useQuery: () => ({ data: { connected: false } }) },
         },
         tiingo: {
           getStatus: {
@@ -445,6 +456,9 @@ describe("IntegrationsSettings", () => {
             useMutation: () => ({ mutate: vi.fn(), isPending: false }),
           },
         },
+        sec: {
+          getStatus: { useQuery: () => ({ data: { connected: false } }) },
+        },
         tiingo: {
           getStatus: {
             useQuery: () => ({
@@ -501,6 +515,10 @@ describe("IntegrationsSettings", () => {
             useMutation: () => ({ mutate: vi.fn(), isPending: false }),
           },
           setAccountMapping: {
+            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+          },
+
+          acceptLinkSuggestions: {
             useMutation: () => ({ mutate: vi.fn(), isPending: false }),
           },
         },
@@ -628,6 +646,9 @@ describe("IntegrationsSettings", () => {
             useMutation: () => ({ mutate: vi.fn(), isPending: false }),
           },
         },
+        sec: {
+          getStatus: { useQuery: () => ({ data: { connected: false } }) },
+        },
         tiingo: {
           getStatus: {
             useQuery: () => ({
@@ -682,6 +703,10 @@ describe("IntegrationsSettings", () => {
             useMutation: () => ({ mutate: vi.fn(), isPending: false }),
           },
           setAccountMapping: {
+            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+          },
+
+          acceptLinkSuggestions: {
             useMutation: () => ({ mutate: vi.fn(), isPending: false }),
           },
         },

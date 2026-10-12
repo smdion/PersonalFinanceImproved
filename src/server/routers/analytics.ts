@@ -4,7 +4,9 @@ import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { createTRPCRouter, portfolioProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { ANALYTICS_HISTORY_SNAPSHOT_LIMIT } from "@/lib/constants";
-import { FMP_SECTOR_TO_ASSET_CLASS } from "@/lib/config/fmp-sector-map";
+import { effectiveFacts, valueByClass } from "@/lib/pure/fund-facts";
+import { loadBucketLinks, toFactRows } from "@/server/helpers/fund-facts";
+import { localDateStr } from "@/lib/utils/date";
 
 // ---------------------------------------------------------------------------
 // Shared Zod schemas
@@ -16,7 +18,8 @@ const HoldingInputSchema = z.object({
   weightBps: z.number().int().min(0).max(10000),
   expenseRatio: z.string().nullable().optional(),
   assetClassId: z.number().int().nullable().optional(),
-  assetClassSource: z.enum(["fmp", "manual"]).default("manual"),
+  // "fmp" is kept so holdings entered before FMP was removed still save.
+  assetClassSource: z.enum(["sec", "fmp", "manual"]).default("manual"),
 });
 
 // ---------------------------------------------------------------------------
@@ -217,75 +220,49 @@ export const analyticsRouter = createTRPCRouter({
     }),
 
   /**
-   * FMP ticker lookup — resolves name, expense ratio, sector, and suggested asset class.
-   * API key is read server-side from api_connections; never exposed to the client.
-   *
-   * Distinguishes error types so the UI can show the right message:
-   *   no_key    — FMP connection not configured (suppress "Look up" button on the client)
-   *   not_found — ticker not found in FMP
-   *   rate_limit — FMP 429 (250/day free tier exhausted)
-   *   error     — any other FMP or network failure
+   * Ticker lookup from the fund facts Ledgr already stores (SEC filings or
+   * your entries) — name, expense ratio, and the asset class linked to the
+   * fund's dominant category when one holds at least 80% of it. No outside
+   * service is called; a fund Ledgr hasn't seen returns not_found.
    */
   lookupTicker: portfolioProcedure
     .input(z.object({ ticker: z.string().min(1).max(20) }))
     .query(async ({ ctx, input }) => {
-      // Fetch FMP API key from api_connections
-      const conn = await ctx.db
-        .select({ config: schema.apiConnections.config })
-        .from(schema.apiConnections)
-        .where(eq(schema.apiConnections.service, "fmp"))
-        .limit(1);
-
-      const apiKey = conn[0]?.config?.apiKey;
-      if (!apiKey) {
-        return { error: "no_key" as const };
-      }
-
       const ticker = input.ticker.toUpperCase();
-
-      try {
-        const res = await fetch(
-          `https://financialmodelingprep.com/api/v3/profile/${ticker}?apikey=${apiKey}`,
-        );
-
-        if (res.status === 429) {
-          return { error: "rate_limit" as const };
+      const [security] = await ctx.db
+        .select()
+        .from(schema.securities)
+        .where(eq(schema.securities.ticker, ticker))
+        .limit(1);
+      if (!security) return { error: "not_found" as const };
+      const rows = await ctx.db
+        .select()
+        .from(schema.securityFacts)
+        .where(eq(schema.securityFacts.securityId, security.id));
+      const facts = effectiveFacts(toFactRows(rows), localDateStr());
+      if (!facts.expenseRatio && !facts.composition)
+        return { error: "not_found" as const };
+      let suggestedAssetClassName: string | undefined;
+      const mix = facts.composition?.buckets;
+      if (mix) {
+        // Shares per class through the household's links (several
+        // categories may count toward one class).
+        const { byClass } = valueByClass(mix, await loadBucketLinks(ctx.db));
+        const [top] = [...byClass.entries()].sort((x, y) => y[1] - x[1]);
+        if (top && top[1] >= 0.8) {
+          const [cls] = await ctx.db
+            .select({ name: schema.assetClassParams.name })
+            .from(schema.assetClassParams)
+            .where(eq(schema.assetClassParams.id, top[0]))
+            .limit(1);
+          suggestedAssetClassName = cls?.name;
         }
-
-        if (!res.ok) {
-          return { error: "error" as const };
-        }
-
-        const data = (await res.json()) as Array<{
-          companyName?: string;
-          sector?: string;
-          expenseRatio?: number;
-          price?: number;
-        }>;
-
-        if (!Array.isArray(data) || data.length === 0) {
-          return { error: "not_found" as const };
-        }
-
-        const profile = data[0]!;
-        const sector = profile.sector ?? undefined;
-        const suggestedAssetClassName =
-          sector !== undefined
-            ? (FMP_SECTOR_TO_ASSET_CLASS[sector] ?? undefined)
-            : undefined;
-
-        return {
-          name: profile.companyName ?? ticker,
-          expenseRatio:
-            profile.expenseRatio !== undefined
-              ? profile.expenseRatio
-              : undefined,
-          sector,
-          suggestedAssetClassName: suggestedAssetClassName ?? undefined,
-        };
-      } catch {
-        return { error: "error" as const };
       }
+      return {
+        name: security.name,
+        expenseRatio: facts.expenseRatio?.value,
+        suggestedAssetClassName,
+      };
     }),
 
   /**
@@ -358,17 +335,4 @@ export const analyticsRouter = createTRPCRouter({
           ),
         );
     }),
-
-  /**
-   * Check whether an FMP connection is configured (used to show/hide the Look up button).
-   * Returns true if a key exists, false otherwise.
-   */
-  hasFmpKey: portfolioProcedure.query(async ({ ctx }) => {
-    const conn = await ctx.db
-      .select({ config: schema.apiConnections.config })
-      .from(schema.apiConnections)
-      .where(eq(schema.apiConnections.service, "fmp"))
-      .limit(1);
-    return !!conn[0]?.config?.apiKey;
-  }),
 });

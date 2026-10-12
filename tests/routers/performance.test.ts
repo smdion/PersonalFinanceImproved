@@ -1094,6 +1094,66 @@ describe("performance router", () => {
       expect(row!.conversionBasis).toBeNull();
       expect(row!.latestConversionYear).toBeNull();
     });
+
+    it("lists each person's basis on a joint account tracked as one row", async () => {
+      const other = await seedPerson(db, "Basis Spouse");
+      const joint = seedPerformanceAccount(db, {
+        institution: "Vanguard",
+        accountType: "ira",
+        ownershipType: "joint",
+        ownerPersonId: null,
+      });
+      db.insert(schema.accountPerformance)
+        .values({
+          year: 2024,
+          institution: "Vanguard",
+          accountLabel: "Joint IRA",
+          ownerPersonId: personId, // stored under one person, as legacy rows are
+          parentCategory: "Retirement",
+          performanceAccountId: joint,
+          beginningBalance: "0",
+          totalContributions: "0",
+          yearlyGainLoss: "0",
+          endingBalance: "0",
+          employerContributions: "0",
+          fees: "0",
+          distributions: "0",
+          isActive: true,
+        })
+        .run();
+      for (const [owner, contrib, conv] of [
+        [personId, "100", "10"],
+        [other, "200", "20"],
+      ] as const)
+        db.insert(schema.accountBasis)
+          .values({
+            performanceAccountId: joint,
+            ownerPersonId: owner,
+            year: 2024,
+            contributionBasis: contrib,
+            conversionBasis: conv,
+            latestConversionYear: 2024,
+          })
+          .run();
+      const summary = await caller.performance.computeSummary();
+      const row = summary.accountRows.find(
+        (r: { performanceAccountId: number | null; year: number }) =>
+          r.performanceAccountId === joint && r.year === 2024,
+      )!;
+      expect(row.contributionBasis).toBe(300);
+      expect(row.conversionBasis).toBe(30);
+      expect(
+        row.basisByOwner.map((b: { ownerName: string | null }) => b.ownerName),
+      ).toEqual(["Basis Owner", "Basis Spouse"]);
+      // A year with no basis row says so instead of showing $0.
+      const blank = summary.accountRows.find(
+        (r: { performanceAccountId: number | null; year: number }) =>
+          r.performanceAccountId === perfAcctId && r.year === 2023,
+      )!;
+      expect(blank.basisByOwner).toEqual([
+        expect.objectContaining({ recorded: false, contributionBasis: 0 }),
+      ]);
+    });
   });
 
   // ── computeSummary Retirement rollup — regression: a stale stored

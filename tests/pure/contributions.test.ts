@@ -443,3 +443,80 @@ describe("formatEmployerMatch", () => {
     );
   });
 });
+
+import { householdSavings } from "@/lib/pure/contributions";
+
+describe("householdSavings", () => {
+  // Invented household: one person on a $100k plan, plus a joint brokerage.
+  const view = (ret: number, retMatch: number, comp: number) => ({
+    retirementWithoutMatch: ret,
+    retirementWithMatch: ret + retMatch,
+    portfolioWithoutMatch: 0,
+    portfolioWithMatch: 0,
+    compensation: comp,
+  });
+  const person = {
+    totalCompensation: 100_000,
+    accountTypes: [
+      {
+        parentCategory: "Retirement",
+        employeeContrib: 10_000,
+        tradContrib: 6_000,
+        taxFreeContrib: 4_000,
+        afterTaxContrib: 0,
+        hsaContrib: 0,
+        views: {
+          projected: { employeeContrib: 10_000, totalContrib: 12_000 },
+          blended: { employeeContrib: 10_000, totalContrib: 12_000 },
+          ytd: { employeeContrib: 5_000, totalContrib: 6_000 },
+        },
+      },
+    ],
+    totals: {
+      views: {
+        projected: view(10_000, 2_000, 100_000),
+        blended: view(10_000, 2_000, 100_000),
+        // Half the year earned, half the plan in.
+        ytd: view(5_000, 1_000, 50_000),
+      },
+    },
+  };
+  const joint = {
+    parentCategory: "Portfolio",
+    employeeContrib: 6_000,
+    tradContrib: 0,
+    taxFreeContrib: 0,
+    afterTaxContrib: 6_000,
+    hsaContrib: 0,
+    views: {
+      projected: { employeeContrib: 6_000, totalContrib: 6_000 },
+      blended: { employeeContrib: 6_000, totalContrib: 6_000 },
+      ytd: { employeeContrib: 2_000, totalContrib: 2_000 },
+    },
+  };
+
+  it("counts joint accounts in the rate, per view", () => {
+    expect(
+      householdSavings([person], [joint], "projected", true),
+    ).toMatchObject({ compensation: 100_000, total: 16_000, rate: 0.16 });
+    // YTD: money in so far over compensation earned so far.
+    expect(householdSavings([person], [joint], "ytd", true)).toMatchObject({
+      compensation: 50_000,
+      total: 7_000,
+      rate: 0.14,
+    });
+  });
+
+  it("splits each group by tax treatment, scaled to the view, so the lines add up", () => {
+    const { groups } = householdSavings([person], [joint], "ytd", false);
+    const ret = groups.find((g) => g.group === "retirement")!;
+    expect(ret.share).toBeCloseTo(0.12, 6);
+    expect(ret.lines.map((l) => [l.key, l.share])).toEqual([
+      ["preTax", 0.06],
+      ["taxFree", 0.04],
+      ["match", 0.02],
+    ]);
+    const port = groups.find((g) => g.group === "portfolio")!;
+    expect(port.lines).toEqual([{ key: "afterTax", share: 0.04 }]);
+  });
+});

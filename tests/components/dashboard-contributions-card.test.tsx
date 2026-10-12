@@ -26,6 +26,7 @@ vi.mock("@/lib/hooks/use-persisted-setting", () => ({
   ],
 }));
 
+let paceQuery: { data: unknown } = { data: undefined };
 let contribQuery: { data: unknown; isLoading: boolean; error: unknown } = {
   data: undefined,
   isLoading: true,
@@ -39,6 +40,9 @@ vi.mock("@/lib/trpc", () => ({
     }),
     contribution: {
       computeSummary: { useQuery: () => contribQuery },
+    },
+    investments: {
+      getSavingsThisYear: { useQuery: () => paceQuery },
     },
     // Reached via useEffectiveSalaryProfileId → useActiveSalaryProfile, and
     // useEffectiveContribProfileId → useActiveContribProfile. An empty list
@@ -71,6 +75,7 @@ const view = (
 });
 
 const acct401k = {
+  performanceAccountIds: [1],
   accountType: "401(k)",
   categoryKey: "401k",
   parentCategory: "Retirement",
@@ -97,6 +102,7 @@ const acct401k = {
 
 const acctEspp = {
   accountType: "ESPP",
+  performanceAccountIds: [],
   categoryKey: "espp",
   parentCategory: "Portfolio",
   limit: 0,
@@ -189,6 +195,21 @@ describe("ContributionsCard smoke", () => {
     expect(screen.getByText(/of \$23,500\.00/)).toBeInTheDocument();
     // ESPP has no IRS limit — discount bar branch
     expect(screen.getByText(/Discount/)).toBeInTheDocument();
+  });
+
+  it("shows whether money is going in as set up, and what's saved so far", () => {
+    contribQuery = { data: mockData, isLoading: false, error: null };
+    paceQuery = {
+      data: {
+        accounts: [{ performanceAccountId: 1, status: "on_pace" }],
+        total: { saved: 9000, unposted: 500, status: "on_pace" },
+      },
+    };
+    render(<ContributionsCard />);
+    expect(screen.getAllByText("On pace").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText(/Saved so far this year/)).toBeInTheDocument();
+    expect(screen.getByText(/on its way/)).toBeInTheDocument();
+    paceQuery = { data: undefined };
   });
 
   it("renders joint accounts in their own section when present", () => {

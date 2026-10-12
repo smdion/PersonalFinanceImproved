@@ -56,6 +56,17 @@ export type AccountRow = {
   contributionBasis: number | null;
   conversionBasis: number | null;
   latestConversionYear: number | null;
+  /** Each person's Roth basis for this account and year (a joint-labeled
+   *  account can hold two people's Roth); the fields above are the total. */
+  basisByOwner?: {
+    ownerPersonId: number;
+    ownerName: string | null;
+    contributionBasis: number;
+    conversionBasis: number;
+    latestConversionYear: number | null;
+    /** False when no basis row exists yet for this person and year. */
+    recorded?: boolean;
+  }[];
 };
 
 export type MasterAccount = {

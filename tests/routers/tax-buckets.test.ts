@@ -40,7 +40,7 @@ describe("taxBuckets router", () => {
   });
 
   it("returns real tax buckets from the latest snapshot, split by owner and tax type", async () => {
-    const personId = await seedPerson(db, "Sean", "1987-03-28");
+    const personId = await seedPerson(db, "Alex", "1987-03-28");
     const perfAcctId = seedPerformanceAccount(db, {
       institution: "Fidelity",
       accountType: "401k",
@@ -75,14 +75,14 @@ describe("taxBuckets router", () => {
   });
 
   it("resolves Rule of 55 from a linked job's real endDate — a dormant former-employer plan stays eligible", async () => {
-    const personId = await seedPerson(db, "Joanna", "1960-01-10");
+    const personId = await seedPerson(db, "Sam", "1960-01-10");
     const perfAcctId = seedPerformanceAccount(db, {
       institution: "Voya",
       accountType: "401k",
       ownerPersonId: personId,
       ownershipType: "individual",
     });
-    // Joanna turned 55 in 2015. She separated from this job in 2020 — Rule
+    // Sam turned 55 in 2015. She separated from this job in 2020 — Rule
     // of 55 applies (permanently, once already separated), even though
     // this isn't her current job by the time we check. endDate must be a
     // real PAST date — resolveSeparationYear only derives from a job that

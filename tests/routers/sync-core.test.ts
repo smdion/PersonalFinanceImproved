@@ -806,8 +806,8 @@ describe("sync core — getPreview", () => {
   });
 
   it("portfolio.localAccounts gives each owner of a jointly-tracked account a distinct label and ownerPersonId, not both 'Joint'", async () => {
-    const sean = await seedPerson(db, "Sean", "1987-01-01");
-    const joanna = await seedPerson(db, "Joanna", "1991-01-01");
+    const alex = await seedPerson(db, "Alex", "1987-01-01");
+    const sam = await seedPerson(db, "Sam", "1991-01-01");
     const perfAcctId = seedPerformanceAccount(db, {
       institution: "Vanguard",
       accountType: "ira",
@@ -821,14 +821,14 @@ describe("sync core — getPreview", () => {
         amount: "50000",
         institution: "Vanguard",
         accountType: "ira",
-        ownerPersonId: sean,
+        ownerPersonId: alex,
       },
       {
         performanceAccountId: perfAcctId,
         amount: "40000",
         institution: "Vanguard",
         accountType: "ira",
-        ownerPersonId: joanna,
+        ownerPersonId: sam,
       },
     ]);
 
@@ -867,14 +867,14 @@ describe("sync core — getPreview", () => {
     const localAccounts = result.portfolio!.localAccounts;
     expect(localAccounts).toHaveLength(2);
     const labels = localAccounts.map((a) => a.label).sort();
-    expect(labels).toEqual(["Joanna IRA (Vanguard)", "Sean IRA (Vanguard)"]);
+    expect(labels).toEqual(["Alex IRA (Vanguard)", "Sam IRA (Vanguard)"]);
     const ownerIds = localAccounts.map((a) => a.ownerPersonId).sort();
-    expect(ownerIds).toEqual([sean, joanna].sort());
+    expect(ownerIds).toEqual([alex, sam].sort());
   });
 
   it("portfolio.localAccounts still gives each owner a distinct label even when the shared account has a displayName set", async () => {
-    const sean = await seedPerson(db, "Sean2", "1987-01-01");
-    const joanna = await seedPerson(db, "Joanna2", "1991-01-01");
+    const alex = await seedPerson(db, "Alex2", "1987-01-01");
+    const sam = await seedPerson(db, "Sam2", "1991-01-01");
     const perfAcctId = seedPerformanceAccount(db, {
       institution: "Fidelity",
       accountType: "ira",
@@ -889,14 +889,14 @@ describe("sync core — getPreview", () => {
         amount: "10000",
         institution: "Fidelity",
         accountType: "ira",
-        ownerPersonId: sean,
+        ownerPersonId: alex,
       },
       {
         performanceAccountId: perfAcctId,
         amount: "20000",
         institution: "Fidelity",
         accountType: "ira",
-        ownerPersonId: joanna,
+        ownerPersonId: sam,
       },
     ]);
 
@@ -920,7 +920,7 @@ describe("sync core — getPreview", () => {
     if (!result.synced) throw new Error("Expected synced:true");
 
     const localAccounts = result.portfolio!.localAccounts.filter(
-      (a) => a.ownerPersonId === sean || a.ownerPersonId === joanna,
+      (a) => a.ownerPersonId === alex || a.ownerPersonId === sam,
     );
     expect(localAccounts).toHaveLength(2);
     // displayName wins in accountDisplayName's own priority order — this
@@ -934,7 +934,7 @@ describe("sync core — getPreview", () => {
     // collide, because it's keyed on (performanceAccountId, ownerPersonId),
     // not on the label.
     const ownerIds = localAccounts.map((a) => a.ownerPersonId).sort();
-    expect(ownerIds).toEqual([sean, joanna].sort());
+    expect(ownerIds).toEqual([alex, sam].sort());
   });
 });
 

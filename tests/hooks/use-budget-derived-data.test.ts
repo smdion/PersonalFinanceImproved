@@ -34,7 +34,7 @@ const paycheckPeople = [
     },
     job: { id: 1 },
     salary: 0,
-    person: { name: "Sean" },
+    person: { name: "Alex" },
     rawContribs: [
       {
         id: 12,
@@ -232,7 +232,7 @@ describe("useBudgetDerivedData — non-payroll pool follows isPayrollDeducted, n
           },
           job: { id: 1 },
           salary: 0,
-          person: { name: "Sean" },
+          person: { name: "Alex" },
           rawContribs: [
             {
               id: 20,
@@ -266,7 +266,7 @@ describe("useBudgetDerivedData — non-payroll pool follows isPayrollDeducted, n
           },
           job: { id: 1 },
           salary: 0,
-          person: { name: "Sean" },
+          person: { name: "Alex" },
           rawContribs: [
             {
               id: 21,

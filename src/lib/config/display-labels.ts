@@ -2,6 +2,10 @@
 // Components import from here — never define local label maps.
 
 import type { ContribResolutionStatus } from "@/lib/pure/profiles";
+import type {
+  CompositionBucket,
+  InvestmentTransactionKind,
+} from "./enum-values";
 
 export const PAY_PERIOD_LABELS: Record<string, string> = {
   weekly: "Weekly",
@@ -267,3 +271,31 @@ export function wealthScoreTier(aawScore: number): {
     shortLabel: "UAW — Behind",
   };
 }
+
+/** Investment transaction kinds, as shown in Settings → SimpleFIN. */
+export const INVESTMENT_TRANSACTION_KIND_LABELS: Record<
+  InvestmentTransactionKind,
+  string
+> = {
+  contribution: "Contribution",
+  withdrawal: "Withdrawal",
+  dividend: "Dividend",
+  interest: "Interest",
+  fee: "Fee",
+  trade: "Trade (inside the account)",
+  sweep: "Cash sweep (inside the account)",
+  gain_loss: "Realized gain/loss",
+  transfer: "Transfer between your accounts",
+  other: "Other",
+};
+
+/** Composition buckets of a fund's holdings. */
+export const COMPOSITION_BUCKET_LABELS: Record<CompositionBucket, string> = {
+  us_equity: "US stocks",
+  intl_equity: "International stocks",
+  us_bond: "US bonds",
+  intl_bond: "International bonds",
+  tips: "TIPS",
+  cash: "Cash",
+  other: "Other",
+};

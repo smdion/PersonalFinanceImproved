@@ -30,6 +30,88 @@ export const PAY_PERIOD_VALUES = [
 export type PayPeriod = (typeof PAY_PERIOD_VALUES)[number];
 export const payPeriodSchema = z.enum(PAY_PERIOD_VALUES);
 
+// ── Investment transaction kind (SimpleFIN ingest) ──
+// What a brokerage/401k/HSA transaction row means for performance math.
+// Only `contribution` and `withdrawal` move money into or out of an
+// account; everything else happens inside it (see simplefin-transaction-rules).
+
+export const INVESTMENT_TRANSACTION_KIND_VALUES = [
+  "contribution", // money in from outside (payroll, bank deposit, IRA conversion in)
+  "withdrawal", // money out (distribution, conversion out, HSA medical spending)
+  "dividend", // income paid by a holding (stays in the account)
+  "interest", // money-market / cash interest (stays in the account)
+  "fee", // account or fund fee taken from the balance
+  "trade", // buy or sell of a holding (value moves between holdings)
+  "sweep", // cash moved between the settlement/core fund and cash
+  "gain_loss", // realized gain/loss bookkeeping row (no money moves)
+  "transfer", // between the household's own accounts (IRA conversion, rollover) — not money added or taken out
+  "other", // unrecognised — shown for review, never dropped
+] as const;
+export type InvestmentTransactionKind =
+  (typeof INVESTMENT_TRANSACTION_KIND_VALUES)[number];
+export const investmentTransactionKindSchema = z.enum(
+  INVESTMENT_TRANSACTION_KIND_VALUES,
+);
+
+// ── Security kind (holdings) ──
+
+export const SECURITY_KIND_VALUES = [
+  "etf",
+  "mutual_fund",
+  "plan_fund", // workplace-plan fund with no public ticker (collective trust etc.)
+  "stock",
+  "money_market",
+  "cash",
+  "other",
+] as const;
+export type SecurityKind = (typeof SECURITY_KIND_VALUES)[number];
+export const securityKindSchema = z.enum(SECURITY_KIND_VALUES);
+
+// ── Fund facts (SEC filings / user) ──
+
+export const SECURITY_FACT_SOURCE_VALUES = [
+  "sec_nport", // composition from the fund's latest N-PORT portfolio report
+  "sec_ncsr", // expense ratio from its latest shareholder report (N-CSR)
+  "sec_nmfp", // money market fund: all cash, per its N-MFP report (money market funds don't file N-PORT)
+  "user", // entered or confirmed by the household
+] as const;
+export type SecurityFactSource = (typeof SECURITY_FACT_SOURCE_VALUES)[number];
+export const securityFactSourceSchema = z.enum(SECURITY_FACT_SOURCE_VALUES);
+
+/**
+ * Whose SEC filings supply a fund's facts: its own, a registered stand-in,
+ * or none (the household said no stand-in fits — don't suggest again).
+ */
+export const FACTS_BASIS_VALUES = ["exact", "standin", "none"] as const;
+export type FactsBasis = (typeof FACTS_BASIS_VALUES)[number];
+export const factsBasisSchema = z.enum(FACTS_BASIS_VALUES);
+
+/**
+ * Composition buckets a fund's holdings are summed into. Fixed set; each
+ * counts toward at most one asset class (asset_class_buckets), and a class
+ * can take several.
+ */
+export const COMPOSITION_BUCKET_VALUES = [
+  "us_equity",
+  "intl_equity",
+  "us_bond",
+  "intl_bond",
+  "tips",
+  "cash",
+  "other",
+] as const;
+export type CompositionBucket = (typeof COMPOSITION_BUCKET_VALUES)[number];
+export const compositionBucketSchema = z.enum(COMPOSITION_BUCKET_VALUES);
+/** The categories shown as their own rows in mix-vs-target ("other" is a note). */
+export const MAJOR_COMPOSITION_BUCKETS: readonly CompositionBucket[] =
+  COMPOSITION_BUCKET_VALUES.filter((b) => b !== "other");
+
+// ── Holding observation source ──
+
+export const HOLDING_SOURCE_VALUES = ["simplefin", "manual"] as const;
+export type HoldingSource = (typeof HOLDING_SOURCE_VALUES)[number];
+export const holdingSourceSchema = z.enum(HOLDING_SOURCE_VALUES);
+
 // ── Pay Week ──
 
 export const PAY_WEEK_VALUES = ["even", "odd", "na"] as const;
@@ -154,3 +236,20 @@ export const utilityKindSchema = z.enum(UTILITY_KIND_VALUES);
 export const UTILITY_UNIT_VALUES = ["ccf", "gallon", "kWh"] as const;
 export type UtilityUnit = (typeof UTILITY_UNIT_VALUES)[number];
 export const utilityUnitSchema = z.enum(UTILITY_UNIT_VALUES);
+
+/** What a suggested stand-in fund's own SEC filings say (securities.standinPreview). Shares are fractions (0–1). */
+export type StandInPreview = {
+  /** Share of the stand-in's holdings its filings classify; null if no holdings filing. */
+  coverage: number | null;
+  mix: Record<CompositionBucket, number> | null;
+  /** Cheapest share class's expense ratio (a retail fee, not the plan's). */
+  expenseRatio: number | null;
+  /** Period the holdings are as of. */
+  asOf: string | null;
+  checkedAt: string;
+  /** Filings the figures came from — unchanged ones aren't downloaded again. */
+  nportAccession?: string | null;
+  ncsrAccession?: string | null;
+  /** Why the last check failed (the figures above are from the one before). */
+  error?: string | null;
+};

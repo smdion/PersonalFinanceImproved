@@ -7,6 +7,7 @@ import {
   getAccountTypeConfig,
   categoriesWithIrsLimit,
   getLimitGroup,
+  isRetirementParent,
 } from "@/lib/config/account-types";
 import { requireLimit } from "@/server/helpers/settings";
 import { safeDivide, roundToCents } from "@/lib/utils/math";
@@ -291,6 +292,8 @@ export type ViewAwareTotals = {
   totalWithMatch: number;
   savingsRateWithMatch: number;
   savingsRateWithoutMatch: number;
+  /** The compensation the rates divide by (YTD: earned so far). */
+  compensation: number;
 };
 
 function limitMetrics(
@@ -415,6 +418,7 @@ export function computeViewAwareTotals(input: {
       totalWithMatch: totalWith,
       savingsRateWithMatch: (safeDivide(totalWith, comp) ?? 0) as number,
       savingsRateWithoutMatch: (safeDivide(totalWithout, comp) ?? 0) as number,
+      compensation: comp,
     };
   }
 
@@ -454,16 +458,35 @@ export function computeViewAwareTotals(input: {
   return { projected: projView, blended: blendedView, ytd: ytdView };
 }
 
+/** One account's share of a household savings breakdown — the subset of
+ * the contribution-summary snapshot the helper below reads. */
+type SavingsAccount = {
+  parentCategory: string;
+  employeeContrib: number;
+  tradContrib: number;
+  taxFreeContrib: number;
+  afterTaxContrib: number;
+  hsaContrib: number;
+  views: Record<ViewMode, { employeeContrib: number; totalContrib: number }>;
+};
+
 /** A person shape sufficient to derive a household savings rate — the
- * subset of the contribution-summary router output both dashboard cards
- * (Financial Checkup, Savings Rate) consume. */
+ * subset of the contribution-summary router output the dashboard reads. */
 export type SavingsRatePerson = {
   totalCompensation?: number | null;
   salary?: number | null;
+  accountTypes: SavingsAccount[];
   totals: {
     views: Record<
       ViewMode,
-      Pick<ViewAwareTotals, "savingsRateWithMatch" | "savingsRateWithoutMatch">
+      Pick<
+        ViewAwareTotals,
+        | "retirementWithoutMatch"
+        | "retirementWithMatch"
+        | "portfolioWithoutMatch"
+        | "portfolioWithMatch"
+        | "compensation"
+      >
     >;
   };
 };
@@ -472,13 +495,12 @@ export type SavingsRatePerson = {
  * once and reuse — callers typically need it both to decide `excludeMatch`
  * (via `isHighIncomeHousehold`) and to weight the rate itself. */
 export function householdTotalCompensation(
-  people: SavingsRatePerson[],
+  people: Pick<SavingsRatePerson, "totalCompensation" | "salary">[],
 ): number {
   return people.reduce((s, d) => s + (d.totalCompensation ?? d.salary ?? 0), 0);
 }
 
-/** Household-level "is this a high earner" gate — same threshold comparison
- * both dashboard cards use to decide whether employer match should be
+/** Household-level "is this a high earner" gate — whether employer match is
  * excluded from the headline savings rate by default. */
 export function isHighIncomeHousehold(
   householdTotalComp: number,
@@ -487,31 +509,78 @@ export function isHighIncomeHousehold(
   return householdTotalComp >= highIncomeThreshold;
 }
 
+export type SavingsGroup = "retirement" | "portfolio";
+
+const TREATMENTS = [
+  ["preTax", "tradContrib"],
+  ["taxFree", "taxFreeContrib"],
+  ["afterTax", "afterTaxContrib"],
+  ["hsa", "hsaContrib"],
+] as const;
+export type SavingsTreatment = (typeof TREATMENTS)[number][0];
+
 /**
- * Weighted household savings rate for the given view mode — each person's
- * view-aware rate weighted by their own total compensation, matching the
- * server's per-person rate computation (`computeViewAwareTotals` above).
- * Single source of truth for the number the Financial Checkup and Savings
- * Rate cards both render side by side on the dashboard.
+ * The household savings rate for a view, and what it's made of: every
+ * person's and every joint account's contributions over the compensation
+ * the view divides by (YTD: earned so far), split by goal group
+ * (Retirement / Portfolio — parentCategory) and, within each, by tax
+ * treatment. Treatments come from the paycheck setup, so each group's split
+ * is scaled to the view's employee dollars; the employer match (when
+ * included) is its own line. Shares are fractions of compensation, and a
+ * group's lines add up to the group.
  */
-export function computeHouseholdSavingsRate(
+export function householdSavings(
   people: SavingsRatePerson[],
+  jointAccounts: SavingsAccount[],
   viewMode: ViewMode,
   excludeMatch: boolean,
-): { householdTotalComp: number; rate: number } {
-  const householdTotalComp = householdTotalCompensation(people);
-  const rateKey = excludeMatch
-    ? "savingsRateWithoutMatch"
-    : "savingsRateWithMatch";
-  const rate =
-    householdTotalComp > 0
-      ? people.reduce(
-          (s, d) =>
-            s +
-            (d.totals.views[viewMode][rateKey] ?? 0) *
-              (d.totalCompensation ?? d.salary ?? 0),
-          0,
-        ) / householdTotalComp
-      : 0;
-  return { householdTotalComp, rate };
+) {
+  const compensation = people.reduce(
+    (s, d) => s + d.totals.views[viewMode].compensation,
+    0,
+  );
+  const share = (n: number) => safeDivide(n, compensation, 0);
+  const groupOf = (a: SavingsAccount): SavingsGroup =>
+    isRetirementParent(a.parentCategory) ? "retirement" : "portfolio";
+  const groups = (["retirement", "portfolio"] as const).map((group) => {
+    const persons = people.map((d) => d.totals.views[viewMode]);
+    const joint = jointAccounts.filter((a) => groupOf(a) === group);
+    const employee =
+      persons.reduce((s, v) => s + v[`${group}WithoutMatch`], 0) +
+      joint.reduce((s, a) => s + a.views[viewMode].employeeContrib, 0);
+    const withMatch =
+      persons.reduce((s, v) => s + v[`${group}WithMatch`], 0) +
+      joint.reduce((s, a) => s + a.views[viewMode].totalContrib, 0);
+    const accounts = [
+      ...people.flatMap((d) =>
+        d.accountTypes.filter((a) => groupOf(a) === group),
+      ),
+      ...joint,
+    ];
+    const plan = accounts.reduce((s, a) => s + a.employeeContrib, 0);
+    const scale = safeDivide(employee, plan, 0);
+    const lines: { key: SavingsTreatment | "match"; share: number }[] =
+      TREATMENTS.map(([key, field]) => ({
+        key,
+        share: share(accounts.reduce((s, a) => s + a[field], 0) * scale),
+      }));
+    if (!excludeMatch)
+      lines.push({ key: "match", share: share(withMatch - employee) });
+    const total = excludeMatch ? employee : withMatch;
+    return {
+      group,
+      total,
+      share: share(total),
+      lines: lines.filter((l) => l.share > 0),
+    };
+  });
+  const total = groups.reduce((s, g) => s + g.total, 0);
+  return {
+    compensation,
+    total,
+    rate: share(total),
+    groups: groups.filter((g) => g.total !== 0),
+  };
 }
+
+export type HouseholdSavings = ReturnType<typeof householdSavings>;

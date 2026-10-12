@@ -29,7 +29,7 @@ export type PortfolioLabelPerf =
  *
  * A person-specific holding row (ownerPersonId set) takes precedence over
  * the shared performance account's own ownership designation — e.g. a
- * jointly-tracked IRA where Sean's and Joanna's balances are recorded as
+ * jointly-tracked IRA where Alex's and Sam's balances are recorded as
  * separate portfolio_accounts rows under one performance account should
  * still display each person's own name, not "Joint", for that row. This
  * mirrors the same precedence rule contribution-profiles.ts's

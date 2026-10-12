@@ -35,11 +35,20 @@ import {
   ContributionRow,
   AddContribForm,
 } from "./contribution-accounts-contrib-row";
+import {
+  AccountLiveSection,
+  AccountLiveSummary,
+  type AccountInsight,
+} from "./account-live-data";
+import type { Holding } from "@/components/investments/fund-holding-row";
 
 export function AccountCard({
   account: pa,
   contributions,
   balance,
+  insight,
+  holdings = [],
+  showLive = false,
   portfolioSubs,
   people,
   jobs,
@@ -78,6 +87,11 @@ export function AccountCard({
   };
   contributions: ContribRow[];
   balance: number | null;
+  /** SimpleFIN detail for this account (absent when not linked). */
+  insight?: AccountInsight;
+  holdings?: Holding[];
+  /** False without the portfolio permission — the section is left out. */
+  showLive?: boolean;
   portfolioSubs: PortfolioSub[];
   people: { id: number; name: string }[];
   jobs: { id: number; employerName: string }[];
@@ -125,8 +139,8 @@ export function AccountCard({
   const [showInactiveContribs, setShowInactiveContribs] = useState(false);
   const [showDanger, setShowDanger] = useState(false);
   const [openSection, setOpenSection] = useState<
-    "subs" | "contribs" | "settings" | null
-  >("settings");
+    "live" | "subs" | "contribs" | "settings" | null
+  >(insight && insight.status !== "none" ? "live" : "settings");
 
   // Account type from the master record (no resolution needed)
   const acctType = pa.accountType as AccountCategory | null;
@@ -148,7 +162,7 @@ export function AccountCard({
   const activeSubs = portfolioSubs.filter((s) => s.isActive);
   const inactiveSubs = portfolioSubs.filter((s) => !s.isActive);
 
-  const toggleSection = (s: "subs" | "contribs" | "settings") =>
+  const toggleSection = (s: "live" | "subs" | "contribs" | "settings") =>
     setOpenSection(openSection === s ? null : s);
 
   return (
@@ -170,7 +184,15 @@ export function AccountCard({
           <div className="text-primary truncate text-sm font-medium">
             {accountDisplayName(pa)}
           </div>
-          <div className="text-caption text-faint">{pa.institution}</div>
+          <div className="text-caption text-faint truncate">
+            {pa.institution}
+            {insight && (
+              <>
+                {" · "}
+                <AccountLiveSummary insight={insight} />
+              </>
+            )}
+          </div>
         </div>
         {/* Account Type */}
         <div className="text-muted w-20 text-center text-xs">
@@ -208,7 +230,28 @@ export function AccountCard({
       {isExpanded && (
         <div className="border-subtle bg-surface-sunken/50 border-t">
           {" "}
-          {/* ── Account Settings section (auto-expanded, first) ── */}{" "}
+          {/* ── SimpleFIN: live balance, holdings, deposit check ── */}
+          {showLive && (
+            <div className="border-subtle border-b">
+              <button
+                onClick={() => toggleSection("live")}
+                className="text-caption text-muted hover:bg-surface-elevated/50 flex w-full items-center justify-between px-4 py-2 font-semibold tracking-wider uppercase"
+              >
+                <span>Holdings &amp; Deposits</span>
+                <span
+                  className={`transition-transform ${openSection === "live" ? "rotate-90" : ""}`}
+                >
+                  &#9654;
+                </span>
+              </button>
+              {openSection === "live" && (
+                <div className="px-4 pb-3">
+                  <AccountLiveSection insight={insight} holdings={holdings} />
+                </div>
+              )}
+            </div>
+          )}
+          {/* ── Account Settings section ── */}{" "}
           {onPerfUpdate && (
             <div className="border-subtle border-b">
               {" "}

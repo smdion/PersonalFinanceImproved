@@ -13,7 +13,17 @@
  */
 
 import { z } from "zod/v4";
-import { and, asc, desc, eq, gte } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gte,
+  isNotNull,
+  isNull,
+  or,
+  sql,
+} from "drizzle-orm";
 import { createTRPCRouter, protectedProcedure, syncProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import {
@@ -26,8 +36,25 @@ import {
   localDateStr,
   getSimplefinLastError,
 } from "@/lib/simplefin/sync";
-import { claimSetupToken, getAccounts } from "@/lib/simplefin/client";
+import {
+  claimSetupToken,
+  getAccounts,
+  isSimplefinReplayMode,
+} from "@/lib/simplefin/client";
+import {
+  SIMPLEFIN_DAILY_REQUEST_LIMIT,
+  SIMPLEFIN_MANUAL_SYNC_MIN_GAP_MS,
+  countSimplefinRequestsLastDay,
+  lastSimplefinRequestAt,
+} from "@/lib/simplefin/request-log";
+import { redactStoredCardSpending } from "@/lib/simplefin/ingest";
+import { loadLatestSubAccounts } from "@/server/helpers/sub-accounts";
+import { suggestLinks } from "@/lib/pure/simplefin-link-suggestions";
+import { recogniseAccountKind } from "@/lib/config/simplefin-account-kinds";
+import { countsAsFeed } from "@/lib/pure/simplefin-feeds";
+import { taxTypeLabel } from "@/lib/utils/colors";
 import { readMaybeEncrypted } from "@/lib/crypto";
+import { summarizeBalanceDates } from "@/lib/pure/balance-dates";
 import type { SimplefinConfig } from "@/lib/simplefin/sync";
 import { getLatestSnapshot } from "@/server/helpers/snapshot";
 import { accountDisplayName } from "@/lib/utils/format";
@@ -40,6 +67,130 @@ import type { ParentCategory } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types.types";
 import type { PortfolioTaxType } from "@/lib/config/enum-values";
 import { TRPCError } from "@trpc/server";
+
+type LinkSuggestionView = {
+  performanceAccountId: number;
+  subKey: string | null;
+  /** e.g. "IRA (Vanguard) — Alex — Roth" or "Alice 401k (Fidelity)". */
+  label: string;
+};
+
+/**
+ * Sub-accounts by key, and a suggested link for each unlinked SimpleFIN
+ * account. Suggestions never take a sub-account (or whole account) the
+ * household already linked.
+ */
+async function linkContext(
+  db: Parameters<typeof loadLatestSubAccounts>[0],
+  rows: (typeof schema.simplefinAccounts.$inferSelect)[],
+) {
+  const [subs, perf, people] = await Promise.all([
+    loadLatestSubAccounts(db),
+    db.select().from(schema.performanceAccounts),
+    db
+      .select({ id: schema.people.id, name: schema.people.name })
+      .from(schema.people),
+  ]);
+  const names = new Map(people.map((p) => [p.id, p.name]));
+  const perfLabel = new Map(
+    perf.map((a) => [
+      a.id,
+      accountDisplayName(
+        a,
+        a.ownerPersonId != null ? names.get(a.ownerPersonId) : undefined,
+      ),
+    ]),
+  );
+  const subByKey = new Map(subs.map((sub) => [sub.key, sub]));
+  const takenKeys = new Set(rows.map((r) => r.linkedSubKey).filter(Boolean));
+  const takenWhole = new Set(
+    rows
+      .filter((r) => r.linkedPerformanceAccountId != null && !r.linkedSubKey)
+      .map((r) => r.linkedPerformanceAccountId),
+  );
+  const open = subs.filter(
+    (sub) =>
+      !takenKeys.has(sub.key) && !takenWhole.has(sub.performanceAccountId),
+  );
+  const keyOf = new Map(open.map((sub) => [sub, sub.key]));
+  const suggestions = new Map<number, LinkSuggestionView>();
+  for (const s of suggestLinks(
+    rows
+      .filter((r) => r.linkedPerformanceAccountId == null)
+      .map((r) => ({
+        id: r.id,
+        orgName: r.orgName,
+        accountName: r.accountName,
+        balance: Number(r.lastBalance),
+      })),
+    open,
+  )) {
+    const subKey =
+      s.candidate.taxType === null
+        ? null
+        : (keyOf.get(s.candidate as (typeof open)[number]) ?? null);
+    const account = perfLabel.get(s.candidate.performanceAccountId) ?? "";
+    suggestions.set(s.simplefinAccountId, {
+      performanceAccountId: s.candidate.performanceAccountId,
+      subKey,
+      label: subKey ? `${account} — ${subByKey.get(subKey)!.label}` : account,
+    });
+  }
+
+  // An account linked to a whole tracked account whose name states one tax
+  // treatment (e.g. a Roth IRA linked to an IRA holding two people's Roth
+  // and traditional money) can be narrowed to that sub-account. Only that
+  // tracked account's own free sub-accounts are considered.
+  const wholeLinked = new Map<number, typeof rows>();
+  for (const r of rows) {
+    if (r.linkedPerformanceAccountId == null || r.linkedSubKey) continue;
+    const list = wholeLinked.get(r.linkedPerformanceAccountId) ?? [];
+    list.push(r);
+    wholeLinked.set(r.linkedPerformanceAccountId, list);
+  }
+  for (const [performanceAccountId, linked] of wholeLinked) {
+    const own = subs.filter(
+      (sub) => sub.performanceAccountId === performanceAccountId,
+    );
+    if (own.length < 2) continue;
+    const free = own.filter((sub) => !takenKeys.has(sub.key));
+    for (const s of suggestLinks(
+      linked.map((r) => ({
+        id: r.id,
+        orgName: r.orgName,
+        accountName: r.accountName,
+        balance: Number(r.lastBalance),
+      })),
+      free,
+    )) {
+      if (s.candidate.taxType === null) continue;
+      const sub = s.candidate as (typeof free)[number];
+      suggestions.set(s.simplefinAccountId, {
+        performanceAccountId,
+        subKey: sub.key,
+        label: `${perfLabel.get(performanceAccountId) ?? ""} — ${sub.label}`,
+      });
+    }
+  }
+  // A whole-account link whose name states a tax treatment the tracked
+  // account has no part for (e.g. a Traditional IRA that only holds money
+  // on its way to Roth, after its part was dropped from the snapshot): its
+  // money has nowhere to go, so say which part to add.
+  const missingParts = new Map<number, string>();
+  for (const r of rows) {
+    if (r.linkedPerformanceAccountId == null || r.linkedSubKey) continue;
+    if (suggestions.has(r.id)) continue;
+    const kind = recogniseAccountKind(r.accountName);
+    if (!kind?.taxType) continue;
+    const has = subs.some(
+      (sub) =>
+        sub.performanceAccountId === r.linkedPerformanceAccountId &&
+        sub.taxType === kind.taxType,
+    );
+    if (!has) missingParts.set(r.id, taxTypeLabel(kind.taxType));
+  }
+  return { subByKey, suggestions, missingParts };
+}
 
 export const simplefinRouter = createTRPCRouter({
   /** Claim a one-time setup token and store the resulting access URL. */
@@ -83,8 +234,24 @@ export const simplefinRouter = createTRPCRouter({
     }
   }),
 
-  /** Manual sync trigger — calls the same runSimplefinSync the daily cron calls. */
+  /** Manual sync trigger — calls the same runSimplefinSync the daily cron calls. At most once per 10 minutes (quota). */
   syncNow: syncProcedure.mutation(async ({ ctx }) => {
+    if (!isSimplefinReplayMode()) {
+      const last = await lastSimplefinRequestAt(ctx.db);
+      if (
+        last &&
+        Date.now() - last.getTime() < SIMPLEFIN_MANUAL_SYNC_MIN_GAP_MS
+      ) {
+        const minutes = Math.ceil(
+          (SIMPLEFIN_MANUAL_SYNC_MIN_GAP_MS - (Date.now() - last.getTime())) /
+            60_000,
+        );
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: `SimpleFIN was synced moments ago. Try again in ${minutes} minute${minutes === 1 ? "" : "s"} — SimpleFIN allows only about 24 requests a day.`,
+        });
+      }
+    }
     try {
       return { success: true as const, ...(await runSimplefinSync(ctx.db)) };
     } catch (e) {
@@ -112,6 +279,71 @@ export const simplefinRouter = createTRPCRouter({
       connected: true as const,
       lastSyncedAt: conn.lastSyncedAt,
       lastError: await getSimplefinLastError(ctx.db),
+    };
+  }),
+
+  /** What the sync has collected and how much of today's request quota is used — counts only, for Settings → Data sources. */
+  getCollectionStats: protectedProcedure.query(async ({ ctx }) => {
+    const h = schema.holdingObservations;
+    const t = schema.investmentTransactions;
+    const [holdingRows, txStats, requestsLastDay, balanceRows] =
+      await Promise.all([
+        ctx.db
+          .select({
+            accountId: h.simplefinAccountId,
+            securityId: h.securityId,
+            asOf: h.asOf,
+            shares: h.shares,
+          })
+          .from(h)
+          .where(isNotNull(h.simplefinAccountId)),
+        ctx.db
+          .select({
+            count: sql<number>`count(*)`,
+            accounts: sql<number>`count(distinct ${t.simplefinAccountId})`,
+            oldest: sql<string | null>`min(${t.posted})`,
+          })
+          .from(t)
+          .where(isNull(t.voidedAt)),
+        countSimplefinRequestsLastDay(ctx.db),
+        ctx.db
+          .select({
+            orgName: schema.simplefinAccounts.orgName,
+            lastBalanceDate: schema.simplefinAccounts.lastBalanceDate,
+            lastSeenAt: schema.simplefinAccounts.lastSeenAt,
+          })
+          .from(schema.simplefinAccounts)
+          .where(eq(schema.simplefinAccounts.isIncluded, true)),
+      ]);
+    // Same summary as the Live Balance card, so both say the same "as of".
+    const balanceDates = summarizeBalanceDates(
+      balanceRows.map((r) => ({
+        institution: r.orgName,
+        reportedAt: r.lastBalanceDate ?? r.lastSeenAt,
+      })),
+    );
+    // Latest row per (account, fund); a fund whose latest row is 0 shares was sold.
+    const latest = new Map<string, { asOf: string; shares: number }>();
+    for (const r of holdingRows) {
+      const key = `${r.accountId}:${r.securityId}`;
+      const prev = latest.get(key);
+      if (!prev || r.asOf > prev.asOf)
+        latest.set(key, { asOf: r.asOf, shares: Number(r.shares) });
+    }
+    const held = [...latest.values()].filter((v) => v.shares !== 0);
+    return {
+      holdings: held.length,
+      holdingsAsOf: held.reduce<string | null>(
+        (max, v) => (max === null || v.asOf > max ? v.asOf : max),
+        null,
+      ),
+      transactions: Number(txStats[0]?.count ?? 0),
+      transactionAccounts: Number(txStats[0]?.accounts ?? 0),
+      oldestTransaction: txStats[0]?.oldest ?? null,
+      requestsLastDay,
+      dailyRequestLimit: SIMPLEFIN_DAILY_REQUEST_LIMIT,
+      /** Least current first; `asOf` is a valuation date (YYYY-MM-DD). */
+      dataAsOf: balanceDates.institutions,
     };
   }),
 
@@ -189,11 +421,12 @@ export const simplefinRouter = createTRPCRouter({
       taxTypeByPerfId.set(perfId, taxTypes.size === 1 && only ? only : "mixed");
     }
 
-    // Group every currently-linked SimpleFIN account's balance by target
-    // performanceAccountId, since more than one can point at the same id.
+    // Group every counted (linked and included) SimpleFIN account's balance
+    // by target performanceAccountId, since more than one can point at the
+    // same id. Unchecked accounts count for nothing — see countsAsFeed.
     const linkedTotalByPerfId = new Map<number, number>();
     for (const r of rows) {
-      if (r.linkedPerformanceAccountId == null) continue;
+      if (!countsAsFeed(r) || r.linkedPerformanceAccountId == null) continue;
       linkedTotalByPerfId.set(
         r.linkedPerformanceAccountId,
         (linkedTotalByPerfId.get(r.linkedPerformanceAccountId) ?? 0) +
@@ -202,6 +435,7 @@ export const simplefinRouter = createTRPCRouter({
     }
 
     const snapshotDate = latest?.snapshot.snapshotDate ?? null;
+    const links = await linkContext(ctx.db, rows);
 
     return rows.map((r) => {
       const lastBalance = Number(r.lastBalance);
@@ -210,12 +444,28 @@ export const simplefinRouter = createTRPCRouter({
         orgName: r.orgName,
         accountName: r.accountName,
         lastBalance,
+        lastBalanceDate: r.lastBalanceDate,
         isIncluded: r.isIncluded,
         lastSeenAt: r.lastSeenAt,
         linkedPerformanceAccountId: r.linkedPerformanceAccountId,
+        // The sub-account it's linked to; a key no longer in the latest
+        // snapshot (edited or deactivated) is kept and flagged, and the
+        // link counts for the whole account meanwhile.
+        linkedSubKey:
+          r.linkedPerformanceAccountId != null ? r.linkedSubKey : null,
+        linkedSubLabel: r.linkedSubKey
+          ? (links.subByKey.get(r.linkedSubKey)?.label ?? null)
+          : null,
+        subLinkMissing:
+          r.linkedPerformanceAccountId != null &&
+          !!r.linkedSubKey &&
+          !links.subByKey.has(r.linkedSubKey),
+        suggestion: links.suggestions.get(r.id) ?? null,
+        /** Tax treatment (label) of a part this account needs but the tracked account lacks. */
+        missingPart: links.missingParts.get(r.id) ?? null,
         snapshotDate,
       };
-      if (r.linkedPerformanceAccountId == null) {
+      if (r.linkedPerformanceAccountId == null || !countsAsFeed(r)) {
         return {
           ...base,
           snapshotBalance: null,
@@ -255,7 +505,7 @@ export const simplefinRouter = createTRPCRouter({
 
   /** Active performance_accounts, for the match-to-existing-account picker. */
   listMatchableAccounts: protectedProcedure.query(async ({ ctx }) => {
-    const [accounts, people] = await Promise.all([
+    const [accounts, people, subs] = await Promise.all([
       ctx.db
         .select()
         .from(schema.performanceAccounts)
@@ -265,6 +515,7 @@ export const simplefinRouter = createTRPCRouter({
           asc(schema.performanceAccounts.id),
         ),
       ctx.db.select().from(schema.people),
+      loadLatestSubAccounts(ctx.db),
     ]);
     const peopleMap = new Map(people.map((p) => [p.id, p.name]));
     return accounts.map((a) => ({
@@ -273,8 +524,52 @@ export const simplefinRouter = createTRPCRouter({
         a,
         a.ownerPersonId != null ? peopleMap.get(a.ownerPersonId) : undefined,
       ),
+      // Only worth choosing between when the account has more than one.
+      subAccounts: subs
+        .filter((sub) => sub.performanceAccountId === a.id)
+        .map((sub) => ({ key: sub.key, label: sub.label })),
     }));
   }),
+
+  /**
+   * Link every unlinked SimpleFIN account to its suggested (sub-)account, and
+   * narrow whole-account links to their suggested sub-account.
+   */
+  acceptLinkSuggestions: syncProcedure
+    .input(z.object({ ids: z.array(z.number().int()).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const rows = await ctx.db.select().from(schema.simplefinAccounts);
+      const { suggestions } = await linkContext(ctx.db, rows);
+      let linked = 0;
+      for (const [id, s] of suggestions) {
+        if (input.ids && !input.ids.includes(id)) continue;
+        await ctx.db
+          .update(schema.simplefinAccounts)
+          .set({
+            linkedPerformanceAccountId: s.performanceAccountId,
+            linkedSubKey: s.subKey,
+          })
+          .where(
+            and(
+              eq(schema.simplefinAccounts.id, id),
+              // Unlinked, or linked to this whole account (a narrower link).
+              or(
+                isNull(schema.simplefinAccounts.linkedPerformanceAccountId),
+                and(
+                  eq(
+                    schema.simplefinAccounts.linkedPerformanceAccountId,
+                    s.performanceAccountId,
+                  ),
+                  isNull(schema.simplefinAccounts.linkedSubKey),
+                ),
+              ),
+            ),
+          );
+        await redactStoredCardSpending(ctx.db, id);
+        linked++;
+      }
+      return { linked };
+    }),
 
   /**
    * Match (or unmatch) a SimpleFIN account to an existing performance_accounts
@@ -290,9 +585,27 @@ export const simplefinRouter = createTRPCRouter({
       z.object({
         id: z.number().int(),
         performanceAccountId: z.number().int().nullable(),
+        /** A sub-account of that tracked account (snapshotAccountKey), or null/absent for the whole account. */
+        subKey: z.string().max(200).nullable().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      const subKey =
+        input.performanceAccountId == null ? null : (input.subKey ?? null);
+      if (subKey) {
+        const subs = await loadLatestSubAccounts(ctx.db);
+        if (
+          !subs.some(
+            (sub) =>
+              sub.key === subKey &&
+              sub.performanceAccountId === input.performanceAccountId,
+          )
+        )
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "That sub-account isn't in the latest snapshot",
+          });
+      }
       if (input.performanceAccountId != null) {
         const [target] = await ctx.db
           .select({ id: schema.performanceAccounts.id })
@@ -314,7 +627,10 @@ export const simplefinRouter = createTRPCRouter({
 
       const [row] = await ctx.db
         .update(schema.simplefinAccounts)
-        .set({ linkedPerformanceAccountId: input.performanceAccountId })
+        .set({
+          linkedPerformanceAccountId: input.performanceAccountId,
+          linkedSubKey: subKey,
+        })
         .where(eq(schema.simplefinAccounts.id, input.id))
         .returning();
 
@@ -324,6 +640,10 @@ export const simplefinRouter = createTRPCRouter({
           message: "SimpleFIN account not found",
         });
       }
+
+      // Relinking to an HSA (or unlinking) redacts card spending kept while
+      // the account was linked elsewhere — same rule as ingest.
+      await redactStoredCardSpending(ctx.db, row.id);
 
       return {
         success: true as const,

@@ -2,26 +2,25 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**363 procedures across 43 routers.**
+**388 procedures across 50 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
 ## `analytics`
 
-| Procedure                | Kind     | Auth                 | Description                                                                                                                                                                                           |
-| ------------------------ | -------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bulkUpsertHoldings`     | mutation | `portfolioProcedure` | Bulk upsert holdings for one account+snapshot in a single round-trip. Replaces the entire set for that account+snapshot (delete-then-insert in a transaction).                                        |
-| `copyHoldingsToSnapshot` | mutation | `portfolioProcedure` | Snapshot-copy: duplicate all holdings from snapshot A to snapshot B. Returns { count: 0 } (not an error) when the source snapshot has no holdings.                                                    |
-| `deleteHolding`          | mutation | `portfolioProcedure` | Delete one holding by id.                                                                                                                                                                             |
-| `getAccounts`            | query    | `portfolioProcedure` | Get all active performance accounts (used to build the account list on the page).                                                                                                                     |
-| `getAssetClasses`        | query    | `portfolioProcedure` | Get all asset class params (for the asset class dropdown).                                                                                                                                            |
-| `getGlidePathForAge`     | query    | `portfolioProcedure` | Get glide path allocations for a specific age (for drift computation). Returns an empty array if no glide path is configured.                                                                         |
-| `getHoldings`            | query    | `portfolioProcedure` | Get all holdings for a given snapshot (or the latest snapshot that has holdings). Only returns holdings for isActive = true performance_accounts.                                                     |
-| `getHoldingsHistory`     | query    | `portfolioProcedure` | Fetch holdings across multiple snapshots for historical allocation/drift charts. Only returns snapshots that actually have ≥1 holding.                                                                |
-| `getSnapshotBalances`    | query    | `portfolioProcedure` | Get portfolio account balances for a given snapshot (to compute dollar values from weights).                                                                                                          |
-| `getSnapshots`           | query    | `portfolioProcedure` | Get all portfolio snapshots (for the snapshot selector).                                                                                                                                              |
-| `hasFmpKey`              | query    | `portfolioProcedure` | Check whether an FMP connection is configured (used to show/hide the Look up button). Returns true if a key exists, false otherwise.                                                                  |
-| `lookupTicker`           | query    | `portfolioProcedure` | Distinguishes error types so the UI can show the right message: no_key — FMP connection not configured (suppress "Look up" button on the client) not_found — ticker not found in FMP rate_limit — FMP |
+| Procedure                | Kind     | Auth                 | Description                                                                                                                                                                                              |
+| ------------------------ | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bulkUpsertHoldings`     | mutation | `portfolioProcedure` | Bulk upsert holdings for one account+snapshot in a single round-trip. Replaces the entire set for that account+snapshot (delete-then-insert in a transaction).                                           |
+| `copyHoldingsToSnapshot` | mutation | `portfolioProcedure` | Snapshot-copy: duplicate all holdings from snapshot A to snapshot B. Returns { count: 0 } (not an error) when the source snapshot has no holdings.                                                       |
+| `deleteHolding`          | mutation | `portfolioProcedure` | Delete one holding by id.                                                                                                                                                                                |
+| `getAccounts`            | query    | `portfolioProcedure` | Get all active performance accounts (used to build the account list on the page).                                                                                                                        |
+| `getAssetClasses`        | query    | `portfolioProcedure` | Get all asset class params (for the asset class dropdown).                                                                                                                                               |
+| `getGlidePathForAge`     | query    | `portfolioProcedure` | Get glide path allocations for a specific age (for drift computation). Returns an empty array if no glide path is configured.                                                                            |
+| `getHoldings`            | query    | `portfolioProcedure` | Get all holdings for a given snapshot (or the latest snapshot that has holdings). Only returns holdings for isActive = true performance_accounts.                                                        |
+| `getHoldingsHistory`     | query    | `portfolioProcedure` | Fetch holdings across multiple snapshots for historical allocation/drift charts. Only returns snapshots that actually have ≥1 holding.                                                                   |
+| `getSnapshotBalances`    | query    | `portfolioProcedure` | Get portfolio account balances for a given snapshot (to compute dollar values from weights).                                                                                                             |
+| `getSnapshots`           | query    | `portfolioProcedure` | Get all portfolio snapshots (for the snapshot selector).                                                                                                                                                 |
+| `lookupTicker`           | query    | `portfolioProcedure` | Ticker lookup from the fund facts Ledgr already stores (SEC filings or your entries) — name, expense ratio, and the asset class linked to the fund's dominant category when one holds at least 80% of it |
 
 ## `api-docs`
 
@@ -141,6 +140,53 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `upsertNote`     | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
 | `upsertSalary`   | mutation | `adminProcedure`     | field falls back to the SAME live estimate the current-year auto-fill in `computeSummary` shows (active job's compensation under the active Salary Profile) for the current year, or 0 for a past year w |
 
+## `investments/account-insights`
+
+| Procedure              | Kind  | Auth                 | Description                                                                                                                                                                                              |
+| ---------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `getAccountInsights`   | query | `portfolioProcedure` | (no description)                                                                                                                                                                                         |
+| `getLiveSinceSnapshot` | query | `portfolioProcedure` | How the household's linked accounts moved each day since the latest snapshot, as a change from it — the Portfolio chart's live line and the Net Worth page's "today" estimate add it to the snapshot's o |
+
+## `investments/comparison`
+
+| Procedure       | Kind  | Auth                 | Description                                                                                                 |
+| --------------- | ----- | -------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `getComparison` | query | `portfolioProcedure` | Yearly results and the same money in each benchmark, from `fromYear` (default: first year with real gains). |
+
+## `investments/fund-facts`
+
+| Procedure               | Kind     | Auth                 | Description                                                                                                                                                                                   |
+| ----------------------- | -------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `checkStandIn`          | mutation | `portfolioProcedure` | Check a suggested (unconfirmed) stand-in's SEC filings now, to judge it before using it. At most once an hour per fund unless the last check failed — each check downloads several SEC files. |
+| `clearUserFacts`        | mutation | `portfolioProcedure` | Remove your own expense ratio or mix for a fund, going back to SEC's (or none).                                                                                                               |
+| `confirmStandIn`        | mutation | `portfolioProcedure` | Use the suggested stand-in's SEC filings for this fund, and fetch them now.                                                                                                                   |
+| `findStandIn`           | mutation | `portfolioProcedure` | After "Not a match": look for a stand-in again (asks SEC now).                                                                                                                                |
+| `getHoldingsOverview`   | query    | `portfolioProcedure` | Holdings valued today, with each fund's facts; allocation vs target; blended cost.                                                                                                            |
+| `linkCompositionBucket` | mutation | `portfolioProcedure` | Which asset class a fund category counts toward (null = none). Several categories may count toward one class; a category toward one class.                                                    |
+| `rejectStandIn`         | mutation | `portfolioProcedure` | Stop using a stand-in (suggested or already confirmed): no registered fund fits. Facts that came from it are removed and it isn't suggested again; your own entries are kept.                 |
+| `setUserFacts`          | mutation | `portfolioProcedure` | The household's own expense ratio and/or mix for a fund (e.g. from the plan's fee disclosure).                                                                                                |
+
+## `investments/health`
+
+| Procedure   | Kind  | Auth                 | Description                                                              |
+| ----------- | ----- | -------------------- | ------------------------------------------------------------------------ |
+| `getHealth` | query | `portfolioProcedure` | Accounts whose holdings stopped arriving or don't add up to the balance. |
+
+## `investments/snapshot-flows`
+
+| Procedure          | Kind  | Auth                 | Description                                                                                                                                                                                              |
+| ------------------ | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `getSnapshotFlows` | query | `portfolioProcedure` | Money added since a snapshot across SimpleFIN accounts linked to tracked accounts (the Live Balance change's scope), whether stored transactions reach back that far, and the latest few money movements |
+
+## `investments/suggestions`
+
+| Procedure            | Kind  | Auth                 | Description                                                                                                                                                                                              |
+| -------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `getSavingsThisYear` | query | `portfolioProcedure` | Saved so far this year against the paycheck plan, per tracked account and for the household (Dashboard).                                                                                                 |
+| `suggestBasis`       | query | `portfolioProcedure` | The year's Roth basis rows with Roth contributions and conversions no saved fill has counted yet. Basis is cumulative, so these add onto the stored figures; money out of a Roth account reduces them (c |
+| `suggestPerformance` | query | `portfolioProcedure` | The year's Performance rows with what SimpleFIN has seen that no saved fill has counted yet, added onto the stored figures.                                                                              |
+| `suggestSnapshot`    | query | `portfolioProcedure` | Suggested balances for a new portfolio snapshot, by snapshot sub-account key, from linked SimpleFIN accounts.                                                                                            |
+
 ## `mortgage`
 
 | Procedure              | Kind     | Auth                 | Description      |
@@ -173,7 +219,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `getLatest`              | query    | `protectedProcedure` | Get the latest snapshot with its accounts (for pre-filling a new snapshot form).                                                                                                                         |
 | `listHistory`            | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
 | `listSnapshots`          | query    | `protectedProcedure` | Paginated snapshot list with optional date range filter and sorting.                                                                                                                                     |
-| `listSnapshotTotals`     | query    | `protectedProcedure` | Lightweight snapshot totals for portfolio chart — returns (date, total) pairs.                                                                                                                           |
+| `listSnapshotTotals`     | query    | `protectedProcedure` | Lightweight snapshot totals for the portfolio chart — (date, total) pairs, plus each snapshot's amount per tracked account (for the stacked by-account view; rows tied to no account are "Other").       |
 | `updateAccount`          | mutation | `portfolioProcedure` | only allowed on the **most recent** snapshot — it re-derives that year's performance ending balances + annual rollups and re-pushes ("resync") the corrected balances to the budget API. Older snapshots |
 
 ## `paycheck`
@@ -377,6 +423,16 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `upsertMonth`               | mutation | `savingsProcedure`   | Atomically upsert overrides for ALL goals in a single month (pool-constrained).                                                                                                                          |
 | `upsertMonthRange`          | mutation | `savingsProcedure`   | Atomically upsert overrides for ALL goals across a month range (fill-forward).                                                                                                                           |
 
+## `sec`
+
+| Procedure          | Kind     | Auth                 | Description                                                           |
+| ------------------ | -------- | -------------------- | --------------------------------------------------------------------- |
+| `getStatus`        | query    | `protectedProcedure` | Status for Settings and Data sources. Never returns the contact.      |
+| `refreshNow`       | mutation | `syncProcedure`      | Check every held fund for new filings now (at most every 10 minutes). |
+| `removeConnection` | mutation | `syncProcedure`      | (no description)                                                      |
+| `saveContact`      | mutation | `syncProcedure`      | Check SEC accepts the contact, then store it encrypted.               |
+| `testConnection`   | mutation | `syncProcedure`      | Test the stored contact.                                              |
+
 ## `settings/admin`
 
 | Procedure                       | Kind     | Auth                 | Description                                                                                  |
@@ -463,6 +519,8 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 | Procedure               | Kind     | Auth                 | Description                                                                                                                                                                                             |
 | ----------------------- | -------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `acceptLinkSuggestions` | mutation | `syncProcedure`      | Link every unlinked SimpleFIN account to its suggested (sub-)account, and narrow whole-account links to their suggested sub-account.                                                                    |
+| `getCollectionStats`    | query    | `protectedProcedure` | What the sync has collected and how much of today's request quota is used — counts only, for Settings → Data sources.                                                                                   |
 | `getStatus`             | query    | `protectedProcedure` | Connection status for the Settings integrations card and the sidebar's Data Updated tooltip.                                                                                                            |
 | `listAccounts`          | query    | `protectedProcedure` | matched-group level: every SimpleFIN account linked to a given performance account shares the same `change`, comparing their _combined_ live balance against that one snapshot balance. A per-row delta |
 | `listBalanceHistory`    | query    | `protectedProcedure` | Snapshot history for the dashboard sparkline.                                                                                                                                                           |
@@ -471,7 +529,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `saveToken`             | mutation | `syncProcedure`      | Claim a one-time setup token and store the resulting access URL.                                                                                                                                        |
 | `setAccountIncluded`    | mutation | `syncProcedure`      | Toggle an account's inclusion and recompute today's total from local data immediately — no SimpleFIN API call, so this is free to click repeatedly. Does not touch any prior day's snapshot.            |
 | `setAccountMapping`     | mutation | `syncProcedure`      | multiple SimpleFIN accounts can point at the same performance account (e.g. historical account splits/merges Ledgr still tracks as a single account) — listAccounts sums every linked account's balance |
-| `syncNow`               | mutation | `syncProcedure`      | Manual sync trigger — calls the same runSimplefinSync the daily cron calls.                                                                                                                             |
+| `syncNow`               | mutation | `syncProcedure`      | Manual sync trigger — calls the same runSimplefinSync the daily cron calls. At most once per 10 minutes (quota).                                                                                        |
 | `testConnection`        | mutation | `syncProcedure`      | Test the stored connection without writing a snapshot.                                                                                                                                                  |
 
 ## `sync/config`
@@ -578,8 +636,10 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `getRetention`         | query    | `protectedProcedure` | Read retention setting.                                                                                                  |
 | `getSchedule`          | query    | `protectedProcedure` | Read auto-version schedule setting.                                                                                      |
 | `getUpgradeBanner`     | query    | `protectedProcedure` | Check if a pre-upgrade backup banner should be shown.                                                                    |
+| `importDataLoss`       | query    | `versionProcedure`   | Same check for an uploaded backup file, given only its table names.                                                      |
 | `list`                 | query    | `protectedProcedure` | List all versions (metadata only, no JSONB data).                                                                        |
 | `resetAllData`         | mutation | `adminProcedure`     | Reset all user data — truncates every table except state_versions, state_version_tables, app_settings, and local_admins. |
 | `restore`              | mutation | `versionProcedure`   | Restore from a version.                                                                                                  |
+| `restoreDataLoss`      | query    | `versionProcedure`   | Tables a restore of this version would empty (it predates them), for the pre-restore warning.                            |
 | `setRetention`         | mutation | `versionProcedure`   | Update retention setting and trigger cleanup.                                                                            |
 | `setSchedule`          | mutation | `versionProcedure`   | Update auto-version schedule.                                                                                            |

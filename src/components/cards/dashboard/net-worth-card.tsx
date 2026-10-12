@@ -7,6 +7,7 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatDate } from "@/lib/utils/format";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import { LoadingCard, ErrorCard } from "./utils";
+import { MortgagePayoff } from "./mortgage-payoff";
 
 function NetWorthCardImpl() {
   const targeting = useYearEndTargetingInput();
@@ -101,11 +102,14 @@ function NetWorthCardImpl() {
             </div>
           ))}
         {data.hasHouse && (
-          <div className="flex justify-between">
-            <span className="text-muted">Mortgage</span>
-            <span className="text-red-600">
-              -{formatCurrency(data.mortgageBalance)}
-            </span>
+          <div>
+            <div className="flex justify-between">
+              <span className="text-muted">Mortgage</span>
+              <span className="text-red-600">
+                -{formatCurrency(data.mortgageBalance)}
+              </span>
+            </div>
+            <MortgagePayoff />
           </div>
         )}
       </div>

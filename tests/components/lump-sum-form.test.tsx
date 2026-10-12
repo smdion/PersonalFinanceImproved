@@ -138,22 +138,20 @@ describe("LumpSumForm", () => {
   it("R4: two accounts sharing a name show the owner in the label and are individually selectable", () => {
     const onAdd = vi.fn();
     const duplicateNameAccounts = [
-      { name: "Long Term Brokerage", category: "brokerage", ownerName: "Sean" },
+      { name: "Long Term Brokerage", category: "brokerage", ownerName: "Alex" },
       {
         name: "Long Term Brokerage",
         category: "brokerage",
-        ownerName: "Joanna",
+        ownerName: "Sam",
       },
     ];
     render(<LumpSumForm accounts={duplicateNameAccounts} onAdd={onAdd} />);
     // Both owner-qualified labels render distinctly.
-    expect(screen.getByText("Long Term Brokerage (Sean)")).toBeInTheDocument();
-    expect(
-      screen.getByText("Long Term Brokerage (Joanna)"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Long Term Brokerage (Alex)")).toBeInTheDocument();
+    expect(screen.getByText("Long Term Brokerage (Sam)")).toBeInTheDocument();
 
-    fireEvent.change(screen.getByDisplayValue("Long Term Brokerage (Sean)"), {
-      target: { value: "Long Term Brokerage::Joanna" },
+    fireEvent.change(screen.getByDisplayValue("Long Term Brokerage (Alex)"), {
+      target: { value: "Long Term Brokerage::Sam" },
     });
     fireEvent.change(screen.getByPlaceholderText("$50,000"), {
       target: { value: "1000" },
@@ -163,7 +161,7 @@ describe("LumpSumForm", () => {
     expect(onAdd.mock.calls[0]![0].targetAccountName).toBe(
       "Long Term Brokerage",
     );
-    expect(onAdd.mock.calls[0]![0].targetOwnerName).toBe("Joanna");
+    expect(onAdd.mock.calls[0]![0].targetOwnerName).toBe("Sam");
   });
 
   it("renders with an empty accounts list without crashing", () => {

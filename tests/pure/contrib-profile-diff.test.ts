@@ -6,7 +6,7 @@ import {
 
 const account = (overrides: Partial<DiffAccount> = {}): DiffAccount => ({
   id: 1,
-  accountName: "Sean 401k",
+  accountName: "Alex 401k",
   live: { contributionValue: "0", contributionMethod: "percent_of_salary" },
   ...overrides,
 });
@@ -44,7 +44,7 @@ describe("diffContribProfileSwap", () => {
       }),
     ]);
     expect(lines).toEqual([
-      "Sean 401k: 14% → using account's own value (currently 0%)",
+      "Alex 401k: 14% → using account's own value (currently 0%)",
     ]);
   });
 
@@ -56,7 +56,7 @@ describe("diffContribProfileSwap", () => {
       "1": { contributionValue: "20", contributionMethod: "percent_of_salary" },
     };
     const lines = diffContribProfileSwap(outgoing, incoming, [account()]);
-    expect(lines).toEqual(["Sean 401k: 14% → 20%"]);
+    expect(lines).toEqual(["Alex 401k: 14% → 20%"]);
   });
 
   it("isActive: false gets the 'excluded' phrasing, distinct from a rate change", () => {
@@ -65,7 +65,7 @@ describe("diffContribProfileSwap", () => {
       account({ live: { contributionValue: "10", isActive: true } }),
     ]);
     expect(lines).toEqual([
-      "Sean 401k: excluded → using account's own value (currently 10)",
+      "Alex 401k: excluded → using account's own value (currently 10)",
     ]);
   });
 
@@ -77,7 +77,7 @@ describe("diffContribProfileSwap", () => {
     const lines = diffContribProfileSwap(outgoing, {}, [
       account({
         id: 1,
-        accountName: "Sean 401k",
+        accountName: "Alex 401k",
         live: {
           contributionValue: "0",
           contributionMethod: "percent_of_salary",
@@ -85,13 +85,13 @@ describe("diffContribProfileSwap", () => {
       }),
       account({
         id: 2,
-        accountName: "Sean IRA",
+        accountName: "Alex IRA",
         live: { contributionValue: "0" },
       }),
     ]);
     expect(lines).toEqual([
-      "Sean 401k: 14% → using account's own value (currently 0%)",
-      "Sean IRA: 500 → using account's own value (currently 0)",
+      "Alex 401k: 14% → using account's own value (currently 0%)",
+      "Alex IRA: 500 → using account's own value (currently 0)",
     ]);
   });
 

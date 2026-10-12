@@ -19,6 +19,7 @@ import * as schema from "@/lib/db/schema";
 import { getLatestSnapshot } from "@/server/helpers/snapshot";
 import { toNumber } from "@/server/helpers/transforms";
 import { zDecimal } from "@/server/routers/settings/_shared";
+import { recordFill, zFillRecord } from "@/server/helpers/fill-ledger";
 import { computeTaxBucketBreakdown } from "@/lib/pure/tax-buckets";
 import type { db as appDb } from "@/lib/db";
 import { computeTaxBucketAnalysis } from "@/lib/pure/tax-bucket-analysis";
@@ -259,6 +260,9 @@ export const taxBucketsRouter = createTRPCRouter({
             latestConversionYear: z.number().int().nullable(),
           }),
         ),
+        /** Set when the figures were filled from SimpleFIN: what they
+         *  counted, so the next fill adds only what's new. */
+        simplefinFill: zFillRecord.optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -293,6 +297,8 @@ export const taxBucketsRouter = createTRPCRouter({
             });
         }
         await stampBasisUpdated(tx);
+        if (input.simplefinFill)
+          await recordFill(tx, "basis", input.simplefinFill);
       });
       return { success: true };
     }),

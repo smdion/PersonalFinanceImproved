@@ -312,7 +312,7 @@ function buildFullAccountNote(
 
 /** Owner-prefixed account label for tooltip lines — omits the "Owner — "
  *  prefix when the account's own name already starts with the owner's
- *  name (many real account names, e.g. "Joanna IRA (Vanguard)", already
+ *  name (many real account names, e.g. "Sam IRA (Vanguard)", already
  *  include it — prefixing again produced a visibly duplicated name). */
 function ownerAccountLabel(ia: { name: string; ownerName?: string }): string {
   if (!ia.ownerName) return ia.name;

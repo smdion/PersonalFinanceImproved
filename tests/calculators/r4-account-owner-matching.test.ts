@@ -31,7 +31,7 @@ function makeInput(): ProjectionInput {
       category: "brokerage",
       taxType: "afterTax",
       startingBalance: 200000,
-      ownerName: "Sean",
+      ownerName: "Alex",
       ownerPersonId: 1,
       parentCategory: "Portfolio",
     },
@@ -40,7 +40,7 @@ function makeInput(): ProjectionInput {
       category: "brokerage",
       taxType: "afterTax",
       startingBalance: 150000,
-      ownerName: "Joanna",
+      ownerName: "Sam",
       ownerPersonId: 2,
       parentCategory: "Portfolio",
     },
@@ -57,7 +57,7 @@ function makeInput(): ProjectionInput {
       baseAnnual: 6000,
       taxTreatment: "after_tax",
       personId: 1,
-      ownerName: "Sean",
+      ownerName: "Alex",
       parentCategory: "Portfolio",
       retirementBehavior: "continues_after_retirement",
     },
@@ -66,12 +66,12 @@ function makeInput(): ProjectionInput {
       name: "Long Term Brokerage",
       accountName: "Long Term Brokerage",
       method: "fixed_monthly",
-      value: 300, // $300/mo -> $3,600/yr, deliberately DIFFERENT from Sean's
+      value: 300, // $300/mo -> $3,600/yr, deliberately DIFFERENT from Alex's
       salaryFraction: 1,
       baseAnnual: 3600,
       taxTreatment: "after_tax",
       personId: 2,
-      ownerName: "Joanna",
+      ownerName: "Sam",
       parentCategory: "Portfolio",
       retirementBehavior: "continues_after_retirement",
     },
@@ -178,14 +178,14 @@ describe("R4 — decumulation Portfolio-continuing-contributions matches by owne
     )!;
     expect(firstDecumYear).toBeDefined();
 
-    const seanAcct = firstDecumYear.individualAccountBalances.find(
-      (a) => a.name === "Long Term Brokerage" && a.ownerName === "Sean",
+    const alexAcct = firstDecumYear.individualAccountBalances.find(
+      (a) => a.name === "Long Term Brokerage" && a.ownerName === "Alex",
     )!;
-    const joannaAcct = firstDecumYear.individualAccountBalances.find(
-      (a) => a.name === "Long Term Brokerage" && a.ownerName === "Joanna",
+    const samAcct = firstDecumYear.individualAccountBalances.find(
+      (a) => a.name === "Long Term Brokerage" && a.ownerName === "Sam",
     )!;
-    expect(seanAcct).toBeDefined();
-    expect(joannaAcct).toBeDefined();
+    expect(alexAcct).toBeDefined();
+    expect(samAcct).toBeDefined();
 
     // Each person's own contribution landed on THEIR account, not the
     // other's — allowing for limitGrowthRate's per-year growth factor
@@ -193,16 +193,14 @@ describe("R4 — decumulation Portfolio-continuing-contributions matches by owne
     // un-grown baseAnnual. The two amounts are genuinely different (proving
     // this isn't accidentally passing via both being equal/zero) and each
     // is close to its OWN spec's baseAnnual, not the other spec's.
-    expect(seanAcct.contribution).toBeGreaterThan(5900);
-    expect(seanAcct.contribution).toBeLessThan(6300);
-    expect(joannaAcct.contribution).toBeGreaterThan(3500);
-    expect(joannaAcct.contribution).toBeLessThan(3800);
+    expect(alexAcct.contribution).toBeGreaterThan(5900);
+    expect(alexAcct.contribution).toBeLessThan(6300);
+    expect(samAcct.contribution).toBeGreaterThan(3500);
+    expect(samAcct.contribution).toBeLessThan(3800);
 
     // Sanity: total attributed contribution equals the sum of both specs —
     // nothing silently dropped, nothing double-counted onto one account.
-    expect(seanAcct.contribution + joannaAcct.contribution).toBeGreaterThan(
-      9400,
-    );
-    expect(seanAcct.contribution + joannaAcct.contribution).toBeLessThan(10100);
+    expect(alexAcct.contribution + samAcct.contribution).toBeGreaterThan(9400);
+    expect(alexAcct.contribution + samAcct.contribution).toBeLessThan(10100);
   });
 });

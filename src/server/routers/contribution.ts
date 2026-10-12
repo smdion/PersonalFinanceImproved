@@ -1,10 +1,24 @@
 /** Contribution router for computing per-account contribution allocations, IRS limits, employer matches, and accumulation order across retirement and brokerage accounts. */
 import { eq } from "drizzle-orm";
 import { z } from "zod/v4";
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  userHasPermission,
+} from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { calculateContributions } from "@/lib/calculators/contribution";
-import { countPeriodsElapsed } from "@/lib/calculators/paycheck";
+import {
+  loadLiveContributions,
+  liveYearToDate,
+} from "./investments/live-contributions";
+import {
+  contribRemainingFraction,
+  countPeriodsElapsed,
+  monthsDoneYtd,
+  monthsElapsedYtd,
+  periodsElapsedYtd,
+} from "@/lib/calculators/paycheck";
 import { accountDisplayName, stripInstitutionSuffix } from "@/lib/utils/format";
 import {
   toNumber,
@@ -106,6 +120,8 @@ type AccountTypeSnapshot = {
   hasDiscountBar: boolean; // config-driven: ESPP-style discount bar rendering
   employerMatchLabel: string; // config-driven: 'match' or 'disc.' etc.
   targetAnnual: number | null; // user's self-imposed annual target (null = no target)
+  /** The tracked (Performance) accounts this row's contributions feed — joins it to live status. */
+  performanceAccountIds: number[];
   allocationPriority: number; // overflow routing priority (lower = higher priority)
   priorYear?: {
     amount: number; // total designated for prior tax year across all contribs in this category
@@ -250,6 +266,21 @@ export const contributionRouter = createTRPCRouter({
         number,
         { contributions: number; employerMatch: number }
       >();
+      // With the portfolio permission, actuals are live (Performance + what
+      // SimpleFIN has seen since + what's on its way, through today) — see
+      // investments/live-contributions. Those accounts need no stale-gap fill.
+      const live =
+        ctx.session?.user && userHasPermission(ctx.session.user, "portfolio")
+          ? await loadLiveContributions(ctx.db)
+          : null;
+      const liveThroughToday = new Set<number>();
+      // The day each live account's latest contribution actually arrived —
+      // a month already paid into counts as done (monthsDoneYtd).
+      const contributedThrough = new Map(
+        (live ?? [])
+          .filter((c) => c.latestContributionDay !== null)
+          .map((c) => [c.performanceAccountId, c.latestContributionDay!]),
+      );
       // total_contributions includes employer match — split into employee-only + match
       for (const row of currentYearPerfActuals) {
         if (row.performanceAccountId == null) continue;
@@ -266,6 +297,13 @@ export const contributionRouter = createTRPCRouter({
             employerMatch: match,
           });
         }
+      }
+
+      for (const c of live ?? []) {
+        const ytd = liveYearToDate(c);
+        if (ytd.contributions === 0 && ytd.employerMatch === 0) continue;
+        perfActualMap.set(c.performanceAccountId, ytd);
+        liveThroughToday.add(c.performanceAccountId);
       }
 
       // Build label map for performance accounts — strip institution suffix for category grouping
@@ -358,10 +396,12 @@ export const contributionRouter = createTRPCRouter({
           effectiveSalaryMap,
         );
         const periodsPerYear = getPeriodsPerYear(job.payPeriod);
-        const anchor = job.anchorPayDate ? new Date(job.anchorPayDate) : null;
-        const periodsElapsed = anchor
-          ? countPeriodsElapsed(asOfDate, job.payPeriod, anchor)
-          : Math.round((asOfDate.getMonth() / 12) * periodsPerYear);
+        const periodsElapsed = periodsElapsedYtd(
+          asOfDate,
+          job.payPeriod,
+          job.anchorPayDate,
+          periodsPerYear,
+        );
         jobCache.set(c.jobId, { salary, periodsPerYear, periodsElapsed });
       }
 
@@ -452,6 +492,7 @@ export const contributionRouter = createTRPCRouter({
                     totalWithMatch: 0,
                     savingsRateWithMatch: 0,
                     savingsRateWithoutMatch: 0,
+                    compensation: 0,
                   },
                   blended: {
                     retirementWithoutMatch: 0,
@@ -462,6 +503,7 @@ export const contributionRouter = createTRPCRouter({
                     totalWithMatch: 0,
                     savingsRateWithMatch: 0,
                     savingsRateWithoutMatch: 0,
+                    compensation: 0,
                   },
                   ytd: {
                     retirementWithoutMatch: 0,
@@ -472,6 +514,7 @@ export const contributionRouter = createTRPCRouter({
                     totalWithMatch: 0,
                     savingsRateWithMatch: 0,
                     savingsRateWithoutMatch: 0,
+                    compensation: 0,
                   },
                 },
                 ytdActualRetirement: 0,
@@ -500,13 +543,12 @@ export const contributionRouter = createTRPCRouter({
           // Total compensation (always includes bonus) — used for savings rate denominator
           const totalCompensation = getTotalCompensation(dbSalary, bonusTerms);
           const periodsPerYear = getPeriodsPerYear(activeJob.payPeriod);
-          const periodsElapsedYtd = activeJob.anchorPayDate
-            ? countPeriodsElapsed(
-                asOfDate,
-                activeJob.payPeriod,
-                new Date(activeJob.anchorPayDate),
-              )
-            : Math.round((asOfDate.getMonth() / 12) * periodsPerYear);
+          const periodsElapsed = periodsElapsedYtd(
+            asOfDate,
+            activeJob.payPeriod,
+            activeJob.anchorPayDate,
+            periodsPerYear,
+          );
           const age = getAgeFromDob(person.dateOfBirth, asOfDate);
 
           const jobContribs = effectiveContribs.filter(
@@ -669,25 +711,17 @@ export const contributionRouter = createTRPCRouter({
               blendedEmployee: number;
               blendedMatch: number;
               ytdDataStale: boolean;
+              performanceAccountIds: Set<number>;
             }
           >();
 
           // Compute method-aware remaining fraction for blended estimates.
           // Each contribution method has a different delivery cadence.
-          const monthsElapsed =
-            asOfDate.getMonth() + (asOfDate.getDate() >= 15 ? 1 : 0);
-          function methodRemainingFraction(method: string): number {
-            switch (method) {
-              case "fixed_monthly":
-                return (12 - monthsElapsed) / 12;
-              case "fixed_annual":
-                return 0;
-              default:
-                return periodsPerYear > 0
-                  ? (periodsPerYear - periodsElapsedYtd) / periodsPerYear
-                  : 1;
-            }
-          }
+          const elapsed = {
+            periodsElapsed,
+            periodsPerYear,
+            monthsElapsed: monthsElapsedYtd(asOfDate),
+          };
           for (let i = 0; i < accounts.length; i++) {
             const acct = accounts[i]!;
             const rawContrib = rawContribs[i]!;
@@ -759,7 +793,10 @@ export const contributionRouter = createTRPCRouter({
               blendedEmployee: 0,
               blendedMatch: 0,
               ytdDataStale: false,
+              performanceAccountIds: new Set<number>(),
             };
+            if (rawContrib.performanceAccountId != null)
+              entry.performanceAccountIds.add(rawContrib.performanceAccountId);
             // Accumulate YTD actuals from proportionally-split performance data
             const contribActual = contribActualMap.get(rawContrib.id);
             if (contribActual) {
@@ -770,8 +807,17 @@ export const contributionRouter = createTRPCRouter({
             // Stale gap: periods between last performance update and today,
             // filled at current projected rate. Actuals are trusted (may
             // reflect old contribution rates or salary changes).
-            const remaining = methodRemainingFraction(
+            const remaining = contribRemainingFraction(
               rawContrib.contributionMethod,
+              {
+                ...elapsed,
+                monthsElapsed: monthsDoneYtd(
+                  asOfDate,
+                  rawContrib.performanceAccountId != null
+                    ? contributedThrough.get(rawContrib.performanceAccountId)
+                    : null,
+                ),
+              },
             );
             const ytdEmp = contribActual?.contributions ?? 0;
             const ytdMatch = contribActual?.employerMatch ?? 0;
@@ -787,7 +833,11 @@ export const contributionRouter = createTRPCRouter({
               if (
                 isPayrollCadence &&
                 perfLastUpdated &&
-                activeJob.anchorPayDate
+                activeJob.anchorPayDate &&
+                !(
+                  rawContrib.performanceAccountId != null &&
+                  liveThroughToday.has(rawContrib.performanceAccountId)
+                )
               ) {
                 const anchor = new Date(activeJob.anchorPayDate);
                 const periodsAtPerfDate = countPeriodsElapsed(
@@ -795,10 +845,7 @@ export const contributionRouter = createTRPCRouter({
                   activeJob.payPeriod,
                   anchor,
                 );
-                stalePeriods = Math.max(
-                  0,
-                  periodsElapsedYtd - periodsAtPerfDate,
-                );
+                stalePeriods = Math.max(0, periodsElapsed - periodsAtPerfDate);
               }
               if (stalePeriods > 0) entry.ytdDataStale = true;
               const perPeriodEmp = acct.annualContribution / periodsPerYear;
@@ -927,6 +974,7 @@ export const contributionRouter = createTRPCRouter({
             accountTypes.push({
               accountType: cat,
               categoryKey: data.categoryKey,
+              performanceAccountIds: [...data.performanceAccountIds],
               parentCategory: data.parentCategory,
               limit,
               employeeContrib: totalEmployee,
@@ -1038,7 +1086,7 @@ export const contributionRouter = createTRPCRouter({
           );
 
           const ytdRatioForTotals = safeDivide(
-            periodsElapsedYtd,
+            periodsElapsed,
             periodsPerYear,
             0,
           );
@@ -1079,7 +1127,7 @@ export const contributionRouter = createTRPCRouter({
             totalCompensation,
             bonusGross,
             periodsPerYear,
-            periodsElapsedYtd,
+            periodsElapsedYtd: periodsElapsed,
             accountTypes,
             perContribData,
             totals: {
@@ -1156,6 +1204,31 @@ export const contributionRouter = createTRPCRouter({
           fundingMissing: 0,
           pctOfSalaryToMax: null,
         };
+        // Live actuals (portfolio permission): YTD is the money in so far;
+        // Year-End adds the rest of the year on this contribution's own
+        // schedule — the same rule as the per-person accounts.
+        const jointActual =
+          c.performanceAccountId != null &&
+          liveThroughToday.has(c.performanceAccountId)
+            ? perfActualMap.get(c.performanceAccountId)
+            : undefined;
+        const viewOf = (emp: number, match: number): AccountViewMetrics => ({
+          ...jointViewMetrics,
+          employeeContrib: roundToCents(emp),
+          employerMatch: roundToCents(match),
+          totalContrib: roundToCents(emp + match),
+        });
+        const jointRemaining = contribRemainingFraction(c.contributionMethod, {
+          periodsPerYear,
+          // A joint contribution has no job: no anchor payday to walk.
+          periodsElapsed: periodsElapsedYtd(asOfDate, "", null, periodsPerYear),
+          monthsElapsed: monthsDoneYtd(
+            asOfDate,
+            c.performanceAccountId != null
+              ? contributedThrough.get(c.performanceAccountId)
+              : null,
+          ),
+        });
         jointAccountTypes.push({
           accountType: displayCat,
           categoryKey: jColorKey,
@@ -1164,13 +1237,27 @@ export const contributionRouter = createTRPCRouter({
           employeeContrib: roundToCents(annual),
           employerMatch: roundToCents(matchAnnual),
           totalContrib: roundToCents(annual + matchAnnual),
-          views: {
-            projected: jointViewMetrics,
-            blended: jointViewMetrics,
-            ytd: jointViewMetrics,
-          },
+          views: jointActual
+            ? {
+                projected: jointViewMetrics,
+                blended: viewOf(
+                  jointActual.contributions + annual * jointRemaining,
+                  jointActual.employerMatch + matchAnnual * jointRemaining,
+                ),
+                ytd: viewOf(
+                  jointActual.contributions,
+                  jointActual.employerMatch,
+                ),
+              }
+            : {
+                projected: jointViewMetrics,
+                blended: jointViewMetrics,
+                ytd: jointViewMetrics,
+              },
           ytdDataStale: false,
           currentPctOfSalary: null,
+          performanceAccountIds:
+            c.performanceAccountId != null ? [c.performanceAccountId] : [],
           tradContrib: c.taxTreatment === "pre_tax" ? roundToCents(annual) : 0,
           taxFreeContrib: isTaxFree(c.taxTreatment) ? roundToCents(annual) : 0,
           afterTaxContrib:

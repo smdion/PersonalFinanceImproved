@@ -1,15 +1,28 @@
 "use client";
 
+import { countsAsFeed } from "@/lib/pure/simplefin-feeds";
 import React, { memo, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
+import { Tooltip } from "@/components/ui/tooltip";
+import { useUser, hasPermission } from "@/lib/context/user-context";
+import { summarizeBalanceDates } from "@/lib/pure/balance-dates";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
 import { safeDivide, roundToCents } from "@/lib/utils/math";
 import { getDisplayConfig } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types.types";
 import type { PortfolioTaxType } from "@/lib/config/enum-values";
 import { LoadingCard } from "./utils";
+
+/** How the breakdown groups balances; the button steps through them in order. */
+type Rollup = "category" | "institution" | "account";
+const ROLLUPS: readonly Rollup[] = ["category", "institution", "account"];
+const ROLLUP_LABELS: Record<Rollup, string> = {
+  category: "category",
+  institution: "institution",
+  account: "account",
+};
 
 // Only need enough history to compute yesterday-vs-today for the trend arrow.
 const HISTORY_DAYS = 2;
@@ -19,6 +32,8 @@ export type SimplefinAccountListItem = {
   orgName: string;
   isIncluded: boolean;
   lastBalance: number;
+  lastBalanceDate: Date | string | null;
+  lastSeenAt: Date | string;
   linkedPerformanceAccountId: number | null;
   change: number | null;
   taxType: PortfolioTaxType | "mixed" | null;
@@ -130,12 +145,34 @@ export function summarizeByInstitution(
 }
 
 /**
+ * Same balances/drift, one row per tracked account (named as everywhere
+ * else — `names` maps tracked-account id to its display name). Accounts
+ * linked to no tracked account, or unchecked, stay under "Not matched".
+ */
+export function summarizeByTrackedAccount(
+  accounts: SimplefinAccountListItem[],
+  names: ReadonlyMap<number, string>,
+): AccountTypeGroup[] {
+  return summarizeAccounts(
+    accounts,
+    (a) =>
+      countsAsFeed(a) && a.linkedPerformanceAccountId != null
+        ? {
+            key: String(a.linkedPerformanceAccountId),
+            label: names.get(a.linkedPerformanceAccountId) ?? a.orgName,
+          }
+        : { key: "", label: "Not matched" },
+    "",
+  );
+}
+
+/**
  * Drift summary across matched tracked accounts. Deduped by
  * linkedPerformanceAccountId — many-to-one matching means several
  * SimpleFIN accounts can share one target and an identical `change`
- * value, so counting per row would overcount. Deliberately not filtered
- * by isIncluded: matching is a data-comparison concept independent of
- * whether an account currently counts toward the total.
+ * value, so counting per row would overcount. Unchecked accounts are
+ * left out: they count for nothing anywhere (countsAsFeed), and an
+ * unchecked account's stale balance would otherwise show as drift.
  */
 export function summarizeDrift(accounts: SimplefinAccountListItem[]): {
   groupCount: number;
@@ -144,7 +181,8 @@ export function summarizeDrift(accounts: SimplefinAccountListItem[]): {
 } {
   const changeByPerfId = new Map<number, number>();
   for (const a of accounts) {
-    if (a.linkedPerformanceAccountId == null || a.change == null) continue;
+    if (!countsAsFeed(a) || a.change == null) continue;
+    if (a.linkedPerformanceAccountId == null) continue;
     if (!changeByPerfId.has(a.linkedPerformanceAccountId)) {
       changeByPerfId.set(a.linkedPerformanceAccountId, a.change);
     }
@@ -182,10 +220,72 @@ function DriftBadge({ drift, balance }: { drift: number; balance: number }) {
   );
 }
 
-function LinkedBalanceCardImpl() {
-  const [rollupBy, setRollupBy] = useState<"category" | "institution">(
-    "category",
+const shortDay = (day: string) =>
+  formatDate(day, "medium").replace(`, ${new Date().getFullYear()}`, "");
+
+function BalanceDatesFooter({
+  accounts,
+  accountCount,
+  lastSyncedAt,
+}: {
+  accounts: SimplefinAccountListItem[] | undefined;
+  accountCount: number;
+  lastSyncedAt: Date | string | null;
+}) {
+  const countLabel = `${accountCount} account${accountCount === 1 ? "" : "s"}`;
+  const summary = summarizeBalanceDates(
+    (accounts ?? [])
+      .filter((a) => a.isIncluded)
+      .map((a) => ({
+        institution: a.orgName,
+        reportedAt: new Date(a.lastBalanceDate ?? a.lastSeenAt),
+      })),
   );
+  if (!summary.oldest || !summary.newest) {
+    return (
+      <p className="text-caption text-faint mt-1">
+        {lastSyncedAt
+          ? `As of ${formatDate(lastSyncedAt.toString(), "medium")}`
+          : "Not yet synced"}
+        {" · "}
+        {countLabel}
+      </p>
+    );
+  }
+  const range =
+    summary.oldest === summary.newest
+      ? shortDay(summary.oldest)
+      : `${shortDay(summary.oldest)}–${shortDay(summary.newest)}`;
+  const behind = summary.behind;
+  return (
+    <div className="mt-1">
+      <Tooltip
+        side="top"
+        lines={[
+          "Balances as each institution reported them:",
+          ...summary.institutions.map(
+            (i) =>
+              `${i.institution} — ${shortDay(i.asOf)}${i.tradingDaysBehind > 0 ? ` (${i.tradingDaysBehind} market day${i.tradingDaysBehind === 1 ? "" : "s"} behind)` : ""}`,
+          ),
+        ]}
+      >
+        <p className="text-caption text-faint w-fit cursor-help underline decoration-dotted underline-offset-2">
+          Balances as of {range} · {countLabel}
+        </p>
+      </Tooltip>
+      {behind.length > 0 && (
+        <p className="text-caption text-amber-600">
+          {behind.length === 1
+            ? `${behind[0]!.institution} is ${behind[0]!.tradingDaysBehind} market day${behind[0]!.tradingDaysBehind === 1 ? "" : "s"} behind`
+            : `${behind.map((b) => b.institution).join(" and ")} are behind`}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function LinkedBalanceCardImpl() {
+  const [rollupBy, setRollupBy] = useState<Rollup>("category");
   const { data: status, isLoading: statusLoading } =
     trpc.simplefin.getStatus.useQuery();
   const isConnected = status?.connected ?? false;
@@ -205,6 +305,14 @@ function LinkedBalanceCardImpl() {
     trpc.simplefin.listMatchableAccounts.useQuery(undefined, {
       enabled: isConnected,
     });
+  // Transaction-level detail (what you added, recent activity) needs the
+  // portfolio permission; everyone else sees the balance-only card.
+  const canSeeActivity = hasPermission(useUser(), "portfolio");
+  const flowsSince = accounts?.find((a) => a.snapshotDate)?.snapshotDate;
+  const { data: flows } = trpc.investments.getSnapshotFlows.useQuery(
+    { since: flowsSince ?? "" },
+    { enabled: isConnected && canSeeActivity && !!flowsSince },
+  );
 
   if (statusLoading) return <LoadingCard title="Live Balance" />;
   // No SimpleFIN connection configured — omit the card entirely rather
@@ -229,8 +337,14 @@ function LinkedBalanceCardImpl() {
   const accountTypeGroups = accounts
     ? rollupBy === "category"
       ? summarizeByAccountType(accounts)
-      : summarizeByInstitution(accounts)
+      : rollupBy === "institution"
+        ? summarizeByInstitution(accounts)
+        : summarizeByTrackedAccount(
+            accounts,
+            new Map((matchableAccounts ?? []).map((m) => [m.id, m.label])),
+          )
     : [];
+  const nextRollup = ROLLUPS[(ROLLUPS.indexOf(rollupBy) + 1) % ROLLUPS.length]!;
   const drift = accounts ? summarizeDrift(accounts) : null;
   const snapshotDate = accounts?.find((a) => a.snapshotDate)?.snapshotDate;
   const snapshotLabel = snapshotDate
@@ -248,6 +362,7 @@ function LinkedBalanceCardImpl() {
   const linkedCount = accounts
     ? new Set(
         accounts
+          .filter(countsAsFeed)
           .map((a) => a.linkedPerformanceAccountId)
           .filter((id): id is number => id != null),
       ).size
@@ -311,6 +426,44 @@ function LinkedBalanceCardImpl() {
         </div>
       )}
 
+      {/* What you added vs what markets did — only when stored transactions
+          reach back to the snapshot, and marked estimated while rows still
+          await review. */}
+      {drift && drift.groupCount > 0 && flows?.covered && (
+        <p className="text-caption text-muted mb-1">
+          {flows.added >= 0 ? "You added " : "You took out "}
+          {formatCurrency(Math.abs(flows.added))} · markets{" "}
+          {drift.totalDrift - flows.added >= 0 ? "+" : "-"}
+          {formatCurrency(
+            Math.abs(roundToCents(drift.totalDrift - flows.added)),
+          )}
+          {flows.uncertainCount > 0 && (
+            <span className="text-faint">
+              {" "}
+              (estimated — {flows.uncertainCount}{" "}
+              {flows.uncertainCount === 1 ? "transaction" : "transactions"}{" "}
+              Ledgr wasn&apos;t sure about)
+            </span>
+          )}
+        </p>
+      )}
+
+      {canSeeActivity && flows && flows.recent.length > 0 && (
+        <div className="mb-2 space-y-0.5">
+          {flows.recent.map((r) => (
+            <div
+              key={r.id}
+              className="text-caption text-faint flex justify-between gap-2"
+            >
+              <span className="truncate">
+                {shortDay(r.posted)} · {r.institution} — {r.label}
+              </span>
+              <span className="shrink-0">{formatCurrency(r.amount)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Coverage against every tracked account — not just the matched
           ones — answers "does this total represent all of net worth,"
           not "is everything currently in sync" (drift is expected). */}
@@ -330,13 +483,11 @@ function LinkedBalanceCardImpl() {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                setRollupBy(
-                  rollupBy === "category" ? "institution" : "category",
-                );
+                setRollupBy(nextRollup);
               }}
               className="bg-surface-elevated hover:bg-surface-strong text-muted rounded-full px-2 py-0.5 text-xs transition-colors"
             >
-              By {rollupBy === "category" ? "institution" : "category"}
+              By {ROLLUP_LABELS[nextRollup]}
             </button>
           </div>
           {accountTypeGroups.map(
@@ -356,15 +507,14 @@ function LinkedBalanceCardImpl() {
         </div>
       )}
 
-      {/* Freshness footer — same position (bottom of card) and format
-          ("Updated <medium date>") as the Net Worth card's footer. */}
-      <p className="text-caption text-faint mt-1">
-        {status?.lastSyncedAt
-          ? `As of ${formatDate(status.lastSyncedAt.toString(), "medium")}`
-          : "Not yet synced"}
-        {" · "}
-        {latest.accountCount} account{latest.accountCount === 1 ? "" : "s"}
-      </p>
+      {/* Freshness footer: how current the balances are, by the
+          institutions' own dates (not when Ledgr synced). Hover lists each
+          institution; amber only when one falls a trading day behind. */}
+      <BalanceDatesFooter
+        accounts={accounts}
+        accountCount={latest.accountCount}
+        lastSyncedAt={status?.lastSyncedAt ?? null}
+      />
     </Card>
   );
 }

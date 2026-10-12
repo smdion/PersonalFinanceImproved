@@ -11,6 +11,7 @@ import {
   listTablesSQL,
   jsonbLiteral,
   validateColumns,
+  tablesWithIdColumn,
 } from "@/lib/db/compat";
 
 const mockedIsPostgres = vi.mocked(isPostgres);
@@ -95,5 +96,14 @@ describe("validateColumns", () => {
     expect(() =>
       validateColumns("definitely_not_a_real_table", ["id"]),
     ).toThrow(/Unknown table/);
+  });
+});
+
+describe("tablesWithIdColumn", () => {
+  it("leaves out tables keyed by something other than an id", () => {
+    mockedIsPostgres.mockReturnValue(false);
+    expect(tablesWithIdColumn(["people", "asset_class_buckets"])).toEqual([
+      "people",
+    ]);
   });
 });

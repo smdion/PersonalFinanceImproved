@@ -241,6 +241,15 @@ export const PROJECTION_DEBOUNCE_MS = 600;
 /** Allocation tolerance — allocations summing within this of 1.0 are acceptable. */
 export const ALLOCATION_TOLERANCE = 0.01;
 
+/** A share below this shows as 0% (whole-percent display) — too small to draw or mention. */
+export const NEGLIGIBLE_SHARE = 0.005;
+
+/** A share at or above this shows as 100% — treat it as all of it. */
+export const FULL_SHARE = 0.995;
+
+/** Dollar amounts closer than this are the same to the cent. */
+export const HALF_CENT = 0.005;
+
 /** Amortization loop stops when remaining balance drops below this. */
 export const AMORTIZATION_BALANCE_TOLERANCE = 0.005;
 

@@ -14,6 +14,7 @@ import type { Service, PreviewData } from "./integrations-types";
 import { PreviewPanel } from "./integrations-preview-panel";
 import { SimplefinCard } from "./integrations-simplefin";
 import { TiingoCard } from "./integrations-tiingo";
+import { SecCard } from "./integrations-sec";
 import {
   ConnectionStatusLine,
   ConnectionResultMessage,
@@ -506,6 +507,7 @@ const INTEGRATIONS_SECTIONS = [
   { key: "actual", label: "Actual Budget" },
   { key: "simplefin", label: "SimpleFIN" },
   { key: "tiingo", label: "Tiingo" },
+  { key: "sec", label: "SEC fund facts" },
   { key: "syncBehavior", label: "Sync Behavior" },
 ] as const;
 
@@ -525,6 +527,7 @@ export function IntegrationsSettings() {
   const { data: connection } = trpc.sync.getConnection.useQuery();
   const { data: simplefinStatus } = trpc.simplefin.getStatus.useQuery();
   const { data: tiingoStatus } = trpc.tiingo.getStatus.useQuery();
+  const { data: secStatus } = trpc.sec.getStatus.useQuery();
   const [section, setSection] = usePersistedSetting<IntegrationsSectionKey>(
     SK_SETTINGS_INTEGRATIONS_SECTION,
     "ynab",
@@ -637,6 +640,9 @@ export function IntegrationsSettings() {
               {s.key === "tiingo" && (
                 <NavStatusDot connected={tiingoStatus?.connected ?? false} />
               )}
+              {s.key === "sec" && (
+                <NavStatusDot connected={secStatus?.connected ?? false} />
+              )}
               {s.label}
             </button>
           ))}
@@ -675,11 +681,14 @@ export function IntegrationsSettings() {
               savedActualExternalUrl={connection?.actual.externalUrl}
             />
           </div>
-          <div className={section === "simplefin" ? "" : "hidden"}>
+          <div className={section === "simplefin" ? "space-y-4" : "hidden"}>
             <SimplefinCard />
           </div>
           <div className={section === "tiingo" ? "" : "hidden"}>
             <TiingoCard />
+          </div>
+          <div className={section === "sec" ? "" : "hidden"}>
+            <SecCard />
           </div>
           {section === "syncBehavior" && <SyncBehaviorSettings />}
         </div>

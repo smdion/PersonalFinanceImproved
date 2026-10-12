@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   ACCOUNT_TYPE_CONFIG,
+  getEmployerMatchSubType,
   getAllCategories,
   getEngineCategories,
   categoriesWithTaxPreference,
@@ -32,6 +33,7 @@ import {
   tracksRothBasis,
   type AccountCategory,
   type AccountBalance,
+  isPreTaxTreatment,
 } from "@/lib/config/account-types";
 import {
   CONTRIBUTION_METHOD_LABELS,
@@ -508,5 +510,24 @@ describe("Roth ordering rules / Rule of 55 config (Tax Buckets tool)", () => {
     expect(tracksRothBasis("hsa")).toBe(false);
     expect(tracksRothBasis("brokerage")).toBe(false);
     expect(tracksRothBasis("not_a_real_category")).toBe(false);
+  });
+});
+
+describe("employerMatchSubType", () => {
+  it("is always one of the category's own sub-type options", () => {
+    for (const [category, cfg] of Object.entries(ACCOUNT_TYPE_CONFIG)) {
+      const match = getEmployerMatchSubType(category);
+      if (match !== null)
+        expect(cfg.subTypeOptions as readonly string[]).toContain(match);
+    }
+    expect(getEmployerMatchSubType("not_a_real_category")).toBeNull();
+  });
+});
+
+describe("tax treatment predicates", () => {
+  it("tell pre-tax from tax-free and after-tax", () => {
+    expect(isPreTaxTreatment("pre_tax")).toBe(true);
+    expect(isPreTaxTreatment("tax_free")).toBe(false);
+    expect(isPreTaxTreatment("after_tax")).toBe(false);
   });
 });

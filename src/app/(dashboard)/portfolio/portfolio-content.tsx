@@ -4,6 +4,7 @@
  *  portfolio/page.tsx is a thin server component that prefetches the most
  *  expensive query before rendering this. */
 
+import { SinceSnapshotBanner } from "@/components/portfolio/account-live-data";
 import React, { useState, useCallback, useMemo } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
@@ -209,6 +210,12 @@ export function PortfolioContent() {
   >(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const snapshotPageSize = showAll ? 1000 : 52;
+  // Dashed live line after the latest snapshot — hidden (no error) without
+  // the portfolio permission it needs.
+  const { data: liveSinceSnapshot } =
+    trpc.investments.getLiveSinceSnapshot.useQuery(undefined, {
+      retry: false,
+    });
   const { data: snapshotTotals } = trpc.networth.listSnapshotTotals.useQuery(
     undefined,
     {
@@ -442,6 +449,9 @@ export function PortfolioContent() {
         </div>
       )}
 
+      {/* Change since the latest snapshot: added vs markets */}
+      <SinceSnapshotBanner />
+
       {/* Quick Look Stats Panel */}
       {showQuickLook && snapshotTotals && snapshotTotals.length >= 2 && (
         <PortfolioQuickLook snapshots={snapshotTotals} />
@@ -467,7 +477,10 @@ export function PortfolioContent() {
       {/* Portfolio value chart */}
       {showChart && snapshotTotals && snapshotTotals.length > 0 && (
         <CardBoundary title="Portfolio Chart">
-          <PortfolioChart snapshots={snapshotTotals} />
+          <PortfolioChart
+            snapshots={snapshotTotals}
+            live={liveSinceSnapshot?.points}
+          />
         </CardBoundary>
       )}
 

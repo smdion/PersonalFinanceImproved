@@ -3,14 +3,17 @@
 /** Multi-panel summary of the latest portfolio snapshot — balances grouped by
  *  account type, institution, person, tax bucket, plus a per-account bar chart. */
 
+import { FULL_SHARE, HALF_CENT } from "@/lib/constants";
 import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import {
   formatCurrency,
+  formatPercent,
   accountDisplayName,
   personDisplayName,
 } from "@/lib/utils/format";
-import { trpc } from "@/lib/trpc";
+import { trpc, type RouterOutputs } from "@/lib/trpc";
+import { COMPOSITION_BUCKET_LABELS } from "@/lib/config/display-labels";
 import { taxTypeLabel, accountColor } from "@/lib/utils/colors";
 import {
   ACCOUNT_TYPE_CONFIG,
@@ -24,6 +27,11 @@ export function AccountBalanceOverview() {
   const { data: perfAccounts } =
     trpc.performance.performanceAccounts.list.useQuery();
   const { data: people } = trpc.settings.people.list.useQuery();
+  // Hidden (no error) without the portfolio permission it needs.
+  const { data: holdings } = trpc.investments.getHoldingsOverview.useQuery(
+    undefined,
+    { retry: false },
+  );
 
   // Memoize all derived breakdowns from snapshot data. Hooks must be called
   // before any early return to preserve hook order.
@@ -244,6 +252,78 @@ export function AccountBalanceOverview() {
           </div>
         </div>
       </div>
+
+      {holdings && holdings.allocation.total > 0 && (
+        <MixAndCost data={holdings} />
+      )}
     </Card>
+  );
+}
+
+/** Reported holdings by asset class, and what the funds cost a year. */
+function MixAndCost({
+  data,
+}: {
+  data: RouterOutputs["investments"]["getHoldingsOverview"];
+}) {
+  const { allocation, cost } = data;
+  const rows = [
+    ...allocation.rows
+      .filter((r) => r.value > HALF_CENT)
+      .map((r) => ({ label: r.name, amount: r.value })),
+    ...allocation.unmapped.map((u) => ({
+      label: COMPOSITION_BUCKET_LABELS[u.bucket],
+      amount: u.value,
+    })),
+    ...(allocation.unknown > HALF_CENT
+      ? [{ label: "Mix not known yet", amount: allocation.unknown }]
+      : []),
+  ];
+  return (
+    <div className="border-subtle mt-6 grid grid-cols-1 gap-6 border-t pt-4 lg:grid-cols-4">
+      <div className="lg:col-span-2">
+        <SummaryTable
+          title="By Asset Class (holdings SimpleFIN reports)"
+          rows={rows}
+          total={allocation.total}
+          showPct
+        />
+      </div>
+      <div className="lg:col-span-2">
+        <h4 className="text-muted mb-2 text-xs font-semibold tracking-wide uppercase">
+          What the Funds Cost
+        </h4>
+        {cost.expenseRatio === null ? (
+          <p className="text-faint text-xs">
+            No fund fees known yet — set up SEC fund facts in Settings →
+            Integrations, or enter a fund&apos;s fee in its account below.
+          </p>
+        ) : (
+          <div className="space-y-1 text-xs">
+            <div className="flex items-baseline justify-between">
+              <span className="text-muted">Blended yearly fee</span>
+              <span className="text-primary font-medium tabular-nums">
+                {formatPercent(
+                  cost.expenseRatio,
+                  cost.expenseRatio < 0.001 ? 3 : 2,
+                )}
+              </span>
+            </div>
+            <div className="flex items-baseline justify-between">
+              <span className="text-muted">About a year</span>
+              <span className="text-primary font-medium tabular-nums">
+                {formatCurrency(cost.yearlyCost)}
+              </span>
+            </div>
+            {cost.coveredShare < FULL_SHARE && (
+              <p className="text-caption text-faint">
+                Fee known for {formatPercent(cost.coveredShare, 0)} of holdings
+                — open an account below to enter the rest.
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

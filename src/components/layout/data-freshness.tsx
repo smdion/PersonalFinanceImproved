@@ -4,14 +4,26 @@ import { useEffect, useRef } from "react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import { RefreshCw } from "lucide-react";
 import { trpc } from "@/lib/trpc";
-import { formatDate } from "@/lib/utils/format";
-import { findOldestDateSource } from "@/lib/pure/data-freshness";
+import { useUser, hasPermission } from "@/lib/context/user-context";
+import { budgetApiServiceLabel, formatDate } from "@/lib/utils/format";
+import {
+  evaluateDataSources,
+  type DataSourceStatus,
+} from "@/lib/pure/data-freshness";
 
 export function DataFreshness({ compact }: { compact?: boolean }) {
   const utils = trpc.useUtils();
   const { data } = trpc.settings.getDataFreshness.useQuery();
   const { data: syncStatus } = trpc.sync.getSyncStatus.useQuery();
   const { data: simplefinStatus } = trpc.simplefin.getStatus.useQuery();
+  const { data: secStatus } = trpc.sec.getStatus.useQuery();
+  const user = useUser();
+  const { data: investmentHealth } = trpc.investments.getHealth.useQuery(
+    undefined,
+    {
+      enabled: !!simplefinStatus?.connected && hasPermission(user, "portfolio"),
+    },
+  );
   const hasFiredAutoSync = useRef(false);
 
   const syncAllMut = trpc.sync.syncAll.useMutation({
@@ -57,11 +69,6 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
 
   if (!data) return null;
 
-  const syncLabel = syncStatus?.service?.toUpperCase();
-  const syncDate = syncStatus?.lastSynced
-    ? formatDate(syncStatus.lastSynced.toString())
-    : null;
-
   const budgetApiCanSync = !!(syncStatus?.service && syncStatus.connected);
   const simplefinCanSync = !!simplefinStatus?.connected;
   const canSync = budgetApiCanSync || simplefinCanSync;
@@ -79,75 +86,109 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
     }
   };
 
-  const simplefinDate =
-    simplefinStatus?.connected && simplefinStatus.lastSyncedAt
-      ? formatDate(simplefinStatus.lastSyncedAt.toString())
-      : null;
-  const simplefinHasError = !!(
-    simplefinStatus?.connected && simplefinStatus.lastError
+  const statuses = evaluateDataSources({
+    balance: data.balanceDate ? { lastUpdated: data.balanceDate } : undefined,
+    performance: data.performanceDate
+      ? { lastUpdated: data.performanceDate }
+      : undefined,
+    basis: data.basisDate ? { lastUpdated: data.basisDate } : undefined,
+    budgetApi: budgetApiCanSync
+      ? { lastUpdated: syncStatus?.lastSynced?.toString() ?? null }
+      : undefined,
+    simplefin: simplefinCanSync
+      ? {
+          lastUpdated: simplefinStatus?.lastSyncedAt?.toString() ?? null,
+          error: simplefinStatus?.lastError ?? null,
+          warnings: investmentHealth?.issues.map((i) => i.message),
+        }
+      : undefined,
+    secFacts: secStatus?.connected
+      ? { lastUpdated: secStatus.lastRun, error: secStatus.lastError }
+      : undefined,
+  });
+  const attention = statuses.filter((s) => s.needsAttention);
+  const labelFor = (s: DataSourceStatus) =>
+    s.source.key === "budgetApi"
+      ? budgetApiServiceLabel(syncStatus?.service)
+      : s.source.label;
+  const whenFor = (s: DataSourceStatus) =>
+    s.lastUpdated === null
+      ? "never"
+      : s.ageDays === 0 && s.source.mode === "automatic"
+        ? "today"
+        : formatDate(s.lastUpdated, "medium").replace(
+            `, ${new Date().getFullYear()}`,
+            "",
+          );
+  const synced = statuses.filter(
+    (s) => !s.needsAttention && s.source.mode === "automatic",
   );
-
-  const oldestRaw = findOldestDateSource([
-    data.balanceDate,
-    data.performanceDate,
-    data.basisDate,
-    syncStatus?.lastSynced?.toString(),
-    simplefinStatus?.connected
-      ? simplefinStatus.lastSyncedAt?.toString()
-      : null,
-  ]);
-  const oldestLabel = oldestRaw ? formatDate(oldestRaw) : null;
+  const manual = statuses.filter(
+    (s) => !s.needsAttention && s.source.mode === "manual",
+  );
+  const headline = isSyncing
+    ? "Syncing…"
+    : attention.length > 0
+      ? `${attention.length} need${attention.length === 1 ? "s" : ""} attention`
+      : statuses.length > 0
+        ? "All current"
+        : null;
 
   const tooltipContent = (
-    <div className="text-label space-y-1">
-      <div className="text-caption mb-1 font-medium tracking-wider text-slate-300 uppercase">
-        Data Updated
-      </div>
-      {data.balanceDate && (
-        <div className="flex justify-between gap-4">
-          <span className="text-slate-400">Balance</span>
-          <span>{formatDate(data.balanceDate)}</span>
-        </div>
-      )}
-      {data.performanceDate && (
-        <div className="flex justify-between gap-4">
-          <span className="text-slate-400">Performance</span>
-          <span>{formatDate(data.performanceDate)}</span>
-        </div>
-      )}
-      {data.basisDate && (
-        <div className="flex justify-between gap-4">
-          <span className="text-slate-400">Basis</span>
-          <span>{formatDate(data.basisDate)}</span>
-        </div>
-      )}
-      {syncLabel && (
-        <div className="flex justify-between gap-4">
-          <span className="text-slate-400">{syncLabel}</span>
-          <span>{syncDate ?? "never"}</span>
-        </div>
-      )}
-      {simplefinStatus?.connected && (
-        <div className="flex justify-between gap-4">
-          <span className="text-slate-400">
-            SimpleFIN
-            {simplefinHasError && (
-              <span
-                className="ml-1 text-amber-400"
-                title={simplefinStatus.lastError ?? undefined}
-              >
-                ⚠
+    <div className="text-label max-w-72 space-y-1.5">
+      {attention.length > 0 && (
+        <div>
+          <div className="text-caption mb-0.5 font-medium tracking-wider text-amber-300 uppercase">
+            Needs attention
+          </div>
+          {attention.map((s) => (
+            <div key={s.source.key}>
+              <span>{labelFor(s)}</span>
+              <span className="text-slate-400">
+                {" "}
+                — {s.reason}
+                {s.lastUpdated !== null && ` · updated ${whenFor(s)}`}
               </span>
-            )}
-          </span>
-          <span>{simplefinDate ?? "never"}</span>
+              {s.source.key === "simplefin" && simplefinStatus?.lastError && (
+                <div className="text-caption truncate text-slate-500">
+                  {simplefinStatus.lastError}
+                </div>
+              )}
+              {s.source.key === "simplefin" &&
+                !simplefinStatus?.lastError &&
+                (investmentHealth?.issues.length ?? 0) > 1 && (
+                  <div className="text-caption text-slate-500">
+                    {investmentHealth!.issues
+                      .slice(0, 2)
+                      .map((i) => i.message)
+                      .join(" · ")}
+                    {investmentHealth!.issues.length > 2 &&
+                      ` · and ${investmentHealth!.issues.length - 2} more`}
+                  </div>
+                )}
+            </div>
+          ))}
         </div>
       )}
-      {isSyncing && (
-        <div className="text-caption pt-1 text-center text-slate-500">
-          Syncing…
+      {synced.length > 0 && (
+        <div>
+          <span className="text-slate-400">Synced: </span>
+          {synced.map((s) => `${labelFor(s)} ${whenFor(s)}`).join(" · ")}
         </div>
       )}
+      {manual.length > 0 && (
+        <div>
+          <span className="text-slate-400">Updated by you: </span>
+          {manual.map((s) => `${labelFor(s)} ${whenFor(s)}`).join(" · ")}
+        </div>
+      )}
+      <div className="text-caption pt-0.5 text-slate-500">
+        {isSyncing
+          ? "Syncing…"
+          : canSync
+            ? "Click to sync now · details in Settings"
+            : "Details in Settings"}
+      </div>
     </div>
   );
 
@@ -164,10 +205,10 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
             <RefreshCw
               className={`h-4 w-4 ${isSyncing ? "animate-spin" : ""}`}
             />
-            {simplefinHasError && (
+            {attention.length > 0 && (
               <span
                 className="text-caption absolute top-1 right-1 leading-none text-amber-400"
-                aria-label="Sync error"
+                aria-label="Data needs attention"
               >
                 ⚠
               </span>
@@ -202,10 +243,10 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
             className={`h-4 w-4 shrink-0 ${isSyncing ? "animate-spin" : ""}`}
           />
           <span className="text-label">
-            Data{oldestLabel ? `: ${oldestLabel}` : ""}
+            Data{headline ? `: ${headline}` : ""}
           </span>
-          {simplefinHasError && (
-            <span className="text-amber-400" aria-label="Sync error">
+          {attention.length > 0 && !isSyncing && (
+            <span className="text-amber-400" aria-label="Data needs attention">
               ⚠
             </span>
           )}

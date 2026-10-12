@@ -1,6 +1,7 @@
 "use client";
 
 /** General settings tab containing the living-cost category mapping editor, which assigns budget categories to Dave Ramsey spending ranges. */
+import { DataSourcesSettings } from "./data-sources";
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import {
@@ -27,6 +28,7 @@ const GENERAL_SECTIONS = [
   { key: "people", label: "People" },
   { key: "retirement", label: "Retirement" },
   { key: "livingCosts", label: "Living Costs Mapping" },
+  { key: "dataSources", label: "Data Sources" },
 ] as const;
 
 type GeneralSectionKey = (typeof GENERAL_SECTIONS)[number]["key"];
@@ -70,6 +72,7 @@ export function GeneralSettings() {
         <div className={section === "livingCosts" ? "" : "hidden"}>
           <LivingCostMappingEditor />
         </div>
+        {section === "dataSources" && <DataSourcesSettings />}
       </div>
     </div>
   );

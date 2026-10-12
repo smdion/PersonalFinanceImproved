@@ -32,6 +32,7 @@ import {
   isPortfolioParent,
 } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
+import { PaceStatusText } from "./pace-status";
 import { LoadingCard, ErrorCard } from "./utils";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
@@ -125,6 +126,22 @@ function ContributionsCardImpl() {
   } as Parameters<typeof trpc.contribution.computeSummary.useQuery>[0];
   const { data, isLoading, error } =
     trpc.contribution.computeSummary.useQuery(contribInput);
+  // Live status per tracked account (needs the portfolio permission; the
+  // card works without it).
+  const { data: pace } = trpc.investments.getSavingsThisYear.useQuery(
+    undefined,
+    { retry: false },
+  );
+  const paceOf = (ids: readonly number[]) => {
+    const a = pace?.accounts.find(
+      (r) => ids.includes(r.performanceAccountId) && r.status !== "no_plan",
+    );
+    return a ? (
+      <span className="ml-1.5">
+        <PaceStatusText status={a.status} latest={a.latest} />
+      </span>
+    ) : null;
+  };
   const [contribPeriod, setContribPeriod] = useState<ContribPeriod>("annual");
   if (isLoading) return <LoadingCard title="Contributions" />;
   if (error)
@@ -134,17 +151,29 @@ function ContributionsCardImpl() {
 
   const jointAts = data?.jointAccountTypes ?? [];
   // Retirement vs portfolio vs total (from tRPC response, plus joint) — non-overlapping by parentCategory
-  const jt = data?.jointTotals ?? { totalWithoutMatch: 0, totalWithMatch: 0 };
   const jointRetirement = jointAts.filter((a) =>
     isRetirementParent(a.parentCategory),
   );
   const jointPortfolio = jointAts.filter((a) =>
     isPortfolioParent(a.parentCategory),
   );
-  const jointRetNoMatch = sumBy(jointRetirement, (a) => a.employeeContrib);
-  const jointRetWithMatch = sumBy(jointRetirement, (a) => a.totalContrib);
-  const jointPortNoMatch = sumBy(jointPortfolio, (a) => a.employeeContrib);
-  const jointPortWithMatch = sumBy(jointPortfolio, (a) => a.totalContrib);
+  // Joint rows carry their own per-view figures (live YTD / Year-End).
+  const jointRetNoMatch = sumBy(
+    jointRetirement,
+    (a) => a.views[viewMode].employeeContrib,
+  );
+  const jointRetWithMatch = sumBy(
+    jointRetirement,
+    (a) => a.views[viewMode].totalContrib,
+  );
+  const jointPortNoMatch = sumBy(
+    jointPortfolio,
+    (a) => a.views[viewMode].employeeContrib,
+  );
+  const jointPortWithMatch = sumBy(
+    jointPortfolio,
+    (a) => a.views[viewMode].totalContrib,
+  );
   // Household totals from server-computed view-aware data
   const householdRetNoMatch =
     sumBy(people, (p) => p.totals.views[viewMode].retirementWithoutMatch) +
@@ -160,10 +189,12 @@ function ContributionsCardImpl() {
     jointPortWithMatch;
   const householdTotalNoMatch =
     sumBy(people, (p) => p.totals.views[viewMode].totalWithoutMatch) +
-    jt.totalWithoutMatch;
+    jointRetNoMatch +
+    jointPortNoMatch;
   const householdTotalWithMatch =
     sumBy(people, (p) => p.totals.views[viewMode].totalWithMatch) +
-    jt.totalWithMatch;
+    jointRetWithMatch +
+    jointPortWithMatch;
 
   // Use average periodsPerYear for household-level multiplier
   const avgPeriodsPerYear =
@@ -221,6 +252,7 @@ function ContributionsCardImpl() {
                               (Joint)
                             </span>
                           )}
+                          {paceOf(at.performanceAccountIds)}
                         </span>
                         <div className="text-right">
                           <span className="text-primary font-medium">
@@ -303,6 +335,17 @@ function ContributionsCardImpl() {
                             at.views[viewMode].pctOfSalaryToMax !== null &&
                             Math.floor(at.views[viewMode].pctOfSalaryToMax) ===
                               0 && (
+                              <p className="text-caption mt-0.5 text-green-600">
+                                {/* A plan reaching the limit isn't money in:
+                                    only Actual YTD can say "maxed out". */}
+                                {viewMode === "blended"
+                                  ? "On track to max"
+                                  : "Set to max"}
+                              </p>
+                            )}
+                          {viewMode === "ytd" &&
+                            hasLimit &&
+                            at.views.ytd.fundingPct >= 1 && (
                               <p className="text-caption mt-0.5 text-green-600">
                                 Maxed out
                               </p>
@@ -452,10 +495,14 @@ function ContributionsCardImpl() {
                   <div className="flex items-baseline justify-between text-xs">
                     <span className="text-muted font-medium">
                       {at.accountType}
+                      {paceOf(at.performanceAccountIds)}
                     </span>
                     <span className="text-primary font-medium">
-                      {formatCurrency(at.employeeContrib * householdMult)}
-                      {suffix}
+                      {formatCurrency(
+                        at.views[viewMode].employeeContrib * householdMult,
+                      )}
+                      {/* A year-to-date amount isn't a rate. */}
+                      {viewMode !== "ytd" && suffix}
                     </span>
                   </div>
                   {/* Bar for joint accounts */}
@@ -561,7 +608,7 @@ function ContributionsCardImpl() {
                 {formatCurrency(householdRetNoMatch * householdMult)}
               </span>
               {householdRetWithMatch > householdRetNoMatch && (
-                <span className="text-muted ml-1">
+                <span className="text-muted block">
                   {formatCurrency(householdRetWithMatch * householdMult)} w/
                   match
                 </span>
@@ -577,7 +624,7 @@ function ContributionsCardImpl() {
                 {formatCurrency(householdPortNoMatch * householdMult)}
               </span>
               {householdPortWithMatch > householdPortNoMatch && (
-                <span className="text-muted ml-1">
+                <span className="text-muted block">
                   {formatCurrency(householdPortWithMatch * householdMult)} w/
                   match
                 </span>
@@ -598,7 +645,7 @@ function ContributionsCardImpl() {
                 {formatCurrency(householdTotalNoMatch * householdMult)}
               </span>
               {householdTotalWithMatch > householdTotalNoMatch && (
-                <span className="text-muted ml-1">
+                <span className="text-muted block">
                   {formatCurrency(householdTotalWithMatch * householdMult)} w/
                   match
                 </span>
@@ -606,6 +653,19 @@ function ContributionsCardImpl() {
             </div>
           </div>
         </div>
+        {pace && pace.total.saved > 0 && (
+          <p className="text-caption text-muted flex flex-wrap items-center justify-between gap-x-2">
+            <span>
+              Saved so far this year{" "}
+              <span className="text-primary font-medium">
+                {formatCurrency(pace.total.saved)}
+              </span>
+              {pace.total.unposted > 0 &&
+                ` (+${formatCurrency(pace.total.unposted)} on its way)`}
+            </span>
+            <PaceStatusText status={pace.total.status} />
+          </p>
+        )}
       </div>
     </Card>
   );

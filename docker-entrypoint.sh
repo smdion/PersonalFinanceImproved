@@ -4,9 +4,11 @@ set -e
 # Restrict file permissions for SQLite database files (owner-only)
 umask 0077
 
-# Pre-migration backup: The auto-versioning system in instrumentation.ts
-# creates point-in-time snapshots on startup, providing automatic
-# pre-migration recovery points without a separate backup step here.
+# Pre-migration backup: db-migrate.js writes one (pre-upgrade-backup-*.json
+# for PostgreSQL, an exact .db copy for SQLite, in LEDGR_BACKUP_DIR or
+# /app/data) before changing an existing database, and refuses to migrate if
+# it can't. (The auto-versions created on startup run after migrating, so
+# they are not pre-migration recovery points.)
 
 echo "Running database migrations..."
 if ! node db-migrate.js; then

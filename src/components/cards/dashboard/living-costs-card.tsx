@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState, memo } from "react";
-import { trpc } from "@/lib/trpc";
+import { trpc, type RouterOutputs } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { StatusDot } from "@/components/ui/badge";
-import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
 import { sumBy, safeDivide } from "@/lib/utils/math";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
@@ -27,6 +27,73 @@ import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
+
+type BudgetSummaryData = NonNullable<
+  RouterOutputs["budget"]["computeActiveSummary"]
+>;
+
+/**
+ * The budget at a glance, above the category ranges: the monthly plan,
+ * essential vs discretionary, and (with a linked budget app) what's been
+ * spent this month.
+ */
+function BudgetSummary({
+  result,
+  weightedAnnualTotal,
+  weighted,
+  actuals,
+}: {
+  result: NonNullable<BudgetSummaryData["result"]>;
+  weightedAnnualTotal: number | null;
+  weighted: boolean;
+  actuals: RouterOutputs["budget"]["listApiActuals"] | undefined;
+}) {
+  const monthly = weighted
+    ? (weightedAnnualTotal ?? 0) / 12
+    : result.totalMonthly;
+  const rows = actuals?.actuals ?? [];
+  const budgeted = sumBy(rows, (a) => a.budgeted);
+  const spent = sumBy(rows, (a) => Math.max(0, -a.activity));
+  const spentShare = safeDivide(spent, budgeted, null);
+  return (
+    <div className="border-subtle mb-3 border-b pb-3">
+      <div className="flex items-baseline justify-between">
+        <span className="text-primary text-lg font-semibold">
+          {formatCurrency(monthly)}
+          <span className="text-faint ml-1 text-xs font-normal">
+            /month{weighted ? " avg" : ""}
+          </span>
+        </span>
+        <span className="text-muted text-xs">
+          Essential {formatCurrency(result.essentialTotal)} · Discretionary{" "}
+          {formatCurrency(result.discretionaryTotal)}
+        </span>
+      </div>
+      {actuals?.service && rows.length > 0 && spentShare !== null && (
+        <div
+          className="mt-2"
+          title={`${formatCurrency(spent)} spent of ${formatCurrency(budgeted)} budgeted (linked categories only)`}
+        >
+          <div className="text-muted mb-0.5 flex justify-between text-xs">
+            <span>
+              Spent this month
+              {actuals.month ? ` (${formatDate(actuals.month, "short")})` : ""}
+            </span>
+            <span className={spentShare > 1 ? "text-red-600" : ""}>
+              {formatPercent(spentShare, 0)}
+            </span>
+          </div>
+          <div className="bg-surface-strong h-1.5 rounded">
+            <div
+              className={`h-1.5 rounded ${spentShare > 1 ? "bg-red-500" : "bg-green-500"}`}
+              style={{ width: `${Math.min(100, spentShare * 100)}%` }}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function LivingCostsCardImpl() {
   const [budgetColumn] = usePersistedSetting<number>("budget_active_column", 0);
@@ -91,6 +158,9 @@ function LivingCostsCardImpl() {
       },
       ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     });
+  // Spent this month in the linked budget app (YNAB/Actual) — the "how am
+  // I actually doing" line next to the plan.
+  const { data: actualsData } = trpc.budget.listApiActuals.useQuery();
   const lcQueryInput = {
     ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     ...contribProfileInput,
@@ -435,7 +505,7 @@ function LivingCostsCardImpl() {
     <Card
       title={
         <>
-          Living Costs
+          Budget &amp; Spending
           <HelpTip
             text={`Always shows the full-year projected picture, regardless of the Paycheck page's Current Salary/Year-End Estimate/Actual YTD selector — every number here besides income (budget spending, savings, retirement, portfolio, extra-paycheck routing) is this app's annualized RATE for that thing, not a real posted-transaction year-to-date total, so scoping just the income side to "so far this year" would push every percentage well past 100%. Budget categories as % of ${incomeLabel} income compared to Dave Ramsey's recommended ranges (Ramsey's original ranges are based on net take-home pay). Retirement/Portfolio/Savings/Extra Paycheck/Unallocated below show where the rest of your ${incomeLabel} income goes: Net counts only non-payroll contributions (IRA, manually-funded brokerage/HSA) actually funded from take-home pay — payroll-deducted contributions, Roth included, never touch net pay; Gross counts your full contribution total, payroll and non-payroll combined, plus taxes and any other payroll deduction (health/dental/vision insurance, etc.) — those already come out before net pay is computed too, so Gross names them explicitly instead of leaving them invisibly baked into Net. Extra Paycheck is this year's 3rd-biweekly-paycheck months currently set to route to a savings goal (see the Savings/Budget toggle on Salary Profile or the Paycheck page) — computed from the real pay calendar, not from which months have already been transferred. Unallocated includes any budget category with no Ramsey mapping, plus any genuinely untracked money.`}
           />
@@ -448,6 +518,14 @@ function LivingCostsCardImpl() {
       } · full-year view`}
       href="/budget"
     >
+      {budgetData?.result && (
+        <BudgetSummary
+          result={budgetData.result}
+          weightedAnnualTotal={budgetData.weightedAnnualTotal ?? null}
+          weighted={!!budgetData.columnMonths}
+          actuals={actualsData}
+        />
+      )}
       {/* Gross / Net toggle */}
       <div
         className="mb-2 flex items-center gap-2"

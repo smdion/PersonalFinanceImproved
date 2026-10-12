@@ -11,7 +11,13 @@ import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useInlineNumberEdit } from "@/lib/hooks/use-inline-number-edit";
-import { formatCurrency, formatDate } from "@/lib/utils/format";
+import {
+  accountDisplayName,
+  formatCurrency,
+  formatDate,
+} from "@/lib/utils/format";
+import { findBasisGaps } from "@/lib/pure/basis-consistency";
+import { parseBasisEditField } from "@/components/performance/basis-cell";
 import {
   PERF_CATEGORY_PORTFOLIO,
   accountTypeToPerformanceCategory,
@@ -124,27 +130,28 @@ export function PerformanceContent() {
       } else if (type === "master") {
         updateCostBasis.mutate({ performanceAccountId: id, costBasis: value });
       } else if (type === "basis") {
+        // field is "<basis field>:<ownerPersonId>" — basis is per person.
         const row = data?.accountRows.find((r) => r.id === id) as
           AccountRow | undefined;
-        if (
-          !row ||
-          row.performanceAccountId == null ||
-          row.ownerPersonId == null
-        )
+        const target = parseBasisEditField(field);
+        const owner = row?.basisByOwner?.find(
+          (b) => b.ownerPersonId === target?.ownerPersonId,
+        );
+        if (!row || row.performanceAccountId == null || !target || !owner)
           return;
         updateRothBasis.mutate({
           performanceAccountId: row.performanceAccountId,
-          ownerPersonId: row.ownerPersonId,
+          ownerPersonId: owner.ownerPersonId,
           year: row.year,
           contributionBasis: String(
-            field === "contributionBasis"
+            target.field === "contributionBasis"
               ? value
-              : (row.contributionBasis ?? 0),
+              : owner.contributionBasis,
           ),
           conversionBasis: String(
-            field === "conversionBasis" ? value : (row.conversionBasis ?? 0),
+            target.field === "conversionBasis" ? value : owner.conversionBasis,
           ),
-          latestConversionYear: row.latestConversionYear,
+          latestConversionYear: owner.latestConversionYear,
         });
       } else {
         updateAccount.mutate({ id, [field]: value });
@@ -434,6 +441,37 @@ export function PerformanceContent() {
     if (match) setSelectedAccountIds(new Set(match.ids));
   };
 
+  const basisGaps = findBasisGaps(
+    accountRows.flatMap((a) =>
+      a.performanceAccountId === null
+        ? []
+        : (a.basisByOwner ?? []).map((b) => ({
+            performanceAccountId: a.performanceAccountId!,
+            ownerPersonId: b.ownerPersonId,
+            year: a.year,
+            conversionBasis: b.conversionBasis,
+            latestConversionYear: b.latestConversionYear,
+          })),
+    ),
+  );
+  const basisGapLabel = (g: (typeof basisGaps)[number]) => {
+    const a = accountRows.find(
+      (r) => r.performanceAccountId === g.performanceAccountId,
+    );
+    const owner = a?.basisByOwner?.find(
+      (b) => b.ownerPersonId === g.ownerPersonId,
+    )?.ownerName;
+    return a
+      ? `${owner ? `${owner} — ` : ""}${accountDisplayName({
+          institution: a.institution,
+          // lint-violation-ok: passing accountLabel into the blessed accountDisplayName helper, not rendering it directly
+          accountLabel: a.accountLabel,
+          accountType: a.accountType ?? undefined,
+          ownershipType: a.ownershipType,
+        })}`
+      : "An account";
+  };
+
   return (
     <div>
       <PageHeader
@@ -492,6 +530,21 @@ export function PerformanceContent() {
           totals={lifetimeTotals}
           snapshotDate={lastSnapshotDate}
         />
+      )}
+
+      {/* Roth conversion basis entered on a later year but not its own */}
+      {basisGaps.length > 0 && (
+        <div className="mb-3 rounded-md border border-amber-400/60 bg-amber-50/40 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/20 dark:text-amber-300">
+          {basisGaps.map((g) => (
+            <p key={`${g.performanceAccountId}-${g.ownerPersonId}-${g.year}`}>
+              {basisGapLabel(g)}: {g.year} conversion basis is{" "}
+              {formatCurrency(g.recorded)}, but {g.fromYear} says the latest
+              conversion was in {g.year} with {formatCurrency(g.expected)} —{" "}
+              {g.year}&apos;s row is probably missing it. Turn on the Basis
+              columns and fix their line on the {g.year} row.
+            </p>
+          ))}
+        </div>
       )}
 
       {/* Ending balance consistency warning */}

@@ -8,11 +8,13 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import {
   formatCurrency,
+  formatDate,
   accountDisplayName,
   personDisplayName,
 } from "@/lib/utils/format";
 import { taxTypeLabel } from "@/lib/utils/colors";
 import { localDateStr } from "@/lib/utils/date";
+import { snapshotAccountKey } from "@/lib/pure/portfolio";
 import { getDisplayConfig } from "@/lib/config/account-types";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
@@ -35,6 +37,8 @@ type AccountRow = {
    *  resolveSnapshotAccountAmounts), so the row is shown/held at $0 here
    *  too rather than displaying a stale total the save won't match. */
   isClosedAccount: boolean;
+  /** Set when the amount came from a SimpleFIN fill. */
+  filled?: true;
 };
 
 let rowKeyCounter = 0;
@@ -284,6 +288,15 @@ export function NewSnapshotForm({
   });
 
   const { data: snapshotTotals } = trpc.networth.listSnapshotTotals.useQuery();
+  // Hidden (no error shown) without the portfolio permission it needs.
+  const { data: suggestions } = trpc.investments.suggestSnapshot.useQuery(
+    undefined,
+    { retry: false },
+  );
+  const [filled, setFilled] = useState(false);
+  const [accountNotes, setAccountNotes] = useState<
+    Map<number, NonNullable<typeof suggestions>["accounts"][number]>
+  >(new Map());
 
   const today = localDateStr();
   const [snapshotDate, setSnapshotDate] = useState(today);
@@ -387,11 +400,42 @@ export function NewSnapshotForm({
   const updateRow = useCallback(
     (key: string, field: keyof AccountRow, value: string | number) => {
       setRows((prev) =>
-        (prev ?? []).map((r) => (r.key === key ? { ...r, [field]: value } : r)),
+        (prev ?? []).map((r) =>
+          // A typed amount is no longer SimpleFIN's.
+          r.key === key ? { ...r, [field]: value, filled: undefined } : r,
+        ),
       );
     },
     [],
   );
+
+  /**
+   * Prefill from SimpleFIN: each linked sub-account's live balance. Amounts
+   * already typed in this form keep the edit.
+   */
+  const fillFromSimplefin = () => {
+    if (!rows || !suggestions) return;
+    const byKey = new Map(suggestions.amounts.map((s) => [s.key, s.amount]));
+    setRows(
+      rows.map((r) => {
+        const amount = byKey.get(
+          snapshotAccountKey({
+            performanceAccountId: r.performanceAccountId,
+            taxType: r.taxType,
+            subType: r.subType,
+            ownerPersonId: r.ownerPersonId,
+          }),
+        );
+        const untouched = (parseFloat(r.amount) || 0) === r.previousAmount;
+        if (amount === undefined || r.isClosedAccount || !untouched) return r;
+        return { ...r, amount: amount.toFixed(2), filled: true };
+      }),
+    );
+    setFilled(true);
+    setAccountNotes(
+      new Map(suggestions.accounts.map((a) => [a.performanceAccountId, a])),
+    );
+  };
 
   const handleSave = () => {
     if (!rows) return;
@@ -457,6 +501,53 @@ export function NewSnapshotForm({
               Discard
             </button>
           </span>
+        </div>
+      )}
+
+      {suggestions && suggestions.amounts.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 rounded bg-blue-50 p-2 text-xs text-blue-900 dark:bg-blue-950/30 dark:text-blue-200">
+          <span>
+            {filled
+              ? "Filled from SimpleFIN — check each balance, then save. Accounts without a feed keep their last value; amounts you'd typed were kept."
+              : "Fill balances from your linked SimpleFIN accounts."}
+          </span>
+          {!filled && (
+            <button
+              type="button"
+              onClick={fillFromSimplefin}
+              className="rounded bg-blue-600 px-2 py-0.5 text-white hover:bg-blue-700"
+            >
+              Fill from SimpleFIN
+            </button>
+          )}
+        </div>
+      )}
+      {suggestions && suggestions.unplaced.length > 0 && (
+        <div className="rounded border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
+          <p className="font-medium">
+            SimpleFIN shows money no part of this snapshot holds:
+          </p>
+          <ul className="mt-0.5 list-disc pl-4">
+            {suggestions.unplaced.map((u) => {
+              const pa = (perfAccounts ?? []).find(
+                (p) => p.id === u.performanceAccountId,
+              );
+              return (
+                <li key={u.feedId}>
+                  {formatCurrency(u.balance)} in {u.name}
+                  {pa && ` (linked to ${accountDisplayName(pa)})`} —{" "}
+                  {u.reason === "part_gone"
+                    ? "it's linked to a part that's no longer in your snapshot."
+                    : "the account has no part for it."}
+                </li>
+              );
+            })}
+          </ul>
+          <p className="mt-1">
+            Add the missing part in Portfolio → Account &amp; Contribution
+            Settings → the account → Sub-accounts, then link it in Settings →
+            Integrations → SimpleFIN.
+          </p>
         </div>
       )}
 
@@ -578,6 +669,29 @@ export function NewSnapshotForm({
                             </span>
                           )}
                         </div>
+                        {(() => {
+                          const id = group.rows[0]?.performanceAccountId;
+                          const note =
+                            id != null ? accountNotes.get(id) : undefined;
+                          if (!note || !group.rows.some((r) => r.filled))
+                            return null;
+                          const asOf = note.balanceDate
+                            ? ` as of ${formatDate(note.balanceDate, "medium")}`
+                            : "";
+                          return (
+                            <p
+                              className={`text-caption py-1 pl-6 ${note.split ? "text-amber-700 dark:text-amber-400" : "text-faint"}`}
+                            >
+                              {note.split
+                                ? `SimpleFIN reports one balance for this account (${formatCurrency(note.total)}${asOf}), so it's divided across these parts: ${
+                                    note.newMoney
+                                      ? `${formatCurrency(note.newMoney)} of new contributions placed by your paycheck setup${note.newMoneyEstimated ? " (estimated — this account sends only a balance)" : ""}, then `
+                                      : ""
+                                  }the rest divided by each part's size${suggestions?.snapshotTooOld ? " (your last snapshot is too old to place new contributions from the paycheck setup)" : ""}. Check against your statement.`
+                                : `From SimpleFIN${asOf}.`}
+                            </p>
+                          );
+                        })()}
                         {/* Sub-rows */}
                         {group.rows.map((row) => {
                           const amt = parseFloat(row.amount) || 0;

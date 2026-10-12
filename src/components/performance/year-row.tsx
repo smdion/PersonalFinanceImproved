@@ -1,5 +1,6 @@
 "use client";
 
+import { BasisCell } from "./basis-cell";
 import React from "react";
 import {
   formatCurrency,
@@ -20,7 +21,11 @@ import {
 } from "@/lib/config/account-types";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Badge } from "@/components/ui/badge";
-import type { YearRowProps } from "./types";
+import type { AccountRow, YearRowProps } from "./types";
+
+/** A row whose account carries Roth basis for at least one person. */
+const hasRothBasis = (a: AccountRow) =>
+  tracksRothBasis(a.accountType ?? "") && (a.basisByOwner?.length ?? 0) > 0;
 
 export function YearRow({
   row,
@@ -86,9 +91,7 @@ export function YearRow({
     (a) => a.endingBalance,
   );
   const yearUnrealized = yearCostBasisEnding - yearCostBasis;
-  const rothBasisAccountsForYear = accounts.filter(
-    (a) => tracksRothBasis(a.accountType ?? "") && a.ownerPersonId != null,
-  );
+  const rothBasisAccountsForYear = accounts.filter(hasRothBasis);
   const yearContributionBasis = sumBy(
     rothBasisAccountsForYear,
     (a) => a.contributionBasis ?? 0,
@@ -577,14 +580,9 @@ export function YearRow({
                   );
                   const basis = Number(master?.costBasis ?? 0);
                   const unrealized = a.endingBalance - basis;
-                  // Roth basis is owner-attributed — a jointly-labeled
-                  // account (ownerPersonId null) has no one to attach it
-                  // to, same as Tax Buckets' handling of joint accounts.
-                  const rothTracked =
-                    tracksRothBasis(a.accountType ?? "") &&
-                    a.ownerPersonId != null;
-                  const contributionBasis = a.contributionBasis ?? 0;
-                  const conversionBasis = a.conversionBasis ?? 0;
+                  // Roth basis is per person: shown for each person with a
+                  // basis row on this account (see BasisCell).
+                  const rothTracked = hasRothBasis(a);
                   return (
                     <>
                       {showBasis && (
@@ -625,63 +623,49 @@ export function YearRow({
                             <td className="text-faint px-4 py-2 text-right">
                               —
                             </td>
-                          ) : acctEditable ? (
-                            <EditableCell
-                              value={contributionBasis}
-                              formatter={formatCurrency}
-                              isEditing={isEditingAccount(
-                                a.id,
-                                "contributionBasis",
-                              )}
+                          ) : (
+                            <BasisCell
+                              row={a}
+                              field="contributionBasis"
+                              editable={!!acctEditable}
+                              editingField={
+                                editingCell?.type === "basis" &&
+                                editingCell.id === a.id
+                                  ? editingCell.field
+                                  : null
+                              }
                               editValue={editValue}
-                              onStartEdit={() =>
-                                onStartEdit(
-                                  "basis",
-                                  a.id,
-                                  "contributionBasis",
-                                  contributionBasis,
-                                )
+                              onStartEdit={(editField, current) =>
+                                onStartEdit("basis", a.id, editField, current)
                               }
                               onEditValueChange={onEditValueChange}
                               onSaveEdit={onSaveEdit}
                               onKeyDown={onKeyDown}
-                              className="text-muted"
                             />
-                          ) : (
-                            <td className="text-muted px-4 py-2 text-right">
-                              {formatCurrency(contributionBasis)}
-                            </td>
                           )}
                           {!rothTracked ? (
                             <td className="text-faint px-4 py-2 text-right">
                               —
                             </td>
-                          ) : acctEditable ? (
-                            <EditableCell
-                              value={conversionBasis}
-                              formatter={formatCurrency}
-                              isEditing={isEditingAccount(
-                                a.id,
-                                "conversionBasis",
-                              )}
+                          ) : (
+                            <BasisCell
+                              row={a}
+                              field="conversionBasis"
+                              editable={!!acctEditable}
+                              editingField={
+                                editingCell?.type === "basis" &&
+                                editingCell.id === a.id
+                                  ? editingCell.field
+                                  : null
+                              }
                               editValue={editValue}
-                              onStartEdit={() =>
-                                onStartEdit(
-                                  "basis",
-                                  a.id,
-                                  "conversionBasis",
-                                  conversionBasis,
-                                )
+                              onStartEdit={(editField, current) =>
+                                onStartEdit("basis", a.id, editField, current)
                               }
                               onEditValueChange={onEditValueChange}
                               onSaveEdit={onSaveEdit}
                               onKeyDown={onKeyDown}
-                              className="text-muted"
                             />
-                          ) : (
-                            <td className="text-muted px-4 py-2 text-right">
-                              {formatCurrency(conversionBasis)}
-                            </td>
                           )}
                         </>
                       )}

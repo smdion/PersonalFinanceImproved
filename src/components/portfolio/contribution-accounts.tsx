@@ -28,6 +28,7 @@ import { useContributionAccountsMutations } from "./use-contribution-accounts-mu
 import { UnlinkedContribsBanner } from "./unlinked-contribs-banner";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
+import type { Holding } from "@/components/investments/fund-holding-row";
 
 export function ContributionAccountsSettings() {
   const user = useUser();
@@ -39,6 +40,28 @@ export function ContributionAccountsSettings() {
     trpc.performance.performanceAccounts.list.useQuery();
   const { data: latestSnap } =
     trpc.networth.portfolioSnapshots.getLatest.useQuery();
+  // SimpleFIN detail per account — hidden (no error) without the portfolio
+  // permission these need.
+  const { data: insights } = trpc.investments.getAccountInsights.useQuery(
+    undefined,
+    { retry: false },
+  );
+  const { data: holdingsOverview } =
+    trpc.investments.getHoldingsOverview.useQuery(undefined, { retry: false });
+  const insightByPerfId = useMemo(
+    () => new Map((insights ?? []).map((i) => [i.performanceAccountId, i])),
+    [insights],
+  );
+  const holdingsByPerfId = useMemo(() => {
+    const m = new Map<number, Holding[]>();
+    for (const a of holdingsOverview?.accounts ?? [])
+      if (a.performanceAccountId !== null)
+        m.set(a.performanceAccountId, [
+          ...(m.get(a.performanceAccountId) ?? []),
+          ...a.holdings,
+        ]);
+    return m;
+  }, [holdingsOverview]);
 
   // Employer-match/auto-maximize fields on a contribution account are
   // profile-ownable (see contribAccountActiveFieldsSchema) — when a
@@ -307,6 +330,9 @@ export function ContributionAccountsSettings() {
                   account={pa}
                   contributions={contribsByPerfId.get(pa.id) ?? []}
                   balance={balanceByPerfId.get(pa.id) ?? null}
+                  insight={insightByPerfId.get(pa.id)}
+                  holdings={holdingsByPerfId.get(pa.id) ?? []}
+                  showLive={insights !== undefined}
                   portfolioSubs={portfolioSubsByPerfId.get(pa.id) ?? []}
                   people={peopleList}
                   jobs={jobsList}

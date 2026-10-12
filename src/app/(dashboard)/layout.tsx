@@ -129,17 +129,18 @@ export default async function DashboardLayout({
         <DemoBanner profileName={demoProfile.name} isDemoOnly={isDemoOnly} />
       )}
       <PrivacyProvider initialPrivacy={privacy}>
-        <DashboardLayoutClient user={user} isDemoOnly={isDemoOnly}>
-          <UserProvider
-            user={{
-              name: user.name,
-              role: user.role,
-              permissions: user.permissions,
-            }}
-          >
+        {/* Wraps the sidebar too, so its Data indicator can check permissions. */}
+        <UserProvider
+          user={{
+            name: user.name,
+            role: user.role,
+            permissions: user.permissions,
+          }}
+        >
+          <DashboardLayoutClient user={user} isDemoOnly={isDemoOnly}>
             <DashboardShell>{children}</DashboardShell>
-          </UserProvider>
-        </DashboardLayoutClient>
+          </DashboardLayoutClient>
+        </UserProvider>
       </PrivacyProvider>
     </>
   );

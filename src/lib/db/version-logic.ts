@@ -21,13 +21,17 @@ import { encodeJsonbForPgImport } from "./jsonb-import";
 import {
   truncateTables,
   resetSequences,
+  tablesWithIdColumn,
   validateColumns,
   queryRaw,
   execRaw,
 } from "./compat";
 import { VERSION_TABLE_NAMES, VERSION_TABLES } from "./version-tables";
 import { log } from "@/lib/logger";
-import { transformBackupToCurrentSchema } from "./backup-transforms";
+import {
+  REBUILT_ON_RESTORE,
+  transformBackupToCurrentSchema,
+} from "./backup-transforms";
 
 /**
  * Column list for an INSERT built from a row set — the UNION of every
@@ -199,6 +203,40 @@ async function cleanupAutoVersions(database: NodePgDatabase<typeof schema>) {
   }
 }
 
+/**
+ * Tables a restore would empty that the backup can't refill: every
+ * versioned table the backup has no entry for (it predates the table) and
+ * that holds rows now. Restore truncates every versioned table, so this
+ * history is lost — synced data such as SimpleFIN holdings and
+ * transactions can't be fetched again. An empty entry in the backup is not
+ * listed: the table existed and was empty when the backup was taken.
+ */
+export async function tablesLostOnRestore(
+  database: NodePgDatabase<typeof schema>,
+  backupTableNames: Iterable<string>,
+): Promise<{ tableName: string; currentRows: number }[]> {
+  const present = new Set(backupTableNames);
+  const lost: { tableName: string; currentRows: number }[] = [];
+  for (const tableName of VERSION_TABLE_NAMES) {
+    if (present.has(tableName)) continue;
+    // Rebuilt by the restore from a table the backup does carry.
+    const source = REBUILT_ON_RESTORE[tableName];
+    if (source && present.has(source)) continue;
+    let currentRows = 0;
+    try {
+      const rows = await queryRaw<{ n: number | string }>(
+        database,
+        sql.raw(`SELECT COUNT(*) AS n FROM "${tableName}"`),
+      );
+      currentRows = Number(rows[0]?.n ?? 0);
+    } catch {
+      continue; // table doesn't exist yet (migration pending)
+    }
+    if (currentRows > 0) lost.push({ tableName, currentRows });
+  }
+  return lost;
+}
+
 export async function restoreVersion(
   database: NodePgDatabase<typeof schema>,
   versionId: number,
@@ -233,16 +271,14 @@ export async function restoreVersion(
     CURRENT_SCHEMA_VERSION,
   );
 
-  // Rebuild the table data map with transformed data
-  const tableDataMap = new Map(
-    tableDatas.map((t) => [
-      t.tableName,
-      {
-        ...t,
-        data: transformedMap[t.tableName] ?? t.data,
-      },
-    ]),
+  // Rebuild the table data map with transformed data — including tables the
+  // transform rebuilt that the version itself doesn't carry (e.g. links a
+  // newer schema keeps in a table of its own).
+  const tableDataMap = new Map<string, { data: unknown }>(
+    tableDatas.map((t) => [t.tableName, { data: t.data }]),
   );
+  for (const [tableName, data] of Object.entries(transformedMap))
+    tableDataMap.set(tableName, { data });
 
   // Wrap in a transaction so truncate + inserts are atomic.
   // If anything fails, the database rolls back to its pre-restore state.
@@ -465,7 +501,7 @@ async function importBackupPg(
     }
 
     // Reset serial sequences
-    for (const tableName of VERSION_TABLE_NAMES) {
+    for (const tableName of tablesWithIdColumn(VERSION_TABLE_NAMES)) {
       await client.query(
         `SELECT setval(pg_get_serial_sequence('"${tableName}"', 'id'), COALESCE((SELECT MAX(id) FROM "${tableName}"), 0) + 1, false)`,
       );

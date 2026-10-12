@@ -5,6 +5,11 @@ import { render, screen, fireEvent } from "@testing-library/react";
 // appear (rendered via the mocked ProjectionCard), and tab switching works.
 // Child components are stubbed so we don't pull in recharts or hit the engine.
 
+// The realized-vs-assumed card has its own queries; out of scope here.
+vi.mock("@/components/retirement/realized-vs-assumed-card", () => ({
+  RealizedVsAssumedCard: () => null,
+}));
+
 vi.mock("@/components/cards/projection", () => ({
   ProjectionCard: () => (
     <div data-testid="projection-card">

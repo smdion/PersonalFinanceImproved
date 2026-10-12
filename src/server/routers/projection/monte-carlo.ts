@@ -303,7 +303,7 @@ export const monteCarloRouter = createTRPCRouter({
         // Simple
         // mode's ONE fictional bucket the only representation, so nothing
         // downstream can disagree with it. The per-account table/chart and
-        // the person-filtered ("Sean"/"Joanna") view both already degrade
+        // the person-filtered ("Alex"/"Sam") view both already degrade
         // gracefully when there's no individual data (see
         // ProjectionCard's disabled-pill guard + reconcileIndividualToAggregate's
         // existing `hasIndividualAccounts` gate) — no engine-level flag

@@ -132,21 +132,21 @@ describe("applyLumpSums", () => {
 
   it("R4: matches by name AND owner when two accounts share a name — lands on the RIGHT owner's account", () => {
     const indBal = new Map<string, number>([
-      ["Sean::Long Term Brokerage", 200000],
-      ["Joanna::Long Term Brokerage", 150000],
+      ["Alex::Long Term Brokerage", 200000],
+      ["Sam::Long Term Brokerage", 150000],
     ]);
     const indAccts = [
       {
         name: "Long Term Brokerage",
         category: "brokerage",
         taxType: "afterTax",
-        ownerName: "Sean",
+        ownerName: "Alex",
       },
       {
         name: "Long Term Brokerage",
         category: "brokerage",
         taxType: "afterTax",
-        ownerName: "Joanna",
+        ownerName: "Sam",
       },
     ];
     const ctx = makeCtx({
@@ -161,13 +161,13 @@ describe("applyLumpSums", () => {
         amount: 10000,
         targetAccount: "brokerage",
         targetAccountName: "Long Term Brokerage",
-        targetOwnerName: "Joanna",
+        targetOwnerName: "Sam",
       },
     ];
     applyLumpSums(ls, ctx, state);
-    expect(indBal.get("Joanna::Long Term Brokerage")).toBe(160000);
-    // Sean's identically-named account must be untouched.
-    expect(indBal.get("Sean::Long Term Brokerage")).toBe(200000);
+    expect(indBal.get("Sam::Long Term Brokerage")).toBe(160000);
+    // Alex's identically-named account must be untouched.
+    expect(indBal.get("Alex::Long Term Brokerage")).toBe(200000);
   });
 
   it("R4: falls back to name-only match when targetOwnerName isn't set (lump sums saved before the field existed)", () => {

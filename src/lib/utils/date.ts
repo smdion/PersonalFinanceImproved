@@ -91,3 +91,20 @@ export function parseLocalDateOnly(value: string | Date): Date {
 export function localMidnight(date: Date = new Date()): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
+
+/**
+ * UTC calendar day (YYYY-MM-DD) of a timestamp. Institutions report posting
+ * dates as UTC timestamps, so posted dates, balance dates and windows are
+ * compared as UTC days — an internal key, never compared to a local "today"
+ * (use localDateStr for that).
+ */
+export function utcDayOf(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+/** A YYYY-MM-DD day `n` days later (or earlier, for negative `n`), in UTC. */
+export function addDays(day: string, n: number): string {
+  const d = new Date(`${day}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return utcDayOf(d);
+}

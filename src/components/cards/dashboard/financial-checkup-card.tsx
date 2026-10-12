@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useState, type ReactNode } from "react";
 
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
@@ -15,13 +15,15 @@ import {
 } from "@/lib/constants";
 import { wealthScoreTier } from "@/lib/config/display-labels";
 import {
-  computeHouseholdSavingsRate,
+  householdSavings,
   householdTotalCompensation,
   isHighIncomeHousehold,
 } from "@/lib/pure/contributions";
 import { useScenario } from "@/lib/context/scenario-context";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import { LoadingCard, ErrorCard } from "./utils";
+import { SavingsRateBreakdown } from "./savings-rate-breakdown";
+import { formatMonths } from "./mortgage-payoff";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
 
@@ -32,6 +34,8 @@ type CheckupStep = {
   text: string;
   subText?: string;
   href: string;
+  /** Shown under the row when it's expanded (the row then toggles instead of linking). */
+  detail?: ReactNode;
 };
 
 function CheckupIcon({ status }: { status: CheckupStep["status"] }) {
@@ -97,6 +101,7 @@ function CheckupIcon({ status }: { status: CheckupStep["status"] }) {
 }
 
 function CheckupRow({ step }: { step: CheckupStep }) {
+  const [open, setOpen] = useState(false);
   const badgeColor = {
     green: "bg-green-100 text-green-700",
     yellow: "bg-amber-100 text-amber-700",
@@ -104,16 +109,23 @@ function CheckupRow({ step }: { step: CheckupStep }) {
     gray: "bg-surface-elevated text-muted",
   }[step.status];
 
-  return (
-    <a
-      href={step.href}
-      className="group hover:bg-surface-sunken -mx-1 flex items-center gap-2 rounded px-1 py-1.5 transition-colors"
-    >
+  const rowClass =
+    "group hover:bg-surface-sunken -mx-1 flex w-full items-center gap-2 rounded px-1 py-1.5 text-left transition-colors";
+  const label = (
+    <span className="text-secondary group-hover:text-primary flex-1 text-sm">
+      {step.label}
+      {step.helpTip && <HelpTip text={step.helpTip} />}
+      {step.detail && (
+        <span className="text-faint ml-1 text-xs" aria-hidden="true">
+          {open ? "\u25BE" : "\u25B8"}
+        </span>
+      )}
+    </span>
+  );
+  const body = (
+    <>
       <CheckupIcon status={step.status} />
-      <span className="text-secondary group-hover:text-primary flex-1 text-sm">
-        {step.label}
-        {step.helpTip && <HelpTip text={step.helpTip} />}
-      </span>
+      {label}
       <div className="text-right">
         <span
           className={`text-caption rounded-full px-1.5 py-0.5 font-medium whitespace-nowrap ${badgeColor}`}
@@ -124,7 +136,26 @@ function CheckupRow({ step }: { step: CheckupStep }) {
           <div className="text-micro text-faint mt-0.5">{step.subText}</div>
         )}
       </div>
-    </a>
+    </>
+  );
+  if (!step.detail)
+    return (
+      <a href={step.href} className={rowClass}>
+        {body}
+      </a>
+    );
+  return (
+    <div>
+      <button
+        type="button"
+        className={rowClass}
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+      >
+        {body}
+      </button>
+      {open && step.detail}
+    </div>
   );
 }
 
@@ -156,6 +187,7 @@ function FinancialCheckupCardImpl() {
       ? { budgetTierOverride: efundBudgetColumn }
       : undefined;
   const [fiCache] = useFICache();
+  const [matchOverride, setMatchOverride] = useState<boolean | null>(null);
   const savings = trpc.savings.computeSummary.useQuery(efundTierInput);
   const contribs = trpc.contribution.computeSummary.useQuery(contribInput);
   const mortgage = trpc.mortgage.computeActiveSummary.useQuery();
@@ -225,29 +257,36 @@ function FinancialCheckupCardImpl() {
     });
   } else {
     const primary = activeLoans[0]!;
+    // Ahead of the original loan (refinancing + extra payments) — the same
+    // figure Net Worth's payoff line shows.
+    const monthsAhead = mortgage.data?.result.totalMonthsSaved ?? 0;
     steps.push({
       label: "Debt Payoff",
-      status: primary.monthsAheadOfSchedule > 0 ? "green" : "yellow",
+      status: monthsAhead > 0 ? "green" : "yellow",
       text:
-        primary.monthsAheadOfSchedule > 0
-          ? `${primary.monthsAheadOfSchedule} mo ahead`
+        monthsAhead > 0
+          ? `${formatMonths(monthsAhead)} ahead`
           : `${Math.ceil(primary.remainingMonths / 12)} yr remaining`,
       href: "/mortgage",
     });
   }
 
-  // 4. Savings Rate
+  // 4. Savings Rate — expands into what it's made of.
   const contribPeople = contribs.data?.people?.filter((d) => d.result) ?? [];
-  // Shared with SavingsRateCard — single source of truth (lib/pure/contributions.ts)
   const highIncome = isHighIncomeHousehold(
     householdTotalCompensation(contribPeople),
     highIncomeThreshold,
   );
-  const { rate: savingsRate } = computeHouseholdSavingsRate(
+  // Default: leave the match out for a high-income household; the
+  // breakdown's switch overrides it.
+  const excludeMatch = matchOverride ?? highIncome;
+  const savingsBreakdown = householdSavings(
     contribPeople,
+    contribs.data?.jointAccountTypes ?? [],
     viewMode,
-    highIncome,
+    excludeMatch,
   );
+  const savingsRate = savingsBreakdown.rate;
   const parsedThresholds = (() => {
     try {
       const arr = JSON.parse(
@@ -274,7 +313,19 @@ function FinancialCheckupCardImpl() {
           ? "yellow"
           : "red",
     text: formatPercent(savingsRate, 1),
+    subText: excludeMatch ? undefined : "incl. match",
     href: "/paycheck",
+    detail: (
+      <SavingsRateBreakdown
+        savings={savingsBreakdown}
+        viewMode={viewMode}
+        excludeMatch={excludeMatch}
+        onToggleMatch={() => setMatchOverride(!excludeMatch)}
+        highIncome={highIncome}
+        highIncomeThreshold={highIncomeThreshold}
+        targets={{ good: yellowThreshold, great: greenThreshold }}
+      />
+    ),
   });
 
   // 5. Wealth Score (uses AAW score — Money Guy formula — for PAW/AAW/UAW tier)

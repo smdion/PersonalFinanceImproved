@@ -77,8 +77,8 @@ export type TooltipData =
          *  from this specific "Total Withdrawals" rmd block. */
         qcdAmount?: number;
         /** "Why is my RMD this amount" — per-person divisor × balance
-         *  breakdown, e.g. "Sean: $45,231
-         *  (÷27.4, balance $1,239,329) · Joanna: $12,000 (÷25.5, balance
+         *  breakdown, e.g. "Alex: $40,000
+         *  (÷27.4, balance $1,096,000) · Sam: $12,000 (÷25.5, balance
          *  $306,000)". Pre-formatted by the caller from
          *  `EngineDecumulationYear.rmdByPerson`'s divisor/priorYearEndTradBalance/age
          *  fields (or the household-level `rmdDivisor`/`priorYearEndTradBalance`

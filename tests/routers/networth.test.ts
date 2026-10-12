@@ -216,6 +216,18 @@ describe("networth router", () => {
       expect(result[1]!.date).toBe("2025-01-15");
       expect(result[1]!.total).toBeCloseTo(150000, 0);
     });
+
+    it("splits each snapshot by account, adding up to its total", async () => {
+      const result = await caller.networth.listSnapshotTotals();
+      for (const snap of result) {
+        expect(snap.byAccount.length).toBeGreaterThan(0);
+        expect(snap.byAccount.reduce((t, a) => t + a.amount, 0)).toBeCloseTo(
+          snap.total,
+          2,
+        );
+        for (const a of snap.byAccount) expect(a.label).not.toBe("");
+      }
+    });
   });
 
   // ── LIST SNAPSHOTS (paginated) ──

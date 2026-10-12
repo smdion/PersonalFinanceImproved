@@ -524,6 +524,84 @@ function findExtraPaycheckMonths(
 }
 
 /**
+ * Paychecks so far this year: walked from the job's anchor payday when it
+ * has one, else estimated from the month. One rule for every view that
+ * pro-rates a paycheck plan (Contributions' YTD / Year-End Estimate, the
+ * Dashboard's Saved This Year).
+ */
+export function periodsElapsedYtd(
+  asOfDate: Date,
+  payPeriod: string,
+  anchorPayDate: string | Date | null | undefined,
+  periodsPerYear: number,
+): number {
+  return anchorPayDate
+    ? countPeriodsElapsed(asOfDate, payPeriod, new Date(anchorPayDate))
+    : Math.round((asOfDate.getMonth() / 12) * periodsPerYear);
+}
+
+/** Months of contributions so far this year for a monthly schedule (a month counts from the 15th). */
+export function monthsElapsedYtd(asOfDate: Date): number {
+  return asOfDate.getMonth() + (asOfDate.getDate() >= 15 ? 1 : 0);
+}
+
+/**
+ * Months done this year for a monthly contribution, given the day its
+ * latest contribution actually arrived (YYYY-MM-DD, if known): a month
+ * whose contribution has posted is done even before the 15th, so the rest
+ * of the year isn't counted from a month that's already in.
+ */
+export function monthsDoneYtd(
+  asOfDate: Date,
+  latestContributionDay: string | null | undefined,
+): number {
+  const byDate = monthsElapsedYtd(asOfDate);
+  if (!latestContributionDay) return byDate;
+  const [y, m] = latestContributionDay.split("-").map(Number);
+  return y === asOfDate.getFullYear() ? Math.max(byDate, m!) : byDate;
+}
+
+/**
+ * The share of a year's planned amount one contribution brings, by how it's
+ * made: one paycheck, one month, or none for a once-a-year amount (it
+ * isn't spread over the year).
+ */
+export function contribStepFraction(
+  method: string,
+  periodsPerYear: number,
+): number {
+  switch (method) {
+    case "fixed_monthly":
+      return 1 / 12;
+    case "fixed_annual":
+      return 0;
+    default:
+      return periodsPerYear > 0 ? 1 / periodsPerYear : 0;
+  }
+}
+
+/**
+ * The share of this year's planned amount still to come, by how the
+ * contribution is made: per paycheck (percent of salary, fixed per period)
+ * by paychecks left, monthly by months left, annual not at all.
+ */
+export function contribRemainingFraction(
+  method: string,
+  p: { periodsElapsed: number; periodsPerYear: number; monthsElapsed: number },
+): number {
+  switch (method) {
+    case "fixed_monthly":
+      return (12 - p.monthsElapsed) / 12;
+    case "fixed_annual":
+      return 0;
+    default:
+      return p.periodsPerYear > 0
+        ? Math.max(0, p.periodsPerYear - p.periodsElapsed) / p.periodsPerYear
+        : 1;
+  }
+}
+
+/**
  * Count how many pay periods have occurred between Jan 1 and asOfDate for the current year.
  * Uses the same anchor-payday walking logic as findExtraPaycheckMonths.
  */

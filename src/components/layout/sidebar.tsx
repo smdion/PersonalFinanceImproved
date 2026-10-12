@@ -80,6 +80,7 @@ const navStructure: NavEntry[] = [
     items: [
       { href: "/portfolio", label: "Portfolio", Icon: Gem },
       { href: "/performance", label: "Performance", Icon: Trophy },
+      { href: "/benchmarks", label: "Benchmarks", Icon: PieChart },
       { href: "/brokerage", label: "Brokerage", Icon: BarChart3 },
     ],
   },
@@ -105,7 +106,6 @@ const navStructure: NavEntry[] = [
     items: [
       { href: "/retirement", label: "Retirement", Icon: Palmtree },
       { href: "/contributions", label: "Contributions", Icon: Layers },
-      { href: "/analytics", label: "Analytics", Icon: PieChart },
       { href: "/tax-buckets", label: "Tax Buckets", Icon: Unlock },
       {
         href: "/tax-optimization",

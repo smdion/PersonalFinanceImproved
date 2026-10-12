@@ -14,7 +14,20 @@ import "server-only";
 import { eq, sql } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { encryptJson, readMaybeEncrypted } from "@/lib/crypto";
-import { getAccounts, type SimplefinAccount } from "./client";
+import {
+  getAccounts,
+  isSimplefinReplayMode,
+  type SimplefinAccount,
+} from "./client";
+import { BudgetApiError } from "@/lib/budget-api/errors";
+import {
+  SIMPLEFIN_DAILY_REQUEST_LIMIT,
+  countSimplefinRequestsLastDay,
+  pruneSimplefinRequestLog,
+  recordSimplefinRequest,
+} from "./request-log";
+import { ingestInvestmentData, type IngestSummary } from "./ingest";
+import { utcDayOf } from "@/lib/utils/date";
 import { localDateStr } from "@/lib/utils/date";
 
 export { localDateStr };
@@ -31,7 +44,36 @@ export type SimplefinSyncResult = {
   accountCount: number;
   /** Non-fatal provider errors from this sync (e.g. one institution needs re-auth), for the UI to surface. */
   providerErrors: string[];
+  /** What was stored for investment accounts (holdings, transactions); absent for local recomputes. */
+  investments?: Omit<IngestSummary, "warnings">;
 };
+
+/** Re-request this many days before the last successful sync so late-posting rows are caught. */
+const WINDOW_OVERLAP_DAYS = 5;
+/** SimpleFIN keeps about 90 days of transactions. */
+/**
+ * SimpleFIN keeps 90 days of transactions and answers a request for more
+ * than that with a "capped" notice — and an exact 90 can already exceed it
+ * by the time the provider evaluates it. Ask for a day less; if the
+ * provider ever reports a smaller limit, use that instead (learned, see
+ * getWindowLimitDays).
+ */
+const DEFAULT_MAX_WINDOW_DAYS = 89;
+const WINDOW_LIMIT_KEY = "simplefin_window_limit_days";
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Start of the transaction window to request: last success minus the overlap, at most 90 days back. */
+export function transactionWindowStart(
+  lastSyncedAt: Date | null,
+  now: Date,
+  maxDays: number = DEFAULT_MAX_WINDOW_DAYS,
+): Date {
+  const earliest = now.getTime() - maxDays * DAY_MS;
+  if (!lastSyncedAt) return new Date(earliest);
+  return new Date(
+    Math.max(earliest, lastSyncedAt.getTime() - WINDOW_OVERLAP_DAYS * DAY_MS),
+  );
+}
 
 const LAST_ERROR_SETTING_KEY = "simplefin_last_error";
 const PARTIAL_SYNC_STATE_KEY = "simplefin_partial_sync_state";
@@ -43,6 +85,79 @@ const PARTIAL_SYNC_STATE_KEY = "simplefin_partial_sync_state";
  *  and mark the connection synced (stop retrying today) but keep the
  *  warning visible. */
 export const MAX_PARTIAL_SYNC_RETRIES_PER_DAY = 3;
+
+const INVESTMENTS_SYNCED_AT_KEY = "simplefin_investments_synced_at";
+const INVESTMENTS_FIRST_SYNCED_AT_KEY = "simplefin_investments_first_synced_at";
+
+/** When holdings and transactions were last stored completely, or null if never. */
+export async function getInvestmentsSyncedAt(db: Db): Promise<Date | null> {
+  const rows = await db
+    .select({ value: schema.appSettings.value })
+    .from(schema.appSettings)
+    .where(eq(schema.appSettings.key, INVESTMENTS_SYNCED_AT_KEY));
+  const value = rows[0]?.value;
+  if (typeof value !== "string") return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+async function setInvestmentsSyncedAt(db: Db, at: Date): Promise<void> {
+  await db
+    .insert(schema.appSettings)
+    .values({ key: INVESTMENTS_SYNCED_AT_KEY, value: at.toISOString() })
+    .onConflictDoUpdate({
+      target: schema.appSettings.key,
+      set: { value: at.toISOString() },
+    });
+  // The first complete ingest fixes how far back stored transactions reach.
+  await db
+    .insert(schema.appSettings)
+    .values({ key: INVESTMENTS_FIRST_SYNCED_AT_KEY, value: at.toISOString() })
+    .onConflictDoNothing();
+}
+
+/**
+ * The earliest day stored transactions are complete from: SimpleFIN's
+ * 90-day window before the first complete ingest. Null before any ingest.
+ */
+export async function getTransactionCoverageStart(
+  db: Db,
+): Promise<Date | null> {
+  const rows = await db
+    .select({ value: schema.appSettings.value })
+    .from(schema.appSettings)
+    .where(eq(schema.appSettings.key, INVESTMENTS_FIRST_SYNCED_AT_KEY));
+  const value = rows[0]?.value;
+  if (typeof value !== "string") return null;
+  const first = new Date(value);
+  if (Number.isNaN(first.getTime())) return null;
+  return transactionWindowStart(null, first, await getWindowLimitDays(db));
+}
+
+/** How many days of history to request: the default, or less if the provider said its limit is lower. */
+export async function getWindowLimitDays(db: Db): Promise<number> {
+  const rows = await db
+    .select({ value: schema.appSettings.value })
+    .from(schema.appSettings)
+    .where(eq(schema.appSettings.key, WINDOW_LIMIT_KEY));
+  const stored = Number(rows[0]?.value);
+  return Number.isFinite(stored) && stored > 0
+    ? Math.min(DEFAULT_MAX_WINDOW_DAYS, stored)
+    : DEFAULT_MAX_WINDOW_DAYS;
+}
+
+/** Remember a lower limit the provider reported (one day inside it, like the default). */
+async function learnWindowLimit(db: Db, reportedDays: number): Promise<void> {
+  const learned = Math.max(1, reportedDays - 1);
+  if (learned >= (await getWindowLimitDays(db))) return;
+  await db
+    .insert(schema.appSettings)
+    .values({ key: WINDOW_LIMIT_KEY, value: learned })
+    .onConflictDoUpdate({
+      target: schema.appSettings.key,
+      set: { value: learned },
+    });
+}
 
 /** Get the api_connections row for the simplefin service, or null if not configured. */
 export async function getSimplefinConnection(db: Db) {
@@ -161,6 +276,8 @@ export type SimplefinAccountRow = {
   orgName: string;
   accountName: string;
   lastBalance: number;
+  /** The institution's as-of time for lastBalance; null when not reported. */
+  lastBalanceDate: Date | null;
   isIncluded: boolean;
   lastSeenAt: Date;
 };
@@ -193,6 +310,8 @@ export async function upsertSimplefinAccounts(
         orgName: a.orgName,
         accountName: a.name,
         lastBalance: a.balance.toFixed(2),
+        // Paired with lastBalance: null when not reported, never an older date.
+        lastBalanceDate: a.balanceDate ?? null,
         lastSeenAt: now,
       })),
     )
@@ -202,6 +321,7 @@ export async function upsertSimplefinAccounts(
         orgName: sql`excluded.org_name`,
         accountName: sql`excluded.account_name`,
         lastBalance: sql`excluded.last_balance`,
+        lastBalanceDate: sql`excluded.last_balance_date`,
         lastSeenAt: sql`excluded.last_seen_at`,
       },
     })
@@ -213,6 +333,7 @@ export async function upsertSimplefinAccounts(
     orgName: r.orgName,
     accountName: r.accountName,
     lastBalance: Number(r.lastBalance),
+    lastBalanceDate: r.lastBalanceDate,
     isIncluded: r.isIncluded,
     lastSeenAt: r.lastSeenAt,
   }));
@@ -288,7 +409,58 @@ export async function runSimplefinSync(
       .from(schema.simplefinAccounts)
       .where(eq(schema.simplefinAccounts.isIncluded, true));
 
-    const { accounts: fetched, providerErrors } = await getAccounts(accessUrl);
+    // Quota: every real request counts against SimpleFIN Bridge's daily
+    // limit (exceeding it can disable the connection). Replays don't count.
+    const replay = isSimplefinReplayMode();
+    await pruneSimplefinRequestLog(db, asOfDate);
+    if (!replay) {
+      const used = await countSimplefinRequestsLastDay(db, asOfDate);
+      if (used >= SIMPLEFIN_DAILY_REQUEST_LIMIT) {
+        await recordSimplefinRequest(db, {
+          endpoint: "/accounts",
+          outcome: "skipped_quota",
+        });
+        throw new Error(
+          `Paused: ${used} SimpleFIN requests in the last 24 hours (Ledgr's limit is ${SIMPLEFIN_DAILY_REQUEST_LIMIT}, below SimpleFIN's daily quota). Syncing resumes automatically.`,
+        );
+      }
+    }
+    // Based on the last complete investment ingest, not the balance sync:
+    // the first sync after upgrading (or after a failed ingest) must reach
+    // back the full window SimpleFIN still holds.
+    const windowStart = transactionWindowStart(
+      await getInvestmentsSyncedAt(db),
+      asOfDate,
+      await getWindowLimitDays(db),
+    );
+    let response: Awaited<ReturnType<typeof getAccounts>>;
+    try {
+      response = await getAccounts(accessUrl, { startDate: windowStart });
+      await recordSimplefinRequest(db, {
+        endpoint: "/accounts",
+        outcome: replay ? "replay" : "ok",
+        httpStatus: replay ? null : 200,
+      });
+    } catch (e) {
+      await recordSimplefinRequest(db, {
+        endpoint: "/accounts",
+        outcome:
+          e instanceof BudgetApiError && e.code === "timeout"
+            ? "timeout"
+            : "error",
+        httpStatus: e instanceof BudgetApiError ? e.status : null,
+      });
+      throw e;
+    }
+    const {
+      accounts: fetched,
+      providerErrors,
+      accountIdsWithErrors,
+      windowLimitDays,
+    } = response;
+    // The provider trimmed our history request: remember its limit so the
+    // next request stays inside it (and this isn't reported as an error).
+    if (windowLimitDays) await learnWindowLimit(db, windowLimitDays);
     const fetchedIds = new Set(fetched.map((a) => a.id));
     const missingAccounts = expectedIncluded.filter(
       (a) => !fetchedIds.has(a.externalAccountId),
@@ -340,9 +512,51 @@ export async function runSimplefinSync(
       // tick retries instead of treating a partial sync as done for the day.
     }
 
+    // Investment detail (holdings, transactions). A failure here must not
+    // lose the balance snapshot already written — it becomes a warning.
+    let investments: SimplefinSyncResult["investments"];
+    const ingestWarnings: string[] = [];
+    try {
+      const registryRows = await db
+        .select({
+          id: schema.simplefinAccounts.id,
+          externalAccountId: schema.simplefinAccounts.externalAccountId,
+          linkedPerformanceAccountId:
+            schema.simplefinAccounts.linkedPerformanceAccountId,
+        })
+        .from(schema.simplefinAccounts);
+      const summary = await ingestInvestmentData(db, {
+        accounts: fetched,
+        registry: new Map(
+          registryRows.map((r) => [
+            r.externalAccountId,
+            {
+              id: r.id,
+              linkedPerformanceAccountId: r.linkedPerformanceAccountId,
+            },
+          ]),
+        ),
+        windowStart: utcDayOf(windowStart),
+        accountIdsWithErrors: new Set(accountIdsWithErrors ?? []),
+        now: asOfDate,
+      });
+      const { warnings, ...counts } = summary;
+      investments = counts;
+      ingestWarnings.push(...warnings);
+      // Only a complete ingest moves the window forward; an account that
+      // reported an error is re-requested from the old start next time.
+      if ((accountIdsWithErrors ?? []).length === 0)
+        await setInvestmentsSyncedAt(db, asOfDate);
+    } catch (e) {
+      ingestWarnings.push(
+        `Couldn't store holdings and transactions this sync: ${e instanceof Error ? e.message.slice(0, 200) : String(e)}`,
+      );
+    }
+
     const allWarnings = [
       ...providerErrors,
       ...(missingWarning ? [missingWarning] : []),
+      ...ingestWarnings,
     ];
     await setSimplefinLastError(
       db,
@@ -354,6 +568,7 @@ export async function runSimplefinSync(
       totalBalance,
       accountCount,
       providerErrors: allWarnings,
+      investments,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

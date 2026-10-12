@@ -1,4 +1,8 @@
 /** Demo router for creating, listing, activating, and destroying isolated demo schemas seeded with predefined financial profiles. */
+import {
+  DEMO_SCHEMA_MARKER_PREFIX,
+  MIGRATION_COUNT_SQL,
+} from "@/lib/db/demo-schema-marker";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { sql } from "drizzle-orm";
@@ -590,7 +594,7 @@ export const demoRouter = createTRPCRouter({
       const client = await pool.connect();
       try {
         const schemaCount = await client.query(
-          `SELECT count(*)::int AS cnt FROM information_schema.schemata WHERE schema_name LIKE 'demo_%'`,
+          `SELECT count(*)::int AS cnt FROM information_schema.schemata WHERE schema_name LIKE 'demo\\_%'`,
         );
         if ((schemaCount.rows[0]?.cnt ?? 0) >= MAX_DEMO_SCHEMAS) {
           throw new TRPCError({
@@ -644,6 +648,15 @@ export const demoRouter = createTRPCRouter({
             ),
           );
         }
+
+        // Stamp the schema with the migrations it was built for, so a
+        // later upgrade can tell it's stale (see demo-schema-marker.ts).
+        const migrations = (await client.query(MIGRATION_COUNT_SQL)) as {
+          rows: { n: number }[];
+        };
+        await client.query(
+          `COMMENT ON SCHEMA ${quotedSchema} IS '${DEMO_SCHEMA_MARKER_PREFIX}${Number(migrations.rows[0]?.n ?? 0)}'`,
+        );
 
         // Switch search_path and seed demo data + reference tables
         await client.query(`SET search_path TO ${quotedSchema}, public`);

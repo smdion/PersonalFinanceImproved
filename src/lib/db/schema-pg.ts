@@ -40,8 +40,15 @@ import type {
   BudgetApiService,
   ApiSyncDirection,
   PortfolioTaxType,
+  InvestmentTransactionKind,
+  SecurityKind,
+  SecurityFactSource,
+  FactsBasis,
+  CompositionBucket,
+  HoldingSource,
   UtilityKind,
   UtilityUnit,
+  StandInPreview,
 } from "@/lib/config/enum-values";
 
 /** One date-ranged rule directing an extra paycheck to one or more savings goals. */
@@ -1113,11 +1120,12 @@ export const accountHoldings = pgTable(
 
     // Source of the asset class assignment — surfaces to user so they
     // know whether to trust or override it.
-    // 'fmp' = auto-assigned from FMP sector, 'manual' = user set it.
+    // 'sec' = filled in from stored SEC fund facts, 'manual' = user set it,
+    // 'fmp' = legacy rows filled from FMP before it was removed.
     assetClassSource: text("asset_class_source")
       .notNull()
       .default("manual")
-      .$type<"fmp" | "manual">(),
+      .$type<"sec" | "fmp" | "manual">(),
   },
   (table) => [
     // Unique: one ticker entry per account per snapshot
@@ -2291,6 +2299,279 @@ export const simplefinBalanceSnapshots = pgTable(
   ],
 );
 
+// ── Investments data foundation (v0.8.5) ─────────────────────────────────
+// What SimpleFIN only keeps for 90 days (holdings, transactions) is stored
+// here as sent. Transaction classification is NOT stored — it is computed on
+// read by lib/pure/simplefin-transactions.ts from these inputs plus the
+// built-in and user rules, so a rule change re-classifies history (RULES:
+// computed values are not stored). Only explicit overrides are stored.
+
+/** A fund/security as an institution reports it. */
+export const securities = pgTable(
+  "securities",
+  {
+    id: serial("id").primaryKey(),
+    /** Validated public ticker (uppercase) — set only once confirmed, never a raw pseudo-symbol. */
+    ticker: text("ticker"),
+    /** Symbol exactly as the institution sent it (may be a plan pseudo-symbol). */
+    sourceSymbol: text("source_symbol"),
+    name: text("name").notNull(),
+    kind: text("kind").$type<SecurityKind>().notNull(),
+    /** Identity for funds with no ticker: SimpleFIN org name + description. */
+    institution: text("institution"),
+    sourceDescription: text("source_description"),
+    /** SEC identity of this fund (series + share class), when it is registered. */
+    secSeriesId: text("sec_series_id"),
+    secClassId: text("sec_class_id"),
+    /** Series whose filings supply the facts: this fund's own, or a confirmed stand-in. */
+    factsSeriesId: text("facts_series_id"),
+    factsClassId: text("facts_class_id"),
+    /** Name of the series supplying the facts (shown when confirming a stand-in). */
+    factsSeriesName: text("facts_series_name"),
+    factsBasis: text("facts_basis").$type<FactsBasis>(),
+    standinConfirmedAt: timestamp("standin_confirmed_at", {
+      withTimezone: true,
+    }),
+    /** What a suggested (not yet confirmed) stand-in's SEC filings say,
+     *  so the household can judge it before using it: how much of the fund
+     *  they explain, its mix, and its cheapest share class's fee. Never
+     *  counted as this fund's facts. */
+    standinPreview: jsonb("standin_preview").$type<StandInPreview>(),
+    /** Last time SEC was checked for new filings (whether or not anything changed). */
+    factsCheckedAt: timestamp("facts_checked_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("securities_ticker_idx")
+      .on(table.ticker)
+      .where(sql`${table.ticker} IS NOT NULL`),
+    uniqueIndex("securities_untickered_identity_idx")
+      .on(table.institution, table.sourceDescription)
+      .where(sql`${table.ticker} IS NULL`),
+  ],
+);
+
+/** Composition columns shared by security_facts and sec_filing_cache: fractions of the fund, long positions only, normalised to sum to 1. */
+const compositionColumns = {
+  usEquityPct: decimal("us_equity_pct", { precision: 12, scale: 6 }),
+  intlEquityPct: decimal("intl_equity_pct", { precision: 12, scale: 6 }),
+  usBondPct: decimal("us_bond_pct", { precision: 12, scale: 6 }),
+  intlBondPct: decimal("intl_bond_pct", { precision: 12, scale: 6 }),
+  tipsPct: decimal("tips_pct", { precision: 12, scale: 6 }),
+  cashPct: decimal("cash_pct", { precision: 12, scale: 6 }),
+  otherPct: decimal("other_pct", { precision: 12, scale: 6 }),
+  /** Share of the fund's holdings that could be classified (the rest is unresolved). */
+  coverage: decimal("coverage", { precision: 12, scale: 6 }),
+};
+
+/**
+ * Dated facts about a fund: its expense ratio and what it holds. From SEC
+ * filings (its own, or a confirmed stand-in's) or entered by the
+ * household. Read as groups — expense ratio and composition each come
+ * whole from one row, never mixed across filings.
+ */
+export const securityFacts = pgTable(
+  "security_facts",
+  {
+    id: serial("id").primaryKey(),
+    securityId: integer("security_id")
+      .notNull()
+      .references(() => securities.id, { onDelete: "restrict" }),
+    /** Period the facts describe (filing period end), or the day the user entered them. */
+    asOf: date("as_of").notNull(),
+    source: text("source").$type<SecurityFactSource>().notNull(),
+    /** Series the filing belongs to — differs from the fund's own when a stand-in supplied it. */
+    secSeriesId: text("sec_series_id"),
+    accession: text("accession"),
+    /** Annual expense ratio as a fraction (0.0008 = 0.08%). */
+    expenseRatio: decimal("expense_ratio", { precision: 12, scale: 6 }),
+    ...compositionColumns,
+    fetchedAt: timestamp("fetched_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("security_facts_identity_idx").on(
+      table.securityId,
+      table.source,
+      table.asOf,
+    ),
+    index("security_facts_security_idx").on(table.securityId),
+    check(
+      "security_facts_fraction_check",
+      sql`(${table.expenseRatio} IS NULL OR (${table.expenseRatio} >= 0 AND ${table.expenseRatio} < 1))
+        AND (${table.coverage} IS NULL OR (${table.coverage} >= 0 AND ${table.coverage} <= 1))`,
+    ),
+  ],
+);
+
+/**
+ * Normalised composition of any fund's N-PORT filing, by accession — so a
+ * look-through into the same underlying fund isn't downloaded twice.
+ * Re-fetchable: not versioned or backed up.
+ */
+export const secFilingCache = pgTable(
+  "sec_filing_cache",
+  {
+    accession: text("accession").primaryKey(),
+    seriesId: text("series_id").notNull(),
+    periodEnd: date("period_end").notNull(),
+    ...compositionColumns,
+    fetchedAt: timestamp("fetched_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [index("sec_filing_cache_series_idx").on(table.seriesId)],
+);
+
+/** A SimpleFIN account's balance as reported, per balance date. */
+export const simplefinAccountBalances = pgTable(
+  "simplefin_account_balances",
+  {
+    id: serial("id").primaryKey(),
+    simplefinAccountId: integer("simplefin_account_id")
+      .notNull()
+      .references(() => simplefinAccounts.id, { onDelete: "restrict" }),
+    /** SimpleFIN `balance-date`, as sent (UTC). */
+    balanceDate: timestamp("balance_date", { withTimezone: true }).notNull(),
+    balance: decimal("balance", { precision: 14, scale: 2 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("simplefin_account_balances_account_date_idx").on(
+      table.simplefinAccountId,
+      table.balanceDate,
+    ),
+  ],
+);
+
+/**
+ * Shares held per account, security and trading day. One row per day: for
+ * funds with no public ticker, the reported value ÷ shares is the only price
+ * history there is. Exactly one of simplefinAccountId / performanceAccountId
+ * is set (enforced in the app layer too — SQLite drops CHECK constraints).
+ */
+export const holdingObservations = pgTable(
+  "holding_observations",
+  {
+    id: serial("id").primaryKey(),
+    simplefinAccountId: integer("simplefin_account_id").references(
+      () => simplefinAccounts.id,
+      { onDelete: "restrict" },
+    ),
+    performanceAccountId: integer("performance_account_id").references(
+      () => performanceAccounts.id,
+      { onDelete: "restrict" },
+    ),
+    securityId: integer("security_id")
+      .notNull()
+      .references(() => securities.id, { onDelete: "restrict" }),
+    /** SimpleFIN `balance-date` as sent (UTC); null for manual rows. */
+    balanceDate: timestamp("balance_date", { withTimezone: true }),
+    /** Valuation date: the most recent completed US trading day for balanceDate. */
+    asOf: date("as_of").notNull(),
+    shares: decimal("shares", { precision: 20, scale: 8 }).notNull(),
+    /** As reported — evidence only, never summed as a balance. */
+    reportedMarketValue: decimal("reported_market_value", {
+      precision: 14,
+      scale: 2,
+    }),
+    avgCostPerShare: decimal("avg_cost_per_share", { precision: 20, scale: 8 }),
+    source: text("source").$type<HoldingSource>().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("holding_observations_simplefin_idx")
+      .on(table.simplefinAccountId, table.securityId, table.asOf)
+      .where(sql`${table.simplefinAccountId} IS NOT NULL`),
+    uniqueIndex("holding_observations_manual_idx")
+      .on(table.performanceAccountId, table.securityId, table.asOf)
+      .where(sql`${table.performanceAccountId} IS NOT NULL`),
+    index("holding_observations_security_idx").on(table.securityId),
+    index("holding_observations_perf_account_idx").on(
+      table.performanceAccountId,
+    ),
+    check(
+      "holding_observations_one_account_check",
+      sql`(${table.simplefinAccountId} IS NULL) <> (${table.performanceAccountId} IS NULL)`,
+    ),
+  ],
+);
+
+/**
+ * Investment-account transactions exactly as SimpleFIN sent them. The kind
+ * (contribution, fee, …) is computed on read; only an explicit override is
+ * stored. HSA medical-spending descriptions are redacted at ingest, which
+ * locks the kind (kindOverrideSource = ingest_redacted).
+ */
+export const investmentTransactions = pgTable(
+  "investment_transactions",
+  {
+    id: serial("id").primaryKey(),
+    simplefinAccountId: integer("simplefin_account_id")
+      .notNull()
+      .references(() => simplefinAccounts.id, { onDelete: "restrict" }),
+    /** SimpleFIN transaction id — unique only within its account. */
+    externalId: text("external_id").notNull(),
+    /** Institution posting date (UTC date of SimpleFIN `posted`). */
+    posted: date("posted").notNull(),
+    transacted: date("transacted"),
+    amount: decimal("amount", { precision: 14, scale: 2 }).notNull(),
+    description: text("description").notNull(),
+    pending: boolean("pending").notNull().default(false),
+    /**
+     * Locked by ingest: HSA card spending stored as a "Medical withdrawal"
+     * (merchant redacted). Null = the kind is worked out when read.
+     */
+    kindOverride: text("kind_override").$type<InvestmentTransactionKind>(),
+    /** Set when the row vanished from a window that should still contain it. */
+    voidedAt: timestamp("voided_at", { withTimezone: true }),
+    firstSeenAt: timestamp("first_seen_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("investment_transactions_external_idx").on(
+      table.simplefinAccountId,
+      table.externalId,
+    ),
+    index("investment_transactions_account_posted_idx").on(
+      table.simplefinAccountId,
+      table.posted,
+    ),
+  ],
+);
+
+/** Outbound SimpleFIN request ledger — enforces the daily quota. Not versioned; pruned after 30 days. */
+export const syncRequestLog = pgTable(
+  "sync_request_log",
+  {
+    id: serial("id").primaryKey(),
+    service: text("service").notNull(),
+    requestedAt: timestamp("requested_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    endpoint: text("endpoint").notNull(),
+    httpStatus: integer("http_status"),
+    outcome: text("outcome").notNull(),
+  },
+  (table) => [
+    index("sync_request_log_service_requested_idx").on(
+      table.service,
+      table.requestedAt,
+    ),
+  ],
+);
+
 export const simplefinAccounts = pgTable(
   "simplefin_accounts",
   {
@@ -2302,6 +2583,8 @@ export const simplefinAccounts = pgTable(
       precision: 14,
       scale: 2,
     }).notNull(),
+    /** The institution's as-of time for lastBalance (SimpleFIN `balance-date`); null when not reported. */
+    lastBalanceDate: timestamp("last_balance_date", { withTimezone: true }),
     isIncluded: boolean("is_included").notNull().default(true),
     lastSeenAt: timestamp("last_seen_at", { withTimezone: true })
       .notNull()
@@ -2309,6 +2592,16 @@ export const simplefinAccounts = pgTable(
     linkedPerformanceAccountId: integer(
       "linked_performance_account_id",
     ).references(() => performanceAccounts.id, { onDelete: "set null" }),
+    /**
+     * The sub-account this SimpleFIN account is (snapshotAccountKey: tracked
+     * account + tax type + kind + owner), or null for the whole tracked
+     * account. Institutions report sub-accounts separately — e.g. each
+     * spouse's Roth IRA inside one joint "IRA" tracked account.
+     * Only meaningful with linkedPerformanceAccountId (enforced by the
+     * router, not a CHECK: deleting a tracked account nulls the link and
+     * must not be blocked by a leftover key, which readers ignore).
+     */
+    linkedSubKey: text("linked_sub_key"),
   },
   (table) => [
     index("simplefin_accounts_org_name_idx").on(
@@ -2472,6 +2765,23 @@ export const assetClassParams = pgTable(
     isActive: boolean("is_active").notNull().default(true),
   },
   (table) => [index("asset_class_params_is_active_idx").on(table.isActive)],
+);
+
+/**
+ * Which asset class each composition bucket of a fund's holdings counts
+ * toward (a bucket feeds at most one class; a class can take several — e.g.
+ * US and international bonds into one bonds class). No row = left out of
+ * the mix-vs-target comparison.
+ */
+export const assetClassBuckets = pgTable(
+  "asset_class_buckets",
+  {
+    bucket: text("bucket").$type<CompositionBucket>().primaryKey(),
+    assetClassId: integer("asset_class_id")
+      .notNull()
+      .references(() => assetClassParams.id, { onDelete: "cascade" }),
+  },
+  (table) => [index("asset_class_buckets_class_idx").on(table.assetClassId)],
 );
 
 export const assetClassCorrelations = pgTable(

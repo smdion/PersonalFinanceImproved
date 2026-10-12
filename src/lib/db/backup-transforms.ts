@@ -37,10 +37,13 @@ import { log } from "@/lib/logger";
  * `KNOWN_SCHEMA_VERSIONS` and `schemaEra()` so a new migration can't silently
  * break restore by being added to one list and not the other.
  *
- * Every entry so far is an additive nullable/defaulted column on an existing
- * table, so a backup naming one is already current-shape (minus columns that
- * safely default on insert) and routes through the same idempotent
- * v0.7 → current transform as the v8 baseline.
+ * Entries that add — new tables, or nullable/defaulted columns on existing
+ * ones — need nothing: a backup naming one is already current-shape (minus
+ * tables that restore empty and columns that safely default on insert) and
+ * routes through the same idempotent v0.7 → current transform as the v8
+ * baseline. An entry that DROPS a column (0009) needs an explicit strip of
+ * that column in transformV07xToCurrent, or importing a backup taken while
+ * it existed fails validateColumns.
  */
 const V08_SCHEMA_TAGS = [
   "0001_nappy_blade", // PG: retirement_settings.withdrawal_routing_mode
@@ -49,7 +52,101 @@ const V08_SCHEMA_TAGS = [
   "0002_complete_jackpot", // SQLite counterpart of 0002
   "0003_past_rhodey", // PG: retirement_profile_people.social_security_pia
   "0003_shallow_patch", // SQLite counterpart of 0003
+  // 0004–0011 below were pre-release v0.8.5 builds, squashed into
+  // 0004_v085_investments before release; only installs that ran those
+  // builds (and their backups) carry these tags.
+  "0004_simple_rogue", // PG: v0.8.5 investments foundation (securities, holding_observations, investment_transactions, investment_transaction_rules, simplefin_account_balances, sync_request_log)
+  "0004_glorious_tigra", // SQLite counterpart of 0004
+  "0005_light_prima", // PG: simplefin_accounts.last_balance_date
+  "0005_neat_namorita", // SQLite counterpart of 0005
+  "0006_empty_zarda", // PG: v0.8.5 SEC fund facts (security_facts, sec_filing_cache, securities SEC identity, asset_class_params.composition_bucket)
+  "0006_opposite_onslaught", // SQLite counterpart of 0006
+  "0007_bizarre_zarek", // PG: simplefin_accounts.linked_sub_key (link to a sub-account)
+  "0007_closed_bastion", // SQLite counterpart of 0007
+  "0008_worthless_talisman", // PG: investment_transactions.source_split
+  "0008_absent_tenebrous", // SQLite counterpart of 0008
+  "0009_icy_black_cat", // PG: drop investment_transactions.source_split (per-deposit split removed before release)
+  "0009_vengeful_mister_sinister", // SQLite counterpart of 0009
+  "0010_red_ink", // PG: securities.standin_preview (a suggested stand-in's SEC facts, for judging it)
+  "0010_mysterious_black_panther", // SQLite counterpart of 0010
+  "0011_lumpy_maximus", // PG: asset_class_buckets (several buckets per asset class), copied from asset_class_params.composition_bucket
+  "0011_peaceful_rictor", // SQLite counterpart of 0011
+  "0004_v085_investments", // PG + SQLite: v0.8.5 as released — investments, SEC fund facts, asset_class_buckets
 ] as const;
+
+/** First tags whose backups carry asset_class_buckets (PG, SQLite). */
+const ASSET_CLASS_BUCKETS_TAGS = [
+  "0011_lumpy_maximus",
+  "0011_peaceful_rictor",
+] as const;
+
+/**
+ * Tables a restore rebuilds from other tables when the backup predates
+ * them — so a backup without one doesn't lose its data (see
+ * tablesLostOnRestore). Value: the table it's rebuilt from.
+ */
+export const REBUILT_ON_RESTORE: Readonly<Record<string, string>> = {
+  asset_class_buckets: "asset_class_params",
+};
+
+/**
+ * Whether a backup at `schemaVersion` was taken before asset_class_buckets
+ * existed. Decided by the version, not by the table being empty: a newer
+ * backup with nothing linked must stay unlinked.
+ */
+function predatesAssetClassBuckets(schemaVersion: string): boolean {
+  const v08 = V08_SCHEMA_TAGS as readonly string[];
+  const at = v08.indexOf(schemaVersion);
+  if (at === -1) return true; // every older era
+  return ASSET_CLASS_BUCKETS_TAGS.every((t) => at < v08.indexOf(t));
+}
+
+/**
+ * Pre-0011 backups: each asset class's single composition_bucket becomes
+ * its asset_class_buckets row (the squashed v0.8.5 migration drops the
+ * column from a live database that still has it).
+ */
+function rebuildAssetClassBuckets(
+  tables: TableData,
+  schemaVersion: string,
+): void {
+  if (!predatesAssetClassBuckets(schemaVersion)) return;
+  const rows: Record<string, unknown>[] = [];
+  for (const c of (tables["asset_class_params"] ?? []) as Record<
+    string,
+    unknown
+  >[]) {
+    const bucket = c["composition_bucket"];
+    if (typeof bucket === "string" && bucket !== "")
+      rows.push({ bucket, asset_class_id: c["id"] });
+  }
+  // Nothing to link: leave the table out, as a backup with it empty would.
+  if (rows.length > 0) tables["asset_class_buckets"] = rows;
+}
+
+/**
+ * Fields only pre-release v0.8.5 builds had, dropped from a backup taken on
+ * one — the same as the squashed migration does to a live database: a
+ * transaction kind set by hand goes back to the built-in rules, and the
+ * per-deposit split, override source and single-bucket link go. (Their
+ * investment_transaction_rules table is simply never restored.) Runs after
+ * rebuildAssetClassBuckets, which reads composition_bucket.
+ */
+function dropPreReleaseV085Fields(tables: TableData): void {
+  for (const row of (tables["investment_transactions"] ?? []) as Record<
+    string,
+    unknown
+  >[]) {
+    if (row["kind_override_source"] === "user") row["kind_override"] = null;
+    delete row["kind_override_source"];
+    delete row["source_split"];
+  }
+  for (const row of (tables["asset_class_params"] ?? []) as Record<
+    string,
+    unknown
+  >[])
+    delete row["composition_bucket"];
+}
 
 const V07_SCHEMA_TAGS = [
   "0000_v7_initial_schema", // PG + SQLite (identical tag in both journals)
@@ -932,6 +1029,8 @@ export function transformBackupToCurrentSchema(
   // + the salary_overrides → salaries reshape + is_default drop. Runs for
   // every era, including a fully-current v0.7.x export (a no-op then).
   transformV07xToCurrent(cloned);
+  rebuildAssetClassBuckets(cloned, schemaVersion);
+  dropPreReleaseV085Fields(cloned);
 
   log("info", "backup_transform_complete", {
     from: schemaVersion,

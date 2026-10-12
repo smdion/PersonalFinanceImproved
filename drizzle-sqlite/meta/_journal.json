@@ -29,6 +29,13 @@
       "when": 1788671002892,
       "tag": "0003_shallow_patch",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1791835561221,
+      "tag": "0004_v085_investments",
+      "breakpoints": true
     }
   ]
 }

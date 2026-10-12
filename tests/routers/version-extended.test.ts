@@ -670,3 +670,68 @@ describe("resetAllData", () => {
     }
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DATA-LOSS WARNING — a backup older than a table empties it on restore
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("version router — restore data-loss warning", () => {
+  let ctx: Awaited<ReturnType<typeof createTestCaller>>;
+  let oldVersionId: number;
+
+  beforeAll(async () => {
+    ctx = await createTestCaller();
+    // Current data includes a table an older backup knows nothing about.
+    // (The fixture backup holds only `people`, so tables seeded by the
+    // migrations are listed too — assertions check containment.)
+    ctx.db
+      .insert(sqliteSchema.securities)
+      .values([
+        { ticker: "EXMPX", name: "Example Index Fund", kind: "mutual_fund" },
+        { ticker: "EXMXX", name: "Example Money Market", kind: "money_market" },
+      ])
+      .run();
+    oldVersionId = seedStateVersion(ctx.db, {
+      name: "Before investments",
+      schemaVersion: "0003_past_rhodey",
+    });
+    seedStateVersionTable(ctx.db, oldVersionId, "people", [
+      { id: 1, name: "Example Person" },
+    ]);
+  });
+
+  afterAll(() => ctx.cleanup());
+
+  it("lists tables with rows that the version predates", async () => {
+    const lost = await ctx.caller.version.restoreDataLoss({
+      id: oldVersionId,
+    });
+    expect(lost).toContainEqual({ tableName: "securities", currentRows: 2 });
+  });
+
+  it("does not warn when the backup has the table, even empty", async () => {
+    const lost = await ctx.caller.version.importDataLoss({
+      tableNames: ["people", "securities"],
+    });
+    expect(lost.find((t) => t.tableName === "securities")).toBeUndefined();
+    expect(lost.find((t) => t.tableName === "people")).toBeUndefined();
+  });
+
+  it("checks an uploaded file by its table names", async () => {
+    const lost = await ctx.caller.version.importDataLoss({
+      tableNames: ["people"],
+    });
+    expect(lost).toContainEqual({ tableName: "securities", currentRows: 2 });
+  });
+
+  it("is restricted to callers who can restore", async () => {
+    const viewer = await createTestCaller(viewerSession);
+    try {
+      await expect(
+        viewer.caller.version.restoreDataLoss({ id: oldVersionId }),
+      ).rejects.toThrow();
+    } finally {
+      viewer.cleanup();
+    }
+  });
+});

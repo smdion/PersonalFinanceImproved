@@ -5,6 +5,7 @@
 import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { TRPCError } from "@trpc/server";
+import { eq } from "drizzle-orm";
 import {
   createTestCaller,
   viewerSession,
@@ -487,6 +488,128 @@ describe("simplefin router", () => {
         expect(matched?.snapshotBalance).toBe(5000);
       } finally {
         matchCleanup();
+      }
+    });
+  });
+
+  describe("syncNow", () => {
+    it("refuses a manual sync within 10 minutes of the last SimpleFIN request (quota)", async () => {
+      db.insert(sqliteSchema.syncRequestLog)
+        .values({ service: "simplefin", endpoint: "/accounts", outcome: "ok" })
+        .run();
+      await expect(caller.simplefin.syncNow()).rejects.toThrow(
+        /Try again in \d+ minute/,
+      );
+    });
+  });
+
+  describe("getCollectionStats", () => {
+    it("counts current holdings (not sold funds) and live transactions", async () => {
+      const ctx = await createTestCaller();
+      try {
+        const account = ctx.db
+          .insert(sqliteSchema.simplefinAccounts)
+          .values({
+            externalAccountId: "sf-1",
+            orgName: "Example Bank",
+            accountName: "Example IRA",
+            lastBalance: "1000",
+          })
+          .returning()
+          .get().id;
+        const sec = (ticker: string) =>
+          ctx.db
+            .insert(sqliteSchema.securities)
+            .values({ ticker, name: ticker, kind: "etf" })
+            .returning()
+            .get().id;
+        const [kept, sold] = [sec("EXKPT"), sec("EXSLD")];
+        for (const [securityId, asOf, shares] of [
+          [kept, "2026-05-14", "1"],
+          [kept, "2026-05-15", "2"],
+          [sold, "2026-05-14", "3"],
+          [sold, "2026-05-15", "0"],
+        ] as const)
+          ctx.db
+            .insert(sqliteSchema.holdingObservations)
+            .values({
+              simplefinAccountId: account,
+              securityId,
+              asOf,
+              shares,
+              source: "simplefin",
+            })
+            .run();
+        for (const [externalId, voided] of [
+          ["t1", false],
+          ["t2", true],
+        ] as const)
+          ctx.db
+            .insert(sqliteSchema.investmentTransactions)
+            .values({
+              simplefinAccountId: account,
+              externalId,
+              posted: "2026-05-10",
+              amount: "10.00",
+              description: "EXAMPLE",
+              pending: false,
+              voidedAt: voided ? new Date() : null,
+            })
+            .run();
+        const other = ctx.db
+          .insert(sqliteSchema.simplefinAccounts)
+          .values({
+            externalAccountId: "sf-2",
+            orgName: "Example Bank",
+            accountName: "Example Brokerage",
+            lastBalance: "1000",
+          })
+          .returning()
+          .get().id;
+        const laterPlan = ctx.db
+          .insert(sqliteSchema.simplefinAccounts)
+          .values({
+            externalAccountId: "sf-3",
+            orgName: "Example Plan Co",
+            accountName: "Example 401k",
+            lastBalance: "1000",
+          })
+          .returning()
+          .get().id;
+        // Each account's own balance date; 22:00 UTC is after the close.
+        for (const [id, iso] of [
+          [account, "2026-05-14T22:00:00Z"],
+          [other, "2026-05-12T22:00:00Z"], // lags its sibling at the same bank
+          [laterPlan, "2026-05-13T22:00:00Z"],
+        ] as const)
+          ctx.db
+            .update(sqliteSchema.simplefinAccounts)
+            .set({ lastBalanceDate: new Date(iso) })
+            .where(eq(sqliteSchema.simplefinAccounts.id, id))
+            .run();
+        const stats = await ctx.caller.simplefin.getCollectionStats();
+        expect(stats.dataAsOf).toEqual([
+          {
+            institution: "Example Bank",
+            asOf: "2026-05-12",
+            tradingDaysBehind: 1,
+          },
+          {
+            institution: "Example Plan Co",
+            asOf: "2026-05-13",
+            tradingDaysBehind: 0,
+          },
+        ]);
+        expect(stats).toMatchObject({
+          holdings: 1,
+          holdingsAsOf: "2026-05-15",
+          transactions: 1,
+          transactionAccounts: 1,
+          oldestTransaction: "2026-05-10",
+          requestsLastDay: 0,
+        });
+      } finally {
+        ctx.cleanup();
       }
     });
   });

@@ -123,6 +123,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     taxPreferenceNote:
       "Can be split between Traditional (pre-tax) and Roth (after-tax)",
     subTypeOptions: ["Rollover", "Employer Match", "Profit Sharing"],
+    employerMatchSubType: "Employer Match",
     subTypeDisplay: {},
   },
   "403b": {
@@ -169,6 +170,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     taxPreferenceNote:
       "Can be split between Traditional (pre-tax) and Roth (after-tax)",
     subTypeOptions: ["Rollover", "Employer Match"],
+    employerMatchSubType: "Employer Match",
     subTypeDisplay: {},
   },
   ira: {
@@ -315,7 +317,6 @@ export const ACCOUNT_TYPE_CONFIG = {
           "Employee stock purchase plan — employer discount on company stock",
         hasDiscountBar: true,
         employerContribKind: "discount",
-        hasPurchasePeriodCalculator: true,
         employerMatchLabel: "disc.",
         colors: {
           bg: "bg-teal-500",
@@ -376,7 +377,6 @@ export function getDisplayConfig(
   subType?: string | null,
 ): {
   hasDiscountBar: boolean;
-  hasPurchasePeriodCalculator: boolean;
   employerMatchLabel: string;
   displayLabel: string;
   employerContribKind: "match" | "discount";
@@ -386,7 +386,6 @@ export function getDisplayConfig(
     return {
       hasDiscountBar: false,
       employerContribKind: "match",
-      hasPurchasePeriodCalculator: false,
       employerMatchLabel: "match",
       displayLabel: accountType,
     };
@@ -396,7 +395,6 @@ export function getDisplayConfig(
       string,
       | {
           hasDiscountBar: boolean;
-          hasPurchasePeriodCalculator?: boolean;
           employerMatchLabel: string;
           displayLabel: string;
           employerContribKind: "match" | "discount";
@@ -404,12 +402,7 @@ export function getDisplayConfig(
       | undefined
     >
   )[subLower];
-  if (sub)
-    return {
-      ...sub,
-      hasPurchasePeriodCalculator: sub.hasPurchasePeriodCalculator ?? false,
-    };
-  return { ...cfg, hasPurchasePeriodCalculator: false };
+  return sub ?? cfg;
 }
 
 /** True if this account (type+subtype)'s employer_contributions represents
@@ -559,6 +552,13 @@ export function isInLimit401kGroup(category: string): boolean {
   return getLimitGroup(category) === "401k";
 }
 
+/** The sub-type holding employer match money for a category, if it tracks one. */
+export function getEmployerMatchSubType(category: string): string | null {
+  const cfg: AccountTypeConfig | undefined =
+    ACCOUNT_TYPE_CONFIG[category as AccountCategory];
+  return cfg?.employerMatchSubType ?? null;
+}
+
 /** Check if a category tracks cost basis (after-tax accounts like brokerage). */
 export function tracksCostBasis(category: string): boolean {
   const cfg = ACCOUNT_TYPE_CONFIG[category as AccountCategory];
@@ -684,6 +684,11 @@ export function categoryHasDistributions(category: string): boolean {
 /** Check if a tax treatment value represents tax-free (Roth) contributions. */
 export function isTaxFree(taxTreatment: string): boolean {
   return taxTreatment === "tax_free";
+}
+
+/** Check if a tax treatment value represents pre-tax (traditional) contributions. */
+export function isPreTaxTreatment(taxTreatment: string): boolean {
+  return taxTreatment === "pre_tax";
 }
 
 /** Check if an engine-internal taxType key represents the tax-free (Roth) bucket. */
