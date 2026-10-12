@@ -200,5 +200,10 @@ describe("FinancialCheckupCard smoke", () => {
     fireEvent.click(screen.getByRole("button", { name: "Excl. match" }));
     expect(screen.getByText("20.0%")).toBeInTheDocument();
     expect(screen.queryByText("Employer match")).toBeNull();
+    // Portfolio toggle: the fixture has no Portfolio money, so the rate holds
+    // and the row says what's counted.
+    fireEvent.click(screen.getByRole("button", { name: "Excl. portfolio" }));
+    expect(screen.getByText("20.0%")).toBeInTheDocument();
+    expect(screen.getByText("retirement only")).toBeInTheDocument();
   });
 });

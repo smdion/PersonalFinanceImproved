@@ -188,6 +188,7 @@ function FinancialCheckupCardImpl() {
       : undefined;
   const [fiCache] = useFICache();
   const [matchOverride, setMatchOverride] = useState<boolean | null>(null);
+  const [includePortfolio, setIncludePortfolio] = useState(true);
   const savings = trpc.savings.computeSummary.useQuery(efundTierInput);
   const contribs = trpc.contribution.computeSummary.useQuery(contribInput);
   const mortgage = trpc.mortgage.computeActiveSummary.useQuery();
@@ -284,7 +285,7 @@ function FinancialCheckupCardImpl() {
     contribPeople,
     contribs.data?.jointAccountTypes ?? [],
     viewMode,
-    excludeMatch,
+    { excludeMatch, includePortfolio },
   );
   const savingsRate = savingsBreakdown.rate;
   const parsedThresholds = (() => {
@@ -313,7 +314,13 @@ function FinancialCheckupCardImpl() {
           ? "yellow"
           : "red",
     text: formatPercent(savingsRate, 1),
-    subText: excludeMatch ? undefined : "incl. match",
+    subText:
+      [
+        excludeMatch ? null : "incl. match",
+        includePortfolio ? null : "retirement only",
+      ]
+        .filter(Boolean)
+        .join(" · ") || undefined,
     href: "/paycheck",
     detail: (
       <SavingsRateBreakdown
@@ -321,6 +328,8 @@ function FinancialCheckupCardImpl() {
         viewMode={viewMode}
         excludeMatch={excludeMatch}
         onToggleMatch={() => setMatchOverride(!excludeMatch)}
+        includePortfolio={includePortfolio}
+        onTogglePortfolio={() => setIncludePortfolio((v) => !v)}
         highIncome={highIncome}
         highIncomeThreshold={highIncomeThreshold}
         targets={{ good: yellowThreshold, great: greenThreshold }}

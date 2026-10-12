@@ -55,6 +55,8 @@ export function SavingsRateBreakdown({
   viewMode,
   excludeMatch,
   onToggleMatch,
+  includePortfolio,
+  onTogglePortfolio,
   highIncome,
   highIncomeThreshold,
   targets,
@@ -63,25 +65,36 @@ export function SavingsRateBreakdown({
   viewMode: ViewMode;
   excludeMatch: boolean;
   onToggleMatch: () => void;
+  includePortfolio: boolean;
+  onTogglePortfolio: () => void;
   highIncome: boolean;
   highIncomeThreshold: number;
   targets: { good: number; great: number };
 }) {
   return (
     <div className="mt-1 mb-1 ml-6 space-y-2 text-xs">
-      <div className="text-muted flex items-center justify-between gap-2">
-        <span>
+      <div className="text-muted space-y-1">
+        <p>
           {formatCurrency(savings.total)}
           {VIEW_SUFFIX[viewMode]} of {formatCurrency(savings.compensation)}{" "}
           {viewMode === "ytd" ? "earned" : "total comp"}
+        </p>
+        <span className="flex gap-1">
+          <button
+            type="button"
+            onClick={onToggleMatch}
+            className="bg-surface-elevated hover:bg-surface-strong text-muted rounded-full px-2 py-0.5 whitespace-nowrap transition-colors"
+          >
+            {excludeMatch ? "Incl. match" : "Excl. match"}
+          </button>
+          <button
+            type="button"
+            onClick={onTogglePortfolio}
+            className="bg-surface-elevated hover:bg-surface-strong text-muted rounded-full px-2 py-0.5 whitespace-nowrap transition-colors"
+          >
+            {includePortfolio ? "Excl. portfolio" : "Incl. portfolio"}
+          </button>
         </span>
-        <button
-          type="button"
-          onClick={onToggleMatch}
-          className="bg-surface-elevated hover:bg-surface-strong text-muted rounded-full px-2 py-0.5 whitespace-nowrap transition-colors"
-        >
-          {excludeMatch ? "Incl. match" : "Excl. match"}
-        </button>
       </div>
       {excludeMatch && highIncome && (
         <p className="text-amber-600">
