@@ -271,8 +271,11 @@ describe("investment suggestions", () => {
       // Recorded $1,000 ($800 + $200 employer) + the $1,000 deposit not yet filled.
       expect(row).toMatchObject({ recorded: 1000, pending: 1000, saved: 2000 });
       expect(row.planYear).toBeGreaterThan(0);
+      // The total covers the accounts with a paycheck plan.
       expect(pace.total.saved).toBeCloseTo(
-        pace.accounts.reduce((t, a) => t + a.saved, 0),
+        pace.accounts
+          .filter((a) => a.planYear > 0)
+          .reduce((t, a) => t + a.saved, 0),
       );
     } finally {
       vi.useRealTimers();

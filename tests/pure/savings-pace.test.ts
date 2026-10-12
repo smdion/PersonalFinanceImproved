@@ -53,6 +53,14 @@ describe("savingsPace", () => {
     ).toBe("met");
   });
 
+  it("totals only the accounts with a plan", () => {
+    const r = savingsPace([
+      account({ recorded: 20_000 }),
+      account({ performanceAccountId: 2, plan: null, recorded: 7_000 }),
+    ]);
+    expect(r.total.saved).toBe(20_000);
+  });
+
   it("keeps accounts with savings but no plan, and drops empty ones", () => {
     const r = savingsPace([
       account({ performanceAccountId: 2, plan: null, recorded: 7_000 }),

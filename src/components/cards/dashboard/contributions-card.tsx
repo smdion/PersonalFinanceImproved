@@ -145,17 +145,29 @@ function ContributionsCardImpl() {
 
   const jointAts = data?.jointAccountTypes ?? [];
   // Retirement vs portfolio vs total (from tRPC response, plus joint) — non-overlapping by parentCategory
-  const jt = data?.jointTotals ?? { totalWithoutMatch: 0, totalWithMatch: 0 };
   const jointRetirement = jointAts.filter((a) =>
     isRetirementParent(a.parentCategory),
   );
   const jointPortfolio = jointAts.filter((a) =>
     isPortfolioParent(a.parentCategory),
   );
-  const jointRetNoMatch = sumBy(jointRetirement, (a) => a.employeeContrib);
-  const jointRetWithMatch = sumBy(jointRetirement, (a) => a.totalContrib);
-  const jointPortNoMatch = sumBy(jointPortfolio, (a) => a.employeeContrib);
-  const jointPortWithMatch = sumBy(jointPortfolio, (a) => a.totalContrib);
+  // Joint rows carry their own per-view figures (live YTD / Year-End).
+  const jointRetNoMatch = sumBy(
+    jointRetirement,
+    (a) => a.views[viewMode].employeeContrib,
+  );
+  const jointRetWithMatch = sumBy(
+    jointRetirement,
+    (a) => a.views[viewMode].totalContrib,
+  );
+  const jointPortNoMatch = sumBy(
+    jointPortfolio,
+    (a) => a.views[viewMode].employeeContrib,
+  );
+  const jointPortWithMatch = sumBy(
+    jointPortfolio,
+    (a) => a.views[viewMode].totalContrib,
+  );
   // Household totals from server-computed view-aware data
   const householdRetNoMatch =
     sumBy(people, (p) => p.totals.views[viewMode].retirementWithoutMatch) +
@@ -171,10 +183,12 @@ function ContributionsCardImpl() {
     jointPortWithMatch;
   const householdTotalNoMatch =
     sumBy(people, (p) => p.totals.views[viewMode].totalWithoutMatch) +
-    jt.totalWithoutMatch;
+    jointRetNoMatch +
+    jointPortNoMatch;
   const householdTotalWithMatch =
     sumBy(people, (p) => p.totals.views[viewMode].totalWithMatch) +
-    jt.totalWithMatch;
+    jointRetWithMatch +
+    jointPortWithMatch;
 
   // Use average periodsPerYear for household-level multiplier
   const avgPeriodsPerYear =
@@ -482,7 +496,8 @@ function ContributionsCardImpl() {
                       {formatCurrency(
                         at.views[viewMode].employeeContrib * householdMult,
                       )}
-                      {suffix}
+                      {/* A year-to-date amount isn't a rate. */}
+                      {viewMode !== "ytd" && suffix}
                     </span>
                   </div>
                   {/* Bar for joint accounts */}

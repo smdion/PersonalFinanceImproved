@@ -103,8 +103,12 @@ export function savingsPace(accounts: readonly PaceAccountInput[]) {
     })
     .filter((r) => r.planYear > 0 || r.saved !== 0)
     .sort((x, y) => y.planYear - x.planYear || y.saved - x.saved);
+  // Totals cover the accounts with a paycheck plan — the ones the
+  // Contributions card lists (money in a no-plan account, e.g. an ESPP,
+  // shows on its own row only).
+  const planned = rows.filter((r) => r.planYear > 0);
   const sum = (k: "saved" | "unposted" | "planYear" | "yearEnd") =>
-    roundToCents(rows.reduce((t, r) => t + r[k], 0));
+    roundToCents(planned.reduce((t, r) => t + r[k], 0));
   return {
     accounts: rows,
     total: {
@@ -113,7 +117,7 @@ export function savingsPace(accounts: readonly PaceAccountInput[]) {
       planYear: sum("planYear"),
       yearEnd: sum("yearEnd"),
       status: totalStatus(rows.map((r) => r.status)),
-      estimated: rows.some((r) => r.pendingEstimated && r.pending !== 0),
+      estimated: planned.some((r) => r.pendingEstimated && r.pending !== 0),
     },
   };
 }
