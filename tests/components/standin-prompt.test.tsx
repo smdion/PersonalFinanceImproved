@@ -1,24 +1,35 @@
 /** A suggested stand-in fund: preview and recommendation. Invented data only. */
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import type { Holding } from "@/components/investments/fund-holding-row";
 
-const mutation = () => ({
-  useMutation: () => ({ mutate: vi.fn(), isPending: false, isSuccess: false }),
-});
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    useUtils: () => ({ investments: { invalidate: vi.fn() } }),
-    investments: {
-      confirmStandIn: mutation(),
-      rejectStandIn: mutation(),
-      findStandIn: mutation(),
-      checkStandIn: mutation(),
-      setUserFacts: mutation(),
-      clearUserFacts: mutation(),
+// Each call succeeds straight away; `calls` records what was sent.
+const calls = vi.hoisted(() => [] as string[]);
+vi.mock("@/lib/trpc", () => {
+  const mutation = (name: string) => ({
+    useMutation: (opts?: { onSuccess?: () => void }) => ({
+      mutate: () => {
+        calls.push(name);
+        opts?.onSuccess?.();
+      },
+      isPending: false,
+      isSuccess: false,
+    }),
+  });
+  return {
+    trpc: {
+      useUtils: () => ({ investments: { invalidate: vi.fn() } }),
+      investments: {
+        confirmStandIn: mutation("confirmStandIn"),
+        rejectStandIn: mutation("rejectStandIn"),
+        findStandIn: mutation("findStandIn"),
+        checkStandIn: mutation("checkStandIn"),
+        setUserFacts: mutation("setUserFacts"),
+        clearUserFacts: mutation("clearUserFacts"),
+      },
     },
-  },
-}));
+  };
+});
 vi.mock("@/components/ui/tooltip", () => ({
   Tooltip: ({ children }: { children: React.ReactNode }) => children,
 }));
@@ -78,6 +89,18 @@ describe("stand-in prompt", () => {
       screen.getByRole("button", { name: /Enter from my plan/ }),
     ).toBeInTheDocument();
     expect(screen.getByText(/404\(a\)\(5\)/)).toBeInTheDocument();
+  });
+
+  it("keeps the suggestion until the household's own figures are saved", () => {
+    calls.length = 0;
+    render(<HoldingRow h={holding(preview(0.4))} editable />);
+    fireEvent.click(screen.getByRole("button", { name: /Enter from my plan/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(calls).toEqual([]);
+
+    fireEvent.click(screen.getByRole("button", { name: /Enter from my plan/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(calls).toEqual(["setUserFacts", "rejectStandIn"]);
   });
 
   it("offers to check the stand-in's filings when they haven't been", () => {

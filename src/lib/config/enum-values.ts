@@ -258,4 +258,9 @@ export type StandInPreview = {
   /** Period the holdings are as of. */
   asOf: string | null;
   checkedAt: string;
+  /** Filings the figures came from — unchanged ones aren't downloaded again. */
+  nportAccession?: string | null;
+  ncsrAccession?: string | null;
+  /** Why the last check failed (the figures above are from the one before). */
+  error?: string | null;
 };

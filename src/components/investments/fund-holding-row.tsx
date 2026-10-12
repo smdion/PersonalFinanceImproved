@@ -78,9 +78,12 @@ export function MixBar({ facts }: { facts: Holding["facts"] }) {
 function FactsForm({
   holding,
   onDone,
+  onSaved,
 }: {
   holding: Holding;
   onDone: () => void;
+  /** After a save (not a cancel) — e.g. stop using a stand-in the household replaced. */
+  onSaved?: () => void;
 }) {
   const utils = trpc.useUtils();
   const [er, setEr] = useState(
@@ -100,6 +103,7 @@ function FactsForm({
   );
   const save = trpc.investments.setUserFacts.useMutation({
     onSuccess: () => {
+      onSaved?.();
       utils.investments.invalidate();
       onDone();
     },
@@ -239,6 +243,7 @@ export function HoldingRow({
 }) {
   const utils = trpc.useUtils();
   const [editing, setEditing] = useState(false);
+  const [replacingStandIn, setReplacingStandIn] = useState(false);
   const refresh = () => utils.investments.invalidate();
   const confirm = trpc.investments.confirmStandIn.useMutation({
     onSuccess: refresh,
@@ -322,14 +327,27 @@ export function HoldingRow({
           h={h}
           onUse={() => confirm.mutate({ securityId: h.securityId })}
           onEnterOwn={() => {
-            reject.mutate({ securityId: h.securityId });
+            // The stand-in is only dropped once the household's own figures
+            // are saved; cancelling the form keeps the suggestion.
+            setReplacingStandIn(true);
             setEditing(true);
           }}
           busy={confirm.isPending || reject.isPending}
         />
       )}
       {editable && editing && (
-        <FactsForm holding={h} onDone={() => setEditing(false)} />
+        <FactsForm
+          holding={h}
+          onDone={() => {
+            setEditing(false);
+            setReplacingStandIn(false);
+          }}
+          onSaved={
+            replacingStandIn
+              ? () => reject.mutate({ securityId: h.securityId })
+              : undefined
+          }
+        />
       )}
     </div>
   );
@@ -377,6 +395,24 @@ function StandInPrompt({
         <span className="font-medium">{h.factsSeriesName}</span>, a registered
         fund that likely follows the same strategy.
       </p>
+      {preview?.error && (
+        <p className="text-caption text-red-700 dark:text-red-400">
+          The last check of that fund&apos;s filings failed ({preview.error}).
+          {preview.coverage !== null || preview.expenseRatio !== null
+            ? " Showing what was found before."
+            : ""}
+        </p>
+      )}
+      {check.data?.stoppedBySec && (
+        <p className="text-caption">
+          SEC asked Ledgr to slow down — try again later.
+        </p>
+      )}
+      {check.data && check.data.errors.length > 0 && (
+        <p className="text-caption text-red-700 dark:text-red-400">
+          {check.data.errors.join("; ")}
+        </p>
+      )}
       {advice.mix === "checking" ? (
         <p>
           Ledgr hasn&apos;t checked that fund&apos;s own filings yet.{" "}

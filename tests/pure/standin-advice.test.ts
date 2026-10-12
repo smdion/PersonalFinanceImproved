@@ -11,8 +11,13 @@ const preview = (coverage: number | null) => ({
 });
 
 describe("adviseStandIn", () => {
-  it("waits for the stand-in's filings to be checked", () => {
+  it("waits for the stand-in's filings to be checked (or re-checked after a failure)", () => {
     expect(adviseStandIn(null)).toEqual({ mix: "checking" });
+    expect(
+      adviseStandIn({ ...preview(null), error: "SEC unreachable" }),
+    ).toEqual({
+      mix: "checking",
+    });
   });
   it("trusts the mix when the filings explain most of the fund", () => {
     expect(adviseStandIn(preview(STANDIN_COVERAGE_OK))).toEqual({

@@ -22,7 +22,9 @@ export type StandInAdvice =
     };
 
 export function adviseStandIn(preview: StandInPreview | null): StandInAdvice {
-  if (!preview) return { mix: "checking" };
+  // Never checked, or the checks so far failed before finding anything.
+  if (!preview || (preview.error && preview.coverage === null))
+    return { mix: "checking" };
   if (preview.coverage === null) return { mix: "enter", coverage: null };
   return preview.coverage >= STANDIN_COVERAGE_OK
     ? { mix: "use", coverage: preview.coverage }

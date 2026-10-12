@@ -135,6 +135,9 @@ export async function valueHoldings(
   return valued;
 }
 
+/** How often "Check now" may re-check one suggested stand-in. */
+const CHECK_STANDIN_COOLDOWN_MS = 60 * 60 * 1000;
+
 export const investmentFundFactsRouter = createTRPCRouter({
   /** Holdings valued today, with each fund's facts; allocation vs target; blended cost. */
   getHoldingsOverview: portfolioProcedure.query(async ({ ctx }) => {
@@ -267,14 +270,43 @@ export const investmentFundFactsRouter = createTRPCRouter({
       return { ok: true as const };
     }),
 
-  /** Check a suggested stand-in's SEC filings now, to judge it before using it. */
+  /**
+   * Check a suggested (unconfirmed) stand-in's SEC filings now, to judge it
+   * before using it. At most once an hour per fund unless the last check
+   * failed — each check downloads several SEC files.
+   */
   checkStandIn: portfolioProcedure
     .input(z.object({ securityId: z.number().int() }))
     .mutation(async ({ ctx, input }) => {
+      const s = schema.securities;
+      const [sec] = await ctx.db
+        .select({ preview: s.standinPreview })
+        .from(s)
+        .where(
+          and(
+            eq(s.id, input.securityId),
+            eq(s.factsBasis, "standin"),
+            isNull(s.standinConfirmedAt),
+          ),
+        );
+      if (!sec)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "No suggested stand-in to check",
+        });
+      const last = sec.preview?.checkedAt
+        ? Date.parse(sec.preview.checkedAt)
+        : 0;
+      if (!sec.preview?.error && Date.now() - last < CHECK_STANDIN_COOLDOWN_MS)
+        return { checked: false, stoppedBySec: false, errors: [] };
       const summary = await syncSecurityFacts(ctx.db, {
         securityIds: [input.securityId],
       });
-      return { stoppedBySec: summary.stoppedBySec };
+      return {
+        checked: true,
+        stoppedBySec: summary.stoppedBySec,
+        errors: summary.errors,
+      };
     }),
 
   /** After "Not a match": look for a stand-in again (asks SEC now). */

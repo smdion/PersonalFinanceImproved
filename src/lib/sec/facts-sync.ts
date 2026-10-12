@@ -9,7 +9,7 @@
  * A 403/429 from SEC stops the run; the last stored facts stay.
  */
 import "server-only";
-import { eq, inArray, isNull, lt, or } from "drizzle-orm";
+import { and, eq, inArray, isNull, lt, or } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { StandInPreview } from "@/lib/config/enum-values";
 import { log } from "@/lib/logger";
@@ -351,14 +351,47 @@ async function refreshOne(
     sec.standinConfirmedAt === null &&
     sec.factsSeriesId
   ) {
-    const preview = await previewStandIn(
-      contact,
-      composer,
-      index.series.get(sec.factsSeriesId)?.classIds ?? [],
-      sec.factsSeriesId,
-      now,
-    );
-    await db.update(s).set({ standinPreview: preview }).where(eq(s.id, sec.id));
+    const previous = sec.standinPreview ?? null;
+    let preview: StandInPreview;
+    try {
+      preview = await previewStandIn(
+        contact,
+        composer,
+        index.series.get(sec.factsSeriesId)?.classIds ?? [],
+        sec.factsSeriesId,
+        previous,
+        now,
+      );
+    } catch (err) {
+      // A failed preview never stops this fund's refresh: keep what was
+      // known and say why the check failed. Only SEC throttling ends the run.
+      if (err instanceof SecRateLimitError) throw err;
+      const message = err instanceof Error ? err.message : String(err);
+      log("warn", "standin_preview_failed", { securityId: sec.id, message });
+      preview = {
+        coverage: previous?.coverage ?? null,
+        mix: previous?.mix ?? null,
+        expenseRatio: previous?.expenseRatio ?? null,
+        asOf: previous?.asOf ?? null,
+        nportAccession: previous?.nportAccession ?? null,
+        ncsrAccession: previous?.ncsrAccession ?? null,
+        checkedAt: now.toISOString(),
+        error: message,
+      };
+    }
+    // Only while it's still this same, unconfirmed suggestion — a confirm or
+    // reject during the run clears the preview, and it stays cleared.
+    await db
+      .update(s)
+      .set({ standinPreview: preview })
+      .where(
+        and(
+          eq(s.id, sec.id),
+          eq(s.factsBasis, "standin"),
+          isNull(s.standinConfirmedAt),
+          eq(s.factsSeriesId, sec.factsSeriesId),
+        ),
+      );
   }
 
   const usable =
@@ -461,13 +494,19 @@ async function previewStandIn(
   composer: Composer,
   classIds: readonly string[],
   seriesId: string,
+  previous: StandInPreview | null,
   now: Date,
 ): Promise<StandInPreview> {
   let coverage: number | null = null;
   let mix: StandInPreview["mix"] = null;
   let asOf: string | null = null;
   const nport = latest(await listFilings(contact, seriesId, "NPORT-P"));
-  if (nport) {
+  if (nport && previous?.nportAccession === nport.accession) {
+    // Same holdings report as last time: nothing new to read.
+    coverage = previous.coverage;
+    mix = previous.mix;
+    asOf = previous.asOf;
+  } else if (nport) {
     const { composition, periodDate } = await composer.compose(
       seriesId,
       nport,
@@ -489,7 +528,9 @@ async function previewStandIn(
   const report = classIds[0]
     ? latest(await listFilings(contact, classIds[0], "N-CSR"))
     : null;
-  if (report) {
+  if (report && previous?.ncsrAccession === report.accession) {
+    expenseRatio = previous.expenseRatio;
+  } else if (report) {
     const ratios = await fetchExpenseRatios(contact, report);
     const fees = classIds
       .map((c) => ratios.get(c))
@@ -502,6 +543,9 @@ async function previewStandIn(
     expenseRatio,
     asOf,
     checkedAt: now.toISOString(),
+    nportAccession: nport?.accession ?? null,
+    ncsrAccession: report?.accession ?? null,
+    error: null,
   };
 }
 

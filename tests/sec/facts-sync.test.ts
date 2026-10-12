@@ -15,7 +15,12 @@ import { randomBytes } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { createTestDb, type TestDbContext } from "../helpers/db-harness";
 
-const sec = vi.hoisted(() => ({ rateLimited: false, nportCalls: 0 }));
+const sec = vi.hoisted(() => ({
+  rateLimited: false,
+  nportCalls: 0,
+  ncsrCalls: 0,
+  ncsrFails: false,
+}));
 
 vi.mock("@/lib/sec/client", async () => {
   const actual =
@@ -78,7 +83,9 @@ vi.mock("@/lib/sec/client", async () => {
       if (type === "NPORT-P" && (id === "S1" || id === "S2" || id === "S4"))
         return [filing(`nport-${id}`)];
       if (type === "N-MFP" && id === "S3") return [filing("nmfp-S3")];
-      if (type === "N-CSR") return [filing(`ncsr-${id}`)];
+      if (type === "N-CSR")
+        // A new report arrives when the test makes reading it fail.
+        return [filing(sec.ncsrFails ? `ncsr-${id}-new` : `ncsr-${id}`)];
       return [];
     }),
     fetchNport: vi.fn(async (_c: string, f: { accession: string }) => {
@@ -115,15 +122,16 @@ vi.mock("@/lib/sec/client", async () => {
         ],
       };
     }),
-    fetchExpenseRatios: vi.fn(
-      async () =>
-        new Map([
-          ["C1", 0.0012],
-          ["C3", 0.0011],
-          ["C4", 0.0035], // the stand-in's retail class
-          ["C5", 0.0009], // its cheaper class
-        ]),
-    ),
+    fetchExpenseRatios: vi.fn(async (_c: string, f: { accession: string }) => {
+      if (f.accession.startsWith("ncsr-C4")) sec.ncsrCalls++;
+      if (f.accession === "ncsr-C4-new") throw new Error("Unreadable report");
+      return new Map([
+        ["C1", 0.0012],
+        ["C3", 0.0011],
+        ["C4", 0.0035], // the stand-in's retail class
+        ["C5", 0.0009], // its cheaper class
+      ]);
+    }),
   };
 });
 
@@ -176,6 +184,8 @@ describe("syncSecurityFacts", () => {
   beforeEach(() => {
     sec.rateLimited = false;
     sec.nportCalls = 0;
+    sec.ncsrCalls = 0;
+    sec.ncsrFails = false;
   });
 
   const facts = (key: string) =>
@@ -251,6 +261,36 @@ describe("syncSecurityFacts", () => {
       now: new Date("2026-10-03T00:00:00Z"),
     });
     expect(sec.nportCalls).toBe(0);
+  });
+
+  it("keeps checking a stand-in when its preview fails, and doesn't re-read unchanged reports", async () => {
+    // Back to unconfirmed: the preview is refreshed again.
+    ctx.db
+      .update(ctx.schema.securities)
+      .set({ standinConfirmedAt: null })
+      .where(eq(ctx.schema.securities.id, ids.plan!))
+      .run();
+    sec.ncsrFails = true;
+    const failedAt = new Date("2026-10-03T12:00:00Z");
+    await syncSecurityFacts(ctx.rawDb, { force: true, now: failedAt });
+    expect(security("plan").factsCheckedAt).toEqual(failedAt);
+    expect(security("plan").standinPreview).toMatchObject({
+      coverage: expect.closeTo(0.6, 5), // what was read before stays
+      expenseRatio: 0.0035,
+      error: "Unreadable report",
+    });
+
+    sec.ncsrFails = false;
+    sec.ncsrCalls = 0;
+    await syncSecurityFacts(ctx.rawDb, {
+      force: true,
+      now: new Date("2026-10-03T13:00:00Z"),
+    });
+    expect(security("plan").standinPreview).toMatchObject({
+      expenseRatio: 0.0035,
+      error: null,
+    });
+    expect(sec.ncsrCalls).toBe(0); // the stand-in's N-CSR is the same as last time
   });
 
   it("stops the whole run when SEC throttles, keeping stored facts", async () => {

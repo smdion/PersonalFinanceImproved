@@ -168,6 +168,43 @@ describe("fund facts", () => {
     expect(o.cost.coveredShare).toBeCloseTo(5000 / 6000);
   });
 
+  it("checks a suggested stand-in's filings at most hourly, unless the last check failed", async () => {
+    const setPreview = (checkedAt: Date, error: string | null) =>
+      ctx.db
+        .update(sqliteSchema.securities)
+        .set({
+          standinPreview: {
+            coverage: 0.9,
+            mix: null,
+            expenseRatio: 0.001,
+            asOf: "2026-06-30",
+            checkedAt: checkedAt.toISOString(),
+            error,
+          },
+        })
+        .where(eq(sqliteSchema.securities.id, id.plan!))
+        .run();
+    const check = () =>
+      ctx.caller.investments.checkStandIn({ securityId: id.plan! });
+    const calls = syncCalls.ids.length;
+
+    setPreview(new Date(), null);
+    expect(await check()).toMatchObject({ checked: false });
+    expect(syncCalls.ids).toHaveLength(calls);
+
+    setPreview(new Date(), "Unreadable report");
+    expect(await check()).toMatchObject({ checked: true });
+    expect(syncCalls.ids.at(-1)).toEqual([id.plan]);
+
+    setPreview(new Date(Date.now() - 2 * 60 * 60 * 1000), null);
+    expect(await check()).toMatchObject({ checked: true });
+
+    // Only a suggestion waiting for an answer can be checked.
+    await expect(
+      ctx.caller.investments.checkStandIn({ securityId: id.stock! }),
+    ).rejects.toThrow(/No suggested stand-in/);
+  });
+
   it("confirms a stand-in and fetches its facts right away", async () => {
     await ctx.caller.investments.confirmStandIn({ securityId: id.plan! });
     expect(syncCalls.ids.at(-1)).toEqual([id.plan]);

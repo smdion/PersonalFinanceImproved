@@ -37,11 +37,13 @@ import { log } from "@/lib/logger";
  * `KNOWN_SCHEMA_VERSIONS` and `schemaEra()` so a new migration can't silently
  * break restore by being added to one list and not the other.
  *
- * Every entry so far only adds — new tables, or nullable/defaulted columns
- * on existing ones — so a backup naming one is already current-shape (minus
+ * Entries that add — new tables, or nullable/defaulted columns on existing
+ * ones — need nothing: a backup naming one is already current-shape (minus
  * tables that restore empty and columns that safely default on insert) and
  * routes through the same idempotent v0.7 → current transform as the v8
- * baseline.
+ * baseline. An entry that DROPS a column (0009) needs an explicit strip of
+ * that column in transformV07xToCurrent, or importing a backup taken while
+ * it existed fails validateColumns.
  */
 const V08_SCHEMA_TAGS = [
   "0001_nappy_blade", // PG: retirement_settings.withdrawal_routing_mode
