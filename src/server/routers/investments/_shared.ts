@@ -2,6 +2,7 @@
  * Shared helpers for the investments router group.
  * Internal to investments/ — do not import from outside this directory.
  */
+import type { TransactionSourceSplit } from "@/lib/db/schema-pg";
 import { and, asc, eq, gte, isNotNull, isNull } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { isHsaCategory } from "@/lib/config/account-types";
@@ -134,6 +135,8 @@ export type ClassifiedTransactionRow = {
   voided: boolean;
   kindOverride: InvestmentTransactionKind | null;
   kindOverrideSource: KindOverrideSource | null;
+  /** The household's split of this deposit, if set (see schema). */
+  sourceSplit: TransactionSourceSplit | null;
   /** Set when this row is one side of a move between the household's own accounts. */
   transfer: TransferMatch | null;
 } & EffectiveKind;
@@ -191,6 +194,7 @@ export async function loadClassifiedTransactions(
       voided: r.voidedAt !== null,
       kindOverride: r.kindOverride,
       kindOverrideSource: r.kindOverrideSource,
+      sourceSplit: r.sourceSplit ?? null,
       ...effectiveTransactionKind(
         institution,
         {

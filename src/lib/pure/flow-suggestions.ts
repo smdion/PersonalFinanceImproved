@@ -25,6 +25,8 @@ export type FlowRow = {
   kind: InvestmentTransactionKind;
   /** Set when this row is one side of a move between the household's own accounts. */
   transfer: { conversion: boolean } | null;
+  /** The household's own split of a deposit (employer / employee Roth dollars). */
+  sourceSplit?: { employer: number; employeeRoth: number } | null;
 };
 
 export type FlowTotals = {
@@ -43,6 +45,8 @@ export type FlowTotals = {
   conversionsIn: number;
   /** Tax year of the latest conversion received, if any. */
   latestConversionYear: number | null;
+  /** The part of `contributions` the household split by hand, and how. */
+  knownSplit: { total: number; employer: number; employeeRoth: number };
   count: number;
 };
 
@@ -54,16 +58,31 @@ const COUNTED_KINDS = new Set<InvestmentTransactionKind>([
   "transfer",
 ]);
 
-/** How a row was counted — kind plus the conversion flag. */
-export function countedAs(row: Pick<FlowRow, "kind" | "transfer">): string {
-  return row.transfer?.conversion ? `${row.kind}:conversion` : row.kind;
+/**
+ * How a row was counted — kind plus the conversion flag, plus a deposit's
+ * hand-set split ("contribution|e:<employer>|r:<roth>"), so changing any of
+ * them later is noticed and corrected.
+ */
+export function countedAs(
+  row: Pick<FlowRow, "kind" | "transfer" | "sourceSplit">,
+): string {
+  const base = row.transfer?.conversion ? `${row.kind}:conversion` : row.kind;
+  const s = row.kind === "contribution" ? row.sourceSplit : null;
+  return s ? `${base}|e:${s.employer}|r:${s.employeeRoth}` : base;
 }
 
-function fromCountedAs(key: string): Pick<FlowRow, "kind" | "transfer"> {
-  const [kind, flag] = key.split(":") as [InvestmentTransactionKind, string?];
+function fromCountedAs(
+  key: string,
+): Pick<FlowRow, "kind" | "transfer" | "sourceSplit"> {
+  const [head, e, r] = key.split("|");
+  const [kind, flag] = head!.split(":") as [InvestmentTransactionKind, string?];
   return {
     kind,
     transfer: flag === "conversion" ? { conversion: true } : null,
+    sourceSplit:
+      e && r
+        ? { employer: Number(e.slice(2)), employeeRoth: Number(r.slice(2)) }
+        : null,
   };
 }
 
@@ -76,6 +95,7 @@ const ZERO: FlowTotals = {
   unmatchedTransfers: 0,
   conversionsIn: 0,
   latestConversionYear: null,
+  knownSplit: { total: 0, employer: 0, employeeRoth: 0 },
   count: 0,
 };
 
@@ -84,6 +104,14 @@ function addRow(t: FlowTotals, r: FlowRow, sign: 1 | -1) {
   switch (r.kind) {
     case "contribution":
       t.contributions += amount;
+      if (r.sourceSplit) {
+        // A split set before the amount changed is scaled down to fit it.
+        const parts = r.sourceSplit.employer + r.sourceSplit.employeeRoth;
+        const fit = parts > r.amount && parts > 0 ? r.amount / parts : 1;
+        t.knownSplit.total += amount;
+        t.knownSplit.employer += sign * r.sourceSplit.employer * fit;
+        t.knownSplit.employeeRoth += sign * r.sourceSplit.employeeRoth * fit;
+      }
       break;
     case "withdrawal":
       t.distributions -= amount;
@@ -120,11 +148,21 @@ function rounded(t: FlowTotals): FlowTotals {
     transfersOut: roundToCents(t.transfersOut),
     unmatchedTransfers: roundToCents(t.unmatchedTransfers),
     conversionsIn: roundToCents(t.conversionsIn),
+    knownSplit: {
+      total: roundToCents(t.knownSplit.total),
+      employer: roundToCents(t.knownSplit.employer),
+      employeeRoth: roundToCents(t.knownSplit.employeeRoth),
+    },
   };
 }
 
+const fresh = (): FlowTotals => ({
+  ...ZERO,
+  knownSplit: { ...ZERO.knownSplit },
+});
+
 export function sumFlows(rows: readonly FlowRow[]): FlowTotals {
-  const t = { ...ZERO };
+  const t = fresh();
   for (const r of rows) addRow(t, r, 1);
   return rounded(t);
 }
@@ -141,7 +179,7 @@ export function flowsSinceFill(
   counted: Readonly<Record<string, string>>,
   baseline: string,
 ): { totals: FlowTotals; counted: Record<string, string> } {
-  const t = { ...ZERO };
+  const t = fresh();
   const next: Record<string, string> = {};
   for (const r of rows) {
     if (r.pending) continue;
@@ -360,5 +398,31 @@ export function estimateFromPaycheck(
       (mix.employeePreTax + mix.employeeRoth + mix.employeeOther) * share,
     ),
     employer: roundToCents(mix.employer * share),
+  };
+}
+
+/**
+ * Split a period's deposits: the ones the household split by hand use
+ * their own figures; only the rest is estimated from the paycheck setup.
+ */
+export function splitWithKnown(
+  t: Pick<FlowTotals, "contributions" | "knownSplit">,
+  mix: ContributionMix | null,
+  accountIsRoth: boolean,
+): ContributionSplit {
+  const known = t.knownSplit;
+  const rest = roundToCents(t.contributions - known.total);
+  const s = splitContributions(rest, mix, accountIsRoth);
+  const knownEmployee = known.total - known.employer;
+  return {
+    employee: roundToCents(s.employee + knownEmployee),
+    employer: roundToCents(s.employer + known.employer),
+    // In a Roth-only account all of the employee's money is Roth.
+    employeeRoth: roundToCents(
+      s.employeeRoth + (accountIsRoth ? knownEmployee : known.employeeRoth),
+    ),
+    // Only new money still estimated counts — not a correction backing out
+    // an earlier estimate.
+    estimated: s.estimated && rest > 0,
   };
 }

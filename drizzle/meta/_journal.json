@@ -57,6 +57,13 @@
       "when": 1791747324763,
       "tag": "0007_bizarre_zarek",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791763850141,
+      "tag": "0008_worthless_talisman",
+      "breakpoints": true
     }
   ]
 }

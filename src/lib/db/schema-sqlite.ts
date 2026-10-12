@@ -2266,6 +2266,9 @@ export const holdingObservations = sqliteTable(
  * stored. HSA medical-spending descriptions are redacted at ingest, which
  * locks the kind (kindOverrideSource = ingest_redacted).
  */
+/** See investmentTransactions.sourceSplit. Dollars, both within the row's amount. */
+export type TransactionSourceSplit = { employer: number; employeeRoth: number };
+
 export const investmentTransactions = sqliteTable(
   "investment_transactions",
   {
@@ -2285,6 +2288,13 @@ export const investmentTransactions = sqliteTable(
     kindOverrideSource: text(
       "kind_override_source",
     ).$type<KindOverrideSource>(),
+    /** The household's own split of a deposit (feeds report one amount):
+     *  how much was the employer's and how much was the employee's Roth
+     *  money; the rest is the employee's other money. Null = estimate it
+     *  from the paycheck setup. Only meaningful on a contribution. */
+    sourceSplit: text("source_split", {
+      mode: "json",
+    }).$type<TransactionSourceSplit>(),
     /** Set when the row vanished from a window that should still contain it. */
     voidedAt: integer("voided_at", { mode: "timestamp" }),
     firstSeenAt: integer("first_seen_at", { mode: "timestamp" })

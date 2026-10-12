@@ -58,6 +58,8 @@ const V08_SCHEMA_TAGS = [
   "0006_opposite_onslaught", // SQLite counterpart of 0006
   "0007_bizarre_zarek", // PG: simplefin_accounts.linked_sub_key (link to a sub-account)
   "0007_closed_bastion", // SQLite counterpart of 0007
+  "0008_worthless_talisman", // PG: investment_transactions.source_split
+  "0008_absent_tenebrous", // SQLite counterpart of 0008
 ] as const;
 
 const V07_SCHEMA_TAGS = [

@@ -7,6 +7,7 @@ import {
   initialBaseline,
   reduceBasis,
   splitContributions,
+  splitWithKnown,
   sumFlows,
   type FeedAccount,
   type FlowRow,
@@ -39,6 +40,7 @@ describe("sumFlows", () => {
       unmatchedTransfers: -100,
       conversionsIn: 300,
       latestConversionYear: 2026,
+      knownSplit: { total: 0, employer: 0, employeeRoth: 0 },
       count: 5,
     });
   });
@@ -257,6 +259,69 @@ describe("estimateFromPaycheck", () => {
     expect(estimateFromPaycheck(mix, "2026-03-11", "2026-03-11")).toEqual({
       employee: 0,
       employer: 0,
+    });
+  });
+});
+
+describe("hand-set deposit splits", () => {
+  const mix = {
+    employeePreTax: 3000,
+    employeeRoth: 0,
+    employeeOther: 0,
+    employer: 1000,
+    employerRoth: 0,
+  };
+
+  it("uses the household's split and estimates only the rest", () => {
+    const t = sumFlows([
+      {
+        ...row(1, "2026-03-05", 400, "contribution"),
+        sourceSplit: { employer: 150, employeeRoth: 50 },
+      },
+      row(2, "2026-03-06", 400, "contribution"),
+    ]);
+    expect(t.knownSplit).toEqual({
+      total: 400,
+      employer: 150,
+      employeeRoth: 50,
+    });
+    expect(splitWithKnown(t, mix, false)).toEqual({
+      employee: 550, // 250 (split) + 300 (estimated)
+      employer: 250, // 150 (split) + 100 (estimated)
+      employeeRoth: 50,
+      estimated: true,
+    });
+  });
+
+  it("counts all the employee's money in a Roth-only account as Roth", () => {
+    const t = sumFlows([
+      {
+        ...row(1, "2026-03-05", 500, "contribution"),
+        sourceSplit: { employer: 100, employeeRoth: 0 },
+      },
+    ]);
+    expect(splitWithKnown(t, null, true)).toMatchObject({
+      employer: 100,
+      employeeRoth: 400,
+    });
+  });
+
+  it("re-counts a deposit whose split changed after a fill", () => {
+    const r = {
+      ...row(1, "2026-03-05", 400, "contribution"),
+      sourceSplit: { employer: 100, employeeRoth: 0 },
+    };
+    const { totals, counted } = flowsSinceFill(
+      [r],
+      { 1: "contribution|e:150|r:50" },
+      "2026-03-01",
+    );
+    expect(counted).toEqual({ 1: "contribution|e:100|r:0" });
+    expect(totals.contributions).toBe(0); // same deposit, out and back in
+    expect(totals.knownSplit).toEqual({
+      total: 0,
+      employer: -50,
+      employeeRoth: -50,
     });
   });
 });

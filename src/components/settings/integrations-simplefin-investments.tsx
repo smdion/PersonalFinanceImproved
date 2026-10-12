@@ -377,6 +377,13 @@ function RecentActivity() {
                   )}
                 </span>
               )}
+              {r.kind === "contribution" && r.amount > 0 && !r.pending && (
+                <DepositSplit
+                  id={r.id}
+                  amount={r.amount}
+                  split={r.sourceSplit}
+                />
+              )}
             </td>
             <td className="text-primary py-1 text-right whitespace-nowrap">
               {formatCurrency(r.amount)}
@@ -385,6 +392,107 @@ function RecentActivity() {
         ))}
       </tbody>
     </table>
+  );
+}
+
+/**
+ * A deposit's split by hand: employer and employee-Roth dollars (the rest
+ * is the employee's other money). Fills use it instead of estimating the
+ * split from the paycheck setup.
+ */
+function DepositSplit({
+  id,
+  amount,
+  split,
+}: {
+  id: number;
+  amount: number;
+  split: { employer: number; employeeRoth: number } | null;
+}) {
+  const utils = trpc.useUtils();
+  const [open, setOpen] = useState(false);
+  const [employer, setEmployer] = useState(String(split?.employer ?? ""));
+  const [roth, setRoth] = useState(String(split?.employeeRoth ?? ""));
+  const save = trpc.investments.setTransactionSplit.useMutation({
+    onSuccess: () => {
+      setOpen(false);
+      void utils.investments.invalidate();
+    },
+  });
+  if (!open)
+    return (
+      <span className="text-faint block">
+        {split
+          ? `split by you: employer ${formatCurrency(split.employer)}, Roth ${formatCurrency(split.employeeRoth)}`
+          : "split estimated from your paycheck setup"}{" "}
+        <button
+          className="hover:text-primary underline"
+          onClick={() => setOpen(true)}
+        >
+          {split ? "change" : "split"}
+        </button>
+      </span>
+    );
+  const e = Number(employer) || 0;
+  const r = Number(roth) || 0;
+  const over = e + r > amount + 0.005;
+  return (
+    <span className="mt-1 flex flex-wrap items-center gap-1">
+      <label className="text-faint">
+        Employer $
+        <input
+          type="number"
+          step="0.01"
+          min="0"
+          value={employer}
+          onChange={(ev) => setEmployer(ev.target.value)}
+          aria-label="Employer part"
+          className="border-default ml-0.5 w-20 rounded border px-1"
+        />
+      </label>
+      <label className="text-faint">
+        Your Roth $
+        <input
+          type="number"
+          step="0.01"
+          min="0"
+          value={roth}
+          onChange={(ev) => setRoth(ev.target.value)}
+          aria-label="Your Roth part"
+          className="border-default ml-0.5 w-20 rounded border px-1"
+        />
+      </label>
+      <span className="text-faint">
+        rest yours: {formatCurrency(Math.max(0, amount - e - r))}
+      </span>
+      <Button
+        size="xs"
+        variant="primary"
+        disabled={save.isPending || over}
+        onClick={() =>
+          save.mutate({ id, split: { employer: e, employeeRoth: r } })
+        }
+      >
+        Save
+      </Button>
+      {split && (
+        <Button
+          size="xs"
+          variant="ghost"
+          disabled={save.isPending}
+          onClick={() => save.mutate({ id, split: null })}
+        >
+          Clear
+        </Button>
+      )}
+      <Button size="xs" variant="ghost" onClick={() => setOpen(false)}>
+        Cancel
+      </Button>
+      {over && <span className="text-red-600">More than the deposit.</span>}
+      {save.isError && (
+        <span className="text-red-600">{save.error.message}</span>
+      )}
+    </span>
   );
 }
 

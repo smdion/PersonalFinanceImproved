@@ -520,6 +520,73 @@ describe("investment suggestions", () => {
       .run();
   });
 
+  it("uses a deposit split by hand instead of the paycheck estimate", async () => {
+    const [dep] = ctx.db
+      .select()
+      .from(sqliteSchema.investmentTransactions)
+      .where(eq(sqliteSchema.investmentTransactions.externalId, "t5"))
+      .all();
+    await expect(
+      ctx.caller.investments.setTransactionSplit({
+        id: dep!.id,
+        split: { employer: 900, employeeRoth: 200 },
+      }),
+    ).rejects.toThrow(/more than the deposit/);
+    await ctx.caller.investments.setTransactionSplit({
+      id: dep!.id,
+      split: { employer: 100, employeeRoth: 0 },
+    });
+    // Earlier saves stamped "last updated" today; count from March again.
+    ctx.db
+      .update(sqliteSchema.appSettings)
+      .set({ value: "2026-03-01T12:00:00Z" })
+      .where(eq(sqliteSchema.appSettings.key, "performance_last_updated"))
+      .run();
+    ctx.db
+      .delete(sqliteSchema.appSettings)
+      .where(eq(sqliteSchema.appSettings.key, "simplefin_fill_ledger"))
+      .run();
+    const s = await ctx.caller.investments.suggestPerformance({ year: 2026 });
+    const brk = s.accounts.find(
+      (a) => a.accountPerformanceId === ap.brokerage,
+    )!;
+    expect(brk.added).toMatchObject({
+      employer: 100,
+      employee: 900,
+      estimated: false,
+    });
+    // Reclassifying the deposit drops its split.
+    await ctx.caller.investments.setTransactionKind({
+      id: dep!.id,
+      kind: "transfer",
+    });
+    expect(
+      ctx.db
+        .select()
+        .from(sqliteSchema.investmentTransactions)
+        .where(eq(sqliteSchema.investmentTransactions.id, dep!.id))
+        .get()!.sourceSplit,
+    ).toBeNull();
+    await ctx.caller.investments.clearTransactionKind({ id: dep!.id });
+    // A pending deposit can't be split yet.
+    ctx.db
+      .update(sqliteSchema.investmentTransactions)
+      .set({ pending: true })
+      .where(eq(sqliteSchema.investmentTransactions.id, dep!.id))
+      .run();
+    await expect(
+      ctx.caller.investments.setTransactionSplit({
+        id: dep!.id,
+        split: { employer: 1, employeeRoth: 0 },
+      }),
+    ).rejects.toThrow(/settles/);
+    ctx.db
+      .update(sqliteSchema.investmentTransactions)
+      .set({ pending: false })
+      .where(eq(sqliteSchema.investmentTransactions.id, dep!.id))
+      .run();
+  });
+
   it("needs the portfolio permission", async () => {
     const { createViewerSessionWithPermissions } = await import("./setup");
     const other = await createTestCaller(

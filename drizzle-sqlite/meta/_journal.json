@@ -57,6 +57,13 @@
       "when": 1791747325766,
       "tag": "0007_closed_bastion",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1791763851179,
+      "tag": "0008_absent_tenebrous",
+      "breakpoints": true
     }
   ]
 }
