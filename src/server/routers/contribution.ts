@@ -15,6 +15,7 @@ import {
 import {
   contribRemainingFraction,
   countPeriodsElapsed,
+  monthsDoneYtd,
   monthsElapsedYtd,
   periodsElapsedYtd,
 } from "@/lib/calculators/paycheck";
@@ -273,6 +274,13 @@ export const contributionRouter = createTRPCRouter({
           ? await loadLiveContributions(ctx.db)
           : null;
       const liveThroughToday = new Set<number>();
+      // The day each live account's latest contribution actually arrived —
+      // a month already paid into counts as done (monthsDoneYtd).
+      const contributedThrough = new Map(
+        (live ?? [])
+          .filter((c) => c.latestContributionDay !== null)
+          .map((c) => [c.performanceAccountId, c.latestContributionDay!]),
+      );
       // total_contributions includes employer match — split into employee-only + match
       for (const row of currentYearPerfActuals) {
         if (row.performanceAccountId == null) continue;
@@ -798,7 +806,15 @@ export const contributionRouter = createTRPCRouter({
             // reflect old contribution rates or salary changes).
             const remaining = contribRemainingFraction(
               rawContrib.contributionMethod,
-              elapsed,
+              {
+                ...elapsed,
+                monthsElapsed: monthsDoneYtd(
+                  asOfDate,
+                  rawContrib.performanceAccountId != null
+                    ? contributedThrough.get(rawContrib.performanceAccountId)
+                    : null,
+                ),
+              },
             );
             const ytdEmp = contribActual?.contributions ?? 0;
             const ytdMatch = contribActual?.employerMatch ?? 0;
@@ -1203,7 +1219,12 @@ export const contributionRouter = createTRPCRouter({
           periodsPerYear,
           // A joint contribution has no job: no anchor payday to walk.
           periodsElapsed: periodsElapsedYtd(asOfDate, "", null, periodsPerYear),
-          monthsElapsed: monthsElapsedYtd(asOfDate),
+          monthsElapsed: monthsDoneYtd(
+            asOfDate,
+            c.performanceAccountId != null
+              ? contributedThrough.get(c.performanceAccountId)
+              : null,
+          ),
         });
         jointAccountTypes.push({
           accountType: displayCat,

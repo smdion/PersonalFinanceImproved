@@ -546,6 +546,22 @@ export function monthsElapsedYtd(asOfDate: Date): number {
 }
 
 /**
+ * Months done this year for a monthly contribution, given the day its
+ * latest contribution actually arrived (YYYY-MM-DD, if known): a month
+ * whose contribution has posted is done even before the 15th, so the rest
+ * of the year isn't counted from a month that's already in.
+ */
+export function monthsDoneYtd(
+  asOfDate: Date,
+  latestContributionDay: string | null | undefined,
+): number {
+  const byDate = monthsElapsedYtd(asOfDate);
+  if (!latestContributionDay) return byDate;
+  const [y, m] = latestContributionDay.split("-").map(Number);
+  return y === asOfDate.getFullYear() ? Math.max(byDate, m!) : byDate;
+}
+
+/**
  * The share of a year's planned amount one contribution brings, by how it's
  * made: one paycheck, one month, or none for a once-a-year amount (it
  * isn't spread over the year).

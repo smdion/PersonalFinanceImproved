@@ -6,6 +6,7 @@ import {
   countPeriodsElapsed,
   contribRemainingFraction,
   contribStepFraction,
+  monthsDoneYtd,
   monthsElapsedYtd,
   periodsElapsedYtd,
   getExtraPaycheckMonthKeys,
@@ -603,5 +604,15 @@ describe("contribution schedule helpers", () => {
     expect(contribStepFraction("fixed_per_period", 24)).toBeCloseTo(1 / 24);
     expect(contribStepFraction("fixed_monthly", 26)).toBeCloseTo(1 / 12);
     expect(contribStepFraction("fixed_annual", 26)).toBe(0);
+  });
+});
+
+describe("monthsDoneYtd", () => {
+  it("counts a month as done once its contribution has arrived, even before the 15th", () => {
+    const oct12 = new Date(2026, 9, 12);
+    expect(monthsDoneYtd(oct12, null)).toBe(9);
+    expect(monthsDoneYtd(oct12, "2026-10-02")).toBe(10);
+    expect(monthsDoneYtd(oct12, "2026-09-02")).toBe(9);
+    expect(monthsDoneYtd(oct12, "2025-12-02")).toBe(9); // last year's
   });
 });

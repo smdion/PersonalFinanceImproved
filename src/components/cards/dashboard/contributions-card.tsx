@@ -336,6 +336,17 @@ function ContributionsCardImpl() {
                             Math.floor(at.views[viewMode].pctOfSalaryToMax) ===
                               0 && (
                               <p className="text-caption mt-0.5 text-green-600">
+                                {/* A plan reaching the limit isn't money in:
+                                    only Actual YTD can say "maxed out". */}
+                                {viewMode === "blended"
+                                  ? "On track to max"
+                                  : "Set to max"}
+                              </p>
+                            )}
+                          {viewMode === "ytd" &&
+                            hasLimit &&
+                            at.views.ytd.fundingPct >= 1 && (
+                              <p className="text-caption mt-0.5 text-green-600">
                                 Maxed out
                               </p>
                             )}

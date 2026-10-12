@@ -38,6 +38,8 @@ export type LiveContribution = {
   unposted: { employee: number; employer: number };
   /** The latest contribution vs today's setup (null: no transactions to check). */
   latest: LatestContributionVerdict | null;
+  /** The day the latest contribution actually arrived (null: none seen). */
+  latestContributionDay: string | null;
   plan: { yearly: number; remaining: number } | null;
 };
 
@@ -49,7 +51,7 @@ export async function loadLiveContributions(
 ): Promise<LiveContribution[]> {
   const year = Number(today.slice(0, 4));
   const recentSince = addDays(today, -RECENT_ACTIVITY_DAYS);
-  const [rows, pending, mix, names, context, recent] = await Promise.all([
+  const [rows, pending, names, context, recent] = await Promise.all([
     db
       .select({
         performanceAccountId: schema.accountPerformance.performanceAccountId,
@@ -64,11 +66,32 @@ export async function loadLiveContributions(
         ),
       ),
     loadPerformanceSuggestions(db, year),
-    loadContributionMix(db, dayDate(today)),
     loadTrackedAccountNames(db),
     loadFeedContext(db),
     loadClassifiedTransactions(db, { since: recentSince }),
   ]);
+  const feedIdsOf = (id: number) =>
+    context.feeds.filter((f) => f.performanceAccountId === id).map((f) => f.id);
+  const contributionsOf = (id: number) => {
+    const ids = feedIdsOf(id);
+    return recent.filter(
+      (r) =>
+        ids.includes(r.simplefinAccountId) &&
+        r.posted >= recentSince &&
+        r.kind === "contribution" &&
+        !r.pending &&
+        !r.voided,
+    );
+  };
+  // The day each account's latest contribution actually arrived: a month
+  // whose contribution is in counts as done (see monthsDoneYtd), so the rest
+  // of the year isn't counted from it again.
+  const contributedThrough = new Map<number, string>();
+  for (const id of new Set(context.feeds.map((f) => f.performanceAccountId))) {
+    const latest = checkLatestContribution(contributionsOf(id), 0).latest;
+    if (latest) contributedThrough.set(id, latest.day);
+  }
+  const mix = await loadContributionMix(db, dayDate(today), contributedThrough);
   // An account whose feed sends transactions is known only through its
   // latest posted one; the plan between then and today is on its way — the
   // gap the Year-End Estimate view fills ("stale periods").
@@ -86,7 +109,10 @@ export async function loadLiveContributions(
     await Promise.all(
       [...new Set(lastPosted.values())].map(
         async (day) =>
-          [day, await loadContributionMix(db, dayDate(day))] as const,
+          [
+            day,
+            await loadContributionMix(db, dayDate(day), contributedThrough),
+          ] as const,
       ),
     ),
   );
@@ -140,18 +166,10 @@ export async function loadLiveContributions(
       // Only a feed that sends transactions can show the latest deposit.
       latest:
         m && sentTransactions(feedIds, context.lastTransactionDay, recentSince)
-          ? checkLatestContribution(
-              recent.filter(
-                (r) =>
-                  feedIds.includes(r.simplefinAccountId) &&
-                  r.posted >= recentSince &&
-                  r.kind === "contribution" &&
-                  !r.pending &&
-                  !r.voided,
-              ),
-              m.perContribution,
-            ).verdict
+          ? checkLatestContribution(contributionsOf(id), m.perContribution)
+              .verdict
           : null,
+      latestContributionDay: contributedThrough.get(id) ?? null,
       plan: m ? { yearly, remaining: m.remainingThisYear } : null,
     };
   });

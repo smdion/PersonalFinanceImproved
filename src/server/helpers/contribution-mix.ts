@@ -19,7 +19,7 @@ import { getPeriodsPerYear, toNumber, type Db } from "./transforms";
 import {
   contribRemainingFraction,
   contribStepFraction,
-  monthsElapsedYtd,
+  monthsDoneYtd,
   periodsElapsedYtd,
 } from "@/lib/calculators/paycheck";
 import { DEFAULT_PAY_PERIODS_PER_YEAR } from "@/lib/constants";
@@ -34,6 +34,8 @@ import {
 export async function loadContributionMix(
   db: Db,
   asOf: Date = new Date(),
+  /** Tracked account → the day its latest contribution actually arrived (live data). */
+  contributedThrough?: ReadonlyMap<number, string>,
 ): Promise<Map<number, AccountContributionMix>> {
   const [allJobs, contribs, activeProfile] = await Promise.all([
     db.select().from(schema.jobs),
@@ -97,7 +99,10 @@ export async function loadContributionMix(
         job?.anchorPayDate,
         payPeriods,
       ),
-      monthsElapsed: monthsElapsedYtd(asOf),
+      monthsElapsed: monthsDoneYtd(
+        asOf,
+        contributedThrough?.get(c.performanceAccountId!),
+      ),
     };
     return {
       c,
