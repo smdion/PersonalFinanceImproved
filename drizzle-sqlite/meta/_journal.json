@@ -71,6 +71,13 @@
       "when": 1791823000951,
       "tag": "0009_vengeful_mister_sinister",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1791826031680,
+      "tag": "0010_mysterious_black_panther",
+      "breakpoints": true
     }
   ]
 }

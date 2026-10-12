@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**394 procedures across 53 routers.**
+**395 procedures across 53 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -157,6 +157,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 | Procedure              | Kind     | Auth                 | Description                                                                                                                                                                   |
 | ---------------------- | -------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `checkStandIn`         | mutation | `portfolioProcedure` | Check a suggested stand-in's SEC filings now, to judge it before using it.                                                                                                    |
 | `clearUserFacts`       | mutation | `portfolioProcedure` | Remove your own expense ratio or mix for a fund, going back to SEC's (or none).                                                                                               |
 | `confirmStandIn`       | mutation | `portfolioProcedure` | Use the suggested stand-in's SEC filings for this fund, and fetch them now.                                                                                                   |
 | `findStandIn`          | mutation | `portfolioProcedure` | After "Not a match": look for a stand-in again (asks SEC now).                                                                                                                |

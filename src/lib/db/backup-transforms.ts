@@ -62,6 +62,8 @@ const V08_SCHEMA_TAGS = [
   "0008_absent_tenebrous", // SQLite counterpart of 0008
   "0009_icy_black_cat", // PG: drop investment_transactions.source_split (per-deposit split removed before release)
   "0009_vengeful_mister_sinister", // SQLite counterpart of 0009
+  "0010_red_ink", // PG: securities.standin_preview (a suggested stand-in's SEC facts, for judging it)
+  "0010_mysterious_black_panther", // SQLite counterpart of 0010
 ] as const;
 
 const V07_SCHEMA_TAGS = [

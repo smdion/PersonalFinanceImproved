@@ -247,3 +247,15 @@ export const utilityKindSchema = z.enum(UTILITY_KIND_VALUES);
 export const UTILITY_UNIT_VALUES = ["ccf", "gallon", "kWh"] as const;
 export type UtilityUnit = (typeof UTILITY_UNIT_VALUES)[number];
 export const utilityUnitSchema = z.enum(UTILITY_UNIT_VALUES);
+
+/** What a suggested stand-in fund's own SEC filings say (securities.standinPreview). Shares are fractions (0–1). */
+export type StandInPreview = {
+  /** Share of the stand-in's holdings its filings classify; null if no holdings filing. */
+  coverage: number | null;
+  mix: Record<CompositionBucket, number> | null;
+  /** Cheapest share class's expense ratio (a retail fee, not the plan's). */
+  expenseRatio: number | null;
+  /** Period the holdings are as of. */
+  asOf: string | null;
+  checkedAt: string;
+};

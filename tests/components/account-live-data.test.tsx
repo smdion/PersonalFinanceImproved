@@ -21,6 +21,7 @@ vi.mock("@/lib/trpc", () => ({
       confirmStandIn: mutation(confirmStandIn),
       rejectStandIn: mutation(),
       findStandIn: mutation(),
+      checkStandIn: mutation(),
       setUserFacts: mutation(),
       clearUserFacts: mutation(),
     },

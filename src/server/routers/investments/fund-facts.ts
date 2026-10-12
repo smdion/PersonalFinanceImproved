@@ -124,6 +124,11 @@ export async function valueHoldings(
       factsSeriesName: security?.factsSeriesName ?? null,
       standInPending:
         security?.factsBasis === "standin" && !security.standinConfirmedAt,
+      /** What the suggested stand-in's filings say (null until checked). */
+      standInPreview:
+        security?.factsBasis === "standin" && !security.standinConfirmedAt
+          ? (security.standinPreview ?? null)
+          : null,
     };
   });
 
@@ -184,6 +189,7 @@ export const investmentFundFactsRouter = createTRPCRouter({
                 factsBasis: r.factsBasis,
                 factsSeriesName: r.factsSeriesName,
                 standInPending: r.standInPending,
+                standInPreview: r.standInPreview,
               })),
           };
         })
@@ -213,7 +219,11 @@ export const investmentFundFactsRouter = createTRPCRouter({
       const s = schema.securities;
       const updated = await ctx.db
         .update(s)
-        .set({ standinConfirmedAt: new Date(), factsCheckedAt: null })
+        .set({
+          standinConfirmedAt: new Date(),
+          standinPreview: null,
+          factsCheckedAt: null,
+        })
         .where(and(eq(s.id, input.securityId), eq(s.factsBasis, "standin")))
         .returning({ id: s.id });
       if (updated.length === 0)
@@ -244,6 +254,7 @@ export const investmentFundFactsRouter = createTRPCRouter({
           factsClassId: null,
           factsSeriesName: null,
           standinConfirmedAt: null,
+          standinPreview: null,
         })
         .where(and(eq(s.id, input.securityId), eq(s.factsBasis, "standin")))
         .returning({ id: s.id });
@@ -254,6 +265,16 @@ export const investmentFundFactsRouter = createTRPCRouter({
           .where(and(eq(f.securityId, input.securityId), ne(f.source, "user")));
       }
       return { ok: true as const };
+    }),
+
+  /** Check a suggested stand-in's SEC filings now, to judge it before using it. */
+  checkStandIn: portfolioProcedure
+    .input(z.object({ securityId: z.number().int() }))
+    .mutation(async ({ ctx, input }) => {
+      const summary = await syncSecurityFacts(ctx.db, {
+        securityIds: [input.securityId],
+      });
+      return { stoppedBySec: summary.stoppedBySec };
     }),
 
   /** After "Not a match": look for a stand-in again (asks SEC now). */

@@ -71,6 +71,13 @@
       "when": 1791822999890,
       "tag": "0009_icy_black_cat",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791826030636,
+      "tag": "0010_red_ink",
+      "breakpoints": true
     }
   ]
 }

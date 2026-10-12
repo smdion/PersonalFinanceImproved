@@ -1,0 +1,1 @@
+ALTER TABLE `securities` ADD `standin_preview` text;

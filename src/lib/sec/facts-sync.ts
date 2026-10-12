@@ -11,6 +11,7 @@
 import "server-only";
 import { eq, inArray, isNull, lt, or } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
+import type { StandInPreview } from "@/lib/config/enum-values";
 import { log } from "@/lib/logger";
 import {
   EMPTY_BUCKETS,
@@ -343,6 +344,23 @@ async function refreshOne(
       await db.update(s).set({ ticker: symbol }).where(eq(s.id, sec.id));
   }
 
+  // A suggested stand-in isn't used until the household confirms it, but
+  // what its filings say is fetched now so they can judge it.
+  if (
+    sec.factsBasis === "standin" &&
+    sec.standinConfirmedAt === null &&
+    sec.factsSeriesId
+  ) {
+    const preview = await previewStandIn(
+      contact,
+      composer,
+      index.series.get(sec.factsSeriesId)?.classIds ?? [],
+      sec.factsSeriesId,
+      now,
+    );
+    await db.update(s).set({ standinPreview: preview }).where(eq(s.id, sec.id));
+  }
+
   const usable =
     sec.factsSeriesId &&
     (sec.factsBasis === "exact" || sec.standinConfirmedAt !== null);
@@ -435,6 +453,56 @@ async function refreshOne(
   }
   await db.update(s).set({ factsCheckedAt: now }).where(eq(s.id, sec.id));
   return usable ? written : null;
+}
+
+/** What a stand-in's own filings say: coverage and mix (N-PORT), cheapest fee (N-CSR). */
+async function previewStandIn(
+  contact: string,
+  composer: Composer,
+  classIds: readonly string[],
+  seriesId: string,
+  now: Date,
+): Promise<StandInPreview> {
+  let coverage: number | null = null;
+  let mix: StandInPreview["mix"] = null;
+  let asOf: string | null = null;
+  const nport = latest(await listFilings(contact, seriesId, "NPORT-P"));
+  if (nport) {
+    const { composition, periodDate } = await composer.compose(
+      seriesId,
+      nport,
+      0,
+    );
+    const { coverage: c, ...buckets } = composition;
+    coverage = c;
+    mix = buckets;
+    asOf = periodDate;
+  } else {
+    const nmfp = latest(await listFilings(contact, seriesId, "N-MFP"));
+    if (nmfp) {
+      coverage = 1;
+      mix = { ...EMPTY_BUCKETS, cash: 1 };
+      asOf = nmfp.filingDate;
+    }
+  }
+  let expenseRatio: number | null = null;
+  const report = classIds[0]
+    ? latest(await listFilings(contact, classIds[0], "N-CSR"))
+    : null;
+  if (report) {
+    const ratios = await fetchExpenseRatios(contact, report);
+    const fees = classIds
+      .map((c) => ratios.get(c))
+      .filter((v): v is number => v !== undefined);
+    if (fees.length > 0) expenseRatio = Math.min(...fees);
+  }
+  return {
+    coverage,
+    mix,
+    expenseRatio,
+    asOf,
+    checkedAt: now.toISOString(),
+  };
 }
 
 async function upsertFact(

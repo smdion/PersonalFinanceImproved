@@ -217,7 +217,7 @@ describe("syncSecurityFacts", () => {
     expect(Number(mm.cashPct)).toBe(1);
   });
 
-  it("suggests a stand-in for a fund SEC doesn't list, and fetches nothing until confirmed", async () => {
+  it("suggests a stand-in for a fund SEC doesn't list, previews it, and uses nothing until confirmed", async () => {
     expect(security("plan")).toMatchObject({
       factsBasis: "standin",
       factsSeriesId: "S4",
@@ -225,6 +225,12 @@ describe("syncSecurityFacts", () => {
       ticker: null,
     });
     expect(facts("plan")).toHaveLength(0);
+    // …but what the stand-in's own filings say is kept, to judge it by.
+    expect(security("plan")?.standinPreview).toMatchObject({
+      coverage: expect.closeTo(0.6, 5),
+      expenseRatio: 0.0035, // its cheapest class (its only one here)
+      asOf: "2026-06-30",
+    });
     ctx.db
       .update(ctx.schema.securities)
       .set({ standinConfirmedAt: new Date() })

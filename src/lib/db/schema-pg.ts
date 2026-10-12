@@ -50,6 +50,7 @@ import type {
   KindOverrideSource,
   UtilityKind,
   UtilityUnit,
+  StandInPreview,
 } from "@/lib/config/enum-values";
 
 /** One date-ranged rule directing an extra paycheck to one or more savings goals. */
@@ -2333,6 +2334,11 @@ export const securities = pgTable(
     standinConfirmedAt: timestamp("standin_confirmed_at", {
       withTimezone: true,
     }),
+    /** What a suggested (not yet confirmed) stand-in's SEC filings say,
+     *  so the household can judge it before using it: how much of the fund
+     *  they explain, its mix, and its cheapest share class's fee. Never
+     *  counted as this fund's facts. */
+    standinPreview: jsonb("standin_preview").$type<StandInPreview>(),
     /** Last time SEC was checked for new filings (whether or not anything changed). */
     factsCheckedAt: timestamp("facts_checked_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })

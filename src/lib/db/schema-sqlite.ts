@@ -42,6 +42,7 @@ import type {
   KindOverrideSource,
   UtilityKind,
   UtilityUnit,
+  StandInPreview,
 } from "@/lib/config/enum-values";
 
 /** One date-ranged rule directing an extra paycheck to one or more savings goals. */
@@ -2105,6 +2106,13 @@ export const securities = sqliteTable(
     factsSeriesName: text("facts_series_name"),
     factsBasis: text("facts_basis").$type<FactsBasis>(),
     standinConfirmedAt: integer("standin_confirmed_at", { mode: "timestamp" }),
+    /** What a suggested (not yet confirmed) stand-in's SEC filings say,
+     *  so the household can judge it before using it: how much of the fund
+     *  they explain, its mix, and its cheapest share class's fee. Never
+     *  counted as this fund's facts. */
+    standinPreview: text("standin_preview", {
+      mode: "json",
+    }).$type<StandInPreview>(),
     /** Last time SEC was checked for new filings (whether or not anything changed). */
     factsCheckedAt: integer("facts_checked_at", { mode: "timestamp" }),
     createdAt: integer("created_at", { mode: "timestamp" })

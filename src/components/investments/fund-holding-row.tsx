@@ -8,6 +8,7 @@
  * Portfolio page's account settings; Benchmarks shows it read-only.
  */
 import { TickerLink } from "./ticker-link";
+import { adviseStandIn } from "@/lib/pure/standin-advice";
 import { useState } from "react";
 import { trpc, type RouterOutputs } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -317,37 +318,131 @@ export function HoldingRow({
         </p>
       )}
       {editable && h.standInPending && (
-        <div className="mt-1 rounded bg-amber-50 p-2 text-amber-900 dark:bg-amber-900/20 dark:text-amber-300">
-          SEC has no filings for this fund (plan-only funds don&apos;t file with
-          SEC). By name, it looks like{" "}
-          <span className="font-medium">{h.factsSeriesName}</span> — a
-          different, registered fund that likely follows the same strategy or
-          index. Check your plan&apos;s fact sheet; if the mix matches, Ledgr
-          can use it as a stand-in. Values will be marked Estimated, and its fee
-          is a retail fund&apos;s — enter your plan&apos;s real fee with
-          &ldquo;edit facts&rdquo;.
-          <div className="mt-1 flex gap-2">
-            <Button
-              size="xs"
-              variant="primary"
-              disabled={confirm.isPending}
-              onClick={() => confirm.mutate({ securityId: h.securityId })}
-            >
-              {confirm.isPending ? "Fetching…" : "Use it"}
-            </Button>
-            <Button
-              size="xs"
-              variant="ghost"
-              onClick={() => reject.mutate({ securityId: h.securityId })}
-            >
-              Not a match
-            </Button>
-          </div>
-        </div>
+        <StandInPrompt
+          h={h}
+          onUse={() => confirm.mutate({ securityId: h.securityId })}
+          onEnterOwn={() => {
+            reject.mutate({ securityId: h.securityId });
+            setEditing(true);
+          }}
+          busy={confirm.isPending || reject.isPending}
+        />
       )}
       {editable && editing && (
         <FactsForm holding={h} onDone={() => setEditing(false)} />
       )}
+    </div>
+  );
+}
+
+/** Where a plan participant finds a plan-only fund's real fee and mix. */
+const PLAN_DOCS =
+  "Your plan's real fee is in its annual fee disclosure (the “404(a)(5) participant fee disclosure”, usually on the plan's website), which lists every fund's expense ratio; the mix is on the fund's fact sheet in the same place.";
+
+/**
+ * A suggested stand-in fund, with what its own SEC filings say and a
+ * recommendation: use it for the mix when its filings explain most of it,
+ * otherwise enter the mix (and always the fee) from the plan's documents.
+ */
+function StandInPrompt({
+  h,
+  onUse,
+  onEnterOwn,
+  busy,
+}: {
+  h: Holding;
+  onUse: () => void;
+  onEnterOwn: () => void;
+  busy: boolean;
+}) {
+  const utils = trpc.useUtils();
+  const check = trpc.investments.checkStandIn.useMutation({
+    onSuccess: () => utils.investments.invalidate(),
+  });
+  const preview = h.standInPreview;
+  const advice = adviseStandIn(preview);
+  const mix = preview?.mix
+    ? COMPOSITION_BUCKET_VALUES.filter((b) => preview.mix![b] >= 0.005)
+        .map(
+          (b) =>
+            `${formatPercent(preview.mix![b], 0)} ${COMPOSITION_BUCKET_LABELS[b].toLowerCase()}`,
+        )
+        .join(", ")
+    : null;
+  return (
+    <div className="mt-1 space-y-1 rounded bg-amber-50 p-2 text-amber-900 dark:bg-amber-900/20 dark:text-amber-300">
+      <p>
+        SEC has no filings for this fund (plan-only funds don&apos;t file with
+        SEC). By name it looks like{" "}
+        <span className="font-medium">{h.factsSeriesName}</span>, a registered
+        fund that likely follows the same strategy.
+      </p>
+      {advice.mix === "checking" ? (
+        <p>
+          Ledgr hasn&apos;t checked that fund&apos;s own filings yet.{" "}
+          <button
+            className="underline"
+            disabled={check.isPending}
+            onClick={() => check.mutate({ securityId: h.securityId })}
+          >
+            {check.isPending ? "Checking…" : "Check now"}
+          </button>
+        </p>
+      ) : (
+        <p>
+          {preview!.coverage === null
+            ? "That fund files no holdings report, so its mix can't be checked."
+            : `Its filings explain ${formatPercent(preview!.coverage, 0)} of what it holds${mix ? ` (${mix})` : ""}${preview!.asOf ? `, as of ${shortDay(preview!.asOf)}` : ""}.`}
+          {preview!.expenseRatio !== null &&
+            ` Its cheapest share class costs ${formatPercent(preview!.expenseRatio, 2)} a year — a retail fee, not your plan's.`}
+        </p>
+      )}
+      {advice.mix === "use" && (
+        <p className="font-medium">
+          Recommended: use it for the mix, then enter your plan&apos;s own fee.
+        </p>
+      )}
+      {advice.mix === "enter" && (
+        <p className="font-medium">
+          Recommended: enter this fund&apos;s mix and fee yourself
+          {advice.coverage !== null
+            ? ` — the stand-in's filings only explain ${formatPercent(advice.coverage, 0)} of it`
+            : ""}
+          .
+        </p>
+      )}
+      <p className="text-caption">{PLAN_DOCS}</p>
+      <div className="flex flex-wrap gap-2">
+        {advice.mix === "enter" ? (
+          <>
+            <Button
+              size="xs"
+              variant="primary"
+              disabled={busy}
+              onClick={onEnterOwn}
+            >
+              Enter from my plan&apos;s documents
+            </Button>
+            <Button size="xs" variant="ghost" disabled={busy} onClick={onUse}>
+              Use it anyway
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button size="xs" variant="primary" disabled={busy} onClick={onUse}>
+              {busy ? "Fetching…" : "Use it"}
+            </Button>
+            <Button
+              size="xs"
+              variant="ghost"
+              disabled={busy}
+              onClick={onEnterOwn}
+            >
+              Not a match — I&apos;ll enter it
+            </Button>
+          </>
+        )}
+      </div>
     </div>
   );
 }
