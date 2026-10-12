@@ -8,6 +8,48 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.8
 
+## [0.8.5] - 2026-10-12
+
+Includes a database update that runs automatically on start; Ledgr saves a backup of your data first. Restoring a backup from an older version still works.
+
+### Added
+
+- Investments from SimpleFIN: holdings, transactions and fund details now come in from your linked accounts. Snapshots, Performance and cost basis can be filled from them — Ledgr suggests the numbers and you confirm.
+- Accounts whose institution reports only a balance get contribution estimates from your paycheck setup.
+- Money moved between your own accounts is recognized as a transfer, not new savings, with a one-click "moved between my accounts" for moves only one side reports.
+- A deposit can be split by hand into your part, the employer's part and Roth.
+- Benchmarks: compare your mix with a target-date fund for your retirement year (the default) or a blended option. Every major fund category shows in mix vs target, accounts holding several funds add them up in the account header, and several fund categories can count toward one asset class.
+- A plan fund with no public data can use a suggested stand-in fund. Ledgr previews it and recommends whether to use it or enter the details yourself.
+- Portfolio shows what moved since the last snapshot (money you added vs the markets), a live daily line after the last snapshot (also on Net Worth), and each account's SimpleFIN detail. Brokerage cost basis can be suggested from the average cost your institution reports.
+- Retirement shows the returns you've actually had next to the returns the plan assumes.
+- Contributions shows this year's money in so far, live, with a status for each account: On pace, Latest deposit differs, No recent deposit, or Estimated. Hover a status to see the latest deposit next to what your setup puts in.
+- The Year-End Estimate counts what's already in, what's on its way, and the rest of the year at today's setup.
+
+### Changed
+
+- The dashboard combines related cards instead of stacking them:
+  - Budget & Spending shows the budget summary and what's been spent this month.
+  - Taxes moved into Household Income, and mortgage payoff progress sits under Net Worth.
+  - Financial Checkup's Savings Rate opens into its breakdown.
+  - Retirement is a wide card with Readiness and Growth benchmarks alongside.
+- The savings rate counts joint accounts. In Actual YTD it compares the money in so far with the pay earned so far, and the Traditional / Roth / After-tax / HSA lines follow the selected view and add up to their group.
+- Debt Payoff's "ahead" is measured against your original loan, refinancing included, matching the payoff line under Net Worth.
+- A SimpleFIN account you've left unchecked no longer counts anywhere.
+
+### Removed
+
+- The ESPP purchase-period calculator, the Performance page's index column, and household transaction rules.
+
+### Fixed
+
+- The Year-End Estimate could show more than 100% of a limit (for example an IRA at 108%) when this month's contribution had already arrived.
+- Joint accounts on the Contributions card showed the full-year plan in every view.
+- Restoring a backup could fail partway through.
+- SimpleFIN: institution names were missing for some connections, and a "date range was capped" notice was reported as an error.
+- A holding that is itself a fund could be counted as a single stock in fund breakdowns.
+
+---
+
 ## [0.8.4] - 2026-10-10
 
 No database changes.
