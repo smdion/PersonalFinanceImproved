@@ -126,8 +126,6 @@ export type AccountTypeConfig = {
         employerMatchLabel: string;
         employerContribKind: "match" | "discount";
         colors: ColorSet;
-        /** Show the ESPP purchase-period calculator in the update performance flyout. */
-        hasPurchasePeriodCalculator?: boolean;
       }
     >
   >;

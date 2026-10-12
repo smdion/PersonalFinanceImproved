@@ -14,9 +14,7 @@ import {
   combineCashBasisGainLoss,
 } from "@/lib/config/display-labels";
 import { HelpTip } from "@/components/ui/help-tip";
-import { EsppCalculator } from "./espp-calculator";
 import type { UpdateFormRow, UpdatePerformanceFormProps } from "./types";
-import type { EsppSummary } from "@/lib/pure/performance";
 
 type EndingBalanceSource = "snapshot" | "manual";
 
@@ -490,29 +488,6 @@ function AccountFormRow({
     : computedGainLoss;
 
   const displayCfg = getDisplayConfig(row.accountType ?? "", row.subType);
-  const [showCalculator, setShowCalculator] = useState(
-    displayCfg.hasPurchasePeriodCalculator,
-  );
-
-  const applyEsppSummary = useCallback(
-    (summary: EsppSummary) => {
-      onFieldChange(
-        id,
-        "employeeContrib",
-        summary.employeeContributions.toFixed(2),
-      );
-      onFieldChange(
-        id,
-        "employerContributions",
-        summary.employerMatch.toFixed(2),
-      );
-      onFieldChange(id, "rollovers", summary.rollovers.toFixed(2));
-      onFieldChange(id, "fees", summary.fees.toFixed(2));
-      onFieldChange(id, "distributions", summary.distributions.toFixed(2));
-    },
-    [id, onFieldChange],
-  );
-
   return (
     <div className="border-subtle mb-3 border-b pb-3 last:mb-0 last:border-b-0 last:pb-0">
       {/* Account name */}
@@ -521,24 +496,7 @@ function AccountFormRow({
         <span className="text-primary text-sm font-semibold">
           {row.displayName}
         </span>
-        {displayCfg.hasPurchasePeriodCalculator && !showCalculator && (
-          <button
-            type="button"
-            onClick={() => setShowCalculator(true)}
-            className="text-caption ml-auto text-teal-600 hover:text-teal-800"
-          >
-            ESPP Calculator
-          </button>
-        )}
       </div>
-
-      {/* ESPP calculator — shown for ESPP sub-type accounts */}
-      {showCalculator && displayCfg.hasPurchasePeriodCalculator && (
-        <EsppCalculator
-          onApply={applyEsppSummary}
-          onDismiss={() => setShowCalculator(false)}
-        />
-      )}
 
       {fillNote && <p className="text-caption text-muted mb-1">{fillNote}</p>}
 
