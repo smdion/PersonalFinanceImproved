@@ -21,6 +21,7 @@ import {
 } from "@/lib/pure/simplefin-holdings";
 import { planReconcile } from "@/lib/pure/simplefin-reconcile";
 import { classifySimplefinTransaction } from "@/lib/pure/simplefin-transactions";
+import { addDays, utcDayOf } from "@/lib/utils/date";
 import { valuationDateFor } from "@/lib/pure/market-calendar";
 import { isHsaCategory } from "@/lib/config/account-types";
 
@@ -39,25 +40,9 @@ export type IngestSummary = {
   warnings: string[];
 };
 
-/**
- * UTC calendar day of a moment. SimpleFIN encodes institution posting dates
- * as UTC timestamps, so posted dates and the requested window are compared
- * as UTC days throughout — an internal key, never compared to a local "today".
- */
-export function utcDayOf(date: Date): string {
-  // eslint-disable-next-line local/no-tz-unsafe-date-string -- institution posting dates are UTC; see doc comment
-  return date.toISOString().slice(0, 10); // lint-violation-ok: UTC posting-date key
-}
-
 /** UTC calendar day of a SimpleFIN `posted` timestamp (seconds). */
 function postedDay(posted: number): string {
   return utcDayOf(new Date(posted * 1000));
-}
-
-function addDaysIso(day: string, n: number): string {
-  const t = new Date(`${day}T00:00:00Z`);
-  t.setUTCDate(t.getUTCDate() + n);
-  return utcDayOf(t);
 }
 
 async function ensureSecurity(
@@ -264,7 +249,7 @@ async function ingestTransactions(
   // rows older than the requested start (providers don't always honour it).
   const earliest = incoming.reduce(
     (min, t) => (t.posted < min ? t.posted : min),
-    addDaysIso(windowStart, -RECONCILE_LOOKBACK_DAYS),
+    addDays(windowStart, -RECONCILE_LOOKBACK_DAYS),
   );
   const storedRows = await db
     .select()

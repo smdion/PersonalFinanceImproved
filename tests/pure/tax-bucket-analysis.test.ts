@@ -9,8 +9,8 @@ import { computeTaxBucketBreakdown } from "@/lib/pure/tax-buckets";
 import type { TaxBucketSnapshotAccount } from "@/lib/pure/tax-buckets";
 
 const people = [
-  { id: 1, name: "Sean", birthYear: 1987 },
-  { id: 2, name: "Joanna", birthYear: 1991 },
+  { id: 1, name: "Alex", birthYear: 1987 },
+  { id: 2, name: "Sam", birthYear: 1991 },
 ];
 
 function account(
@@ -27,7 +27,7 @@ function account(
     ownerPersonId: 1,
     performanceAccountId: 1,
     displayName: null,
-    accountLabel: "Sean 401k (Fidelity)",
+    accountLabel: "Alex 401k (Fidelity)",
     ...overrides,
   };
 }
@@ -95,15 +95,15 @@ describe("computeTaxBucketAnalysis", () => {
       currentDate: new Date("2026-01-01"),
     });
 
-    const sean = result.find((r) => r.ownerPersonId === 1)!;
-    const joanna = result.find((r) => r.ownerPersonId === 2)!;
-    expect(sean.balance).toBeCloseTo(188268.24, 2);
+    const alex = result.find((r) => r.ownerPersonId === 1)!;
+    const sam = result.find((r) => r.ownerPersonId === 2)!;
+    expect(alex.balance).toBeCloseTo(188268.24, 2);
     expect(
-      sean.slices.find((s) => s.label === "Contribution basis")?.amount,
+      alex.slices.find((s) => s.label === "Contribution basis")?.amount,
     ).toBe(40000);
-    expect(joanna.balance).toBeCloseTo(101817.45, 2);
+    expect(sam.balance).toBeCloseTo(101817.45, 2);
     expect(
-      joanna.slices.find((s) => s.label === "Contribution basis")?.amount,
+      sam.slices.find((s) => s.label === "Contribution basis")?.amount,
     ).toBe(20000);
   });
 
@@ -165,7 +165,7 @@ describe("computeTaxBucketAnalysis", () => {
         performanceAccountId: 8,
         ownerPersonId: 2,
         amount: 3979.81,
-        accountLabel: "Joanna ESPP (UBS)",
+        accountLabel: "Sam ESPP (UBS)",
       }),
     ];
     const breakdown = computeTaxBucketBreakdown({ accounts }, people, []);
@@ -180,7 +180,7 @@ describe("computeTaxBucketAnalysis", () => {
           isActive: true,
           separationDate: null,
           costBasis: 1500,
-          accountLabel: "Joanna ESPP (UBS)",
+          accountLabel: "Sam ESPP (UBS)",
           displayName: null,
           institution: "UBS",
         },
@@ -229,7 +229,7 @@ describe("computeTaxBucketAnalysis", () => {
           isActive: true,
           separationDate: null, // no explicit date — derive from job link
           costBasis: 0,
-          accountLabel: "Sean 401k (Fidelity)",
+          accountLabel: "Alex 401k (Fidelity)",
           displayName: null,
           institution: "Fidelity",
         },
@@ -238,7 +238,7 @@ describe("computeTaxBucketAnalysis", () => {
       jobLinks: [
         {
           performanceAccountId: 1,
-          endDate: new Date("2043-01-01"), // Sean turns 56 in 2043
+          endDate: new Date("2043-01-01"), // Alex turns 56 in 2043
           isSpeculative: false,
         },
       ],
@@ -288,7 +288,7 @@ describe("computeTaxBucketAnalysis", () => {
           isActive: true,
           separationDate: null,
           costBasis: 0,
-          accountLabel: "Sean 401k (Fidelity)",
+          accountLabel: "Alex 401k (Fidelity)",
           displayName: null,
           institution: "Fidelity",
         },

@@ -8,6 +8,7 @@
  * Y means a conversion was entered on a later row but not on its own
  * year's — the year's history understates it.
  */
+import { HALF_CENT } from "@/lib/constants";
 import { roundToCents } from "@/lib/utils/math";
 
 export type BasisHistoryRow = {
@@ -45,7 +46,7 @@ export function findBasisGaps(rows: readonly BasisHistoryRow[]): BasisGap[] {
       const own = byYear.get(y);
       if (!own) continue;
       seen.add(y);
-      if (own.conversionBasis + 0.005 < later.conversionBasis)
+      if (own.conversionBasis + HALF_CENT < later.conversionBasis)
         gaps.push({
           performanceAccountId: later.performanceAccountId,
           ownerPersonId: later.ownerPersonId,

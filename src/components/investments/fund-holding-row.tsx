@@ -7,6 +7,7 @@
  * again, or enter the fund's own fee and mix. Editing lives on the
  * Portfolio page's account settings; Benchmarks shows it read-only.
  */
+import { FULL_SHARE, NEGLIGIBLE_SHARE } from "@/lib/constants";
 import { TickerLink } from "./ticker-link";
 import { adviseStandIn } from "@/lib/pure/standin-advice";
 import { useState } from "react";
@@ -46,7 +47,9 @@ const shortDay = (day: string) =>
 export function MixBar({ facts }: { facts: Holding["facts"] }) {
   const c = facts.composition;
   if (!c) return <span className="text-faint text-caption">Mix unknown</span>;
-  const parts = COMPOSITION_BUCKET_VALUES.filter((b) => c.buckets[b] > 0.005);
+  const parts = COMPOSITION_BUCKET_VALUES.filter(
+    (b) => c.buckets[b] > NEGLIGIBLE_SHARE,
+  );
   return (
     <Tooltip
       lines={[
@@ -54,7 +57,7 @@ export function MixBar({ facts }: { facts: Holding["facts"] }) {
           (b) =>
             `${COMPOSITION_BUCKET_LABELS[b]} ${formatPercent(c.buckets[b], 1)}`,
         ),
-        ...(c.coverage < 0.995
+        ...(c.coverage < FULL_SHARE
           ? [`Covers ${formatPercent(c.coverage, 0)} of the fund's holdings`]
           : []),
         c.fromUser ? "Entered by you" : `SEC filing, ${shortDay(c.asOf)}`,
@@ -385,7 +388,9 @@ function StandInPrompt({
   const preview = h.standInPreview;
   const advice = adviseStandIn(preview);
   const mix = preview?.mix
-    ? COMPOSITION_BUCKET_VALUES.filter((b) => preview.mix![b] >= 0.005)
+    ? COMPOSITION_BUCKET_VALUES.filter(
+        (b) => preview.mix![b] >= NEGLIGIBLE_SHARE,
+      )
         .map(
           (b) =>
             `${formatPercent(preview.mix![b], 0)} ${COMPOSITION_BUCKET_LABELS[b].toLowerCase()}`,

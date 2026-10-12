@@ -522,7 +522,7 @@ describe("budget router — listContribAccountsForLinking", () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       const seed = seedStandardDataset(db);
-      const otherPersonId = await seedPerson(db, "Joanna");
+      const otherPersonId = await seedPerson(db, "Sam");
       const jointPerfAcctId = seedPerformanceAccount(db, {
         accountType: "ira",
         institution: "Vanguard",
@@ -546,7 +546,7 @@ describe("budget router — listContribAccountsForLinking", () => {
       const result = await caller.budget.listContribAccountsForLinking();
       const labels = result.map((r) => r.displayLabel).sort();
       expect(labels).toEqual([
-        "Joanna IRA (Vanguard) — Roth",
+        "Sam IRA (Vanguard) — Roth",
         "Test Person IRA (Vanguard) — Roth",
       ]);
     } finally {
@@ -560,7 +560,7 @@ describe("budget router — listContribAccountsForLinking", () => {
    * jointly-tracked performance account, otherwise share every label
    * component (owner, institution, account type) — only tax treatment
    * differs. Without it, a linked Roth IRA and an unlinked Traditional IRA
-   * for the same person both showed as the identical "Sean IRA (Vanguard)",
+   * for the same person both showed as the identical "Alex IRA (Vanguard)",
    * making it look like the unlinked one was a duplicate of the linked one.
    */
   it("distinguishes one person's own Roth vs Traditional account under the same performance account", async () => {

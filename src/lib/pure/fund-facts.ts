@@ -7,6 +7,7 @@
  *   never mixed across filings.
  * - Facts older than 15 months are flagged stale.
  */
+import { HALF_CENT } from "@/lib/constants";
 import {
   COMPOSITION_BUCKET_VALUES,
   type CompositionBucket,
@@ -185,7 +186,7 @@ export function valueByClass(
     const v = buckets[b];
     const classId = links.get(b);
     if (classId === undefined) {
-      if (v > 0.005) unlinked.push(b);
+      if (v > HALF_CENT) unlinked.push(b);
       continue;
     }
     byClass.set(classId, (byClass.get(classId) ?? 0) + v);

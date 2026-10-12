@@ -16,6 +16,28 @@ export function countsAsFeed(a: {
 }
 
 /**
+ * How far back "recent" SimpleFIN activity reaches (SimpleFIN keeps about
+ * this much history): the deposit check's window, and how long a feed may
+ * go without sending a transaction before it counts as balance-only.
+ */
+export const RECENT_ACTIVITY_DAYS = 90;
+
+/**
+ * Whether any of `feedIds` sent a transaction on or after `since` (or ever,
+ * without `since`). `lastTransactionDay`: each feed's latest posted day.
+ */
+export function sentTransactions(
+  feedIds: readonly number[],
+  lastTransactionDay: ReadonlyMap<number, string>,
+  since?: string,
+): boolean {
+  return feedIds.some((id) => {
+    const last = lastTransactionDay.get(id);
+    return last !== undefined && (since === undefined || last >= since);
+  });
+}
+
+/**
  * Whether an account's live balance covers the whole account the way the
  * snapshot does, so the two can be compared: it has feeds, every part of
  * it is linked (or a feed covers the whole account), and no feed's money

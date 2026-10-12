@@ -8,7 +8,7 @@
  */
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import { isTaxFree } from "@/lib/config/account-types";
+import { isPreTaxTreatment, isTaxFree } from "@/lib/config/account-types";
 import type {
   AccountContributionMix,
   ContributionMix,
@@ -106,7 +106,7 @@ export async function loadContributionMix(
     annual: number,
   ) => {
     if (isTaxFree(c.taxTreatment)) mix.employeeRoth += annual;
-    else if (c.taxTreatment === "pre_tax") mix.employeePreTax += annual;
+    else if (isPreTaxTreatment(c.taxTreatment)) mix.employeePreTax += annual;
     else mix.employeeOther += annual;
     const m = match.get(c.id);
     mix.employer += m?.matchAnnual ?? 0;

@@ -22,7 +22,7 @@ export type SubAccount = {
   ownerPersonId: number | null;
   taxType: PortfolioTaxType;
   subType: string | null;
-  /** e.g. "Sean — Roth", "Employer Match (Traditional)". */
+  /** e.g. "Alex — Roth", "Employer Match (Traditional)". */
   label: string;
   /** Latest snapshot amount (rows sharing a key are summed). */
   amount: number;

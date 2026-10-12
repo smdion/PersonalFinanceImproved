@@ -129,12 +129,6 @@ function rounded(t: FlowTotals): FlowTotals {
 
 const fresh = (): FlowTotals => ({ ...ZERO });
 
-export function sumFlows(rows: readonly FlowRow[]): FlowTotals {
-  const t = fresh();
-  for (const r of rows) addRow(t, r, 1);
-  return rounded(t);
-}
-
 /**
  * What changed since the last saved fill, for one row's feeds: rows after
  * the row's baseline not yet counted, plus counted rows whose kind changed

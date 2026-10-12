@@ -33,6 +33,7 @@ import {
   tracksRothBasis,
   type AccountCategory,
   type AccountBalance,
+  isPreTaxTreatment,
 } from "@/lib/config/account-types";
 import {
   CONTRIBUTION_METHOD_LABELS,
@@ -520,5 +521,13 @@ describe("employerMatchSubType", () => {
         expect(cfg.subTypeOptions as readonly string[]).toContain(match);
     }
     expect(getEmployerMatchSubType("not_a_real_category")).toBeNull();
+  });
+});
+
+describe("tax treatment predicates", () => {
+  it("tell pre-tax from tax-free and after-tax", () => {
+    expect(isPreTaxTreatment("pre_tax")).toBe(true);
+    expect(isPreTaxTreatment("tax_free")).toBe(false);
+    expect(isPreTaxTreatment("after_tax")).toBe(false);
   });
 });

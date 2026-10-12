@@ -5,6 +5,7 @@
  * your target, and what it costs. Holdings from SimpleFIN, priced at
  * today's close (Tiingo); fund facts from SEC filings or your own entries.
  */
+import { FULL_SHARE, NEGLIGIBLE_SHARE } from "@/lib/constants";
 import { BUCKET_COLORS, HoldingRow, type Overview } from "./fund-holding-row";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
@@ -23,7 +24,7 @@ function AccountHeader({ a }: { a: OverviewAccount }) {
   const r = a.rollup;
   const er = r?.cost.expenseRatio ?? null;
   const parts = r?.mix
-    ? COMPOSITION_BUCKET_VALUES.filter((b) => r.mix![b] >= 0.005)
+    ? COMPOSITION_BUCKET_VALUES.filter((b) => r.mix![b] >= NEGLIGIBLE_SHARE)
     : [];
   return (
     <div className="mb-1 text-xs">
@@ -66,7 +67,7 @@ function AccountHeader({ a }: { a: OverviewAccount }) {
                 `${COMPOSITION_BUCKET_LABELS[b]} ${formatPercent(r.mix![b], 0)}`,
             )
             .join(" · ")}
-          {r.coverage < 0.995 &&
+          {r.coverage < FULL_SHARE &&
             ` (mix known for ${formatPercent(r.coverage, 0)})`}
           {er !== null &&
             ` · about ${formatCurrency(r.cost.yearlyCost)} a year in fees`}
@@ -79,7 +80,7 @@ function AccountHeader({ a }: { a: OverviewAccount }) {
 /** "+1.2%" in amber when it's more than 5 points off, faint otherwise. */
 function Drift({ pct, target }: { pct: number; target: number }) {
   const drift = pct - target;
-  if (Math.abs(drift) < 0.005) return null;
+  if (Math.abs(drift) < NEGLIGIBLE_SHARE) return null;
   return (
     <span className={Math.abs(drift) > 0.05 ? "text-amber-600" : "text-faint"}>
       {" "}
@@ -337,7 +338,7 @@ export function HoldingsSection() {
               <p className="text-muted mt-1 text-sm">
                 About {formatCurrency(cost.yearlyCost)} a year in fund fees.
               </p>
-              {cost.coveredShare < 0.995 && (
+              {cost.coveredShare < FULL_SHARE && (
                 <p className="text-caption text-faint mt-1">
                   Covers {formatPercent(cost.coveredShare, 0)} of your money —
                   funds without a known expense ratio aren&apos;t included.

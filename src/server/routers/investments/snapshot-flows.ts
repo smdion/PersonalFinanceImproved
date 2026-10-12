@@ -4,7 +4,8 @@ import { createTRPCRouter, portfolioProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { flowsSince } from "@/lib/pure/snapshot-flows";
 import { getTransactionCoverageStart } from "@/lib/simplefin/sync";
-import { REDACTED_MEDICAL_DESCRIPTION, utcDayOf } from "@/lib/simplefin/ingest";
+import { REDACTED_MEDICAL_DESCRIPTION } from "@/lib/simplefin/ingest";
+import { utcDayOf } from "@/lib/utils/date";
 import { INVESTMENT_TRANSACTION_KIND_LABELS } from "@/lib/config/display-labels";
 import { countedFeed, loadClassifiedTransactions } from "./_shared";
 

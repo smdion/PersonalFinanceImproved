@@ -596,7 +596,7 @@ export function ProjectionCard(props: {
                   // fictional bucket server-side, so a scenario sourced
                   // from an MC result (Rate-Seeded, and any future
                   // Simple-tax-mode scenario) has NO real per-person data
-                  // to filter by — offering Sean/Joanna views would
+                  // to filter by — offering Alex/Sam views would
                   // silently show $0 everywhere instead of an honest "not
                   // available."
                   const personViewDisabledTitle = hasIndividualAccountData

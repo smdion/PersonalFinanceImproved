@@ -71,7 +71,7 @@ import { TRPCError } from "@trpc/server";
 type LinkSuggestionView = {
   performanceAccountId: number;
   subKey: string | null;
-  /** e.g. "IRA (Vanguard) — Sean — Roth" or "Alice 401k (Fidelity)". */
+  /** e.g. "IRA (Vanguard) — Alex — Roth" or "Alice 401k (Fidelity)". */
   label: string;
 };
 

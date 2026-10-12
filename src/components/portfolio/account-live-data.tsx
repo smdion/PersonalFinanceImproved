@@ -6,6 +6,7 @@
  * it holds (with the household's fund-fact controls), its asset mix and
  * yearly fee, and whether deposits match the paycheck setup.
  */
+import { FULL_SHARE, NEGLIGIBLE_SHARE } from "@/lib/constants";
 import { trpc, type RouterOutputs } from "@/lib/trpc";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
@@ -48,7 +49,9 @@ function AccountMixBar({
   buckets: Record<CompositionBucket, number>;
   total: number;
 }) {
-  const parts = COMPOSITION_BUCKET_VALUES.filter((b) => buckets[b] > 0.005);
+  const parts = COMPOSITION_BUCKET_VALUES.filter(
+    (b) => buckets[b] > NEGLIGIBLE_SHARE,
+  );
   if (total <= 0 || parts.length === 0) return null;
   return (
     <div>
@@ -352,7 +355,7 @@ export function AccountLiveSection({
                   cost.expenseRatio < 0.001 ? 3 : 2,
                 )}{" "}
                 ≈ {formatCurrency(cost.yearlyCost)} a year
-                {cost.coveredShare < 0.995 &&
+                {cost.coveredShare < FULL_SHARE &&
                   ` (for ${formatPercent(cost.coveredShare, 0)} of the account)`}
               </span>
             )}

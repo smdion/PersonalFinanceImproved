@@ -45,8 +45,7 @@ export const investmentHealthRouter = createTRPCRouter({
       );
       const account = accounts.get(id);
       return {
-        label:
-          `${account?.institution ?? ""} ${account?.accountName ?? ""}`.trim(),
+        label: account?.feedName ?? "",
         holdingsAsOf: rows[0]!.asOf,
         holdingsValue: valued
           ? held.reduce((sum, r) => sum + Number(r.value), 0)

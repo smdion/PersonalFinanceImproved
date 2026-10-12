@@ -7,7 +7,6 @@ import {
   initialBaseline,
   reduceBasis,
   splitContributions,
-  sumFlows,
   type FeedAccount,
   type FlowRow,
 } from "@/lib/pure/flow-suggestions";
@@ -20,16 +19,20 @@ const row = (
   transfer: FlowRow["transfer"] = null,
 ) => ({ id, posted, amount, kind, transfer, pending: false, voided: false });
 
-describe("sumFlows", () => {
-  it("maps kinds onto the Performance fields", () => {
-    const t = sumFlows([
-      row(1, "2026-02-01", 500, "contribution"),
-      row(2, "2026-02-02", -40, "withdrawal"),
-      row(3, "2026-02-03", -2.5, "fee"),
-      row(4, "2026-02-04", 12, "dividend"),
-      row(5, "2026-02-05", 300, "transfer", { conversion: true }),
-      row(6, "2026-02-06", -100, "transfer"),
-    ]);
+describe("flow totals", () => {
+  it("map kinds onto the Performance fields", () => {
+    const { totals: t } = flowsSinceFill(
+      [
+        row(1, "2026-02-01", 500, "contribution"),
+        row(2, "2026-02-02", -40, "withdrawal"),
+        row(3, "2026-02-03", -2.5, "fee"),
+        row(4, "2026-02-04", 12, "dividend"),
+        row(5, "2026-02-05", 300, "transfer", { conversion: true }),
+        row(6, "2026-02-06", -100, "transfer"),
+      ],
+      {},
+      "2026-01-01",
+    );
     expect(t).toEqual({
       contributions: 500,
       distributions: 40,

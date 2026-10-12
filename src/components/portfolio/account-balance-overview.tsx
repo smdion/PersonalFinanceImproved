@@ -3,6 +3,7 @@
 /** Multi-panel summary of the latest portfolio snapshot — balances grouped by
  *  account type, institution, person, tax bucket, plus a per-account bar chart. */
 
+import { FULL_SHARE, HALF_CENT } from "@/lib/constants";
 import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import {
@@ -268,13 +269,13 @@ function MixAndCost({
   const { allocation, cost } = data;
   const rows = [
     ...allocation.rows
-      .filter((r) => r.value > 0.005)
+      .filter((r) => r.value > HALF_CENT)
       .map((r) => ({ label: r.name, amount: r.value })),
     ...allocation.unmapped.map((u) => ({
       label: COMPOSITION_BUCKET_LABELS[u.bucket],
       amount: u.value,
     })),
-    ...(allocation.unknown > 0.005
+    ...(allocation.unknown > HALF_CENT
       ? [{ label: "Mix not known yet", amount: allocation.unknown }]
       : []),
   ];
@@ -314,7 +315,7 @@ function MixAndCost({
                 {formatCurrency(cost.yearlyCost)}
               </span>
             </div>
-            {cost.coveredShare < 0.995 && (
+            {cost.coveredShare < FULL_SHARE && (
               <p className="text-caption text-faint">
                 Fee known for {formatPercent(cost.coveredShare, 0)} of holdings
                 — open an account below to enter the rest.

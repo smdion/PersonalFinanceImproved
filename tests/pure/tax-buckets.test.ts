@@ -10,8 +10,8 @@ import {
 } from "@/lib/pure/tax-buckets";
 
 const people = [
-  { id: 1, name: "Sean" },
-  { id: 2, name: "Joanna" },
+  { id: 1, name: "Alex" },
+  { id: 2, name: "Sam" },
 ];
 
 // Shaped after real household data verified live this session: a 401k with
@@ -32,7 +32,7 @@ function account(
     ownerPersonId: 1,
     performanceAccountId: 1,
     displayName: null,
-    accountLabel: "Sean 401k (Fidelity)",
+    accountLabel: "Alex 401k (Fidelity)",
     ...overrides,
   };
 }
@@ -83,26 +83,26 @@ describe("computeTaxBucketBreakdown", () => {
     expect(result.portfolioByTaxType.taxFree).toBeCloseTo(290085.69, 2);
     const rollup = result.accountRollup;
     expect(rollup).toHaveLength(2);
-    const sean = rollup.find((r) => r.ownerPersonId === 1)!;
-    const joanna = rollup.find((r) => r.ownerPersonId === 2)!;
-    expect(sean.amount).toBeCloseTo(188268.24, 2);
-    expect(sean.performanceAccountId).toBe(5);
-    expect(joanna.amount).toBeCloseTo(101817.45, 2);
+    const alex = rollup.find((r) => r.ownerPersonId === 1)!;
+    const sam = rollup.find((r) => r.ownerPersonId === 2)!;
+    expect(alex.amount).toBeCloseTo(188268.24, 2);
+    expect(alex.performanceAccountId).toBe(5);
+    expect(sam.amount).toBeCloseTo(101817.45, 2);
 
     // accountBreakdownByCategory used to merge on (name, taxType) only, so
     // these two identically-labeled
     // "IRA (Vanguard)" rows from different owners collapsed into ONE entry,
-    // silently keeping only Sean's ownerPersonId — this feeds
+    // silently keeping only Alex's ownerPersonId — this feeds
     // build-engine-payload.ts's individualAccounts directly (the engine's
     // per-owner eligibility data), so a wrong owner here means Rule of 55 /
-    // 59½ gating resolves the wrong person's access for Joanna's half of the
+    // 59½ gating resolves the wrong person's access for Sam's half of the
     // money. Owner is now part of the merge key: two separate entries.
     const breakdown = result.accountBreakdownByCategory["ira"];
     expect(breakdown).toHaveLength(2);
     const seanEntry = breakdown!.find((e) => e.ownerPersonId === 1)!;
-    const joannaEntry = breakdown!.find((e) => e.ownerPersonId === 2)!;
+    const samEntry = breakdown!.find((e) => e.ownerPersonId === 2)!;
     expect(seanEntry.amount).toBeCloseTo(188268.24, 2);
-    expect(joannaEntry.amount).toBeCloseTo(101817.45, 2);
+    expect(samEntry.amount).toBeCloseTo(101817.45, 2);
   });
 
   it("keeps a jointly-owned (null ownerPersonId) account in the rollup without a person attribution", () => {
@@ -123,8 +123,8 @@ describe("computeTaxBucketBreakdown", () => {
     expect(result.accountRollup).toHaveLength(1);
     expect(result.accountRollup[0]!.ownerPersonId).toBeNull();
     // Joint balance still attributed to both people equally for ownership fractions.
-    expect(result.ownershipByPerson.Sean?.brokerage).toBeCloseTo(0.5, 5);
-    expect(result.ownershipByPerson.Joanna?.brokerage).toBeCloseTo(0.5, 5);
+    expect(result.ownershipByPerson.Alex?.brokerage).toBeCloseTo(0.5, 5);
+    expect(result.ownershipByPerson.Sam?.brokerage).toBeCloseTo(0.5, 5);
   });
 
   it("fills afterTaxBasis from active performance accounts that track cost basis", () => {

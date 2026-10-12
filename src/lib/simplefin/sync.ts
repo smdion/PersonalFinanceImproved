@@ -26,7 +26,8 @@ import {
   pruneSimplefinRequestLog,
   recordSimplefinRequest,
 } from "./request-log";
-import { ingestInvestmentData, utcDayOf, type IngestSummary } from "./ingest";
+import { ingestInvestmentData, type IngestSummary } from "./ingest";
+import { utcDayOf } from "@/lib/utils/date";
 import { localDateStr } from "@/lib/utils/date";
 
 export { localDateStr };

@@ -3,10 +3,10 @@
  * Internal to investments/ — do not import from outside this directory.
  */
 import { accountDisplayName } from "@/lib/utils/format";
-import { and, asc, eq, gte, isNotNull, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, gte, isNotNull, isNull, max } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { isHsaCategory } from "@/lib/config/account-types";
-import { utcDayOf } from "@/lib/simplefin/ingest";
+import { addDays, utcDayOf } from "@/lib/utils/date";
 import {
   balanceAsOf,
   effectiveTransactionKind,
@@ -21,7 +21,16 @@ import {
   recordedMoveDeposits,
   type TransferMatch,
 } from "@/lib/pure/internal-transfers";
-import { loadLatestSubAccounts } from "@/server/helpers/sub-accounts";
+import {
+  loadLatestSubAccounts,
+  type SubAccount,
+} from "@/server/helpers/sub-accounts";
+import { toNumber } from "@/server/helpers/transforms";
+import type { FeedAccount } from "@/lib/pure/flow-suggestions";
+import {
+  suggestSnapshotAmounts,
+  type UnplacedFeed,
+} from "@/lib/pure/snapshot-suggestions";
 import { countsAsFeed } from "@/lib/pure/simplefin-feeds";
 
 type Db = typeof import("@/lib/db").db;
@@ -30,6 +39,8 @@ export type AccountInfo = {
   id: number;
   institution: string;
   accountName: string;
+  /** The institution's own name for it (institution + account name). */
+  feedName: string;
   /**
    * What to call it: the tracked account's name (accountDisplayName), plus
    * the part when linked to one; the institution's own name only when it
@@ -52,6 +63,72 @@ export const countedFeed = and(
   isNotNull(schema.simplefinAccounts.linkedPerformanceAccountId),
   eq(schema.simplefinAccounts.isIncluded, true),
 );
+
+/** A counted SimpleFIN feed: its link, balance, and the day the balance is from. */
+export type ContextFeed = FeedAccount & { balanceDay: string | null };
+
+/** What every investments view starts from — loaded once, in one place. */
+export type FeedContext = {
+  feeds: ContextFeed[];
+  /** The latest snapshot's sub-accounts. */
+  subs: SubAccount[];
+  snapshotDate: string | null;
+  /** Each feed's latest posted transaction day (absent: never sent one). */
+  lastTransactionDay: Map<number, string>;
+  /** Feeds whose money no part of the latest snapshot holds. */
+  unplaced: UnplacedFeed[];
+};
+
+export async function loadFeedContext(db: Db): Promise<FeedContext> {
+  const f = schema.simplefinAccounts;
+  const t = schema.investmentTransactions;
+  const [rows, subs, latest, last] = await Promise.all([
+    db
+      .select({
+        id: f.id,
+        performanceAccountId: f.linkedPerformanceAccountId,
+        subKey: f.linkedSubKey,
+        balance: f.lastBalance,
+        balanceDate: f.lastBalanceDate,
+      })
+      .from(f)
+      .where(countedFeed),
+    loadLatestSubAccounts(db),
+    db
+      .select({ date: schema.portfolioSnapshots.snapshotDate })
+      .from(schema.portfolioSnapshots)
+      .orderBy(desc(schema.portfolioSnapshots.snapshotDate))
+      .limit(1),
+    db
+      .select({ id: t.simplefinAccountId, day: max(t.posted) })
+      .from(t)
+      .groupBy(t.simplefinAccountId),
+  ]);
+  const subByKey = new Map(subs.map((s) => [s.key, s]));
+  const feeds: ContextFeed[] = rows.map((r) => ({
+    id: r.id,
+    performanceAccountId: r.performanceAccountId!,
+    subKey: r.subKey,
+    ownerPersonId: r.subKey
+      ? (subByKey.get(r.subKey)?.ownerPersonId ?? null)
+      : null,
+    balance: toNumber(r.balance),
+    balanceDay: r.balanceDate ? utcDayOf(r.balanceDate) : null,
+  }));
+  const { unplaced } = suggestSnapshotAmounts(
+    subs,
+    feeds.map((x) => ({ ...x, balanceDate: x.balanceDay })),
+  );
+  return {
+    feeds,
+    subs,
+    snapshotDate: latest[0]?.date ?? null,
+    lastTransactionDay: new Map(
+      last.filter((l) => l.day !== null).map((l) => [l.id, l.day!]),
+    ),
+    unplaced,
+  };
+}
 
 /**
  * "<tracked account>|<year>" → the tracked account Performance records money
@@ -150,6 +227,7 @@ export async function loadAccounts(db: Db): Promise<Map<number, AccountInfo>> {
           id: r.id,
           institution: r.orgName,
           accountName: r.accountName,
+          feedName: `${r.orgName} ${r.accountName}`.trim(),
           label:
             feeds && r.perf?.accountLabel
               ? `${accountDisplayName(
@@ -331,13 +409,6 @@ export async function loadClassifiedTransactions(
 }
 
 const TRANSFER_MARGIN_DAYS = 7;
-
-function addDays(day: string, n: number): string {
-  const d = new Date(`${day}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + n);
-  // eslint-disable-next-line local/no-tz-unsafe-date-string -- calendar-day arithmetic done entirely in UTC on a YYYY-MM-DD key; never compared to a local "today".
-  return d.toISOString().slice(0, 10); // lint-violation-ok: UTC day arithmetic on a date key
-}
 
 /**
  * Each SimpleFIN account's holdings on the latest date it reported them,

@@ -10,6 +10,8 @@
  * closures (national days of mourning, weather) are not modelled.
  */
 
+import { addDays } from "@/lib/utils/date";
+
 const MARKET_TIME_ZONE = "America/New_York";
 /** 4:00 pm Eastern — a timestamp before this reflects the previous close. */
 const MARKET_CLOSE_MINUTES = 16 * 60;
@@ -24,12 +26,6 @@ function parts(date: string): { y: number; m: number; d: number; dow: number } {
   const [y, m, d] = date.split("-").map(Number) as [number, number, number];
   const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
   return { y, m, d, dow };
-}
-
-function addDays(date: string, n: number): string {
-  const { y, m, d } = parts(date);
-  const t = new Date(Date.UTC(y, m - 1, d + n));
-  return ymd(t.getUTCFullYear(), t.getUTCMonth() + 1, t.getUTCDate());
 }
 
 /** nth (1-based) weekday `dow` of a month; n = -1 for the last one. */

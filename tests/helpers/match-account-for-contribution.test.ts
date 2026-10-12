@@ -48,7 +48,7 @@ import {
 } from "@/server/helpers/contribution";
 
 const CRIT = {
-  contribOwner: "Sean" as string | undefined,
+  contribOwner: "Alex" as string | undefined,
   matchTaxType: "traditional" as string | undefined,
   accountType: "401k" as string | undefined,
   contribParentCat: "Retirement" as string | undefined,
@@ -58,7 +58,7 @@ const acct = (o: Partial<BreakdownAccount>): BreakdownAccount => ({
   name: "acc",
   taxType: "traditional",
   accountType: "401k",
-  ownerName: "Sean",
+  ownerName: "Alex",
   parentCategory: "Retirement",
   ...o,
 });
@@ -75,7 +75,7 @@ describe("matchAccountForContribution — tier precedence", () => {
 
   it("tier 2: falls to a no-owner (joint) row matching taxType + accountType + parentCat when no exact-owner row exists", () => {
     const accts = [
-      acct({ name: "wrong-owner", ownerName: "Joanna" }),
+      acct({ name: "wrong-owner", ownerName: "Sam" }),
       acct({ name: "JOINT", ownerName: undefined }),
       acct({ name: "owner-but-wrong-tax", taxType: "roth" }),
     ];
@@ -101,7 +101,7 @@ describe("matchAccountForContribution — tier precedence", () => {
     const accts = [
       acct({
         name: "wrong-owner-wrong-acct",
-        ownerName: "Joanna",
+        ownerName: "Sam",
         accountType: "403b",
       }),
       acct({
@@ -145,7 +145,7 @@ describe("matchAccountForContribution — tier precedence", () => {
   });
 
   it("returns undefined when no row is even loosely the household's (all rows owned by someone else)", () => {
-    const accts = [acct({ name: "hers", ownerName: "Joanna" })];
+    const accts = [acct({ name: "hers", ownerName: "Sam" })];
     expect(matchAccountForContribution(accts, CRIT)).toBeUndefined();
   });
 
@@ -187,7 +187,7 @@ describe("matchAccountForContribution — undefined contribOwner (spec with no p
   it("only matches joint (no-owner) rows; exactOwner becomes ownerName===undefined", () => {
     const crit = { ...CRIT, contribOwner: undefined };
     const accts = [
-      acct({ name: "someones", ownerName: "Sean" }),
+      acct({ name: "someones", ownerName: "Alex" }),
       acct({ name: "joint", ownerName: undefined }),
     ];
     expect(matchAccountForContribution(accts, crit)!.name).toBe("joint");
