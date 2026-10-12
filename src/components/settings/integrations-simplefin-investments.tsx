@@ -6,6 +6,7 @@
  * place, with "save as a rule" for the household's own institutions.
  * Needs the portfolio permission (mounted on the admin-only Integrations page).
  */
+import { localDateStr } from "@/lib/utils/date";
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
@@ -327,9 +328,17 @@ function Holdings() {
 
 function RecentActivity() {
   const utils = trpc.useUtils();
-  const { data: rows } = trpc.investments.listTransactions.useQuery({
-    days: 30,
+  // The last 30 days, plus older rows (back to SimpleFIN's ~90) that look
+  // like a move between accounts and still need a decision.
+  const { data: all } = trpc.investments.listTransactions.useQuery({
+    days: 90,
   });
+  const [cutoff] = useState(() =>
+    localDateStr(new Date(Date.now() - 30 * 86_400_000)),
+  );
+  const rows = all?.filter(
+    (r) => r.posted >= cutoff || r.transferSuggestion !== null,
+  );
   const clear = trpc.investments.clearTransactionKind.useMutation({
     onSuccess: () => utils.investments.invalidate(),
   });
