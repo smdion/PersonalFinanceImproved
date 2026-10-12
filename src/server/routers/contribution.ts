@@ -492,6 +492,7 @@ export const contributionRouter = createTRPCRouter({
                     totalWithMatch: 0,
                     savingsRateWithMatch: 0,
                     savingsRateWithoutMatch: 0,
+                    compensation: 0,
                   },
                   blended: {
                     retirementWithoutMatch: 0,
@@ -502,6 +503,7 @@ export const contributionRouter = createTRPCRouter({
                     totalWithMatch: 0,
                     savingsRateWithMatch: 0,
                     savingsRateWithoutMatch: 0,
+                    compensation: 0,
                   },
                   ytd: {
                     retirementWithoutMatch: 0,
@@ -512,6 +514,7 @@ export const contributionRouter = createTRPCRouter({
                     totalWithMatch: 0,
                     savingsRateWithMatch: 0,
                     savingsRateWithoutMatch: 0,
+                    compensation: 0,
                   },
                 },
                 ytdActualRetirement: 0,

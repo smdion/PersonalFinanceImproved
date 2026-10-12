@@ -112,6 +112,15 @@ export type LatestContributionVerdict =
   /** No contribution arrived in the window. */
   | "none";
 
+/** The latest contribution and what today's setup puts in per contribution. */
+export type LatestContribution = {
+  verdict: LatestContributionVerdict;
+  /** The day's deposits summed (null: none in the window). */
+  deposit: { day: string; amount: number } | null;
+  /** Today's setup, per contribution. */
+  expected: number;
+};
+
 /**
  * Whether the latest contribution (one paycheck or month — the feed's rows
  * for that day summed) matches what today's setup puts in per

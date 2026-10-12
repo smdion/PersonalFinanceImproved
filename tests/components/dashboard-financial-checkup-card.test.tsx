@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 
 // Direct smoke test for
 // src/components/cards/dashboard/financial-checkup-card.tsx. Aggregates 4
@@ -69,15 +69,28 @@ const baseSavings = {
 const baseContribs = {
   people: [
     {
-      accountTypes: [{ employerMatch: 3000 }],
+      accountTypes: [
+        {
+          employerMatch: 3000,
+          parentCategory: "Retirement",
+          employeeContrib: 30000,
+          tradContrib: 20000,
+          taxFreeContrib: 10000,
+          afterTaxContrib: 0,
+          hsaContrib: 0,
+        },
+      ],
       result: {},
       totalCompensation: 150000,
       salary: 150000,
       totals: {
         views: {
           projected: {
-            savingsRateWithMatch: 0.3,
-            savingsRateWithoutMatch: 0.25,
+            retirementWithoutMatch: 30000,
+            retirementWithMatch: 33000,
+            portfolioWithoutMatch: 0,
+            portfolioWithMatch: 0,
+            compensation: 150000,
           },
         },
       },
@@ -87,6 +100,7 @@ const baseContribs = {
 const baseMortgage = {
   result: {
     loans: [{ remainingMonths: 120, monthsAheadOfSchedule: 6 }],
+    totalMonthsSaved: 20,
   },
 };
 const baseNetworth = {
@@ -141,6 +155,15 @@ describe("FinancialCheckupCard smoke", () => {
     expect(screen.getByText("Mortgage paid off")).toBeInTheDocument();
   });
 
+  it("counts Debt Payoff ahead against the original loan, refinancing included", () => {
+    savingsQuery = withData(baseSavings);
+    contribsQuery = withData(baseContribs);
+    mortgageQuery = withData(baseMortgage);
+    networthQuery = withData(baseNetworth);
+    render(<FinancialCheckupCard />);
+    expect(screen.getByText("1 yr 8 mo ahead")).toBeInTheDocument();
+  });
+
   it("shows 'Run retirement projection' FI status when fiCache is null and target unset", () => {
     savingsQuery = withData(baseSavings);
     contribsQuery = withData(baseContribs);
@@ -160,5 +183,22 @@ describe("FinancialCheckupCard smoke", () => {
     networthQuery = withData(baseNetworth);
     render(<FinancialCheckupCard />);
     expect(screen.getByText(/\/\d+ on track/)).toBeInTheDocument();
+  });
+
+  it("expands the Savings Rate row into what it's made of", () => {
+    savingsQuery = withData(baseSavings);
+    contribsQuery = withData(baseContribs);
+    mortgageQuery = withData(baseMortgage);
+    networthQuery = withData(baseNetworth);
+    render(<FinancialCheckupCard />);
+    // Below the high-income threshold: the match counts by default.
+    expect(screen.getByText("22.0%")).toBeInTheDocument();
+    expect(screen.queryByText("Employer match")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /Savings Rate/ }));
+    expect(screen.getByText("Employer match")).toBeInTheDocument();
+    expect(screen.getByText("Roth")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Excl. match" }));
+    expect(screen.getByText("20.0%")).toBeInTheDocument();
+    expect(screen.queryByText("Employer match")).toBeNull();
   });
 });

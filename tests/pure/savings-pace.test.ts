@@ -5,6 +5,12 @@ import { savingsPace } from "@/lib/pure/savings-pace";
 // A $26,000-a-year setup, $6,000 of it still to come this year.
 const plan = { yearly: 26_000, remaining: 6_000 };
 
+const latest = (verdict: "matches" | "differs" | "none") => ({
+  verdict,
+  deposit: verdict === "none" ? null : { day: "2026-03-13", amount: 1_000 },
+  expected: 1_000,
+});
+
 const account = (over: Partial<Parameters<typeof savingsPace>[0][number]>) => ({
   performanceAccountId: 1,
   label: "Alex 401k (Example)",
@@ -12,7 +18,7 @@ const account = (over: Partial<Parameters<typeof savingsPace>[0][number]>) => ({
   pending: 0,
   pendingEstimated: false,
   unposted: 0,
-  latest: "matches" as const,
+  latest: latest("matches"),
   plan,
   ...over,
 });
@@ -33,12 +39,12 @@ describe("savingsPace", () => {
 
   it("flags a latest contribution that differs, or none arriving", () => {
     expect(
-      savingsPace([account({ recorded: 9_000, latest: "differs" })])
+      savingsPace([account({ recorded: 9_000, latest: latest("differs") })])
         .accounts[0]!.status,
     ).toBe("differs");
     expect(
-      savingsPace([account({ recorded: 9_000, latest: "none" })]).accounts[0]!
-        .status,
+      savingsPace([account({ recorded: 9_000, latest: latest("none") })])
+        .accounts[0]!.status,
     ).toBe("no_recent");
   });
 
@@ -92,7 +98,7 @@ describe("savingsPace", () => {
     expect(
       savingsPace([
         account({}),
-        account({ performanceAccountId: 2, latest: "differs" }),
+        account({ performanceAccountId: 2, latest: latest("differs") }),
       ]).total.status,
     ).toBe("differs");
   });

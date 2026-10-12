@@ -5,6 +5,8 @@
  * each account on the Contributions card (see lib/pure/savings-pace).
  */
 import type { PaceStatus } from "@/lib/pure/savings-pace";
+import type { LatestContribution } from "@/lib/pure/deposit-check";
+import { formatCurrency, formatDate } from "@/lib/utils/format";
 
 const STATUS_TEXT: Record<PaceStatus, string> = {
   met: "Plan met",
@@ -34,12 +36,25 @@ const STATUS_CLASS: Record<PaceStatus, string> = {
   no_plan: "text-faint",
 };
 
-export function PaceStatusText({ status }: { status: PaceStatus }) {
+/** The hover: what the status was judged on, when there's a deposit to show. */
+function titleOf(status: PaceStatus, latest?: LatestContribution | null) {
+  if (!latest?.deposit) return STATUS_TITLE[status];
+  return `${STATUS_TITLE[status]}.\nLatest: ${formatCurrency(latest.deposit.amount)} on ${formatDate(latest.deposit.day, "medium")} · setup: ${formatCurrency(latest.expected)} per contribution`;
+}
+
+export function PaceStatusText({
+  status,
+  latest,
+}: {
+  status: PaceStatus;
+  /** The account's latest contribution vs its setup (adds the details to the hover). */
+  latest?: LatestContribution | null;
+}) {
   if (status === "no_plan") return null;
   return (
     <span
       className={`text-caption font-normal ${STATUS_CLASS[status]}`}
-      title={STATUS_TITLE[status]}
+      title={titleOf(status, latest)}
     >
       {STATUS_TEXT[status]}
     </span>

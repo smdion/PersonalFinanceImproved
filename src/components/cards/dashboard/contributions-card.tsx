@@ -132,10 +132,16 @@ function ContributionsCardImpl() {
     undefined,
     { retry: false },
   );
-  const statusOf = (ids: readonly number[]) =>
-    pace?.accounts.find(
-      (a) => ids.includes(a.performanceAccountId) && a.status !== "no_plan",
-    )?.status ?? null;
+  const paceOf = (ids: readonly number[]) => {
+    const a = pace?.accounts.find(
+      (r) => ids.includes(r.performanceAccountId) && r.status !== "no_plan",
+    );
+    return a ? (
+      <span className="ml-1.5">
+        <PaceStatusText status={a.status} latest={a.latest} />
+      </span>
+    ) : null;
+  };
   const [contribPeriod, setContribPeriod] = useState<ContribPeriod>("annual");
   if (isLoading) return <LoadingCard title="Contributions" />;
   if (error)
@@ -246,13 +252,7 @@ function ContributionsCardImpl() {
                               (Joint)
                             </span>
                           )}
-                          {statusOf(at.performanceAccountIds) && (
-                            <span className="ml-1.5">
-                              <PaceStatusText
-                                status={statusOf(at.performanceAccountIds)!}
-                              />
-                            </span>
-                          )}
+                          {paceOf(at.performanceAccountIds)}
                         </span>
                         <div className="text-right">
                           <span className="text-primary font-medium">
@@ -495,13 +495,7 @@ function ContributionsCardImpl() {
                   <div className="flex items-baseline justify-between text-xs">
                     <span className="text-muted font-medium">
                       {at.accountType}
-                      {statusOf(at.performanceAccountIds) && (
-                        <span className="ml-1.5">
-                          <PaceStatusText
-                            status={statusOf(at.performanceAccountIds)!}
-                          />
-                        </span>
-                      )}
+                      {paceOf(at.performanceAccountIds)}
                     </span>
                     <span className="text-primary font-medium">
                       {formatCurrency(

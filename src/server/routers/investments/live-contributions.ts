@@ -12,7 +12,7 @@ import { addDays, localDateStr } from "@/lib/utils/date";
 import { roundToCents } from "@/lib/utils/math";
 import {
   checkLatestContribution,
-  type LatestContributionVerdict,
+  type LatestContribution,
 } from "@/lib/pure/deposit-check";
 import {
   RECENT_ACTIVITY_DAYS,
@@ -37,7 +37,7 @@ export type LiveContribution = {
   /** The plan between the latest posted transaction and today. */
   unposted: { employee: number; employer: number };
   /** The latest contribution vs today's setup (null: no transactions to check). */
-  latest: LatestContributionVerdict | null;
+  latest: LatestContribution | null;
   /** The day the latest contribution actually arrived (null: none seen). */
   latestContributionDay: string | null;
   plan: { yearly: number; remaining: number } | null;
@@ -166,8 +166,17 @@ export async function loadLiveContributions(
       // Only a feed that sends transactions can show the latest deposit.
       latest:
         m && sentTransactions(feedIds, context.lastTransactionDay, recentSince)
-          ? checkLatestContribution(contributionsOf(id), m.perContribution)
-              .verdict
+          ? (() => {
+              const check = checkLatestContribution(
+                contributionsOf(id),
+                m.perContribution,
+              );
+              return {
+                verdict: check.verdict,
+                deposit: check.latest,
+                expected: roundToCents(m.perContribution),
+              };
+            })()
           : null,
       latestContributionDay: contributedThrough.get(id) ?? null,
       plan: m ? { yearly, remaining: m.remainingThisYear } : null,

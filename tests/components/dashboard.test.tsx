@@ -6,25 +6,15 @@ vi.mock("@/components/cards/dashboard", () => ({
   HouseholdIncomeCard: () => (
     <div data-testid="household-income">HouseholdIncome</div>
   ),
-  SavingsRateCard: () => <div data-testid="savings-rate">SavingsRate</div>,
-  BudgetStatusCard: () => <div data-testid="budget-status">BudgetStatus</div>,
   SavingsGoalsCard: () => <div data-testid="savings-goals">SavingsGoals</div>,
   RetirementCard: () => <div data-testid="retirement">Retirement</div>,
-  MortgageCard: () => <div data-testid="mortgage">Mortgage</div>,
   NetWorthCard: () => <div data-testid="net-worth">NetWorth</div>,
   LinkedBalanceCard: () => (
     <div data-testid="linked-balance">LinkedBalance</div>
   ),
   ContributionsCard: () => <div data-testid="contributions">Contributions</div>,
-  TaxesCard: () => <div data-testid="taxes">Taxes</div>,
   FinancialCheckupCard: () => (
     <div data-testid="financial-checkup">FinancialCheckup</div>
-  ),
-  FidelityMultiplierCard: () => (
-    <div data-testid="fidelity-multiplier">FidelityMultiplier</div>
-  ),
-  DollarMultiplierCard: () => (
-    <div data-testid="dollar-multiplier">DollarMultiplier</div>
   ),
   LivingCostsCard: () => <div data-testid="living-costs">LivingCosts</div>,
 }));
@@ -92,10 +82,7 @@ describe("DashboardPage", () => {
     expect(screen.getByTestId("savings-goals")).toBeInTheDocument();
     expect(screen.getByTestId("retirement")).toBeInTheDocument();
     expect(screen.getByTestId("contributions")).toBeInTheDocument();
-    expect(screen.getByTestId("mortgage")).toBeInTheDocument();
-    expect(screen.getByTestId("savings-rate")).toBeInTheDocument();
-    expect(screen.getByTestId("budget-status")).toBeInTheDocument();
-    expect(screen.getByTestId("taxes")).toBeInTheDocument();
+    expect(screen.getByTestId("living-costs")).toBeInTheDocument();
   });
 
   it("does not show onboarding wizard when complete", async () => {

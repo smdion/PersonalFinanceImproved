@@ -9,6 +9,8 @@ import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { useScenario } from "@/lib/context/scenario-context";
 import { sumBy } from "@/lib/utils/math";
 import { LoadingCard, ErrorCard } from "./utils";
+import { TaxesSummary } from "./taxes-summary";
+import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
 
@@ -24,10 +26,16 @@ function HouseholdIncomeCardImpl() {
     queryInput: contribProfileInput,
   } = useEffectiveContribProfileId();
   const { data: contribProfiles } = trpc.contributionProfile.list.useQuery();
+  // The Paycheck page's tax year, so net pay and the taxes below agree.
+  const [taxYearSetting] = usePersistedSetting<number | null>(
+    "paycheck_tax_year",
+    null,
+  );
   const queryInput = {
     ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     ...contribProfileInput,
     ...salaryProfileInput,
+    ...(taxYearSetting != null ? { taxYearOverride: taxYearSetting } : {}),
   };
   const { data, isLoading, error } = trpc.paycheck.computeSummary.useQuery(
     Object.keys(queryInput).length > 0 ? queryInput : undefined,
@@ -187,6 +195,7 @@ function HouseholdIncomeCardImpl() {
           </div>
         )}
       </div>
+      <TaxesSummary data={data} viewMode={viewMode} />
     </Card>
   );
 }

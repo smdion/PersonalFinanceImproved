@@ -31,6 +31,9 @@ vi.mock("@/lib/trpc", () => ({
     sync: {
       getSyncStatus: { useQuery: () => ({ data: syncStatusData }) },
     },
+    mortgage: {
+      computeActiveSummary: { useQuery: () => ({ data: undefined }) },
+    },
   },
 }));
 

@@ -17,7 +17,10 @@
  * and judges only whether the latest contribution matches today's setup.
  */
 import { roundToCents } from "@/lib/utils/math";
-import type { LatestContributionVerdict } from "./deposit-check";
+import type {
+  LatestContribution,
+  LatestContributionVerdict,
+} from "./deposit-check";
 
 export type PaceStatus =
   /** Saved the full year's plan already. */
@@ -54,7 +57,7 @@ export type PaceAccountInput = {
    */
   unposted: number;
   /** The latest contribution vs today's setup; null when the feed sends no transactions. */
-  latest: LatestContributionVerdict | null;
+  latest: LatestContribution | null;
   /** The account's paycheck setup (null: none). */
   plan: PacePlan | null;
 };
@@ -69,7 +72,7 @@ function status(a: PaceAccountInput, saved: number): PaceStatus {
   const yearly = a.plan?.yearly ?? 0;
   if (yearly <= 0) return "no_plan";
   if (saved >= yearly) return "met";
-  return a.latest === null ? "estimated" : FROM_LATEST[a.latest];
+  return a.latest === null ? "estimated" : FROM_LATEST[a.latest.verdict];
 }
 
 /** The household: on pace only when every checked account is. */
@@ -99,6 +102,8 @@ export function savingsPace(accounts: readonly PaceAccountInput[]) {
         /** Saved so far, what's on its way, and the rest of the year at today's setup. */
         yearEnd: roundToCents(saved + a.unposted + (a.plan?.remaining ?? 0)),
         status: status(a, saved),
+        /** What the status was judged on (the card's hover). */
+        latest: a.latest,
       };
     })
     .filter((r) => r.planYear > 0 || r.saved !== 0)

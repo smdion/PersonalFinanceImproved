@@ -117,6 +117,7 @@ vi.mock("@/lib/trpc", () => ({
     budget: {
       computeActiveSummary: { useQuery: () => budgetQuery },
       listProfiles: { useQuery: () => ({ data: [] }) },
+      listApiActuals: { useQuery: () => ({ data: undefined }) },
     },
     paycheck: { computeSummary: { useQuery: () => paycheckQuery } },
     contribution: { computeSummary: { useQuery: () => contribQuery } },

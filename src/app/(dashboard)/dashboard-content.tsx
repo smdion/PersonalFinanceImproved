@@ -4,18 +4,12 @@ import { PageHeader } from "@/components/ui/page-header";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 import {
   HouseholdIncomeCard,
-  SavingsRateCard,
-  BudgetStatusCard,
   SavingsGoalsCard,
   RetirementCard,
-  MortgageCard,
   NetWorthCard,
   LinkedBalanceCard,
   ContributionsCard,
-  TaxesCard,
   FinancialCheckupCard,
-  FidelityMultiplierCard,
-  DollarMultiplierCard,
   LivingCostsCard,
 } from "@/components/cards/dashboard";
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
@@ -40,7 +34,7 @@ export function DashboardContent() {
       <PageHeader title="Dashboard" subtitle="Financial overview" />
 
       {/* Primary metrics row */}
-      <div className="mb-3 grid grid-cols-[repeat(auto-fit,minmax(340px,1fr))] gap-3">
+      <div className="mb-3 grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-3">
         <CardBoundary title="Net Worth">
           <NetWorthCard />
         </CardBoundary>
@@ -55,45 +49,24 @@ export function DashboardContent() {
         </CardBoundary>
       </div>
 
-      {/* This year's saving: the plan vs what's going in, the rate, the goals */}
+      {/* This year's money: the budget and spending, what's going into
+          savings, and the goals it funds */}
       <div className="mb-3 grid grid-cols-[repeat(auto-fit,minmax(340px,1fr))] gap-3">
+        <CardBoundary title="Budget & Spending">
+          <LivingCostsCard />
+        </CardBoundary>
         <CardBoundary title="Contributions">
           <ContributionsCard />
-        </CardBoundary>
-        <CardBoundary title="Savings Rate">
-          <SavingsRateCard />
         </CardBoundary>
         <CardBoundary title="Savings Goals">
           <SavingsGoalsCard />
         </CardBoundary>
       </div>
 
-      {/* Retirement outlook */}
-      <div className="mb-3 grid grid-cols-[repeat(auto-fit,minmax(340px,1fr))] gap-3">
+      {/* Retirement outlook, with its benchmarks */}
+      <div className="grid gap-3">
         <CardBoundary title="Retirement">
           <RetirementCard />
-        </CardBoundary>
-        <CardBoundary title="Fidelity Multiplier">
-          <FidelityMultiplierCard />
-        </CardBoundary>
-        <CardBoundary title="Dollar Multiplier">
-          <DollarMultiplierCard />
-        </CardBoundary>
-      </div>
-
-      {/* Details */}
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-3">
-        <CardBoundary title="Living Costs">
-          <LivingCostsCard />
-        </CardBoundary>
-        <CardBoundary title="Mortgage">
-          <MortgageCard />
-        </CardBoundary>
-        <CardBoundary title="Budget Status">
-          <BudgetStatusCard />
-        </CardBoundary>
-        <CardBoundary title="Taxes">
-          <TaxesCard />
         </CardBoundary>
       </div>
     </div>
