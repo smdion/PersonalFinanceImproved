@@ -31,7 +31,9 @@ vi.mock("@/lib/context/scenario-context", () => ({
 
 const engineData = {
   result: {
-    projectionByYear: [{ age: 40, endBalance: 500000 }],
+    projectionByYear: [
+      { age: 40, endBalance: 500000, individualAccountBalances: [] },
+    ] as unknown[],
     sustainableWithdrawal: 20000,
     warnings: [],
   },
@@ -111,5 +113,73 @@ describe("RetirementCard dashboard cache-peek features", () => {
     };
     render(<RetirementCard />);
     expect(screen.getByText("(simulated: age 55)")).toBeInTheDocument();
+  });
+});
+
+describe("RetirementCard scope", () => {
+  it("counts Retirement accounts only, like the Retirement page", () => {
+    mcPeekData = { result: null };
+    coastFireMcPeekData = { result: null };
+    const saved = engineData.result.projectionByYear;
+    const savedSpecs = (engineData as Record<string, unknown>)
+      .contributionSpecs;
+    // At retirement age: $300k in a Retirement 401k, $100k in a Portfolio brokerage.
+    engineData.result.projectionByYear = [
+      {
+        age: 65,
+        phase: "accumulation",
+        endBalance: 400000,
+        individualAccountBalances: [
+          {
+            category: "401k",
+            taxType: "preTax",
+            parentCategory: "Retirement",
+            balance: 300000,
+          },
+          {
+            category: "brokerage",
+            taxType: "afterTax",
+            parentCategory: "Portfolio",
+            balance: 100000,
+          },
+        ],
+        balanceByTaxType: {
+          preTax: 300000,
+          taxFree: 0,
+          hsa: 0,
+          afterTax: 100000,
+          afterTaxBasis: 50000,
+        },
+        balanceByAccount: {
+          brokerage: {
+            structure: "basis_tracking",
+            balance: 100000,
+            basis: 50000,
+          },
+        },
+      },
+    ];
+    (engineData as Record<string, unknown>).contributionSpecs = [
+      {
+        category: "401k",
+        parentCategory: "Retirement",
+        baseAnnual: 20000,
+        matchAnnual: 5000,
+      },
+      {
+        category: "brokerage",
+        parentCategory: "Portfolio",
+        baseAnnual: 12000,
+        matchAnnual: 0,
+      },
+    ];
+    engineData.settings.retirementAge = 65;
+    render(<RetirementCard />);
+    // Nest egg: the Retirement 401k only (no inflation adjustment at age 65 = now).
+    expect(screen.getByText("$300,000.00")).toBeInTheDocument();
+    // Contributions: the 401k and its match, not the Portfolio brokerage.
+    expect(screen.getByText(/\$25,000\.00\/yr/)).toBeInTheDocument();
+    engineData.result.projectionByYear = saved;
+    (engineData as Record<string, unknown>).contributionSpecs = savedSpecs;
   });
 });
