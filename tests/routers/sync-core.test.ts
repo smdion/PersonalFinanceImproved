@@ -873,7 +873,7 @@ describe("sync core — getPreview", () => {
   });
 
   it("portfolio.localAccounts still gives each owner a distinct label even when the shared account has a displayName set", async () => {
-    const alex = await seedPerson(db, "Sean2", "1987-01-01");
+    const alex = await seedPerson(db, "Alex2", "1987-01-01");
     const sam = await seedPerson(db, "Sam2", "1991-01-01");
     const perfAcctId = seedPerformanceAccount(db, {
       institution: "Fidelity",
