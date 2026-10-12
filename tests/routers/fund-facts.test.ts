@@ -373,7 +373,26 @@ describe("fund facts", () => {
       )!;
 
     const before = (await row(id.bonds!)).value;
+    const category = async (b: CompositionBucket) =>
+      (await overview()).allocation.categories.find((c) => c.bucket === b)!;
+    // Every major category is listed, linked or not ("other" isn't).
+    expect(
+      (await overview()).allocation.categories.map((c) => c.bucket),
+    ).toEqual([
+      "us_equity",
+      "intl_equity",
+      "us_bond",
+      "intl_bond",
+      "tips",
+      "cash",
+    ]);
+    expect(await category("intl_bond")).toEqual({
+      bucket: "intl_bond",
+      value: 500,
+      assetClassId: null,
+    });
     await link("intl_bond", id.bonds!);
+    expect((await category("intl_bond")).assetClassId).toBe(id.bonds);
     expect(await row(id.bonds!)).toMatchObject({
       buckets: ["us_bond", "intl_bond"],
       value: expect.closeTo(before + 500, 5),

@@ -76,14 +76,91 @@ function AccountHeader({ a }: { a: OverviewAccount }) {
   );
 }
 
+/** "+1.2%" in amber when it's more than 5 points off, faint otherwise. */
+function Drift({ pct, target }: { pct: number; target: number }) {
+  const drift = pct - target;
+  if (Math.abs(drift) < 0.005) return null;
+  return (
+    <span className={Math.abs(drift) > 0.05 ? "text-amber-600" : "text-faint"}>
+      {" "}
+      ({drift > 0 ? "+" : ""}
+      {formatPercent(drift, 1)})
+    </span>
+  );
+}
+
+function MixBarRow({
+  label,
+  pct,
+  target,
+  color,
+  note,
+  children,
+}: {
+  label: string;
+  pct: number;
+  target: number | null;
+  color: string;
+  note?: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="text-xs">
+      <div className="flex justify-between gap-2">
+        <span className="text-primary">{label}</span>
+        <span className="text-muted">
+          {formatPercent(pct, 1)}
+          {target !== null ? (
+            <>
+              {" "}
+              vs {formatPercent(target, 0)} target
+              <Drift pct={pct} target={target} />
+            </>
+          ) : (
+            note && <span className="text-faint"> · {note}</span>
+          )}
+        </span>
+      </div>
+      <div className="bg-surface-strong relative mt-0.5 h-2 rounded">
+        <div
+          className="h-2 rounded"
+          style={{
+            width: `${Math.min(100, pct * 100)}%`,
+            backgroundColor: color,
+          }}
+        />
+        {target !== null && (
+          <div
+            className="bg-primary absolute -top-0.5 h-3 w-0.5"
+            style={{ left: `${Math.min(100, target * 100)}%` }}
+            title="Target"
+          />
+        )}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+/**
+ * Every major fund category as its own row, next to the glide-path target
+ * of the asset class it counts toward. A class that takes several
+ * categories shows its target once, on a combined line after them.
+ */
 function AllocationCard({ data }: { data: Overview }) {
   const utils = trpc.useUtils();
   const link = trpc.investments.linkCompositionBucket.useMutation({
     onSuccess: () => utils.investments.invalidate(),
   });
-  const { total, unknown, rows, unmapped } = data.allocation;
+  const { total, unknown, rows, unmapped, categories } = data.allocation;
   const known = total - unknown;
+  const share = (v: number) => (known > 0 ? v / known : 0);
   const hasTarget = rows.some((r) => r.targetPct !== null);
+  const classOf = new Map(rows.map((r) => [r.assetClassId, r]));
+  const minor = unmapped.filter(
+    (u) => !categories.some((c) => c.bucket === u.bucket),
+  );
+  const noCategory = rows.filter((r) => r.buckets.length === 0);
   return (
     <Card title="Your mix vs your target">
       <p className="text-caption text-faint mb-3">
@@ -96,119 +173,100 @@ function AllocationCard({ data }: { data: Overview }) {
         mix is known.
       </p>
       <div className="space-y-2">
-        {rows.map((r) => {
-          const pct = known > 0 ? r.value / known : 0;
-          const drift = r.targetPct !== null ? pct - r.targetPct : null;
+        {categories.map((c) => {
+          const cls =
+            c.assetClassId !== null ? classOf.get(c.assetClassId) : undefined;
+          const shared = cls !== undefined && cls.buckets.length > 1;
+          const lastOfClass = shared && cls.buckets.at(-1) === c.bucket;
           return (
-            <div key={r.assetClassId} className="text-xs">
-              <div className="flex justify-between">
-                <span className="text-primary">{r.name}</span>
-                <span className="text-muted">
-                  {formatPercent(pct, 1)}
-                  {r.targetPct !== null && (
-                    <>
-                      {" "}
-                      vs {formatPercent(r.targetPct, 0)} target{" "}
-                      {drift !== null && Math.abs(drift) >= 0.005 && (
-                        <span
-                          className={
-                            Math.abs(drift) > 0.05
-                              ? "text-amber-600"
-                              : "text-faint"
-                          }
-                        >
-                          ({drift > 0 ? "+" : ""}
-                          {formatPercent(drift, 1)})
-                        </span>
-                      )}
-                    </>
-                  )}
-                </span>
-              </div>
-              <div className="bg-surface-strong relative mt-0.5 h-2 rounded">
-                <div
-                  className="h-2 rounded"
-                  style={{
-                    width: `${Math.min(100, pct * 100)}%`,
-                    backgroundColor: r.buckets[0]
-                      ? BUCKET_COLORS[r.buckets[0]]
-                      : CHART_COLORS.mixOther,
-                  }}
-                />
-                {r.targetPct !== null && (
-                  <div
-                    className="bg-primary absolute -top-0.5 h-3 w-0.5"
-                    style={{ left: `${Math.min(100, r.targetPct * 100)}%` }}
-                    title="Target"
-                  />
+            <div key={c.bucket} className="space-y-2">
+              <MixBarRow
+                label={COMPOSITION_BUCKET_LABELS[c.bucket]}
+                pct={share(c.value)}
+                target={cls && !shared ? cls.targetPct : null}
+                color={BUCKET_COLORS[c.bucket]}
+                note={
+                  cls
+                    ? shared
+                      ? `target shared — see ${cls.name}`
+                      : undefined
+                    : "no target in your plan"
+                }
+              >
+                {!cls && rows.length > 0 && (
+                  <div className="text-caption text-faint mt-0.5 flex flex-wrap items-center gap-1">
+                    Give it a target by counting it in one of your asset
+                    classes:
+                    <select
+                      value=""
+                      disabled={link.isPending}
+                      onChange={(e) =>
+                        e.target.value &&
+                        link.mutate({
+                          bucket: c.bucket,
+                          assetClassId: Number(e.target.value),
+                        })
+                      }
+                      className="border-strong bg-surface-primary rounded border px-1 py-0"
+                    >
+                      <option value="">Count it in…</option>
+                      {rows.map((r) => (
+                        <option key={r.assetClassId} value={r.assetClassId}>
+                          {r.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 )}
-              </div>
-              {r.buckets.length === 0 && (
-                <p className="text-caption text-faint">
-                  Not linked to a fund category.
-                </p>
-              )}
-              {r.buckets.length > 1 && (
-                <p
-                  className="text-caption text-faint"
-                  title={`Projections use ${r.name}'s return and risk for everything counted in it.`}
+              </MixBarRow>
+              {lastOfClass && (
+                <MixBarRow
+                  label={`${cls.name} (${cls.buckets
+                    .map((b) => COMPOSITION_BUCKET_LABELS[b])
+                    .join(" + ")})`}
+                  pct={share(cls.value)}
+                  target={cls.targetPct}
+                  color={CHART_COLORS.mixOther}
                 >
-                  Counts:{" "}
-                  {r.buckets.map((b, i) => (
-                    <span key={b}>
-                      {i > 0 && " + "}
-                      {COMPOSITION_BUCKET_LABELS[b]}
-                      {i > 0 && (
-                        <button
-                          className="hover:text-primary ml-1 underline"
-                          disabled={link.isPending}
-                          title={`Stop counting ${COMPOSITION_BUCKET_LABELS[b]} in ${r.name}`}
-                          onClick={() =>
-                            link.mutate({ bucket: b, assetClassId: null })
-                          }
-                        >
-                          (remove)
-                        </button>
-                      )}
-                    </span>
-                  ))}
-                </p>
+                  <p className="text-caption text-faint mt-0.5">
+                    {cls.buckets.slice(1).map((b) => (
+                      <button
+                        key={b}
+                        className="hover:text-primary mr-2 underline"
+                        disabled={link.isPending}
+                        title={`Projections use ${cls.name}'s return and risk for everything counted in it.`}
+                        onClick={() =>
+                          link.mutate({ bucket: b, assetClassId: null })
+                        }
+                      >
+                        Stop counting {COMPOSITION_BUCKET_LABELS[b]} in{" "}
+                        {cls.name}
+                      </button>
+                    ))}
+                  </p>
+                </MixBarRow>
               )}
             </div>
           );
         })}
       </div>
-      {unmapped.length > 0 && (
-        <div className="mt-3 space-y-1 text-xs">
-          {unmapped.map((u) => (
-            <div key={u.bucket} className="flex flex-wrap items-center gap-2">
-              <span className="text-muted">
-                {COMPOSITION_BUCKET_LABELS[u.bucket]} ({formatCurrency(u.value)}
-                ) isn&apos;t counted in any of your asset classes, so it&apos;s
-                left out of the comparison.
-              </span>
-              {rows.length > 0 && (
-                <select
-                  value=""
-                  disabled={link.isPending}
-                  onChange={(e) =>
-                    e.target.value &&
-                    link.mutate({
-                      bucket: u.bucket,
-                      assetClassId: Number(e.target.value),
-                    })
-                  }
-                  className="border-strong bg-surface-primary rounded border px-1.5 py-0.5"
-                >
-                  <option value="">Count it in…</option>
-                  {rows.map((r) => (
-                    <option key={r.assetClassId} value={r.assetClassId}>
-                      {r.name}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
+      {(minor.length > 0 || noCategory.length > 0) && (
+        <div className="text-caption text-faint mt-3 space-y-0.5">
+          {minor.map((u) => (
+            <p key={u.bucket}>
+              {COMPOSITION_BUCKET_LABELS[u.bucket]} ({formatCurrency(u.value)})
+              — holdings that aren&apos;t stocks, bonds or cash — is left out of
+              the comparison.
+            </p>
+          ))}
+          {noCategory.map((r) => (
+            <p key={r.assetClassId}>
+              {r.name}
+              {r.targetPct !== null
+                ? ` (${formatPercent(r.targetPct, 0)} target)`
+                : ""}{" "}
+              isn&apos;t linked to a fund category, so nothing counts toward it.
+            </p>
           ))}
         </div>
       )}

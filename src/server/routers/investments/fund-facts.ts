@@ -11,6 +11,7 @@ import { createTRPCRouter, portfolioProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import {
   COMPOSITION_BUCKET_VALUES,
+  MAJOR_COMPOSITION_BUCKETS,
   compositionBucketSchema,
   type CompositionBucket,
 } from "@/lib/config/enum-values";
@@ -221,6 +222,12 @@ export const investmentFundFactsRouter = createTRPCRouter({
           targetPct: target.target[a.id] ?? null,
         })),
         unmapped: unlinked.map((b) => ({ bucket: b, value: buckets[b] })),
+        /** Every major fund category, held or not, with the class it counts toward. */
+        categories: MAJOR_COMPOSITION_BUCKETS.map((b) => ({
+          bucket: b,
+          value: buckets[b],
+          assetClassId: links.get(b) ?? null,
+        })),
       },
       cost: blendedCost(valued),
     };

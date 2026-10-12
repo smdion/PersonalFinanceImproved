@@ -102,6 +102,9 @@ export const COMPOSITION_BUCKET_VALUES = [
 ] as const;
 export type CompositionBucket = (typeof COMPOSITION_BUCKET_VALUES)[number];
 export const compositionBucketSchema = z.enum(COMPOSITION_BUCKET_VALUES);
+/** The categories shown as their own rows in mix-vs-target ("other" is a note). */
+export const MAJOR_COMPOSITION_BUCKETS: readonly CompositionBucket[] =
+  COMPOSITION_BUCKET_VALUES.filter((b) => b !== "other");
 
 // ── Holding observation source ──
 
