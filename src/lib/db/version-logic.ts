@@ -21,6 +21,7 @@ import { encodeJsonbForPgImport } from "./jsonb-import";
 import {
   truncateTables,
   resetSequences,
+  tablesWithIdColumn,
   validateColumns,
   queryRaw,
   execRaw,
@@ -500,7 +501,7 @@ async function importBackupPg(
     }
 
     // Reset serial sequences
-    for (const tableName of VERSION_TABLE_NAMES) {
+    for (const tableName of tablesWithIdColumn(VERSION_TABLE_NAMES)) {
       await client.query(
         `SELECT setval(pg_get_serial_sequence('"${tableName}"', 'id'), COALESCE((SELECT MAX(id) FROM "${tableName}"), 0) + 1, false)`,
       );

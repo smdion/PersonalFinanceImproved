@@ -33,57 +33,8 @@
     {
       "idx": 4,
       "version": "6",
-      "when": 1791684818429,
-      "tag": "0004_glorious_tigra",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "6",
-      "when": 1791739092202,
-      "tag": "0005_neat_namorita",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "6",
-      "when": 1791744770484,
-      "tag": "0006_opposite_onslaught",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "6",
-      "when": 1791747325766,
-      "tag": "0007_closed_bastion",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "6",
-      "when": 1791763851179,
-      "tag": "0008_absent_tenebrous",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "6",
-      "when": 1791823000951,
-      "tag": "0009_vengeful_mister_sinister",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "6",
-      "when": 1791826031680,
-      "tag": "0010_mysterious_black_panther",
-      "breakpoints": true
-    },
-    {
-      "idx": 11,
-      "version": "6",
-      "when": 1791830688628,
-      "tag": "0011_peaceful_rictor",
+      "when": 1791835561221,
+      "tag": "0004_v085_investments",
       "breakpoints": true
     }
   ]

@@ -1,1 +1,0 @@
-ALTER TABLE `simplefin_accounts` ADD `linked_sub_key` text;

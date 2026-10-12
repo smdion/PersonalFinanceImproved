@@ -1,1 +1,0 @@
-ALTER TABLE "investment_transactions" ADD COLUMN "source_split" jsonb;

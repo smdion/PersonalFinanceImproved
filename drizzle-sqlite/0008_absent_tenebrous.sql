@@ -1,1 +1,0 @@
-ALTER TABLE `investment_transactions` ADD `source_split` text;

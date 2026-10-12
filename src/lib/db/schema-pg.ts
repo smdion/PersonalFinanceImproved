@@ -2759,23 +2759,12 @@ export const assetClassParams = pgTable(
   {
     id: serial("id").primaryKey(),
     name: text("name").notNull().unique(),
-    /**
-     * @deprecated Replaced by asset_class_buckets (several buckets can feed
-     * one class) in 0011; kept only so an image from before 0011 still runs
-     * if rolled back. Never read or written — drop it in a later migration.
-     */
-    compositionBucket: text("composition_bucket").$type<CompositionBucket>(),
     meanReturn: decimal("mean_return", { precision: 12, scale: 6 }).notNull(),
     stdDev: decimal("std_dev", { precision: 12, scale: 6 }).notNull(),
     sortOrder: integer("sort_order").notNull().default(0),
     isActive: boolean("is_active").notNull().default(true),
   },
-  (table) => [
-    index("asset_class_params_is_active_idx").on(table.isActive),
-    uniqueIndex("asset_class_params_composition_bucket_idx")
-      .on(table.compositionBucket)
-      .where(sql`${table.compositionBucket} IS NOT NULL`),
-  ],
+  (table) => [index("asset_class_params_is_active_idx").on(table.isActive)],
 );
 
 /**

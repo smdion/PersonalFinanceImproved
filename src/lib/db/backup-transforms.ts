@@ -52,6 +52,9 @@ const V08_SCHEMA_TAGS = [
   "0002_complete_jackpot", // SQLite counterpart of 0002
   "0003_past_rhodey", // PG: retirement_profile_people.social_security_pia
   "0003_shallow_patch", // SQLite counterpart of 0003
+  // 0004–0011 below were pre-release v0.8.5 builds, squashed into
+  // 0004_v085_investments before release; only installs that ran those
+  // builds (and their backups) carry these tags.
   "0004_simple_rogue", // PG: v0.8.5 investments foundation (securities, holding_observations, investment_transactions, investment_transaction_rules, simplefin_account_balances, sync_request_log)
   "0004_glorious_tigra", // SQLite counterpart of 0004
   "0005_light_prima", // PG: simplefin_accounts.last_balance_date
@@ -68,6 +71,7 @@ const V08_SCHEMA_TAGS = [
   "0010_mysterious_black_panther", // SQLite counterpart of 0010
   "0011_lumpy_maximus", // PG: asset_class_buckets (several buckets per asset class), copied from asset_class_params.composition_bucket
   "0011_peaceful_rictor", // SQLite counterpart of 0011
+  "0004_v085_investments", // PG + SQLite: v0.8.5 as released — investments, SEC fund facts, asset_class_buckets
 ] as const;
 
 /** First tags whose backups carry asset_class_buckets (PG, SQLite). */
@@ -99,7 +103,8 @@ function predatesAssetClassBuckets(schemaVersion: string): boolean {
 
 /**
  * Pre-0011 backups: each asset class's single composition_bucket becomes
- * its asset_class_buckets row, as migration 0011 does on a live database.
+ * its asset_class_buckets row (the squashed v0.8.5 migration drops the
+ * column from a live database that still has it).
  */
 function rebuildAssetClassBuckets(
   tables: TableData,
@@ -117,6 +122,30 @@ function rebuildAssetClassBuckets(
   }
   // Nothing to link: leave the table out, as a backup with it empty would.
   if (rows.length > 0) tables["asset_class_buckets"] = rows;
+}
+
+/**
+ * Fields only pre-release v0.8.5 builds had, dropped from a backup taken on
+ * one — the same as the squashed migration does to a live database: a
+ * transaction kind set by hand goes back to the built-in rules, and the
+ * per-deposit split, override source and single-bucket link go. (Their
+ * investment_transaction_rules table is simply never restored.) Runs after
+ * rebuildAssetClassBuckets, which reads composition_bucket.
+ */
+function dropPreReleaseV085Fields(tables: TableData): void {
+  for (const row of (tables["investment_transactions"] ?? []) as Record<
+    string,
+    unknown
+  >[]) {
+    if (row["kind_override_source"] === "user") row["kind_override"] = null;
+    delete row["kind_override_source"];
+    delete row["source_split"];
+  }
+  for (const row of (tables["asset_class_params"] ?? []) as Record<
+    string,
+    unknown
+  >[])
+    delete row["composition_bucket"];
 }
 
 const V07_SCHEMA_TAGS = [
@@ -710,12 +739,6 @@ function transformV07xToCurrent(tables: TableData): TableData {
     tables["savings_planned_tx_settlements"] = [];
   }
 
-  // v0.8.5 0009: investment_transactions.source_split (added in 0008) was
-  // dropped before release — a backup or version saved while it existed
-  // still carries the field, which import would reject as unknown.
-  for (const row of tables["investment_transactions"] ?? [])
-    delete (row as Record<string, unknown>)["source_split"];
-
   // 0032: Retirement Profiles, step A (expand) + the backfill migration
   // 0032_curved_silhouette.sql itself performs in the same file. This
   // function used to stop at step A — empty
@@ -1007,6 +1030,7 @@ export function transformBackupToCurrentSchema(
   // every era, including a fully-current v0.7.x export (a no-op then).
   transformV07xToCurrent(cloned);
   rebuildAssetClassBuckets(cloned, schemaVersion);
+  dropPreReleaseV085Fields(cloned);
 
   log("info", "backup_transform_complete", {
     from: schemaVersion,

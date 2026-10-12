@@ -194,6 +194,41 @@ const BASELINE_HASHES: Record<string, string> = {
     "v0.6_final",
 };
 
+// sha256 of every PostgreSQL migration file of the v0.8 line up to the
+// v0.8.5 squash, including the pre-release 0004–0011 that v0.8.5 squashed
+// into one. The LATEST applied row names exactly where an install was, so a
+// backup taken before the squash is labelled with its real schema tag
+// (all are in backup-transforms' V08_SCHEMA_TAGS).
+const V08_MIGRATION_HASHES: Record<string, string> = {
+  a626ffc04645cdc4d3a28b0793d380796c27be18d954ba22b62514018d595d5f:
+    "0000_v8_initial_schema",
+  fcdc386e4feec343e36bf406408b945085d25e3ab894400c35380eae6f089db1:
+    "0001_nappy_blade",
+  "1e41b0bc9dffb0f161e934366d6bca24f7eb760c2a36dfa1089570c8c5a264f7":
+    "0002_talented_monster_badoon",
+  "3885f68b63400bafa5255385298f696ac03762bde8d62f63d10eafdfd87ab59d":
+    "0003_past_rhodey",
+  "604efb62e506b15c0e4fb1badcd39e8322e6029754caeb07aa655d9883d40995":
+    "0004_simple_rogue",
+  "0fdbea5668319cde21964cdc4731467be705ca30948d1277d751f0b2600213c2":
+    "0005_light_prima",
+  bf1ae798460566c4643eaa7513f73346fa19db826e20c822fbb748b2f44caad0:
+    "0006_empty_zarda",
+  a67207de4f5756238733969d786dd6b3e50425e0cdb7806c709af5c8d723ea6a:
+    "0007_bizarre_zarek",
+  "20aa1a547298db796e508d3f2a3b89e8e288e8926ea5c44d662831f03efbddb8":
+    "0008_worthless_talisman",
+  "714af5cf53b1209c1ce826835d770efa3f119848479cd8bb0c0d8d050644af2b":
+    "0009_icy_black_cat",
+  "540178c73bb2f46266a77e5b57eafab7f90913c3641fe03ab0fb2d1bfecccca0":
+    "0010_red_ink",
+  "5d38e8c357c954874148fe4052d3dff8a10ca116b2f873fb09a432526c3bb178":
+    "0011_lumpy_maximus",
+  // v0.8.5 as released (0004–0011 squashed). Keep in step with the file.
+  da6dbae6f960a0e17c5d3810ad13a8971de5de1782b171d8249107e3d75ff3a7:
+    "0004_v085_investments",
+};
+
 /**
  * Detect the pre-squash schema era. Hash of the earliest applied migration
  * first (exact for v0.6.x / v0.7.x), then schema-shape probes for older
@@ -202,6 +237,19 @@ const BASELINE_HASHES: Record<string, string> = {
 async function detectSchemaEra(
   client: import("pg").PoolClient,
 ): Promise<string> {
+  // Exact, v0.8 line: the latest migration applied.
+  try {
+    const { rows: lastRow } = await client.query(
+      "SELECT hash FROM drizzle.__drizzle_migrations ORDER BY id DESC LIMIT 1",
+    );
+    const lastHash = lastRow[0]?.hash as string | undefined;
+    if (lastHash && V08_MIGRATION_HASHES[lastHash]) {
+      return V08_MIGRATION_HASHES[lastHash];
+    }
+  } catch {
+    // __drizzle_migrations absent or unreadable — fall through.
+  }
+
   // Exact: the first migration a post-squash install ever applied is its
   // release-line baseline.
   try {

@@ -1,1 +1,0 @@
-ALTER TABLE "securities" ADD COLUMN "standin_preview" jsonb;

@@ -1,5 +1,5 @@
 {
-  "id": "8e2bf1d8-be8f-4246-b85e-b5dbd655d50b",
+  "id": "c018bd85-2c30-464e-8dbd-284062a701a1",
   "prevId": "442fb33e-40d7-433f-abbf-0b20b8a90a79",
   "version": "7",
   "dialect": "postgresql",
@@ -841,6 +841,57 @@
           "columns": ["key"]
         }
       },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.asset_class_buckets": {
+      "name": "asset_class_buckets",
+      "schema": "",
+      "columns": {
+        "bucket": {
+          "name": "bucket",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "asset_class_id": {
+          "name": "asset_class_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "asset_class_buckets_class_idx": {
+          "name": "asset_class_buckets_class_idx",
+          "columns": [
+            {
+              "expression": "asset_class_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "asset_class_buckets_asset_class_id_asset_class_params_id_fk": {
+          "name": "asset_class_buckets_asset_class_id_asset_class_params_id_fk",
+          "tableFrom": "asset_class_buckets",
+          "tableTo": "asset_class_params",
+          "columnsFrom": ["asset_class_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -2756,86 +2807,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.investment_transaction_rules": {
-      "name": "investment_transaction_rules",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "institution_contains": {
-          "name": "institution_contains",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "description_contains": {
-          "name": "description_contains",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "sign": {
-          "name": "sign",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "kind": {
-          "name": "kind",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "review_when": {
-          "name": "review_when",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "max_fraction_of_balance": {
-          "name": "max_fraction_of_balance",
-          "type": "numeric(12, 6)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "priority": {
-          "name": "priority",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "sample_description": {
-          "name": "sample_description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "investment_transaction_rules_nonempty_check": {
-          "name": "investment_transaction_rules_nonempty_check",
-          "value": "length(\"investment_transaction_rules\".\"institution_contains\") > 0 AND length(\"investment_transaction_rules\".\"description_contains\") > 0"
-        }
-      },
-      "isRLSEnabled": false
-    },
     "public.investment_transactions": {
       "name": "investment_transactions",
       "schema": "",
@@ -2891,12 +2862,6 @@
         },
         "kind_override": {
           "name": "kind_override",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "kind_override_source": {
-          "name": "kind_override_source",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -7254,6 +7219,108 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.sec_filing_cache": {
+      "name": "sec_filing_cache",
+      "schema": "",
+      "columns": {
+        "accession": {
+          "name": "accession",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "series_id": {
+          "name": "series_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "period_end": {
+          "name": "period_end",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "us_equity_pct": {
+          "name": "us_equity_pct",
+          "type": "numeric(12, 6)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "intl_equity_pct": {
+          "name": "intl_equity_pct",
+          "type": "numeric(12, 6)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "us_bond_pct": {
+          "name": "us_bond_pct",
+          "type": "numeric(12, 6)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "intl_bond_pct": {
+          "name": "intl_bond_pct",
+          "type": "numeric(12, 6)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tips_pct": {
+          "name": "tips_pct",
+          "type": "numeric(12, 6)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cash_pct": {
+          "name": "cash_pct",
+          "type": "numeric(12, 6)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "other_pct": {
+          "name": "other_pct",
+          "type": "numeric(12, 6)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "coverage": {
+          "name": "coverage",
+          "type": "numeric(12, 6)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fetched_at": {
+          "name": "fetched_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "sec_filing_cache_series_idx": {
+          "name": "sec_filing_cache_series_idx",
+          "columns": [
+            {
+              "expression": "series_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.securities": {
       "name": "securities",
       "schema": "",
@@ -7297,6 +7364,60 @@
         "source_description": {
           "name": "source_description",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sec_series_id": {
+          "name": "sec_series_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sec_class_id": {
+          "name": "sec_class_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "facts_series_id": {
+          "name": "facts_series_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "facts_class_id": {
+          "name": "facts_class_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "facts_series_name": {
+          "name": "facts_series_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "facts_basis": {
+          "name": "facts_basis",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "standin_confirmed_at": {
+          "name": "standin_confirmed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "standin_preview": {
+          "name": "standin_preview",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "facts_checked_at": {
+          "name": "facts_checked_at",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
         },
@@ -7353,6 +7474,174 @@
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.security_facts": {
+      "name": "security_facts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "security_id": {
+          "name": "security_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "as_of": {
+          "name": "as_of",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sec_series_id": {
+          "name": "sec_series_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "accession": {
+          "name": "accession",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expense_ratio": {
+          "name": "expense_ratio",
+          "type": "numeric(12, 6)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "us_equity_pct": {
+          "name": "us_equity_pct",
+          "type": "numeric(12, 6)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "intl_equity_pct": {
+          "name": "intl_equity_pct",
+          "type": "numeric(12, 6)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "us_bond_pct": {
+          "name": "us_bond_pct",
+          "type": "numeric(12, 6)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "intl_bond_pct": {
+          "name": "intl_bond_pct",
+          "type": "numeric(12, 6)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tips_pct": {
+          "name": "tips_pct",
+          "type": "numeric(12, 6)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cash_pct": {
+          "name": "cash_pct",
+          "type": "numeric(12, 6)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "other_pct": {
+          "name": "other_pct",
+          "type": "numeric(12, 6)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "coverage": {
+          "name": "coverage",
+          "type": "numeric(12, 6)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fetched_at": {
+          "name": "fetched_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "security_facts_identity_idx": {
+          "name": "security_facts_identity_idx",
+          "columns": [
+            {
+              "expression": "security_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "source",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "as_of",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "security_facts_security_idx": {
+          "name": "security_facts_security_idx",
+          "columns": [
+            {
+              "expression": "security_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "security_facts_security_id_securities_id_fk": {
+          "name": "security_facts_security_id_securities_id_fk",
+          "tableFrom": "security_facts",
+          "tableTo": "securities",
+          "columnsFrom": ["security_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "security_facts_fraction_check": {
+          "name": "security_facts_fraction_check",
+          "value": "(\"security_facts\".\"expense_ratio\" IS NULL OR (\"security_facts\".\"expense_ratio\" >= 0 AND \"security_facts\".\"expense_ratio\" < 1))\n        AND (\"security_facts\".\"coverage\" IS NULL OR (\"security_facts\".\"coverage\" >= 0 AND \"security_facts\".\"coverage\" <= 1))"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.self_loans": {
@@ -7571,6 +7860,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "last_balance_date": {
+          "name": "last_balance_date",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
         "is_included": {
           "name": "is_included",
           "type": "boolean",
@@ -7588,6 +7883,12 @@
         "linked_performance_account_id": {
           "name": "linked_performance_account_id",
           "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "linked_sub_key": {
+          "name": "linked_sub_key",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         }
