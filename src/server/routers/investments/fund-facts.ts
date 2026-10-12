@@ -180,7 +180,7 @@ export const investmentFundFactsRouter = createTRPCRouter({
           return {
             simplefinAccountId: id,
             performanceAccountId: a?.performanceAccountId ?? null,
-            label: `${a?.institution ?? ""} ${a?.accountName ?? ""}`.trim(),
+            label: a?.label ?? "",
             total: rows.reduce((s, r) => s + r.value, 0),
             /** Its funds added up (null for an effectively single-fund account). */
             rollup: accountRollup(rows),

@@ -141,6 +141,34 @@ describe("fund facts", () => {
   });
   afterAll(() => ctx.cleanup());
 
+  it("names an account the way the rest of the app does once it's linked", async () => {
+    const before = await ctx.caller.investments.getHoldingsOverview();
+    // Not linked to a tracked account: the institution's own name.
+    expect(before.accounts[0]!.label).toBe("Example Bank Example IRA");
+    const perf = ctx.db
+      .insert(sqliteSchema.performanceAccounts)
+      .values({
+        institution: "Example Bank",
+        accountType: "ira",
+        accountLabel: "Example Person IRA (Example Bank)",
+        displayName: "Example Retirement Account",
+        ownershipType: "individual",
+        parentCategory: "Retirement",
+      })
+      .returning()
+      .get().id;
+    ctx.db
+      .update(sqliteSchema.simplefinAccounts)
+      .set({ linkedPerformanceAccountId: perf })
+      .run();
+    const after = await ctx.caller.investments.getHoldingsOverview();
+    expect(after.accounts[0]!.label).toBe("Example Retirement Account");
+    ctx.db
+      .update(sqliteSchema.simplefinAccounts)
+      .set({ linkedPerformanceAccountId: null })
+      .run();
+  });
+
   it("values holdings at today's close when priced, else as reported", async () => {
     const o = await ctx.caller.investments.getHoldingsOverview();
     const rows = o.accounts[0]!.holdings;

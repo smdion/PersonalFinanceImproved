@@ -34,6 +34,12 @@ export type AccountInfo = {
   id: number;
   institution: string;
   accountName: string;
+  /**
+   * What to call it: the tracked account's name (accountDisplayName), plus
+   * the part when linked to one; the institution's own name only when it
+   * feeds no tracked account.
+   */
+  label: string;
   /** Linked to an HSA-type tracked account. */
   isHsa: boolean;
   performanceAccountId: number | null;
@@ -105,6 +111,16 @@ export async function loadAccounts(db: Db): Promise<Map<number, AccountInfo>> {
       orgName: schema.simplefinAccounts.orgName,
       accountName: schema.simplefinAccounts.accountName,
       accountType: schema.performanceAccounts.accountType,
+      perf: {
+        accountType: schema.performanceAccounts.accountType,
+        subType: schema.performanceAccounts.subType,
+        label: schema.performanceAccounts.label,
+        institution: schema.performanceAccounts.institution,
+        displayName: schema.performanceAccounts.displayName,
+        accountLabel: schema.performanceAccounts.accountLabel,
+        ownershipType: schema.performanceAccounts.ownershipType,
+        ownerPersonId: schema.performanceAccounts.ownerPersonId,
+      },
       performanceAccountId: schema.simplefinAccounts.linkedPerformanceAccountId,
       linkedSubKey: schema.simplefinAccounts.linkedSubKey,
       isIncluded: schema.simplefinAccounts.isIncluded,
@@ -117,9 +133,15 @@ export async function loadAccounts(db: Db): Promise<Map<number, AccountInfo>> {
         schema.simplefinAccounts.linkedPerformanceAccountId,
       ),
     );
-  const subs = rows.some((r) => r.linkedSubKey)
-    ? new Map((await loadLatestSubAccounts(db)).map((s) => [s.key, s]))
-    : new Map();
+  const [subs, people] = await Promise.all([
+    rows.some((r) => r.linkedSubKey)
+      ? loadLatestSubAccounts(db).then((l) => new Map(l.map((s) => [s.key, s])))
+      : new Map(),
+    db
+      .select({ id: schema.people.id, name: schema.people.name })
+      .from(schema.people),
+  ]);
+  const names = new Map(people.map((p) => [p.id, p.name]));
   return new Map(
     rows.map((r) => {
       // An unchecked account keeps its link (HSA redaction still follows
@@ -136,6 +158,15 @@ export async function loadAccounts(db: Db): Promise<Map<number, AccountInfo>> {
           id: r.id,
           institution: r.orgName,
           accountName: r.accountName,
+          label:
+            feeds && r.perf?.accountLabel
+              ? `${accountDisplayName(
+                  r.perf,
+                  r.perf.ownerPersonId != null
+                    ? names.get(r.perf.ownerPersonId)
+                    : undefined,
+                )}${sub ? ` · ${sub.label}` : ""}`
+              : `${r.orgName} ${r.accountName}`.trim(),
           isHsa: r.accountType != null && isHsaCategory(r.accountType),
           performanceAccountId: feeds ? r.performanceAccountId : null,
           ownerPersonId: sub?.ownerPersonId ?? null,
