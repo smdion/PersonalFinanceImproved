@@ -333,6 +333,9 @@ function RecentActivity() {
   const clear = trpc.investments.clearTransactionKind.useMutation({
     onSuccess: () => utils.investments.invalidate(),
   });
+  const markTransfer = trpc.investments.setTransactionKind.useMutation({
+    onSuccess: () => utils.investments.invalidate(),
+  });
   if (!rows) return null;
   if (rows.length === 0)
     return (
@@ -377,6 +380,31 @@ function RecentActivity() {
                   )}
                 </span>
               )}
+              {(r.kind === "contribution" || r.kind === "withdrawal") &&
+                r.source !== "locked" &&
+                !r.pending && (
+                  <span
+                    className={`block ${r.transferSuggestion ? "text-amber-700 dark:text-amber-400" : "text-faint"}`}
+                  >
+                    {r.transferSuggestion?.reason === "pair" &&
+                      `Matches ${formatCurrency(-r.amount)} in ${r.transferSuggestion.other} on ${formatDate(r.transferSuggestion.otherPosted!, "medium")} — looks like a move between your accounts. `}
+                    {r.transferSuggestion?.reason === "recorded" &&
+                      `Your Performance figures already record money moving in from ${r.transferSuggestion.other} this year — this deposit may be part of that move (counting it as a deposit too would count it twice). `}
+                    {r.transferSuggestion?.reason === "words" &&
+                      "The description says it's a transfer or rollover. "}
+                    <button
+                      className="hover:text-primary underline"
+                      disabled={markTransfer.isPending}
+                      onClick={() =>
+                        markTransfer.mutate({ id: r.id, kind: "transfer" })
+                      }
+                    >
+                      {r.transferSuggestion
+                        ? "Mark as a transfer"
+                        : "moved between my accounts?"}
+                    </button>
+                  </span>
+                )}
               {r.kind === "contribution" && r.amount > 0 && !r.pending && (
                 <DepositSplit
                   id={r.id}

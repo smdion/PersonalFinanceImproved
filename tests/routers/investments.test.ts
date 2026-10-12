@@ -391,6 +391,80 @@ describe("investments router", () => {
     expect(after.find((r) => r.id === out)?.source).toBe("override");
   });
 
+  it("suggests a transfer for a deposit Performance already records as moved in", async () => {
+    const db = ctx.db;
+    const perf = (label: string) =>
+      db
+        .insert(sqliteSchema.performanceAccounts)
+        .values({
+          institution: "Example Broker",
+          accountType: "brokerage",
+          accountLabel: label,
+          ownershipType: "individual",
+          parentCategory: "Portfolio",
+        })
+        .returning()
+        .get().id;
+    const into = perf("Example Receiving");
+    const from = perf("Example Old Plan");
+    const year = Number(daysAgo(4).slice(0, 4));
+    for (const [id, rollovers] of [
+      [into, "900"],
+      [from, "-900"],
+    ] as const)
+      db.insert(sqliteSchema.accountPerformance)
+        .values({
+          year,
+          institution: "Example Broker",
+          accountLabel: `acct ${id}`,
+          beginningBalance: "0",
+          totalContributions: "0",
+          yearlyGainLoss: "0",
+          endingBalance: "0",
+          rollovers,
+          parentCategory: "Portfolio",
+          performanceAccountId: id,
+        })
+        .run();
+    const sf = db
+      .insert(sqliteSchema.simplefinAccounts)
+      .values({
+        externalAccountId: "sf-receiving",
+        orgName: "Example Broker",
+        accountName: "sf-receiving",
+        lastBalance: "900",
+        linkedPerformanceAccountId: into,
+      })
+      .returning()
+      .get().id;
+    const dep = db
+      .insert(sqliteSchema.investmentTransactions)
+      .values({
+        simplefinAccountId: sf,
+        externalId: "rcv-1",
+        posted: daysAgo(4),
+        amount: "900.00",
+        description: "DEPOSIT",
+        pending: false,
+      })
+      .returning()
+      .get().id;
+    const rows = await ctx.caller.investments.listTransactions({});
+    expect(rows.find((r) => r.id === dep)?.transferSuggestion).toMatchObject({
+      reason: "recorded",
+    });
+    // One click settles it.
+    await ctx.caller.investments.setTransactionKind({
+      id: dep,
+      kind: "transfer",
+    });
+    const after = await ctx.caller.investments.listTransactions({});
+    expect(after.find((r) => r.id === dep)).toMatchObject({
+      kind: "transfer",
+      transferSuggestion: null,
+    });
+  });
+
   it("requires the portfolio permission to read or change anything", async () => {
     for (const session of [
       viewerSession,

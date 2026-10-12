@@ -85,3 +85,77 @@ export function matchInternalTransfers(
   }
   return result;
 }
+
+/** Words institutions use for money moving between accounts. */
+const MOVE_WORDS = /\b(roll ?overs?|transfers?|xfer|trnsfr|journal|acat)\b/i;
+
+export type TransferSuggestion =
+  | {
+      reason: "pair";
+      /** The opposite row elsewhere (an unchecked or unlinked account). */
+      pairId: number;
+    }
+  | { reason: "words" }
+  | {
+      reason: "recorded";
+      /** The tracked account Performance records the money leaving. */
+      fromAccount: string;
+    };
+
+/**
+ * Deposits and withdrawals that look like a move between the household's
+ * accounts but couldn't be matched (the other side is in an account that
+ * isn't linked or checked, or isn't in SimpleFIN at all). Suggestions only:
+ * an equal, opposite amount in any other SimpleFIN account within a few
+ * days; a description that says so; or a deposit into an account whose
+ * Performance figures for that year already record money rolled in from
+ * another tracked account (`recordedMoveIn` names it) — counting it as a
+ * contribution too would count it twice. Rows already matched or set by
+ * hand get none.
+ */
+export function suggestOneSidedTransfers(
+  rows: readonly {
+    /** Tracked account it counts toward, if counted. */
+    performanceAccountId?: number | null;
+    id: number;
+    simplefinAccountId: number;
+    /** Counts toward a tracked account (linked and checked). */
+    counted: boolean;
+    posted: string;
+    amount: number;
+    kind: string;
+    description: string;
+    /** Already matched, or kind set by hand / locked. */
+    settled: boolean;
+  }[],
+  recordedMoveIn: (
+    performanceAccountId: number,
+    year: number,
+  ) => string | null = () => null,
+): Map<number, TransferSuggestion> {
+  const out = new Map<number, TransferSuggestion>();
+  const money = (r: (typeof rows)[number]) =>
+    (r.kind === "contribution" && r.amount > 0) ||
+    (r.kind === "withdrawal" && r.amount < 0);
+  for (const r of rows) {
+    if (!r.counted || r.settled || !money(r)) continue;
+    const other = rows.find(
+      (o) =>
+        o.id !== r.id &&
+        o.simplefinAccountId !== r.simplefinAccountId &&
+        !o.counted &&
+        Math.round((o.amount + r.amount) * 100) === 0 &&
+        Math.abs(Date.parse(o.posted) - Date.parse(r.posted)) / DAY_MS <=
+          MAX_DAYS,
+    );
+    const recorded =
+      r.amount > 0 && r.performanceAccountId != null
+        ? recordedMoveIn(r.performanceAccountId, Number(r.posted.slice(0, 4)))
+        : null;
+    if (other) out.set(r.id, { reason: "pair", pairId: other.id });
+    else if (recorded)
+      out.set(r.id, { reason: "recorded", fromAccount: recorded });
+    else if (MOVE_WORDS.test(r.description)) out.set(r.id, { reason: "words" });
+  }
+  return out;
+}

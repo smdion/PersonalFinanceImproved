@@ -2,6 +2,7 @@
  * Shared helpers for the investments router group.
  * Internal to investments/ — do not import from outside this directory.
  */
+import { accountDisplayName } from "@/lib/utils/format";
 import type { TransactionSourceSplit } from "@/lib/db/schema-pg";
 import { and, asc, eq, gte, isNotNull, isNull } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
@@ -21,8 +22,16 @@ import type {
 } from "@/lib/config/enum-values";
 import {
   matchInternalTransfers,
+  suggestOneSidedTransfers,
   type TransferMatch,
 } from "@/lib/pure/internal-transfers";
+
+export type TransferSuggestionView = {
+  reason: "pair" | "words" | "recorded";
+  /** The other account (for "pair"). */
+  other: string | null;
+  otherPosted: string | null;
+};
 import { loadLatestSubAccounts } from "@/server/helpers/sub-accounts";
 import { countsAsFeed } from "@/lib/pure/simplefin-feeds";
 import type { SimplefinTransactionRule } from "@/lib/config/simplefin-transaction-rules";
@@ -49,6 +58,48 @@ export const countedFeed = and(
   isNotNull(schema.simplefinAccounts.linkedPerformanceAccountId),
   eq(schema.simplefinAccounts.isIncluded, true),
 );
+
+/**
+ * "<tracked account>|<year>" → the tracked account Performance records money
+ * rolling out of, for accounts whose row that year records money rolling in
+ * (positive rollovers) while another's records it rolling out.
+ */
+async function recordedMovesIn(db: Db): Promise<Map<string, string>> {
+  const rows = await db
+    .select({
+      performanceAccountId: schema.accountPerformance.performanceAccountId,
+      year: schema.accountPerformance.year,
+      rollovers: schema.accountPerformance.rollovers,
+      institution: schema.performanceAccounts.institution,
+      accountLabel: schema.performanceAccounts.accountLabel,
+      displayName: schema.performanceAccounts.displayName,
+      accountType: schema.performanceAccounts.accountType,
+    })
+    .from(schema.accountPerformance)
+    .innerJoin(
+      schema.performanceAccounts,
+      eq(
+        schema.performanceAccounts.id,
+        schema.accountPerformance.performanceAccountId,
+      ),
+    );
+  const out = new Map<string, string>();
+  for (const into of rows) {
+    if (Number(into.rollovers) <= 0) continue;
+    const from = rows.find(
+      (r) =>
+        r.year === into.year &&
+        r.performanceAccountId !== into.performanceAccountId &&
+        Number(r.rollovers) < 0,
+    );
+    if (from)
+      out.set(
+        `${into.performanceAccountId}|${into.year}`,
+        accountDisplayName(from),
+      );
+  }
+  return out;
+}
 
 export async function loadUserRules(db: Db): Promise<UserTransactionRule[]> {
   return db.select().from(schema.investmentTransactionRules);
@@ -139,6 +190,8 @@ export type ClassifiedTransactionRow = {
   sourceSplit: TransactionSourceSplit | null;
   /** Set when this row is one side of a move between the household's own accounts. */
   transfer: TransferMatch | null;
+  /** Looks like such a move, but the other side isn't in a counted account. */
+  transferSuggestion: TransferSuggestionView | null;
 } & EffectiveKind;
 
 /** Stored transactions with the kind each is shown as (worked out now, never stored). */
@@ -206,6 +259,7 @@ export async function loadClassifiedTransactions(
         { rules, accountBalance: balanceForRules },
       ),
       transfer: null as TransferMatch | null,
+      transferSuggestion: null as TransferSuggestionView | null,
     };
   });
 
@@ -242,6 +296,48 @@ export async function loadClassifiedTransactions(
     r.source = "transfer_match";
     r.needsReview = false;
     r.ruleId = null;
+  }
+
+  // Moves whose other side isn't in a counted account: suggest, never set.
+  const recorded = await recordedMovesIn(db);
+  const suggestions = suggestOneSidedTransfers(
+    classified
+      .filter((r) => !r.pending && !r.voided)
+      .map((r) => ({
+        performanceAccountId:
+          accounts.get(r.simplefinAccountId)?.performanceAccountId ?? null,
+        id: r.id,
+        simplefinAccountId: r.simplefinAccountId,
+        counted:
+          accounts.get(r.simplefinAccountId)?.performanceAccountId != null,
+        posted: r.posted,
+        amount: r.amount,
+        kind: r.kind,
+        description: r.description,
+        settled:
+          r.transfer !== null ||
+          r.source === "override" ||
+          r.source === "locked",
+      })),
+    (performanceAccountId, year) =>
+      recorded.get(`${performanceAccountId}|${year}`) ?? null,
+  );
+  for (const r of classified) {
+    const s = suggestions.get(r.id);
+    if (!s) continue;
+    const other =
+      s.reason === "pair"
+        ? classified.find((o) => o.id === s.pairId)
+        : undefined;
+    r.transferSuggestion = other
+      ? {
+          reason: "pair",
+          other: `${other.institution} ${other.accountName}`.trim(),
+          otherPosted: other.posted,
+        }
+      : s.reason === "recorded"
+        ? { reason: "recorded", other: s.fromAccount, otherPosted: null }
+        : { reason: "words", other: null, otherPosted: null };
   }
 
   return classified

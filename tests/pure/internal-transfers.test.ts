@@ -1,6 +1,7 @@
 /** Matching money moved between the household's own accounts. Invented rows. */
 import { describe, it, expect } from "vitest";
 import {
+  suggestOneSidedTransfers,
   matchInternalTransfers,
   type TransferCandidate,
 } from "@/lib/pure/internal-transfers";
@@ -114,5 +115,73 @@ describe("matchInternalTransfers", () => {
         row({ simplefinAccountId: 2, amount: 625, performanceAccountId: null }),
       ]).size,
     ).toBe(0);
+  });
+});
+
+describe("suggestOneSidedTransfers", () => {
+  const base = {
+    simplefinAccountId: 1,
+    counted: true,
+    posted: "2026-09-14",
+    kind: "contribution",
+    description: "CASH",
+    settled: false,
+    performanceAccountId: 7,
+  };
+
+  it("pairs with an equal, opposite amount in an account that isn't counted", () => {
+    const s = suggestOneSidedTransfers([
+      { ...base, id: 1, amount: 2160.85 },
+      {
+        ...base,
+        id: 2,
+        simplefinAccountId: 9,
+        counted: false,
+        performanceAccountId: null,
+        kind: "withdrawal",
+        amount: -2160.85,
+        posted: "2026-09-11",
+      },
+    ]);
+    expect(s.get(1)).toEqual({ reason: "pair", pairId: 2 });
+    expect(s.has(2)).toBe(false); // not counted: nothing to suggest on it
+  });
+
+  it("uses Performance's recorded move-in, then the description", () => {
+    const recorded = (id: number, year: number) =>
+      id === 7 && year === 2026 ? "Example ESPP" : null;
+    const s = suggestOneSidedTransfers(
+      [
+        { ...base, id: 1, amount: 500 },
+        {
+          ...base,
+          id: 2,
+          amount: 500,
+          performanceAccountId: 8,
+          description: "ROLLOVER IN",
+        },
+        { ...base, id: 3, amount: 500, performanceAccountId: 8 },
+      ],
+      recorded,
+    );
+    expect(s.get(1)).toEqual({
+      reason: "recorded",
+      fromAccount: "Example ESPP",
+    });
+    expect(s.get(2)).toEqual({ reason: "words" });
+    expect(s.has(3)).toBe(false);
+  });
+
+  it("leaves matched and hand-set rows alone", () => {
+    const s = suggestOneSidedTransfers([
+      {
+        ...base,
+        id: 1,
+        amount: 500,
+        settled: true,
+        description: "TRANSFER IN",
+      },
+    ]);
+    expect(s.size).toBe(0);
   });
 });
