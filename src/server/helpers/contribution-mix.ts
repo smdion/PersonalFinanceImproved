@@ -9,7 +9,10 @@
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { isTaxFree } from "@/lib/config/account-types";
-import type { ContributionMix } from "@/lib/pure/flow-suggestions";
+import type {
+  AccountContributionMix,
+  ContributionMix,
+} from "@/lib/pure/flow-suggestions";
 import { filterActiveJobs } from "@/lib/pure/profiles";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { toNumber, type Db } from "./transforms";
@@ -23,7 +26,7 @@ import {
 
 export async function loadContributionMix(
   db: Db,
-): Promise<Map<number, ContributionMix>> {
+): Promise<Map<number, AccountContributionMix>> {
   const [allJobs, contribs, activeProfile] = await Promise.all([
     db.select().from(schema.jobs),
     db
@@ -71,7 +74,7 @@ export async function loadContributionMix(
       salary,
       periodsPerYear,
     );
-    return { c, salary, annual };
+    return { c, job, salary, annual };
   });
 
   const match = computeGroupedEmployerMatch(
@@ -90,15 +93,18 @@ export async function loadContributionMix(
     })),
   );
 
-  const out = new Map<number, ContributionMix>();
-  for (const { c, annual } of resolved) {
-    const mix = out.get(c.performanceAccountId!) ?? {
-      employeePreTax: 0,
-      employeeRoth: 0,
-      employeeOther: 0,
-      employer: 0,
-      employerRoth: 0,
-    };
+  const empty = (): ContributionMix => ({
+    employeePreTax: 0,
+    employeeRoth: 0,
+    employeeOther: 0,
+    employer: 0,
+    employerRoth: 0,
+  });
+  const add = (
+    mix: ContributionMix,
+    c: (typeof resolved)[number]["c"],
+    annual: number,
+  ) => {
     if (isTaxFree(c.taxTreatment)) mix.employeeRoth += annual;
     else if (c.taxTreatment === "pre_tax") mix.employeePreTax += annual;
     else mix.employeeOther += annual;
@@ -106,7 +112,22 @@ export async function loadContributionMix(
     mix.employer += m?.matchAnnual ?? 0;
     if (m && isTaxFree(m.employerMatchTaxTreatment))
       mix.employerRoth += m.matchAnnual;
-    out.set(c.performanceAccountId!, mix);
+  };
+  const out = new Map<number, AccountContributionMix>();
+  for (const { c, job, annual } of resolved) {
+    const account = out.get(c.performanceAccountId!) ?? {
+      ...empty(),
+      byPerson: new Map(),
+    };
+    add(account, c, annual);
+    // Whose paycheck it is: the contribution's person, else its job's.
+    const person = c.personId ?? job?.personId ?? null;
+    if (person !== null) {
+      const own = account.byPerson.get(person) ?? empty();
+      add(own, c, annual);
+      account.byPerson.set(person, own);
+    }
+    out.set(c.performanceAccountId!, account);
   }
   return out;
 }

@@ -19,6 +19,7 @@ import { roundToCents } from "@/lib/utils/math";
 import {
   attributeFeeds,
   estimateFromPaycheck,
+  mixFor,
   flowsSinceFill,
   initialBaseline,
   reduceBasis,
@@ -343,7 +344,16 @@ export const investmentSuggestionsRouter = createTRPCRouter({
           ledger.counted,
           countFrom,
         );
-        const accountMix = mix.get(r.performanceAccountId) ?? null;
+        // A row tracked per person splits by that person's paycheck; a
+        // single row for the account (even one stored under a person)
+        // covers everyone's.
+        const accountMix = mixFor(
+          mix,
+          r.performanceAccountId,
+          (perAccount.get(r.performanceAccountId) ?? 1) > 1
+            ? r.ownerPersonId
+            : null,
+        );
         const split = splitWithKnown(t, accountMix, false);
         // No feed: what the paycheck setup should have sent instead.
         const estimateTo = today < yearEnd ? today : yearEnd;
@@ -486,7 +496,7 @@ export const investmentSuggestionsRouter = createTRPCRouter({
           feeds,
           subs,
         );
-        const accountMix = mix.get(r.performanceAccountId) ?? null;
+        const accountMix = mixFor(mix, r.performanceAccountId, r.ownerPersonId);
         let roth = 0;
         let conversions = 0;
         let outflow = 0;

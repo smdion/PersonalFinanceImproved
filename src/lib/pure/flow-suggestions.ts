@@ -426,3 +426,28 @@ export function splitWithKnown(
     estimated: s.estimated && rest > 0,
   };
 }
+
+/** An account's mix in total and per person whose paycheck feeds it. */
+export type AccountContributionMix = ContributionMix & {
+  byPerson: Map<number, ContributionMix>;
+};
+
+/**
+ * The mix to split one person's deposits by. An account several people's
+ * paychecks feed uses that person's own setup; a person with no paycheck
+ * into it (e.g. the other spouse's half of a joint IRA) gets none — their
+ * deposits aren't paycheck money. A row for the whole account (no owner)
+ * uses the account's total.
+ */
+export function mixFor(
+  mix: ReadonlyMap<number, AccountContributionMix>,
+  performanceAccountId: number,
+  ownerPersonId: number | null,
+): ContributionMix | null {
+  const account = mix.get(performanceAccountId);
+  if (!account) return null;
+  if (ownerPersonId === null) return account;
+  return account.byPerson.size > 0
+    ? (account.byPerson.get(ownerPersonId) ?? null)
+    : account;
+}
