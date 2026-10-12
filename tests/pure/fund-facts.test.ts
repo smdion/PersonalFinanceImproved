@@ -5,6 +5,7 @@ import {
   blendedCost,
   effectiveFacts,
   portfolioBuckets,
+  valueByClass,
   type FactRow,
 } from "@/lib/pure/fund-facts";
 
@@ -127,5 +128,37 @@ describe("portfolio roll-ups", () => {
     expect(r.mix).toBeNull();
     expect(r.coverage).toBe(0);
     expect(r.cost.yearlyCost).toBeCloseTo(5);
+  });
+});
+
+describe("valueByClass", () => {
+  const buckets = {
+    us_equity: 60,
+    intl_equity: 20,
+    us_bond: 10,
+    intl_bond: 5,
+    tips: 0,
+    cash: 4,
+    other: 1,
+  };
+
+  it("adds several categories into one class and lists what's left out", () => {
+    const r = valueByClass(
+      buckets,
+      new Map([
+        ["us_equity", 1],
+        ["intl_equity", 2],
+        ["us_bond", 3],
+        ["intl_bond", 3],
+        ["tips", 4], // linked but empty: no value, not left out
+      ] as const),
+    );
+    expect(Object.fromEntries(r.byClass)).toEqual({
+      1: 60,
+      2: 20,
+      3: 15,
+      4: 0,
+    });
+    expect(r.unlinked).toEqual(["cash", "other"]);
   });
 });

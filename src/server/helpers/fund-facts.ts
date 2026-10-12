@@ -1,6 +1,26 @@
-/** Stored security_facts rows → the pure FactRow shape. */
-import type * as schema from "@/lib/db/schema";
+/** Stored security_facts rows → the pure FactRow shape; bucket links. */
+import { eq } from "drizzle-orm";
+import * as schema from "@/lib/db/schema";
+import type { CompositionBucket } from "@/lib/config/enum-values";
 import type { FactRow } from "@/lib/pure/fund-facts";
+import type { Db } from "./transforms";
+
+/**
+ * Which active asset class each composition bucket counts toward. A link to
+ * an inactive class doesn't count (the bucket shows as left out).
+ */
+export async function loadBucketLinks(
+  db: Db,
+): Promise<Map<CompositionBucket, number>> {
+  const l = schema.assetClassBuckets;
+  const a = schema.assetClassParams;
+  const rows = await db
+    .select({ bucket: l.bucket, assetClassId: l.assetClassId })
+    .from(l)
+    .innerJoin(a, eq(a.id, l.assetClassId))
+    .where(eq(a.isActive, true));
+  return new Map(rows.map((r) => [r.bucket, r.assetClassId]));
+}
 
 export function toFactRows(
   rows: (typeof schema.securityFacts.$inferSelect)[],

@@ -78,6 +78,13 @@
       "when": 1791826030636,
       "tag": "0010_red_ink",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791830687589,
+      "tag": "0011_lumpy_maximus",
+      "breakpoints": true
     }
   ]
 }

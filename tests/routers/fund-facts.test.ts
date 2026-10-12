@@ -6,6 +6,7 @@ import "./setup-mocks";
 import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
 import { eq } from "drizzle-orm";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
+import type { CompositionBucket } from "@/lib/config/enum-values";
 
 vi.mock("@/server/helpers/market-prices", () => ({
   getLatestMarketClose: vi.fn(async (_db: unknown, ticker: string) =>
@@ -40,20 +41,20 @@ describe("fund facts", () => {
     const db = ctx.db;
     const cls = (
       name: string,
-      compositionBucket: string | null,
+      bucket: CompositionBucket | null,
       sortOrder: number,
-    ) =>
-      db
+    ) => {
+      const classId = db
         .insert(sqliteSchema.assetClassParams)
-        .values({
-          name,
-          meanReturn: "0.07",
-          stdDev: "0.15",
-          sortOrder,
-          compositionBucket: compositionBucket as never,
-        })
+        .values({ name, meanReturn: "0.07", stdDev: "0.15", sortOrder })
         .returning()
         .get().id;
+      if (bucket)
+        db.insert(sqliteSchema.assetClassBuckets)
+          .values({ bucket, assetClassId: classId })
+          .run();
+      return classId;
+    };
     id.stocks = cls("Example Stocks", "us_equity", 1);
     id.bonds = cls("Example Bonds", "us_bond", 2);
     id.spare = cls("Example Spare", null, 3);
@@ -334,16 +335,36 @@ describe("fund facts", () => {
     expect(rows.filter((r) => r.source === "user")).toHaveLength(0);
   });
 
-  it("links a bucket to one asset class at a time", async () => {
-    await ctx.caller.investments.setCompositionBucket({
-      assetClassId: id.spare!,
-      bucket: "us_bond",
+  it("counts several fund categories toward one asset class, each toward one", async () => {
+    const link = (bucket: CompositionBucket, assetClassId: number | null) =>
+      ctx.caller.investments.linkCompositionBucket({ bucket, assetClassId });
+    const overview = () => ctx.caller.investments.getHoldingsOverview();
+    const row = async (classId: number) =>
+      (await overview()).allocation.rows.find(
+        (r) => r.assetClassId === classId,
+      )!;
+
+    const before = (await row(id.bonds!)).value;
+    await link("intl_bond", id.bonds!);
+    expect(await row(id.bonds!)).toMatchObject({
+      buckets: ["us_bond", "intl_bond"],
+      value: expect.closeTo(before + 500, 5),
     });
-    const rows = ctx.db.select().from(sqliteSchema.assetClassParams).all();
-    expect(rows.find((r) => r.id === id.spare)?.compositionBucket).toBe(
-      "us_bond",
+    expect((await overview()).allocation.unmapped).toEqual([]);
+
+    // A category moves rather than counting twice.
+    await link("intl_bond", id.spare!);
+    expect((await row(id.bonds!)).buckets).toEqual(["us_bond"]);
+    expect((await row(id.spare!)).buckets).toEqual(["intl_bond"]);
+
+    await link("intl_bond", null);
+    expect((await overview()).allocation.unmapped).toEqual([
+      { bucket: "intl_bond", value: 500 },
+    ]);
+
+    await expect(link("intl_bond", 999_999)).rejects.toThrow(
+      /No such asset class/,
     );
-    expect(rows.find((r) => r.id === id.bonds)?.compositionBucket).toBeNull();
   });
 
   it("needs the portfolio permission", async () => {

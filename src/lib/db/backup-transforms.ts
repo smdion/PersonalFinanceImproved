@@ -66,7 +66,58 @@ const V08_SCHEMA_TAGS = [
   "0009_vengeful_mister_sinister", // SQLite counterpart of 0009
   "0010_red_ink", // PG: securities.standin_preview (a suggested stand-in's SEC facts, for judging it)
   "0010_mysterious_black_panther", // SQLite counterpart of 0010
+  "0011_lumpy_maximus", // PG: asset_class_buckets (several buckets per asset class), copied from asset_class_params.composition_bucket
+  "0011_peaceful_rictor", // SQLite counterpart of 0011
 ] as const;
+
+/** First tags whose backups carry asset_class_buckets (PG, SQLite). */
+const ASSET_CLASS_BUCKETS_TAGS = [
+  "0011_lumpy_maximus",
+  "0011_peaceful_rictor",
+] as const;
+
+/**
+ * Tables a restore rebuilds from other tables when the backup predates
+ * them — so a backup without one doesn't lose its data (see
+ * tablesLostOnRestore). Value: the table it's rebuilt from.
+ */
+export const REBUILT_ON_RESTORE: Readonly<Record<string, string>> = {
+  asset_class_buckets: "asset_class_params",
+};
+
+/**
+ * Whether a backup at `schemaVersion` was taken before asset_class_buckets
+ * existed. Decided by the version, not by the table being empty: a newer
+ * backup with nothing linked must stay unlinked.
+ */
+function predatesAssetClassBuckets(schemaVersion: string): boolean {
+  const v08 = V08_SCHEMA_TAGS as readonly string[];
+  const at = v08.indexOf(schemaVersion);
+  if (at === -1) return true; // every older era
+  return ASSET_CLASS_BUCKETS_TAGS.every((t) => at < v08.indexOf(t));
+}
+
+/**
+ * Pre-0011 backups: each asset class's single composition_bucket becomes
+ * its asset_class_buckets row, as migration 0011 does on a live database.
+ */
+function rebuildAssetClassBuckets(
+  tables: TableData,
+  schemaVersion: string,
+): void {
+  if (!predatesAssetClassBuckets(schemaVersion)) return;
+  const rows: Record<string, unknown>[] = [];
+  for (const c of (tables["asset_class_params"] ?? []) as Record<
+    string,
+    unknown
+  >[]) {
+    const bucket = c["composition_bucket"];
+    if (typeof bucket === "string" && bucket !== "")
+      rows.push({ bucket, asset_class_id: c["id"] });
+  }
+  // Nothing to link: leave the table out, as a backup with it empty would.
+  if (rows.length > 0) tables["asset_class_buckets"] = rows;
+}
 
 const V07_SCHEMA_TAGS = [
   "0000_v7_initial_schema", // PG + SQLite (identical tag in both journals)
@@ -955,6 +1006,7 @@ export function transformBackupToCurrentSchema(
   // + the salary_overrides → salaries reshape + is_default drop. Runs for
   // every era, including a fully-current v0.7.x export (a no-op then).
   transformV07xToCurrent(cloned);
+  rebuildAssetClassBuckets(cloned, schemaVersion);
 
   log("info", "backup_transform_complete", {
     from: schemaVersion,

@@ -101,6 +101,7 @@ export const relocationScenarios = active.relocationScenarios;
 export const scenarios = active.scenarios;
 export const assetClassParams = active.assetClassParams;
 export const assetClassCorrelations = active.assetClassCorrelations;
+export const assetClassBuckets = active.assetClassBuckets;
 export const glidePathAllocations = active.glidePathAllocations;
 export const mcPresets = active.mcPresets;
 export const mcPresetGlidePaths = active.mcPresetGlidePaths;

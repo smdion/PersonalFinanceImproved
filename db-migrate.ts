@@ -140,6 +140,7 @@ const VERSION_TABLE_NAMES = [
   "retirement_salary_overrides",
   "retirement_budget_overrides",
   "asset_class_correlations",
+  "asset_class_buckets",
   "glide_path_allocations",
   "brokerage_planned_transactions",
   "annual_performance",

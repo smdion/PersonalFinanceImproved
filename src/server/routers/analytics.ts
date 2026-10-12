@@ -4,10 +4,9 @@ import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { createTRPCRouter, portfolioProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { ANALYTICS_HISTORY_SNAPSHOT_LIMIT } from "@/lib/constants";
-import { effectiveFacts } from "@/lib/pure/fund-facts";
-import { toFactRows } from "@/server/helpers/fund-facts";
+import { effectiveFacts, valueByClass } from "@/lib/pure/fund-facts";
+import { loadBucketLinks, toFactRows } from "@/server/helpers/fund-facts";
 import { localDateStr } from "@/lib/utils/date";
-import type { CompositionBucket } from "@/lib/config/enum-values";
 
 // ---------------------------------------------------------------------------
 // Shared Zod schemas
@@ -246,19 +245,15 @@ export const analyticsRouter = createTRPCRouter({
       let suggestedAssetClassName: string | undefined;
       const mix = facts.composition?.buckets;
       if (mix) {
-        const [bucket, share] = Object.entries(mix).sort(
-          (x, y) => y[1] - x[1],
-        )[0]!;
-        if (share >= 0.8) {
+        // Shares per class through the household's links (several
+        // categories may count toward one class).
+        const { byClass } = valueByClass(mix, await loadBucketLinks(ctx.db));
+        const [top] = [...byClass.entries()].sort((x, y) => y[1] - x[1]);
+        if (top && top[1] >= 0.8) {
           const [cls] = await ctx.db
             .select({ name: schema.assetClassParams.name })
             .from(schema.assetClassParams)
-            .where(
-              eq(
-                schema.assetClassParams.compositionBucket,
-                bucket as CompositionBucket,
-              ),
-            )
+            .where(eq(schema.assetClassParams.id, top[0]))
             .limit(1);
           suggestedAssetClassName = cls?.name;
         }

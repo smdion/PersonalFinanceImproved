@@ -19,13 +19,14 @@ import {
   blendedCost,
   effectiveFacts,
   portfolioBuckets,
+  valueByClass,
 } from "@/lib/pure/fund-facts";
 import { interpolateAllocations } from "@/lib/calculators/random";
 import { getAge, localDateStr } from "@/lib/utils/date";
 import { getLatestMarketClose } from "@/server/helpers/market-prices";
 import { getSecConnection } from "@/lib/sec/connection";
 import { syncSecurityFacts } from "@/lib/sec/facts-sync";
-import { toFactRows } from "@/server/helpers/fund-facts";
+import { loadBucketLinks, toFactRows } from "@/server/helpers/fund-facts";
 import { loadAccounts, loadLatestHoldings } from "./_shared";
 
 type Db = typeof import("@/lib/db").db;
@@ -150,17 +151,19 @@ export const investmentFundFactsRouter = createTRPCRouter({
         .select({
           id: schema.assetClassParams.id,
           name: schema.assetClassParams.name,
-          bucket: schema.assetClassParams.compositionBucket,
         })
         .from(schema.assetClassParams)
         .where(eq(schema.assetClassParams.isActive, true))
         .orderBy(schema.assetClassParams.sortOrder),
       targetByAssetClass(ctx.db),
     ]);
-    const valued = await valueHoldings(ctx.db, holdings);
+    const [valued, links] = await Promise.all([
+      valueHoldings(ctx.db, holdings),
+      loadBucketLinks(ctx.db),
+    ]);
 
     const { buckets, unknown, total } = portfolioBuckets(valued);
-    const mapped = new Set(assetClasses.map((a) => a.bucket).filter(Boolean));
+    const { byClass, unlinked } = valueByClass(buckets, links);
     const byAccount = new Map<number, typeof valued>();
     for (const v of valued)
       byAccount.set(v.simplefinAccountId, [
@@ -210,13 +213,14 @@ export const investmentFundFactsRouter = createTRPCRouter({
         rows: assetClasses.map((a) => ({
           assetClassId: a.id,
           name: a.name,
-          bucket: a.bucket,
-          value: a.bucket ? buckets[a.bucket] : 0,
+          /** The fund categories counted toward it. */
+          buckets: COMPOSITION_BUCKET_VALUES.filter(
+            (b) => links.get(b) === a.id,
+          ),
+          value: byClass.get(a.id) ?? 0,
           targetPct: target.target[a.id] ?? null,
         })),
-        unmapped: COMPOSITION_BUCKET_VALUES.filter(
-          (b) => !mapped.has(b) && buckets[b] > 0.005,
-        ).map((b) => ({ bucket: b, value: buckets[b] })),
+        unmapped: unlinked.map((b) => ({ bucket: b, value: buckets[b] })),
       },
       cost: blendedCost(valued),
     };
@@ -418,27 +422,41 @@ export const investmentFundFactsRouter = createTRPCRouter({
       return { ok: true as const };
     }),
 
-  /** Which composition bucket an asset class receives (null = none). */
-  setCompositionBucket: portfolioProcedure
+  /**
+   * Which asset class a fund category counts toward (null = none). Several
+   * categories may count toward one class; a category toward one class.
+   */
+  linkCompositionBucket: portfolioProcedure
     .input(
       z.object({
-        assetClassId: z.number().int(),
-        bucket: compositionBucketSchema.nullable(),
+        bucket: compositionBucketSchema,
+        assetClassId: z.number().int().nullable(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const a = schema.assetClassParams;
-      if (input.bucket) {
-        // A bucket belongs to one asset class: release it elsewhere first.
-        await ctx.db
-          .update(a)
-          .set({ compositionBucket: null })
-          .where(eq(a.compositionBucket, input.bucket as CompositionBucket));
+      const l = schema.assetClassBuckets;
+      const bucket = input.bucket as CompositionBucket;
+      if (input.assetClassId === null) {
+        await ctx.db.delete(l).where(eq(l.bucket, bucket));
+        return { ok: true as const };
       }
+      const a = schema.assetClassParams;
+      const [cls] = await ctx.db
+        .select({ id: a.id })
+        .from(a)
+        .where(and(eq(a.id, input.assetClassId), eq(a.isActive, true)));
+      if (!cls)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "No such asset class",
+        });
       await ctx.db
-        .update(a)
-        .set({ compositionBucket: input.bucket })
-        .where(eq(a.id, input.assetClassId));
+        .insert(l)
+        .values({ bucket, assetClassId: cls.id })
+        .onConflictDoUpdate({
+          target: l.bucket,
+          set: { assetClassId: cls.id },
+        });
       return { ok: true as const };
     }),
 });

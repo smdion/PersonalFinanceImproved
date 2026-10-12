@@ -88,7 +88,8 @@ export const factsBasisSchema = z.enum(FACTS_BASIS_VALUES);
 
 /**
  * Composition buckets a fund's holdings are summed into. Fixed set; each
- * asset class can point at one (asset_class_params.composition_bucket).
+ * counts toward at most one asset class (asset_class_buckets), and a class
+ * can take several.
  */
 export const COMPOSITION_BUCKET_VALUES = [
   "us_equity",

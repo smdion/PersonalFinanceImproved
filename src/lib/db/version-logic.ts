@@ -27,7 +27,10 @@ import {
 } from "./compat";
 import { VERSION_TABLE_NAMES, VERSION_TABLES } from "./version-tables";
 import { log } from "@/lib/logger";
-import { transformBackupToCurrentSchema } from "./backup-transforms";
+import {
+  REBUILT_ON_RESTORE,
+  transformBackupToCurrentSchema,
+} from "./backup-transforms";
 
 /**
  * Column list for an INSERT built from a row set — the UNION of every
@@ -215,6 +218,9 @@ export async function tablesLostOnRestore(
   const lost: { tableName: string; currentRows: number }[] = [];
   for (const tableName of VERSION_TABLE_NAMES) {
     if (present.has(tableName)) continue;
+    // Rebuilt by the restore from a table the backup does carry.
+    const source = REBUILT_ON_RESTORE[tableName];
+    if (source && present.has(source)) continue;
     let currentRows = 0;
     try {
       const rows = await queryRaw<{ n: number | string }>(
@@ -264,16 +270,14 @@ export async function restoreVersion(
     CURRENT_SCHEMA_VERSION,
   );
 
-  // Rebuild the table data map with transformed data
-  const tableDataMap = new Map(
-    tableDatas.map((t) => [
-      t.tableName,
-      {
-        ...t,
-        data: transformedMap[t.tableName] ?? t.data,
-      },
-    ]),
+  // Rebuild the table data map with transformed data — including tables the
+  // transform rebuilt that the version itself doesn't carry (e.g. links a
+  // newer schema keeps in a table of its own).
+  const tableDataMap = new Map<string, { data: unknown }>(
+    tableDatas.map((t) => [t.tableName, { data: t.data }]),
   );
+  for (const [tableName, data] of Object.entries(transformedMap))
+    tableDataMap.set(tableName, { data });
 
   // Wrap in a transaction so truncate + inserts are atomic.
   // If anything fails, the database rolls back to its pre-restore state.

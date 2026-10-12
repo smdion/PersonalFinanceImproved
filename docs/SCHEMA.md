@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**80 tables.**
+**81 tables.**
 
 ## Mermaid diagram
 
@@ -215,6 +215,9 @@ erDiagram
   asset_class_params {
     int id PK
   }
+  asset_class_buckets {
+    int id PK
+  }
   asset_class_correlations {
     int id PK
   }
@@ -292,6 +295,7 @@ erDiagram
   holding_observations }o--|| securities : references
   investment_transactions }o--|| simplefin_accounts : references
   simplefin_accounts }o--|| performance_accounts : references
+  asset_class_buckets }o--|| asset_class_params : references
   asset_class_correlations }o--|| asset_class_params : references
   asset_class_correlations }o--|| asset_class_params : references
   glide_path_allocations }o--|| asset_class_params : references
@@ -310,6 +314,7 @@ erDiagram
 - **annual_performance**
 - **api_connections**
 - **app_settings**
+- **asset_class_buckets** → asset_class_params
 - **asset_class_correlations** → asset_class_params, asset_class_params
 - **asset_class_params**
 - **brokerage_goals**

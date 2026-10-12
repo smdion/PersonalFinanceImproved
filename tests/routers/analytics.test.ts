@@ -282,10 +282,13 @@ describe("analytics router", () => {
             name: "Example Stocks",
             meanReturn: "0.07",
             stdDev: "0.15",
-            compositionBucket: "us_equity",
           })
           .returning()
           .get();
+        ctx.db
+          .insert(sqliteSchema.assetClassBuckets)
+          .values({ bucket: "us_equity", assetClassId: cls.id })
+          .run();
         const sec = ctx.db
           .insert(sqliteSchema.securities)
           .values({
@@ -321,6 +324,49 @@ describe("analytics router", () => {
           expenseRatio: 0.0004,
           suggestedAssetClassName: cls.name,
         });
+      } finally {
+        ctx.cleanup();
+      }
+    });
+
+    it("suggests a class that several of the fund's categories count toward together", async () => {
+      const ctx = await createTestCaller(adminSession);
+      try {
+        const bonds = ctx.db
+          .insert(sqliteSchema.assetClassParams)
+          .values({ name: "Example Bonds", meanReturn: "0.04", stdDev: "0.05" })
+          .returning()
+          .get();
+        ctx.db
+          .insert(sqliteSchema.assetClassBuckets)
+          .values([
+            { bucket: "us_bond", assetClassId: bonds.id },
+            { bucket: "intl_bond", assetClassId: bonds.id },
+          ])
+          .run();
+        const sec = ctx.db
+          .insert(sqliteSchema.securities)
+          .values({
+            ticker: "EXBDX",
+            name: "Example Global Bond Fund",
+            kind: "mutual_fund",
+          })
+          .returning()
+          .get();
+        ctx.db
+          .insert(sqliteSchema.securityFacts)
+          .values({
+            securityId: sec.id,
+            source: "sec_nport",
+            asOf: "2026-06-30",
+            usBondPct: "0.550000",
+            intlBondPct: "0.450000",
+            coverage: "1.000000",
+          })
+          .run();
+        expect(
+          await ctx.caller.analytics.lookupTicker({ ticker: "EXBDX" }),
+        ).toMatchObject({ suggestedAssetClassName: "Example Bonds" });
       } finally {
         ctx.cleanup();
       }

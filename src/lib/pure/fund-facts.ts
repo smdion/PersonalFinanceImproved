@@ -168,3 +168,27 @@ export function accountRollup(holdings: readonly ValuedHolding[]): {
     cost: blendedCost(holdings),
   };
 }
+
+/**
+ * Value per asset class from value per bucket, through the household's
+ * links (bucket → the class it counts toward; several buckets may feed one
+ * class). Buckets with value but no link are listed so they can be shown
+ * as left out. The one place bucket values become class values.
+ */
+export function valueByClass(
+  buckets: Readonly<Record<CompositionBucket, number>>,
+  links: ReadonlyMap<CompositionBucket, number>,
+): { byClass: Map<number, number>; unlinked: CompositionBucket[] } {
+  const byClass = new Map<number, number>();
+  const unlinked: CompositionBucket[] = [];
+  for (const b of COMPOSITION_BUCKET_VALUES) {
+    const v = buckets[b];
+    const classId = links.get(b);
+    if (classId === undefined) {
+      if (v > 0.005) unlinked.push(b);
+      continue;
+    }
+    byClass.set(classId, (byClass.get(classId) ?? 0) + v);
+  }
+  return { byClass, unlinked };
+}

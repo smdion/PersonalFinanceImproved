@@ -76,6 +76,7 @@ export const VERSION_TABLES: VersionTableEntry[] = [
   { name: "retirement_budget_overrides", tier: 1 },
   { name: "projection_overrides", tier: 1 },
   { name: "asset_class_correlations", tier: 1 },
+  { name: "asset_class_buckets", tier: 1 }, // FK into asset_class_params
   { name: "glide_path_allocations", tier: 1 },
   { name: "brokerage_planned_transactions", tier: 1 },
   { name: "annual_performance", tier: 1 },

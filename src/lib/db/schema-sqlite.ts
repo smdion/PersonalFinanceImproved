@@ -2552,7 +2552,11 @@ export const assetClassParams = sqliteTable(
   {
     id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
     name: text("name").notNull().unique(),
-    /** Which composition bucket of a fund's holdings this asset class receives (none = not mapped). */
+    /**
+     * @deprecated Replaced by asset_class_buckets (several buckets can feed
+     * one class) in 0011; kept only so an image from before 0011 still runs
+     * if rolled back. Never read or written — drop it in a later migration.
+     */
     compositionBucket: text("composition_bucket").$type<CompositionBucket>(),
     meanReturn: text("mean_return").notNull(),
     stdDev: text("std_dev").notNull(),
@@ -2565,6 +2569,23 @@ export const assetClassParams = sqliteTable(
       .on(table.compositionBucket)
       .where(sql`${table.compositionBucket} IS NOT NULL`),
   ],
+);
+
+/**
+ * Which asset class each composition bucket of a fund's holdings counts
+ * toward (a bucket feeds at most one class; a class can take several — e.g.
+ * US and international bonds into one bonds class). No row = left out of
+ * the mix-vs-target comparison.
+ */
+export const assetClassBuckets = sqliteTable(
+  "asset_class_buckets",
+  {
+    bucket: text("bucket").$type<CompositionBucket>().primaryKey(),
+    assetClassId: integer("asset_class_id")
+      .notNull()
+      .references(() => assetClassParams.id, { onDelete: "cascade" }),
+  },
+  (table) => [index("asset_class_buckets_class_idx").on(table.assetClassId)],
 );
 
 export const assetClassCorrelations = sqliteTable(

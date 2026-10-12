@@ -78,7 +78,7 @@ function AccountHeader({ a }: { a: OverviewAccount }) {
 
 function AllocationCard({ data }: { data: Overview }) {
   const utils = trpc.useUtils();
-  const link = trpc.investments.setCompositionBucket.useMutation({
+  const link = trpc.investments.linkCompositionBucket.useMutation({
     onSuccess: () => utils.investments.invalidate(),
   });
   const { total, unknown, rows, unmapped } = data.allocation;
@@ -130,8 +130,8 @@ function AllocationCard({ data }: { data: Overview }) {
                   className="h-2 rounded"
                   style={{
                     width: `${Math.min(100, pct * 100)}%`,
-                    backgroundColor: r.bucket
-                      ? BUCKET_COLORS[r.bucket]
+                    backgroundColor: r.buckets[0]
+                      ? BUCKET_COLORS[r.buckets[0]]
                       : CHART_COLORS.mixOther,
                   }}
                 />
@@ -143,9 +143,35 @@ function AllocationCard({ data }: { data: Overview }) {
                   />
                 )}
               </div>
-              {!r.bucket && (
+              {r.buckets.length === 0 && (
                 <p className="text-caption text-faint">
                   Not linked to a fund category.
+                </p>
+              )}
+              {r.buckets.length > 1 && (
+                <p
+                  className="text-caption text-faint"
+                  title={`Projections use ${r.name}'s return and risk for everything counted in it.`}
+                >
+                  Counts:{" "}
+                  {r.buckets.map((b, i) => (
+                    <span key={b}>
+                      {i > 0 && " + "}
+                      {COMPOSITION_BUCKET_LABELS[b]}
+                      {i > 0 && (
+                        <button
+                          className="hover:text-primary ml-1 underline"
+                          disabled={link.isPending}
+                          title={`Stop counting ${COMPOSITION_BUCKET_LABELS[b]} in ${r.name}`}
+                          onClick={() =>
+                            link.mutate({ bucket: b, assetClassId: null })
+                          }
+                        >
+                          (remove)
+                        </button>
+                      )}
+                    </span>
+                  ))}
                 </p>
               )}
             </div>
@@ -154,40 +180,36 @@ function AllocationCard({ data }: { data: Overview }) {
       </div>
       {unmapped.length > 0 && (
         <div className="mt-3 space-y-1 text-xs">
-          {unmapped.map((u) => {
-            const free = rows.filter((r) => !r.bucket);
-            return (
-              <div key={u.bucket} className="flex flex-wrap items-center gap-2">
-                <span className="text-muted">
-                  {COMPOSITION_BUCKET_LABELS[u.bucket]} (
-                  {formatCurrency(u.value)})
-                  {free.length > 0
-                    ? " isn't linked to one of your asset classes:"
-                    : " isn't one of your asset classes, so it's left out of the comparison."}
-                </span>
-                {free.length > 0 && (
-                  <select
-                    defaultValue=""
-                    onChange={(e) =>
-                      e.target.value &&
-                      link.mutate({
-                        assetClassId: Number(e.target.value),
-                        bucket: u.bucket,
-                      })
-                    }
-                    className="border-strong bg-surface-primary rounded border px-1.5 py-0.5"
-                  >
-                    <option value="">Link to…</option>
-                    {free.map((r) => (
-                      <option key={r.assetClassId} value={r.assetClassId}>
-                        {r.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-            );
-          })}
+          {unmapped.map((u) => (
+            <div key={u.bucket} className="flex flex-wrap items-center gap-2">
+              <span className="text-muted">
+                {COMPOSITION_BUCKET_LABELS[u.bucket]} ({formatCurrency(u.value)}
+                ) isn&apos;t counted in any of your asset classes, so it&apos;s
+                left out of the comparison.
+              </span>
+              {rows.length > 0 && (
+                <select
+                  value=""
+                  disabled={link.isPending}
+                  onChange={(e) =>
+                    e.target.value &&
+                    link.mutate({
+                      bucket: u.bucket,
+                      assetClassId: Number(e.target.value),
+                    })
+                  }
+                  className="border-strong bg-surface-primary rounded border px-1.5 py-0.5"
+                >
+                  <option value="">Count it in…</option>
+                  {rows.map((r) => (
+                    <option key={r.assetClassId} value={r.assetClassId}>
+                      {r.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          ))}
         </div>
       )}
       {unknown > 0.5 && (
