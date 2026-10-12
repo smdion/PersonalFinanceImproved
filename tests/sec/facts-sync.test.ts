@@ -293,6 +293,21 @@ describe("syncSecurityFacts", () => {
     expect(sec.ncsrCalls).toBe(0); // the stand-in's N-CSR is the same as last time
   });
 
+  it("previews a waiting stand-in on the next run even if its fund was checked recently", async () => {
+    const now = new Date("2026-10-03T14:00:00Z");
+    ctx.db
+      .update(ctx.schema.securities)
+      .set({ standinPreview: null, factsCheckedAt: now })
+      .where(eq(ctx.schema.securities.id, ids.plan!))
+      .run();
+    const r = await syncSecurityFacts(ctx.rawDb, { now });
+    expect(r.checked).toBe(1); // only the stand-in; the others aren't due
+    expect(security("plan").standinPreview).toMatchObject({
+      expenseRatio: 0.0035,
+      error: null,
+    });
+  });
+
   it("stops the whole run when SEC throttles, keeping stored facts", async () => {
     const before = facts("target").length;
     sec.rateLimited = true;

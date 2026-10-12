@@ -231,6 +231,13 @@ export async function syncSecurityFacts(
           : or(
               isNull(s.factsCheckedAt),
               lt(s.factsCheckedAt, new Date(now.getTime() - CHECK_EVERY_MS)),
+              // A suggested stand-in nobody has previewed yet (e.g. one
+              // suggested before previews existed) shouldn't wait a week.
+              and(
+                eq(s.factsBasis, "standin"),
+                isNull(s.standinConfirmedAt),
+                isNull(s.standinPreview),
+              ),
             ),
     );
   try {
