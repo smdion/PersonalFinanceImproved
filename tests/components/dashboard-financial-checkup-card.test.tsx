@@ -55,7 +55,12 @@ vi.mock("@/lib/trpc", () => ({
       settings: { appSettings: { list: { invalidate: vi.fn() } } },
     }),
     contribution: { computeSummary: { useQuery: () => contribsQuery } },
+    sync: { getSyncStatus: { useQuery: () => ({ data: undefined }) } },
+    simplefin: { getStatus: { useQuery: () => ({ data: undefined }) } },
+    sec: { getStatus: { useQuery: () => ({ data: undefined }) } },
+    investments: { getHealth: { useQuery: () => ({ data: undefined }) } },
     settings: {
+      getDataFreshness: { useQuery: () => ({ data: undefined }) },
       appSettings: {
         list: { useQuery: () => ({ data: [] }) },
         upsert: {

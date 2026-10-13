@@ -9,6 +9,9 @@
 import { useMilestones } from "@/lib/hooks/use-milestones";
 import { useRecommendationDismissals } from "@/lib/hooks/use-recommendation-dismissals";
 import { applyDismissals } from "@/lib/pure/recommendation-dismissals";
+import { useDataSourceStatuses } from "@/lib/hooks/use-data-source-statuses";
+import { recommendationsFromDataSources } from "@/lib/pure/recommendations-data";
+import { budgetApiServiceLabel } from "@/lib/utils/format";
 import {
   rankRecommendations,
   recommendationsFromMilestones,
@@ -21,9 +24,15 @@ export function useRecommendations(): ReturnType<typeof useMilestones> & {
 } {
   const milestones = useMilestones();
   const { dismissals, today } = useRecommendationDismissals();
-  const ranked = rankRecommendations(
-    recommendationsFromMilestones(milestones.results),
-  );
+  const data = useDataSourceStatuses();
+  const ranked = rankRecommendations([
+    ...recommendationsFromMilestones(milestones.results),
+    ...recommendationsFromDataSources(data.statuses, (s) =>
+      s.source.key === "budgetApi"
+        ? budgetApiServiceLabel(data.syncStatus?.service)
+        : s.source.label,
+    ),
+  ]);
   const { shown, dismissed } = applyDismissals(ranked, dismissals, today);
   return { ...milestones, recommendations: shown, dismissed };
 }
