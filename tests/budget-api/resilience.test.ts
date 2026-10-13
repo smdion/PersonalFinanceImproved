@@ -4,7 +4,7 @@
  *   - idempotency.ts (deterministic key generation)
  *   - drift-detection.ts (broken-mapping + rename detection)
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   BudgetApiError,
   classifyResponse,
@@ -118,6 +118,9 @@ describe("backoffMs", () => {
 });
 
 describe("retryWithBackoff", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
   it("succeeds on first try if no error", async () => {
     let calls = 0;
     const result = await retryWithBackoff(async () => {
@@ -128,15 +131,37 @@ describe("retryWithBackoff", () => {
     expect(calls).toBe(1);
   });
 
-  it("retries on retryable errors", async () => {
+  it("retries on retryable errors, waiting 1s then 2s", async () => {
     let calls = 0;
-    const result = await retryWithBackoff(async () => {
+    const done = retryWithBackoff(async () => {
       calls++;
       if (calls < 3) throw new BudgetApiError("server err", "server", 500);
       return "ok";
     }, 5);
-    expect(result).toBe("ok");
+    await vi.advanceTimersByTimeAsync(0);
+    expect(calls).toBe(1);
+    await vi.advanceTimersByTimeAsync(999);
+    expect(calls).toBe(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(calls).toBe(2);
+    await vi.advanceTimersByTimeAsync(2000);
+    await expect(done).resolves.toBe("ok");
     expect(calls).toBe(3);
+  });
+
+  it("waits Retry-After seconds instead of the backoff on 429", async () => {
+    let calls = 0;
+    const done = retryWithBackoff(async () => {
+      calls++;
+      if (calls === 1)
+        throw new BudgetApiError("slow down", "rate-limit", 429, 7);
+      return "ok";
+    });
+    await vi.advanceTimersByTimeAsync(6999);
+    expect(calls).toBe(1);
+    await vi.advanceTimersByTimeAsync(1);
+    await expect(done).resolves.toBe("ok");
+    expect(calls).toBe(2);
   });
 
   it("does not retry non-retryable (auth) errors", async () => {
@@ -152,12 +177,13 @@ describe("retryWithBackoff", () => {
 
   it("gives up after maxAttempts", async () => {
     let calls = 0;
-    await expect(
-      retryWithBackoff(async () => {
-        calls++;
-        throw new BudgetApiError("server", "server", 500);
-      }, 2),
-    ).rejects.toThrow();
+    const done = retryWithBackoff(async () => {
+      calls++;
+      throw new BudgetApiError("server", "server", 500);
+    }, 2);
+    const failed = expect(done).rejects.toThrow(/server/);
+    await vi.runAllTimersAsync();
+    await failed;
     expect(calls).toBe(2);
   });
 });
