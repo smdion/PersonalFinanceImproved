@@ -53,10 +53,13 @@ export function StatusIcon({ status }: { status: MilestoneStatus }) {
 export function MilestoneRow({
   result,
   extra,
+  detail,
 }: {
   result: MilestoneResult;
   /** Extra controls in the open row (e.g. remove a custom goal). */
   extra?: ReactNode;
+  /** Extra detail in the open row (e.g. the savings-rate breakdown). */
+  detail?: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const style = STATUS_STYLE[result.status];
@@ -107,6 +110,7 @@ export function MilestoneRow({
             <ProgressBar value={result.progress} variant={style.bar} small />
           )}
           <p>{result.rule}</p>
+          {detail}
           {result.adaptedNote && (
             <p className="text-muted">{result.adaptedNote}</p>
           )}

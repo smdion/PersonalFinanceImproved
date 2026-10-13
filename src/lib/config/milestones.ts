@@ -322,9 +322,9 @@ export const MILESTONES = [
     group: "foo",
     source: "moneyGuy",
     title: "6 · Max out retirement",
-    rule: "Fill the IRS limit of every account in the Retirement category (401k/403b, IRA, HSA) with your own contributions — or, below a high income, reach a 25% investing rate first.",
+    rule: "Fill the IRS limit of every account in the Retirement category (401k/403b, IRA, HSA) with your own contributions — or reach 25% of gross pay into Retirement accounts first (Portfolio money is step 7's).",
     adaptedNote:
-      "Money Guy's step 6 is the employer plans; Ledgr counts every account you've put in the Retirement category, so step 5's IRA and HSA are part of it. Employer match isn't counted — the IRS limit is for your own deferrals (an HSA's limit includes employer money). Below a high income, Money Guy says hitting 25% before maxing out is enough to move on; Ledgr uses your high-income threshold.",
+      "Money Guy's step 6 is the employer plans; Ledgr counts every account you've put in the Retirement category, so step 5's IRA and HSA are part of it. Employer match isn't counted — the IRS limit is for your own deferrals (an HSA's limit includes employer money). Money Guy says hitting 25% before maxing out is enough to move on \"if you don't have a high income\" but gives no number; Ledgr's high-income threshold only decides whether the match counts toward the 25%.",
     href: "/paycheck",
   },
   {
@@ -332,7 +332,7 @@ export const MILESTONES = [
     group: "foo",
     source: "moneyGuy",
     title: "7 · Hyperaccumulation",
-    rule: "Save and invest 25% of gross pay.",
+    rule: "Save and invest 25% of gross pay, brokerage included.",
     href: "/contributions",
   },
   {
@@ -388,9 +388,9 @@ export const MILESTONES = [
     group: "saving",
     source: "moneyGuy",
     title: "25% savings rate",
-    rule: "Save and invest 25% of gross pay — retirement accounts, HSA and brokerage. The employer match counts until household pay passes the high-income threshold.",
+    rule: "Save and invest 25% of gross pay — retirement accounts, HSA and brokerage alike (a rate that rounds to 25% counts). The employer match counts until household pay passes the high-income threshold.",
     adaptedNote:
-      "Starting later needs more: 6% from age 20, 10% from 25, 17% from 30, about 25% from 35. 5–10% is a fine start in your 20s.",
+      "Money set aside for a specific future cost (college, the next car) is step 8, not part of the 25%. Starting later needs more: 6% from age 20, 10% from 25, 17% from 30, about 25% from 35.",
     href: "/contributions",
   },
 

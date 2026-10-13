@@ -15,6 +15,7 @@ import {
   type MilestoneSource,
 } from "@/lib/config/milestones";
 import { MilestoneRow } from "@/components/milestones/milestone-row";
+import { SavingsRateBreakdown } from "@/components/cards/dashboard/savings-rate-breakdown";
 import { FooLadder } from "@/components/milestones/foo-ladder";
 import { MilestonesHero } from "@/components/milestones/milestones-hero";
 import {
@@ -148,6 +149,18 @@ export function MilestonesContent() {
                 <MilestoneRow
                   key={r.id}
                   result={r}
+                  detail={
+                    r.id === "savingsRate" && input.savings ? (
+                      <SavingsRateBreakdown
+                        savings={input.savings.breakdown}
+                        viewMode="projected"
+                        excludeMatch={!input.savings.matchCounted}
+                        includePortfolio
+                        highIncome={input.savings.highIncome}
+                        highIncomeThreshold={input.savings.highIncomeThreshold}
+                      />
+                    ) : undefined
+                  }
                   extra={
                     isGoals && canEdit ? (
                       <button

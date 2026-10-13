@@ -7,6 +7,7 @@ import {
   incomeMultipleTarget,
   inflateTarget,
   milestoneHoldings,
+  meetsMoneyGuyRate,
   milestoneLimits,
   retirementUnlimitedContributions,
   milestoneProjectionYears,
@@ -23,7 +24,12 @@ import {
   FIDELITY_CHECKPOINTS,
   MONEY_GUY_CHECKPOINTS,
 } from "@/lib/config/milestones";
-import { makeInput, makeProjection, makeYear } from "../fixtures/milestones";
+import {
+  makeInput,
+  makeProjection,
+  makeSavings,
+  makeYear,
+} from "../fixtures/milestones";
 
 function byId(results: MilestoneResult[], id: string): MilestoneResult {
   const r = results.find((x) => x.id === id);
@@ -155,14 +161,14 @@ describe("wealth journey", () => {
 
   it("dates 'investments save harder' from finalized years only", () => {
     const input = makeInput({
-      savings: {
+      savings: makeSavings({
         rate: 0.22,
         saved: 33_000,
         savedWithMatch: 38_000,
         compensation: 150_000,
         matchCounted: true,
         highIncome: false,
-      },
+      }),
     });
     // 2025: 240k × 8% = 19.2k < 38k; now: 300k × 8% = 24k < 38k.
     expect(
@@ -326,26 +332,48 @@ describe("Financial Order of Operations", () => {
     );
   });
 
-  it("step 6: a 25% investing rate before maxing out completes it below a high income", () => {
-    const savings = {
-      rate: 0.26,
-      saved: 39_000,
-      savedWithMatch: 44_000,
-      compensation: 150_000,
-      matchCounted: true,
-      highIncome: false,
-    };
+  it("step 6: 25% into Retirement accounts before maxing out completes it", () => {
+    const savings = makeSavings({ rate: 0.29, retirementRate: 0.26 });
     const r = byId(run({ savings }), "foo6");
     expect(r.status).toBe("reached");
-    expect(r.headline).toBe("Investing 26.0% before maxing out");
-    // High earners still max the employer plans.
-    const high = byId(
-      run({ savings: { ...savings, matchCounted: false, highIncome: true } }),
-      "foo6",
+    expect(r.headline).toBe("Investing 26.0% for retirement before maxing out");
+    // The high-income threshold only decides whether the match counts.
+    expect(
+      byId(
+        run({ savings: { ...savings, matchCounted: false, highIncome: true } }),
+        "foo6",
+      ).status,
+    ).toBe("reached");
+    // A rate that rounds to 25% counts.
+    expect(
+      byId(run({ savings: makeSavings({ retirementRate: 0.249 }) }), "foo6")
+        .status,
+    ).toBe("reached");
+    // Portfolio money is step 7's, not step 6's.
+    expect(
+      byId(
+        run({ savings: makeSavings({ rate: 0.29, retirementRate: 0.24 }) }),
+        "foo6",
+      ).status,
+    ).toBe("behind");
+  });
+
+  it("the 25% rule and step 7 count Portfolio money and say what's in it", () => {
+    const savings = makeSavings({
+      rate: 0.293,
+      retirementRate: 0.249,
+      matchCounted: false,
+      highIncome: true,
+    });
+    const r = byId(run({ savings }), "savingsRate");
+    expect(r.status).toBe("reached");
+    expect(r.headline).toBe("29.3% of gross pay");
+    expect(r.note).toBe(
+      "24.9% into Retirement accounts · employer match left out (pay over $200,000.00)",
     );
-    expect(high.status).toBe("behind");
-    // Under 25% the limit is the test.
-    expect(byId(run(), "foo6").status).toBe("behind");
+    expect(byId(run({ savings }), "foo7").status).toBe("reached");
+    expect(meetsMoneyGuyRate(0.244)).toBe(false);
+    expect(meetsMoneyGuyRate(0.245)).toBe(true);
   });
 
   it("flags match left on the table", () => {
@@ -391,14 +419,14 @@ describe("Financial Order of Operations", () => {
     const results = run({
       checklist: { deductibles: true, prepaid: true },
       limits: [],
-      savings: {
+      savings: makeSavings({
         rate: 0.3,
         saved: 45_000,
         savedWithMatch: 50_000,
         compensation: 150_000,
         matchCounted: true,
         highIncome: false,
-      },
+      }),
     }).map((r) => (r.id === "foo5" ? { ...r, status: "reached" as const } : r));
     expect(currentFooStep(results)).toBeNull();
   });
@@ -915,8 +943,8 @@ describe("input builders", () => {
     const totals = {
       retirementWithoutMatch: 15_000,
       retirementWithMatch: 20_000,
-      portfolioWithoutMatch: 0,
-      portfolioWithMatch: 0,
+      portfolioWithoutMatch: 10_000,
+      portfolioWithMatch: 10_000,
       compensation: 100_000,
     };
     const base = {
@@ -964,13 +992,16 @@ describe("input builders", () => {
       ...base,
       highIncomeThreshold: 200_000,
     });
-    expect(below.savings).toEqual({
-      rate: 0.2,
-      saved: 20_000,
-      savedWithMatch: 20_000,
+    // The 25% rule counts Portfolio money; step 6 the Retirement category.
+    expect(below.savings).toMatchObject({
+      rate: 0.3,
+      retirementRate: 0.2,
+      saved: 30_000,
+      savedWithMatch: 30_000,
       compensation: 100_000,
       matchCounted: true,
       highIncome: false,
+      highIncomeThreshold: 200_000,
     });
     expect(below.match).toEqual({ captured: 5_000, available: 7_500 });
     expect(below.mortgage).toEqual({
@@ -980,7 +1011,8 @@ describe("input builders", () => {
     });
     const above = buildMilestoneInput({ ...base, highIncomeThreshold: 90_000 });
     expect(above.savings).toMatchObject({
-      rate: 0.15,
+      rate: 0.25,
+      retirementRate: 0.15,
       matchCounted: false,
       highIncome: true,
     });

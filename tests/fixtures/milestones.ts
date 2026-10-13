@@ -1,4 +1,5 @@
 /** Synthetic Milestones engine input for tests — made-up figures only. */
+import { householdSavings } from "@/lib/pure/contributions";
 import type {
   MilestoneInput,
   MilestoneProjectionYear,
@@ -44,6 +45,24 @@ export function makeProjection(
   }));
 }
 
+/** Money Guy savings figures; the breakdown is empty unless a test needs it. */
+export function makeSavings(
+  overrides: Partial<NonNullable<MilestoneInput["savings"]>> = {},
+): NonNullable<MilestoneInput["savings"]> {
+  return {
+    rate: 0.22,
+    retirementRate: 0.22,
+    saved: 33_000,
+    savedWithMatch: 38_000,
+    compensation: 150_000,
+    matchCounted: true,
+    highIncome: false,
+    highIncomeThreshold: 200_000,
+    breakdown: householdSavings([], [], "projected", { excludeMatch: false }),
+    ...overrides,
+  };
+}
+
 export function makeInput(
   overrides: Partial<MilestoneInput> = {},
 ): MilestoneInput {
@@ -82,14 +101,7 @@ export function makeInput(
       isScenario: false,
     },
     fiTarget: 1_500_000,
-    savings: {
-      rate: 0.22,
-      saved: 33_000,
-      savedWithMatch: 38_000,
-      compensation: 150_000,
-      matchCounted: true,
-      highIncome: false,
-    },
+    savings: makeSavings(),
     match: { captured: 5_000, available: 5_000 },
     limits: [
       {

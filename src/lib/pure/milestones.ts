@@ -63,6 +63,7 @@ import {
   householdSavings,
   householdTotalCompensation,
   isHighIncomeHousehold,
+  type HouseholdSavings,
   type SavingsRatePerson,
 } from "@/lib/pure/contributions";
 
@@ -207,17 +208,22 @@ export type MilestoneInput = {
   } | null;
   /** FI number in today's dollars (yearly expenses ÷ withdrawal rate). */
   fiTarget: number;
-  /** Money Guy savings rate (retirement + brokerage + HSA; match counted
-   *  below the high-income threshold) and this year's total saved incl.
-   *  employer money. */
+  /** Money Guy savings rates (match counted below the high-income
+   *  threshold) and this year's totals. */
   savings: {
+    /** Retirement + Portfolio money — the 25% rule and FOO step 7. */
     rate: number;
+    /** Retirement category only — FOO step 6's "25% before maxing out". */
+    retirementRate: number;
     saved: number;
     savedWithMatch: number;
     compensation: number;
     matchCounted: boolean;
     /** At or above the household's high-income threshold. */
     highIncome: boolean;
+    highIncomeThreshold: number;
+    /** Both goal groups with the match rule applied, for the breakdown. */
+    breakdown: HouseholdSavings;
   } | null;
   match: { captured: number; available: number } | null;
   limits: MilestoneLimit[] | null;
@@ -319,6 +325,11 @@ export function firstProjectedYear(
 ): { year: number; age: number } | null {
   const hit = years.find((y) => y.year > asOfYear && test(y));
   return hit ? { year: hit.year, age: hit.age } : null;
+}
+
+/** Money Guy's 25% as a round number: a rate that rounds to 25% counts. */
+export function meetsMoneyGuyRate(rate: number): boolean {
+  return Math.round(rate * 100) >= Math.round(MONEY_GUY_SAVINGS_RATE * 100);
 }
 
 /** A target set in one year's dollars, in another year's dollars. */
@@ -857,7 +868,7 @@ function savingsRate(input: MilestoneInput): MilestoneResult {
       headline: "Needs a paycheck set up",
     });
   }
-  const met = s.rate >= MONEY_GUY_SAVINGS_RATE;
+  const met = meetsMoneyGuyRate(s.rate);
   const gapPerMonth = (MONEY_GUY_SAVINGS_RATE * s.compensation - s.saved) / 12;
   return result("savingsRate", {
     status: met ? "reached" : "behind",
@@ -865,9 +876,16 @@ function savingsRate(input: MilestoneInput): MilestoneResult {
     target: { kind: "percent", amount: MONEY_GUY_SAVINGS_RATE },
     progress: Math.min(1, s.rate / MONEY_GUY_SAVINGS_RATE),
     headline: `${formatPercent(s.rate, 1)} of gross pay`,
-    note: s.matchCounted
-      ? "Employer match counted"
-      : "Employer match left out (high income)",
+    note: [
+      s.retirementRate < s.rate
+        ? `${formatPercent(s.retirementRate, 1)} into Retirement accounts`
+        : null,
+      s.matchCounted
+        ? "employer match counted"
+        : `employer match left out (pay over ${formatCurrency(s.highIncomeThreshold)})`,
+    ]
+      .filter(Boolean)
+      .join(" · "),
     nextStep: met
       ? null
       : `${formatCurrency(gapPerMonth)} more a month reaches 25%`,
@@ -951,8 +969,11 @@ function limitStep(
   const open = rows.filter(
     (r) => r.contributed < r.limit * LIMIT_FILLED_TOLERANCE,
   );
-  // Money Guy's step 6: below a high income, reaching a 25% investing rate
-  // before the employer plans are maxed also completes the step.
+  // Money Guy's step 6: reaching a 25% retirement investing rate (the
+  // Retirement category only — Portfolio money is step 7's) before the
+  // plans are maxed also completes the step. (Their "if you don't have a
+  // high income" has no number; the high-income threshold only decides
+  // whether the match counts toward the 25%.)
   const unlimitedNote =
     step === 6 && (input.retirementUnlimited ?? 0) > 0
       ? `Plus ${formatCurrency(input.retirementUnlimited!)} a year into retirement accounts without an IRS limit`
@@ -962,15 +983,14 @@ function limitStep(
     step === 6 &&
     open.length > 0 &&
     s !== null &&
-    !s.highIncome &&
-    s.rate >= MONEY_GUY_SAVINGS_RATE;
+    meetsMoneyGuyRate(s.retirementRate);
   if (twentyFiveFirst) {
     return result(id, {
       status: "reached",
       value: { kind: "currency", amount: contributed },
       target: { kind: "currency", amount: limit },
       progress: 1,
-      headline: `Investing ${formatPercent(s.rate, 1)} before maxing out`,
+      headline: `Investing ${formatPercent(s.retirementRate, 1)} for retirement before maxing out`,
       note: [
         `${formatCurrency(contributed)} of ${formatCurrency(limit)} a year of IRS limits`,
         unlimitedNote,
@@ -1738,17 +1758,27 @@ export function buildMilestoneInput(raw: {
   const c = raw.contributions;
   const people = c?.people.filter((p) => p.accountTypes.length > 0) ?? [];
   if (c && people.length > 0) {
-    // Money Guy's definition, fixed — not the per-viewer display switches:
-    // retirement + brokerage + HSA, the match counted below the high-income
-    // threshold, on the full year's plan.
+    // Money Guy's definitions, fixed — not the per-viewer display switches,
+    // on the full year's plan, the match counted below the high-income
+    // threshold. The 25% rule (step 7) counts Retirement and Portfolio
+    // money alike; step 6's "25% before maxing out" is the Retirement
+    // category alone.
     const highIncome = isHighIncomeHousehold(
       householdTotalCompensation(people),
       raw.highIncomeThreshold,
     );
-    const counted = householdSavings(people, c.jointAccountTypes, "projected", {
-      excludeMatch: highIncome,
-      includePortfolio: true,
-    });
+    const breakdown = householdSavings(
+      people,
+      c.jointAccountTypes,
+      "projected",
+      { excludeMatch: highIncome, includePortfolio: true },
+    );
+    const retirementOnly = householdSavings(
+      people,
+      c.jointAccountTypes,
+      "projected",
+      { excludeMatch: highIncome, includePortfolio: false },
+    );
     const withMatch = householdSavings(
       people,
       c.jointAccountTypes,
@@ -1759,12 +1789,15 @@ export function buildMilestoneInput(raw: {
       },
     );
     savings = {
-      rate: counted.rate,
-      saved: counted.total,
+      rate: breakdown.rate,
+      retirementRate: retirementOnly.rate,
+      saved: breakdown.total,
       savedWithMatch: withMatch.total,
-      compensation: counted.compensation,
+      compensation: breakdown.compensation,
       matchCounted: !highIncome,
       highIncome,
+      highIncomeThreshold: raw.highIncomeThreshold,
+      breakdown,
     };
     const accounts = [
       ...people.flatMap((p) => p.accountTypes),
