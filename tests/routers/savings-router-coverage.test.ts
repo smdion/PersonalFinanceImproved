@@ -1266,31 +1266,6 @@ describe("savings.plannedTransactions settle/unsettle/settleMany", () => {
     ).rejects.toThrow(/already settled/i);
   });
 
-  it("unsettle removes the settlement so it can be settled again", async () => {
-    const tx = await caller.savings.plannedTransactions.create({
-      goalId: goalId1,
-      transactionDate: "2026-11-15",
-      amount: "-300",
-      description: "Gift",
-      isRecurring: false,
-    });
-    await caller.savings.plannedTransactions.settle({
-      plannedTxId: tx.id,
-      occurrenceMonth: "2026-11",
-    });
-    const unsettleResult = await caller.savings.plannedTransactions.unsettle({
-      plannedTxId: tx.id,
-      occurrenceMonth: "2026-11",
-    });
-    expect(unsettleResult).toEqual({ ok: true });
-    // Should be settleable again now that the settlement was removed.
-    const resettled = await caller.savings.plannedTransactions.settle({
-      plannedTxId: tx.id,
-      occurrenceMonth: "2026-11",
-    });
-    expect(resettled).toEqual({ ok: true });
-  });
-
   it("settling one leg of a transfer settles both legs (pair-atomic)", async () => {
     const created = await caller.savings.transfers.create({
       fromGoalId: goalId1,
@@ -1624,41 +1599,6 @@ describe("savings.allocationOverrides advanced", () => {
       expect(result).toEqual({ ok: true });
     });
   });
-
-  describe("batchUpsert", () => {
-    it("batch upserts overrides for a single goal", async () => {
-      const result = await caller.savings.allocationOverrides.batchUpsert({
-        goalId,
-        overrides: [
-          { monthDate: "2027-09-01", amount: 800 },
-          { monthDate: "2027-10-01", amount: 900 },
-        ],
-      });
-      expect(result).toEqual({ ok: true });
-    });
-
-    it("updates existing entries on re-call", async () => {
-      // First call
-      await caller.savings.allocationOverrides.batchUpsert({
-        goalId,
-        overrides: [{ monthDate: "2027-11-01", amount: 100 }],
-      });
-      // Second call — should update
-      const result = await caller.savings.allocationOverrides.batchUpsert({
-        goalId,
-        overrides: [{ monthDate: "2027-11-01", amount: 200 }],
-      });
-      expect(result).toEqual({ ok: true });
-    });
-
-    it("handles empty overrides array", async () => {
-      const result = await caller.savings.allocationOverrides.batchUpsert({
-        goalId,
-        overrides: [],
-      });
-      expect(result).toEqual({ ok: true });
-    });
-  });
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1756,11 +1696,6 @@ describe("savings.extraPaycheckRouting", () => {
       jobId,
       rules: [],
     });
-    expect(result).toEqual({ ok: true });
-  });
-
-  it("rematerialize runs without error", async () => {
-    const result = await caller.savings.extraPaycheckRouting.rematerialize();
     expect(result).toEqual({ ok: true });
   });
 

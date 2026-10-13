@@ -1,14 +1,8 @@
 /**
  * Shared "apply one pull mapping" logic for budget-API account sync.
  *
- * Previously duplicated between `syncAll` (transactional, full sync) and
- * `pullAssetsFromApi` (standalone, asset-only). The standalone copy never
- * grew mortgage-mapping support when `syncAll`'s loop did, so a mortgage
- * mapping pulled via `pullAssetsFromApi` alone would silently fall through
- * to the asset branch and write a bogus `other_asset_items` row instead of
- * updating the mortgage loan. Single implementation now; both call sites
- * pass their own `db`/`tx` so atomicity is the caller's choice, but the
- * mapping logic and upsert conflict target can't drift apart again.
+ * Used by `syncAll`'s pull loop (assets and mortgage mappings alike); the
+ * caller passes its own `db`/`tx`, so atomicity is the caller's choice.
  */
 
 import { eq } from "drizzle-orm";

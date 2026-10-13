@@ -2,9 +2,8 @@
  * Monte Carlo projection endpoint + related settings mutations.
  *
  * Contains the `computeMonteCarloProjection` query (the main stochastic
- * projection engine) and the three scenario-scoped mutations that edit
- * the MC input tables: `updateReturnRateTable`, `updateGlidePathAllocations`,
- * and `updateClampBounds`.
+ * projection engine) and the scenario-scoped mutations that edit the MC
+ * input tables: `updateGlidePathAllocations` and `updateClampBounds`.
  */
 import { eq, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -633,28 +632,6 @@ export const monteCarloRouter = createTRPCRouter({
     }),
 
   // --- Mutations for editing projection assumptions ---
-
-  updateReturnRateTable: scenarioProcedure
-    .input(
-      z.object({
-        entries: z.array(
-          z.object({ age: z.number().int(), rateOfReturn: z.number() }),
-        ),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
-      for (const entry of input.entries) {
-        await db
-          .insert(schema.returnRateTable)
-          .values({ age: entry.age, rateOfReturn: String(entry.rateOfReturn) })
-          .onConflictDoUpdate({
-            target: schema.returnRateTable.age,
-            set: { rateOfReturn: String(entry.rateOfReturn) },
-          });
-      }
-      return { updated: input.entries.length };
-    }),
 
   updateGlidePathAllocations: scenarioProcedure
     .input(

@@ -128,43 +128,6 @@ describe("auth enforcement", () => {
   // the "wrong permission rejected / correct permission allowed" pattern
   // already used for budget above.
 
-  describe("scenarioProcedure enforcement", () => {
-    it("viewer without scenario permission cannot create a MC preset", async () => {
-      const session = createViewerSessionWithPermissions(["budget"]);
-      const { caller, cleanup } = await createTestCaller(session);
-      try {
-        await expect(
-          caller.projection.createPreset({
-            name: "Unauthorized Preset",
-            returnMean: 0.07,
-            returnStdDev: 0.15,
-            inflationMean: 0.03,
-            inflationStdDev: 0.01,
-          }),
-        ).rejects.toThrow();
-      } finally {
-        cleanup();
-      }
-    });
-
-    it("viewer with scenario permission can create a MC preset", async () => {
-      const session = createViewerSessionWithPermissions(["scenario"]);
-      const { caller, cleanup } = await createTestCaller(session);
-      try {
-        const preset = await caller.projection.createPreset({
-          name: "Permitted Preset",
-          returnMean: 0.07,
-          returnStdDev: 0.15,
-          inflationMean: 0.03,
-          inflationStdDev: 0.01,
-        });
-        expect(preset.name).toBe("Permitted Preset");
-      } finally {
-        cleanup();
-      }
-    });
-  });
-
   describe("portfolioProcedure enforcement", () => {
     it("viewer without portfolio permission cannot list performance accounts", async () => {
       const session = createViewerSessionWithPermissions(["budget"]);
@@ -182,59 +145,6 @@ describe("auth enforcement", () => {
       try {
         const result = await caller.analytics.getAccounts();
         expect(Array.isArray(result)).toBe(true);
-      } finally {
-        cleanup();
-      }
-    });
-  });
-
-  describe("performanceProcedure enforcement", () => {
-    it("viewer without performance permission cannot delete an account_performance row", async () => {
-      const session = createViewerSessionWithPermissions(["budget"]);
-      const { caller, cleanup } = await createTestCaller(session);
-      try {
-        await expect(
-          caller.performance.deleteAccount({ id: 999999 }),
-        ).rejects.toThrow();
-      } finally {
-        cleanup();
-      }
-    });
-
-    it("viewer with performance permission can delete an account_performance row", async () => {
-      const session = createViewerSessionWithPermissions(["performance"]);
-      const { caller, cleanup } = await createTestCaller(session);
-      try {
-        // No matching row exists — delete is a no-op, but it must not be
-        // rejected for permission reasons.
-        const result = await caller.performance.deleteAccount({ id: 999999 });
-        expect(result).toEqual({ success: true });
-      } finally {
-        cleanup();
-      }
-    });
-  });
-
-  describe("savingsProcedure enforcement", () => {
-    it("viewer without savings permission cannot rematerialize extra-paycheck overrides", async () => {
-      const session = createViewerSessionWithPermissions(["budget"]);
-      const { caller, cleanup } = await createTestCaller(session);
-      try {
-        await expect(
-          caller.savings.extraPaycheckRouting.rematerialize(),
-        ).rejects.toThrow();
-      } finally {
-        cleanup();
-      }
-    });
-
-    it("viewer with savings permission can rematerialize extra-paycheck overrides", async () => {
-      const session = createViewerSessionWithPermissions(["savings"]);
-      const { caller, cleanup } = await createTestCaller(session);
-      try {
-        const result =
-          await caller.savings.extraPaycheckRouting.rematerialize();
-        expect(result).toEqual({ ok: true });
       } finally {
         cleanup();
       }

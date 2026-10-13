@@ -284,19 +284,6 @@ describe("networth router", () => {
 
   // ── COMPUTE FI PROGRESS ──
 
-  describe("computeFIProgress", () => {
-    it("returns FI progress with portfolio and target", async () => {
-      const result = await caller.networth.computeFIProgress();
-      expect(result).toHaveProperty("fiProgress");
-      expect(result).toHaveProperty("fiTarget");
-      expect(result).toHaveProperty("currentPortfolio");
-      expect(result.currentPortfolio).toBeCloseTo(150000, 0);
-      expect(typeof result.fiProgress).toBe("number");
-      expect(typeof result.fiTarget).toBe("number");
-      expect(result.fiTarget).toBeGreaterThan(0);
-    });
-  });
-
   // ── COMPUTE COMPARISON ──
 
   describe("computeComparison", () => {

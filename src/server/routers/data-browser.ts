@@ -124,16 +124,4 @@ export const dataBrowserRouter = createTRPCRouter({
         totalCount,
       };
     }),
-
-  /** Export full table as JSON array. */
-  exportTable: adminProcedure
-    .input(z.object({ tableName: z.string() }))
-    .query(async ({ ctx, input }) => {
-      assertKnownTable(input.tableName);
-
-      return queryRaw<Record<string, unknown>>(
-        ctx.db,
-        sql`SELECT * FROM ${sql.raw(`"${input.tableName}"`)} ORDER BY 1`,
-      );
-    }),
 });

@@ -1,5 +1,5 @@
 /** Savings router for savings goals, emergency fund calculations, planned transactions, and budget API expense integration. */
-import { eq, asc, sql, lt, isNull, and, inArray } from "drizzle-orm";
+import { eq, asc, sql, lt, isNull, and } from "drizzle-orm";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import {
@@ -1033,29 +1033,6 @@ export const savingsRouter = createTRPCRouter({
         }),
       )
       .mutation(({ ctx, input }) => settleOccurrence(ctx.db, input)),
-    unsettle: savingsProcedure
-      .input(
-        z.object({
-          plannedTxId: z.number().int(),
-          occurrenceMonth: z.string().regex(/^\d{4}-\d{2}$/),
-        }),
-      )
-      .mutation(async ({ ctx, input }) => {
-        const pairIds = await resolvePairedPlannedTxIds(
-          ctx.db,
-          input.plannedTxId,
-        );
-        const monthDate = `${input.occurrenceMonth}-01`;
-        await ctx.db
-          .delete(schema.savingsPlannedTxSettlements)
-          .where(
-            and(
-              inArray(schema.savingsPlannedTxSettlements.plannedTxId, pairIds),
-              eq(schema.savingsPlannedTxSettlements.occurrenceMonth, monthDate),
-            ),
-          );
-        return { ok: true };
-      }),
     settleMany: savingsProcedure
       .input(
         z.object({
@@ -1319,44 +1296,6 @@ export const savingsRouter = createTRPCRouter({
               goalId: alloc.goalId,
               monthDate,
               amount: String(alloc.amount),
-            });
-          }
-        }
-        return { ok: true };
-      }),
-
-    /** Batch upsert overrides for a single goal (fill-down, change-all-after). */
-    batchUpsert: savingsProcedure
-      .input(
-        z.object({
-          goalId: z.number().int(),
-          overrides: z.array(
-            z.object({
-              monthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-              amount: z.number(),
-            }),
-          ),
-        }),
-      )
-      .mutation(async ({ ctx, input }) => {
-        const existing = await ctx.db
-          .select()
-          .from(schema.savingsAllocationOverrides)
-          .where(eq(schema.savingsAllocationOverrides.goalId, input.goalId));
-        const existingByDate = new Map(existing.map((r) => [r.monthDate, r]));
-
-        for (const o of input.overrides) {
-          const row = existingByDate.get(o.monthDate);
-          if (row) {
-            await ctx.db
-              .update(schema.savingsAllocationOverrides)
-              .set({ amount: String(o.amount) })
-              .where(eq(schema.savingsAllocationOverrides.id, row.id));
-          } else {
-            await ctx.db.insert(schema.savingsAllocationOverrides).values({
-              goalId: input.goalId,
-              monthDate: o.monthDate,
-              amount: String(o.amount),
             });
           }
         }
@@ -2620,13 +2559,6 @@ export const savingsRouter = createTRPCRouter({
         await materializeBudgetIncomeAdjustments(ctx.db);
         return { ok: true };
       }),
-
-    /** Re-run materializer without changing rules (e.g. after goal rename). */
-    rematerialize: savingsProcedure.mutation(async ({ ctx }) => {
-      await materializeExtraPaycheckSavings(ctx.db);
-      await materializeBudgetIncomeAdjustments(ctx.db);
-      return { ok: true };
-    }),
   }),
 
   /** All recorded monthly balances for active savings goals (for history view). */

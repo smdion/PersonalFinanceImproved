@@ -704,27 +704,6 @@ export const networthRouter = createTRPCRouter({
     }));
   }),
 
-  computeFIProgress: protectedProcedure
-    .input(zYearEndTargeting)
-    .query(async ({ ctx, input }) => {
-      // Read from buildYearEndHistory (single computation path)
-      const yearEndHistory = await buildYearEndHistory(ctx.db, new Date(), {
-        budgetProfileId: input?.budgetProfileId,
-        budgetColumn: input?.budgetColumn,
-        salaryActiveFields: toSalaryActiveMap(input?.salaryActiveFields),
-      });
-      const currentRow =
-        yearEndHistory.find((h) => h.isCurrent) ??
-        yearEndHistory[yearEndHistory.length - 1];
-
-      return {
-        fiProgress: currentRow?.fiProgress ?? 0,
-        fiTarget: currentRow?.fiTarget ?? 0,
-        currentPortfolio: currentRow?.portfolioTotal ?? 0,
-        cash: currentRow?.cash ?? 0,
-      };
-    }),
-
   /**
    * Compare net worth at two dates.
    * Uses nearest portfolio snapshot for investment values, computes mortgage

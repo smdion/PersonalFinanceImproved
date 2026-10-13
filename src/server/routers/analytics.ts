@@ -115,50 +115,6 @@ export const analyticsRouter = createTRPCRouter({
     }),
 
   /**
-   * Delete one holding by id.
-   */
-  deleteHolding: portfolioProcedure
-    .input(z.object({ id: z.number().int() }))
-    .mutation(async ({ ctx, input }) => {
-      await ctx.db
-        .delete(schema.accountHoldings)
-        .where(eq(schema.accountHoldings.id, input.id));
-      return { success: true as const };
-    }),
-
-  /**
-   * Snapshot-copy: duplicate all holdings from snapshot A to snapshot B.
-   * Returns { count: 0 } (not an error) when the source snapshot has no holdings.
-   */
-  copyHoldingsToSnapshot: portfolioProcedure
-    .input(
-      z.object({
-        fromSnapshotId: z.number().int(),
-        toSnapshotId: z.number().int(),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      const source = await ctx.db
-        .select()
-        .from(schema.accountHoldings)
-        .where(eq(schema.accountHoldings.snapshotId, input.fromSnapshotId));
-
-      if (source.length === 0) return { count: 0 };
-
-      const rows = source.map(({ id: _id, snapshotId: _snap, ...rest }) => ({
-        ...rest,
-        snapshotId: input.toSnapshotId,
-      }));
-
-      await ctx.db
-        .insert(schema.accountHoldings)
-        .values(rows)
-        .onConflictDoNothing(); // skip duplicates if some already copied
-
-      return { count: rows.length };
-    }),
-
-  /**
    * Fetch holdings across multiple snapshots for historical allocation/drift charts.
    * Only returns snapshots that actually have ≥1 holding.
    */

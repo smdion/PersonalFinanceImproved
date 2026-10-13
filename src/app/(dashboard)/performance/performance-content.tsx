@@ -42,7 +42,6 @@ import {
   FilteredAccountTable,
 } from "@/components/performance";
 import type { YearRange } from "@/components/performance";
-import { PendingRollovers } from "@/components/performance/pending-rollovers";
 import type {
   AnnualRow,
   AccountRow,
@@ -204,7 +203,6 @@ export function PerformanceContent() {
     lifetimeTotals,
     lastSnapshotDate,
     performanceLastUpdated,
-    pendingRollovers,
     balanceMismatch,
   } = data;
   // Router always produces valid PerfCategory values via getEffectiveCategory.
@@ -568,23 +566,9 @@ export function PerformanceContent() {
             <span className="font-semibold">Balance mismatch:</span> Performance
             account totals ({formatCurrency(balanceMismatch.perfTotal)}) differ
             from portfolio snapshot ({formatCurrency(balanceMismatch.snapTotal)}
-            ) by {formatCurrency(Math.abs(balanceMismatch.delta))}
-            {balanceMismatch.explainedByPending
-              ? " — this matches your pending rollover(s)."
-              : ". Check that ending balances and snapshot values are consistent."}
+            ) by {formatCurrency(Math.abs(balanceMismatch.delta))}. Check that
+            ending balances and snapshot values are consistent.
           </span>
-        </div>
-      )}
-
-      {/* Pending rollovers tracker */}
-      {pendingRollovers && pendingRollovers.length > 0 && (
-        <div className="mb-3">
-          <PendingRollovers
-            pendingRollovers={pendingRollovers}
-            accountRows={accountRows}
-            masterAccounts={masterAccounts}
-            onMutated={() => utils.performance.computeSummary.invalidate()}
-          />
         </div>
       )}
 

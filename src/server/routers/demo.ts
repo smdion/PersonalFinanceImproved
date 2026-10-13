@@ -704,18 +704,4 @@ export const demoRouter = createTRPCRouter({
     });
     return { ok: true };
   }),
-
-  /** Check if a demo schema exists and has data. */
-  isDemoReady: protectedProcedure
-    .input(z.object({ slug: demoSlugSchema }))
-    .query(async ({ ctx, input }) => {
-      if (!isPostgres()) {
-        return { ready: false };
-      }
-      const schemaName = `demo_${input.slug.replace(/-/g, "_")}`;
-      const result = await ctx.db.execute<{ exists: boolean }>(
-        sql`SELECT EXISTS(SELECT 1 FROM information_schema.schemata WHERE schema_name = ${schemaName}) as exists`,
-      );
-      return { ready: result.rows[0]?.exists ?? false };
-    }),
 });

@@ -6,13 +6,12 @@
  *
  * - `scenarios.ts`    — `computeProjection`
  * - `coast-fire.ts`   — `computeCoastFire`, `computeCoastFireMC`
- * - `monte-carlo.ts`  — `computeMonteCarloProjection`, `updateReturnRateTable`,
+ * - `monte-carlo.ts`  — `computeMonteCarloProjection`,
  *                       `updateGlidePathAllocations`, `updateClampBounds`
  * - `strategy.ts`     — `computeStrategyComparison`, `analyzeStrategy`,
  *                       `updateInflationRisk`, `updateAssetClassOverrides`
  * - `stress-test.ts`  — `computeStressTest`
- * - `presets.ts`      — `listPresets`, `createPreset`, `updatePreset`,
- *                       `deletePreset`, `updateInflationOverrides`
+ * - `presets.ts`      — `updateInflationOverrides`
  * - `relocation.ts`   — `computeRelocationFiProjection`
  * - `withdrawal-bracket-optimizer.ts` — `computeWithdrawalBracketOptimizer`
  * - `coast-fire-probe.ts` — `computeCoastFireProbe`

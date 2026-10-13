@@ -8,15 +8,12 @@ import {
   scenarioProcedure,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { log } from "@/lib/logger";
 import { invalidateYearEndCache } from "@/server/helpers";
 import {
   ALL_PERMISSIONS,
   RBAC_SETTINGS_PREFIX,
   RBAC_ADMIN_GROUP_KEY,
 } from "@/server/auth";
-import { getAccountTypeConfig } from "@/lib/config/account-types";
-import type { AccountCategory } from "@/lib/config/account-types";
 import { settingValue } from "./_shared";
 import {
   apiConfigSchema,
@@ -463,88 +460,4 @@ export const adminProcedures = {
           .where(eq(schema.apiConnections.service, input.service)),
       ),
   }),
-
-  // ══ RELOCATION SCENARIOS ══
-  // ══ BACKFILL PERFORMANCE ACCOUNT IDS ══
-  backfillPerformanceAccountIds: adminProcedure
-    .input(
-      z.object({ dryRun: z.boolean().optional().default(false) }).optional(),
-    )
-    .mutation(async ({ ctx, input }) => {
-      const dryRun = input?.dryRun ?? false;
-      const [allContribs, allPerfAccounts, allPeople] = await Promise.all([
-        ctx.db.select().from(schema.contributionAccounts),
-        ctx.db.select().from(schema.performanceAccounts),
-        ctx.db.select().from(schema.people),
-      ]);
-
-      const peopleMap = new Map(allPeople.map((p) => [p.id, p]));
-      const needsBackfill = allContribs.filter(
-        (c) => c.performanceAccountId === null,
-      );
-
-      let updated = 0;
-      const unmatched: string[] = [];
-      const matches: {
-        contribAccountId: number;
-        performanceAccountId: number;
-        description: string;
-      }[] = [];
-
-      for (const contrib of needsBackfill) {
-        const person =
-          contrib.personId != null
-            ? peopleMap.get(contrib.personId)
-            : undefined;
-        const personName = person?.name?.toLowerCase() ?? "";
-        const display = getAccountTypeConfig(
-          contrib.accountType as AccountCategory,
-        );
-        const typeLabel =
-          display?.displayLabel?.toLowerCase() ??
-          contrib.accountType.toLowerCase();
-
-        const match = allPerfAccounts.find((pa) => {
-          const labelLower = (pa.accountLabel ?? "").toLowerCase();
-          return (
-            labelLower.includes(typeLabel) &&
-            (pa.ownerPersonId === contrib.personId ||
-              // Guard against personName being "" (joint contrib /
-              // unresolved person) — String.includes("") is always true,
-              // which would otherwise match this contrib to ANY performance
-              // account of the right type regardless of actual ownership.
-              (personName !== "" && labelLower.includes(personName)))
-          );
-        });
-
-        if (match) {
-          matches.push({
-            contribAccountId: contrib.id,
-            performanceAccountId: match.id,
-            description: `contrib_account id=${contrib.id} (${contrib.accountType}, person=${person?.name ?? contrib.personId}) -> performance_account id=${match.id} (${match.accountLabel})`,
-          });
-          if (!dryRun) {
-            await ctx.db
-              .update(schema.contributionAccounts)
-              .set({ performanceAccountId: match.id })
-              .where(eq(schema.contributionAccounts.id, contrib.id));
-          }
-          updated++;
-        } else {
-          const desc = `contrib_account id=${contrib.id} (${contrib.accountType}, person=${person?.name ?? contrib.personId})`;
-          unmatched.push(desc);
-          log("warn", "admin_backfill_perf_id_unmatched", {
-            description: desc,
-          });
-        }
-      }
-
-      return {
-        dryRun,
-        updated,
-        matches,
-        unmatched,
-        alreadyLinked: allContribs.length - needsBackfill.length,
-      };
-    }),
 };
