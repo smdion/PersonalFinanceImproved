@@ -44,6 +44,7 @@ export default defineConfig({
     // spend part of their time waiting on SQLite I/O, so a fourth worker on
     // a 4-core box measured ~12% faster on them.
     maxWorkers: "100%",
+    globalSetup: ["tests/global-setup.ts"],
     execArgv,
     // Most of the suite (server/routers/calculators/db/pure/helpers/etc.) is
     // pure Node logic that never touches the DOM. Only the files that
