@@ -596,6 +596,62 @@ describe("filterYearByParentCategory", () => {
     expect(result.endBalance).toBe(10000);
   });
 
+  it("rescopes an accumulation year's contributions to the filtered accounts", () => {
+    // $8k into the Retirement 401k (+$2k match) and $6k into a Portfolio
+    // brokerage the engine routed through the same household slots.
+    const yr = makeYear() as unknown as Record<string, unknown> & {
+      individualAccountBalances: {
+        contribution: number;
+        employerMatch: number;
+      }[];
+    };
+    yr.individualAccountBalances[0]!.contribution = 8000;
+    yr.individualAccountBalances[0]!.employerMatch = 2000;
+    yr.individualAccountBalances[1]!.contribution = 6000;
+    Object.assign(yr, {
+      totalEmployee: 14000,
+      totalEmployer: 2000,
+      totalRoth: 0,
+      totalTraditional: 8000,
+      slots: [
+        {
+          category: "401k",
+          employeeContrib: 8000,
+          employerMatch: 2000,
+          rothContrib: 0,
+          traditionalContrib: 8000,
+          overflowAmount: 0,
+        },
+        {
+          category: "brokerage",
+          employeeContrib: 6000,
+          employerMatch: 0,
+          rothContrib: 0,
+          traditionalContrib: 0,
+          overflowAmount: 0,
+        },
+      ],
+    });
+    const result = filterYearByParentCategory(
+      yr as unknown as EngineYearProjection,
+      "Retirement",
+    ) as unknown as {
+      totalEmployee: number;
+      totalEmployer: number;
+      totalTraditional: number;
+      slots: { category: string; employeeContrib: number }[];
+    };
+    expect(result.totalEmployee).toBe(8000);
+    expect(result.totalEmployer).toBe(2000);
+    expect(result.totalTraditional).toBe(8000);
+    expect(
+      result.slots.find((s) => s.category === "brokerage")!.employeeContrib,
+    ).toBe(0);
+    expect(
+      result.slots.find((s) => s.category === "401k")!.employeeContrib,
+    ).toBe(8000);
+  });
+
   it("does not mutate the original year object", () => {
     const original = makeYear();
     const originalLen = original.individualAccountBalances.length;
