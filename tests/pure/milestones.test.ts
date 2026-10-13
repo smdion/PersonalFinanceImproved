@@ -579,7 +579,7 @@ describe("investing (Bogleheads)", () => {
       "rebalance",
     );
     expect(r.nextStep).toBe(
-      "Move about $100k out of Stocks — $60k into Bonds, $40k into TIPS",
+      "Move about $100k out of Stocks — $60k into Bonds and $40k into TIPS",
     );
     expect(r.impact).toEqual({ kind: "oneTime", amount: 100_000 });
     // The same mix in a $50k household scales with it.
@@ -617,7 +617,27 @@ describe("investing (Bogleheads)", () => {
       "2 classes outside the band: Stocks 10.0 pts over · Bonds 5.6 pts under",
     );
     expect(r.nextStep).toBe(
-      "Move about $100k out of Stocks — $56k into Bonds, $40k into TIPS",
+      "Move about $100k out of Stocks — $56k into Bonds and $40k into TIPS",
+    );
+  });
+
+  it("lists several classes as a sentence", () => {
+    const r = byId(
+      holdings(
+        [
+          { name: "A", share: 0.7, targetShare: 0.6 },
+          { name: "B", share: 0.13, targetShare: 0.12 },
+          { name: "C", share: 0.03, targetShare: 0.02 },
+          { name: "D", share: 0.07, targetShare: 0.13 },
+          { name: "E", share: 0.04, targetShare: 0.07 },
+          { name: "F", share: 0.03, targetShare: 0.06 },
+        ],
+        { knownValue: 1_000_000 },
+      ),
+      "rebalance",
+    );
+    expect(r.nextStep).toBe(
+      "Move about $120k out of A, B and C — $60k into D, $30k into E and $30k into F",
     );
   });
 

@@ -1,4 +1,5 @@
 import { describe, it, expect, afterEach } from "vitest";
+import { formatList } from "@/lib/utils/format";
 import {
   stripInstitutionSuffix,
   personDisplayName,
@@ -527,5 +528,14 @@ describe("privacy mode", () => {
       const [a, b] = maskAmountsInText("$100 vs $100").split(" vs ");
       expect(a!.replace(/^.*?(\$)/, "$1")).toBe(b);
     });
+  });
+});
+
+describe("formatList", () => {
+  it("joins one, two and many items as a sentence", () => {
+    expect(formatList([])).toBe("");
+    expect(formatList(["A"])).toBe("A");
+    expect(formatList(["A", "B"])).toBe("A and B");
+    expect(formatList(["A", "B", "C"])).toBe("A, B and C");
   });
 });

@@ -68,6 +68,7 @@ import type { CompositionBucket } from "@/lib/config/enum-values";
 import {
   compactCurrency,
   formatCurrency,
+  formatList,
   formatNumber,
   formatPercent,
   formatSavingsRate,
@@ -1372,8 +1373,10 @@ function investing(input: MilestoneInput): MilestoneResult[] {
       .filter((c) => c.share < c.targetShare!)
       .sort((a, b) => dollars(b) - dollars(a));
     const list = (cs: typeof targeted) =>
-      cs.map((c) => `${compactCurrency(dollars(c))} into ${c.name}`).join(", ");
-    const names = (cs: typeof targeted) => cs.map((c) => c.name).join(" and ");
+      formatList(
+        cs.map((c) => `${compactCurrency(dollars(c))} into ${c.name}`),
+      );
+    const names = (cs: typeof targeted) => formatList(cs.map((c) => c.name));
     const overTotal = over.reduce((s, c) => s + dollars(c), 0);
     const underTotal = under.reduce((s, c) => s + dollars(c), 0);
     const action =

@@ -156,6 +156,12 @@ export function formatPercent(value: number, decimals = 0): string {
   return `${(value * 100).toFixed(decimals)}%`;
 }
 
+/** Items as a sentence list: "A", "A and B", "A, B and C". */
+export function formatList(items: readonly string[]): string {
+  if (items.length <= 1) return items[0] ?? "";
+  return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
+}
+
 /** A savings rate, at the precision it's judged at (SAVINGS_RATE_DECIMALS). */
 export function formatSavingsRate(value: number): string {
   return formatPercent(value, SAVINGS_RATE_DECIMALS);
