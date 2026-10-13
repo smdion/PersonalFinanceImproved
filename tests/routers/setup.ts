@@ -7,8 +7,6 @@
  *   const result = await caller.budget.listProfiles();
  *   cleanup();
  */
-import fs from "fs";
-import path from "path";
 import { randomBytes } from "node:crypto";
 
 // Set a deterministic-per-process ENCRYPTION_KEY before any module that
@@ -21,7 +19,7 @@ import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { eq } from "drizzle-orm";
 import type { Session } from "next-auth";
-import { applyMigrationsIdempotent } from "../helpers/db-harness";
+import { openTestSqlite } from "../helpers/db-harness";
 import type { Permission } from "@/server/auth";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
@@ -93,29 +91,16 @@ interface TestCaller {
  * Creates an isolated test environment with:
  * - A temp SQLite database with all migrations applied
  * - A tRPC caller bound to an admin session
- * - A cleanup function to close the DB and delete the file
+ * - A cleanup function to close the DB
  */
 export async function createTestCaller(
   session: Session = adminSession,
 ): Promise<TestCaller> {
-  // Create temp file for SQLite — using a file (not :memory:) because
-  // some operations may need multiple connections.
-  const tmpDir = path.join(process.cwd(), "tests", ".tmp");
-  if (!fs.existsSync(tmpDir)) {
-    fs.mkdirSync(tmpDir, { recursive: true });
-  }
-  const dbPath = path.join(
-    tmpDir,
-    `test-${Date.now()}-${Math.random().toString(36).slice(2)}.db`,
-  );
-
-  const sqlite = new Database(dbPath);
-  sqlite.pragma("journal_mode = WAL");
-  sqlite.pragma("foreign_keys = ON");
+  // A fresh in-memory copy of the migrated, seeded template (built once
+  // per worker — see openTestSqlite).
+  const sqlite = openTestSqlite();
 
   const db = drizzle(sqlite, { schema: sqliteSchema });
-
-  applyMigrationsIdempotent(sqlite);
 
   // Monkey-patch db.transaction so routers that use async transaction
   // callbacks (e.g. sync-core's C3 atomic write block) can run under the
@@ -127,17 +112,6 @@ export async function createTestCaller(
   // verified by the PG-backed deploy smoke tests, not the test suite.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (db as any).transaction = async (fn: (tx: unknown) => unknown) => fn(db);
-
-  // Seed essential reference data (contribution limits, tax brackets)
-  const seedPath = path.resolve("seed-reference-data.sql");
-  if (fs.existsSync(seedPath)) {
-    const seedSql = fs.readFileSync(seedPath, "utf-8");
-    try {
-      sqlite.exec(seedSql);
-    } catch {
-      // May fail if tables don't exist in SQLite or syntax differs — non-fatal
-    }
-  }
 
   // Cast to PG type (same pattern as production schema.ts)
   // eslint-disable-next-line no-restricted-syntax -- Drizzle ORM requires this cast for SQLite-to-PG type compatibility in test harness
@@ -155,22 +129,6 @@ export async function createTestCaller(
       sqlite.close();
     } catch {
       // Already closed
-    }
-    try {
-      fs.unlinkSync(dbPath);
-      // Also clean up WAL and SHM files
-      try {
-        fs.unlinkSync(dbPath + "-wal");
-      } catch {
-        /* may not exist */
-      }
-      try {
-        fs.unlinkSync(dbPath + "-shm");
-      } catch {
-        /* may not exist */
-      }
-    } catch {
-      // File already deleted
     }
   };
 

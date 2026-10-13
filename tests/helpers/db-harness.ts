@@ -21,22 +21,33 @@ export interface TestDbContext {
   cleanup: () => void;
 }
 
-export async function createTestDb(): Promise<TestDbContext> {
-  const tmpDir = path.join(process.cwd(), "tests", ".tmp");
-  if (!fs.existsSync(tmpDir)) {
-    fs.mkdirSync(tmpDir, { recursive: true });
+/** The migrated, seeded database, built once per test worker. */
+let template: Buffer | null = null;
+
+/**
+ * A fresh in-memory test database: a copy of a template that has every
+ * migration and the reference data (IRS limits, tax brackets) applied.
+ * Building that template takes ~85ms; copying it takes well under 1ms, so
+ * it's built once per worker instead of once per test. A reference-data
+ * load that fails throws here — tests must never run on a half-seeded DB.
+ */
+export function openTestSqlite(): InstanceType<typeof Database> {
+  if (!template) {
+    const t = new Database(":memory:");
+    applyMigrationsIdempotent(t);
+    const seedPath = path.resolve("seed-reference-data.sql");
+    if (fs.existsSync(seedPath)) t.exec(fs.readFileSync(seedPath, "utf-8"));
+    template = t.serialize();
+    t.close();
   }
-  const dbPath = path.join(
-    tmpDir,
-    `test-${Date.now()}-${Math.random().toString(36).slice(2)}.db`,
-  );
-
-  const sqlite = new Database(dbPath);
-  sqlite.pragma("journal_mode = WAL");
+  const sqlite = new Database(template);
   sqlite.pragma("foreign_keys = ON");
+  return sqlite;
+}
 
+export async function createTestDb(): Promise<TestDbContext> {
+  const sqlite = openTestSqlite();
   const db = drizzle(sqlite, { schema: sqliteSchema });
-  applyMigrationsIdempotent(sqlite);
 
   // Monkey-patch db.transaction so helpers using async transaction
   // callbacks can run under the better-sqlite3 test harness — mirrors the
@@ -47,38 +58,13 @@ export async function createTestDb(): Promise<TestDbContext> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (db as any).transaction = async (fn: (tx: unknown) => unknown) => fn(db);
 
-  // Seed reference data
-  const seedPath = path.resolve("seed-reference-data.sql");
-  if (fs.existsSync(seedPath)) {
-    try {
-      sqlite.exec(fs.readFileSync(seedPath, "utf-8"));
-    } catch {
-      // Non-fatal
-    }
-  }
-
   const rawDb = db as unknown as DbType;
 
   const cleanup = () => {
     try {
       sqlite.close();
     } catch {
-      /* */
-    }
-    try {
-      fs.unlinkSync(dbPath);
-    } catch {
-      /* */
-    }
-    try {
-      fs.unlinkSync(dbPath + "-wal");
-    } catch {
-      /* */
-    }
-    try {
-      fs.unlinkSync(dbPath + "-shm");
-    } catch {
-      /* */
+      /* already closed */
     }
   };
 
