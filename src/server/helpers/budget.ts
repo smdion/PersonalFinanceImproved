@@ -25,7 +25,7 @@ import {
   resolveCompensation,
   applyActiveSalary,
   applyActiveBonusTerms,
-  getEffectiveIncome,
+  contributionPay,
   applySandboxSalaryEntries,
 } from "./salary";
 import type { SalaryActiveMap, SalaryOverrideEntry } from "./salary";
@@ -537,7 +537,9 @@ export async function resolveLinkedBudgetItemAmounts<
         effectiveSalaryMap,
       );
       const bonusTerms = applyActiveBonusTerms(sandboxEntry, comp.terms);
-      salaryByJobId.set(j.id, getEffectiveIncome(j, salary, bonusTerms));
+      // Regular paychecks only: what a bonus check carries isn't monthly
+      // cash flow (contributionPay — base salary).
+      salaryByJobId.set(j.id, contributionPay(j, salary, bonusTerms).salary);
     }
 
     for (const c of activeContribs) {

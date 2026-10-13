@@ -50,6 +50,7 @@ import {
   setSavingsGoalLink,
   deleteSavingsGoalLink,
   copySavingsGoalLinks,
+  contributionPay,
 } from "@/server/helpers";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { buildBracketInput } from "./paycheck";
@@ -267,6 +268,7 @@ export async function computeJobNetPayPerCheck(
     personalContribs.filter((c) => c.ownership !== "joint"),
     currentSalary,
     periodsPerYear,
+    contributionPay(salaryEntry, currentSalary, bonusTerms).bonusGross,
   );
 
   // Intentionally does not pass a bonusOverride — this value gets persisted

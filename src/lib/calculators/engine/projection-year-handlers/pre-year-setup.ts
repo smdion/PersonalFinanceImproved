@@ -136,7 +136,8 @@ export function runPreYearSetup(
           if (spec.method === "percent_of_salary" && spec.personId != null) {
             const personSal =
               state.projectedSalaryByPerson.get(spec.personId) ?? 0;
-            spec.salaryFraction = personSal / state.projectedSalary;
+            spec.salaryFraction =
+              (personSal * (spec.personPayShare ?? 1)) / state.projectedSalary;
           }
         }
       }

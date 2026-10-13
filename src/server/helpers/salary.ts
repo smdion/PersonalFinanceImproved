@@ -411,22 +411,41 @@ export function mergeSalaryProfileJobFields<J extends { id: number }>(
 }
 
 /**
- * Compute effective income for a job — salary + annual bonus when
- * includeBonusInContributions is true. Used for payroll contribution
- * calculations where the flag controls whether percent-of-salary deductions
- * apply to bonus pay. `includeBonusInContributions` now lives on the
- * resolved Salary Profile entry, not the raw `jobs` row — callers pass the
- * entry (or undefined, when the job has no entry in the active profile; a
- * missing entry already resolves baseSalary to 0, so treating it as "no
- * bonus" here changes nothing observable).
+ * Whether a job's bonus check carries contributions — the Salary Profile's
+ * "Contributions from bonus check" switch. It's stored as two flags
+ * (include401kInBonus, includeBonusInContributions) that once meant this
+ * separately; either one means yes. The paycheck takes the contributions
+ * out of the bonus check (bonusCheckContribution); every path follows it.
  */
-export function getEffectiveIncome(
-  entry: { includeBonusInContributions: boolean | undefined } | undefined,
+export function bonusCarriesContributions(
+  entry:
+    | {
+        include401kInBonus?: boolean | undefined;
+        includeBonusInContributions?: boolean | undefined;
+      }
+    | undefined,
+): boolean {
+  return !!(entry?.include401kInBonus || entry?.includeBonusInContributions);
+}
+
+/**
+ * A job's pay as contributions see it, the way the paycheck does: the base
+ * salary (regular paychecks — percent-of-pay amounts and the employer match
+ * are figured on it) and the bonus whose check carries contributions (0
+ * when it doesn't). Contribution amounts are then
+ * annualContributionWithBonus (server/helpers/contribution.ts).
+ */
+export function contributionPay(
+  entry: Parameters<typeof bonusCarriesContributions>[0],
   baseSalary: number,
   bonusTerms: BonusTerms,
-): number {
-  if (!entry?.includeBonusInContributions) return baseSalary;
-  return getTotalCompensation(baseSalary, bonusTerms);
+): { salary: number; bonusGross: number } {
+  return {
+    salary: baseSalary,
+    bonusGross: bonusCarriesContributions(entry)
+      ? getTotalCompensation(baseSalary, bonusTerms) - baseSalary
+      : 0,
+  };
 }
 
 /**

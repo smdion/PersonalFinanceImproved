@@ -18,19 +18,19 @@ import {
   monthsDoneYtd,
   monthsElapsedYtd,
   periodsElapsedYtd,
+  bonusCheckContribution,
 } from "@/lib/calculators/paycheck";
 import { accountDisplayName, stripInstitutionSuffix } from "@/lib/utils/format";
 import {
   toNumber,
   getPeriodsPerYear,
-  getEffectiveIncome,
+  contributionPay,
   getTotalCompensation,
   resolveCompensation,
   applyActiveSalary,
   applyActiveBonusTerms,
   buildContribAccounts,
   computeAnnualContribution,
-  computeBonusGross,
   loadAndApplyContribProfile,
   loadEffectiveSalaryProfile,
   applySandboxSalaryEntries,
@@ -70,7 +70,6 @@ import {
   getAccountTypeConfig,
   getDisplayConfig,
   getLimitGroup,
-  isInLimit401kGroup,
   getDefaultAccumulationOrder,
   categoriesWithIrsLimit,
   isRetirementCategory,
@@ -543,7 +542,10 @@ export const contributionRouter = createTRPCRouter({
             effectiveSalaryMap,
           );
           const bonusTerms = applyActiveBonusTerms(personEntry, comp.terms);
-          const salary = getEffectiveIncome(activeJob, dbSalary, bonusTerms);
+          // Base salary + the bonus whose check carries contributions —
+          // the paycheck's way (contributionPay / bonusCheckContribution).
+          const pay = contributionPay(activeJob, dbSalary, bonusTerms);
+          const salary = pay.salary;
           // Total compensation (always includes bonus) — used for savings rate denominator
           const totalCompensation = getTotalCompensation(dbSalary, bonusTerms);
           const periodsPerYear = getPeriodsPerYear(activeJob.payPeriod);
@@ -565,11 +567,21 @@ export const contributionRouter = createTRPCRouter({
               c.ownership !== "joint",
           );
 
+          // The day this year's bonus check is paid (null: no bonus date set).
+          const bonusDate =
+            pay.bonusGross > 0 && activeJob.bonusMonth != null
+              ? new Date(
+                  asOfDate.getFullYear(),
+                  activeJob.bonusMonth - 1,
+                  activeJob.bonusDayOfMonth ?? 1,
+                )
+              : null;
           const accounts = buildContribAccounts(
             jobContribs,
             personalContribs,
             salary,
             periodsPerYear,
+            pay.bonusGross,
           );
           const rawContribs = [...jobContribs, ...personalContribs];
 
@@ -582,29 +594,6 @@ export const contributionRouter = createTRPCRouter({
           };
 
           const result = calculateContributions(input);
-
-          const bonusGross = computeBonusGross(
-            salary,
-            bonusTerms.bonusPercent,
-            bonusTerms.bonusMultiplier,
-            bonusTerms.monthsInBonusYear,
-          );
-
-          // Estimate bonus contributions for categories in the 401k limit group (if include401kInBonus is set)
-          let bonus401k = 0;
-          if (activeJob.include401kInBonus && bonusGross > 0) {
-            const bonusPct = rawContribs
-              .filter(
-                (c) =>
-                  isInLimit401kGroup(c.accountType) &&
-                  c.contributionMethod === "percent_of_salary",
-              )
-              .reduce(
-                (s, c) => s + toNumber(String(c.contributionValue)) / 100,
-                0,
-              );
-            bonus401k = roundToCents(bonusGross * bonusPct);
-          }
 
           // Resolve IRS limit for an account type (with coverage variant + catchup)
           const resolveContribLimit = (
@@ -718,6 +707,8 @@ export const contributionRouter = createTRPCRouter({
               performanceAccountIds: Set<number>;
               /** Sum of this account's percent-of-pay elections; null once any of its contributions is a fixed amount. */
               electedPct: number | null;
+              /** What the bonus check takes for it (bonusCheckContribution). */
+              bonus: number;
             }
           >();
 
@@ -801,7 +792,14 @@ export const contributionRouter = createTRPCRouter({
               ytdDataStale: false,
               performanceAccountIds: new Set<number>(),
               electedPct: 0,
+              bonus: 0,
             };
+            // What the bonus check takes, and the match on it. The Year-End
+            // estimate adds them only when the year's actuals don't already
+            // hold that check (paid after the date they run through).
+            const bonusEmp = bonusCheckContribution(acct, pay.bonusGross);
+            const bonusMatch = acct.employerMatchOnBonus ?? 0;
+            entry.bonus += bonusEmp;
             entry.electedPct =
               entry.electedPct !== null &&
               rawContrib.contributionMethod === "percent_of_salary"
@@ -861,18 +859,30 @@ export const contributionRouter = createTRPCRouter({
                 stalePeriods = Math.max(0, periodsElapsed - periodsAtPerfDate);
               }
               if (stalePeriods > 0) entry.ytdDataStale = true;
+              const regularMatch = acct.employerMatch - bonusMatch;
               const perPeriodEmp = acct.annualContribution / periodsPerYear;
-              const perPeriodMatch = acct.employerMatch / periodsPerYear;
+              const perPeriodMatch = regularMatch / periodsPerYear;
+              const actualsThrough =
+                rawContrib.performanceAccountId != null &&
+                liveThroughToday.has(rawContrib.performanceAccountId)
+                  ? asOfDate
+                  : perfLastUpdated;
+              const bonusInActuals =
+                bonusDate !== null &&
+                actualsThrough != null &&
+                bonusDate <= actualsThrough;
               entry.blendedEmployee +=
                 ytdEmp +
                 perPeriodEmp * stalePeriods +
-                acct.annualContribution * remaining;
+                acct.annualContribution * remaining +
+                (bonusInActuals ? 0 : bonusEmp);
               entry.blendedMatch +=
                 ytdMatch +
                 perPeriodMatch * stalePeriods +
-                acct.employerMatch * remaining;
+                regularMatch * remaining +
+                (bonusInActuals ? 0 : bonusMatch);
             } else {
-              entry.blendedEmployee += acct.annualContribution;
+              entry.blendedEmployee += acct.annualContribution + bonusEmp;
               entry.blendedMatch += acct.employerMatch;
             }
             const pyAmt =
@@ -886,18 +896,18 @@ export const contributionRouter = createTRPCRouter({
             // Four-way tax-treatment split — after_tax and hsa must NOT be
             // folded into "trad" (that used to silently mislabel taxable
             // brokerage and HSA dollars as Traditional/pre-tax).
-            if (isTaxFree(acct.taxTreatment))
-              entry.taxFree += acct.annualContribution;
+            // Bonus-check money lands in the same bucket as the account's.
+            const withBonus = acct.annualContribution + bonusEmp;
+            if (isTaxFree(acct.taxTreatment)) entry.taxFree += withBonus;
             else if (isAfterTaxTreatment(acct.taxTreatment))
-              entry.afterTax += acct.annualContribution;
-            else if (isHsaTreatment(acct.taxTreatment))
-              entry.hsa += acct.annualContribution;
-            else entry.trad += acct.annualContribution;
+              entry.afterTax += withBonus;
+            else if (isHsaTreatment(acct.taxTreatment)) entry.hsa += withBonus;
+            else entry.trad += withBonus;
             // Same isPayrollDeducted resolution paycheck.ts's calculator
             // input uses (buildContribAccounts) — independent of the tax
             // treatment split above.
             if (rawContrib.isPayrollDeducted ?? rawContrib.jobId !== null) {
-              entry.payrollDeducted += acct.annualContribution;
+              entry.payrollDeducted += withBonus;
             } else {
               entry.nonPayroll += acct.annualContribution;
             }
@@ -920,9 +930,7 @@ export const contributionRouter = createTRPCRouter({
             const limit = getLimitForCategory(data.categoryKey);
             const employeeContrib = roundToCents(data.employee);
             const employerMatch = roundToCents(data.match);
-            const bonusAdd = isInLimit401kGroup(data.categoryKey)
-              ? bonus401k
-              : 0;
+            const bonusAdd = roundToCents(data.bonus);
             const totalEmployee = employeeContrib + bonusAdd;
             const cfg = categoriesWithIrsLimit().includes(
               data.categoryKey as AccountCategory,
@@ -941,8 +949,7 @@ export const contributionRouter = createTRPCRouter({
                     employerMatch: data.ytdEmployerMatch,
                   }
                 : null;
-            const blendedEmployee =
-              roundToCents(data.blendedEmployee) + bonusAdd;
+            const blendedEmployee = roundToCents(data.blendedEmployee);
             const blendedMatch = roundToCents(data.blendedMatch);
             const views = computeViewAwareAccountMetrics({
               projected: {
@@ -1078,13 +1085,13 @@ export const contributionRouter = createTRPCRouter({
             isPortfolioParent(d.parentCategory),
           );
           const blendedRetWithoutMatch = roundToCents(
-            retCats.reduce((s, [, d]) => s + d.blendedEmployee, 0) + bonus401k,
+            retCats.reduce((s, [, d]) => s + d.blendedEmployee, 0),
           );
           const blendedRetWithMatch = roundToCents(
             retCats.reduce(
               (s, [, d]) => s + d.blendedEmployee + d.blendedMatch,
               0,
-            ) + bonus401k,
+            ),
           );
           const blendedPortWithoutMatch = roundToCents(
             portCats.reduce((s, [, d]) => s + d.blendedEmployee, 0),
@@ -1136,7 +1143,7 @@ export const contributionRouter = createTRPCRouter({
             person,
             salary,
             totalCompensation,
-            bonusGross,
+            bonusGross: roundToCents(totalCompensation - dbSalary),
             periodsPerYear,
             periodsElapsedYtd: periodsElapsed,
             accountTypes,

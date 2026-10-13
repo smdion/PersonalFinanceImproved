@@ -53,6 +53,8 @@ export type ContributionAccountInput = {
   isPayrollDeducted: boolean;
   group: string; // e.g. 'retirement', 'portfolio' — driven by account data, not hardcoded
   employerMatch: number;
+  /** Of employerMatch, the part that matches what the bonus check takes. */
+  employerMatchOnBonus?: number;
   employerMatchTaxTreatment: TaxTreatmentType;
 };
 

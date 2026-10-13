@@ -395,6 +395,28 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
  * If `includeContribInBonus` is true, payroll-deducted contributions (e.g. 401k) are subtracted
  * from the bonus net. This matches employers who withhold retirement contributions from bonuses.
  */
+/**
+ * What a bonus check takes for one contribution account: a percent-of-pay
+ * account its rate of the bonus, a fixed-amount account its regular
+ * per-period dollars, an account not paid through payroll nothing. The one
+ * rule for money contributed from bonus checks — the paycheck, the
+ * contribution summary and the retirement projection all use it (when the
+ * job's "Contributions from bonus check" switch is on).
+ */
+export function bonusCheckContribution(
+  account: {
+    isPayrollDeducted: boolean;
+    rateOfGross: number | null;
+    perPeriodContribution: number;
+  },
+  bonusGross: number,
+): number {
+  if (!account.isPayrollDeducted || bonusGross <= 0) return 0;
+  return account.rateOfGross !== null
+    ? roundToCents(account.rateOfGross * bonusGross)
+    : account.perPeriodContribution;
+}
+
 function calculateBonus(
   input: PaycheckInput,
   _marginalRate: number,
@@ -441,17 +463,11 @@ function calculateBonus(
   // Optionally deduct payroll contributions (e.g. 401k) from bonus paycheck.
   // Percent-of-salary accounts scale against bonusGross; fixed-amount accounts
   // use their regular per-period dollar amount unchanged.
-  let bonusContributions = 0;
-  if (input.includeContribInBonus) {
-    for (const ca of input.contributionAccounts) {
-      if (ca.isPayrollDeducted) {
-        bonusContributions +=
-          ca.rateOfGross !== null
-            ? roundToCents(ca.rateOfGross * bonusGross)
-            : ca.perPeriodContribution;
-      }
-    }
-  }
+  const bonusContributions = input.includeContribInBonus
+    ? sumBy(input.contributionAccounts, (ca) =>
+        bonusCheckContribution(ca, bonusGross),
+      )
+    : 0;
 
   const bonusNet = roundToCents(
     bonusGross - bonusFederalWithholding - bonusFica - bonusContributions,

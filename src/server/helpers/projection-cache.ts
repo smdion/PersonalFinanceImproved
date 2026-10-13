@@ -248,8 +248,14 @@ import { log } from "@/lib/logger";
  *  RESULT, so a warm pre-R48a row would serve flag-less years for the 36h
  *  TTL on deploy day, exactly when the new Tax Optimization page's IRMAA alert
  *  and assumptions note debut. One-time bump, no further one needed (an
- *  output field never touches the input hash). */
-export const PROJECTION_CACHE_ENGINE_VERSION = 31;
+ *  output field never touches the input hash).
+ *
+ *  32: one bonus rule for contributions — a percent-of-pay spec carries
+ *  personPayShare and the engine re-derives salaryFraction from it each year
+ *  when it tracks salary per person (it used to apply the rate to the
+ *  person's total pay, bonus included, whatever the bonus switch said).
+ *  Engine logic changed for the same input, so cached rows must not serve. */
+export const PROJECTION_CACHE_ENGINE_VERSION = 32;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

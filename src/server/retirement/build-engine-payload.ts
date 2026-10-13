@@ -14,7 +14,7 @@ import { eq, asc, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import {
   toNumber,
-  getEffectiveIncome,
+  contributionPay,
   getTotalCompensation,
   applyActiveSalary,
   applyActiveBonusTerms,
@@ -583,14 +583,14 @@ export async function buildEnginePayload(
     const totalComp = getTotalCompensation(salary, bonusTerms);
     return {
       job,
-      // effectiveIncome respects includeBonusInContributions.
-      salary: getEffectiveIncome(job, salary, bonusTerms),
+      // Base salary + the bonus whose check carries contributions.
+      ...contributionPay(job, salary, bonusTerms),
       totalComp,
       totalCompFullFormula: totalComp,
     };
   });
-  // combinedSalary = effective income (respects includeBonusInContributions flag)
-  // Used for contribution calculations where percent_of_salary uses the payroll basis
+  // combinedSalary = base salaries — the payroll basis percent-of-pay
+  // contributions and the match are figured on (bonus checks: contributionPay)
   // totalCompensation = always includes bonus (resolved/pinned, not full-formula)
   // — used for display and "as of now" rate calculations.
   const totalCompensation = sumBy(jobSalaries, (js) => js.totalComp);
@@ -1147,7 +1147,7 @@ export async function buildEnginePayload(
     const comp = resolveCompensation(salaryProfileActiveMap, j.id);
     return {
       job: { id: j.id, personId: j.personId },
-      salary: getEffectiveIncome(j, comp.salary, comp.terms),
+      ...contributionPay(j, comp.salary, comp.terms),
       baseSalary: comp.salary,
       totalComp: getTotalCompensation(comp.salary, comp.terms),
     };
@@ -1337,7 +1337,7 @@ export async function buildEnginePayload(
           );
           return {
             job: { id: j.id, personId: j.personId },
-            salary: getEffectiveIncome(j, comp.salary, comp.terms),
+            ...contributionPay(j, comp.salary, comp.terms),
             baseSalary: comp.salary,
             totalComp: getTotalCompensation(comp.salary, comp.terms),
           };

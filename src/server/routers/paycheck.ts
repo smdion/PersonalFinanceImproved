@@ -28,6 +28,7 @@ import {
   buildPaycheckInputForJob,
   fetchContributionProfile,
   getIncompleteContribAccountIds,
+  contributionPay,
 } from "@/server/helpers";
 import { getAllPeople } from "@/server/helpers/people";
 import { applySandboxSalaryEntries } from "@/server/helpers/salary";
@@ -377,19 +378,19 @@ export const paycheckRouter = createTRPCRouter({
               c.isActive &&
               c.ownership !== "joint",
           );
-          const contribAccounts = buildContribAccounts(
-            jobContribs,
-            personalContribs,
-            salary,
-            periodsPerYear,
-          );
-
           // The What-If sandbox can override bonus terms independently of
           // salary — same per-field precedence as the salary merge above.
           const personBonusEntry = effectiveSalaryMap.get(person.id);
           const bonusTerms = applyActiveBonusTerms(
             personBonusEntry,
             comp.terms,
+          );
+          const contribAccounts = buildContribAccounts(
+            jobContribs,
+            personalContribs,
+            salary,
+            periodsPerYear,
+            contributionPay(activeJob, salary, bonusTerms).bonusGross,
           );
 
           // This year's actual paid-out bonus, if pinned on the Salary
