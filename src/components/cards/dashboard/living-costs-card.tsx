@@ -2,7 +2,7 @@
 
 import React, { useState, memo } from "react";
 import { trpc, type RouterOutputs } from "@/lib/trpc";
-import { Card } from "@/components/ui/card";
+import { Card, ProgressBar } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { StatusDot } from "@/components/ui/badge";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
@@ -70,25 +70,15 @@ function BudgetSummary({
         </span>
       </div>
       {actuals?.service && rows.length > 0 && spentShare !== null && (
-        <div
-          className="mt-2"
-          title={`${formatCurrency(spent)} spent of ${formatCurrency(budgeted)} budgeted (linked categories only)`}
-        >
-          <div className="text-muted mb-0.5 flex justify-between text-xs">
-            <span>
-              Spent this month
-              {actuals.month ? ` (${formatDate(actuals.month, "short")})` : ""}
-            </span>
-            <span className={spentShare > 1 ? "text-red-600" : ""}>
-              {formatPercent(spentShare, 0)}
-            </span>
-          </div>
-          <div className="bg-surface-strong h-1.5 rounded">
-            <div
-              className={`h-1.5 rounded ${spentShare > 1 ? "bg-red-500" : "bg-green-500"}`}
-              style={{ width: `${Math.min(100, spentShare * 100)}%` }}
-            />
-          </div>
+        <div className="mt-2">
+          <ProgressBar
+            value={spentShare}
+            label={`Spent this month${actuals.month ? ` (${formatDate(actuals.month, "short")})` : ""}`}
+            tooltip={`${formatCurrency(spent)} spent of ${formatCurrency(budgeted)} budgeted (linked categories only)`}
+            variant="success"
+            allowOver
+            small
+          />
         </div>
       )}
     </div>

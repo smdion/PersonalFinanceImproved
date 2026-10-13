@@ -4,7 +4,6 @@
  * transaction-level detail): live balance and link status, what it holds,
  * and whether deposits match the paycheck setup.
  */
-import { asc, inArray } from "drizzle-orm";
 import { createTRPCRouter, portfolioProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { addDays, utcDayOf } from "@/lib/utils/date";
@@ -24,8 +23,9 @@ import {
   loadClassifiedTransactions,
   loadFeedContext,
   loadLatestHoldings,
+  loadBalanceHistory,
 } from "./_shared";
-import { valueHoldings } from "./fund-facts";
+import { valueHoldings } from "./holdings-overview";
 
 export const investmentAccountInsightsRouter = createTRPCRouter({
   getAccountInsights: portfolioProcedure.query(async ({ ctx }) => {
@@ -116,24 +116,12 @@ export const investmentAccountInsightsRouter = createTRPCRouter({
     );
     if (!snapshotDate || feeds.length === 0)
       return { snapshotDate, points: [] };
-    const history = await ctx.db
-      .select({
-        id: schema.simplefinAccountBalances.simplefinAccountId,
-        date: schema.simplefinAccountBalances.balanceDate,
-        balance: schema.simplefinAccountBalances.balance,
-      })
-      .from(schema.simplefinAccountBalances)
-      .where(
-        inArray(
-          schema.simplefinAccountBalances.simplefinAccountId,
-          feeds.map((f) => f.id),
-        ),
-      )
-      .orderBy(asc(schema.simplefinAccountBalances.balanceDate));
+    const history = await loadBalanceHistory(ctx.db);
     const historyOf = (f: (typeof feeds)[number]) => {
-      const rows: [string, number][] = history
-        .filter((h) => h.id === f.id)
-        .map((h) => [utcDayOf(h.date), toNumber(h.balance)]);
+      const rows: [string, number][] = (history.get(f.id) ?? []).map((h) => [
+        h.day,
+        h.balance,
+      ]);
       if (f.balanceDay) rows.push([f.balanceDay, f.balance]);
       return rows.sort((a, b) => a[0].localeCompare(b[0]));
     };

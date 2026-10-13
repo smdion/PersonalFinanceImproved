@@ -13,6 +13,12 @@ let simplefinInterval: ReturnType<typeof setInterval> | undefined;
 let secInterval: ReturnType<typeof setInterval> | undefined;
 
 export function registerNodeHandlers() {
+  // Server date math runs in the household's zone from the first request.
+  void Promise.all([
+    import("@/lib/db"),
+    import("@/server/helpers/household-timezone"),
+  ]).then(([{ db }, tz]) => tz.loadHouseholdTimeZone(db));
+
   process.on("unhandledRejection", (reason) => {
     const err = reason instanceof Error ? reason : new Error(String(reason));
     reportError(err, { context: "unhandled_rejection" });

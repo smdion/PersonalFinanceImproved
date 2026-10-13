@@ -131,17 +131,10 @@ describe("paycheck/contribution computeSummary honor a different Salary Profile'
       });
       const person = result.people.find((p) => p.person.id === personId)!;
 
-      // includeBonusInContributions defaults true, so this router's `salary`
-      // is effective income (base + bonus) before the final bonusGross is
-      // computed off of it — a pre-existing two-step quirk, unrelated to
-      // which profile's terms are in effect.
-      const pinnedEffective =
-        LIVE_SALARY +
-        LIVE_SALARY * PINNED_BONUS_PERCENT * PINNED_BONUS_MULTIPLIER;
+      // The bonus is figured on the base salary (no bonus on the bonus).
       const pinnedBonus =
-        pinnedEffective * PINNED_BONUS_PERCENT * PINNED_BONUS_MULTIPLIER;
-      const liveEffective = LIVE_SALARY + LIVE_SALARY * LIVE_BONUS_PERCENT;
-      const liveBonus = liveEffective * LIVE_BONUS_PERCENT;
+        LIVE_SALARY * PINNED_BONUS_PERCENT * PINNED_BONUS_MULTIPLIER;
+      const liveBonus = LIVE_SALARY * LIVE_BONUS_PERCENT;
 
       expect(person.bonusGross).toBeCloseTo(pinnedBonus, 2);
       expect(person.bonusGross).not.toBeCloseTo(liveBonus, 2);
@@ -256,10 +249,7 @@ describe("sandboxSalaryEntries is the highest precedence tier", () => {
       });
       const person = result.people.find((p) => p.person.id === personId)!;
 
-      // Same two-step effective-income quirk noted above.
-      const sandboxEffective =
-        LIVE_SALARY + LIVE_SALARY * sandboxBonusPercent * 1.0;
-      const expectedBonus = sandboxEffective * sandboxBonusPercent * 1.0;
+      const expectedBonus = LIVE_SALARY * sandboxBonusPercent * 1.0;
 
       expect(person.bonusGross).toBeCloseTo(expectedBonus, 2);
     } finally {

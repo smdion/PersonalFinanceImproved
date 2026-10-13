@@ -533,7 +533,14 @@ export function householdSavings(
   people: SavingsRatePerson[],
   jointAccounts: SavingsAccount[],
   viewMode: ViewMode,
-  excludeMatch: boolean,
+  {
+    excludeMatch,
+    includePortfolio = true,
+  }: {
+    excludeMatch: boolean;
+    /** false: Retirement accounts only (Portfolio money left out of the rate). */
+    includePortfolio?: boolean;
+  },
 ) {
   const compensation = people.reduce(
     (s, d) => s + d.totals.views[viewMode].compensation,
@@ -574,12 +581,15 @@ export function householdSavings(
       lines: lines.filter((l) => l.share > 0),
     };
   });
-  const total = groups.reduce((s, g) => s + g.total, 0);
+  const counted = groups.filter(
+    (g) => g.total !== 0 && (includePortfolio || g.group !== "portfolio"),
+  );
+  const total = counted.reduce((s, g) => s + g.total, 0);
   return {
     compensation,
     total,
     rate: share(total),
-    groups: groups.filter((g) => g.total !== 0),
+    groups: counted,
   };
 }
 

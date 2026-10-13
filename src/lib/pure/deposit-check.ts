@@ -8,7 +8,7 @@
 import { roundToCents } from "@/lib/utils/math";
 
 /** How far the observed pace may differ from the setup and still "match". */
-export const DEPOSIT_MATCH_TOLERANCE = 0.1;
+const DEPOSIT_MATCH_TOLERANCE = 0.1;
 /** Paydays needed before judging a pace. */
 const MIN_PAYDAYS = 3;
 

@@ -29,9 +29,15 @@ import {
 } from "@/lib/config/account-types";
 import { WITHDRAWAL_STRATEGY_LABELS } from "@/lib/config/withdrawal-strategies";
 import { PERF_CATEGORY_RETIREMENT } from "@/lib/config/display-labels";
+import type { AccountCategory } from "@/lib/config/account-types";
+import { filterYearByParentCategory } from "@/components/cards/projection/utils";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import { LoadingCard, ErrorCard } from "./utils";
 import { RetirementBenchmarks } from "./retirement-benchmarks";
+import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
+import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
+import { SK_HIGH_INCOME_THRESHOLD } from "@/lib/constants/settings-keys";
+import { isHighIncomeHousehold } from "@/lib/pure/contributions";
 
 function RetirementCardImpl() {
   const salaryActiveFields = useActiveSalaries();
@@ -105,6 +111,17 @@ function RetirementCardImpl() {
 
   const { data, isLoading, isFetching, error } =
     trpc.projection.computeProjection.useQuery(engineInput);
+  const [highIncomeThreshold] = usePersistedSetting<number>(
+    SK_HIGH_INCOME_THRESHOLD,
+    DEFAULT_HIGH_INCOME_THRESHOLD,
+  );
+  // The match switch shared with every savings rate and contribution total.
+  const { excludeMatch } = useSavingsRateOptions(
+    isHighIncomeHousehold(
+      data && "combinedSalary" in data ? data.combinedSalary : 0,
+      highIncomeThreshold,
+    ),
+  );
 
   useEffect(() => {
     if (!data?.result || isLoading || isFetching) return;
@@ -159,13 +176,18 @@ function RetirementCardImpl() {
       </Card>
     );
 
-  const {
-    result,
-    settings,
-    baseLimits,
-    realDefaults,
-    portfolioByTaxTypeByParentCat,
-  } = data;
+  const { settings, baseLimits, portfolioByTaxTypeByParentCat } = data;
+  // Retirement accounts only, like the Retirement page: the engine projects
+  // every account (Portfolio ones too) and pages filter by parent category.
+  const result = {
+    ...data.result,
+    projectionByYear: data.result.projectionByYear.map((yr) =>
+      filterYearByParentCategory(yr, PERF_CATEGORY_RETIREMENT),
+    ),
+  };
+  const retirementSpecs = (data.contributionSpecs ?? []).filter(
+    (s) => s.parentCategory === PERF_CATEGORY_RETIREMENT,
+  );
   const retPortfolio =
     portfolioByTaxTypeByParentCat?.[PERF_CATEGORY_RETIREMENT];
   const retAge = settings.retirementAge;
@@ -177,13 +199,17 @@ function RetirementCardImpl() {
       retPortfolio.hsa +
       retPortfolio.afterTax
     : 0;
-  const annualContributions = sumBy(
-    Object.values(realDefaults.annualByCategory),
-    (v) => v,
-  );
+  const annualContributions = sumBy(retirementSpecs, (s) => s.baseAnnual);
   const employerContributions = sumBy(
-    Object.values(realDefaults.employerMatchByCategory),
-    (v) => v,
+    retirementSpecs,
+    (s) => s.matchAnnual ?? 0,
+  );
+  // Room is measured against what goes into limited accounts only.
+  const limitedContributions = sumBy(
+    retirementSpecs.filter((s) =>
+      categoriesWithIrsLimit().includes(s.category as AccountCategory),
+    ),
+    (s) => s.baseAnnual,
   );
   // Sum limits per unique group (401k/403b share a group — avoid double-counting)
   const retLimits = (() => {
@@ -219,8 +245,8 @@ function RetirementCardImpl() {
   const totalWithMatch = annualContributions + employerContributions;
   const retirementBudget = data.decumulationExpenses ?? 0;
   const taxAdvSpace =
-    retLimits > 0 && annualContributions < retLimits
-      ? retLimits - annualContributions
+    retLimits > 0 && limitedContributions < retLimits
+      ? retLimits - limitedContributions
       : 0;
 
   return (
@@ -278,11 +304,15 @@ function RetirementCardImpl() {
             <div className="flex justify-between">
               <span className="text-muted">Contributions</span>
               <span className="text-primary">
-                {formatCurrency(totalWithMatch)}/yr
+                {formatCurrency(
+                  excludeMatch ? annualContributions : totalWithMatch,
+                )}
+                /yr
                 {employerContributions > 0 && (
                   <span className="text-caption text-faint ml-1">
-                    ({formatCurrency(annualContributions)} +{" "}
-                    {formatCurrency(employerContributions)} match)
+                    {excludeMatch
+                      ? `(+ ${formatCurrency(employerContributions)} match)`
+                      : `(${formatCurrency(annualContributions)} + ${formatCurrency(employerContributions)} match)`}
                   </span>
                 )}
               </span>
@@ -431,7 +461,7 @@ function RetirementCardImpl() {
         </div>
         <div className="md:border-subtle md:border-l md:pl-8">
           <RetirementBenchmarks
-            data={data}
+            data={{ ...data, result }}
             currentAge={currentAge}
             retirementSavings={portfolioTotal}
           />

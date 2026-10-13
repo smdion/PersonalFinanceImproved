@@ -708,12 +708,10 @@ function PayTaxDetailsView({ sd }: { sd: Detail }) {
         value={sd.bonusDayOfMonth !== null ? String(sd.bonusDayOfMonth) : "—"}
       />
       <DetailStat
-        label="401(k) on bonus"
-        value={sd.include401kInBonus ? "Yes" : "No"}
-      />
-      <DetailStat
-        label="Bonus counts toward contributions"
-        value={sd.includeBonusInContributions ? "Yes" : "No"}
+        label="Contributions from bonus check"
+        value={
+          sd.include401kInBonus || sd.includeBonusInContributions ? "Yes" : "No"
+        }
       />
     </div>
   );
@@ -731,6 +729,7 @@ function PayTaxDetailsEdit({
   drafts,
   setDraft,
   onWriteField,
+  onWriteFields,
   onCommitAnchorPayDate,
   onCommitBudgetPeriodsPerMonth,
   onCommitAdditionalFedWithholding,
@@ -745,6 +744,8 @@ function PayTaxDetailsEdit({
     field: K,
     value: Entry[K],
   ) => void;
+  /** Several fields in one write (one request — they succeed or fail together). */
+  onWriteFields: (sd: Detail, fields: Partial<Entry>) => void;
   onCommitAnchorPayDate: (sd: Detail) => void;
   onCommitBudgetPeriodsPerMonth: (sd: Detail) => void;
   onCommitAdditionalFedWithholding: (sd: Detail) => void;
@@ -884,25 +885,25 @@ function PayTaxDetailsEdit({
           placeholder="—"
         />
       </FormField>
-      <label className="text-secondary flex items-center gap-1.5 self-end pb-1.5 text-xs">
+      {/* One switch: the bonus check takes payroll contributions (percent-
+          of-pay accounts at their rate of the bonus, fixed amounts once
+          more). Two stored flags used to say this separately; both follow
+          it (bonusCarriesContributions). */}
+      <label
+        className="text-secondary flex items-center gap-1.5 self-end pb-1.5 text-xs"
+        title="The bonus check takes your payroll contributions: percent-of-pay accounts at their rate of the bonus, fixed amounts once more. The employer match follows."
+      >
         <input
           type="checkbox"
-          checked={sd.include401kInBonus}
+          checked={sd.include401kInBonus || sd.includeBonusInContributions}
           onChange={(e) =>
-            onWriteField(sd, "include401kInBonus", e.target.checked)
+            onWriteFields(sd, {
+              include401kInBonus: e.target.checked,
+              includeBonusInContributions: e.target.checked,
+            })
           }
         />
-        401(k) on bonus
-      </label>
-      <label className="text-secondary flex items-center gap-1.5 self-end pb-1.5 text-xs">
-        <input
-          type="checkbox"
-          checked={sd.includeBonusInContributions}
-          onChange={(e) =>
-            onWriteField(sd, "includeBonusInContributions", e.target.checked)
-          }
-        />
-        Bonus counts toward contributions
+        Contributions from bonus check
       </label>
     </div>
   );
@@ -1216,21 +1217,18 @@ function ProfileEditPanel({
    *  Generic over Entry's keys so both the original numeric fields and the
    *  11 new fields (enums, booleans, nullable dates/numbers) share this one
    *  write path. */
-  const writeField = <K extends keyof Entry>(
-    sd: Detail,
-    field: K,
-    stored: Entry[K],
-  ) => {
+  const writeFields = (sd: Detail, fields: Partial<Entry>) => {
     if (sd.jobId === null) return;
     const key = String(sd.jobId);
     const existing = profile.salaries[key];
     if (!existing) return;
-    patchEntryMutation.mutate({
-      id: profileId,
-      jobId: sd.jobId,
-      fields: { [field]: stored } as Partial<Entry>,
-    });
+    patchEntryMutation.mutate({ id: profileId, jobId: sd.jobId, fields });
   };
+  const writeField = <K extends keyof Entry>(
+    sd: Detail,
+    field: K,
+    stored: Entry[K],
+  ) => writeFields(sd, { [field]: stored } as Partial<Entry>);
 
   /** Empty clears the pin back to null (unpinned, formula applies) — unlike
    *  the always-numeric fields below, an empty commit here is meaningful,
@@ -1489,6 +1487,7 @@ function ProfileEditPanel({
                             drafts={drafts}
                             setDraft={setDraft}
                             onWriteField={writeField}
+                            onWriteFields={writeFields}
                             onCommitAnchorPayDate={commitAnchorPayDate}
                             onCommitBudgetPeriodsPerMonth={
                               commitBudgetPeriodsPerMonth

@@ -351,7 +351,7 @@ async function ingestTransactions(
  * Card spending is redacted unless the account is linked to a non-HSA type:
  * an unlinked account might be an HSA, so it is treated as one.
  */
-export function redactsCardSpending(
+function redactsCardSpending(
   linked: boolean,
   accountType: string | undefined,
 ): boolean {
@@ -359,7 +359,7 @@ export function redactsCardSpending(
 }
 
 /** Whether a stored SimpleFIN account's card spending is redacted (see {@link redactsCardSpending}). */
-export async function accountRedactsCardSpending(
+async function accountRedactsCardSpending(
   db: Db,
   simplefinAccountId: number,
 ): Promise<boolean> {
@@ -385,7 +385,7 @@ export async function accountRedactsCardSpending(
 }
 
 /** Replace a stored row's description with "Medical withdrawal" and lock its kind. */
-export async function lockAsMedicalWithdrawal(
+async function lockAsMedicalWithdrawal(
   db: Db,
   transactionIds: readonly number[],
 ): Promise<void> {

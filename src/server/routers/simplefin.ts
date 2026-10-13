@@ -375,8 +375,7 @@ export const simplefinRouter = createTRPCRouter({
       getLatestSnapshot(ctx.db),
     ]);
 
-    // Same filter-and-sum idiom as sync/mappings.ts's pullPortfolioFromApi —
-    // a performance account can be split across multiple snapshot rows
+    // A performance account can be split across multiple snapshot rows
     // (e.g. by tax type), so sum every row that shares its id.
     const snapshotBalanceByPerfId = new Map<number, number>();
     const taxTypesSeenByPerfId = new Map<number, Set<PortfolioTaxType>>();

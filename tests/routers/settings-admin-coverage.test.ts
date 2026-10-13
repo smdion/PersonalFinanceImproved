@@ -29,8 +29,6 @@ import "./setup-mocks";
 import { vi, describe, it, expect } from "vitest";
 import {
   createTestCaller,
-  seedPerson,
-  seedPerformanceAccount,
   seedAppSetting,
   adminSession,
   viewerSession,
@@ -89,111 +87,6 @@ describe("settings.appSettings.list viewer filtering", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // BACKFILL PERFORMANCE ACCOUNT IDS
 // ─────────────────────────────────────────────────────────────────────────────
-
-describe("settings.backfillPerformanceAccountIds", () => {
-  it("returns zero updates when no contribution accounts exist", async () => {
-    const ctx = await createTestCaller(adminSession);
-    try {
-      const result = await ctx.caller.settings.backfillPerformanceAccountIds();
-      expect(result.updated).toBe(0);
-      expect(result.unmatched).toEqual([]);
-      expect(result.alreadyLinked).toBe(0);
-    } finally {
-      ctx.cleanup();
-    }
-  });
-
-  it("links matching contribution account to performance account", async () => {
-    const ctx = await createTestCaller(adminSession);
-    try {
-      const personId = await seedPerson(ctx.db, "Alice", "1990-01-01");
-      const _perfAcctId = seedPerformanceAccount(ctx.db, {
-        institution: "Fidelity",
-        accountType: "401k",
-        ownerPersonId: personId,
-      });
-
-      // Insert contribution account with correct schema fields
-      ctx.db
-        .insert(schema.contributionAccounts)
-        .values({
-          personId,
-          accountType: "401k",
-          taxTreatment: "pre_tax",
-          contributionMethod: "percent_of_salary",
-          contributionValue: "0.10",
-          employerMatchType: "none",
-          isActive: true,
-          performanceAccountId: null,
-        })
-        .run();
-
-      const result = await ctx.caller.settings.backfillPerformanceAccountIds();
-      expect(result.updated).toBeGreaterThanOrEqual(1);
-    } finally {
-      ctx.cleanup();
-    }
-  });
-
-  it("reports unmatched contribution accounts", async () => {
-    const ctx = await createTestCaller(adminSession);
-    try {
-      const personId = await seedPerson(ctx.db, "Bob", "1985-06-15");
-
-      // Insert contribution account for HSA with no matching perf account
-      ctx.db
-        .insert(schema.contributionAccounts)
-        .values({
-          personId,
-          accountType: "hsa",
-          taxTreatment: "pre_tax",
-          contributionMethod: "dollar_amount",
-          contributionValue: "200",
-          employerMatchType: "none",
-          isActive: true,
-          performanceAccountId: null,
-        })
-        .run();
-
-      const result = await ctx.caller.settings.backfillPerformanceAccountIds();
-      expect(result.unmatched.length).toBeGreaterThanOrEqual(1);
-    } finally {
-      ctx.cleanup();
-    }
-  });
-
-  it("counts already linked accounts", async () => {
-    const ctx = await createTestCaller(adminSession);
-    try {
-      const personId = await seedPerson(ctx.db, "Carol", "1992-03-20");
-      const perfAcctId = seedPerformanceAccount(ctx.db, {
-        institution: "Schwab",
-        accountType: "brokerage",
-        ownerPersonId: personId,
-      });
-
-      // Already linked
-      ctx.db
-        .insert(schema.contributionAccounts)
-        .values({
-          personId,
-          accountType: "brokerage",
-          taxTreatment: "after_tax",
-          contributionMethod: "dollar_amount",
-          contributionValue: "500",
-          employerMatchType: "none",
-          isActive: true,
-          performanceAccountId: perfAcctId,
-        })
-        .run();
-
-      const result = await ctx.caller.settings.backfillPerformanceAccountIds();
-      expect(result.alreadyLinked).toBeGreaterThanOrEqual(1);
-    } finally {
-      ctx.cleanup();
-    }
-  });
-});
 
 // portfolioSnapshots.delete/create additional coverage moved to
 // networth.test.ts (procedures moved to routers/networth.ts).

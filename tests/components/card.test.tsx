@@ -274,4 +274,24 @@ describe("ProgressBar", () => {
     expect(spans).toHaveLength(1);
     expect(spans[0]!.textContent).toBe("50%");
   });
+
+  it("shows an overrun when allowOver: real percent, red bar, still capped at full", () => {
+    render(<ProgressBar value={1.25} allowOver ariaLabel="Of budget" />);
+    expect(screen.getByText("125%")).toBeInTheDocument();
+    const bar = screen.getByRole("progressbar");
+    expect(bar).toHaveAttribute("aria-valuenow", "100");
+    expect(bar).toHaveAttribute("aria-valuetext", "125%");
+    expect(bar).toHaveAttribute("aria-label", "Of budget — over");
+    expect(bar.className).toContain("bg-red-500");
+    expect(bar.style.width).toBe("100%");
+  });
+
+  it("renders one compact line when inline", () => {
+    const { container } = render(
+      <ProgressBar value={0.4} inline small variant="success" />,
+    );
+    expect(screen.getByText("40%")).toBeInTheDocument();
+    expect(container.firstElementChild!.className).toContain("items-center");
+    expect(screen.getByRole("progressbar").className).toContain("bg-green-500");
+  });
 });

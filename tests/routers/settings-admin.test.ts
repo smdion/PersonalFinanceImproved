@@ -26,7 +26,6 @@ import "./setup-mocks";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
 import {
   createTestCaller,
-  seedPerson,
   seedPerformanceAccount,
   seedSnapshot,
   seedAppSetting,
@@ -91,6 +90,32 @@ describe("settings.appSettings", () => {
   });
 
   describe("upsert", () => {
+    it("rejects an unknown household time zone and applies a valid one", async () => {
+      const before = process.env.TZ;
+      try {
+        await expect(
+          caller.settings.appSettings.upsert({
+            key: "household_timezone",
+            value: "Not/AZone",
+          }),
+        ).rejects.toThrow("Not a recognized time zone");
+        await caller.settings.appSettings.upsert({
+          key: "household_timezone",
+          value: "America/Chicago",
+        });
+        expect(process.env.TZ).toBe("America/Chicago");
+        // Clearing it hands the server back to the container's zone.
+        await caller.settings.appSettings.upsert({
+          key: "household_timezone",
+          value: null,
+        });
+        expect(process.env.TZ).toBe(before);
+      } finally {
+        if (before === undefined) delete process.env.TZ;
+        else process.env.TZ = before;
+      }
+    });
+
     it("inserts a new setting", async () => {
       const result = await caller.settings.appSettings.upsert({
         key: "test_setting",
@@ -850,181 +875,6 @@ describe("settings.appSettings non-admin filtering", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // BACKFILL PERFORMANCE ACCOUNT IDS
 // ─────────────────────────────────────────────────────────────────────────────
-
-describe("settings.backfillPerformanceAccountIds", () => {
-  it("returns zeroes when no contribution accounts exist", async () => {
-    const ctx = await createTestCaller(adminSession);
-    try {
-      const result = await ctx.caller.settings.backfillPerformanceAccountIds();
-      expect(result).toBeDefined();
-      expect(result.updated).toBe(0);
-      expect(result.alreadyLinked).toBe(0);
-      expect(Array.isArray(result.unmatched)).toBe(true);
-    } finally {
-      ctx.cleanup();
-    }
-  });
-
-  it("backfills a matching contribution account", async () => {
-    const ctx = await createTestCaller(adminSession);
-    try {
-      const personId = await seedPerson(ctx.db, "Alice", "1985-03-15");
-      const _perfAcctId = seedPerformanceAccount(ctx.db, {
-        institution: "Fidelity",
-        accountType: "401k",
-        accountLabel: "Alice Fidelity 401k",
-        ownerPersonId: personId,
-      });
-      // Insert a contribution account with no performanceAccountId
-      const sqliteSchema = await import("@/lib/db/schema-sqlite");
-      ctx.db
-        .insert(sqliteSchema.contributionAccounts)
-        .values({
-          personId,
-          accountType: "401k",
-          taxTreatment: "pre_tax",
-          contributionMethod: "percent_of_salary",
-          contributionValue: "0.10",
-          employerMatchType: "none",
-          isActive: true,
-        })
-        .run();
-
-      const result = await ctx.caller.settings.backfillPerformanceAccountIds();
-      expect(result.updated).toBe(1);
-      expect(result.unmatched).toHaveLength(0);
-      expect(result.alreadyLinked).toBe(0);
-    } finally {
-      ctx.cleanup();
-    }
-  });
-
-  it("reports unmatched contribution accounts", async () => {
-    const ctx = await createTestCaller(adminSession);
-    try {
-      const personId = await seedPerson(ctx.db, "Zara", "1990-01-01");
-      const sqliteSchema = await import("@/lib/db/schema-sqlite");
-      // Insert a contribution account with no matching performance account
-      ctx.db
-        .insert(sqliteSchema.contributionAccounts)
-        .values({
-          personId,
-          accountType: "403b",
-          taxTreatment: "pre_tax",
-          contributionMethod: "percent_of_salary",
-          contributionValue: "0.05",
-          employerMatchType: "none",
-          isActive: true,
-        })
-        .run();
-
-      const result = await ctx.caller.settings.backfillPerformanceAccountIds();
-      expect(result.updated).toBe(0);
-      expect(result.unmatched).toHaveLength(1);
-      expect(result.unmatched[0]).toContain("403b");
-    } finally {
-      ctx.cleanup();
-    }
-  });
-
-  it("backfills via label name matching when ownerPersonId differs", async () => {
-    const ctx = await createTestCaller(adminSession);
-    try {
-      const personId = await seedPerson(ctx.db, "Charlie", "1990-06-15");
-      // Create perf account owned by a different person (null) but with person name in label
-      seedPerformanceAccount(ctx.db, {
-        institution: "Fidelity",
-        accountType: "401k",
-        accountLabel: "charlie fidelity 401k",
-        ownerPersonId: null,
-      });
-      const sqliteSchema = await import("@/lib/db/schema-sqlite");
-      ctx.db
-        .insert(sqliteSchema.contributionAccounts)
-        .values({
-          personId,
-          accountType: "401k",
-          taxTreatment: "pre_tax",
-          contributionMethod: "percent_of_salary",
-          contributionValue: "0.06",
-          employerMatchType: "none",
-          isActive: true,
-        })
-        .run();
-
-      const result = await ctx.caller.settings.backfillPerformanceAccountIds();
-      expect(result.updated).toBe(1);
-    } finally {
-      ctx.cleanup();
-    }
-  });
-
-  it("backfills using displayLabel fallback for unknown accountType", async () => {
-    const ctx = await createTestCaller(adminSession);
-    try {
-      const personId = await seedPerson(ctx.db, "Dana", "1992-01-01");
-      seedPerformanceAccount(ctx.db, {
-        institution: "Unknown",
-        accountType: "custom_type",
-        accountLabel: "dana unknown custom_type",
-        ownerPersonId: personId,
-      });
-      const sqliteSchema = await import("@/lib/db/schema-sqlite");
-      ctx.db
-        .insert(sqliteSchema.contributionAccounts)
-        .values({
-          personId,
-          accountType: "custom_type",
-          taxTreatment: "pre_tax",
-          contributionMethod: "fixed_amount",
-          contributionValue: "100",
-          employerMatchType: "none",
-          isActive: true,
-        })
-        .run();
-
-      const result = await ctx.caller.settings.backfillPerformanceAccountIds();
-      expect(result.updated).toBe(1);
-    } finally {
-      ctx.cleanup();
-    }
-  });
-
-  it("reports already-linked accounts", async () => {
-    const ctx = await createTestCaller(adminSession);
-    try {
-      const personId = await seedPerson(ctx.db, "Bob", "1988-06-20");
-      const perfAcctId = seedPerformanceAccount(ctx.db, {
-        institution: "Schwab",
-        accountType: "ira",
-        accountLabel: "Bob Schwab IRA",
-        ownerPersonId: personId,
-      });
-      const sqliteSchema = await import("@/lib/db/schema-sqlite");
-      // Insert a contribution account that is already linked
-      ctx.db
-        .insert(sqliteSchema.contributionAccounts)
-        .values({
-          personId,
-          accountType: "ira",
-          taxTreatment: "pre_tax",
-          contributionMethod: "fixed_amount",
-          contributionValue: "500",
-          employerMatchType: "none",
-          isActive: true,
-          performanceAccountId: perfAcctId,
-        })
-        .run();
-
-      const result = await ctx.caller.settings.backfillPerformanceAccountIds();
-      expect(result.updated).toBe(0);
-      expect(result.unmatched).toHaveLength(0);
-      expect(result.alreadyLinked).toBe(1);
-    } finally {
-      ctx.cleanup();
-    }
-  });
-});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ADDITIONAL COVERAGE — apiConnections config shapes

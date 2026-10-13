@@ -292,11 +292,32 @@ export function AllTransactionsTab({
     });
   };
 
+  // The goals the forms point at, checked against the current goal list —
+  // the forms are seeded once, and a goal can be removed or hidden (or the
+  // list arrive) while one is open. Display and submit use the same value.
+  const goalIds = new Set(goalProjections.map((gp) => gp.goalId));
+  const addGoalId = goalIds.has(addForm.goalId)
+    ? addForm.goalId
+    : (goalProjections[0]?.goalId ?? 0);
+  const fromGoalId = goalIds.has(transferForm.fromGoalId)
+    ? transferForm.fromGoalId
+    : 0;
+  const toGoalId =
+    goalIds.has(transferForm.toGoalId) && transferForm.toGoalId !== fromGoalId
+      ? transferForm.toGoalId
+      : 0;
+
   const commitAdd = () => {
     const amt = parseFloat(addForm.amount);
-    if (!addForm.description || !addForm.transactionDate || isNaN(amt)) return;
+    if (
+      !addGoalId ||
+      !addForm.description ||
+      !addForm.transactionDate ||
+      isNaN(amt)
+    )
+      return;
     createTx.mutate({
-      goalId: addForm.goalId,
+      goalId: addGoalId,
       transactionDate: addForm.transactionDate,
       description: addForm.description,
       amount: String(addForm.isNegative ? -Math.abs(amt) : Math.abs(amt)),
@@ -308,9 +329,8 @@ export function AllTransactionsTab({
   const commitTransfer = () => {
     const amt = parseFloat(transferForm.amount);
     if (
-      !transferForm.fromGoalId ||
-      !transferForm.toGoalId ||
-      transferForm.fromGoalId === transferForm.toGoalId ||
+      !fromGoalId ||
+      !toGoalId ||
       !transferForm.transactionDate ||
       !transferForm.description ||
       isNaN(amt) ||
@@ -318,8 +338,8 @@ export function AllTransactionsTab({
     )
       return;
     createTransfer.mutate({
-      fromGoalId: transferForm.fromGoalId,
-      toGoalId: transferForm.toGoalId,
+      fromGoalId,
+      toGoalId,
       transactionDate: transferForm.transactionDate,
       amount: amt,
       description: transferForm.description,
@@ -336,7 +356,7 @@ export function AllTransactionsTab({
   };
 
   const toGoalOptions = goalProjections.filter(
-    (gp) => gp.goalId !== transferForm.fromGoalId,
+    (gp) => gp.goalId !== fromGoalId,
   );
 
   const isCellActive = (txId: number, field: ActiveCellField) =>
@@ -404,7 +424,7 @@ export function AllTransactionsTab({
                     Fund
                   </label>
                   <select
-                    value={addForm.goalId}
+                    value={addGoalId}
                     onChange={(e) =>
                       setAddForm({
                         ...addForm,
@@ -560,7 +580,7 @@ export function AllTransactionsTab({
                     From
                   </label>
                   <select
-                    value={transferForm.fromGoalId}
+                    value={fromGoalId}
                     onChange={(e) =>
                       setTransferForm({
                         ...transferForm,
@@ -588,7 +608,7 @@ export function AllTransactionsTab({
                     To
                   </label>
                   <select
-                    value={transferForm.toGoalId}
+                    value={toGoalId}
                     onChange={(e) =>
                       setTransferForm({
                         ...transferForm,

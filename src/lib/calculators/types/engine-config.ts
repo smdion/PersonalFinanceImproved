@@ -755,6 +755,11 @@ export type ContributionSpec = {
    *  so that multi-job households don't inflate per-account contributions.
    *  Defaults to 1.0 for single-job households. */
   salaryFraction: number;
+  /** percent_of_salary: the pay this spec applies to as a share of its
+   *  person's total pay (below 1 when the bonus check carries no
+   *  contributions). The engine re-derives salaryFraction from it each year
+   *  when it tracks salary per person. Absent = 1. */
+  personPayShare?: number;
   /** Periods per year (for fixed_per_period). Ignored for other methods. */
   periodsPerYear?: number;
   /** Current-year annual contribution (computed from value + salary/periods). */

@@ -1,5 +1,5 @@
 /** Savings router for savings goals, emergency fund calculations, planned transactions, and budget API expense integration. */
-import { eq, asc, sql, lt, isNull, and, inArray } from "drizzle-orm";
+import { eq, asc, sql, lt, isNull, and } from "drizzle-orm";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import {
@@ -50,6 +50,7 @@ import {
   setSavingsGoalLink,
   deleteSavingsGoalLink,
   copySavingsGoalLinks,
+  contributionPay,
 } from "@/server/helpers";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { buildBracketInput } from "./paycheck";
@@ -267,6 +268,7 @@ export async function computeJobNetPayPerCheck(
     personalContribs.filter((c) => c.ownership !== "joint"),
     currentSalary,
     periodsPerYear,
+    contributionPay(salaryEntry, currentSalary, bonusTerms).bonusGross,
   );
 
   // Intentionally does not pass a bonusOverride — this value gets persisted
@@ -505,6 +507,22 @@ async function computeLiveMaxMonthlyFunding(
 /** Accepts both the main db instance and transaction handles. */
 type DbType =
   Context["db"] | Parameters<Parameters<Context["db"]["transaction"]>[0]>[0];
+
+/**
+ * Delete a savings goal, detaching its sub-goals first (they become
+ * top-level). The database can't be relied on for this: installs since
+ * v0.8.0 have no foreign key on parent_goal_id (SQLite can't add one in
+ * place), and an orphaned sub-goal disappears from the Savings page.
+ */
+async function deleteSavingsGoal(db: Context["db"], id: number) {
+  await db.transaction(async (tx) => {
+    await tx
+      .update(schema.savingsGoals)
+      .set({ parentGoalId: null })
+      .where(eq(schema.savingsGoals.parentGoalId, id));
+    await tx.delete(schema.savingsGoals).where(eq(schema.savingsGoals.id, id));
+  });
+}
 
 /** A transfer's two legs must settle/unsettle together — otherwise money
  *  silently vanishes from (or reappears in) the combined projection. */
@@ -1015,29 +1033,6 @@ export const savingsRouter = createTRPCRouter({
         }),
       )
       .mutation(({ ctx, input }) => settleOccurrence(ctx.db, input)),
-    unsettle: savingsProcedure
-      .input(
-        z.object({
-          plannedTxId: z.number().int(),
-          occurrenceMonth: z.string().regex(/^\d{4}-\d{2}$/),
-        }),
-      )
-      .mutation(async ({ ctx, input }) => {
-        const pairIds = await resolvePairedPlannedTxIds(
-          ctx.db,
-          input.plannedTxId,
-        );
-        const monthDate = `${input.occurrenceMonth}-01`;
-        await ctx.db
-          .delete(schema.savingsPlannedTxSettlements)
-          .where(
-            and(
-              inArray(schema.savingsPlannedTxSettlements.plannedTxId, pairIds),
-              eq(schema.savingsPlannedTxSettlements.occurrenceMonth, monthDate),
-            ),
-          );
-        return { ok: true };
-      }),
     settleMany: savingsProcedure
       .input(
         z.object({
@@ -1301,44 +1296,6 @@ export const savingsRouter = createTRPCRouter({
               goalId: alloc.goalId,
               monthDate,
               amount: String(alloc.amount),
-            });
-          }
-        }
-        return { ok: true };
-      }),
-
-    /** Batch upsert overrides for a single goal (fill-down, change-all-after). */
-    batchUpsert: savingsProcedure
-      .input(
-        z.object({
-          goalId: z.number().int(),
-          overrides: z.array(
-            z.object({
-              monthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-              amount: z.number(),
-            }),
-          ),
-        }),
-      )
-      .mutation(async ({ ctx, input }) => {
-        const existing = await ctx.db
-          .select()
-          .from(schema.savingsAllocationOverrides)
-          .where(eq(schema.savingsAllocationOverrides.goalId, input.goalId));
-        const existingByDate = new Map(existing.map((r) => [r.monthDate, r]));
-
-        for (const o of input.overrides) {
-          const row = existingByDate.get(o.monthDate);
-          if (row) {
-            await ctx.db
-              .update(schema.savingsAllocationOverrides)
-              .set({ amount: String(o.amount) })
-              .where(eq(schema.savingsAllocationOverrides.id, row.id));
-          } else {
-            await ctx.db.insert(schema.savingsAllocationOverrides).values({
-              goalId: input.goalId,
-              monthDate: o.monthDate,
-              amount: String(o.amount),
             });
           }
         }
@@ -1685,10 +1642,9 @@ export const savingsRouter = createTRPCRouter({
         }
       }
 
-      // Delete the savings goal (cascades to savings_monthly, planned transactions, overrides)
-      await ctx.db
-        .delete(schema.savingsGoals)
-        .where(eq(schema.savingsGoals.id, input.goalId));
+      // Delete the savings goal (cascades to savings_monthly, planned
+      // transactions, overrides; sub-goals become top-level)
+      await deleteSavingsGoal(ctx.db, input.goalId);
 
       return item;
     }),
@@ -2603,13 +2559,6 @@ export const savingsRouter = createTRPCRouter({
         await materializeBudgetIncomeAdjustments(ctx.db);
         return { ok: true };
       }),
-
-    /** Re-run materializer without changing rules (e.g. after goal rename). */
-    rematerialize: savingsProcedure.mutation(async ({ ctx }) => {
-      await materializeExtraPaycheckSavings(ctx.db);
-      await materializeBudgetIncomeAdjustments(ctx.db);
-      return { ok: true };
-    }),
   }),
 
   /** All recorded monthly balances for active savings goals (for history view). */
@@ -2729,10 +2678,6 @@ export const savingsRouter = createTRPCRouter({
       ),
     delete: savingsProcedure
       .input(z.object({ id: z.number().int() }))
-      .mutation(({ ctx, input }) =>
-        ctx.db
-          .delete(schema.savingsGoals)
-          .where(eq(schema.savingsGoals.id, input.id)),
-      ),
+      .mutation(({ ctx, input }) => deleteSavingsGoal(ctx.db, input.id)),
   }),
 });

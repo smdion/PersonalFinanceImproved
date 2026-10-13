@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 
 // Direct smoke test for
 // src/components/cards/dashboard/financial-checkup-card.tsx. Aggregates 4
@@ -15,6 +15,11 @@ vi.mock("@/lib/context/scenario-context", () => ({
 }));
 vi.mock("@/lib/hooks/use-salary-overrides", () => ({
   useActiveSalaries: () => [],
+}));
+vi.mock("@/lib/context/user-context", () => ({
+  useUser: () => ({ role: "viewer", name: "Test", permissions: [] }),
+  isAdmin: (u: { role: string }) => u.role === "admin",
+  hasPermission: () => true,
 }));
 vi.mock("@/lib/hooks/use-persisted-setting", () => ({
   usePersistedSetting: (key: string, defaultValue: unknown) => {
@@ -197,8 +202,17 @@ describe("FinancialCheckupCard smoke", () => {
     fireEvent.click(screen.getByRole("button", { name: /Savings Rate/ }));
     expect(screen.getByText("Employer match")).toBeInTheDocument();
     expect(screen.getByText("Roth")).toBeInTheDocument();
+    const row = () => screen.getByRole("button", { name: /Savings Rate/ });
     fireEvent.click(screen.getByRole("button", { name: "Excl. match" }));
-    expect(screen.getByText("20.0%")).toBeInTheDocument();
+    expect(within(row()).getByText("20.0%")).toBeInTheDocument();
     expect(screen.queryByText("Employer match")).toBeNull();
+    // Portfolio toggle: the fixture has no Portfolio money, so the rate holds
+    // and the row says what's counted.
+    fireEvent.click(screen.getByRole("button", { name: "Excl. portfolio" }));
+    expect(within(row()).getByText("20.0%")).toBeInTheDocument();
+    expect(screen.getByText("retirement only")).toBeInTheDocument();
+    // The switches are shared app-wide (a module store): put them back.
+    fireEvent.click(screen.getByRole("button", { name: "Incl. match" }));
+    fireEvent.click(screen.getByRole("button", { name: "Incl. portfolio" }));
   });
 });

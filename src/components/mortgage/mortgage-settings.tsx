@@ -229,32 +229,38 @@ export function MortgageSettings() {
   const user = useUser();
   const admin = isAdmin(user);
   const utils = trpc.useUtils();
+  // A loan or extra payment feeds every mortgage figure (payoff summary,
+  // what-ifs) and Net Worth's mortgage balance, not just these lists.
+  const invalidateMortgage = () => {
+    utils.mortgage.invalidate();
+    utils.networth.invalidate();
+  };
   const { data, isLoading } = trpc.mortgage.mortgageLoans.list.useQuery();
   const { data: extraPayments } =
     trpc.mortgage.mortgageExtraPayments.list.useQuery();
   const createLoan = trpc.mortgage.mortgageLoans.create.useMutation({
     onSuccess: () => {
-      utils.mortgage.mortgageLoans.invalidate();
+      invalidateMortgage();
       setAdding(false);
     },
   });
   const updateLoan = trpc.mortgage.mortgageLoans.update.useMutation({
     onSuccess: () => {
-      utils.mortgage.mortgageLoans.invalidate();
+      invalidateMortgage();
       setEditingId(null);
     },
   });
   const deleteLoan = trpc.mortgage.mortgageLoans.delete.useMutation({
-    onSuccess: () => utils.mortgage.mortgageLoans.invalidate(),
+    onSuccess: invalidateMortgage,
   });
   const createExtra = trpc.mortgage.mortgageExtraPayments.create.useMutation({
     onSuccess: () => {
-      utils.mortgage.mortgageExtraPayments.invalidate();
+      invalidateMortgage();
       setAddingExtra(false);
     },
   });
   const deleteExtra = trpc.mortgage.mortgageExtraPayments.delete.useMutation({
-    onSuccess: () => utils.mortgage.mortgageExtraPayments.invalidate(),
+    onSuccess: invalidateMortgage,
   });
 
   const [adding, setAdding] = useState(false);

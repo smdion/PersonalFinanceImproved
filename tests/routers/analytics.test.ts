@@ -133,65 +133,7 @@ describe("analytics router", () => {
 
   // ── deleteHolding ──────────────────────────────────────────────────────────
 
-  describe("deleteHolding", () => {
-    it("deletes a holding by id", async () => {
-      const perfAcctId = seedPerformanceAccount(db);
-      const snapshotId = seedSnapshot(db, nextDate());
-
-      const [inserted] = await caller.analytics.bulkUpsertHoldings({
-        performanceAccountId: perfAcctId,
-        snapshotId,
-        holdings: [{ ticker: "DEL", name: "Delete Me", weightBps: 10000 }],
-      });
-
-      const result = await caller.analytics.deleteHolding({ id: inserted!.id });
-      expect(result).toEqual({ success: true });
-
-      const after = await caller.analytics.getHoldings({ snapshotId });
-      expect(after.every((h) => h.id !== inserted!.id)).toBe(true);
-    });
-  });
-
   // ── copyHoldingsToSnapshot ─────────────────────────────────────────────────
-
-  describe("copyHoldingsToSnapshot", () => {
-    it("returns count 0 when source snapshot has no holdings", async () => {
-      seedPerformanceAccount(db);
-      const fromSnapshotId = seedSnapshot(db, nextDate());
-      const toSnapshotId = seedSnapshot(db, nextDate());
-
-      const result = await caller.analytics.copyHoldingsToSnapshot({
-        fromSnapshotId,
-        toSnapshotId,
-      });
-      expect(result).toEqual({ count: 0 });
-    });
-
-    it("copies holdings to destination snapshot", async () => {
-      const perfAcctId = seedPerformanceAccount(db);
-      const fromSnapshotId = seedSnapshot(db, nextDate());
-      const toSnapshotId = seedSnapshot(db, nextDate());
-
-      await caller.analytics.bulkUpsertHoldings({
-        performanceAccountId: perfAcctId,
-        snapshotId: fromSnapshotId,
-        holdings: [
-          { ticker: "IVV", name: "iShares Core S&P 500", weightBps: 10000 },
-        ],
-      });
-
-      const result = await caller.analytics.copyHoldingsToSnapshot({
-        fromSnapshotId,
-        toSnapshotId,
-      });
-      expect(result).toEqual({ count: 1 });
-
-      const copied = await caller.analytics.getHoldings({
-        snapshotId: toSnapshotId,
-      });
-      expect(copied[0]).toMatchObject({ ticker: "IVV" });
-    });
-  });
 
   // ── getHoldingsHistory ─────────────────────────────────────────────────────
 

@@ -25,7 +25,7 @@ const DEFAULT_MAX_BYTES = 80 * 1024 * 1024;
 export class SecRateLimitError extends Error {
   override name = "SecRateLimitError";
 }
-export class SecRequestError extends Error {
+class SecRequestError extends Error {
   override name = "SecRequestError";
 }
 
@@ -37,7 +37,7 @@ async function pace(): Promise<void> {
 }
 
 /** Stream an SEC URL into `onChunk`. */
-export async function secStream(
+async function secStream(
   contact: string,
   url: string,
   onChunk: (text: string) => void,
@@ -137,7 +137,7 @@ export async function listFilings(
 }
 
 /** Folder URL of a filing, from its index link. */
-export function filingFolder(filing: EdgarFiling): string {
+function filingFolder(filing: EdgarFiling): string {
   return filing.filingHref.replace(/[^/]+$/, "");
 }
 

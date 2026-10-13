@@ -57,6 +57,8 @@ export type AccumulationRowProps = {
   yr: EngineAccumulationYear;
   state: ProjectionState;
   parentCategoryFilter?: string;
+  /** Rate counts the employer match (the shared savings-rate switch). */
+  rateIncludesMatch?: boolean;
   isPhaseTransition: boolean;
   hasOverride: boolean;
   accumOverrideNotes?: string;
@@ -73,6 +75,7 @@ export function AccumulationRow({
   yr,
   state,
   parentCategoryFilter,
+  rateIncludesMatch = false,
   isPhaseTransition,
   hasOverride,
   accumOverrideNotes,
@@ -112,47 +115,6 @@ export function AccumulationRow({
     yr.slots.map((s) => [s.category, s]),
   );
   const pt = getPersonYearTotals(yr);
-  // When parentCategoryFilter is active, compute brokerage contributions
-  // from individual accounts matching the filter (e.g. Retirement page
-  // should not include Portfolio-parentCategory brokerage like Long Term).
-  const pcfBrokContrib = parentCategoryFilter
-    ? (() => {
-        const iabs = yr.individualAccountBalances ?? [];
-        const matching = iabs.filter(
-          (ia) =>
-            ACCOUNT_TYPE_CONFIG[ia.category as AccountCategory]
-              ?.isOverflowTarget && ia.parentCategory === parentCategoryFilter,
-        );
-        if (matching.length === 0) return null;
-        return {
-          employee: matching.reduce((s, ia) => s + ia.contribution, 0),
-          match: matching.reduce((s, ia) => s + ia.employerMatch, 0),
-        };
-      })()
-    : undefined;
-  // How much brokerage contrib to subtract from totals on filtered pages
-  const pcfBrokAdj =
-    parentCategoryFilter && !pt
-      ? (() => {
-          const iabs = yr.individualAccountBalances ?? [];
-          const allBrok = iabs.filter(
-            (ia) =>
-              ACCOUNT_TYPE_CONFIG[ia.category as AccountCategory]
-                ?.isOverflowTarget,
-          );
-          const matchBrok = allBrok.filter(
-            (ia) => ia.parentCategory === parentCategoryFilter,
-          );
-          return {
-            employee:
-              allBrok.reduce((s, ia) => s + ia.contribution, 0) -
-              matchBrok.reduce((s, ia) => s + ia.contribution, 0),
-            match:
-              allBrok.reduce((s, ia) => s + ia.employerMatch, 0) -
-              matchBrok.reduce((s, ia) => s + ia.employerMatch, 0),
-          };
-        })()
-      : { employee: 0, match: 0 };
   return (
     <tr
       key={yr.year}
@@ -298,7 +260,12 @@ export function AccumulationRow({
                   yr.proRateFraction != null && yr.proRateFraction > 0
                     ? yr.projectedSalary * yr.proRateFraction
                     : yr.projectedSalary;
-                const effectiveRate = safeDivide(
+                // The accounts this page shows (the year is already scoped),
+                // with the match when the shared switch counts it.
+                const rateAmount =
+                  yr.totalEmployee + (rateIncludesMatch ? yr.totalEmployer : 0);
+                const effectiveRate = safeDivide(rateAmount, effectiveSalary);
+                const employeeRate = safeDivide(
                   yr.totalEmployee,
                   effectiveSalary,
                 );
@@ -308,11 +275,11 @@ export function AccumulationRow({
                   color?: TipColor;
                 }[] = [
                   {
-                    text: `${formatCurrency(deflate(yr.totalEmployee, yr.year))} / ${formatCurrency(deflate(effectiveSalary, yr.year))} = ${formatPercent(effectiveRate, 1)}`,
+                    text: `${formatCurrency(deflate(rateAmount, yr.year))} / ${formatCurrency(deflate(effectiveSalary, yr.year))} = ${formatPercent(effectiveRate, 1)}${rateIncludesMatch ? " (incl. match)" : ""}${parentCategoryFilter ? ` — ${parentCategoryFilter} accounts` : ""}`,
                     style: "header",
                   },
                   {
-                    text: `Target rate: ${formatPercent(yr.config.contributionRate, 1)}`,
+                    text: `Household target (all accounts, your money): ${formatPercent(yr.config.contributionRate, 1)}`,
                     style: "meta",
                   },
                 ];
@@ -328,13 +295,15 @@ export function AccumulationRow({
                   yr.rateCeilingScale > 0
                 ) {
                   lines.push({
-                    text: `Uncapped rate: ${formatPercent(safeDivide(yr.totalEmployee, effectiveSalary * yr.rateCeilingScale), 1)} → ${formatPercent(effectiveRate, 1)} (ceiling applied)`,
+                    text: `Uncapped rate: ${formatPercent(safeDivide(yr.totalEmployee, effectiveSalary * yr.rateCeilingScale), 1)} → ${formatPercent(employeeRate, 1)} (ceiling applied)`,
                     style: "note",
                     color: "amber",
                   });
                 }
-                if (yr.rateCeilingScale == null) {
-                  const diff = effectiveRate - yr.config.contributionRate;
+                // Comparable with the household target only when it's the
+                // same measure: every account, your money only.
+                if (yr.rateCeilingScale == null && !parentCategoryFilter) {
+                  const diff = employeeRate - yr.config.contributionRate;
                   if (Math.abs(diff) > 0.001) {
                     lines.push({
                       text: `Actual ${diff > 0 ? "higher" : "lower"} — per-account specs${diff < 0 ? " / IRS limits" : ""}`,
@@ -368,7 +337,7 @@ export function AccumulationRow({
           {yr.projectedSalary > 0
             ? formatPercent(
                 safeDivide(
-                  yr.totalEmployee,
+                  yr.totalEmployee + (rateIncludesMatch ? yr.totalEmployer : 0),
                   yr.proRateFraction != null && yr.proRateFraction > 0
                     ? yr.projectedSalary * yr.proRateFraction
                     : yr.projectedSalary,
@@ -549,15 +518,9 @@ export function AccumulationRow({
                 contribSpecs?.filter((s) => s.category === ofCat) ?? [];
               const ofLabel = getAccountTypeConfig(ofCat).displayLabel;
               const ofRawMatch = bSlot?.employerMatch ?? 0;
-              // Prefer person filter, then parentCategory filter, then raw slot
-              const ofContrib =
-                pt?.byCategoryContrib[ofCat] ??
-                (parentCategoryFilter
-                  ? (pcfBrokContrib ?? {
-                      employee: 0,
-                      match: 0,
-                    })
-                  : null);
+              // Person filter first; otherwise the slot (already scoped to
+              // the page's accounts by filterYearByParentCategory).
+              const ofContrib = pt?.byCategoryContrib[ofCat] ?? null;
               const ofEmp = ofContrib
                 ? ofContrib.employee
                 : (bSlot?.employeeContrib ?? 0);
@@ -682,17 +645,8 @@ export function AccumulationRow({
                 0,
               );
               // Determine which specs and slot amounts apply to this bucket (data-driven via bucketSlotMap)
-              const isOFTarget =
-                ACCOUNT_TYPE_CONFIG[cat as AccountCategory]?.isOverflowTarget;
-              // When parentCategoryFilter active, use filtered brokerage data
-              const slotEmp =
-                parentCategoryFilter && isOFTarget
-                  ? (pcfBrokContrib?.employee ?? 0)
-                  : slotBucketContrib(slot, bucket);
-              const slotMatch =
-                parentCategoryFilter && isOFTarget
-                  ? (pcfBrokContrib?.match ?? 0)
-                  : slot.employerMatch;
+              const slotEmp = slotBucketContrib(slot, bucket);
+              const slotMatch = slot.employerMatch;
               const bucketSpecs = filterSpecsForBucket(allCatSpecs, bucket);
               const isAssoc = bucketSlotMap[bucket]?.matchIsAssociated ?? false;
               if (slotEmp === 0 && slotMatch === 0) continue;
@@ -836,7 +790,7 @@ export function AccumulationRow({
             ? iabs.filter((ia) => ia.ownerPersonId === personFilter)
             : [];
           const empAmount = deflate(
-            pt ? pt.contribution : yr.totalEmployee - pcfBrokAdj.employee,
+            pt ? pt.contribution : yr.totalEmployee,
             yr.year,
           );
           const matchAmount = pt
@@ -844,8 +798,8 @@ export function AccumulationRow({
                 mine.reduce((s, ia) => s + ia.employerMatch, 0),
                 yr.year,
               )
-            : yr.totalEmployer - pcfBrokAdj.match > 0
-              ? deflate(yr.totalEmployer - pcfBrokAdj.match, yr.year)
+            : yr.totalEmployer > 0
+              ? deflate(yr.totalEmployer, yr.year)
               : 0;
           const budgetProfileName =
             accumulationExpenseOverride != null
@@ -884,25 +838,13 @@ export function AccumulationRow({
               (c) => !ACCOUNT_TYPE_CONFIG[c].supportsRothSplit,
             )) {
               const isOF = ACCOUNT_TYPE_CONFIG[sbCat]?.isOverflowTarget;
-              // When parentCategoryFilter active, use filtered brokerage data
-              if (parentCategoryFilter && isOF) {
-                const filteredEmp = pcfBrokContrib?.employee ?? 0;
-                if (filteredEmp > 0) {
-                  bucketTotals.push({
-                    label: getAccountTypeConfig(sbCat).displayLabel,
-                    amount: deflate(filteredEmp, yr.year),
-                    color: "amber",
-                  });
-                }
-              } else {
-                const sbSlot = yr.slots.find((s) => s.category === sbCat);
-                if (sbSlot && sbSlot.employeeContrib > 0) {
-                  bucketTotals.push({
-                    label: getAccountTypeConfig(sbCat).displayLabel,
-                    amount: deflate(sbSlot.employeeContrib, yr.year),
-                    color: isOF ? "amber" : "emerald",
-                  });
-                }
+              const sbSlot = yr.slots.find((s) => s.category === sbCat);
+              if (sbSlot && sbSlot.employeeContrib > 0) {
+                bucketTotals.push({
+                  label: getAccountTypeConfig(sbCat).displayLabel,
+                  amount: deflate(sbSlot.employeeContrib, yr.year),
+                  color: isOF ? "amber" : "emerald",
+                });
               }
             }
             inOutItems.push(...bucketTotals);
@@ -999,16 +941,11 @@ export function AccumulationRow({
         <td className="px-2 py-1.5 text-right font-medium">
           {formatCurrency(
             deflate(
-              pt
-                ? pt.contribution
-                : yr.totalEmployee +
-                    yr.totalEmployer -
-                    pcfBrokAdj.employee -
-                    pcfBrokAdj.match,
+              pt ? pt.contribution : yr.totalEmployee + yr.totalEmployer,
               yr.year,
             ),
           )}
-          {yr.totalEmployer - pcfBrokAdj.match > 0 && (
+          {yr.totalEmployer > 0 && (
             <span className="text-micro ml-px align-super text-green-600">
               +m
             </span>

@@ -158,7 +158,6 @@ const VERSION_TABLE_NAMES = [
   "account_basis",
   "budget_item_category_links",
   "savings_goal_category_links",
-  "pending_rollovers",
   "simplefin_balance_snapshots",
   "simplefin_accounts",
   "utility_service",
@@ -227,6 +226,9 @@ const V08_MIGRATION_HASHES: Record<string, string> = {
   // v0.8.5 as released (0004–0011 squashed). Keep in step with the file.
   da6dbae6f960a0e17c5d3810ad13a8971de5de1782b171d8249107e3d75ff3a7:
     "0004_v085_investments",
+  // v0.8.6: savings_goals parent key + index, old roth_basis names, pending_rollovers dropped.
+  b9e85651c61ef84f14d47c010ce6eebd53291b32401381f8445d340924a7886d:
+    "0005_v086_schema_cleanup",
 };
 
 /**

@@ -603,9 +603,9 @@ function DoneStep({ isSaving }: { isSaving: boolean }) {
   );
 }
 
-// --- Progress indicator ---
+// --- Step indicator (which wizard step you are on) ---
 
-function ProgressBar({
+function StepIndicator({
   currentStep,
   steps,
 }: {
@@ -897,7 +897,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="bg-surface-primary border-default mx-4 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border p-6 shadow-2xl sm:p-8">
-        <ProgressBar currentStep={step} steps={STEPS} />
+        <StepIndicator currentStep={step} steps={STEPS} />
         <div className="text-secondary mb-4 flex items-center justify-center gap-2 text-sm">
           Step {step + 1} of {STEPS.length}
         </div>

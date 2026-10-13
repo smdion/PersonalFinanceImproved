@@ -497,10 +497,12 @@ describe("householdSavings", () => {
 
   it("counts joint accounts in the rate, per view", () => {
     expect(
-      householdSavings([person], [joint], "projected", true),
+      householdSavings([person], [joint], "projected", { excludeMatch: true }),
     ).toMatchObject({ compensation: 100_000, total: 16_000, rate: 0.16 });
     // YTD: money in so far over compensation earned so far.
-    expect(householdSavings([person], [joint], "ytd", true)).toMatchObject({
+    expect(
+      householdSavings([person], [joint], "ytd", { excludeMatch: true }),
+    ).toMatchObject({
       compensation: 50_000,
       total: 7_000,
       rate: 0.14,
@@ -508,7 +510,9 @@ describe("householdSavings", () => {
   });
 
   it("splits each group by tax treatment, scaled to the view, so the lines add up", () => {
-    const { groups } = householdSavings([person], [joint], "ytd", false);
+    const { groups } = householdSavings([person], [joint], "ytd", {
+      excludeMatch: false,
+    });
     const ret = groups.find((g) => g.group === "retirement")!;
     expect(ret.share).toBeCloseTo(0.12, 6);
     expect(ret.lines.map((l) => [l.key, l.share])).toEqual([
@@ -518,5 +522,14 @@ describe("householdSavings", () => {
     ]);
     const port = groups.find((g) => g.group === "portfolio")!;
     expect(port.lines).toEqual([{ key: "afterTax", share: 0.04 }]);
+  });
+
+  it("can leave Portfolio money out of the rate", () => {
+    const r = householdSavings([person], [joint], "projected", {
+      excludeMatch: true,
+      includePortfolio: false,
+    });
+    expect(r).toMatchObject({ total: 10_000, rate: 0.1 });
+    expect(r.groups.map((g) => g.group)).toEqual(["retirement"]);
   });
 });

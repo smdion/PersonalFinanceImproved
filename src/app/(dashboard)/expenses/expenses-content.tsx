@@ -7,6 +7,7 @@ import dynamic from "next/dynamic";
 import { SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { PageHeader } from "@/components/ui/page-header";
+import { ProgressBar } from "@/components/ui/card";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
@@ -545,6 +546,10 @@ export function ExpensesContent() {
                     <td className="px-3 py-2 text-right">
                       <ProgressBar
                         value={safeDivide(totalActual, totalBudgeted, 0)}
+                        variant="success"
+                        ariaLabel="Of budget"
+                        allowOver
+                        inline
                       />
                     </td>
                   </tr>
@@ -763,7 +768,13 @@ function GroupRows({
           {group.diff > 0 ? " over" : " under"}
         </td>
         <td className="px-3 py-1.5 text-right">
-          <ProgressBar value={percentUsed} />
+          <ProgressBar
+            value={percentUsed}
+            variant="success"
+            ariaLabel="Of budget"
+            allowOver
+            inline
+          />
         </td>
       </tr>
       {isExpanded &&
@@ -809,47 +820,19 @@ function GroupRows({
                 </td>
                 <td className="px-3 py-1 text-right">
                   {item.budgeted > 0 ? (
-                    <ProgressBar value={itemPct} small />
+                    <ProgressBar
+                      value={itemPct}
+                      variant="success"
+                      ariaLabel="Of budget"
+                      allowOver
+                      inline
+                      small
+                    />
                   ) : null}
                 </td>
               </tr>
             );
           })}
     </>
-  );
-}
-
-function ProgressBar({ value, small }: { value: number; small?: boolean }) {
-  const clamped = Math.min(value, 1.5);
-  const width = Math.min(clamped * 100, 100);
-  const isOver = value > 1;
-  const h = small ? "h-1.5" : "h-2";
-  const name = `${formatPercent(value)} of budget${isOver ? " — over budget" : ""}`;
-
-  return (
-    <div className="flex items-center gap-1.5">
-      <div
-        className={`flex-1 ${h} bg-surface-elevated min-w-[40px] overflow-hidden rounded-full`}
-      >
-        <div
-          className={`${h} rounded-full transition-all ${isOver ? "bg-red-400" : "bg-green-400"}`}
-          style={{ width: `${width}%` }}
-          role="progressbar"
-          aria-label={name}
-          aria-valuenow={Math.round(Math.min(value, 1) * 100)}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          // valuenow is clamped to 100 (ARIA requires it in range); the
-          // real over-budget figure lives here.
-          aria-valuetext={formatPercent(value)}
-        />
-      </div>
-      <span
-        aria-hidden="true"
-        className={`text-caption w-8 text-right tabular-nums ${isOver ? "font-semibold text-red-600" : "text-muted"}`}
-      >
-        {value >= 9.99 ? "—" : formatPercent(value)}
-      </span>
-    </div>
   );
 }

@@ -2,6 +2,11 @@
 
 /** Year-by-year projection table with dynamic column headers, accumulation/decumulation row delegation, and Monte Carlo overlay. */
 import { HelpTip } from "@/components/ui/help-tip";
+import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
+import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
+import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
+import { SK_HIGH_INCOME_THRESHOLD } from "@/lib/constants/settings-keys";
+import { isHighIncomeHousehold } from "@/lib/pure/contributions";
 import { Toggle } from "@/components/ui/toggle";
 import { PillBtn, LabeledPillGroup } from "./pill-btn";
 import {
@@ -70,6 +75,19 @@ export function ProjectionTable({
     renderTooltip,
     hasIndividualAccountData,
   } = state;
+
+  // The Rate column counts the match when the shared savings-rate switch
+  // does (same default: left out for a high-income household).
+  const [highIncomeThreshold] = usePersistedSetting<number>(
+    SK_HIGH_INCOME_THRESHOLD,
+    DEFAULT_HIGH_INCOME_THRESHOLD,
+  );
+  const { excludeMatch } = useSavingsRateOptions(
+    isHighIncomeHousehold(
+      result?.projectionByYear.find(isAccumYear)?.projectedSalary ?? 0,
+      highIncomeThreshold,
+    ),
+  );
 
   // Shared MC cell rendering options — passed to row components
   const mcCellOpts: RenderMcCellOptions = {
@@ -354,6 +372,7 @@ export function ProjectionTable({
                         yr={yr}
                         state={state}
                         parentCategoryFilter={parentCategoryFilter}
+                        rateIncludesMatch={!excludeMatch}
                         isPhaseTransition={isPhaseTransition}
                         hasOverride={hasOverride}
                         accumOverrideNotes={accumOverrideNotes}

@@ -23,8 +23,8 @@ const updateLoanMutate = vi.fn();
 const deleteLoanMutate = vi.fn();
 const createExtraMutate = vi.fn();
 const deleteExtraMutate = vi.fn();
-const invalidateLoans = vi.fn();
-const invalidateExtras = vi.fn();
+const invalidateMortgage = vi.fn();
+const invalidateNetWorth = vi.fn();
 
 const mockLoans = [
   {
@@ -79,10 +79,8 @@ const mockExtraPayments = [
 vi.mock("@/lib/trpc", () => ({
   trpc: {
     useUtils: () => ({
-      mortgage: {
-        mortgageLoans: { invalidate: invalidateLoans },
-        mortgageExtraPayments: { invalidate: invalidateExtras },
-      },
+      mortgage: { invalidate: invalidateMortgage },
+      networth: { invalidate: invalidateNetWorth },
     }),
     mortgage: {
       mortgageLoans: {
@@ -148,6 +146,8 @@ describe("MortgageSettings smoke", () => {
     deleteLoanMutate.mockClear();
     createExtraMutate.mockClear();
     deleteExtraMutate.mockClear();
+    invalidateMortgage.mockClear();
+    invalidateNetWorth.mockClear();
   });
 
   it("renders loan cards, refinance chain, and extra payments table", () => {
@@ -188,6 +188,10 @@ describe("MortgageSettings smoke", () => {
     expect(createLoanMutate).toHaveBeenCalledWith(
       expect.objectContaining({ name: "New Loan Name" }),
     );
+    // Every mortgage figure (payoff summary, Debt Payoff) and Net Worth's
+    // mortgage balance refresh, not just the loan list.
+    expect(invalidateMortgage).toHaveBeenCalled();
+    expect(invalidateNetWorth).toHaveBeenCalled();
   });
 
   it("deletes a loan after confirming", async () => {

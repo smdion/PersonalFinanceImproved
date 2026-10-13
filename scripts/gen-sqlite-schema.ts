@@ -37,6 +37,11 @@
  *   - mortgage_loans.refinanced_from_id FK (→ SET NULL): present on a fresh
  *     v0.8 baseline (the schema now declares the self-reference), absent on
  *     upgraded SQLite installs (the SQLite 0019 never added it).
+ *   - savings_goals.parent_goal_id FK (→ SET NULL): declared in the schema
+ *     (and so in the SQLite snapshot) but on NO SQLite install — 0005 adds
+ *     only its index, since a table rebuild inside the migration runner's
+ *     transaction would cascade-delete savings history. The savings router
+ *     detaches sub-goals on delete instead.
  *   - account_holdings.weight_bps range CHECK: present on installs upgraded
  *     through the v0.7.0 in-memory replay, absent on a fresh v0.8 baseline
  *     (stripped, per above).

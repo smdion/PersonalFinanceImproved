@@ -124,7 +124,7 @@ function SinceSnapshot({
 }
 
 /** Household total of the per-account split, for the Portfolio page. */
-export function SinceSnapshotSummary({
+function SinceSnapshotSummary({
   insights,
 }: {
   insights: readonly AccountInsight[];

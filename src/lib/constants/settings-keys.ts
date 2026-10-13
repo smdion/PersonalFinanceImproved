@@ -63,6 +63,11 @@ export const SK_PAYCHECK_TAX_YEAR = "paycheck_tax_year";
 // ── Dashboard Cards ─────────────────────────────────────────────────
 export const SK_HIGH_INCOME_THRESHOLD = "high_income_threshold";
 export const SK_SAVINGS_RATE_THRESHOLDS = "savings_rate_thresholds";
+/** "auto" | "include" | "exclude" — employer match in savings rates and contribution totals. */
+export const SK_SAVINGS_RATE_MATCH = "savings_rate_match";
+/** Portfolio (non-retirement) money in savings rates and contribution totals. */
+export const SK_SAVINGS_RATE_INCLUDE_PORTFOLIO =
+  "savings_rate_include_portfolio";
 
 // ── Settings Page ───────────────────────────────────────────────────
 export const SK_SETTINGS_ACTIVE_TAB = "settings_active_tab";
@@ -76,3 +81,7 @@ export const SK_SETTINGS_DEBUG_SECTION = "settings_debug_section";
 
 // ── Debug ───────────────────────────────────────────────────────────
 export const SK_DIAG_MODE = "diag_mode";
+
+// ── Household ───────────────────────────────────────────────────────
+/** IANA time zone the server's date math runs in (e.g. "America/Chicago"). */
+export const SK_HOUSEHOLD_TIMEZONE = "household_timezone";

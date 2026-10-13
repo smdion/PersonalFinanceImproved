@@ -1,7 +1,7 @@
 /** Performance router for portfolio time-weighted return tracking, snapshot ingestion, account-level performance history, and category rollup calculations. */
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
-import { asc, eq, and, sql, isNull } from "drizzle-orm";
+import { asc, eq, and, sql } from "drizzle-orm";
 import {
   PERF_BALANCE_MISMATCH_ABS,
   PERF_BALANCE_MISMATCH_PCT,
@@ -873,24 +873,6 @@ export const performanceRouter = createTRPCRouter({
       0,
     );
 
-    // Pending rollovers — expose to UI for badges and confirmation flow
-    const pendingRolloversRaw = await ctx.db
-      .select()
-      .from(schema.pendingRollovers)
-      .where(isNull(schema.pendingRollovers.confirmedAt));
-
-    const pendingRollovers = pendingRolloversRaw.map((r) => ({
-      id: r.id,
-      sourceAccountPerformanceId: r.sourceAccountPerformanceId,
-      destinationPerformanceAccountId: r.destinationPerformanceAccountId,
-      amount: toNumber(r.amount),
-      saleDate: r.saleDate,
-      saleYear: r.saleYear,
-      applyYear: r.applyYear,
-      notes: r.notes,
-      createdAt: r.createdAt.toISOString(),
-    }));
-
     // Ending balance consistency check: compare sum of account ending balances
     // (current year) against the latest portfolio snapshot total.
     // Only fires when both share the same date — a different date means expected staleness.
@@ -913,20 +895,7 @@ export const performanceRouter = createTRPCRouter({
         snapTotal * PERF_BALANCE_MISMATCH_PCT,
       );
       if (Math.abs(delta) <= threshold) return null;
-
-      // Check if delta is explained by pending rollovers
-      const pendingTotal = pendingRollovers
-        .filter(
-          (pr) => pr.saleYear === currentYear || pr.applyYear === currentYear,
-        )
-        .reduce((sum, pr) => sum + pr.amount, 0);
-      return {
-        perfTotal,
-        snapTotal,
-        delta,
-        explainedByPending:
-          Math.abs(Math.abs(delta) - pendingTotal) <= threshold,
-      };
+      return { perfTotal, snapTotal, delta };
     })();
 
     return {
@@ -939,7 +908,6 @@ export const performanceRouter = createTRPCRouter({
       masterAccounts,
       lastSnapshotDate,
       performanceLastUpdated,
-      pendingRollovers,
       balanceMismatch,
       lifetimeTotals: latestPortfolio
         ? {
@@ -1090,16 +1058,6 @@ export const performanceRouter = createTRPCRouter({
         .returning();
       await stampPerformanceUpdated(ctx.db);
       return row;
-    }),
-
-  deleteAccount: performanceProcedure
-    .input(z.object({ id: z.number().int() }))
-    .mutation(async ({ ctx, input }) => {
-      await ctx.db
-        .delete(schema.accountPerformance)
-        .where(eq(schema.accountPerformance.id, input.id));
-      await stampPerformanceUpdated(ctx.db);
-      return { success: true };
     }),
 
   /**
@@ -1658,262 +1616,6 @@ export const performanceRouter = createTRPCRouter({
   // ---------------------------------------------------------------------------
   // Pending Rollover CRUD — all performanceProcedure
   // ---------------------------------------------------------------------------
-
-  createPendingRollover: performanceProcedure
-    .input(
-      z.object({
-        sourceAccountPerformanceId: z.number().int(),
-        destinationPerformanceAccountId: z.number().int(),
-        amount: zDecimal,
-        saleDate: z.string(),
-        saleYear: z.number().int(),
-        applyYear: z.number().int(),
-        notes: z.string().optional(),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      const [row] = await ctx.db
-        .insert(schema.pendingRollovers)
-        .values({
-          sourceAccountPerformanceId: input.sourceAccountPerformanceId,
-          destinationPerformanceAccountId:
-            input.destinationPerformanceAccountId,
-          amount: input.amount,
-          saleDate: input.saleDate,
-          saleYear: input.saleYear,
-          applyYear: input.applyYear,
-          notes: input.notes ?? null,
-        })
-        .returning({ id: schema.pendingRollovers.id });
-      return { id: row!.id };
-    }),
-
-  editPendingRollover: performanceProcedure
-    .input(
-      z.object({
-        id: z.number().int(),
-        amount: zDecimalOpt,
-        saleDate: z.string().optional(),
-        applyYear: z.number().int().optional(),
-        notes: z.string().nullable().optional(),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      const { id, ...fields } = input;
-      const existing = await ctx.db
-        .select({ confirmedAt: schema.pendingRollovers.confirmedAt })
-        .from(schema.pendingRollovers)
-        .where(eq(schema.pendingRollovers.id, id));
-      if (!existing[0])
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Rollover not found",
-        });
-      if (existing[0].confirmedAt)
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Cannot edit a confirmed rollover",
-        });
-      await ctx.db
-        .update(schema.pendingRollovers)
-        .set(fields)
-        .where(eq(schema.pendingRollovers.id, id));
-      return { success: true };
-    }),
-
-  deletePendingRollover: performanceProcedure
-    .input(z.object({ id: z.number().int() }))
-    .mutation(async ({ ctx, input }) => {
-      const existing = await ctx.db
-        .select({ confirmedAt: schema.pendingRollovers.confirmedAt })
-        .from(schema.pendingRollovers)
-        .where(eq(schema.pendingRollovers.id, input.id));
-      if (!existing[0])
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Rollover not found",
-        });
-      if (existing[0].confirmedAt)
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Cannot delete a confirmed rollover",
-        });
-      await ctx.db
-        .delete(schema.pendingRollovers)
-        .where(eq(schema.pendingRollovers.id, input.id));
-      return { success: true };
-    }),
-
-  confirmPendingRollover: performanceProcedure
-    .input(
-      z.object({
-        id: z.number().int(),
-        /** Override amount if actual wire differed from recorded amount. */
-        actualAmount: zDecimalOpt,
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      return ctx.db.transaction(async (tx) => {
-        const [pr] = await tx
-          .select()
-          .from(schema.pendingRollovers)
-          .where(eq(schema.pendingRollovers.id, input.id));
-        if (!pr)
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Rollover not found",
-          });
-        if (pr.confirmedAt)
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Rollover already confirmed",
-          });
-
-        const finalAmount = input.actualAmount ?? pr.amount;
-
-        // 1. Debit source account_performance: reduce endingBalance, record rollover out (negative)
-        const [srcRow] = await tx
-          .select()
-          .from(schema.accountPerformance)
-          .where(
-            eq(schema.accountPerformance.id, pr.sourceAccountPerformanceId),
-          );
-        if (!srcRow)
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Source account_performance row not found",
-          });
-        if (srcRow.isFinalized)
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message:
-              "Source year is finalized — cannot apply rollover. Edit manually after unlocking.",
-          });
-
-        const srcEndBal =
-          toNumber(srcRow.endingBalance) - toNumber(finalAmount);
-        const srcRollovers = toNumber(srcRow.rollovers) - toNumber(finalAmount);
-        await tx
-          .update(schema.accountPerformance)
-          .set({
-            endingBalance: srcEndBal.toFixed(2),
-            rollovers: srcRollovers.toFixed(2),
-          })
-          .where(
-            eq(schema.accountPerformance.id, pr.sourceAccountPerformanceId),
-          );
-
-        // 2. Credit destination account_performance for applyYear — upsert if needed
-        const destRows = await tx
-          .select()
-          .from(schema.accountPerformance)
-          .where(
-            and(
-              eq(
-                schema.accountPerformance.performanceAccountId,
-                pr.destinationPerformanceAccountId,
-              ),
-              eq(schema.accountPerformance.year, pr.applyYear),
-            ),
-          );
-
-        if (destRows[0]) {
-          if (destRows[0].isFinalized)
-            throw new TRPCError({
-              code: "BAD_REQUEST",
-              message:
-                "Destination year is finalized — cannot apply rollover. Edit manually after unlocking.",
-            });
-          const destRollovers =
-            toNumber(destRows[0].rollovers) + toNumber(finalAmount);
-          const destEndBal =
-            toNumber(destRows[0].endingBalance) + toNumber(finalAmount);
-          await tx
-            .update(schema.accountPerformance)
-            .set({
-              rollovers: destRollovers.toFixed(2),
-              endingBalance: destEndBal.toFixed(2),
-            })
-            .where(eq(schema.accountPerformance.id, destRows[0].id));
-        } else {
-          // No row for this year yet — check the year isn't finalized before crediting
-          const [applyYearAnnual] = await tx
-            .select({ isFinalized: schema.annualPerformance.isFinalized })
-            .from(schema.annualPerformance)
-            .where(eq(schema.annualPerformance.year, pr.applyYear))
-            .limit(1);
-          if (applyYearAnnual?.isFinalized)
-            throw new TRPCError({
-              code: "PRECONDITION_FAILED",
-              message:
-                "Destination year is finalized — cannot apply rollover. Edit manually after unlocking.",
-            });
-
-          // Get prior year ending balance as beginning balance
-          const [priorRow] = await tx
-            .select({ endingBalance: schema.accountPerformance.endingBalance })
-            .from(schema.accountPerformance)
-            .where(
-              and(
-                eq(
-                  schema.accountPerformance.performanceAccountId,
-                  pr.destinationPerformanceAccountId,
-                ),
-                eq(schema.accountPerformance.year, pr.applyYear - 1),
-              ),
-            );
-          const destMaster = await tx
-            .select()
-            .from(schema.performanceAccounts)
-            .where(
-              eq(
-                schema.performanceAccounts.id,
-                pr.destinationPerformanceAccountId,
-              ),
-            );
-          if (!destMaster[0])
-            throw new TRPCError({
-              code: "NOT_FOUND",
-              message: "Destination performance account not found",
-            });
-          const beginBal = priorRow ? toNumber(priorRow.endingBalance) : 0;
-          const rolloverIn = toNumber(finalAmount);
-          await tx.insert(schema.accountPerformance).values({
-            year: pr.applyYear,
-            institution: destMaster[0].institution,
-            accountLabel: destMaster[0].accountLabel,
-            ownerPersonId: destMaster[0].ownerPersonId,
-            beginningBalance: beginBal.toFixed(2),
-            totalContributions: "0",
-            yearlyGainLoss: "0",
-            endingBalance: (beginBal + rolloverIn).toFixed(2),
-            employerContributions: "0",
-            fees: "0",
-            distributions: "0",
-            rollovers: rolloverIn.toFixed(2),
-            parentCategory: destMaster[0].parentCategory,
-            isActive: true,
-            isFinalized: false,
-            performanceAccountId: pr.destinationPerformanceAccountId,
-          });
-        }
-
-        // 3. Cascade lifetime fields if either year is finalized-adjacent
-        await cascadeLifetimeFields(tx);
-
-        // 4. Mark pending rollover confirmed and update amount if it changed
-        await tx
-          .update(schema.pendingRollovers)
-          .set({
-            confirmedAt: new Date(),
-            amount: finalAmount,
-          })
-          .where(eq(schema.pendingRollovers.id, input.id));
-
-        await stampPerformanceUpdated(tx);
-        return { success: true };
-      });
-    }),
 
   performanceAccounts: createTRPCRouter({
     list: protectedProcedure.query(({ ctx }) =>

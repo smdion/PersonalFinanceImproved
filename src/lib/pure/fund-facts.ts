@@ -137,7 +137,7 @@ export function blendedCost(holdings: readonly ValuedHolding[]): {
 }
 
 /** A fund smaller than this share of its account doesn't make it "multi-fund" (e.g. cash dust). */
-export const ROLLUP_MIN_SHARE = 0.01;
+const ROLLUP_MIN_SHARE = 0.01;
 
 /**
  * One account's funds added up — mix as shares of the money whose mix is

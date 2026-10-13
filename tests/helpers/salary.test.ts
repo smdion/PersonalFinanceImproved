@@ -2,7 +2,7 @@ import "../helpers/setup-mocks";
 import { describe, it, expect } from "vitest";
 import {
   computeBonusGross,
-  getEffectiveIncome,
+  contributionPay,
   getTotalCompensation,
   applyActiveSalary,
   applyActiveBonusTerms,
@@ -60,10 +60,10 @@ describe("computeBonusGross", () => {
 });
 
 // ---------------------------------------------------------------------------
-// getEffectiveIncome / getTotalCompensation (pure)
+// contributionPay / getTotalCompensation (pure)
 // ---------------------------------------------------------------------------
 
-describe("getEffectiveIncome", () => {
+describe("contributionPay", () => {
   // A job carries no bonus terms of its own any more — bonusTerms is
   // whatever a Salary Profile's entry resolved to (see resolveCompensation).
   const bonusTerms: BonusTerms = {
@@ -72,15 +72,39 @@ describe("getEffectiveIncome", () => {
     monthsInBonusYear: 12,
   };
 
-  it("returns base salary when includeBonusInContributions is false", () => {
-    const job = { includeBonusInContributions: false };
-    expect(getEffectiveIncome(job, 120000, bonusTerms)).toBe(120000);
+  it("is the base salary and no bonus when the bonus check carries no contributions", () => {
+    expect(contributionPay({}, 120000, bonusTerms)).toEqual({
+      salary: 120000,
+      bonusGross: 0,
+    });
   });
 
-  it("returns salary + bonus when includeBonusInContributions is true", () => {
-    const job = { includeBonusInContributions: true };
-    // 120000 + 120000 * 0.10 * 1 * (12/12) = 132000
-    expect(getEffectiveIncome(job, 120000, bonusTerms)).toBe(132000);
+  it("uses this year's pinned bonus when one is passed, the formula otherwise", () => {
+    expect(
+      contributionPay({ include401kInBonus: true }, 120000, bonusTerms, 15000),
+    ).toEqual({ salary: 120000, bonusGross: 15000 });
+    expect(
+      contributionPay({ include401kInBonus: true }, 120000, bonusTerms, null),
+    ).toEqual({ salary: 120000, bonusGross: 12000 });
+    // A pin doesn't make a bonus check carry contributions on its own.
+    expect(contributionPay({}, 120000, bonusTerms, 15000)).toEqual({
+      salary: 120000,
+      bonusGross: 0,
+    });
+  });
+
+  it("carries the bonus when either switch is on, never folded into the salary", () => {
+    // 120000 * 0.10 * 1 * (12/12) = 12000
+    for (const entry of [
+      { include401kInBonus: true },
+      { includeBonusInContributions: true },
+      { include401kInBonus: true, includeBonusInContributions: true },
+    ]) {
+      expect(contributionPay(entry, 120000, bonusTerms)).toEqual({
+        salary: 120000,
+        bonusGross: 12000,
+      });
+    }
   });
 });
 

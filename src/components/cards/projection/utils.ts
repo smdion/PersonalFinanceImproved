@@ -16,6 +16,7 @@ import {
   ACCOUNT_TYPE_CONFIG,
   isRothType,
   isTaxFreeBucket,
+  isPreTaxType,
 } from "@/lib/config/account-types";
 import { TAX_TREATMENT_TO_TAX_TYPE } from "@/lib/config/display-labels";
 import {
@@ -261,12 +262,58 @@ export function filterYearByParentCategory(
   );
 
   if (yr.phase !== "decumulation") {
+    // Contributions rescoped to the same accounts as the balances: the
+    // engine routes per category (a household-wide brokerage slot holds a
+    // Portfolio account's money too), so each slot and total is rebuilt from
+    // what the kept accounts actually received. Routing flags (caps,
+    // remaining space, overflow amounts) stay household-wide — they describe
+    // a real global constraint, as for withdrawals below.
+    const sum = (
+      rows: typeof filtered,
+      pick: (ia: (typeof filtered)[number]) => number,
+    ) => roundToCents(rows.reduce((t, ia) => t + pick(ia), 0));
+    const accumSlots =
+      "slots" in yr
+        ? yr.slots.map((slot) => {
+            const catIabs = filtered.filter(
+              (ia) => ia.category === slot.category,
+            );
+            return {
+              ...slot,
+              employeeContrib: sum(catIabs, (ia) => ia.contribution),
+              employerMatch: sum(catIabs, (ia) => ia.employerMatch),
+              rothContrib: sum(
+                catIabs.filter((ia) => isTaxFreeBucket(ia.taxType)),
+                (ia) => ia.contribution,
+              ),
+              traditionalContrib: sum(
+                catIabs.filter((ia) => isPreTaxType(ia.taxType)),
+                (ia) => ia.contribution,
+              ),
+            };
+          })
+        : undefined;
     return {
       ...yr,
       individualAccountBalances: filtered,
       balanceByTaxType: byTax,
       balanceByAccount: byAcct,
       endBalance,
+      ...(accumSlots
+        ? {
+            slots: accumSlots,
+            totalEmployee: sum(filtered, (ia) => ia.contribution),
+            totalEmployer: sum(filtered, (ia) => ia.employerMatch),
+            totalRoth: sum(
+              filtered.filter((ia) => isTaxFreeBucket(ia.taxType)),
+              (ia) => ia.contribution,
+            ),
+            totalTraditional: sum(
+              filtered.filter((ia) => isPreTaxType(ia.taxType)),
+              (ia) => ia.contribution,
+            ),
+          }
+        : {}),
     };
   }
 

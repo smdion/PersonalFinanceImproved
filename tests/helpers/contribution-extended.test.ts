@@ -9,6 +9,7 @@ import "./setup-mocks";
 import { describe, it, expect } from "vitest";
 import {
   aggregateContributionsByCategory,
+  annualContributionWithBonus,
   resolveProfile,
   applyContribActiveFields,
   buildContributionDisplaySpecs,
@@ -722,5 +723,59 @@ describe("buildContributionDisplaySpecs", () => {
         [makeJobSalary()],
       ),
     ).toThrow(/independently carry employer match config/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// annualContributionWithBonus — the one yearly amount (the paycheck's way)
+// ---------------------------------------------------------------------------
+
+describe("annualContributionWithBonus", () => {
+  const pct = (value: number, jobId: number | null = 1) => ({
+    contributionMethod: "percent_of_salary",
+    contributionValue: value,
+    jobId,
+  });
+
+  it("takes the rate of the base salary when the bonus check carries nothing", () => {
+    expect(annualContributionWithBonus(pct(10), { salary: 100_000 }, 26)).toBe(
+      10_000,
+    );
+  });
+
+  it("adds the rate of the bonus once — however the bonus switches were set", () => {
+    // contributionPay folds both switches into one bonusGross; the bonus is
+    // never also part of the salary, so it can't be counted twice.
+    expect(
+      annualContributionWithBonus(
+        pct(10),
+        { salary: 100_000, bonusGross: 12_000 },
+        26,
+      ),
+    ).toBe(11_200);
+  });
+
+  it("takes a fixed per-paycheck amount once more from the bonus check", () => {
+    expect(
+      annualContributionWithBonus(
+        {
+          contributionMethod: "fixed_per_period",
+          contributionValue: 200,
+          jobId: 1,
+        },
+        { salary: 100_000, bonusGross: 12_000 },
+        26,
+      ),
+    ).toBe(200 * 27);
+  });
+
+  it("takes nothing from the bonus for an account not paid through payroll", () => {
+    expect(
+      annualContributionWithBonus(
+        pct(10, null),
+        { salary: 100_000, bonusGross: 12_000 },
+        26,
+      ),
+    ).toBe(10_000);
   });
 });

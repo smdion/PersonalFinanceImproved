@@ -436,9 +436,14 @@ export const savingsGoals = sqliteTable(
   {
     id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
     name: text("name").notNull().unique(),
-    parentGoalId: integer("parent_goal_id"),
-    // Self-referential FK enforced via migration 0001_add_parent_goal_fk.sql
-    // (ALTER TABLE ADD CONSTRAINT) — Drizzle cannot self-reference inline.
+    // Lost in the v0.8 squash and restored by 0005_v086_schema_cleanup.
+    // Upgraded SQLite installs lack it (SQLite can't add one in place), so
+    // deleting a goal also detaches its sub-goals in app code
+    // (savings router, deleteSavingsGoal).
+    parentGoalId: integer("parent_goal_id").references(
+      (): AnySQLiteColumn => savingsGoals.id,
+      { onDelete: "set null" },
+    ),
     targetAmount: text("target_amount"),
     targetMonths: integer("target_months"),
     targetDate: text("target_date"),
@@ -455,7 +460,10 @@ export const savingsGoals = sqliteTable(
     reimbursementApiCategoryId: text("reimbursement_api_category_id"),
     targetMode: text("target_mode").notNull().default("fixed"), // 'fixed' | 'ongoing' | 'bucket' — validated by Zod (app-layer, no DB constraint)
   },
-  (table) => [index("savings_goals_is_active_idx").on(table.isActive)],
+  (table) => [
+    index("savings_goals_is_active_idx").on(table.isActive),
+    index("savings_goals_parent_goal_id_idx").on(table.parentGoalId),
+  ],
 );
 
 // One row per (savings goal, service, role) — replaces the old single-slot
@@ -974,43 +982,6 @@ export const accountPerformance = sqliteTable(
     index("account_performance_owner_id_idx").on(table.ownerPersonId),
     index("account_performance_perf_acct_idx").on(table.performanceAccountId),
     index("account_performance_is_active_idx").on(table.isActive),
-  ],
-);
-
-export const pendingRollovers = sqliteTable(
-  "pending_rollovers",
-  {
-    id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
-    /** The account_performance row the rollover originates from (ESPP side). */
-    sourceAccountPerformanceId: integer("source_account_performance_id")
-      .notNull()
-      .references(() => accountPerformance.id, { onDelete: "restrict" }),
-    /** The master performance_accounts record the money is going to. Year-row may not exist yet at record time. */
-    destinationPerformanceAccountId: integer(
-      "destination_performance_account_id",
-    )
-      .notNull()
-      .references(() => performanceAccounts.id, { onDelete: "restrict" }),
-    amount: text("amount").notNull(),
-    saleDate: text("sale_date").notNull(),
-    /** Year the rollover originates from — determines which source account_performance row is debited. */
-    saleYear: integer("sale_year").notNull(),
-    /** Year the rollover applies to on the destination side (defaults to saleYear; may differ for Dec→Jan wires). */
-    applyYear: integer("apply_year").notNull(),
-    notes: text("notes"),
-    /** Set when the user confirms the wire has landed in the destination account. */
-    confirmedAt: integer("confirmed_at", { mode: "timestamp" }),
-    createdAt: integer("created_at", { mode: "timestamp" })
-      .notNull()
-      .default(sql`(unixepoch())`),
-  },
-  (table) => [
-    index("pending_rollovers_source_idx").on(table.sourceAccountPerformanceId),
-    index("pending_rollovers_dest_idx").on(
-      table.destinationPerformanceAccountId,
-    ),
-    index("pending_rollovers_sale_year_idx").on(table.saleYear),
-    index("pending_rollovers_confirmed_idx").on(table.confirmedAt),
   ],
 );
 

@@ -2,7 +2,6 @@
  * Shared helper for pushing portfolio snapshot balances to a budget API
  * (YNAB / Actual). Single computation path used by:
  *   - networth.portfolioSnapshots.create (auto-push on new snapshot)
- *   - sync.pushPortfolioToApi   (manual push of latest)
  *   - sync.resyncPortfolioPush  (re-push an existing snapshot)
  *
  * Aggregates by remoteAccountId, computes (snapshotSum - liveYnabBalance) per
@@ -65,7 +64,7 @@ function buildMemo(snapshotId: number, contributorLabels: string[]): string {
  * single performance account (e.g. two IRAs aggregated under one perf row).
  *
  * Requires `performanceAccountId` on every push mapping. Mappings missing
- * the typed field are skipped - backfill via `sync.migrateAccountMappingsToIds`
+ * the typed field are skipped — re-link the mapping in Settings → Integrations
  * if you see them in prod.
  *
  * Pure function - no I/O.

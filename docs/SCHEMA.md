@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**80 tables.**
+**79 tables.**
 
 ## Mermaid diagram
 
@@ -81,9 +81,6 @@ erDiagram
     int id PK
   }
   account_performance {
-    int id PK
-  }
-  pending_rollovers {
     int id PK
   }
   account_holdings {
@@ -272,8 +269,6 @@ erDiagram
   portfolio_accounts }o--|| people : references
   account_performance }o--|| people : references
   account_performance }o--|| performance_accounts : references
-  pending_rollovers }o--|| account_performance : references
-  pending_rollovers }o--|| performance_accounts : references
   account_holdings }o--|| performance_accounts : references
   account_holdings }o--|| portfolio_snapshots : references
   historical_salaries }o--|| people : references
@@ -346,7 +341,6 @@ erDiagram
 - **net_worth_annual**
 - **other_asset_items**
 - **paycheck_deductions** → jobs
-- **pending_rollovers** → account_performance, performance_accounts
 - **people**
 - **performance_accounts** → people
 - **portfolio_accounts** → portfolio_snapshots, people
