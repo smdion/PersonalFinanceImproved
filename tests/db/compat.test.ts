@@ -5,6 +5,9 @@ vi.mock("@/lib/db/dialect", () => ({
   isPostgres: vi.fn(() => false),
 }));
 
+import { drizzle } from "drizzle-orm/better-sqlite3";
+import { PgDialect } from "drizzle-orm/pg-core";
+import { openTestSqlite } from "../helpers/db-harness";
 import { isPostgres } from "@/lib/db/dialect";
 import {
   tableExistsSQL,
@@ -17,31 +20,39 @@ import {
 const mockedIsPostgres = vi.mocked(isPostgres);
 
 describe("tableExistsSQL", () => {
-  it("returns SQLite query when not postgres", () => {
+  it("SQLite: answers true for a real table and false for a missing one", () => {
     mockedIsPostgres.mockReturnValue(false);
-    const result = tableExistsSQL("users");
-    // Should contain sqlite_master reference
-    expect(result.queryChunks).toBeDefined();
+    const db = drizzle(openTestSqlite());
+    expect(db.get(tableExistsSQL("people"))).toEqual({ has_tables: 1 });
+    expect(db.get(tableExistsSQL("no_such_table"))).toEqual({ has_tables: 0 });
   });
 
-  it("returns PostgreSQL query when postgres", () => {
+  it("PostgreSQL: asks information_schema with the name as a bound param", () => {
     mockedIsPostgres.mockReturnValue(true);
-    const result = tableExistsSQL("users");
-    expect(result.queryChunks).toBeDefined();
+    const q = new PgDialect().sqlToQuery(tableExistsSQL("people"));
+    expect(q.sql).toContain("information_schema.tables");
+    expect(q.params).toEqual(["people"]);
   });
 });
 
 describe("listTablesSQL", () => {
-  it("returns SQLite query when not postgres", () => {
+  it("SQLite: lists app tables, sorted, without sqlite/drizzle internals", () => {
     mockedIsPostgres.mockReturnValue(false);
-    const result = listTablesSQL();
-    expect(result.queryChunks).toBeDefined();
+    const db = drizzle(openTestSqlite());
+    const names = db
+      .all<{ tablename: string }>(listTablesSQL())
+      .map((r) => r.tablename);
+    expect(names).toContain("people");
+    expect(names).toEqual([...names].sort());
+    expect(
+      names.filter((n) => n.startsWith("sqlite_") || n.startsWith("__drizzle")),
+    ).toEqual([]);
   });
 
-  it("returns PostgreSQL query when postgres", () => {
+  it("PostgreSQL: reads pg_tables for the public schema", () => {
     mockedIsPostgres.mockReturnValue(true);
-    const result = listTablesSQL();
-    expect(result.queryChunks).toBeDefined();
+    const q = new PgDialect().sqlToQuery(listTablesSQL());
+    expect(q.sql).toMatch(/FROM pg_tables WHERE schemaname = 'public'/);
   });
 });
 
