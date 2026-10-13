@@ -40,6 +40,10 @@ export default defineConfig({
     // regardless of 10s vs 15s; this just adds headroom for load
     // variance rather than masking anything.
     testTimeout: 15000,
+    // Every core: vitest's default leaves one idle, and the router tests
+    // spend part of their time waiting on SQLite I/O, so a fourth worker on
+    // a 4-core box measured ~12% faster on them.
+    maxWorkers: "100%",
     execArgv,
     // Most of the suite (server/routers/calculators/db/pure/helpers/etc.) is
     // pure Node logic that never touches the DOM. Only the files that
