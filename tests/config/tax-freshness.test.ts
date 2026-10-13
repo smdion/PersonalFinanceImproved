@@ -28,6 +28,7 @@ import {
   computeLtcgTax,
 } from "@/lib/config/tax-tables";
 import { NIIT_RATE, NIIT_THRESHOLDS, computeNiit } from "@/lib/config/niit";
+import { SS_TAX_THRESHOLDS } from "@/lib/config/ss-tax";
 import {
   IRMAA_BRACKETS,
   IRMAA_DATA_YEAR,
@@ -573,84 +574,18 @@ describe("Tax law structural checks", () => {
   // These tests verify structural tax rules that require code changes
   // (not just data updates) when they change.
 
-  it("TCJA status check — brackets assume current TCJA rates", () => {
-    // TCJA was enacted in 2017 with rates: 10, 12, 22, 24, 32, 35, 37%
-    // Originally scheduled to sunset after 2025, but made permanent by the
-    // "One Big Beautiful Bill Act" (signed July 4, 2025). Rates confirmed
-    // in IRS Revenue Procedure 2025-32 for tax year 2026.
-    const tcjaRates = [0, 0.1, 0.12, 0.22, 0.24, 0.32, 0.35, 0.37];
-    const preTcjaRates = [0, 0.1, 0.15, 0.25, 0.28, 0.33, 0.35, 0.396];
-
-    // TCJA rates are permanent — this documents the assumption.
-    // If rates ever change legislatively, every tax_brackets row needs new rates.
-    expect(tcjaRates).not.toEqual(preTcjaRates);
-  });
+  // Bracket rates (TCJA, made permanent by OBBBA) are checked row by row in
+  // tests/config/tax-params.test.ts; FICA rate, Medicare surtax threshold,
+  // HSA/super catch-up and standard deductions against the seed in
+  // tests/config/irs-contribution-limits.test.ts.
 
   it("SS taxation thresholds still unchanged since 1993", () => {
-    // IRC §86 provisional income thresholds — these have never been indexed.
-    // If Congress ever indexes them, this is a code change in tax-estimation.ts.
-    //
-    // The fact that they are NOT indexed is itself the tax planning insight:
-    // more retirees pay tax on SS each year due to bracket creep.
-    const expected = {
-      MFJ: { tier1: 32000, tier2: 44000 },
-      Single: { tier1: 25000, tier2: 34000 },
-    };
-
-    // Verify the code matches the expected (unchanged) values.
-    // If the IRS ever changes these, update tax-estimation.ts and this test.
-    expect(expected.MFJ.tier1).toBe(32000);
-    expect(expected.MFJ.tier2).toBe(44000);
-    expect(expected.Single.tier1).toBe(25000);
-    expect(expected.Single.tier2).toBe(34000);
-  });
-
-  it("FICA SS rate is still 6.2%", () => {
-    // Unchanged since 1990. If Congress changes it (e.g., to shore up
-    // the SS trust fund), update seed-reference-data.sql.
-    expect(0.062).toBe(0.062); // Documenting the assumption
-  });
-
-  it("Medicare surtax threshold is still not indexed ($200k/$250k)", () => {
-    // ACA Additional Medicare Tax (2013) — $200k Single, $250k MFJ.
-    // These are NOT indexed to inflation, so more people hit them each year.
-    // If Congress indexes them, update seed-reference-data.sql.
-    expect(200000).toBe(200000); // Documenting the assumption
-  });
-
-  it("HSA catch-up is still statutory $1,000 (not indexed)", () => {
-    // IRC §223(b)(3)(B) — fixed by statute, not adjusted for inflation.
-    // IRA catch-up was also $1,000 fixed until SECURE 2.0 indexed it starting 2024.
-    expect(1000).toBe(1000); // Documenting the assumption
-  });
-
-  it("SECURE 2.0 super catch-up is still $11,250 (ages 60-63)", () => {
-    // IRC §414(v)(2)(C) as amended by SECURE 2.0 Act §109.
-    // This amount is indexed to inflation starting 2026 (in $500 increments).
-    // Until then, it's fixed at $11,250.
-    expect(11250).toBe(11250);
-  });
-
-  it("2026 standard deduction values per IRS Rev. Proc. 2025-32", () => {
-    // Document the authoritative 2026 values.
-    // The seed script reads these from Budget Overview.xlsx; this test
-    // captures the IRS-published values so any future drift between the
-    // xlsx and the published amounts is caught when someone updates the
-    // assertion. To verify against a live DB:
-    //   psql ... -c "SELECT limit_type, value FROM contribution_limits
-    //                WHERE tax_year = 2026 AND limit_type LIKE 'standard_%'"
-    const STANDARD_DEDUCTIONS_2026 = {
-      MFJ: 30000,
-      Single: 15000,
-      MFS: 15000,
-      HOH: 22500,
-    };
-    // Documenting the assumption — fail loud if a future "update"
-    // accidentally drifts these without an IRS source.
-    expect(STANDARD_DEDUCTIONS_2026.MFJ).toBe(30000);
-    expect(STANDARD_DEDUCTIONS_2026.Single).toBe(15000);
-    expect(STANDARD_DEDUCTIONS_2026.MFS).toBe(15000);
-    expect(STANDARD_DEDUCTIONS_2026.HOH).toBe(22500);
+    // IRC §86 provisional income thresholds — never indexed, so more
+    // retirees pay tax on SS each year. If Congress indexes them, update
+    // ss-tax.ts and this test.
+    expect(SS_TAX_THRESHOLDS.MFJ).toEqual({ tier1: 32000, tier2: 44000 });
+    expect(SS_TAX_THRESHOLDS.Single).toEqual({ tier1: 25000, tier2: 34000 });
+    expect(SS_TAX_THRESHOLDS.HOH).toEqual(SS_TAX_THRESHOLDS.Single);
   });
 
   it("NIIT thresholds still not indexed ($200k/$250k, 3.8%)", () => {

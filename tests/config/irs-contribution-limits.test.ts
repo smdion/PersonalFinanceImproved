@@ -143,6 +143,26 @@ const IRS_LIMITS: Record<
       value: 2050,
       source: "IRC §63(f) / IRS Rev. Proc. 2025-32 — filer 65+, Single/HoH",
     },
+    standard_deduction_mfj: {
+      value: 32200,
+      source: "IRS Rev. Proc. 2025-32 (as amended by OBBBA)",
+    },
+    standard_deduction_single: {
+      value: 16100,
+      source: "IRS Rev. Proc. 2025-32 (as amended by OBBBA)",
+    },
+    standard_deduction_hoh: {
+      value: 24150,
+      source: "IRS Rev. Proc. 2025-32 (as amended by OBBBA)",
+    },
+    fica_ss_rate: {
+      value: 0.062,
+      source: "IRC §3101(a) — employee share, unchanged since 1990",
+    },
+    fica_medicare_surtax_threshold: {
+      value: 200000,
+      source: "IRC §3101(b)(2) — statutory, not indexed (Single/HoH)",
+    },
   },
 };
 
