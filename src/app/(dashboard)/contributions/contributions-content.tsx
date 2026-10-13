@@ -8,7 +8,11 @@ import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile"
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import {
+  formatCurrency,
+  formatPercent,
+  formatSavingsRate,
+} from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
 import { categoryChartHex, gainLossTextColor } from "@/lib/utils/colors";
 import { useUser, hasPermission } from "@/lib/context/user-context";
@@ -683,12 +687,11 @@ export function ContributionsContent() {
                   {combinedSalary > 0 && (
                     <>
                       Savings rate:{" "}
-                      {formatPercent(
+                      {formatSavingsRate(
                         householdSavings([person], [], viewMode, {
                           excludeMatch,
                           includePortfolio,
                         }).rate,
-                        1,
                       )}{" "}
                       ({excludeMatch ? "w/o match" : "w/ match"})
                     </>
@@ -898,13 +901,13 @@ function SummaryCard({
         <span className="text-muted text-xs tracking-wide uppercase">
           {label}
         </span>
-        <div className="text-3xl font-bold">{formatPercent(rate, 1)}</div>
+        <div className="text-3xl font-bold">{formatSavingsRate(rate)}</div>
         <div className="text-muted text-sm">
           {formatCurrency(amount)}
           {pl}
           {rate !== rateAlt && (
             <span className="ml-2 text-xs">
-              ({formatPercent(rateAlt, 1)} {altLabel})
+              ({formatSavingsRate(rateAlt)} {altLabel})
             </span>
           )}
         </div>

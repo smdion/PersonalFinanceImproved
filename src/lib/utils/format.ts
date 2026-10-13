@@ -1,5 +1,6 @@
 import { getDisplayConfig } from "@/lib/config/account-types";
 import { parseLocalDateOnly } from "@/lib/utils/date";
+import { SAVINGS_RATE_DECIMALS } from "@/lib/constants";
 
 /** Short month labels (index 0 = January), for compact axis/table labels. */
 export const MONTH_NAMES_SHORT = [
@@ -153,6 +154,11 @@ export function formatCurrency(value: number): string {
  */
 export function formatPercent(value: number, decimals = 0): string {
   return `${(value * 100).toFixed(decimals)}%`;
+}
+
+/** A savings rate, at the precision it's judged at (SAVINGS_RATE_DECIMALS). */
+export function formatSavingsRate(value: number): string {
+  return formatPercent(value, SAVINGS_RATE_DECIMALS);
 }
 
 /**

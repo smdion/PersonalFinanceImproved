@@ -338,7 +338,7 @@ describe("Financial Order of Operations", () => {
     const savings = makeSavings({ rate: 0.29, retirementRate: 0.26 });
     const r = byId(run({ savings }), "foo6");
     expect(r.status).toBe("reached");
-    expect(r.headline).toBe("Investing 26.0% for retirement before maxing out");
+    expect(r.headline).toBe("Investing 26% for retirement before maxing out");
     // The high-income threshold only decides whether the match counts.
     expect(
       byId(
@@ -369,9 +369,9 @@ describe("Financial Order of Operations", () => {
     });
     const r = byId(run({ savings }), "savingsRate");
     expect(r.status).toBe("reached");
-    expect(r.headline).toBe("29.3% of gross pay");
+    expect(r.headline).toBe("29% of gross pay");
     expect(r.note).toBe(
-      "24.9% into Retirement accounts · employer match left out (pay over $200,000.00)",
+      "25% into Retirement accounts · employer match left out (pay over $200,000.00)",
     );
     expect(byId(run({ savings }), "foo7").status).toBe("reached");
     expect(meetsMoneyGuyRate(0.244)).toBe(false);

@@ -56,6 +56,7 @@ import {
   type MilestoneDefinition,
 } from "@/lib/config/milestones";
 import {
+  SAVINGS_RATE_DECIMALS,
   WEALTH_FORMULA_MULTIPLIER,
   WEALTH_TIER_PAW_MIN,
 } from "@/lib/constants";
@@ -68,6 +69,7 @@ import {
   formatCurrency,
   formatNumber,
   formatPercent,
+  formatSavingsRate,
 } from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
 import {
@@ -364,7 +366,8 @@ export function firstProjectedYear(
  *  percent) to the target meets it — 24.9% meets 25%. Every savings-rate
  *  threshold check goes through this, so the dashboard and Milestones agree. */
 export function meetsRateTarget(rate: number, target: number): boolean {
-  return Math.round(rate * 100) >= Math.round(target * 100);
+  const scale = 10 ** (2 + SAVINGS_RATE_DECIMALS);
+  return Math.round(rate * scale) >= Math.round(target * scale);
 }
 
 /** Money Guy's 25%, as a round number. */
@@ -915,10 +918,10 @@ function savingsRate(input: MilestoneInput): MilestoneResult {
     value: { kind: "percent", amount: s.rate },
     target: { kind: "percent", amount: MONEY_GUY_SAVINGS_RATE },
     progress: Math.min(1, s.rate / MONEY_GUY_SAVINGS_RATE),
-    headline: `${formatPercent(s.rate, 1)} of gross pay`,
+    headline: `${formatSavingsRate(s.rate)} of gross pay`,
     note: [
       s.retirementRate < s.rate
-        ? `${formatPercent(s.retirementRate, 1)} into Retirement accounts`
+        ? `${formatSavingsRate(s.retirementRate)} into Retirement accounts`
         : null,
       s.matchCounted
         ? "employer match counted"
@@ -1030,7 +1033,7 @@ function limitStep(
       value: { kind: "currency", amount: contributed },
       target: { kind: "currency", amount: limit },
       progress: 1,
-      headline: `Investing ${formatPercent(s.retirementRate, 1)} for retirement before maxing out`,
+      headline: `Investing ${formatSavingsRate(s.retirementRate)} for retirement before maxing out`,
       note: [
         `${formatCurrency(contributed)} of ${formatCurrency(limit)} a year of IRS limits`,
         unlimitedNote,
@@ -1379,11 +1382,11 @@ function pfRetirementRate(input: MilestoneInput): MilestoneResult {
     value: { kind: "percent", amount: s.retirementRate },
     target: { kind: "percent", amount: PF_RETIREMENT_RATE.min },
     progress: Math.min(1, s.retirementRate / PF_RETIREMENT_RATE.min),
-    headline: `${formatPercent(s.retirementRate, 1)} of pre-tax income into Retirement accounts`,
+    headline: `${formatSavingsRate(s.retirementRate)} of pre-tax income into Retirement accounts`,
     note: [
       upper
-        ? `At or above the ${formatPercent(PF_RETIREMENT_RATE.upper)} upper end`
-        : `${formatPercent(PF_RETIREMENT_RATE.upper)} is the upper end`,
+        ? `At or above the ${formatSavingsRate(PF_RETIREMENT_RATE.upper)} upper end`
+        : `${formatSavingsRate(PF_RETIREMENT_RATE.upper)} is the upper end`,
       s.matchCounted
         ? "employer match counted"
         : `employer match left out (pay over ${formatCurrency(s.highIncomeThreshold)})`,

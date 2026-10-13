@@ -206,7 +206,7 @@ describe("FinancialCheckupCard smoke", () => {
     fireEvent.click(screen.getByRole("button", { name: /Savings Rate/ }));
     fireEvent.click(screen.getByRole("button", { name: "Excl. match" }));
     const row = screen.getByRole("button", { name: /Savings Rate/ });
-    expect(within(row).getByText("25.0%")).toBeInTheDocument();
+    expect(within(row).getByText("25%")).toBeInTheDocument();
     expect(row.querySelector(".text-green-500")).not.toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Incl. match" }));
   });
@@ -216,19 +216,19 @@ describe("FinancialCheckupCard smoke", () => {
     contribsQuery = withData(baseContribs);
     render(<FinancialCheckupCard />);
     // Below the high-income threshold: the match counts by default.
-    expect(screen.getByText("22.0%")).toBeInTheDocument();
+    expect(screen.getByText("22%")).toBeInTheDocument();
     expect(screen.queryByText("Employer match")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /Savings Rate/ }));
     expect(screen.getByText("Employer match")).toBeInTheDocument();
     expect(screen.getByText("Roth")).toBeInTheDocument();
     const row = () => screen.getByRole("button", { name: /Savings Rate/ });
     fireEvent.click(screen.getByRole("button", { name: "Excl. match" }));
-    expect(within(row()).getByText("20.0%")).toBeInTheDocument();
+    expect(within(row()).getByText("20%")).toBeInTheDocument();
     expect(screen.queryByText("Employer match")).toBeNull();
     // Portfolio toggle: the fixture has no Portfolio money, so the rate holds
     // and the row says what's counted.
     fireEvent.click(screen.getByRole("button", { name: "Excl. portfolio" }));
-    expect(within(row()).getByText("20.0%")).toBeInTheDocument();
+    expect(within(row()).getByText("20%")).toBeInTheDocument();
     expect(screen.getByText("retirement only")).toBeInTheDocument();
     // The switches are shared app-wide (a module store): put them back.
     fireEvent.click(screen.getByRole("button", { name: "Incl. match" }));

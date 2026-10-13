@@ -5,7 +5,7 @@ import { memo, useState, type ReactNode } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
-import { formatPercent } from "@/lib/utils/format";
+import { formatSavingsRate } from "@/lib/utils/format";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
 import { CHECKUP_MILESTONES } from "@/lib/config/milestones";
@@ -253,7 +253,7 @@ function FinancialCheckupCardImpl() {
       : meetsRateTarget(savingsRate, yellowThreshold)
         ? "yellow"
         : "red",
-    text: formatPercent(savingsRate, 1),
+    text: formatSavingsRate(savingsRate),
     subText:
       [
         excludeMatch ? null : "incl. match",

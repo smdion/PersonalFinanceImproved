@@ -42,6 +42,11 @@ export const DEFAULT_INFLATION_RATE = 0.03;
 /** High income threshold for savings rate display (show employee-only rate as headline). */
 export const DEFAULT_HIGH_INCOME_THRESHOLD = 200_000;
 
+/** Savings rates are shown, and judged against their targets, to this many
+ *  decimal places of a percent — whole percents, so 24.9% shows (and
+ *  counts) as 25%. formatSavingsRate() and meetsRateTarget() both read it. */
+export const SAVINGS_RATE_DECIMALS = 0;
+
 // Default withdrawal splits are defined in src/lib/config/account-types.ts
 // (derived from each account type's defaultWithdrawalSplit config property)
 

@@ -1,7 +1,11 @@
 "use client";
 
 import { HelpTip } from "@/components/ui/help-tip";
-import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import {
+  formatCurrency,
+  formatPercent,
+  formatSavingsRate,
+} from "@/lib/utils/format";
 import { taxTypeLabel } from "@/lib/utils/colors";
 import type { ViewMode } from "@/lib/calculators/types";
 import type {
@@ -104,7 +108,7 @@ export function SavingsRateBreakdown({
         <div key={g.group}>
           <div className="flex justify-between text-sm">
             <span className="text-muted capitalize">{g.group}</span>
-            <span className="text-primary">{formatPercent(g.share, 1)}</span>
+            <span className="text-primary">{formatSavingsRate(g.share)}</span>
           </div>
           {g.lines.length > 0 && (
             <div className="mt-0.5 ml-3 space-y-0.5">
@@ -115,7 +119,7 @@ export function SavingsRateBreakdown({
                     <HelpTip text={LINE_HELP[l.key]} />
                   </span>
                   <span className="text-secondary font-medium">
-                    {formatPercent(l.share, 1)}
+                    {formatSavingsRate(l.share)}
                   </span>
                 </div>
               ))}
