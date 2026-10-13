@@ -20,6 +20,9 @@ import { useScenario } from "@/lib/context/scenario-context";
 import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
+import { useRecommendations } from "@/lib/hooks/use-recommendations";
+import { contributionsSummaryLine } from "@/lib/pure/plain-summary";
+import { PlainSummary } from "@/components/ui/plain-summary";
 import {
   householdSavings,
   type HouseholdSavings,
@@ -100,6 +103,11 @@ export function ContributionsContent() {
         .reduce((s, p) => s + (p.totalCompensation ?? p.salary), 0) >=
         highIncomeThreshold,
     );
+
+  // The top paycheck to-do, for the plain-words line.
+  const { recommendations } = useRecommendations();
+  const nextPaycheckAction =
+    recommendations.find((r) => r.area === "paycheck")?.action ?? null;
 
   const { data: profileData } = trpc.contribution.computeSummary.useQuery(
     { contributionProfileId: selectedProfileId },
@@ -286,6 +294,21 @@ export function ContributionsContent() {
           const primary = excludeMatch ? "without" : "with";
           return (
             <>
+              {viewMode === "projected" && (
+                <div className="md:col-span-3">
+                  <PlainSummary
+                    text={contributionsSummaryLine({
+                      rate: primary === "without" ? hhRateWithout : hhRateWith,
+                      annualAmount: counted(
+                        excludeMatch ? savingsWithout : savingsWith,
+                      ),
+                      matchIncluded: !excludeMatch,
+                      includePortfolio,
+                      nextAction: nextPaycheckAction,
+                    })}
+                  />
+                </div>
+              )}
               <SummaryCard
                 label={`${isBlended ? "Total Savings (Est.)" : "Total Savings"}${includePortfolio ? "" : " — retirement only"}`}
                 rate={primary === "without" ? hhRateWithout : hhRateWith}
