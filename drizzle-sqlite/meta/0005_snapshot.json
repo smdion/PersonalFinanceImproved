@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "e257aa2b-b0ef-4a23-b5b2-ba1b3fb496dd",
+  "id": "b2108097-c7b5-44b7-8bf8-ff0b4321dbd4",
   "prevId": "c9bd0a63-d85a-40d3-ae41-e96ffe1068ac",
   "tables": {
     "account_basis": {
@@ -3586,127 +3586,6 @@
           "columnsFrom": ["job_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "pending_rollovers": {
-      "name": "pending_rollovers",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": true
-        },
-        "source_account_performance_id": {
-          "name": "source_account_performance_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "destination_performance_account_id": {
-          "name": "destination_performance_account_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "amount": {
-          "name": "amount",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "sale_date": {
-          "name": "sale_date",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "sale_year": {
-          "name": "sale_year",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "apply_year": {
-          "name": "apply_year",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "notes": {
-          "name": "notes",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "confirmed_at": {
-          "name": "confirmed_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(unixepoch())"
-        }
-      },
-      "indexes": {
-        "pending_rollovers_source_idx": {
-          "name": "pending_rollovers_source_idx",
-          "columns": ["source_account_performance_id"],
-          "isUnique": false
-        },
-        "pending_rollovers_dest_idx": {
-          "name": "pending_rollovers_dest_idx",
-          "columns": ["destination_performance_account_id"],
-          "isUnique": false
-        },
-        "pending_rollovers_sale_year_idx": {
-          "name": "pending_rollovers_sale_year_idx",
-          "columns": ["sale_year"],
-          "isUnique": false
-        },
-        "pending_rollovers_confirmed_idx": {
-          "name": "pending_rollovers_confirmed_idx",
-          "columns": ["confirmed_at"],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "pending_rollovers_source_account_performance_id_account_performance_id_fk": {
-          "name": "pending_rollovers_source_account_performance_id_account_performance_id_fk",
-          "tableFrom": "pending_rollovers",
-          "tableTo": "account_performance",
-          "columnsFrom": ["source_account_performance_id"],
-          "columnsTo": ["id"],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
-        },
-        "pending_rollovers_destination_performance_account_id_performance_accounts_id_fk": {
-          "name": "pending_rollovers_destination_performance_account_id_performance_accounts_id_fk",
-          "tableFrom": "pending_rollovers",
-          "tableTo": "performance_accounts",
-          "columnsFrom": ["destination_performance_account_id"],
-          "columnsTo": ["id"],
-          "onDelete": "restrict",
           "onUpdate": "no action"
         }
       },

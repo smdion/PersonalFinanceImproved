@@ -98,7 +98,6 @@ export const VERSION_TABLES: VersionTableEntry[] = [
   { name: "simplefin_accounts", tier: 2 }, // FK into performance_accounts (tier 1)
 
   // Tier 3 — depends on tier 2
-  { name: "pending_rollovers", tier: 3 }, // FKs into account_performance (tier 2, ON DELETE restrict) + performance_accounts (tier 1)
   // SimpleFIN history (v0.8.5) — can't be re-fetched after 90 days, so versioned + backed up.
   { name: "simplefin_account_balances", tier: 3 }, // FK into simplefin_accounts (tier 2)
   { name: "holding_observations", tier: 3 }, // FKs into simplefin_accounts (tier 2), performance_accounts (tier 1), securities (tier 0)

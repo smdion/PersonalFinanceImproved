@@ -4,6 +4,10 @@
 -- carried into the squash). Every step is guarded: a no-op where already done.
 -- Sub-goals left pointing at a deleted goal (possible on installs without
 -- the key) become top-level again, as the app now does on delete.
+-- Pending rollovers: only the ESPP calculator (removed in v0.8.5) created
+-- them; the feature's code is gone. Its rows are dropped with it.
+DROP TABLE IF EXISTS "pending_rollovers" CASCADE;
+--> statement-breakpoint
 UPDATE "savings_goals" SET "parent_goal_id" = NULL
   WHERE "parent_goal_id" IS NOT NULL
     AND "parent_goal_id" NOT IN (SELECT "id" FROM "savings_goals");

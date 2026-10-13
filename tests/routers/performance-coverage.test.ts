@@ -663,17 +663,6 @@ describe("performance.computeSummary — enriched accountRows", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Pending Rollover CRUD — lines 1524-1608. Plain mutations (no db.transaction),
-// unlike finalizeYear below, so they're directly testable through the caller.
-// ─────────────────────────────────────────────────────────────────────────────
-
-// ─────────────────────────────────────────────────────────────────────────────
-// confirmPendingRollover — lines 1609-1778. Wrapped in db.transaction(async ...),
-// same pattern used successfully elsewhere in this codebase (e.g. savings.ts),
-// unlike finalizeYear below which has a documented, separate incompatibility.
-// ─────────────────────────────────────────────────────────────────────────────
-
-// ─────────────────────────────────────────────────────────────────────────────
 // finalizeYear — pure function unit tests
 //
 // The finalizeYear procedure uses db.transaction(async ...) which is
