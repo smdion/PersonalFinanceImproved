@@ -55,6 +55,14 @@ vi.mock("@/lib/trpc", () => ({
       settings: { appSettings: { list: { invalidate: vi.fn() } } },
     }),
     contribution: { computeSummary: { useQuery: () => contribsQuery } },
+    settings: {
+      appSettings: {
+        list: { useQuery: () => ({ data: [] }) },
+        upsert: {
+          useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+        },
+      },
+    },
   },
 }));
 

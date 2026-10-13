@@ -146,6 +146,21 @@ describe("settings.appSettings", () => {
       expect(saved?.value).toEqual(goals);
     });
 
+    it("validates recommendation dismissals on write", async () => {
+      await expect(
+        caller.settings.appSettings.upsert({
+          key: "recommendation_dismissals",
+          value: { foo2: { until: "tomorrow", urgency: "now" } },
+        }),
+      ).rejects.toThrow(/Invalid recommendation_dismissals/);
+      const value = { foo6: { until: null, urgency: "soon" } };
+      const saved = await caller.settings.appSettings.upsert({
+        key: "recommendation_dismissals",
+        value,
+      });
+      expect(saved?.value).toEqual(value);
+    });
+
     it("inserts a new setting", async () => {
       const result = await caller.settings.appSettings.upsert({
         key: "test_setting",

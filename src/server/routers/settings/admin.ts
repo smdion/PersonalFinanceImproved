@@ -14,7 +14,9 @@ import {
   SK_MILESTONE_CHECKPOINT_SOURCE,
   SK_MILESTONE_CUSTOM_GOALS,
   SK_MILESTONE_SAVINGS_TARGET_SOURCE,
+  SK_RECOMMENDATION_DISMISSALS,
 } from "@/lib/constants/settings-keys";
+import { dismissalsSchema } from "@/lib/pure/recommendation-dismissals";
 import {
   checkpointSourceSchema,
   customGoalsSchema,
@@ -52,6 +54,7 @@ const STRUCTURED_SETTINGS: Record<string, z.ZodType> = {
   [SK_MILESTONE_CHECKLIST]: milestoneChecklistSchema,
   [SK_MILESTONE_CHECKPOINT_SOURCE]: checkpointSourceSchema,
   [SK_MILESTONE_SAVINGS_TARGET_SOURCE]: savingsTargetSourceSchema,
+  [SK_RECOMMENDATION_DISMISSALS]: dismissalsSchema,
 };
 
 // --- Procedures ---

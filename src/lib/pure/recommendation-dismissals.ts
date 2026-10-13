@@ -1,0 +1,80 @@
+/**
+ * Dismissed and snoozed recommendations — household-wide (app_settings
+ * `recommendation_dismissals`, admin-written, validated on write with
+ * `dismissalsSchema`). A dismissal remembers the urgency it was made at:
+ * if the recommendation escalates (soon → now) it comes back.
+ */
+import { z } from "zod/v4";
+import { localDateStr } from "@/lib/utils/date";
+import type {
+  Recommendation,
+  RecommendationUrgency,
+} from "@/lib/pure/recommendations";
+
+const URGENCY_RANK: Record<RecommendationUrgency, number> = {
+  now: 0,
+  soon: 1,
+};
+
+export const dismissalsSchema = z.record(
+  z.string().min(1).max(80),
+  z.object({
+    /** Hidden until this date (YYYY-MM-DD); null = for good. */
+    until: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .nullable(),
+    /** The urgency when dismissed. */
+    urgency: z.enum(["now", "soon"]),
+  }),
+);
+export type Dismissals = z.infer<typeof dismissalsSchema>;
+
+export function parseDismissals(raw: unknown): Dismissals {
+  const parsed = dismissalsSchema.safeParse(raw);
+  return parsed.success ? parsed.data : {};
+}
+
+function isActive(d: Dismissals[string], today: string): boolean {
+  return d.until === null || d.until > today;
+}
+
+/** Splits recommendations into shown and dismissed. `today` is the
+ *  household's date (YYYY-MM-DD). */
+export function applyDismissals(
+  recommendations: readonly Recommendation[],
+  dismissals: Dismissals,
+  today: string,
+): { shown: Recommendation[]; dismissed: Recommendation[] } {
+  const shown: Recommendation[] = [];
+  const dismissed: Recommendation[] = [];
+  for (const r of recommendations) {
+    const d = dismissals[r.id];
+    const hidden =
+      d !== undefined &&
+      isActive(d, today) &&
+      URGENCY_RANK[r.urgency] >= URGENCY_RANK[d.urgency];
+    (hidden ? dismissed : shown).push(r);
+  }
+  return { shown, dismissed };
+}
+
+/** The dismissals to save: expired snoozes dropped, `change` applied
+ *  (null removes the entry — "restore"). */
+export function nextDismissals(
+  current: Dismissals,
+  today: string,
+  change: { id: string; value: Dismissals[string] | null },
+): Dismissals {
+  const out: Dismissals = {};
+  for (const [id, d] of Object.entries(current))
+    if (isActive(d, today) && id !== change.id) out[id] = d;
+  if (change.value) out[change.id] = change.value;
+  return out;
+}
+
+/** A snooze end date `months` from `today` (YYYY-MM-DD). */
+export function snoozeUntil(today: string, months: number): string {
+  const [y, m, d] = today.split("-").map(Number) as [number, number, number];
+  return localDateStr(new Date(y, m - 1 + months, d));
+}

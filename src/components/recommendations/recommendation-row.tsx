@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { MILESTONE_SOURCE_LABELS } from "@/lib/config/milestones";
 import { STATUS_COLORS } from "@/lib/utils/colors";
 import { compactCurrency, maskAmountsInText } from "@/lib/utils/format";
@@ -20,8 +21,11 @@ const URGENCY = {
  *  involved, and where to do it. */
 export function RecommendationRow({
   recommendation: r,
+  actions,
 }: {
   recommendation: Recommendation;
+  /** Extra controls (dismiss / snooze / restore). */
+  actions?: ReactNode;
 }) {
   const sourceLabel =
     r.source === "ledgr" ? "Ledgr" : MILESTONE_SOURCE_LABELS[r.source];
@@ -52,6 +56,7 @@ export function RecommendationRow({
       >
         Go →
       </a>
+      {actions}
     </div>
   );
 }
