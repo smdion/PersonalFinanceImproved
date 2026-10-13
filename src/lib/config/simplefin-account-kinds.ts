@@ -24,7 +24,7 @@ export type SimplefinAccountKind = {
   subType?: string;
 };
 
-export const SIMPLEFIN_ACCOUNT_KINDS: readonly SimplefinAccountKind[] = [
+const SIMPLEFIN_ACCOUNT_KINDS: readonly SimplefinAccountKind[] = [
   {
     pattern: /\broth\b.*\bira\b|\bira\b.*\broth\b/i,
     accountType: "ira",

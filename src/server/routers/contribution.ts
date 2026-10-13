@@ -75,6 +75,9 @@ import {
   categoriesWithIrsLimit,
   isRetirementCategory,
   isTaxFree,
+  isPreTaxTreatment,
+  isAfterTaxTreatment,
+  isHsaTreatment,
   isRetirementParent,
   isPortfolioParent,
 } from "@/lib/config/account-types";
@@ -875,10 +878,9 @@ export const contributionRouter = createTRPCRouter({
             // brokerage and HSA dollars as Traditional/pre-tax).
             if (isTaxFree(acct.taxTreatment))
               entry.taxFree += acct.annualContribution;
-            else if (acct.taxTreatment === "after_tax")
+            else if (isAfterTaxTreatment(acct.taxTreatment))
               entry.afterTax += acct.annualContribution;
-            // lint-violation-ok: taxTreatment value, not an accountType/category comparison
-            else if (acct.taxTreatment === "hsa")
+            else if (isHsaTreatment(acct.taxTreatment))
               entry.hsa += acct.annualContribution;
             else entry.trad += acct.annualContribution;
             // Same isPayrollDeducted resolution paycheck.ts's calculator
@@ -1258,12 +1260,14 @@ export const contributionRouter = createTRPCRouter({
           currentPctOfSalary: null,
           performanceAccountIds:
             c.performanceAccountId != null ? [c.performanceAccountId] : [],
-          tradContrib: c.taxTreatment === "pre_tax" ? roundToCents(annual) : 0,
+          tradContrib: isPreTaxTreatment(c.taxTreatment)
+            ? roundToCents(annual)
+            : 0,
           taxFreeContrib: isTaxFree(c.taxTreatment) ? roundToCents(annual) : 0,
-          afterTaxContrib:
-            c.taxTreatment === "after_tax" ? roundToCents(annual) : 0,
-          // lint-violation-ok: taxTreatment value, not an accountType/category comparison
-          hsaContrib: c.taxTreatment === "hsa" ? roundToCents(annual) : 0,
+          afterTaxContrib: isAfterTaxTreatment(c.taxTreatment)
+            ? roundToCents(annual)
+            : 0,
+          hsaContrib: isHsaTreatment(c.taxTreatment) ? roundToCents(annual) : 0,
           // Same isPayrollDeducted resolution as the per-person loop above.
           nonPayrollContrib:
             (c.isPayrollDeducted ?? c.jobId !== null)

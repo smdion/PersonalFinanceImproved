@@ -55,7 +55,7 @@ const COUNTED_KINDS = new Set<InvestmentTransactionKind>([
 ]);
 
 /** How a row was counted — kind plus the conversion flag. */
-export function countedAs(row: Pick<FlowRow, "kind" | "transfer">): string {
+function countedAs(row: Pick<FlowRow, "kind" | "transfer">): string {
   return row.transfer?.conversion ? `${row.kind}:conversion` : row.kind;
 }
 

@@ -12,7 +12,7 @@ import type { AccountRow } from "./types";
 
 type Field = "contributionBasis" | "conversionBasis";
 
-export const basisEditField = (field: Field, ownerPersonId: number) =>
+const basisEditField = (field: Field, ownerPersonId: number) =>
   `${field}:${ownerPersonId}`;
 
 export function parseBasisEditField(

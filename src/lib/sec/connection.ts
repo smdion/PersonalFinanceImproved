@@ -10,7 +10,7 @@ import { encryptJson, readMaybeEncrypted } from "@/lib/crypto";
 
 type Db = typeof import("@/lib/db").db;
 
-export const SEC_SERVICE = "sec";
+const SEC_SERVICE = "sec";
 
 export type SecConfig = { contactEmail: string };
 

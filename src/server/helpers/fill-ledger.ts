@@ -10,7 +10,7 @@ import * as schema from "@/lib/db/schema";
 import { utcDayOf } from "@/lib/utils/date";
 import type { Db, DbOrTx } from "./transforms";
 
-export const FILL_LEDGER_KEY = "simplefin_fill_ledger";
+const FILL_LEDGER_KEY = "simplefin_fill_ledger";
 
 export type FillScope = "performance" | "basis";
 

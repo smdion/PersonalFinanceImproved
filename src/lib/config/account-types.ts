@@ -691,6 +691,16 @@ export function isPreTaxTreatment(taxTreatment: string): boolean {
   return taxTreatment === "pre_tax";
 }
 
+/** Check if a tax treatment value represents after-tax (taxable/brokerage) contributions. */
+export function isAfterTaxTreatment(taxTreatment: string): boolean {
+  return taxTreatment === "after_tax";
+}
+
+/** Check if a tax treatment value represents HSA contributions. */
+export function isHsaTreatment(taxTreatment: string): boolean {
+  return taxTreatment === "hsa";
+}
+
 /** Check if an engine-internal taxType key represents the tax-free (Roth) bucket. */
 export function isTaxFreeBucket(taxType: string): boolean {
   return taxType === "taxFree";
