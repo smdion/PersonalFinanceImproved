@@ -170,15 +170,14 @@ describe("FinancialCheckupCard smoke", () => {
     expect(screen.getByText(/On pace for age \d+/)).toBeInTheDocument();
   });
 
-  it("links to the Milestones page and counts what's on track", () => {
+  it("links to Recommendations with the count and counts what's on track", () => {
     withMilestones(makeInput());
     contribsQuery = withData(baseContribs);
     render(<FinancialCheckupCard />);
     expect(screen.getByText(/\/\d+ on track/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Milestones/ })).toHaveAttribute(
-      "href",
-      "/milestones",
-    );
+    const link = screen.getByRole("link", { name: /recommendation/i });
+    expect(link).toHaveAttribute("href", "/recommendations");
+    expect(link.textContent).toMatch(/^\d+ recommendations? →$/);
   });
 
   it("a savings rate that rounds to the target is green", () => {

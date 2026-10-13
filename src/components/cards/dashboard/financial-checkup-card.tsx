@@ -16,10 +16,8 @@ import {
   isHighIncomeHousehold,
 } from "@/lib/pure/contributions";
 import { useScenario } from "@/lib/context/scenario-context";
-import {
-  useContributionSummaryInput,
-  useMilestones,
-} from "@/lib/hooks/use-milestones";
+import { useContributionSummaryInput } from "@/lib/hooks/use-milestones";
+import { useRecommendations } from "@/lib/hooks/use-recommendations";
 import { LoadingCard, ErrorCard } from "./utils";
 import { SavingsRateBreakdown } from "./savings-rate-breakdown";
 import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
@@ -175,7 +173,7 @@ function FinancialCheckupCardImpl() {
     "savings_rate_thresholds",
     "[0.25, 0.15]",
   );
-  const milestones = useMilestones();
+  const milestones = useRecommendations();
   const contribs = trpc.contribution.computeSummary.useQuery(contribInput);
 
   const contribPeople = contribs.data?.people?.filter((d) => d.result) ?? [];
@@ -292,10 +290,12 @@ function FinancialCheckupCardImpl() {
       subtitle={`${greenCount}/${steps.length} on track`}
       headerRight={
         <a
-          href="/milestones"
+          href="/recommendations"
           className="text-caption text-blue-600 hover:underline"
         >
-          Milestones →
+          {milestones.recommendations.length > 0
+            ? `${milestones.recommendations.length} recommendation${milestones.recommendations.length === 1 ? "" : "s"} →`
+            : "Recommendations →"}
         </a>
       }
     >

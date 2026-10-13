@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadingCard, ErrorCard } from "@/components/cards/dashboard/utils";
-import { useUser, isAdmin, hasPermission } from "@/lib/context/user-context";
+import { useUser, isAdmin } from "@/lib/context/user-context";
 import { useMilestones } from "@/lib/hooks/use-milestones";
 import {
   MILESTONE_GROUPS,
@@ -37,12 +37,8 @@ const SOURCES: MilestoneSource[] = [
 export function MilestonesContent() {
   const user = useUser();
   const canEdit = isAdmin(user);
-  const { isLoading, projectionLoading, error, input, results } = useMilestones(
-    {
-      withHoldings: hasPermission(user, "portfolio"),
-      withBrokerageGoals: hasPermission(user, "brokerage"),
-    },
-  );
+  const { isLoading, projectionLoading, error, input, results } =
+    useMilestones();
   const [source, setSource] = useState<MilestoneSource | null>(null);
   const [hideUnknown, setHideUnknown] = useState(false);
   const goalActions = useCustomGoalActions(input?.customGoals ?? []);

@@ -285,6 +285,13 @@ export type MilestoneInput = {
   brokerageGoals: { name: string; targetYear: number }[] | null;
 };
 
+export type MilestoneImpact = {
+  /** perYear: a yearly amount (match missed, savings gap, unused room);
+   *  oneTime: a lump to reach a target. */
+  kind: "perYear" | "oneTime";
+  amount: number;
+};
+
 export type MilestoneStatus = "reached" | "onTrack" | "behind" | "unknown";
 
 export type MilestoneValue = {
@@ -313,6 +320,9 @@ export type MilestoneResult = MilestoneDefinition & {
   expectedAge: number | null;
   /** Everything this milestone contributes to the timeline. */
   achievements: { year: number; label: string }[];
+  /** The dollars closing the gap would move — set where the gap is already
+   *  worked out, so Recommendations rank by it without re-deriving it. */
+  impact: MilestoneImpact | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -436,6 +446,7 @@ function result(
     expectedYear: null,
     expectedAge: null,
     achievements: [],
+    impact: null,
     ...fields,
     short: fields.short ?? fields.headline,
   };
@@ -892,6 +903,10 @@ function checkpoints(
       current < target
         ? `${formatCurrency((target - current) * now.grossIncome)} more to be on pace for your age`
         : null,
+    impact:
+      current < target
+        ? { kind: "oneTime", amount: (target - current) * now.grossIncome }
+        : null,
     reachedYear: highest?.year ?? null,
     expectedYear: expected?.year ?? null,
     expectedAge: expected?.age ?? null,
@@ -932,6 +947,7 @@ function savingsRate(input: MilestoneInput): MilestoneResult {
     nextStep: met
       ? null
       : `${formatCurrency(gapPerMonth)} more a month reaches 25%`,
+    impact: met ? null : { kind: "perYear", amount: gapPerMonth * 12 },
   });
 }
 
@@ -1049,6 +1065,12 @@ function limitStep(
     progress: Math.min(1, safeDivide(contributed, limit, 0)),
     headline: `${formatCurrency(contributed)} of ${formatCurrency(limit)} a year`,
     note: unlimitedNote,
+    impact: open.length
+      ? {
+          kind: "perYear",
+          amount: open.reduce((sum, r) => sum + (r.limit - r.contributed), 0),
+        }
+      : null,
     nextStep: open.length
       ? open
           .map(
@@ -1115,6 +1137,7 @@ function foo(
           left >= 1
             ? `${formatCurrency(left)} a year of match left on the table — raise the 401k contribution`
             : null,
+        impact: left >= 1 ? { kind: "perYear", amount: left } : null,
       }),
     );
   }
@@ -1394,6 +1417,7 @@ function pfRetirementRate(input: MilestoneInput): MilestoneResult {
     nextStep: met
       ? null
       : `${formatCurrency(gapPerMonth)} more a month into retirement accounts reaches 15%`,
+    impact: met ? null : { kind: "perYear", amount: gapPerMonth * 12 },
   });
 }
 
@@ -1566,6 +1590,7 @@ function customGoal(
       progress: 1,
       note: reachedNote(reachedYear, input.years, current >= targetNow),
       nextStep: null,
+      impact: null,
       reachedYear,
       achievements: [{ year: reachedYear, label: goal.label }],
     };
@@ -1583,6 +1608,7 @@ function customGoal(
       ? expectedNote(expected, input, goal.metric === "netWorth")
       : null,
     nextStep: `${formatCurrency(Math.max(0, targetNow - current))} to go`,
+    impact: { kind: "oneTime", amount: Math.max(0, targetNow - current) },
     reachedYear: null,
     achievements: [],
   };

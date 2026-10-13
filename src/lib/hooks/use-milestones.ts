@@ -14,6 +14,7 @@ import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import { useDashboardProjection } from "@/lib/hooks/use-dashboard-projection";
 import { useScenario } from "@/lib/context/scenario-context";
+import { useUser, hasPermission } from "@/lib/context/user-context";
 import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
 import { SK_HIGH_INCOME_THRESHOLD } from "@/lib/constants/settings-keys";
 import {
@@ -35,10 +36,13 @@ export function useContributionSummaryInput() {
   } as Parameters<typeof trpc.contribution.computeSummary.useQuery>[0];
 }
 
-export function useMilestones({
-  withHoldings = false,
-  withBrokerageGoals = false,
-}: { withHoldings?: boolean; withBrokerageGoals?: boolean } = {}): {
+/**
+ * The household's milestones. Rows that need data a viewer may not see
+ * (linked holdings: portfolio; brokerage goals: brokerage) are gated here,
+ * once, so every caller — Milestones page, Checkup, Recommendations — judges
+ * the same set.
+ */
+export function useMilestones(): {
   isLoading: boolean;
   /** Expected dates are still coming (the projection is computing). */
   projectionLoading: boolean;
@@ -47,6 +51,9 @@ export function useMilestones({
   results: MilestoneResult[];
 } {
   const { isInScenario } = useScenario();
+  const user = useUser();
+  const withHoldings = hasPermission(user, "portfolio");
+  const withBrokerageGoals = hasPermission(user, "brokerage");
   const contribInput = useContributionSummaryInput();
   const [efundBudgetColumn] = usePersistedSetting<number>(
     "efund_budget_column",

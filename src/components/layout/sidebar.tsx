@@ -46,6 +46,7 @@ import {
   ExternalLink,
   Award,
   Lightbulb,
+  ListChecks,
   type LucideIcon,
 } from "lucide-react";
 import { BRAND_COLORS } from "@/lib/utils/colors";
@@ -71,6 +72,11 @@ const navStructure: NavEntry[] = [
     label: "Insights",
     Icon: Lightbulb,
     items: [
+      {
+        href: "/recommendations",
+        label: "Recommendations",
+        Icon: ListChecks,
+      },
       { href: "/milestones", label: "Milestones", Icon: Award },
       { href: "/benchmarks", label: "Benchmarks", Icon: PieChart },
       { href: "/contributions", label: "Contributions", Icon: Layers },
