@@ -34,19 +34,18 @@ vi.mock("@/lib/hooks/use-local-storage", () => ({
 import { AllTransactionsTab } from "@/components/savings/all-transactions-tab";
 import type { GoalProjection } from "@/components/savings/types";
 
-const goal = (goalId: number, name: string) =>
-  ({
-    goalId,
-    name,
-    current: 0,
-    target: 0,
-    targetMode: "fixed",
-    monthlyAllocation: 0,
-    monthlyAllocations: [],
-    balances: [],
-    monthEvents: [],
-    hasOverride: [],
-  }) as unknown as GoalProjection;
+const goal = (goalId: number, name: string): GoalProjection => ({
+  goalId,
+  name,
+  current: 0,
+  target: 0,
+  targetMode: "fixed",
+  monthlyAllocation: 0,
+  monthlyAllocations: [],
+  balances: [],
+  monthEvents: [],
+  hasOverride: [],
+});
 
 describe("AllTransactionsTab add form", () => {
   it("submits the goal it shows after the selected goal is removed", () => {
