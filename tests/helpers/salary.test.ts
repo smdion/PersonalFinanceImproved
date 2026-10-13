@@ -79,6 +79,20 @@ describe("contributionPay", () => {
     });
   });
 
+  it("uses this year's pinned bonus when one is passed, the formula otherwise", () => {
+    expect(
+      contributionPay({ include401kInBonus: true }, 120000, bonusTerms, 15000),
+    ).toEqual({ salary: 120000, bonusGross: 15000 });
+    expect(
+      contributionPay({ include401kInBonus: true }, 120000, bonusTerms, null),
+    ).toEqual({ salary: 120000, bonusGross: 12000 });
+    // A pin doesn't make a bonus check carry contributions on its own.
+    expect(contributionPay({}, 120000, bonusTerms, 15000)).toEqual({
+      salary: 120000,
+      bonusGross: 0,
+    });
+  });
+
   it("carries the bonus when either switch is on, never folded into the salary", () => {
     // 120000 * 0.10 * 1 * (12/12) = 12000
     for (const entry of [

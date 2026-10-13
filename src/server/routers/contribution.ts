@@ -544,10 +544,21 @@ export const contributionRouter = createTRPCRouter({
           const bonusTerms = applyActiveBonusTerms(personEntry, comp.terms);
           // Base salary + the bonus whose check carries contributions —
           // the paycheck's way (contributionPay / bonusCheckContribution).
-          const pay = contributionPay(activeJob, dbSalary, bonusTerms);
+          // This year's figures: the pinned bonus when there is one, like
+          // the paycheck (SalaryProfileEntry.bonusOverride).
+          const pay = contributionPay(
+            activeJob,
+            dbSalary,
+            bonusTerms,
+            comp.bonusOverride,
+          );
           const salary = pay.salary;
-          // Total compensation (always includes bonus) — used for savings rate denominator
-          const totalCompensation = getTotalCompensation(dbSalary, bonusTerms);
+          // Total compensation this year (salary + this year's bonus) — the
+          // savings rate denominator.
+          const totalCompensation =
+            comp.bonusOverride != null
+              ? dbSalary + comp.bonusOverride
+              : getTotalCompensation(dbSalary, bonusTerms);
           const periodsPerYear = getPeriodsPerYear(activeJob.payPeriod);
           const periodsElapsed = periodsElapsedYtd(
             asOfDate,

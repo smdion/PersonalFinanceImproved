@@ -390,7 +390,8 @@ export const paycheckRouter = createTRPCRouter({
             personalContribs,
             salary,
             periodsPerYear,
-            contributionPay(activeJob, salary, bonusTerms).bonusGross,
+            contributionPay(activeJob, salary, bonusTerms, comp.bonusOverride)
+              .bonusGross,
           );
 
           // This year's actual paid-out bonus, if pinned on the Salary

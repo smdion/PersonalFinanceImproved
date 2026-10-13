@@ -672,6 +672,8 @@ type JobSalaryRef = {
   job: { id: number; personId: number };
   salary: number;
   bonusGross?: number;
+  /** This year's bonus (the pinned one when set) — this year's lines only. */
+  bonusGrossThisYear?: number;
 };
 
 /**
@@ -694,9 +696,9 @@ function jobPayFor<T extends { job: { id: number; personId: number } }>(
  * (bonusCheckContribution — percent-of-pay at its rate of the bonus, a fixed
  * amount once more; only for accounts paid through payroll). The one
  * yearly amount the contribution summary and the retirement projection
- * use. (The budget follows regular paychecks only — base salary.) Known
- * gap: the paycheck's bonus honours a pinned bonusOverride; this uses the
- * formula bonus.
+ * use. (The budget follows regular paychecks only — base salary.) This
+ * year's figures pass the pinned bonus as `bonusGross`; the projection
+ * passes the formula bonus (contributionPay).
  */
 export function annualContributionWithBonus(
   c: {
@@ -910,7 +912,10 @@ export function buildContributionDisplaySpecs(
       job,
     );
     const cv = Number(c.contributionValue);
-    salaryById.set(c.id, salary + (js?.bonusGross ?? 0));
+    salaryById.set(
+      c.id,
+      salary + (js?.bonusGrossThisYear ?? js?.bonusGross ?? 0),
+    );
     incompleteById.set(c.id, incomplete);
     annualById.set(
       c.id,
@@ -919,7 +924,11 @@ export function buildContributionDisplaySpecs(
         : roundToCents(
             annualContributionWithBonus(
               { ...c, contributionValue: cv },
-              { salary, bonusGross: js?.bonusGross },
+              // This year's contribution lines: the pinned bonus when set.
+              {
+                salary,
+                bonusGross: js?.bonusGrossThisYear ?? js?.bonusGross,
+              },
               periods,
             ),
           ),

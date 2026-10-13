@@ -583,8 +583,17 @@ export async function buildEnginePayload(
     const totalComp = getTotalCompensation(salary, bonusTerms);
     return {
       job,
-      // Base salary + the bonus whose check carries contributions.
+      // Base salary + the bonus whose check carries contributions (the
+      // formula bonus — the projection grows it forward).
       ...contributionPay(job, salary, bonusTerms),
+      // This year's — the pinned bonus when there is one — for this year's
+      // contribution lines (display specs), never for growth.
+      bonusGrossThisYear: contributionPay(
+        job,
+        salary,
+        bonusTerms,
+        comp.bonusOverride,
+      ).bonusGross,
       totalComp,
       totalCompFullFormula: totalComp,
     };

@@ -432,18 +432,23 @@ export function bonusCarriesContributions(
  * A job's pay as contributions see it, the way the paycheck does: the base
  * salary (regular paychecks — percent-of-pay amounts and the employer match
  * are figured on it) and the bonus whose check carries contributions (0
- * when it doesn't). Contribution amounts are then
+ * when it doesn't). Pass the pinned `bonusOverride` for THIS YEAR's figures
+ * (paycheck, contribution summary, this year's contribution lines); leave it
+ * out for anything that grows forward (projection) — see
+ * SalaryProfileEntry.bonusOverride. Contribution amounts are then
  * annualContributionWithBonus (server/helpers/contribution.ts).
  */
 export function contributionPay(
   entry: Parameters<typeof bonusCarriesContributions>[0],
   baseSalary: number,
   bonusTerms: BonusTerms,
+  bonusOverride?: number | null,
 ): { salary: number; bonusGross: number } {
   return {
     salary: baseSalary,
     bonusGross: bonusCarriesContributions(entry)
-      ? getTotalCompensation(baseSalary, bonusTerms) - baseSalary
+      ? (bonusOverride ??
+        getTotalCompensation(baseSalary, bonusTerms) - baseSalary)
       : 0,
   };
 }
