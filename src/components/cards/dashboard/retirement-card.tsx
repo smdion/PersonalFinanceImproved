@@ -34,6 +34,10 @@ import { filterYearByParentCategory } from "@/components/cards/projection/utils"
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import { LoadingCard, ErrorCard } from "./utils";
 import { RetirementBenchmarks } from "./retirement-benchmarks";
+import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
+import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
+import { SK_HIGH_INCOME_THRESHOLD } from "@/lib/constants/settings-keys";
+import { isHighIncomeHousehold } from "@/lib/pure/contributions";
 
 function RetirementCardImpl() {
   const salaryActiveFields = useActiveSalaries();
@@ -107,6 +111,17 @@ function RetirementCardImpl() {
 
   const { data, isLoading, isFetching, error } =
     trpc.projection.computeProjection.useQuery(engineInput);
+  const [highIncomeThreshold] = usePersistedSetting<number>(
+    SK_HIGH_INCOME_THRESHOLD,
+    DEFAULT_HIGH_INCOME_THRESHOLD,
+  );
+  // The match switch shared with every savings rate and contribution total.
+  const { excludeMatch } = useSavingsRateOptions(
+    isHighIncomeHousehold(
+      data && "combinedSalary" in data ? data.combinedSalary : 0,
+      highIncomeThreshold,
+    ),
+  );
 
   useEffect(() => {
     if (!data?.result || isLoading || isFetching) return;
@@ -289,11 +304,15 @@ function RetirementCardImpl() {
             <div className="flex justify-between">
               <span className="text-muted">Contributions</span>
               <span className="text-primary">
-                {formatCurrency(totalWithMatch)}/yr
+                {formatCurrency(
+                  excludeMatch ? annualContributions : totalWithMatch,
+                )}
+                /yr
                 {employerContributions > 0 && (
                   <span className="text-caption text-faint ml-1">
-                    ({formatCurrency(annualContributions)} +{" "}
-                    {formatCurrency(employerContributions)} match)
+                    {excludeMatch
+                      ? `(+ ${formatCurrency(employerContributions)} match)`
+                      : `(${formatCurrency(annualContributions)} + ${formatCurrency(employerContributions)} match)`}
                   </span>
                 )}
               </span>

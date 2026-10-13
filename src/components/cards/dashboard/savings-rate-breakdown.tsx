@@ -9,18 +9,6 @@ import type {
   SavingsTreatment,
 } from "@/lib/pure/contributions";
 
-// A real, nonzero contribution can still round to "0%" at the default 0
-// decimals (e.g. $100/mo against a $250k household income is ~0.5%), which
-// reads as "nothing here" even though dollars are genuinely flowing.  Fall
-// back to 1 decimal only in that specific case so small-but-real categories
-// stay visible without adding decimal noise to the common (larger) values.
-function formatBreakdownPercent(fraction: number): string {
-  if (fraction > 0 && Math.round(fraction * 100) === 0) {
-    return formatPercent(fraction, 1);
-  }
-  return formatPercent(fraction);
-}
-
 const LINE_LABEL: Record<SavingsTreatment | "match", string> = {
   preTax: taxTypeLabel("preTax"),
   taxFree: taxTypeLabel("taxFree"),
@@ -112,9 +100,7 @@ export function SavingsRateBreakdown({
         <div key={g.group}>
           <div className="flex justify-between text-sm">
             <span className="text-muted capitalize">{g.group}</span>
-            <span className="text-primary">
-              {formatBreakdownPercent(g.share)}
-            </span>
+            <span className="text-primary">{formatPercent(g.share, 1)}</span>
           </div>
           {g.lines.length > 0 && (
             <div className="mt-0.5 ml-3 space-y-0.5">
@@ -125,7 +111,7 @@ export function SavingsRateBreakdown({
                     <HelpTip text={LINE_HELP[l.key]} />
                   </span>
                   <span className="text-secondary font-medium">
-                    {formatBreakdownPercent(l.share)}
+                    {formatPercent(l.share, 1)}
                   </span>
                 </div>
               ))}

@@ -22,6 +22,11 @@ vi.mock("@/lib/hooks/use-effective-salary-profile-id", () => ({
 vi.mock("@/lib/hooks/use-effective-contrib-profile-id", () => ({
   useEffectiveContribProfileId: () => ({ queryInput: {} }),
 }));
+vi.mock("@/lib/context/user-context", () => ({
+  useUser: () => ({ role: "viewer", name: "Test", permissions: [] }),
+  isAdmin: (u: { role: string }) => u.role === "admin",
+  hasPermission: () => true,
+}));
 vi.mock("@/lib/hooks/use-persisted-setting", () => ({
   usePersistedSetting: () => [null, vi.fn()],
 }));
@@ -177,8 +182,13 @@ describe("RetirementCard scope", () => {
     render(<RetirementCard />);
     // Nest egg: the Retirement 401k only (no inflation adjustment at age 65 = now).
     expect(screen.getByText("$300,000.00")).toBeInTheDocument();
-    // Contributions: the 401k and its match, not the Portfolio brokerage.
-    expect(screen.getByText(/\$25,000\.00\/yr/)).toBeInTheDocument();
+    // Contributions: the 401k and its match, not the Portfolio brokerage
+    // ($12,000). The mocked settings make this a high-income household, so
+    // the shared match switch leaves the match out of the headline.
+    expect(screen.getAllByText(/\$20,000\.00\s*\/yr/).length).toBeGreaterThan(
+      0,
+    );
+    expect(screen.getByText("(+ $5,000.00 match)")).toBeInTheDocument();
     engineData.result.projectionByYear = saved;
     (engineData as Record<string, unknown>).contributionSpecs = savedSpecs;
   });

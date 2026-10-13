@@ -96,7 +96,8 @@ type AccountTypeSnapshot = {
   totalContrib: number; // employee + employer (toward limit where applicable)
   views: Record<ViewMode, AccountViewMetrics>;
   ytdDataStale: boolean; // true when YTD actual < expected — performance data may be behind
-  currentPctOfSalary: number | null; // current employee % of salary (whole number)
+  /** The percent-of-pay election (whole number, e.g. 15); null for fixed-amount contributions. */
+  currentPctOfSalary: number | null;
   /** True pre-tax (Traditional) contributions only — hsa/afterTax are NOT
    *  folded in here; see afterTaxContrib/hsaContrib below. */
   tradContrib: number;
@@ -715,6 +716,8 @@ export const contributionRouter = createTRPCRouter({
               blendedMatch: number;
               ytdDataStale: boolean;
               performanceAccountIds: Set<number>;
+              /** Sum of this account's percent-of-pay elections; null once any of its contributions is a fixed amount. */
+              electedPct: number | null;
             }
           >();
 
@@ -797,7 +800,14 @@ export const contributionRouter = createTRPCRouter({
               blendedMatch: 0,
               ytdDataStale: false,
               performanceAccountIds: new Set<number>(),
+              electedPct: 0,
             };
+            entry.electedPct =
+              entry.electedPct !== null &&
+              rawContrib.contributionMethod === "percent_of_salary"
+                ? entry.electedPct +
+                  toNumber(String(rawContrib.contributionValue))
+                : null;
             if (rawContrib.performanceAccountId != null)
               entry.performanceAccountIds.add(rawContrib.performanceAccountId);
             // Accumulate YTD actuals from proportionally-split performance data
@@ -919,11 +929,10 @@ export const contributionRouter = createTRPCRouter({
             )
               ? getAccountTypeConfig(data.categoryKey as AccountCategory)
               : null;
-            let currentPctOfSalary: number | null = null;
-            if (limit > 0 && salary > 0) {
-              currentPctOfSalary =
-                roundToCents((totalEmployee / salary) * 100 * 100) / 100;
-            }
+            // The payroll election as set up ("15% of pay"), not dollars ÷
+            // salary — that ratio mixed in bonus-check money and differed
+            // from what the household actually elects.
+            const currentPctOfSalary = data.electedPct;
 
             const ytdActualForCategory =
               data.ytdContributions > 0 || data.ytdEmployerMatch > 0

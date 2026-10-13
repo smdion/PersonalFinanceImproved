@@ -15,12 +15,14 @@ import { useUser, hasPermission } from "@/lib/context/user-context";
 import { useScenario } from "@/lib/context/scenario-context";
 import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
+import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
+import {
+  householdSavings,
+  type HouseholdSavings,
+  type SavingsGroup,
+} from "@/lib/pure/contributions";
 import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
-import {
-  isPortfolioParent,
-  isRetirementParent,
-} from "@/lib/config/account-types";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 
 type PeriodMode = "annual" | "monthly" | "per-period";
@@ -82,11 +84,18 @@ export function ContributionsContent() {
   const [selectedProfileId, setSelectedProfileId] = useState<
     number | undefined
   >(activeProfileId ?? undefined);
-  const [matchOverride, setMatchOverride] = useState<boolean | null>(null);
   const [highIncomeThreshold] = usePersistedSetting<number>(
     "high_income_threshold",
     DEFAULT_HIGH_INCOME_THRESHOLD,
   );
+  // Before the early returns (hooks): the switches are shared app-wide.
+  const { excludeMatch, includePortfolio, toggleMatch, togglePortfolio } =
+    useSavingsRateOptions(
+      (data?.people ?? [])
+        .filter((p) => p.salary > 0)
+        .reduce((s, p) => s + (p.totalCompensation ?? p.salary), 0) >=
+        highIncomeThreshold,
+    );
 
   const { data: profileData } = trpc.contribution.computeSummary.useQuery(
     { contributionProfileId: selectedProfileId },
@@ -136,68 +145,48 @@ export function ContributionsContent() {
     (s, p) => s + (p.totalCompensation ?? p.salary),
     0,
   );
-  // High income: show employee-only rate as headline (match is "free money", not savings effort)
-  const highIncome = combinedSalary >= highIncomeThreshold;
-  const excludeMatch = matchOverride !== null ? matchOverride : highIncome;
+
   const avgPeriodsPerYear =
     activePeople.length > 0
       ? activePeople.reduce((s, p) => s + p.periodsPerYear, 0) /
         activePeople.length
       : 26;
 
-  // Joint account contributions split by parentCategory.
-  // jointAccountTypes carries per-account data; jointTotals carries the
-  // household aggregate. Both are already on the router response — the page
-  // was simply not reading them, causing joint brokerage to show 0% / $0.
+  // Household totals and rates: the same calculation as the Financial
+  // Checkup (householdSavings — joint accounts per view; YTD divides by pay
+  // earned so far), with and without the match so each card shows both.
   const jointAccountTypes = data?.jointAccountTypes ?? [];
-  const jointTotals = data?.jointTotals ?? {
-    totalWithoutMatch: 0,
-    totalWithMatch: 0,
+  const jointTotals = {
+    totalWithoutMatch: jointAccountTypes.reduce(
+      (t, a) => t + a.views[viewMode].employeeContrib,
+      0,
+    ),
+    totalWithMatch: jointAccountTypes.reduce(
+      (t, a) => t + a.views[viewMode].totalContrib,
+      0,
+    ),
   };
-  const jointRetirementWith = jointAccountTypes
-    .filter((a) => isRetirementParent(a.parentCategory))
-    .reduce((s, a) => s + a.totalContrib, 0);
-  const jointRetirementWithout = jointAccountTypes
-    .filter((a) => isRetirementParent(a.parentCategory))
-    .reduce((s, a) => s + a.employeeContrib, 0);
-  const jointPortfolioWith = jointAccountTypes
-    .filter((a) => isPortfolioParent(a.parentCategory))
-    .reduce((s, a) => s + a.totalContrib, 0);
-  const jointPortfolioWithout = jointAccountTypes
-    .filter((a) => isPortfolioParent(a.parentCategory))
-    .reduce((s, a) => s + a.employeeContrib, 0);
-
-  // Household totals (view-mode-aware) — include joint accounts in all three buckets
-  const totalRetirementWith =
-    activePeople.reduce(
-      (s, p) => s + p.totals.views[viewMode].retirementWithMatch,
-      0,
-    ) + jointRetirementWith;
-  const totalRetirementWithout =
-    activePeople.reduce(
-      (s, p) => s + p.totals.views[viewMode].retirementWithoutMatch,
-      0,
-    ) + jointRetirementWithout;
-  const totalPortfolioWith =
-    activePeople.reduce(
-      (s, p) => s + p.totals.views[viewMode].portfolioWithMatch,
-      0,
-    ) + jointPortfolioWith;
-  const totalPortfolioWithout =
-    activePeople.reduce(
-      (s, p) => s + p.totals.views[viewMode].portfolioWithoutMatch,
-      0,
-    ) + jointPortfolioWithout;
-  const totalWith =
-    activePeople.reduce(
-      (s, p) => s + p.totals.views[viewMode].totalWithMatch,
-      0,
-    ) + jointTotals.totalWithMatch;
-  const totalWithout =
-    activePeople.reduce(
-      (s, p) => s + p.totals.views[viewMode].totalWithoutMatch,
-      0,
-    ) + jointTotals.totalWithoutMatch;
+  const savingsOf = (
+    source: {
+      people: typeof activePeople;
+      joint: typeof jointAccountTypes;
+    },
+    withoutMatch: boolean,
+  ) =>
+    householdSavings(source.people, source.joint, viewMode, {
+      excludeMatch: withoutMatch,
+    });
+  const current = { people: activePeople, joint: jointAccountTypes };
+  const savingsWith = savingsOf(current, false);
+  const savingsWithout = savingsOf(current, true);
+  const group = (sv: HouseholdSavings, g: SavingsGroup) =>
+    sv.groups.find((x) => x.group === g) ?? { total: 0, share: 0 };
+  const totalRetirementWith = group(savingsWith, "retirement").total;
+  const totalRetirementWithout = group(savingsWithout, "retirement").total;
+  const totalPortfolioWith = group(savingsWith, "portfolio").total;
+  const totalPortfolioWithout = group(savingsWithout, "portfolio").total;
+  const totalWith = savingsWith.total;
+  const totalWithout = savingsWithout.total;
   const totalEmployerMatch = totalWith - totalWithout;
 
   const pl = periodLabel(period);
@@ -228,14 +217,16 @@ export function ContributionsContent() {
             </select>
           )}
           <button
-            onClick={() => setMatchOverride(excludeMatch ? false : true)}
-            className={`rounded px-2 py-1 text-xs transition-colors ${
-              matchOverride !== null
-                ? "bg-blue-100 font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
-                : "text-muted hover:bg-surface-elevated"
-            }`}
+            onClick={toggleMatch}
+            className="text-muted hover:bg-surface-elevated rounded px-2 py-1 text-xs transition-colors"
           >
             {excludeMatch ? "Incl. match" : "Excl. match"}
+          </button>
+          <button
+            onClick={togglePortfolio}
+            className="text-muted hover:bg-surface-elevated rounded px-2 py-1 text-xs transition-colors"
+          >
+            {includePortfolio ? "Excl. portfolio" : "Incl. portfolio"}
           </button>
           <div className="bg-surface-elevated flex gap-1 rounded-full p-0.5">
             {(["annual", "monthly", "per-period"] as const).map((m) => (
@@ -276,41 +267,28 @@ export function ContributionsContent() {
       {/* Household summary — rates from server (single source of truth) */}
       <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
         {(() => {
-          // Total savings rate — totalWith/Without already include joint accounts,
-          // so this naturally captures the full household picture.
-          const hhRateWith = safeDivide(totalWith, combinedSalary, 0);
-          const hhRateWithout = safeDivide(totalWithout, combinedSalary, 0);
-          const retRateWith = safeDivide(
-            totalRetirementWith,
-            combinedSalary,
-            0,
-          );
-          const retRateWithout = safeDivide(
-            totalRetirementWithout,
-            combinedSalary,
-            0,
-          );
-          const portRateWith = safeDivide(
-            totalPortfolioWith,
-            combinedSalary,
-            0,
-          );
-          const portRateWithout = safeDivide(
-            totalPortfolioWithout,
-            combinedSalary,
-            0,
-          );
+          // Total counts Portfolio money only while the portfolio switch is on.
+          const counted = (sv: HouseholdSavings) =>
+            includePortfolio ? sv.total : group(sv, "retirement").total;
+          const share = (n: number) =>
+            safeDivide(n, savingsWith.compensation, 0);
+          const hhRateWith = share(counted(savingsWith));
+          const hhRateWithout = share(counted(savingsWithout));
+          const retRateWith = group(savingsWith, "retirement").share;
+          const retRateWithout = group(savingsWithout, "retirement").share;
+          const portRateWith = group(savingsWith, "portfolio").share;
+          const portRateWithout = group(savingsWithout, "portfolio").share;
           const isBlended = viewMode === "blended";
           const primary = excludeMatch ? "without" : "with";
           return (
             <>
               <SummaryCard
-                label={isBlended ? "Total Savings (Est.)" : "Total Savings"}
+                label={`${isBlended ? "Total Savings (Est.)" : "Total Savings"}${includePortfolio ? "" : " — retirement only"}`}
                 rate={primary === "without" ? hhRateWithout : hhRateWith}
                 rateAlt={primary === "without" ? hhRateWith : hhRateWithout}
                 altLabel={excludeMatch ? "w/ match" : "w/o match"}
                 amount={toDisplay(
-                  excludeMatch ? totalWithout : totalWith,
+                  counted(excludeMatch ? savingsWithout : savingsWith),
                   avgPeriodsPerYear,
                   period,
                 )}
@@ -342,6 +320,7 @@ export function ContributionsContent() {
                 )}
                 pl={pl}
                 color="bg-purple-500"
+                note={includePortfolio ? undefined : "Not counted in the total"}
               />
             </>
           );
@@ -705,10 +684,10 @@ export function ContributionsContent() {
                     <>
                       Savings rate:{" "}
                       {formatPercent(
-                        excludeMatch
-                          ? person.totals.views[viewMode]
-                              .savingsRateWithoutMatch
-                          : person.totals.views[viewMode].savingsRateWithMatch,
+                        householdSavings([person], [], viewMode, {
+                          excludeMatch,
+                          includePortfolio,
+                        }).rate,
                         1,
                       )}{" "}
                       ({excludeMatch ? "w/o match" : "w/ match"})
@@ -830,67 +809,34 @@ export function ContributionsContent() {
             </thead>
             <tbody>
               {(() => {
-                const profileJointAccountTypes =
-                  profileData.jointAccountTypes ?? [];
-                const totalKey = excludeMatch
-                  ? "totalWithoutMatch"
-                  : "totalWithMatch";
-                const retKey = excludeMatch
-                  ? "retirementWithoutMatch"
-                  : "retirementWithMatch";
-                const portKey = excludeMatch
-                  ? "portfolioWithoutMatch"
-                  : "portfolioWithMatch";
-                const profileJointTotal = excludeMatch
-                  ? (profileData.jointTotals?.totalWithoutMatch ?? 0)
-                  : (profileData.jointTotals?.totalWithMatch ?? 0);
-                const profileJointRetirement = profileJointAccountTypes
-                  .filter((a) => isRetirementParent(a.parentCategory))
-                  .reduce(
-                    (s, a) =>
-                      s + (excludeMatch ? a.employeeContrib : a.totalContrib),
-                    0,
-                  );
-                const profileJointPortfolio = profileJointAccountTypes
-                  .filter((a) => isPortfolioParent(a.parentCategory))
-                  .reduce(
-                    (s, a) =>
-                      s + (excludeMatch ? a.employeeContrib : a.totalContrib),
-                    0,
-                  );
+                const profile = savingsOf(
+                  {
+                    people: profileData.people.filter((p) => p.salary > 0),
+                    joint: profileData.jointAccountTypes ?? [],
+                  },
+                  excludeMatch,
+                );
                 return [
                   {
                     label: excludeMatch
                       ? "Total (w/o match)"
                       : "Total (w/ match)",
                     current: excludeMatch ? totalWithout : totalWith,
-                    profile:
-                      profileData.people.reduce(
-                        (s, p) => s + p.totals.views[viewMode][totalKey],
-                        0,
-                      ) + profileJointTotal,
+                    profile: profile.total,
                   },
                   {
                     label: "Retirement",
                     current: excludeMatch
                       ? totalRetirementWithout
                       : totalRetirementWith,
-                    profile:
-                      profileData.people.reduce(
-                        (s, p) => s + p.totals.views[viewMode][retKey],
-                        0,
-                      ) + profileJointRetirement,
+                    profile: group(profile, "retirement").total,
                   },
                   {
                     label: "Portfolio",
                     current: excludeMatch
                       ? totalPortfolioWithout
                       : totalPortfolioWith,
-                    profile:
-                      profileData.people.reduce(
-                        (s, p) => s + p.totals.views[viewMode][portKey],
-                        0,
-                      ) + profileJointPortfolio,
+                    profile: group(profile, "portfolio").total,
                   },
                 ];
               })().map((row) => {
@@ -935,6 +881,7 @@ function SummaryCard({
   amount,
   pl,
   color,
+  note,
 }: {
   label: string;
   rate: number;
@@ -943,6 +890,7 @@ function SummaryCard({
   amount: number;
   pl: string;
   color: string;
+  note?: string;
 }) {
   return (
     <Card>
@@ -966,6 +914,7 @@ function SummaryCard({
             style={{ width: `${Math.min(100, rate * 100)}%` }}
           />
         </div>
+        {note && <p className="text-faint text-xs">{note}</p>}
       </div>
     </Card>
   );

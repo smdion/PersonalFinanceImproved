@@ -19,6 +19,11 @@ vi.mock("@/lib/context/scenario-context", () => ({
 vi.mock("@/lib/hooks/use-salary-overrides", () => ({
   useActiveSalaries: () => [],
 }));
+vi.mock("@/lib/context/user-context", () => ({
+  useUser: () => ({ role: "viewer", name: "Test", permissions: [] }),
+  isAdmin: (u: { role: string }) => u.role === "admin",
+  hasPermission: () => true,
+}));
 vi.mock("@/lib/hooks/use-persisted-setting", () => ({
   usePersistedSetting: (_key: string, defaultValue: unknown) => [
     defaultValue,

@@ -6,6 +6,11 @@ vi.mock("@/components/ui/help-tip", () => ({
   HelpTip: () => null,
 }));
 
+vi.mock("@/lib/context/user-context", () => ({
+  useUser: () => ({ role: "viewer", name: "Test", permissions: [] }),
+  isAdmin: (u: { role: string }) => u.role === "admin",
+  hasPermission: () => true,
+}));
 vi.mock("@/lib/hooks/use-persisted-setting", () => ({
   usePersistedSetting: () => [null, vi.fn()],
 }));
@@ -212,6 +217,16 @@ describe("ContributionSnapshot", () => {
           employeeContrib: 2000,
           employerMatch: 0,
           totalContrib: 2000,
+          afterTaxContrib: 2000,
+          tradContrib: 0,
+          taxFreeContrib: 0,
+          hsaContrib: 0,
+          views: Object.fromEntries(
+            ["projected", "blended", "ytd"].map((v) => [
+              v,
+              { employeeContrib: 2000, employerMatch: 0, totalContrib: 2000 },
+            ]),
+          ),
         },
       ],
     });

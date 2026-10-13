@@ -23,6 +23,7 @@ import { useScenario } from "@/lib/context/scenario-context";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import { LoadingCard, ErrorCard } from "./utils";
 import { SavingsRateBreakdown } from "./savings-rate-breakdown";
+import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
 import { formatMonths } from "./mortgage-payoff";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
@@ -187,13 +188,19 @@ function FinancialCheckupCardImpl() {
       ? { budgetTierOverride: efundBudgetColumn }
       : undefined;
   const [fiCache] = useFICache();
-  const [matchOverride, setMatchOverride] = useState<boolean | null>(null);
-  const [includePortfolio, setIncludePortfolio] = useState(true);
   const savings = trpc.savings.computeSummary.useQuery(efundTierInput);
   const contribs = trpc.contribution.computeSummary.useQuery(contribInput);
   const mortgage = trpc.mortgage.computeActiveSummary.useQuery();
   const yearEndTargeting = useYearEndTargetingInput();
   const networth = trpc.networth.computeSummary.useQuery(yearEndTargeting);
+
+  const contribPeople = contribs.data?.people?.filter((d) => d.result) ?? [];
+  const highIncome = isHighIncomeHousehold(
+    householdTotalCompensation(contribPeople),
+    highIncomeThreshold,
+  );
+  const { excludeMatch, includePortfolio, toggleMatch, togglePortfolio } =
+    useSavingsRateOptions(highIncome);
 
   const isLoading =
     savings.isLoading ||
@@ -273,14 +280,6 @@ function FinancialCheckupCardImpl() {
   }
 
   // 4. Savings Rate — expands into what it's made of.
-  const contribPeople = contribs.data?.people?.filter((d) => d.result) ?? [];
-  const highIncome = isHighIncomeHousehold(
-    householdTotalCompensation(contribPeople),
-    highIncomeThreshold,
-  );
-  // Default: leave the match out for a high-income household; the
-  // breakdown's switch overrides it.
-  const excludeMatch = matchOverride ?? highIncome;
   const savingsBreakdown = householdSavings(
     contribPeople,
     contribs.data?.jointAccountTypes ?? [],
@@ -327,9 +326,9 @@ function FinancialCheckupCardImpl() {
         savings={savingsBreakdown}
         viewMode={viewMode}
         excludeMatch={excludeMatch}
-        onToggleMatch={() => setMatchOverride(!excludeMatch)}
+        onToggleMatch={toggleMatch}
         includePortfolio={includePortfolio}
-        onTogglePortfolio={() => setIncludePortfolio((v) => !v)}
+        onTogglePortfolio={togglePortfolio}
         highIncome={highIncome}
         highIncomeThreshold={highIncomeThreshold}
         targets={{ good: yellowThreshold, great: greenThreshold }}

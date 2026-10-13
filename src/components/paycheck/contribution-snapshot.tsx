@@ -21,13 +21,23 @@ import {
   type ContribPeriod,
 } from "@/components/ui/contrib-period-toggle";
 import { FundingBar } from "./funding-bar";
-import { OVER_LIMIT_THRESHOLD } from "@/lib/constants";
 import {
   categoriesWithIrsLimit,
   getAccountTypeConfig,
-  isRetirementParent,
-  isPortfolioParent,
 } from "@/lib/config/account-types";
+import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
+import {
+  DEFAULT_HIGH_INCOME_THRESHOLD,
+  OVER_LIMIT_THRESHOLD,
+} from "@/lib/constants";
+import { SK_HIGH_INCOME_THRESHOLD } from "@/lib/constants/settings-keys";
+import {
+  householdSavings,
+  householdTotalCompensation,
+  isHighIncomeHousehold,
+  type HouseholdSavings,
+  type SavingsGroup,
+} from "@/lib/pure/contributions";
 import type { AccountCategory } from "@/lib/config/account-types";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 
@@ -47,6 +57,16 @@ export function ContributionSnapshot() {
   const { data, isLoading, error } =
     trpc.contribution.computeSummary.useQuery(contribInput);
   const [contribPeriod, setContribPeriod] = useState<ContribPeriod>("annual");
+  const [highIncomeThreshold] = usePersistedSetting<number>(
+    SK_HIGH_INCOME_THRESHOLD,
+    DEFAULT_HIGH_INCOME_THRESHOLD,
+  );
+  const { excludeMatch, includePortfolio } = useSavingsRateOptions(
+    isHighIncomeHousehold(
+      householdTotalCompensation(data?.people?.filter((d) => d.result) ?? []),
+      highIncomeThreshold,
+    ),
+  );
 
   if (isLoading)
     return (
@@ -60,7 +80,7 @@ export function ContributionSnapshot() {
     );
   if (!data?.people?.length) return null;
 
-  const { people, jointAccountTypes = [], jointTotals } = data;
+  const { people, jointAccountTypes = [] } = data;
   const activePeople = people.filter((p) => p.accountTypes.length > 0);
   if (activePeople.length === 0 && jointAccountTypes.length === 0) return null;
 
@@ -82,56 +102,48 @@ export function ContributionSnapshot() {
       : 26;
   const householdMult = getContribMultiplier(contribPeriod, avgPeriodsPerYear);
 
-  // Household totals (apply multiplier) — include joint, non-overlapping groups by parentCategory
-  const jt = jointTotals ?? { totalWithoutMatch: 0, totalWithMatch: 0 };
-  const jointRetNoMatch = sumBy(
-    jointAccountTypes.filter((a) => isRetirementParent(a.parentCategory)),
-    (a) => a.employeeContrib,
-  );
-  const jointRetWithMatch = sumBy(
-    jointAccountTypes.filter((a) => isRetirementParent(a.parentCategory)),
-    (a) => a.totalContrib,
-  );
-  const jointPortNoMatch = sumBy(
-    jointAccountTypes.filter((a) => isPortfolioParent(a.parentCategory)),
-    (a) => a.employeeContrib,
-  );
-  const jointPortWithMatch = sumBy(
-    jointAccountTypes.filter((a) => isPortfolioParent(a.parentCategory)),
-    (a) => a.totalContrib,
-  );
-
-  // Household totals from server-computed view-mode values
-  const householdRetNoMatch =
-    (sumBy(
-      activePeople,
-      (p) => p.totals.views[viewMode].retirementWithoutMatch,
-    ) +
-      jointRetNoMatch) *
-    householdMult;
-  const householdRetWithMatch =
-    (sumBy(activePeople, (p) => p.totals.views[viewMode].retirementWithMatch) +
-      jointRetWithMatch) *
-    householdMult;
-  const householdPortNoMatch =
-    (sumBy(
-      activePeople,
-      (p) => p.totals.views[viewMode].portfolioWithoutMatch,
-    ) +
-      jointPortNoMatch) *
-    householdMult;
-  const householdPortWithMatch =
-    (sumBy(activePeople, (p) => p.totals.views[viewMode].portfolioWithMatch) +
-      jointPortWithMatch) *
-    householdMult;
-  const householdTotalNoMatch =
-    (sumBy(activePeople, (p) => p.totals.views[viewMode].totalWithoutMatch) +
-      jt.totalWithoutMatch) *
-    householdMult;
-  const householdTotalWithMatch =
-    (sumBy(activePeople, (p) => p.totals.views[viewMode].totalWithMatch) +
-      jt.totalWithMatch) *
-    householdMult;
+  // Household totals: the same calculation as every savings rate
+  // (householdSavings), with and without the match.
+  const savingsOf = (withoutMatch: boolean) =>
+    householdSavings(
+      people.filter((d) => d.result),
+      jointAccountTypes,
+      viewMode,
+      { excludeMatch: withoutMatch },
+    );
+  const savingsWith = savingsOf(false);
+  const savingsWithout = savingsOf(true);
+  const groupTotal = (sv: HouseholdSavings, g: SavingsGroup) =>
+    sv.groups.find((x) => x.group === g)?.total ?? 0;
+  const totals = [
+    {
+      key: "retirement",
+      label: "Retirement",
+      help: "Accounts with parentCategory 'Retirement': 401k, IRA, HSA, and retirement-tagged brokerage.",
+      without: groupTotal(savingsWithout, "retirement"),
+      with: groupTotal(savingsWith, "retirement"),
+    },
+    {
+      key: "portfolio",
+      label: "Brokerage",
+      help: "Non-retirement investment accounts: brokerage, ESPP, and other taxable accounts outside the retirement nest egg.",
+      without: groupTotal(savingsWithout, "portfolio"),
+      with: groupTotal(savingsWith, "portfolio"),
+    },
+    {
+      key: "total",
+      label: includePortfolio ? "Total Portfolio" : "Total (retirement only)",
+      help: includePortfolio
+        ? "All contributions combined: Retirement + Brokerage."
+        : "Retirement accounts only — Brokerage is switched off in the savings rate.",
+      without: includePortfolio
+        ? savingsWithout.total
+        : groupTotal(savingsWithout, "retirement"),
+      with: includePortfolio
+        ? savingsWith.total
+        : groupTotal(savingsWith, "retirement"),
+    },
+  ];
 
   const periodSuffix = getPeriodSuffix(contribPeriod);
 
@@ -406,12 +418,12 @@ export function ContributionSnapshot() {
                               at.views[viewMode].employeeContrib * mult,
                             )}
                           </span>
-                          {at.currentPctOfSalary !== null &&
-                            contribPeriod === "annual" && (
-                              <span className="text-faint ml-1 text-xs">
-                                ({Math.round(at.currentPctOfSalary)}%)
-                              </span>
-                            )}
+                          {at.currentPctOfSalary !== null && (
+                            <span className="text-faint ml-1 text-xs">
+                              ({Number(at.currentPctOfSalary.toFixed(1))}% of
+                              pay)
+                            </span>
+                          )}
                           {at.bonusContrib > 0 && (
                             <span
                               className="ml-0.5 text-xs text-amber-600"
@@ -659,48 +671,30 @@ export function ContributionSnapshot() {
         </p>
       )}
       <div className="grid grid-cols-1 gap-4 rounded-xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-blue-50 p-5 text-sm md:grid-cols-3">
-        <div>
-          <p className="text-faint mb-1 text-xs tracking-wide uppercase">
-            Retirement
-            <HelpTip text="Accounts with parentCategory 'Retirement': 401k, IRA, HSA, and retirement-tagged brokerage." />
-          </p>
-          <div className="flex items-baseline gap-2">
-            <span className="text-primary text-lg font-bold">
-              {formatCurrency(householdRetNoMatch)}
-            </span>
-            <span className="text-muted">
-              {formatCurrency(householdRetWithMatch)} w/ match
-            </span>
-          </div>
-        </div>
-        <div>
-          <p className="text-faint mb-1 text-xs tracking-wide uppercase">
-            Brokerage
-            <HelpTip text="Non-retirement investment accounts: brokerage, ESPP, and other taxable accounts outside the retirement nest egg." />
-          </p>
-          <div className="flex items-baseline gap-2">
-            <span className="text-primary text-lg font-bold">
-              {formatCurrency(householdPortNoMatch)}
-            </span>
-            <span className="text-muted">
-              {formatCurrency(householdPortWithMatch)} w/ match
-            </span>
-          </div>
-        </div>
-        <div>
-          <p className="text-faint mb-1 text-xs tracking-wide uppercase">
-            Total Portfolio
-            <HelpTip text="All contributions combined: Retirement + Brokerage." />
-          </p>
-          <div className="flex items-baseline gap-2">
-            <span className="text-primary text-lg font-bold">
-              {formatCurrency(householdTotalNoMatch)}
-            </span>
-            <span className="text-muted">
-              {formatCurrency(householdTotalWithMatch)} w/ match
-            </span>
-          </div>
-        </div>
+        {totals.map((t) => {
+          const [main, alt] = excludeMatch
+            ? [t.without, t.with]
+            : [t.with, t.without];
+          return (
+            <div key={t.key}>
+              <p className="text-faint mb-1 text-xs tracking-wide uppercase">
+                {t.label}
+                <HelpTip text={t.help} />
+              </p>
+              <div className="flex items-baseline gap-2">
+                <span className="text-primary text-lg font-bold">
+                  {formatCurrency(main * householdMult)}
+                </span>
+                {alt !== main && (
+                  <span className="text-muted">
+                    {formatCurrency(alt * householdMult)}{" "}
+                    {excludeMatch ? "w/ match" : "w/o match"}
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

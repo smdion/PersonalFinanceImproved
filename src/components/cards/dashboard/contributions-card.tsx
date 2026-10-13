@@ -28,9 +28,18 @@ import {
 import {
   getAllCategories,
   getAccountTypeConfig,
-  isRetirementParent,
-  isPortfolioParent,
 } from "@/lib/config/account-types";
+import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
+import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
+import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
+import { SK_HIGH_INCOME_THRESHOLD } from "@/lib/constants/settings-keys";
+import {
+  householdSavings,
+  householdTotalCompensation,
+  isHighIncomeHousehold,
+  type HouseholdSavings,
+  type SavingsGroup,
+} from "@/lib/pure/contributions";
 import type { AccountCategory } from "@/lib/config/account-types";
 import { PaceStatusText } from "./pace-status";
 import { LoadingCard, ErrorCard } from "./utils";
@@ -143,6 +152,16 @@ function ContributionsCardImpl() {
     ) : null;
   };
   const [contribPeriod, setContribPeriod] = useState<ContribPeriod>("annual");
+  const [highIncomeThreshold] = usePersistedSetting<number>(
+    SK_HIGH_INCOME_THRESHOLD,
+    DEFAULT_HIGH_INCOME_THRESHOLD,
+  );
+  const { excludeMatch, includePortfolio } = useSavingsRateOptions(
+    isHighIncomeHousehold(
+      householdTotalCompensation(data?.people?.filter((d) => d.result) ?? []),
+      highIncomeThreshold,
+    ),
+  );
   if (isLoading) return <LoadingCard title="Contributions" />;
   if (error)
     return <ErrorCard title="Contributions" message="Failed to load" />;
@@ -150,51 +169,45 @@ function ContributionsCardImpl() {
   const people = data?.people?.filter((d) => d.accountTypes.length > 0) ?? [];
 
   const jointAts = data?.jointAccountTypes ?? [];
-  // Retirement vs portfolio vs total (from tRPC response, plus joint) — non-overlapping by parentCategory
-  const jointRetirement = jointAts.filter((a) =>
-    isRetirementParent(a.parentCategory),
-  );
-  const jointPortfolio = jointAts.filter((a) =>
-    isPortfolioParent(a.parentCategory),
-  );
-  // Joint rows carry their own per-view figures (live YTD / Year-End).
-  const jointRetNoMatch = sumBy(
-    jointRetirement,
-    (a) => a.views[viewMode].employeeContrib,
-  );
-  const jointRetWithMatch = sumBy(
-    jointRetirement,
-    (a) => a.views[viewMode].totalContrib,
-  );
-  const jointPortNoMatch = sumBy(
-    jointPortfolio,
-    (a) => a.views[viewMode].employeeContrib,
-  );
-  const jointPortWithMatch = sumBy(
-    jointPortfolio,
-    (a) => a.views[viewMode].totalContrib,
-  );
-  // Household totals from server-computed view-aware data
-  const householdRetNoMatch =
-    sumBy(people, (p) => p.totals.views[viewMode].retirementWithoutMatch) +
-    jointRetNoMatch;
-  const householdRetWithMatch =
-    sumBy(people, (p) => p.totals.views[viewMode].retirementWithMatch) +
-    jointRetWithMatch;
-  const householdPortNoMatch =
-    sumBy(people, (p) => p.totals.views[viewMode].portfolioWithoutMatch) +
-    jointPortNoMatch;
-  const householdPortWithMatch =
-    sumBy(people, (p) => p.totals.views[viewMode].portfolioWithMatch) +
-    jointPortWithMatch;
-  const householdTotalNoMatch =
-    sumBy(people, (p) => p.totals.views[viewMode].totalWithoutMatch) +
-    jointRetNoMatch +
-    jointPortNoMatch;
-  const householdTotalWithMatch =
-    sumBy(people, (p) => p.totals.views[viewMode].totalWithMatch) +
-    jointRetWithMatch +
-    jointPortWithMatch;
+  // Footer totals: the same calculation as every savings rate
+  // (householdSavings), with and without the match.
+  const savingsOf = (withoutMatch: boolean) =>
+    householdSavings(
+      data?.people?.filter((d) => d.result) ?? [],
+      jointAts,
+      viewMode,
+      { excludeMatch: withoutMatch },
+    );
+  const savingsWith = savingsOf(false);
+  const savingsWithout = savingsOf(true);
+  const groupTotal = (sv: HouseholdSavings, g: SavingsGroup) =>
+    sv.groups.find((x) => x.group === g)?.total ?? 0;
+  const footer = [
+    {
+      key: "retirement",
+      label: PERF_CATEGORY_RETIREMENT,
+      without: groupTotal(savingsWithout, "retirement"),
+      with: groupTotal(savingsWith, "retirement"),
+    },
+    {
+      key: "portfolio",
+      label: PERF_CATEGORY_BROKERAGE,
+      without: groupTotal(savingsWithout, "portfolio"),
+      with: groupTotal(savingsWith, "portfolio"),
+    },
+    {
+      key: "total",
+      label: `Total${includePortfolio ? "" : " (retirement only)"}${
+        viewMode === "ytd" ? " (YTD)" : viewMode === "blended" ? " (Est.)" : ""
+      }`,
+      without: includePortfolio
+        ? savingsWithout.total
+        : groupTotal(savingsWithout, "retirement"),
+      with: includePortfolio
+        ? savingsWith.total
+        : groupTotal(savingsWith, "retirement"),
+    },
+  ];
 
   // Use average periodsPerYear for household-level multiplier
   const avgPeriodsPerYear =
@@ -260,12 +273,12 @@ function ContributionsCardImpl() {
                               at.views[viewMode].employeeContrib * mult,
                             )}
                           </span>
-                          {at.currentPctOfSalary !== null &&
-                            contribPeriod === "annual" && (
-                              <span className="text-faint text-caption ml-1">
-                                ({Math.round(at.currentPctOfSalary)}%)
-                              </span>
-                            )}
+                          {at.currentPctOfSalary !== null && (
+                            <span className="text-faint text-caption ml-1">
+                              ({Number(at.currentPctOfSalary.toFixed(1))}% of
+                              pay)
+                            </span>
+                          )}
                         </div>
                       </div>
 
@@ -599,59 +612,29 @@ function ContributionsCardImpl() {
       </div>
       <div className="border-subtle mt-3 space-y-2 border-t pt-3">
         <div className="grid grid-cols-3 gap-3">
-          <div>
-            <p className="text-caption text-faint mb-0.5 tracking-wide uppercase">
-              {PERF_CATEGORY_RETIREMENT}
-            </p>
-            <div className="text-xs">
-              <span className="text-primary font-semibold">
-                {formatCurrency(householdRetNoMatch * householdMult)}
-              </span>
-              {householdRetWithMatch > householdRetNoMatch && (
-                <span className="text-muted block">
-                  {formatCurrency(householdRetWithMatch * householdMult)} w/
-                  match
-                </span>
-              )}
-            </div>
-          </div>
-          <div>
-            <p className="text-caption text-faint mb-0.5 tracking-wide uppercase">
-              {PERF_CATEGORY_BROKERAGE}
-            </p>
-            <div className="text-xs">
-              <span className="text-primary font-semibold">
-                {formatCurrency(householdPortNoMatch * householdMult)}
-              </span>
-              {householdPortWithMatch > householdPortNoMatch && (
-                <span className="text-muted block">
-                  {formatCurrency(householdPortWithMatch * householdMult)} w/
-                  match
-                </span>
-              )}
-            </div>
-          </div>
-          <div>
-            <p className="text-caption text-faint mb-0.5 tracking-wide uppercase">
-              Total Portfolio
-              {viewMode === "ytd"
-                ? " (YTD)"
-                : viewMode === "blended"
-                  ? " (Est.)"
-                  : ""}
-            </p>
-            <div className="text-xs">
-              <span className="text-primary font-semibold">
-                {formatCurrency(householdTotalNoMatch * householdMult)}
-              </span>
-              {householdTotalWithMatch > householdTotalNoMatch && (
-                <span className="text-muted block">
-                  {formatCurrency(householdTotalWithMatch * householdMult)} w/
-                  match
-                </span>
-              )}
-            </div>
-          </div>
+          {footer.map((f) => {
+            const [main, alt] = excludeMatch
+              ? [f.without, f.with]
+              : [f.with, f.without];
+            return (
+              <div key={f.key}>
+                <p className="text-caption text-faint mb-0.5 tracking-wide uppercase">
+                  {f.label}
+                </p>
+                <div className="text-xs">
+                  <span className="text-primary font-semibold">
+                    {formatCurrency(main * householdMult)}
+                  </span>
+                  {alt !== main && (
+                    <span className="text-muted block">
+                      {formatCurrency(alt * householdMult)}{" "}
+                      {excludeMatch ? "w/ match" : "w/o match"}
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
         {pace && pace.total.saved > 0 && (
           <p className="text-caption text-muted flex flex-wrap items-center justify-between gap-x-2">
