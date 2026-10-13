@@ -22,6 +22,9 @@ This release is about making Ledgr's many numbers easier to act on. No database 
 - **Keep data current** — stale snapshots, performance, basis and failed syncs now appear as recommendations too.
 - **Quick search** — press Cmd/Ctrl-K to jump to any page by name or by what's on it ("HSA limit", "FI").
 - **A plain-words summary** at the top of the Contributions page: your savings rate, the dollars behind it, and the next step.
+- **Current glide path** (Benchmarks → Your mix vs your target) — your own target mix by age for what you hold today, separate from the retirement simulation's glide path, so the real portfolio can be held more conservatively on purpose. Your mix, rebalancing and recommendations compare against it once set.
+- **Glide path chart** on Benchmarks: your target mix by age, with Vanguard's target-date stock share (shifted to your retirement age) to compare against.
+- **Rebalancing says what to move**, in dollars: "Move about $X out of US Equities — $Y into US Bonds, $Z into TIPS", bringing every asset class back to target once any is outside its band.
 
 ### Changed
 
@@ -31,6 +34,9 @@ This release is about making Ledgr's many numbers easier to act on. No database 
 - **Projected FI year** grows your FI number with inflation and counts cash, so it's no longer early; the Net Worth page reads it straight from the projection.
 - **Savings rates** are shown and judged to whole percents — 24.9% shows (and counts) as 25%.
 - **A joint family HSA** now shows its IRS limit on the Contributions page and card.
+- **Your mix, costs and rebalancing count only SimpleFIN accounts linked to a Ledgr account**, so a duplicate or old connection no longer counts the same money twice; unlinked ones are listed as not counted.
+- **Small asset classes** (a 1–2% cash target) are no longer flagged for being a fraction of a point off.
+- **TIPS are purple** instead of lime in mixes and charts, easier to tell from bonds and cash for colorblind readers.
 
 ---
 
