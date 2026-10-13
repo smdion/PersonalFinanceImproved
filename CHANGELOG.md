@@ -8,6 +8,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.8
 
+## [0.8.6] - 2026-10-13
+
+Includes a database update that runs automatically on start; Ledgr saves a backup of your data first. Restoring a backup from an older version still works (pending-rollover rows from older backups are left out — that feature no longer exists).
+
+### Added
+
+- **Include-portfolio switch for the savings rate**, next to include-match. Both switches are now shared: flip either one anywhere and every savings rate and contribution total follows — Financial Checkup, the Contributions page and card, the Paycheck contribution snapshot, the Retirement card and the projection's Rate column. Admins' choice is saved for the household; viewers' stays in their browser.
+- **Household time zone** (Settings → General → Household). The server now works out "today" — year-end snapshots, paycheck and budget dates, daily syncs — in your household's time zone instead of UTC, so dates near midnight land on the right day. An admin's browser fills it in on first visit.
+- **Contributions from bonus check** — one switch in the Salary Profile replaces the two that said the same thing ("401(k) on bonus" and "Bonus counts toward contributions").
+
+### Changed
+
+- **Contribution figures agree everywhere.** The paycheck, the Contributions page and card, the Retirement card and the retirement projection now use one rule for money taken from bonus checks, and one savings-rate calculation. Rates show one decimal everywhere.
+- **The employer match follows bonus-check contributions** everywhere, the paycheck included.
+- **A pinned bonus** (bonus override on a Salary Profile) now applies to every figure for this year — contributions, the match and the savings rate — not just the paycheck. Projections still grow the formula bonus.
+- **Per-account percentages show your payroll election** ("15% of pay") instead of dollars divided by salary.
+- **The Retirement card and the Retirement page's Rate column count Retirement accounts only**, matching the Retirement page's balances and the Contributions page's Retirement total.
+- **The Contributions page's Year-End and YTD figures** count joint accounts for the selected view and compare year-to-date money with pay earned so far.
+
+### Removed
+
+- The pending-rollover tracker on the Performance page (nothing has created rollovers since the ESPP calculator was removed in 0.8.5), and server endpoints no screen used.
+
+### Fixed
+
+- **Bonus 401(k) money was counted twice** on the Contributions page and card when both bonus switches were on.
+- **Projections for two-earner households** applied contribution rates to total pay, bonus included, regardless of the bonus setting; fixed-annual contributions were projected at twelve times their amount.
+- **Deleting a savings goal hid its sub-goals.** They now become top-level goals, and the database protects the link again (it was lost in the 0.8 upgrade).
+- **Editing a loan or extra payment** didn't refresh the payoff line, Debt Payoff or the net-worth mortgage balance until reload.
+- **The savings add-transaction and transfer forms** could submit a different fund than the one shown when the fund list changed while the form was open.
+- **The Year-End estimate** could count a bonus check that had already been paid twice.
+
+---
+
 ## [0.8.5] - 2026-10-12
 
 Includes a database update that runs automatically on start; Ledgr saves a backup of your data first. Restoring a backup from an older version still works.
