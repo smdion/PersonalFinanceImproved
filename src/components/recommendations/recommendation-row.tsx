@@ -22,10 +22,13 @@ const URGENCY = {
 export function RecommendationRow({
   recommendation: r,
   actions,
+  detail,
 }: {
   recommendation: Recommendation;
   /** Extra controls (dismiss / snooze / restore). */
   actions?: ReactNode;
+  /** An extra line under the context (e.g. why it was dismissed). */
+  detail?: ReactNode;
 }) {
   const sourceLabel =
     r.source === "ledgr" ? "Ledgr" : MILESTONE_SOURCE_LABELS[r.source];
@@ -43,6 +46,7 @@ export function RecommendationRow({
         <div className="text-micro text-faint">
           {r.title} · {maskAmountsInText(r.context)} · {sourceLabel}
         </div>
+        {detail}
       </div>
       {r.impact && (
         <span className="text-secondary text-sm whitespace-nowrap">

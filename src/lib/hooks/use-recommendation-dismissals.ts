@@ -45,12 +45,19 @@ export function useRecommendationDismissals() {
     today,
     canEdit,
     isPending: save.isPending,
-    dismiss: (r: Recommendation) =>
-      write(r.id, { until: null, urgency: r.urgency }),
-    snooze: (r: Recommendation) =>
+    dismiss: (r: Recommendation, note: string) =>
+      write(r.id, {
+        until: null,
+        urgency: r.urgency,
+        on: today,
+        ...(note.trim() ? { note: note.trim() } : {}),
+      }),
+    snooze: (r: Recommendation, note: string) =>
       write(r.id, {
         until: snoozeUntil(today, SNOOZE_MONTHS),
         urgency: r.urgency,
+        on: today,
+        ...(note.trim() ? { note: note.trim() } : {}),
       }),
     restore: (r: Recommendation) => write(r.id, null),
   };

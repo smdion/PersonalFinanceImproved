@@ -26,6 +26,13 @@ export const dismissalsSchema = z.record(
       .nullable(),
     /** The urgency when dismissed. */
     urgency: z.enum(["now", "soon"]),
+    /** Why — the household's own note. */
+    note: z.string().trim().max(280).optional(),
+    /** When it was dismissed or snoozed (YYYY-MM-DD). */
+    on: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
   }),
 );
 export type Dismissals = z.infer<typeof dismissalsSchema>;

@@ -8,6 +8,8 @@ import { LoadingCard, ErrorCard } from "@/components/cards/dashboard/utils";
 import { useRecommendations } from "@/lib/hooks/use-recommendations";
 import { RECOMMENDATION_AREAS } from "@/lib/config/recommendations";
 import { RecommendationRow } from "@/components/recommendations/recommendation-row";
+import { DismissControls } from "@/components/recommendations/dismiss-controls";
+import { formatDate } from "@/lib/utils/format";
 import { useRecommendationDismissals } from "@/lib/hooks/use-recommendation-dismissals";
 import type { Recommendation } from "@/lib/pure/recommendations";
 
@@ -20,38 +22,40 @@ export function RecommendationsContent() {
   /** Dismiss/snooze controls — admins only (household-wide setting). */
   const actionsFor = (r: Recommendation) =>
     dismissals.canEdit ? (
-      <span className="text-caption flex gap-1.5 whitespace-nowrap">
-        <button
-          type="button"
-          className="text-muted hover:text-primary"
-          disabled={dismissals.isPending}
-          onClick={() => dismissals.snooze(r)}
-          title="Hide for 3 months"
-        >
-          Snooze
-        </button>
-        <button
-          type="button"
-          className="text-muted hover:text-primary"
-          disabled={dismissals.isPending}
-          onClick={() => dismissals.dismiss(r)}
-          title="Hide unless it becomes urgent"
-        >
-          Dismiss
-        </button>
-      </span>
+      <DismissControls
+        disabled={dismissals.isPending}
+        onSnooze={(note) => dismissals.snooze(r, note)}
+        onDismiss={(note) => dismissals.dismiss(r, note)}
+      />
     ) : undefined;
   const dismissedList =
     dismissed.length > 0 ? (
-      <details>
-        <summary className="text-muted cursor-pointer text-xs">
-          Dismissed or snoozed ({dismissed.length})
-        </summary>
-        <Card className="mt-2">
-          {dismissed.map((r) => (
+      <Card
+        title={`Dismissed or snoozed (${dismissed.length})`}
+        subtitle="Hidden from the list above — back if one becomes urgent or a snooze ends."
+      >
+        {dismissed.map((r) => {
+          const d = dismissals.dismissals[r.id];
+          const when = d
+            ? [
+                d.until
+                  ? `Snoozed until ${formatDate(d.until, "medium")}`
+                  : "Dismissed",
+                d.on ? `on ${formatDate(d.on, "medium")}` : null,
+              ]
+                .filter(Boolean)
+                .join(" ")
+            : null;
+          return (
             <RecommendationRow
               key={r.id}
               recommendation={r}
+              detail={
+                <div className="text-micro text-secondary mt-0.5">
+                  {when}
+                  {d?.note ? ` — “${d.note}”` : ""}
+                </div>
+              }
               actions={
                 dismissals.canEdit ? (
                   <button
@@ -65,9 +69,9 @@ export function RecommendationsContent() {
                 ) : undefined
               }
             />
-          ))}
-        </Card>
-      </details>
+          );
+        })}
+      </Card>
     ) : null;
   const header = (
     <PageHeader

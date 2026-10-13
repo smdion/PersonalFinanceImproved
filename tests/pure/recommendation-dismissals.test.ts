@@ -66,6 +66,33 @@ describe("recommendation dismissals", () => {
     ).toEqual({ x: { until: "2027-01-13", urgency: "soon" } });
   });
 
+  it("keeps the household's note and date; older entries without them still read", () => {
+    expect(
+      parseDismissals({
+        a: {
+          until: null,
+          urgency: "soon",
+          note: "  Keeping bonds high on purpose  ",
+          on: "2026-10-13",
+        },
+        b: { until: "2027-01-13", urgency: "soon" },
+      }),
+    ).toEqual({
+      a: {
+        until: null,
+        urgency: "soon",
+        note: "Keeping bonds high on purpose",
+        on: "2026-10-13",
+      },
+      b: { until: "2027-01-13", urgency: "soon" },
+    });
+    expect(
+      parseDismissals({
+        a: { until: null, urgency: "soon", note: "x".repeat(281) },
+      }),
+    ).toEqual({});
+  });
+
   it("snoozes by calendar months and reads bad data as none", () => {
     expect(snoozeUntil("2026-10-13", 3)).toBe("2027-01-13");
     expect(parseDismissals({ a: { until: "soon", urgency: "now" } })).toEqual(
