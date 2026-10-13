@@ -529,17 +529,22 @@ describe("saving, safety and home", () => {
 });
 
 describe("investing (Bogleheads)", () => {
+  const holdingsInput = (
+    classes: { name: string; share: number; targetShare: number | null }[],
+    extra: { knownValue?: number; unlinkedValue?: number } = {},
+  ) => ({
+    coverage: 0.95,
+    knownValue: extra.knownValue ?? 100_000,
+    unlinkedValue: extra.unlinkedValue ?? 0,
+    classes,
+    expenseRatio: 0.0005,
+    costCoverage: 0.9,
+    funds: [],
+  });
   const holdings = (
     classes: { name: string; share: number; targetShare: number | null }[],
-  ) =>
-    run({
-      holdings: {
-        coverage: 0.95,
-        classes,
-        expenseRatio: 0.0005,
-        costCoverage: 0.9,
-      },
-    });
+    extra: { knownValue?: number; unlinkedValue?: number } = {},
+  ) => run({ holdings: holdingsInput(classes, extra) });
 
   it("5/25 bands: 5 points absolute or 25% of the target", () => {
     const inBand = holdings([
@@ -547,6 +552,7 @@ describe("investing (Bogleheads)", () => {
       { name: "Bonds", share: 0.38, targetShare: 0.4 },
     ]);
     expect(byId(inBand, "rebalance").status).toBe("reached");
+    // Bonds 5 pts under a 15% target (> 25% of it); Cash 3 pts over 10%.
     const off = holdings([
       { name: "US stocks", share: 0.77, targetShare: 0.75 },
       { name: "Bonds", share: 0.1, targetShare: 0.15 },
@@ -554,18 +560,96 @@ describe("investing (Bogleheads)", () => {
     ]);
     const r = byId(off, "rebalance");
     expect(r.status).toBe("behind");
-    expect(r.nextStep).toBe("Bonds 5.0 pts under · Cash 3.0 pts over");
+    expect(r.headline).toBe(
+      "2 classes outside the band: Bonds 5.0 pts under · Cash 3.0 pts over",
+    );
+  });
+
+  it("says what to move, in this household's dollars", () => {
+    // A $1M household, 10 pts heavy in stocks, short on two bond classes.
+    const r = byId(
+      holdings(
+        [
+          { name: "Stocks", share: 0.7, targetShare: 0.6 },
+          { name: "Bonds", share: 0.24, targetShare: 0.3 },
+          { name: "TIPS", share: 0.06, targetShare: 0.1 },
+        ],
+        { knownValue: 1_000_000 },
+      ),
+      "rebalance",
+    );
+    expect(r.nextStep).toBe(
+      "Move about $100k out of Stocks — $60k into Bonds, $40k into TIPS",
+    );
+    expect(r.impact).toEqual({ kind: "oneTime", amount: 100_000 });
+    // The same mix in a $50k household scales with it.
+    const small = byId(
+      holdings(
+        [
+          { name: "Stocks", share: 0.7, targetShare: 0.6 },
+          { name: "Bonds", share: 0.3, targetShare: 0.4 },
+        ],
+        { knownValue: 50_000 },
+      ),
+      "rebalance",
+    );
+    expect(small.nextStep).toBe(
+      "Move about $5k out of Stocks — $5k into Bonds",
+    );
+  });
+
+  it("once triggered, every class goes back to its target", () => {
+    // Stocks trip the band; TIPS (4% target, 4 pts under) and Cash don't on
+    // their own, but the rebalance brings them back too. Tiny gaps are left.
+    const r = byId(
+      holdings(
+        [
+          { name: "Stocks", share: 0.7, targetShare: 0.6 },
+          { name: "Bonds", share: 0.244, targetShare: 0.3 },
+          { name: "TIPS", share: 0, targetShare: 0.04 },
+          { name: "Cash", share: 0.056, targetShare: 0.058 },
+        ],
+        { knownValue: 1_000_000 },
+      ),
+      "rebalance",
+    );
+    expect(r.headline).toBe(
+      "2 classes outside the band: Stocks 10.0 pts over · Bonds 5.6 pts under",
+    );
+    expect(r.nextStep).toBe(
+      "Move about $100k out of Stocks — $56k into Bonds, $40k into TIPS",
+    );
+  });
+
+  it("a small target is judged on the 5-point band alone", () => {
+    // 0.4 pts over a 1.4% cash target is >25% of it, but under 5 points.
+    const r = byId(
+      holdings([
+        { name: "Stocks", share: 0.6, targetShare: 0.6 },
+        { name: "Bonds", share: 0.386, targetShare: 0.386 },
+        { name: "Cash", share: 0.018, targetShare: 0.014 },
+      ]),
+      "rebalance",
+    );
+    expect(r.status).toBe("reached");
+  });
+
+  it("says when holdings aren't linked to an asset class", () => {
+    const r = byId(
+      holdings([{ name: "Stocks", share: 0.6, targetShare: 0.6 }], {
+        unlinkedValue: 16_000,
+      }),
+      "rebalance",
+    );
+    expect(r.note).toBe(
+      "$16,000.00 of holdings aren't linked to an asset class and aren't counted — link them on Benchmarks",
+    );
   });
 
   it("low cost at or under 0.20%", () => {
     expect(byId(holdings([]), "lowCost").status).toBe("reached");
     const pricey = run({
-      holdings: {
-        coverage: 0.9,
-        classes: [],
-        expenseRatio: 0.006,
-        costCoverage: 0.9,
-      },
+      holdings: { ...holdingsInput([]), expenseRatio: 0.006 },
     });
     expect(byId(pricey, "lowCost").status).toBe("behind");
   });
@@ -573,9 +657,8 @@ describe("investing (Bogleheads)", () => {
   it("needs enough linked holdings", () => {
     const thin = run({
       holdings: {
+        ...holdingsInput([{ name: "US", share: 1, targetShare: 0.6 }]),
         coverage: 0.5,
-        classes: [{ name: "US", share: 1, targetShare: 0.6 }],
-        expenseRatio: 0.001,
         costCoverage: 0.5,
       },
     });
@@ -922,6 +1005,8 @@ describe("input builders", () => {
       }),
     ).toEqual({
       coverage: 0.8,
+      knownValue: 80,
+      unlinkedValue: 0,
       classes: [
         { name: "US", share: 0.75, targetShare: 0.7 },
         { name: "Bonds", share: 0.25, targetShare: null },

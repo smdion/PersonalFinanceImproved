@@ -66,6 +66,7 @@ import {
 } from "@/lib/config/display-labels";
 import type { CompositionBucket } from "@/lib/config/enum-values";
 import {
+  compactCurrency,
   formatCurrency,
   formatNumber,
   formatPercent,
@@ -265,6 +266,10 @@ export type MilestoneInput = {
   holdings: {
     /** Share of the portfolio whose asset class is known. */
     coverage: number;
+    /** Dollars whose mix is known — the shares' denominator. */
+    knownValue: number;
+    /** Dollars in fund categories not linked to any asset class. */
+    unlinkedValue: number;
     classes: { name: string; share: number; targetShare: number | null }[];
     expenseRatio: number | null;
     /** Share of the portfolio with a known expense ratio. */
@@ -1344,24 +1349,61 @@ function investing(input: MilestoneInput): MilestoneResult[] {
       const gap = Math.abs(c.share - c.targetShare!);
       return (
         gap > REBALANCE_BANDS.absolute ||
-        gap > REBALANCE_BANDS.relative * c.targetShare!
+        (c.targetShare! >= REBALANCE_BANDS.relativeMinTarget &&
+          gap > REBALANCE_BANDS.relative * c.targetShare!)
       );
     });
+    // The bands decide when; the targets decide what: once any class is
+    // outside its band, every class moves back to its target (Bogleheads
+    // rebalance to the target mix, not just the class that tripped).
+    const dollars = (c: (typeof targeted)[number]) =>
+      Math.abs(c.share - c.targetShare!) * h.knownValue;
+    const moves = off.length
+      ? targeted.filter(
+          (c) => Math.abs(c.share - c.targetShare!) >= REBALANCE_BANDS.minMove,
+        )
+      : [];
+    const over = moves
+      .filter((c) => c.share > c.targetShare!)
+      .sort((a, b) => dollars(b) - dollars(a));
+    const under = moves
+      .filter((c) => c.share < c.targetShare!)
+      .sort((a, b) => dollars(b) - dollars(a));
+    const list = (cs: typeof targeted) =>
+      cs.map((c) => `${compactCurrency(dollars(c))} into ${c.name}`).join(", ");
+    const names = (cs: typeof targeted) => cs.map((c) => c.name).join(" and ");
+    const overTotal = over.reduce((s, c) => s + dollars(c), 0);
+    const underTotal = under.reduce((s, c) => s + dollars(c), 0);
+    const action =
+      over.length && under.length
+        ? `Move about ${compactCurrency(overTotal)} out of ${names(over)} — ${list(under)}`
+        : over.length
+          ? `Move about ${compactCurrency(overTotal)} out of ${names(over)} into what's under target`
+          : under.length
+            ? `Add about ${compactCurrency(underTotal)} — ${list(under)}`
+            : null;
+    const gaps = off
+      .map((c) => {
+        const gap = c.share - c.targetShare!;
+        return `${c.name} ${formatNumber(Math.abs(gap) * 100, 1)} pts ${gap > 0 ? "over" : "under"}`;
+      })
+      .join(" · ");
     out.push(
       result("rebalance", {
         status: off.length === 0 ? "reached" : "behind",
         headline:
           off.length === 0
             ? "Every class within its band"
-            : `${off.length} class${off.length === 1 ? "" : "es"} outside the band`,
-        nextStep: off.length
-          ? off
-              .map((c) => {
-                const gap = c.share - c.targetShare!;
-                return `${c.name} ${formatNumber(Math.abs(gap) * 100, 1)} pts ${gap > 0 ? "over" : "under"}`;
-              })
-              .join(" · ")
-          : null,
+            : `${off.length} class${off.length === 1 ? "" : "es"} outside the band: ${gaps}`,
+        note:
+          h.unlinkedValue > 0
+            ? `${formatCurrency(h.unlinkedValue)} of holdings aren't linked to an asset class and aren't counted — link them on Benchmarks`
+            : null,
+        nextStep: action,
+        impact:
+          action !== null
+            ? { kind: "oneTime", amount: Math.max(overTotal, underTotal) }
+            : null,
       }),
     );
   }
@@ -1883,6 +1925,7 @@ export function milestoneHoldings(overview: {
     total: number;
     unknown: number;
     rows: { name: string; value: number; targetPct: number | null }[];
+    unmapped?: { value: number }[];
   };
   cost: { expenseRatio: number | null; coveredShare: number };
   accounts?: {
@@ -1923,6 +1966,11 @@ export function milestoneHoldings(overview: {
     }
   return {
     coverage: safeDivide(known, total, 0),
+    knownValue: known,
+    unlinkedValue: (overview.allocation.unmapped ?? []).reduce(
+      (sum, u) => sum + u.value,
+      0,
+    ),
     classes: rows.map((r) => ({
       name: r.name,
       share: safeDivide(r.value, known, 0),

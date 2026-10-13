@@ -206,7 +206,17 @@ export const PROTECTION_CHECKLIST_AGE = 40;
 
 /** Bogleheads 5/25 rebalancing bands: rebalance when an asset class is off
  *  its target by more than 5 percentage points or 25% of the target. */
-export const REBALANCE_BANDS = { absolute: 0.05, relative: 0.25 };
+export const REBALANCE_BANDS = {
+  absolute: 0.05,
+  relative: 0.25,
+  /** The 25%-of-target band only for classes targeted at least this much —
+   *  for a small class (a 1–2% cash target) 25% of it is a fraction of a
+   *  point, so those are judged on the 5-point band alone. */
+  relativeMinTarget: 0.05,
+  /** Once a band is breached, every class goes back to its target; gaps
+   *  smaller than this aren't worth a trade. */
+  minMove: 0.005,
+};
 
 /** A blended expense ratio at or below this counts as low cost. */
 export const LOW_COST_EXPENSE_RATIO = 0.002;
@@ -507,8 +517,8 @@ export const MILESTONES = [
     id: "rebalance",
     group: "investing",
     source: "bogleheads",
-    title: "On target (5/25 bands)",
-    rule: "Each asset class within 5 points, or 25% of its target, of where you want it.",
+    title: "Rebalancing (5/25 bands)",
+    rule: "Each asset class within 5 points, or 25% of its target, of where you want it (the 25% band only for classes targeted at 5% or more).",
     adaptedNote:
       "“Age in bonds” is the Bogleheads' classic starting point for the bond share; your own glide path sets the targets here.",
     href: "/benchmarks",
