@@ -69,21 +69,6 @@ function hrefMatches(href: string, pathname: string): boolean {
 export const navStructure: NavEntry[] = [
   { href: "/", label: "Dashboard", Icon: LayoutDashboard },
   {
-    // Answers — how you're doing and what to do next.
-    label: "Insights",
-    Icon: Lightbulb,
-    items: [
-      {
-        href: "/recommendations",
-        label: "Recommendations",
-        Icon: ListChecks,
-      },
-      { href: "/milestones", label: "Milestones", Icon: Award },
-      { href: "/benchmarks", label: "Benchmarks", Icon: PieChart },
-      { href: "/contributions", label: "Contributions", Icon: Layers },
-    ],
-  },
-  {
     label: "Cash Flow",
     Icon: ArrowLeftRight,
     items: [
@@ -136,6 +121,21 @@ export const navStructure: NavEntry[] = [
         label: "Budget Scenarios",
         Icon: FlaskConical,
       },
+    ],
+  },
+  {
+    // Answers — how you're doing and what to do next.
+    label: "Insights",
+    Icon: Lightbulb,
+    items: [
+      {
+        href: "/recommendations",
+        label: "Recommendations",
+        Icon: ListChecks,
+      },
+      { href: "/milestones", label: "Milestones", Icon: Award },
+      { href: "/benchmarks", label: "Benchmarks", Icon: PieChart },
+      { href: "/contributions", label: "Contributions", Icon: Layers },
     ],
   },
   {
