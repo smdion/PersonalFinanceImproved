@@ -36,7 +36,7 @@ This release is about making Ledgr's many numbers easier to act on. No database 
 - **A joint family HSA** now shows its IRS limit on the Contributions page and card.
 - **Your mix, costs and rebalancing count only SimpleFIN accounts linked to a Ledgr account**, so a duplicate or old connection no longer counts the same money twice; unlinked ones are listed as not counted.
 - **Small asset classes** (a 1–2% cash target) are no longer flagged for being a fraction of a point off.
-- **TIPS are purple** instead of lime in mixes and charts, easier to tell from bonds and cash for colorblind readers.
+- **TIPS are purple and international bonds rose** in mixes and charts (were lime and teal), so neither is mistaken for US bonds or cash — including by colorblind readers.
 
 ---
 
