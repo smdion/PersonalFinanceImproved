@@ -26,6 +26,29 @@ vi.mock("@/lib/budget-api", () => ({
   cacheGet: vi.fn().mockResolvedValue(null),
 }));
 
+// The simulation runs in-process with a handful of trials instead of on the
+// worker thread at full size. These tests check the routers and the
+// projection cache, not the simulation's statistics (calculators/
+// monte-carlo* and the worker client have their own tests), and a full-size
+// run here cost minutes. The real engine still runs, so results are real;
+// `mcRuns` counts runs so cache tests can prove a hit doesn't recompute.
+const mcRuns = vi.hoisted(() => ({ count: 0 }));
+vi.mock("@/server/helpers/monte-carlo-worker-client", async () => {
+  const { calculateMonteCarlo } = await import("@/lib/calculators/monte-carlo");
+  return {
+    runMonteCarloOffThread: async (
+      input: Parameters<typeof calculateMonteCarlo>[0],
+    ) => {
+      mcRuns.count++;
+      return calculateMonteCarlo({
+        ...input,
+        numTrials: Math.min(input.numTrials, 25),
+      });
+    },
+    getMonteCarloProgress: () => null,
+  };
+});
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -1115,9 +1138,13 @@ describe("projection router — computeStrategyComparison cache", () => {
       seedGlidePath(db);
 
       const first = await caller.projection.computeStrategyComparison();
+      const runsAfterFirst = mcRuns.count;
       const second = await caller.projection.computeStrategyComparison();
 
       expect(second).toEqual(first);
+      // The hit ran no simulation at all.
+      expect(runsAfterFirst).toBeGreaterThan(0);
+      expect(mcRuns.count).toBe(runsAfterFirst);
       const rows = db.select().from(schema.projectionCache).all();
       expect(rows).toHaveLength(1);
     } finally {
@@ -1150,8 +1177,6 @@ describe("projection router — computeStrategyComparison cache", () => {
     }
   }, 30000);
 
-  // Same reason as the two tests above — computeStrategyComparison runs
-  // for real, twice, in this one test.
   it("forceRefresh bypasses an existing cache hit and recomputes", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
@@ -1164,6 +1189,7 @@ describe("projection router — computeStrategyComparison cache", () => {
       const before = db.select().from(schema.projectionCache).all();
       expect(before).toHaveLength(1);
       const computedAtBefore = before[0]!.computedAt;
+      const runsBefore = mcRuns.count;
 
       await caller.projection.computeStrategyComparison({
         forceRefresh: true,
@@ -1174,6 +1200,8 @@ describe("projection router — computeStrategyComparison cache", () => {
       expect(after[0]!.computedAt.getTime()).toBeGreaterThanOrEqual(
         computedAtBefore.getTime(),
       );
+      // It actually recomputed (the timestamp alone can't prove that).
+      expect(mcRuns.count).toBeGreaterThan(runsBefore);
     } finally {
       cleanup();
     }
@@ -2019,9 +2047,12 @@ describe("projection router — computeCoastFireMC cache", () => {
       seedDefaultMcPreset(db);
 
       const first = await caller.projection.computeCoastFireMC({});
+      const runsAfterFirst = mcRuns.count;
       const second = await caller.projection.computeCoastFireMC({});
 
       expect(second.result).toEqual(first.result);
+      expect(runsAfterFirst).toBeGreaterThan(0);
+      expect(mcRuns.count).toBe(runsAfterFirst);
       const rows = db.select().from(schema.projectionCache).all();
       expect(rows).toHaveLength(1);
     } finally {
@@ -2029,10 +2060,6 @@ describe("projection router — computeCoastFireMC cache", () => {
     }
   });
 
-  // computeCoastFireMC runs a real binary search (multiple MC probes) for
-  // real, twice, by design (cache hit forced to miss). Marginal against
-  // the default 10s timeout under CI's coverage instrumentation — see the
-  // identical note on computeStrategyComparison's cache-miss test above.
   it("forceRefresh bypasses an existing cache hit and re-searches", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
@@ -2045,6 +2072,7 @@ describe("projection router — computeCoastFireMC cache", () => {
       const before = db.select().from(schema.projectionCache).all();
       expect(before).toHaveLength(1);
       const computedAtBefore = before[0]!.computedAt;
+      const runsBefore = mcRuns.count;
 
       await caller.projection.computeCoastFireMC({ forceRefresh: true });
 
@@ -2053,6 +2081,7 @@ describe("projection router — computeCoastFireMC cache", () => {
       expect(after[0]!.computedAt.getTime()).toBeGreaterThanOrEqual(
         computedAtBefore.getTime(),
       );
+      expect(mcRuns.count).toBeGreaterThan(runsBefore);
     } finally {
       cleanup();
     }
@@ -2066,12 +2095,14 @@ describe("projection router — computeCoastFireMC cache", () => {
       seedCorrelations(db);
       seedDefaultMcPreset(db);
 
+      const runsBefore = mcRuns.count;
       const response = await caller.projection.computeCoastFireMC({
         peekOnly: true,
       });
 
       expect(response.result).toBeNull();
       expect(response.computedAt).toBeNull();
+      expect(mcRuns.count).toBe(runsBefore);
       const rows = db.select().from(schema.projectionCache).all();
       expect(rows).toHaveLength(0);
     } finally {
@@ -2088,12 +2119,14 @@ describe("projection router — computeCoastFireMC cache", () => {
       seedDefaultMcPreset(db);
 
       const real = await caller.projection.computeCoastFireMC({});
+      const runsAfterReal = mcRuns.count;
       const peeked = await caller.projection.computeCoastFireMC({
         peekOnly: true,
       });
 
       expect(peeked.result).toEqual(real.result);
       expect(peeked.computedAt).not.toBeNull();
+      expect(mcRuns.count).toBe(runsAfterReal);
       const rows = db.select().from(schema.projectionCache).all();
       expect(rows).toHaveLength(1);
     } finally {
