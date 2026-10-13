@@ -296,6 +296,8 @@ export const MILESTONES = [
     source: "moneyGuy",
     title: "5 · Roth IRA & HSA",
     rule: "Fill the IRA and HSA to their IRS limits.",
+    adaptedNote:
+      "Money Guy: skip it without a high-deductible health plan (no HSA) or a way to fund a Roth IRA.",
     href: "/paycheck",
   },
   {
@@ -303,7 +305,9 @@ export const MILESTONES = [
     group: "foo",
     source: "moneyGuy",
     title: "6 · Max out retirement",
-    rule: "Fill the 401k/403b to its IRS limit.",
+    rule: "Fill the 401k/403b to its IRS limit — or, below a high income, reach a 25% investing rate first.",
+    adaptedNote:
+      "Money Guy: if you don't have a high income and hit 25% before maxing out your employer accounts, move on. High earners max the plans and keep going (Ledgr uses your high-income threshold).",
     href: "/paycheck",
   },
   {

@@ -189,6 +189,8 @@ export type MilestoneInput = {
     savedWithMatch: number;
     compensation: number;
     matchCounted: boolean;
+    /** At or above the household's high-income threshold. */
+    highIncome: boolean;
   } | null;
   match: { captured: number; available: number } | null;
   limits: MilestoneLimit[] | null;
@@ -883,12 +885,14 @@ function limitStep(
   }
   const rows = input.limits.filter((l) => l.step === step && l.limit > 0);
   if (rows.length === 0) {
+    // Money Guy: skip step 5 without an HSA-eligible plan or a way into a
+    // Roth IRA — Ledgr can't see eligibility, so it can't call this behind.
     return step === 5
       ? result(id, {
-          status: "behind",
+          status: "unknown",
           headline: "No IRA or HSA set up",
           nextStep:
-            "Open a Roth IRA (a backdoor Roth works above the income limit)",
+            "Open a Roth IRA if you can (a backdoor Roth works above the income limit); the HSA needs a high-deductible health plan",
         })
       : result(id, { status: "unknown", headline: "No workplace plan set up" });
   }
@@ -900,6 +904,25 @@ function limitStep(
   const open = rows.filter(
     (r) => r.contributed < r.limit * LIMIT_FILLED_TOLERANCE,
   );
+  // Money Guy's step 6: below a high income, reaching a 25% investing rate
+  // before the employer plans are maxed also completes the step.
+  const s = input.savings;
+  const twentyFiveFirst =
+    step === 6 &&
+    open.length > 0 &&
+    s !== null &&
+    !s.highIncome &&
+    s.rate >= MONEY_GUY_SAVINGS_RATE;
+  if (twentyFiveFirst) {
+    return result(id, {
+      status: "reached",
+      value: { kind: "currency", amount: contributed },
+      target: { kind: "currency", amount: limit },
+      progress: 1,
+      headline: `Investing ${formatPercent(s.rate, 1)} before maxing out`,
+      note: `${formatCurrency(contributed)} of ${formatCurrency(limit)} a year in employer plans`,
+    });
+  }
   return result(id, {
     status: open.length === 0 ? "reached" : "behind",
     value: { kind: "currency", amount: contributed },
@@ -1657,6 +1680,7 @@ export function buildMilestoneInput(raw: {
       savedWithMatch: withMatch.total,
       compensation: counted.compensation,
       matchCounted: !highIncome,
+      highIncome,
     };
     const accounts = [
       ...people.flatMap((p) => p.accountTypes),

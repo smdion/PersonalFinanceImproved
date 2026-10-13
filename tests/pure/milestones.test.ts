@@ -160,6 +160,7 @@ describe("wealth journey", () => {
         savedWithMatch: 38_000,
         compensation: 150_000,
         matchCounted: true,
+        highIncome: false,
       },
     });
     // 2025: 240k × 8% = 19.2k < 38k; now: 300k × 8% = 24k < 38k.
@@ -292,6 +293,28 @@ describe("Financial Order of Operations", () => {
     expect(currentFooStep(results)).toBe(6);
   });
 
+  it("step 6: a 25% investing rate before maxing out completes it below a high income", () => {
+    const savings = {
+      rate: 0.26,
+      saved: 39_000,
+      savedWithMatch: 44_000,
+      compensation: 150_000,
+      matchCounted: true,
+      highIncome: false,
+    };
+    const r = byId(run({ savings }), "foo6");
+    expect(r.status).toBe("reached");
+    expect(r.headline).toBe("Investing 26.0% before maxing out");
+    // High earners still max the employer plans.
+    const high = byId(
+      run({ savings: { ...savings, matchCounted: false, highIncome: true } }),
+      "foo6",
+    );
+    expect(high.status).toBe("behind");
+    // Under 25% the limit is the test.
+    expect(byId(run(), "foo6").status).toBe("behind");
+  });
+
   it("flags match left on the table", () => {
     const r = byId(
       run({ match: { captured: 2_000, available: 3_000 } }),
@@ -318,9 +341,10 @@ describe("Financial Order of Operations", () => {
     expect(r.headline).toBe("$2,400.00 of other debt");
   });
 
-  it("asks for a Roth IRA when step 5 has no accounts", () => {
+  it("can't judge step 5 without accounts (eligibility is invisible)", () => {
     const r = byId(run({ limits: [] }), "foo5");
-    expect(r.status).toBe("behind");
+    expect(r.status).toBe("unknown");
+    expect(r.nextStep).toContain("Roth IRA");
     expect(byId(run({ limits: [] }), "foo6").status).toBe("unknown");
   });
 
@@ -340,6 +364,7 @@ describe("Financial Order of Operations", () => {
         savedWithMatch: 50_000,
         compensation: 150_000,
         matchCounted: true,
+        highIncome: false,
       },
     }).map((r) => (r.id === "foo5" ? { ...r, status: "reached" as const } : r));
     expect(currentFooStep(results)).toBeNull();
@@ -823,6 +848,7 @@ describe("input builders", () => {
       savedWithMatch: 20_000,
       compensation: 100_000,
       matchCounted: true,
+      highIncome: false,
     });
     expect(below.match).toEqual({ captured: 5_000, available: 7_500 });
     expect(below.mortgage).toEqual({
@@ -831,6 +857,10 @@ describe("input builders", () => {
       payoffYear: 2043,
     });
     const above = buildMilestoneInput({ ...base, highIncomeThreshold: 90_000 });
-    expect(above.savings).toMatchObject({ rate: 0.15, matchCounted: false });
+    expect(above.savings).toMatchObject({
+      rate: 0.15,
+      matchCounted: false,
+      highIncome: true,
+    });
   });
 });

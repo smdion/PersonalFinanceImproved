@@ -88,6 +88,7 @@ export function makeInput(
       savedWithMatch: 38_000,
       compensation: 150_000,
       matchCounted: true,
+      highIncome: false,
     },
     match: { captured: 5_000, available: 5_000 },
     limits: [
