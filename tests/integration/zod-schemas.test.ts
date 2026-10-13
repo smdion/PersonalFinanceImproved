@@ -2,10 +2,11 @@
  * Integration tests for Zod input schemas used by tRPC routers.
  *
  * These tests import the actual Zod schemas and verify they correctly
- * validate/reject inputs — no database or server required.
+ * validate/reject inputs — no database or server required. Router-inline
+ * input schemas are tested through the router (tests/routers/*), never by
+ * re-declaring a copy here.
  */
 import { describe, it, expect } from "vitest";
-import { z } from "zod/v4";
 import {
   columnLabelsSchema,
   columnMonthsSchema,
@@ -22,93 +23,6 @@ import {
   accountMappingSchema,
   relocationScenarioParamsSchema,
 } from "@/lib/db/json-schemas";
-
-// ── Budget Item Creation Schemas ──────────────────────────────────
-
-describe("budget createItem input schema", () => {
-  // Reproduce the schema from the budget router
-  const createItemSchema = z.object({
-    category: z.string().trim().min(1),
-    subcategory: z.string().trim().min(1),
-    isEssential: z.boolean().default(true),
-  });
-
-  it("accepts valid input", () => {
-    const result = createItemSchema.safeParse({
-      category: "Housing",
-      subcategory: "Rent",
-      isEssential: false,
-    });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.category).toBe("Housing");
-      expect(result.data.subcategory).toBe("Rent");
-      expect(result.data.isEssential).toBe(false);
-    }
-  });
-
-  it("trims whitespace from category and subcategory", () => {
-    const result = createItemSchema.safeParse({
-      category: "  Housing  ",
-      subcategory: "  Rent  ",
-    });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.category).toBe("Housing");
-      expect(result.data.subcategory).toBe("Rent");
-    }
-  });
-
-  it("defaults isEssential to true when omitted", () => {
-    const result = createItemSchema.safeParse({
-      category: "Food",
-      subcategory: "Groceries",
-    });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.isEssential).toBe(true);
-    }
-  });
-
-  it("rejects empty category", () => {
-    const result = createItemSchema.safeParse({
-      category: "",
-      subcategory: "Rent",
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it("rejects whitespace-only category", () => {
-    const result = createItemSchema.safeParse({
-      category: "   ",
-      subcategory: "Rent",
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it("rejects empty subcategory", () => {
-    const result = createItemSchema.safeParse({
-      category: "Housing",
-      subcategory: "",
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it("rejects missing category field", () => {
-    const result = createItemSchema.safeParse({
-      subcategory: "Rent",
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it("rejects non-string category", () => {
-    const result = createItemSchema.safeParse({
-      category: 123,
-      subcategory: "Rent",
-    });
-    expect(result.success).toBe(false);
-  });
-});
 
 // ── Column Labels Schema ──────────────────────────────────────────
 
