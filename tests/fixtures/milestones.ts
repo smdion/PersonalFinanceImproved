@@ -136,6 +136,9 @@ export function makeInput(
     checklist: {},
     customGoals: [],
     checkpointSource: "moneyGuy",
+    savingsTargetSource: "moneyGuy",
+    megaBackdoor: null,
+    brokerageGoals: null,
     ...overrides,
   };
 }

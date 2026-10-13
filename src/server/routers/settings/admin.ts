@@ -13,11 +13,13 @@ import {
   SK_MILESTONE_CHECKLIST,
   SK_MILESTONE_CHECKPOINT_SOURCE,
   SK_MILESTONE_CUSTOM_GOALS,
+  SK_MILESTONE_SAVINGS_TARGET_SOURCE,
 } from "@/lib/constants/settings-keys";
 import {
   checkpointSourceSchema,
   customGoalsSchema,
   milestoneChecklistSchema,
+  savingsTargetSourceSchema,
 } from "@/lib/pure/milestones";
 import {
   applyHouseholdTimeZone,
@@ -49,6 +51,7 @@ const STRUCTURED_SETTINGS: Record<string, z.ZodType> = {
   [SK_MILESTONE_CUSTOM_GOALS]: customGoalsSchema,
   [SK_MILESTONE_CHECKLIST]: milestoneChecklistSchema,
   [SK_MILESTONE_CHECKPOINT_SOURCE]: checkpointSourceSchema,
+  [SK_MILESTONE_SAVINGS_TARGET_SOURCE]: savingsTargetSourceSchema,
 };
 
 // --- Procedures ---

@@ -7,6 +7,7 @@ import {
   incomeMultipleTarget,
   inflateTarget,
   milestoneHoldings,
+  megaBackdoorRoom,
   meetsMoneyGuyRate,
   meetsRateTarget,
   milestoneLimits,
@@ -632,6 +633,7 @@ describe("custom goals", () => {
       customGoals: [goal],
       checklist: { will: true },
       checkpointSource: "moneyGuy",
+      savingsTargetSource: "moneyGuy",
     });
     expect(
       parseMilestoneSettings({
@@ -652,13 +654,19 @@ describe("custom goals", () => {
         customGoals: [{ ...goal, target: -1 }],
         checklist: { nope: true },
       }),
-    ).toEqual({ customGoals: [], checklist: {}, checkpointSource: "moneyGuy" });
+    ).toEqual({
+      customGoals: [],
+      checklist: {},
+      checkpointSource: "moneyGuy",
+      savingsTargetSource: "moneyGuy",
+    });
     expect(
       parseMilestoneSettings({ customGoals: null, checklist: null }),
     ).toEqual({
       customGoals: [],
       checklist: {},
       checkpointSource: "moneyGuy",
+      savingsTargetSource: "moneyGuy",
     });
     expect(
       parseMilestoneSettings({ customGoals: [goal, goal], checklist: {} })
@@ -920,6 +928,7 @@ describe("input builders", () => {
       ],
       expenseRatio: 0.001,
       costCoverage: 0.9,
+      funds: [],
     });
   });
 
@@ -1019,5 +1028,242 @@ describe("input builders", () => {
       matchCounted: false,
       highIncome: true,
     });
+  });
+});
+
+describe("r/personalfinance", () => {
+  it("the household picks one savings rule; 15% counts Retirement money only", () => {
+    const savings = makeSavings({ rate: 0.29, retirementRate: 0.149 });
+    const mg = run({ savings }).map((r) => r.id);
+    expect(mg).toContain("savingsRate");
+    expect(mg).not.toContain("pfRetirementRate");
+    const results = run({ savings, savingsTargetSource: "personalFinance" });
+    expect(results.map((r) => r.id)).not.toContain("savingsRate");
+    const r = byId(results, "pfRetirementRate");
+    expect(r.status).toBe("reached"); // 14.9% rounds to 15%
+    expect(r.note).toContain("20% is the upper end");
+    // FOO step 7 stays Money Guy's.
+    expect(byId(results, "foo7").status).toBe("reached");
+    expect(
+      byId(
+        run({
+          savings: makeSavings({ retirementRate: 0.12 }),
+          savingsTargetSource: "personalFinance",
+        }),
+        "pfRetirementRate",
+      ).status,
+    ).toBe("behind");
+  });
+
+  it("mega backdoor room: total-additions limit less deferrals (no catch-up) and match", () => {
+    const limits = {
+      "401k_employee_limit": 24_500,
+      "401k_total_additions_limit": 72_000,
+    };
+    expect(
+      megaBackdoorRoom(
+        [
+          {
+            name: "Pat",
+            compensation: 150_000,
+            accountTypes: [
+              {
+                categoryKey: "401k",
+                employeeContrib: 20_000,
+                employerMatch: 5_000,
+              },
+              { categoryKey: "ira", employeeContrib: 7_500, employerMatch: 0 },
+            ],
+          },
+          {
+            // 50+: 32,500 deferred, but catch-up doesn't count toward 415(c).
+            name: "Sam",
+            compensation: 200_000,
+            accountTypes: [
+              {
+                categoryKey: "401k",
+                employeeContrib: 32_500,
+                employerMatch: 6_000,
+              },
+            ],
+          },
+          {
+            name: "Lee",
+            compensation: 90_000,
+            accountTypes: [
+              { categoryKey: "ira", employeeContrib: 7_500, employerMatch: 0 },
+            ],
+          },
+          {
+            // Part-time: 415(c) caps at 100% of pay.
+            name: "Kim",
+            compensation: 30_000,
+            accountTypes: [
+              {
+                categoryKey: "401k",
+                employeeContrib: 10_000,
+                employerMatch: 1_000,
+              },
+            ],
+          },
+        ],
+        limits,
+      ),
+    ).toEqual([
+      { owner: "Pat", room: 47_000, limit: 72_000 },
+      { owner: "Sam", room: 41_500, limit: 72_000 },
+      { owner: "Kim", room: 19_000, limit: 30_000 },
+    ]);
+    expect(
+      megaBackdoorRoom(
+        [
+          {
+            name: "Pat",
+            compensation: 100_000,
+            accountTypes: [
+              { categoryKey: "401k", employeeContrib: 1, employerMatch: 0 },
+            ],
+          },
+        ],
+        {},
+      ),
+    ).toEqual([]);
+    const r = byId(
+      run({ megaBackdoor: [{ owner: "Pat", room: 47_000, limit: 72_000 }] }),
+      "megaBackdoor",
+    );
+    expect(r.status).toBe("unknown");
+    expect(r.headline).toBe("Up to $47,000.00 a year of after-tax room");
+  });
+
+  it("near-term brokerage goals belong out of stocks", () => {
+    const at = (goals: { name: string; targetYear: number }[]) =>
+      byId(run({ brokerageGoals: goals }), "goalHorizon");
+    expect(at([]).status).toBe("unknown");
+    expect(at([{ name: "Car", targetYear: 2028 }])).toMatchObject({
+      status: "behind",
+      nextStep: "Move toward savings, CDs or I bonds: Car (2028)",
+    });
+    expect(at([{ name: "Roof", targetYear: 2030 }]).status).toBe("onTrack");
+    expect(at([{ name: "Cabin", targetYear: 2040 }]).status).toBe("reached");
+  });
+
+  it("judges each fund against its category's bar", () => {
+    const holdings = milestoneHoldings({
+      allocation: { total: 100, unknown: 0, rows: [] },
+      cost: { expenseRatio: 0.001, coveredShare: 1 },
+      accounts: [
+        {
+          holdings: [
+            {
+              securityId: 1,
+              name: "Total US",
+              symbol: "AAA",
+              facts: {
+                expenseRatio: { value: 0.0003 },
+                composition: {
+                  buckets: {
+                    us_equity: 0.99,
+                    intl_equity: 0,
+                    us_bond: 0,
+                    intl_bond: 0,
+                    tips: 0,
+                    cash: 0.01,
+                    other: 0,
+                  },
+                },
+              },
+            },
+            {
+              securityId: 2,
+              name: "Pricey US",
+              symbol: "BBB",
+              facts: {
+                expenseRatio: { value: 0.0044 },
+                composition: {
+                  buckets: {
+                    us_equity: 0.95,
+                    intl_equity: 0,
+                    us_bond: 0,
+                    intl_bond: 0,
+                    tips: 0,
+                    cash: 0.05,
+                    other: 0,
+                  },
+                },
+              },
+            },
+            {
+              // A balanced fund has no main category: not judged.
+              securityId: 3,
+              name: "Balanced",
+              symbol: "CCC",
+              facts: {
+                expenseRatio: { value: 0.005 },
+                composition: {
+                  buckets: {
+                    us_equity: 0.5,
+                    intl_equity: 0,
+                    us_bond: 0.5,
+                    intl_bond: 0,
+                    tips: 0,
+                    cash: 0,
+                    other: 0,
+                  },
+                },
+              },
+            },
+          ],
+        },
+        // The same fund in a second account counts once.
+        {
+          holdings: [
+            {
+              securityId: 1,
+              name: "Total US",
+              symbol: "AAA",
+              facts: {
+                expenseRatio: { value: 0.0003 },
+                composition: {
+                  buckets: {
+                    us_equity: 1,
+                    intl_equity: 0,
+                    us_bond: 0,
+                    intl_bond: 0,
+                    tips: 0,
+                    cash: 0,
+                    other: 0,
+                  },
+                },
+              },
+            },
+          ],
+        },
+      ],
+    });
+    expect(holdings?.funds).toHaveLength(2);
+    const r = byId(run({ holdings }), "fundCosts");
+    expect(r).toMatchObject({
+      status: "behind",
+      headline: "1 of 2 funds over the bar",
+      nextStep: "BBB 0.44% (US stocks: under 0.10%)",
+    });
+  });
+
+  it("parses the savings rule setting", () => {
+    expect(
+      parseMilestoneSettings({
+        customGoals: [],
+        checklist: {},
+        savingsTargetSource: "personalFinance",
+      }).savingsTargetSource,
+    ).toBe("personalFinance");
+    expect(
+      parseMilestoneSettings({
+        customGoals: [],
+        checklist: {},
+        savingsTargetSource: "nope",
+      }).savingsTargetSource,
+    ).toBe("moneyGuy");
   });
 });

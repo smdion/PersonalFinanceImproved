@@ -37,7 +37,8 @@ export function useContributionSummaryInput() {
 
 export function useMilestones({
   withHoldings = false,
-}: { withHoldings?: boolean } = {}): {
+  withBrokerageGoals = false,
+}: { withHoldings?: boolean; withBrokerageGoals?: boolean } = {}): {
   isLoading: boolean;
   /** Expected dates are still coming (the projection is computing). */
   projectionLoading: boolean;
@@ -68,6 +69,9 @@ export function useMilestones({
   const projection = useDashboardProjection();
   const holdings = trpc.investments.getHoldingsOverview.useQuery(undefined, {
     enabled: withHoldings,
+  });
+  const brokerageGoals = trpc.brokerage.listGoals.useQuery(undefined, {
+    enabled: withBrokerageGoals,
   });
 
   // The projection and holdings only add expected dates and the investing
@@ -102,6 +106,12 @@ export function useMilestones({
         }
       : null,
     holdings: withHoldings ? (holdings.data ?? null) : null,
+    brokerageGoals: !withBrokerageGoals
+      ? null
+      : (brokerageGoals.data?.map((g) => ({
+          name: g.name,
+          targetYear: g.targetYear,
+        })) ?? null),
   });
   return {
     isLoading,

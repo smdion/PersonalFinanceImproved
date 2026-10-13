@@ -76,6 +76,9 @@ export const SK_MILESTONE_CUSTOM_GOALS = "milestone_custom_goals";
 export const SK_MILESTONE_CHECKLIST = "milestone_checklist";
 /** "moneyGuy" | "fidelity" — which income-multiple checkpoints to follow. */
 export const SK_MILESTONE_CHECKPOINT_SOURCE = "milestone_checkpoint_source";
+/** "moneyGuy" | "personalFinance" — which savings-rate rule to follow. */
+export const SK_MILESTONE_SAVINGS_TARGET_SOURCE =
+  "milestone_savings_target_source";
 
 // ── Settings Page ───────────────────────────────────────────────────
 export const SK_SETTINGS_ACTIVE_TAB = "settings_active_tab";

@@ -9,10 +9,16 @@
  */
 
 export type MilestoneSource =
-  "moneyGuy" | "bogleheads" | "fidelity" | "millionaireNextDoor" | "custom";
+  | "moneyGuy"
+  | "personalFinance"
+  | "bogleheads"
+  | "fidelity"
+  | "millionaireNextDoor"
+  | "custom";
 
 export const MILESTONE_SOURCE_LABELS: Record<MilestoneSource, string> = {
   moneyGuy: "Money Guy",
+  personalFinance: "r/personalfinance",
   bogleheads: "Bogleheads",
   fidelity: "Fidelity",
   millionaireNextDoor: "Millionaire Next Door",
@@ -135,6 +141,40 @@ export const CHECKPOINT_SOURCES = {
 } as const;
 export type CheckpointSource = keyof typeof CHECKPOINT_SOURCES;
 export const DEFAULT_CHECKPOINT_SOURCE: CheckpointSource = "moneyGuy";
+
+/** The savings-rate rule the household follows — Money Guy's 25% of gross
+ *  (retirement and brokerage) or r/personalfinance's 15% (up to 20%) of
+ *  pre-tax income into retirement accounts. One is shown. */
+export const SAVINGS_TARGET_SOURCES = {
+  moneyGuy: { label: "Money Guy 25%", milestoneId: "savingsRate" },
+  personalFinance: {
+    label: "r/personalfinance 15%",
+    milestoneId: "pfRetirementRate",
+  },
+} as const;
+export type SavingsTargetSource = keyof typeof SAVINGS_TARGET_SOURCES;
+export const DEFAULT_SAVINGS_TARGET_SOURCE: SavingsTargetSource = "moneyGuy";
+
+/** r/personalfinance: save at least 15%, up to 20%, of pre-tax income for
+ *  retirement before other goals. */
+export const PF_RETIREMENT_RATE = { min: 0.15, upper: 0.2 };
+
+/** r/personalfinance: money for goals sooner than 3–5 years belongs in
+ *  savings, CDs or I bonds — not stocks. */
+export const GOAL_HORIZON_YEARS = { cash: 3, conservative: 5 };
+
+/** r/personalfinance's bar for good index funds (their test for whether an
+ *  employer plan beats an IRA): domestic stock under 0.1%, international
+ *  stock under 0.2%, bonds under 0.1%. */
+export const PF_FUND_EXPENSE_RATIO = {
+  us_equity: 0.001,
+  intl_equity: 0.002,
+  us_bond: 0.001,
+  intl_bond: 0.001,
+  tips: 0.001,
+} as const;
+/** A fund's main category: the bucket holding at least this share. */
+export const FUND_MAIN_BUCKET_SHARE = 0.6;
 
 /** Money Guy's hyperaccumulation savings rate (of gross pay). */
 export const MONEY_GUY_SAVINGS_RATE = 0.25;
@@ -393,6 +433,34 @@ export const MILESTONES = [
       "Money set aside for a specific future cost (college, the next car) is step 8, not part of the 25%. Starting later needs more: 6% from age 20, 10% from 25, 17% from 30, about 25% from 35.",
     href: "/contributions",
   },
+  {
+    id: "pfRetirementRate",
+    group: "saving",
+    source: "personalFinance",
+    title: "15% for retirement",
+    rule: "Save at least 15%, up to 20%, of pre-tax income for retirement — the Retirement category — before saving for other goals.",
+    adaptedNote:
+      "If you're behind on retirement savings, save more than 15%; if you can't reach it yet, start with 10%.",
+    href: "/contributions",
+  },
+  {
+    id: "megaBackdoor",
+    group: "saving",
+    source: "personalFinance",
+    title: "Mega backdoor Roth room",
+    rule: "After the 401k is full, some plans take after-tax contributions up to the IRS total-additions limit (employee + employer + after-tax), converted to Roth.",
+    adaptedNote:
+      "Only if your plan allows after-tax contributions and in-plan Roth conversions or in-service withdrawals — ask HR. Catch-up contributions don't count toward the limit.",
+    href: "/paycheck",
+  },
+  {
+    id: "goalHorizon",
+    group: "saving",
+    source: "personalFinance",
+    title: "Near-term goals out of stocks",
+    rule: "Money for goals sooner than 3–5 years belongs in savings, CDs or I bonds; a conservative stock/bond mix only for goals further out.",
+    href: "/brokerage",
+  },
 
   // --- Safety ---
   {
@@ -451,6 +519,14 @@ export const MILESTONES = [
     source: "bogleheads",
     title: "Low cost",
     rule: "A blended expense ratio of 0.20% or less.",
+    href: "/benchmarks",
+  },
+  {
+    id: "fundCosts",
+    group: "investing",
+    source: "personalFinance",
+    title: "Low-cost funds, fund by fund",
+    rule: "Domestic stock index funds under 0.1%, international stock under 0.2%, bond funds under 0.1% — r/personalfinance's bar for a good 401k lineup.",
     href: "/benchmarks",
   },
 ] as const satisfies readonly MilestoneDefinition[];

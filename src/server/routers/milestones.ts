@@ -10,6 +10,7 @@ import {
   SK_MILESTONE_CHECKLIST,
   SK_MILESTONE_CHECKPOINT_SOURCE,
   SK_MILESTONE_CUSTOM_GOALS,
+  SK_MILESTONE_SAVINGS_TARGET_SOURCE,
 } from "@/lib/constants/settings-keys";
 import {
   milestoneYearFromHistory,
@@ -37,6 +38,7 @@ export const milestonesRouter = createTRPCRouter({
               SK_MILESTONE_CUSTOM_GOALS,
               SK_MILESTONE_CHECKLIST,
               SK_MILESTONE_CHECKPOINT_SOURCE,
+              SK_MILESTONE_SAVINGS_TARGET_SOURCE,
             ]),
           ),
       ]);
@@ -57,6 +59,7 @@ export const milestonesRouter = createTRPCRouter({
           customGoals: setting(SK_MILESTONE_CUSTOM_GOALS),
           checklist: setting(SK_MILESTONE_CHECKLIST),
           checkpointSource: setting(SK_MILESTONE_CHECKPOINT_SOURCE),
+          savingsTargetSource: setting(SK_MILESTONE_SAVINGS_TARGET_SOURCE),
         }),
       };
     }),

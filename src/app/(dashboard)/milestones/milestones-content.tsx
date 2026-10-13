@@ -21,12 +21,14 @@ import { MilestonesHero } from "@/components/milestones/milestones-hero";
 import {
   AddCustomGoal,
   CheckpointSourcePicker,
+  SavingsTargetSourcePicker,
   MilestoneChecklistEditor,
   useCustomGoalActions,
 } from "@/components/milestones/milestone-settings";
 
 const SOURCES: MilestoneSource[] = [
   "moneyGuy",
+  "personalFinance",
   "bogleheads",
   "fidelity",
   "custom",
@@ -38,6 +40,7 @@ export function MilestonesContent() {
   const { isLoading, projectionLoading, error, input, results } = useMilestones(
     {
       withHoldings: hasPermission(user, "portfolio"),
+      withBrokerageGoals: hasPermission(user, "brokerage"),
     },
   );
   const [source, setSource] = useState<MilestoneSource | null>(null);
@@ -142,6 +145,11 @@ export function MilestonesContent() {
                     source={input.checkpointSource}
                     canEdit={canEdit}
                   />
+                ) : g.key === "saving" ? (
+                  <SavingsTargetSourcePicker
+                    source={input.savingsTargetSource}
+                    canEdit={canEdit}
+                  />
                 ) : undefined
               }
             >
@@ -150,7 +158,8 @@ export function MilestonesContent() {
                   key={r.id}
                   result={r}
                   detail={
-                    r.id === "savingsRate" && input.savings ? (
+                    (r.id === "savingsRate" || r.id === "pfRetirementRate") &&
+                    input.savings ? (
                       <SavingsRateBreakdown
                         savings={input.savings.breakdown}
                         viewMode="projected"

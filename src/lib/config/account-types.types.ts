@@ -21,6 +21,9 @@ export type IrsLimitKeys = {
   catchup: string;
   superCatchup?: string;
   coverageVariant?: string; // e.g. HSA family vs individual
+  /** IRC 415(c) total-additions limit (employee + employer + after-tax) for
+   *  employer plans — what's left is after-tax ("mega backdoor") room. */
+  totalAdditions?: string;
 };
 
 // ---------------------------------------------------------------------------

@@ -41,6 +41,13 @@ import {
   REBALANCE_BANDS,
   CHECKPOINT_SOURCES,
   DEFAULT_CHECKPOINT_SOURCE,
+  DEFAULT_SAVINGS_TARGET_SOURCE,
+  FUND_MAIN_BUCKET_SHARE,
+  GOAL_HORIZON_YEARS,
+  PF_FUND_EXPENSE_RATIO,
+  PF_RETIREMENT_RATE,
+  SAVINGS_TARGET_SOURCES,
+  type SavingsTargetSource,
   type BuiltInMilestoneId,
   type CheckpointSource,
   type CustomGoalMetric,
@@ -52,7 +59,11 @@ import {
   WEALTH_FORMULA_MULTIPLIER,
   WEALTH_TIER_PAW_MIN,
 } from "@/lib/constants";
-import { wealthScoreTier } from "@/lib/config/display-labels";
+import {
+  COMPOSITION_BUCKET_LABELS,
+  wealthScoreTier,
+} from "@/lib/config/display-labels";
+import type { CompositionBucket } from "@/lib/config/enum-values";
 import {
   formatCurrency,
   formatNumber,
@@ -164,6 +175,13 @@ export const checkpointSourceSchema = z.enum(
   Object.keys(CHECKPOINT_SOURCES) as [CheckpointSource, ...CheckpointSource[]],
 );
 
+export const savingsTargetSourceSchema = z.enum(
+  Object.keys(SAVINGS_TARGET_SOURCES) as [
+    SavingsTargetSource,
+    ...SavingsTargetSource[],
+  ],
+);
+
 /** Stored settings → validated values. Anything unreadable reads as empty
  *  (writes are validated with the same schemas, so this only guards old or
  *  hand-edited data). */
@@ -171,18 +189,24 @@ export function parseMilestoneSettings(raw: {
   customGoals: unknown;
   checklist: unknown;
   checkpointSource?: unknown;
+  savingsTargetSource?: unknown;
 }): {
   customGoals: CustomGoal[];
   checklist: MilestoneChecklist;
   checkpointSource: CheckpointSource;
+  savingsTargetSource: SavingsTargetSource;
 } {
   const goals = customGoalsSchema.safeParse(raw.customGoals);
   const checklist = milestoneChecklistSchema.safeParse(raw.checklist);
   const source = checkpointSourceSchema.safeParse(raw.checkpointSource);
+  const target = savingsTargetSourceSchema.safeParse(raw.savingsTargetSource);
   return {
     customGoals: goals.success ? goals.data : [],
     checklist: checklist.success ? checklist.data : {},
     checkpointSource: source.success ? source.data : DEFAULT_CHECKPOINT_SOURCE,
+    savingsTargetSource: target.success
+      ? target.data
+      : DEFAULT_SAVINGS_TARGET_SOURCE,
   };
 }
 
@@ -243,11 +267,20 @@ export type MilestoneInput = {
     expenseRatio: number | null;
     /** Share of the portfolio with a known expense ratio. */
     costCoverage: number;
+    /** Each held fund with a known expense ratio and main category. */
+    funds: { name: string; bucket: CompositionBucket; expenseRatio: number }[];
   } | null;
   checklist: MilestoneChecklist;
   customGoals: CustomGoal[];
   /** Which income-multiple checkpoints the household follows. */
   checkpointSource: CheckpointSource;
+  /** Which savings-rate rule the household follows. */
+  savingsTargetSource: SavingsTargetSource;
+  /** After-tax ("mega backdoor") room per person: the IRS total-additions
+   *  limit less employee deferrals (catch-up excluded) and employer money. */
+  megaBackdoor: { owner: string; room: number; limit: number }[] | null;
+  /** Active brokerage goals (money held in the brokerage account). */
+  brokerageGoals: { name: string; targetYear: number }[] | null;
 };
 
 export type MilestoneStatus = "reached" | "onTrack" | "behind" | "unknown";
@@ -1326,6 +1359,135 @@ function investing(input: MilestoneInput): MilestoneResult[] {
 }
 
 // ---------------------------------------------------------------------------
+// r/personalfinance
+// ---------------------------------------------------------------------------
+
+function pfRetirementRate(input: MilestoneInput): MilestoneResult {
+  const s = input.savings;
+  if (!s || s.compensation <= 0) {
+    return result("pfRetirementRate", {
+      status: "unknown",
+      headline: "Needs a paycheck set up",
+    });
+  }
+  const met = meetsRateTarget(s.retirementRate, PF_RETIREMENT_RATE.min);
+  const upper = meetsRateTarget(s.retirementRate, PF_RETIREMENT_RATE.upper);
+  const gapPerMonth =
+    ((PF_RETIREMENT_RATE.min - s.retirementRate) * s.compensation) / 12;
+  return result("pfRetirementRate", {
+    status: met ? "reached" : "behind",
+    value: { kind: "percent", amount: s.retirementRate },
+    target: { kind: "percent", amount: PF_RETIREMENT_RATE.min },
+    progress: Math.min(1, s.retirementRate / PF_RETIREMENT_RATE.min),
+    headline: `${formatPercent(s.retirementRate, 1)} of pre-tax income into Retirement accounts`,
+    note: [
+      upper
+        ? `At or above the ${formatPercent(PF_RETIREMENT_RATE.upper)} upper end`
+        : `${formatPercent(PF_RETIREMENT_RATE.upper)} is the upper end`,
+      s.matchCounted
+        ? "employer match counted"
+        : `employer match left out (pay over ${formatCurrency(s.highIncomeThreshold)})`,
+    ].join(" · "),
+    nextStep: met
+      ? null
+      : `${formatCurrency(gapPerMonth)} more a month into retirement accounts reaches 15%`,
+  });
+}
+
+function megaBackdoor(input: MilestoneInput): MilestoneResult {
+  const rows = input.megaBackdoor;
+  if (!rows || rows.length === 0) {
+    return result("megaBackdoor", {
+      status: "unknown",
+      headline: "No workplace plan set up",
+    });
+  }
+  const room = rows.reduce((sum, r) => sum + r.room, 0);
+  return result("megaBackdoor", {
+    // Ledgr can't see whether a plan takes after-tax money, so this is
+    // information, not a grade.
+    status: "unknown",
+    value: { kind: "currency", amount: room },
+    headline: `Up to ${formatCurrency(room)} a year of after-tax room`,
+    short: `${formatCurrency(room)}/yr room`,
+    note: "If your plan allows after-tax contributions · assumes one employer plan each, before any profit-sharing",
+    nextStep: rows
+      .map(
+        (r) =>
+          `${r.owner}: ${formatCurrency(r.room)} of the ${formatCurrency(r.limit)} limit left`,
+      )
+      .join(" · "),
+  });
+}
+
+function goalHorizon(input: MilestoneInput): MilestoneResult {
+  const goals = input.brokerageGoals;
+  if (!goals || goals.length === 0) {
+    return result("goalHorizon", {
+      status: "unknown",
+      headline: "No brokerage goals",
+    });
+  }
+  const yearsOut = (g: { targetYear: number }) => g.targetYear - input.asOfYear;
+  const soon = goals.filter((g) => yearsOut(g) <= GOAL_HORIZON_YEARS.cash);
+  const mid = goals.filter(
+    (g) =>
+      yearsOut(g) > GOAL_HORIZON_YEARS.cash &&
+      yearsOut(g) <= GOAL_HORIZON_YEARS.conservative,
+  );
+  const list = (gs: typeof goals) =>
+    gs.map((g) => `${g.name} (${g.targetYear})`).join(", ");
+  if (soon.length > 0) {
+    return result("goalHorizon", {
+      status: "behind",
+      headline: `${soon.length} brokerage goal${soon.length === 1 ? "" : "s"} due within ${GOAL_HORIZON_YEARS.cash} years`,
+      nextStep: `Move toward savings, CDs or I bonds: ${list(soon)}`,
+      note: mid.length ? `Conservative mix for: ${list(mid)}` : null,
+    });
+  }
+  return result("goalHorizon", {
+    status: mid.length ? "onTrack" : "reached",
+    headline: mid.length
+      ? `${mid.length} goal${mid.length === 1 ? "" : "s"} ${GOAL_HORIZON_YEARS.cash}–${GOAL_HORIZON_YEARS.conservative} years out`
+      : `Every brokerage goal is ${GOAL_HORIZON_YEARS.conservative}+ years out`,
+    nextStep: mid.length
+      ? `A conservative stock/bond mix for: ${list(mid)}`
+      : null,
+  });
+}
+
+function fundCosts(input: MilestoneInput): MilestoneResult {
+  const funds = input.holdings?.funds ?? [];
+  const judged = funds.filter((f) => f.bucket in PF_FUND_EXPENSE_RATIO);
+  if (judged.length === 0) {
+    return result("fundCosts", {
+      status: "unknown",
+      headline: "Not enough linked holdings",
+    });
+  }
+  const bar = (f: (typeof judged)[number]) =>
+    PF_FUND_EXPENSE_RATIO[f.bucket as keyof typeof PF_FUND_EXPENSE_RATIO];
+  const pricey = judged.filter((f) => f.expenseRatio > bar(f));
+  return result("fundCosts", {
+    status: pricey.length ? "behind" : "reached",
+    value: { kind: "count", amount: judged.length - pricey.length },
+    target: { kind: "count", amount: judged.length },
+    progress: (judged.length - pricey.length) / judged.length,
+    headline: pricey.length
+      ? `${pricey.length} of ${judged.length} funds over the bar`
+      : `All ${judged.length} funds under the bar`,
+    nextStep: pricey.length
+      ? pricey
+          .map(
+            (f) =>
+              `${f.name} ${formatPercent(f.expenseRatio, 2)} (${COMPOSITION_BUCKET_LABELS[f.bucket]}: under ${formatPercent(bar(f), 2)})`,
+          )
+          .join(" · ")
+      : null,
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Custom goals
 // ---------------------------------------------------------------------------
 
@@ -1453,11 +1615,16 @@ export function evaluateMilestones(input: MilestoneInput): MilestoneResult[] {
           now,
           (y) => checkpointBalance("fidelity", y),
         ),
-    savings,
+    input.savingsTargetSource === "personalFinance"
+      ? pfRetirementRate(input)
+      : savings,
+    megaBackdoor(input),
+    goalHorizon(input),
     efund,
     protection(input, now),
     ...housing(input, now),
     ...investing(input),
+    fundCosts(input),
   ];
 }
 
@@ -1689,10 +1856,42 @@ export function milestoneHoldings(overview: {
     rows: { name: string; value: number; targetPct: number | null }[];
   };
   cost: { expenseRatio: number | null; coveredShare: number };
+  accounts?: {
+    holdings: {
+      securityId: number | null;
+      name: string | null;
+      symbol: string | null;
+      facts: {
+        expenseRatio: { value: number } | null;
+        composition: { buckets: Record<CompositionBucket, number> } | null;
+      };
+    }[];
+  }[];
 }): MilestoneInput["holdings"] {
   const { total, unknown, rows } = overview.allocation;
   if (total <= 0) return null;
   const known = total - unknown;
+  // Each fund once (it can sit in several accounts), by its main category.
+  const funds = new Map<
+    string,
+    { name: string; bucket: CompositionBucket; expenseRatio: number }
+  >();
+  for (const a of overview.accounts ?? [])
+    for (const h of a.holdings) {
+      const er = h.facts.expenseRatio?.value;
+      const buckets = h.facts.composition?.buckets;
+      if (er == null || !buckets) continue;
+      const main = (
+        Object.entries(buckets) as [CompositionBucket, number][]
+      ).find(([, share]) => share >= FUND_MAIN_BUCKET_SHARE);
+      if (!main) continue;
+      const key = String(h.securityId ?? h.symbol ?? h.name);
+      funds.set(key, {
+        name: h.symbol ?? h.name ?? "A fund",
+        bucket: main[0],
+        expenseRatio: er,
+      });
+    }
   return {
     coverage: safeDivide(known, total, 0),
     classes: rows.map((r) => ({
@@ -1702,7 +1901,54 @@ export function milestoneHoldings(overview: {
     })),
     expenseRatio: overview.cost.expenseRatio,
     costCoverage: overview.cost.coveredShare,
+    funds: [...funds.values()],
   };
+}
+
+/**
+ * After-tax ("mega backdoor") room per person in plans with an IRS
+ * total-additions limit (config `irsLimitKeys.totalAdditions`): the lesser
+ * of that limit and the person's pay, less employee deferrals up to the
+ * base limit (catch-up doesn't count) and the employer match. Assumes one
+ * employer plan per person (each unrelated employer has its own limit) and
+ * no profit-sharing contributions (not modelled).
+ */
+export function megaBackdoorRoom(
+  people: readonly {
+    name: string;
+    /** The person's pay (salary + bonus) — 415(c) caps at 100% of it. */
+    compensation: number;
+    accountTypes: readonly {
+      categoryKey: string;
+      employeeContrib: number;
+      employerMatch: number;
+    }[];
+  }[],
+  limitsRecord: Record<string, number>,
+): { owner: string; room: number; limit: number }[] {
+  const out: { owner: string; room: number; limit: number }[] = [];
+  for (const p of people) {
+    let limit = 0;
+    let base = 0;
+    let employee = 0;
+    let employer = 0;
+    for (const a of p.accountTypes) {
+      const keys = configOf(a.categoryKey)?.irsLimitKeys;
+      if (!keys?.totalAdditions) continue;
+      limit = limitsRecord[keys.totalAdditions] ?? 0;
+      base = limitsRecord[keys.base] ?? 0;
+      employee += a.employeeContrib;
+      employer += a.employerMatch;
+    }
+    if (limit <= 0) continue;
+    if (p.compensation > 0) limit = Math.min(limit, p.compensation);
+    out.push({
+      owner: p.name,
+      room: Math.max(0, limit - Math.min(employee, base) - employer),
+      limit,
+    });
+  }
+  return out;
 }
 
 type MilestoneAccount = LimitAccount &
@@ -1724,6 +1970,7 @@ export function buildMilestoneInput(raw: {
     customGoals: CustomGoal[];
     checklist: MilestoneChecklist;
     checkpointSource: CheckpointSource;
+    savingsTargetSource: SavingsTargetSource;
   };
   contributions: {
     people: (Omit<SavingsRatePerson, "accountTypes"> & {
@@ -1731,8 +1978,11 @@ export function buildMilestoneInput(raw: {
       accountTypes: MilestoneAccount[];
     })[];
     jointAccountTypes: MilestoneAccount[];
+    /** The year's IRS limits, by key. */
+    limits?: Record<string, number>;
   } | null;
   highIncomeThreshold: number;
+  brokerageGoals?: { name: string; targetYear: number }[] | null;
   efundMonths: number | null;
   mortgage: {
     loans: {
@@ -1762,6 +2012,7 @@ export function buildMilestoneInput(raw: {
   let match: MilestoneInput["match"] = null;
   let limits: MilestoneInput["limits"] = null;
   let retirementUnlimited: MilestoneInput["retirementUnlimited"] = null;
+  let mega: MilestoneInput["megaBackdoor"] = null;
   const c = raw.contributions;
   const people = c?.people.filter((p) => p.accountTypes.length > 0) ?? [];
   if (c && people.length > 0) {
@@ -1818,6 +2069,16 @@ export function buildMilestoneInput(raw: {
       ),
     };
     retirementUnlimited = retirementUnlimitedContributions(accounts);
+    mega = c.limits
+      ? megaBackdoorRoom(
+          people.map((p) => ({
+            name: p.person.name,
+            compensation: p.totalCompensation ?? p.salary ?? 0,
+            accountTypes: p.accountTypes,
+          })),
+          c.limits,
+        )
+      : null;
     limits = milestoneLimits(
       people.map((p) => ({
         name: p.person.name,
@@ -1878,5 +2139,8 @@ export function buildMilestoneInput(raw: {
     checklist: inputs.checklist,
     customGoals: inputs.customGoals,
     checkpointSource: inputs.checkpointSource,
+    savingsTargetSource: inputs.savingsTargetSource,
+    megaBackdoor: mega,
+    brokerageGoals: raw.brokerageGoals ?? null,
   };
 }

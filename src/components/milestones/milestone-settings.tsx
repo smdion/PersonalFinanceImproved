@@ -7,6 +7,8 @@ import { trpc } from "@/lib/trpc";
 import {
   CHECKPOINT_SOURCES,
   CUSTOM_GOAL_METRICS,
+  SAVINGS_TARGET_SOURCES,
+  type SavingsTargetSource,
   type CheckpointSource,
   MAX_CUSTOM_GOALS,
   MILESTONE_CHECKLIST_ITEMS,
@@ -16,6 +18,7 @@ import {
 import {
   SK_MILESTONE_CHECKLIST,
   SK_MILESTONE_CHECKPOINT_SOURCE,
+  SK_MILESTONE_SAVINGS_TARGET_SOURCE,
   SK_MILESTONE_CUSTOM_GOALS,
 } from "@/lib/constants/settings-keys";
 import type { CustomGoal, MilestoneChecklist } from "@/lib/pure/milestones";
@@ -191,9 +194,44 @@ export function AddCustomGoal({
   );
 }
 
-/** Which income-multiple checkpoints the household follows — Money Guy and
- *  Fidelity disagree after 40 and measure different money, so one is used
- *  everywhere (here and the Retirement card's Readiness). */
+/** A household choice between two sources' definitions (Money Guy vs
+ *  Fidelity checkpoints, Money Guy vs r/personalfinance savings rate) —
+ *  one is used everywhere. Admins change it; everyone sees it. */
+function SourcePicker<K extends string>({
+  label,
+  settingKey,
+  value,
+  options,
+  canEdit,
+}: {
+  label: string;
+  settingKey: string;
+  value: K;
+  options: Record<K, string>;
+  canEdit: boolean;
+}) {
+  const save = useSaveMilestoneSetting();
+  return (
+    <label className="text-caption text-muted flex items-center gap-1">
+      {label}
+      <select
+        className="bg-surface-primary text-secondary rounded border px-1.5 py-0.5"
+        value={value}
+        disabled={!canEdit || save.isPending}
+        onChange={(e) =>
+          save.mutate({ key: settingKey, value: e.target.value })
+        }
+      >
+        {(Object.entries(options) as [K, string][]).map(([key, text]) => (
+          <option key={key} value={key}>
+            {text}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 export function CheckpointSourcePicker({
   source,
   canEdit,
@@ -201,32 +239,37 @@ export function CheckpointSourcePicker({
   source: CheckpointSource;
   canEdit: boolean;
 }) {
-  const save = useSaveMilestoneSetting();
   return (
-    <label className="text-caption text-muted flex items-center gap-1">
-      Checkpoints
-      <select
-        className="bg-surface-primary text-secondary rounded border px-1.5 py-0.5"
-        value={source}
-        disabled={!canEdit || save.isPending}
-        onChange={(e) =>
-          save.mutate({
-            key: SK_MILESTONE_CHECKPOINT_SOURCE,
-            value: e.target.value,
-          })
-        }
-      >
-        {(
-          Object.entries(CHECKPOINT_SOURCES) as [
-            CheckpointSource,
-            (typeof CHECKPOINT_SOURCES)[CheckpointSource],
-          ][]
-        ).map(([key, s]) => (
-          <option key={key} value={key}>
-            {s.label} ({s.measures})
-          </option>
-        ))}
-      </select>
-    </label>
+    <SourcePicker
+      label="Checkpoints"
+      settingKey={SK_MILESTONE_CHECKPOINT_SOURCE}
+      value={source}
+      canEdit={canEdit}
+      options={{
+        moneyGuy: `${CHECKPOINT_SOURCES.moneyGuy.label} (${CHECKPOINT_SOURCES.moneyGuy.measures})`,
+        fidelity: `${CHECKPOINT_SOURCES.fidelity.label} (${CHECKPOINT_SOURCES.fidelity.measures})`,
+      }}
+    />
+  );
+}
+
+export function SavingsTargetSourcePicker({
+  source,
+  canEdit,
+}: {
+  source: SavingsTargetSource;
+  canEdit: boolean;
+}) {
+  return (
+    <SourcePicker
+      label="Savings rule"
+      settingKey={SK_MILESTONE_SAVINGS_TARGET_SOURCE}
+      value={source}
+      canEdit={canEdit}
+      options={{
+        moneyGuy: SAVINGS_TARGET_SOURCES.moneyGuy.label,
+        personalFinance: SAVINGS_TARGET_SOURCES.personalFinance.label,
+      }}
+    />
   );
 }
