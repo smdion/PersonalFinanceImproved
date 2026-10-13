@@ -148,6 +148,13 @@ type ProgressBarProps = {
   /** Accessible name for the bar. Falls back to a string `label`, then
    *  "Progress". Pass this when `label` is a non-string node. */
   ariaLabel?: string;
+  /** Going past 100% means something (spent vs budget): the bar turns red
+   *  and the percent shows the real figure; the bar itself stops at full. */
+  allowOver?: boolean;
+  /** One compact line — the bar with its percent beside it (table rows). */
+  inline?: boolean;
+  /** Thinner bar (nested rows). */
+  small?: boolean;
 };
 
 export function ProgressBar({
@@ -156,11 +163,46 @@ export function ProgressBar({
   variant = "default",
   tooltip,
   ariaLabel,
+  allowOver = false,
+  inline = false,
+  small = false,
 }: ProgressBarProps) {
-  const color = PROGRESS_BAR_VARIANT_COLORS[variant];
+  const isOver = allowOver && value > 1;
+  const color = PROGRESS_BAR_VARIANT_COLORS[isOver ? "danger" : variant];
   const percent = Math.min(100, Math.max(0, value * 100));
+  // The real figure (an overrun included) — aria-valuenow must stay 0–100.
+  const shown = formatPercent(allowOver ? Math.max(0, value) : percent / 100);
   const name =
     ariaLabel ?? (typeof label === "string" ? label : undefined) ?? "Progress";
+  const height = small ? "h-1.5" : inline ? "h-2" : "h-2 sm:h-3";
+  const bar = (
+    <div
+      className={`bg-surface-sunken ${height} overflow-hidden rounded-full${inline ? "min-w-[40px] flex-1" : ""}`}
+    >
+      <div
+        className={`h-full ${color} rounded-full transition-all`}
+        style={{ width: `${percent}%` }}
+        role="progressbar"
+        aria-label={isOver ? `${name} — over` : name}
+        aria-valuenow={Math.round(percent)}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuetext={shown}
+      />
+    </div>
+  );
+  if (inline)
+    return (
+      <div className="flex items-center gap-1.5" title={tooltip}>
+        {bar}
+        <span
+          aria-hidden="true"
+          className={`text-caption w-8 text-right tabular-nums ${isOver ? "font-semibold text-red-600" : "text-muted"}`}
+        >
+          {value >= 9.99 ? "—" : shown}
+        </span>
+      </div>
+    );
   return (
     // Redundant `title` only when there's no visible label to describe it.
     <div
@@ -173,22 +215,14 @@ export function ProgressBar({
         {label && <span className="text-secondary">{label}</span>}
         {/* Value is exposed via the progressbar role below — hide the
             visual copy from AT so it isn't announced twice. */}
-        <span className="text-muted font-medium" aria-hidden="true">
-          {formatPercent(percent / 100)}
+        <span
+          className={`font-medium ${isOver ? "text-red-600" : "text-muted"}`}
+          aria-hidden="true"
+        >
+          {shown}
         </span>
       </div>
-      <div className="bg-surface-sunken h-2 overflow-hidden rounded-full sm:h-3">
-        <div
-          className={`h-full ${color} rounded-full transition-all`}
-          style={{ width: `${percent}%` }}
-          role="progressbar"
-          aria-label={name}
-          aria-valuenow={Math.round(percent)}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuetext={formatPercent(percent / 100)}
-        />
-      </div>
+      {bar}
     </div>
   );
 }
