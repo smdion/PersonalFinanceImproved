@@ -139,9 +139,11 @@ export function HelpContent() {
       <Section title="Navigation & Layout">
         <p>
           The app is organized into a <strong>sidebar</strong> on the left with
-          six groups: <em>Cash Flow</em>, <em>Wealth</em>, <em>Net Worth</em>,{" "}
-          <em>Upkeep</em>, <em>Analysis</em>, and <em>System</em>, plus the
-          Dashboard at the top and Help at the bottom.
+          seven groups: <em>Insights</em> (how you&rsquo;re doing and what to do
+          next), <em>Cash Flow</em>, <em>Investments</em>, <em>Net Worth</em>,{" "}
+          <em>Upkeep</em>, <em>Planning</em> (what-ifs and long-range plans),
+          and <em>System</em>, plus the Dashboard at the top and Help at the
+          bottom.
         </p>
         <ul className="ml-2 list-inside list-disc space-y-1">
           <li>
@@ -718,9 +720,9 @@ export function HelpContent() {
         </ul>
       </Section>
 
-      {/* ━━ ANALYSIS ━━ */}
+      {/* ━━ PLANNING ━━ */}
       <h3 className="text-faint pt-2 text-xs font-semibold tracking-wider uppercase">
-        Analysis
+        Planning
       </h3>
 
       {/* ── Retirement ── */}

@@ -45,6 +45,7 @@ import {
   Calculator,
   ExternalLink,
   Award,
+  Lightbulb,
   type LucideIcon,
 } from "lucide-react";
 import { BRAND_COLORS } from "@/lib/utils/colors";
@@ -66,6 +67,16 @@ function hrefMatches(href: string, pathname: string): boolean {
 const navStructure: NavEntry[] = [
   { href: "/", label: "Dashboard", Icon: LayoutDashboard },
   {
+    // Answers — how you're doing and what to do next.
+    label: "Insights",
+    Icon: Lightbulb,
+    items: [
+      { href: "/milestones", label: "Milestones", Icon: Award },
+      { href: "/benchmarks", label: "Benchmarks", Icon: PieChart },
+      { href: "/contributions", label: "Contributions", Icon: Layers },
+    ],
+  },
+  {
     label: "Cash Flow",
     Icon: ArrowLeftRight,
     items: [
@@ -81,7 +92,6 @@ const navStructure: NavEntry[] = [
     items: [
       { href: "/portfolio", label: "Portfolio", Icon: Gem },
       { href: "/performance", label: "Performance", Icon: Trophy },
-      { href: "/benchmarks", label: "Benchmarks", Icon: PieChart },
       { href: "/brokerage", label: "Brokerage", Icon: BarChart3 },
     ],
   },
@@ -102,12 +112,11 @@ const navStructure: NavEntry[] = [
     items: [{ href: "/upkeep/utilities", label: "Utilities", Icon: Gauge }],
   },
   {
-    label: "Analysis",
+    // Explorers — what-ifs and long-range plans.
+    label: "Planning",
     Icon: Search,
     items: [
-      { href: "/milestones", label: "Milestones", Icon: Award },
       { href: "/retirement", label: "Retirement", Icon: Palmtree },
-      { href: "/contributions", label: "Contributions", Icon: Layers },
       { href: "/tax-buckets", label: "Tax Buckets", Icon: Unlock },
       {
         href: "/tax-optimization",

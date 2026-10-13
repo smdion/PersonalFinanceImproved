@@ -70,7 +70,8 @@ describe("Sidebar", () => {
     expect(screen.getAllByText("Cash Flow").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Investments").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Net Worth").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Analysis").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Insights").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Planning").length).toBeGreaterThan(0);
     expect(screen.getAllByText("System").length).toBeGreaterThan(0);
   });
 
