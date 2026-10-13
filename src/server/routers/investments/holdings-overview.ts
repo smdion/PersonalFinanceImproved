@@ -132,10 +132,24 @@ export async function loadHoldingsOverview(db: Db) {
       .orderBy(schema.assetClassParams.sortOrder),
     targetByAssetClass(db),
   ]);
-  const [valued, links] = await Promise.all([
+  const [allValued, links] = await Promise.all([
     valueHoldings(db, holdings),
     loadBucketLinks(db),
   ]);
+  // Only SimpleFIN accounts linked to a Ledgr account count — an unlinked
+  // feed (a duplicate connection, an old replay, an account Ledgr doesn't
+  // track) would otherwise count the same money twice. Their dollars are
+  // reported so the page can say what's left out.
+  const isLinked = (simplefinAccountId: number) =>
+    accounts.get(simplefinAccountId)?.performanceAccountId != null;
+  const valued = allValued.filter((v) => isLinked(v.simplefinAccountId));
+  const unlinkedTotals = new Map<number, number>();
+  for (const v of allValued)
+    if (!isLinked(v.simplefinAccountId))
+      unlinkedTotals.set(
+        v.simplefinAccountId,
+        (unlinkedTotals.get(v.simplefinAccountId) ?? 0) + v.value,
+      );
 
   const { buckets, unknown, total } = portfolioBuckets(valued);
   const { byClass, unlinked } = valueByClass(buckets, links);
@@ -149,6 +163,16 @@ export async function loadHoldingsOverview(db: Db) {
   return {
     secConnected: sec !== null,
     age: target.age,
+    /** SimpleFIN accounts with holdings that aren't linked to a Ledgr
+     *  account — left out of everything below. */
+    unlinkedAccounts: [...unlinkedTotals.entries()]
+      .map(([id, total]) => ({
+        simplefinAccountId: id,
+        label: accounts.get(id)?.label ?? "",
+        total,
+      }))
+      .filter((a) => a.total > 0)
+      .sort((x, y) => y.total - x.total),
     accounts: [...byAccount.entries()]
       .map(([id, rows]) => {
         const a = accounts.get(id);

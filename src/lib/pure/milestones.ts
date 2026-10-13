@@ -270,6 +270,8 @@ export type MilestoneInput = {
     knownValue: number;
     /** Dollars in fund categories not linked to any asset class. */
     unlinkedValue: number;
+    /** Dollars in SimpleFIN accounts not linked to a Ledgr account. */
+    unlinkedAccountsValue?: number;
     classes: { name: string; share: number; targetShare: number | null }[];
     expenseRatio: number | null;
     /** Share of the portfolio with a known expense ratio. */
@@ -1396,9 +1398,16 @@ function investing(input: MilestoneInput): MilestoneResult[] {
             ? "Every class within its band"
             : `${off.length} class${off.length === 1 ? "" : "es"} outside the band: ${gaps}`,
         note:
-          h.unlinkedValue > 0
-            ? `${formatCurrency(h.unlinkedValue)} of holdings aren't linked to an asset class and aren't counted — link them on Benchmarks`
-            : null,
+          [
+            h.unlinkedValue > 0
+              ? `${formatCurrency(h.unlinkedValue)} of holdings aren't linked to an asset class and aren't counted — link them on Benchmarks`
+              : null,
+            (h.unlinkedAccountsValue ?? 0) > 0
+              ? `${formatCurrency(h.unlinkedAccountsValue!)} in SimpleFIN accounts not linked to Ledgr is left out`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(" · ") || null,
         nextStep: action,
         impact:
           action !== null
@@ -1927,6 +1936,8 @@ export function milestoneHoldings(overview: {
     rows: { name: string; value: number; targetPct: number | null }[];
     unmapped?: { value: number }[];
   };
+  /** SimpleFIN accounts not linked to a Ledgr account (left out). */
+  unlinkedAccounts?: { total: number }[];
   cost: { expenseRatio: number | null; coveredShare: number };
   accounts?: {
     holdings: {
@@ -1969,6 +1980,10 @@ export function milestoneHoldings(overview: {
     knownValue: known,
     unlinkedValue: (overview.allocation.unmapped ?? []).reduce(
       (sum, u) => sum + u.value,
+      0,
+    ),
+    unlinkedAccountsValue: (overview.unlinkedAccounts ?? []).reduce(
+      (sum, a) => sum + a.total,
       0,
     ),
     classes: rows.map((r) => ({

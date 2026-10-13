@@ -1007,6 +1007,7 @@ describe("input builders", () => {
       coverage: 0.8,
       knownValue: 80,
       unlinkedValue: 0,
+      unlinkedAccountsValue: 0,
       classes: [
         { name: "US", share: 0.75, targetShare: 0.7 },
         { name: "Bonds", share: 0.25, targetShare: null },

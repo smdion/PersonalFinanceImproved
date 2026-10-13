@@ -395,6 +395,16 @@ function AllocationCard({ data }: { data: Overview }) {
           known mix. Confirm a stand-in or enter their facts above.
         </p>
       )}
+      {data.unlinkedAccounts.length > 0 && (
+        <p className="text-caption text-faint mt-1">
+          Left out:{" "}
+          {data.unlinkedAccounts
+            .map((a) => `${a.label} (${formatCurrency(a.total)})`)
+            .join(", ")}{" "}
+          — SimpleFIN accounts not linked to a Ledgr account. Link them in
+          Settings → Integrations → SimpleFIN if they&apos;re yours to count.
+        </p>
+      )}
     </Card>
   );
 }
