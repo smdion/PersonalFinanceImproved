@@ -8,6 +8,7 @@ import {
   inflateTarget,
   milestoneHoldings,
   meetsMoneyGuyRate,
+  meetsRateTarget,
   milestoneLimits,
   retirementUnlimitedContributions,
   milestoneProjectionYears,
@@ -373,6 +374,8 @@ describe("Financial Order of Operations", () => {
     );
     expect(byId(run({ savings }), "foo7").status).toBe("reached");
     expect(meetsMoneyGuyRate(0.244)).toBe(false);
+    expect(meetsRateTarget(0.149, 0.15)).toBe(true);
+    expect(meetsRateTarget(0.144, 0.15)).toBe(false);
     expect(meetsMoneyGuyRate(0.245)).toBe(true);
   });
 

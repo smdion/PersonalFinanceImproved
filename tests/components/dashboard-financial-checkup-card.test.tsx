@@ -181,6 +181,36 @@ describe("FinancialCheckupCard smoke", () => {
     );
   });
 
+  it("a savings rate that rounds to the target is green", () => {
+    withMilestones(makeInput());
+    // 24.96% retirement-only without the match: rounds to 25%.
+    contribsQuery = withData({
+      people: [
+        {
+          ...baseContribs.people[0],
+          totals: {
+            views: {
+              projected: {
+                retirementWithoutMatch: 37440,
+                retirementWithMatch: 40440,
+                portfolioWithoutMatch: 0,
+                portfolioWithMatch: 0,
+                compensation: 150000,
+              },
+            },
+          },
+        },
+      ],
+    });
+    render(<FinancialCheckupCard />);
+    fireEvent.click(screen.getByRole("button", { name: /Savings Rate/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Excl. match" }));
+    const row = screen.getByRole("button", { name: /Savings Rate/ });
+    expect(within(row).getByText("25.0%")).toBeInTheDocument();
+    expect(row.querySelector(".text-green-500")).not.toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Incl. match" }));
+  });
+
   it("expands the Savings Rate row into what it's made of", () => {
     withMilestones(makeInput());
     contribsQuery = withData(baseContribs);

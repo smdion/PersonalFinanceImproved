@@ -9,7 +9,7 @@ import { formatPercent } from "@/lib/utils/format";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
 import { CHECKUP_MILESTONES } from "@/lib/config/milestones";
-import type { MilestoneResult } from "@/lib/pure/milestones";
+import { meetsRateTarget, type MilestoneResult } from "@/lib/pure/milestones";
 import {
   householdSavings,
   householdTotalCompensation,
@@ -248,12 +248,11 @@ function FinancialCheckupCardImpl() {
 
   steps.push({
     label: "Savings Rate",
-    status:
-      savingsRate >= greenThreshold
-        ? "green"
-        : savingsRate >= yellowThreshold
-          ? "yellow"
-          : "red",
+    status: meetsRateTarget(savingsRate, greenThreshold)
+      ? "green"
+      : meetsRateTarget(savingsRate, yellowThreshold)
+        ? "yellow"
+        : "red",
     text: formatPercent(savingsRate, 1),
     subText:
       [

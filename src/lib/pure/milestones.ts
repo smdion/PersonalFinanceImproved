@@ -327,9 +327,16 @@ export function firstProjectedYear(
   return hit ? { year: hit.year, age: hit.age } : null;
 }
 
-/** Money Guy's 25% as a round number: a rate that rounds to 25% counts. */
+/** Savings-rate targets are round numbers: a rate that rounds (to a whole
+ *  percent) to the target meets it — 24.9% meets 25%. Every savings-rate
+ *  threshold check goes through this, so the dashboard and Milestones agree. */
+export function meetsRateTarget(rate: number, target: number): boolean {
+  return Math.round(rate * 100) >= Math.round(target * 100);
+}
+
+/** Money Guy's 25%, as a round number. */
 export function meetsMoneyGuyRate(rate: number): boolean {
-  return Math.round(rate * 100) >= Math.round(MONEY_GUY_SAVINGS_RATE * 100);
+  return meetsRateTarget(rate, MONEY_GUY_SAVINGS_RATE);
 }
 
 /** A target set in one year's dollars, in another year's dollars. */
