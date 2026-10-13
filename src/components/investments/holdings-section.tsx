@@ -15,6 +15,8 @@ import {
   type Overview,
 } from "./fund-holding-row";
 import { TickerLink } from "./ticker-link";
+import { CurrentGlidePathEditor } from "./current-glide-path-editor";
+import { useUser, isAdmin } from "@/lib/context/user-context";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import {
@@ -254,18 +256,45 @@ function AllocationCard({ data }: { data: Overview }) {
   );
   const noCategory = rows.filter((r) => r.buckets.length === 0);
   const [open, setOpen] = useState<CompositionBucket | null>(null);
+  const [editingPath, setEditingPath] = useState(false);
+  const canEditPath = isAdmin(useUser());
   const funds = combineHoldings(data.accounts);
   return (
     <Card title="Your mix vs your target">
       <p className="text-caption text-faint mb-3">
         What your funds hold, added up across accounts
         {hasTarget && data.age !== null
-          ? `, next to your glide-path target for age ${data.age}`
+          ? `, next to ${data.targetSource === "current" ? "your current glide path" : "the retirement simulation's glide path"} for age ${data.age}`
           : ""}
         . Percentages are of the{" "}
         {formatPercent(total > 0 ? known / total : 0, 0)} of your money whose
-        mix is known.
+        mix is known.{" "}
+        {canEditPath && !editingPath && (
+          <button
+            type="button"
+            className="text-blue-600 hover:underline"
+            onClick={() => setEditingPath(true)}
+          >
+            {data.targetSource === "current"
+              ? "Edit your current glide path"
+              : "Set a current glide path"}
+          </button>
+        )}
       </p>
+      {editingPath && (
+        <CurrentGlidePathEditor
+          classes={rows.map((r) => ({
+            assetClassId: r.assetClassId,
+            name: r.name,
+          }))}
+          currentGlidePath={data.currentGlidePath}
+          age={data.age}
+          todaysTarget={Object.fromEntries(
+            rows.map((r) => [r.assetClassId, r.targetPct]),
+          )}
+          onClose={() => setEditingPath(false)}
+        />
+      )}
       <div className="space-y-2">
         {categories.map((c) => {
           const cls =

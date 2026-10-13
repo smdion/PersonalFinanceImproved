@@ -76,6 +76,10 @@ export const SK_MILESTONE_CUSTOM_GOALS = "milestone_custom_goals";
 export const SK_MILESTONE_CHECKLIST = "milestone_checklist";
 /** "moneyGuy" | "fidelity" — which income-multiple checkpoints to follow. */
 export const SK_MILESTONE_CHECKPOINT_SOURCE = "milestone_checkpoint_source";
+/** The household's own target mix by age for what it holds today —
+ *  separate from the retirement simulation's glide path (validated:
+ *  currentGlidePathSchema). */
+export const SK_CURRENT_GLIDE_PATH = "current_glide_path";
 /** Dismissed/snoozed recommendations (validated: dismissalsSchema). */
 export const SK_RECOMMENDATION_DISMISSALS = "recommendation_dismissals";
 /** "moneyGuy" | "personalFinance" — which savings-rate rule to follow. */

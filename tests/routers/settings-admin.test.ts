@@ -161,6 +161,15 @@ describe("settings.appSettings", () => {
       expect(saved?.value).toEqual(value);
     });
 
+    it("validates the current glide path on write", async () => {
+      await expect(
+        caller.settings.appSettings.upsert({
+          key: "current_glide_path",
+          value: [{ age: 40, allocations: { "1": 0.5 } }],
+        }),
+      ).rejects.toThrow(/Invalid current_glide_path/);
+    });
+
     it("inserts a new setting", async () => {
       const result = await caller.settings.appSettings.upsert({
         key: "test_setting",

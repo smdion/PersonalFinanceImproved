@@ -177,6 +177,35 @@ describe("fund facts", () => {
       .run();
   });
 
+  it("compares with the household's current glide path when one is set", async () => {
+    const before = await ctx.caller.investments.getHoldingsOverview();
+    expect(before.targetSource).toBe("retirement");
+    // A deliberately conservative mix, flat across ages.
+    ctx.db
+      .insert(sqliteSchema.appSettings)
+      .values({
+        key: "current_glide_path",
+        value: [
+          {
+            age: 30,
+            allocations: { [String(id.stocks)]: 0.6, [String(id.bonds)]: 0.4 },
+          },
+        ],
+      })
+      .run();
+    const after = await ctx.caller.investments.getHoldingsOverview();
+    expect(after.targetSource).toBe("current");
+    const target = (assetClassId: number) =>
+      after.allocation.rows.find((r) => r.assetClassId === assetClassId)!
+        .targetPct;
+    expect(target(id.stocks!)).toBeCloseTo(0.6);
+    expect(target(id.bonds!)).toBeCloseTo(0.4);
+    ctx.db
+      .delete(sqliteSchema.appSettings)
+      .where(eq(sqliteSchema.appSettings.key, "current_glide_path"))
+      .run();
+  });
+
   it("values holdings at today's close when priced, else as reported", async () => {
     const o = await ctx.caller.investments.getHoldingsOverview();
     const rows = o.accounts[0]!.holdings;

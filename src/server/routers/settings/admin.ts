@@ -15,7 +15,9 @@ import {
   SK_MILESTONE_CUSTOM_GOALS,
   SK_MILESTONE_SAVINGS_TARGET_SOURCE,
   SK_RECOMMENDATION_DISMISSALS,
+  SK_CURRENT_GLIDE_PATH,
 } from "@/lib/constants/settings-keys";
+import { currentGlidePathSchema } from "@/lib/pure/current-glide-path";
 import { dismissalsSchema } from "@/lib/pure/recommendation-dismissals";
 import {
   checkpointSourceSchema,
@@ -55,6 +57,7 @@ const STRUCTURED_SETTINGS: Record<string, z.ZodType> = {
   [SK_MILESTONE_CHECKPOINT_SOURCE]: checkpointSourceSchema,
   [SK_MILESTONE_SAVINGS_TARGET_SOURCE]: savingsTargetSourceSchema,
   [SK_RECOMMENDATION_DISMISSALS]: dismissalsSchema,
+  [SK_CURRENT_GLIDE_PATH]: currentGlidePathSchema,
 };
 
 // --- Procedures ---
