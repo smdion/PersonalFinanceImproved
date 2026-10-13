@@ -3,9 +3,11 @@
 import { ScenarioProvider } from "@/lib/context/scenario-context";
 import { ScenarioBar } from "@/components/layout/scenario-bar";
 import { usePrivacy } from "@/lib/context/privacy-context";
+import { useHouseholdTimeZoneDefault } from "@/lib/hooks/use-household-timezone-default";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const { privacy } = usePrivacy();
+  useHouseholdTimeZoneDefault();
   return (
     <ScenarioProvider>
       {/* Keyed on privacy so toggling remounts the page and every

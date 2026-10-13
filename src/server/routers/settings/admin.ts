@@ -8,6 +8,11 @@ import {
   scenarioProcedure,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
+import { SK_HOUSEHOLD_TIMEZONE } from "@/lib/constants/settings-keys";
+import {
+  applyHouseholdTimeZone,
+  isValidTimeZone,
+} from "@/server/helpers/household-timezone";
 import { invalidateYearEndCache } from "@/server/helpers";
 import {
   ALL_PERMISSIONS,
@@ -120,11 +125,18 @@ export const adminProcedures = {
     upsert: adminProcedure
       .input(appSettingInput)
       .mutation(async ({ ctx, input }) => {
+        const isTimeZone = input.key === SK_HOUSEHOLD_TIMEZONE;
+        if (isTimeZone && input.value != null && !isValidTimeZone(input.value))
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Not a recognized time zone",
+          });
         // value column is NOT NULL — when null, delete the row so the default applies
         if (input.value === null || input.value === undefined) {
           await ctx.db
             .delete(schema.appSettings)
             .where(eq(schema.appSettings.key, input.key));
+          if (isTimeZone) applyHouseholdTimeZone(null);
           return null;
         }
         const result = await ctx.db
@@ -136,6 +148,8 @@ export const adminProcedures = {
           })
           .returning()
           .then((r) => r[0]);
+        // Server date math moves to the new zone right away.
+        if (isTimeZone) applyHouseholdTimeZone(input.value);
         // Invalidate year-end cache when settings change (e.g. salary averaging toggle)
         invalidateYearEndCache();
         return result;

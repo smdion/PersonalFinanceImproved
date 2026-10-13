@@ -19,6 +19,7 @@ import {
   SK_RETIREMENT_MC_AUTOLOAD,
   SK_RETIREMENT_COASTFIRE_MC_AUTOLOAD,
   SK_SETTINGS_GENERAL_SECTION,
+  SK_HOUSEHOLD_TIMEZONE,
 } from "@/lib/constants/settings-keys";
 import { Button } from "@/components/ui/button";
 import { Toggle } from "@/components/ui/toggle";
@@ -26,6 +27,7 @@ import { PeopleSettings } from "@/components/settings/people";
 
 const GENERAL_SECTIONS = [
   { key: "people", label: "People" },
+  { key: "household", label: "Household" },
   { key: "retirement", label: "Retirement" },
   { key: "livingCosts", label: "Living Costs Mapping" },
   { key: "dataSources", label: "Data Sources" },
@@ -66,6 +68,7 @@ export function GeneralSettings() {
         <div className={section === "people" ? "" : "hidden"}>
           <PeopleSettings />
         </div>
+        {section === "household" && <HouseholdSettings />}
         <div className={section === "retirement" ? "" : "hidden"}>
           <RetirementSettings />
         </div>
@@ -73,6 +76,51 @@ export function GeneralSettings() {
           <LivingCostMappingEditor />
         </div>
         {section === "dataSources" && <DataSourcesSettings />}
+      </div>
+    </div>
+  );
+}
+
+function HouseholdSettings() {
+  const [timeZone, setTimeZone] = usePersistedSetting<string | null>(
+    SK_HOUSEHOLD_TIMEZONE,
+    null,
+  );
+  const zones = useMemo(() => Intl.supportedValuesOf("timeZone"), []);
+  const browserZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  return (
+    <div>
+      <h3 className="text-primary mb-1 text-sm font-semibold">Household</h3>
+      <p className="text-muted mb-3 text-xs">
+        Settings that apply to everyone using this Ledgr.
+      </p>
+      <div className="divide-subtle divide-y rounded-lg border">
+        <div className="flex items-center justify-between gap-4 px-3 py-3">
+          <div>
+            <div className="text-primary text-sm font-medium">Time zone</div>
+            <div className="text-muted mt-0.5 text-xs">
+              What &ldquo;today&rdquo; means for the server: year-end snapshots,
+              paycheck and budget dates, and daily syncs.
+              {timeZone !== browserZone && (
+                <> This browser is on {browserZone}.</>
+              )}
+            </div>
+          </div>
+          <select
+            className="bg-surface-primary text-secondary rounded border px-2 py-1 text-sm"
+            value={timeZone ?? ""}
+            onChange={(e) => setTimeZone(e.target.value || null)}
+            aria-label="Household time zone"
+          >
+            <option value="">Not set (server default, usually UTC)</option>
+            {zones.map((z) => (
+              <option key={z} value={z}>
+                {z}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
     </div>
   );

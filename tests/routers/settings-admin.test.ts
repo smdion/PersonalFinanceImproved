@@ -90,6 +90,32 @@ describe("settings.appSettings", () => {
   });
 
   describe("upsert", () => {
+    it("rejects an unknown household time zone and applies a valid one", async () => {
+      const before = process.env.TZ;
+      try {
+        await expect(
+          caller.settings.appSettings.upsert({
+            key: "household_timezone",
+            value: "Not/AZone",
+          }),
+        ).rejects.toThrow("Not a recognized time zone");
+        await caller.settings.appSettings.upsert({
+          key: "household_timezone",
+          value: "America/Chicago",
+        });
+        expect(process.env.TZ).toBe("America/Chicago");
+        // Clearing it hands the server back to the container's zone.
+        await caller.settings.appSettings.upsert({
+          key: "household_timezone",
+          value: null,
+        });
+        expect(process.env.TZ).toBe(before);
+      } finally {
+        if (before === undefined) delete process.env.TZ;
+        else process.env.TZ = before;
+      }
+    });
+
     it("inserts a new setting", async () => {
       const result = await caller.settings.appSettings.upsert({
         key: "test_setting",

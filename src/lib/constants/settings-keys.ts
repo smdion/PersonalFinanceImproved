@@ -81,3 +81,7 @@ export const SK_SETTINGS_DEBUG_SECTION = "settings_debug_section";
 
 // ── Debug ───────────────────────────────────────────────────────────
 export const SK_DIAG_MODE = "diag_mode";
+
+// ── Household ───────────────────────────────────────────────────────
+/** IANA time zone the server's date math runs in (e.g. "America/Chicago"). */
+export const SK_HOUSEHOLD_TIMEZONE = "household_timezone";
