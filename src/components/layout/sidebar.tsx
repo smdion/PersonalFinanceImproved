@@ -53,9 +53,9 @@ import { BRAND_COLORS } from "@/lib/utils/colors";
 
 // ── Navigation data structure ──
 
-type NavItem = { href: string; label: string; Icon: LucideIcon };
-type NavGroup = { label: string; Icon: LucideIcon; items: NavItem[] };
-type NavEntry = NavItem | NavGroup;
+export type NavItem = { href: string; label: string; Icon: LucideIcon };
+export type NavGroup = { label: string; Icon: LucideIcon; items: NavItem[] };
+export type NavEntry = NavItem | NavGroup;
 
 function isGroup(entry: NavEntry): entry is NavGroup {
   return "items" in entry;
@@ -65,7 +65,8 @@ function hrefMatches(href: string, pathname: string): boolean {
   return pathname === href || (href !== "/" && pathname.startsWith(href + "/"));
 }
 
-const navStructure: NavEntry[] = [
+/** The app's pages — the sidebar and Quick search both read this. */
+export const navStructure: NavEntry[] = [
   { href: "/", label: "Dashboard", Icon: LayoutDashboard },
   {
     // Answers — how you're doing and what to do next.

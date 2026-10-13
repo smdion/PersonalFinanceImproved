@@ -147,6 +147,12 @@ export function HelpContent() {
         </p>
         <ul className="ml-2 list-inside list-disc space-y-1">
           <li>
+            <strong>Quick search</strong> &mdash; Press <kbd>Cmd</kbd>+
+            <kbd>K</kbd> (<kbd>Ctrl</kbd>+<kbd>K</kbd> on Windows) and type a
+            page or what&rsquo;s on it &mdash; &ldquo;HSA limit&rdquo;,
+            &ldquo;FI&rdquo;, &ldquo;savings rate&rdquo;.
+          </li>
+          <li>
             <strong>Collapse the sidebar</strong> &mdash; Click the{" "}
             <Kbd>Collapse</Kbd> button at the bottom of the sidebar to switch to
             icon-only mode. Click again to expand.
